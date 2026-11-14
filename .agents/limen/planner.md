@@ -14,9 +14,9 @@ Follow `/home/artek/.pi/agent/skills/plan-task/SKILL.md` and its `references/pla
 - **Plan after:** if this plan needs another ticket's interfaces and that ticket has no `stages/` yet, treat it as a blocking question.
 - **§5 `limen ticket new`:** the ticket exists. Do not create another one.
 - **§6:** commit the ticket folder with explicit paths after each finished stage file. Never `git add -A`.
-- **§7 cold review:** you run it yourself, as a separate job, before you finish. Commit the complete plan first. Then start one review job on your own branch (`git branch --show-current`) and wait for it:
+- **§7 cold review:** you run it yourself, as a separate job, before you finish. Commit the complete plan first. Then start one review job on your own branch (`git branch --show-current`) and wait for it. Review model (`spec/build.md` TRACK, standing models): `claude-opus-5-5` when the plan has a `[risky]` stage or touches a risk area of that line; else `claude-sonnet-5-5`. Write the choice and its reason in `plan.md` § Cold review.
   ```
-  limen spawn --review --detached --branch <your branch> --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high \
+  limen spawn --review --detached --branch <your branch> --engine pi --provider claude-bridge --model <review model> --thinking high \
     --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 40m \
     --label "plan review · FNNN" '<the §7 pre-mortem text, with this ticket folder>'
   limen wait <id>; limen jobs <id>
@@ -27,6 +27,17 @@ Follow `/home/artek/.pi/agent/skills/plan-task/SKILL.md` and its `references/pla
 - Do not edit `spec/build.md`, `docs/product/stage-2/*` or any other ticket. If one of them must change, write the exact change in the final message.
 - Probes run in a temp folder inside this worktree. No DB migration, no `bun run test:int`, no `.env` reads, no VPS, no push.
 - Write the commit you read the code at into the status line of `plan.md`: `Plan base: <short sha>` (`git rev-parse --short HEAD` at the start of the job). A later refresh job compares the code against it.
+
+## Plan size (owner, 2026-11-14; replaces U3 "detailed stage files" of 2026-11-12)
+
+A harness study (Nov 12–14) found: plans cost 3–10 times their build, and about half of the plan-review findings were errors in plan detail (drifted line numbers, a stage that fails typecheck, an assert that cannot hold). The Sonnet worker reads the code at `HEAD` and finds that detail itself. The plan decides what the worker must not guess: product and design choices, edge cases, interfaces between stages, tests.
+
+- **Keep:** numbered decisions (P, D) with reason and rejected option; the edge-case answers of plan-task §4 as decisions; numbered test cases with fixed values; the names and signatures that a later stage or another ticket uses; schema and migration shape; the Proof command; `[risky]` marks; checkpoints and owner steps.
+- **Leave out:** line numbers; copies of current code; edit text ("change X to Y on line N"); lists of each file that a rename or a new argument touches (the worker greps); `grep` patterns as "Done when" checks, except a check that must find nothing when that is the acceptance itself.
+- **Name** a file or function only where the stage creates or changes an interface, or where two modules could fit. Else name the module or the capability page.
+- **Size:** `plan.md` at most 1,500 words; each stage file at most 700 words. A stage that needs more is two stages. Count with `wc -w` before the commit, and write the counts in `plan.md` § Planning progress.
+- **Read less:** start from `docs/capabilities/` and the ticket's epic page. Read code only to check a fact that a decision depends on.
+- A worker that finds a gap in a decision still stops and asks (plan-task §4). A gap in code detail is the worker's to solve at `HEAD`.
 
 ## Refresh job
 

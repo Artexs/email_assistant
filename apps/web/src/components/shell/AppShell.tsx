@@ -57,7 +57,8 @@ function Frame({ active, title, children }: AppShellProps) {
   const email = me?.user.email ?? null;
   const onboardingOpen = me === null || !me.onboarding.done;
   const operator = me?.operator === true;
-  const navProps = { active, onboardingOpen, operator, email, loading, onLogOut };
+  const features = me?.features ?? [];
+  const navProps = { active, onboardingOpen, operator, features, email, loading, onLogOut };
 
   let content: ReactNode;
   if (me !== null) {
@@ -100,7 +101,7 @@ function Frame({ active, title, children }: AppShellProps) {
           {content}
         </main>
       </div>
-      <BottomTabs active={active} />
+      <BottomTabs active={active} features={features} />
     </div>
   );
 }

@@ -1,0 +1,319 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-002",
+  "cases": [
+    {
+      "id": "w-1-026",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Magazynowe Expo: pakiet wystawcy w cenie z zeszłego roku!",
+      "body": "Szanowni Państwo,\n\nrejestracja wystawców na Targi Magazynowe Expo właśnie ruszyła i mamy dla Państwa niespodziankę: ceny pakietów wystawienniczych pozostają takie same jak w zeszłym roku!\n\nDo 31.01.2027 dopłacamy do każdego stoiska 15 procent, a pierwsze dziesięć firm dostanie dodatkowo bezpłatny wpis w katalogu i miejsce na prezentację produktu na scenie głównej.\n\nOferujemy też program dla firm, które nigdy wcześniej nie wystawiały się na targach: wynajem wyposażenia, hostessy i obsługa techniczna w jednej cenie. To idealny moment, aby pokazać swoją markę tysiącom odwiedzających!\n\nSprawdź nasz cennik i zarezerwuj miejsce, zanim zrobi to konkurencja.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-027",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólne przetargi - wyniki prekwalifikacji",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że nasze wspólne zgłoszenie do przetargu na obsługę logistyczną sieci supermarketów w regionie bałtyckim przeszło etap prekwalifikacji. Zamawiający potwierdził to w piątek, a pełna dokumentacja przetargowa będzie dostępna dla zakwalifikowanych oferentów od 8.02.2027.\n\nZ pięciu zgłoszonych konsorcjów do dalszego etapu zakwalifikowały się trzy. Nasz udział w ofercie pozostaje zgodny z wcześniejszymi ustaleniami, czyli 60 procent po stronie Kordelan i 40 procent po stronie Baltic Freight Partners.\n\nPiszę wyłącznie dla Pana wiadomości, aby miał Pan aktualny obraz sytuacji. O kolejnych krokach poinformuję, gdy tylko zamawiający opublikuje harmonogram.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-028",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "[ERP] Zatwierdzono zamówienie ZK-2027-0143",
+      "body": "Automatyczne powiadomienie ERP\n\nZamówienie zakupu ZK-2027-0143 zostało zatwierdzone w module magazynowym.\nData zatwierdzenia: 25.01.2027, 08:41\nMagazyn: Gdynia\n\nWiadomość wygenerowana automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-029",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie realizacji przelewu",
+      "body": "Przelew wychodzący został zrealizowany.\nData: 25.01.2027, 08:50\nKwota: 7 420,00 PLN\nOdbiorca: Logistyka Serwis\nStatus: zaksięgowany\n\nWiadomość automatyczna, prosimy nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-030",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pański kalendarz w lutym - proszę o kontakt",
+      "body": "Panie Wiktorze,\n\nproszę o kontakt ze mną w sprawie Pana terminów w lutym. Rada rozważa zmianę formuły posiedzenia z 18.02, a ta sprawa wymaga Pana osobistego udziału w rozmowie. Nie chcę omawiać jej przez asystentkę ani przez sekretariat.\n\nZ zewnętrznym audytorem rozmawiałem już dzisiaj rano i jego uwagi dotyczą bezpośrednio Pana obszaru. Bez Pana stanowiska nie zapadnie żadna decyzja.\n\nProszę o telefon do mnie, gdy tylko Pan to przeczyta.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-031",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Exhibit at Warehouse Expo - last booths with a bonus",
+      "body": "Hello,\n\nonly three exhibition booths left at Targi Magazynowe Expo! Book today and get a free ad in the show catalogue.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-032",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "[ERP] Dzienny raport stanu systemu magazynowego - 24.01.2027",
+      "body": "Dzienny raport systemu ERP Kordelan\n\nZakres: system magazynowy (WMS), wszystkie magazyny\nOkres: 24.01.2027, 00:00 - 23:59\nWygenerowano: 25.01.2027, 08:55\n\nDostępność systemu:\n- magazyn Gdynia: 99,92 procent, jedna przerwa 6 minut o 14:12,\n- magazyn Gdańsk: 100 procent,\n- magazyn Tczew: 99,60 procent, dwie przerwy po 11 i 9 minut (13:05 i 19:40).\n\nPrzetworzone dokumenty:\n- przyjęcia towaru (PZ): 214, w tym 3 z odchyleniem ilościowym,\n- wydania (WZ): 389,\n- przesunięcia międzymagazynowe (MM): 41,\n- inwentaryzacje cząstkowe: 7.\n\nZdarzenia systemowe zapisane w dzienniku:\n- 12 ostrzeżeń o wolnym czasie odpowiedzi skanerów w strefie B magazynu Gdynia,\n- 2 błędy synchronizacji lokalizacji (kody ERR-LOK-17 i ERR-LOK-22), zamknięte automatycznie po ponownej próbie,\n- 1 nieudane logowanie do konta serwisowego, zablokowane zgodnie z polityką po trzech próbach.\n\nObciążenie serwera aplikacji: średnie 38 procent, szczyt 71 procent o 11:30. Zajętość bazy danych: 64 procent przydzielonej przestrzeni.\n\nPełny raport w formacie arkusza jest zapisany w module magazynowym w sekcji Raporty okresowe, razem z wykresami obciążenia i listą wszystkich zdarzeń z poziomu ostrzeżeń. Raport jest generowany codziennie o 08:55 i przechowywany w archiwum przez 90 dni, a starsze raporty usuwa się automatycznie.\n\nWiadomość wygenerowano automatycznie. Nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-033",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana dziennego limitu przelewów - potwierdzenie",
+      "body": "Bank Aurum - powiadomienie dla klienta firmowego\n\nInformujemy, że dzienny limit przelewów wychodzących dla Twojego konta firmowego został zmieniony zgodnie z dyspozycją złożoną w bankowości internetowej.\n\nPoprzedni limit: 500 000,00 PLN\nNowy limit: 750 000,00 PLN\nObowiązuje od: 25.01.2027, 09:00\nDyspozycję zatwierdziło dwóch użytkowników z uprawnieniami podpisu.\n\nZmiana dotyczy wyłącznie przelewów krajowych. Limity dla przelewów zagranicznych i płatności kartą pozostają bez zmian. Pełną historię zmian limitów znajdziesz w bankowości internetowej w sekcji Ustawienia konta.\n\nWiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-034",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Get 100% genuine B2B leads - special price for you",
+      "body": "Dear Business Owner,\n\nAre you tired of low sales? We have the solution for you! Our team of experts is offering you 10,000 fresh B2B leads of logistic companys for only 99 dollars. Normal price is 899 dollars!!!\n\nWhy choose us?\n- verified emails, 100 percent working\n- results in 7 days, we guarantee\n- free SEO report for your website, worth 300 dollars\n\nThis offer is only valid for 24 hours and then price goes back. Do not miss your chance and reply to this email now, our manager will contact you immediately with payment details.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-035",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Shipment to Gothenburg cleared customs",
+      "body": "Dear Mr Szalewski,\n\nI would like to let you know that the pallet shipment from your Gdynia warehouse arrived at our Gothenburg distribution centre on Friday and was cleared by customs the same afternoon. Our receiving team counted all pallets and found no damage.\n\nThe goods were booked into stock on Saturday morning, and the first orders using them already went out on Monday. Our warehouse manager is very satisfied with the labelling and with the quality of the documentation, which made the clearance quick.\n\nI am sharing this simply so you know that the delivery went well.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-036",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Pański kalendarz w lutym - proszę o kontakt",
+      "body": "Dear Mr Szalewski,\n\nfollowing my message from this morning: I have now spoken to the auditor again and settled the matter with the other members of the council. The auditor accepted that the points of his review will be discussed in writing, so a personal meeting is no longer needed. The meeting of 18.02.2027 stays in its current format.\n\nI am telling you this only so you have the current status. No further steps are needed from your side, and your assistant has been informed.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Pański kalendarz w lutym - proszę o kontakt",
+          "body": "Panie Wiktorze,\n\nproszę o kontakt ze mną w sprawie Pana terminów w lutym. Rada rozważa zmianę formuły posiedzenia z 18.02, a ta sprawa wymaga Pana osobistego udziału w rozmowie. Nie chcę omawiać jej przez asystentkę ani przez sekretariat.\n\nZ zewnętrznym audytorem rozmawiałem już dzisiaj rano i jego uwagi dotyczą bezpośrednio Pana obszaru. Bez Pana stanowiska nie zapadnie żadna decyzja.\n\nProszę o telefon do mnie, gdy tylko Pan to przeczyta."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-1-037",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: nieobecność redakcji",
+      "body": "Dzień dobry,\n\ndziękujemy za wiadomość. To jest automatyczna odpowiedź. Redakcja Logistyka Dzis przebywa na wspólnym wyjeździe szkoleniowym do 29.01.2027 i nie odczytuje poczty w tym czasie.\n\nWydanie tygodnika w piątek 29.01.2027 ukaże się jak zwykle, przygotowaliśmy je wcześniej. Wiadomości dotyczące prenumeraty, reklam i zmian adresu prosimy kierować po 1.02.2027. Odpowiedzi na wiadomości otrzymane w czasie naszej nieobecności będą udzielane po powrocie, w kolejności wpływu.\n\nZ poważaniem, zespół redakcji",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-038",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Karty paliwowe: nowe zasady limitów u dużych dostawców",
+      "body": "Dzień dobry,\n\nw tym tygodniu na rynku kart paliwowych dla flot pojawiły się nowe zasady. Trzech dużych dostawców zapowiedziało, że od 1 marca przejdzie z limitów kwotowych na limity litrowe, co ma ułatwić flotom planowanie zużycia przy zmiennych cenach.\n\nŚrednia opłata za obsługę karty nie zmieni się w tym roku. Zmieni się natomiast sposób rozliczania akcyzy na fakturach, o czym dostawcy poinformują klientów odrębnymi pismami.\n\nInformacje podajemy do wiadomości czytelników.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-039",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dostawa zastępcza zrealizowana prawidłowo",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że dostawa zastępcza po reklamacji z zeszłego tygodnia dotarła do nas w całości i bez uszkodzeń. Sprawę uważamy za zamkniętą.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-040",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie zmiany adresu e-mail w prenumeracie",
+      "body": "To jest automatyczne potwierdzenie z systemu prenumeraty Logistyka Dzis.\n\nAdres e-mail powiązany z Twoją prenumeratą cyfrowego wydania tygodnika został zmieniony 25.01.2027, o godzinie 09:30. Od następnego wydania wiadomości będą wysyłane na nowy adres.\n\nJeżeli to nie Ty dokonałeś zmiany, możesz przywrócić poprzednie ustawienia w panelu prenumeraty. Ta wiadomość jest tylko potwierdzeniem zmiany i nie wymaga od Ciebie żadnych działań.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-041",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Obsada magazynu w Gdyni - faktura agencji",
+      "body": "Dzień dobry Wiktorze,\n\nw związku z obsadą w Gdyni: agencja pracy tymczasowej, z którą rozmawiałem, przysłała już fakturę zaliczkową za pierwszy miesiąc współpracy na kwotę 18 400 zł. Niezależnie od tego, jaką wybierzemy opcję, ktoś z księgowości musi sprawdzić tę fakturę i zdecydować o terminie jej zapłaty, bo ja nie mam do tego dostępu.\n\nProsiłbym więc, aby ktoś z Pana zespołu zajął się weryfikacją faktury i przypisaniem kosztu do właściwego centrum w budżecie na ten rok. Fakturę przekażę zaraz po tym, jak dowiem się, kto się tym zajmie.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [
+        {
+          "from": "rafal.kwiecinski@kordelan.test",
+          "subject": "Obsada magazynu w Gdyni - prosze o Pana opinie",
+          "body": "Dzień dobry Wiktorze,\n\nod kilku tygodni pracujemy w Gdyni na niepełnej obsadzie: brakuje nam dwóch brygadzistów na zmianie nocnej, a rotacja wśród magazynierów sięgnęła w grudniu 14 procent. Mam dwie możliwości i chciałbym poznać Pana zdanie, zanim cokolwiek ogłoszę.\n\nPierwsza to podniesienie widełek dla brygadzistów o około 8 procent, co kosztowałoby budżet około 6 tysięcy złotych miesięcznie. Druga to zatrudnienie agencji pracy tymczasowej na kwartał, drożej, ale szybciej. Osobiście skłaniam się ku pierwszej, ponieważ lepiej buduje stabilność zespołu, jednak decyzja ma konsekwencje budżetowe i woli ją Pan podjąć sam.\n\nBędę wdzięczny za krótką odpowiedź pisemną, na którą mogę się później powołać w rozmowie z działem finansowym.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-1-042",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rynek paliw: komentarz tygodnia",
+      "body": "Dzień dobry,\n\nkomentarz tygodnia: hurtowe ceny oleju napędowego spadły w minionych dniach o około 2 procent, co przekłada się na niższe ceny na stacjach, ale dostawcy kart paliwowych nie planują obniżek rabatów dla flot w pierwszym kwartale. Dla firm z kontraktami opartymi na cenie hurtowej oznacza to niewielką poprawę kosztów.\n\nAnalitycy zwracają uwagę, że ceny pozostają wrażliwe na decyzje producentów ropy w lutym. Pisaliśmy o tym szerzej w poprzednim wydaniu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-043",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowy artykuł w obserwowanym temacie: karty paliwowe",
+      "body": "Automatyczne powiadomienie: w obserwowanym przez Ciebie temacie pojawił się nowy artykuł.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-044",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie dostarczenia wydania 4/2027",
+      "body": "Automatyczne powiadomienie systemu dystrybucji\n\nWydanie nr 4/2027 tygodnika Logistyka Dziś zostało dostarczone na adres Twojej prenumeraty 25.01.2027 o godzinie 10:15. Format: cyfrowy, wersja z załącznikiem w pliku PDF.\n\nJeśli wiadomość nie dotarła do Twojej głównej skrzynki, sprawdź folder ze spamem i dodaj nasz adres do listy zaufanych nadawców. Archiwum numerów z ostatnich 12 miesięcy jest dostępne dla Ciebie w panelu prenumeraty.\n\nTo powiadomienie wygenerowano automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-045",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie konta prenumeratora - styczeń 2027",
+      "body": "Dzień dobry,\n\nto jest automatyczne podsumowanie Twojego konta prenumeratora tygodnika Logistyka Dziś, wygenerowane przez nasz system 25.01.2027.\n\nPlan: prenumerata cyfrowa dla firm, 1 użytkownik\nOkres rozliczeniowy: 01.01.2027 - 31.12.2027\nStatus płatności: opłacona, faktura FV-LD-2027-0188 wysłana na adres rozliczeniowy\n\nWykorzystanie w ostatnich 30 dniach:\n- otrzymane wydania: 4, wszystkie dostarczone,\n- otwarcia wiadomości: 3,\n- pobrane załączniki PDF: 2,\n- wyświetlenia archiwum: 1.\n\nZapisane tematy powiadomień: karty paliwowe i ceny paliw, przetargi logistyczne, regulacje drogowe, rynek frachtów. Możesz je zmienić w panelu prenumeraty w dowolnym momencie. Zmiany obowiązują od następnego wydania i nie wpływają na dostęp do archiwum wydania cyfrowego.\n\nPrzypominamy, że dane rozliczeniowe możesz zaktualizować w ustawieniach konta, a historię faktur pobrać w formacie PDF. Jeśli chcesz zmienić plan lub dodać kolejnych użytkowników, możesz to zrobić w panelu bez kontaktu z redakcją.\n\nDla bezpieczeństwa konta pamiętaj, że nigdy nie prosimy o podanie hasła w wiadomości e-mail. Jeśli zauważysz coś niepokojącego w aktywności swojego konta, zmień hasło w panelu prenumeraty i zgłoś sprawę przez formularz kontaktowy.\n\nTa wiadomość jest generowana automatycznie raz w miesiącu. Odpowiedzi wysłane na ten adres nie są odczytywane.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-046",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólne przetargi - udział w drugim lotcie",
+      "body": "Szanowny Panie Prezesie,\n\nw przetargu sieci supermarketów w regionie bałtyckim zamawiający dopuścił składanie ofert na drugi lot, obejmujący obsługę centrów dystrybucyjnych w Rydze i Kłajpedzie. Nie jest on duży, ale daje dostęp do kontraktu na trzy lata.\n\nZastanawiamy się, czy wystąpić o drugi lot razem z Państwem, w tym samym układzie udziałów, czy lepiej złożyć dla niego osobną ofertę po naszej stronie. Chciałbym poznać Pana opinię, ponieważ od niej zależy, jak podzielimy zasoby przy przygotowaniu dokumentacji.\n\nBędę wdzięczny za odpowiedź pisemną, którą mógłbym przekazać wspólnikom.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-047",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Incoming transfer booked on your account",
+      "body": "Bank Aurum - notification for business customers\n\nAn incoming transfer was booked on your business account on 25.01.2027 at 10:28.\n\nSender: Meblodrew sp. z o.o.\nAmount: 27 840,00 PLN\nTitle: payment for invoice FV-1176\nAvailable balance after the operation: 1 311 250,35 PLN\n\nYou can see the details of the transfer in your online banking under Account history.\n\nThis message was generated automatically. Please do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-048",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Magazynowe Expo 2027 - ZAREZERWUJ TERAZ, zanim będzie za późno!!!",
+      "body": "Szanowni Państwo, drodzy przedsiębiorcy,\n\ntegoroczne Targi Magazynowe Expo będą największym wydarzeniem w historii branży! Nie możecie Państwo tego przegapić, a my mamy dla Was SZCZEGÓLNĄ ofertę wyłącznie na ten tydzień!\n\nCo dostaniecie, rezerwując stoisko do piątku:\n- rabat 35 procent na pakiet wystawcy STANDARD,\n- rabat 45 procent na pakiet PREMIUM z miejscem w hali głównej,\n- bezpłatny wpis w katalogu dla każdej firmy, która zapłaci zaliczkę w ciągu dwóch dni,\n- darmowe zaproszenia VIP dla dziesięciu Waszych klientów,\n- miejsce w programie konferencji dla pierwszych pięciu zgłoszeń.\n\nW zeszłym roku wszystkie stoiska wyprzedały się w niecały tydzień, a firmy, które zwlekały, zostały z niczym. Dziś zostało nam zaledwie sześć wolnych stanowisk w hali głównej i dwanaście w hali bocznej. Każda godzina zwłoki zmniejsza szansę, że ktokolwiek się dla Was znajdzie!\n\nNie potrzebujecie żadnego doświadczenia wystawienniczego. Nasz zespół zajmie się wszystkim: zabudową, transportem, ochroną i obsługą hostess. Wystarczy, że wypełnicie krótki formularz zgłoszeniowy i zapłacicie zaliczkę, a my zrobimy resztę.\n\nDołączcie do ponad 400 wystawców, którzy już zaufali naszemu targom, i wypromujcie swoją markę wśród tysięcy odwiedzających z całej Europy!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-049",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic framework - exclusivity clause, need your steer",
+      "body": "Hi Wiktor,\n\nme again on the Nordic framework. Karin sent over the revised draft this morning and there are two changes I do not want to answer without you.\n\nFirst, they now ask for exclusivity on chilled and frozen goods in Sweden and Norway for the whole term, three years. In return they offer a minimum volume of 1,800 pallets a month, which is higher than what we discussed in December. It looks good on paper, but it ties our cold-chain capacity in Gdynia, and if their volume drops we are stuck with the idle space.\n\nSecond, they want us to carry the risk for temperature deviations up to 5 percent of the shipment value, without a cap per incident. Legal says that is normally covered by a cap, usually 100 thousand euro, so I would try to get that.\n\nMy feeling is that the exclusivity could work if the minimum volume is guaranteed with a take-or-pay clause, but its a big commitment and a strategic one, so I would like to hear what you think before I reply to Karin. Which of the two points is acceptable for you, and where should I hold the line?\n\nThanks, and sorry for the long mail.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-050",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawa celna w Kłajpedzie - wybór agenta",
+      "body": "Szanowny Panie Prezesie,\n\nprzygotowując wspólną ofertę na drugi lot przetargu, doszliśmy do pytania, które wymaga Pana opinii. Chodzi o obsługę celną dla tras przez Kłajpedę, ponieważ od tego zależy kalkulacja kosztów i zapisy w umowie z zamawiającym.\n\nWidzimy dwie możliwości. Pierwsza to skorzystanie z agenta celnego, z którym współpracujemy od lat w Baltic Freight Partners, ze stałą prowizją od zgłoszenia. Druga to zatrudnienie agenta, którego od dawna wskazuje wasz zespół eksportu, z lepszymi stawkami, ale bez doświadczenia w przetargach publicznych na Litwie.\n\nRozumiem, że decyzja ma charakter strategiczny i dotyczy relacji z kluczowymi klientami Państwa firmy. Dlatego chciałbym poznać Pana zdanie na piśmie: którego z agentów Pan woli i czy gotowy jest Pan zaakceptować wyższy koszt pierwszego, jeśli ryzyko opóźnień będzie mniejsze.\n\nJeśli zechce Pan omówić sprawę ze mną bezpośrednio, mogę w tej sprawie rozmawiać w dowolnym dniu tego tygodnia. Chcemy zamknąć kalkulację przed końcem miesiąca, bo dokumentacja przetargowa dla zakwalifikowanych oferentów będzie dostępna od 8.02.2027, a po tej dacie zamawiający oczekuje od konsorcjów pełnej listy podwykonawców, w tym agentów celnych i przewoźników, wraz z dokumentami potwierdzającymi ich uprawnienia i dotychczasowe referencje.\n\nZ poważaniem, Daniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

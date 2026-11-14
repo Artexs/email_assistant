@@ -1,0 +1,325 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-006",
+  "cases": [
+    {
+      "id": "w-1-126",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Confirm your new notification email address",
+      "body": "Hello,\n\nthis is an automated message from Supply Chain Weekly. A request was made in your account to add this address as a notification email for your freight alerts.\n\nYour verification code is 482915. The code is valid for 30 minutes. Enter it in your account settings under Notification emails to finish the change.\n\nIf you did not request this change, you can ignore this message. No changes will be made to your account unless the code is entered.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-127",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Materiały na posiedzenie rady - lista dokumentów",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że sekretarz rady zamieścił w repozytorium komplet materiałów na posiedzenie 28.01.2027. W skład materiałów wchodzą: projekt budżetu na rok 2027 z uwagami komitetu audytu, raport zarządu o przetargach, zestawienie ryzyk walutowych oraz protokół z poprzedniego posiedzenia.\n\nWszyscy członkowie rady mają dostęp do dokumentów od dziś rano. Piszę wyłącznie dla Pana wiadomości, aby zarząd wiedział, że materiały są już dostępne i można je pobrać z repozytorium w dowolnym momencie przed posiedzeniem.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-128",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Pański kalendarz w lutym - proszę o kontakt",
+      "body": "Panie Wiktorze,\n\nuzupełniam informacje o terminach. W dniach 17-19.02 jestem w Oslo, w związku z czym na posiedzeniu rady 18.02 połączę się zdalnie. Wyjazd do Rotterdamu w dniach 8-10.03 pozostaje bez zmian. Te terminy mają już sekretarz rady i Pana asystentka, a bilety lotnicze zostały zarezerwowane.\n\nPiszę wyłącznie dla Pana wiadomości, nic nie trzeba w tej sprawie robić.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Pański kalendarz w lutym - proszę o kontakt",
+          "body": "Panie Wiktorze,\n\nproszę o kontakt ze mną w sprawie Pana terminów w lutym. Rada rozważa zmianę formuły posiedzenia z 18.02, a ta sprawa wymaga Pana osobistego udziału w rozmowie. Nie chcę omawiać jej przez asystentkę ani przez sekretariat.\n\nZ zewnętrznym audytorem rozmawiałem już dzisiaj rano i jego uwagi dotyczą bezpośrednio Pana obszaru. Bez Pana stanowiska nie zapadnie żadna decyzja.\n\nProszę o telefon do mnie, gdy tylko Pan to przeczyta."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-1-129",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie tygodnia: Twoje alerty o paliwach",
+      "body": "Automatyczne podsumowanie alertów\n\nW okresie od 18.01.2027 do 24.01.2027 wysłano Ci jeden alert w temacie \"ceny paliw\" i dwa powiadomienia o nowych artykułach w temacie \"karty paliwowe\".\n\nAlert cenowy: olej napędowy, hurt, próg 5,90 zł netto, przekroczony 20.01.2027.\nNowe artykuły: 2, opublikowane 19.01.2027 i 22.01.2027.\n\nPodsumowanie wysyłamy co poniedziałek, jeśli w poprzednim tygodniu wysłano co najmniej jedno powiadomienie. Ustawienia możesz zmienić w panelu prenumeraty, w zakładce Powiadomienia, w dowolnym momencie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-130",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Apartamenty nad morzem - inwestycja, która się spłaca!",
+      "body": "Szanowni Państwo!\n\nczy myśleli Państwo o inwestycji w apartament nad morzem? Targi Magazynowe Expo wraz z naszym partnerem, deweloperem z Trójmiasta, przygotowały dla Państwa ofertę, która nie ma sobie równych! Apartamenty w nowej inwestycji w Sopocie już od 320 tysięcy złotych, a pierwsze 15 kupujących otrzyma 12 procent rabatu!\n\nDlaczego warto?\n- lokalizacja 200 metrów od plaży,\n- gwarantowany zwrot z najmu, nawet 9 procent rocznie,\n- pełne wykończenie pod klucz, razem z meblami,\n- miejsce parkingowe w hali garażowej w cenie,\n- zarządzanie najmem po stronie dewelopera, bez żadnych zmartwień.\n\nTo oferta z innej półki niż targi magazynowe, ale wiemy, że nasi klienci cenią sobie dobrą lokatę kapitału. Wielu naszych wystawców już zdecydowało się na zakup i mówi, że to najlepsza decyzja ostatnich lat! Liczba apartamentów jest ograniczona i zostało ich już tylko kilkanaście, więc nie ma czasu do stracenia.\n\nWystarczy skontaktować się z naszym działem handlowym, a doradca przygotuje dla Państwa indywidualną ofertę, zorganizuje prezentację i zaproponuje wizytę na budowie. Zapraszamy do kontaktu jeszcze w tym tygodniu, bo od następnego rabat przestaje obowiązywać, a ceny apartamentów rosną co miesiąc o 2 procent!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-131",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Termin posiedzenia rady w marcu - proszę o Pana zdanie",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się z prośbą o Pana opinię. Posiedzenie rady zaplanowane na 25.03.2027 koliduje z moim wyjazdem służbowym, który przesunął się o jeden dzień. Rozważam przeniesienie posiedzenia na 26.03.2027, na ten sam czas i do tej samej sali.\n\nCzy ten termin jest dla Pana akceptowalny, czy zarząd ma w tym dniu zobowiązania, które by temu przeszkadzały? Proszę o odpowiedź pisemną, żebym mógł poinformować pozostałych członków rady.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-132",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Uszkodzone palety - odszkodowanie",
+      "body": "Szanowny Panie Prezesie,\n\nczy uzna Pan nasze roszczenie za uszkodzone palety w pełnej wysokości? Czekam na Pana odpowiedź.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-133",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your weekly digest was delivered",
+      "body": "This is an automated delivery confirmation. Your weekly digest of 25.01.2027 was sent to your address at 17:29.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-134",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Foreign currency transfer completed",
+      "body": "Bank Aurum - notification for business customers\n\nAn outgoing foreign currency transfer from your business account was completed on 25.01.2027 at 17:28.\n\nBeneficiary: Nordic Pallets AB\nAmount: 6 480,00 EUR\nBooked amount: 29 160,00 PLN at the bank rate of 4,5000\nDetails of payment: invoice NP-2027-014, pallet rental\nFees: 25,00 PLN\n\nYou can download the confirmation of the transfer in online banking under Account history.\n\nThis message was generated automatically. Please do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-135",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kursy języka angielskiego dla Pana zespołu - 20% taniej",
+      "body": "Dzień dobry,\n\nwiemy, że Pana firma pracuje z klientami zagranicznymi, więc proponujemy kursy języka angielskiego dla Pana pracowników, prowadzone online przez lektorów z całego świata. Przy zapisie do końca lutego udzielamy rabatu 20 procent na pierwszy semestr.\n\nZajęcia odbywają się dwa razy w tygodniu po 90 minut, a poziom grupy dobieramy po krótkim teście. Zapisy przyjmuje nasz dział handlowy, a pierwsza lekcja próbna jest bezpłatna.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-136",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Unpaid fuel card invoices - please ask accounting to review",
+      "body": "Dear Mr Szalewski,\n\nour system shows two unpaid invoices for fuel cards from December 2026, with the due date already passed by about two weeks. We have also noticed that the payment reference on the last transfer from your company did not match any open invoice.\n\nPlease ask someone in your accounting team to review both invoices, match the last transfer to the correct one and confirm to us the planned payment date. We would like to close the matter this month, so that the cards stay active without interruption.\n\nEwelina Marszalek",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-137",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Terminal w Kłajpedzie - wspólne pismo o stałe okno odpraw",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do mojego pytania o wspólne pismo do terminalu: terminal w Kłajpedzie poinformował nas dzisiaj, że od marca wprowadza stałe okna odpraw dla konsorcjów na podstawie standardowego wniosku. Wspólne pismo nie jest zatem już potrzebne, a nasz agent złoży wniosek w naszym imieniu.\n\nPiszę wyłącznie dla Pana wiadomości, żeby miał Pan aktualny obraz sytuacji. Agent potwierdził też, że opłata za złożenie wniosku wynosi 120 euro i nie ma wpływu na wcześniejszą kalkulację.",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Terminal w Kłajpedzie - wspólne pismo o stałe okno odpraw",
+          "body": "Szanowny Panie Prezesie,\n\nczy zgodzi się Pan, abyśmy w imieniu konsorcjum wystąpili do terminalu w Kłajpedzie o stałe okno odpraw? Proszę o odpowiedź pisemną.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-1-138",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Faktura nr FV-PF-0312 - prosimy o przekazanie do księgowości",
+      "body": "Szanowni Państwo,\n\nw załączeniu faktura FV-PF-0312 za usługi kart paliwowych, której termin płatności upływa jutro. Prosimy o niezwłoczne przekazanie jej do księgowości i zrealizowanie przelewu na nowy rachunek: PL00-TEST-4821.\n\nUwaga: dotychczasowy rachunek został zamknięty i płatności na stary rachunek nie będą uznawane. Prosimy nie weryfikować zmiany telefonicznie, ponieważ nasza infolinia jest w tym tygodniu nieczynna. Po zapłacie prosimy odpowiedzieć na tę wiadomość z potwierdzeniem przelewu.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-139",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przyjęcia paczki przelewów do dostawców",
+      "body": "Bank Aurum - powiadomienie dla klienta firmowego\n\nPaczka przelewów do dostawców, przesłana 25.01.2027 o godzinie 17:20 z systemu finansowo-księgowego, została przyjęta przez bank i oczekuje na realizację w najbliższym terminie sesji rozliczeniowej.\n\nSzczegóły paczki:\n- liczba przelewów: 6,\n- łączna kwota: 118 540,00 PLN,\n- planowana data realizacji: 26.01.2027,\n- użytkownik, który wysłał paczkę: konto integracyjne systemu księgowego.\n\nZawartość paczki:\n- Paliwa-Flota, faktura FV-1180, 38 420,00 PLN,\n- Meblodrew, faktura FV-1176, 27 840,00 PLN,\n- Naczepy-Serwis Pomorze, faktura FV-0877, 19 600,00 PLN,\n- Logistyka Serwis, faktura FV-0991, 7 420,00 PLN,\n- Serwis Naczep Pomorze, faktura FV-0902, 5 600,00 PLN,\n- Biuro Rachunkowe Nord, faktura FV-0412, 19 660,00 PLN.\n\nPaczka wymaga autoryzacji przez dwóch użytkowników z uprawnieniami podpisu. Do momentu autoryzacji przelewy nie zostaną zrealizowane. Status paczki możesz sprawdzić w bankowości internetowej w sekcji Paczki przelewów. Jeśli paczka nie zostanie autoryzowana do końca dnia roboczego, przelewy zostaną anulowane, a plik będzie można zaimportować ponownie bez dodatkowych opłat. Bank nigdy nie prosi o podanie danych logowania w wiadomości e-mail, ani w rozmowie telefonicznej, ani przez komunikator. W razie wątpliwości co do zawartości paczki skontaktuj się z doradcą.\n\nWiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-140",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Terminarz podróży - korekta",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że mój przelot do Oslo w dniu 17.02 został przesunięty na godzinę 12:40. Piszę dla informacji.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-141",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe artykuły o kartach paliwowych",
+      "body": "Automatyczne powiadomienie: w temacie \"karty paliwowe\" ukazały się dwa nowe artykuły.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-142",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your website is invisible! Get TOP 1 now",
+      "body": "Hello,\n\nyour website is not visible in Google. We can fix it in 24 hours for only 99 dollars!!! Reply now.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-143",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie ustawień alertów w temacie: karty paliwowe",
+      "body": "Dzień dobry,\n\nto jest automatyczne podsumowanie ustawień Twoich alertów w temacie \"karty paliwowe\", wygenerowane po ostatniej zmianie konfiguracji konta 25.01.2027.\n\nAktualne ustawienia:\n- temat: karty paliwowe i ceny paliw,\n- częstotliwość: raz dziennie, tylko gdy pojawi się nowy artykuł,\n- godzina wysyłki: 07:00,\n- adres dostawy: główny adres konta,\n- format: wiadomość tekstowa z listą nagłówków.\n\nOd 1.02.2027 zmienia się harmonogram wysyłki tego tematu. Wiadomości będą wysyłane w zbiorczej wersji tygodniowej, w piątek o 07:00, o czym informowaliśmy w osobnym powiadomieniu. Jeśli chcesz zachować codzienne alerty, wybierz w panelu prenumeraty opcję natychmiastowych powiadomień.\n\nPowiązane alerty konta:\n- olej napędowy, próg 6,00 zł netto, status: aktywny,\n- przetargi logistyczne, status: wyłączony,\n- regulacje drogowe, status: wyłączony.\n\nWszystkie ustawienia możesz zmienić w dowolnym momencie w panelu prenumeraty w zakładce Powiadomienia. Zmiany obowiązują od najbliższej wysyłki. Historia ostatnich zmian ustawień jest dostępna w zakładce Dziennik konta, gdzie widać datę każdej zmiany oraz urządzenie, z którego ją wprowadzono. Jeśli nie rozpoznajesz którejś zmiany, zmień hasło do konta w panelu prenumeraty i wyloguj pozostałe urządzenia, aby zabezpieczyć dostęp.\n\nTa wiadomość została wygenerowana automatycznie. Odpowiedzi na ten adres nie są odczytywane.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-144",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "[ERP] Scanner firmware update completed - Gdynia warehouse",
+      "body": "System notification\n\nThe firmware update of the handheld scanners in the Gdynia warehouse was completed on 25.01.2027 at 18:10. A total of 42 devices were updated to version 5.2.1, 3 devices were skipped because they were offline during the update.\n\nThe skipped devices will be updated automatically at their next connection to the warehouse network. The update did not interrupt the operation of the warehouse management system.\n\nThis is an automated message from the ERP system of Kordelan.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-145",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Faktura serwisanta skanerów - płatność",
+      "body": "Wiktor,\n\nserwisant skanerów w Gdyni przysłał fakturę za naprawę systemu magazynowego, 6 800 zł. Prosiłabym, żeby ktoś z księgowości sprawdził ją i zapłacił.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-146",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "[ERP] Raport zdarzeń awaryjnych systemu magazynowego - 25.01.2027",
+      "body": "Automatyczny raport zdarzeń awaryjnych systemu ERP Kordelan\n\nZakres: system magazynowy (WMS), wszystkie magazyny\nOkres: 25.01.2027, 00:00 - 18:30\n\nZdarzenia awaryjne zarejestrowane w tym okresie:\n1. 06:12, magazyn Gdynia, brak odpowiedzi serwera aplikacji przez 4 minuty, usunięty automatycznie po ponownym uruchomieniu usługi,\n2. 09:47, magazyn Tczew, błąd połączenia skanerów ze strefą B, 11 skanerów, czas trwania 9 minut,\n3. 13:20, magazyn Gdańsk, przekroczony limit czasu odpowiedzi bazy danych, jedna operacja przyjęcia towaru wymagała ponowienia,\n4. 15:55, magazyn Gdynia, błąd drukarki etykiet na rampie 3, zgłoszono do serwisu pod numerem ZG-2027-0066.\n\nZdarzenia oznaczone jako ostrzeżenia, bez wpływu na pracę magazynów: 17.\n\nWskaźniki w tym okresie:\n- średnia dostępność systemu: 99,71 procent,\n- średni czas odpowiedzi operacji skanowania: 0,6 sekundy,\n- liczba dokumentów przetworzonych w okresie: 702,\n- liczba dokumentów, które wymagały ponowienia: 5.\n\nWszystkie zdarzenia zostały zarejestrowane w dzienniku systemowym i są dostępne w module magazynowym w sekcji Dziennik zdarzeń. Zgłoszenia serwisowe są prowadzone w systemie zgłoszeń działu IT, a ich status można sprawdzić po numerze zgłoszenia. Zdarzenia z poprzednich dni są dostępne w archiwum raportów, które jest przechowywane przez 60 dni.\n\nTen raport jest generowany codziennie o 18:30. Wiadomość wygenerowano automatycznie. Nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-147",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Budget variance table for the council folder",
+      "body": "Hello Wiktor,\n\ncould someone from your finance team prepare a short variance table, December actuals against the 2027 budget plan, and send it to the council secretary before the meeting? The audit committee would like to have it in the council folder.\n\nA one-page table is enough. It should show revenue, fixed costs and fleet investment, with a comment where the deviation is above 5 percent. I do not need to see it myself, it is only for the folder.\n\nZbigniew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-148",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Obsada magazynu w Gdyni - prosze o Pana opinie",
+      "body": "Wiktorze, dla informacji: kwestię widełek omówiłem już z dyrektor operacyjną i finansami, budżet zatwierdzono bez zmian.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [
+        {
+          "from": "rafal.kwiecinski@kordelan.test",
+          "subject": "Obsada magazynu w Gdyni - prosze o Pana opinie",
+          "body": "Dzień dobry Wiktorze,\n\nod kilku tygodni pracujemy w Gdyni na niepełnej obsadzie: brakuje nam dwóch brygadzistów na zmianie nocnej, a rotacja wśród magazynierów sięgnęła w grudniu 14 procent. Mam dwie możliwości i chciałbym poznać Pana zdanie, zanim cokolwiek ogłoszę.\n\nPierwsza to podniesienie widełek dla brygadzistów o około 8 procent, co kosztowałoby budżet około 6 tysięcy złotych miesięcznie. Druga to zatrudnienie agencji pracy tymczasowej na kwartał, drożej, ale szybciej. Osobiście skłaniam się ku pierwszej, ponieważ lepiej buduje stabilność zespołu, jednak decyzja ma konsekwencje budżetowe i woli ją Pan podjąć sam.\n\nBędę wdzięczny za krótką odpowiedź pisemną, na którą mogę się później powołać w rozmowie z działem finansowym.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-1-149",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: doradca klienta nieobecny",
+      "body": "Dzień dobry,\n\ndziękujemy za wiadomość. To jest automatyczna odpowiedź. Doradca klienta firmowego Banku Aurum jest nieobecny do 29.01.2027 i nie odczytuje poczty w tym czasie.\n\nW sprawach pilnych dotyczących rachunku prosimy korzystać z bankowości internetowej lub z infolinii dla klientów firmowych. Wiadomości przesłane na ten adres będą rozpatrywane po powrocie doradcy, w kolejności wpływu. Dane klientów przekazane w wiadomościach nie są udostępniane innym osobom.\n\nBank Aurum",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-150",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Terminy dostaw do zakładu w lutym - zmiany okien rozładunku",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję o zmianach w oknach rozładunku w naszym zakładzie w lutym. W związku z modernizacją linii produkcyjnej od 1.02.2027 do 28.02.2027 zmieniamy godziny przyjmowania dostaw na rampie głównej.\n\nDo tej pory dostawy przyjmowaliśmy od 6:00 do 14:00. W lutym okno będzie krótsze i wyniesie od 7:00 do 12:00, od poniedziałku do piątku, a w soboty rampa pozostaje nieczynna. Dostawy chłodzone mają pierwszeństwo przy rozładunku i zostaną przyjęte w pierwszej kolejności, niezależnie od kolejności przyjazdu.\n\nZmiana dotyczy wszystkich dostawców, w tym Państwa firmy, i została już uwzględniona w naszym systemie planowania. Okna będą rezerwowane przez dostawców w naszym portalu logistycznym z wyprzedzeniem co najmniej 24 godzin. Jeśli kierowca przyjedzie poza zarezerwowanym oknem, rozładunek może zostać przesunięty na kolejny dzień roboczy.\n\nZ naszej strony zrobiliśmy wszystko, aby zmiany były jak najmniej uciążliwe, a od 1.03.2027 powracamy do dotychczasowych godzin pracy rampy. Piszę wyłącznie, aby Pan i Pana zespół mieli aktualną informację o terminach dostaw w najbliższym miesiącu. Dotychczasowa współpraca z Państwa firmą układa się bardzo dobrze, a zmiany okien nie wpływają na ustalone ceny ani na warunki umowy ramowej.\n\nZ poważaniem,\nTomasz Brzeziński\nDyrektor Zakupów, Meblodrew",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

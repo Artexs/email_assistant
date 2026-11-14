@@ -1,10 +1,10 @@
 # Measurement
 
-> Checked against the code at `85904fc`, 2026-11-14.
+> Checked against the code at `d91e47f`, 2026-11-14.
 
 ## What it does now
 
-`weekStats` computes the numbers of one week of one organization: missed important mail (M1), open loops on time (M2), serious mistakes (M3), handled share (M4), urgent notice time (M5), cost per mailbox (M7) and the evidence of each category (M8). It can take one mailbox or all mailboxes of the organization. `recentWeekStats` gives the last finished weeks, newest first, and only the newest week carries M8. The route `GET /api/stats` (flag `stats_page`) and the operator CLI `bun run stats:week` call these functions. Every metric reads real mail only, and a call recomputes from the database and writes nothing. The pure metric code is in `packages/core/src/metrics`; each module that owns a table has the row reader for its tables.
+`weekStats` computes the numbers of one week of one organization: missed important mail (M1), open loops on time (M2), serious mistakes (M3), handled share (M4), urgent notice time (M5), cost per mailbox (M7) and the evidence of each category (M8). It can take one mailbox or all mailboxes of the organization. `recentWeekStats` gives the last finished weeks, newest first, and only the newest week carries M8. The route `GET /api/stats` (flag `stats_page`) and the operator CLI `bun run stats:week` call these functions. The panel page `/stats` reads the route and shows the last 8 finished weeks as one read-only table: the metrics are the rows, the weeks are the columns, each rate has its count, and a mailbox select picks one mailbox or all. An evidence row shows its precision only from 30 labels (`EVIDENCE_MIN_LABELS`); below that it shows the label count. `apps/web/src/lib/stats-view.ts` builds the cells. Every metric reads real mail only, and a call recomputes from the database and writes nothing. The pure metric code is in `packages/core/src/metrics`; each module that owns a table has the row reader for its tables.
 
 ## Rules
 
@@ -27,6 +27,7 @@
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | function | `weekStats`, `recentWeekStats`                                                                                                                            | `apps/server/src/modules/reports/metrics.ts`         |
 | route    | `GET /api/stats`                                                                                                                                          | `apps/server/src/modules/reports/routes.ts`          |
+| page     | `/stats` (the weekly numbers, read-only)                                                                                                                  | `apps/web/src/islands/StatsPage.tsx`                 |
 | CLI      | `bun run stats:week`                                                                                                                                      | `apps/server/src/scripts/stats-week.ts`              |
 | CLI      | `bun run mailbox:signals`                                                                                                                                 | `apps/server/src/scripts/mailbox-signals.ts`         |
 | function | the pure metrics (`missedImportant`, `openLoopsOnTime`, `seriousMistakes`, `handledShare`, `urgentLatency`, `unitCost`, `autoEvidence`, `buildWeekStats`) | `packages/core/src/metrics/index.ts`                 |
@@ -50,7 +51,7 @@ Tables that other capabilities write for the measures:
 
 ## Limits
 
-- No Monday message and no stats page yet: later stages of F100 (`F100-e3a-measure`).
+- No Monday message yet: a later stage of F100 (`F100-e3a-measure`).
 - The holdout result, the history check and the tripwire are not in M8: F110. E5 loop rows are not in M2: F116. The E6 draft outcome line is not in the report: F115.
 - The M1 answered-check signal is not computed from `email_flags` yet: the metric reads `triage_feedback` rows of source `answered_check` only.
 - The backup share of M7 is an assumption (`F100-e3a-measure`, question Q6).
