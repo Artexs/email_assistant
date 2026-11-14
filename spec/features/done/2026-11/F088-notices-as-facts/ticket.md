@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F088 · Notices are stored as facts and rendered per channel, detail and locale by a renderer registry
