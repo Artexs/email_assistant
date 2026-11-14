@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F098 · E7-T1 Polish UI (i18n frame first)

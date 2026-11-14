@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { getLocale, t } from "../../i18n";
 import { api } from "../../lib/api";
 import { errorText } from "../../lib/errors";
+import { mailboxStatusUi } from "../../lib/mailbox-status";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -28,6 +29,7 @@ export function MailboxCard({ mailbox, isOwner, timeZone, now, onChanged }: Mail
   const [busy, setBusy] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const { hint } = mailboxStatusUi[mailbox.status];
 
   const switchStatus = async (action: "pause" | "resume") => {
     setBusy(true);
@@ -60,10 +62,10 @@ export function MailboxCard({ mailbox, isOwner, timeZone, now, onChanged }: Mail
           <p>{t(mailbox.mode === null ? "mb_mode_none" : modeTexts[mailbox.mode])}</p>
         </div>
         <ScopeBadges scopes={mailbox.scopes} />
-        {isOwner && mailbox.status === "auth_error" && (
+        {isOwner && hint !== null && (
           <Alert variant="destructive">
             <AlertDescription>
-              <p>{t("mb_auth_error_hint")}</p>
+              <p>{t(hint)}</p>
             </AlertDescription>
           </Alert>
         )}

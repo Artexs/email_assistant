@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
+import { textsFor } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import type { ActionsScope } from "../../src/modules/actions";
@@ -30,7 +31,7 @@ describe("e2e activity rows", () => {
       const ctx = { orgId: s.orgId };
       const result = await seedActivityRows(trx, ctx, s.mailboxId, NOW);
       expect(result.total).toBe(56);
-      const page = await listActivity(trx, ctx, { notRated: false, limit: 100 }, NOW);
+      const page = await listActivity(trx, ctx, { notRated: false, limit: 100 }, NOW, textsFor("en"));
       expect(page.items).toHaveLength(56);
       const byId = (id: string) => page.items.find((item) => item.emailId === id);
       const moved = byId(result.emailIds.moved);

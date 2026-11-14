@@ -26,8 +26,8 @@
     },
     {
       "id": "w-1-030",
-      "category": "needs_reply",
-      "blindHash": "e7c41f1df887b23cc276f9c5eb6f4b7300215a438abd20a5f76a909268e80424"
+      "category": "urgent",
+      "blindHash": "b59ead7f8ef9501e54511e619ab436a02d6f14d2b9efaccad289b38bd184b8ff"
     },
     {
       "id": "w-1-031",
@@ -57,7 +57,7 @@
     {
       "id": "w-1-036",
       "category": "info",
-      "blindHash": "fad388c681431083b8df59e4235355821407cc083e69f1754c286da4434c7368"
+      "blindHash": "8e7c69eabe9296567501b3efe84c8dd9064e4d6a7193465ca9acaa47b46844db"
     },
     {
       "id": "w-1-037",
