@@ -35,7 +35,7 @@ export function urgentLatency(rows: readonly UrgentNoticeRow[], opts: { timeZone
     minutes.push(Math.max(0, row.noticeAt.getTime() - row.receivedAt.getTime()) / MINUTE_MS);
   }
   minutes.sort((a, b) => a - b);
-  const p90 = minutes.length === 0 ? null : minutes[Math.ceil(0.9 * minutes.length) - 1];
+  const p90 = minutes[Math.ceil(0.9 * minutes.length) - 1] ?? null;
   return {
     urgent,
     noticed: minutes.length,
