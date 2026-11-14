@@ -1,6 +1,6 @@
 # Delegation
 
-> Checked against the code at `1ca3052`, 2026-11-14.
+> Checked against the code at `cf125cf`, 2026-11-14.
 
 ## What it does now
 

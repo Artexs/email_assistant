@@ -380,3 +380,4 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **
 - 2026-11-07: stage 22.1 steps 1–4 done on the VPS (deploy `fa60c7b`, migration, scope `self`, Test delegate, `create_draft` on; Results). Step 5 and stage 22.2 wait for the user; quiet hours (22:00–07:00 Warsaw) hold approval messages until 07:00.
 - 2026-11-07: the user skipped stage 22.2 and set `SEND_SCOPE=all`; stage 23.1 done (held sends 0, restart, log line; Results). `<START>` 22:40Z. Left: 23.2 (the week) and the close.
 - 2026-11-07: S4 closed (the user's decision): lint 0, typecheck 0, unit 1125 pass, int 836 pass. Stage 19 ticked with the fake-Telegram note; stages 22 and 23 stay unticked: 22.1 and 23.1 done on the VPS, the real-mail steps 22.2 and 23.2 moved to `spec/features/planned/F047-s4-pilot-week/plan.md`. Moved to `tasks/done/`.
+- 2026-11-14: first real delegation round trip (F047 part A via F095 stage 10): passed; the reject step was skipped by the owner.
