@@ -24,6 +24,8 @@ export async function storeCapture(
     return stored;
   } catch {
     await sql`rollback to savepoint capture_row`.execute(trx);
+    // Rolling back keeps the savepoint: release it, so savepoints do not pile up in a long chunk.
+    await sql`release savepoint capture_row`.execute(trx);
     return false;
   }
 }
