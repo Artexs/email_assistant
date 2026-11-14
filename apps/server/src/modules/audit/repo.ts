@@ -21,6 +21,7 @@ export const auditEvents = {
   mailboxResumed: "mailbox.resumed",
   mailboxPasswordChanged: "mailbox.password_changed",
   mailboxRemoved: "mailbox.removed", // data: mailbox_id
+  mailboxHostAllowed: "mailbox.host_allowed", // data: mailbox_id
   onboardingModeKept: "onboarding.mode_kept", // data: via
   actionApplied: "action.applied",
   actionFailed: "action.failed",
@@ -73,6 +74,7 @@ export const auditEvents = {
   webBackupCodesGenerated: "web.backup_codes_generated", // data: via
   webBackupCodeUsed: "web.backup_code_used", // data: via
   webTwoFactorLocked: "web.two_factor_locked", // data: via, locked_until
+  webTwoFactorReset: "web.two_factor_reset", // data: via, sessions_ended
   operatorNotice: "operator.notice", // data: kind, key
 } as const;
 

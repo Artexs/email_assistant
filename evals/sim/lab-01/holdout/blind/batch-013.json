@@ -39,13 +39,13 @@
       "thread": [
         {
           "from": "karin.lindqvist@nordicfoods-trade.test",
-          "subject": "Re: Customs requirements for the Nordic lane",
-          "body": "Dear Daniel, thank you for the details. Our export team will pass them to the broker. Best regards, Wiktor Szalewski"
+          "subject": "Customs requirements for the Nordic lane",
+          "body": "Dear Mr Szalewski, we have heard that the customs rules for chilled food will change in February. Could your broker confirm the impact on the Gothenburg deliveries? Karin Lindqvist"
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
-          "subject": "Customs requirements for the Nordic lane",
-          "body": "Dear Mr Szalewski, we have heard that the customs rules for chilled food will change in February. Could your broker confirm the impact on the Gothenburg deliveries? Karin Lindqvist"
+          "subject": "Re: Customs requirements for the Nordic lane",
+          "body": "Dear Daniel, thank you for the details. Our export team will pass them to the broker. Best regards, Wiktor Szalewski"
         }
       ],
       "attachments": []

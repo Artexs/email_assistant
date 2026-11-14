@@ -253,13 +253,13 @@
       "thread": [
         {
           "from": "karin.lindqvist@nordicfoods-trade.test",
-          "subject": "Re: Customs documents for Sweden",
-          "body": "Dear Karin, thank you for the questions. Our broker will confirm the requirements this week. Best regards, Wiktor Szalewski"
+          "subject": "Customs documents for Sweden",
+          "body": "Dear Mr Szalewski, could you tell us if any new temperature documents will be needed for the February shipments? Karin Lindqvist"
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
-          "subject": "Customs documents for Sweden",
-          "body": "Dear Mr Szalewski, could you tell us if any new temperature documents will be needed for the February shipments? Karin Lindqvist"
+          "subject": "Re: Customs documents for Sweden",
+          "body": "Dear Karin, thank you for the questions. Our broker will confirm the requirements this week. Best regards, Wiktor Szalewski"
         }
       ],
       "attachments": []
