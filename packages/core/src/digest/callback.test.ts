@@ -1,6 +1,15 @@
 import { describe, expect, test } from "bun:test";
 
-import { type Callback, encodeCallback, type FeedbackCallback, labelCategories, parseCallback } from "./callback";
+import {
+  type Callback,
+  encodeCallback,
+  type FeedbackCallback,
+  isFeedbackCallback,
+  isReviewCallback,
+  labelCategories,
+  parseCallback,
+  reviewLabelCategories,
+} from "./callback";
 import { CALLBACK_MAX_BYTES } from "./message";
 
 const ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
@@ -69,5 +78,50 @@ describe("approval callback data", () => {
 
   test("the S2 and S3 kinds still parse", () => {
     expect(parseCallback(`fu:${ID}`)).toEqual({ kind: "undo", emailId: ID });
+  });
+});
+
+const reviewAll: FeedbackCallback[] = [
+  ...reviewLabelCategories.flatMap((category): FeedbackCallback[] => [
+    { kind: "review_right", category, emailId: ID },
+    { kind: "review_pick", category, emailId: ID },
+  ]),
+  { kind: "review_edit", emailId: ID },
+  { kind: "review_cancel", emailId: ID },
+];
+
+describe("review callback data", () => {
+  test.each(reviewAll)("round trip %o, at most 64 bytes", (callback) => {
+    const data = encodeCallback(callback);
+    expect(Buffer.byteLength(data)).toBeLessThanOrEqual(CALLBACK_MAX_BYTES);
+    expect(parseCallback(data)).toEqual(callback);
+    expect(isReviewCallback(callback)).toBe(true);
+    expect(isFeedbackCallback(callback)).toBe(true);
+  });
+
+  test("uses the documented formats", () => {
+    expect(encodeCallback({ kind: "review_right", category: "info", emailId: ID })).toBe(`vr:i:${ID}`);
+    expect(encodeCallback({ kind: "review_pick", category: "spam", emailId: ID })).toBe(`vc:s:${ID}`);
+    expect(encodeCallback({ kind: "review_edit", emailId: ID })).toBe(`ve:${ID}`);
+    expect(encodeCallback({ kind: "review_cancel", emailId: ID })).toBe(`vx:${ID}`);
+  });
+
+  test("the review prefixes take delegation (d), the digest prefixes do not", () => {
+    expect(parseCallback(`vr:d:${ID}`)).toEqual({ kind: "review_right", category: "delegation", emailId: ID });
+    expect(parseCallback(`vc:d:${ID}`)).toEqual({ kind: "review_pick", category: "delegation", emailId: ID });
+    expect(parseCallback(`fr:d:${ID}`)).toBeNull();
+    expect(parseCallback(`fc:d:${ID}`)).toBeNull();
+  });
+
+  test.each([`vr:z:${ID}`, `vq:${ID}`, `vr:i:${ID.toUpperCase()}`, `ve:${ID}:x`, `vx:not-a-uuid`])(
+    "rejects %p",
+    (data) => {
+      expect(parseCallback(data)).toBeNull();
+    }
+  );
+
+  test("only the four review kinds are review callbacks", () => {
+    for (const callback of all) expect(isReviewCallback(callback)).toBe(false);
+    expect(isReviewCallback({ kind: "approve", actionId: ID })).toBe(false);
   });
 });

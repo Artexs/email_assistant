@@ -5,8 +5,9 @@ import { aiTextTexts, type AiTextTexts } from "./ai-text";
 import { answerTexts, type AnswerTexts } from "./answers";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
+import { reviewTexts, type ReviewTexts } from "./review";
 
-export type { AiTextTexts, AnswerTexts, CategoryTexts, ClockTexts };
+export type { AiTextTexts, AnswerTexts, CategoryTexts, ClockTexts, ReviewTexts };
 
 export interface CoreTexts {
   locale: UserLocale;
@@ -14,6 +15,7 @@ export interface CoreTexts {
   categories: CategoryTexts;
   answers: AnswerTexts;
   aiText: AiTextTexts;
+  review: ReviewTexts;
   // Stage 07 adds wouldDo; stages 08–11 add common, notices, approvals, digest, bot.
 }
 
@@ -24,6 +26,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     categories: categoryTexts.en,
     answers: answerTexts.en,
     aiText: aiTextTexts.en,
+    review: reviewTexts.en,
   },
   pl: {
     locale: "pl",
@@ -31,6 +34,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     categories: categoryTexts.pl,
     answers: answerTexts.pl,
     aiText: aiTextTexts.pl,
+    review: reviewTexts.pl,
   },
 };
 

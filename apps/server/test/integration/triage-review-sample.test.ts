@@ -74,11 +74,11 @@ async function seed(trx: Transaction<DB>) {
       })
     );
   }
-  await recordFeedback(trx, { orgId: a.orgId }, { emailId: ids[2], trueCategory: "info", source: "review" });
+  await recordFeedback(trx, { orgId: a.orgId }, { emailId: ids[2] as string, trueCategory: "info", source: "review" });
   for (let n = 1; n <= 3; n += 1) {
     await triagedMail(trx, b, { receivedAt: new Date(`2026-11-1${n}T09:00:00Z`) });
   }
-  const mail = (n: number) => ids[n - 1];
+  const mail = (n: number) => ids[n - 1] as string;
   const eligible = [2, 4, 6, 8, 9, 10, 11, 12, 13, 14].map(mail);
   return { a, b, mail, eligible };
 }

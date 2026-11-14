@@ -194,6 +194,36 @@ describe("handleCallback", () => {
     });
   });
 
+  test("the review taps record the source review; the review picker offers delegation", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA, info, link, deps } = await setup(trx);
+
+      const right = await handleCallback(deps, link, `vr:i:${info}`);
+      expect(right.answer).toBe("✅ Saved: Info is right.");
+      expect(await feedbackRows(trx, info)).toMatchObject([
+        { verdict: "right", true_category: "info", source: "review", user_id: a.userId },
+      ]);
+
+      const delegation = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: T });
+      const picker = (await handleCallback(deps, link, `ve:${delegation}`)).send;
+      const data = picker?.buttons.flat().map((button) => button.data) ?? [];
+      expect(data.every((item) => item.startsWith("vc:") || item.startsWith("vx:"))).toBe(true);
+      expect(data).toContain(`vc:d:${delegation}`);
+      expect(data).toContain(`vx:${delegation}`);
+
+      const picked = await handleCallback(deps, link, `vc:d:${delegation}`);
+      expect(picked.edit?.buttons).toEqual([]);
+      expect(await feedbackRows(trx, delegation)).toMatchObject([
+        { verdict: "wrong", true_category: "delegation", source: "review" },
+      ]);
+
+      expect(await handleCallback(deps, link, `vx:${delegation}`)).toEqual({
+        answer: "",
+        edit: { text: "✏️ Cancelled.", buttons: [] },
+      });
+    });
+  });
+
   describe("undo", () => {
     const applied = (type: "move" | "mark_read", payload?: Record<string, string>) => ({
       type,
