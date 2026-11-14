@@ -1,6 +1,6 @@
 # F105 plan — Identity A: TOTP, backup codes, break-glass owner
 
-> **Status 2026-11-14 — planned.** Plan base: ff61cbc, refreshed 2026-11-14 (first base 163c7b2; [plan-refresh-1.md](plan-refresh-1.md)). Fifteen stages written; cold review 1 applied (§ Cold review). Build after the public login ticket (F082, done).
+> **Status 2026-11-14 — planned.** Plan base: cf125cf, refreshed 2026-11-14 (first base 163c7b2; [plan-refresh-1.md](plan-refresh-1.md), [plan-refresh-2.md](plan-refresh-2.md)). Fifteen stages written; cold review 1 applied (§ Cold review). Build after the public login ticket (F082, done).
 
 Workers read `ticket.md`, this file and their one stage file. **A gap or a deviation is a question in the final message, not a choice:** the coordinator decides from § Input or asks the owner.
 
@@ -13,6 +13,7 @@ Workers read `ticket.md`, this file and their one stage file. **A gap or a devia
 - [x] Committed (explicit paths).
 - [x] Cold review 1 (coordinator's review job): PASS with notes, filed as [plan-review-1.md](plan-review-1.md); N1–N9 applied (§ Cold review).
 - [x] Refresh 1 (2026-11-14, base 163c7b2 → ff61cbc): the code of F092, F097, F098, F099 and F100 checked against every stage; [plan-refresh-1.md](plan-refresh-1.md). No stage changed in substance, so no second review.
+- [x] Refresh 2 (2026-11-14, base ff61cbc → cf125cf): F097 stage 04 and F100 stage 04 checked against every stage; the stage 01 migration version fixed (`20261114120001` is taken); [plan-refresh-2.md](plan-refresh-2.md). No stage changed in substance, so no review.
 
 ## Input
 
@@ -250,7 +251,7 @@ Advisory overlaps with tickets in build (start the stages anyway; on a land conf
 
 ## How to run (coordinator)
 
-1. Before the first spawn: F082 is in `spec/features/done/` (true). Run `scripts/plan-drift.sh spec/features/planned/F105-e7-t6-identity-a-totp-backup-codes-break-glass ff61cbc`; exit 1 → a refresh job first (`spec/build.md` NEXT, plan refresh rule). Move the ticket: `git mv spec/features/planned/F105-e7-t6-identity-a-totp-backup-codes-break-glass spec/features/active/`, commit.
+1. Before the first spawn: F082 is in `spec/features/done/` (true). Run `scripts/plan-drift.sh spec/features/planned/F105-e7-t6-identity-a-totp-backup-codes-break-glass cf125cf`; exit 1 → a refresh job first (`spec/build.md` NEXT, plan refresh rule). Move the ticket: `git mv spec/features/planned/F105-e7-t6-identity-a-totp-backup-codes-break-glass spec/features/active/`, commit.
 2. Spawn one stage (NN = two digits, `<slug>` from the stage list):
 
    ```
@@ -287,3 +288,4 @@ Review 1 ([plan-review-1.md](plan-review-1.md), job `2026-11-14-f105-plan-review
 - 2026-11-14: planned by a `--role planner` job (Opus 5.5) at 163c7b2. Probes P1–P6 (Better Auth 1.7.18 on a throwaway Postgres with the repo migrations; `uqr`; `tsc --strict`).
 - 2026-11-14: cold review 1 (PASS, 10 notes) filed; N1–N9 applied in the same planning job; stage 05 split, 15 stages.
 - 2026-11-14: refresh 1 at ff61cbc (F092, F097, F098, F099, F100 landed since 163c7b2): paths, line numbers, the RLS fact F13, D12, D20, D21 and stages 01, 04–06, 08–14 updated; no stage changed in substance; [plan-refresh-1.md](plan-refresh-1.md).
+- 2026-11-14: refresh 2 at cf125cf (F097 stage 04, F100 stage 04 landed since ff61cbc): stage 01 migration version and the `TENANT_TABLES` note; no stage changed in substance; [plan-refresh-2.md](plan-refresh-2.md).
