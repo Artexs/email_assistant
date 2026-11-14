@@ -36,6 +36,8 @@ const WRITE_ROUTES = [
   "PATCH /api/settings/:mailboxId/mode",
   "PATCH /api/settings/:mailboxId/switches/:name",
   "PATCH /api/settings/:mailboxId/sync-folders/:key",
+  "POST /api/actions/:id/mistake",
+  "POST /api/actions/:id/reject-reason",
   "POST /api/actions/undo",
   "POST /api/channels/telegram/link",
   "POST /api/feedback",
