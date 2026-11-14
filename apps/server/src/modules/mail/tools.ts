@@ -35,7 +35,7 @@ import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from
 import { backfillInbox, fetchSince, type SyncDeps, type SyncResult } from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
-// Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`, `testmail-target deliver`).
+// Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`, `mailbox:signals`, `testmail-target deliver`).
 
 const log = createLog("mail");
 
@@ -159,6 +159,94 @@ export async function auditMailbox(
     });
   }
   return results;
+}
+
+export const SIGNALS_CONTENT_LIMIT = 200;
+
+const SIGNALS_MAX_NAMES = 10;
+const SERVER_NAME = /^[a-z0-9.-]{1,64}$/;
+
+export interface MailboxSignals {
+  mails: number; // INBOX mail with INTERNALDATE in the window
+  answered: number;
+  seen: number;
+  flagged: number;
+  contentRead: number; // the newest mails whose content was read (<= SIGNALS_CONTENT_LIMIT)
+  captureFailed: number; // contentRead mails with capture null
+  authResults: number; // of contentRead: capture.authResults not null
+  authservIds: Record<string, number>; // server name -> count, at most 10 names, the rest under "other"
+  listUnsubscribe: number;
+  partsUnknown: number; // over the size limit
+}
+
+/** The server name of an Authentication-Results value (RFC 8601 §2.2), or "other" when it is not a plain host name. */
+export function authservIdOf(authResults: string): string {
+  const name = (authResults.split(";")[0] ?? "").trim().toLowerCase();
+  return SERVER_NAME.test(name) ? name : "other";
+}
+
+/** Read-only: counts the IMAP flags and captured headers of INBOX mail since `since`. Counts and server names only. */
+export async function signalsOfMailbox(
+  deps: ToolDeps & { openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider> },
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date
+): Promise<MailboxSignals> {
+  const imap = await loadImapOptions(deps, ctx, mailboxId, await getMailboxOrThrow(deps, ctx, mailboxId));
+  const provider = await (deps.openProvider ?? openImapProvider)(imap);
+  const signals: MailboxSignals = {
+    mails: 0,
+    answered: 0,
+    seen: 0,
+    flagged: 0,
+    contentRead: 0,
+    captureFailed: 0,
+    authResults: 0,
+    authservIds: {},
+    listUnsubscribe: 0,
+    partsUnknown: 0,
+  };
+  const names = new Map<string, number>();
+  try {
+    const metas = await fetchSince(provider, INBOX, since);
+    signals.mails = metas.length;
+    const uids = metas.map((meta) => meta.uid);
+    const has = (flags: string[], flag: string) => flags.some((value) => value.toLowerCase() === flag);
+    for (let i = 0; i < uids.length; i += LOCATE_CHUNK) {
+      for (const { flags } of await provider.fetchFlagsIn(INBOX, uids.slice(i, i + LOCATE_CHUNK))) {
+        if (has(flags, "\\answered")) signals.answered += 1;
+        if (has(flags, "\\seen")) signals.seen += 1;
+        if (has(flags, "\\flagged")) signals.flagged += 1;
+      }
+    }
+    for (const uid of [...uids].sort((a, b) => b - a).slice(0, SIGNALS_CONTENT_LIMIT)) {
+      const { capture } = await provider.fetchContent(INBOX, uid);
+      signals.contentRead += 1;
+      if (capture === null) {
+        signals.captureFailed += 1;
+        continue;
+      }
+      if (!capture.partsKnown) signals.partsUnknown += 1;
+      if (capture.listUnsubscribe !== null) signals.listUnsubscribe += 1;
+      if (capture.authResults !== null) {
+        signals.authResults += 1;
+        const name = authservIdOf(capture.authResults);
+        names.set(name, (names.get(name) ?? 0) + 1);
+      }
+    }
+  } finally {
+    await provider.close();
+  }
+  const ranked = [...names]
+    .filter(([name]) => name !== "other")
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  let other = names.get("other") ?? 0;
+  for (const [i, [name, count]] of ranked.entries()) {
+    if (i < SIGNALS_MAX_NAMES) signals.authservIds[name] = count;
+    else other += count;
+  }
+  if (other > 0) signals.authservIds.other = other;
+  return signals;
 }
 
 /** One-off, read-only: stores INBOX mail of the last `days` days that the regular sync missed (`backfilled_at`). */
