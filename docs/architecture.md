@@ -195,23 +195,8 @@ The cap does not touch a retry with a count (a hard error keeps its 3 tries) and
    Soft errors wait with backoff (`next_attempt_at`) and do not count; the row keeps its status.
    Hard errors add 1 to `attempts`. After 3 hard errors: an email becomes `unsure` (reason `triage_error`);
    an action becomes `failed`, and the user gets a notice. Rule 6 wins for `send`.
-   The triage worker (S1b; `triage/service.ts`, `triage/jobs.ts`, `triage/pause.ts`) applies this rule to the email as follows:
-   - **Soft error** (timeout, a lost network connection, HTTP 429, 500, 502, 503, 504): the LLM client of the process pauses. The pause is 5 min.
-     Each next soft or config error without a good LLM answer in between doubles it, up to 60 min. The pause is in memory and covers all mailboxes.
-     The mail goes back to `pending` with `next_attempt_at` = the pause end. It gets no count. The job claims no mail during the pause.
-     Claimed mail that the worker did not try keeps its old `next_attempt_at`. One `warn` line per pause.
-   - **Config error** (HTTP 401, 402, 403, 404; HTTP 400 with `FAILED_PRECONDITION` or `API_KEY_INVALID`): the same pause, no count.
-     One `error` line names the keys to check.
-   - **Safety block** (`llm_blocked`): the mail becomes `unsure` at once. The worker writes one `llm.call` row and does not retry.
-   - **Hard error** (an HTTP 400 without the two config signs, an unreadable answer, an error without an HTTP status and without a network code, or any other HTTP status that is not listed):
-     the mail waits a fixed 5 min and `attempts` goes up by 1. At 3 attempts the mail becomes `unsure` (`triage_error`).
-     A stale claim (`locked_at` older than 5 min) that a later run takes back also counts one attempt.
-     A mail that reaches 3 attempts this way becomes `unsure` (`triage_error`) without an LLM call.
-   - **Error outside the LLM call** (thread read, save, DB): the mail in work counts one try, with a 5-min wait, like a hard error.
-     At 3 tries it becomes `unsure` (`triage_error`). If that save fails, the mail goes back with a count.
-     Mail that the worker claimed later in the same batch goes back with no count. The error stops this mailbox only; the next mailbox runs.
-   - **Shutdown:** the server waits up to 30 s for a running batch. A batch that is cut off leaves claimed mail in `processing`;
-     the next start takes it back and counts one attempt for each mail.
+
+   Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 
    The committer (S3; `actions/committer.ts`, `actions/apply.ts`, every 15 s) applies the rule to the action row as follows:
    - **Soft error** (a lost connection, a timeout): the row goes back to `ready` with `next_attempt_at` = now + 5 min and gets no count. The run stops for this mailbox; the rest of its batch is released.
@@ -224,10 +209,9 @@ The cap does not touch a retry with a count (a hard error keeps its 3 tries) and
      At the start of each mailbox run it sets older `ready` originals to `expired` (`status_reason` = `stale`, audit `action.expired`). Reverse rows and `save_summary` never expire.
    - The committer opens one IMAP connection per mailbox per run, and only when it claims a mailbox-changing action. Order per mail: `save_summary`, `flag`, `mark_read`, `move`.
 
-8. **Cost limits.** The daily cap (default 300, `LLM_DAILY_CAP`) counts every LLM call attempt (`audit_log` event `llm.call`)
-   per mailbox per `America/Los_Angeles` day (the quota day of the free tier). At the cap the mail goes back to `pending`
-   with `next_attempt_at` = the start of the next quota day, with no count. Mail older than 7 days is not sent to the LLM: status `skipped` (reason `too_old`);
-   the digest lists it as "not processed" (ADR 0012). Mail with `emails.backfilled_at` set skips the 7-day rule (one-off backfill, §6.1).
+8. **Cost limits.**
+
+   Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 
 ### 4.2 Categories and folders
 
@@ -287,9 +271,7 @@ The known limits of the folder sync are in ADR 0014 (D24).
 
 ### 4.4 Feedback, Undo and the success metric
 
-- **Feedback sources:** labeling CLI (S1b); ✅ / ✏️ buttons under each digest line (S2); the Undo button (S3);
-  a mail that the user moves back to a synced folder after a system move (§6.1); the web panel (S5).
-  Every source writes a `triage_feedback` row through `triage.recordFeedback()`. A known mail is never triaged again (no loop).
+- Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 - **Moved back by the user:** `mail.sync` only sets `emails.returned_at` (when the system moved the mail, §6.1).
   The job `triage.returned` (every 15 s, no LLM) handles each flagged mail in one transaction. It locks the mail's latest original `move` action (the lock Undo takes too, so the two never both write feedback).
   When the move is `applied` and has no reverse row, or only a `failed` one, it sets the move to `undone` (`status_reason` = `user_moved_back`).
@@ -306,18 +288,7 @@ The known limits of the folder sync are in ADR 0014 (D24).
   The caller (the Telegram handler) writes the feedback row (verdict `wrong`, source `undo`) in the same transaction when at least one reverse row was created and the latest category is not `unsure`.
   The tap answers with a toast only: started, already requested, nothing to undo, too old (7 days), not possible now (`ACTIONS_SCOPE=off` or a paused mailbox: nothing is written), or "not in your account" (the same text as the feedback buttons).
   A move that a committer run holds at the second of the tap still finishes; the line then shows ↩️ again and the user taps again.
-- **Buttons under a digest line (S2):** ✅ means "the shown category is right": it writes `true_category` = the shown category (verdict `right`).
-  ✏️ opens a picker with five categories (Urgent, Reply, Info, Notification, Spam) and Cancel; a pick writes `true_category` = the pick
-  (verdict `right` or `wrong`). The latest row of a mail wins (as in `listLabeledResults`). The same answer twice writes nothing
-  (the bot answers "Already saved"). An `unsure` line has only ✏️, because a verdict without a category is not valid for `unsure`.
-- **Feedback rows:** `verdict` (`right` / `wrong`) and an optional `true_category`. A row with a `true_category` counts for precision and recall.
-  A row with only `wrong` counts only against the precision of the predicted category.
-- **Eval on real mail:** the eval runner reads the labels from `triage_feedback` in the DB. Real labels never go to git.
-  Real-mail evals use mail younger than 30 days (the body is cleared after that, §7). Pilot exception: backfilled mail up to 180 days (§6.1).
-- **Success metric** ("share of mail handled without the user", target 80–90%):
-  handled = mail in `spam`, `notification`, `info`, or `delegation` sent after one tap, with an applied plan
-  that the user did not undo or correct within 7 days. Share = handled ÷ all triaged mail. One line in the weekly digest.
-  The weekly line is not built yet (follow-up `spec/features/planned/F033-handled-share-metric/plan.md`, `spec/features/planned/F042-handled-share-delegations/plan.md`).
+- Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 - **Digest lines for delegations (S4):** a `logged` send reads "would ask you to send it"; the phrases for the other statuses are `waits for your approval`, `approved, sending`, `sending`, `sent`, `rejected`, `not sent (approval expired)` and `not sent (failed)`. The footer shows `👥 Delegations: <n> waiting for a reply, <m> overdue` when there are open delegations.
 
 ### 4.5 Approval flow (Telegram)
@@ -367,19 +338,9 @@ sequenceDiagram
 
 ### 4.6 Status flows
 
-```
-emails.status:   pending → processing → triaged → done                (done = all its actions have an end status)
-                 processing → pending                                 (soft error, config error or daily cap: no count; untried claimed mail keeps its next_attempt_at)
-                 processing → pending                                 (hard error with tries left: attempts + 1, next try after 5 min)
-                 processing → pending                                 (error on the mailbox, for example a DB error: untried claimed mail goes back, no count)
-                 processing → triaged as `unsure`                     (after 3 hard errors, reason triage_error)
-                 processing → triaged as `unsure`                     (safety block, reason llm_blocked)
-                 processing → processing                              (stale claim: locked_at older than 5 min, taken again by a later run;
-                                                                       the take-back counts one attempt; a mail at 3 attempts ends as unsure / triage_error without an LLM call)
-                 processing → skipped                                 (older than 7 days and not backfilled, reason too_old)
-                 processing → skipped                                 (received more than 24 h before resumed_at and not backfilled, reason suspended_backlog; §8)
-                 skipped → pending                                    (one-off backfill re-queue of too_old mail in the window)
+Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Data (F095).
 
+```
 actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; tests compare it with the guards)
                  ready → applied                                      (idempotent: move, flag, mark read, save summary; the ensure rule, §4.1 rule 6)
                  ready → expired                                      (stale: older than 24 h; policy_changed; undo; manual)
@@ -723,8 +684,7 @@ Tenancy:
 - **Feature flags (F087):** `bun run org:flag --org-id <uuid> [--flag <key> --on|--off]` lists or changes the flags of one organization (audit row `org.flag_changed`). `FEATURES_OFF` turns flags off for every organization at the next restart (kill switch); an unknown key stops the start. The start log line `features off by FEATURES_OFF: <keys|none>` shows it.
 - **Operator notices (S6a):** `channels.operator` sends three events to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` by a direct send, or writes a `warn` log line when the key is empty. The texts hold ids, dates and counts only. The events and their keys are `trial_ending` (`trial_ending:<org id>:<trial_ends_at ms>`, 3 days before the end and after it), `llm_cap` (`llm_cap:<mailbox id>:<quota day start>`, sent by the triage job when a mailbox reaches `LLM_DAILY_CAP`) and `auth_error_24h` (`auth_error_24h:<mailbox id>:<status_changed_at ms>`, a mailbox in `auth_error` for 24 h). The dedup is an audit row `operator.notice` with the key, written after a successful send: a crash between the send and the row repeats one notice (at least once). A failed send is tried again at the next hourly run. Quiet hours do not apply. A suspended organization gets no `trial_ending` or `auth_error_24h` notice.
 - **Work queue:** `emails` and `actions` rows with `status`, `attempts`, `next_attempt_at`, `locked_at`, claimed with `FOR UPDATE SKIP LOCKED`.
-- **Mailbox errors:** IMAP/SMTP login error → mailbox `auth_error`, a Telegram notice to the linked owners (one per `status_changed_at`), other mailboxes continue.
-  The way out is `bun run mailbox:password` (new password on stdin, login test, `auth_error` → `active`). Connection errors → backoff.
+- Moved to [docs/capabilities/sync.md](capabilities/sync.md) § Rules (F095).
 - **Notices (S2):** urgent mail goes to every linked member (24 h look-back, one notice per mail). `auth_error`, sync late and sync works again go to linked owners only.
   Notices never go out in quiet hours (22:00–07:00 in the organization timezone); they wait until 07:00. Digests go out at their times.
   Sync late: an `active` mailbox whose last good sync is older than 30 min, not within 30 min after the mailbox became `active` again,

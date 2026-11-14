@@ -131,7 +131,7 @@ Hardest parts (most risk):
 ## 5. LLM: Gemini and OpenAI (ADR 0007, ADR 0012, ADR 0013, ADR 0015)
 
 - `LLM_PROVIDER` = `gemini` or `openai` (ADR 0015; the pilot VPS uses `openai`, `gpt-6-luna`). SDKs `@google/genai` and `openai`. Gemini: key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`, provisional: `docs/architecture.md` §6.3), `GEMINI_RPM`, `LLM_DAILY_CAP`, `TRIAGE_LLM_SCOPE`.
-- All calls go through `platform/llm/` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/architecture.md` §4.1 rule 7).
+- All calls go through `platform/llm/` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/capabilities/triage.md` § Rules).
 - Setup check: `bun run llm:check --provider <gemini|openai>` from the repo root (script `apps/server/src/scripts/llm-check.ts`; `gemini:test` is an alias; env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04). Cloud Billing (or Vertex AI) on before any other person's mail.
 - **Data:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training; accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on; an EU endpoint before any outside user's mail (ADR 0035 proposed, E11b F111; PD-001: no outside user is served).

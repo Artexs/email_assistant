@@ -48,7 +48,9 @@
 
 ## Pages
 
-| Page | Capability | Main modules |
-| ---- | ---------- | ------------ |
+| Page                   | Capability | Main modules                                                                           |
+| ---------------------- | ---------- | -------------------------------------------------------------------------------------- |
+| [sync.md](sync.md)     | Sync       | `modules/mail`, `packages/core/src/mail`                                               |
+| [triage.md](triage.md) | Triage     | `modules/triage`, `modules/config` (rules), `packages/core/src/triage`, `platform/llm` |
 
-Planned pages (F095 stages 03–07): sync, triage, actions and Undo, drafts and send, delegation, digest and notices, web panel, tenancy and plans, retention, backups.
+Planned pages (F095 stages 04–07): actions and Undo, drafts and send, delegation, digest and notices, web panel, tenancy and plans, retention, backups.
