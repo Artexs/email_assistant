@@ -4,6 +4,8 @@ import { classifierCategories } from "../triage/categories";
 
 import {
   personaFileSchema,
+  batchCategories,
+  batchSchema,
   testmailCategories,
   validateBatch,
   type Batch,
@@ -34,7 +36,7 @@ function makeCase(id: string, overrides: Partial<BatchCase> = {}): BatchCase {
 }
 
 function makeBatch(cases: BatchCase[]): Batch {
-  return { batch: "2026-11-08-a", writer: "claude-sonnet-5-5", cases };
+  return { batch: "2026-11-08-a", writer: "claude-sonnet-5-5", delegatesActive: false, cases };
 }
 
 const opts = { fileBatchId: "2026-11-08-a", requireBlind: false };
@@ -141,6 +143,42 @@ describe("validateBatch", () => {
     for (const issue of issues) {
       for (const text of texts) expect(issue.detail.toLowerCase()).not.toContain(text);
     }
+  });
+});
+
+describe("delegation category", () => {
+  const delegationCase = makeCase("a", { expected: { category: "delegation" } });
+  const delegationCodes = (batch: Batch, extra: { requireBlind: boolean }) =>
+    codes(validateBatch(batch, personas, { ...opts, ...extra })).filter(
+      (code) => code === "delegation_without_delegates"
+    );
+
+  test("a batch without delegatesActive defaults to false", () => {
+    const parsed = batchSchema.parse({ batch: "2026-11-08-a", writer: "w", cases: [makeCase("a")] });
+    expect(parsed.delegatesActive).toBe(false);
+  });
+
+  test("an expected delegation without delegatesActive is one issue", () => {
+    expect(delegationCodes(makeBatch([delegationCase]), { requireBlind: false })).toEqual([
+      "delegation_without_delegates",
+    ]);
+  });
+
+  test("an expected delegation with delegatesActive is valid", () => {
+    const batch = { ...makeBatch([delegationCase]), delegatesActive: true };
+    expect(delegationCodes(batch, { requireBlind: false })).toEqual([]);
+  });
+
+  test("a blind delegation without delegatesActive is an issue when blind is required", () => {
+    const batch = makeBatch([
+      makeCase("a", { expected: { category: "needs_reply" }, blind: { category: "delegation" } }),
+    ]);
+    expect(delegationCodes(batch, { requireBlind: true })).toEqual(["delegation_without_delegates"]);
+    expect(delegationCodes(batch, { requireBlind: false })).toEqual([]);
+  });
+
+  test("batchCategories is the test categories plus delegation", () => {
+    expect([...batchCategories]).toEqual([...testmailCategories, "delegation"]);
   });
 });
 

@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export const testmailCategories = ["urgent", "needs_reply", "info", "notification", "spam"] as const;
 export type TestmailCategory = (typeof testmailCategories)[number];
+// `delegation` is legal only in a batch with delegatesActive: true (the VPS has active delegates).
+export const batchCategories = [...testmailCategories, "delegation"] as const;
+export type BatchCategory = (typeof batchCategories)[number];
 export const personaGroups = ["work", "services", "outside"] as const;
 
 const displayNameSchema = z
@@ -47,8 +50,8 @@ export const batchCaseSchema = z
     lang: z.enum(["pl", "en"]),
     subject: z.string().min(1).max(200),
     body: z.string().min(1).max(6000),
-    expected: z.object({ category: z.enum(testmailCategories) }),
-    blind: z.object({ category: z.enum(testmailCategories) }).optional(),
+    expected: z.object({ category: z.enum(batchCategories) }),
+    blind: z.object({ category: z.enum(batchCategories) }).optional(),
     replyTo: z.string().optional(),
     note: z.string().max(300).optional(),
   })
@@ -59,6 +62,7 @@ export const batchSchema = z
     batch: z.string().regex(BATCH_ID_PATTERN),
     writer: z.string().min(1).max(80),
     checker: z.string().min(1).max(80).optional(),
+    delegatesActive: z.boolean().default(false),
     cases: z.array(batchCaseSchema).min(1).max(200),
   })
   .strict();
@@ -79,7 +83,8 @@ export type BatchIssueCode =
   | "test_address"
   | "blind_missing"
   | "blind_disagrees"
-  | "batch_id_mismatch";
+  | "batch_id_mismatch"
+  | "delegation_without_delegates";
 
 // detail holds ids, field names and counts only, never mail text.
 export interface BatchIssue {
@@ -170,6 +175,15 @@ export function validateBatch(
       if (hasPhoneNumber(text)) add("phone_number", `${field}: number with 9 or more digits`);
       if (testAddress && text.toLowerCase().includes(testAddress)) {
         add("test_address", `${field}: contains the test mailbox address`);
+      }
+    }
+
+    if (!batch.delegatesActive) {
+      if (batchCase.expected.category === "delegation") {
+        add("delegation_without_delegates", "expected: delegation needs delegatesActive");
+      }
+      if (opts.requireBlind && batchCase.blind?.category === "delegation") {
+        add("delegation_without_delegates", "blind: delegation needs delegatesActive");
       }
     }
 

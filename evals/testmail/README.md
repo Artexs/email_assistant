@@ -33,8 +33,8 @@ Plan: `spec/features/done/2026-11/F036-test-mail-traffic/plan.md`. Notes: `notes
   Rule for agents: never tap approve for a test mail. Tell the user before you send a batch.
 - The VPS triages the mail with the real LLM (`TRIAGE_LLM_SCOPE=all`). Each mail costs one classifier call.
 - Urgent mails make Telegram urgent notices for the user. Every mail shows in the digest.
-- AgentMail mail is not "synthetic" for the scope gates (D14 in the task file). The follow-up is `spec/features/planned/F057-testmail-mail-kind/plan.md`.
-- A triage result `delegation` (only with active delegates) or `unsure` counts as `WRONG` in `compare`.
+- `TEST_SENDER_ADDRESSES` on the VPS marks AgentMail mail as test mail (F097 stage 01).
+- Set `delegatesActive: true` in a batch when delegates are active on the VPS; then `delegation` is a legal expected category and `compare` scores it. `unsure` still counts as `WRONG`.
 - The VPS can run an older prompt version than `origin/master`. `compare` prints the versions.
 - The send logs live in `~/.local/state/ea-testmail/`. Every checkout (main or worktree) sees the same logs, cap and lock.
 
@@ -86,6 +86,7 @@ Replace `<id>` with the batch id `<YYYY-MM-DD>-<slug>`.
 4. Run `bun run testmail:blind --batch <id> > /tmp/<id>.blind.json`.
    - Checker: use the pi `subagent` tool with agent `testmail-checker`.
    - The task text holds the full content of `/tmp/<id>.blind.json`. The checker has no file tools, so it cannot read `expected`.
+   - The checker may answer `delegation` only for a batch with `delegatesActive: true`. Say in the task text whether delegates are active.
    - pi passes the task as one process argument (Linux limit: 128 KiB per argument).
      Split the blind JSON into chunks of at most 100 000 bytes. Keep whole cases, and keep a thread case with its `thread`. Check the size with `wc -c`.
      Use one checker call per chunk and merge the answers.

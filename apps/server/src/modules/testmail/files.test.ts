@@ -27,6 +27,7 @@ describe("committed testmail files", () => {
     );
     for (const name of files) {
       const batch = batchSchema.parse(readJson(join(paths.batchesDir, name)));
+      expect({ name, delegatesActive: batch.delegatesActive }).toEqual({ name, delegatesActive: false });
       const issues = validateBatch(batch, personas, { requireBlind: true, fileBatchId: name.replace(/\.json$/, "") });
       expect({ name, issues }).toEqual({ name, issues: [] });
     }

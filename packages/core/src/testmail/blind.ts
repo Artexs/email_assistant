@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { testmailCategories, type Batch, type PersonaFile, type TestmailCategory } from "./batch";
+import { batchCategories, type Batch, type BatchCategory, type PersonaFile } from "./batch";
 
 // What the classifier sees: one bare sender address for every persona, no display name, no group.
 export interface BlindCase {
@@ -29,7 +29,7 @@ export function blindView(batch: Batch, personas: PersonaFile): BlindCase[] {
 }
 
 export const blindLabelsSchema = z
-  .array(z.object({ id: z.string(), category: z.enum(testmailCategories) }).strict())
+  .array(z.object({ id: z.string(), category: z.enum(batchCategories) }).strict())
   .superRefine((labels, ctx) => {
     const seen = new Set<string>();
     labels.forEach((label, index) => {
@@ -42,7 +42,7 @@ export const blindLabelsSchema = z
 
 export function applyBlindLabels(
   batch: Batch,
-  labels: { id: string; category: TestmailCategory }[],
+  labels: { id: string; category: BatchCategory }[],
   checker: string
 ): { batch: Batch; unknownIds: string[]; missingIds: string[] } {
   const byId = new Map(labels.map((label) => [label.id, label.category]));

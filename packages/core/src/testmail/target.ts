@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { Category } from "../triage/categories";
 
-import { BATCH_ID_PATTERN, testmailCategories, type Batch, type TestmailCategory } from "./batch";
+import { BATCH_ID_PATTERN, batchCategories, type Batch, type BatchCategory } from "./batch";
 import { caseStates, type SendLogLine } from "./send-log";
 
 const caseIdPattern = /^[a-z0-9-]{1,40}$/;
@@ -17,7 +17,7 @@ export const targetInputSchema = z
           .object({
             caseId: z.string().regex(caseIdPattern),
             persona: z.string().regex(caseIdPattern),
-            expected: z.enum(testmailCategories),
+            expected: z.enum(batchCategories),
             marker: z.enum(["none", "borderline", "attack"]),
             parentCaseId: z.string().regex(caseIdPattern).nullable(), // replyTo
             messageId: z.string().min(3).max(300).nullable(), // null = not sent
@@ -70,7 +70,7 @@ export function buildTargetInput(batch: Batch, lines: readonly SendLogLine[], se
 export interface CompareRow {
   caseId: string;
   persona: string;
-  expected: TestmailCategory;
+  expected: BatchCategory;
   marker: Marker;
   state: "not_sent" | "not_synced" | "not_triaged" | "triaged";
   emailId: string | null;

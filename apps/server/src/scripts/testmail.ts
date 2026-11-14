@@ -13,7 +13,7 @@ import {
   personaFileSchema,
   planSends,
   sentInWindow,
-  testmailCategories,
+  batchCategories,
   validateBatch,
   type Batch,
   type PersonaFile,
@@ -162,7 +162,7 @@ function runValidate(options: z.infer<(typeof optionSchemas)["validate"]>): numb
     requireBlind: !options["allow-unlabelled"],
   });
   for (const issue of issues) out(`case ${issue.caseId ?? "-"} ${issue.code} ${issue.detail}`);
-  for (const category of testmailCategories) {
+  for (const category of batchCategories) {
     out(`category ${category} ${batch.cases.filter((item) => item.expected.category === category).length}`);
   }
   for (const [persona, count] of countBy(batch.cases, (item) => item.persona)) out(`persona ${persona} ${count}`);

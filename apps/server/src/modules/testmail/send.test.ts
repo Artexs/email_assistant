@@ -31,7 +31,7 @@ function makeCase(id: string, persona: string, replyTo?: string): Batch["cases"]
 }
 
 function makeBatch(cases: Batch["cases"]): Batch {
-  return { batch: batchId, writer: "test", cases };
+  return { batch: batchId, writer: "test", delegatesActive: false, cases };
 }
 
 const abcBatch = makeBatch([makeCase("a", "anna"), makeCase("b", "anna", "a"), makeCase("c", "jan")]);

@@ -22,6 +22,7 @@ describe("buildTargetInput", () => {
     const batch: Batch = {
       batch: batchId,
       writer: "w",
+      delegatesActive: false,
       cases: [mk("a", { note: "attack: injection" }), mk("b", { note: "borderline: maybe", replyTo: "a" }), mk("c")],
     };
     const lines: SendLogLine[] = [
@@ -149,22 +150,50 @@ describe("buildCompareRows", () => {
   });
 });
 
-describe("buildCompareRows, categories outside the test set", () => {
-  test("delegation and unsure are never ok", () => {
+describe("buildCompareRows, delegation", () => {
+  const delegationBatch: Batch = {
+    batch: batchId,
+    writer: "w",
+    delegatesActive: true,
+    cases: [{ ...mk("d"), expected: { category: "delegation" as const } }],
+  };
+  test("a delegation case builds a valid target input", () => {
+    const input = buildTargetInput(delegationBatch, [], "i@x.test");
+    expect(input.cases[0]?.expected).toBe("delegation");
+    expect(targetInputSchema.safeParse(input).success).toBe(true);
+  });
+
+  test("a right delegation result is ok, another category is not", () => {
     const input: TargetInput = {
       batch: batchId,
       sender: "i@x.test",
-      cases: [entry("d", "<d@x>"), entry("u", "<u@x>")],
+      cases: [entry("d", "<d@x>", { expected: "delegation" })],
     };
-    const rows = buildCompareRows(
-      input,
-      [email("e1", "<d@x>"), email("e2", "<u@x>")],
-      [result("e1", "delegation"), result("e2", "unsure")]
-    );
-    expect(rows.map((r) => [r.caseId, r.state, r.category, r.ok])).toEqual([
-      ["d", "triaged", "delegation", false],
-      ["u", "triaged", "unsure", false],
-    ]);
+    const emails = [email("e1", "<d@x>")];
+    expect(buildCompareRows(input, emails, [result("e1", "delegation")])[0]?.ok).toBe(true);
+    expect(buildCompareRows(input, emails, [result("e1", "needs_reply")])[0]?.ok).toBe(false);
+  });
+
+  test("the table prints ok for a right delegation result", () => {
+    const input: TargetInput = {
+      batch: batchId,
+      sender: "i@x.test",
+      cases: [entry("d", "<d@x>", { expected: "delegation" })],
+    };
+    const rows = buildCompareRows(input, [email("e1", "<d@x>")], [result("e1", "delegation")]);
+    expect(renderCompareTable(rows).split("\n")[2]).toBe("| d | boss | delegation | delegation | 0.90 | llm | ok |  |");
+  });
+});
+
+describe("buildCompareRows, categories outside the test set", () => {
+  test("unsure is never ok", () => {
+    const input: TargetInput = {
+      batch: batchId,
+      sender: "i@x.test",
+      cases: [entry("u", "<u@x>")],
+    };
+    const rows = buildCompareRows(input, [email("e2", "<u@x>")], [result("e2", "unsure")]);
+    expect(rows.map((r) => [r.caseId, r.state, r.category, r.ok])).toEqual([["u", "triaged", "unsure", false]]);
   });
 });
 
