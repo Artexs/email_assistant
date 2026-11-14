@@ -109,11 +109,11 @@ Drop the job DB after each land.
 
 ## Planning progress
 
-- [written] ticket.md, plan.md, questions.md, stages 01–08.
+- [written] ticket, plan, questions, stages 01–08. Words: plan ≤1500; stages 695, 677, 649, 691, 571, 560, 606, 636.
 
 ## Cold review
 
-(filled after review 1)
+Model `claude-opus-5-5`: stage 07 is `[risky]`; privacy claims; new Polish text.
 
 ## Log
 
