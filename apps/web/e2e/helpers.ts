@@ -15,18 +15,28 @@ export function nextAddress(base: number): string {
   return `198.51.100.${base + addressCount}`;
 }
 
-export async function signIn(page: Page, email: string, password: string): Promise<void> {
+interface SignInTexts {
+  email_label: string;
+  password_label: string;
+  sign_in: string;
+}
+
+export async function signIn(page: Page, email: string, password: string, texts: SignInTexts = en): Promise<void> {
   // The form is in the server HTML, so a click before hydration would post it natively. The island's first effect asks for the session.
   const hydrated = page.waitForResponse((response) => response.url().includes("/api/auth/get-session"));
   await page.goto("/login");
   await hydrated;
-  await page.getByLabel(en.email_label).fill(email);
-  await page.getByLabel(en.password_label, { exact: true }).fill(password);
-  await page.getByRole("button", { name: en.sign_in }).click();
+  await page.getByLabel(texts.email_label).fill(email);
+  await page.getByLabel(texts.password_label, { exact: true }).fill(password);
+  await page.getByRole("button", { name: texts.sign_in }).click();
 }
 
-export async function signInAs(page: Page, user: { email: string; password: string }): Promise<void> {
-  await signIn(page, user.email, user.password);
+export async function signInAs(
+  page: Page,
+  user: { email: string; password: string },
+  texts: SignInTexts = en
+): Promise<void> {
+  await signIn(page, user.email, user.password, texts);
 }
 
 const violationPrefix = "csp-violation";

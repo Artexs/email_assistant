@@ -16,6 +16,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
+- `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟠 ACTIVE): E7-T2 Platform controls (send limits, feature flags, operator console, security log)
+- `F098-e7-t1-polish-ui-i18n-frame-first` (🟠 ACTIVE): E7-T1 Polish UI (i18n frame first)
+- `F097-e2a-offline-lab` (🟠 ACTIVE): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start
 - `F095-e1-close-the-mvp` (🟠 ACTIVE): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets)
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
@@ -29,9 +33,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2. Plan its §2.1 rows in order with `plan-task`; each planned ticket gets a `## Sequenced` section (tickets that must land first, and its gate) and a line here. Start the first line here whose `Sequenced` tickets are all landed and whose gate is done; no cap on parallel builds (owner decision 2026-11-13); only one migration in build at a time; file overlaps named in the plan gates are advisory: start the stages anyway, and when a land conflicts, resume the worker to merge `master` and re-prove; a ticket with a second-pass gate on numbers stops at that stage and asks the owner (§2.4). Owner checkpoints and owner steps (U1, U2, ...) are NOT a stop (owner decision 2026-11-13): after the review PASS of the stage before a checkpoint, build the next stages with the plan defaults. Owner decision 2026-11-13 (later): VPS, ssh and deploy steps are pre-approved; the coordinator does them (backup first, name the rollback target, verify after). Stop for the owner only when a step needs an API key or secret the coordinator cannot get itself.
 - Planning: a NEXT line that says `needs plan` gets a `--role planner` job (at most three at once); when the plan lands, drop `needs plan` and the ticket builds stage by stage. A ticket without `needs plan` builds directly from `ticket.md` (and an old one-job `plan.md`). Command, review, questions, auto-build: `notes/2026-11-13-limen-planner-role.md`.
 - Plan refresh (owner, 2026-11-14, until Sat 21 Nov): before stage 01 of any planned ticket, run `scripts/plan-drift.sh <ticket folder> <plan base>`; exit 1 means spawn a `--role planner` job `Refresh FNNN` first (`.agents/limen/planner.md` § Refresh job; command in `notes/2026-11-13-limen-planner-role.md` § Plan refresh; counts against the three-planner cap). A line marked `needs refresh` waits for that job.
+- Owner decisions (owner, 2026-11-14): the coordinator is the only writer of `docs/owner-decisions.md`. Add an entry for each important default: the `[important: <kind>]` items of `questions.md` when a plan lands; the Decisions for the owner section of a worker final message when a stage lands; and your own calls (an owner checkpoint or owner step passed on a default, a risky stage landed without review, a VPS deploy, a ticket drop or fold, an owner rule not followed). A worker that stops on a blocking question: decide it from the plan and product docs, resume with `limen continue`, add an entry. Ask the owner only for keys, secrets, real money, deletion of real data, outside publication. End each reply that hands control back with `Owner decisions: N new` (`grep -c ' · new$' docs/owner-decisions.md`). An entry the owner marks `changed` becomes a ticket line; append `→ <ticket>` to it.
 - `F095-e1-close-the-mvp` (🔴 PLANNED, plan landed, 10 stages): the MVP closes: capability map, docs boundary, NEXT sweep, pilot results; no needs; gate Owner U1 (F047 part A phone session) before stage 10; stage 09 not before 2026-11-14T22:40Z.
 - `F096-e8-lr-log-rotation` (🔴 PLANNED, plan landed): Docker rotates every Compose service log (5 × 10 MB), a CI check keeps it; one stage, closed after the check at the next VPS deploy; sequenced after none; gate —.
-- `F097-e2a-offline-lab` (🔴 PLANNED, needs refresh, plan landed, 22 stages): every category gets measured precision and recall on a frozen synthetic corpus, and /review starts real labels; build after F095; the owner audit of 50 cases (after stage 20) does not stop the build.
+- `F097-e2a-offline-lab` (🔴 PLANNED, plan landed + refreshed, 22 stages): every category gets measured precision and recall on a frozen synthetic corpus, and /review starts real labels; build after F095; the owner audit of 50 cases (after stage 20) does not stop the build.
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🔴 PLANNED, plan landed, 13 stages, no migration): the panel and Telegram follow each user's language (pl/en; Telegram null = Polish), with a Telegram consent step; sequenced after F082 (closed); gate none.
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🔴 PLANNED, plan landed, 15 stages): send limits, operator console, /api/me flags, owner security log; sequenced after F082 and F091 (both closed); gate none.
 - `F100-e3a-measure` (🔴 PLANNED, needs refresh, plan landed, 19 stages): every Stage 2 metric is measured on real mail and a weekly report leads with misses and mistakes; sequenced after F095; stage-level waits on F097 stages 01, 03, 04; gate none.
@@ -64,6 +69,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
+- `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
 - `F091-repo-split` (🟢 PROVEN): The big repositories are split by aggregate and action handling is table-driven with a completeness test; landed 2026-11-14
 - `F088-notices-as-facts` (🟢 PROVEN): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry; landed 2026-11-14
 - `F082-s6b-public-login` (🟢 PROVEN): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list; landed 2026-11-14
@@ -72,5 +78,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
 - `F090-llm-roles` (🟢 PROVEN): LLM calls name a role; provider, model, cap share and prompt version follow the role; landed 2026-11-13
 - `F089-structured-logs` (🟢 PROVEN): Logs are events with allow-listed fields and run ids, with a lint rule in warn mode; landed 2026-11-13
-- `F087-feature-flags` (🟢 PROVEN): Feature flags per organization and the operator check exist before the first Stage 2 feature; landed 2026-11-13
-- 2026-11: 60 landed. spec/features/done/2026-11/
+- 2026-11: 61 landed. spec/features/done/2026-11/

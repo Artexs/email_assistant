@@ -41,3 +41,9 @@
 - Spawn: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan refresh · FNNN" "Refresh FNNN: make spec/features/<lane>/FNNN-slug/ true for HEAD"`. It counts against the cap of three planners.
 - Plan base: new plans write `Plan base: <sha>` in the `plan.md` status line. Older plans: the `Refresh:` line in `ticket.md` § Sequenced, else the `base` file of the planner job in `.limen/jobs/`.
 - Marked 2026-11-14: F097 (base 9d9bfb8), F100 (10e81b9, after the F097 refresh), F101 (a72b214). Not marked: F095 (nearly built), F098 and F099 (in build; a land conflict resumes the worker), F092 (plan base def6883; its stage 01 reads the live catalog), F102 (already held for a re-check), F103 (planning now).
+
+## Owner decisions log (owner decision 2026-11-14)
+- File: `docs/owner-decisions.md`, newest first, status word `new` / `ok` / `changed` at the end of each heading. Only the coordinator writes it (parallel jobs would conflict on one shared file).
+- Planners mark each `questions.md` item `[important: <kind>]` or `[minor]` (`.agents/limen/planner.md`). Workers end each final message with `Decisions for the owner` (`.agents/limen/styleguide.md` § Decisions for the owner). The coordinator copies the important ones when it lands, and adds its own calls.
+- Blocking question in a worker: the worker finishes with a question file; the coordinator decides, resumes with `limen continue`, adds an entry. Only keys, secrets, money, deletion of real data and outside publication still wait for the owner.
+- Back-fill 2026-11-14: 22 entries from 15 `questions.md` files and the coordinator's overnight calls.

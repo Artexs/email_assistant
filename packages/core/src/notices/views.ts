@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CHASER_SET_LIMIT, type SendResultKind } from "../digest/approvals";
 import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
+import { sendLimitKinds } from "../send-limits";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
 
@@ -177,6 +178,16 @@ const delegationAnsweredView = z.strictObject({
 
 const mailboxRemovedView = z.strictObject({});
 
+const sendHeldView = z.strictObject({
+  mailboxId: id,
+  address: text,
+  limit: z.enum(sendLimitKinds),
+  waiting: z.number().int().min(1),
+  nextAt: isoDate,
+  now: isoDate,
+  timeZone,
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -189,6 +200,7 @@ export const noticeViewSchemas = {
   send_result: sendResultView,
   delegation_answered: delegationAnsweredView,
   mailbox_removed: mailboxRemovedView,
+  send_held: sendHeldView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;

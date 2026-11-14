@@ -1,14 +1,23 @@
 import { expect, test } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
+import { pl } from "../../src/i18n/pl";
 import { legalDocs, legalLangs, legalPath, type LegalDoc } from "../../src/lib/legal";
 import { cspErrors, nextAddress } from "../helpers";
 
-const titles: Record<LegalDoc, string> = {
-  privacy: en.legal_privacy_title,
-  terms: en.legal_terms_title,
-  dpa: en.legal_dpa_title,
-};
+function textsOf(lang: (typeof legalLangs)[number]) {
+  return lang === "pl" ? pl : en;
+}
+
+function titleOf(lang: (typeof legalLangs)[number], doc: LegalDoc): string {
+  const texts = textsOf(lang);
+  const titles: Record<LegalDoc, string> = {
+    privacy: texts.legal_privacy_title,
+    terms: texts.legal_terms_title,
+    dpa: texts.legal_dpa_title,
+  };
+  return titles[doc];
+}
 
 function onMobile(): boolean {
   return test.info().project.name === "mobile";
@@ -29,12 +38,14 @@ for (const lang of legalLangs) {
     test(`a visitor without a session reads /legal/${lang}/${doc}`, async ({ page }) => {
       const errors = await cspErrors(page);
       const path = legalPath(lang, doc);
+      const texts = textsOf(lang);
 
       await page.goto(path);
       await expect(page).toHaveURL(new RegExp(`${path}$`));
-      await expect(page.getByRole("heading", { level: 1, name: titles[doc] })).toBeVisible();
-      await expect(page.getByText(en.legal_stub_text)).toBeVisible();
-      await expect(page.getByRole("link", { name: en.go_to_sign_in })).toHaveAttribute("href", "/login");
+      await expect(page.getByRole("heading", { level: 1, name: titleOf(lang, doc) })).toBeVisible();
+      await expect(page.locator("html")).toHaveAttribute("lang", lang);
+      await expect(page.getByText(texts.legal_stub_text)).toBeVisible();
+      await expect(page.getByRole("link", { name: texts.go_to_sign_in })).toHaveAttribute("href", "/login");
       expect(errors).toEqual([]);
     });
   }

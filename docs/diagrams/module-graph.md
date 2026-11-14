@@ -47,6 +47,10 @@ flowchart BT
   mail --> audit
   mail --> config
   mail --> tenancy
+  operator --> actions
+  operator --> audit
+  operator --> channels
+  operator --> mail
   operator --> tenancy
   reports --> actions
   reports --> audit

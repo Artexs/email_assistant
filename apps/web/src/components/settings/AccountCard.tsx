@@ -9,6 +9,7 @@ import { errorText } from "../../lib/errors";
 import { saveLocale } from "../../lib/locale-api";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
 import { useResource } from "../../lib/use-resource";
+import { useMe } from "../shell/MeProvider";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -17,7 +18,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
-import { useMe } from "../shell/MeProvider";
+import { SecurityLog } from "./SecurityLog";
 
 type Field = "current" | "password" | "repeat";
 type FieldErrors = Partial<Record<Field, TextKey>>;
@@ -110,6 +111,7 @@ function LanguageSelect() {
 }
 
 export function AccountCard() {
+  const { me } = useMe();
   const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -277,6 +279,11 @@ export function AccountCard() {
             </p>
           )}
         </div>
+        {me !== null && me.role === "owner" && me.features.includes("security_log") ? (
+          <div className="border-t pt-4">
+            <SecurityLog timeZone={me.organization.timezone} />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

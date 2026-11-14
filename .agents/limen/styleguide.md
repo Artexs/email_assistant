@@ -30,7 +30,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - An LLM call names a role (`llm.generate({ role, promptVersion, … })`); the role table in config picks provider and model; the prompt comes from the registry (`prompts`), one file per version; one `llm.call` row per call through `recordLlmCall`. A prompt or model change of any role runs `bun run eval` and must pass the go/no-go table.
 - Files under about 400 lines and one aggregate; a bigger repository becomes `repo/<aggregate>.ts` behind the same index.
 - Registries (a typed record keyed by the enum, with a test against the enum and the CHECK list) over if-chains for handlers, detectors, renderers, roles, prompts and jobs.
-- A new table with `org_id` gets tenant-filter tests, retention (if it holds text) and a note for the organization delete and DSR map (`docs/code-patterns.md` § Data access).
+- A new table with `org_id` gets tenant-filter tests, the `tenant_rows` RLS policy in its migration, retention (if it holds text) and a note for the organization delete and DSR map (`docs/code-patterns.md` § Data access).
 - A new user-visible behaviour reads `isFeatureOn(db, ctx, flag)`; the flag is in `packages/core/src/features.ts` with an owner epic and a remove-by date, default off, on for the pilot first. Change a flag only through `setOrgFeature`.
 - Notices are facts: a producer calls `queueNotice({ kind, view, locale })`; the sender renders with `renderNotice` from `@ea/core`. A new kind follows the checklist in `docs/code-patterns.md` § Notices are facts. A view schema change still accepts the views of rows queued in the last 24 h.
 - A change that lands behaviour updates its page in `docs/capabilities/` in the same change (PD-009); behaviour rules go there, not into `docs/architecture.md`.
@@ -51,3 +51,10 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - A CLI that queries a repository directly: a CLI that uses the DB calls the service function that a route calls.
 - `use("*")` in a router mounted at `/` (it runs for every `/api` path); reading `FEATURES_OFF` or `OPERATOR_USER_IDS` outside `platform/config`; a settings argument on a flag read.
 - The text of an outbox notice built outside a renderer in `packages/core/src/notices/` (direct replies and tap answers keep their own texts). A view, a rendered text or a Zod error in a log line.
+
+## Decisions for the owner
+
+- The owner reads `docs/owner-decisions.md`; only the coordinator writes it. A worker or reviewer never edits it.
+- A worker that meets a product decision the plan does not answer: if the answer does not change the stage, take the safest default, note it in a code comment or the stage's notes file where a later reader needs it, and go on. If the answer changes what the stage builds, commit what is useful, write the question, the options and a proposed default to a plain file in the ticket folder, and finish; the coordinator decides and resumes the job.
+- Every worker final message ends with a section `Decisions for the owner`: one line per default taken (kind: user-visible, security, privacy, money, irreversible, production, scope or rule-exception; the choice; how to undo it). Write `none` when there is none. A small technical choice is not a decision for the owner.
+- Still stop and ask, never default: an API key or secret, real money, deletion of real data, a publication outside the repository.

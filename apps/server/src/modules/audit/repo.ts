@@ -165,6 +165,35 @@ export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCa
   });
 }
 
+// F099 D18: `llm.call` rows of the organization at or after `since`, per model (no model: "unknown").
+export async function sumLlmCallsByModelSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  since: Date
+): Promise<{ model: string; calls: number; tokensIn: number; tokensOut: number }[]> {
+  const model = sql<string>`coalesce(data->>'model', 'unknown')`;
+  const rows = await db
+    .selectFrom("audit_log")
+    .select([
+      model.as("model"),
+      sql<string>`count(*)`.as("calls"),
+      sql<string>`coalesce(sum((data->>'tokens_in')::bigint), 0)`.as("tokens_in"),
+      sql<string>`coalesce(sum((data->>'tokens_out')::bigint), 0)`.as("tokens_out"),
+    ])
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", auditEvents.llmCall)
+    .where("created_at", ">=", since)
+    .groupBy(model)
+    .orderBy(model)
+    .execute();
+  return rows.map((row) => ({
+    model: row.model,
+    calls: Number(row.calls),
+    tokensIn: Number(row.tokens_in),
+    tokensOut: Number(row.tokens_out),
+  }));
+}
+
 // One `llm.call` row per LLM call attempt; the mailbox id is in `data`, so no join to `emails`.
 // With a role: rows of that role; rows without a role count as classifier rows (written before roles existed).
 export async function countLlmCallsSince(
@@ -251,4 +280,41 @@ export async function findActionActor(
     .limit(1)
     .executeTakeFirst();
   return row?.actor;
+}
+
+export interface AuditEventRow {
+  id: string;
+  at: Date;
+  actor: string;
+  event: string;
+  reasonCode: string | null;
+  data: unknown;
+}
+
+// The newest rows of the organization with an event in `events` and `created_at >= since`, newest first (created_at, then id).
+// Index audit_log_org_event_created_idx (org_id, event, created_at) serves it. The security log and the operator notice list read through it.
+export async function listAuditEvents(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { events: readonly string[]; since: Date; limit: number }
+): Promise<AuditEventRow[]> {
+  if (opts.events.length === 0) return [];
+  const rows = await db
+    .selectFrom("audit_log")
+    .select(["id", "created_at", "actor", "event", "reason_code", "data"])
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "in", [...opts.events])
+    .where("created_at", ">=", opts.since)
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(opts.limit)
+    .execute();
+  return rows.map((row) => ({
+    id: String(row.id),
+    at: row.created_at,
+    actor: row.actor,
+    event: row.event,
+    reasonCode: row.reason_code,
+    data: row.data,
+  }));
 }

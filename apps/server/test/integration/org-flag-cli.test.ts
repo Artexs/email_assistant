@@ -68,6 +68,7 @@ describe("org:flag CLI", () => {
     expect(result.stdout).toContain("stats_page off (default)");
     expect(result.stdout).toContain("approvals_page off (default)");
     expect(result.stdout).toContain("sent_sync off (default)");
+    expect(result.stdout).toContain("security_log off (default)");
     expectNoName(result, orgName);
   });
 

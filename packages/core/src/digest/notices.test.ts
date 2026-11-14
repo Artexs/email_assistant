@@ -5,6 +5,7 @@ import {
   feedbackButtons,
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
   renderUrgentNotice,
@@ -197,5 +198,33 @@ describe("renderActionFailedNotice", () => {
   test("marks a test mail after the first line only", () => {
     expect(lines({ ...base, synthetic: true })[1]).toBe("🧪 test");
     expect(renderActionFailedNotice(base).text).not.toContain("🧪");
+  });
+});
+
+describe("renderSendHeldNotice", () => {
+  const base = {
+    address: "boss@x.test",
+    mailboxId: ID,
+    limit: "mailbox_hour" as const,
+    waiting: 3,
+    nextAt: new Date("2026-11-20T10:10:00Z"),
+    now: new Date("2026-11-20T10:00:00Z"),
+    timeZone,
+  };
+
+  test("names the limit, the count and the local time of the next send", () => {
+    expect(renderSendHeldNotice(base)).toEqual({
+      text: "⏸ Sends from boss@x.test wait: the hourly send limit of this mailbox is reached.\n3 waiting; the next one goes out at about 11:10.",
+      buttons: [],
+    });
+  });
+
+  test("the two other limits have their own text", () => {
+    expect(renderSendHeldNotice({ ...base, limit: "mailbox_day" }).text).toContain(
+      "wait: the daily send limit of this mailbox is reached."
+    );
+    expect(renderSendHeldNotice({ ...base, limit: "recipient_day" }).text).toContain(
+      "wait: the daily limit for one recipient is reached."
+    );
   });
 });

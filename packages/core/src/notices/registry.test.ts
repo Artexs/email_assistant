@@ -11,6 +11,7 @@ import type { OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
   renderUrgentNotice,
@@ -27,6 +28,7 @@ const id1 = "11111111-1111-4111-8111-111111111111";
 const id2 = "22222222-2222-4222-8222-222222222222";
 const now = new Date("2026-11-13T10:07:33.123Z");
 const receivedAt = new Date("2026-11-12T22:15:00.000Z");
+const nextAt = new Date("2026-11-13T11:00:00.000Z");
 const timeZone = "Europe/Warsaw";
 const opts: NoticeRenderOptions = { channel: "telegram", detail: "full", locale: "en" };
 
@@ -219,6 +221,20 @@ const cases: Case[] = [
       }),
   },
   { kind: "mailbox_removed", view: {}, direct: () => ({ text: MAILBOX_REMOVED_TEXT, buttons: [] }) },
+  {
+    kind: "send_held",
+    view: { mailboxId: id1, address: "me@firma.test", limit: "mailbox_day", waiting: 2, nextAt, now, timeZone },
+    direct: () =>
+      renderSendHeldNotice({
+        mailboxId: id1,
+        address: "me@firma.test",
+        limit: "mailbox_day",
+        waiting: 2,
+        nextAt,
+        now,
+        timeZone,
+      }),
+  },
 ];
 
 // The view of a case, as the outbox row stores it.

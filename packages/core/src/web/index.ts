@@ -9,6 +9,7 @@ export * from "./operator";
 export * from "./organization";
 export * from "./password";
 export * from "./rules";
+export * from "./security-log";
 export * from "./sessions";
 export * from "./settings";
 export * from "./telegram";

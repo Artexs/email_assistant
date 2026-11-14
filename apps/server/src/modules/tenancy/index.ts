@@ -23,6 +23,7 @@ export {
   type UserAuthProfile,
   type UserMembership,
 } from "./repo";
+export { listSecurityLog } from "./security-log";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {
   createOrganizationWithOwner,

@@ -8,7 +8,7 @@ import { createOperatorNotices } from "../../src/modules/channels";
 import { setMailboxStatus } from "../../src/modules/mail/repo";
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, suspendOrg } from "./fixtures";
+import { createOrgWithMailbox, insertDraftAndSend, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -326,6 +326,36 @@ describe("operator notices: sendLimitReached", () => {
       await notices.run();
       expect(texts).toHaveLength(1);
       expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
+    });
+  });
+
+  test("(9) the hourly run sends one text for a held mailbox; a second run sends none", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const ctx = { orgId: org.orgId };
+      const { sendId } = await insertDraftAndSend(trx, ctx, org.mailboxId, {
+        sendStatus: "approved",
+        approved: { userId: org.userId, at: new Date(NOW.getTime() - HOUR) },
+        outgoingMessageId: `<${randomUUID()}@x.test>`,
+      });
+      await trx
+        .updateTable("actions")
+        .set({ last_error: "send_limit:recipient_day", next_attempt_at: new Date(NOW.getTime() + 10 * 60_000) })
+        .where("id", "=", sendId)
+        .execute();
+      const { texts, send } = recorder();
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send });
+
+      await notices.run();
+      expect(mine(texts, org.mailboxId)).toEqual([
+        `Mailbox ${org.mailboxId} of org ${org.orgId} hit the send limit recipient_day at 2026-11-12T10:00:00.000Z; its sends wait until 2026-11-12T10:10:00.000Z.`,
+      ]);
+      expect(await noticeRows(trx, org.orgId)).toEqual([
+        { kind: "send_limit", key: `send_limit:${org.mailboxId}:2026-11-12` },
+      ]);
+
+      await notices.run();
+      expect(mine(texts, org.mailboxId)).toHaveLength(1);
     });
   });
 

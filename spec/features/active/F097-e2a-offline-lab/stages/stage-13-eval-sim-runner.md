@@ -10,7 +10,7 @@ Shared file: `apps/server/src/scripts/eval.ts` was changed by stage 01 (`runReal
 
 **Goal.** `runEval` runs cases in parallel with the same results and stops on errors or budget (D22, D26).
 
-**Files.** `apps/server/src/modules/triage/eval.ts`, `eval.test.ts`.
+**Files.** `apps/server/src/modules/triage/eval.ts`, `eval.test.ts`, `apps/server/src/modules/triage/eval-pool.ts` (new). `eval.ts` is 557 lines (over the 400-line rule, plan fact F20, D38): the pool, the start rule and the stop rules go into `eval-pool.ts`; `runEval` stays in `eval.ts` (its input gains the two optional fields below) and calls the pool. The tests below stay in `eval.test.ts` and go through `runEval`.
 
 **Interfaces.**
 
@@ -89,7 +89,7 @@ Reading `process.env` for `XDG_STATE_HOME`/`HOME` happens in `scripts/eval.ts`, 
 
 **Goal.** `bun run eval --sim <scenario> --part <p>` loads the corpus, runs it with the pool and the caps, and writes state and ledger (D20, D21, D22, D26, D28).
 
-**Files.** `apps/server/src/scripts/eval.ts`, `apps/server/src/scripts/eval-sim-load.ts` (new: corpus → `EvalCase[]`), `eval-sim-load.test.ts`, `evals/README.md` (a "Sim corpora" section with the flags).
+**Files.** `apps/server/src/scripts/eval.ts`, `apps/server/src/scripts/eval-sim-load.ts` (new: corpus → `EvalCase[]`), `eval-sim-load.test.ts`, `evals/README.md` (a "Sim corpora" section with the flags), `docs/capabilities/triage.md` (PD-009, plan fact F19: rule 13 gains `bun run eval --sim <scenario> --part dev|holdout|week` with the worker pool, the $1 run cap and the $20 month cap; keep the "Checked against" line).
 
 **Interfaces.**
 

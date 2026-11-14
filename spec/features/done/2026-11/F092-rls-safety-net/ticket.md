@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F092 · Row-level security is a safety net under the tenant filter for every table with `org_id`

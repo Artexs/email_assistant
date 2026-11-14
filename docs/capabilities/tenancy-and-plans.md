@@ -13,6 +13,7 @@ Every row of the system belongs to one organization. An organization has members
    - `requireOwner` answers `403 owner_only` for a member that is not an owner. Owner-only routes: `PATCH /api/organization`, `POST /api/onboarding/keep-mode`, the mailbox routes that change a mailbox, and the settings and rules write routes (`modules/config/routes.ts`).
    - Only the owner role is created by a tool today (`org:create`, `org:invite`). The code reads the role `assistant`, and no CLI or route adds one.
 2. **The tenant filter.** Every repository function takes a `TenantContext` (`{ orgId, userId? }`) and filters by `org_id`. The few functions that list across organizations are named in `docs/code-patterns.md` § Data access. `docs/architecture.md` §5 holds the tenant tables and §7 holds the isolation rules. The filter lives in code: there is no row-level security (`F092-rls-safety-net`).
+   - Row-level security is the second line under the tenant filter (`docs/architecture.md` §5 Tenancy, F092).
 3. **Plan state (S6a).** `organizations.plan` is `trial`, `active` or `suspended`. The operator changes it with `bun run org:plan` (audit row `org.plan_changed`). A `suspended` organization is paused by the operator:
    - **Jobs.** These skip it: mail sync, triage worker, `triage.returned`, committer, chaser, notice detection, digests and the outbox sender (its pending rows wait). The approval expiry and `platform.retention` still run for it. Every job reaches mailboxes through `listSyncTargets`, `listMailboxTargets` or `listLinkedChats`, which skip a `suspended` organization unless the caller sets `includeSuspended`. The sync, triage and committer loops check the plan before each mailbox, so a run that started before the change stops at the next mailbox. A send in flight finishes.
    - **Queued messages.** The change to `suspended` sets every `pending` outbox row of the organization to `failed` / `outdated`, except the kinds `approval` and `approval_set` (the notifier queues them only once).
@@ -88,7 +89,6 @@ suspended → trial | active         (org:plan; sets resumed_at and runs the res
 - No sign-up and no billing: the operator creates every organization (PD-001, PD-047). A trial that ends does not change the plan by itself; only the operator notice `trial_ending` goes out (`digest-and-notices.md`).
 - No account delete and no data export for an organization: E7-T3 (F106).
 - No operator console page and no other operator route than `GET /api/operator/flags`: E7-T2 (F099). The operator uses the CLIs.
-- No row-level security: the tenant filter is in code only (`F092-rls-safety-net`).
 - No way to add a second member (an `assistant`) with a CLI or a route. The role exists in the code and in the e2e seed only.
 - No flag has a reader in the server yet (rule 5). The registry has three flags: `stats_page`, `approvals_page` and `sent_sync`.
 
@@ -102,5 +102,6 @@ suspended → trial | active         (org:plan; sets resumed_at and runs the res
 
 - `apps/server/test/integration/tenancy.test.ts`, `tenancy-organization.test.ts`, `tenancy-plan.test.ts`, `tenancy-features.test.ts`, `tenancy-flag-write.test.ts`, `tenancy-digest-times.test.ts`, `tenancy-user-profile.test.ts`
 - `apps/server/test/integration/scope-two-orgs.test.ts`
+- `apps/server/test/integration/rls-policy.test.ts`, `web-tenant-scope.test.ts`
 - `apps/server/test/integration/org-cli.test.ts`, `org-flag-cli.test.ts`, `org-invite-cli.test.ts`
 - `packages/core/src/features.test.ts`, `packages/core/src/tenancy.test.ts`

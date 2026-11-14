@@ -8,7 +8,7 @@ After this stage the real-label run can write its counts as JSON, and one comman
 
 **Goal.** Sim and real numbers for `notification` and `spam` side by side (D32, P7).
 
-**Files.** `apps/server/src/scripts/eval.ts`, `apps/server/src/modules/triage/eval-gap.ts` (new), `eval-gap.test.ts`, `evals/README.md` (flags).
+**Files.** `apps/server/src/scripts/eval.ts`, `apps/server/src/modules/triage/eval-gap.ts` (new), `eval-gap.test.ts`, `evals/README.md` (flags), `docs/capabilities/triage.md` (PD-009: rule 13 gains `--real --json <file>` (counts only) and `--gap`; keep the "Checked against" line).
 
 **Interfaces.**
 
@@ -38,7 +38,7 @@ Both sides use the same measure: the final category of every labelled mail, no c
 4. `realCounts` JSON contains no email id and no address (fixture with ids in the report rows).
 5. A gate file whose `categories.notification.metrics` is missing (an older file) → `renderGap` throws a typed error naming the field; the CLI prints it and exits 1.
 
-**Check.** `bun test apps/server/src/modules/triage/eval-gap.test.ts`
+**Check.** `bun test apps/server/src/modules/triage/eval-gap.test.ts apps/server/src/capability-map.test.ts`
 
 **Done when.** Cases 1–5 pass.
 

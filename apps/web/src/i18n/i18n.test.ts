@@ -54,6 +54,7 @@ const SAME_IN_BOTH: TextKey[] = [
   "smtp_security_starttls",
   "act_action_at", // placeholders and a separator only
   "act_dlg_line",
+  "sec_line", // placeholders and a separator only
 ];
 
 function forms(table: Record<PluralKey, Record<string, string>>): string[] {

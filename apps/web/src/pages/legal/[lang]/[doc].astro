@@ -1,24 +1,25 @@
 ---
 import Public from "../../../layouts/Public.astro";
 import { en } from "../../../i18n/en";
+import { pl } from "../../../i18n/pl";
 import { legalDocs, legalLangs, type LegalDoc } from "../../../lib/legal";
 
 export function getStaticPaths() {
   return legalLangs.flatMap((lang) => legalDocs.map((doc) => ({ params: { lang, doc } })));
 }
 
+const { lang, doc } = Astro.params as { lang: "pl" | "en"; doc: LegalDoc };
+const texts = lang === "pl" ? pl : en;
 const titles = {
-  privacy: en.legal_privacy_title,
-  terms: en.legal_terms_title,
-  dpa: en.legal_dpa_title,
+  privacy: texts.legal_privacy_title,
+  terms: texts.legal_terms_title,
+  dpa: texts.legal_dpa_title,
 } as const satisfies Record<LegalDoc, string>;
-
-const { doc } = Astro.params as { lang: string; doc: LegalDoc };
 const title = titles[doc];
 ---
 
-<Public title={title}>
+<Public title={title} lang={lang}>
   <h1 class="text-2xl font-semibold">{title}</h1>
-  <p>{en.legal_stub_text}</p>
-  <a href="/login" class="underline">{en.go_to_sign_in}</a>
+  <p>{texts.legal_stub_text}</p>
+  <a href="/login" class="underline">{texts.go_to_sign_in}</a>
 </Public>

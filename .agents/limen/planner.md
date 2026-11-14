@@ -9,7 +9,7 @@ This process is one detached turn. Nobody types into this session. Only commits,
 Follow `/home/artek/.pi/agent/skills/plan-task/SKILL.md` and its `references/plan-shape.md`. Read both before you write. They define the folder shape (`ticket.md`, `plan.md`, `stages/stage-NN-<slug>.md`), the stage size, the edge-case questions and the fact checks. These job rules replace some of its steps:
 
 - **§2 "Ask the user first":** you cannot ask during the job. The owner has answered the product questions; use the decisions in `ticket.md`, `plan.md` and the epic page. Do not re-open them. A new question has two kinds:
-  - **Small** (the stages do not change with the answer): take the safest default, record it as a numbered decision marked `default, owner to confirm`, and list it in `questions.md` in the ticket folder. Continue.
+  - **Small** (the stages do not change with the answer): take the safest default, record it as a numbered decision marked `default, owner to confirm`, and list it in `questions.md` in the ticket folder. Mark each `questions.md` item `[important: <kind>]` (kinds: user-visible, security, privacy, money, irreversible, production, scope, rule-exception) or `[minor]`. The coordinator copies the important ones to `docs/owner-decisions.md` when it lands the plan. Continue.
   - **Blocking** (the answer changes the stages): stop. Write the question, the options and your proposed default to `questions.md`. Set `needs-adam: <one line>` and `needs-adam-on: <today>` in the `ticket.md` front matter. Commit the stages you have, mark the rest not written in "Planning progress", and finish. The coordinator asks the owner and continues this job (`limen continue`) with the answer; then remove both fields and go on.
 - **Plan after:** if this plan needs another ticket's interfaces and that ticket has no `stages/` yet, treat it as a blocking question.
 - **§5 `limen ticket new`:** the ticket exists. Do not create another one.
@@ -43,4 +43,4 @@ The instruction says `Refresh FNNN` when the plan exists but other tickets chang
 
 ## Final message
 
-It goes whole to the coordinator, then to the owner. First: open questions with their defaults, facts not verified, and any edit outside the folder that the plan needs. Then: the ticket path, the stage list (one line each), the `[risky]` stages, the owner checkpoints and owner steps, the commits.
+It goes whole to the coordinator, then to the owner. First: open questions with their defaults (the `[important: <kind>]` ones first), facts not verified, and any edit outside the folder that the plan needs. Then: the ticket path, the stage list (one line each), the `[risky]` stages, the owner checkpoints and owner steps, the commits.

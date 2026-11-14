@@ -11,6 +11,7 @@ import {
   type Onboarding,
   type OrganizationSettings,
   type ScopeInfo,
+  type SecurityLog,
   type Sessions,
 } from "@ea/core";
 import { Hono } from "hono";
@@ -20,7 +21,7 @@ import type { Db, TenantContext } from "../../platform/db";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { auditEvents, recordAudit } from "../audit";
 
-import { featureStates } from "./features";
+import { featureStates, isFeatureOn } from "./features";
 import {
   getMembership,
   getOrganization,
@@ -29,6 +30,7 @@ import {
   setUserLocale,
   setUserTerms,
 } from "./repo";
+import { listSecurityLog } from "./security-log";
 import { organizationView, updateOrganizationSettings } from "./service";
 
 export interface TenancyRouteDeps {
@@ -90,6 +92,13 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     if (!row) return c.json({ error: "not_found" }, 404);
     const settings: OrganizationSettings = { ...organizationView(row), timezones: Intl.supportedValuesOf("timeZone") };
     return c.json(settings);
+  });
+
+  // Owner only first, then the flag: an assistant gets 403 whatever the flag says (plan D26).
+  app.get("/security-log", requireOwner, async (c) => {
+    const ctx = c.get("ctx");
+    if (!(await isFeatureOn(deps.db, ctx, "security_log"))) return c.json({ error: "not_found" }, 404);
+    return c.json((await listSecurityLog(deps.db, ctx, deps.now())) satisfies SecurityLog);
   });
 
   app.patch("/organization", requireOwner, async (c) => {
