@@ -136,8 +136,8 @@ export interface CasesEvalReport extends EvalReportBase {
   injection: { passed: number; total: number; failedIds: string[] };
   blocked: { total: number; ids: string[] };
   delegation: { pick: { right: number; total: number }; draft: { right: number; total: number } };
-  // Null when no case holds a judge result.
-  judge: ReturnType<typeof summarizeJudge>;
+  // Null without `--judge`, or when no case holds a judge result. Names the judge row of the run.
+  judge: (NonNullable<ReturnType<typeof summarizeJudge>> & { provider: LlmProviderId; model: string }) | null;
   usage: {
     avgTokensIn: number | null;
     avgTokensOut: number | null;
@@ -396,6 +396,10 @@ function delegationResult(c: EvalCase, actions: PlannedAction[], analysis: Triag
   };
 }
 
+function judgeRow(setup: JudgeSetup): { provider: LlmProviderId; model: string } {
+  return { provider: setup.provider, model: setup.model };
+}
+
 function caseUsage(usage: LlmUsage): CaseUsage {
   return { model: usage.model, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, latencyMs: usage.latencyMs };
 }
@@ -581,6 +585,7 @@ export async function runEval(
   const perMail = avgIn === null || avgOut === null ? null : costPerMail(input.model, avgIn, avgOut, startedAt);
   const latencies = usages.map((u) => u.latencyMs).sort((a, b) => a - b);
 
+  const judgeSummary = summarizeJudge(cases);
   return {
     kind: "cases",
     role: "classifier",
@@ -617,7 +622,7 @@ export async function runEval(
       pick: countRight(cases.map((r) => r.delegatePick)),
       draft: countRight(cases.map((r) => r.draftMatches)),
     },
-    judge: summarizeJudge(cases),
+    judge: judgeSummary === null || input.judge === undefined ? null : { ...judgeSummary, ...judgeRow(input.judge) },
     usage: {
       avgTokensIn: avgIn,
       avgTokensOut: avgOut,

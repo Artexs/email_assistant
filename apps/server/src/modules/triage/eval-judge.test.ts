@@ -96,7 +96,12 @@ function delegationCase(id: string, over: Partial<EvalCase> = {}): EvalCase {
 }
 
 const opts = { model: "gemini-3.5-flash-lite", provider: "gemini" as const, bar: 0.98, minKept: 30, retries: 0 };
-const judgeSetup = (llm: LlmClient) => ({ llm, model: "judge-model", addressOf: delegateAddress });
+const judgeSetup = (llm: LlmClient) => ({
+  llm,
+  provider: "openai" as const,
+  model: "judge-model",
+  addressOf: delegateAddress,
+});
 const deps = (llm: LlmClient) => ({
   llm,
   sleep: async () => undefined,

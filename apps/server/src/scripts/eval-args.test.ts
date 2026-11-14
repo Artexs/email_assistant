@@ -55,6 +55,10 @@ describe("parseEvalArgs", () => {
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev"])).toMatchObject({ judge: false });
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge-model", "m"])).toBeUndefined();
     expect(parseEvalArgs(["--judge"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge", "--judge-rpm", "6"])).toMatchObject({
+      "judge-rpm": 6,
+    });
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge-rpm", "6"])).toBeUndefined();
   });
 
   test("the real mode keeps its rules", () => {

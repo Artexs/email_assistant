@@ -143,6 +143,8 @@ function judgeParts(report: CasesEvalReport): string[] {
   const lines: string[] = [
     "## Draft judge",
     "",
+    `Judge: ${judge.provider} ${judge.model}. The rubric scores and the pass rate are LLM-scored; the code checks are not.`,
+    "",
     `Judged: ${judge.judged}, errors ${judge.errors} (a judge error is not in the other counts).`,
     `Code checks passed: ${judge.codePassed} of ${judge.scored}${failedCodes === "" ? "" : ` (failed: ${failedCodes})`}`,
     "",

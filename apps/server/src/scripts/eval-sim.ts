@@ -23,7 +23,7 @@ import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/
 import { createLog } from "../platform/log";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
-import { judgeSetupError } from "./eval-judge-setup";
+import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -143,17 +143,13 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     `provider=${row.provider} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=$${cap}`
   );
 
-  // The rpm of this process only: the provider row is copied, the config is not changed.
-  const limited: LlmRoleTable = {
-    ...table,
-    providers: {
-      ...table.providers,
-      [row.provider]: { ...keys, rpm: options.rpm as number },
-      ...(judgeRow === undefined
-        ? {}
-        : { [judgeRow.provider]: { ...table.providers[judgeRow.provider], rpm: options.rpm as number } }),
-    },
-  };
+  // `--rpm` is the classifier provider's rate; the judge provider keeps the configured rate (`--judge-rpm` overrides).
+  const limited = simRoleTable(table, {
+    rpm: options.rpm as number,
+    judge: options.judge,
+    judgeRpm: options["judge-rpm"],
+    judgeRoleRpm: options["judge-provider"] === undefined ? undefined : config.LLM_JUDGE_RPM,
+  });
   const llm = (deps.createLlmClient ?? createLlmClient)({ table: limited });
 
   const stateFile = resolve(
@@ -200,7 +196,9 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         retries: options.retries,
         done,
         concurrency: options.concurrency,
-        ...(judgeRow === undefined ? {} : { judge: { llm, model: judgeRow.model, addressOf: evalDelegateAddress } }),
+        ...(judgeRow === undefined
+          ? {}
+          : { judge: { llm, provider: judgeRow.provider, model: judgeRow.model, addressOf: evalDelegateAddress } }),
         budget: {
           capUsd: cap,
           callCostUsd,

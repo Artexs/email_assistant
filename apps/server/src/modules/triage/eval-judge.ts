@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { type DraftCheckCode, draftCodeChecks, type EvalCase, type PlannedAction, splitAddress } from "@ea/core";
 
 import { SoftError } from "../../platform/errors";
-import { LlmBlockedError, type LlmClient, LlmConfigError, llmErrorCode } from "../../platform/llm";
+import { LlmBlockedError, type LlmClient, LlmConfigError, llmErrorCode, type LlmProviderId } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 
 import type { CaseResult, CaseUsage } from "./eval";
@@ -15,7 +15,9 @@ const log = createLog("eval");
 // What a sim run with `--judge` adds: the client that holds the judge role row, and an optional model of that row's provider.
 export interface JudgeSetup {
   llm: LlmClient;
-  model?: string;
+  // The judge role row of this run: the report names them.
+  provider: LlmProviderId;
+  model: string;
   // The address the eval gives a delegate: the expected recipient of a delegation draft.
   addressOf(delegateKey: string): string;
 }

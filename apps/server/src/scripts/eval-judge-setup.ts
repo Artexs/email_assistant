@@ -15,3 +15,22 @@ export function judgeSetupError(table: LlmRoleTable, at: Date): string | null {
   }
   return null;
 }
+
+// The rates of a sim run, for this process only (the rows are copied, the config is not changed).
+// `--rpm` is the classifier provider's rate. The judge provider keeps the rate of the config; the judge role keeps
+// `LLM_JUDGE_RPM` also when `--judge-provider` moved the role (the table drops the role's env keys then).
+// `--judge-rpm` replaces the judge provider's rate and drops the role's own rate.
+export function simRoleTable(
+  table: LlmRoleTable,
+  opts: { rpm: number; judge: boolean; judgeRpm?: number; judgeRoleRpm?: number }
+): LlmRoleTable {
+  const classifier = table.roles.classifier.provider;
+  const providers = { ...table.providers, [classifier]: { ...table.providers[classifier], rpm: opts.rpm } };
+  if (!opts.judge) return { ...table, providers };
+  const judge = table.roles.judge;
+  if (opts.judgeRpm !== undefined) {
+    providers[judge.provider] = { ...providers[judge.provider], rpm: opts.judgeRpm };
+    return { roles: { ...table.roles, judge: { ...judge, rpm: null } }, providers };
+  }
+  return { roles: { ...table.roles, judge: { ...judge, rpm: opts.judgeRoleRpm ?? judge.rpm } }, providers };
+}
