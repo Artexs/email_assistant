@@ -1,6 +1,6 @@
 # Triage
 
-> Checked against the code at `acc5292`, 2026-11-14.
+> Checked against the code at `524a02d`, 2026-11-14.
 
 ## What it does now
 
@@ -41,6 +41,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
     a mail that the user moves back to a synced folder after a system move (`docs/architecture.md` §6.1); the web panel (S5).
     Every source writes a `triage_feedback` row through `triage.recordFeedback()`. A known mail is never triaged again (no loop).
     - The source `review` is for the labels of the Telegram `/review` page (a random sample of unlabelled real mail, `listReviewSample` in `triage/review-repo.ts`); its buttons are `vr`, `vc`, `ve`, `vx` (see [digest-and-notices.md](digest-and-notices.md) rule 10), so metrics can tell them from digest taps.
+    - The source `answered_check` is written by the answered check of `/review` (F100 stage 15); no code writes it yet.
     - Check against the code: `triage.returned` (every 15 s) and the Undo path also call `recordFeedback`; the Telegram handler and `POST /api/feedback` set `skipIfSame`, so the same answer twice writes no row.
 11. **Buttons under a digest line (S2)** (moved from `docs/architecture.md` §4.4): ✅ means "the shown category is right": it writes `true_category` = the shown category (verdict `right`).
     ✏️ opens a picker with five categories (Urgent, Reply, Info, Notification, Spam) and Cancel; a pick writes `true_category` = the pick
@@ -104,7 +105,7 @@ emails.status:   pending → processing → triaged → done                (don
 - `emails.status` is one of `pending`, `processing`, `triaged`, `done`, `skipped`; `skip_reason` holds `too_old`, `suspended_backlog` or `body_expired`; `attempts`, `next_attempt_at` and `locked_at` drive the claim (`FOR UPDATE SKIP LOCKED`).
   - Check against the code: no code writes the status `done`. The check constraint of `emails.status` allows it, but a mail stays `triaged` when its actions end, so the flow `triaged → done` above does not happen today.
 - `triage_results`: `category`, `vip`, `confidence`, `reason_code`, `reason`, `fields` (with `model_category`), `model`, `prompt_version`, `tokens_in`, `tokens_out`, `latency_ms`. A mail can have several rows; the newest wins.
-- `triage_feedback`: `verdict` (`right`, `wrong`), `true_category`, `source` (`cli`, `telegram`, `undo`, `imap_move`, `web`, `review`), `user_id`.
+- `triage_feedback`: `verdict` (`right`, `wrong`), `true_category`, `source` (`cli`, `telegram`, `undo`, `imap_move`, `web`, `review`, `answered_check`), `user_id`.
 - `mailbox_settings`: `mode`, `tool_switches`, `category_policy` (per category: `threshold`, `auto`); the job compares a settings version (rule 9).
 - `sender_rules`: `pattern`, `kind` (`whitelist`, `blocklist`, `vip`); at most 1000 per organization.
 - Audit events: `llm.call` (one per call attempt: role, prompt version, model, outcome, tokens, latency), `email.triaged`, `email.skipped`, `email.requeued`, `action.planned`.
