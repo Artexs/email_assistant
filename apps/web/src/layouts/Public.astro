@@ -6,14 +6,16 @@ interface Props {
   titleKey?: TextKey;
   // A page whose title is not a key (the legal pages) passes the text; it wins over `titleKey`.
   title?: string;
+  // The language of the page text, printed in `<html lang>`.
+  lang?: "en" | "pl";
 }
 
-const { titleKey, title } = Astro.props;
+const { titleKey, title, lang = "en" } = Astro.props;
 const pageTitle = title ?? (titleKey === undefined ? en.brand : en[titleKey]);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

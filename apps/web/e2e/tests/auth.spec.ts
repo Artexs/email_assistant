@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
+import { pl } from "../../src/i18n/pl";
 import { E2E_BASE_URL } from "../env";
 import { cspErrors, nextAddress, signIn } from "../helpers";
 import { readSeed } from "../seed";
@@ -160,7 +161,7 @@ test("the pages keep the CSP and show the 404 page", async ({ page }) => {
 
   const response = await page.goto("/nope");
   expect(response?.status()).toBe(404);
-  await expect(page.getByRole("heading", { level: 1, name: en.not_found_title })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: pl.not_found_title })).toBeVisible();
 });
 
 test("the login rate limit counts per address", async ({ browser, page }) => {
