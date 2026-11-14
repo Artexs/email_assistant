@@ -216,7 +216,8 @@ export async function startFakeAgentMail(opts: { apiKey: string; now?: () => Dat
       holds.push(holdMs);
     },
     async stop() {
-      // Bun 1.3.14 `server.stop(true)` waits for in-flight handlers: release each held response first.
+      // Release each held response first: `server.stop(true)` must not wait for a handler that never ends
+      // (Bun 1.3.14 waited; see docs/known-alerts.md).
       for (const entry of [...held]) {
         entry.release();
       }

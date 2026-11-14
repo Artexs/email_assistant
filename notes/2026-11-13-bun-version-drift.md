@@ -1,8 +1,16 @@
-# Bun version drift: CI and image on 1.3.14, local on 1.4.4 (2026-11-13)
+# Bun version drift: closed by the 1.4.4 pin (2026-11-13)
 
 Plan: `spec/features/active/F093-ci-green/plan.md`.
 
-## Rule
+## Closed (F094)
+
+- `.bun-version` and `deploy/Dockerfile` line 1 hold Bun 1.4.4, the PC's Bun. CI reads the pin; the `image` job checks the Dockerfile. `bun run test:unit:ci` and `bun run test:int:ci` stay the proof scripts (they run the pin).
+- Commit: `daea2dc`.
+- The STARTTLS test certificate names only `IP:127.0.0.1`. A new test refuses a trusted certificate for `localhost` on STARTTLS to 127.0.0.1. On 1.3.14 that test fails: 1.3.14 checked the upgrade against `localhost`, so it refused a correct IP certificate (fail-closed) and accepted a `localhost` certificate (fail-open). 1.4.4 checks against the IP.
+- NV3 answered: the IMAP adapter never runs STARTTLS (`imapFlowOptions`: implicit TLS for every non-loopback host; `doSTARTTLS: false` for plain loopback). imapflow over TLS to any IP-literal host throws `servername argument must be an string` on Bun 1.3.14 and 1.4.4 (imapflow passes `servername: false`); see `notes/2026-11-03-imapflow-tls-under-bun.md`. It fails closed; mailbox hosts must be DNS names.
+- VPS: pending (F094 stage 2).
+
+## History (pin 1.3.14)
 
 - CI and the server image run the Bun version in `.bun-version` (1.3.14).
 - Local and worker runs use the PC's Bun (1.4.4 on 2026-11-13).
@@ -17,9 +25,9 @@ Plan: `spec/features/active/F093-ci-green/plan.md`.
 
 ## Effect on product code
 
-STARTTLS to an IP-literal mail host fails the certificate name check on the image Bun (`host-guard.ts` returns no `servername` for an IP literal). It fails closed: no password goes out. DNS hosts are fine.
+STARTTLS to an IP-literal mail host failed the certificate name check on the image Bun until F094 (`host-guard.ts` returns no `servername` for an IP literal). It failed closed: no password went out. DNS hosts are fine. Corrected 2026-11-13 (F094): it also accepted a certificate issued for `localhost`.
 
 ## Open
 
-- NV3: whether IMAP STARTTLS (imapflow) to an IP host has the same quirk. Not checked.
-- The coordinator opens the follow-up ticket after the stage 1 land: "The server image, CI and local checks run one current Bun (1.4.x)" (plan § How to run, item 5; questions.md Q1).
+- NV3: whether IMAP STARTTLS (imapflow) to an IP host has the same quirk. Answered (see Closed).
+- Done: F094. The coordinator opens the follow-up ticket after the stage 1 land: "The server image, CI and local checks run one current Bun (1.4.x)" (plan § How to run, item 5; questions.md Q1).

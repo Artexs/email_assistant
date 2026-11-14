@@ -13,11 +13,13 @@ import { buildSmtpTransportOptions, openSmtpSender, verifySmtpLogin, type SmtpCo
 
 // A scripted SMTP server that offers STARTTLS and AUTH only after the upgrade. Its certificate is self-signed
 // (made with openssl for the test): only a client that is given this certificate as a CA may trust it.
-// At STARTTLS the plain server relays the connection to a second, TLS-only server, because Bun 1.3.14 cannot
-// upgrade an accepted socket on the server side.
+// At STARTTLS the plain server relays the connection to a second, TLS-only server. The relay keeps the server
+// side simple and works on every Bun version.
 let dir = "";
 let key = "";
 let cert = "";
+let otherKey = "";
+let otherCert = "";
 const servers: (Server | TlsServer)[] = [];
 
 beforeAll(() => {
@@ -26,21 +28,25 @@ beforeAll(() => {
     "openssl",
     [
       ...["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-subj", "/CN=127.0.0.1"],
-      // Bun 1.3.14 (.bun-version) checks a socket upgraded to an IP host against "localhost": the DNS name lets the
-      // test run there. Remove DNS:localhost when .bun-version moves past 1.3.
-      ...[
-        "-addext",
-        "subjectAltName=IP:127.0.0.1,DNS:localhost",
-        "-keyout",
-        join(dir, "key.pem"),
-        "-out",
-        join(dir, "cert.pem"),
-      ],
+      // The certificate names only the IP: the STARTTLS tests prove the name check against an IP host.
+      ...["-addext", "subjectAltName=IP:127.0.0.1", "-keyout", join(dir, "key.pem"), "-out", join(dir, "cert.pem")],
     ],
     { stdio: "ignore" }
   );
   key = readFileSync(join(dir, "key.pem"), "utf8");
   cert = readFileSync(join(dir, "cert.pem"), "utf8");
+  // A second certificate for another name (localhost). Bun 1.3.14 accepted it for a STARTTLS upgrade to 127.0.0.1.
+  execFileSync(
+    "openssl",
+    [
+      ...["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-subj", "/CN=localhost"],
+      ...["-addext", "subjectAltName=DNS:localhost", "-keyout", join(dir, "other-key.pem")],
+      ...["-out", join(dir, "other-cert.pem")],
+    ],
+    { stdio: "ignore" }
+  );
+  otherKey = readFileSync(join(dir, "other-key.pem"), "utf8");
+  otherCert = readFileSync(join(dir, "other-cert.pem"), "utf8");
 });
 
 afterAll(() => {
@@ -54,7 +60,7 @@ interface Fake {
   seen: string[];
 }
 
-function startServer(opts: { offerStartTls: boolean }): Promise<Fake> {
+function startServer(opts: { offerStartTls: boolean; pair?: { key: string; cert: string } }): Promise<Fake> {
   return new Promise((resolve) => {
     const seen: string[] = [];
     let tlsPort = 0;
@@ -113,7 +119,7 @@ function startServer(opts: { offerStartTls: boolean }): Promise<Fake> {
       });
       if (!tls) socket.write("220 fake ESMTP\r\n");
     };
-    const tlsServer = createTlsServer({ key, cert }, (socket) => handle(socket, true));
+    const tlsServer = createTlsServer(opts.pair ?? { key, cert }, (socket) => handle(socket, true));
     const server = createServer((raw) => handle(raw, false));
     servers.push(tlsServer, server);
     tlsServer.listen(0, "127.0.0.1", () => {
@@ -211,6 +217,14 @@ describe("STARTTLS against a scripted server with a self-signed certificate", ()
     expect(sendError).toMatchObject({ stage: "connect", soft: false });
     expect(fake.seen).not.toContain("AUTH tls");
     expect(fake.seen).not.toContain("AUTH plain");
+  });
+
+  test("a trusted certificate for another name is refused on STARTTLS to an IP host and no password goes out", async () => {
+    const fake = await startServer({ offerStartTls: true, pair: { key: otherKey, cert: otherCert } });
+    const error = await verifySmtpLogin({ ...base, port: fake.port, ca: otherCert }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HardError);
+    expect((error as Error).message).toBe("SMTP verify failed (ERR_TLS_CERT_ALTNAME_INVALID)");
+    expect(fake.seen).toEqual(["STARTTLS"]);
   });
 
   test("a server without STARTTLS is refused and no password goes out", async () => {

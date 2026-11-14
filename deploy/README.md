@@ -62,7 +62,7 @@ $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, 
 
 Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. A CLI prints the text form with `$C exec -e LOG_FORMAT=text server bun run <script> …`.
 
-A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text (`sync <mailbox id> <mode>: fetched …`).
+A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync log line has the form `synced <mailbox id>: folders <n>, fetched <n>, …`; a failure is `sync <mailbox id> failed: …` (`mail/jobs.ts`).
 
 ## Login error (`auth_error`)
 
