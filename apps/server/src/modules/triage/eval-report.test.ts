@@ -86,6 +86,7 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     reasoningEffort: null,
     promptVersion: "classifier-v2",
     cases: Array.from({ length: 10 }, (_, i) => caseResult(`c${i}`)),
+    cost: { spentUsd: 0, capUsd: null, stoppedByBudget: false },
     complete: true,
     stoppedReason: null,
     doneCount: 10,

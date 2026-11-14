@@ -41,6 +41,7 @@ import {
 import { createLog } from "../../platform/log";
 
 import { type ClassifierEmail, classifyEmail } from "./classifier";
+import { type EvalBudget, runPool } from "./eval-pool";
 import { prompts } from "./prompts";
 import { type ClassifierDelegate, EXCERPT_CHARS } from "./prompts/classifier-v2";
 import type { MailKind } from "./repo";
@@ -112,6 +113,8 @@ export interface CasesEvalReport extends EvalReportBase {
   reasoningEffort: string | null;
   promptVersion: string;
   cases: CaseResult[];
+  // Spend of the earlier results and the new ones, by the run's price table. Zero without a budget.
+  cost: { spentUsd: number; capUsd: number | null; stoppedByBudget: boolean };
   complete: boolean;
   stoppedReason: string | null;
   doneCount: number;
@@ -367,9 +370,18 @@ function caseUsage(usage: LlmUsage): CaseUsage {
   return { model: usage.model, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, latencyMs: usage.latencyMs };
 }
 
+function rulesOf(c: EvalCase) {
+  return applyHardRules(splitAddress(c.from).address, c.senderRules, { delegation: c.delegates.length > 0 });
+}
+
+// A blocklist case ends without an LLM call.
+function isRuleSpam(c: EvalCase): boolean {
+  return rulesOf(c).kind === "spam";
+}
+
 async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries: number }): Promise<CaseResult> {
   const expected = c.expected.category;
-  const rules = applyHardRules(splitAddress(c.from).address, c.senderRules, { delegation: c.delegates.length > 0 });
+  const rules = rulesOf(c);
   const base = { id: c.id, kind: c.kind, expected };
 
   if (rules.kind === "spam") {
@@ -442,6 +454,7 @@ async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries:
 
 // `done`: results from an earlier run. A result without an error (also a blocked one) is not run again.
 // After STOP_AFTER_ERRORS LLM cases in a row end in an error, the run stops: a spent quota fails every call.
+// `concurrency` calls run at once; with a `budget` the run also stops when the next call could pass the cap.
 export async function runEval(
   deps: Deps,
   input: {
@@ -453,35 +466,39 @@ export async function runEval(
     minKept: number;
     retries: number;
     done?: CaseResult[];
+    concurrency?: number;
+    budget?: EvalBudget;
   }
 ): Promise<CasesEvalReport> {
   const startedAt = deps.now();
   const earlier = new Map((input.done ?? []).filter((r) => r.errorCode === null).map((r) => [r.id, r]));
+  const pool = await runPool({
+    cases: input.cases,
+    earlier,
+    concurrency: input.concurrency ?? 1,
+    ...(input.budget === undefined ? {} : { budget: input.budget }),
+    stopAfterErrors: STOP_AFTER_ERRORS,
+    errorStopReason: STOP_REASON,
+    now: startedAt,
+    usesLlm: (c) => !isRuleSpam(c),
+    run: (c) => runCase(deps, c, input),
+    onResult: async (result) => {
+      await deps.onResult?.(result);
+      log.info(`case ${result.id}: ${result.finalCategory ?? `error ${result.errorCode}`}`);
+    },
+  });
+  if (pool.stoppedReason !== null) log.warn(`stop: ${pool.stoppedReason}`);
+
+  // The report follows the input order, never the finish order.
   const cases: CaseResult[] = [];
   const predictions: Prediction[] = [];
   const errorCodes: Record<string, number> = {};
   const whitelist = { passed: 0, total: 0, errors: 0 };
   const blockedIds: string[] = [];
   const usages: CaseUsage[] = [];
-  let errorsInRow = 0;
-  let stoppedReason: string | null = null;
-
   for (const c of input.cases) {
-    let result = earlier.get(c.id);
-    if (result === undefined) {
-      if (stoppedReason === null && errorsInRow >= STOP_AFTER_ERRORS) {
-        stoppedReason = STOP_REASON;
-        log.warn(`stop: ${STOP_AFTER_ERRORS} cases in a row ended in an error`);
-      }
-      // After the stop, only earlier results are added: no new LLM call.
-      if (stoppedReason !== null) continue;
-      result = await runCase(deps, c, input);
-      await deps.onResult?.(result);
-      if (result.errorCode !== null) errorsInRow += 1;
-      else if (result.source === "llm") errorsInRow = 0;
-      log.info(`case ${c.id}: ${result.finalCategory ?? `error ${result.errorCode}`}`);
-    }
-
+    const result = pool.results.get(c.id);
+    if (result === undefined) continue;
     const prediction = toPrediction(result);
     if (prediction) predictions.push(prediction);
     if (result.errorCode !== null) errorCodes[result.errorCode] = (errorCodes[result.errorCode] ?? 0) + 1;
@@ -497,6 +514,7 @@ export async function runEval(
     }
     cases.push(result);
   }
+  const stoppedReason = pool.stoppedReason;
 
   const injectionCases = cases.filter((r) => r.injectionPassed !== null);
   const sweep = {} as CasesEvalReport["sweep"];
@@ -531,6 +549,7 @@ export async function runEval(
     reasoningEffort: input.reasoningEffort ?? null,
     promptVersion: prompts.classifier.version,
     cases,
+    cost: { spentUsd: pool.spentUsd, capUsd: input.budget?.capUsd ?? null, stoppedByBudget: pool.stoppedByBudget },
     complete: stoppedReason === null,
     stoppedReason,
     doneCount: cases.filter((r) => r.errorCode === null).length,
