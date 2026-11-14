@@ -5,13 +5,17 @@ import { dirname, resolve } from "node:path";
 import { costPerMail } from "@ea/core";
 
 import {
+  buildGateFile,
   evalExitCode,
+  gateFileName,
+  gateFileRefusal,
   evalStateFileName,
   firstEstimateUsd,
   parseCaseResults,
   prompts,
   renderEvalReport,
   runEval,
+  simMetaOf,
 } from "../modules/triage";
 import { type Config, ConfigError, llmRoleTable, loadConfig } from "../platform/config";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
@@ -35,6 +39,7 @@ const log = createLog("eval");
 
 const simRoot = resolve(import.meta.dir, "../../../../evals/sim");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
+const gateDir = resolve(import.meta.dir, "../../../../evals/results/gate");
 
 function out(text: string): void {
   process.stdout.write(`${text}\n`);
@@ -47,6 +52,7 @@ export interface SimDeps {
   now?: () => Date;
   root?: string;
   runsDir?: string;
+  gateDir?: string;
 }
 
 // `eval --sim`: a corpus part through the worker pool, under the run cap and the month cap.
@@ -187,12 +193,33 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         },
       }
     );
-    const markdown = renderEvalReport(report, {
-      title: `Eval report: sim ${scenario} ${part}`,
+    const sim = {
+      report,
+      meta: simMetaOf(loaded.cases),
+      corpus: { scenario, version: loaded.version, manifestSha: loaded.manifestSha, audit: loaded.audit, part },
       hideIds: part === "holdout",
-    });
+    };
+    const markdown = renderEvalReport(report, { title: `Eval report: sim ${scenario} ${part}`, sim });
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
+    // The gate file of a full holdout run at the default bar (D27); an older file of the same name is replaced.
+    const refusal = gateFileRefusal(options, report);
+    if (refusal !== null) {
+      log.info(refusal);
+    } else {
+      const dir = deps.gateDir ?? gateDir;
+      const name = gateFileName({
+        role: report.role,
+        promptVersion: report.promptVersion,
+        model,
+        reasoningEffort: effort,
+        scenario,
+        version: loaded.version,
+      });
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(resolve(dir, name), `${JSON.stringify(buildGateFile({ ...sim, now: new Date() }), null, 2)}\n`);
+      log.info(`gate file: evals/results/gate/${name}`);
+    }
     if (!report.complete) log.warn(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
     return evalExitCode(report);
   } catch (error) {

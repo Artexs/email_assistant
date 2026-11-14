@@ -85,7 +85,8 @@
       "mustNot": [
         "Do not give a power of attorney without legal review"
       ],
-      "note": "rewritten: question for the executive's decision; urgency softened"
+      "note": "rewritten: question for the executive's decision; urgency softened",
+      "dropped": true
     },
     {
       "id": "b-rep-0062",

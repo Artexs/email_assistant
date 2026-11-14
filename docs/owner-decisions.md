@@ -99,10 +99,11 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Undo: none needed; F097, F100 and F101 get a plan refresh before their first stage (`.agents/limen/planner.md` § Refresh job).
 - Source: `spec/build.md` NEXT order rule; `notes/2026-11-14-coordinator-audit.md` § 1.
 
-### 2026-11-14 · Reviews and planners run on Opus 5.5, not Sonnet 5.5 · money · ok
+### 2026-11-14 · Reviews and planners run on Opus 5.5, not Sonnet 5.5 · money · changed
 - Choice: stage reviews and planner jobs ran on Opus 5.5; the board names Sonnet 5.5 for the reviewer.
 - Why: owner decision 2026-11-13 moved plan reviews to Opus; the coordinator applied it to stage reviews too.
 - Undo: write one reviewer model on the board (`spec/build.md` § TRACK).
+- Changed 2026-11-14 (commit 7d6d14ef): Opus 5.5 only for risky stages and plans (list in spec/build.md TRACK); else Sonnet 5.5; a review task names the model and the reason.
 - Source: `notes/2026-11-14-coordinator-audit.md` § 6; `notes/2026-11-14-overnight-summary.md` (quota hit twice).
 
 ### 2026-11-14 · Two VPS updates overnight · production · ok
