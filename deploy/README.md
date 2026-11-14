@@ -86,6 +86,31 @@ An `auth_error` notice means the mail server refused the stored password. The sy
 
 A `paused` mailbox stays paused. Use `/resume` in Telegram.
 
+## Mail server not allowed (`host_blocked`)
+
+A `host_blocked` notice means the server name of the mailbox points to a private or local address. The system does not connect to such an address. The sync, triage and send for that mailbox stop. No mail is lost: it stays on the mail server.
+
+1. Run the check. It prints the status and which side (IMAP or SMTP) the guard refuses, and it makes no connection:
+   `$C run --rm -T server bun run mailbox:check --org-id <uuid> --mailbox-id <uuid>`
+2. Check the DNS answer of the provider host from the server container. A real provider host resolves to a public address. A refusal means a wrong host or a DNS change.
+3. Run nothing else. At the start of each sync run (every `MAIL_SYNC_EVERY_MIN` minutes) the system checks both hosts again, with no connection. When both pass, the mailbox becomes `active` by itself and the same run syncs it. A password change (see "Login error (`auth_error`)") also ends the state.
+
+Do not set `MAIL_ALLOW_LOCAL_HOSTS` on the VPS.
+
+### Roll back
+
+Roll back the code, not the migration. Do this only for a code rollback to a release older than F085 stage 02: that release cannot read the status `host_blocked` and stops the notice sender. Stop the server container first, so no run of the new code sets the status again:
+
+```sh
+$C stop server
+$C exec -T db psql -U postgres -d email_assistant <<'SQL'
+UPDATE outbox SET status = 'failed', error_code = 'outdated', locked_at = NULL WHERE kind = 'host_blocked' AND status IN ('pending', 'sending');
+UPDATE mailboxes SET status = 'active', status_changed_at = now() WHERE status = 'host_blocked';
+SQL
+```
+
+Then start the old release. The old code logs the refusal at each run again. Do not run `db:rollback` on a live database.
+
 ## Telegram
 
 The server uses long polling (no inbound port). The VPS uses the pilot bot `@Email_assistant_vps_bot`. The dev bot `@Email_assistant_local_bot` stays on the Mac: one bot token allows one poller.
@@ -386,7 +411,7 @@ Each notice says what happened. The left part is the start of the text.
 - `⚠️ Unknown whether the mail … went out` (`outcome_unknown`): the connection broke after the content, or the server stopped during the send. Check `Wysłane` and ask the recipient. Tap 📤 Send again only if the mail did not go out. If the mail did go out, tap ✅ It went out (owners only): the delegation becomes `sent` with the stored message id, no mail is sent again, and a reply of the delegate is matched. Without this tap the delegation stays `cancelled` and a later reply is not matched. The button shows only for a delegation send, and it does nothing after a resend.
 - `⌛ Not sent: the approval expired (48 h)` (`expired`, `timeout`): nobody tapped within 48 hours. The draft was removed (or the notice says it stays).
 - `⌛ Not sent: you did not receive the approval request (the account was paused, or it did not go out)` (`not_seen`): the request did not reach you, either before the account was paused (the system ended the send at the resume) or for 48 h while the account ran. The draft was removed (or the notice says it stays). Send the task by hand if it is still needed.
-- `⌛ Not sent: it waited 48 h after your approval` (`held_timeout`): a held approval. Read the scope: `SEND_SCOPE`, a paused mailbox (`/resume`) or a login error (`mailbox:password`). The system does not plan it again; send the task by hand from the draft, which stays in Drafts.
+- `⌛ Not sent: it waited 48 h after your approval` (`held_timeout`): a held approval. Read the scope: `SEND_SCOPE`, a paused mailbox (`/resume`), a login error (`mailbox:password`) or a mail server that is not allowed (`host_blocked`). The system does not plan it again; send the task by hand from the draft, which stays in Drafts.
 - `⌛ Not sent: no approval request could go out within 7 days` (`not_notified`): no owner was linked, or the draft was not created. Link an owner with `telegram:link`.
 - `❌ Not sent: the draft could not be created` (`draft_missing`): the draft failed three times. Read `docs/known-alerts.md` (`action <id>: failed hard_error`).
 - `⌛ Not sent: the setting was changed` (`policy_changed`): `mode shadow` or `switch create_draft off` closed the gate.
@@ -480,7 +505,7 @@ Set up (once, on the server):
 
 What the page shows:
 
-- **Organizations:** plan, trial end, mailboxes (all and with login error), last sync, failures in the last 24 hours (sends and notices), AI calls and cost today. It holds ids, codes, counts and dates only: no organization name, no address, no mail text. Map an id to a customer with `org:status` on the server.
+- **Organizations:** plan, trial end, mailboxes (all, with a login error, with a server not allowed), last sync, failures in the last 24 hours (sends and notices), AI calls and cost today. It holds ids, codes, counts and dates only: no organization name, no address, no mail text. Map an id to a customer with `org:status` on the server.
 - **One organization:** plan state, mailbox limit, each mailbox by id and status, the last runs (sync, AI triage, digest, send, notice), failures, AI calls of the day by model and the feature flags with their source (`off by the server list`, `set by the operator`, `default`).
 - **Notices:** the operator notices of all organizations for the last 1, 7 or 30 days (kind and key).
 - **Changes:** the plan (with trial days or the mailbox limit) and each flag (on or off) of an organization. A change calls the same function as `org:plan` or `org:flag` and writes the same audit row into that organization, with your user id as actor. It works while your own organization is `suspended`.
