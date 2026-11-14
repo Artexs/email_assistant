@@ -505,6 +505,23 @@ Test once: `sudo reboot`, then `$C ps`. Both services must be `Up` and healthy.
 4. Test a stop: `$C stop server`. After the period and the grace time, the alert arrives.
    Then run `$C start server`. The check turns green after the next ping.
 
+## LLM provider budget
+
+A spent budget stops the triage. The provider answers with `http_429_quota`, and the system pauses all LLM calls until the owner adds credit or raises the budget.
+A budget alert warns you before this happens. You do this once. The menu names below are not verified (2026-11). The OpenAI console can differ.
+
+1. Open the OpenAI platform and select the project that owns `OPENAI_API_KEY`.
+2. Open the limits or billing settings of the project and set a monthly budget. The pilot used $3 per month (`spec/features/done/2026-11/F026-llm-provider-switch/plan.md`, stage 0).
+3. Add an e-mail alert below the budget, for example at 80 %.
+4. After a quota pause, send `/status` to the bot. With the flag `llm_pause_line` on, the answer holds a line `⏸ LLM paused since … (http_429_quota)`. The next digest shows the same line.
+5. Add credit or raise the budget. Then wait for the pause to end (at most 60 minutes) or run `$C restart server`.
+
+Turn the flag on for an organization (see § Customers):
+
+```
+$C run --rm server bun run org:flag --org-id <org id> --flag llm_pause_line --on
+```
+
 ## 48-hour test procedure
 
 Start time `T0`. Use the test mailbox only.
