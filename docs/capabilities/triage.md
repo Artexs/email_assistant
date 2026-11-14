@@ -75,7 +75,10 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 | function | `createLlmPause`                                                        | `apps/server/src/modules/triage/pause.ts`       |
 | function | `goNoGoFor`, `setCategoryAutoWithGate`                                  | `apps/server/src/modules/triage/gate.ts`        |
 | function | `requeueBackfillWindow`                                                 | `apps/server/src/modules/triage/backfill.ts`    |
-| function | `applyHardRules`, `decideCategory`, `planActions`, `decidePolicy`       | `packages/core/src/triage/index.ts`             |
+| function | `applyHardRules`                                                        | `packages/core/src/triage/rules.ts`             |
+| function | `decideCategory`                                                        | `packages/core/src/triage/threshold.ts`         |
+| function | `planActions`                                                           | `packages/core/src/triage/planners.ts`          |
+| function | `decidePolicy`                                                          | `packages/core/src/triage/policy.ts`            |
 | function | `createLlmClient` (`generate` per role)                                 | `apps/server/src/platform/llm/client.ts`        |
 
 ## Data

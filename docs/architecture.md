@@ -195,6 +195,7 @@ The cap does not touch a retry with a count (a hard error keeps its 3 tries) and
    Soft errors wait with backoff (`next_attempt_at`) and do not count; the row keeps its status.
    Hard errors add 1 to `attempts`. After 3 hard errors: an email becomes `unsure` (reason `triage_error`);
    an action becomes `failed`, and the user gets a notice. Rule 6 wins for `send`.
+
    Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 
    The committer (S3; `actions/committer.ts`, `actions/apply.ts`, every 15 s) applies the rule to the action row as follows:
@@ -209,6 +210,7 @@ The cap does not touch a retry with a count (a hard error keeps its 3 tries) and
    - The committer opens one IMAP connection per mailbox per run, and only when it claims a mailbox-changing action. Order per mail: `save_summary`, `flag`, `mark_read`, `move`.
 
 8. **Cost limits.**
+
    Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 
 ### 4.2 Categories and folders
