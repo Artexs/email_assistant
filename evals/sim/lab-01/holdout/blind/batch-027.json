@@ -148,18 +148,6 @@
       "attachments": []
     },
     {
-      "id": "b-rep-0039",
-      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
-      "to": [
-        "wiktor.szalewski@kordelan.test"
-      ],
-      "cc": [],
-      "subject": "Card block: your decision",
-      "body": "Dear Mr Szalewski,\n\nthree cards on your account show unusual night purchases. Do you want us to block them? It is your decision; please tell me by tomorrow.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
-      "thread": [],
-      "attachments": []
-    },
-    {
       "id": "b-rep-0040",
       "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
       "to": [
@@ -317,18 +305,6 @@
       "cc": [],
       "subject": "Pallet count correction",
       "body": "Dear Mr Szalewski,\n\nwould you confirm that we may plan for 120 pallets instead of 100 on the 03.02.2027 delivery? I would like your own answer, by Wednesday if possible.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
-      "thread": [],
-      "attachments": []
-    },
-    {
-      "id": "b-rep-0055",
-      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
-      "to": [
-        "wiktor.szalewski@kordelan.test"
-      ],
-      "cc": [],
-      "subject": "Opóźnienie dostawy: kiedy towar dotrze?",
-      "body": "Panie Wiktorze,\n\ndostawa zapowiedziana na dzisiaj nie dotarła. Chciałabym usłyszeć od Pana, kiedy towar będzie u nas. Będę wdzięczna za wiadomość jeszcze dziś, najlepiej przed 16:00.\n\nGenowefa Jastrzebska",
       "thread": [],
       "attachments": []
     }
