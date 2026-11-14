@@ -1,0 +1,189 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-006",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-del-0160",
+      "subject": "Zestawienie umów z hotelami i liniami lotniczymi",
+      "body": "Wiktor,\n\nwracam do tematu podróży zarządu i rady. Zaczęło się od tego, że hotel w Poznaniu zmienił nam warunki anulowania rezerwacji bez uprzedzenia, a linia lotnicza, z którą mamy umowę korporacyjną, podniosła opłatę za zmianę biletu. Wydaje mi się, że nie mamy pełnego obrazu tego, na jakich zasadach podróżujemy i ile możemy zmieniać bez kosztów.\n\nPoproś proszę koordynatora sprzedaży, żeby zebrał wszystkie umowy korporacyjne, które dotyczą podróży służbowych: z hotelami, z liniami lotniczymi i z wypożyczalnią samochodów. Niech zestawi je w jednej tabeli z podziałem na okres obowiązywania, zniżki, warunki anulowania i opłaty za zmiany. Interesują mnie głównie te umowy, które wygasają w pierwszym półroczu.\n\nNie potrzebuję opinii prawnej, tylko czytelnego przeglądu. Gdy będzie gotowy, niech trafi do mojego sekretariatu, a ja zajmę się nim przy okazji przygotowań do posiedzenia rady. Ewentualne rozmowy z dostawcami zostawiam zarządowi, ale chciałbym wiedzieć, jaka jest podstawa do negocjacji.\n\nJeśli Piotr uzna, że któraś umowa wymaga szybkiej interwencji, niech da znać od razu, a nie czeka z całością do końca. Termin: do końca przyszłego tygodnia. Nie oczekuję odpowiedzi od Ciebie, tylko gotowej tabeli. Dobrze, żeby przy każdej umowie był też wpisany numer, pod którym leży w archiwum, bo ostatnio szukałem jednej z nich przez dwa dni.\n\nPozdrawiam",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Wiktor,</p><p style=\"margin:0 0 12px 0\">wracam do tematu podróży zarządu i rady. Zaczęło się od tego, że hotel w Poznaniu zmienił nam warunki anulowania rezerwacji bez uprzedzenia, a linia lotnicza, z którą mamy umowę korporacyjną, podniosła opłatę za zmianę biletu. Wydaje mi się, że nie mamy pełnego obrazu tego, na jakich zasadach podróżujemy i ile możemy zmieniać bez kosztów.</p><p style=\"margin:0 0 12px 0\">Poproś proszę koordynatora sprzedaży, żeby zebrał wszystkie umowy korporacyjne, które dotyczą podróży służbowych: z hotelami, z liniami lotniczymi i z wypożyczalnią samochodów. Niech zestawi je w jednej tabeli z podziałem na okres obowiązywania, zniżki, warunki anulowania i opłaty za zmiany. Interesują mnie głównie te umowy, które wygasają w pierwszym półroczu.</p><p style=\"margin:0 0 12px 0\">Nie potrzebuję opinii prawnej, tylko czytelnego przeglądu. Gdy będzie gotowy, niech trafi do mojego sekretariatu, a ja zajmę się nim przy okazji przygotowań do posiedzenia rady. Ewentualne rozmowy z dostawcami zostawiam zarządowi, ale chciałbym wiedzieć, jaka jest podstawa do negocjacji.</p><p style=\"margin:0 0 12px 0\">Jeśli Piotr uzna, że któraś umowa wymaga szybkiej interwencji, niech da znać od razu, a nie czeka z całością do końca. Termin: do końca przyszłego tygodnia. Nie oczekuję odpowiedzi od Ciebie, tylko gotowej tabeli. Dobrze, żeby przy każdej umowie był też wpisany numer, pod którym leży w archiwum, bo ostatnio szukałem jednej z nich przez dwa dni.</p><p style=\"margin:0 0 12px 0\">Pozdrawiam</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0161",
+      "subject": "Tender annex",
+      "body": "Dear Wiktor,\n\nplease have your sales coordinator send over the pricing annex for the joint tender by Friday.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Wiktor,</p><p style=\"margin:0 0 12px 0\">please have your sales coordinator send over the pricing annex for the joint tender by Friday.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0162",
+      "subject": "Scheduling the signing ceremony and related travel",
+      "body": "Dear Mr Szalewski,\n\nI am writing about the signing of the framework agreement between Nordic Foods Trade and Kordelan Dystrybucja, which our management would like to arrange for the week of 22.01.2027. Our CEO and our legal counsel plan to attend in person, and we would like to prepare the day carefully so that it runs without problems.\n\nWe would be grateful if your assistant could take care of the practical matters on your side. In particular, we would like her to reserve a meeting room for the signing and for a short working lunch afterwards, to enter the event in the shared calendar so that all participants have the same time, and to propose a time slot of about ninety minutes, preferably in the late morning. We would also appreciate her help in booking two hotel rooms near your office for our colleagues, who will travel from Stockholm the evening before, and a car from the airport.\n\nOur assistant, Mrs Holm, will send her the names and flight details as soon as the tickets are issued. She is also available by phone if there are any questions about the programme or about dietary requirements.\n\nThere is no need for you to be involved in these arrangements. A brief confirmation from your assistant is all we need, once she has fixed the date and the room.\n\nThank you very much for your support, and we look forward to the signing.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0163",
+      "subject": "Request for a contract overview",
+      "body": "Dear Mr Szalewski,\n\nahead of the meeting on 28.01.2027 the board would like to see a clear list of the contracts that expire within the next twelve months, with the party, the value and the notice period. Please ask your sales contracts coordinator to prepare it as a simple table and send it to my office by Monday 25.01.2027.\n\nThe list does not need legal comments. If the coordinator has questions about the scope, he may contact the board secretary directly.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0164",
+      "subject": "Wspólne przetargi - spotkanie w Gdyni",
+      "body": "Szanowny Panie Wiktorze,\n\nproszę o polecenie asystentce ustalenia terminu spotkania roboczego w Gdyni w najbliższy czwartek.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0165",
+      "subject": "Rozliczenie delegacji i zaliczek członków rady",
+      "body": "Szanowny Panie Prezesie,\n\npo ostatnich wyjazdach członków rady na rozmowy z inwestorami w Warszawie i w Poznaniu pozostało kilka spraw finansowych, które muszą zostać zamknięte przed posiedzeniem. Dotyczy to zaliczek wypłaconych członkom rady na koszty podróży, rozliczenia rachunków za hotele i przejazdy oraz zwrotu kosztów kolejowych, które jeden z członków pokrył z własnych środków.\n\nProszę o polecenie księgowości zestawienia wszystkich zaliczek i rachunków z podziałem na osoby, rozliczenia różnic w obie strony oraz przygotowania przelewów na właściwe rachunki. Zestawienie powinno także wskazać, które wydatki przekraczają limity określone w regulaminie rady. Wszystkie rachunki zebrała asystentka zarządu i zostawiła w teczce w księgowości, więc nie trzeba ich szukać. Dokumenty brakujące proszę zgłosić do sekretariatu rady.\n\nZależy mi na tym, aby rozliczenie zostało zamknięte do końca stycznia i aby koszty zostały zaksięgowane w okresie, w którym powstały. Rada będzie pytać o koszty podróży przy omawianiu budżetu, a nie chciałbym, aby część wydatków pozostawała otwarta. Po wykonaniu przelewów proszę o krótką informację do mojego sekretariatu, wraz z łączną kwotą wypłat, którą podam radzie jako element sprawozdania z kosztów. Jeżeli któryś z członków rady nie podał numeru konta, sekretariat uzupełni dane w ciągu jednego dnia. Nie potrzebuję odpowiedzi od Pana osobiście.\n\nZ wyrazami szacunku\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0166",
+      "subject": "Nowy cennik kart i aneks - do przeglądu",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłamy do rozpatrzenia nowy cennik opłat za obsługę kart paliwowych, obowiązujący od 1 marca, razem z aneksem do umowy ramowej, który go wprowadza. Prosimy o przekazanie obu dokumentów osobie, która w Państwa firmie zajmuje się umowami z dostawcami, aby sprawdziła zapisy i potwierdziła ich akceptację.\n\nW aneksie zmieniły się zasady naliczania prowizji od zakupów zagranicznych oraz termin płatności faktur, który został wydłużony do czternastu dni. Reszta pozostaje bez zmian.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-del-0168",
+      "subject": "Rezerwacja sali na rozmowy z zespołem odpraw",
+      "body": "Szanowny Panie Wiktorze,\n\nplanujemy na przyszły tydzień krótką wizytę w Państwa biurze w Gdańsku, aby omówić z zespołem odpraw zmiany w procedurze zgłoszeń celnych. Prosimy o polecenie asystentce zarezerwowania sali na dwie godziny we wtorek po południu oraz o wpisanie spotkania do kalendarza zarządu.\n\nPrzyjadą dwie osoby z naszej strony. Prosimy także o uzgodnienie miejsca parkingowego dla ich samochodu. Potwierdzenie terminu wystarczy przesłać do mojego biura.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-del-0169",
+      "subject": "Payment terms clause - please have it updated",
+      "body": "Hello Mr Szalewski,\n\nfollowing the bank notice below, I would like to propose that the payment terms in our fuel card agreement be changed to a fixed 14-day term from the invoice date. At present the contract only says \"promptly\", which causes disagreements about when a payment is late.\n\nCould you ask your colleague who handles sales and supplier contracts to prepare the amended clause and send it to us for signature? A one-page addendum is enough. We would like to have it in place before the February invoices go out.\n\nThanks for your help.",
+      "thread": [
+        {
+          "subject": "Transfer notification",
+          "body": "Your transfer to Paliwa-Flota was credited on 18.01.2027. Reference: INV-2026-12. This message was generated automatically. Bank Kordelan Services"
+        },
+        {
+          "subject": "Re: Transfer notification",
+          "body": "Ewelina, FYI: the December invoice was paid on 18.01. Please confirm that it is recorded. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0171",
+      "subject": "Rozliczenie umowy - prośba do księgowości",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o polecenie księgowości wystawienia noty na dopłatę do cennika, o której rozmawiał Pan z dyrektor operacyjną.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [
+        {
+          "subject": "Cennik na I kwartał",
+          "body": "Panie Tomaszu, dopłata za dostawy poranne będzie rozliczana osobną notą. Szczegóły prześlemy po zamknięciu miesiąca. Halina Strzemecka"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0172",
+      "subject": "Kalendarz spotkań przetargowych",
+      "body": "Panie Wiktorze,\n\nniech asystentka zaproponuje mi trzy terminy spotkań przetargowych na przyszły tydzień i wpisze je do Pana kalendarza. Poproszę także o rezerwację sali.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-del-0173",
+      "subject": "Kontrola umów hotelowych rady",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o zlecenie koordynatorowi sprzedaży przeglądu umowy z hotelem, w którym zatrzymują się członkowie rady podczas posiedzeń. Interesują mnie warunki zmiany daty pobytu, opłaty za anulowanie oraz stawki za pokoje na drugi kwartał.\n\nKrótkie zestawienie wystarczy. Proszę o przesłanie go do mojego sekretariatu przed posiedzeniem rady, aby można było zdecydować o ewentualnym wypowiedzeniu lub renegocjacji umowy.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0174",
+      "subject": "Faktura korygująca do przetargu",
+      "body": "Szanowny Panie Wiktorze,\n\nproszę, aby księgowość wystawiła fakturę korygującą do ostatniego zamówienia w ramach przetargu. Stawka VAT jest nieprawidłowa.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0175",
+      "subject": "Cleaning up the open invoices before the quarter closes",
+      "body": "Dear Mr Szalewski,\n\nAs the quarter comes to an end, we have reviewed the open items on your account with Paliwa-Flota, and there are five that need attention from your accounting team. Two of them are invoices from November that are overdue, two are credit notes that we issued in December and that do not appear in your ledger, and the last one is a duplicate invoice that we cancelled but that may still be in your payment queue.\n\nWe would be grateful if you could ask your accounting team to compare the statement of open items that we send separately with their own records and to confirm which items they agree with. If a payment is outstanding, they can send us the planned date. For the credit notes, it is enough for them to post the documents and send us the confirmation. In case of the duplicate invoice, they should remove it from the payment run, so that no unnecessary transfer is made.\n\nThe statement lists all items by number and amount, and our credit controller can help if there are any questions. Her contact will be given to your team at the first request.\n\nWe would like to have the account reconciled by the end of the month, so that the quarter can be closed on both sides without open items. Your personal involvement is not necessary, since this is a routine reconciliation between the two accounting teams.\n\nThank you for your help, and best wishes for the coming weeks.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0178",
+      "subject": "Fuel price clause and the new rate schedule",
+      "body": "Dear Mr Szalewski,\n\nI am getting in touch about the annual review of our fuel card agreement. This year the review is a little more involved than usual, because three things change at once: the fuel price index that we use for the monthly adjustment, the rate schedule for stations outside Poland, and the definition of what counts as a business-hours transaction.\n\nOur proposal comes in the form of a draft addendum to the agreement. We would be glad if you could pass it to the colleague in your company who looks after sales and supplier contracts, so that she can read it through, compare it with the current wording and tell us which of the changes your side accepts. It would also help if she could mark any clauses she would like to discuss with our team, so that we can prepare for the call and not lose time.\n\nWe realise that the proposal arrives in a busy period, and we do not expect you to deal with it yourself. A reply from the person who reviews the document is perfectly sufficient. We would like to finish the review by the end of February, so that the new schedule applies from the start of the second quarter.\n\nIf it would be easier, we can also arrange a short call between our two teams, once your colleague has had a first look.\n\nThank you for your help and your continued trust.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-del-0179",
+      "subject": "Aneks do umowy ramowej - ceny na drugi kwartał",
+      "body": "Szanowny Panie Prezesie,\n\nzwracamy się z prośbą o przekazanie osobie odpowiedzialnej za umowy sprzedażowe propozycji aneksu do naszej umowy ramowej, który ustali ceny transportu na drugi kwartał. Projekt aneksu przygotowaliśmy po stronie Meblodrew i prześlemy go, gdy tylko otrzymamy adres odbiorcy.\n\nProsimy o uwagi do zapisów dotyczących dopłaty paliwowej i rabatu za dostawy w godzinach porannych.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "b-del-0181",
+      "subject": "Re: Spotkanie w sprawie faktur",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o polecenie asystentce umówienia krótkiej rozmowy telefonicznej z moim działem rozliczeń w czwartek.",
+      "thread": [
+        {
+          "subject": "Rozmowa o fakturach",
+          "body": "Dzień dobry, rozmowa z Państwa działem rozliczeń byłaby dobrym rozwiązaniem. Proszę o wskazanie terminu. Wiktor Szalewski"
+        },
+        {
+          "subject": "Faktury - styczeń",
+          "body": "Szanowny Panie Prezesie, w styczniu zmienia się format naszych faktur. Chcielibyśmy omówić to z Państwa działem finansowym. Ewelina Marszalek"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0183",
+      "subject": "Booking the venue for the contract signing",
+      "body": "Dear Mr Szalewski,\n\nour legal team has confirmed that the framework agreement is ready for signature. Could your assistant please reserve a conference room at your office for 22.01.2027 at 11:00 and send the invitation to our delegation of four people? A coffee service for the guests would be appreciated.\n\nOur side will send the names of the participants directly to her. A short confirmation from her will be enough. Thank you for your help with the arrangements.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-del-0184",
+      "subject": "Sala na spotkanie z kandydatami",
+      "body": "Wiktor,\n\nniech asystentka zarezerwuje salę na rozmowy z kandydatami na środę 27.01.2027, od 9:00 do 13:00.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0185",
+      "subject": "Amendment to the joint tender agreement",
+      "body": "Dear Wiktor,\n\nafter the call with the contracting authority, we need to amend the joint tender agreement: the bid validity period has been extended by thirty days, and the authority requires a joint and several liability clause that is not yet in our draft.\n\nCould you ask your sales coordinator to prepare the amended version and send it to our legal team for review? We have already marked the clauses that need to change and will share the list with him as soon as he confirms that he is taking it on. A first draft by the end of next week would be perfect, since the authority wants signed documents on 10.02.2027.\n\nThank you for your help.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0186",
+      "subject": "Request to review payment clause",
+      "body": "Hello Mr Szalewski,\n\nas promised in your earlier note, here is the request for the contract side: could your colleague responsible for supplier contracts review the late-payment interest clause in our fuel card agreement and propose a wording that both sides can accept? The current text refers to a statutory rate that has changed. We would be glad to have her comments by the end of the month.\n\nThank you for your help.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "subject": "Re: Late payment interest",
+          "body": "Ewelina, thank you. I will ask the team to look at the clause. Wiktor Szalewski"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0188",
+      "subject": "Projekt umowy konsorcjum - prośba o przygotowanie",
+      "body": "Szanowny Panie Wiktorze,\n\ndziękuję za potwierdzenie udziału Kordelana we wspólnej ofertze na obsługę logistyczną terminalu kontenerowego. Zbliża się moment, w którym musimy przygotować formalną umowę konsorcjum, a po Państwa stronie leży opracowanie pierwszego projektu. Zgodnie z naszymi ustaleniami umowa ma określić podział zadań, odpowiedzialność za realizację poszczególnych tras, sposób rozliczania przychodów oraz zasady reprezentowania konsorcjum wobec zamawiającego.\n\nZwracam się z prośbą o polecenie koordynatorowi sprzedaży, aby przygotował projekt umowy na podstawie wzoru, którego używacie przy dużych kontraktach. Chętnie uzupełnię go o nasze uwagi, gdy tylko otrzymam pierwszą wersję. Proszę o szczególną uwagę na zapisy o odpowiedzialności solidarnej, ponieważ zamawiający wymaga ich w dokumentacji przetargowej, oraz na klauzulę o poufności, która obejmie także dane o cenach.\n\nDobrze byłoby otrzymać pierwszy projekt do końca przyszłego tygodnia, ponieważ nasi prawnicy potrzebują dwóch lub trzech dni na przegląd. Następnie spotkamy się, aby uzgodnić ostateczne brzmienie. Wszelkie pytania dotyczące zakresu może zespół kierować do mojego asystenta. Warto również uwzględnić w umowie zapis o sposobie rozstrzygania sporów między partnerami, najlepiej przez arbitraż w Gdyni, tak jak ustaliliśmy wstępnie podczas grudniowego spotkania.\n\nNie wymaga to Pana osobistego zaangażowania. Dziękuję za pomoc i za dobrą współpracę.\n\nZ wyrazami szacunku",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">dziękuję za potwierdzenie udziału Kordelana we wspólnej ofertze na obsługę logistyczną terminalu kontenerowego. Zbliża się moment, w którym musimy przygotować formalną umowę konsorcjum, a po Państwa stronie leży opracowanie pierwszego projektu. Zgodnie z naszymi ustaleniami umowa ma określić podział zadań, odpowiedzialność za realizację poszczególnych tras, sposób rozliczania przychodów oraz zasady reprezentowania konsorcjum wobec zamawiającego.</p><p style=\"margin:0 0 12px 0\">Zwracam się z prośbą o polecenie koordynatorowi sprzedaży, aby przygotował projekt umowy na podstawie wzoru, którego używacie przy dużych kontraktach. Chętnie uzupełnię go o nasze uwagi, gdy tylko otrzymam pierwszą wersję. Proszę o szczególną uwagę na zapisy o odpowiedzialności solidarnej, ponieważ zamawiający wymaga ich w dokumentacji przetargowej, oraz na klauzulę o poufności, która obejmie także dane o cenach.</p><p style=\"margin:0 0 12px 0\">Dobrze byłoby otrzymać pierwszy projekt do końca przyszłego tygodnia, ponieważ nasi prawnicy potrzebują dwóch lub trzech dni na przegląd. Następnie spotkamy się, aby uzgodnić ostateczne brzmienie. Wszelkie pytania dotyczące zakresu może zespół kierować do mojego asystenta. Warto również uwzględnić w umowie zapis o sposobie rozstrzygania sporów między partnerami, najlepiej przez arbitraż w Gdyni, tak jak ustaliliśmy wstępnie podczas grudniowego spotkania.</p><p style=\"margin:0 0 12px 0\">Nie wymaga to Pana osobistego zaangażowania. Dziękuję za pomoc i za dobrą współpracę.</p><p style=\"margin:0 0 12px 0\">Z wyrazami szacunku</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0190",
+      "subject": "Szkolenie dla kierowców - sala i termin",
+      "body": "Cześć Wiktor,\n\npo ostatnich reklamacjach chcemy zrobić dla kierowców krótkie szkolenie z zabezpieczania ładunków. Poproś asystentkę, żeby znalazła termin w przyszłym tygodniu, najlepiej czwartek po południu, zarezerwowała salę na dwadzieścia osób i rozesłała zaproszenia do kierowników zmian. Kto z kierowców ma przyjść, ustalę ze swoim zespołem.\n\nDzięki, nie musisz nic zatwierdzać. Jeśli asystentka ma wątpliwości co do sali, może zapytać Halinę z działu operacyjnego, bo szkolenia zwykle robimy w magazynie w Poznaniu i dobrze byłoby uzgodnić miejsce z kierownikiem tamtej zmiany.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-del-0193",
+      "subject": "Wzór aneksu do umowy z doradcą",
+      "body": "Szanowny Panie Prezesie,\n\nrada chciałaby przedłużyć umowy z doradcami o kolejny rok bez zmiany stawek. Potrzebny jest do tego wzór aneksu, który przygotuje koordynator sprzedaży, jeśli Pan go o to poprosi. Wzór powinien być krótki i przewidywać możliwość wypowiedzenia z jednomiesięcznym wyprzedzeniem, a także zawierać zapis o poufności, który obowiązywał w umowach pierwotnych. Proszę o przesłanie go do mojego sekretariatu przed posiedzeniem rady. Nie potrzebuję odpowiedzi od Pana osobiście.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0194",
+      "subject": "Okna rozładunku w lutym - rezerwacja",
+      "body": "Szanowny Panie Prezesie,\n\nw lutym planujemy cztery duże dostawy płyt meblowych do Państwa magazynu w Gdyni. Prosimy o polecenie asystentce zarezerwowania okien rozładunku na 02.02., 09.02., 16.02. i 23.02.2027, każdego dnia między 7:00 a 10:00, oraz o wpisanie ich do wspólnego kalendarza dostaw.\n\nPotwierdzenie rezerwacji wystarczy przesłać na adres naszego działu logistyki. Dziękujemy za pomoc.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    }
+  ]
+}
