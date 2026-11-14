@@ -39,12 +39,13 @@ const routers = () =>
     () => NOW,
     async () => []
   );
-const operatorApp = (suspendedA = false) =>
+const operatorApp = (suspendedA = false, twoFactorOff?: ReadonlySet<string>) =>
   webTestApp({
     db,
     sessions: sessions(),
     routers: routers(),
     operatorUserIds: new Set([org.assistantId]),
+    ...(twoFactorOff ? { twoFactorOff } : {}),
     ...(suspendedA
       ? { isOrgSuspended: async (id: string) => id === org.orgId || isOrgSuspended(db, { orgId: id }) }
       : {}),
@@ -80,6 +81,9 @@ const auditOfB = (event: string) =>
     .where("event", "=", event)
     .where("actor", "=", org.assistantId)
     .execute();
+
+const auditCountOfB = async () =>
+  (await db.selectFrom("audit_log").select("id").where("org_id", "=", org.otherOrgId).execute()).length;
 
 const flagRowsOfB = () => db.selectFrom("org_features").selectAll().where("org_id", "=", org.otherOrgId).execute();
 
@@ -192,6 +196,23 @@ describe("operator writes (F099 stage 09, D20, D21)", () => {
       body: { error: "unknown_flag" },
     });
     expect(await flagRowsOfB()).toHaveLength(1);
+  });
+
+  test("2b. an operator without TOTP is refused 403 two_factor_required and writes nothing (F105 D10)", async () => {
+    const app = operatorApp(false, new Set([org.assistantId]));
+    const auditBefore = await auditCountOfB();
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await app.request(flagUrl(org.otherOrgId), post("assistant", { flag: "stats_page", enabled: true }));
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: "two_factor_required" });
+      const plan = await app.request(planUrl(org.otherOrgId), post("assistant", { plan: "suspended" }));
+      expect(plan.status).toBe(403);
+    } finally {
+      errorSpy.mockRestore();
+    }
+    expect(await flagRowsOfB()).toHaveLength(0);
+    expect(await auditCountOfB()).toBe(auditBefore);
   });
 
   test("3. suspend cancels the pending outbox and writes the audit row of the CLI", async () => {
