@@ -16,7 +16,7 @@ The translation rules and the fixed words of stage 06 (its table) apply here too
 | `Shadow mode: the system changed nothing in your mailbox.` | `Tryb podglądu: system niczego nie zmienił w Twojej skrzynce.` |
 | `Commands:` | `Polecenia:` |
 | `/digest – the digest now` | `/digest – podsumowanie teraz` |
-| `✅ This chat is linked. Digests and urgent notices come here.` | `✅ Ten czat jest połączony. Tu przychodzą podsumowania i pilne powiadomienia.` |
+| `✅ This chat is linked. Digests and urgent notices come here.` | `✅ Ten czat jest połączony. Tu przychodzą podsumowania i pilne komunikaty.` |
 | `Something went wrong. Try again later.` | `Coś poszło nie tak. Spróbuj ponownie później.` |
 | `⏸ This account is paused. Nothing changes now. To resume it, contact <who>.` | `⏸ To konto jest wstrzymane. Teraz nic się nie zmienia. Aby je wznowić, skontaktuj się z: <who>.` (no contact: `… skontaktuj się z operatorem.`) |
 
