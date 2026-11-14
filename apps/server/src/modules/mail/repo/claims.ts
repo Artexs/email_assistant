@@ -1,6 +1,7 @@
 import type { Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
+import { NO_TEST_SENDERS, type TestMailRule } from "../seed";
 
 import { mailKindFilter } from "./emails";
 import type { DbOrTrx } from "./shared";
@@ -44,7 +45,7 @@ export async function claimEmails(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { now: Date; limit: number; staleBefore: Date; syntheticOnly: boolean }
+  opts: { now: Date; limit: number; staleBefore: Date; syntheticOnly: false | { testMail: TestMailRule } }
 ): Promise<ClaimedEmail[]> {
   const rows = await db
     .with("picked", (qb) => {
@@ -62,7 +63,7 @@ export async function claimEmails(
             eb.and([eb("status", "=", "processing"), eb("locked_at", "<", opts.staleBefore)]),
           ])
         );
-      if (opts.syntheticOnly) query = query.where(mailKindFilter("synthetic"));
+      if (opts.syntheticOnly !== false) query = query.where(mailKindFilter("synthetic", opts.syntheticOnly.testMail));
       return query.orderBy("received_at").orderBy("id").limit(opts.limit).forUpdate().skipLocked();
     })
     .updateTable("emails as e")
@@ -151,6 +152,7 @@ export async function finishEmail(
     .executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
+// Backfill keeps today's SQL: it re-queues every mail without a synthetic Message-ID, also from a test sender (NO_TEST_SENDERS; sync.md rule 15).
 // Gives stored real INBOX mail of the window that the worker skipped as `too_old` a new triage run. No audit: the caller writes it.
 export async function requeueTooOld(
   trx: Transaction<DB>,
@@ -168,7 +170,7 @@ export async function requeueTooOld(
     .where("skip_reason", "=", "too_old")
     .where("received_at", ">=", opts.since)
     .where("body_text", "is not", null)
-    .where(mailKindFilter("real"))
+    .where(mailKindFilter("real", NO_TEST_SENDERS))
     .returning("id")
     .execute();
   return rows.map((row) => row.id);

@@ -34,6 +34,7 @@ import {
   type PlannedActionInput,
   type SendClaimFilter,
 } from "../../src/modules/actions";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -286,11 +287,9 @@ describe("claimActions", () => {
         "syn:save_summary",
       ]);
       await trx.updateTable("actions").set({ locked_at: null }).execute();
-      expect(summed(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "synthetic" })))).toEqual([
-        "real:save_summary",
-        "syn:flag",
-        "syn:save_summary",
-      ]);
+      expect(
+        summed(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "synthetic", testMail: NO_TEST_SENDERS })))
+      ).toEqual(["real:save_summary", "syn:flag", "syn:save_summary"]);
       await trx.updateTable("actions").set({ locked_at: null }).execute();
       expect(summed(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL)))).toEqual([
         "real:flag",
@@ -299,6 +298,33 @@ describe("claimActions", () => {
         "syn:save_summary",
       ]);
       expect(real.emailId).not.toBe(synthetic.emailId);
+    });
+  });
+
+  test("filter synthetic with a test sender rule claims a planned move from that sender only", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const fromTestSender = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
+        category: "info",
+        createdAt: ago(2 * HOUR),
+        messageId: "<t-1@ses.test>",
+        from: "T@a.test",
+        actions: [ready("move")],
+      });
+      await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        messageId: "<b-1@firma.test>",
+        from: "boss@firma.test",
+        actions: [ready("move")],
+      });
+      const claimed = await claimActions(
+        trx,
+        a.ctx,
+        a.mailboxId,
+        claimOpts({ kind: "synthetic", testMail: { senders: ["t@a.test"] } })
+      );
+      expect(claimed.map((row) => `${row.type}:${row.email_id}`)).toEqual([`move:${fromTestSender.emailId}`]);
     });
   });
 
@@ -1516,9 +1542,9 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         createdAt: ago(HOUR),
       });
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "none" }))).toEqual([]);
-      expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "synthetic" })))).toEqual([
-        synthetic.draftId,
-      ]);
+      expect(
+        ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "synthetic", testMail: NO_TEST_SENDERS })))
+      ).toEqual([synthetic.draftId]);
       await trx.updateTable("actions").set({ locked_at: null }).execute();
       expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL)))).toEqual(
         [synthetic.draftId, real.draftId].sort()

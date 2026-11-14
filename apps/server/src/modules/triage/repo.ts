@@ -10,7 +10,7 @@ import { sql, type NotNull, type Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { mailKindFilter, type MailKind } from "../mail";
+import { mailKindFilter, type MailKind, type TestMailRule } from "../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -246,7 +246,7 @@ export async function listUnlabeled(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { limit: number; mail: MailKind }
+  opts: { limit: number; mail: MailKind; testMail: TestMailRule }
 ): Promise<UnlabeledResult[]> {
   const rows = await db
     .selectFrom((qb) =>
@@ -269,7 +269,7 @@ export async function listUnlabeled(
         .where("triage_results.org_id", "=", ctx.orgId)
         .where("emails.org_id", "=", ctx.orgId)
         .where("emails.mailbox_id", "=", mailboxId)
-        .where(mailKindFilter(opts.mail))
+        .where(mailKindFilter(opts.mail, opts.testMail))
         .where(({ not, exists, selectFrom }) =>
           not(
             exists(
@@ -298,7 +298,7 @@ export async function listLabeledResults(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { mail: MailKind }
+  opts: { mail: MailKind; testMail: TestMailRule }
 ): Promise<LabeledResult[]> {
   const rows = await db
     .with("latest_result", (qb) =>
@@ -319,7 +319,7 @@ export async function listLabeledResults(
         .where("triage_results.org_id", "=", ctx.orgId)
         .where("emails.org_id", "=", ctx.orgId)
         .where("emails.mailbox_id", "=", mailboxId)
-        .where(mailKindFilter(opts.mail))
+        .where(mailKindFilter(opts.mail, opts.testMail))
         .orderBy("triage_results.email_id")
         .orderBy("triage_results.created_at", "desc")
         .orderBy("triage_results.id", "desc")
@@ -362,7 +362,7 @@ export async function listUsageSince(
   ctx: TenantContext,
   mailboxId: string,
   since: Date,
-  opts: { mail: MailKind }
+  opts: { mail: MailKind; testMail: TestMailRule }
 ): Promise<UsageRow[]> {
   return db
     .selectFrom("triage_results")
@@ -381,7 +381,7 @@ export async function listUsageSince(
     .where("emails.mailbox_id", "=", mailboxId)
     .where("triage_results.model", "is not", null)
     .where("triage_results.created_at", ">=", since)
-    .where(mailKindFilter(opts.mail))
+    .where(mailKindFilter(opts.mail, opts.testMail))
     .orderBy("triage_results.created_at")
     .orderBy("triage_results.id")
     .$narrowType<{ model: NotNull }>()

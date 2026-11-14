@@ -24,6 +24,7 @@ import {
   type MailSender,
   type SmtpConnectOptions,
 } from "../../src/modules/mail";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials } from "../../src/modules/mail/repo";
@@ -105,6 +106,7 @@ function triageJob(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope) {
     pause: createLlmPause(),
     scope,
     batchSize: 10,
+    testMail: NO_TEST_SENDERS,
     dailyCap: 1000,
     now: () => NOW,
   });
@@ -411,7 +413,7 @@ describe("two organizations under scope all (D2)", () => {
       const realB = await addPendingMail(trx, b, "<r-b@x.test>");
 
       const llm = fakeLlm();
-      await triageJob(trx, llm, { kind: "synthetic" }).run();
+      await triageJob(trx, llm, { kind: "synthetic", testMail: NO_TEST_SENDERS }).run();
 
       expect(llm.prompts).toHaveLength(2);
       expect(await emailStatus(trx, syntheticA)).toBe("triaged");

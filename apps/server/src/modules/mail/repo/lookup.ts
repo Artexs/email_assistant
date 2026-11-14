@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
+import type { TestMailRule } from "../seed";
 
 import { mailKindFilter } from "./emails";
 import type { DbOrTrx } from "./shared";
@@ -12,7 +13,7 @@ export async function listThreadContext(
   threadKey: string,
   before: Date,
   excludeId: string,
-  opts: { syntheticOnly: boolean }
+  opts: { syntheticOnly: false | { testMail: TestMailRule } }
 ): Promise<{ from_address: string | null; subject: string | null; received_at: Date; body_excerpt: string | null }[]> {
   let query = db
     .selectFrom("emails")
@@ -22,7 +23,7 @@ export async function listThreadContext(
     .where("thread_key", "=", threadKey)
     .where("received_at", "<", before)
     .where("id", "!=", excludeId);
-  if (opts.syntheticOnly) query = query.where(mailKindFilter("synthetic"));
+  if (opts.syntheticOnly !== false) query = query.where(mailKindFilter("synthetic", opts.syntheticOnly.testMail));
   return query.orderBy("received_at", "desc").orderBy("id", "desc").limit(3).execute();
 }
 export async function listFolderEmailKeys(

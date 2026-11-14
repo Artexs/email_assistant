@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { simpleParser } from "mailparser";
 
-import { isSyntheticMessageId, renderSeedMessage, type SeedMessage } from "./seed";
+import { isSyntheticMessageId, isTestMail, NO_TEST_SENDERS, renderSeedMessage, type SeedMessage } from "./seed";
 
 const base: SeedMessage = {
   messageId: "<a1@example.test>",
@@ -121,5 +121,30 @@ describe("isSyntheticMessageId", () => {
     expect(isSyntheticMessageId("<a@ea-seed.test.evil>")).toBe(false);
     expect(isSyntheticMessageId("a@ea-seed.test")).toBe(false);
     expect(isSyntheticMessageId(null)).toBe(false);
+  });
+});
+
+describe("isTestMail", () => {
+  test("a synthetic Message-ID is test mail without any sender rule", () => {
+    expect(isTestMail({ messageIdHeader: "<a@ea-seed.test>", fromAddress: "x@y.test" }, NO_TEST_SENDERS)).toBe(true);
+  });
+
+  test("a sender in the rule is test mail, compared in lower case", () => {
+    expect(
+      isTestMail(
+        { messageIdHeader: "<a@ses.amazonaws.com>", fromAddress: "EA-TestMail-75wd@AgentMail.to" },
+        { senders: ["ea-testmail-75wd@agentmail.to"] }
+      )
+    ).toBe(true);
+  });
+
+  test("a mail with no Message-ID and no sender is real", () => {
+    expect(isTestMail({ messageIdHeader: null, fromAddress: null }, { senders: ["a@b.test"] })).toBe(false);
+  });
+
+  test("another sender with a real Message-ID is real", () => {
+    expect(
+      isTestMail({ messageIdHeader: "<a@x.test>", fromAddress: "boss@firma.test" }, { senders: ["a@b.test"] })
+    ).toBe(false);
   });
 });

@@ -11,6 +11,7 @@ import type { LinkedChat } from "../../src/modules/channels";
 import { APPROVAL_TEXTS } from "../../src/modules/channels/callbacks";
 import { accountPausedText } from "../../src/modules/channels/texts";
 import { delegationHooks, detectReply } from "../../src/modules/delegation";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { listLabeledResults } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 
@@ -142,7 +143,7 @@ describe("handleCallback", () => {
       expect(right.answer).toBe("Saved.");
       expect(await feedbackRows(trx, info)).toHaveLength(2);
 
-      const labeled = await listLabeledResults(trx, ctxA, a.mailboxId, { mail: "real" });
+      const labeled = await listLabeledResults(trx, ctxA, a.mailboxId, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(labeled.filter((row) => row.email_id === info)).toMatchObject([
         { verdict: "right", true_category: "info" },
       ]);

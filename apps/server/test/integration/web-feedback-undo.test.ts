@@ -4,6 +4,7 @@ import { feedbackResultSchema, undoResultSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import type { ActionsScope } from "../../src/modules/actions";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { triageRoutes } from "../../src/modules/triage";
 
@@ -83,7 +84,7 @@ async function setup() {
   return { org, mine, theirs };
 }
 
-function appWith(org: WebOrg, scope: ActionsScope = { kind: "synthetic" }) {
+function appWith(org: WebOrg, scope: ActionsScope = { kind: "synthetic", testMail: NO_TEST_SENDERS }) {
   return webTestApp({
     db,
     sessions: { owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId },

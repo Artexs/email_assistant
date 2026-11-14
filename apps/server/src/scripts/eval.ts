@@ -15,7 +15,7 @@ import {
   renderEvalReport,
   runEval,
 } from "../modules/triage";
-import { ConfigError, llmRoleTable, loadConfig, openAiReasoningEfforts } from "../platform/config";
+import { ConfigError, llmRoleTable, loadConfig, openAiReasoningEfforts, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError, llmProviderIds, type LlmRoleTable } from "../platform/llm";
 import { createLog } from "../platform/log";
@@ -122,7 +122,7 @@ async function runReal(
   try {
     await assertAppRole(db);
     const mail = options.synthetic ? "synthetic" : "real";
-    const rows = await listLabeledResults(db, { orgId }, mailboxId, { mail });
+    const rows = await listLabeledResults(db, { orgId }, mailboxId, { mail, testMail: testMailRule(config) });
     const report = buildRealReport(rows, {
       bar: options.bar,
       minKept: options["min-kept"],

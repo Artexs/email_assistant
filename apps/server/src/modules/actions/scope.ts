@@ -1,9 +1,9 @@
-import { isSyntheticMessageId } from "../mail";
+import { isTestMail, type TestMailRule } from "../mail";
 
 import type { MailboxClaimFilter, SendClaimFilter } from "./repo";
 
-// D8: `off` = no mailbox change; `synthetic` = synthetic mail only; `all` = real mail of every mailbox (the mode of each mailbox is the consent).
-export type ActionsScope = { kind: "off" } | { kind: "synthetic" } | { kind: "all" };
+// D8: `off` = no mailbox change; `synthetic` = test mail only (a synthetic Message-ID or a sender of `testMail`); `all` = real mail of every mailbox (the mode of each mailbox is the consent).
+export type ActionsScope = { kind: "off" } | { kind: "synthetic"; testMail: TestMailRule } | { kind: "all" };
 
 // D16: `off` = no send; `self` = only to the listed addresses; `all` = every send, always after an owner's tap.
 export type SendScope = { kind: "off" } | { kind: "self"; addresses: string[] } | { kind: "all" };
@@ -11,14 +11,17 @@ export type SendScope = { kind: "off" } | { kind: "self"; addresses: string[] } 
 // Pure. The committer and the Undo tap use it. `all` admits every mailbox.
 export function claimFilterFor(scope: ActionsScope): MailboxClaimFilter {
   if (scope.kind === "off") return { kind: "none" };
-  if (scope.kind === "synthetic") return { kind: "synthetic" };
+  if (scope.kind === "synthetic") return { kind: "synthetic", testMail: scope.testMail };
   return { kind: "all" };
 }
 
-// Pure. Does the claim filter let a mail with this Message-ID through? The Undo tap uses it (M9).
-export function scopeAdmits(filter: MailboxClaimFilter, messageIdHeader: string | null): boolean {
+// Pure. Does the claim filter let this mail through? The Undo tap uses it (M9).
+export function scopeAdmits(
+  filter: MailboxClaimFilter,
+  mail: { messageIdHeader: string | null; fromAddress: string | null }
+): boolean {
   if (filter.kind === "all") return true;
-  if (filter.kind === "synthetic") return isSyntheticMessageId(messageIdHeader);
+  if (filter.kind === "synthetic") return isTestMail(mail, filter.testMail);
   return false;
 }
 

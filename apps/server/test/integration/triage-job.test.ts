@@ -7,6 +7,7 @@ import { listActionsForEmail } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { ensureSyncFolders } from "../../src/modules/mail";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { createLlmPause, createTriageJob, triageOne, type TriageScope } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -92,6 +93,7 @@ function job(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope, at: Date 
     pause: createLlmPause(),
     scope,
     batchSize: 5,
+    testMail: NO_TEST_SENDERS,
     dailyCap: 1000,
     now: () => at,
   });
@@ -227,7 +229,7 @@ describe("createTriageJob", () => {
       const seeded = await insertTestEmail(trx, ctx, mailboxId, { message_id_header: "<s@ea-seed.test>" });
 
       const llm = fakeLlm();
-      await job(trx, llm, { kind: "synthetic" }).run();
+      await job(trx, llm, { kind: "synthetic", testMail: NO_TEST_SENDERS }).run();
 
       expect(llm.prompts).toHaveLength(1);
       expect((await emailRow(trx, real)).status).toBe("pending");
@@ -247,7 +249,7 @@ describe("createTriageJob", () => {
       });
 
       const llm = fakeLlm();
-      const triage = job(trx, llm, { kind: "synthetic" });
+      const triage = job(trx, llm, { kind: "synthetic", testMail: NO_TEST_SENDERS });
       await triage.run();
       await triage.run();
 
@@ -334,8 +336,9 @@ describe("createTriageJob: pause and errors", () => {
       db: trx,
       llm,
       pause: createLlmPause(),
-      scope: { kind: "synthetic" },
+      scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
       batchSize: 5,
+      testMail: NO_TEST_SENDERS,
       dailyCap: 1000,
       now: () => clock.at,
       ...overrides,
@@ -824,8 +827,9 @@ describe("createTriageJob: daily cap", () => {
         db: trx,
         llm,
         pause: createLlmPause(),
-        scope: { kind: "synthetic" },
+        scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
         batchSize: 5,
+        testMail: NO_TEST_SENDERS,
         dailyCap: 2,
         now: () => now,
       });
@@ -865,6 +869,7 @@ describe("createTriageJob: daily cap", () => {
         pause: createLlmPause(),
         scope: { kind: "all" },
         batchSize: 5,
+        testMail: NO_TEST_SENDERS,
         dailyCap: 1,
         now: () => now,
         onCapReached: (hookCtx, hookMailboxId, hookDayStart) =>
@@ -903,6 +908,7 @@ describe("createTriageJob: daily cap", () => {
         pause: createLlmPause(),
         scope: { kind: "all" },
         batchSize: 5,
+        testMail: NO_TEST_SENDERS,
         dailyCap: 1,
         now: () => now,
         onCapReached: () => {

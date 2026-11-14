@@ -6,6 +6,7 @@ import type { Transaction } from "kysely";
 
 import { settingsDeps } from "../../src/composition";
 import { getSettingsView, insertDefaultSettings, setMode, SettingsNotFoundError } from "../../src/modules/config";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import {
   goNoGoFor,
   insertFeedback,
@@ -93,7 +94,7 @@ describe("goNoGoFor", () => {
   test("no labelled mail: every category is no-go: too few", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const gates = await goNoGoFor(trx, s.ctx, s.mailboxId, NOW);
+      const gates = await goNoGoFor(trx, s.ctx, s.mailboxId, NOW, NO_TEST_SENDERS);
       for (const category of barCategories) {
         expect(gates[category]).toEqual({
           decision: "no-go: too few",
@@ -110,7 +111,7 @@ describe("goNoGoFor", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40 });
-      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW)).info).toEqual({
+      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW, NO_TEST_SENDERS)).info).toEqual({
         decision: "go",
         precision: 1,
         kept: 40,
@@ -125,7 +126,7 @@ describe("goNoGoFor", () => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40, confidence: 0.9 });
       await addLabeled(trx, s, { category: "info", n: 5, wrong: 5, confidence: 0.75 });
-      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW)).info).toMatchObject({
+      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW, NO_TEST_SENDERS)).info).toMatchObject({
         decision: "go",
         kept: 40,
         atConfidence: 0.8,
@@ -138,7 +139,7 @@ describe("goNoGoFor", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40, wrong: 4 });
-      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW)).info).toEqual({
+      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW, NO_TEST_SENDERS)).info).toEqual({
         decision: "no-go",
         precision: 0.9,
         kept: 40,
@@ -152,7 +153,7 @@ describe("goNoGoFor", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "spam", n: 12 });
-      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW)).spam).toMatchObject({
+      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW, NO_TEST_SENDERS)).spam).toMatchObject({
         decision: "no-go: too few",
         kept: 12,
         atConfidence: 0.5,
@@ -166,8 +167,8 @@ describe("goNoGoFor", () => {
       const a = await setup(trx);
       const b = await setup(trx);
       await addLabeled(trx, b, { category: "info", n: 40 });
-      expect((await goNoGoFor(trx, a.ctx, a.mailboxId, NOW)).info.decision).toBe("no-go: too few");
-      expect((await goNoGoFor(trx, b.ctx, b.mailboxId, NOW)).info.decision).toBe("go");
+      expect((await goNoGoFor(trx, a.ctx, a.mailboxId, NOW, NO_TEST_SENDERS)).info.decision).toBe("no-go: too few");
+      expect((await goNoGoFor(trx, b.ctx, b.mailboxId, NOW, NO_TEST_SENDERS)).info.decision).toBe("go");
     });
   });
 });
@@ -180,7 +181,7 @@ describe("setCategoryAutoWithGate", () => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40, wrong: 4 });
       const before = await policyRow(trx, s.mailboxId);
-      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, input);
+      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, input, NO_TEST_SENDERS);
       expect(result.kind).toBe("refused");
       if (result.kind === "refused") expect(result.gate.decision).toBe("no-go");
       expect(await policyRow(trx, s.mailboxId)).toEqual(before);
@@ -192,7 +193,13 @@ describe("setCategoryAutoWithGate", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40, wrong: 4 });
-      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, { ...input, force: true });
+      const result = await setCategoryAutoWithGate(
+        s.deps,
+        s.ctx,
+        s.mailboxId,
+        { ...input, force: true },
+        NO_TEST_SENDERS
+      );
       expect(result.kind).toBe("changed");
       const row = await policyRow(trx, s.mailboxId);
       expect(row.category_policy).toMatchObject({ info: { auto: true, threshold: 0.7 } });
@@ -206,7 +213,13 @@ describe("setCategoryAutoWithGate", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40 });
-      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, { ...input, force: true });
+      const result = await setCategoryAutoWithGate(
+        s.deps,
+        s.ctx,
+        s.mailboxId,
+        { ...input, force: true },
+        NO_TEST_SENDERS
+      );
       expect(result.kind).toBe("changed");
       expect((await policyRow(trx, s.mailboxId)).category_policy).toMatchObject({
         info: { auto: true, threshold: 0.5 },
@@ -220,7 +233,7 @@ describe("setCategoryAutoWithGate", () => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40, confidence: 0.9 });
       await addLabeled(trx, s, { category: "info", n: 5, wrong: 5, confidence: 0.75 });
-      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, input);
+      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, input, NO_TEST_SENDERS);
       expect(result.kind).toBe("changed");
       expect((await policyRow(trx, s.mailboxId)).category_policy).toMatchObject({
         info: { auto: true, threshold: 0.8 },
@@ -232,7 +245,7 @@ describe("setCategoryAutoWithGate", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await addLabeled(trx, s, { category: "info", n: 40 });
-      await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, { ...input, threshold: 0.9 });
+      await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, { ...input, threshold: 0.9 }, NO_TEST_SENDERS);
       expect((await policyRow(trx, s.mailboxId)).category_policy).toMatchObject({
         info: { auto: true, threshold: 0.9 },
       });
@@ -247,12 +260,18 @@ describe("setCategoryAutoWithGate", () => {
         .set({ category_policy: JSON.stringify({ spam: { auto: true, threshold: 0.7 } }) })
         .where("mailbox_id", "=", s.mailboxId)
         .execute();
-      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, {
-        category: "spam",
-        auto: false,
-        force: false,
-        actor: "test",
-      });
+      const result = await setCategoryAutoWithGate(
+        s.deps,
+        s.ctx,
+        s.mailboxId,
+        {
+          category: "spam",
+          auto: false,
+          force: false,
+          actor: "test",
+        },
+        NO_TEST_SENDERS
+      );
       expect(result).toMatchObject({ kind: "changed", gate: null });
       expect((await policyRow(trx, s.mailboxId)).category_policy).toMatchObject({ spam: { auto: false } });
     });
@@ -263,12 +282,18 @@ describe("setCategoryAutoWithGate", () => {
       const box = await createOrgWithMailbox(trx);
       const ctx = { orgId: box.orgId };
       const deps = settingsDeps(trx, () => NOW);
-      const off = setCategoryAutoWithGate(deps, ctx, box.mailboxId, {
-        category: "info",
-        auto: false,
-        force: false,
-        actor: "test",
-      });
+      const off = setCategoryAutoWithGate(
+        deps,
+        ctx,
+        box.mailboxId,
+        {
+          category: "info",
+          auto: false,
+          force: false,
+          actor: "test",
+        },
+        NO_TEST_SENDERS
+      );
       await expect(off).rejects.toBeInstanceOf(SettingsNotFoundError);
       await expect(off).rejects.toThrow("no mailbox_settings row");
       await expect(getSettingsView(deps, ctx, box.mailboxId)).rejects.toBeInstanceOf(SettingsNotFoundError);
@@ -294,12 +319,18 @@ describe("committed rows", () => {
         .execute();
       const deps = settingsDeps(db, () => NOW);
       await Promise.all([
-        setCategoryAutoWithGate(deps, ctx, created.mailboxId, {
-          category: "spam",
-          auto: false,
-          force: false,
-          actor: "test",
-        }),
+        setCategoryAutoWithGate(
+          deps,
+          ctx,
+          created.mailboxId,
+          {
+            category: "spam",
+            auto: false,
+            force: false,
+            actor: "test",
+          },
+          NO_TEST_SENDERS
+        ),
         setMode(deps, ctx, created.mailboxId, { mode: "assist", keepSwitches: false, actor: "test" }),
       ]);
       const row = await db

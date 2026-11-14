@@ -14,6 +14,7 @@ import {
   type ClaimedAction,
 } from "../../src/modules/actions";
 import { INBOX, syncMailbox } from "../../src/modules/mail";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import {
   createFakeMailProvider,
   type FakeMailProvider,
@@ -275,7 +276,9 @@ describe("undo: the reverse rows", () => {
       const mail = await insertMail(trx, s, [{ type: "flag", status: "applied" }]);
 
       expect(await undo(trx, s.ctx, mail.emailId, { ...opts(s), scope: { kind: "off" } })).toEqual({ kind: "held" });
-      expect(await undo(trx, s.ctx, mail.emailId, { ...opts(s), scope: { kind: "synthetic" } })).toEqual({
+      expect(
+        await undo(trx, s.ctx, mail.emailId, { ...opts(s), scope: { kind: "synthetic", testMail: NO_TEST_SENDERS } })
+      ).toEqual({
         kind: "held",
       });
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", s.mailboxId).execute();
@@ -292,7 +295,9 @@ describe("undo: the reverse rows", () => {
       const s = await setup(trx);
       const mail = await insertMail(trx, s, [{ type: "flag", status: "applied" }], "<a@ea-seed.test>");
 
-      expect(await undo(trx, s.ctx, mail.emailId, { ...opts(s), scope: { kind: "synthetic" } })).toEqual({
+      expect(
+        await undo(trx, s.ctx, mail.emailId, { ...opts(s), scope: { kind: "synthetic", testMail: NO_TEST_SENDERS } })
+      ).toEqual({
         kind: "started",
         created: 1,
       });

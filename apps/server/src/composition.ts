@@ -12,7 +12,7 @@ import { cancelPendingApprovalRequestsOfClosedSends, SENDER_STALE_MS } from "./m
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
 import { composeMessage, mailboxHasUidplus, openImapProvider, openSmtpSender } from "./modules/mail";
-import { sendTestAddresses, type Config } from "./platform/config";
+import { sendTestAddresses, testMailRule, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { DB, Db, TenantContext } from "./platform/db";
 import { createLog } from "./platform/log";
@@ -27,8 +27,8 @@ export function actionsScope(config: Config): ActionsScope {
     return { kind: "off" };
   }
   if (config.ACTIONS_SCOPE === "synthetic") {
-    log.info("actions committer applies mailbox changes to synthetic mail only");
-    return { kind: "synthetic" };
+    log.info("actions committer applies mailbox changes to test mail only");
+    return { kind: "synthetic", testMail: testMailRule(config) };
   }
   log.warn(
     "actions committer applies mailbox changes to the real mail of every active mailbox, by its mode (ACTIONS_SCOPE=all)"

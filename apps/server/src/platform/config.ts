@@ -146,6 +146,8 @@ const baseSchema = z.object({
   SEND_SCOPE: z.enum(["off", "self", "all"]).default("off"),
   // Comma-separated; needed with SEND_SCOPE=self.
   SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // Comma-separated sender addresses whose mail counts as test mail (D1 of F097). Empty = none.
+  TEST_SENDER_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Send limits per mailbox (PD-044); a send over a limit waits. Integers 1 to 10 000; empty = the default.
   SEND_LIMIT_MAILBOX_HOUR: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(20)),
   SEND_LIMIT_MAILBOX_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(100)),
@@ -267,6 +269,18 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
         message: "needed when SEND_SCOPE is self: one or more valid addresses",
       });
     }
+  }
+  if (
+    !(config.TEST_SENDER_ADDRESSES ?? "")
+      .split(",")
+      .filter((item) => item.trim() !== "")
+      .every((item) => addressPattern.test(item.trim()))
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["TEST_SENDER_ADDRESSES"],
+      message: "must be a comma list of valid addresses",
+    });
   }
   if (config.OPERATOR_TELEGRAM_CHAT_ID !== undefined && config.TELEGRAM_BOT_TOKEN === undefined) {
     ctx.addIssue({ code: "custom", path: ["OPERATOR_TELEGRAM_CHAT_ID"], message: "needs TELEGRAM_BOT_TOKEN" });
@@ -405,6 +419,11 @@ export function authMailSettings(config: Config): AuthMailSettings | null {
 
 export function sendTestAddresses(config: Config): string[] {
   return parseAddressList(config.SEND_TEST_ADDRESSES);
+}
+
+// Structural twin of `TestMailRule` in the mail module: `platform` does not import `modules`.
+export function testMailRule(config: Config): { senders: string[] } {
+  return { senders: parseAddressList(config.TEST_SENDER_ADDRESSES) };
 }
 
 /** The send limits (PD-044). */

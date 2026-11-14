@@ -4,7 +4,7 @@ import type { Category } from "@ea/core";
 import { z } from "zod";
 
 import { listForLabeling, parseLabelInput, recordFeedback, type LabelItem } from "../modules/triage";
-import { loadConfig } from "../platform/config";
+import { loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
@@ -122,6 +122,7 @@ async function main(): Promise<number> {
     const items = await listForLabeling(db, ctx, options.mailboxId, {
       limit: options.limit,
       mail: options.synthetic ? "synthetic" : "real",
+      testMail: testMailRule(config),
     });
     let labeled = 0;
     let skipped = 0;

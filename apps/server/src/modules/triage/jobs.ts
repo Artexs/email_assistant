@@ -8,7 +8,15 @@ import type { LlmClient } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { getMailboxSettings, listSenderRules } from "../config";
 import { listDelegates } from "../delegation";
-import { claimEmails, getJunkFolderPath, getMailbox, listSyncTargets, releaseEmail, type ClaimedEmail } from "../mail";
+import {
+  claimEmails,
+  getJunkFolderPath,
+  getMailbox,
+  listSyncTargets,
+  releaseEmail,
+  type ClaimedEmail,
+  type TestMailRule,
+} from "../mail";
 import { getOrganization, isOrgSuspended } from "../tenancy";
 
 import type { LlmPause } from "./pause";
@@ -21,14 +29,16 @@ const RETRY_WAIT_MS = 5 * 60_000;
 
 const modeSchema = z.enum(mailboxModes);
 
-// `synthetic`: only the seeded test mail of every mailbox. `all`: all mail of every active mailbox.
-export type TriageScope = { kind: "synthetic" } | { kind: "all" };
+// `synthetic`: only test mail (seeded, or from a test sender) of every mailbox. `all`: all mail of every active mailbox.
+export type TriageScope = { kind: "synthetic"; testMail: TestMailRule } | { kind: "all" };
 
 export interface TriageJobDeps {
   db: Db | Transaction<DB>;
   llm: LlmClient;
   pause: LlmPause;
   scope: TriageScope;
+  // Thread context of a test mail comes from test mail only.
+  testMail: TestMailRule;
   batchSize: number;
   dailyCap: number;
   now(): Date;
@@ -118,7 +128,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               now,
               limit: deps.batchSize,
               staleBefore: new Date(now.getTime() - STALE_AFTER_MS),
-              syntheticOnly: deps.scope.kind === "synthetic",
+              syntheticOnly: deps.scope.kind === "synthetic" ? { testMail: deps.scope.testMail } : false,
             });
             for (const [index, email] of claimed.entries()) {
               current = index;
