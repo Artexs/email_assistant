@@ -17,6 +17,30 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Company sign-in: the IdP client secret is stored in clear in `sso_providers` (F119) · security · new
+- Choice: the OIDC plugin reads the client secret from `sso_providers.oidc_config` itself, so it stays in clear there. The secret is never exported or logged. Options at gate G1: an Entra certificate, or a decrypt plugin.
+- Why: the plugin has no read hook. A decrypt plugin changes every auth path.
+- Undo: change the storage at G1, before the build goes on.
+- Source: `spec/features/planned/F119-e7-t7-identity-b-oidc/questions.md` Q1.
+
+### 2026-11-14 · Company sign-in asks no TOTP code; the operator console refuses it (F119) · security · new
+- Choice: an SSO sign-in asks no second factor, because the IdP owns it. SSO sessions cannot open the operator console (`403 password_sign_in_required`). "SSO required" refuses a password with the wrong-password answer, and only the operator reopens passwords.
+- Why: the IdP already did the second factor, and the console needs the stronger password plus TOTP path.
+- Undo: add a TOTP step after SSO in a later ticket.
+- Source: `spec/features/planned/F119-e7-t7-identity-b-oidc/questions.md` Q2, Q5.
+
+### 2026-11-14 · Company sign-in setup: a new CLI adds members, `--require on` has prerequisites (F119) · scope · new
+- Choice: `org:member --add` creates members with no password, and `org:member --end-sessions` ends a member's sessions. `--require on` needs a proved domain, the flag on, a break-glass owner with TOTP, every other member's e-mail on the domain, and it ends old password sessions.
+- Why: no just-in-time accounts exist, and ADR 0026 point 7 needs a way to end sessions.
+- Undo: change the prerequisites in stage 08.
+- Source: `spec/features/planned/F119-e7-t7-identity-b-oidc/questions.md` Q3, Q4, Q7.
+
+### 2026-11-14 · Entra test tenant costs about 7 USD a month after the trial (F119) · money · new
+- Choice: the Entra test tenant is the M365 Business Basic seat that F117 also needs. The owner buys it before stage 15.
+- Why: the real end-to-end check needs a real Entra tenant.
+- Undo: skip stage 15 and close the ticket without the real check.
+- Source: `spec/features/planned/F119-e7-t7-identity-b-oidc/questions.md` Q10.
+
 ### 2026-11-14 · Legal drafts name no person, company, bucket region or breach register place (F107) · privacy · new
 - Choice: the drafts use only the placeholders `<provider name>`, `<address>`, `<contact>`, `<B2 region>` and `<breach register location>`. No repo file gives them.
 - Why: the repo is public, and no file states the B2 region.
