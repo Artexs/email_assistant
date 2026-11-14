@@ -189,7 +189,7 @@
         {
           "from": "oliver.pemberton@kordelan.test",
           "subject": "Export pricing – lane update",
-          "body": "Dear Mr Szalewski,\n\nwe have new tariffs for the Baltic and Nordic lanes. I will send details later this week. Would you like us to include them in the next joint offer?\n\nDaniel"
+          "body": "Wiktor,\n\nthe carriers have new tariffs for the Baltic and Nordic lanes. I will send details later this week. Shall we share them with Daniel for the next joint offer?\n\nOliver"
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
@@ -284,12 +284,12 @@
         {
           "from": "karin.lindqvist@nordicfoods-trade.test",
           "subject": "Customs invoice – broker",
-          "body": "Wiktor, got the broker's invoice for the last clearances, 3 shipments. Looks off. Will forward it.\n\nOliver"
+          "body": "Dear Mr Szalewski,\n\nplease find the customs broker's invoice for the last three clearances. Could you confirm that the figures match your records?\n\nKarin Lindqvist"
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
           "subject": "Re: Customs invoice – broker",
-          "body": "Send it over, we will have it checked.\n\nWiktor"
+          "body": "Karin, thank you. We will review it and come back to you.\n\nWiktor"
         }
       ],
       "attachments": []
