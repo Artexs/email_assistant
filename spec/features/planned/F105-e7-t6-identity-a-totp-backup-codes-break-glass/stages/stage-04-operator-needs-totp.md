@@ -65,7 +65,7 @@ Two steps. About 180 changed lines.
     1. `http.test.ts` `requireOperator`: an operator with `twoFactorEnabled: true` → 200; an operator with `false` → 403 `{ error: "two_factor_required" }` and one captured line holding `operator_two_factor_required user_id=u-op`; a non-operator with `false` → 404 `not_found` (not 403).
     2. `web-operator-page.test.ts`: an operator (the assistant of `webOrg`, as the file sets it) listed in `twoFactorOff` → every form of `FORMS` answers 302 with `location: /settings?two_factor=required` and `cache-control: private, no-store`; the owner (no operator) still gets the 404 page in every form; the same operator without `twoFactorOff` still gets the page (200).
     3. `web-operator-page.test.ts` (or `web-operator.test.ts`, whichever builds the app with `operatorUserIds`): `GET /api/operator/flags` for the operator in `twoFactorOff` → 403 `two_factor_required`; for the owner → 404.
-    4. `GET /api/me` of the operator in `twoFactorOff` still answers `operator: true` (the nav keeps its link; the page sends the user to the settings).
+    4. `web-me.test.ts` (it builds the real tenancy routes): `GET /api/me` of an operator in `twoFactorOff` still answers `operator: true` (the nav keeps its link; the page sends the user to the settings).
   - Check: `bun test apps/server/src/platform/http.test.ts apps/server/test/integration/web-operator-page.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/web-me.test.ts`; `bun run lint`.
   - Done when: tests 1–4 pass and the old cases pass.
   - Out of scope: the settings page text for `?two_factor=required` (stage 10); operator CLIs (no change).

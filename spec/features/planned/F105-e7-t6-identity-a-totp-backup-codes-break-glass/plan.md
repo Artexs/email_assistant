@@ -48,7 +48,7 @@ The owner's words (word for word):
 
 ## Facts checked (2026-11-14; `better-auth` 1.7.18, `@better-auth/utils` 0.5.1; probes on a throwaway Postgres 18.6 cluster with every repo migration applied, plus the draft SQL of stage 01)
 
-- **F1 Plugin schema.** The `two-factor` plugin adds `user.twoFactorEnabled` (boolean, default false) and a model `twoFactor` with `secret`, `backupCodes`, `userId`, `verified`, `failedVerificationCount`, `lockedUntil` (`plugins/two-factor/schema.mjs`). The option `schema: { user: { fields: { twoFactorEnabled: "two_factor_enabled" } }, twoFactor: { modelName: "auth_two_factors", fields: { userId: "user_id", backupCodes: "backup_codes", failedVerificationCount: "failed_verification_count", lockedUntil: "locked_until" } } }` works with the `pg` pool and the Kysely adapter (probe P1: enable, verify, sign-in, backup code, disable all passed; `incrementOne` works). `tsc --strict` accepts these options and the client calls of D15 (probe P5).
+- **F1 Plugin schema.** The `two-factor` plugin adds `user.twoFactorEnabled` (boolean, default false) and a model `twoFactor` with `secret`, `backupCodes`, `userId`, `verified`, `failedVerificationCount`, `lockedUntil` (`plugins/two-factor/schema.mjs`). The option `schema: { user: { fields: { twoFactorEnabled: "two_factor_enabled" } }, twoFactor: { modelName: "auth_two_factors", fields: { userId: "user_id", backupCodes: "backup_codes", failedVerificationCount: "failed_verification_count", lockedUntil: "locked_until" } } }` works with the `pg` pool and the Kysely adapter (probe P1: enable, verify, sign-in, backup code, disable all passed; `incrementOne` works). `tsc --strict` accepts these options, the client calls of D15, `auth.api.viewBackupCodes`, `getSession().user.twoFactorEnabled`, and a trailing plugin typed `satisfies BetterAuthPlugin` that uses `createAuthMiddleware`, `ctx.getSignedCookie`, `adapter.findOne` and `adapter.deleteMany` (probe P5).
 - **F2 Enrolment.** `POST /two-factor/enable { password }` (a session and the password; `method` defaults to `totp`) returns `{ method: "totp", totpURI, backupCodes }` and writes the row with `verified: false`; `users.two_factor_enabled` stays false. The URI is `otpauth://totp/Email Assistant:<email>?secret=<base32, 52 characters>&issuer=…&digits=6&period=30`. `POST /two-factor/verify-totp { code }` with the session sets `verified: true` and `two_factor_enabled: true` and replaces the session (a new session row and cookie). A second `enable` while the row is verified answers `400 TOTP_ALREADY_ENABLED`; while it is not verified, it overwrites the row. `method: "otp"` answers `400 OTP_NOT_CONFIGURED` (no `sendOTP`). The secret and the backup codes are stored encrypted with the auth secret (`symmetricEncrypt`, `storeBackupCodes: "encrypted"` default).
 - **F3 Sign-in with a second factor.** `POST /sign-in/email` with the right password for a user with TOTP answers `200 { twoFactorRedirect: true, twoFactorMethods: ["totp"] }`, sets only the signed cookie `ea.two_factor` (10 min), and deletes the session it made. Hook order (`api/dispatch.mjs` `getHooks`): the user `hooks.after` runs first and still sees `ctx.context.newSession` (with `user.twoFactorEnabled: true`); the plugin's after hook then deletes the session and sets `newSession` to null; a plugin listed after `twoFactor` sees `newSession: null` and `returned.twoFactorRedirect: true`. `databaseHooks.session.create.after` fires with `ctx.path = "/sign-in/email"` before the plugin deletes the session (probe P1, case 7).
 - **F4 The code step.** `POST /two-factor/verify-totp { code, trustDevice? }` and `POST /two-factor/verify-backup-code { code, trustDevice? }` with the `ea.two_factor` cookie make the session (`databaseHooks.session.create` with the verify path). In an after hook, `ctx.context.session` is null on this sign-in path and set on the enrolment path; `ctx.context.newSession` is set after success on both (probe P2). A backup code works once (`401 INVALID_BACKUP_CODE` on reuse; 9 left after one use, `auth.api.viewBackupCodes({ body: { userId } })`, server only). The same TOTP code works again inside its window (no replay guard; probe P1 case 9). Codes match at ±1 step of 30 s (`@better-auth/utils/otp` `verifyTOTP`, `window = 1`), with `Date.now()`.
@@ -64,7 +64,7 @@ The owner's words (word for word):
 ## Not verified (the stage that checks it)
 
 - The plugin's behaviour under two parallel enrolments of one user: stage 01 adds `UNIQUE (user_id)`, so the second insert fails; stage 02 test 14 checks that the answer is a 500 with no second row and no log line with a secret.
-- The QR code scans in a real authenticator app (Google Authenticator, Aegis, 1Password): stage 14 (owner step U2 on the owner's phone).
+- The QR code scans in a real authenticator app (Google Authenticator, Aegis, 1Password): stage 14 (owner step U1 on the owner's phone).
 - `uqr` in the Astro build (ESM import in a client island): stage 09 runs `bun run web:build`.
 
 ## Decisions (D1–D27)
@@ -179,8 +179,9 @@ No owner checkpoint (owner decision 2026-11-13). Owner steps only for the owner'
 
 | #   | Step | When |
 | --- | ---- | ---- |
-| U1  | None for the shared dev DB: the coordinator runs `bun run db:migrate` in the main checkout after stage 01 lands (no `test:int` running there). | after stage 01 |
-| U2  | Sign in to the panel on the VPS, turn on two-factor sign-in in Settings → Account with your phone's authenticator app, keep the backup codes. Until then the operator console answers "two-factor sign-in required" for you. | stage 14, after the deploy |
+| U1  | Sign in to the panel on the VPS, turn on two-factor sign-in in Settings → Account with your phone's authenticator app, keep the backup codes. Until then the operator console sends you to the settings page. | stage 14, after the deploy |
+
+The shared dev DB needs `bun run db:migrate` after stage 01 lands; the coordinator runs it in the main checkout (§ How to run, item 5), not the owner.
 
 ## Review
 
@@ -254,7 +255,7 @@ Advisory overlaps with tickets in build (start the stages anyway; on a land conf
 
 3. Stage 01: no other migration stage of any ticket in build. Stage 09: no other `bun.lock` change of any ticket in build.
 4. When the job finishes: read its final message and `/tmp/f105-sNN/*.log`. For the stages of § Review, spawn the review job and wait for it; a finding → `limen continue <job-id> "<fix>"` with the same engine flags, then review again (at most 2 rounds, then the owner decides).
-5. Land: `limen land <job-id> --yes --keep-open` (stage 14: the coordinator closes the ticket with `limen ticket done F105` after its checks). Drop the job DB from the main checkout: `bun run db:worktree <YYYY-MM-DD>-<hash> --drop` (stage 11 also `f105_s11_e2e`). After stage 01 lands: `bun run db:migrate` in the main checkout (U1).
+5. Land: `limen land <job-id> --yes --keep-open` (stage 14: the coordinator closes the ticket with `limen ticket done F105` after its checks). Drop the job DB from the main checkout: `bun run db:worktree <YYYY-MM-DD>-<hash> --drop` (stage 11 also `f105_s11_e2e`). After stage 01 lands: `bun run db:migrate` in the main checkout (no `test:int` running there).
 6. Stage 12: spawn it only when F099 stages 12 and 13 are on `master`. If stage 13 is ready first, build 13 and 14 and leave 12 for later; stage 12 then deploys with the next VPS deploy of any ticket, and the ticket closes after stage 12 lands.
 7. Workers often break the one-`&&` proof form. Accept a check when its saved log shows the pass. A check with no proof at all → `limen continue`.
 
