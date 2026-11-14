@@ -1,0 +1,330 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-028",
+  "cases": [
+    {
+      "id": "b-rep-0056",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowa rekrutacja na stanowisko kierownika zmiany: potrzebna zgoda",
+      "body": "Cześć Wiktor,\n\npracownik zmiany dziennej w Gdyni złożył wypowiedzenie i muszę zdecydować, jak szukać następcy. Widzę dwie ścieżki. Pierwsza to awans wewnętrzny jednego z brygadzistów, co jest szybkie, ale zostawi lukę na niższym stanowisku. Druga to rekrutacja zewnętrzna, która potrwa około sześciu tygodni i da nam doświadczoną osobę z rynku.\n\nMam dwóch kandydatów wewnętrznych i trzy aplikacje z zewnątrz, ale żadnej z nich nie chcę kontynuować bez Twojej zgody. Które rozwiązanie wybierasz?\n\nDaj znać do czwartku, bo okres wypowiedzenia mija pod koniec lutego.\n\nRafał",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0057",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board dinner: your preference",
+      "body": "Hi Wiktor,\n\ndo you prefer the board dinner on Wednesday evening or on Thursday after the meeting? I must tell the restaurant tomorrow.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0058",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint tender: your decision on the bid bond",
+      "body": "Dear Mr Szalewski,\n\nthe joint tender requires a bid bond of 50 000 EUR. Would Kordelan provide half of it? I need your answer by Friday.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0059",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kryteria oceny ofert w przetargu sieci",
+      "body": "Dzień dobry Panie Wiktorze,\n\nzbliża się termin składania ofert w przetargu na obsługę logistyczną naszej sieci i chcę Pana zapytać o konkretną rzecz, zanim zamknę dokumentację.\n\nDo tej pory oceniamy oferty według trzech kryteriów: cena z wagą 60 procent, terminowość dostaw z wagą 30 procent i jakość obsługi reklamacji z wagą 10 procent. Mój zarząd chce zmienić te proporcje i podnieść wagę terminowości do 40 procent kosztem ceny. Powód jest prosty: w ostatnim kwartale mieliśmy sześć opóźnionych dostaw i wiele pretensji od właścicieli sklepów.\n\nWiem, że to Panu nie musi się podobać, bo Pana firma jest mocna cenowo. Jednak chcę usłyszeć wprost, co Pan o tym myśli. Czy taka zmiana jest dla Pana akceptowalna? A jeśli tak, czy jest Pan gotów wpisać do oferty kary umowne za opóźnienia powyżej dwóch godzin?\n\nPotrzebuję tej informacji, aby nie zmieniać dokumentów po terminie składania ofert. Odpowiedź proszę przesłać najpóźniej do poniedziałku do 12:00. Jeśli odpowiedź będzie niejasna, uznam, że zgadza się Pan na nowe kryteria. Dodam, że Pana konkurenci już dostali podobne pytanie, ale ich odpowiedzi mnie nie przekonały, dlatego liczę na szczerą i konkretną odpowiedź. Zależy mi na dalszej współpracy, ale warunki muszą być jasne dla obu stron.\n\nGenowefa Jastrzebska",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0060",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Strategia na przetargi regionalne w tym roku",
+      "body": "Szanowny Panie Prezesie,\n\nw tym roku planujemy z moim zespołem kilkanaście przetargów regionalnych, w których Kordelan i Baltic Freight Partners mogłyby występować wspólnie. Chcę poznać Pańskie zdanie na temat strategii, zanim zaczniemy przygotowywać oferty.\n\nWidzę dwa podejścia. Pierwsze zakłada, że startujemy w każdym przetargu, w którym mamy szansę na wygraną, nawet przy niskich marżach, aby budować pozycję na rynku. Drugie zakłada, że wybieramy trzy do czterech przetargów rocznie, ale takich, w których marża przekracza dziesięć procent.\n\nPierwsze podejście wymaga większego zaangażowania ludzi i może prowadzić do przeciążenia zespołów ofertowych. Drugie jest bezpieczniejsze, ale ogranicza nas do mniejszej liczby kontraktów.\n\nKtóry kierunek Pan popiera? Proszę też o wskazanie, czy akceptuje Pan wspólny budżet na przygotowanie ofert w wysokości około 20 000 EUR rocznie, dzielony po połowie.\n\nDobrze byłoby mieć Pańską odpowiedź w ciągu dwóch tygodni, żeby zespoły mogły zaplanować pracę na pierwsze półrocze. Chętnie omówię to także na spotkaniu, jeśli woli Pan rozmowę od wymiany wiadomości. Mój zespół ma już wstępną listę dwunastu przetargów, które moglibyśmy rozważyć, i mogę ją Panu przesłać razem z oszacowaniem pracochłonności. Chciałbym uniknąć sytuacji, w której wspólne oferty będą przygotowywane w pośpiechu, na kilka dni przed terminem.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0061",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawa celna: szybka decyzja",
+      "body": "Szanowny Panie Prezesie,\n\nczy mój broker może złożyć zgłoszenie celne w imieniu Kordelan dla przesyłki z poniedziałku? Proszę o odpowiedź jeszcze dziś.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0062",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Annual board travel plan: need your view",
+      "body": "Hi Wiktor,\n\nI am putting together the travel plan of the board for the year and I would like your view before I send it to the others. The plan has three trips: the supplier visit in Germany in April, the site visit at the Gdynia warehouse in June, and the strategy retreat in September.\n\nMy question is about the retreat. Last year we held it in Sopot for two days, and the feedback was mixed, because the programme was too tight. This year I would like to move it to a quieter place, for example in the Mazury region, and extend it to three days. The extra day would cost about 15 000 PLN for the whole group. I do not want to propose it if you think the board will not accept the cost.\n\nI would also like to know whether the April trip to Germany works for you. I know that the trade fair season is busy, and I want to avoid the second week of April, when your calendar is usually full.\n\nCan you tell me whether the extension of the retreat is acceptable and whether the first or the third week of April suits you better? Please answer by the end of next week, so that the secretariat can start the bookings.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0063",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyniki za grudzień: oczekuję wyjaśnienia",
+      "body": "Panie Prezesie,\n\nwyniki za grudzień pokazują spadek marży na przewozach krajowych o dwa punkty procentowe. Proszę o pisemne wyjaśnienie, co było przyczyną: koszty paliwa, opóźnienia dostaw czy zmiany w cennikach.\n\nOczekuję także informacji, czy zarząd widzi ryzyko dalszego spadku w pierwszym kwartale. Odpowiedź w kilku zdaniach, z liczbami, proszę przesłać do końca tygodnia, przed przygotowaniem materiałów dla rady, która zbiera się pod koniec miesiąca.\n\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0064",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Brokerzy celni: wybór partnera dla eksportu do Szwecji",
+      "body": "Szanowny Panie Prezesie,\n\ndo obsługi eksportu do Szwecji mamy dwóch możliwych brokerów celnych. Pierwszy jest tańszy o 15 procent, ale odprawia tylko w dni robocze do 16:00. Drugi pracuje także w soboty, ale jego prowizja jest wyższa.\n\nPonieważ część Państwa przesyłek odjeżdża w piątki późnym popołudniem, widzę większe ryzyko opóźnień przy pierwszym wariancie. Chciałbym jednak poznać Pańską opinię, zanim wybierzemy partnera.\n\nKtóry broker bardziej odpowiada Państwa planom? Odpowiedź pisemna do 26.01.2027 pozwoli nam rozpocząć współpracę od lutego.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0065",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacje: oczekuję Pańskiej osobistej decyzji",
+      "body": "Panie Wiktorze,\n\npiszę do Pana bezpośrednio, bo sprawa reklamacji przekroczyła już cierpliwość mojego zarządu. W grudniu zgłosiliśmy siedem reklamacji dotyczących uszkodzonych lub niekompletnych dostaw. Do dziś zamknięto tylko dwie, a pozostałe pięć wisi bez odpowiedzi, choć obiecano nam rozstrzygnięcie w ciągu dziesięciu dni roboczych.\n\nŁączna wartość spornych towarów to około 23 400 PLN. To dla nas poważna kwota, zwłaszcza że część produktów miała krótki termin ważności i trafiła do utylizacji. Moi kierownicy sklepów pytają mnie, czy możemy jeszcze polegać na Państwa dostawach w sezonie.\n\nChcę usłyszeć od Pana trzy rzeczy. Po pierwsze, kiedy wszystkie pozostałe reklamacje zostaną rozpatrzone. Po drugie, czy uzna Pan je w całości, czy tylko części. Po trzecie, kto po Państwa stronie odpowiada za to, aby sytuacja się nie powtórzyła.\n\nJeśli do 21.01.2027 nie otrzymam tych odpowiedzi, wystąpię o rabat na przyszłe zamówienia i rozważę zmianę dostawcy dla części asortymentu. Wolałabym tego uniknąć, bo współpraca była dotąd dobra, a Pana ludzie na magazynie zwykle się starają. Problem leży w tym, że nikt nie bierze odpowiedzialności za sprawy, które trafiają do Państwa działu reklamacji, i muszę każdą z nich przypominać osobnym telefonem.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0066",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Prośba o zgodę na ogłoszenie",
+      "body": "Cześć Wiktor,\n\nczy mogę opublikować ogłoszenie o pracę dla magazynierów w Tczewie jeszcze w tym tygodniu? Potrzebuję Twojego tak lub nie do środy.\n\nRafał",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0067",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okno rozładunku na rampie C: zmiana od lutego",
+      "body": "Cześć Wiktor,\n\nmamy problem z rampą C w Gdyni. Od lutego remont nawierzchni skróci okno rozładunku z sześciu do czterech godzin dziennie, a to oznacza, że część dostaw trzeba przesunąć. Najbardziej dotknie to klienta z branży meblowej i dostawy od Nordic Foods.\n\nWidzę dwie możliwości: zwiększyć obsadę na rampie A kosztem sortowania, albo poprosić klientów o przesunięcie ich okien o godzinę. Pierwsza opcja kosztuje nas około 9 000 PLN miesięcznie, druga wymaga rozmów z klientami, którzy mogą się zgodzić lub nie.\n\nCo wybierasz? Potrzebuję Twojej decyzji do piątku, żeby wysłać klientom informację z odpowiednim wyprzedzeniem.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0068",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dinner on Tuesday?",
+      "body": "Wiktor,\n\nare you free for dinner on Tuesday after the board call? I want to talk about the Munich trip. Please let me know by tomorrow.\n\nZbigniew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0069",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Signing meeting for the framework agreement",
+      "body": "Dear Mr Szalewski,\n\ncan you attend the signing of the framework agreement in Malmo on 05.02.2027, or should we sign by courier? Please confirm by Friday.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0070",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Export certificates: one more question to you",
+      "body": "Dear Mr Szalewski,\n\nyour sales coordinator answered my earlier questions about the export certificates and the shipping documents, and I am grateful for his quick reply. One point remains that he could not decide, so I turn to you.\n\nOur customs broker in Sweden asks whether Kordelan can issue a single combined certificate of origin for all consignments of a month, instead of one certificate for each shipment. This would save our broker about two hours of work per week, and it would also reduce the number of documents that our warehouse team must check at the gate. On your side, the combined certificate means that the certificate is issued after the last shipment of the month, so the earliest consignments would travel without it.\n\nI understand that this may not be allowed by the authorities in the way that we imagine. Therefore I would like to ask you to check the rules with your export team and to tell me your answer: is a monthly combined certificate possible, yes or no? If not, please indicate whether you could prepare the certificates in a batch at the start of the week, which would be an acceptable compromise.\n\nWe plan to apply the new routine from the first shipment in March. To prepare the instructions for the broker and the warehouse, we need your answer by 19.02.2027.\n\nThank you for your help, which we truly appreciate.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Re: Export certificates",
+          "body": "Dear Karin, the certificate of origin is issued per consignment in our process. The rules for a combined certificate would need confirmation from the customs office, which I cannot give myself. Piotr Lewandrowski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0072",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Cennik na meble: czy rabat obejmie też kwartał drugi?",
+      "body": "Szanowny Panie Prezesie,\n\nczy rabat 3 procent z cennika obejmie także zamówienia z drugiego kwartału? Proszę o krótką odpowiedź do piątku.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Re: Cennik transportu",
+          "body": "Panie Tomaszu, dziękuję za zainteresowanie. Rabat jest możliwy przy stałych wolumenach. Wiktor Szalewski"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Cennik transportu na 2027",
+          "body": "Dzień dobry Panie Wiktorze, dostałam cennik na nowy rok i widzę podwyżkę. Proszę o wyjaśnienie, jak to się ma do naszego rabatu. Genowefa Jastrzebska"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0073",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fuel price update and your decision on the annex",
+      "body": "Dear Mr Szalewski,\n\ndiesel prices at our partner stations will rise by about two percent from the beginning of February, because of the new supplier terms. For your fleet this means an extra cost of roughly 4 500 PLN per month at the current volumes.\n\nWe can offer two ways to limit the effect. The first is a price cap at the present level for three months, with a small fee. The second is to move part of your fuel purchases to stations in the cheaper network, which requires changes in the routes of your drivers.\n\nWhich solution would you prefer? Please let me have your answer by 23.01.2027 so that I can prepare the annex.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0075",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Skład konsorcjum eksportowego",
+      "body": "Panie Prezesie,\n\nczy zgadza się Pan, aby do wspólnej oferty eksportowej dołączył trzeci partner, spedytor z Rygi? Czekam na odpowiedź do czwartku.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0076",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Card limit: one question",
+      "body": "Dear Mr Szalewski,\n\nmay we raise the monthly limit on your cards by 10 000 PLN for the winter? Please confirm by reply today.\n\nEwelina Marszalek",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0077",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenie: potwierdzenie frekwencji",
+      "body": "Wiktor,\n\nczy potwierdzasz obecność na całym posiedzeniu rady 28.01.2027, łącznie z częścią zamkniętą? Odpowiedz, proszę, dzisiaj.\n\nZbigniew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0078",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Karty dla nowych pojazdów: Państwa decyzja",
+      "body": "Szanowny Panie Prezesie,\n\nzbliża się dostawa sześciu nowych naczep chłodniczych i musimy ustalić, jak rozliczać paliwo agregatów. Proponuję osobne karty dla każdej naczepy, z oddzielnym centrum kosztów. Pozwoli to Państwa księgowej rozliczać koszty bez ręcznej pracy.\n\nKarty będą kosztować 12 PLN miesięcznie za sztukę. Czy zgadza się Pan na takie rozwiązanie? Jeśli tak, proszę o listę pojazdów i osób odpowiedzialnych do końca stycznia.\n\nProszę o odpowiedź pisemną, bo wymaga tego nasza procedura.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0079",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Card payment terms: question for you",
+      "body": "Dear Mr Szalewski,\n\nour finance team has changed the payment terms for fuel card invoices for all large customers. The new standard is 21 days instead of 30, with a discount of one percent for payment within 10 days.\n\nYour account is among those where the change would apply from March. I would like to ask whether you accept the new terms, or whether you prefer to keep the current 30 days without the discount.\n\nBoth options are possible. Please let me know in writing by the end of the month.\n\nEwelina Marszalek",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0080",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólna trasa Gdynia–Malmö: pytanie o ubezpieczenie",
+      "body": "Szanowny Panie Prezesie,\n\nna wspólnej trasie do Malmö pojawia się kwestia ubezpieczenia ładunku. Nasz ubezpieczyciel oferuje polisę na kwotę 250 000 EUR za jedną przesyłkę, a Państwa polisa obejmuje 150 000 EUR. Przy cennych przesyłkach spożywczych różnica może mieć znaczenie.\n\nCzy zgadza się Pan, aby wspólna trasa korzystała z naszej polisy, a koszt rozkładał się według liczby przesyłek? Przedstawiłem wyliczenia w poprzedniej wiadomości.\n\nPoproszę o Pańskie stanowisko do końca tygodnia, ponieważ polisa musi zostać zgłoszona przed pierwszym transportem.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0081",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Posiedzenie rady: wyjazd do Hamburga, ostateczne potwierdzenie",
+      "body": "Panie Prezesie,\n\nPani Dorota Wilczyńska poinformowała mnie, że sekretariat czeka na Pańską decyzję w sprawie wyjazdu rady do oddziału w Hamburgu. Wracam do tej sprawy, ponieważ termin rezerwacji biletów upływa, a ceny rosną.\n\nPrzypomnę najważniejsze fakty. Wyjazd miałby się odbyć w dniach 17–18.03.2027. Pierwszego dnia przewidziano zwiedzanie magazynu i rozmowę z dyrektorem oddziału. Drugiego dnia odbyłoby się krótkie posiedzenie rady wyjazdowej, na którym omówiono by wyniki oddziału, plan inwestycji w automatyzację oraz wspólne przetargi z partnerem lokalnym.\n\nKoszt wyjazdu dla sześciu członków rady szacujemy na około 28 000 PLN. Rada przyjęła zasadę, że takie wyjazdy wymagają potwierdzenia przez zarząd, że istnieją konkretne tematy do omówienia na miejscu. Proszę zatem o odpowiedź na dwa pytania. Czy zarząd uznaje wyjazd za uzasadniony? Czy potwierdza Pan swoją obecność w obu dniach?\n\nOdpowiedź proszę przesłać do piątku, żeby sekretariat mógł zamknąć rezerwacje. Jeżeli wyjazd miałby być przesunięty, proszę o wskazanie dwóch alternatywnych terminów w kwietniu. Rada ceni sobie możliwość spotkania z kadrą zagraniczną i chce, aby wizyta była dobrze przygotowana merytorycznie, a nie tylko formalna. Dlatego zależy mi na Pana opinii, a nie tylko na formalnym potwierdzeniu daty. Jeśli uważa Pan, że lepszym rozwiązaniem byłaby wideokonferencja, proszę o to napisać.\n\nZbigniew Orlowicz",
+      "thread": [
+        {
+          "from": "dorota.wilczynska@kordelan.test",
+          "subject": "Hamburg: rezerwacje",
+          "body": "Dzień dobry, bilety do Hamburga na 17–18.03.2027 są wstępnie wstrzymane do piątku. Potrzebuję potwierdzenia od pana prezesa. Dorota Wilczynska"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0082",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Lunch before the meeting",
+      "body": "Wiktor,\n\nshall we have lunch before the 28th meeting? 12:00 at the usual place. Let me know today if possible.\n\nZbigniew",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
