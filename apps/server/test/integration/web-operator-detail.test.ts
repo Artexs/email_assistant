@@ -15,7 +15,7 @@ import { apiRouters } from "../../src/web";
 
 import { insertAction, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
-import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // F099 stage 08: GET /api/operator/orgs/:orgId and GET /api/operator/notices (plan D15, D16, D17, D19).
 const db = testDb();
@@ -51,7 +51,8 @@ const app = () =>
       extras,
       () => NOW,
       async () => [],
-      noBackupCodes
+      noBackupCodes,
+      noPrivacy
     ),
     operatorUserIds: new Set([org.assistantId]),
   });

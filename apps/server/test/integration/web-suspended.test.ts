@@ -9,7 +9,7 @@ import { createSecretBox } from "../../src/platform/crypto";
 import { apiRouters } from "../../src/web";
 
 import { testDb } from "./helpers";
-import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const key = randomBytes(32).toString("base64");
@@ -51,6 +51,7 @@ const WRITE_ROUTES = [
 
 // Write routes in `SUSPENDED_WRITE_ALLOW`: a paused account may still call them (web-terms.test.ts proves it).
 const ALLOWED_WHEN_SUSPENDED = [
+  "DELETE /api/organization",
   "POST /api/me/terms",
   "PATCH /api/me/locale",
   "POST /api/operator/orgs/:orgId/flags",
@@ -66,7 +67,8 @@ const routers = () =>
     extras,
     () => new Date(),
     async () => [],
-    noBackupCodes
+    noBackupCodes,
+    noPrivacy
   );
 
 const suspendedApp = () =>

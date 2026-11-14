@@ -67,6 +67,12 @@ export const featureFlags = {
     epic: "E3a",
     removeBy: "2027-03-01",
   },
+  org_delete: {
+    default: false,
+    description: "Delete the organization in the Account card (owners).",
+    epic: "E7-T3",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;
