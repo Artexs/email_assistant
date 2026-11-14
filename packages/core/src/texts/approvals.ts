@@ -193,7 +193,7 @@ export const approvalTexts = {
       clarification: (address) => `📤 Wysłać? Pytanie do nadawcy: ${address}`,
       reminder: (to) => `📤 Wysłać? Przypomnienie: ${to}`,
     },
-    inactive: "(nieaktywny)",
+    inactive: "(nieaktywny wykonawca)",
     externalSender: "⚠️ nadawca zewnętrzny",
     due: "Termin",
     draft: "Szkic:",
@@ -245,7 +245,7 @@ export const approvalTexts = {
       failedStays: (cause) => `${cause}. Szkic zostaje w folderze Drafts.`,
       unknown: (to, subject) => `⚠️ Nie wiadomo, czy wiadomość wyszła do: ${to} · ${subject}`,
       unknownRest:
-        "Połączenie przerwało się po wysłaniu treści. Sprawdź folder Sent lub zapytaj odbiorcę, zanim wyślesz ponownie.",
+        "Połączenie zostało przerwane po wysłaniu treści. Sprawdź folder Sent lub zapytaj odbiorcę, zanim wyślesz ponownie.",
       expired: {
         timeout: (subject) => `⌛ Nie wysłano: zatwierdzenie wygasło (48 h) · ${subject}`,
         draft_missing: (subject) => `❌ Nie wysłano: nie udało się utworzyć szkicu · ${subject}`,
@@ -266,9 +266,9 @@ export const approvalTexts = {
       auth_error: "Logowanie do skrzynki nie działa, więc wysyłanie czeka",
     },
     edit: {
-      approved: (time) => `⏳ Zatwierdzono ${time}, wysyłanie.`,
+      approved: (time) => `⏳ Zatwierdzono ${time}, trwa wysyłanie.`,
       approvedHeld: (time, held) =>
-        `⏳ Zatwierdzono ${time}. ${held}; /status pokazuje szczegóły. Wysyłanie wygaśnie 48 h po zatwierdzeniu, jeśli nadal będzie wstrzymane.`,
+        `⏳ Zatwierdzono ${time}. ${held}; /status pokazuje szczegóły. Zatwierdzenie wygaśnie 48 h po naciśnięciu przycisku, jeśli wysyłanie nadal będzie wstrzymane.`,
       rejected: (time) => `✖️ Odrzucono ${time}.`,
       expired: (time) => `⌛ Wygasło ${time}. Wiadomość nie została wysłana.`,
       approvedSet: (time, done, skipped) => `⏳ Zatwierdzono ${time}. Wysyłanie: ${done}, pominięto: ${skipped}.`,

@@ -229,7 +229,7 @@ describe("renderApprovalRequest in Polish", () => {
       "📤 Wysłać? Przypomnienie: Anna Nowak anna@example.com"
     );
     expect(plRequest(view({ recipientInactive: true, synthetic: true })).text.split("\n")[0]).toBe(
-      "📤 Wysłać? Zlecenie: Anna Nowak (nieaktywny) anna@example.com · 🧪 test"
+      "📤 Wysłać? Zlecenie: Anna Nowak (nieaktywny wykonawca) anna@example.com · 🧪 test"
     );
   });
 
@@ -690,7 +690,7 @@ describe("approvalEdit in Polish", () => {
   const base = { original, at, timeZone: TZ, actionId: ID, counts: { done: 2, skipped: 1 } };
 
   test.each<[ApprovalEditOutcome, string]>([
-    ["approved", "⏳ Zatwierdzono 11:07, wysyłanie."],
+    ["approved", "⏳ Zatwierdzono 11:07, trwa wysyłanie."],
     ["rejected", "✖️ Odrzucono 11:07."],
     ["expired", "⌛ Wygasło 11:07. Wiadomość nie została wysłana."],
     ["approved_set", "⏳ Zatwierdzono 11:07. Wysyłanie: 2, pominięto: 1."],

@@ -133,7 +133,7 @@ export const noticeTexts = {
     },
     mailboxRemoved: "Skrzynka usunięta. Zmień teraz jej hasło w ustawieniach dostawcy poczty.",
     sendHeld: {
-      first: (address, limit) => `⏸ Wysyłanie ze skrzynki ${address} czeka: ${limit}.`,
+      first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka: ${address}): ${limit}.`,
       limit: {
         mailbox_hour: "osiągnięto godzinny limit wysyłania z tej skrzynki",
         mailbox_day: "osiągnięto dzienny limit wysyłania z tej skrzynki",

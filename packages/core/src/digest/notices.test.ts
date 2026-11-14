@@ -308,7 +308,7 @@ describe("Polish notices", () => {
       [5, "5 wiadomości czeka"],
     ] as const) {
       expect(renderSendHeldNotice({ ...base, waiting }, pl).text).toBe(
-        `⏸ Wysyłanie ze skrzynki me@firma.test czeka: osiągnięto godzinny limit wysyłania z tej skrzynki.\n${count}; następna wyjdzie około 12:10.`
+        `⏸ Wysyłanie czeka (skrzynka: me@firma.test): osiągnięto godzinny limit wysyłania z tej skrzynki.\n${count}; następna wyjdzie około 12:10.`
       );
     }
   });
