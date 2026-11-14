@@ -1,6 +1,6 @@
 import { ChevronsUpDown } from "lucide-react";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,

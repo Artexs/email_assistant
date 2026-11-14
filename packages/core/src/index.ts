@@ -1,4 +1,5 @@
 export * from "./tenancy";
+export * from "./texts/locale";
 export * from "./triage";
 export * from "./digest";
 export * from "./notices";

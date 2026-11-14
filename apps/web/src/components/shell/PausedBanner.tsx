@@ -1,4 +1,4 @@
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 
 export function PausedBanner({ contact }: { contact: string | null }) {
   return (

@@ -2,7 +2,7 @@ import { toolSwitchNames, type MailboxView, type SettingsWebChange, type Setting
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { patchSettings } from "../../lib/settings-api";

@@ -1,7 +1,7 @@
 import { Circle, CircleCheck } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 
 export interface ChecklistItemProps {
   title: TextKey;

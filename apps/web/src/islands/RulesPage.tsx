@@ -9,7 +9,7 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
-import { t } from "../i18n/en";
+import { t, useLocale } from "../i18n";
 import { api } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { groupRules, ruleKindOrder, rulesPath } from "../lib/rules-view";
@@ -162,6 +162,7 @@ function Rules() {
 }
 
 export default function RulesPage() {
+  useLocale();
   return (
     <AppShell active="rules" title="title_rules">
       <Rules />

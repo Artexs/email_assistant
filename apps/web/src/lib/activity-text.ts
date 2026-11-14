@@ -1,6 +1,6 @@
 import type { ActivityItem, Category, FeedbackResult, UndoWebResult } from "@ea/core/web";
 
-import { t } from "../i18n/en";
+import { t } from "../i18n";
 
 export function categoryName(category: Category): string {
   return t(`act_cat_${category}`);

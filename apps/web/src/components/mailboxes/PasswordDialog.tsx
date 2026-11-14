@@ -2,7 +2,7 @@ import { mailboxPasswordBodySchema, mailboxViewSchema, type MailboxView } from "
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { Button } from "../ui/button";

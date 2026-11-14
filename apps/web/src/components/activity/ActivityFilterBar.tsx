@@ -1,6 +1,6 @@
 import { activityRanges, categories } from "@ea/core/web";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { filtersToSearch, type ActivityFilters } from "../../lib/activity-filters";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";

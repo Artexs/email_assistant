@@ -2,7 +2,7 @@ import { changePasswordFormSchema, fieldErrors as toFieldErrors, sessionsSchema 
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { t, type TextKey } from "../../i18n/en";
+import { getLocale, t, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
@@ -18,7 +18,10 @@ import { Switch } from "../ui/switch";
 type Field = "current" | "password" | "repeat";
 type FieldErrors = Partial<Record<Field, TextKey>>;
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+// English keeps the browser default; Polish is fixed so the date matches the panel language.
+function dateFormat(): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(getLocale() === "pl" ? "pl-PL" : undefined, { dateStyle: "medium" });
+}
 
 // L21: the member's own live sessions, with a mark on this device. No button ends one session (B3).
 function SessionsList() {
@@ -54,7 +57,7 @@ function SessionsList() {
               </span>
               <span className="text-muted-foreground">{session.address ?? t("acct_unknown_address")}</span>
               <span className="text-muted-foreground">
-                {t("acct_last_active", { date: dateFormat.format(new Date(session.lastUsedAt)) })}
+                {t("acct_last_active", { date: dateFormat().format(new Date(session.lastUsedAt)) })}
               </span>
             </li>
           ))}

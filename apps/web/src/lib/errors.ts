@@ -1,4 +1,4 @@
-import type { TextKey } from "../i18n/en";
+import type { TextKey } from "../i18n";
 import { ApiError } from "./api";
 
 const codeTexts: Record<string, TextKey> = {

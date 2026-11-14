@@ -1,6 +1,6 @@
 import { Activity, ClipboardList, Inbox, ListFilter, Settings, type LucideIcon } from "lucide-react";
 
-import type { TextKey } from "../../i18n/en";
+import type { TextKey } from "../../i18n";
 
 export type NavKey = "onboarding" | "activity" | "mailboxes" | "settings" | "rules";
 

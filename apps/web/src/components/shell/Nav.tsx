@@ -1,7 +1,7 @@
 import { Menu } from "lucide-react";
 import { cn } from "cn";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Skeleton } from "../ui/skeleton";

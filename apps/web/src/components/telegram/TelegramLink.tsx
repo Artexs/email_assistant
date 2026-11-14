@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { canWrite } from "../../lib/can-write";
 import { errorText } from "../../lib/errors";

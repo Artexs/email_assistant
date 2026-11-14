@@ -6,7 +6,7 @@ import { Alert } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { t, type TextKey } from "../i18n/en";
+import { t, type TextKey, useLocale } from "../i18n";
 import { authClient } from "../lib/auth-client";
 
 type FieldErrors = Partial<Record<"email" | "password", TextKey>>;
@@ -16,6 +16,7 @@ function nextTarget(): string {
 }
 
 export default function LoginPage() {
+  useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);

@@ -2,7 +2,7 @@ import { isLabelCategory, type ActivityItem, type LabelCategory } from "@ea/core
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { postFeedback, postUndo } from "../../lib/activity-api";
 import { categoryName, feedbackToast, undoToast } from "../../lib/activity-text";
 import { ApiError } from "../../lib/api";

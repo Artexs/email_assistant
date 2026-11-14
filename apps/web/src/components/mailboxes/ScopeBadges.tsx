@@ -1,6 +1,6 @@
 import type { MailboxView } from "@ea/core/web";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { badgeKey, reasonKeys } from "../../lib/scope-text";
 import { Badge } from "../ui/badge";
 

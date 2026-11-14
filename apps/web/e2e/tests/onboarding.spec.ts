@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createFakeTelegramClient } from "../../../../tools/fake-telegram/src/driver";
 
-import { en } from "../../src/i18n/en";
+import { en, enPlurals } from "../../src/i18n/en";
 import { E2E_TELEGRAM_URL } from "../env";
 import { cleanUpOrg, connectGreenMail, cspErrors, nextAddress, signIn } from "../helpers";
 import { readSeed } from "../seed";
@@ -45,7 +45,7 @@ test("from open to done and back", async ({ page }, testInfo) => {
   await connectGreenMail(page, testInfo.project.name);
 
   await page.goto("/onboarding");
-  await expect(page.getByText(en.ob_mailbox_done_one)).toBeVisible();
+  await expect(page.getByText(enPlurals.ob_mailbox_done.one)).toBeVisible();
 
   await page.getByRole("button", { name: en.tg_link }).click();
   const url = page.getByLabel(en.tg_link_label, { exact: true });

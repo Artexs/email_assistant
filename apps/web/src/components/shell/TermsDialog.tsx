@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { z } from "zod";
 
-import { t, type TextKey } from "../../i18n/en";
+import { getLocale, t, type TextKey } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
-import { legalDocs, legalLang, legalPath, type LegalDoc } from "../../lib/legal";
+import { legalDocs, legalPath, type LegalDoc } from "../../lib/legal";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 
@@ -30,7 +30,7 @@ function ignore() {
 export function TermsDialog({ current, onAccepted, onLogOut }: TermsDialogProps) {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
-  const lang = legalLang(navigator.language);
+  const lang = getLocale();
 
   async function accept() {
     setPending(true);

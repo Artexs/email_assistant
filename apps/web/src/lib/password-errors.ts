@@ -1,4 +1,4 @@
-import type { TextKey } from "../i18n/en";
+import type { TextKey } from "../i18n";
 
 export interface ChangePasswordError {
   field: "current" | "password" | null;

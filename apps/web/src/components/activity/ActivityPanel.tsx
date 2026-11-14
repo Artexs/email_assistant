@@ -1,6 +1,6 @@
 import { formatClock, type ActivityItem } from "@ea/core/web";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import {
   categoryTagText,
   confidenceText,

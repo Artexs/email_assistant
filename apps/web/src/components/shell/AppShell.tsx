@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { authClient } from "../../lib/auth-client";
 import { ApiError } from "../../lib/api";
-import { t, type TextKey } from "../../i18n/en";
+import { t, useLocale, type TextKey } from "../../i18n";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { Toaster } from "../ui/sonner";
@@ -97,6 +97,12 @@ function Frame({ active, title, children }: AppShellProps) {
 }
 
 export function AppShell(props: AppShellProps) {
+  const locale = useLocale();
+  const { title } = props;
+  // The static title is English; the client sets the title in the current language.
+  useEffect(() => {
+    document.title = `${t(title)} · ${t("brand")}`;
+  }, [title, locale]);
   return (
     <MeProvider>
       <Frame {...props} />

@@ -5,10 +5,10 @@ import { AuthCard } from "../components/auth/AuthCard";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { t, type TextKey } from "../i18n/en";
+import { getLocale, t, type TextKey, useLocale } from "../i18n";
 import { authClient } from "../lib/auth-client";
 import { setPasswordWithTerms } from "../lib/auth-requests";
-import { legalDocs, legalLang, legalPath, type LegalDoc } from "../lib/legal";
+import { legalDocs, legalPath, type LegalDoc } from "../lib/legal";
 import { setupError } from "../lib/password-errors";
 
 type Mode = "form" | "invalid" | "missing";
@@ -23,6 +23,7 @@ const legalTitles: Record<LegalDoc, TextKey> = {
 const legalLinks = legalDocs.map((doc) => ({ doc, title: legalTitles[doc] }));
 
 export default function SetupPage() {
+  useLocale();
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("form");
   const [token, setToken] = useState<string | null>(null);
@@ -112,7 +113,7 @@ export default function SetupPage() {
     const ids = [extra, fieldErrors[field] === undefined ? undefined : `${field}-error`].filter(Boolean);
     return ids.length === 0 ? undefined : ids.join(" ");
   };
-  const lang = legalLang(navigator.language);
+  const lang = getLocale();
   const errorText = (field: Field) => {
     const key = fieldErrors[field];
     return key === undefined ? null : (

@@ -1,6 +1,6 @@
 import type { GateView } from "@ea/core/web";
 
-import type { TextKey } from "../i18n/en";
+import type { TextKey } from "../i18n";
 
 export function formatPercent(ratio: number): string {
   return Number((ratio * 100).toFixed(1)).toString();

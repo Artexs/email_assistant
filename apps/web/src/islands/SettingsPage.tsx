@@ -23,7 +23,7 @@ import { SyncFoldersCard } from "../components/settings/SyncFoldersCard";
 import { TimezoneCard } from "../components/settings/TimezoneCard";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
-import { t, type TextKey } from "../i18n/en";
+import { t, tp, type TextKey, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { selectedMailboxId, settingsPath } from "../lib/settings-api";
@@ -69,7 +69,7 @@ function MailboxSettings({ mailbox, isOwner, listLoading, reloadMailboxes, reloa
     mutate(change.settings);
     if (change.settings.mode !== data.mode) reloadMe();
     reloadMailboxes();
-    const suffix = change.expired > 0 ? ` ${t("expired_suffix", { count: change.expired })}` : "";
+    const suffix = change.expired > 0 ? ` ${tp("expired_suffix", change.expired)}` : "";
     toast.success(`${t(toastKey, vars)}${suffix}`);
   };
 
@@ -215,6 +215,7 @@ function Settings() {
 }
 
 export default function SettingsPage() {
+  useLocale();
   return (
     <AppShell active="settings" title="title_settings">
       <Settings />

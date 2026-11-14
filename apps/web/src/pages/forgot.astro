@@ -1,7 +1,6 @@
 ---
 import Public from "../layouts/Public.astro";
 import ForgotPage from "../islands/ForgotPage.tsx";
-import { en } from "../i18n/en";
 ---
 
-<Public title={en.title_forgot}><ForgotPage client:load /></Public>
+<Public titleKey="title_forgot"><ForgotPage client:only="react" /></Public>

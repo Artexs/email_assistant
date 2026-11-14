@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ACTIVITY_SUBJECTS } from "../../../server/src/scripts/e2e-seed-args";
-import { en, t } from "../../src/i18n/en";
+import { en } from "../../src/i18n/en";
+import { t } from "../../src/i18n";
 import { E2E_BASE_URL } from "../env";
 import {
   cleanUpOrg,

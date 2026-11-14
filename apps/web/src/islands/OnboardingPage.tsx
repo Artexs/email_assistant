@@ -8,7 +8,7 @@ import { useMe } from "../components/shell/MeProvider";
 import { TelegramLink } from "../components/telegram/TelegramLink";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button, buttonVariants } from "../components/ui/button";
-import { t } from "../i18n/en";
+import { t, tp, useLocale } from "../i18n";
 import { api } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { errorText } from "../lib/errors";
@@ -37,8 +37,7 @@ function Onboarding() {
 
   let mailboxText = t("ob_mailbox_open");
   if (onboarding.mailbox) {
-    mailboxText =
-      me.mailboxCount === 1 ? t("ob_mailbox_done_one") : t("ob_mailbox_done_many", { count: me.mailboxCount });
+    mailboxText = tp("ob_mailbox_done", me.mailboxCount);
   } else if (!isOwnerRole) {
     mailboxText = t("ob_mailbox_assistant");
   }
@@ -89,11 +88,7 @@ function Onboarding() {
         </ChecklistItem>
         <ChecklistItem title="ob_rules_title" done={onboarding.rules > 0} optional>
           <p className="text-sm">{t("ob_rules_text")}</p>
-          {onboarding.rules > 0 && (
-            <p className="text-sm text-muted-foreground">
-              {onboarding.rules === 1 ? t("ob_rules_one") : t("ob_rules_many", { count: onboarding.rules })}
-            </p>
-          )}
+          {onboarding.rules > 0 && <p className="text-sm text-muted-foreground">{tp("ob_rules", onboarding.rules)}</p>}
           <a href="/rules" className={`${buttonVariants({ variant: "outline" })} self-start`}>
             {t("ob_open_rules")}
           </a>
@@ -104,6 +99,7 @@ function Onboarding() {
 }
 
 export default function OnboardingPage() {
+  useLocale();
   return (
     <AppShell active="onboarding" title="title_onboarding">
       <Onboarding />
