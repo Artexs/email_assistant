@@ -1,0 +1,307 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-001",
+  "cases": [
+    {
+      "id": "w-1-001",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Obsada magazynu w Gdyni - prosze o Pana opinie",
+      "body": "Dzień dobry Wiktorze,\n\nod kilku tygodni pracujemy w Gdyni na niepełnej obsadzie: brakuje nam dwóch brygadzistów na zmianie nocnej, a rotacja wśród magazynierów sięgnęła w grudniu 14 procent. Mam dwie możliwości i chciałbym poznać Pana zdanie, zanim cokolwiek ogłoszę.\n\nPierwsza to podniesienie widełek dla brygadzistów o około 8 procent, co kosztowałoby budżet około 6 tysięcy złotych miesięcznie. Druga to zatrudnienie agencji pracy tymczasowej na kwartał, drożej, ale szybciej. Osobiście skłaniam się ku pierwszej, ponieważ lepiej buduje stabilność zespołu, jednak decyzja ma konsekwencje budżetowe i woli ją Pan podjąć sam.\n\nBędę wdzięczny za krótką odpowiedź pisemną, na którą mogę się później powołać w rozmowie z działem finansowym.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-002",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenie rady - stan przygotowań i budżet",
+      "body": "Dzień dobry Panie Wiktorze,\n\ninformuję o stanie przygotowań do posiedzenia rady nadzorczej. Komitet audytu zakończył przegląd projektu budżetu na rok 2027 i nie zgłosił zastrzeżeń do założeń przychodowych. Przychody grupy zaplanowano z wzrostem o 6 procent względem roku bieżącego, przy marży operacyjnej utrzymanej na poziomie z roku poprzedniego.\n\nJedyna pozycja, którą komitet oznaczył do dyskusji, to nakłady na flotę. Zawierają one zakup nowych naczep oraz wymianę części ciągników, łącznie około 11 milionów złotych. Komitet uznał, że uzasadnienie jest spójne, ale chce usłyszeć je wprost na posiedzeniu.\n\nPosiedzenie odbędzie się 28.01.2027 o godzinie 10:00 w sali rady na ostatnim piętrze siedziby. Porządek obrad rozesłała sekretarz rady w zeszłym tygodniu. Dwóch członków rady uczestniczy zdalnie, pozostali na miejscu. Po części formalnej przewidziano blok poświęcony ryzykom walutowym w kontraktach eksportowych, krótki raport zarządu o przetargach oraz sprawy bieżące.\n\nDokumenty finansowe zostały już zamieszczone w repozytorium rady i są dostępne dla wszystkich członków. Wersja uzupełniona o zaktualizowane dane za grudzień ukaże się w środę. Piszę o tym tylko po to, aby zarząd miał pełny obraz stanu prac przed posiedzeniem. Szczegółowe omówienie budżetu zaplanowano na drugą część obrad.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-003",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "[ERP] Zadanie WMS-SYNC zakończone z ostrzeżeniami",
+      "body": "Automatyczne powiadomienie systemu ERP Kordelan\n\nModuł: System magazynowy (WMS), magazyn Gdynia\nZadanie: WMS-SYNC-NOC\nStatus: zakończone z ostrzeżeniami\nData i godzina zakończenia: 25.01.2027, 03:42\n\nPodsumowanie przebiegu:\n- zsynchronizowano stany 18 412 pozycji,\n- pominięto 37 pozycji z błędnym kodem lokalizacji,\n- czas przebiegu 41 minut, zwykle 28 minut.\n\nLista pominiętych pozycji została zapisana w raporcie ERP-RAP-0412 i jest dostępna w module magazynowym. Kolejny planowy przebieg zadania odbędzie się 26.01.2027 o godzinie 03:00.\n\nWiadomość wygenerowano automatycznie. Nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-004",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rate alert: your saved lanes moved this week",
+      "body": "This is an automated alert from your Supply Chain Weekly account.\n\nYou receive it because you saved three freight lanes under \"My alerts\". The benchmark rate changed by more than 3 percent on these lanes since your last alert:\n\n- Gdansk to Rotterdam, 40ft container: up 4.1 percent\n- Gdynia to Hamburg, 40ft container: down 3.4 percent\n- Shanghai to Gdansk, 40ft container: up 6.8 percent\n\nRates are indicative spot benchmarks, refreshed every Monday at 06:00 UTC. They do not include surcharges.\n\nTo change the lanes or the alert threshold, open the alert settings in your account. If you no longer want these alerts, you can switch them off there.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-005",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Baza 50000 e-maili firm transportowych - tylko dzisiaj -70%!",
+      "body": "Szanowny Przedsiębiorco,\n\nmamy dla Pana wyjątkową okazję! Nasza baza 50000 zweryfikowanych adresów e-mail firm transportowych i logistycznych z całej Europy jest teraz w promocji. Cena regularna 4900 złotych, dzisiaj tylko 1470 złotych!\n\nZ naszą bazą Pan zwiększy sprzedaż o 300 procent w trzydzieści dni, gwarantujemy! Dołączamy też bezpłatny audyt SEO Pana strony, który pozycjonuje Pana na pierwszą stronę wyszukiwarki w tydzień.\n\nOferta ważna tylko do północy. Nie pozwól, żeby konkurencja Pana wyprzedziła, kupuje już teraz nasze listy!\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-006",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Limit kart paliwowych od lutego",
+      "body": "Szanowny Panie Prezesie,\n\nczy akceptuje Pan podniesienie miesięcznego limitu kart paliwowych floty z 80 do 95 tysięcy litrów od 1 lutego? Cena za litr pozostaje bez zmian. Czekam na Pana odpowiedź.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-007",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "OSTATNIE MIEJSCA! Stoisko na Targach Magazynowych Expo -40%!!!",
+      "body": "Uwaga, firmy magazynowe i logistyczne!\n\nTargi Magazynowe Expo wracają, a my mamy dla Państwa absolutnie niesamowitą ofertę! Tylko dla pierwszych 20 firm, które zgłoszą się do końca tygodnia, stoisko wystawiennicze z rabatem aż 40 procent!\n\nW pakiecie PREMIUM dostajecie:\n- stoisko 12 metrów kwadratowych w hali głównej,\n- reklamę w katalogu targowym w nakładzie 10 tysięcy egzemplarzy,\n- 50 darmowych zaproszeń dla Państwa klientów,\n- logo na wszystkich bannerach przed wejściem,\n- bezpłatne miejsce parkingowe dla jednego pojazdu dostawczego.\n\nNie czekajcie! W zeszłym roku wszystkie miejsca rozeszły się w trzy dni. Konkurencja już się zgłosiła i zajmuje najlepsze miejsca przy wejściu głównym. Każdy dzień zwłoki to utracone kontakty biznesowe!\n\nDodatkowo, jeśli zapłacą Państwo zaliczkę w ciągu 48 godzin, otrzymają Państwo za darmo voucher na catering dla całego zespołu wystawienniczego oraz miejsce w panelu o przyszłości branży (tak, naprawdę!).\n\nLiczba miejsc jest ograniczona, a rabat dotyczy tylko pierwszych 20 firm, więc decyzja musi zapaść teraz, a nie w przyszłym miesiącu, kiedy hala będzie już zapełniona wystawcami z całej Europy! Skontaktujcie się z naszym działem handlowym już dziś, a otrzymacie indywidualną wycenę w ciągu godziny!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-008",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólny przetarg - uzgodnienie terminu warsztatu",
+      "body": "Szanowny Panie Prezesie,\n\nw ramach naszej współpracy przy wspólnych przetargach chcielibyśmy zorganizować warsztat poświęcony zasadom podziału kosztów i ról w ofertach na ten rok. Zależy nam, aby całością spraw organizacyjnych zajął się Pański zespół.\n\nProsimy zatem, aby asystentka zarządu uzgodniła z nami termin półdniowego spotkania w Gdańsku w lutym, zarezerwowała salę i wysłała zaproszenia uczestnikom po stronie Kordelan. Po naszej stronie weźmie udział trzech partnerów. Jesteśmy elastyczni co do dnia tygodnia.\n\nZ góry dziękujemy za pomoc w tej sprawie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-009",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz rady i podróże - stan na styczeń",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótką informację o kalendarzu. Posiedzenia rady w pierwszym kwartale zaplanowano na 28.01, 18.02 i 25.03.2027. Moje dwie podróże służbowe w tym okresie to wyjazd do Rotterdamu w dniach 8-10.03 oraz pobyt w Oslo 17-19.02.\n\nZ tego powodu posiedzenie z 18.02 odbędzie się zdalnie dla mnie, o ile nie ulegnie przeniesieniu. Pozostałe terminy pozostają bez zmian. Plan podróży i szczegóły zakwaterowania ma moja sekretarka, wiadomość ma charakter wyłącznie informacyjny.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-010",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic framework - payment terms, your call",
+      "body": "Hi Wiktor,\n\nquick one from the road, sorry for typos. Karin called this morning and said their lawyers want to push payment terms in the framework agreement from 30 to 60 days. They say its a standard thing for their board and the rest of the draft they are fine with.\n\nI think we can live with 45, maybe 60 if they take the volume commitment we wanted for the second year. But thats a money question, so its yours to answer, not mine. I dont want to promise anything on the phone and then have you unhappy later.\n\nCan you let me know what you think? A line back is enough, I will take it from there with her.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-011",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawa kontenerów z Hamburga - decyzja dzisiaj do 15:00",
+      "body": "Szanowny Panie Prezesie,\n\npiszę w sprawie dwóch kontenerów z towarem Nordic Foods Trade, które od soboty stoją w porcie przy odprawie. Urząd celny wezwał nas wczoraj do uzupełnienia dokumentów, a nasz agent ma dla nas dwa warianty. Potrzebuję Pana decyzji dzisiaj do godziny 15:00, bo po tej porze agent traci rezerwację slotu odprawy i następny wolny termin to dopiero czwartek.\n\nWariant pierwszy: składamy zgłoszenie uzupełniające z gwarancją zabezpieczającą, co kosztuje około 3 tysięcy euro, ale kontenery wyjadą jeszcze dziś wieczorem. Wariant drugi: czekamy na pełną dokumentację od producenta, bez dodatkowych kosztów, lecz towar stoi co najmniej do piątku i naliczane są opłaty magazynowe w porcie.\n\nPonieważ gwarancja wymaga podpisu osoby upoważnionej do reprezentowania spółki, a opcja ma znaczenie także dla naszej wspólnej umowy z Nordic, nie chcę podejmować tej decyzji bez Pana. Jeśli wybierze Pan wariant pierwszy, agent przygotuje druk do podpisu w ciągu godziny.\n\nDziękuję z góry za szybką odpowiedź. Jestem dziś w biurze przez cały dzień, a agent czeka na wiadomość od nas przez telefon służbowy. Przygotowałem też krótkie zestawienie kosztów obu wariantów, które mogę przesłać na życzenie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-012",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Account activity summary for 22.01.2027",
+      "body": "Powiadomienia Bankowe - Bank Aurum\n\nDear customer,\n\nthis is an automatic summary of the activity on your business account ending 4821 for 22.01.2027. All amounts are in PLN.\n\nOutgoing transfers:\n- 22.01.2027, 09:14, transfer to Paliwa-Flota, invoice FV-1180, amount 38 420,00, status: completed\n- 22.01.2027, 10:02, transfer to Meblodrew, amount 12 750,50, status: completed\n- 22.01.2027, 13:47, transfer to Logistyka Serwis, amount 4 310,00, status: completed\n\nIncoming transfers:\n- 22.01.2027, 11:25, transfer from Hurtownia Zielona, amount 96 000,00, status: booked\n- 22.01.2027, 15:08, transfer from Nordic Foods Trade, amount 58 200,00, status: booked\n\nAccount balance at the end of the day: 1 284 610,35 PLN. Available daily limit for outgoing transfers: 500 000,00 PLN.\n\nThe balance shown includes all booked and pending operations, and the daily limit is reset every morning at 00:00 local time. You can see the full list of operations, including card payments, in your online banking under the section Account history.\n\nYour login to online banking on 22.01.2027 at 08:51 was confirmed with your authorization device. No security alerts were recorded.\n\nThis message was generated automatically. Please do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-013",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rabat dla członków - bilety na Targi Magazynowe Expo",
+      "body": "Zapraszamy na Targi Magazynowe Expo!\n\nSpecjalna oferta dla firm z regionu: bilet wstępu VIP za 99 zł zamiast 249 zł. Do biletu dołączamy darmowy kubek z logo targów i torbę na materiały.\n\nKod rabatowy EXPO99 działa tylko w tym tygodniu. Sprawdź nasz pakiet partnerski i dołącz do ponad 400 wystawców, których oferta nie ma nic wspólnego z Pana branżą, ale na pewno Pana zainteresuje!\n\nSkorzystaj z oferty, zanim skończy się pula biletów.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-014",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś nr 4: ceny oleju napędowego i rynek kart paliwowych",
+      "body": "Logistyka Dziś, numer 4/2027\n\nPALIWA: DIESEL TANIEJ DRUGI TYDZIEŃ Z RZĘDU\nŚrednia cena oleju napędowego na stacjach przy głównych trasach tranzytowych spadła w ostatnim tygodniu o 6 groszy za litr i wynosi 6,18 zł brutto. Analitycy rynku paliw wiążą spadek z łagodniejszą zimą w Europie i wyższym zapasem w magazynach paliwowych. Prognoza na najbliższe tygodnie jest ostrożnie optymistyczna, choć wpływ na ceny hurtowe mogą mieć decyzje producentów ropy.\n\nKARTY PALIWOWE: DOSTAWCY ZMIENIAJĄ ZASADY LIMITÓW\nKilku dużych dostawców kart paliwowych dla flot ogłosiło zmiany zasad naliczania limitów od lutego. Zamiast limitów kwotowych część firm wprowadza limity litrowe oraz miesięczne okna rozliczeniowe. Przedstawiciele branży oceniają, że zmiany ułatwią planowanie kosztów, ale wymagają aktualizacji umów w firmach transportowych.\n\nOPŁATY DROGOWE: NOWE STAWKI OD KWIETNIA\nResort infrastruktury opublikował projekt nowych stawek opłat za przejazd drogami krajowymi. Dla pojazdów powyżej 12 ton stawki mają wzrosnąć średnio o 4 procent. Konsultacje potrwają do końca lutego.\n\nPRZETARGI: KIEDY DECYZJE W SIECIACH HANDLOWYCH\nSieci handlowe zapowiadają rozstrzygnięcia przetargów logistycznych na pierwszy kwartał. Eksperci radzą, by w ofertach uwzględniać klauzule indeksacji paliwowej.\n\nW następnym numerze: wyniki badania kosztów pracy w magazynach oraz nowe dane o rotacji kierowców.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-015",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Obsada magazynu w Gdyni - prosze o Pana opinie",
+      "body": "Wiktorze, wracam do mojej wiadomości o obsadzie w Gdyni. Czy zgadza się Pan na podniesienie widełek dla brygadzistów? Odpowiedź chciałbym mieć przed rozmową z działem finansowym.",
+      "thread": [
+        {
+          "from": "rafal.kwiecinski@kordelan.test",
+          "subject": "Obsada magazynu w Gdyni - prosze o Pana opinie",
+          "body": "Dzień dobry Wiktorze,\n\nod kilku tygodni pracujemy w Gdyni na niepełnej obsadzie: brakuje nam dwóch brygadzistów na zmianie nocnej, a rotacja wśród magazynierów sięgnęła w grudniu 14 procent. Mam dwie możliwości i chciałbym poznać Pana zdanie, zanim cokolwiek ogłoszę.\n\nPierwsza to podniesienie widełek dla brygadzistów o około 8 procent, co kosztowałoby budżet około 6 tysięcy złotych miesięcznie. Druga to zatrudnienie agencji pracy tymczasowej na kwartał, drożej, ale szybciej. Osobiście skłaniam się ku pierwszej, ponieważ lepiej buduje stabilność zespołu, jednak decyzja ma konsekwencje budżetowe i woli ją Pan podjąć sam.\n\nBędę wdzięczny za krótką odpowiedź pisemną, na którą mogę się później powołać w rozmowie z działem finansowym.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-1-016",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your annual subscription renews on 05.02.2027",
+      "body": "Supply Chain Weekly - account notice\n\nHello,\n\nthis is an automated message about your subscription. Your Supply Chain Weekly Professional plan will renew automatically on 05.02.2027. No action is needed if you want to keep the plan.\n\nPlan details:\n- Plan: Professional, 1 seat\n- Billing period: 05.02.2027 to 04.02.2028\n- Payment method: corporate card ending 7712\n- Amount: 1 290,00 EUR, VAT included\n\nWhat is included: the weekly digest every Thursday, the daily freight rate alerts for up to five saved lanes, access to the archive of market reports since 2019 and the quarterly container index report.\n\nUsage in the last 12 months: 51 digests opened, 4 reports downloaded, 3 lanes saved, and 2 invoices requested by the billing contact.\n\nIf you want to change the plan, switch to monthly billing or cancel the renewal, you can do it in your account settings until 04.02.2027, 23:59 UTC. After that date the renewal is charged and a receipt is sent to the billing contact of the account.\n\nThis message was generated automatically. Replies to this address are not read.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-017",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rozmowy kwalifikacyjne - kierownik zmiany w Gdyni",
+      "body": "Dzień dobry Wiktorze,\n\nmamy trzech kandydatów na stanowisko kierownika zmiany w magazynie w Gdyni, których chcemy zaprosić na drugi etap rozmów. Prosiłbym, żeby ktoś z Pana zespołu zajął się uzgodnieniem terminów w kalendarzach: moim, dyrektor operacyjnej oraz Pana, na przyszły tydzień.\n\nWystarczy, aby ta osoba znalazła trzy wolne okna po 60 minut, zarezerwowała salę i wysłała zaproszenia kandydatom. Dane kontaktowe kandydatów przekażę od razu, gdy tylko ktoś się tym zajmie.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-018",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacja magazynierów - grafik rozmów i sale",
+      "body": "Cześć Wiktor,\n\nwystartowała rekrutacja 12 magazynierów na wiosenny szczyt i potrzebuję, żeby ktoś z Twojego zespołu zajął się logistyką rozmów, bo moi ludzie są w tym tygodniu w pełni obłożeni inwentaryzacją. Zrobiłabym to sama, ale po prostu nie mam na to czasu.\n\nCo jest do zrobienia:\n- ułożyć grafik rozmów z 24 kandydatami w dwóch blokach, we wtorek i czwartek w przyszłym tygodniu,\n- zarezerwować salę B na całe dwa dni oraz przygotować wodę i kawę,\n- rozesłać zaproszenia kandydatom z godziną i miejscem,\n- wpisać mnie i Rafała do kalendarza jako prowadzących, na zmianę po dwie godziny.\n\nLista kandydatów jest w arkuszu rekrutacji, który zespół HR już udostępnił, razem z krótkimi notatkami z rozmów telefonicznych. Najlepiej, żeby tym zajęła się Dorota, ma największe doświadczenie w pilnowaniu kalendarzy, ale zostawiam to Tobie. Jeśli pojawią się konflikty terminów z moimi spotkaniami w Gdyni, niech uwzględni, że w czwartek po 14:00 jestem już poza biurem.\n\nGdyby coś się nie zgadzało z liczbą sal albo z dostępnością osób, daj znać, to coś wymyślimy razem. Nie chcę, żeby rekrutacja przeciągnęła się poza koniec lutego, bo wtedy zabraknie ludzi na szczyt.\n\nZ góry dziękuję.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-020",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przegląd tygodnia: logistyka w liczbach",
+      "body": "Dzień dobry,\n\nkrótki przegląd tygodnia z rynku logistycznego. Indeks koniunktury w transporcie drogowym wzrósł w styczniu o 2 punkty i wynosi 54,3. Najlepiej oceniają sytuację firmy zajmujące się dystrybucją żywności, najsłabiej przewoźnicy obsługujący budownictwo.\n\nStawki frachtu drogowego na trasach z Polski do Niemiec są o 3 procent niższe niż przed miesiącem, a na trasach do krajów skandynawskich pozostają stabilne. Eksperci wskazują, że niższe ceny paliw kompensują niższe stawki, więc marże przewoźników zmieniły się niewiele.\n\nPrzypominamy, że w lutym ruszają konsultacje nowych przepisów o czasie pracy kierowców. Szczegóły opisaliśmy w poprzednim numerze.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-021",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your topic preferences were updated",
+      "body": "Hello,\n\nthis is an automated confirmation from Supply Chain Weekly. The topic preferences of your account were updated on 25.01.2027 at 07:12 UTC.\n\nYour digest now covers: ocean freight rates, port congestion, customs and trade rules, and warehousing. The topic \"air cargo\" was removed from your digest. The delivery day stays the same, every Thursday.\n\nIf you did not make this change, you can restore the previous settings in your account. This message is only a confirmation and needs no action.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-022",
+      "from": "Dorota Wilczynska <dorota.wilczynska@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zielona Hurtownia tender - offer submission today at 17:00",
+      "body": "Hi Wiktor,\n\nI am writing about the Zielona Hurtownia tender, and I have to ask for your time today. The buyer has extended the offer deadline, which was originally 15.01.2027, and the new final cut-off is today at 17:00. They confirmed that on Friday, and there will be no further extension.\n\nThe offer package is ready. Piotr finished the price tables on Friday, finance reviewed the margin, and the legal team has no remarks on the contract annex. What is missing is your signature on the offer letter and on the statement of the authorised representative. Without both documents the submission is formally invalid, and the buyer has said it would not even open such an offer.\n\nThe submission goes through the buyer's tender platform, and our side needs about 40 minutes to upload everything and check the confirmation. For that reason I need the signed documents by 15:30 at the latest. You can sign them electronically. I have put the two files in your signing queue and can also bring them to your office on paper if that is faster for you.\n\nI know your calendar is full today, so I moved your 14:00 call with Gdansk to Wednesday. Your window from 14:30 to 15:30 is now free. Please tell me if you prefer to sign earlier, and I will have everything ready.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-023",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Magazynowe Expo - ostatnie wolne stoiska",
+      "body": "Dzień dobry,\n\nmamy jeszcze trzy wolne stoiska na Targi Magazynowe Expo. Zamów teraz i otrzymaj gratis reklamę w katalogu targowym!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-1-024",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Kalendarz rady i podróże - stan na styczeń",
+      "body": "Panie Wiktorze,\n\nczy będzie Pan obecny osobiście na posiedzeniu 18.02, skoro ja połączę się z Oslo zdalnie? Jeśli nie, rozważę przeniesienie na 19.02. Proszę o odpowiedź.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Kalendarz rady i podróże - stan na styczeń",
+          "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótką informację o kalendarzu. Posiedzenia rady w pierwszym kwartale zaplanowano na 28.01, 18.02 i 25.03.2027. Moje dwie podróże służbowe w tym okresie to wyjazd do Rotterdamu w dniach 8-10.03 oraz pobyt w Oslo 17-19.02.\n\nZ tego powodu posiedzenie z 18.02 odbędzie się zdalnie dla mnie, o ile nie ulegnie przeniesieniu. Pozostałe terminy pozostają bez zmian. Plan podróży i szczegóły zakwaterowania ma moja sekretarka, wiadomość ma charakter wyłącznie informacyjny."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-1-025",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie zapisu do newslettera Logistyka Dziś",
+      "body": "To jest automatyczne potwierdzenie. Zmieniliśmy Pana ustawienia newslettera zgodnie z żądaniem z konta: wydanie tygodnika będzie przychodziło w piątki o 07:00.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

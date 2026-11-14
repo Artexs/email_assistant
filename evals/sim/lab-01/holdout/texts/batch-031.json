@@ -380,7 +380,8 @@
       "mustNot": [
         "Do not agree to discuss price in the call without the sales coordinator"
       ],
-      "note": "rewritten: personal question for the executive; deadline softened"
+      "note": "rewritten: personal question for the executive; deadline softened",
+      "dropped": true
     }
   ]
 }

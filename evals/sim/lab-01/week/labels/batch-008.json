@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-008",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "w-2-023",
+      "category": "spam",
+      "blindHash": "81d6a324d695f806695f291f7bf4372af708d5ea1e569414de1cc6648725f419"
+    },
+    {
+      "id": "w-2-024",
+      "category": "needs_reply",
+      "blindHash": "fcf97feedaf76df25518c85281763d51bb26d8fe23f579537a2ebaa03934ed85"
+    },
+    {
+      "id": "w-2-025",
+      "category": "needs_reply",
+      "blindHash": "7cd282f394395fde07b8747a6de7a53612e60b266909e19e1578765352b21e2a"
+    },
+    {
+      "id": "w-2-026",
+      "category": "info",
+      "blindHash": "d3efaf3964009b4f8e270e050d16f56ca58c5857b58a1cf5815a5838bf13c719"
+    },
+    {
+      "id": "w-2-027",
+      "category": "notification",
+      "blindHash": "1946f11b1040cd866bacb70bd0f775683f72f9dbce902cc36394d727dcf9598f"
+    },
+    {
+      "id": "w-2-028",
+      "category": "notification",
+      "blindHash": "05c47d0814021f11650d2d864d46e3ea6dc58a94e56ff124e26512a3f4a1818a"
+    },
+    {
+      "id": "w-2-029",
+      "category": "notification",
+      "blindHash": "581c952c8c5b405984c78963420173fff9d25be67f3a768623e0ddaff3f5d64b"
+    },
+    {
+      "id": "w-2-030",
+      "category": "notification",
+      "blindHash": "931822fa73f6ed3a01ebf1707089ae2f1f6cf411bb9e6822392fa075a42d8d26"
+    },
+    {
+      "id": "w-2-031",
+      "category": "delegation",
+      "blindHash": "9d91b30975738b9271ca585846d9573415631a5b4956e5820e1634c2986e7bef"
+    },
+    {
+      "id": "w-2-032",
+      "category": "needs_reply",
+      "blindHash": "7447a06c9acb187cae766f5843e228a21be004f9b26fdddbd3d5406264d120d5"
+    },
+    {
+      "id": "w-2-033",
+      "category": "spam",
+      "blindHash": "c0cf15cb5a84838daa4b0b8f934b11f8e071a7f5b0644af1c80fa062dd69f2e3"
+    },
+    {
+      "id": "w-2-034",
+      "category": "spam",
+      "blindHash": "7fb69deed03a94e300f904ef69068bd67d7ea4d0cfbd5ae54d4e953ee5b35cd0"
+    },
+    {
+      "id": "w-2-035",
+      "category": "info",
+      "blindHash": "309c008c6cef98e7867bb0488ec6d4ba5e240ee01a49fd2330ef8e1106986c03"
+    },
+    {
+      "id": "w-2-036",
+      "category": "notification",
+      "blindHash": "5f93bb8c61e9221cbf2c6ed983f9d810ae9269df92807a8db06c991a1d29fbde"
+    },
+    {
+      "id": "w-2-037",
+      "category": "spam",
+      "blindHash": "b3f295e7e4dbce81e004e0556689e461d4ad23a92760f5017e638e6beaaf5b35"
+    },
+    {
+      "id": "w-2-038",
+      "category": "notification",
+      "blindHash": "53e3de53d49c3104cfe5bc47afc06df0b34405cb860a270f6cbd1ba39bbd124b"
+    },
+    {
+      "id": "w-2-039",
+      "category": "notification",
+      "blindHash": "5206d9a3269ba484fd4469818f71f9fbea02e640190ebde4207138c1b764b144"
+    },
+    {
+      "id": "w-2-040",
+      "category": "notification",
+      "blindHash": "d54ed6aa8a060d7b8a8b37bd0bac2d7b9c3e2389836d847f1dd135e3b60112cf"
+    },
+    {
+      "id": "w-2-041",
+      "category": "info",
+      "blindHash": "39f40da2b914564ae3e59dfff6e7bf8a913f7f46f5f14ad7639a87aa1b8c0474"
+    },
+    {
+      "id": "w-2-042",
+      "category": "info",
+      "blindHash": "eb117110251aad3c0dce401cbe9eaaddf7dd895fb93286ad28245f3c1420d307"
+    },
+    {
+      "id": "w-2-043",
+      "category": "delegation",
+      "blindHash": "75494f27eff79b930be2e4771c81385429af2dcac4c7180ff712ab417bdda1e6"
+    },
+    {
+      "id": "w-2-044",
+      "category": "spam",
+      "blindHash": "c63fd633c01c63a5b1eeb40c68be93759d39e709e8dc2a2e28990fe0e93aed41"
+    },
+    {
+      "id": "w-2-045",
+      "category": "needs_reply",
+      "blindHash": "b1034f1da9e1cd454f257029c210d499adbab6b7a43cca986b28db8f9ac81c82"
+    },
+    {
+      "id": "w-2-046",
+      "category": "needs_reply",
+      "blindHash": "8535136db1b38f46cc94d71920c52c2a8feb67fec2d04e175e35219cc671ae2a"
+    },
+    {
+      "id": "w-2-047",
+      "category": "notification",
+      "blindHash": "d5a4bdf5bf2271c648f18617443aa486d3c1a43da240e3588a1bfdd6ea2a6dcf"
+    }
+  ]
+}

@@ -61,6 +61,15 @@ export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";
 export { judgeDraft, judgePassed } from "./judge";
 export type { JudgeResult } from "./judge";
+export {
+  buildGateFile,
+  gateFileName,
+  gateFileRefusal,
+  gateFileSchema,
+  renderSimSections,
+  simMetaOf,
+} from "./eval-sim-report";
+export type { GateFile, SimMeta, SimReportInput } from "./eval-sim-report";
 export { prompts, rolesWithoutPrompt } from "./prompts";
 export type { PromptEntry } from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";

@@ -86,7 +86,7 @@ A module that has something to tell a user through the outbox (digests and notic
 - A row waits up to 24 h in the outbox (the sender fails an older row with `expired`), and newer code may render it. A change of a view schema or of a view field must still accept the views of the rows queued in the last 24 h. If it cannot, the change waits until those rows drain (`deploy/README.md` § Notices as facts). Otherwise every waiting row of the kind becomes `failed` / `bad_view` and the user gets nothing.
 - A clock in a view is a fact of the queue time (`now`, `timeZone`): a notice held by the quiet hours prints the same text when it goes out.
 - The edit after a tap keeps the stored text of the card and adds one status line (`renderNoticeEdit`); it never renders the card again.
-- Texts are `en` today. The row's `locale` comes from `users.locale` (null = `pl`, as the auth mails); a renderer selects the `pl` text when E7-T1 adds it.
+- The row's `locale` comes from `users.locale` (null = `pl`, as the auth mails). A renderer takes its words from `textsFor(locale)` (`packages/core/src/texts/`): one entry per text, in `en` and `pl`.
 
 ### Add a notice kind
 

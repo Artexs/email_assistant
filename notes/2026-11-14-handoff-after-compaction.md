@@ -68,3 +68,15 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 ## F097 s18 writers: thread order (holdout 049-057 landed)
 - Thread order in holdout 049-057 was checked by hand only (no command detects a reversed thread). The blind checker and reconcile show a reversed thread only through disagreement. Stage 20 (freeze + owner audit of 50 cases) must include threaded cases. A mechanical check (thread[i] signature name vs slot thread[i].persona) would be a small ticket for the sim check.
 - Slots whose persona language differs from slot.lang were written in slot.lang with the persona signature unchanged.
+
+## F100 s18 re-review carry-over (landed, PASS)
+For F100 stage 19 (docs) and later web work:
+- measurement.md rule 9 and web-panel.md rule 9: say the page applies the 30-label rule and names the stats_mailbox_gone state. "Checked against" lines in both pages name d91e47f, a master commit that does not hold the stats page: set them to the commit that holds the page (after this land).
+- Page text gap: below 30 labels the page drops the auto mark ("29 of 30 rated mails needed" has no "· auto"). Add `stats_evidence_few_auto` (en, pl) so a category on auto shows it.
+- kept 0 shows "–", not "0 of 30 needed": acceptable; decide later.
+- Cleanup idea: extract a pure `statsView({mailboxId,data,error,loading})` from StatsPage.tsx and unit test the state cases (the page has no component test).
+
+## F105 s05 review carry-over
+- Stage 07 (operator reset) must split `modules/tenancy/repo.ts` into `repo/` before adding `listBreakGlassOrgIdsOfUser` (the file is at 399 lines; code-patterns limit about 400).
+- Stage 14 docs: `tenancy-and-plans.md` rule 7 (Operator CLIs) may need the `org:break-glass` line too, next to `web-panel.md`.
+- The two-org owner test (setBreakGlassFlag org filter) is added in the s05 fix job before landing.

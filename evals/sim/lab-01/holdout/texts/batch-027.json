@@ -174,7 +174,8 @@
       "mustNot": [
         "Do not unblock cards before the check"
       ],
-      "note": "rewritten: question about a decision that belongs to the executive; no team task"
+      "note": "rewritten: question about a decision that belongs to the executive; no team task",
+      "dropped": true
     },
     {
       "id": "b-rep-0040",
@@ -372,7 +373,8 @@
       "mustNot": [
         "Do not promise a date without checking with operations"
       ],
-      "note": "rewritten: calm question to the executive; no panic"
+      "note": "rewritten: calm question to the executive; no panic",
+      "dropped": true
     }
   ]
 }
