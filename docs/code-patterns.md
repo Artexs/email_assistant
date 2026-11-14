@@ -159,6 +159,7 @@ Every text that a user reads has an English and a Polish version, from the first
   - `listMembershipsOfUser` (`tenancy/repo/index.ts`, S5a): the user gives the tenant; the web resolves the organization from the session.
   - `getUserAuthProfile`, `setUserTerms`, `setUserLocale` (`tenancy/repo/index.ts`, S6b): the user gives the row; the web resolves the user from the session.
   - `isBreakGlassOwner`, `listBreakGlassOrgIdsOfUser` (`tenancy/repo/break-glass.ts`, F105): the user gives the rows. They read the memberships of every organization of the user, so they run only with no tenant scope (`/api/auth/*` and the CLIs). Inside a tenant scope, RLS limits them to one organization.
+  - `resolveSsoMember` and the reads under it (`tenancy/sso-resolve.ts`, `tenancy/repo/sso.ts`, F119): the IdP gives the provider id and the subject. They run in the SSO callback inside `/api/auth/*`, with no tenant scope, and only read.
   - `createLockoutStore` functions (`platform/auth-lockout.ts`, S6b): the user gives the row; the table `auth_lockouts` has no `org_id` and goes with the user by cascade.
   - `listOrganizations` (`tenancy/repo/index.ts`, S6a): the retention job, the operator job and `org:status` walk all organizations.
   - `listOrgFeatureRowsOfAll` (`tenancy/repo/index.ts`, F087): `GET /api/operator/flags` lists the flags of every organization. Only routes under `/api/operator`, behind `requireOperator`, call it.
