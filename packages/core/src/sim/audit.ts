@@ -47,8 +47,9 @@ export function applyVerdict(slot: Slot, verdict: string): Slot {
   if (category === undefined || category === slot.category) return slot;
 
   const next: Record<string, unknown> = { ...slot, category };
-  for (const field of ["urgencySource", "contextRef", "expectedDelegate", "expectedDraft"]) delete next[field];
-  if (category === "urgent") next.urgencySource = "text";
-  if (category === "delegation") next.expectedDraft = "clarification";
+  next.urgencySource = category === "urgent" ? "text" : undefined;
+  next.contextRef = undefined;
+  next.expectedDelegate = undefined;
+  next.expectedDraft = category === "delegation" ? "clarification" : undefined;
   return slotSchema.parse(next);
 }
