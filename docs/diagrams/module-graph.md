@@ -51,7 +51,9 @@ flowchart BT
   operator --> audit
   operator --> channels
   operator --> mail
+  operator --> reports
   operator --> tenancy
+  operator --> triage
   reports --> actions
   reports --> audit
   reports --> config

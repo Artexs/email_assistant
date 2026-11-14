@@ -627,3 +627,15 @@ export async function clearTriageTexts(
     if (changed === 0) return total;
   }
 }
+
+// F099 D14: the newest triage result of the organization, null when none.
+export async function lastTriageAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
+  const row = await db
+    .selectFrom("triage_results")
+    .select("created_at")
+    .where("org_id", "=", ctx.orgId)
+    .orderBy("created_at", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.created_at ?? null;
+}

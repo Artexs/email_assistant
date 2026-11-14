@@ -14,5 +14,5 @@ export {
   WAITING_WINDOW_MS,
   type DigestRequest,
 } from "./digest";
-export { insertDigest, lastDigestSlotKey, lastSentDigestEnd, markDigestSent } from "./repo";
+export { insertDigest, lastDigestSentAt, lastDigestSlotKey, lastSentDigestEnd, markDigestSent } from "./repo";
 export { activityRoutes, type ActivityRouteDeps } from "./routes";

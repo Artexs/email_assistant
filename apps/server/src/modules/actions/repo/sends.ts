@@ -328,3 +328,18 @@ export async function countFailedSendsSince(db: DbOrTrx, ctx: TenantContext, sin
     .executeTakeFirstOrThrow();
   return Number(row.count);
 }
+
+// F099 D14: the newest `applied_at` of an applied send of the organization, null when none.
+export async function lastSendAppliedAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
+  const row = await db
+    .selectFrom("actions")
+    .select("applied_at")
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "=", "applied")
+    .where("applied_at", "is not", null)
+    .orderBy("applied_at", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.applied_at ?? null;
+}

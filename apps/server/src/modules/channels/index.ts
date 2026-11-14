@@ -14,6 +14,7 @@ export {
   cancelPendingOutboxOfOrg,
   claimDueOutbox,
   countFailedOutboxSince,
+  lastOutboxSentAt,
   clearOutboxTexts,
   deleteOldLinkTokens,
   failOutbox,

@@ -160,6 +160,47 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     }
   });
 
+  test("7b. path forms of /orgs and /orgs/:orgId: a non-operator always gets 404", async () => {
+    const app = operatorApp();
+    const id = org.orgId;
+    const paths = [
+      "/api/operator/orgs",
+      "/api/operator/orgs/",
+      "/api/operator//orgs",
+      "/api/operator/%6Frgs",
+      "/api/operator/ORGS",
+      "/api/operator/./orgs",
+      "/api/operator/x/../orgs",
+      `/api/operator/orgs/${id}`,
+      `/api/operator/orgs/${id}/`,
+      `/api/operator//orgs/${id}`,
+      `/api/operator/orgs//${id}`,
+      `/api/operator/%6Frgs/${id}`,
+      `/api/operator/orgs/%${id.charCodeAt(0).toString(16)}${id.slice(1)}`,
+      `/api/operator/ORGS/${id}`,
+      `/api/operator/./orgs/${id}`,
+      `/api/operator/x/../orgs/${id}`,
+      "/api/operator/notices",
+      "/api/operator/notices/",
+      "/api/operator/%6Eotices",
+      "/api/operator/NOTICES",
+    ];
+    for (const who of ["owner", "other"]) {
+      for (const path of paths) {
+        for (const method of ["GET", "HEAD"]) {
+          const res = await app.request(path, as(who, { method }));
+          expect({ who, path, method, status: res.status }).toEqual({ who, path, method, status: 404 });
+          if (method === "GET") expect(await res.json()).toEqual({ error: "not_found" });
+        }
+      }
+    }
+    // The same forms with no session never reach a route.
+    for (const path of paths) {
+      const res = await app.request(path, { headers: { origin: TEST_ORIGIN } });
+      expect({ path, status: res.status }).toEqual({ path, status: 401 });
+    }
+  });
+
   test("8. the prefix guard does not leak: the owner still reads /api/me", async () => {
     const res = await operatorApp().request("/api/me", as("owner"));
     expect(res.status).toBe(200);

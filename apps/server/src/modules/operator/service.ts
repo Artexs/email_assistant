@@ -1,11 +1,21 @@
-import { costPerMail, QUOTA_TIMEZONE, quotaDayStart, type OperatorOrgList, type OperatorOrgRow } from "@ea/core";
+import {
+  costPerMail,
+  QUOTA_TIMEZONE,
+  quotaDayStart,
+  type OperatorNotices,
+  type OperatorOrgDetail,
+  type OperatorOrgList,
+  type OperatorOrgRow,
+} from "@ea/core";
 
 import type { Db, TenantContext } from "../../platform/db";
-import { countFailedSendsSince } from "../actions";
-import { sumLlmCallsByModelSince } from "../audit";
-import { countFailedOutboxSince, listLinkedChatsOfOrg } from "../channels";
+import { countFailedSendsSince, lastSendAppliedAt } from "../actions";
+import { auditEvents, listAuditEvents, sumLlmCallsByModelSince } from "../audit";
+import { countFailedOutboxSince, lastOutboxSentAt, listLinkedChatsOfOrg } from "../channels";
 import { listMailboxes } from "../mail";
-import { getOrgPlan, listMemberships, listOrganizations } from "../tenancy";
+import { lastDigestSentAt } from "../reports";
+import { featureStates, getOrgPlan, listMemberships, listOrganizations } from "../tenancy";
+import { lastTriageAt } from "../triage";
 
 const DAY_MS = 24 * 3_600_000;
 
@@ -68,4 +78,80 @@ export async function listOperatorOrgs(deps: { db: Db; now: () => Date }): Promi
     if (row) orgs.push(row);
   }
   return { orgs, at: now.toISOString() };
+}
+
+const NOTICE_LIMIT = 200;
+
+const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
+
+// D15: one organization, every read tenant-scoped. No address, name or text.
+export async function getOperatorOrg(
+  deps: { db: Db; now: () => Date },
+  orgId: string
+): Promise<OperatorOrgDetail | { kind: "not_found" }> {
+  const { db } = deps;
+  const ctx: TenantContext = { orgId };
+  const now = deps.now();
+  const since = new Date(now.getTime() - DAY_MS);
+  const plan = await getOrgPlan(db, ctx);
+  if (!plan) return { kind: "not_found" };
+  const [mailboxes, sends, outbox, llm, flags, triage, digest, send, notice] = await Promise.all([
+    listMailboxes(db, ctx),
+    countFailedSendsSince(db, ctx, since),
+    countFailedOutboxSince(db, ctx, since),
+    llmToday(db, ctx, now),
+    featureStates(db, ctx),
+    lastTriageAt(db, ctx),
+    lastDigestSentAt(db, ctx),
+    lastSendAppliedAt(db, ctx),
+    lastOutboxSentAt(db, ctx),
+  ]);
+  const synced = mailboxes.flatMap((mailbox) => (mailbox.last_synced_at ? [mailbox.last_synced_at.getTime()] : []));
+  return {
+    orgId,
+    plan: plan.plan,
+    trialEndsAt: iso(plan.trialEndsAt),
+    resumedAt: iso(plan.resumedAt),
+    maxMailboxes: plan.maxMailboxes,
+    mailboxes: mailboxes.map((mailbox) => ({
+      mailboxId: mailbox.id,
+      status: mailbox.status,
+      statusChangedAt: mailbox.status_changed_at.toISOString(),
+      lastSyncedAt: iso(mailbox.last_synced_at),
+    })),
+    lastRuns: {
+      sync: synced.length > 0 ? new Date(Math.max(...synced)).toISOString() : null,
+      triage: iso(triage),
+      digest: iso(digest),
+      send: iso(send),
+      notice: iso(notice),
+    },
+    failures24h: { sends, outbox },
+    llmToday: llm,
+    flags,
+    at: now.toISOString(),
+  };
+}
+
+// D16: the operator notices of all organizations, newest first (at desc, then orgId), at most 200.
+export async function listOperatorNotices(deps: { db: Db; now: () => Date }, days: number): Promise<OperatorNotices> {
+  const now = deps.now();
+  const since = new Date(now.getTime() - days * DAY_MS);
+  const notices: OperatorNotices["notices"] = [];
+  for (const { id } of await listOrganizations(deps.db)) {
+    const rows = await listAuditEvents(
+      deps.db,
+      { orgId: id },
+      { events: [auditEvents.operatorNotice], since, limit: NOTICE_LIMIT }
+    );
+    for (const row of rows) {
+      // `data` is stored JSON: read it as unknown and skip a row whose kind or key is not a string.
+      const data = typeof row.data === "object" && row.data !== null ? (row.data as Record<string, unknown>) : {};
+      const { kind, key } = data;
+      if (typeof kind !== "string" || typeof key !== "string") continue;
+      notices.push({ orgId: id, kind, key, at: row.at.toISOString() });
+    }
+  }
+  notices.sort((a, b) => (a.at === b.at ? a.orgId.localeCompare(b.orgId) : a.at < b.at ? 1 : -1));
+  return { notices: notices.slice(0, NOTICE_LIMIT), since: since.toISOString() };
 }
