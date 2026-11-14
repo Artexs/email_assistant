@@ -37,14 +37,13 @@ After the next `mail.sync` run (every `MAIL_SYNC_EVERY_MIN`, default 2 minutes):
 4. `mailbox:settings show --org-id <pilot org> --mailbox-id <pilot mailbox>` → `sent: on, folder Wysłane, stored <n>, last <ISO>, first pass done, error none`, `n` > 0. `n` = 0 means Interia keeps no copy (N2): write it in the note and tell the owner.
 5. `psql`: `SELECT content, origin, count(*) FROM sent_emails WHERE mailbox_id = '<pilot mailbox>' GROUP BY 1, 2 ORDER BY 1, 2` (DB user and name as the F099 runbook reads them, never by printing secrets) → counts only; after `ceil(pending / 100)` more runs, `pending` is 0 (N3).
 6. `psql`: `SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'outbox_kind_check'` → ends with `'sent_missing'`.
-7. The card shows "Last sent mail seen: …" (the owner, or a screenshot through the tailnet).
+7. The card shows "Last sent mail seen: …" (the owner sees it).
 8. Telegram: no `sent_missing` notice now (it can come only after 7 quiet days).
 9. Answered marks (N4): `SELECT count(*) FROM sent_emails s JOIN emails e ON e.mailbox_id = s.mailbox_id AND e.message_id_header = s.parent_message_id WHERE s.mailbox_id = '<pilot mailbox>' AND s.origin = 'user'` → a count. 0 means no `In-Reply-To`/`References` from Interia's clients, or no answered mail in the window: write which in the note; with replies the owner knows of, 0 is a finding for E5b.
 
 ## After
 
 - `notes/<date>-sent-sync-pilot.md`: the counts of checks 4, 5 and 9 (no subject, no address), the first-pass time from the log, the N2–N4 results. Commit it by explicit path.
-- The last land moves the ticket to `done/`.
 
 ## Rollback
 
