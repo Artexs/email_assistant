@@ -236,7 +236,14 @@ export function requireTenant(deps: {
 // A paused account can still accept the terms: it changes no mail and no organization data.
 export const SUSPENDED_WRITE_ALLOW: readonly { method: string; path: RegExp }[] = [
   { method: "POST", path: /^\/api\/me\/terms$/ },
+  // The operator acts on other organizations; its own organization's plan does not matter (plan D21).
+  { method: "POST", path: /^\/api\/operator\// },
 ];
+
+// The operator console page (ADR 0027): non-operators get the 404 page, as for a path that does not exist. Probe P1 of
+// spec/features/active/F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log/plan.md:
+// c.req.path is decoded and normalized, so this covers every served form.
+export const OPERATOR_PAGE = /^\/operator(\/|$)/i;
 
 const READ_METHODS: readonly string[] = ["GET", "HEAD", "OPTIONS"];
 
@@ -379,6 +386,11 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     const session = await readSession(c);
     if (!session) return c.redirect(`/login?next=${encodeURIComponent(safeNextPath(path))}`, 302);
     if (path === "/") return c.redirect(await homeOf(web, session.userId), 302);
+    if (OPERATOR_PAGE.test(path) && web.operatorUserIds?.has(session.userId) !== true) {
+      log.warn("operator_page_refused", { user_id: session.userId });
+      c.header("Cache-Control", "private, no-store");
+      return c.html(notFoundHtml, 404);
+    }
     return next();
   });
 
