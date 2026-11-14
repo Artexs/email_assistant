@@ -128,11 +128,11 @@ export async function listActivity(
         },
         textsFor("en")
       ),
-      phrase: describeActions(own, names, { stayFolder: row.folder }),
+      phrase: describeActions(own, names, { stayFolder: row.folder }, textsFor("en")),
       actions: own
         .filter((action) => !action.reverse)
         .flatMap((action) => {
-          const phrase = describeAction(action, names);
+          const phrase = describeAction(action, names, textsFor("en"));
           if (phrase === null) return [];
           return [
             { type: action.type, status: action.status, phrase, appliedAt: action.appliedAt?.toISOString() ?? null },
