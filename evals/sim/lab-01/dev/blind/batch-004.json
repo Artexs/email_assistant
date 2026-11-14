@@ -1,0 +1,331 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-004",
+  "cases": [
+    {
+      "id": "b-inf-0135",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Export desk: February capacity confirmed",
+      "body": "Dear Mr Szalewski,\n\nI would like to share a short status on the export side of our joint work. Our brokerage has confirmed capacity with four carriers for February, which covers all the lanes to the Nordic and Baltic markets that we planned together. The carriers hold the rates agreed in December, and no extra surcharge has been announced so far.\n\nThe weekly volume forecast is 38 trucks, and the booking windows at the Gdynia terminal are already reserved for the first three weeks. Our customs team reports that document quality has improved, with only two rejected declarations in the past month.\n\nThis message is for your information only.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0144",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Travel schedule, first quarter",
+      "body": "Hi Wiktor,\n\nFYI: I will be away from 16 to 18 February for a conference in Vienna and will be reachable by email only in the evenings.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0145",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport tygodniowy z linii eksportowych",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam krótki raport tygodniowy dotyczący linii eksportowych, które obsługujemy wspólnie z Państwa zespołem. W minionym tygodniu zrealizowaliśmy trzydzieści jeden kursów do Szwecji, Finlandii i Estonii, bez żadnych zatrzymań w porcie.\n\nŚredni czas dostawy do klientów w krajach nordyckich wyniósł 41 godzin, czyli o dwie godziny mniej niż w poprzednim tygodniu. Agent celny nie zgłosił żadnych zastrzeżeń do dokumentów, a jedyną niedogodnością był jednodniowy przestój w jednym z terminali z powodu śniegu, który nie wpłynął na terminy.\n\nRaport ma charakter wyłącznie informacyjny.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0149",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Frekwencja i absencje w styczniu",
+      "body": "Cześć Wiktorze,\n\nkrótka informacja z działu kadr. Absencja w magazynach w pierwszych dwóch tygodniach stycznia wyniosła 4,1 procent, czyli mniej niż w grudniu, kiedy sięgała prawie sześciu. Najwięcej zwolnień lekarskich dotyczyło zmiany nocnej w Poznaniu, ale ten trend się już odwraca.\n\nWszystkie wnioski urlopowe na luty zostały rozpatrzone i nie powodują żadnych luk w obsadzie. Dla Twojej wiadomości: zatrudniliśmy też dwie osoby na zastępstwa w dziale kadr.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0155",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dzis: nowe stawki opłat drogowych",
+      "body": "Od lutego w kilku krajach regionu zmieniają się stawki opłat drogowych dla pojazdów ciężarowych.\n\nNajwięcej zmian dotyczy Niemiec i Czech, gdzie opłata za kilometr wzrośnie średnio o 4 proc. Zdaniem analityków przewoźnicy przerzucą część kosztów na klientów w cennikach na drugi kwartał. W numerze także zestawienie najnowszych przetargów publicznych na usługi transportowe oraz krótki raport o liczbie nowych rejestracji ciężarówek w minionym roku.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0158",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: Container rates ease after holiday peak",
+      "body": "This week in global freight: container rates from Asia to Northern Europe fell for the second week in a row, down 7% from the holiday peak.\n\nHighlights:\n- Port congestion in Rotterdam and Hamburg has eased, with average waiting time dropping below two days.\n- Air cargo demand remains strong in electronics, while perishables are flat.\n- Two carriers announced capacity cuts on the Baltic feeder routes for February.\n\nOur paid report on 2027 freight forecasts is available to subscribers.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0164",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Export documentation status",
+      "body": "Dear Mr Szalewski,\n\nFor your awareness: the revised export documents have been approved by the port authority and are now in use for all our shipments.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Export documentation status",
+          "body": "Hi Wiktor, the port wants revised export docs from February. Daniel's team is dealing with it, will update when done.\n\nOliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0167",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie harmonogramu rozładunków na luty",
+      "body": "Szanowny Panie Prezesie,\n\ndla Państwa informacji przekazuję ustalony w naszym zespole harmonogram przyjęć dostaw na luty. Rampa nr 3 będzie przyjmować dostawy od Państwa we wtorki i czwartki między 6:00 a 10:00, a w pozostałe dni po uzgodnieniu z kierownikiem magazynu.\n\nW dniach 12 i 13 lutego magazyn będzie nieczynny z powodu inwentaryzacji, więc dostaw w tych dniach nie przyjmujemy. Pozostałe okna pozostają bez zmian w stosunku do poprzedniego miesiąca. Nasz dział logistyki przekazał ten harmonogram również Państwa dyspozytorom, więc nie ma potrzeby żadnej akcji po Państwa stronie.\n\nTomasz Brzeziński",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0170",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "FYI: Nordic annex status",
+      "body": "Hi Wiktor,\n\na quick one from Gdansk. Piotr has updated annex 2 of the Nordic framework with the Finland rates, and the new version is in the shared folder under the Nordic contract. I went through it with Karin's team this morning and they have no remarks on the rate table.\n\nThe only open point on their side is the numbering of the clauses, which they will fix in their copy. Just keeping you in the loop.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Nordic annex – Finland rates",
+          "body": "Oliver, the annex with the Finland rates is ready for review. I put it in the shared folder.\n\nPiotr Lewandrowski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0173",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dzis: rynek magazynowy w Polsce",
+      "body": "Podaż nowoczesnych powierzchni magazynowych w Polsce wzrosła w ubiegłym roku o 11 proc. Najwięcej nowych obiektów oddano w regionach łódzkim i wielkopolskim.\n\nWedług raportu doradców nieruchomości czynsze za magazyny w największych węzłach pozostały stabilne, a poziom pustostanów wynosi 5,3 proc. Autorzy raportu spodziewają się, że w tym roku popyt utrzymają firmy handlu internetowego.\n\nKolejne wydanie w przyszły piątek. W kolejnym numerze porównamy stawki za metr kwadratowy w największych hubach logistycznych i przedstawimy prognozy na drugą połowę roku.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0178",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: Carrier surcharges and port strikes",
+      "body": "A busy week for the supply chain: carriers announced new winter surcharges, and a one-day strike at a major northern port delayed about twelve vessels.\n\nWhat we are watching:\n- Fuel surcharges on Baltic services are up an average of 4%.\n- European road haulage rates remain flat for the third month.\n- A new customs system at several ports is due to start in March.\n\nRead the full analysis in our premium edition.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0179",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie: naczepy i serwis floty w styczniu",
+      "body": "Cześć Wiktor,\n\nkrótkie podsumowanie stanu floty na koniec stycznia, żebyś miał pełny obraz.\n\nWszystkie cztery nowe naczepy, które zamówiliśmy w jesieni, zostały już odebrane i weszły do eksploatacji. Przeszły rejestrację bez uwag, a pierwszy tydzień pracy nie wykazał żadnych usterek. Dwie z nich jeżdżą na trasie do Gdyni, dwie obsługują dostawy dla sieci Zielona Hurtownia.\n\nSerwis okresowy trzynastu starszych zestawów odbył się zgodnie z planem. Warsztat wymienił łącznie dwadzieścia sześć klocków hamulcowych i trzy lampy, a koszt serwisu zamknął się o około sześć procent poniżej budżetu. Wskaźnik dostępności floty wyniósł w styczniu 97 procent, najwięcej od roku. Jedyną większą sprawą jest naczepa chłodnia nr 7, która stoi w serwisie do końca tygodnia z powodu wymiany agregatu; kierowcy korzystają z zastępczej.\n\nPlan przeglądów na luty jest już ułożony i przekazany kierownikom magazynów. Z ciekawości sprawdziłem też zużycie paliwa: nowe naczepy mają lepszą aerodynamikę, a pierwsze odczyty wskazują na oszczędność rzędu trzech procent na długich trasach. Jeśli ten wynik się utrzyma, wrócimy do tego przy planowaniu zakupów na kolejny rok. Piszę tylko informacyjnie, nic nie musisz robić.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0183",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Plan posiedzeń w drugim kwartale",
+      "body": "Cześć Wiktorze,\n\ndla informacji: ustaliliśmy z członkami rady, że w drugim kwartale spotkamy się dwa razy, 15 kwietnia i 17 czerwca. Oba posiedzenia odbędą się w siedzibie spółki i zaczną się o 10:00.\n\nSzczegółowe agendy prześlę z odpowiednim wyprzedzeniem. Wcześniejszy plan, w którym było trzecie posiedzenie w maju, został zmieniony, ponieważ kilku członków rady nie może wtedy przyjechać. Zaproszenia z agendą wyślemy w standardowym terminie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0185",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowa osoba w dziale kadr",
+      "body": "Wiktorze, od poniedziałku w dziale kadr pracuje Marta, nowa specjalistka ds. rekrutacji. Zastąpi koleżankę na urlopie macierzyńskim.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0191",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Ankieta pracownicza – wyniki",
+      "body": "Cześć Wiktor,\n\nzamknęliśmy grudniową ankietę zadowolenia pracowników i chciałem Ci przekazać krótko wyniki. Odpowiedziało 71 procent załogi, co jest dobrym wynikiem. Ogólna ocena pracy w firmie wyniosła 4,2 w skali pięciostopniowej, a najlepiej pracownicy oceniają bezpośrednich przełożonych i organizację zmian.\n\nNajsłabiej wypadły parkingi przy magazynie w Łodzi i wyposażenie szatni. Zespół operacyjny już o tym wie. Pełny raport trafi do folderu działu.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0205",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pallet count for Week 4 shipments",
+      "body": "Dear Mr Szalewski,\n\nFor your information: our warehouse has received all pallets of the first lot, 120 in total, in good condition.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0206",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Gdynia port – status on the berth issue",
+      "body": "Hi Wiktor,\n\nan update on the berth problem we discussed. Port management confirmed that our trucks will get a dedicated lane at the north gate from next Monday, so the queue to the main terminal should disappear. The agent also moved our daily cut-off by one hour, which helps with the evening loading.\n\nAll of this is in place now. No action needed, I only wanted you to hear it from me.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Gdynia port – berth issue",
+          "body": "Oliver, what is happening with the queue at the port? I got a note from the drivers.\n\nWiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0209",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyniki wspólnych przewozów eksportowych w IV kwartale",
+      "body": "Szanowny Panie Prezesie,\n\nw imieniu Baltic Freight Partners chciałbym przekazać wyniki naszych wspólnych przewozów eksportowych za czwarty kwartał 2026 roku. Mam nadzieję, że będą dla Pana punktem odniesienia przed rozmowami o planie na rok 2027.\n\nW minionym kwartale obsłużyliśmy łącznie 604 kursy, co oznacza wzrost o 14 procent w stosunku do trzeciego kwartału. Najlepiej rozwijała się trasa do Finlandii, gdzie liczba kursów wzrosła o jedną czwartą, głównie dzięki nowym kontraktom z siecią supermarketów. Terminowość utrzymała się powyżej 95 procent, mimo trudnych warunków pogodowych w grudniu.\n\nPo stronie kosztów udało się obniżyć udział pustych przebiegów z 18 do 13 procent. Przyczyniły się do tego lepsze planowanie ładunków powrotnych oraz współpraca z dwoma nowymi przewoźnikami na trasie nordyckiej. Średnia marża na kurs pozostała stabilna, a rozliczenia między naszymi firmami zostały zamknięte do końca grudnia.\n\nPlanujemy utrzymać ten kierunek w pierwszej połowie nowego roku i zwiększyć udział przewozów na trasach bałtyckich. Szczegółowe zestawienie kursów zostanie przekazane Państwa dyrektorowi eksportu. Niniejsza wiadomość jest wyłącznie informacją. Dodam jeszcze, że nasz zespół analityczny przygotowuje pełną prezentację z wykresami, którą udostępnimy w marcu na zwykłym spotkaniu kwartalnym.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0213",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Baltic lane – carrier update",
+      "body": "Dear Mr Szalewski,\n\nFollowing your earlier note, here is the status of the Baltic lane. Two of the three carriers have signed their 2027 rate letters, and the third has promised to do so by the end of this week. The rates are in line with what we discussed.\n\nCapacity for the first quarter is therefore secure, and I see no risk to your volumes. I will let you know when the last letter arrives.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Baltic lane – carrier update",
+          "body": "Daniel, when are the carriers expected to confirm the rates for the Baltic lane?\n\nWiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0217",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przegląd stanu parku naczep",
+      "body": "Wiktor, cześć,\n\nzrobiliśmy w tym tygodniu pełny przegląd stanu naczep i mam dla Ciebie krótkie podsumowanie.\n\nZ 48 naczep w użyciu 41 jest w bardzo dobrym stanie technicznym, pięć wymaga drobnych napraw w ciągu najbliższych dwóch miesięcy, a dwie są kandydatami do wymiany w przyszłym roku. Najstarsza naczepa ma osiem lat i przejechała 640 tysięcy kilometrów. Koszt napraw pięciu wskazanych jednostek oszacowaliśmy na około 14 tysięcy złotych, w ramach rocznego budżetu serwisowego.\n\nWarto też wiedzieć, że dostawca opon z zeszłego roku zrealizował pełną gwarancję na dwie partie opon, które zużywały się nierówno. Wymieniono je bezpłatnie w warsztacie w Poznaniu i nie poniosły z tego tytułu żadnych kosztów.\n\nDla porządku: wszystkie przeglądy techniczne i ubezpieczenia floty są ważne co najmniej do końca czerwca. Sprawdziłem też, że wszystkie naczepy mają aktualne wpisy w rejestrze oraz że pozostałe dokumenty homologacyjne są kompletne, więc nie spodziewam się żadnych niespodzianek podczas kontroli drogowych w pierwszej połowie roku. Kolejne zestawienie przygotuję w kwietniu. To tylko informacja, żadnych działań nie potrzeba, a jeśli ktoś z rady zapyta o stan floty, możesz bez obaw powiedzieć, że wszystko jest pod kontrolą.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0229",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Awaria WMS – stan na dziś",
+      "body": "Wiktor, piszę, żebyś wiedział, co się stało z systemem magazynowym w nocy.\n\nAwaria serwera aplikacji w Poznaniu trwała od 2:10 do 3:25 i dotknęła tylko zmiany nocnej. Kompletacja została przełączona na papierowe listy, więc żadne zamówienie nie wyszło z opóźnieniem. Dostawca potwierdził, że przyczyną był pełny dysk logów, i wyczyścił go. Po restarcie dane są spójne.\n\nW najbliższym tygodniu dostawca wdroży monitoring, który ma wykrywać takie sytuacje wcześniej. Sprawa jest zamknięta, a ja po prostu informuję.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0232",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Sytuacja na przejściach granicznych – informacja",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję Pana, że od poniedziałku zmienia się organizacja ruchu ciężarowego na przejściu granicznym w Kuźnicy, przez które kierujemy część wspólnych dostaw na Litwę. Służba celna uruchamia drugi pas odpraw dla pojazdów z towarami spożywczymi, co według komunikatu skróci kolejki nawet o połowę.\n\nNasz agent przeanalizował zmiany i uważa, że nowa organizacja jest dla nas korzystna. Kierowcy będą korzystać z pasa spożywczego, a dokumenty zgłoszeniowe zostaną przesłane elektronicznie z dwugodzinnym wyprzedzeniem. Zmieniony został także numer telefonu do dyspozytora na przejściu, ale informacje te trafiły już do naszych kierowców.\n\nW ciągu najbliższych tygodni zbierzemy dane o czasie odpraw i przekażemy Panu porównanie z listopadem i grudniem. Dotychczasowy średni czas wynosił około pięciu godzin, a celem jest wartość poniżej trzech godzin. Obecnie nie widzimy ryzyk dla terminów dostaw ani dla kosztów. Pozostałe przejścia, w tym Budzisko i Ogrodniki, działają bez zmian, a dodatkowe odprawy w nocy zostały utrzymane do końca marca, co daje nam elastyczność w planowaniu kursów w godzinach szczytu.\n\nPiszę wyłącznie informacyjnie, żadne działania po Pana stronie nie są potrzebne. W razie zmian damy znać, ale na dziś wszystko wygląda stabilnie.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0233",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie wizyty członków rady w Poznaniu",
+      "body": "Cześć Wiktor,\n\nwróciłem z wizyty w magazynie w Poznaniu razem z dwoma członkami rady i chcę przekazać Ci swoje wrażenia, bo wszyscy wyszliśmy z dobrym nastawieniem.\n\nMagazyn robi bardzo dobre wrażenie pod względem organizacji. Zwróciliśmy uwagę na czystość, oznakowanie stref i sprawność kompletacji, a obsługa pokazała nam nowy system podziału zadań na zmianie. Pani dyrektor operacyjna oprowadzała nas przez całą wizytę i przygotowała zestawienie wskaźników z ostatnich sześciu miesięcy, które otrzymaliśmy w formie wydruku.\n\nNajwiększe wrażenie zrobiła na nas liczba reklamacji, która w porównaniu z poprzednim rokiem spadła o niemal jedną trzecią. Rada ocenia to jako jeden z najważniejszych wskaźników jakości.\n\nPodróż zorganizowano sprawnie, bez żadnych opóźnień, a wspólny obiad pozwolił nam omówić kilka tematów w nieformalnej atmosferze. Wszyscy zainteresowani wrócili bez zastrzeżeń do organizacji. Nie oczekuję żadnej odpowiedzi, to tylko sprawozdanie z wyjazdu, do Twojej wiadomości. Kolejne takie wizyty zaplanujemy dopiero po zakończeniu przetargu, kiedy będziemy wiedzieli, ile czasu zajmie nam obsługa nowych kontraktów i jak ułożą się terminy w kalendarzu rady. Dziękuję pani dyrektor oraz jej zespołowi za otwartość i dobre przygotowanie, bo z tego, co widzieliśmy, wynika, że cała załoga naprawdę dobrze zna swoją pracę.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0237",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dzis: krótko o kursach walut",
+      "body": "Złoty umocnił się w tym tygodniu wobec euro o 0,6 proc., co obniża koszt importowanych usług transportowych.\n\nAnalitycy nie spodziewają się większych zmian kursu do końca miesiąca.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0239",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Export update: no changes to the lanes",
+      "body": "Dear Mr Szalewski,\n\njust a short note: the export lanes to Sweden and Finland run as planned, and no changes are expected next week.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
