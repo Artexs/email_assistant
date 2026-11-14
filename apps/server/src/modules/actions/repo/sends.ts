@@ -315,3 +315,16 @@ function recipientsOf(payload: unknown): string[] {
   const to = (payload as { to?: unknown } | null)?.to;
   return Array.isArray(to) ? to.filter((entry): entry is string => typeof entry === "string") : [];
 }
+
+// F099 D17: sends of the organization that ended `failed` after `since` (by `updated_at`).
+export async function countFailedSendsSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number> {
+  const row = await db
+    .selectFrom("actions")
+    .select(sql<string>`count(*)`.as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "=", "failed")
+    .where("updated_at", ">", since)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}

@@ -2,6 +2,7 @@ export {
   auditEvents,
   countEventsBetween,
   countLlmCallsSince,
+  sumLlmCallsByModelSince,
   countMailboxEventsBetween,
   findActionActor,
   hasAuditEvent,

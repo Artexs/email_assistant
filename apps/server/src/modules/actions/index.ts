@@ -43,6 +43,7 @@ export {
   clearActionPayloads,
   countActionsSince,
   countClaimable,
+  countFailedSendsSince,
   countHeldSends,
   countApprovals,
   countReadyOriginals,

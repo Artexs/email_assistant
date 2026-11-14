@@ -13,6 +13,7 @@ export {
   cancelPendingOutbox,
   cancelPendingOutboxOfOrg,
   claimDueOutbox,
+  countFailedOutboxSince,
   clearOutboxTexts,
   deleteOldLinkTokens,
   failOutbox,
