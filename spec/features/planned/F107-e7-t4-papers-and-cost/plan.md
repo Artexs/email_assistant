@@ -2,60 +2,58 @@
 
 > **Status 2026-11-14 — planned.** Plan base: 69473f4e. Eight stages; cold review 1 (§ Cold review).
 
-Workers read `ticket.md`, this file and their one stage file. **A gap or a deviation is a question in the final message, not a choice.**
+**A gap or a deviation is a question in the final message, not a choice.**
 
 ## Input
 
-Owner (scope change, 2026-11-12): "You can prepare by yourself the drafts so it will be just the placeholder in the application as there is no need to contact lawyer." P21: "the agent writes the privacy policy, terms and DPA as in-app pages marked "DRAFT, not legal advice", describing the real setup (home VPS, OpenAI, Telegram, Backblaze, Tailscale); the cost model uses real data; the price is a placeholder." PD-049: "Papers (S6e) also hold a DPIA draft, records of processing (Art. 30) and a breach procedure (moved from E8). Cost model v1 from pilot `triage:cost` now; E3 updates it with M7." PD-101: "sub-processors from one typed file in `packages/core` that the S6e legal pages also render". PD-059: "$25 placeholder price … M7 feeds `docs/cost-model.md`".
+Owner (scope change, 2026-11-12): "You can prepare by yourself the drafts so it will be just the placeholder in the application as there is no need to contact lawyer." P21: "the agent writes the privacy policy, terms and DPA as in-app pages marked "DRAFT, not legal advice", describing the real setup (home VPS, OpenAI, Telegram, Backblaze, Tailscale); the cost model uses real data; the price is a placeholder." PD-049: "Papers (S6e) also hold a DPIA draft, records of processing (Art. 30) and a breach procedure (moved from E8). Cost model v1 from pilot `triage:cost` now; E3 updates it with M7." PD-101: "sub-processors from one typed file in `packages/core` that the S6e legal pages also render". PD-059: "$25 placeholder price".
 
 ### Product
 
-- **P1** Six static pages `/legal/<pl|en>/<privacy|terms|dpa>` (the routes and stubs exist). Each starts with the draft line: en "DRAFT, not legal advice. This service runs on a private server for its owner only."; pl "WERSJA ROBOCZA, nie jest poradą prawną. Ta usługa działa na prywatnym serwerze wyłącznie dla jej właściciela." (pl wording: default, owner to confirm, `questions.md` Q2). The line stays for good (P21).
-- **P2** The texts state the real setup at the build commit, nothing more. A fact without a source in code or docs becomes `<to confirm: …>`; a worker never invents a legal fact, a company or a number.
+- **P1** Six static pages `/legal/<pl|en>/<privacy|terms|dpa>` (stubs exist). Each starts with the draft line: en "DRAFT, not legal advice. This service runs on a private server for its owner only."; pl "WERSJA ROBOCZA, nie jest poradą prawną. Ta usługa działa na prywatnym serwerze wyłącznie dla jej właściciela." (pl: default, owner to confirm, Q2). The line stays (P21).
+- **P2** The texts state the real setup at the build commit, nothing more. A fact without a source becomes `<to confirm: …>`; never invent a legal fact, a company or a number.
 - **P3** No person is named: placeholders `<provider name>`, `<address>`, `<contact>` (default, Q1: the repo is public).
-- **P4** Links to the three documents (panel language) on `/login`, `/setup` (exists), in the Account card and in the terms dialog (exists).
-- **P5** Every change of a legal text or of a registry row changes `TERMS_VERSION`; a member with an older version sees the existing blocking dialog (D18).
-- **P6** Internal papers in `docs/legal/`, English only (default, Q4): DPIA draft, records of processing, breach procedure, claims list. The breach register lives outside the public repo (Q5).
-- **P7** Cost model v1: measured pilot LLM cost (four finished weeks of M7 and `triage:cost`), the hosting reference of PD-059 (Hetzner CX23 ÷ 20 mailboxes; the home VPS power cost is `<home VPS cost>`; Q8), the backup share, the $25 placeholder price.
+- **P4** Links (panel language) on `/login`, `/setup` (exists), the Account card, the terms dialog (exists).
+- **P5** A change of a legal text or a registry row changes `TERMS_VERSION`; members then see the existing dialog (D18, Q7).
+- **P6** `docs/legal/`, English (Q4): DPIA draft, records of processing, breach procedure, claims list; the breach register stays outside the repo (Q5).
+- **P7** Cost model v1: pilot LLM cost (four weeks of M7 and `triage:cost`), hosting reference of PD-059 (CX23 ÷ 20; home VPS `<home VPS cost>`, Q8), backup share, $25 placeholder price.
 - **P8** ADR 0020 "Accounts: invite, plan state, consent by mode, deletion", accepted, for the local production shape. ADR 0018 and 0019 stay reserved.
 
 ### Design
 
-- **D1** Markdown sources in `apps/web/src/legal/<lang>/<doc>.md`, rendered by the existing `[lang]/[doc].astro` through `import.meta.glob` (eager). Not `src/content/` (Astro's collection folder; its rules differ between Astro 5 and 7, and F101 moves the panel to Astro 7). No MDX and no new dependency.
-- **D2** Page order: draft line (i18n key `legal_draft_line`), version line (`legal_version`, shows `TERMS_VERSION`), the Markdown body, then the generated tables: privacy gets the data-category table and the sub-processor table; DPA gets the sub-processor table as Annex 2. A wider reading layout than the sign-in pages; no island, no script.
+- **D1** Markdown sources in `apps/web/src/legal/<lang>/<doc>.md`, rendered by the existing `[lang]/[doc].astro` through `import.meta.glob` (eager). Rejected: `src/content/` (Astro's collection folder, different in Astro 5 and 7; F101 moves to 7) and MDX (a new dependency).
+- **D2** Page order: draft line (`legal_draft_line`), version line (`TERMS_VERSION`), Markdown body, generated tables (privacy: data categories and sub-processors; DPA: sub-processors as Annex 2). Wider layout; no island, no script.
 - **D3** Sub-processor registry `packages/core/src/legal/subprocessors.ts` (E10b reads it): `subprocessors: readonly Subprocessor[]`, `Subprocessor = { id, name, purpose: Texts, dataReceived: Texts, location: Texts, termsUrl, personalData: boolean, activeWhen: ActiveWhen }`, `Texts = { en: string; pl: string }`, `ActiveWhen = { kind: "always" } | { kind: "llmProvider"; provider: string } | { kind: "env"; key: string } | { kind: "host"; what: "backup" }`. Rows: stage 01.
 - **D4** Data-category registry `packages/core/src/legal/data-categories.ts`: `dataCategories: readonly DataCategory[]`, `DataCategory = { id, tables: readonly string[], label: Texts, purpose: Texts, subjects: readonly ("users" | "others")[], kept: Kept }`, `Kept = { kind: "orgSetting"; defaultDays: number } | { kind: "days"; days: number } | { kind: "untilDelete" } | { kind: "afterExpiry"; days: number }`, plus `NO_PERSONAL_DATA_TABLES`. Coverage tests: stage 01.
 - **D5** Text guard: `LEGAL_TEXTS_SHA256` next to `TERMS_VERSION` in `packages/core/src/web/terms.ts`. A unit test hashes the six Markdown files (LF), both registries (`JSON.stringify`) and the `legal_*` keys of `en.ts` and `pl.ts`; a mismatch fails with "change TERMS_VERSION and LEGAL_TEXTS_SHA256". Version form `YYYY-MM-DD` (UTC date of the commit), `-2`, `-3` for a second change that day.
-- **D6** Placeholders match `<[a-z][a-z0-9 ]*>` or `<to confirm: …>`; a unit test allows only the list in `apps/web/src/lib/legal.ts` and fails on any other `<…>` in the sources. The page shows them as text, never as an HTML element.
-- **D7** Each pl/en pair has the same `##` heading count (unit test).
-- **D8** `docs/legal/records-of-processing.md` names every data-category id in backticks (unit test).
-- **D9** `docs/legal/claims.md`: one table `| # | Claim | Source | Condition |` (the E10 §4.2 shape, so E10b can reuse it). Source = a repo path, an ADR or a public URL.
-- **D10** `costToRun(mailsPerDay: number, opts?: { mailboxesPerHost?: number }): { llmUsd; hostingUsd; backupUsd; totalUsd; basis: "measured" | "estimate" }` per mailbox per month, in `packages/core/src/metrics/cost-model.ts`, with `pilotCost` (measured block). It reuses the hosting and backup share of `unitCost` (one formula). `basis` is `measured` when `pilotCost.mails >= 100`, else it uses the E3 §4 estimate ($0.000143 per classified mail). F121 reads `costToRun`.
-- **D11** The measurement is read-only on the VPS (stage 07): only counts, dollar sums, model names and dates go into `pilot-cost.md` in this folder; no id, address or subject.
-- **D12** Seams: read Sent (F104), mailbox OAuth and the phone channel (F117, F118), sender profiles and the EU endpoint (F111, F120) and the docs site (F112, a GitHub row with `personalData: false`) change the registries and the texts, which bumps the version by D5; a new table fails D4 coverage.
-- **D13** Docs: new capability page `docs/capabilities/papers.md` (index row); `web-panel.md` loses "stubs"; `docs/architecture.md` §7 "Papers" row; `docs/product-brief.md` and `docs/roadmap.md` point to the drafts.
+- **D6** Only listed placeholders (`legalPlaceholders`) or `<to confirm: …>` may appear; the page shows them as text.
+- **D7** Each pl/en pair has the same `##` heading count.
+- **D8** The records of processing name every data-category id.
+- **D9** `docs/legal/claims.md`: one table `| # | Claim | Source | Condition |` (E10 §4.2 shape; E10b reuses it).
+- **D10** `costToRun(mailsPerDay: number, opts?: { mailboxesPerHost?: number }): { llmUsd; hostingUsd; backupUsd; totalUsd; basis: "measured" | "estimate" }` per mailbox per month, in `packages/core/src/metrics/cost-model.ts`, from the `pilotCost` block; one hosting and backup formula with `unitCost`; `estimate` below 100 measured mails. F121 reads it.
+- **D11** The measurement is read-only on the VPS (stage 07); `pilot-cost.md` holds counts, dollar sums, model names and dates only.
+- **D12** Seams: F104 (Sent), F117/F118 (OAuth, push, Telegram detail), F111/F120 (EU endpoint, profiles), F112 (GitHub row, `personalData: false`) update registries and texts; D5 forces the bump, D4 catches a new table.
+- **D13** Docs: new `docs/capabilities/papers.md`; `web-panel.md`, `docs/architecture.md` §7, product brief and roadmap point to the papers.
 
 ### Edge cases
 
-- **E1** A member who never accepted, or accepted an older version, gets the dialog; a suspended organization may still accept (existing rules, no change).
-- **E2** Pages are static: a later `LLM_PROVIDER` switch does not change them, so each sub-processor row shows its "used when" text. The text says "this install uses OpenAI" with the condition in `claims.md`.
-- **E3** No env value, secret or person is read at build time into a page (test in stage 02).
-- **E4** No state, no job, no write: nothing to repeat after a crash.
+- **E1** A member who never accepted, or accepted another version, gets the dialog; a suspended organization may still accept (existing rules).
+- **E2** Pages are static: an `LLM_PROVIDER` switch does not change them, so each row shows its "used when" text; "this install uses OpenAI" carries its condition in `claims.md`.
+- **E3** No env value, secret or person goes into a page at build time.
+- **E4** No state, job or write: nothing repeats after a crash; two tenants see the same public pages.
 
 ## Facts checked (2026-11-14, at `69473f4e`)
 
-- Stub page, `legalDocs`, `legalPath`, `PUBLIC_PAGE_PATHS` regex, `TERMS_VERSION = "2026-11-12"`, links in `/setup` and the terms dialog, none on `/login` or the Account card: `apps/web/src/pages/legal/[lang]/[doc].astro`, `apps/web/src/lib/legal.ts`, `apps/server/src/platform/http.ts`.
-- `llmProviders` = `gemini`, `openai`; default `openai`; `store: false`: `platform/llm/providers/`, `platform/config.ts`.
-- Retention 30 (DB default), 90 (`RETENTION_TEXT_DAYS`), 7 pending, 1 day tokens: `docs/capabilities/retention.md`.
-- Healthchecks.io heartbeat, HIBP 5 hex characters, auth mail off: `docs/architecture.md` §7–§8.
-- `unitCost`, `costModel` (CX23 $7.1 ÷ 20, backup $0.05): `packages/core/src/metrics/`.
-- `EXPORT_MAP`, `DSR_ADDRESS_MAP`: `apps/server/src/modules/privacy/`.
+- Stub pages, `legalDocs`, `legalPath`, public-path regex, `TERMS_VERSION = "2026-11-12"` (accepted = equal version); links in `/setup` and the dialog, none on `/login` or the Account card (`apps/web`, `platform/http.ts`, `modules/tenancy/routes.ts`).
+- `llmProviders` = `gemini`, `openai`, default `openai`, `store: false` (`platform/llm/providers/`, `platform/config.ts`).
+- Retention 30 (DB default), 90 (`RETENTION_TEXT_DAYS`), 7, 1 (`docs/capabilities/retention.md`); Healthchecks.io, HIBP, auth mail off (`docs/architecture.md` §7–§8).
+- `unitCost`, `costModel` (CX23 $7.1 ÷ 20, backup $0.05); `EXPORT_MAP`, `DSR_ADDRESS_MAP` (`modules/privacy/`).
 
 ## Not verified
 
-- Astro 7 keeps `import.meta.glob` of `.md` with `Content` → stage 02 build on `HEAD` (after F101 if landed).
+- Astro 7 keeps `.md` imports with `Content` → stage 02 build (F101 may land first).
 - Provider terms URLs, OpenAI and Telegram data locations, transfer mechanisms → stage 06 (web, else `<to confirm>`).
-- GDPR articles used (12(3), 28(3), 30, 33, 34, 35(7)): from Regulation 2016/679, not fetched in this job → stage 06 reads EUR-Lex.
+- GDPR articles 12(3), 28(3), 30, 33, 34, 35(7): not fetched here → stage 06 (EUR-Lex).
 - B2 bucket region → owner (Q3); `<B2 region>` until then.
 
 ## Done when
@@ -72,7 +70,7 @@ Owner (scope change, 2026-11-12): "You can prepare by yourself the drafts so it 
 ## Rules for every stage
 
 - Read `CLAUDE.md`, the styleguide, `docs/code-patterns.md`. Build only your stage; format only your files (`bunx prettier --write <files>`). `git add <paths>`, never `-A`.
-- Every visible string in components is an i18n key (en and pl). No `<script>`, no hand-written `<style>` in components (global CSS only).
+- Visible strings in components are i18n keys (en, pl). No `<script>`; no `<style>` in components.
 - A text stage writes from sources it opened; it cites none from memory. Pl and en say the same.
 - No migration; no `bun.lock` change.
 
@@ -90,11 +88,11 @@ No checkpoint stops the build. U1 (stage 07): sign in on the VPS panel and accep
 
 ## Review
 
-Before the land: 02–06 and 08 (Polish text, privacy claims), model `claude-opus-5-5`. 01 lands on its proof. 07: the coordinator's runbook.
+Before the land: 01–06 and 08 (Polish text, privacy claims, the coverage test), `claude-opus-5-5`. 07: the runbook.
 
 ## Stages
 
-Files in `stages/`: 01 `stage-01-registries.md`; 02 `stage-02-page-frame.md`; 03 `stage-03-privacy.md`; 04 `stage-04-terms-dpa.md`; 05 `stage-05-internal-papers.md`; 06 `stage-06-cross-check.md`; 07 `stage-07-vps.md` `[risky]` (coordinator); 08 `stage-08-cost-and-adr.md`.
+`stages/`: 01 registries; 02 page frame, links, guards; 03 privacy; 04 terms and DPA; 05 internal papers; 06 cross-check; 07 VPS and measurement `[risky]` (coordinator); 08 cost model, ADR 0020, docs.
 
 ## How to run (coordinator)
 

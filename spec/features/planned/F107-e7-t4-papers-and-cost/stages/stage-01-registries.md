@@ -6,7 +6,7 @@ Part of [`../plan.md`](../plan.md). Decisions P2, D3, D4, D12.
 
 **Goal.** One typed list of every outside service that receives data, for the legal pages (stage 02) and the E10b security page.
 
-**Files.** New `packages/core/src/legal/subprocessors.ts` (exported from `@ea/core`); its unit test. A server unit test next to the LLM provider registry or config for the checks that need server code.
+**Files.** New `packages/core/src/legal/subprocessors.ts` (exported from `@ea/core/web`: the web app imports only that entry, and the root re-exports it); its unit test. A server unit test next to the LLM provider registry or config for the checks that need server code.
 
 **Interfaces.** D3 names and shapes. Rows at the plan base (worker checks each against the code at `HEAD`):
 
@@ -32,7 +32,7 @@ Part of [`../plan.md`](../plan.md). Decisions P2, D3, D4, D12.
 
 **Goal.** One typed list of what the system stores, about whom and for how long, so the privacy page, the records of processing and the tests share it.
 
-**Files.** New `packages/core/src/legal/data-categories.ts` (exported like step 1); a server integration test for coverage; a server unit test for the retention pins.
+**Files.** New `packages/core/src/legal/data-categories.ts` (exported as in step 1); a server integration test for coverage; a server unit test for the retention pins.
 
 **Interfaces.** D4 names and shapes. Categories (ids fixed; tables from `docs/architecture.md` §5 at `HEAD`):
 `account` (users, memberships, auth tables), `organization` (organization and mailbox settings), `mailbox-secret` (encrypted credentials), `mail-body`, `mail-headers` (subject, addresses, captured headers), `mail-ids` (Message-ID, dedup keys: `untilDelete`), `ai-results` (triage results, action payloads, drafts), `delegation` (delegates, delegations), `rules` (sender rules), `chat` (Telegram links, outbox), `audit` (audit log, feedback labels), `tombstones` (DSR hashes). A table holds one category: a mixed table (`emails`) goes to its most personal column's category, whose `label` names the rest.
