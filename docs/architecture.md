@@ -329,9 +329,10 @@ Tenancy:
 - **Which mail is new:** a message in a synced folder with a dedup key that the DB does not know. Skip it only when its `X-EA-Action-Id`
   matches an `actions` row of this mailbox (the system's own draft or sent mail). The owner's address in `From:` is not a reason
   to skip (a sender can forge it).
-- **Known mail:** the folder being synced is S. If `emails.folder` ≠ `emails.source_folder` (the system moved it), locate the mail in that folder by identity (`locateMessage`, D3; below; with several identical copies outside S, each in copy order, at most 5, until one is gone).
+- **Known mail:** the folder being synced is S. If `emails.folder` ≠ `emails.source_folder` (the system moved it), locate the mail in that folder by identity (`locateMessage`, D3; below).
   The mail is still there → the mail in S is a second identical copy: store it as a new email (dedup key + `#2`, `#3`, …) and triage it.
   The mail is gone → the user moved it back: set `emails.returned_at`, `folder` and `source_folder` = S (§4.4).
+  With several known identical copies outside S, the sync checks them in copy order (at most 5) and the first one that is gone is the mail that came back; only when all are still there does it store a new copy. This also covers a first copy that sits in its own source folder: it does not hide a gone later copy.
   If the known mail is in its source folder, update `uid` silently. If it is in its source folder and that is not S, the mail sits in two synced folders (a cross copy): store nothing and count it. If it is gone there, the user moved it between synced folders: set `folder` and `source_folder` = S, with no feedback and no triage.
   In shadow mode the system moves nothing, so no flag is set. Never triage a known mail again.
   While a system move of the mail runs (`emails.undo_pending_at` set by Undo or the rescue, younger than 24 h), the sync stores no copy of it (D22).
@@ -343,6 +344,7 @@ Tenancy:
   (in the pass of folder S: the mail that the system moved and whose source folder is S; `listRecentlyMoved({ sourceFolder })`), by its `inbox_uid` and its folder `uid`. An identity match that is no longer in the system folder means the user put the mail back: `emails.returned_at` is set (§4.4).
   A match that is still in the system folder is a copy below the cursor: the sync logs and counts it, and stores nothing (follow-up `spec/features/planned/F032-copy-below-cursor/plan.md`).
   An RFC server puts a returned mail above the cursor; the rule above marks it first, and this check then does nothing.
+  Mail that the flag refresh does not find in its folder is looked for at the same UID in the other synced folders below their cursors (the move finder, `mail/moves.ts`; `docs/capabilities/sync.md` rule 6).
 - **First connect:** only mail of the last 24 hours, in INBOX and in every new synced folder (a folder with no cursor yet, also one that is switched on again).
 - **After an outage:** the next sync takes all UIDs above the cursor (IMAP keeps them). Mail older than 7 days is stored but not sent to the LLM.
 - **Backfill (S1b, one-off):** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-180]` reads INBOX mail of the last days.
@@ -378,7 +380,7 @@ Tenancy:
 - **Interia facts (checked 2026-11-03, `notes/2026-11-03-interia-imap-capabilities.md`):** IDLE and UIDPLUS yes; MOVE, CONDSTORE, SPECIAL-USE and custom keywords no.
   So moves use `UID COPY` + `\Deleted` + `UID EXPUNGE`. No `UIDNEXT` on SELECT: the adapter asks `STATUS`, then uses the highest UID + 1.
   `SEARCH HEADER` finds nothing for `X-` headers and for `Message-ID` (Subject works): S3 finds moved mail by identity (above). SMTP does not save sent mail: the committer APPENDs to `Wysłane`.
-  A move keeps the UID (against RFC 3501): a mail moved back to INBOX is below the cursor, so S3 has the below-cursor "returned" check (above).
+  A move keeps the UID (against RFC 3501): a mail moved back to INBOX is below the cursor, so S3 has the below-cursor "returned" check and the move finder (above).
 - **Interia move facts (S3 stage 1, 2026-11-07, `notes/2026-11-03-interia-imap-capabilities.md` "Move probe"):**
   - The hierarchy delimiter is `/`. A nested folder needs its parent first (`AI/…` with no `AI` gives `NO [ALERT]`).
   - A protocol `UID COPY` returns `COPYUID` and a new UID; a webmail move keeps the UID.
