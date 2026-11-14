@@ -46,7 +46,7 @@ function indexPages(readme: string): string[] {
     if (line.startsWith("## ")) {
       break;
     }
-    const match = /^\| \[([^\]]+)\]\(([^)]+)\) \|/.exec(line);
+    const match = /^\| \[([^\]]+)\]\(([^)]+)\)\s*\|/.exec(line);
     if (match?.[2]) {
       pages.push(match[2]);
     }
@@ -113,9 +113,9 @@ describe("capability map helpers", () => {
   test("indexPages reads the Pages table", () => {
     expect(
       indexPages(
-        "## Pages\n\n| Page | Capability | Main modules |\n| --- | --- | --- |\n| [sync.md](sync.md) | Sync | mail |\n"
+        "## Pages\n\n| Page | Capability | Main modules |\n| --- | --- | --- |\n| [sync.md](sync.md) | Sync | mail |\n| [triage.md](triage.md)   | Triage | triage |\n"
       )
-    ).toEqual(["sync.md"]);
+    ).toEqual(["sync.md", "triage.md"]);
   });
 
   test("pageProblems accepts a good page", () => {
