@@ -1,6 +1,6 @@
 # Triage
 
-> Checked against the code at `cf125cf`, 2026-11-14.
+> Checked against the code at `c757cc5`, 2026-11-14.
 
 ## What it does now
 
@@ -119,7 +119,7 @@ emails.status:   pending → processing → triaged → done                (don
 - The gate on real labels (precision at least 98% on at least 30 labels) stays until ADR 0028 (proposed) changes it; E3 sets the numbers.
 - A junk-folder wave can use the shared daily cap: `F063-junk-llm-cap`.
 - Only the `classifier` role has a prompt. The roles `judge` (E2a), `drafter` (E6a), `extractor` (E5b) and `escalation` (E3b) have none yet.
-- The LLM pause is in memory: a restart clears it.
+- The LLM pause is in memory: a restart clears it. `/status` and the digest read the pause from the `llm.call` audit rows (`latestLlmPause`), so they show it after a restart too (flag `llm_pause_line`).
 
 ## Decisions
 

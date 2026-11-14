@@ -2,6 +2,7 @@ import {
   cutText,
   formatClock,
   formatDay,
+  llmPauseLine,
   localDateTime,
   localToInstant,
   nextDigestTime,
@@ -11,6 +12,7 @@ import {
   quotaDayStart,
   renderReviewPage,
   textsFor,
+  textTables,
   type OutMessage,
 } from "@ea/core";
 import type { Transaction } from "kysely";
@@ -30,7 +32,7 @@ import { countLlmCallsSince } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations } from "../delegation";
 import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary, type TestMailRule } from "../mail";
-import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
+import { buildDigestMessage, digestPeriodStart, llmPauseToShow, WAITING_WINDOW_MS } from "../reports";
 import { getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
 import { listForReview } from "../triage";
 
@@ -125,6 +127,9 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   const delegations = await countOpenDelegations(db, ctx);
   lines.push(`Delegations: ${delegations.open} waiting for a reply, ${delegations.overdue} overdue`);
   lines.push(`LLM: ${deps.llm.provider} · ${deps.llm.classifierModel}`);
+  // /status is English until stage 11 of the Polish UI plan moves it to the texts.
+  const llmPause = await llmPauseToShow(db, ctx, now);
+  if (llmPause !== null) lines.push(llmPauseLine(llmPause, timeZone, now, textTables.en));
 
   const member = await getMembership(db, ctx, link.userId);
   const times = parseDigestTimes(member?.digest_times ?? []);

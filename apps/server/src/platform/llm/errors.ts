@@ -24,6 +24,30 @@ export type ConfigCode =
   | "schema_not_strict"
   | "missing_key";
 
+// The runtime lists of the two code types. `errors.test.ts` checks that each list holds every member of its type.
+export const softCodes = [
+  "http_429",
+  "http_500",
+  "http_502",
+  "http_503",
+  "http_504",
+  "http_5xx",
+  "timeout",
+  "network",
+] as const satisfies readonly SoftCode[];
+export const configCodes = [
+  "http_401",
+  "http_402",
+  "http_403",
+  "http_404",
+  "http_400_key",
+  "http_400_precondition",
+  "http_429_quota",
+  "http_400_schema",
+  "schema_not_strict",
+  "missing_key",
+] as const satisfies readonly ConfigCode[];
+
 /** Timeout, 429 or 5xx: the quota or the service, not the mail. */
 export class LlmSoftError extends SoftError {
   constructor(

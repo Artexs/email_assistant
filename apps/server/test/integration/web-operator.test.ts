@@ -51,6 +51,7 @@ const flagOn = (
     | "security_log"
     | "review_command"
     | "mistake_capture"
+    | "llm_pause_line"
     | "old_flag",
   enabled = true
 ) => upsertOrgFeature(db, { orgId }, { flag: flag as "stats_page", enabled, setBy: "test", setAt: SET_AT });
@@ -110,7 +111,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     expect(await res.json()).toEqual({ error: "not_found" });
   });
 
-  test("4. the operator reads every organization with effective values, six keys per row", async () => {
+  test("4. the operator reads every organization with effective values, seven keys per row", async () => {
     await flagOn(org.orgId, "stats_page");
     const res = await operatorApp().request("/api/operator/flags", as("assistant"));
     expect(res.status).toBe(200);
@@ -122,8 +123,9 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "security_log", enabled: false },
       { orgId: org.orgId, flag: "review_command", enabled: false },
       { orgId: org.orgId, flag: "mistake_capture", enabled: false },
+      { orgId: org.orgId, flag: "llm_pause_line", enabled: false },
     ]);
-    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual([false, false, false, false, false, false]);
+    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual([false, false, false, false, false, false, false]);
     for (const row of [...rowsOf(body, org.orgId), ...rowsOf(body, org.otherOrgId)]) {
       expect(Object.keys(row).sort()).toEqual(["enabled", "flag", "orgId"]);
     }
@@ -143,7 +145,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     const res = await operatorApp().request("/api/operator/flags", as("assistant"));
     const body = (await res.json()) as OperatorFlags;
     expect(body.rows.filter((row) => (row.flag as string) === "old_flag")).toEqual([]);
-    expect(rowsOf(body, org.orgId)).toHaveLength(6);
+    expect(rowsOf(body, org.orgId)).toHaveLength(7);
   });
 
   test("7. path forms: the guard covers the prefix, the route is GET /flags only", async () => {
