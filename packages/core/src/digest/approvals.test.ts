@@ -652,7 +652,7 @@ describe("approvalEdit", () => {
   });
 
   test("approved_held keeps one Reject button; the line differs per cause", () => {
-    const texts = (["scope", "paused", "auth_error"] as const).map((heldBy) => {
+    const texts = (["scope", "paused", "auth_error", "host_blocked"] as const).map((heldBy) => {
       const message = approvalEdit({ ...base, outcome: "approved_held", heldBy }, textTables.en);
       expect(message.buttons).toHaveLength(1);
       expect(message.buttons[0]).toHaveLength(1);
@@ -660,12 +660,15 @@ describe("approvalEdit", () => {
       expect(parseCallback(message.buttons[0]?.[0]?.data ?? "")).toEqual({ kind: "reject", actionId: ID });
       return message.text;
     });
-    expect(new Set(texts).size).toBe(3);
+    expect(new Set(texts).size).toBe(4);
     expect(texts[0]).toBe(
       `${original}\n\n⏳ Approved 11:07. Sending is held by SEND_SCOPE on the server; /status shows it. It expires 48 h after the tap if it is still held.`
     );
     expect(texts[1]).toContain("The mailbox is paused, so the send waits; /status shows it.");
     expect(texts[2]).toContain("The mailbox login fails, so the send waits; /status shows it.");
+    expect(texts[3]).toBe(
+      `${original}\n\n⏳ Approved 11:07. The mail server is not allowed, so the send waits; /status shows it. It expires 48 h after the tap if it is still held.`
+    );
   });
 
   test("approved_held without an action id has no button (a set)", () => {

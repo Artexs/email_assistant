@@ -74,7 +74,7 @@ export interface ApprovalTexts {
     };
     rejected: (byName: string | null, subject: string) => string;
   };
-  held: { scope: string; paused: string; auth_error: string };
+  held: { scope: string; paused: string; auth_error: string; host_blocked: string };
   edit: {
     approved: (time: string) => string;
     approvedHeld: (time: string, held: string) => string;
@@ -193,6 +193,7 @@ export const approvalTexts = {
       scope: "Sending is held by SEND_SCOPE on the server",
       paused: "The mailbox is paused, so the send waits",
       auth_error: "The mailbox login fails, so the send waits",
+      host_blocked: "The mail server is not allowed, so the send waits",
     },
     edit: {
       approved: (time) => `⏳ Approved ${time}, sending.`,
@@ -303,6 +304,7 @@ export const approvalTexts = {
       scope: "Wysyłanie jest wstrzymane przez SEND_SCOPE na serwerze",
       paused: "Skrzynka jest wstrzymana, więc wysyłanie czeka",
       auth_error: "Logowanie do skrzynki nie działa, więc wysyłanie czeka",
+      host_blocked: "Serwer poczty jest niedozwolony, więc wysyłanie czeka",
     },
     edit: {
       approved: (time) => `⏳ Zatwierdzono ${time}, trwa wysyłanie.`,

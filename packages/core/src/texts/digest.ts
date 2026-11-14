@@ -14,6 +14,7 @@ export interface DigestTexts {
   mailbox: {
     paused: (since: string, last: string) => string;
     authError: (since: string, last: string) => string;
+    hostBlocked: (since: string, last: string) => string;
     neverSynced: string;
     late: (last: string) => string;
     ok: (last: string) => string;
@@ -66,6 +67,7 @@ export const digestTexts = {
     mailbox: {
       paused: (since, last) => `⏸ Paused since ${since} · last sync ${last}`,
       authError: (since, last) => `❌ Login error since ${since} · last sync ${last}`,
+      hostBlocked: (since, last) => `⛔ Mail server not allowed since ${since} · last sync ${last}`,
       neverSynced: "⚠️ Last sync: never",
       late: (last) => `⚠️ Last sync ${last} (late)`,
       ok: (last) => `🔄 Last sync ${last}`,
@@ -106,6 +108,7 @@ export const digestTexts = {
     mailbox: {
       paused: (since, last) => `⏸ Wstrzymana od ${since} · ostatnia synchronizacja: ${last}`,
       authError: (since, last) => `❌ Błąd logowania od ${since} · ostatnia synchronizacja: ${last}`,
+      hostBlocked: (since, last) => `⛔ Serwer poczty niedozwolony od ${since} · ostatnia synchronizacja: ${last}`,
       neverSynced: "⚠️ Ostatnia synchronizacja: nigdy",
       late: (last) => `⚠️ Ostatnia synchronizacja ${last} (spóźniona)`,
       ok: (last) => `🔄 Ostatnia synchronizacja ${last}`,
