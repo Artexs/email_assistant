@@ -46,6 +46,7 @@ export interface Actions {
   provider_result: Json | null;
   result_notified_at: Timestamp | null;
   reverses_action_id: string | null;
+  send_started_at: Timestamp | null;
   status: string;
   status_reason: string | null;
   type: string;
