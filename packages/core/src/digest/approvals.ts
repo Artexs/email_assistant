@@ -370,12 +370,14 @@ export type ApprovalEditOutcome =
   | "done"
   | "marked_mistake";
 
+export type HeldBy = "scope" | "paused" | "auth_error" | "host_blocked";
+
 // The edited message: the text and the buttons that stay.
 export function approvalEdit(
   input: {
     original: string;
     outcome: ApprovalEditOutcome;
-    heldBy?: "scope" | "paused" | "auth_error";
+    heldBy?: HeldBy;
     at: Date;
     timeZone: string;
     actionId?: string;

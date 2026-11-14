@@ -14,10 +14,11 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Ports and adapters: the port lives in the module that owns it (`mail/port.ts`); each adapter is a folder (`mail/imap/`, `mail/fake/`). Each SDK is imported only in its adapter (ESLint enforces it).
 - Routes are thin: parse with `parseBody` and a `@ea/core` schema, call one service or repo function, map to JSON. The tenant comes from the session (`requireTenant`), never from the request.
 - `/api/operator/*` is the only cross-organization web path; `requireOperator` in `createApp` guards the prefix (users in `OPERATOR_USER_IDS`, everyone else 404).
-- Web: one island per page; every visible string is a key in `apps/web/src/i18n/en.ts` through `t()`; data through `lib/api.ts` and `@ea/core/web` schemas.
+- Web: one island per page; every visible string is a key in `apps/web/src/i18n/en.ts` and `pl.ts` through `t()` or `tp()`; data through `lib/api.ts` and `@ea/core/web` schemas.
 
 ## Prefer
 
+- Texts carry a locale: `docs/code-patterns.md` § Texts carry a locale.
 - TypeScript strict. `const` / `let`. Template literals for strings with variables.
 - Typed Kysely repositories: one function = one clear query; each takes a `TenantContext` and filters by `org_id` (exceptions listed in `docs/code-patterns.md`).
 - Every send goes through the committer and `startSendWithinLimits` (advisory lock, count in the `applying` transaction); no send path calls SMTP itself or skips the limits (`docs/code-patterns.md` § Side effects).
