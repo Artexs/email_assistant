@@ -107,6 +107,8 @@ export interface AuthSessions {
   expires_at: Timestamp;
   id: Generated<string>;
   ip_address: string | null;
+  sign_in_method: Generated<string>;
+  sso_started_at: Timestamp | null;
   token: string;
   updated_at: Generated<Timestamp>;
   user_agent: string | null;
@@ -339,6 +341,7 @@ export interface Organizations {
   name: string;
   plan: Generated<string>;
   resumed_at: Timestamp | null;
+  sso_required: Generated<boolean>;
   style_text: string | null;
   timezone: string;
   trial_ends_at: Timestamp | null;
@@ -384,6 +387,21 @@ export interface SenderRules {
   mailbox_id: string | null;
   org_id: string;
   pattern: string;
+}
+
+export interface SsoProviders {
+  created_at: Generated<Timestamp>;
+  domain: string;
+  domain_proof: string | null;
+  domain_verified: Generated<boolean>;
+  id: Generated<string>;
+  issuer: string;
+  oidc_config: string;
+  org_id: string;
+  provider_id: string;
+  saml_config: string | null;
+  updated_at: Generated<Timestamp>;
+  user_id: string | null;
 }
 
 export interface TriageFeedback {
@@ -456,6 +474,7 @@ export interface DB {
   organizations: Organizations;
   outbox: Outbox;
   sender_rules: SenderRules;
+  sso_providers: SsoProviders;
   triage_feedback: TriageFeedback;
   triage_results: TriageResults;
   users: Users;

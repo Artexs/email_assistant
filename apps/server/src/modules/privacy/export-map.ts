@@ -190,7 +190,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "plan",
     "trial_ends_at",
     "max_mailboxes",
-    "resumed_at"
+    "resumed_at",
+    "sso_required"
   ),
   outbox: byOrg(
     "id",
@@ -218,6 +219,25 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
   ),
   schema_migrations: { export: false, reason: "the migration ledger, not data of the organization" },
   sender_rules: byOrg("id", "org_id", "mailbox_id", "pattern", "kind", "created_at"),
+  // The organization's own IdP setup (SSO). `oidc_config` holds the client secret in clear, so it stays out.
+  sso_providers: {
+    export: true,
+    via: "org_id",
+    columns: [
+      "id",
+      "provider_id",
+      "org_id",
+      "issuer",
+      "domain",
+      "domain_verified",
+      "domain_proof",
+      "saml_config",
+      "user_id",
+      "created_at",
+      "updated_at",
+    ],
+    excluded: { oidc_config: "secret: the IdP client secret" },
+  },
   triage_feedback: byOrg("id", "org_id", "email_id", "verdict", "true_category", "source", "user_id", "created_at"),
   triage_results: byOrg(
     "id",

@@ -74,6 +74,7 @@ interface Seed {
   mailboxAddress: string;
   password: string;
   sessionToken: string;
+  idpClientSecret: string;
   linkTokenHash: string;
   encryptedSecret: string;
   verificationIdentifier: string;
@@ -122,7 +123,7 @@ async function seedSideTables(trx: Transaction<DB>, orgId: string, userId: strin
 
 // An organization with two members (and `sharedUserId` as a third, when given), a mailbox with credentials, mail, triage,
 // actions, outbox rows, a chat link, an unused chat link token, one row in each of `email_flags`, `email_headers`,
-// `digests`, `action_feedback` and `org_features`, and a password, a session and a reset token of the owner.
+// `digests`, `action_feedback`, `org_features` and `sso_providers`, and a password, a session and a reset token of the owner.
 async function seedOrg(sharedUserId?: string): Promise<Seed> {
   return db.transaction().execute(async (trx) => {
     const { orgId, userId: ownerId, mailboxId } = await createOrgWithMailbox(trx);
@@ -146,6 +147,11 @@ async function seedOrg(sharedUserId?: string): Promise<Seed> {
       { orgId },
       { tokenHash: linkTokenHash, userId: ownerId, expiresAt: new Date("2026-11-20T10:15:00Z"), createdAt: NOW }
     );
+    const idpClientSecret = `idp-secret-${randomUUID()}`;
+    await sql`insert into sso_providers (provider_id, org_id, issuer, domain, oidc_config)
+      values (${orgId}, ${orgId}::uuid, 'https://idp.x.test', ${`${randomUUID()}.x.test`}, ${JSON.stringify({ clientSecret: idpClientSecret })})`.execute(
+      trx
+    );
     const password = `scrypt-hash-${randomUUID()}`;
     const sessionToken = `session-${randomUUID()}`;
     const verificationIdentifier = `reset-password:${randomUUID()}`;
@@ -168,6 +174,7 @@ async function seedOrg(sharedUserId?: string): Promise<Seed> {
       mailboxAddress: rows[0]?.address ?? "",
       password,
       sessionToken,
+      idpClientSecret,
       linkTokenHash,
       encryptedSecret,
       verificationIdentifier,
@@ -296,12 +303,19 @@ describe("exportOrganization", () => {
     expect(text).toContain(a.mailboxAddress);
   });
 
-  test("2. the plain text holds no password, credential, session token, link token or verification identifier", async () => {
+  test("2. the plain text holds no password, credential, session token, IdP client secret, link token or verification identifier", async () => {
     const a = await seedOrg();
     const path = outPath();
     written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
     const { text } = await decryptFile(path);
-    for (const secret of [a.password, a.encryptedSecret, a.sessionToken, a.linkTokenHash, a.verificationIdentifier]) {
+    for (const secret of [
+      a.password,
+      a.encryptedSecret,
+      a.sessionToken,
+      a.idpClientSecret,
+      a.linkTokenHash,
+      a.verificationIdentifier,
+    ]) {
       expect(text).not.toContain(secret);
     }
     // The file itself is cipher text.

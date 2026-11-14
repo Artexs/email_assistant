@@ -136,6 +136,12 @@ const DELETE_SEEDS: Record<string, Seed> = {
   },
   outbox: base,
   sender_rules: base,
+  sso_providers: (trx, org) =>
+    execute(
+      trx,
+      sql`insert into sso_providers (provider_id, org_id, issuer, domain, oidc_config)
+        values (${org.orgId}, ${org.orgId}::uuid, 'https://idp.x.test', ${`${randomUUID()}.x.test`}, '{"clientSecret":"s"}')`
+    ),
   triage_feedback: base,
   triage_results: base,
 };

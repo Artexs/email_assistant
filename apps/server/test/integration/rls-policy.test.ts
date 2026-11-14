@@ -43,6 +43,7 @@ const TENANT_TABLES = [
   "org_features",
   "outbox",
   "sender_rules",
+  "sso_providers",
   "triage_feedback",
   "triage_results",
 ];
@@ -111,6 +112,8 @@ async function seedOrg(trx: Trx): Promise<{ orgId: string; userId: string; mailb
   await sql`insert into dsr_tombstones (org_id, key_hash) values (${orgId}::uuid, ${tombstoneKeyHash("mid:<rls@x.test>:h1")})`.execute(
     trx
   );
+  await sql`insert into sso_providers (provider_id, org_id, issuer, domain, oidc_config)
+    values (${orgId}, ${orgId}::uuid, 'https://idp.x.test', ${`${orgId}.x.test`}, '{}')`.execute(trx);
   return { orgId, userId, mailboxId };
 }
 
