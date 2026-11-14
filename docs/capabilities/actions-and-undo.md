@@ -1,6 +1,6 @@
 # Actions and Undo
 
-> Checked against the code at `cf125cf`, 2026-11-14.
+> Checked against the code at `1bd5003e`, 2026-11-14.
 
 ## What it does now
 
@@ -21,6 +21,7 @@ The committer is the only component that changes a mailbox. The job `actions.com
 5. **Retries live on the row that failed** (rule 7 of `docs/architecture.md` §4.1, first paragraph, stays there; the triage part is in [triage.md](triage.md)). The committer (S3; `actions/committer.ts`, `actions/apply.ts`, every 15 s) applies the rule to the action row as follows:
    - **Soft error** (a lost connection, a timeout): the row goes back to `ready` with `next_attempt_at` = now + 5 min and gets no count. The run stops for this mailbox; the rest of its batch is released.
    - **Login error** (`MailAuthError`): the mailbox becomes `auth_error` (the S2 notice), the batch is released with no count.
+   - **Host refused** (`HostNotAllowedError` at the committer open, IMAP or SMTP host): the mailbox becomes `host_blocked` (`markHostBlocked`, `sync.md` rule 13), the batch is released with no count.
    - **Hard error:** `attempts` + 1 and a wait of 5 min. At 3 tries the action is `failed` (`status_reason` = `hard_error`) and the linked owners get an `action_failed` notice (rule 9 below).
    - **`mail_not_found`:** the action is `failed` at once, with no count. An original row gets no notice (the user moved or deleted the mail). A reverse row gets a notice.
    - **`bad_payload`** (a move without a known folder key): `failed` at once, no count, with a notice.

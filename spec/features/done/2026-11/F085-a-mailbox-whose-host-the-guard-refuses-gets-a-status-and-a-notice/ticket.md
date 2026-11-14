@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F085 · A mailbox whose host the guard refuses gets a status and a notice

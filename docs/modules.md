@@ -148,15 +148,16 @@ Code rules: `docs/code-patterns.md`.
 
 - **Owns:** `mailboxes`, `mailbox_credentials`, `mailbox_folders`, `emails`.
 - **Built in S2:** `listMailboxes` (id, address, status, `last_synced_at`, `status_changed_at`, `created_at`), `countWaiting` (mail that waits for triage in all mailboxes),
-  `changeMailboxStatus` (conditional `active` ↔ `paused`; never touches `auth_error`) and the column `mailboxes.status_changed_at` (moves only when the status really changes).
-  `updateMailboxPassword` (in `connect.ts`): IMAP and SMTP login test, new encrypted secret, `auth_error` → `active`, audit row `mailbox.password_changed` in one transaction; CLI `bun run mailbox:password` (password on stdin only).
+  `changeMailboxStatus` (a conditional change between any two statuses; callers: pause and resume, and `host_blocked` in and out) and the column `mailboxes.status_changed_at` (moves only when the status really changes).
+  `updateMailboxPassword` (in `connect.ts`): IMAP and SMTP login test, new encrypted secret, `auth_error` or `host_blocked` → `active`, audit row `mailbox.password_changed` in one transaction; CLI `bun run mailbox:password` (password on stdin only).
 - **Built in S3:** the write port and the identity locate (above); `listRecentlyMoved` (moves of the last 7 days, for the below-cursor check); `updateEmailLocation` (`folder`, `uid`, `inbox_uid`, `moved_at`, `undo_pending_at` in the committer's transaction);
   `setFolderMapEntry` (the real folder path after `ensureFolder`); `listReturned` and `clearReturned` (the returned job); `listFolderUids` (the `excludeUids` of the locate); the columns `inbox_uid`, `moved_at`, `undo_pending_at`.
   `findByMessageId` is removed. CLI `bun run mailbox:probe-move` (test address only).
-- **Built in S4:** `appendMessage` (port, IMAP adapter and fake); `MailSender`, `openSmtpSender`, `SmtpSendError` and the stage rule; `composeMessage`; `locateByActionId`; `listMailboxTargets` (active, paused and auth_error mailboxes for the expiry job; `listSyncTargets` stays as a wrapper for active ones); `mailboxHasUidplus`;
+- **Built in S4:** `appendMessage` (port, IMAP adapter and fake); `MailSender`, `openSmtpSender`, `SmtpSendError` and the stage rule; `composeMessage`; `locateByActionId`; `listMailboxTargets` (serves the expiry job with `active`, `paused`, `auth_error` and `host_blocked` mailboxes, and the host re-check with `host_blocked` ones; `listSyncTargets` stays as a wrapper for active ones); `mailboxHasUidplus`;
   the own-mail skip wired (`isOwnActionId` from `actions`, passed by `main.ts` to the sync and to `backfillMailbox`). CLI `bun run mailbox:probe-send` (test address only). Facts: `notes/2026-11-07-send-approval-facts.md`.
 - **Built in S6a:** the mailbox limit: `connectMailbox` refuses a mailbox above `organizations.max_mailboxes` with `MailboxLimitError` (web `409 mailbox_limit`; the count runs under an advisory lock after the IMAP check). `listMailboxTargets` and `listSyncTargets` skip mailboxes of `suspended` organizations (`includeSuspended`); `countSyncTargets` and `listAuthErrorMailboxesBefore`; the retention clear functions `clearMailBodies` and `clearMailHeaders`; the skip reason `suspended_backlog`.
 - **Built in F100:** header capture and the flag store. `imap/mapper.ts` parses the headers of a mail (display name, `Reply-To`, `Return-Path`, `Authentication-Results`, `List-Unsubscribe`, `List-Id`, attachments, link hosts) with no new fetch; `sync.ts` writes one `email_headers` row in the transaction that stores the mail (`repo/headers.ts`). `refreshFlags` (`repo/flags.ts`, `flags.ts`) keeps `email_flags` (`\Seen`, `\Answered`, `\Flagged` with the first time of each) at most every 10 min per mailbox. Both tables have retention (`repo/retention.ts`). The sync interval is `MAIL_SYNC_EVERY_MIN` (default 2). `docs/capabilities/sync.md` rules 6 and 18.
+- **Built in F085:** `host-status.ts` (`checkMailboxHosts`, `recheckBlockedHosts`, `markHostBlocked`), `inspectMailbox` (`check.ts`).
 - **Rules:** `docs/architecture.md` §6.1.
 - **Later:** `gmail/` and `graph/` (Microsoft 365) adapters with OAuth (Phase 2); IMAP IDLE.
 
@@ -396,7 +397,7 @@ S2 scripts (`package.json`):
 - `telegram:link` — prints a one-time link `t.me/<bot>?start=<token>` for a member (valid 15 minutes).
 - `telegram:unlink` — removes the chat link of a member.
 - `digest:times` — sets the digest times of a member (`--times 08:00,16:00` or `none`).
-- `mailbox:password` — new mailbox password on stdin; tests the login and leaves `auth_error`.
+- `mailbox:password` — new mailbox password on stdin; tests the login and leaves `auth_error` or `host_blocked`.
 
 S5 scripts (`package.json`):
 

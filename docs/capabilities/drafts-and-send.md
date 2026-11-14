@@ -1,6 +1,6 @@
 # Drafts and send
 
-> Checked against the code at `e8164ad`, 2026-11-14.
+> Checked against the code at `1bd5003e`, 2026-11-14.
 
 ## What it does now
 
@@ -43,6 +43,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
    | Error                                                                               | The row goes to                                                                                      | `attempts`                                                          |
    | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
    | Login refused (`EAUTH`)                                                             | `approved`; the mailbox becomes `auth_error`                                                         | no change                                                           |
+   | Host refused by the guard (at the committer open)                                   | `approved`; the mailbox becomes `host_blocked`                                                       | no change                                                           |
    | Soft error at `connect`, `login` or `envelope` (lost connection, timeout, DNS, 4xx) | `approved`, retry in 5 min, no notice; from 6 h after the tap `failed` / `smtp_error` (the soft cap) | no change (retry without a count)                                   |
    | Hard error at `connect`, `login` or `envelope` (not a 5xx at `envelope`)            | `approved`, retry in 5 min                                                                           | + 1 (retry with a count); the third ends as `failed` / `smtp_error` |
    | 5xx at `envelope`, or 5xx after the content                                         | `failed` / `smtp_rejected`                                                                           | no change                                                           |
@@ -52,7 +53,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
    A compose error before `applying` returns the row to `approved` with a count; the third ends as `failed` / `smtp_error`. Each `failed` send gets a result notice (rule 8).
 
    **The soft cap (F044):** a soft error before the content (`connect`, `login` or `envelope`) retries every 5 min without a count. A soft error that comes 6 h or more after the tap (`approved_at`, constant `SEND_SOFT_CAP_MS`) ends the send as `failed` / `smtp_error` with `provider_result.cap = "soft_retry"`, `attempts` unchanged, and the delegation `cancelled` (`send_failed`). The result notice has its own text ("did not accept the mail for 6 hours … nothing was sent") and the button 📤 Send again; the tap sets a new `approved_at`, so the new send gets its own 6 h.
-   The cap does not touch a retry with a count (a hard error keeps its 3 tries) and there is no retry after `content`. A send that waits for another reason (a draft not applied, a mailbox in `auth_error`) also uses up the 6 h; the first soft error after that ends it. `held_timeout` (48 h, `actions-and-undo.md` § Data) still ends an `approved` send that no try reaches.
+   The cap does not touch a retry with a count (a hard error keeps its 3 tries) and there is no retry after `content`. A send that waits for another reason (a draft not applied, a mailbox in `auth_error` or `host_blocked`) also uses up the 6 h; the first soft error after that ends it. `held_timeout` (48 h, `actions-and-undo.md` § Data) still ends an `approved` send that no try reaches.
 
 6. **"Send again":** after `smtp_error` and `outcome_unknown` the notice has the button 📤 Send again (callback `ag:<action id>`).
    - The tap is the approval: it inserts one new `approved` send for the same draft (key `<failed id>:again`, so one resend per failed row) when the draft is still `applied` and the delegation, if any, is open.
@@ -94,7 +95,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
    - **Taps:** the callback data is a kind and a UUID: `ap:` approve, `ar:` reject, `as:` send all, `rs:` skip all, `ag:` send again, `dd:` done. The handler checks the chat link, then the role: **only an owner can approve, reject or send again**; `dd:` (Done) works for every linked member.
      An unknown id and an id of another organization get the same answer. A second tap finds the status changed and answers with it. An expired or rejected action cannot send.
      `approve` refuses while the draft is not `applied` (`draft_not_ready`), and a tap later than 48 h after `notified_at` expires the send (the hourly job can be late by up to an hour).
-   - **The edit after the tap:** the approval message keeps its text (the stored text of the sent card) and gets one line: `⏳ Approved HH:MM, sending.`, `✖️ Rejected HH:MM.`, `⌛ Expired HH:MM. The mail was not sent.` or `✅ Done HH:MM.` or `✅ Marked as sent HH:MM.` (after ✅ It went out). An approved send that is held (by `SEND_SCOPE`, a paused mailbox or a login error) says so, keeps the ✖️ Reject button and expires 48 h after the tap.
+   - **The edit after the tap:** the approval message keeps its text (the stored text of the sent card) and gets one line: `⏳ Approved HH:MM, sending.`, `✖️ Rejected HH:MM.`, `⌛ Expired HH:MM. The mail was not sent.` or `✅ Done HH:MM.` or `✅ Marked as sent HH:MM.` (after ✅ It went out). An approved send that is held (by `SEND_SCOPE`, a paused mailbox, a login error or a mail server that is not allowed) says so, keeps the ✖️ Reject button and expires 48 h after the tap.
    - **The result notice** is a new message (outbox kind `send_result`), one per owner, when the send ends: `✅ Sent to …`, `❌ Not sent …` (`smtp_rejected`, `smtp_error`), `⚠️ Unknown whether the mail … went out` (`outcome_unknown`; "Check Sent or ask the recipient before you send again"), `⌛ Not sent: …` for each `expired` reason, `✖️ Rejected`.
      A `sent` notice adds "No copy in Sent" when the copy failed and "The draft stays in Drafts" when the server has no UIDPLUS. A `pending` Sent copy older than 10 min counts as failed. An edit of the approval message instead of a new message is a follow-up (`F039-approval-edit-in-place`, dropped; E4-A F102 takes it).
      - Check against the code: the old text named the `plan.md` of the ticket `F039-approval-edit-in-place` in the `planned` lane. That ticket is dropped now, and E4-A (`F102-e4-a-act-from-the-panel`) absorbs it.
