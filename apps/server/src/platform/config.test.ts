@@ -13,6 +13,7 @@ import {
   loadTestmailConfig,
   operatorChatId,
   operatorUserIds,
+  sendLimits,
   sendTestAddresses,
   mailAllowLocal,
   mailAllowLocalFromEnv,
@@ -605,5 +606,33 @@ describe("LOG_FORMAT", () => {
 
   test("throws ConfigError for another value", () => {
     expect(configError({ ...fullEnv, LOG_FORMAT: "xml" }).keys).toContain("LOG_FORMAT");
+  });
+});
+
+describe("send limits", () => {
+  const keys = ["SEND_LIMIT_MAILBOX_HOUR", "SEND_LIMIT_MAILBOX_DAY", "SEND_LIMIT_RECIPIENT_DAY"] as const;
+
+  test("no key set gives the PD-044 defaults", () => {
+    expect(sendLimits(loadConfig(fullEnv))).toEqual({ mailboxHour: 20, mailboxDay: 100, recipientDay: 5 });
+  });
+
+  test("values are read; an empty string is the default", () => {
+    const env = {
+      ...fullEnv,
+      SEND_LIMIT_MAILBOX_HOUR: "3",
+      SEND_LIMIT_MAILBOX_DAY: "40",
+      SEND_LIMIT_RECIPIENT_DAY: "2",
+    };
+    expect(sendLimits(loadConfig(env))).toEqual({ mailboxHour: 3, mailboxDay: 40, recipientDay: 2 });
+    const empty = { ...fullEnv, SEND_LIMIT_MAILBOX_HOUR: "", SEND_LIMIT_MAILBOX_DAY: "", SEND_LIMIT_RECIPIENT_DAY: "" };
+    expect(sendLimits(loadConfig(empty))).toEqual({ mailboxHour: 20, mailboxDay: 100, recipientDay: 5 });
+  });
+
+  test("a bad value stops the start and names the key", () => {
+    for (const key of keys) {
+      for (const value of ["0", "-1", "1.5", "abc", "10001"]) {
+        expect(configError({ ...fullEnv, [key]: value }).keys).toContain(key);
+      }
+    }
   });
 });

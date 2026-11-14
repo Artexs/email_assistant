@@ -1,6 +1,6 @@
 import { isIP } from "node:net";
 
-import { type FeatureKey, isFeatureKey, type LlmRole, llmRoles } from "@ea/core";
+import { type FeatureKey, isFeatureKey, type LlmRole, llmRoles, type SendLimits } from "@ea/core";
 import { z } from "zod";
 
 import { type LlmProviderId, llmProviderIds, type LlmRoleSettings, type LlmRoleTable } from "./llm";
@@ -146,6 +146,10 @@ const baseSchema = z.object({
   SEND_SCOPE: z.enum(["off", "self", "all"]).default("off"),
   // Comma-separated; needed with SEND_SCOPE=self.
   SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // Send limits per mailbox (PD-044); a send over a limit waits. Integers 1 to 10 000; empty = the default.
+  SEND_LIMIT_MAILBOX_HOUR: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(20)),
+  SEND_LIMIT_MAILBOX_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(100)),
+  SEND_LIMIT_RECIPIENT_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(5)),
   // Empty = the web is off.
   WEB_BASE_URL: z.preprocess(
     emptyAsUndefined,
@@ -401,6 +405,15 @@ export function authMailSettings(config: Config): AuthMailSettings | null {
 
 export function sendTestAddresses(config: Config): string[] {
   return parseAddressList(config.SEND_TEST_ADDRESSES);
+}
+
+/** The send limits (PD-044). */
+export function sendLimits(config: Config): SendLimits {
+  return {
+    mailboxHour: config.SEND_LIMIT_MAILBOX_HOUR,
+    mailboxDay: config.SEND_LIMIT_MAILBOX_DAY,
+    recipientDay: config.SEND_LIMIT_RECIPIENT_DAY,
+  };
 }
 
 // The operator's chat id for operator notices; null = log lines only.
