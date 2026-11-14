@@ -6,6 +6,7 @@ import {
   confidenceHistogram,
   confusionMatrix,
   goNoGo,
+  simGoNoGo,
   ruleSummary,
   THRESHOLDS,
   thresholdSweep,
@@ -253,5 +254,55 @@ describe("wilsonInterval", () => {
     const { lower, upper } = wilsonInterval(5, 10);
     expect(Math.abs(lower - 0.2366)).toBeLessThan(0.0005);
     expect(Math.abs(upper - 0.7634)).toBeLessThan(0.0005);
+  });
+});
+
+describe("wilsonInterval, plan numbers", () => {
+  test("lower bounds of full and near-full runs", () => {
+    expect(wilsonInterval(200, 200).lower).toBeCloseTo(0.9812, 4);
+    expect(wilsonInterval(199, 200).lower).toBeCloseTo(0.9722, 4);
+    expect(wilsonInterval(190, 190).lower).toBeCloseTo(0.9802, 4);
+    expect(wilsonInterval(185, 185).lower).toBeCloseTo(0.9797, 4);
+  });
+});
+
+describe("simGoNoGo", () => {
+  const notifications = (count: number) => many(count, () => llm("notification", "notification", 0.95));
+
+  test("200 right notifications are go at 0.5 with Wilson lower 0.9812", () => {
+    const row = simGoNoGo(notifications(200)).notification;
+    expect(row.decision).toBe("go");
+    expect(row.threshold).toBe(0.5);
+    expect(row.support).toBe(200);
+    expect(row.tp).toBe(200);
+    expect(row.wilsonLower).toBeCloseTo(0.9812, 4);
+  });
+
+  test("one false positive makes it no-go (200 of 201, lower 0.9724)", () => {
+    const rows = [...notifications(200), llm("info", "notification", 0.95)];
+    const row = simGoNoGo(rows).notification;
+    expect(row.decision).toBe("no-go");
+    expect(row.threshold).toBeNull();
+    expect(row.kept).toBe(201);
+    expect(row.wilsonLower).toBeCloseTo(0.9724, 4);
+  });
+
+  test("199 rows of support are too few", () => {
+    const row = simGoNoGo(notifications(199)).notification;
+    expect(row.decision).toBe("no-go: too few");
+    expect(row.threshold).toBeNull();
+    expect(row.support).toBe(199);
+  });
+
+  test("a category with no rows is too few with null numbers", () => {
+    const row = simGoNoGo([]).urgent;
+    expect(row).toMatchObject({ decision: "no-go: too few", support: 0, kept: 0, precision: null, wilsonLower: null });
+  });
+
+  test("a higher threshold can reach go when low-confidence errors drop out", () => {
+    const rows = [...notifications(200), ...many(5, () => llm("info", "notification", 0.55))];
+    const row = simGoNoGo(rows).notification;
+    expect(row.decision).toBe("go");
+    expect(row.threshold).toBe(0.6);
   });
 });
