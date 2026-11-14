@@ -51,6 +51,13 @@ describe("featureFlags registry", () => {
     expect(featureEpicPattern.test(featureFlags.mistake_capture.epic)).toBe(true);
   });
 
+  test("llm_pause_line defaults off and has the epic E3a", () => {
+    expect(featureFlags.llm_pause_line.default).toBe(false);
+    expect(featureFlags.llm_pause_line.epic).toBe("E3a");
+    expect(featureFlags.llm_pause_line.removeBy).toBe("2027-03-01");
+    expect(featureEpicPattern.test(featureFlags.llm_pause_line.epic)).toBe(true);
+  });
+
   test("featureKeys lists the registry keys in registry order", () => {
     expect<string[]>(featureKeys).toEqual(Object.keys(featureFlags));
     expect(featureKeys.slice(0, 3)).toEqual(["stats_page", "approvals_page", "sent_sync"]);

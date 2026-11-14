@@ -33,17 +33,18 @@
     },
     {
       "id": "b-rep-0217",
-      "subject": "Question on certificates for the February Gdynia shipment",
-      "body": "Dear Mr Szalewski,\n\nI have two questions about the February shipment that we need to settle before our customs broker files the paperwork.\n\n1. Will the phytosanitary certificates for the frozen berries be issued by your side or by the producer in Poland?\n2. Can you confirm that the pallets will arrive in Gdynia no later than 3 February, so that the unloading window is not lost?\n\nOur warehouse in Gothenburg plans its team around this slot, so I would be grateful for a direct answer from you rather than from the sales team.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "subject": "Your decision on certificates for the February Gdynia shipment",
+      "body": "Dear Mr Szalewski,\n\nBefore our customs broker files the paperwork for the February shipment, I need your own decision on two points. They are about responsibility, so I am asking you and not the sales team.\n\n1. Do you accept that Kordelan, and not the producer in Poland, issues the phytosanitary certificates for the frozen berries and carries the responsibility for them?\n2. Do you personally confirm that the pallets will arrive in Gdynia by 3 February, so that our unloading window in Gothenburg is not lost?\n\nOur warehouse plans its team around this slot, so I need to know your position before I give the broker his instructions. I will wait for your answer.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
       "thread": [],
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px\">I have two questions about the February shipment that we need to settle before our customs broker files the paperwork.</p><ol style=\"margin:0 0 12px 18px;padding:0\"><li style=\"margin:0 0 4px\">Will the phytosanitary certificates for the frozen berries be issued by your side or by the producer in Poland?</li><li style=\"margin:0 0 4px\">Can you confirm that the pallets will arrive in Gdynia no later than 3 February, so that the unloading window is not lost?</li></ol><p style=\"margin:0 0 12px\">Our warehouse in Gothenburg plans its team around this slot, so I would be grateful for a direct answer from you rather than from the sales team.</p><p style=\"margin:0 0 12px\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px\">Before our customs broker files the paperwork for the February shipment, I need your own decision on two points. They are about responsibility, so I am asking you and not the sales team.</p><ol style=\"margin:0 0 12px 18px;padding:0\"><li style=\"margin:0 0 4px\">Do you accept that Kordelan, and not the producer in Poland, issues the phytosanitary certificates for the frozen berries and carries the responsibility for them?</li><li style=\"margin:0 0 4px\">Do you personally confirm that the pallets will arrive in Gdynia by 3 February, so that our unloading window in Gothenburg is not lost?</li></ol><p style=\"margin:0 0 12px\">Our warehouse plans its team around this slot, so I need to know your position before I give the broker his instructions. I will wait for your answer.</p><p style=\"margin:0 0 12px\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
       "expectedPoints": [
-        "Kto wystawia świadectwa fitosanitarne dla lutowej wysyłki",
-        "Czy palety dotrą do Gdyni najpóźniej 3 lutego"
+        "Czy Kordelan, a nie producent, wystawia świadectwa fitosanitarne i odpowiada za nie",
+        "Czy prezes osobiście potwierdza dojazd palet do Gdyni do 3 lutego"
       ],
       "mustNot": [
         "Nie obiecywać przesunięcia okna rozładunku w Göteborgu"
-      ]
+      ],
+      "note": "rewritten: questions now ask for the executive's own decision and commitment, not a task for the team"
     },
     {
       "id": "b-rep-0219",
@@ -159,7 +160,7 @@
     {
       "id": "b-rep-0250",
       "subject": "Re: Baltic ports tender – follow-up on your answer",
-      "body": "Hi Wiktor,\n\nthanks for your note last week. I read it carefully, and I have one follow-up. You said Kordelan could commit around thirty trailers but only from April. Our shipping-line partners need start-up capacity in March, at least for the first ten weeks.\n\nCould you tell me whether a short-term arrangement is possible, for example a subcontracted fleet that Kordelan manages for the first two months? If yes, I can write this into the draft letter. If not, I need to know today rather than next week, so that we can find another capacity partner.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "body": "Hi Wiktor,\n\nthanks for your note last week. I read it carefully, and I have one follow-up. You said Kordelan could commit around thirty trailers but only from April. Our shipping-line partners would like start-up capacity in March, at least for the first ten weeks.\n\nI would like to know your view: is a short-term arrangement something you could consider, for example a subcontracted fleet that Kordelan manages for the first two months? There is no rush. I plan to write the draft letter at the end of next month, so a considered written answer from you would be perfect, whenever you find the time.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
       "thread": [
         {
           "subject": "Re: Baltic ports tender",
@@ -167,12 +168,13 @@
         }
       ],
       "expectedPoints": [
-        "Czy możliwe jest tymczasowe rozwiązanie na marzec, np. flota podwykonawców",
-        "Informacja jeszcze dziś, żeby BFP mógł szukać innego partnera"
+        "Czy prezes widzi możliwość tymczasowego rozwiązania na marzec, np. flota podwykonawców",
+        "Pisemna opinia prezesa przed przygotowaniem listu"
       ],
       "mustNot": [
         "Nie obiecywać trzydziestu naczep od marca"
-      ]
+      ],
+      "note": "rewritten: removed the same-day demand; a written answer is wanted, with no urgency"
     },
     {
       "id": "b-spa-0005",

@@ -1,0 +1,179 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-010",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-inf-0019",
+      "subject": "Logistyka Dziś: opłaty drogowe i stawki",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nMinisterstwo opublikowało projekt zmian w systemie opłat drogowych dla pojazdów powyżej 3,5 tony. Przewoźnicy mają czas na uwagi do końca lutego.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0020",
+      "subject": "Supply Chain Weekly: ocean schedules, port congestion and the road freight outlook",
+      "body": "Supply Chain Weekly - this week's digest\n\nOcean freight. Average transit times from Asia to North European ports improved by roughly one day, as carriers restored several services that had been suspended during the holiday period. Schedule reliability reached 61 percent, the best reading since last spring, although it remains well below the levels of three years ago.\n\nPort congestion. Hamburg and Rotterdam report normal berth availability. Gdansk handled a record number of containers in the last week of the year, and terminal operators say the new yard equipment shortens truck turnaround by about fifteen minutes. Antwerp still has some yard congestion after a strike at the beginning of the month.\n\nRoad freight. Spot rates in Central Europe remained stable, with a small increase on routes from Poland to the Nordic countries, where demand for chilled transport is seasonally high. Fuel surcharges follow the diesel price, which fell slightly. Analysts expect that the driver shortage will keep contract rates firm through the first half of the year.\n\nRegulation. The European Parliament committee has approved the new rules on cross-border posting of drivers. The changes should enter into force in two steps, and transport associations call for clear guidance for small carriers.\n\nThe full quarterly freight index is available to paid subscribers.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0021",
+      "subject": "Note on the board calendar",
+      "body": "Dear Mr Szalewski,\n\nFor your information: the board secretary has circulated the meeting dates for the rest of the year. The January meeting remains on the 28th, and the next one is set for the first week of April. The date of the general assembly will follow the budget decision. The dates are also in the board portal. No action is required on your side.\n\nRespectfully,\nZbigniew Orlowicz",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0023",
+      "subject": "Obsada rampy w lutym",
+      "body": "Cześć,\n\npotwierdzam, że na rampie w Poznaniu od lutego mamy pełną obsadę na obu zmianach, więc okna rozładunku zostają bez zmian. To tylko informacja.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "subject": "Obsada magazynu - pytanie",
+          "body": "Dzień dobry, słyszałam o rekrutacji w Pana magazynach. Czy rozładunki dla naszej sieci będą się mieściły w dotychczasowych oknach? Genowefa Jastrzębska"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0024",
+      "subject": "Kalendarz zarządu - luty",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że wyjazd służbowy do Sztokholmu w lutym został przesunięty przez organizatora o tydzień.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0025",
+      "subject": "Przetarg - ocena formalna zakończona",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę poinformować, że komisja zakończyła ocenę formalną ofert w przetargu naszej sieci. Państwa oferta spełnia wszystkie wymagania formalne i zostanie oceniona merytorycznie. Wyniki podamy na początku lutego.\n\nPrzekazuję tę informację, aby miał Pan pełny obraz sytuacji. Żadnych dokumentów nie trzeba już składać. Dziękuję za terminowe przygotowanie ofert.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">pragnę poinformować, że komisja zakończyła ocenę formalną ofert w przetargu naszej sieci. Państwa oferta spełnia wszystkie wymagania formalne i zostanie oceniona merytorycznie. Wyniki podamy na początku lutego.</p><p style=\"margin:0 0 12px 0\">Przekazuję tę informację, aby miał Pan pełny obraz sytuacji. Żadnych dokumentów nie trzeba już składać. Dziękuję za terminowe przygotowanie ofert.</p></div>",
+      "thread": [
+        {
+          "subject": "Re: Przetarg - termin składania",
+          "body": "Pani Genowefo, oferta zostanie złożona w terminie. Dziękuję za potwierdzenie wymagań. Wiktor Szalewski"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0026",
+      "subject": "Szkolenia BHP - harmonogram",
+      "body": "Cześć Wiktor,\n\nwysyłam do wiadomości harmonogram szkoleń BHP dla nowych pracowników magazynów. Pierwsza grupa z Poznania zaczyna w poniedziałek o ósmej, druga we wtorek, a gdyńska w środę. Każde szkolenie trwa cztery godziny i kończy się krótkim testem. Instruktorzy z zewnętrznej firmy potwierdzili terminy, a sale w obu magazynach są zarezerwowane.\n\nNie jest wymagana żadna decyzja. Wszystko zostało uzgodnione z dyrektor operacyjną.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0028",
+      "subject": "Dostawy w styczniu - nasze podsumowanie",
+      "body": "Szanowny Panie Wiktorze,\n\nchciałabym podzielić się podsumowaniem dostaw do naszych hurtowni w pierwszej połowie stycznia, bo uważam, że warto, aby prezes wiedział, jak wygląda to z naszej strony. W sumie przyjęliśmy czterdzieści jeden dostaw, z czego trzydzieści osiem w uzgodnionym oknie. Trzy dostawy przyjechały z opóźnieniem do dwóch godzin z powodu mgły na trasie z Gdyni, ale towar był w pełni sprawny i nie zgłaszamy w tej sprawie żadnych zastrzeżeń.\n\nNasz dział jakości sprawdził temperatury przy rozładunku w każdej hurtowni i wszystkie wyniki mieściły się w normie. Liczba uszkodzonych palet była najniższa od pół roku: dwie na ponad tysiąc czterysta. Doceniamy staranność kierowców i obsługi magazynu w Poznaniu, szczególnie przy rozładunkach wieczornych, kiedy ruch na rampie jest największy.\n\nW przetargu na nowy kontrakt chcemy, aby ta współpraca była kontynuowana, i właśnie dlatego dbamy o to, żeby zespół kupców widział te liczby. Wiadomość ma charakter informacyjny i nie wymaga odpowiedzi. Szczegółowe zestawienie dostaw trzymamy u siebie i przekażemy je tylko wtedy, gdy ktoś o nie zapyta.\n\nDobrze mi się pracuje z Państwa zespołem i mam nadzieję, że tak pozostanie przez cały nowy rok. Zdarzają się oczywiście drobne niedociągnięcia, ale w tym miesiącu nie było żadnego, który warto byłoby wspominać.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0029",
+      "subject": "Reklamacje - stan na dziś",
+      "body": "Cześć Wiktor,\n\nkrótka informacja o reklamacjach z grudnia. Z dwunastu zgłoszeń dziesięć jest już zamkniętych, a dla dwóch czekamy na odpowiedź ubezpieczyciela. Największa sprawa, uszkodzone płyty dla producenta mebli, została rozliczona i klient potwierdził, że jest zadowolony.\n\nWnioski na przyszłość:\n- większość uszkodzeń powstała przy przeładunku w Gdyni,\n- wprowadziliśmy dodatkową kontrolę przy rampie,\n- kierowcy dostali przypomnienie o mocowaniu ładunku.\n\nNic nie trzeba robić z Twojej strony, informuję dla porządku.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">krótka informacja o reklamacjach z grudnia. Z dwunastu zgłoszeń dziesięć jest już zamkniętych, a dla dwóch czekamy na odpowiedź ubezpieczyciela. Największa sprawa, uszkodzone płyty dla producenta mebli, została rozliczona i klient potwierdził, że jest zadowolony.</p><p style=\"margin:0 0 12px 0\">Wnioski na przyszłość:<br>- większość uszkodzeń powstała przy przeładunku w Gdyni,<br>- wprowadziliśmy dodatkową kontrolę przy rampie,<br>- kierowcy dostali przypomnienie o mocowaniu ładunku.</p><p style=\"margin:0 0 12px 0\">Nic nie trzeba robić z Twojej strony, informuję dla porządku.</p><p style=\"margin:0 0 12px 0\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0030",
+      "subject": "Status odpraw celnych w styczniu",
+      "body": "Szanowny Panie Wiktorze,\n\nchciałbym przekazać zbiorczą informację o odprawach celnych, które w styczniu prowadziliśmy wspólnie dla Kordelana. Do tej pory obsłużyliśmy czternaście zleceń, z czego dwanaście zamknęło się w ciągu jednego dnia roboczego. Dwa pozostałe wymagały uzupełnienia dokumentów przewozowych, co nasz zespół zrobił jeszcze tego samego popołudnia. Nie było żadnych zatrzymań ładunku ani dodatkowych opłat za przestój.\n\nWarto odnotować, że urząd celny w porcie wprowadził nowy formularz elektroniczny dla towarów spożywczych. Nasi specjaliści przeszli już szkolenie, a pierwsze zgłoszenia na nowym formularzu zostały przyjęte bez uwag. W lutym spodziewamy się zwiększonego ruchu na trasach do krajów nordyckich, dlatego zarezerwowaliśmy dodatkowe moce w naszym biurze odpraw.\n\nPełne zestawienie zleceń, wraz z numerami deklaracji i datami odpraw, trzymamy u siebie i udostępnimy na życzenie. Nie oczekuję odpowiedzi na tę wiadomość. Piszę ją po to, żeby Pan miał aktualny obraz sytuacji bez konieczności pytania o szczegóły. Jeśli cokolwiek się zmieni w naszych relacjach z urzędem, dam znać odrębną wiadomością.\n\nDziękuję za dobrą współpracę w minionym miesiącu, która była dla nas bardzo komfortowa i przewidywalna.\n\nZ wyrazami szacunku",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0031",
+      "subject": "Urlopy w lutym - stan planu",
+      "body": "Cześć Wiktor,\n\ndla twojej wiedzy: plan urlopów na luty jest już zatwierdzony. W magazynach nikt nie ma więcej niż jednego tygodnia wolnego w miesiącu, a w dniach największego ruchu, czyli przed końcem miesiąca, obsada jest kompletna. Trzy osoby z księgowości biorą urlop w pierwszym tygodniu, ale Magdalena potwierdziła, że zamknięcie miesiąca nie jest zagrożone.\n\nDział HR ma wszystko pod kontrolą, więc nie ma potrzeby się tym zajmować.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0033",
+      "subject": "Supply Chain Weekly: carriers, capacity and the week ahead",
+      "body": "Supply Chain Weekly - what moved this week\n\nCarrier moves. Two large container lines announced a joint service between the North Sea and the Baltic, with weekly sailings from February. The service adds capacity on the Gdansk and Gdynia calls and should reduce transfer times to the Nordic markets by about two days.\n\nAir cargo. Demand for belly capacity remained soft, and airlines report that yields are down compared to last year. Dedicated freighters are still full on the Asia to Europe routes, with rates holding steady.\n\nWarehousing. Vacancy rates for logistics space in Central Europe fell to a record low. Developers in Poland have around one million square metres under construction, mostly in the western and southern regions, and pre-let levels remain high. Rents for prime space rose by three percent in the quarter.\n\nLabour. A survey of 400 European logistics firms shows that three out of four plan to hire warehouse staff in the first quarter. Wage growth for forklift drivers averaged five percent over the past year, and agencies report that experienced drivers are the hardest profile to find.\n\nTechnology. Several carriers now publish estimated arrival times based on live traffic data, which helps receivers to plan unloading windows. Early users report fewer missed slots at the ramp.\n\nThe Supply Chain Weekly annual outlook report is available to paid subscribers.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0034",
+      "subject": "Calendar update",
+      "body": "Dear Mr Szalewski,\n\nThe February travel to Stockholm has moved by one week, as the organiser changed the date. This is for your information only.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0035",
+      "subject": "Logistyka Dziś: tydzień w branży - paliwa, przetargi, rynek pracy",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nRynek paliw. Hurtowe ceny oleju napędowego utrzymały się na zbliżonym poziomie, a analitycy nie spodziewają się większych zmian w lutym. Stacje przy autostradach obniżyły ceny średnio o dwa grosze, co wynika z rosnącej konkurencji między sieciami.\n\nPrzetargi. Zamawiający publiczni ogłosili w tym tygodniu jedenaście postępowań na transport towarów w kraju, w tym trzy na przewozy chłodnicze. Wartość największego z nich, na obsługę sieci szpitali, wynosi około czterdziestu milionów złotych. Terminy składania ofert przypadają w lutym i marcu. Eksperci zwracają uwagę, że kryteria jakościowe odgrywają coraz większą rolę niż sama cena.\n\nRynek pracy. Według najnowszego raportu agencji pracy brakuje w Polsce około dwudziestu tysięcy kierowców zawodowych. Firmy transportowe podnoszą stawki i wprowadzają dodatki za pracę w weekendy. Rośnie też zainteresowanie kierowcami z Ukrainy i krajów Azji Środkowej, choć procedury zatrudnienia pozostają długie.\n\nMagazyny. Deweloperzy zapowiedzieli kolejne parki logistyczne w okolicach Poznania i Gdańska. Stawki najmu pozostają stabilne, a pustostany są najniższe od pięciu lat.\n\nRegulacje. Resort infrastruktury zakończył konsultacje projektu zmian w czasie pracy kierowców. Nowe przepisy mają wejść w życie w połowie roku.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0036",
+      "subject": "Informacja o terminie ankiety dla rady",
+      "body": "Wiktor,\n\ndla informacji: sekretarz rady rozesłał członkom ankietę oceny pracy rady za ubiegły rok. Wyniki zostaną omówione na posiedzeniu 28 stycznia, w ostatnim punkcie porządku obrad. Zarząd nie wypełnia tej ankiety, więc po Twojej stronie nic nie trzeba robić.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0037",
+      "subject": "Delivery window confirmed",
+      "body": "Dear Mr Szalewski,\n\nWe confirm that our receiving dock accepts your trucks on Tuesday and Thursday mornings, as in the current schedule.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0039",
+      "subject": "Weekly freight notes",
+      "body": "Supply Chain Weekly - quick brief\n\nContainer rates on the Asia to North Europe lane edged up one percent after several weeks of decline.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0040",
+      "subject": "Informacja o odprawach w porcie",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę poinformować, że port w Gdyni wprowadził od poniedziałku nowe godziny pracy punktu odpraw dla ładunków spożywczych. Punkt działa teraz od szóstej do dwudziestej drugiej, a w weekendy do osiemnastej. Dla Państwa dostaw na trasach nordyckich nie zmienia to wiele, bo większość zleceń składamy przed południem.\n\nNasz zespół dostosował grafik pracy i potwierdził to z agentem portowym. Nie ma potrzeby żadnych działań po Państwa stronie, a informacja ma służyć wyłącznie temu, aby nie zaskoczyła Państwa wiadomość z portu.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0041",
+      "subject": "Rekrutacja kierowców wózków - informacja",
+      "body": "Cześć Wiktor,\n\ninformacja z magazynów: do końca stycznia przyjęliśmy ośmiu kierowców wózków widłowych w Poznaniu i czterech w Gdyni. Wszyscy mają aktualne uprawnienia UDT, a ich badania lekarskie są kompletne. Po stronie operacyjnej wszystko jest pod kontrolą i pierwsze zmiany ruszają w poniedziałek.\n\nW razie czego Rafał z HR ma listę z numerami dokumentów, ale nikt nie zgłaszał braków. Tylko tyle, nic nie musisz robić.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0042",
+      "subject": "Odbiór towaru - potwierdzenie",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że sprawa reklamacji z ubiegłego miesiąca została u nas zamknięta. Towar zastępczy dotarł do hurtowni w Kielcach w pełnym stanie, a nasza księgowość zaksięgowała dokument korygujący. Z naszej strony wszystko jest wyjaśnione i dziękuję za sprawne załatwienie sprawy. Wiadomość kieruję do wiadomości, bo wiem, że prezes lubi być informowany o zakończeniu większych reklamacji.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0043",
+      "subject": "Supply Chain Weekly: tariffs, rates and a note on Baltic ports",
+      "body": "Supply Chain Weekly - midweek update\n\nTariffs. Several trade partners announced new import duties on processed food, which may affect the pricing of cross-border shipments from spring. Industry groups say they will publish guidance on classification codes in the coming weeks.\n\nRates. Reefer container rates between Northern Europe and the Nordic region rose by three percent, driven by seasonal demand. Road tariffs followed with a rise of one percent.\n\nPorts. Gdynia reports that waiting times for berth slots fell to under twelve hours. Operators credit the new scheduling system.\n\nSubscribers can read the extended analysis in the premium edition.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0044",
+      "subject": "Meeting agenda - final version",
+      "body": "Wiktor,\n\nThe final agenda for the January meeting has been sent to all members. The budget will be item one, the joint tender item two, staffing item three. Nothing else has been added. You will find the pack in the board portal, and the secretary has confirmed that the room is ready.\n\nOrlowicz",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0045",
+      "subject": "Stockholm trip - new date",
+      "body": "Wiktor,\n\nthe Stockholm conference has moved to the second week of February. Just so you know.\n\nZ. O.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0046",
+      "subject": "Re: Delivery windows - confirmation of the schedule",
+      "body": "Dear Mr Szalewski,\n\nThank you for your note on the unloading windows. I wish to confirm that we have updated our receiving schedule accordingly. Our terminal in Gothenburg will accept the Kordelan trucks on Tuesday, Thursday and Friday mornings from the first of February. The pallet labels remain unchanged.\n\nThis is for your information. We do not need anything further at this moment.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "subject": "Re: Delivery windows for February",
+          "body": "Dear Karin, we have noted your questions about the windows. Our operations team will propose a schedule shortly. Best regards, Wiktor Szalewski"
+        },
+        {
+          "subject": "Delivery windows for February",
+          "body": "Dear Mr Szalewski, we are preparing the schedule for February. We would like to know which weekdays suit your trucks best and how many pallets you plan per week. Karin Lindqvist"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0047",
+      "subject": "Nordic contract - draft status",
+      "body": "Hi Wiktor,\n\nFYI the Nordic framework draft is with their lawyers now, no changes from them expected this week.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    }
+  ]
+}

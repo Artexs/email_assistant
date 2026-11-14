@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { createPlanned } from "../../src/modules/actions";
-import { auditEvents, recordAudit } from "../../src/modules/audit";
+import { auditEvents, recordAudit, recordLlmCall } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { markSynced } from "../../src/modules/mail/repo";
 import {
@@ -12,6 +12,7 @@ import {
   lastSentDigestEnd,
   markDigestSent,
 } from "../../src/modules/reports";
+import { setOrgFeature } from "../../src/modules/tenancy";
 
 import {
   createOrgWithMailbox,
@@ -343,6 +344,36 @@ describe("buildDigestMessage", () => {
       });
       const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
       expect(message.text).not.toContain("Shadow mode");
+    });
+  });
+
+  test("the LLM pause line is the first footer line only with the flag llm_pause_line on", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR), subject: "Seed" });
+      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR), subject: "Seed 2" });
+      await recordLlmCall(trx, ctx, {
+        mailboxId: a.mailboxId,
+        role: "classifier",
+        promptVersion: "test",
+        model: "test-model",
+        outcome: "http_429_quota",
+        tokensIn: null,
+        tokensOut: null,
+        latencyMs: 5,
+        at: at(-5 * MIN),
+      });
+      const wide = { ...request, kind: "on_demand" as const, slot: null };
+
+      const off = await buildDigestMessage(trx, ctx, wide);
+      expect(off.text).not.toContain("⏸ LLM");
+
+      await setOrgFeature(trx, ctx, { flag: "llm_pause_line", enabled: true, actor: "cli", now: T });
+      const on = await buildDigestMessage(trx, ctx, wide);
+      expect(on.text).toContain(
+        "⏸ LLM paused since 07:55: the provider quota or budget is spent (http_429_quota). Triage waits."
+      );
     });
   });
 });

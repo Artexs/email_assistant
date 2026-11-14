@@ -22,6 +22,7 @@ import { countWaiting, INBOX, isSyntheticMessageId, listMailboxes } from "../mai
 import { getOrganization } from "../tenancy";
 import { countTriagedBetween, listTriagedBetween } from "../triage";
 
+import { llmPauseToShow } from "./llm-pause";
 import { lastSentDigestEnd } from "./repo";
 
 export const DIGEST_ITEM_LIMIT = 100;
@@ -132,6 +133,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     reasonCode: "suspended_backlog",
   });
   const waiting = await countWaiting(db, ctx, { receivedSince: new Date(request.now.getTime() - WAITING_WINDOW_MS) });
+  const llmPause = await llmPauseToShow(db, ctx, request.now);
 
   return renderDigest(
     {
@@ -147,6 +149,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       skippedBacklog,
       waiting,
       delegations,
+      ...(llmPause === null ? {} : { llmPause }),
     },
     texts
   );

@@ -51,3 +51,8 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 - master now has operator-needs-TOTP (stage 04). The VPS OPERATOR_USER_IDS owner has NO TOTP. Do NOT deploy a master that has F105 stage 04 without the enrolment UI (stages 09-11) and all of stages 01-14 in ONE deploy (stage 15 runbook). After deploy: owner step U1 enrols TOTP in Settings -> Account; until then /operator redirects to /settings?two_factor=required and /api/operator/* gives 403. Escape hatches: operator CLIs over ssh (no requireOperator), /api/auth/two-factor/enable and /verify-totp (allow-list), rollback image ea-server:pre-f105 (never db:rollback).
 - Any other VPS deploy from now on (e.g. F098 s12 Polish, F100, F097 /review) must NOT ship F105 stage 04 before stage 11: deploy from a commit before f105 s04 (git merge --ff-only <commit>) or wait until F105 stages 01-14 are done.
 - Optional test to add later (stage 12 e2e): keep a test that web.ts reads user.twoFactorEnabled from the REAL Better Auth session (a plugin upgrade hiding the field fails closed today).
+
+## F100 s07 review carry-over (landed)
+- Fixed on master: mermaid node quoted; two CLI texts no longer say 5 minutes.
+- Open, optional: web panel texts `mb_resumed_toast` and `connected_toast` (en.ts 107, 168, and pl) still say "within 5 minutes". Fix in F100 stage 18/19 or a later web ticket.
+- Soft-pause line vanishes after 10 min while a doubled soft pause runs; other orgs see no pause line (plan D8, N17). Owner step O1 note after land: set MAIL_SYNC_EVERY_MIN only if 2 is wrong.

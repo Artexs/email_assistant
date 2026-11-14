@@ -239,6 +239,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **Built in S3:** the events `action.applied`, `action.failed`, `action.expired`, `action.undo_requested`, `action.undone`, `email.returned`, `mailbox.folder_created`, `mailbox.mode_changed`, `mailbox.policy_changed`, `mailbox.switch_changed`. `data` holds ids, action types, folder keys, attempts, codes and booleans.
 - **Built in S4:** the events `action.applying`, `action.approved`, `action.rejected`, `action.send_again`, `action.sent_copy_failed`, `delegate.added`, `delegate.changed`, `delegation.created`, `delegation.sent`, `delegation.answered`, `delegation.overdue`, `delegation.cancelled`, `delegation.done`, `delegation.chaser_run`; `countMailboxEventsBetween` (the chaser's once-per-day gate).
 - **Built in F099:** `listAuditEvents`, `sumLlmCallsByModelSince`, the event `action.send_limited` (data `limit`, `until`, `mailbox_id`).
+- **Built in F100:** `latestLlmPause` (`llm-pause.ts`: the LLM pause read from the newest `llm.call` rows, for `/status` and the digest).
 
 ### 3.7 `reports` — digest and metrics (S2)
 

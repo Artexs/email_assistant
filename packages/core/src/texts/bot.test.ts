@@ -122,4 +122,20 @@ describe("bot texts", () => {
       "Approvals: 2 waiting for your tap (oldest 12:00) · 1 approved, sending"
     );
   });
+
+  test("the /resume text names the sync interval; the minutes follow the count", () => {
+    const en = textTables.en.bot.switch.resumedExplain;
+    const pl = textTables.pl.bot.switch.resumedExplain;
+    const tail = " Mail that came during the pause is read then; mail older than 7 days is not triaged.";
+    expect(en(2)).toBe(`The next sync runs within 2 minutes.${tail}`);
+    expect(en(1)).toStartWith("The next sync runs within 1 minute. ");
+    expect(en(5)).toStartWith("The next sync runs within 5 minutes. ");
+    expect(pl(1)).toStartWith("Następna synchronizacja ruszy najpóźniej za 1 minutę. ");
+    expect(pl(2)).toStartWith("Następna synchronizacja ruszy najpóźniej za 2 minuty. ");
+    expect(pl(3)).toStartWith("Następna synchronizacja ruszy najpóźniej za 3 minuty. ");
+    expect(pl(4)).toStartWith("Następna synchronizacja ruszy najpóźniej za 4 minuty. ");
+    expect(pl(5)).toStartWith("Następna synchronizacja ruszy najpóźniej za 5 minut. ");
+    expect(pl(12)).toStartWith("Następna synchronizacja ruszy najpóźniej za 12 minut. ");
+    for (const text of [en(2), pl(2)]) expect(text).not.toContain(":");
+  });
 });
