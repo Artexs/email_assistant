@@ -1,6 +1,6 @@
 # F100 stage 18 — Stats page
 
-Part of [`../plan.md`](../plan.md). Needs stage 12 on `master`. Shared web files: "Panel to Astro 7" (F101), E7-T1 Polish UI (F098), the operator page of F099 stage 10 and E4-A (F102) edit the shell, `nav-items.ts`, `en.ts` and `pl.ts`; merge `master` before the proof if one of them landed.
+Part of [`../plan.md`](../plan.md). Review job before the land (the panel page and its `en.ts` and `pl.ts` texts, plan § Review). Needs stage 12 on `master`. Shared web files: "Panel to Astro 7" (F101), E7-T1 Polish UI (F098), the operator page of F099 stage 10 and E4-A (F102) edit the shell, `nav-items.ts`, `en.ts` and `pl.ts`; merge `master` before the proof if one of them landed.
 
 After this stage a member of an organization with `stats_page` on sees "Stats" in the panel navigation and a read-only page with the last 8 finished weeks: one table, the metrics as rows, the weeks as columns, each cell a rate with its count, and a mailbox select (D25).
 

@@ -114,7 +114,7 @@ After the refresh, `scripts/plan-drift.sh spec/features/planned/F100-e3a-measure
 | stage 18 step 1 | Rewritten: only the nav (`navItems`, `Nav.tsx`, `AppShell.tsx`), `nav_stats` in `en.ts` and `pl.ts`; no server change; F099 stage 10 adds `OPERATOR_ITEM` to the same files. | F099 stage 06 did the server part (F16). |
 | stage 18 step 2 | `client:only="react"`, `title_stats`; `pl.ts`; a `Card` instead of `Placeholder` (no text prop); `web-panel.md` and `measurement.md` page rows. | F098 D2 and stage 02; F18; PD-009. |
 | stage 19 step 1 | The last pass over the pages the stages wrote; `measurement.md` complete. | Pages are written per stage now. |
-| questions.md | Q15 (D31), `[important: user-visible]`. | Refresh rule 4. |
+| questions.md | Q15 (D31), `[important: user-visible]`; Q16 (taps check their flag), `[minor]`, from cold review 2. | Refresh rule 4. |
 
 No change to the outcome, the scope, the stage count (19), the stage order, the stage waits or any decision D1–D29. The F097 interfaces this plan uses are the same as in the F097 refresh (`TestMailRule`, `mailKindFilter(kind, rule)`, the `review` source and `triage_feedback_source_check`, `reviewMessage(deps, link)` in `channels/commands.ts`, `wilsonInterval` in `packages/core/src/triage/metrics.ts`).
 
@@ -135,4 +135,4 @@ No change to the outcome, the scope, the stage count (19), the stage order, the 
 
 ## Review
 
-The refresh changed stages in substance (stage 04 migration and tests, stage 16 migration, the new step 3 of stage 12, new page steps, D31), so a cold review runs: `plan-review-2.md`.
+The refresh changed stages in substance (stage 04 migration and tests, stage 16 migration, the new step 3 of stage 12, new page steps, D31), so a cold review ran: [plan-review-2.md](plan-review-2.md), job `2026-11-14-f100-plan-review-refresh-1-36cdb752`, candidate `a7e99f3`: PASS, 0 blocking, 12 notes. N1–N9 and N11 are fixed (plan.md § Cold review, review 2 table): `measurement.md` edits only when it exists (stages 14, 15); D31 keys on the F098 section file and gives the right helper signatures; `architecture.md` §6.1 line and case-insensitive greps (stages 07, 19); the capability-test wording; stages 07 and 18 get a review job; the stale `tenancy-and-plans.md` flag lines; taps check their flag (D21, D22, Q16); stage 04 case 1 uses a second mail; F100's flag stages never at once. N10 (stages 07 and 14 large) is accepted with a split point in How to run 2. N12 (`spec/build.md:38` says "needs refresh") is an outside edit for the coordinator.

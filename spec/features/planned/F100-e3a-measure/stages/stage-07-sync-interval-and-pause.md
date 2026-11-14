@@ -1,6 +1,6 @@
 # F100 stage 07 — Sync every 2 min and the LLM pause line (F073)
 
-Part of [`../plan.md`](../plan.md). Needs stage 02 on `master`. Not next to stage 06 (both touch the mail job area and `main.ts`). After the land: tell the owner about owner step O1; coordinator steps C3 and C4 follow stage 07.
+Part of [`../plan.md`](../plan.md). Review job before the land (user-visible texts, plan § Review). Needs stage 02 on `master`. Not next to stage 06 (both touch the mail job area and `main.ts`). After the land: tell the owner about owner step O1; coordinator steps C3 and C4 follow stage 07.
 
 After this stage the mail sync runs every 2 minutes by default (`MAIL_SYNC_EVERY_MIN` = 2, 3 or 5), and `/status` and the digest say when the LLM is paused and why, with the quota case in plain words.
 
@@ -8,7 +8,7 @@ After this stage the mail sync runs every 2 minutes by default (`MAIL_SYNC_EVERY
 
 **Goal.** The interval is a config key with default 2 (D7).
 
-**Files.** `apps/server/src/platform/config.ts` (+ `config.test.ts`), `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/commands.ts` (`changeLines` resume text; `CommandDeps` gains `syncEveryMin: number`), the place that builds `CommandDeps` (`createTelegramRuntime` deps in `channels/index.ts` or `telegram/…`; follow `operatorContact`), `apps/server/test/integration/channels-commands.test.ts`, `deploy/compose.yaml` only if it lists env keys one by one (do not set the key there: the default applies), `docs/capabilities/sync.md` (line 7 "Every 5 minutes", rule 6 cron, the `mail.sync` job row of Entry points, rule 16 "mail of the last 5 minutes" and the Limits line "E3a (F100) moves the poll to 2 minutes": the interval is `MAIL_SYNC_EVERY_MIN` minutes, default 2, also 3 or 5; the Limits line keeps only "no IMAP IDLE (E8)"), `docs/architecture.md` §4.1 (the flow line `Scheduler: every 5 min per mailbox` → `every MAIL_SYNC_EVERY_MIN min (default 2)`), `docs/capabilities/digest-and-notices.md` rule 9 (the `/resume` text, if the page quotes it).
+**Files.** `apps/server/src/platform/config.ts` (+ `config.test.ts`), `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/commands.ts` (`changeLines` resume text; `CommandDeps` gains `syncEveryMin: number`), the place that builds `CommandDeps` (`createTelegramRuntime` deps in `channels/index.ts` or `telegram/…`; follow `operatorContact`), `apps/server/test/integration/channels-commands.test.ts`, `deploy/compose.yaml` only if it lists env keys one by one (do not set the key there: the default applies), `docs/capabilities/sync.md` (line 7 "Every 5 minutes", rule 6 cron, the `mail.sync` job row of Entry points, rule 16 "mail of the last 5 minutes" and the Limits line "E3a (F100) moves the poll to 2 minutes": the interval is `MAIL_SYNC_EVERY_MIN` minutes, default 2, also 3 or 5; the Limits line keeps only "no IMAP IDLE (E8)"), `docs/architecture.md` §4.1 (the flow line `Scheduler: every 5 min per mailbox` → `every MAIL_SYNC_EVERY_MIN min (default 2)`, line ~95) and §6.1 "Sync cursor" ("Every 5 minutes: fetch UIDs above the cursor.", line ~321 → "Every `MAIL_SYNC_EVERY_MIN` minutes (default 2): …"), `docs/capabilities/digest-and-notices.md` rule 9 (the `/resume` text, if the page quotes it).
 
 **Interfaces.**
 
@@ -31,7 +31,7 @@ MAIL_SYNC_EVERY_MIN=
 
 Resume text: `` `The next sync runs within ${deps.syncEveryMin} minutes. Mail that came during the pause is read then; mail older than 7 days is not triaged.` `` (`changeLines` gets the number as a parameter).
 
-Add `minutes` to `platform/log-fields.ts` if it is not there (after F103 stage 01: to its number kind list, plan D30). `platform/config.ts` is 493 lines (plan F13): add only the key and `mailSyncCron`, next to `sendLimits`. The resume text follows plan D31 when `packages/core/src/texts/index.ts` exists (after F098 stage 11 the command texts live in `texts.bot`).
+Add `minutes` to `platform/log-fields.ts` if it is not there (after F103 stage 01: to its number kind list, plan D30). `platform/config.ts` is 493 lines (plan F13): add only the key and `mailSyncCron`, next to `sendLimits`. The resume text follows plan D31: when `packages/core/src/texts/bot.ts` exists (F098 stage 11), it is an entry of `texts.bot` with en and pl; else it stays inline in `commands.ts`.
 
 **Decisions.** D7, D30.
 
@@ -42,7 +42,7 @@ Add `minutes` to `platform/log-fields.ts` if it is not there (after F103 stage 0
 
 **Check.** `bun test apps/server/src/platform/config.test.ts apps/server/test/integration/channels-commands.test.ts apps/server/src/capability-map.test.ts`
 
-**Done when.** Cases 1–2 pass; `grep -n "5 min" docs/capabilities/sync.md` shows no line about the sync interval; `grep -rn '"\*/5 \* \* \* \*", mailSync' apps/server/src/main.ts` prints nothing.
+**Done when.** Cases 1–2 pass; `grep -ni "5 min" docs/capabilities/sync.md docs/architecture.md` shows no line about the sync interval (the heartbeat and other 5-minute waits stay); `grep -rn '"\*/5 \* \* \* \*", mailSync' apps/server/src/main.ts` prints nothing.
 
 **Out of scope.** IMAP IDLE (E8); the heartbeat interval (stays 5 min).
 

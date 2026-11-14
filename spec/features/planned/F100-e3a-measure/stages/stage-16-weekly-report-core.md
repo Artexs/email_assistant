@@ -82,7 +82,7 @@ Digest line (D24): when `handled` is set and `triaged > 0`, the footer gets, aft
 
 **Done when.** Cases 1–6 pass.
 
-**Out of scope.** The Polish texts while `packages/core/src/texts/index.ts` does not exist; after F098 stage 08 landed, the renderer follows plan D31 (an entry in the notice texts section with `en` and `pl`, `texts: CoreTexts` last), and the expected text of case 1 stays the English one.
+**Out of scope.** The Polish texts while `packages/core/src/texts/notices.ts` (weekly report) and `digest.ts` (handled-share line) do not exist; when one exists (F098 stages 08 and 10), its texts follow plan D31 (an entry in the notice texts section with `en` and `pl`, `texts: CoreTexts` last), and the expected text of case 1 stays the English one.
 
 ## Step 2 — Migration
 

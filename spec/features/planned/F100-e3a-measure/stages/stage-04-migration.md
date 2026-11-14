@@ -132,7 +132,7 @@ The RLS blocks are not optional: `rls-policy.test.ts` case 1 fails for a table w
 
 **Test** (`measure-schema.test.ts`, each case in `withRollback`; two orgs from `createOrgWithMailbox`; mails with `insertTestEmail`):
 
-1. Insert an `email_headers` row for org A's mail with org A → ok; the same mail id with org B's `org_id` → foreign-key error.
+1. Insert an `email_headers` row for org A's mail m1 with org A → ok. For org A's second mail m2 (no row yet), a row with org B's `org_id` → foreign-key error (SQLSTATE `23503`). Do not reuse m1 for the second insert: `email_id` is the primary key, so Postgres reports `23505` before the foreign key (cold review 2 N9). The same for `email_flags`.
 2. `email_headers` with `reply_to` of 6 entries → check error; `from_name` of 201 chars → check error; `attachments = '{}'::jsonb` → check error.
 3. `email_flags` with `answered_check = 'yes'` and `answered_check_at` null → check error; `answered_check = 'maybe'` → check error.
 4. `action_feedback` kind `reject_reason` with reason null → check error; kind `mistake` with reason `wrong_person` → check error; two rows `(org, action, reject_reason)` → unique error.

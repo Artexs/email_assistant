@@ -14,6 +14,7 @@ Content:
 
 - `measurement.md` complete: "What it does now" (the Monday report, the stats page and route, `stats:week`, M1–M5, M7, M8 with their one-line definitions from plan D11–D17, the snapshot rule D28, real mail only D18); "Rules" (numbered, from D9, D11–D17, D20, D23, D24, D27); "Entry points" (`weekStats` and `recentWeekStats` in `apps/server/src/modules/reports/metrics.ts`, `GET /api/stats`, `bun run stats:week`, `bun run mailbox:signals`, the `weekly_report` detector, the `/stats` page, `packages/core/src/metrics/`); "Data" (`email_headers`, `email_flags`, `action_feedback`, `triage_feedback.source = 'answered_check'`, outbox kind `weekly_report`); "Limits" (holdout, history check and tripwire fields: F110; E5 loop rows: F116; E6 draft outcome line: F115; IMAP IDLE: F114; the M7 backup share is an assumption); "Decisions" (PD-056–PD-068, ADR 0028); "Tests" (the main test files of stages 08–18).
 - Every other touched page: read the lines that stages 03–18 added against the code at this commit (names, limits, flags, the 2-min interval); fix what differs; add a line that a stage missed. Do not rewrite the pages.
+- `tenancy-and-plans.md`: rule 5 and the Limits line name every flag of the registry and the code that reads them (plan § Rules for every stage, flag rule).
 
 Every page this step changes gets a fresh "Checked against" line (this commit's parent sha and today's date).
 
@@ -23,7 +24,7 @@ Every page this step changes gets a fresh "Checked against" line (this commit's 
 
 **Check.** `bun test apps/server/src/capability-map.test.ts`
 
-**Done when.** The test passes; `grep -rn "every 5 min" docs/capabilities docs/architecture.md` shows no line about the mail sync; `grep -n "F100" docs/capabilities/*.md` shows no Limits line that says F100 will do a thing it did.
+**Done when.** The test passes; `grep -rni "every 5 min" docs/capabilities docs/architecture.md docs/modules.md` shows no line about the mail sync (case-insensitive: "Every 5 minutes" counts; cold review 2 N4); `grep -n "F100" docs/capabilities/*.md` shows no Limits line that says F100 will do a thing it did.
 
 **Out of scope.** User docs (E10a does not exist yet).
 

@@ -42,7 +42,7 @@ export const REJECT_REASON_TEXTS: Record<RejectReason, string> = {
 // views.ts: sendResultView gains `mistakeButton: z.boolean().optional()` (optional: rows queued in the last 24 h stay valid).
 ```
 
-`approvalEdit` is the shared edit renderer (`renderNoticeEdit`); it keeps the stored card text and adds one status line (code patterns § Notices are facts). The texts follow plan D31: when `packages/core/src/texts/index.ts` exists, `REJECT_REASON_TEXTS`, the button texts and the new edit lines are entries of the approvals section (en and pl), and `approvalEdit` takes `texts` as F098 left it.
+`approvalEdit` is the shared edit renderer (`renderNoticeEdit`); it keeps the stored card text and adds one status line (code patterns § Notices are facts). The texts follow plan D31: when `packages/core/src/texts/approvals.ts` exists (F098 stage 09), `REJECT_REASON_TEXTS`, the button texts and the new edit lines are entries of that section (en and pl), and `approvalEdit` takes `texts` as F098 left it; else they stay English in `digest/action-feedback.ts`.
 
 **Decisions.** D21, D26.
 
