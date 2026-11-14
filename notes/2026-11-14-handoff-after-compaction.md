@@ -36,3 +36,13 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 - Two parallel `enable` calls give 200+200 (never 500) and one row; the second write replaces the first, so one answer holds a stale secret/backup codes (a wrong secret never becomes verified; enrolment failures do not count to the lock). Plan D22 and "Not verified" are wrong about this. Stage 11 (account card) MUST block a double submit of "Turn on" so the user never sees a QR code or backup codes that are not stored.
 - TOTP replay of the same code in a new challenge gives 200 (plan D26 / owner question Q5 accept this).
 - Sessions made before enrolment on other devices stay alive after TOTP is turned on: stage 03 (D9) ends them.
+
+## F100 stage 14 landed (review PASS) — carry-overs
+- F098 stage 11 (branch limen/2026-11-14-f098-s11-bot-texts-4569598d, re-review 2026-11-14-f098-re-review-s11-83cab473 running) now conflicts with master: (1) callbacks.ts reject case: take `taps.rejectedNow`, keep the `reasonButtons` extra; (2) callbacks.ts ~:320,325 still use NOT_FOUND_TEXT (compile error after F098 removes it): use the `texts.bot.taps` not-found entry; (3) channels-callbacks.test.ts new tests use APPROVAL_TEXTS.not_found / owner_only: replace with textTables.en.bot.taps.*; (4) comment at action-feedback-taps.ts:30 mentions APPROVAL_TEXTS; (5) feedbackTaps answers stay in texts.approvals (D31). Give this list to the F098 s11 merge worker.
+- F100 stage 15: first move handleApprovalCallback (~230 lines) from channels/callbacks.ts to its own file (callbacks.ts is 418 lines) before adding lines.
+- Polish style (pl only, F098 stage 12 or a later texts pass): feedbackTaps 'Zapisano jako błąd.' -> 'Oznaczono jako błąd.'; 'Ta wysyłka nie jest odrzucona.' -> 'Ta wysyłka nie została odrzucona.'
+- web-suspended.test.ts:28 comment says "18 write routes", the list holds 20. Flag check runs before id/body validation (flag off + bad id = 404, not 400): E4-A must not expect 400. drafts-and-send.md rule 11 points to measurement.md rule M3 (stage 12 creates the page).
+
+## F100 stage 06 landed (PASS + fixes)
+- touchEmailFlags inserts an all-false row with checked_at = now for notFound/mismatch targets: "last tried", not "flags known". If stage 07/12/15 or the answered check count coverage (share of mail with known flags), they must not treat these rows as read: add a nullable `flags_read_at` column in the stage 16 migration and set it in writeEmailFlags only. Tell the stage 07, 12, 15 and 16 workers.
+- Review gaps: none open. Mutation of touchEmailFlags call fails case 6, N3 and N1.

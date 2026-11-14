@@ -17,6 +17,13 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Flag refresh marks unreadable mail as "tried" with an empty flag row (F100 stage 06) · data · new
+- Choice: when the refresh cannot find or match a mail, it writes a row in `email_flags` with all flags false and `checked_at` = now. `checked_at` means "last tried", not "flags known".
+- Why: without it, such mail stays first in the queue for 30 days. About 3,000 of them would block the check of live mail, and a later "answered" flag would be missed (M1 under-count). A review reproduced this.
+- Cost: a later reader cannot tell "tried, flags unknown" from "read, no flags". A gone mail never gives a false "answered", so M1 stays a lower bound. If coverage numbers need the difference, add a nullable column in the stage 16 migration.
+- Undo: make `touchEmailFlags` update-only (the starving queue returns).
+- Source: review of F100 stage 06 (note N1), `docs/capabilities/sync.md` rule 6.
+
 ### 2026-11-14 · Two-factor migration down path (F105 stage 01) · security · new
 - Choice: migration `20261114130001_two_factor.sql` adds `auth_two_factors`, `users.two_factor_enabled` and `memberships.break_glass`. Its down step drops them, so it deletes every enrolled second factor and every break-glass mark.
 - Why: a down step must restore the old schema. Review proved the rest of the data stays (users, memberships, policy).
