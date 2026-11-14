@@ -5,12 +5,13 @@ import { AuthCard } from "../components/auth/AuthCard";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { t, type TextKey } from "../i18n";
+import { t, type TextKey, useLocale } from "../i18n";
 import { requestPasswordReset } from "../lib/auth-requests";
 
 type Outcome = "sent" | "off" | null;
 
 export default function ForgotPage() {
+  useLocale();
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [fieldError, setFieldError] = useState<TextKey | null>(null);

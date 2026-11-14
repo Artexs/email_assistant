@@ -6,7 +6,7 @@ import { ActivityList, ActivitySkeleton } from "../components/activity/ActivityL
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { Button } from "../components/ui/button";
-import { t } from "../i18n";
+import { t, useLocale } from "../i18n";
 import { filtersFromSearch, filtersToSearch, type ActivityFilters } from "../lib/activity-filters";
 import { api } from "../lib/api";
 import { useNow } from "../lib/use-now";
@@ -76,6 +76,8 @@ function Activity() {
 }
 
 export default function ActivityPage() {
+  // A language change re-renders the whole island (spec/features/active/F098-e7-t1-polish-ui-i18n-frame-first, panel locale store).
+  useLocale();
   return (
     <AppShell active="activity" title="title_activity">
       <Activity />

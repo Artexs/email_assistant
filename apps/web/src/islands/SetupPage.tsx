@@ -5,7 +5,7 @@ import { AuthCard } from "../components/auth/AuthCard";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { t, type TextKey } from "../i18n";
+import { t, type TextKey, useLocale } from "../i18n";
 import { authClient } from "../lib/auth-client";
 import { setPasswordWithTerms } from "../lib/auth-requests";
 import { legalDocs, legalLang, legalPath, type LegalDoc } from "../lib/legal";
@@ -23,6 +23,7 @@ const legalTitles: Record<LegalDoc, TextKey> = {
 const legalLinks = legalDocs.map((doc) => ({ doc, title: legalTitles[doc] }));
 
 export default function SetupPage() {
+  useLocale();
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("form");
   const [token, setToken] = useState<string | null>(null);

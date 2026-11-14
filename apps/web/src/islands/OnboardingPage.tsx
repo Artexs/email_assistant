@@ -8,7 +8,7 @@ import { useMe } from "../components/shell/MeProvider";
 import { TelegramLink } from "../components/telegram/TelegramLink";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button, buttonVariants } from "../components/ui/button";
-import { t, tp } from "../i18n";
+import { t, tp, useLocale } from "../i18n";
 import { api } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { errorText } from "../lib/errors";
@@ -99,6 +99,7 @@ function Onboarding() {
 }
 
 export default function OnboardingPage() {
+  useLocale();
   return (
     <AppShell active="onboarding" title="title_onboarding">
       <Onboarding />

@@ -9,7 +9,7 @@ import { TelegramLink } from "../components/telegram/TelegramLink";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
-import { t } from "../i18n";
+import { t, useLocale } from "../i18n";
 import { api } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { useNow } from "../lib/use-now";
@@ -111,6 +111,7 @@ function Mailboxes() {
 }
 
 export default function MailboxesPage() {
+  useLocale();
   return (
     <AppShell active="mailboxes" title="title_mailboxes">
       <Mailboxes />

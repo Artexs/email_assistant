@@ -23,7 +23,7 @@ import { SyncFoldersCard } from "../components/settings/SyncFoldersCard";
 import { TimezoneCard } from "../components/settings/TimezoneCard";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
-import { t, tp, type TextKey } from "../i18n";
+import { t, tp, type TextKey, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { selectedMailboxId, settingsPath } from "../lib/settings-api";
@@ -215,6 +215,7 @@ function Settings() {
 }
 
 export default function SettingsPage() {
+  useLocale();
   return (
     <AppShell active="settings" title="title_settings">
       <Settings />
