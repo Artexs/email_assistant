@@ -441,7 +441,7 @@ Tenancy:
 - **Triage config keys:** `TRIAGE_LLM_SCOPE` (default `off`): `off` = no triage worker; `synthetic` = only the seeded test mail of every mailbox;
   `all` = also real mail of every active mailbox of an organization that is not `suspended`. The server refuses to start with `synthetic` or `all` and no key for the chosen provider (`GEMINI_API_KEY` or `OPENAI_API_KEY`).
   `LLM_DAILY_CAP` (default 300): the cap of §4.1 rule 8.
-  `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min.
+  `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min. `/status` and the digest read the pause from the `llm.call` audit rows (`latestLlmPause`, at most 200 rows of the last 2 h), so on a very long run the shown start (`since`) can be later than the real start.
 - **Data by stage:** OpenAI (pilot, since 2026-11-06): paid API terms, no training on API data, abuse logs up to 30 days, no EU location; accepted by the user for their own mail (ADR 0015). Gemini: pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
   accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on.
   An EU endpoint before any outside user's mail: ADR 0035 (proposed, E11b F111). No outside user is served (PD-001).
