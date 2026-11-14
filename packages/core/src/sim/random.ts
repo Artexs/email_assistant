@@ -57,7 +57,8 @@ export function largestRemainder(weights: readonly number[], total: number): num
   const exact = weights.map((w) => (w / sum) * total);
   const counts = exact.map((x) => Math.floor(x + 1e-9));
   const order = exact
-    .map((x, index) => ({ index, rest: x - (counts[index] as number) }))
+    // The remainders are rounded so that float noise (0.35 × 150 = 52.49999…) cannot break a tie.
+    .map((x, index) => ({ index, rest: Math.round((x - (counts[index] as number)) * 1e9) }))
     .sort((a, b) => b.rest - a.rest || a.index - b.index);
   let left = total - counts.reduce((a, b) => a + b, 0);
   for (const { index } of order) {

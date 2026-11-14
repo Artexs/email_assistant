@@ -4,6 +4,7 @@ export * from "./hard-cases";
 export * from "./history-gen";
 export * from "./plan-bank";
 export * from "./plan-spec";
+export * from "./plan-week";
 export * from "./random";
 export * from "./scenario";
 export * from "./slot";
