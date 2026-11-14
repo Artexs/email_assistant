@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). `[risky]`: tenant isolation, auth. Decisions D7, D16, D17, D18, D20. Read "Rules for every stage" in `plan.md` first.
 
-Starts after stages 01 and 02 landed (D22): its tests read the policies of stage 01 and the scope of stage 02. Run `bun run db:migrate` in your job DB first (the prepare script made the DB before stage 01 landed only if it ran earlier; a repeat migrate is harmless).
+Starts after stages 01 and 02 landed (D22): its tests read the policies of stage 01 and the scope of stage 02. The prepare script migrates the job DB from your worktree, which holds the stage 01 migration; check it with `bun run db:migrate` (a repeat is harmless).
 
 Three steps. After this stage, every `/api` request except `/api/operator/*` sees only the rows of its organization, also when a query forgets its `org_id` filter.
 
@@ -19,7 +19,7 @@ File overlap (advisory, board rule): the platform-controls ticket (F099 stage 06
 - import `withoutTenantScope`, `withTenantScope` from `./db` (with the existing `Db`, `TenantContext` types).
 - `requireTenant`: keep every line; replace the final `await next();` with `await withTenantScope(first.org_id, () => next());`. The membership lookup stays before the scope (it finds the scope).
 - `requireOperator`: keep the refusal; replace the final `await next();` with `await withoutTenantScope(() => next());`.
-- One comment line on each: `// RLS safety net (ADR 0011): the rest of the request runs with app.org_id = the session's organization.` and `// Operator routes read across organizations: no tenant scope (ADR 0027).`
+- One comment line on each: `// RLS safety net (ADR 0011): the rest of the request runs in the tenant scope of the session's organization.` and `// Operator routes read across organizations: no tenant scope (ADR 0027).`
 
 Do not move the middleware order in `createApp` (`requireSession`, `requireTenant`, `/operator/*` → `requireOperator`, `refuseSuspendedWrites`, `web.routers`). `/api/auth/*`, `/health` and the page paths stay outside the scope (D17).
 
@@ -74,7 +74,7 @@ Do not move the middleware order in `createApp` (`requireSession`, `requireTenan
 
 11. Files that contain `withTenantScope(` (with the parenthesis, so the definition `withTenantScope<T>(` does not count): exactly `["platform/http.ts"]`.
 12. Files that contain `withoutTenantScope(`: exactly `["platform/http.ts", "platform/scheduler.ts"]`.
-13. Files that contain `set_config('app.org_id'` or `app.org_id =`: exactly `["platform/db/scoped-driver.ts"]` (D18: only the driver writes the value).
+13. Files that contain `set_config('app.org_id'` or `SET app.org_id` or `SET LOCAL app.org_id`: exactly `["platform/db/scoped-driver.ts"]` (D18: only the driver writes the value).
 14. The scan found more than 100 files (it read the tree).
 
 Paths in the assertions are relative to `apps/server/src` with `/` separators.
