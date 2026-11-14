@@ -22,6 +22,10 @@ export const logFieldNames = [
   "org_count",
   "suspended_count",
   "port",
+  // send limits
+  "mailbox_hour",
+  "mailbox_day",
+  "recipient_day",
   // codes
   "code",
   "error",

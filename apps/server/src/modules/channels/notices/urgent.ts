@@ -43,7 +43,8 @@ async function detectUrgent(
   const actions = await listActionsForEmails(
     db,
     ctx,
-    rows.map((row) => row.email_id)
+    rows.map((row) => row.email_id),
+    now
   );
   const delegateIds = new Set<string>();
   for (const list of actions.values()) {

@@ -151,6 +151,37 @@ describe("listActivity", () => {
     });
   });
 
+  test("an approved send held by the send limit reads waiting only inside its window (D11 a)", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const cases: [string, string | null, Date | null, string][] = [
+        ["held", "send_limit:mailbox_hour", new Date(NOW.getTime() + 10 * MINUTE), "approved, waiting: send limit"],
+        ["window over", "send_limit:mailbox_hour", new Date(NOW.getTime() - MINUTE), "approved, sending"],
+        ["no time", "send_limit:mailbox_hour", null, "approved, sending"],
+        ["other error", "smtp_421", new Date(NOW.getTime() + 5 * MINUTE), "approved, sending"],
+      ];
+      const expectedBy = new Map<string, string>();
+      for (const [index, [, lastError, nextAttemptAt, phrase]] of cases.entries()) {
+        const { emailId } = await insertTriagedWithActions(trx, ctxA, a.mailboxId, {
+          category: "delegation",
+          createdAt: ago(HOUR),
+          receivedAt: ago(index * MINUTE + HOUR),
+          messageId: `<held-${index}-${randomUUID()}@ea-seed.test>`,
+          reason: "Delegation.",
+          actions: [{ type: "send", status: "approved", approvedAt: ago(2 * HOUR), lastError, nextAttemptAt }],
+        });
+        expectedBy.set(emailId, phrase);
+      }
+      const page = await listActivity(trx, ctxA, query, NOW);
+      for (const item of page.items) {
+        const expected = expectedBy.get(item.emailId) ?? "missing";
+        expect(item.actions.map((action) => action.phrase)).toEqual([expected]);
+        expect(item.phrase).toBe(expected);
+      }
+      expect(page.items).toHaveLength(cases.length);
+    });
+  });
+
   test("ai text for info and unsure; no action means stays in the folder", async () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);

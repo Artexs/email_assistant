@@ -324,7 +324,7 @@ export function renderSendResult(input: {
           rest = both;
           break;
         case "held_timeout":
-          first = `⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE or the mailbox state) · ${subject}`;
+          first = `⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE, the send limit or the mailbox state) · ${subject}`;
           rest = both;
           break;
         case "delegation_closed":

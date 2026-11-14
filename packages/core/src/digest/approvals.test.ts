@@ -356,7 +356,7 @@ describe("renderSendResult", () => {
     ],
     [
       "held_timeout",
-      "⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE or the mailbox state) · Fwd: Offer",
+      "⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE, the send limit or the mailbox state) · Fwd: Offer",
       "both",
     ],
     ["delegation_closed", "⌛ Not sent: the delegation was closed · Fwd: Offer", "draft"],

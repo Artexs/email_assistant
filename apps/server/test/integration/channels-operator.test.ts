@@ -269,6 +269,82 @@ describe("operator notices: capReached", () => {
   });
 });
 
+describe("operator notices: sendLimitReached", () => {
+  const AT = new Date("2026-11-20T10:00:00Z");
+  const until = new Date("2026-11-20T10:10:00Z");
+
+  test("one text per mailbox and UTC day, with an audit row; the next day sends again", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const ctx = { orgId: org.orgId };
+      const { texts, send } = recorder();
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send });
+      notices.sendLimitReached(ctx, { mailboxId: org.mailboxId, limit: "mailbox_hour", until, at: AT });
+      await notices.idle();
+      expect(texts).toEqual([
+        `Mailbox ${org.mailboxId} of org ${org.orgId} hit the send limit mailbox_hour at 2026-11-20T10:00:00.000Z; its sends wait until 2026-11-20T10:10:00.000Z.`,
+      ]);
+      expect(await noticeRows(trx, org.orgId)).toEqual([
+        { kind: "send_limit", key: `send_limit:${org.mailboxId}:2026-11-20` },
+      ]);
+
+      const later = new Date(AT.getTime() + 3 * HOUR);
+      notices.sendLimitReached(ctx, { mailboxId: org.mailboxId, limit: "mailbox_day", until, at: later });
+      await notices.idle();
+      expect(texts).toHaveLength(1);
+
+      const nextDay = new Date("2026-11-21T00:30:00Z");
+      notices.sendLimitReached(ctx, { mailboxId: org.mailboxId, limit: "mailbox_hour", until, at: nextDay });
+      await notices.idle();
+      expect(texts).toHaveLength(2);
+    });
+  });
+
+  test("a failed send: no throw, no row, one label-only error line; the next run retries", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const ctx = { orgId: org.orgId };
+      const texts: string[] = [];
+      let fail = true;
+      const send = (text: string): Promise<void> => {
+        if (!text.includes(org.mailboxId)) return Promise.resolve();
+        if (fail) return Promise.reject(new Error("boom secret@example.com"));
+        texts.push(text);
+        return Promise.resolve();
+      };
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send });
+      const hit = { mailboxId: org.mailboxId, limit: "recipient_day" as const, until, at: AT };
+      expect(() => notices.sendLimitReached(ctx, hit)).not.toThrow();
+      notices.sendLimitReached(ctx, hit);
+      await notices.idle();
+      expect(await noticeRows(trx, org.orgId)).toEqual([]);
+      const errorLines = lines.filter((line) => line.includes("operator notice send_limit failed"));
+      expect(errorLines).toHaveLength(1);
+      expect(errorLines[0]).not.toContain("secret");
+
+      fail = false;
+      await notices.run();
+      expect(texts).toHaveLength(1);
+      expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
+    });
+  });
+
+  test("the text holds no @", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const { texts, send } = recorder();
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send });
+      notices.sendLimitReached(
+        { orgId: org.orgId },
+        { mailboxId: org.mailboxId, limit: "mailbox_hour", until, at: AT }
+      );
+      await notices.idle();
+      expect(texts).toHaveLength(1);
+      expect(texts[0]).not.toContain("@");
+    });
+  });
+});
+
 describe("operator notices: authMailFailed", () => {
   const day = new Date("2026-11-20T10:00:00Z");
 

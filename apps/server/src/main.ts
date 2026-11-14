@@ -12,6 +12,7 @@ import {
   loadConfig,
   mailAllowLocal,
   operatorChatId,
+  sendLimits,
   type Config,
 } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
@@ -165,10 +166,25 @@ let expiryRun: Promise<void> = Promise.resolve();
 let chaserRun: Promise<void> = Promise.resolve();
 const scopeOfActions = actionsScope(config);
 const scopeOfSends = sendScope(config);
+const limitsOfSends = sendLimits(config);
+log.info("send_limits", {
+  mailbox_hour: limitsOfSends.mailboxHour,
+  mailbox_day: limitsOfSends.mailboxDay,
+  recipient_day: limitsOfSends.recipientDay,
+});
 const hooks = delegationHooks({ db });
 const uidplus = uidplusOf(db);
 // Always built: `save_summary` rows are applied under every scope.
-const committer = createCommitterJob(committerDeps({ db, secrets, scope: scopeOfActions, sendScope: scopeOfSends }));
+const committer = createCommitterJob(
+  committerDeps({
+    db,
+    secrets,
+    scope: scopeOfActions,
+    sendScope: scopeOfSends,
+    sendLimits: limitsOfSends,
+    onSendLimited: (ctx, hit) => operator.sendLimitReached(ctx, hit),
+  })
+);
 scheduler.add("actions.committer", "*/15 * * * * *", () => {
   committerRun = committer.run();
   return committerRun;

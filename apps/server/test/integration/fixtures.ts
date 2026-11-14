@@ -220,6 +220,7 @@ export async function insertAction(
     reversesActionId?: string | null;
     attempts?: number;
     nextAttemptAt?: Date | null;
+    lastError?: string | null;
     lockedAt?: Date | null;
     statusReason?: string | null;
     createdAt?: Date;
@@ -247,6 +248,7 @@ export async function insertAction(
       reverses_action_id: opts.reversesActionId ?? null,
       attempts: opts.attempts ?? 0,
       next_attempt_at: opts.nextAttemptAt ?? null,
+      last_error: opts.lastError ?? null,
       locked_at: opts.lockedAt ?? null,
       status_reason: opts.statusReason ?? null,
       created_at: createdAt,

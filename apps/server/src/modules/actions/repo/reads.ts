@@ -1,4 +1,4 @@
-import { draftKinds, MAILBOX_ACTION_TYPES, moveTargets, type ActionView } from "@ea/core";
+import { draftKinds, MAILBOX_ACTION_TYPES, moveTargets, sendLimitOfError, type ActionView } from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";
 
@@ -44,7 +44,8 @@ const sendKindSchema = z.enum(draftKinds);
 export async function listActionsForEmails(
   db: DbOrTrx,
   ctx: TenantContext,
-  emailIds: readonly string[]
+  emailIds: readonly string[],
+  now: Date
 ): Promise<Map<string, ActionView[]>> {
   const result = new Map<string, ActionView[]>();
   if (emailIds.length === 0) {
@@ -59,6 +60,8 @@ export async function listActionsForEmails(
       "status",
       "reverses_action_id",
       "applied_at",
+      "last_error",
+      "next_attempt_at",
       sql<string | null>`payload->>'folder'`.as("folder"),
       sql<string | null>`payload->>'kind'`.as("kind"),
       sql<string | null>`payload->>'delegate_id'`.as("delegate_id"),
@@ -86,6 +89,15 @@ export async function listActionsForEmails(
       kind: kind.success ? kind.data : null,
       delegateId: row.delegate_id,
     };
+    // D11 (a): after the window the send waits for another reason, so it must not name the limit.
+    if (
+      row.status === "approved" &&
+      sendLimitOfError(row.last_error) !== null &&
+      row.next_attempt_at !== null &&
+      row.next_attempt_at > now
+    ) {
+      view.waiting = "send_limit";
+    }
     result.set(row.email_id, [...(result.get(row.email_id) ?? []), view]);
   }
   return result;
