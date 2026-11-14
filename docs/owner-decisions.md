@@ -17,6 +17,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Two-factor migration down path (F105 stage 01) · security · new
+- Choice: migration `20261114130001_two_factor.sql` adds `auth_two_factors`, `users.two_factor_enabled` and `memberships.break_glass`. Its down step drops them, so it deletes every enrolled second factor and every break-glass mark.
+- Why: a down step must restore the old schema. Review proved the rest of the data stays (users, memberships, policy).
+- Undo: never run `db:rollback` on the VPS after users enrol. The deploy rule already says this.
+- Source: review of F105 stage 01 (`notes` in the job `2026-11-14-f105-review-s01-9095b249`).
+
 ### 2026-11-14 · Production deploy of F099 (with F092 and F098 code) and operator id (F099) · security · new
 - Choice: I deployed `65164fd` to the VPS and set `OPERATOR_USER_IDS` to the pilot org owner. Backup and rollback target are named in `notes/2026-11-14-f099-vps-deploy.md`.
 - Why: the operator console needs one operator; the owner of the pilot org is the only real user. All 9 checks held.
