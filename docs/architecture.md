@@ -6,15 +6,15 @@
 
 ## 1. Goals and constraints
 
-| Driver                                                      | Consequence for the architecture                                                                                                       |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| SaaS for business owners and managers                       | Tenant-aware data model from day one; strict tenant isolation; GDPR.                                                                   |
-| Trust is the product value                                  | Every decision is logged with its reason; every mailbox change has an Undo; the user can correct each decision.                        |
-| No send without the user's direct command                   | The LLM never acts. Code plans, a policy checks, a committer acts. "Send" needs an approval record.                                    |
-| Telegram first, mobile app later                            | One channel-neutral backend API for notices, approvals and commands.                                                                   |
-| IMAP + SMTP first (Interia), Gmail / Microsoft 365 later    | Mail access behind a `MailProvider` port (ADR 0010).                                                                                   |
-| Polish + English, < 200 mails/day/mailbox, small LLM budget | Polling is enough; one cheap model call per mail; cost caps (ADR 0012).                                                                |
-| One developer, home VPS                                     | One repo, one server process, two containers (`server`, `db`), no open inbound port (the web panel is reached through Tailscale only). |
+| Driver                                                                              | Consequence for the architecture                                                                                                       |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Sell-ready multi-tenant product for business owners and managers (not sold, PD-001) | Tenant-aware data model from day one; strict tenant isolation; GDPR.                                                                   |
+| Trust is the product value                                                          | Every decision is logged with its reason; every mailbox change has an Undo; the user can correct each decision.                        |
+| No send without the user's direct command                                           | The LLM never acts. Code plans, a policy checks, a committer acts. "Send" needs an approval record.                                    |
+| Telegram first, mobile app later                                                    | One channel-neutral backend API for notices, approvals and commands.                                                                   |
+| IMAP + SMTP first (Interia), Gmail / Microsoft 365 later                            | Mail access behind a `MailProvider` port (ADR 0010).                                                                                   |
+| Polish + English, < 200 mails/day/mailbox, small LLM budget                         | Polling is enough; one cheap model call per mail; cost caps (ADR 0012).                                                                |
+| One developer, home VPS                                                             | One repo, one server process, two containers (`server`, `db`), no open inbound port (the web panel is reached through Tailscale only). |
 
 ## 2. System context
 
@@ -622,7 +622,7 @@ Tenancy:
   `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min.
 - **Data by stage:** OpenAI (pilot, since 2026-11-06): paid API terms, no training on API data, abuse logs up to 30 days, no EU location; accepted by the user for their own mail (ADR 0015). Gemini: pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
   accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on.
-  Vertex AI with the EU endpoint and its zero-data-retention setup before the first external customer.
+  An EU endpoint before any outside user's mail: ADR 0035 (proposed, E11b F111). No outside user is served (PD-001).
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04).
   Cloud Billing (or Vertex AI) on before any other person's mail.
 - `evals/` holds synthetic and injection cases. A prompt or model change must pass the eval before merge (§9).
@@ -778,7 +778,7 @@ Tenancy:
     The web panel is the one inbound path, and it does not open a port on the router: the server port is published on `127.0.0.1:8080` only (`ports: ["127.0.0.1:8080:8080"]`).
     Tailscale on the host (`tailscale serve --bg 8080`) gives HTTPS at `https://<machine>.<tailnet>.ts.net` to tailnet members only (ADR 0017). `WEB_BASE_URL`, `WEB_AUTH_SECRET` and `WEB_TRUSTED_PROXIES` are the env keys of the web.
     The steps (Tailscale, turn on, first password, access checks, roll back) are in `deploy/README.md`, section Web panel.
-- **Production for external customers (S6):** a hosted EU VPS with the same Compose files (availability, physical security, GDPR duties of a processor).
+- **Production (E7-T5, F108):** the home VPS (PD-001). A hosted EU VPS with the same Compose files is the path if outside users come later (availability, physical security, GDPR duties of a processor).
 - **azyl dev server:** demos with test data only. Its home folder is shared with other projects (skill `vps-ssh`).
 - **Config:** env only; `.env.example` lists every key; the server checks env with Zod at start.
 
@@ -795,7 +795,7 @@ Detail, scope, sizes and dependencies: `docs/roadmap.md`. Goal, done-when, plan 
 | S3 Assist actions                 | Committer, folder moves / mark read / flag, Undo, retries, go/no-go per category, mode switch                                                                                                                                   | `s3-assist-actions.md`              |
 | S4 Drafts + approval + delegation | Delegation and clarification drafts, approval with buttons, send by SMTP, delegations, chaser, injection guards                                                                                                                 | `s4-drafts-approvals-delegation.md` |
 | S5 Web panel (lite)               | Login, connect mailbox, link Telegram, settings, rules, activity                                                                                                                                                                | `s5-web-panel.md`                   |
-| S6 Pre-sale                       | Sign-up, billing, deletion, hosted EU production, Vertex AI EU, privacy policy + DPA, cost model                                                                                                                                | `s6-pre-sale.md`                    |
+| S6 Pre-sale                       | S6a customer core (F077) and S6b login (F082); the rest is Stage 2 E7 (F098, F099, F105–F108, F119; `docs/product/stage-2/`)                                                                                                    | `s6-pre-sale.md`                    |
 | Phase 2                           | Gmail and Microsoft 365 adapters (OAuth; Gmail needs Google verification), style learning, two-way chat + voice, meetings + calendar, mobile app, RAG                                                                           | —                                   |
 
 ## 12. What happens to the current code

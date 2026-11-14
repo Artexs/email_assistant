@@ -6,6 +6,7 @@
 > Each slice has a task file (`spec/features/done/2026-11/F003-s0-foundation/plan.md` … `s6-pre-sale.md`) with its goal, done-when and status.
 > The file-level plan is written in that file when the slice moves to `tasks/active/`.
 > Results of S1b (real accuracy on real mail) can change S3–S5 through the go/no-go table. Rules: `tasks/README.md`.
+> **Changed 2026-11-12 (PD-001):** sell-ready, not sold. After S6a the work follows Stage 2: `docs/product/stage-2/05-execution-plan.md` §2.
 
 ## 1. Scope
 
@@ -24,10 +25,10 @@
 - Tenant-aware data model (one pilot organization). Prompt evaluation set and runner.
 - Runs on the home VPS in Compose (`server` + `db`), with backups and a heartbeat.
 
-### Sellable MVP (+ S5, S6)
+### Sell-ready MVP (+ S5, S6a, S6b)
 
 - Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity (built and deployed 2026-11-11, ADR 0016, 0017).
-- Sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
+- S6a customer core: plan state, suspend and resume, mailbox limit, retention (F077, deployed 2026-11-12). S6b login hardening (F082). Account data, papers and cost, VPS production: Stage 2 E7 (F106, F107, F108). No sign-up and no billing (PD-001, PD-047).
 
 ### Not in the MVP (Phase 2)
 
@@ -133,6 +134,6 @@ Hardest parts (most risk):
 - All calls go through `platform/llm/` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/architecture.md` §4.1 rule 7).
 - Setup check: `bun run llm:check --provider <gemini|openai>` from the repo root (script `apps/server/src/scripts/llm-check.ts`; `gemini:test` is an alias; env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04). Cloud Billing (or Vertex AI) on before any other person's mail.
-- **Data:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training; accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on; Vertex AI EU before the first external customer (S6).
+- **Data:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training; accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on; an EU endpoint before any outside user's mail (ADR 0035 proposed, E11b F111; PD-001: no outside user is served).
 - **Cost:** about $20 per mailbox per month at 200 mails/day with `gemini-3.8-flash` now, about $40 from 2027-01-01 (price doubles).
   The S1b eval compares a Flash-Lite model for the classifier.
