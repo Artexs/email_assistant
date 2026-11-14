@@ -325,15 +325,16 @@ export async function setBreakGlassOwner(
 export type ClearBreakGlassResult = { kind: "cleared"; userId: string } | { kind: "none" } | { kind: "not_found" };
 
 // Takes a transaction too: the operator reset (F105 stage 07) calls it inside its own.
+// `onlyUserId`: clear only when this user still holds the mark after the organization lock; else "none".
 export async function clearBreakGlassOwner(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
-  input: { actor: string; now: Date; reason: "cli" | "two_factor_reset" }
+  input: { actor: string; now: Date; reason: "cli" | "two_factor_reset"; onlyUserId?: string }
 ): Promise<ClearBreakGlassResult> {
   const run = async (trx: Transaction<DB>): Promise<ClearBreakGlassResult> => {
     if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };
     const current = await getBreakGlassUserId(trx, ctx);
-    if (current === null) return { kind: "none" };
+    if (current === null || (input.onlyUserId !== undefined && current !== input.onlyUserId)) return { kind: "none" };
     await setBreakGlassFlag(trx, ctx, current, false);
     await recordAudit(trx, ctx, {
       actor: input.actor,
@@ -363,9 +364,16 @@ export async function resetTwoFactor(
   const run = async (trx: Transaction<DB>): Promise<ResetTwoFactorResult> => {
     if (!(await getMembership(trx, ctx, input.userId))) return { kind: "not_member" };
     const { hadTwoFactor, sessionsEnded } = await resetTwoFactorRows(trx, input.userId);
-    const breakGlassCleared = await listBreakGlassOrgIdsOfUser(trx, input.userId);
-    for (const orgId of breakGlassCleared) {
-      await clearBreakGlassOwner(trx, { orgId }, { actor: input.actor, now: input.now, reason: "two_factor_reset" });
+    // The list is read before the organization locks. Another transaction may move the mark meanwhile, so each
+    // clear re-reads the owner after its lock and clears only this user's mark; the result lists the real changes.
+    const breakGlassCleared: string[] = [];
+    for (const orgId of await listBreakGlassOrgIdsOfUser(trx, input.userId)) {
+      const cleared = await clearBreakGlassOwner(
+        trx,
+        { orgId },
+        { actor: input.actor, now: input.now, reason: "two_factor_reset", onlyUserId: input.userId }
+      );
+      if (cleared.kind === "cleared") breakGlassCleared.push(orgId);
     }
     await recordAudit(trx, ctx, {
       actor: input.actor,

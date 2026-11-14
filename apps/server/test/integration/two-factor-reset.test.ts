@@ -2,7 +2,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { sql } from "kysely";
 
 import { auditEvents } from "../../src/modules/audit";
-import { resetTwoFactor, setBreakGlassOwner } from "../../src/modules/tenancy";
+import { listBreakGlassOrgIdsOfUser, resetTwoFactor, setBreakGlassOwner } from "../../src/modules/tenancy";
+import { insertMembership, lockOrganization, setBreakGlassFlag } from "../../src/modules/tenancy/repo";
 import { holdsToken } from "../totp";
 
 import { testDb } from "./helpers";
@@ -59,6 +60,12 @@ async function state(userId: string, orgId: string) {
   };
 }
 
+// The rows of one user only (no organization audit rows).
+async function userState(userId: string, orgId: string) {
+  const { rows, flag, sessions, trust, breakGlass } = await state(userId, orgId);
+  return { rows, flag, sessions, trust, breakGlass };
+}
+
 async function auditRows(orgId: string, event: string) {
   const result = await sql<{ actor: string; data: Record<string, unknown> }>`
     SELECT actor, data FROM audit_log WHERE org_id = ${orgId} AND event = ${event} ORDER BY id`.execute(db);
@@ -84,6 +91,11 @@ async function createFullOwner() {
 describe("resetTwoFactor", () => {
   test("1-3. the reset ends the second factor, the sessions, the trust and the mark; a repeat run is safe", async () => {
     const user = await createFullOwner();
+    // A bystander in another organization: two sessions, a trust row, the second factor and the mark.
+    const bystander = await createFullOwner();
+    const bystanderBefore = await state(bystander.userId, bystander.orgId);
+    expect(bystanderBefore).toMatchObject({ rows: 1, flag: true, sessions: 2, breakGlass: true });
+    expect(bystanderBefore.trust).toBeGreaterThan(0);
     const before = await state(user.userId, user.orgId);
     expect(before).toMatchObject({ rows: 1, flag: true, sessions: 2, breakGlass: true });
     expect(before.trust).toBeGreaterThan(0);
@@ -117,6 +129,82 @@ describe("resetTwoFactor", () => {
     ]);
     expect(last.clearedRows).toHaveLength(1);
     expect(last).toMatchObject({ rows: 0, flag: false, sessions: 0, trust: 0, breakGlass: false });
+    expect(await state(bystander.userId, bystander.orgId)).toEqual(bystanderBefore);
+  });
+
+  test("1b. a user with the mark in two organizations: both marks clear, the audit rows are flat, a bystander is untouched", async () => {
+    const user = await createFullOwner(); // the mark in organization A
+    const orgB = await kit.createOwner();
+    await insertMembership(db, { orgId: orgB.orgId }, { userId: user.userId, role: "owner" });
+    const marked = await setBreakGlassOwner(db, { orgId: orgB.orgId }, { userId: user.userId, actor: "cli", now: NOW });
+    expect(marked.kind).toBe("set");
+    const bystander = await createFullOwner();
+    const bystanderBefore = await state(bystander.userId, bystander.orgId);
+    const ownerBBefore = await userState(orgB.userId, orgB.orgId);
+
+    // The list holds only the organizations of this user, not the bystander's.
+    expect(await listBreakGlassOrgIdsOfUser(db, user.userId)).toEqual([user.orgId, orgB.orgId].sort());
+
+    const result = await reset(user.orgId, user.userId);
+    expect(result).toEqual({
+      kind: "reset",
+      hadTwoFactor: true,
+      sessionsEnded: 2,
+      breakGlassCleared: [user.orgId, orgB.orgId].sort(),
+    });
+    expect(await listBreakGlassOrgIdsOfUser(db, user.userId)).toEqual([]);
+    for (const orgId of [user.orgId, orgB.orgId]) {
+      expect(await auditRows(orgId, auditEvents.orgBreakGlassCleared)).toEqual([
+        { actor: "cli", data: { user_id: user.userId, reason: "two_factor_reset" } },
+      ]);
+    }
+    // One reset row, in the organization the operator named.
+    expect(await auditRows(user.orgId, auditEvents.webTwoFactorReset)).toHaveLength(1);
+    expect(await auditRows(orgB.orgId, auditEvents.webTwoFactorReset)).toHaveLength(0);
+    expect(await state(bystander.userId, bystander.orgId)).toEqual(bystanderBefore);
+    expect(await userState(orgB.userId, orgB.orgId)).toEqual(ownerBBefore);
+  });
+
+  test("1c. the mark moves to another user while the reset waits on the lock: the other mark stays", async () => {
+    const user = await createFullOwner();
+    const other = await kit.createEnrolled(); // V: a member of the organization of U, no mark yet
+    await insertMembership(db, { orgId: user.orgId }, { userId: other.userId, role: "owner" });
+
+    // Deterministic: transaction A holds the organization lock and moves the mark U → V (what the break-glass
+    // replace does). The reset has already read the list (it reads committed rows), so it waits on the lock.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let locked!: () => void;
+    const isLocked = new Promise<void>((resolve) => (locked = resolve));
+    const mover = db.transaction().execute(async (trx) => {
+      await lockOrganization(trx, { orgId: user.orgId });
+      await setBreakGlassFlag(trx, { orgId: user.orgId }, user.userId, false);
+      await setBreakGlassFlag(trx, { orgId: user.orgId }, other.userId, true);
+      locked();
+      await gate;
+    });
+    await isLocked;
+    const resetting = reset(user.orgId, user.userId);
+    // Wait until a backend waits on a lock (the reset on the organization row), up to 10 s.
+    for (let i = 0; i < 200; i++) {
+      const waiting = await sql<{ n: string }>`
+        SELECT count(*) AS n FROM pg_stat_activity
+        WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%from "organizations"%'`.execute(
+        db
+      );
+      if (Number(waiting.rows[0]?.n) > 0) break;
+      await Bun.sleep(50);
+    }
+    release();
+    await mover;
+    const result = await resetting;
+
+    expect(result).toEqual({ kind: "reset", hadTwoFactor: true, sessionsEnded: 2, breakGlassCleared: [] });
+    expect((await state(other.userId, user.orgId)).breakGlass).toBe(true);
+    expect((await state(user.userId, user.orgId)).breakGlass).toBe(false);
+    // No cleared row names V, and no other row is written.
+    expect(await auditRows(user.orgId, auditEvents.orgBreakGlassCleared)).toEqual([]);
+    expect(await auditRows(user.orgId, auditEvents.webTwoFactorReset)).toHaveLength(1);
   });
 
   test("4a. a mixed state: the flag on and an unverified row; both go", async () => {
