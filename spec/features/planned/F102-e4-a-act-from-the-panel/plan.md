@@ -27,11 +27,11 @@ Owner (PD-029–PD-036): "The rest is fine. Use the default values." Job (2026-1
 - **D6 OpenAPI.** `hono-openapi` 1.6.0, exact pin, `apps/server` only. Only `describeRoute`, never its `validator` (F1). `GET /api/openapi.json` behind login. Hidden: operator routes, `/api/auth/*` (E10). Unit test `openapi-routes.test.ts`: every `apiRouters` route is in the spec or in `HIDDEN_ROUTES` with a reason.
 - **D7 Commands**, roles and answers: [commands.md](commands.md).
 - **D8 Read model** in `channels` (it needs `delegation`, `config`; layers), from `approvalViewFor` (the committer's builder) plus the full quote. `expiresAt` = `notified_at` + 48 h, else `created_at` + 7 days.
-- **D9 Delegations.** Remind now: `sent` or `overdue`, `reminders_sent` < 2, no waiting reminder (checked under the delegation lock: that is the dedup), mailbox in `assist` with `create_draft` on (else 409 `drafts_off`); no due-date or 3-day gate; one reminder, no set. Cancel: `drafted` → reject its send (with card edits; `applying` → 409 `sending`); `sent` or `overdue` → `cancelled` / `user_cancelled`, waiting reminders expire. Done: `closeDelegation`.
-- **D10 Delegates.** Add (existing `addDelegate`), PATCH name, tags, active. The address never changes.
+- **D9 Delegations.** Remind now: `sent` or `overdue`, `reminders_sent` < 2, no waiting reminder (checked under the delegation lock: the dedup), `assist` with `create_draft` on (else 409 `drafts_off`); no due-date or 3-day gate; no set. Cancel: `drafted` → reject its send (with card edits; `applying` → 409 `sending`); `sent` or `overdue` → `cancelled` / `user_cancelled`, waiting reminders expire. Done: `closeDelegation`.
+- **D10 Delegates.** Add, and PATCH name, tags, active. The address never changes.
 - **D11 Nav.** Badge = `/api/me` `approvalsWaiting` (sends `awaiting_approval` with an `applied` draft; 0 with the flag off). Phone: at most 5 tabs (Q8). Delegates is a header tab of `/delegations`.
 - **D12 Superseded rows.** Activity and digest phrase "changed in the panel"; no metric counts them (PD-057).
-- **D13 Axe.** `@axe-core/playwright` (exact pin), helper `expectNoA11yViolations(page)`, tags `wcag2a wcag2aa wcag21a wcag21aa wcag22aa`.
+- **D13 Axe.** `@axe-core/playwright` (exact pin), `expectNoA11yViolations(page)`, WCAG 2.0–2.2 A and AA tags.
 - **D14** One migration (stage 06); `bun.lock` only in stages 01 and 07.
 - **D15** `ApprovalInput.via` adds `web` (audit `data.via`, `approved_via`).
 
@@ -118,7 +118,7 @@ Before land, `claude-opus-5-5`: 06, 08, 09, 11, 16 (migration, exactly-once, sen
 
 ## Planning progress
 
-- [x] Decisions, facts, commands.md; stages 01–20 `[written]`; questions.md.
+- [x] Decisions, commands.md, questions.md; stages 01–20 `[written]`. `wc -w`: plan.md 1497; stages 366–699 each.
 - [ ] Cold review.
 
 ## Cold review

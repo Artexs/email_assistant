@@ -9,13 +9,13 @@ Part of [`../plan.md`](../plan.md). Read D1–D3, D12, D15, F4, F5 and [`../comm
 - **Goal:** an edit replaces a waiting send by a new version in one transaction; the old version can never be approved.
 - **Files:** module `actions` (a new file for `editApproval`), the `onSuperseded` hook in `delegation`, the audit event, the tap answer in `channels`, tests.
 - **Interfaces** (exact names in `commands.md`):
-  - `editApproval(deps, ctx, sendId, input)`; `deps` = `ApprovalDeps` plus `approvalHooks: ApprovalHooks`.
+  - `ApprovalDeps` gains `approvalHooks: ApprovalHooks`; `editApproval(deps, ctx, sendId, input)`.
   - `ApprovalHooks.onDecided(...)`, default `noApprovalHooks` (no-op; stage 09 wires the real one). `approve`, `reject`, `editApproval` call it in their transaction: `approved` / `approved_held` (caller passes `heldBy`), `rejected`, `changed`; `exceptUserId` = the user when `via` is `telegram`.
   - `ApproveResult` and `RejectResult` gain `superseded` + `currentId` (the newest version, found through `supersedes_action_id`).
   - `ApprovalInput.via`: `"telegram" | "cli" | "web"` (D15).
   - Audit event `action.edited`, data `{ previous_action_id, version, delegate_changed, via }`. Never subject or body text.
 - **Decisions:**
-  - Lock order: old send, its draft, delegation (as reject). The old send must be `awaiting_approval`; else `changed` (a newer version exists) or `closed` with its state.
+  - Lock order: old send, its draft, delegation. The old send must be `awaiting_approval`; else `changed` (a newer version exists) or `closed` with its state.
   - Kind `reminder` → `not_editable`. A `delegateId` that is not an active delegate of this organization → `delegate_inactive`; only kind `delegation` takes it.
   - Clean with `cleanUserText`; over a limit after cleaning → `ValidationError` (400). Same subject, body and delegate as the current built message → `unchanged`.
   - New draft = old payload + `version` (old + 1), `subject_text`, `body_text`; a new delegate also sets `to`, `delegate_id`, `delegate_name`. New send = old send payload with the new `to`, `delegate_id`. Status `ready` and `awaiting_approval` (the old send was waiting; a later policy change expires it as today, `policy_changed`); keys `<old draft id>:edit` and `<old send id>:edit`; `supersedes_action_id` on both.
