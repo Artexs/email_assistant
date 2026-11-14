@@ -2,7 +2,7 @@ import { organizationViewSchema, type OrganizationSettings, type OrganizationVie
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { filterTimeZones } from "../../lib/timezones";

@@ -1,6 +1,6 @@
 import type { RuleView, SenderRuleKind } from "@ea/core/web";
 
-import type { TextKey } from "../i18n/en";
+import type { TextKey } from "../i18n";
 
 export const ruleKindOrder = ["vip", "whitelist", "blocklist"] as const;
 

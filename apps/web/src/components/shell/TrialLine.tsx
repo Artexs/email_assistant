@@ -1,4 +1,4 @@
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { trialDateText } from "../../lib/trial-date";
 
 export function TrialLine({ endsAt, timeZone }: { endsAt: string; timeZone: string }) {

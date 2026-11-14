@@ -1,6 +1,6 @@
 import { MAIL_PRESETS, presetForAddress, type PresetKey, type SmtpSecurity } from "@ea/core/web";
 
-import type { TextKey } from "../i18n/en";
+import type { TextKey } from "../i18n";
 
 export type ProviderChoice = PresetKey | "other";
 

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-import { en, t } from "../../src/i18n/en";
+import { en } from "../../src/i18n/en";
+import { t } from "../../src/i18n";
 import { cleanUpOrg, consoleErrors, cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 

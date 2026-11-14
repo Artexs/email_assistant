@@ -2,7 +2,7 @@ import { formatClock, mailboxViewSchema, type MailboxView } from "@ea/core/web";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { api } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { Alert, AlertDescription } from "../ui/alert";

@@ -8,7 +8,8 @@ import {
   STYLE_TEXT_MAX,
 } from "@ea/core/web";
 
-import { en, t } from "./en";
+import { en } from "./en";
+import { t } from "./index";
 
 function messages(result: { success: boolean; error?: { issues: { message: string }[] } }): string[] {
   expect(result.success).toBe(false);

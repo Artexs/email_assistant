@@ -1,6 +1,6 @@
 import type { MailboxView } from "@ea/core/web";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { Badge } from "../ui/badge";
 
 const variants = { active: "default", paused: "secondary", auth_error: "destructive" } as const;

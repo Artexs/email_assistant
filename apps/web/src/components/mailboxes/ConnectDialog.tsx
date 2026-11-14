@@ -2,7 +2,7 @@ import { connectMailboxBodySchema, connectResultSchema, type SmtpSecurity } from
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import {
   fieldErrorKeys,

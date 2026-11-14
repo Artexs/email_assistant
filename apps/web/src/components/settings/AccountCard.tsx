@@ -2,7 +2,7 @@ import { changePasswordFormSchema, fieldErrors as toFieldErrors, sessionsSchema 
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";

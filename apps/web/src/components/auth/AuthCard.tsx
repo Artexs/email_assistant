@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export function AuthCard({ title, children }: { title: TextKey; children: ReactNode }) {

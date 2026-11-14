@@ -2,6 +2,7 @@ export const en = {
   brand: "Email Assistant",
   noscript: "This app needs JavaScript. Turn it on and reload the page.",
   continue: "Continue",
+  close: "Close",
   // nav
   nav_main: "Main",
   nav_onboarding: "Onboarding",
@@ -14,8 +15,6 @@ export const en = {
   user_menu: "Account menu",
   log_out: "Log out",
   // shell states
-  auth_error_banner_one: "1 mailbox has a login error.",
-  auth_error_banner_many: "{count} mailboxes have a login error.",
   auth_error_banner_link: "Open Mailboxes",
   trial_ends_on: "Trial ends on {date}.",
   paused_banner: "This account is paused. Contact {contact} to resume it.",
@@ -201,8 +200,6 @@ export const en = {
   // onboarding
   ob_mailbox_title: "Connect a mailbox",
   ob_mailbox_open: "Connect the mailbox the assistant should read.",
-  ob_mailbox_done_one: "1 mailbox connected.",
-  ob_mailbox_done_many: "{count} mailboxes connected.",
   ob_manage: "Manage",
   ob_mailbox_assistant: "The owner connects the mailbox.",
   ob_telegram_title: "Link Telegram",
@@ -215,8 +212,6 @@ export const en = {
   ob_mode_assistant: "The owner chooses the mode.",
   ob_rules_title: "Add sender rules (optional)",
   ob_rules_text: "VIP, whitelist and blocklist senders. You can do this later.",
-  ob_rules_one: "1 rule",
-  ob_rules_many: "{count} rules",
   ob_open_rules: "Open Rules",
   ob_all_set: "All set. Activity is your start page now.",
   ob_go_activity: "Go to Activity",
@@ -247,7 +242,6 @@ export const en = {
   switch_move_unsure: "Move mail the assistant is unsure about",
   switch_on_toast: "{name}: on.",
   switch_off_toast: "{name}: off.",
-  expired_suffix: "{count} planned actions were cancelled.",
   assist_title: "Switch to assist mode?",
   assist_text:
     "In assist mode the assistant changes mail in {address} for the categories with auto on. Nothing is sent without your approval.",
@@ -468,8 +462,12 @@ export const en = {
 
 export type TextKey = keyof typeof en;
 
-export function t(key: TextKey, vars?: Record<string, string | number>): string {
-  const text: string = en[key];
-  if (!vars) return text;
-  return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
-}
+// A count with one form per plural category: `tp` in `./index` picks the form.
+export const enPlurals = {
+  auth_error_banner: { one: "1 mailbox has a login error.", other: "{count} mailboxes have a login error." },
+  ob_mailbox_done: { one: "1 mailbox connected.", other: "{count} mailboxes connected." },
+  ob_rules: { one: "1 rule", other: "{count} rules" },
+  expired_suffix: { one: "1 planned action was cancelled.", other: "{count} planned actions were cancelled." },
+} as const;
+
+export type PluralKey = keyof typeof enPlurals;

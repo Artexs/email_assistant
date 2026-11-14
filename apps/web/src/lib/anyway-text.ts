@@ -1,6 +1,6 @@
 import type { BarCategory } from "@ea/core/web";
 
-import type { TextKey } from "../i18n/en";
+import type { TextKey } from "../i18n";
 
 // Urgent mail only gets a flag, and that depends on the Flag switch, not on auto. Needs-reply mail gets no action.
 // So the move text would be false here. Auto only moves such mail back from the junk folder to INBOX.

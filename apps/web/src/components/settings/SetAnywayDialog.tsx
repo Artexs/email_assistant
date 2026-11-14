@@ -1,6 +1,6 @@
 import type { BarCategory, GateView } from "@ea/core/web";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { anywayTextKey } from "../../lib/anyway-text";
 import { gateText } from "../../lib/gate-text";
 import { Button } from "../ui/button";

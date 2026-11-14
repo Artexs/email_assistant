@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { authClient } from "../../lib/auth-client";
 import { ApiError } from "../../lib/api";
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { Toaster } from "../ui/sonner";

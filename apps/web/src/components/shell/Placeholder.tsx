@@ -1,4 +1,4 @@
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { Card, CardContent } from "../ui/card";
 
 export function Placeholder() {

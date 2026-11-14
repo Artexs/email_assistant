@@ -9,7 +9,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { isDirty } from "../../lib/draft";
 import { errorText } from "../../lib/errors";

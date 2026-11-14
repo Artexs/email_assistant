@@ -1,6 +1,6 @@
 import type { MailboxView, SettingsWebView } from "@ea/core/web";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { switchesAfterAssist } from "../../lib/settings-api";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";

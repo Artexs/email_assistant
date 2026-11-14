@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { api } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { Button } from "../ui/button";

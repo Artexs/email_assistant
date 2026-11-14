@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { canWrite } from "../../lib/can-write";
 import { isDirty } from "../../lib/draft";

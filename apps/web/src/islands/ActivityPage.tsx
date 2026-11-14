@@ -6,7 +6,7 @@ import { ActivityList, ActivitySkeleton } from "../components/activity/ActivityL
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { Button } from "../components/ui/button";
-import { t } from "../i18n/en";
+import { t } from "../i18n";
 import { filtersFromSearch, filtersToSearch, type ActivityFilters } from "../lib/activity-filters";
 import { api } from "../lib/api";
 import { useNow } from "../lib/use-now";

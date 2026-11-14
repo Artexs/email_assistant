@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { z } from "zod";
 
-import { t, type TextKey } from "../../i18n/en";
+import { t, type TextKey } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { legalDocs, legalLang, legalPath, type LegalDoc } from "../../lib/legal";
 import { Button } from "../ui/button";

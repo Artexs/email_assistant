@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { activityQueryString, type ActivityFilters } from "../../lib/activity-filters";
 import { useActivityList } from "../../lib/use-activity-list";
 import { useNow } from "../../lib/use-now";

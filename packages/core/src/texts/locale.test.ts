@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { firstLanguageTag, localeOfLanguageTag, pluralCategory, resolveLocale } from "./locale";
+import { firstLanguageTag, localeOfLanguageTag, pluralCategory, resolveLocale, type PluralCategory } from "./locale";
 
 describe("localeOfLanguageTag", () => {
   test("a tag that starts with pl is Polish; everything else is English", () => {
@@ -35,7 +35,20 @@ describe("firstLanguageTag", () => {
 describe("pluralCategory", () => {
   test("Polish has one, few and many; a fraction is many", () => {
     const counts = [0, 1, 2, 4, 5, 12, 14, 21, 22, 25, 112, 1.5];
-    const expected = ["many", "one", "few", "few", "many", "many", "many", "many", "few", "many", "many", "many"];
+    const expected: PluralCategory[] = [
+      "many",
+      "one",
+      "few",
+      "few",
+      "many",
+      "many",
+      "many",
+      "many",
+      "few",
+      "many",
+      "many",
+      "many",
+    ];
     expect(counts.map((count) => pluralCategory("pl", count))).toEqual(expected);
   });
 

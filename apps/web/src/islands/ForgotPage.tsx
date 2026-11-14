@@ -5,7 +5,7 @@ import { AuthCard } from "../components/auth/AuthCard";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { t, type TextKey } from "../i18n/en";
+import { t, type TextKey } from "../i18n";
 import { requestPasswordReset } from "../lib/auth-requests";
 
 type Outcome = "sent" | "off" | null;

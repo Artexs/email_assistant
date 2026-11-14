@@ -1,6 +1,6 @@
 import { labelCategories, type Category, type LabelCategory } from "@ea/core/web";
 
-import { t } from "../../i18n/en";
+import { t } from "../../i18n";
 import { categoryName, categoryTagText, subjectText } from "../../lib/activity-text";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
