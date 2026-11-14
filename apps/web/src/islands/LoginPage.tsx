@@ -9,6 +9,7 @@ import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import { t, type TextKey, useLocale } from "../i18n";
 import { authClient } from "../lib/auth-client";
+import { takeDeletedNotice, type DeletedNotice } from "../lib/delete-organization";
 import { cleanBackupCode, cleanTotpCode, codeStepError } from "../lib/two-factor-errors";
 
 type FieldErrors = Partial<Record<"email" | "password", TextKey>>;
@@ -32,9 +33,19 @@ export default function LoginPage() {
   const [codeError, setCodeError] = useState<TextKey | null>(null);
   const codeInput = useRef<HTMLInputElement>(null);
   const [restartNotice, setRestartNotice] = useState<TextKey | null>(null);
+  const [deletedNotice, setDeletedNotice] = useState<DeletedNotice | null>(null);
 
   useEffect(() => {
     setSetupDone(new URLSearchParams(location.search).get("setup") === "done");
+    // The read removes the key; the first notice stays (the effect may run twice in development).
+    let store: Storage | undefined;
+    try {
+      store = sessionStorage;
+    } catch {
+      store = undefined;
+    }
+    const deleted = takeDeletedNotice(location.search, store, Date.now());
+    if (deleted !== null) setDeletedNotice((current) => current ?? deleted);
     let active = true;
     void authClient
       .getSession()
@@ -193,6 +204,22 @@ export default function LoginPage() {
   return (
     <AuthCard title="login_title">
       {setupDone ? <Alert variant="default">{t("login_setup_done")}</Alert> : null}
+      {deletedNotice === null ? null : (
+        <Alert variant="default" data-notice="org-deleted" className="flex flex-col gap-2">
+          <p className="font-medium">{t("del_done_title")}</p>
+          <p>{t("del_done_text")}</p>
+          {deletedNotice.addresses.length === 0 ? null : (
+            <>
+              <p>{t("del_done_mailboxes")}</p>
+              <ul className="list-disc pl-5">
+                {deletedNotice.addresses.map((address) => (
+                  <li key={address}>{address}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </Alert>
+      )}
       {restartNotice === null ? null : (
         <p role="alert" className="text-destructive text-sm">
           {t(restartNotice)}

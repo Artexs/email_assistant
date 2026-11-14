@@ -41,7 +41,7 @@ Template:
 | 0023 | Every user action is a typed HTTP command described in OpenAPI                   | proposed                                            |
 | 0024 | Structured logs, tailnet log store, operator alerts checked by the app           | proposed                                            |
 | 0025 | Not used                                                                         | not used                                            |
-| 0026 | Identity tier 1: OIDC per organization, TOTP, break-glass owner                  | proposed                                            |
+| 0026 | Identity tier 1: OIDC per organization, TOTP, break-glass owner                  | point 1 accepted (F105); points 2–7 proposed        |
 | 0027 | Operator role in the panel and per-organization feature flags                    | proposed                                            |
 | 0028 | Autonomy earned from global evidence and a history check, not labels             | proposed                                            |
 | 0029 | The sync reads the Sent folder, read-only                                        | proposed                                            |

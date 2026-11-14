@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { getLocale, setLocale, t, useLocale, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
+import { canDeleteOrganization } from "../../lib/delete-organization";
 import { errorText } from "../../lib/errors";
 import { saveLocale } from "../../lib/locale-api";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
@@ -18,6 +19,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
+import { DeleteOrganization } from "./DeleteOrganization";
 import { SecurityLog } from "./SecurityLog";
 import { TwoFactorSection } from "./TwoFactorSection";
 
@@ -286,6 +288,11 @@ export function AccountCard() {
         {me !== null && me.role === "owner" && me.features.includes("security_log") ? (
           <div className="border-t pt-4">
             <SecurityLog timeZone={me.organization.timezone} />
+          </div>
+        ) : null}
+        {me !== null && canDeleteOrganization(me) ? (
+          <div className="border-t pt-4">
+            <DeleteOrganization />
           </div>
         ) : null}
       </CardContent>
