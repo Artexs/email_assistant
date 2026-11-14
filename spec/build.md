@@ -45,7 +45,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F101-panel-to-astro-7` (plan refreshed 2026-11-15 (plan-refresh-1.md), base 560e74e7, 4 stages): Panel to Astro 7; sequenced after E1; gate —.
 - `F102-e4-a-act-from-the-panel` (🔴 PLANNED, needs plan): E4-A Act from the panel; sequenced after E1, E7-T1, Astro 7; gate —.
 - `F103-e8a-logs` (plan refreshed 2026-11-15 (plan-refresh-1.md), base 560e74e7, 19 stages, active): every log line an event, CLI output apart, log store on the tailnet; sequenced after E1; gate —.
-- `F104-e5a-read-sent` (plan landed, cold review 1 fixed, 12 stages): E5a Read Sent; build after F095 closes (F099 closed); drift check first; gate —.
+- `F104-e5a-read-sent` (plan refreshed 2026-11-15 at 560e74e7, review 2 PASS, 13 stages): E5a Read Sent; F095 and F099 closed; stage 12 adds the F106 data-request rule for sent mail; gate —.
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (plan landed, 15 stages): E7-T6 Identity A (TOTP, backup codes, break-glass); stage 01 the only migration, stage 10 changes `bun.lock`; sequenced after F082 (closed); gate —.
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, plan landed, 12 stages): E7-T3 Account data (delete, export, DSR); stage 01 the only migration, stage 05 the only `bun.lock` change; build after F082, F098 (closed); gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, plan landed, 8 stages): E7-T4 Papers and cost; legal drafts (pl, en), internal papers, claims list, cost model v1; sequenced after F106 (build after F106 is in `done/`); gate —; stage 07 is the VPS deploy (coordinator), stage 08 the cost model.
