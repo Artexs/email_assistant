@@ -45,7 +45,10 @@ export function approvalViewOf(
   return {
     kind: draft.kind,
     recipient,
-    sender: draft.kind === "reminder" ? null : { label: senderLabel(original.fromAddress, textTables.en), external: input.external },
+    sender:
+      draft.kind === "reminder"
+        ? null
+        : { label: senderLabel(original.fromAddress, textTables.en), external: input.external },
     recipientInactive: input.recipientInactive,
     subject: message.subject,
     dueDate,
