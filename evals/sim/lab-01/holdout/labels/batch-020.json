@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-020",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-not-0070",
+      "category": "notification",
+      "blindHash": "75482eadb4fefea09e737073846bd07e04ee6fd850754c35ce90e472abec9249"
+    },
+    {
+      "id": "b-not-0071",
+      "category": "notification",
+      "blindHash": "4f3368123ef3baf692a1a4657826f1966a9a769861954fed23401ee854d2f02e"
+    },
+    {
+      "id": "b-not-0072",
+      "category": "notification",
+      "blindHash": "a7df77b6a012bcf0dd1a43dbafe5669c16f84ee5c3f3ec119e79c5f40012d5e6"
+    },
+    {
+      "id": "b-not-0073",
+      "category": "notification",
+      "blindHash": "ee1106c6a1d06a0be04e9728aae635626da21c546e7ae3bbeeac38749130beb1"
+    },
+    {
+      "id": "b-not-0074",
+      "category": "notification",
+      "blindHash": "19e50e1edace3e54dda21a9f29a1f17fd5cde694dd647a84ed4eec70bd71ae59"
+    },
+    {
+      "id": "b-not-0075",
+      "category": "notification",
+      "blindHash": "3f76af422e7ff1adbb57f194ae209bec001619c8927228d7f8d2f79f8adb0de1"
+    },
+    {
+      "id": "b-not-0076",
+      "category": "notification",
+      "blindHash": "04a5ea31baf23b0dc54d061e9ea5bf5c166a6028446140d503e230e4164969d2"
+    },
+    {
+      "id": "b-not-0077",
+      "category": "notification",
+      "blindHash": "35c1f71d7c08a30b522e08978b690543621782d7bfe784ee49ffed1b893d3576"
+    },
+    {
+      "id": "b-not-0078",
+      "category": "notification",
+      "blindHash": "c4eb37e19ff54f033493402fedcaa84202c70fbda4255033acda85bf8868d484"
+    },
+    {
+      "id": "b-not-0080",
+      "category": "notification",
+      "blindHash": "e5507870296011c56c5a38176e616fb63eeba26a20956b683244e344fffca12f"
+    },
+    {
+      "id": "b-not-0081",
+      "category": "notification",
+      "blindHash": "1cfe3df11e951b99ddcd7f020df4d5e92b3981b56c2d49c19ab7aab86c1faee1"
+    },
+    {
+      "id": "b-not-0082",
+      "category": "notification",
+      "blindHash": "8e3fde8c7cd36aac7829592e7613b5d6aa93cd47ab529be62a2632e77825527c"
+    },
+    {
+      "id": "b-not-0083",
+      "category": "notification",
+      "blindHash": "03c040beae4977f617a6e73c5e207663c79c420e1326161f90cc1ab5be0717cd"
+    },
+    {
+      "id": "b-not-0084",
+      "category": "notification",
+      "blindHash": "7d8b70f4d2da5c07384c9a82010fb40ad86db9a5eeedebdaadc19dd678360b0f"
+    },
+    {
+      "id": "b-not-0085",
+      "category": "notification",
+      "blindHash": "a002b98b44d41465f99d3d2b8ed3479d3abf55b8d4691ebfbd55a64d5eaa0383"
+    },
+    {
+      "id": "b-not-0086",
+      "category": "notification",
+      "blindHash": "edcd23835db7172d64bd8e2d0d5d14f5bbeeeee35b7874bfa3149e79e18beeba"
+    },
+    {
+      "id": "b-not-0087",
+      "category": "notification",
+      "blindHash": "df10e04e2f2d177076b637973e3920b909f3c41569829247c2be6dae48cbd19a"
+    },
+    {
+      "id": "b-not-0088",
+      "category": "notification",
+      "blindHash": "3fcb4f98893491d534aba7dbfd1def8a37127e8914d7e4fbdd82bc8827a831e7"
+    },
+    {
+      "id": "b-not-0089",
+      "category": "notification",
+      "blindHash": "c4a92df6330350725231b4fcdc9933cd267b5af9a776d6fb9be7fe4642edb60a"
+    },
+    {
+      "id": "b-not-0090",
+      "category": "notification",
+      "blindHash": "05843790fcbc39845ee9581559ffdba8737fc093ec4cb9a4c87c626b197d4456"
+    },
+    {
+      "id": "b-not-0091",
+      "category": "notification",
+      "blindHash": "d284699430cfe9faff7c298ff319ce1b288074ed2d307ab4b03da72ace947814"
+    },
+    {
+      "id": "b-not-0092",
+      "category": "notification",
+      "blindHash": "d7f7b36fbaf656368eb14cdc0991388998ed2a9b25b1c31f85a75519254e5569"
+    },
+    {
+      "id": "b-not-0093",
+      "category": "notification",
+      "blindHash": "37665805702c082b791742ae21009ff8a017159e9d389ba1f37a3cd0a182be73"
+    },
+    {
+      "id": "b-not-0094",
+      "category": "notification",
+      "blindHash": "ed6824f97954db8048146cca03f9e35de7069390868ef91b944503ba594f6cff"
+    },
+    {
+      "id": "b-not-0096",
+      "category": "notification",
+      "blindHash": "bb90fcab047fd4328c01808b7d2e5f7978b49a43a72719eb31da74e4caed1913"
+    }
+  ]
+}
