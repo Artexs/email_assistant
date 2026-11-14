@@ -28,3 +28,6 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 - Single `org_id` filter drops are equivalent mutants (composite FKs + `tr.org_id`); the rule "each single drop must fail" does not apply to these readers. A pair drop (emails + tr) fails 5/4 tests.
 - Fixture `seedWeek` (apps/server/test/integration/metrics-fixtures.ts): its `updateTable("mailbox_settings").set({mode:"assist"})` changes no row because `createOrgWithMailbox` inserts no mailbox_settings row. Stage 12 or 17 MUST insert the row (e.g. via config/repo.ts:22) if it reads mode.
 - `WeekQuery.testMail.senders` must be lower case.
+
+## F097 stage 11 (sim CLI) worker decisions, landed
+- Week mail with direction "sent" is excluded from labelling; labels for dropped texts are ignored (not `label_unknown`); `brief` omits senderHistory (guess: the writer does not need it). Revisit at stage 12 (freeze and audit) or 14 if the owner audit needs them.
