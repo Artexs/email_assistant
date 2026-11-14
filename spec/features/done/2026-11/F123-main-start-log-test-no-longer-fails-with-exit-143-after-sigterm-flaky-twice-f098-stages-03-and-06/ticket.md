@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-14
+landed: 2026-11-14
 ---
 
 # F123 · The server start-log test passes every time: no exit 143 after SIGTERM
