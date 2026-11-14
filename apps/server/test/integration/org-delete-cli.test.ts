@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { sql } from "kysely";
 
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
@@ -125,5 +126,32 @@ describe("org:delete CLI", () => {
     expect(again.stdout).not.toContain("deleted");
     expect(again.stdout + again.stderr).not.toContain(address);
     expectNoName(again, orgName);
+  });
+
+  test("5. a lock wait past the timeout: exit 1, busy, try again, the organization stays; no address, no name", async () => {
+    const { orgId, orgName, address } = await createOrg();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let locked!: () => void;
+    const isLocked = new Promise<void>((resolve) => (locked = resolve));
+    const holder = db.transaction().execute(async (trx) => {
+      await sql`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`.execute(trx);
+      locked();
+      await gate;
+    });
+    await isLocked;
+    let result;
+    try {
+      result = await run(["--org-id", orgId, "--confirm", orgName, "--lock-timeout-ms", "300"]);
+    } finally {
+      release();
+      await holder;
+    }
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("busy, try again");
+    expect(result.stdout).not.toContain("deleted");
+    expect(result.stdout + result.stderr).not.toContain(address);
+    expectNoName(result, orgName);
+    expect(await orgRows(orgId)).toHaveLength(1);
   });
 });

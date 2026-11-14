@@ -12,6 +12,16 @@ describe("parseOrgDeleteArgs", () => {
     });
   });
 
+  test("an optional lock timeout parses; a bad one gives null", () => {
+    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "200"])).toEqual({
+      orgId: ID,
+      confirmName: "Acme",
+      lockTimeoutMs: 200,
+    });
+    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "0"])).toBeNull();
+    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "x"])).toBeNull();
+  });
+
   test("a missing, empty or bad argument gives null", () => {
     expect(parseOrgDeleteArgs(["--org-id", ID])).toBeNull();
     expect(parseOrgDeleteArgs(["--confirm", "Acme"])).toBeNull();

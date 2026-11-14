@@ -22,6 +22,11 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const result = await deleteOrganization(db, { ...args, via: "cli" });
+    if (result.kind === "busy") {
+      process.stderr.write("busy, try again\n");
+      log.error("org_delete_refused", { reason: "busy" });
+      return 1;
+    }
     if (result.kind !== "deleted") {
       log.error("org_delete_refused", { reason: result.kind });
       return 1;

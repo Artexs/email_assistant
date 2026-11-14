@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
-import { auditEvents, recordAudit } from "../../src/modules/audit";
+import { auditEvents, recordAudit, recordAuditOnce } from "../../src/modules/audit";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { deleteOrganization } from "../../src/modules/privacy";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
@@ -246,6 +246,100 @@ describe("deleteOrganization", () => {
   });
 });
 
+// Waits until a backend waits on a lock and its query matches `pattern` (ILIKE), up to 10 s.
+async function waitForLockWait(pattern: string): Promise<boolean> {
+  for (let i = 0; i < 200; i++) {
+    const waiting = await sql<{ n: string }>`
+      SELECT count(*) AS n FROM pg_stat_activity
+      WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE ${pattern}`.execute(db);
+    if (Number(waiting.rows[0]?.n) > 0) return true;
+    await Bun.sleep(50);
+  }
+  return false;
+}
+
+describe("deleteOrganization locks", () => {
+  test("7. a lock wait past the timeout returns busy, changes nothing, and a later run deletes", async () => {
+    const acme = await createOrg("Acme Test");
+    const before = await snapshot(acme);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let locked!: () => void;
+    const isLocked = new Promise<void>((resolve) => (locked = resolve));
+    const holder = db.transaction().execute(async (trx) => {
+      await sql`SELECT id FROM organizations WHERE id = ${acme.orgId}::uuid FOR UPDATE`.execute(trx);
+      locked();
+      await gate;
+    });
+    await isLocked;
+    const started = Date.now();
+    let result;
+    try {
+      result = await deleteOrganization(db, {
+        orgId: acme.orgId,
+        confirmName: acme.name,
+        via: "cli",
+        lockTimeoutMs: 300,
+      });
+    } finally {
+      release();
+      await holder;
+    }
+    const waitedMs = Date.now() - started;
+    expect(result).toEqual({ kind: "busy" });
+    expect(waitedMs).toBeGreaterThanOrEqual(250);
+    expect(waitedMs).toBeLessThan(5000);
+    expect(await snapshot(acme)).toEqual(before);
+    expect(lines.join("\n")).not.toContain("org_deleted");
+
+    expect(await deleteOrganization(db, { orgId: acme.orgId, confirmName: acme.name, via: "cli" })).toMatchObject({
+      kind: "deleted",
+    });
+  });
+
+  test("8. a real deadlock (40P01) on the first attempt is retried once and the delete succeeds", async () => {
+    const acme = await createOrg("Acme Test");
+    // Transaction A holds the lock on the owner user, then asks for the organization row. The delete holds the
+    // organization row and waits on the user row. Each waits for the other. The delete waited first, so its
+    // deadlock check (after deadlock_timeout) finds the cycle and aborts the delete: its first attempt fails.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let userLocked!: () => void;
+    const isUserLocked = new Promise<void>((resolve) => (userLocked = resolve));
+    let orgLockedAt = 0;
+    const holder = db.transaction().execute(async (trx) => {
+      await sql`SELECT id FROM users WHERE id = ${acme.userId}::uuid FOR UPDATE`.execute(trx);
+      userLocked();
+      // Wait until the delete holds the organization row and waits on the user row.
+      expect(await waitForLockWait("%from users u%")).toBe(true);
+      await sql`SELECT id FROM organizations WHERE id = ${acme.orgId}::uuid FOR UPDATE`.execute(trx);
+      orgLockedAt = Date.now();
+      await gate;
+    });
+    await isUserLocked;
+    let finishedAt = 0;
+    const deleting = deleteOrganization(db, { orgId: acme.orgId, confirmName: acme.name, via: "cli" }).then(
+      (result) => {
+        finishedAt = Date.now();
+        return result;
+      }
+    );
+    try {
+      // A got the organization row, so the first attempt of the delete was aborted by the deadlock check.
+      for (let i = 0; i < 300 && orgLockedAt === 0; i++) await Bun.sleep(50);
+      expect(orgLockedAt).toBeGreaterThan(0);
+      expect(finishedAt).toBe(0);
+    } finally {
+      release();
+      await holder;
+    }
+    // The second attempt waited for A, then deleted.
+    expect(await deleting).toMatchObject({ kind: "deleted" });
+    expect(finishedAt).toBeGreaterThanOrEqual(orgLockedAt);
+    expect(await snapshot(acme)).toMatchObject({ organizations: 0, users: 0 });
+  });
+});
+
 describe("audit data of the F106 events", () => {
   test("6. recordAudit stores flat data for the new events and refuses a nested value", async () => {
     const acme = await createOrg("Acme Test");
@@ -267,13 +361,32 @@ describe("audit data of the F106 events", () => {
     await expect(
       recordAudit(db, ctx, { actor: "cli", event: auditEvents.dsrErase, data: nested, at: NOW })
     ).rejects.toThrow("not flat");
+    // The same guard for the once-per-organization writer.
+    await expect(
+      recordAuditOnce(db, ctx, { actor: "cli", event: auditEvents.orgExported, data: nested, at: NOW })
+    ).rejects.toThrow("not flat");
+    expect(
+      await recordAuditOnce(db, ctx, {
+        actor: "cli",
+        event: auditEvents.orgExported,
+        data: { tables: 1, rows: 2 },
+        at: NOW,
+      })
+    ).toBe(true);
     const rows = await db
       .selectFrom("audit_log")
       .select(["event", "data"])
       .where("org_id", "=", acme.orgId)
-      .where("event", "in", [auditEvents.orgDeleteRefused, auditEvents.dsrFind, auditEvents.dsrErase])
+      .where("event", "in", [
+        auditEvents.orgDeleteRefused,
+        auditEvents.dsrFind,
+        auditEvents.dsrErase,
+        auditEvents.orgExported,
+      ])
       .execute();
-    expect(rows.map((row) => row.event).sort()).toEqual([auditEvents.dsrFind, auditEvents.orgDeleteRefused]);
+    expect(rows.map((row) => row.event).sort()).toEqual(
+      [auditEvents.dsrFind, auditEvents.orgDeleteRefused, auditEvents.orgExported].sort()
+    );
     for (const row of rows) {
       for (const value of Object.values(row.data as Record<string, unknown>)) {
         expect(typeof value === "object" && value !== null).toBe(false);
