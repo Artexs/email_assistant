@@ -6,6 +6,7 @@ import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { listMailboxTargets } from "../mail";
 
+import { inTransaction } from "./apply-shared";
 import { APPROVAL_TTL_MS, STALE_AFTER_MS, UNNOTIFIED_TTL_MS } from "./constants";
 import { noDelegationHooks, type DelegationHooks } from "./hooks";
 import {
@@ -159,10 +160,6 @@ export interface ExpiryDeps {
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   // Test seam: replaces `listExpiredApprovals`.
   listExpired?: typeof listExpiredApprovals;
-}
-
-function inTransaction<T>(db: Db | Transaction<DB>, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
-  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
 
 // D22: every hour. Time passes for paused mailboxes too, so the job walks them as well.

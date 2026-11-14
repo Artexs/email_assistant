@@ -1,7 +1,7 @@
-import { isMoveTarget, type MoveTarget, type OutgoingMessage } from "@ea/core";
+import { isMoveTarget, type ActionType, type MoveTarget } from "@ea/core";
 import type { Transaction } from "kysely";
 
-import type { DB, Db, TenantContext } from "../../platform/db";
+import type { DB, TenantContext } from "../../platform/db";
 import { describeError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
@@ -11,16 +11,15 @@ import {
   locateKeyOf,
   locateMessage,
   MailAuthError,
-  type MailSender,
   setUndoPending,
   updateEmailLocation,
   type FolderMessageMeta,
   type MailProvider,
 } from "../mail";
 
+import { inTransaction, needsImap, type ApplyDeps, type ApplyHandler, type ApplyOutcome } from "./apply-shared";
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { applyDraft, removeDraft } from "./drafts";
-import type { DelegationHooks } from "./hooks";
 import { ensureMoved, type EnsureResult } from "./move";
 import { finishAction, markUndone, releaseAction, type ClaimedAction } from "./repo";
 import { applySend } from "./send";
@@ -28,59 +27,9 @@ import { applySend } from "./send";
 const log = createLog("actions");
 
 export { HARD_ERROR_TRIES, RETRY_WAIT_MS };
-
-export type ApplyOutcome =
-  | { kind: "applied" }
-  | {
-      kind: "failed";
-      reason:
-        | "mail_not_found"
-        | "hard_error"
-        | "no_provider"
-        | "bad_payload"
-        | "smtp_rejected"
-        | "smtp_error"
-        | "outcome_unknown";
-    }
-  // An `applying` draft whose send ended before the APPEND (N12).
-  | { kind: "expired"; reason: "send_closed" }
-  | { kind: "retry"; soft: boolean }
-  | { kind: "auth_error" }
-  | { kind: "lost" };
-
-// Gives the real path of a folder key. `ensureFolder` runs once per key per run; a path that differs from `folder_map` is stored.
-export type ResolvableFolderKey = MoveTarget | "drafts" | "sent";
-
-export interface FolderResolver {
-  resolve(key: ResolvableFolderKey): Promise<string>;
-}
-
-export interface ApplyDeps {
-  db: Db | Transaction<DB>;
-  now(): Date;
-  mailboxId: string;
-  folders: FolderResolver;
-  mailbox: { address: string; capabilities: { uidplus: boolean }; folderMap: Record<string, string> };
-  owner: { displayName: string };
-  organization: { styleText: string | null; timezone: string };
-  compose(message: OutgoingMessage): Promise<Buffer>;
-  sender: MailSender | null;
-  hooks: DelegationHooks;
-  /** Paths of the mailbox's `sort` rows (enabled or not): a move into one of them is an APPEND transfer (Interia re-sorts a COPY, F12). */
-  appendFolders: ReadonlySet<string>;
-  /** Test hook: runs after the IMAP change, before the DB transaction. */
-  beforeCommit?: () => void | Promise<void>;
-  /** Test hooks of the send (D11): before the SMTP call, after the 250, before the Sent copy. A throw is a crash. */
-  beforeSend?: () => void | Promise<void>;
-  afterSend?: () => void | Promise<void>;
-  beforeSentCopy?: () => void | Promise<void>;
-}
+export type { ApplyDeps, ApplyOutcome, FolderResolver, ResolvableFolderKey } from "./apply-shared";
 
 const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\Seen" };
-
-async function inTransaction<T>(db: ApplyDeps["db"], run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
-  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
-}
 
 // D9: a reverse move or a rescue (forward target `inbox`) that ends (applied or failed) clears the in-flight flag of the mail.
 async function clearMovePending(trx: Transaction<DB>, ctx: TenantContext, action: ClaimedAction): Promise<void> {
@@ -378,6 +327,26 @@ async function applyMove(
   return { kind: "applied" };
 }
 
+const NEEDS_NOTHING = { provider: false, sender: false, facts: false, sortFolders: false } as const;
+const NEEDS_IMAP = { provider: true, sender: false, facts: false, sortFolders: false } as const;
+
+// One handler per action type. A new type fails typecheck here and completeness.test.ts until it has one.
+export const APPLY_HANDLERS: Readonly<Record<ActionType, ApplyHandler>> = {
+  move: { needs: { ...NEEDS_IMAP, sortFolders: true }, run: applyMove },
+  mark_read: { needs: NEEDS_IMAP, run: applyFlag },
+  flag: { needs: NEEDS_IMAP, run: applyFlag },
+  save_summary: { needs: NEEDS_NOTHING, run: applySummary },
+  // A reverse `create_draft` row deletes the draft (the send of the draft ended).
+  create_draft: {
+    needs: { ...NEEDS_IMAP, facts: true },
+    run: (deps, ctx, action, provider) =>
+      action.reverses_action_id === null
+        ? applyDraft(deps, ctx, action, provider)
+        : removeDraft(deps, ctx, action, provider),
+  },
+  send: { needs: { ...NEEDS_IMAP, sender: true, facts: true }, run: applySend },
+};
+
 // Applies one claimed action and writes the result, the mail location and the audit row in one transaction.
 // The job handles `auth_error` (mailbox status) and the release of the rest of the batch.
 export async function applyAction(
@@ -386,9 +355,8 @@ export async function applyAction(
   action: ClaimedAction,
   provider: MailProvider | null
 ): Promise<ApplyOutcome> {
-  if (action.type === "save_summary") {
-    return applySummary(deps, ctx, action);
-  }
+  const handler = APPLY_HANDLERS[action.type];
+  if (!needsImap(handler)) return handler.run(deps, ctx, action);
   if (provider === null) {
     log.error(`action ${action.id}: no provider for ${action.type}`);
     const now = deps.now();
@@ -400,15 +368,5 @@ export async function applyAction(
     });
     return { kind: "retry", soft: true };
   }
-  if (action.type === "send") {
-    return applySend(deps, ctx, action, provider);
-  }
-  if (action.type === "create_draft") {
-    if (action.reverses_action_id !== null) return removeDraft(deps, ctx, action, provider);
-    return applyDraft(deps, ctx, action, provider);
-  }
-  if (action.type === "move") {
-    return applyMove(deps, ctx, action, provider);
-  }
-  return applyFlag(deps, ctx, action, provider);
+  return handler.run(deps, ctx, action, provider);
 }
