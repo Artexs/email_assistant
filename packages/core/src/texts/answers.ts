@@ -31,7 +31,7 @@ export const answerTexts = {
       too_old: "Za późno na cofnięcie (limit 7 dni).",
       held: "Cofnięcie jest teraz niemożliwe: zmiany w skrzynce są wyłączone albo skrzynka jest wstrzymana.",
     },
-    right: (saved, category) => (saved ? `✅ Zapisano: ${category} – dobrze.` : "Już zapisano."),
+    right: (saved, category) => (saved ? `✅ Zapisano kategorię ${category} – dobrze.` : "Już zapisano."),
     pick: (saved) => (saved ? "Zapisano." : "Już zapisano."),
     picked: (saved, trueCategory, aiCategory) =>
       `✏️ ${saved ? "Zapisano" : "Już zapisano"} kategorię ${trueCategory} (propozycja AI: ${aiCategory}).`,

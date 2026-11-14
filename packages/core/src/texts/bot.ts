@@ -312,8 +312,8 @@ export const botTexts = {
       title: (day, time) => `📊 Stan · ${day} ${time}`,
       noMailbox: "Brak połączonej skrzynki.",
       modes: { shadow: "podgląd", assist: "asystent" },
-      modeNone: "brak (skrzynka bez ustawień: bez klasyfikacji)",
-      mailboxLine: (mode, state) => `Tryb: ${mode} · stan – ${state}`,
+      modeNone: "brak (skrzynka bez ustawień, bez klasyfikacji)",
+      mailboxLine: (mode, state) => `Tryb: ${mode}, ${state}`,
       stateActive: "aktywna",
       statePaused: (since) => `wstrzymana od ${since}`,
       stateAuthError: (since) => `błąd logowania od ${since} (uruchom mailbox:password)`,
@@ -323,7 +323,7 @@ export const botTexts = {
       waiting: (count) => `Czeka na klasyfikację: ${count}`,
       triage: (scope) => `Klasyfikacja: ${PL_TRIAGE[scope]}`,
       actions: (scope, counts) =>
-        `Działania: ${PL_ACTIONS[scope]} · ostatnie 24 h – wykonano ${counts.applied}, cofnięto ${counts.undone}, z błędem ${counts.failed}`,
+        `Działania: ${PL_ACTIONS[scope]}; ostatnie 24 h wykonano ${counts.applied}, cofnięto ${counts.undone}, z błędem ${counts.failed}`,
       approvals: "Zatwierdzenia",
       approvalsOf: (address) => `Zatwierdzenia ${address}`,
       approvalsLine: (label, waiting, extra) =>
@@ -396,10 +396,10 @@ export const botTexts = {
       setApproved: (approved, skipped) => {
         const category = pluralCategory("pl", approved);
         const out = { one: "wyjdzie", few: "wyjdą", many: "wyjdzie", other: "wyjdzie" }[category];
-        return `⏳ ${plReminders(approved)} ${out} w ciągu minuty, pominięto: ${skipped}.`;
+        return `⏳ ${plReminders(approved)} ${out} w ciągu minuty (pominięto ${skipped}).`;
       },
       setApprovedHeld: (approved, skipped, note) =>
-        `⏳ Zatwierdzono ${plReminders(approved)}, pominięto: ${skipped}. ${note}; /status pokazuje szczegóły.`,
+        `⏳ Zatwierdzono ${plReminders(approved)} (pominięto ${skipped}). ${note}; /status pokazuje szczegóły.`,
       setRejected: (count) => `✖️ Pominięto ${plReminders(count)}.`,
       done: "✅ Gotowe.",
       doneAlready: "Już gotowe.",

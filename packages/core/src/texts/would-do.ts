@@ -75,7 +75,7 @@ export const wouldDoTexts = {
       expired: "niewysłane (zatwierdzenie wygasło)",
       failed: "niewysłane (błąd)",
     },
-    sendLimitWait: "zatwierdzone, czeka: limit wysyłki",
+    sendLimitWait: "zatwierdzone, czeka (limit wysyłki)",
     staysIn: (folder) => `zostaje w ${folder}`,
   },
 } satisfies Record<UserLocale, WouldDoTexts>;

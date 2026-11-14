@@ -1,6 +1,6 @@
 # Digest and notices
 
-> Checked against the code at `c757cc5`, 2026-11-14.
+> Checked against the code at `3606dbb6`, 2026-11-14.
 
 ## What it does now
 
@@ -110,7 +110,7 @@ Every message that the system sends to a person goes through Telegram. A user li
 ## Limits
 
 - Telegram only: no mail channel for the digest and the report (E4-B F110; ADR 0022 is proposed) and no push (E9b F118; ADR 0032 is proposed). `noticeChannels` holds `telegram` only and `noticeDetails` holds `full` only.
-- Telegram texts follow `users.locale`: `textsFor(locale)` returns the table of the locale from `packages/core/src/texts/`. A user with no choice (null) reads Polish. A user with `en` reads the English texts, byte for byte as before. Rows queued before the switch hold `locale = 'pl'` for null users with English stored text; a tap on such an approval card adds a Polish status line (cards expire within 48 h). The command menu follows the app language of Telegram, not `users.locale`.
+- Telegram texts follow `users.locale`: `textsFor(locale)` returns the table of the locale from `packages/core/src/texts/`. A user with no choice (null) reads Polish. A user with `en` reads the English texts, byte for byte as before. Rows queued before the switch hold `locale = 'pl'` for null users with English stored text; a tap on such a card adds a Polish status line to the English card. The approval buttons stop working after 48 h, but the buttons Gotowe, Wysłano and "To był błąd" work for up to 7 days, so the mixed edit can show for up to 7 days. The command menu follows the app language of Telegram, not `users.locale`.
 - The quiet hours are a constant for every user and every kind except the digest. Per-user quiet hours and a per-user route per kind are PD-033 and PD-094 (E4-B F110, E9b F118).
 - The digest lists at most 15 items; the rest is a `+N more` line. There is no web list of past digests.
 - The operator notices go to one chat by a direct send, with no outbox row, no queue and no quiet hours. A failed `auth_mail_failed` notice is not tried again.

@@ -71,12 +71,12 @@ afterEach(() => {
 async function member(
   trx: Transaction<DB>,
   locale: UserLocale | null,
-  opts: { linked: boolean; linkedAt?: Date } = { linked: true }
+  opts: { linked: boolean; linkedAt?: Date; settings?: boolean } = { linked: true }
 ) {
   const created = await createOrgWithMailbox(trx);
   const ctx = { orgId: created.orgId };
   await trx.updateTable("users").set({ locale }).where("id", "=", created.userId).execute();
-  await insertDefaultSettings(trx, ctx, created.mailboxId);
+  if (opts.settings !== false) await insertDefaultSettings(trx, ctx, created.mailboxId);
   await markSynced(trx, ctx, created.mailboxId, new Date(T.getTime() - 5 * MINUTE));
   await trx
     .updateTable("mailboxes")
@@ -101,6 +101,7 @@ function commandDeps(trx: Transaction<DB>): CommandDeps {
     sendScope: { kind: "all" },
     testMail: NO_TEST_SENDERS,
     operatorContact: null,
+    syncEveryMin: 5,
   };
 }
 
@@ -301,8 +302,17 @@ describe("a suspended organization", () => {
   });
 });
 
-describe("the Polish status of an active mailbox", () => {
-  test("no line holds two colons", async () => {
+// One separator style per composed line: at most one colon, and no colon together with a spaced dash.
+function expectOneStyle(text: string): void {
+  for (const line of text.split("\n")) {
+    const colons = line.match(/:(?=\s|$)/g)?.length ?? 0;
+    expect(colons, line).toBeLessThanOrEqual(1);
+    expect(colons > 0 && line.includes(" – "), line).toBe(false);
+  }
+}
+
+describe("the Polish status", () => {
+  test("of an active mailbox: every composed line keeps one separator style", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const m = await member(trx, "pl");
@@ -311,8 +321,22 @@ describe("the Polish status of an active mailbox", () => {
       await bot.send(m.chatId, "/status");
 
       const text = String(lastCall(bot.calls, "sendMessage")?.text);
-      expect(text).toContain("Tryb:");
-      for (const line of text.split("\n")) expect(line.match(/:(?=\s|$)/g)?.length ?? 0).toBeLessThanOrEqual(1);
+      expect(text).toContain("Tryb: ");
+      expectOneStyle(text);
+    });
+  });
+
+  test("of a mailbox without settings: the mode line holds one colon", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const m = await member(trx, null, { linked: true, settings: false });
+      const bot = botFor(trx);
+
+      await bot.send(m.chatId, "/status");
+
+      const text = String(lastCall(bot.calls, "sendMessage")?.text);
+      expect(text).toContain("Tryb: brak (skrzynka bez ustawień, bez klasyfikacji), aktywna");
+      expectOneStyle(text);
     });
   });
 });

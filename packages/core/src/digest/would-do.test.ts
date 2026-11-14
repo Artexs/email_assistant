@@ -228,7 +228,30 @@ describe("Polish action phrases", () => {
       "zrobi – przygotować szkic przypomnienia (wykonawca Jan)"
     );
     expect(describeAction({ ...send("approved"), waiting: "send_limit" }, jan, PL)).toBe(
-      "zatwierdzone, czeka: limit wysyłki"
+      "zatwierdzone, czeka (limit wysyłki)"
     );
+  });
+
+  // A composed line holds at most one colon, and never a colon with a dash.
+  test("a line that joins every tense, a delegate and a send wait holds no colon", () => {
+    const line = describeActions(
+      [
+        act("move", "logged", "ai_info"),
+        act("move", "applied", "ai_info"),
+        act("flag", "applied"),
+        delegation("ready", "d1"),
+        act("mark_read", "failed"),
+        { ...send("approved"), waiting: "send_limit" },
+      ],
+      jan,
+      {},
+      PL
+    );
+    expect(line).toContain("zrobi – ");
+    expect(line).toContain("zrobione – ");
+    expect(line).toContain("nieudane – ");
+    expect(line).toContain("(wykonawca Jan)");
+    expect(line).toContain("zatwierdzone, czeka (limit wysyłki)");
+    expect(line.match(/:(?=\s|$)/g) ?? []).toHaveLength(0);
   });
 });

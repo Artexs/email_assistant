@@ -82,7 +82,10 @@ describe("the texts registry", () => {
     collect("pl", textTables.pl);
     expect(lines.length).toBeGreaterThan(100);
     for (const { path, line } of lines) {
-      expect(line.match(/:(?=\s|$)/g)?.length ?? 0, `${path}: ${line}`).toBeLessThanOrEqual(1);
+      const colons = line.match(/:(?=\s|$)/g)?.length ?? 0;
+      expect(colons, `${path}: ${line}`).toBeLessThanOrEqual(1);
+      // A line with a colon takes no spaced dash: one separator style per line.
+      expect(colons > 0 && line.includes(" – "), `${path}: ${line}`).toBe(false);
     }
   });
 });
