@@ -76,7 +76,7 @@ Commands:
 
 **Goal.** A writer or checker agent with no chat history can do its job from one file (P2, D17, D33, D34, D37).
 
-**Files.** `evals/sim/README.md` (new), `evals/README.md` (a "See also" line).
+**Files.** `evals/sim/README.md` (new), `evals/README.md` (a "See also" line), `docs/capabilities/triage.md` (PD-009, plan fact F19: § Entry points gains a CLI row for `bun run sim` with the file `apps/server/src/scripts/sim.ts`; rule 13 gains one sentence: synthetic corpora are planned and checked with `bun run sim`, runbook `evals/sim/README.md`; keep the "Checked against" line).
 
 Content (headings and the exact rules; write it in plain technical English):
 
@@ -92,7 +92,7 @@ Content (headings and the exact rules; write it in plain technical English):
 
 **Test.** None (docs). `bunx prettier --check evals/sim/README.md`.
 
-**Check.** `bunx prettier --check evals/sim/README.md evals/README.md`
+**Check.** `bunx prettier --check evals/sim/README.md evals/README.md docs/capabilities/triage.md && bun test apps/server/src/capability-map.test.ts`
 
 **Done when.** The file holds the 7 sections.
 

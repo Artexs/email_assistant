@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). The last stage: its land closes the ticket.
 
-After this stage `evals/results/` holds the first sim-vs-real comparison for `notification` and `spam` (P7, D32), and the capability page (if E1 created it) names the lab.
+After this stage `evals/results/` holds the first sim-vs-real comparison for `notification` and `spam` (P7, D32), and the triage capability page names the lab.
 
 Precondition (coordinator step C4): `/tmp/f097-real/real.json` exists on this machine (counts from the pilot's real labels, made on the VPS by `bun run eval --real … --json`). It holds no text and no ids. If the file is missing, stop and say so.
 
@@ -26,16 +26,16 @@ Do not copy `real.json` into the repo (real-label counts of the pilot stay out o
 
 **Goal.** The next reader finds the lab.
 
-**Files.** `docs/capabilities/triage.md` (or the capability page E1 made for triage; if `docs/capabilities/` does not exist, skip and say so), `evals/README.md` ("Results" list).
+**Files.** `docs/capabilities/triage.md` (it exists since F095; stages 01, 03, 04, 11, 13, 15, 16 and 21 already added their lines), `evals/README.md` ("Results" list).
 
-Add 3–6 lines: what the lab is (`evals/sim/README.md`), how to run the gate, where the gate files and reports live, the `/review` command and its flag `review_command`, and that real labels never unlock `auto` (ADR 0028).
+Add 2–4 lines: where the first holdout report and the gap report live (`evals/results/`), the gap verdict for `notification` and `spam` in one sentence, and that real labels never unlock `auto` (ADR 0028). Fix any line of the earlier stages that the reports prove wrong. Keep the "Checked against" line.
 
-**Check.** `bunx prettier --check <changed files>`
+**Check.** `bunx prettier --check <changed files> && bun test apps/server/src/capability-map.test.ts`
 
 **Done when.** The lines are in.
 
 ## Proof
 
 ```
-mkdir -p /tmp/f097-s22 && bunx prettier --check evals/README.md > /tmp/f097-s22/prettier.log 2>&1 && bun run test:unit:ci > /tmp/f097-s22/unit.log 2>&1 && echo PROOF_OK
+mkdir -p /tmp/f097-s22 && bunx prettier --check evals/README.md docs/capabilities/triage.md > /tmp/f097-s22/prettier.log 2>&1 && bun run test:unit:ci > /tmp/f097-s22/unit.log 2>&1 && echo PROOF_OK
 ```
