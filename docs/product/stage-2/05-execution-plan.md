@@ -33,7 +33,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 0 | Foundation group: CI green, module borders, feature flags, notices as facts, event logs, LLM roles, repo split, RLS (`07-foundation-plan.md`; tickets exist, `plan.md` written) | `06-architecture-review.md` | ≈ 28 | —; runs next to E1. F087 is the first slice of E7-T2, F089 the first stage of E8a | Owner: start the group; F092 RLS yes or no | F093, F086, F087, F088, F089, F090, F091, F092 |
 | 1 | E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets) | E01 | ≈ 10 | — (F077 landed) | Owner: F047 A phone test; vision text OK (owner-owned) | F095 |
 | 2 | E8-LR Log rotation | E08 (PD-054) | ≈ 1 | — | — | F096 |
-| 3 | E2a Offline lab | E02 | ≈ 14 | E1 | Owner audit of 50 cases per corpus version | F097 |
+| 3 | E2a Offline lab | E02 | 22 | E1 | Owner audit of 50 cases per corpus version (after the F097 corpus freeze, stage 20; does not stop the build) | F097 |
 | 4 | E7-T1 Polish UI (i18n frame first) | E07 notes §11 | ≈ 6 | F082 | — | F098 |
 | 5 | E7-T2 Platform controls (send limits, feature flags, operator console, security log) | E07 notes §11 | ≈ 12 | F082 | — | F099 |
 | 6 | E3a Measure | E03 | ≈ 13 | E1; E7-T2 before its user-visible stages (flags) | — | F100 |
