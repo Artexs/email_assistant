@@ -1,4 +1,4 @@
-import type { WeekSpec } from "./plan-spec";
+import type { PlanSpec, WeekSpec } from "./plan-spec";
 import type { Scenario, SimPersona } from "./scenario";
 
 function persona(key: string, group: SimPersona["group"], lang: SimPersona["lang"], host: string): SimPersona {
@@ -77,4 +77,21 @@ export const defaultWeekSpec: WeekSpec = {
   offHoursShare: 0.05,
   behaviour: { done: 0.4, late: 0.2, out_of_office: 0.15, other_address: 0.1, silent: 0.15 },
   historyDays: 30,
+};
+
+// A small corpus plan for tests: 5 dev and 20 holdout cases per category, 1 holdout case per hard-case tag.
+export const miniPlanSpec: PlanSpec = {
+  seed: 7,
+  batchSize: 25,
+  bank: {
+    devPerCategory: 5,
+    holdoutPerCategory: 20,
+    hardPerTag: 2,
+    hardDevPerTag: 1,
+    replyInjectionPerTag: 1,
+    replyInjectionDevPerTag: 0,
+    langShare: { pl: 0.6, en: 0.4 },
+    threadShare: 0.2,
+  },
+  week: defaultWeekSpec,
 };

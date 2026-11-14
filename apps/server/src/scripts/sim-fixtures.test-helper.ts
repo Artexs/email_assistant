@@ -1,30 +1,16 @@
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { defaultWeekSpec, miniScenario, type CaseText, type PlanSpec, type Scenario, type Slot } from "@ea/core";
+import { miniPlanSpec, miniScenario, simParts, type CaseText, type Scenario, type Slot } from "@ea/core";
 
 import { parseSimArgs } from "./sim-args";
 import { runSim } from "./sim-commands";
-import { writeJson } from "./sim-files";
+import { listBatches, readSlots, writeJson } from "./sim-files";
 
 // Test helper of `bun run sim`: a corpus folder in a temp dir, planned from miniScenario and a small spec.
 
-export const miniPlanSpec: PlanSpec = {
-  seed: 7,
-  batchSize: 25,
-  bank: {
-    devPerCategory: 5,
-    holdoutPerCategory: 20,
-    hardPerTag: 2,
-    hardDevPerTag: 1,
-    replyInjectionPerTag: 1,
-    replyInjectionDevPerTag: 0,
-    langShare: { pl: 0.6, en: 0.4 },
-    threadShare: 0.2,
-  },
-  week: defaultWeekSpec,
-};
+export { miniPlanSpec };
 
 export interface MiniCorpus {
   // The folder that holds the corpus folder (the --root value).
@@ -97,4 +83,69 @@ export function fixtureText(slot: Slot, scenario: Scenario = miniScenario): Case
   if (slot.category === "needs_reply") text.expectedPoints = ["Odpowiedz na pytanie"];
   if (planted.length > 0) text.planted = planted;
   return text;
+}
+
+async function runInProcess(args: string[]): Promise<void> {
+  const cmd = parseSimArgs(args);
+  if (cmd === undefined) throw new Error(`bad arguments: ${args[0]}`);
+  const result = await runSim(cmd);
+  if (result.code !== 0) throw new Error(`${args[0]} failed: ${result.lines.join(" | ")}`);
+}
+
+// A planned mini corpus with a clean text and a blind label (the slot category) for every case, so it can freeze.
+async function writeCompleteCorpus(c: MiniCorpus): Promise<void> {
+  for (const part of simParts) {
+    const slots = readSlots(c.dir, part);
+    const batches = listBatches(c.dir, part, "slots");
+    for (const batch of batches) {
+      writeJson(join(c.dir, part, "texts", `${batch}.json`), {
+        scenario: miniScenario.id,
+        part,
+        batch,
+        writer: "fixture",
+        cases: slots.filter((slot) => slot.batch === batch).map((slot) => fixtureText(slot)),
+      });
+    }
+    const range = ["--batches", `1-${batches.length}`];
+    await runInProcess(["blind-export", miniScenario.id, "--part", part, ...range, "--root", c.root]);
+    for (const batch of batches) {
+      const labels = slots
+        .filter((slot) => slot.batch === batch && slot.direction !== "sent")
+        .map((slot) => ({ id: slot.id, category: slot.category }));
+      const file = join(c.root, `labels-${part}-${batch}.json`);
+      writeFileSync(file, JSON.stringify(labels));
+      const n = String(Number(batch.slice("batch-".length)));
+      await runInProcess([
+        "label-import",
+        miniScenario.id,
+        "--part",
+        part,
+        "--batch",
+        n,
+        "--checker",
+        "fixture",
+        "--file",
+        file,
+        "--root",
+        c.root,
+      ]);
+    }
+  }
+}
+
+let template: Promise<MiniCorpus> | undefined;
+
+// A copy of the complete corpus: it is built once per test file, then copied (the build is slow).
+export async function completeCorpus(): Promise<MiniCorpus> {
+  if (template === undefined) {
+    template = createMiniCorpus({ plan: true }).then(async (c) => {
+      await writeCompleteCorpus(c);
+      process.on("exit", c.cleanup);
+      return c;
+    });
+  }
+  const source = await template;
+  const root = mkdtempSync(join(tmpdir(), "f097-sim-"));
+  cpSync(source.root, root, { recursive: true });
+  return { root, dir: join(root, miniScenario.id), cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }

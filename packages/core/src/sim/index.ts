@@ -1,3 +1,4 @@
+export * from "./audit";
 export * from "./briefs";
 export * from "./checks";
 export * from "./files";
@@ -5,6 +6,7 @@ export * from "./fixtures";
 export * from "./hard-cases";
 export * from "./history-gen";
 export * from "./lang";
+export * from "./manifest";
 export * from "./plan-bank";
 export * from "./plan-spec";
 export * from "./plan-week";

@@ -12,17 +12,17 @@ A writer agent then writes the text for each slot. A checker agent labels the te
 
 Layout (`evals/sim/<scenario>/`):
 
-| Path                              | Holds                                                                    | Written by          |
-| --------------------------------- | ------------------------------------------------------------------------ | ------------------- |
-| `scenario.json`, `plan-spec.json` | the company, personas, delegates, topics; the seed and the sizes         | owner / coordinator |
-| `<part>/slots/batch-NNN.json`     | up to 25 slots per batch (ground truth)                                  | `sim plan`          |
-| `week/history.json`               | 30 days of sender history for the week                                   | `sim plan`          |
-| `<part>/texts/batch-NNN.json`     | one text per slot (`textBatchFileSchema`)                                | writer              |
-| `<part>/blind/batch-NNN.json`     | the mail as a mail holds it, with no slot field (`blindBatchFileSchema`) | `sim blind-export`  |
-| `<part>/labels/batch-NNN.json`    | the checker's category per case, with the hash of the blind entry it saw | `sim label-import`  |
-| `manifest.json`, `audit/`         | freeze data and the owner audit                                          | later stages        |
+| Path                              | Holds                                                                    | Written by                  |
+| --------------------------------- | ------------------------------------------------------------------------ | --------------------------- |
+| `scenario.json`, `plan-spec.json` | the company, personas, delegates, topics; the seed and the sizes         | owner / coordinator         |
+| `<part>/slots/batch-NNN.json`     | up to 25 slots per batch (ground truth)                                  | `sim plan`                  |
+| `week/history.json`               | 30 days of sender history for the week                                   | `sim plan`                  |
+| `<part>/texts/batch-NNN.json`     | one text per slot (`textBatchFileSchema`)                                | writer                      |
+| `<part>/blind/batch-NNN.json`     | the mail as a mail holds it, with no slot field (`blindBatchFileSchema`) | `sim blind-export`          |
+| `<part>/labels/batch-NNN.json`    | the checker's category per case, with the hash of the blind entry it saw | `sim label-import`          |
+| `manifest.json`, `audit/`         | freeze data (version, hashes, counts) and the owner audit                | `sim freeze`, `sim audit-*` |
 
-Commands (`bun run sim <command> <scenario> [--root <dir>]`): `plan`, `status`, `brief`, `check`, `blind-export`, `label-import`, `stale`, `reconcile`.
+Commands (`bun run sim <command> <scenario> [--root <dir>]`): `plan`, `status`, `brief`, `check`, `blind-export`, `label-import`, `stale`, `reconcile`, `freeze`, `audit-list`, `audit-apply`.
 Every command prints counts, ids and issue codes only. `check` never prints mail text.
 
 Data rule: `evals/README.md` § Data rule. Made-up names, reserved domains only, no real mail.
@@ -89,7 +89,15 @@ Steps:
 
 ## 6. Owner audit
 
-Filled by a later stage (the owner audit of a frozen corpus).
+The owner audits a frozen corpus once: 30 random cases and up to 20 contested ones (cases with a `borderline:` note). It takes about 15 minutes. The owner's verdict is the truth and overrides the planner and the checker.
+
+1. The coordinator freezes the corpus: `bun run sim freeze <scenario> --version 1 --date <YYYY-MM-DD>`. It runs `check`, refuses an incomplete corpus and writes `manifest.json` with `audit: pending`. A corpus with a `manifest.json` does not freeze again: delete the file first.
+2. The coordinator runs `bun run sim audit-list <scenario> --version 1`. It prints the paths and counts. It writes `audit/v1-list.md` (one section per case: the slot facts, then the mail as the checker sees it) and `audit/v1-verdicts.json` (every case `pending`). The command refuses when the audit is done and when the verdict file already holds verdicts.
+3. The owner opens `audit/v1-list.md`, reads each case and sets its line in `audit/v1-verdicts.json` to `ok` or `wrong: <category>` (`urgent`, `needs_reply`, `delegation`, `info`, `notification`, `spam`).
+4. The coordinator runs `bun run sim audit-apply <scenario> --version 1 --date <YYYY-MM-DD>` and commits the result. For each `wrong` verdict the slot takes the owner's category (`urgent` gets urgency source `text`, `delegation` gets draft `clarification`; fields that no longer fit are cleared). When a slot changed, the corpus becomes v1.1 (a second change: v1.2) and the hashes are recomputed. The audit is `done` when no verdict is `pending`.
+5. After a changed slot, the coordinator runs `bun run sim check <scenario>`: a case that became `needs_reply` needs `expectedPoints` in its text. A new version means a new gate run (F097 plan D36).
+
+Running the apply twice with the same file changes nothing the second time.
 
 ## 7. Limits
 
