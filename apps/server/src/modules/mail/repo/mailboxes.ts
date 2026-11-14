@@ -139,19 +139,24 @@ export async function setMailboxStatus(
     .execute();
 }
 // Conditional update: it changes the row only while the status is still `change.from`.
+// With `seenChangedAt` it also needs the episode the caller read: a newer change of the same status stops the write.
+// The compare is at millisecond precision, the precision of a JS Date.
 export async function changeMailboxStatus(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  change: { from: MailboxStatus; to: MailboxStatus; at: Date }
+  change: { from: MailboxStatus; to: MailboxStatus; at: Date; seenChangedAt?: Date }
 ): Promise<boolean> {
-  const result = await db
+  let query = db
     .updateTable("mailboxes")
     .set({ status: change.to, status_changed_at: change.at })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
-    .where("status", "=", change.from)
-    .executeTakeFirst();
+    .where("status", "=", change.from);
+  if (change.seenChangedAt !== undefined) {
+    query = query.where(sql<boolean>`date_trunc('milliseconds', status_changed_at) = ${change.seenChangedAt}`);
+  }
+  const result = await query.executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
 export interface MailboxSummary {

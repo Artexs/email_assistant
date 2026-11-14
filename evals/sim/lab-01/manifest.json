@@ -1,0 +1,80 @@
+{
+  "scenario": "lab-01",
+  "version": "1",
+  "frozenAt": "2026-11-14",
+  "parts": {
+    "dev": {
+      "cases": 389,
+      "sha256": "261c1979e053efac6004874e6b3f6efef3e05706041ed2150dc3dd84d2854586"
+    },
+    "holdout": {
+      "cases": 1413,
+      "sha256": "5493ce7d4e5a0248e82f96a02d5c3f363171fce8b052cc3d1bb8740a1ef4a553"
+    },
+    "week": {
+      "cases": 855,
+      "sha256": "c92d820ea8762deb2a91fd2c6338cd2eb6fffd08558bbf0f74f5565d8e647ce9"
+    }
+  },
+  "counts": {
+    "dev": {
+      "delegation": 59,
+      "info": 67,
+      "notification": 63,
+      "needs_reply": 81,
+      "spam": 62,
+      "urgent": 57
+    },
+    "holdout": {
+      "delegation": 222,
+      "info": 243,
+      "notification": 234,
+      "needs_reply": 260,
+      "spam": 234,
+      "urgent": 220
+    },
+    "week": {
+      "needs_reply": 113,
+      "info": 188,
+      "notification": 293,
+      "spam": 166,
+      "delegation": 56,
+      "urgent": 39
+    }
+  },
+  "hardCases": {
+    "already_answered": 10,
+    "attachments": 10,
+    "auto_reply": 20,
+    "bounce": 15,
+    "calendar_invite": 10,
+    "cc_only": 10,
+    "german": 10,
+    "delegation_missing_data": 10,
+    "forwarded_in_thread": 10,
+    "html_only": 10,
+    "injection": 8,
+    "list_mail": 10,
+    "phishing_delegation": 15,
+    "polish_diacritics": 10,
+    "phishing_unsubscribe": 15,
+    "phishing_urgent_push": 15,
+    "reply_inj_other_address": 5,
+    "reply_inj_blank_lines": 5,
+    "reply_inj_fake_agreement": 5,
+    "reply_inj_hidden_data": 5,
+    "reply_inj_header_line": 5,
+    "reply_inj_ignore_rules": 5,
+    "reply_inj_internal_note": 5,
+    "reply_inj_insert_link": 5,
+    "reply_needed_thread": 10,
+    "urgent_no_keyword": 10,
+    "vip_looks_like_spam": 10
+  },
+  "audit": {
+    "status": "pending",
+    "list": "audit/v1-list.md",
+    "verdicts": "audit/v1-verdicts.json",
+    "wrong": 0
+  }
+}

@@ -35,7 +35,7 @@ Two steps. About 260 changed lines.
     | `code` `INVALID_BACKUP_CODE` | `tf_error_backup_code` | false |
     | `code` `TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE` | `tf_error_attempts` | true |
     | `code` `INVALID_TWO_FACTOR_COOKIE` | `tf_error_expired` | true |
-    | `code` `TOTP_NOT_ENABLED` | `tf_error_state` | false |
+    | `code` `TOTP_NOT_ENABLED` or `BACKUP_CODES_NOT_ENABLED` | `tf_error_state` | false |
     | any other | `error_generic` | false |
 
     Keys (exact English | Polish for `pl.ts`, D20):
@@ -46,22 +46,22 @@ Two steps. About 260 changed lines.
     | `tf_code_label` | Code from your authenticator app | Kod z aplikacji uwierzytelniającej |
     | `tf_code_help` | Open the app and type the 6-digit code for Email Assistant. | Otwórz aplikację i wpisz 6-cyfrowy kod dla Email Assistant. |
     | `tf_backup_label` | Backup code | Kod zapasowy |
-    | `tf_backup_help` | Type one of your saved backup codes, for example abcde-12345. Each code works once. | Wpisz jeden z zapisanych kodów zapasowych, na przykład abcde-12345. Każdy kod działa tylko raz. |
+    | `tf_backup_help` | Type one of your saved backup codes, for example abcde-12345. Case matters. Each code works once. | Wpisz jeden z zapisanych kodów zapasowych, na przykład abcde-12345. Wielkość liter ma znaczenie. Każdy kod działa tylko raz. |
     | `tf_use_backup` | Use a backup code | Użyj kodu zapasowego |
     | `tf_use_app` | Use the authenticator app | Użyj aplikacji uwierzytelniającej |
-    | `tf_trust_device` | Trust this device for 30 days | Ufaj temu urządzeniu przez 30 dni |
-    | `tf_trust_help` | Only on your own device. After 30 days it asks for a code again. | Tylko na własnym urządzeniu. Po 30 dniach znowu poprosi o kod. |
+    | `tf_trust_device` | Trust this device for 30 days | Zaufaj temu urządzeniu na 30 dni |
+    | `tf_trust_help` | Only on your own device. After 30 days it asks for a code again. | Tylko na własnym urządzeniu. Po 30 dniach znowu poprosimy o kod. |
     | `tf_verify` | Confirm | Potwierdź |
     | `tf_verifying` | Checking… | Sprawdzanie… |
     | `tf_back` | Back | Wstecz |
     | `tf_code_invalid_format` | Type the 6 digits. | Wpisz 6 cyfr. |
     | `tf_backup_invalid_format` | Type the code as you saved it, for example abcde-12345. | Wpisz kod tak, jak go zapisano, na przykład abcde-12345. |
-    | `tf_error_code` | Wrong code. Check that the time on your phone is right and try again. | Błędny kod. Sprawdź, czy telefon ma dobrą godzinę, i spróbuj ponownie. |
+    | `tf_error_code` | Wrong code. Check that the time on your phone is right and try again. | Błędny kod. Sprawdź, czy telefon ma poprawny czas, i spróbuj ponownie. |
     | `tf_error_backup_code` | This backup code is wrong or was already used. | Ten kod zapasowy jest błędny albo został już użyty. |
     | `tf_error_attempts` | Too many tries. Sign in again. | Za dużo prób. Zaloguj się ponownie. |
-    | `tf_error_expired` | The sign-in step expired. Sign in again. | Krok logowania wygasł. Zaloguj się ponownie. |
+    | `tf_error_expired` | The sign-in step expired. Sign in again. | Czas na wpisanie kodu minął. Zaloguj się ponownie. |
     | `tf_error_locked` | Too many wrong codes. Try again in 15 minutes. | Za dużo błędnych kodów. Spróbuj ponownie za 15 minut. |
-    | `tf_error_state` | Two-factor sign-in has a problem. Use a backup code or ask the operator to reset it. | Logowanie dwuetapowe ma problem. Użyj kodu zapasowego albo poproś operatora o reset. |
+    | `tf_error_state` | Two-factor sign-in has a problem. Use a backup code or ask the operator to reset it. | Wystąpił problem z logowaniem dwuetapowym. Użyj kodu zapasowego albo poproś operatora o jego wyłączenie. |
 
   - Decisions: D15, D16, D20.
   - Test (`two-factor-errors.test.ts`):

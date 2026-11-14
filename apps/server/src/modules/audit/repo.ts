@@ -22,6 +22,7 @@ export const auditEvents = {
   mailboxPasswordChanged: "mailbox.password_changed",
   mailboxRemoved: "mailbox.removed", // data: mailbox_id
   mailboxHostAllowed: "mailbox.host_allowed", // data: mailbox_id
+  mailboxHostBlocked: "mailbox.host_blocked", // data: mailbox_id, source
   onboardingModeKept: "onboarding.mode_kept", // data: via
   actionApplied: "action.applied",
   actionFailed: "action.failed",

@@ -1,11 +1,13 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { afterAll, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { createCommitterJob, type ActionsScope } from "../../src/modules/actions";
 import {
+  configureMailHosts,
   MailAuthError,
+  resolveMailHost,
   type ImapConnectOptions,
   type MailSender,
   type SmtpConnectOptions,
@@ -936,6 +938,106 @@ describe("createCommitterJob with a suspended organization", () => {
       expect(await actionState(trx, sendB.sendId)).toMatchObject({ status: "approved", locked_at: null });
       expect(opener.calls).toEqual([a.address]);
       expect(smtp.calls).toEqual([a.address]);
+    });
+  });
+});
+
+describe("createCommitterJob: a refused host blocks the mailbox", () => {
+  // The preload (`bunfig.toml`) allows local hosts for GreenMail: put that policy back after each test.
+  afterEach(() => {
+    configureMailHosts({ allowLocal: true });
+  });
+
+  function refuse(...hosts: string[]): void {
+    configureMailHosts({
+      allowLocal: false,
+      lookup: async (host) => [{ address: hosts.includes(host) ? "10.0.0.7" : "93.184.216.34", family: 4 }],
+    });
+  }
+
+  async function mailboxOf(trx: Transaction<DB>, box: Box) {
+    return trx
+      .selectFrom("mailboxes")
+      .select(["status", "status_changed_at"])
+      .where("id", "=", box.mailboxId)
+      .executeTakeFirstOrThrow();
+  }
+
+  async function blockAudit(trx: Transaction<DB>, box: Box) {
+    return trx
+      .selectFrom("audit_log")
+      .select(["actor", "data"])
+      .where("org_id", "=", box.orgId)
+      .where("event", "=", "mailbox.host_blocked")
+      .execute();
+  }
+
+  test("an SMTP host that the guard refuses blocks the mailbox and releases the send with no count", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const opener = openerFor([box]);
+      const smtp = senderOpener();
+      const guardedSmtp = smtp.openSender;
+      smtp.openSender = async (opts) => {
+        await resolveMailHost(opts.host);
+        return guardedSmtp(opts);
+      };
+      const p = await pairOf(trx, box);
+      refuse("smtp.x.test");
+
+      await sendJob(trx, opener, smtp, box).run();
+
+      expect(await mailboxOf(trx, box)).toEqual({ status: "host_blocked", status_changed_at: NOW });
+      expect(await blockAudit(trx, box)).toEqual([
+        { actor: "system", data: { mailbox_id: box.mailboxId, source: "committer" } },
+      ]);
+      expect(await actionState(trx, p.sendId)).toMatchObject({ status: "approved", locked_at: null, attempts: 0 });
+      expect(smtp.sender.sent).toHaveLength(0);
+    });
+  });
+
+  test("an IMAP host that the guard refuses blocks the mailbox and releases the move with no count", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const mail = await addMail(trx, box, { messageId: "<h1@x.test>", actions: [{ type: "move" }] });
+      const opener = openerFor([box]);
+      const open = opener.openProvider;
+      opener.openProvider = async (opts) => {
+        await resolveMailHost(opts.host);
+        return open(opts);
+      };
+      refuse("imap.x.test");
+
+      await jobFor(trx, opener, { kind: "all" }).run();
+
+      expect(await mailboxOf(trx, box)).toEqual({ status: "host_blocked", status_changed_at: NOW });
+      expect(await blockAudit(trx, box)).toHaveLength(1);
+      expect(await actionState(trx, mail.actionIds[0] as string)).toMatchObject({
+        status: "ready",
+        locked_at: null,
+        attempts: 0,
+      });
+    });
+  });
+
+  test("another opener error does not block the mailbox", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      await addMail(trx, box, { messageId: "<h2@x.test>", actions: [{ type: "flag" }] });
+      const opener = openerFor([box]);
+      opener.failures.set(box.address, new Error("boom"));
+      const errors = spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        await jobFor(trx, opener, { kind: "all" }).run();
+      } finally {
+        errors.mockRestore();
+      }
+
+      expect((await mailboxOf(trx, box)).status).toBe("active");
+      expect(await blockAudit(trx, box)).toEqual([]);
     });
   });
 });

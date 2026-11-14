@@ -173,4 +173,27 @@ describe("GET /api/security-log", () => {
       },
     ]);
   });
+
+  test("11. second-factor and break-glass rows: kinds, actors, no user id", async () => {
+    await audit(org.orgId, auditEvents.webTwoFactorLocked, org.ownerId, ago(HOUR), {
+      via: "web",
+      locked_until: "2026-11-20T08:15:00.000Z",
+    });
+    await audit(org.orgId, auditEvents.orgBreakGlassSet, "cli", ago(2 * HOUR), { user_id: org.ownerId });
+    await audit(org.orgId, auditEvents.webTwoFactorReset, "cli", ago(3 * HOUR), { via: "cli" });
+    const res = await app().request("/api/security-log", as("owner"));
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(securityLogSchema.parse(JSON.parse(text)).entries).toEqual([
+      {
+        at: ago(HOUR).toISOString(),
+        kind: "two_factor_locked",
+        actor: { kind: "member", name: "Owner" },
+        lockedUntil: "2026-11-20T08:15:00.000Z",
+      },
+      { at: ago(2 * HOUR).toISOString(), kind: "break_glass_set", actor: { kind: "operator" }, lockedUntil: null },
+      { at: ago(3 * HOUR).toISOString(), kind: "two_factor_reset", actor: { kind: "operator" }, lockedUntil: null },
+    ]);
+    expect(text).not.toContain(org.ownerId);
+  });
 });

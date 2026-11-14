@@ -6,6 +6,7 @@ import { sql, type Transaction } from "kysely";
 import {
   configureMailHosts,
   MailAuthError,
+  resolveMailHost,
   type ImapConnectOptions,
   type LookupAll,
   type SeedMessage,
@@ -461,6 +462,144 @@ describe("suspended organizations", () => {
         expect(row.status).toBe("host_blocked");
         expect(row.last_synced_at).toBeNull();
         expect(o.opened).toHaveLength(0);
+      });
+    });
+  });
+
+  describe("the way in: a refused host blocks the mailbox", () => {
+    afterEach(() => {
+      configureMailHosts({ allowLocal: true });
+    });
+
+    // `imap.x.test` is refused when it is in `refused`; any other host is public.
+    function lookupFor(refused: ReadonlySet<string>): LookupAll {
+      return async (host) => [{ address: refused.has(host) ? "10.0.0.7" : "93.184.216.34", family: 4 }];
+    }
+
+    // The opener resolves the host first, as the real opener does, only for the addresses in `users`.
+    function guarded(o: Opened, users: ReadonlySet<string>): void {
+      const open = o.openProvider;
+      o.openProvider = async (opts) => {
+        if (users.has(opts.user)) await resolveMailHost(opts.host);
+        return open(opts);
+      };
+    }
+
+    async function hostBlockedAudit(trx: Transaction<DB>, mailboxId: string) {
+      const rows = await trx
+        .selectFrom("audit_log")
+        .select(["actor", "data"])
+        .where("event", "=", "mailbox.host_blocked")
+        .execute();
+      return rows.filter((row) => (row.data as { mailbox_id?: string }).mailbox_id === mailboxId);
+    }
+
+    function capture(): { lines: string[]; restore(): void } {
+      const lines: string[] = [];
+      const spies = (["log", "warn", "error"] as const).map((name) =>
+        spyOn(console, name).mockImplementation((...args: unknown[]) => {
+          lines.push(args.join(" "));
+        })
+      );
+      return {
+        lines,
+        restore() {
+          for (const spy of spies) spy.mockRestore();
+        },
+      };
+    }
+
+    test("a refused host blocks the mailbox once; the other mailbox syncs; a second run changes nothing", async () => {
+      await withRollback(db, async (trx) => {
+        const bad = await addBox(trx);
+        const good = await addBox(trx);
+        // The bad mailbox sorts first, so the test proves that the job goes on after the block.
+        await trx
+          .updateTable("mailboxes")
+          .set({ created_at: sql`now() + interval '1 minute'` })
+          .where("id", "=", good.mailboxId)
+          .execute();
+        const o = openers();
+        guarded(o, new Set([bad.address]));
+        const badFake = createFakeMailProvider({ uidValidity: 7 });
+        o.fakes.set(bad.address, badFake);
+        const fake = createFakeMailProvider({ uidValidity: 7 });
+        fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+        o.fakes.set(good.address, fake);
+        configureMailHosts({ allowLocal: false, lookup: lookupFor(new Set(["imap.x.test"])) });
+        const log = capture();
+        try {
+          await jobFor(trx, o).run();
+
+          const row = await mailboxRow(trx, bad.mailboxId);
+          expect(row.status).toBe("host_blocked");
+          expect(row.status_changed_at).toEqual(NOW);
+          expect(row.last_synced_at).toBeNull();
+          expect(await hostBlockedAudit(trx, bad.mailboxId)).toEqual([
+            { actor: "system", data: { mailbox_id: bad.mailboxId, source: "sync" } },
+          ]);
+          expect((await mailboxRow(trx, good.mailboxId)).status).toBe("active");
+          expect(await emailCount(trx, good.mailboxId)).toBe(1);
+          expect(
+            log.lines.filter((line) => line.includes("mailbox_host_blocked") && line.includes("reason=sync"))
+          ).toHaveLength(1);
+          expect(log.lines.some((line) => line.includes(`sync ${bad.mailboxId} failed`))).toBe(false);
+
+          // The second run: the mailbox is not a sync target, the re-check sees `refused`.
+          await jobFor(trx, o).run();
+
+          expect(o.opened).not.toContain(badFake);
+          const again = await mailboxRow(trx, bad.mailboxId);
+          expect(again.status).toBe("host_blocked");
+          expect(again.status_changed_at).toEqual(NOW);
+          expect(await hostBlockedAudit(trx, bad.mailboxId)).toHaveLength(1);
+          expect(log.lines.some((line) => line.includes("imap.x.test") || line.includes("10.0.0.7"))).toBe(false);
+        } finally {
+          log.restore();
+        }
+      });
+    });
+
+    test("a lookup failure keeps the mailbox active, with no audit row", async () => {
+      await withRollback(db, async (trx) => {
+        const bad = await addBox(trx);
+        const o = openers();
+        guarded(o, new Set([bad.address]));
+        o.fakes.set(bad.address, createFakeMailProvider({ uidValidity: 7 }));
+        configureMailHosts({
+          allowLocal: false,
+          lookup: async () => {
+            throw Object.assign(new Error("lookup failed"), { code: "ENOTFOUND" });
+          },
+        });
+        const log = capture();
+        try {
+          await jobFor(trx, o).run();
+
+          expect((await mailboxRow(trx, bad.mailboxId)).status).toBe("active");
+          expect(await hostBlockedAudit(trx, bad.mailboxId)).toEqual([]);
+          expect(log.lines.some((line) => line.includes(`sync ${bad.mailboxId}: mail host lookup failed`))).toBe(true);
+        } finally {
+          log.restore();
+        }
+      });
+    });
+
+    test("another error from the opener does not block the mailbox", async () => {
+      await withRollback(db, async (trx) => {
+        const bad = await addBox(trx);
+        const o = openers();
+        o.failures.set(bad.address, new Error("something else"));
+        const log = capture();
+        try {
+          await jobFor(trx, o).run();
+
+          expect((await mailboxRow(trx, bad.mailboxId)).status).toBe("active");
+          expect(await hostBlockedAudit(trx, bad.mailboxId)).toEqual([]);
+          expect(log.lines.some((line) => line.includes(`sync ${bad.mailboxId} failed`))).toBe(true);
+        } finally {
+          log.restore();
+        }
       });
     });
   });

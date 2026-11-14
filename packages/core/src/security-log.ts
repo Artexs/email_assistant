@@ -8,7 +8,15 @@ export const securityEventKinds = [
   "password_changed",
   "sessions_ended",
   "other_sessions_ended",
-] as const; // E7-T6 adds the 2FA kinds, E7-T3 the export, delete and DSR kinds
+  "two_factor_on",
+  "two_factor_off",
+  "two_factor_reset",
+  "backup_codes_new",
+  "backup_code_used",
+  "two_factor_locked",
+  "break_glass_set",
+  "break_glass_cleared",
+] as const; // E7-T3 adds the export, delete and DSR kinds
 
 export type SecurityEventKind = (typeof securityEventKinds)[number];
 
@@ -20,6 +28,14 @@ export const securityEvents = {
   "web.password_changed": "password_changed",
   "web.sessions_revoked": "sessions_ended",
   "web.other_sessions_revoked": "other_sessions_ended",
+  "web.two_factor_enabled": "two_factor_on",
+  "web.two_factor_disabled": "two_factor_off",
+  "web.two_factor_reset": "two_factor_reset",
+  "web.backup_codes_generated": "backup_codes_new",
+  "web.backup_code_used": "backup_code_used",
+  "web.two_factor_locked": "two_factor_locked",
+  "org.break_glass_set": "break_glass_set",
+  "org.break_glass_cleared": "break_glass_cleared",
 } as const satisfies Record<string, SecurityEventKind>;
 
 export const securityEventCodes: readonly string[] = Object.keys(securityEvents);
