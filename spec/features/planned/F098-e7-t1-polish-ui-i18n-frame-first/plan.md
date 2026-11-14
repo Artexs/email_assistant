@@ -111,7 +111,7 @@ Workers read `ticket.md`, this file and their one stage file. A gap or a deviati
 7. The activity list shows Polish phrases for a Polish request and English for an English one (`reports-activity-locale` cases).
 8. A link request without the current consent version is refused and makes no token; an accepted one writes one `web.telegram_consent` row (`web-telegram.test.ts`); the panel shows the consent and needs the tick (`onboarding.spec.ts`).
 9. `docs/code-patterns.md` § "Texts carry a locale" exists; `docs/architecture.md` and `docs/modules.md` name the texts registry and the routes.
-10. `bun run lint`, `bun run typecheck`, `bun run test:unit:ci`, `bun run test:int:ci` pass after each stage; `bun run web:build` and `bun run test:e2e` pass after each stage that changes `apps/web/`.
+10. `bun run lint`, `bun run typecheck`, `bun run test:unit:ci`, `bun run test:int:ci` pass after each stage; `bun run web:build` and `bun run test:e2e` pass after each stage that changes a page (01–05, 08).
 
 ## Rules for every stage
 
@@ -126,18 +126,18 @@ Workers read `ticket.md`, this file and their one stage file. A gap or a deviati
 - Comments state the rule in one sentence and name an ADR or a ticket folder path if a source is needed. No bare codes (`D12`, `S6c`, `F088`) in new comments.
 - Test data uses `example.test` addresses and marker strings. No secret or `.env` value in a test, a log or a commit message.
 - No migration, no `bun.lock` change, no new dependency in any stage.
-- e2e (stages 01–04, 08): this machine runs Playwright with the system Chromium. Before the first e2e run, give the job its own e2e database: `sed -i -E '/^E2E_(MIGRATOR_)?DATABASE_URL=/d' .env`, then `bun run db:worktree f098_sNN_e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env` (NN = your stage). Never point e2e at the shared `email_assistant_e2e`. Run `test:e2e` only under `flock /tmp/email-assistant-shared-tests.lock` (fixed ports 8081 and 8092).
+- e2e (stages 01–05, 08): this machine runs Playwright with the system Chromium. Before the first e2e run, give the job its own e2e database: `sed -i -E '/^E2E_(MIGRATOR_)?DATABASE_URL=/d' .env`, then `bun run db:worktree f098_sNN_e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env` (NN = your stage). Never point e2e at the shared `email_assistant_e2e`. Run `test:e2e` only under `flock /tmp/email-assistant-shared-tests.lock` (fixed ports 8081 and 8092).
 - Before each commit: `git diff --staged`; look for bugs, secrets, debug code and changes outside the stage.
 
 ## Proof
 
-Each stage ends with one chain, after its last commit, with nothing after it. Stages 05, 06, 07 (no web change except tests under `apps/web/src/lib` and `apps/web/src/i18n`):
+Each stage ends with one chain, after its last commit, with nothing after it. Stages 06 and 07 (no page change):
 
 ```
 mkdir -p /tmp/f098-sNN && bun run lint > /tmp/f098-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f098-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f098-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f098-sNN/int.log 2>&1 && echo PROOF_OK
 ```
 
-Stages 01, 02, 03, 04, 08 (they change pages):
+Stages 01, 02, 03, 04, 05, 08 (they change pages):
 
 ```
 mkdir -p /tmp/f098-sNN && bun run lint > /tmp/f098-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f098-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f098-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f098-sNN/int.log 2>&1 && bun run web:build > /tmp/f098-sNN/build.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock env CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e > /tmp/f098-sNN/e2e.log 2>&1 && echo PROOF_OK
@@ -187,7 +187,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [ ] stage 05 · [ ] stage 06 · [ ] stage 07 · [ ] stage 08
+- [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [written] stage 05 · [ ] stage 06 · [ ] stage 07 · [ ] stage 08
 - [ ] cold review (`plan-review-1.md`), findings applied
 
 ## Cold review
