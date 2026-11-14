@@ -19,8 +19,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F088-notices-as-facts` (🟠 ACTIVE): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry
 - `F082-s6b-public-login` (🟠 ACTIVE): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list
+- `F078-auth-verifications-cleanup` (🟠 ACTIVE): Expired Better Auth `auth_verifications` rows are deleted by the retention job
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F069-compose-network-subnet` (🟠 ACTIVE): Pin the Compose network subnet
+- `F030-telegram-picker-already-saved` (🟠 ACTIVE): Telegram picker: say "Already saved" in the message too
 
 ## NEXT
 
@@ -51,4 +53,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F077-s6a-customer-core` (🟢 PROVEN): S6a Customer core: a second organization runs next to the pilot; landed 2026-11-13
 - `F083-retention-and-review-minors-of-the-s6a-group-review-are-fixed-stuck-rows-delegation-task-text-backfilled-mail-body` (🟢 PROVEN): Retention and review minors of the S6a group review are fixed: stuck rows, delegation task text, backfilled mail body; landed 2026-11-12
 - `F080-backfill-suspended-gate` (🟢 PROVEN): The `mailbox:backfill` CLI refuses a suspended organization; landed 2026-11-12
-- 2026-11: 52 landed. spec/features/done/2026-11/
+- 2026-11: 53 landed. spec/features/done/2026-11/
