@@ -172,3 +172,59 @@ export function wilsonInterval(successes: number, n: number, z = 1.959964): { lo
     upper: successes >= n ? 1 : Math.min(1, center + margin),
   };
 }
+
+export interface SimGateRow {
+  support: number;
+  threshold: number | null;
+  kept: number;
+  tp: number;
+  precision: number | null;
+  wilsonLower: number | null;
+  recall: number | null;
+  decision: GoDecision;
+}
+
+// Rows of a category in the lab corpus that the gate needs before it can say "go" (D24).
+export const SIM_MIN_SUPPORT = 200;
+
+// The sim gate (D23, D24): the Wilson 95 % lower bound of the precision must reach the bar, not the point value.
+export function simGoNoGo(
+  rows: Prediction[],
+  opts: { bar?: number; minSupport?: number; minKept?: number } = {}
+): Record<BarCategory, SimGateRow> {
+  const bar = opts.bar ?? DEFAULT_BAR;
+  const minSupport = opts.minSupport ?? SIM_MIN_SUPPORT;
+  const minKept = opts.minKept ?? DEFAULT_MIN_KEPT;
+  const llm = llmRows(rows);
+  const result = {} as Record<BarCategory, SimGateRow>;
+  for (const category of barCategories) {
+    const support = llm.filter((row) => row.expected === category).length;
+    const points = THRESHOLDS.map((threshold) => {
+      const keptRows = llm.filter(
+        (row) => row.modelCategory === category && row.confidence >= threshold && hasTruth(row)
+      );
+      const tp = keptRows.filter((row) => row.expected === category).length;
+      const kept = keptRows.length;
+      return {
+        support,
+        threshold: threshold as number | null,
+        kept,
+        tp,
+        precision: ratio(tp, kept),
+        wilsonLower: kept === 0 ? null : wilsonInterval(tp, kept).lower,
+        recall: ratio(tp, support),
+        decision: "no-go" as GoDecision,
+      };
+    });
+    const lowest = points[0] as SimGateRow;
+    if (support < minSupport) {
+      result[category] = { ...lowest, threshold: null, decision: "no-go: too few" };
+      continue;
+    }
+    const eligible = points.filter((point) => point.kept >= minKept);
+    const passing = eligible.find((point) => point.wilsonLower !== null && point.wilsonLower >= bar);
+    if (passing) result[category] = { ...passing, decision: "go" };
+    else result[category] = { ...(eligible[0] ?? lowest), threshold: null, decision: "no-go" };
+  }
+  return result;
+}

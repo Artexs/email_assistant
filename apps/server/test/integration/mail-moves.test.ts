@@ -445,16 +445,96 @@ describe("findUserMoves", () => {
     });
   });
 
-  test("3.13 a row of another organization is not checked and not changed", async () => {
+  test("3.13 an organization context does not check a mailbox of another organization", async () => {
     await withRollback(db, async (trx) => {
       const s = await movedIntoOffers(trx);
       const other = await newBox(trx);
       const otherId = await stored(trx, other, s.fake, OFFERS, s.uid, { folder: "INBOX", source_folder: "INBOX" });
       const foreign = await targetOf(s.fake, otherId, "INBOX", s.uid, OFFERS);
+      const before = s.fake.folderCalls.length;
 
-      const result = await findUserMoves(depsOf(trx, s.fake), { orgId: s.box.orgId }, s.box.mailboxId, [foreign]);
+      // The mailbox id is the one of the foreign row: only the org filter of the candidate query leaves it out.
+      const result = await findUserMoves(depsOf(trx, s.fake), { orgId: s.box.orgId }, other.mailboxId, [foreign]);
       expect(result).toEqual({ checked: 0, returned: 0, relocated: 0, retry: 0 });
+      expect(s.fake.folderCalls.length).toBe(before);
       expect(await rowOf(trx, otherId)).toMatchObject({ folder: "INBOX", source_folder: "INBOX" });
+    });
+  });
+
+  describe("3.15 another mail at the same UID in another folder is no hit", () => {
+    // Per-folder UIDs: Oferty counts its own UIDs, so its first mail gets the UID of the mail that left INBOX.
+    const cases: [string, SeedMessage][] = [
+      ["another Message-ID", seed(2)],
+      ["the same Message-ID and other content", { ...seed(1), subject: "Other", text: "Other body" }],
+    ];
+    for (const [name, other] of cases) {
+      test(name, async () => {
+        await withRollback(db, async (trx) => {
+          const box = await newBox(trx);
+          const fake = createFakeMailProvider({ uidValidity: 7, uidNextValue: 1 });
+          const uid = fake.deliver("INBOX", seed(1), deliverOpts);
+          const id = await stored(trx, box, fake, "INBOX", uid, { folder: "INBOX", source_folder: "INBOX" });
+          const target = await targetOf(fake, id, "INBOX", uid, "INBOX");
+          fake.remove("INBOX", uid);
+          expect(fake.deliver(OFFERS, other, deliverOpts)).toBe(uid);
+          await setInboxCursor(trx, box, uid + 5);
+          await addFolderRow(trx, box, "offers", OFFERS, { lastUid: uid + 5 });
+          const before = fake.folderCalls.length;
+
+          const result = await findUserMoves(depsOf(trx, fake), { orgId: box.orgId }, box.mailboxId, [target]);
+          // The finder fetched the UID in Oferty and found a mail there; the identity check refused it.
+          expect(fake.folderCalls.slice(before)).toEqual([{ method: "fetchByUidsIn", folder: OFFERS }]);
+          expect(result).toEqual({ checked: 1, returned: 0, relocated: 0, retry: 0 });
+          expect(await rowOf(trx, id)).toEqual({
+            folder: "INBOX",
+            source_folder: "INBOX",
+            uid,
+            inbox_uid: uid,
+            returned_at: null,
+          });
+        });
+      });
+    }
+  });
+
+  test("3.16 an IMAP error propagates to the caller and nothing is written", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await newBox(trx);
+      const fake = interiaFake();
+      const uid = fake.deliver("AI/Info", seed(1), deliverOpts);
+      const id = await stored(trx, box, fake, "AI/Info", uid, {
+        folder: "AI/Info",
+        source_folder: "INBOX",
+        moved_at: ago(1),
+      });
+      const target = await targetOf(fake, id, "AI/Info", uid, "AI/Info");
+      expect(fake.userMove("AI/Info", uid, OFFERS)).toBe(uid);
+      await setInboxCursor(trx, box, uid + 5);
+      await addFolderRow(trx, box, "offers", OFFERS, { lastUid: uid + 5 });
+      const fetched: string[] = [];
+      const failing: MailProvider = {
+        ...fake,
+        fetchByUidsIn: async (folder, uids) => {
+          fetched.push(folder);
+          if (folder === "INBOX") throw new Error("imap down");
+          return fake.fetchByUidsIn(folder, uids);
+        },
+      };
+
+      await withLogs(async () => {
+        await expect(
+          findUserMoves(depsOf(trx, failing), { orgId: box.orgId }, box.mailboxId, [target])
+        ).rejects.toThrow("imap down");
+      });
+      // INBOX is the first folder; the finder does not go on to Oferty after the failure.
+      expect(fetched).toEqual(["INBOX"]);
+      expect(await rowOf(trx, id)).toEqual({
+        folder: "AI/Info",
+        source_folder: "INBOX",
+        uid,
+        inbox_uid: uid,
+        returned_at: null,
+      });
     });
   });
 

@@ -53,4 +53,17 @@ describe("parseEvalArgs", () => {
     expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--set", "all"])).toBeUndefined();
     expect(parseEvalArgs(["--org-id", org])).toBeUndefined();
   });
+
+  test("--real takes --json; --gap takes two files and --out only", () => {
+    expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--json", "c.json"])).toMatchObject({
+      json: "c.json",
+    });
+    expect(parseEvalArgs(["--json", "c.json"])).toBeUndefined();
+    expect(parseEvalArgs(["--gap", "--sim-json", "g.json", "--real-json", "c.json", "--out", "r.md"])).toMatchObject({
+      gap: true,
+    });
+    expect(parseEvalArgs(["--gap", "--sim-json", "g.json"])).toBeUndefined();
+    expect(parseEvalArgs(["--gap", "--sim-json", "g.json", "--real-json", "c.json", "--model", "m"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim-json", "g.json"])).toBeUndefined();
+  });
 });
