@@ -6,6 +6,7 @@ import { Pool } from "pg";
 import { z } from "zod";
 
 import type { LockoutStore } from "./auth-lockout";
+import { signInAuditPlugin, twoFactorPlugin, TWO_FACTOR_ALLOWED_PATHS } from "./auth-two-factor";
 import type { DB, Db } from "./db";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
@@ -50,7 +51,7 @@ export interface AuthHandle {
   close(): Promise<void>;
 }
 
-// D1: the only paths of `/api/auth/*` that reach Better Auth.
+// D1: the only paths of `/api/auth/*` that reach Better Auth. The five two-factor paths come from `auth-two-factor.ts`.
 export const AUTH_ALLOWED_PATHS: ReadonlySet<string> = new Set([
   "/sign-in/email",
   "/sign-out",
@@ -59,6 +60,7 @@ export const AUTH_ALLOWED_PATHS: ReadonlySet<string> = new Set([
   "/change-password",
   "/revoke-other-sessions",
   "/revoke-sessions",
+  ...TWO_FACTOR_ALLOWED_PATHS,
 ]);
 
 // L22: the paths that end sessions, and the audit event of each.
@@ -419,16 +421,9 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         "/change-password": { window: 60, max: 5 },
       },
     },
+    // Order matters: the audit plugin must come after `twoFactorPlugin()` (it reads the result of the code step).
+    plugins: [twoFactorPlugin(), signInAuditPlugin(report)],
     databaseHooks: {
-      session: {
-        create: {
-          after: async (session, ctx) => {
-            if (ctx?.path === "/sign-in/email") {
-              await report("login", session.userId);
-            }
-          },
-        },
-      },
       account: {
         update: {
           after: async (account, ctx) => {
