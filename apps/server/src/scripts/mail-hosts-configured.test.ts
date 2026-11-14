@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 const SERVER_SRC = join(import.meta.dir, "..");
-const EXCLUDED_SUFFIXES = [".test.ts", "-args.ts", "-lines.ts", "-rows.ts"];
+// A `-load.ts` file reads corpus files and parses mail text; it opens no connection (the entry point that calls it does).
+const EXCLUDED_SUFFIXES = [".test.ts", "-args.ts", "-lines.ts", "-rows.ts", "-load.ts"];
 const MAIL_IMPORT = /from "\.\.\/modules\/mail|from "\.\.\/composition"/;
 
 function selectedFiles(): string[] {
