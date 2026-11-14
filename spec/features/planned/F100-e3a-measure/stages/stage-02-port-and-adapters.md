@@ -10,7 +10,7 @@ Shared files: `mail/sync.ts` and `mail/fake/index.ts` are also edited by F097 st
 
 **Goal.** `fetchBodyText` becomes `fetchContent`; `fetchFlagsIn` exists (D3).
 
-**Files.** `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/imap/client.ts`, `apps/server/src/modules/mail/sync.ts` (the one call site), `apps/server/src/modules/mail/index.ts` (exports), every other caller that `bun run typecheck` names.
+**Files.** `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/imap/client.ts`, `apps/server/src/modules/mail/sync.ts` (the one call site), `apps/server/src/modules/mail/index.ts` (exports), every other caller that `bun run typecheck` names, `docs/modules.md` §3.2 (the `port.ts` row: `fetchBodyText(folder, uid)` → `fetchContent(folder, uid)` and `fetchFlagsIn(folder, uids)`; no capability page names the port method at `a6690e4`).
 
 **Interfaces.**
 

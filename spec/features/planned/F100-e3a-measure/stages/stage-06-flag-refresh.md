@@ -75,7 +75,7 @@ export async function getEmailFlags(db: DbOrTrx, ctx: TenantContext, emailId: st
 
 **Goal.** One refresh per mailbox at most every 10 min, on the sync's connection; a failure never fails the sync (D6).
 
-**Files.** `apps/server/src/modules/mail/flags.ts` (new: `refreshFlags`), `apps/server/src/modules/mail/jobs.ts` (`syncOne`, `createMailSyncJob`), `apps/server/src/platform/log-fields.ts` (only if a field is new), `apps/server/test/integration/mail-flags.test.ts` (new), `apps/server/test/integration/mail-jobs.test.ts` (one case).
+**Files.** `apps/server/src/modules/mail/flags.ts` (new: `refreshFlags`), `apps/server/src/modules/mail/jobs.ts` (`syncOne`, `createMailSyncJob`), `apps/server/src/platform/log-fields.ts` (only if a field is new), `apps/server/test/integration/mail-flags.test.ts` (new), `apps/server/test/integration/mail-jobs.test.ts` (one case), `docs/capabilities/sync.md` (rule 6 "The `mail.sync` job" gains the flag refresh: on the same connection after a good run, at most every 10 min per mailbox and process, mail of the last 30 days, at most 3,000 per run, the guarded write by folder, UID and identity, a failure is one `flags_refresh_failed` line and never fails the sync; the first rule "Sync only reads the mailbox" stays true: the refresh only reads FLAGS; Entry points: a `function` row `refreshFlags` → `apps/server/src/modules/mail/flags.ts` and `listFlagTargets`, `writeEmailFlags`, `getEmailFlags` → `apps/server/src/modules/mail/repo/flags.ts`; Data: `email_flags`; refresh the "Checked against" line).
 
 **Interfaces.**
 
@@ -106,7 +106,7 @@ export async function refreshFlags(
 5. 2 mailboxes of 2 orgs in one run → each gets its own rows; no row of org A in org B.
 6. A stored row whose `uid` is set (in the test) to the UID of another fake mail with a different Message-ID → `mismatch = 1`, no `email_flags` row for it.
 
-**Check.** `bun test apps/server/test/integration/mail-flags.test.ts apps/server/test/integration/mail-jobs.test.ts`
+**Check.** `bun test apps/server/test/integration/mail-flags.test.ts apps/server/test/integration/mail-jobs.test.ts apps/server/src/capability-map.test.ts`
 
 **Done when.** Cases 1–6 pass; the existing job tests pass unchanged.
 

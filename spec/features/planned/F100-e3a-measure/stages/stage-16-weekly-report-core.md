@@ -10,7 +10,7 @@ After this stage the pure parts of the Monday message and of the digest's handle
 
 **Goal.** The pure parts of the notice and of the digest line (D23, D24, D26, D27).
 
-**Files.** `packages/core/src/features.ts` (+ test), `packages/core/src/notices/kinds.ts`, `views.ts`, `renderers.ts`, `packages/core/src/notices/registry.test.ts`, `packages/core/src/digest/weekly.ts` (new) + `weekly.test.ts`, `packages/core/src/digest/digest.ts` (`DigestInput.handled`) + `digest.test.ts`, `packages/core/src/digest/index.ts`.
+**Files.** `packages/core/src/features.ts` (+ test) and the three tests that list every flag (plan § Rules for every stage, flag rule), `packages/core/src/notices/kinds.ts`, `views.ts`, `renderers.ts`, `packages/core/src/notices/registry.test.ts`, `packages/core/src/digest/weekly.ts` (new) + `weekly.test.ts`, `packages/core/src/digest/digest.ts` (`DigestInput.handled`) + `digest.test.ts`, `packages/core/src/digest/index.ts`.
 
 **Interfaces.**
 
@@ -78,11 +78,11 @@ Digest line (D24): when `handled` is set and `triaged > 0`, the footer gets, aft
 5. `renderDigest` with `handled: { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false }` → footer holds `🤖 Handled in the last 7 days: 62% (124 of 200)`; with `shadowOnly: true, handled: 0, wouldHandle: 50` → `🤖 Would handle in the last 7 days: 25% (50 of 200)`; `triaged: 0` → no line; without `handled` → the old text.
 6. Both flags default false, epic `E3a`.
 
-**Check.** `bun test packages/core/src/digest/ packages/core/src/notices/ packages/core/src/features.test.ts`
+**Check.** `bun test packages/core/src/digest/ packages/core/src/notices/ packages/core/src/features.test.ts apps/server/test/integration/tenancy-features.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/org-flag-cli.test.ts`
 
 **Done when.** Cases 1–6 pass.
 
-**Out of scope.** Polish texts (E7-T1).
+**Out of scope.** The Polish texts while `packages/core/src/texts/index.ts` does not exist; after F098 stage 08 landed, the renderer follows plan D31 (an entry in the notice texts section with `en` and `pl`, `texts: CoreTexts` last), and the expected text of case 1 stays the English one.
 
 ## Step 2 — Migration
 
@@ -95,17 +95,17 @@ Digest line (D24): when `handled` is set and `triaged > 0`, the footer gets, aft
 ALTER TABLE outbox DROP CONSTRAINT outbox_kind_check;
 ALTER TABLE outbox ADD CONSTRAINT outbox_kind_check CHECK (kind IN (
   'digest', 'urgent', 'auth_error', 'sync_stale', 'sync_ok', 'action_failed',
-  'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed', 'weekly_report'));
+  'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed', 'send_held', 'weekly_report'));
 
 -- migrate:down
 DELETE FROM outbox WHERE kind = 'weekly_report';
 ALTER TABLE outbox DROP CONSTRAINT outbox_kind_check;
 ALTER TABLE outbox ADD CONSTRAINT outbox_kind_check CHECK (kind IN (
   'digest', 'urgent', 'auth_error', 'sync_stale', 'sync_ok', 'action_failed',
-  'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed'));
+  'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed', 'send_held'));
 ```
 
-First read the current list in your job DB (`pg_get_constraintdef` of `outbox_kind_check`): if another ticket added a kind meanwhile, keep it in both lists and say so.
+The list above is the one of `20261114100003_outbox_send_held.sql` (F099 stage 05, 12 kinds) plus `weekly_report`. Do not touch the separate constraint `outbox_send_held_mailbox_check` of that file. First read the current list in your job DB (`pg_get_constraintdef` of `outbox_kind_check`): if another ticket added a kind meanwhile, keep it in both lists and say so.
 
 **Decisions.** D1.
 

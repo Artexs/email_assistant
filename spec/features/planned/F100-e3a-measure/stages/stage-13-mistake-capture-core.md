@@ -8,7 +8,7 @@ After this stage the pure parts exist (the flag `mistake_capture`, two callback 
 
 **Goal.** The pure parts: the flag, two callback kinds, the edit lines, the button on the send result (D21, D26).
 
-**Files.** `packages/core/src/features.ts` (+ test), `packages/core/src/digest/callback.ts` (+ test), `packages/core/src/digest/approvals.ts` (`approvalEdit`, `renderSendResult`) (+ test), `packages/core/src/notices/views.ts` (`send_result` view), `packages/core/src/notices/renderers.ts` (pass the field), `packages/core/src/metrics/m3.ts` (reuse `rejectReasons`; do not define them twice).
+**Files.** `packages/core/src/features.ts` (+ test) and the three tests that list every flag (plan § Rules for every stage), `packages/core/src/digest/callback.ts` (+ test), `packages/core/src/digest/action-feedback.ts` (new: `REJECT_REASON_TEXTS`, the button texts, `reasonButtons(actionId)` and `mistakeButton(actionId)`; `approvals.ts` is 439 lines, plan F13) + test, `packages/core/src/digest/approvals.ts` (`approvalEdit`, `renderSendResult`: only the new outcome cases and the button call) (+ test), `packages/core/src/notices/views.ts` (`send_result` view), `packages/core/src/notices/renderers.ts` (pass the field), `packages/core/src/metrics/m3.ts` (reuse `rejectReasons`; do not define them twice).
 
 **Interfaces.**
 
@@ -42,7 +42,7 @@ export const REJECT_REASON_TEXTS: Record<RejectReason, string> = {
 // views.ts: sendResultView gains `mistakeButton: z.boolean().optional()` (optional: rows queued in the last 24 h stay valid).
 ```
 
-`approvalEdit` is the shared edit renderer (`renderNoticeEdit`); it keeps the stored card text and adds one status line (code patterns § Notices are facts).
+`approvalEdit` is the shared edit renderer (`renderNoticeEdit`); it keeps the stored card text and adds one status line (code patterns § Notices are facts). The texts follow plan D31: when `packages/core/src/texts/index.ts` exists, `REJECT_REASON_TEXTS`, the button texts and the new edit lines are entries of the approvals section (en and pl), and `approvalEdit` takes `texts` as F098 left it.
 
 **Decisions.** D21, D26.
 
@@ -55,7 +55,7 @@ export const REJECT_REASON_TEXTS: Record<RejectReason, string> = {
 5. `noticeViewSchemas.send_result` accepts a view without `mistakeButton` (an old row) and with it.
 6. `featureFlags.mistake_capture.default === false`, epic `E3a`.
 
-**Check.** `bun test packages/core/src/digest/ packages/core/src/notices/ packages/core/src/features.test.ts`
+**Check.** `bun test packages/core/src/digest/ packages/core/src/notices/ packages/core/src/features.test.ts apps/server/test/integration/tenancy-features.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/org-flag-cli.test.ts`
 
 **Done when.** Cases 1–6 pass.
 

@@ -10,7 +10,7 @@ After this stage, with the flags `review_command` and `answered_check` on, `/rev
 
 **Goal.** The pure parts (D22, D26).
 
-**Files.** `packages/core/src/features.ts` (+ test), `packages/core/src/digest/callback.ts` (+ test), `packages/core/src/digest/answered-check.ts` (new) + test, `packages/core/src/digest/index.ts`.
+**Files.** `packages/core/src/features.ts` (+ test) and the three tests that list every flag (plan § Rules for every stage), `packages/core/src/digest/callback.ts` (+ test), `packages/core/src/digest/answered-check.ts` (new) + test, `packages/core/src/digest/index.ts`.
 
 **Interfaces.**
 
@@ -37,7 +37,7 @@ export function renderAnsweredCheck(items: readonly AnsweredItem[], opts: { now:
 export function withAnsweredCheck(page: OutMessage, items: readonly AnsweredItem[], opts: { now: Date; timeZone: string }): OutMessage;
 ```
 
-Block text: first line `You replied to ${n} ${n === 1 ? "mail" : "mails"} that the assistant did not mark "needs reply". Did ${n === 1 ? "it" : "they"} need a reply?`; then per item `${i}. ${categoryTag(category)} · ${senderLabel(from)}` and `cleanSubject(subject)` (reuse the digest helpers; numbering starts at 1 in the block). Buttons: one row per item `[✅ Yes ${i}]` (`ay:`) `[➖ No ${i}]` (`an:`). In `withAnsweredCheck` the page text, a blank line, then the block text; buttons = page buttons, then block buttons.
+Block text: first line `You replied to ${n} ${n === 1 ? "mail" : "mails"} that the assistant did not mark "needs reply". Did ${n === 1 ? "it" : "they"} need a reply?`; then per item `${i}. ${categoryTag(category)} · ${senderLabel(from)}` and `cleanSubject(subject)` (reuse the digest helpers; numbering starts at 1 in the block). Buttons: one row per item `[✅ Yes ${i}]` (`ay:`) `[➖ No ${i}]` (`an:`). In `withAnsweredCheck` the page text, a blank line, then the block text; buttons = page buttons, then block buttons. The helpers keep the signatures they have at your base (after F098 stage 06 `cleanSubject`, `senderLabel` and `categoryTag` take `texts: CoreTexts`; then the two functions take `texts` last and the block text is an entry with en and pl, plan D31).
 
 **Decisions.** D22, D26.
 
@@ -58,7 +58,7 @@ Block text: first line `You replied to ${n} ${n === 1 ? "mail" : "mails"} that t
 
 **Goal.** `/review` appends the block; a tap writes the answer in one transaction (D22).
 
-**Files.** `apps/server/src/modules/mail/repo/flags.ts` (`setAnsweredCheck`), `apps/server/src/modules/triage/answered-check.ts` (new: candidates reader and service) + `triage/index.ts`, `apps/server/src/modules/channels/commands.ts` (`reviewMessage`), `apps/server/src/modules/channels/answered-taps.ts` (new: the tap handler and its answer texts; `callbacks.ts` only routes the two kinds to it), `apps/server/src/modules/channels/callbacks.ts`, `apps/server/test/integration/triage-answered-check.test.ts` (new), `channels-commands.test.ts`, `channels-callbacks.test.ts`.
+**Files.** `apps/server/src/modules/mail/repo/flags.ts` (`setAnsweredCheck`), `apps/server/src/modules/triage/answered-check.ts` (new: candidates reader and service) + `triage/index.ts`, `apps/server/src/modules/channels/commands.ts` (`reviewMessage`), `apps/server/src/modules/channels/answered-taps.ts` (new: the tap handler and its answer texts; `callbacks.ts` only routes the two kinds to it), `apps/server/src/modules/channels/callbacks.ts`, `apps/server/test/integration/triage-answered-check.test.ts` (new), `channels-commands.test.ts`, `channels-callbacks.test.ts`, and the pages: `docs/capabilities/triage.md` (the feedback rule: source `answered_check`, written only by a "yes" of the answered check, with `skipIfSame`; Entry points: `listAnsweredCandidates`, `answerAnsweredCheck` → `apps/server/src/modules/triage/answered-check.ts`), `docs/capabilities/digest-and-notices.md` (rule 9, `/review`: the answered-check block behind `answered_check`, at most 5 items, Yes / No taps by any linked member; Entry points: the taps → `apps/server/src/modules/channels/answered-taps.ts`), `docs/capabilities/measurement.md` (rule M1: `answered_check` is a truth source); refresh each "Checked against" line.
 
 **Interfaces.**
 
@@ -87,7 +87,7 @@ export async function answerAnsweredCheck(
 
 - `not_found`: no `email_flags` row of this organization for the mail. `already`: `setAnsweredCheck` wrote nothing.
 - `reviewMessage` (F097): after it builds the page, when `isFeatureOn(db, ctx, "answered_check")` is also on, `listAnsweredCandidates({ mailboxIds: <the same mailboxes>, since: now − 14 days, limit: ANSWERED_CHECK_LIMIT, testMail: deps.testMail })` and return `withAnsweredCheck(page, items, …)`. With `review_command` off nothing changes (the off text).
-- Callbacks: `answered_yes` / `answered_no` (any linked member, as the review taps): `answerAnsweredCheck(… userId: link.userId)`; answers: `yes` → `Saved: it needed a reply.`; `no` → `Saved: no reply needed.`; `already` → `Already answered.`; `not_found` → `NOT_FOUND_TEXT`. No message edit (the page holds several items).
+- Callbacks: `answered_yes` / `answered_no` (any linked member, as the review taps): `answerAnsweredCheck(… userId: link.userId)`; answers: `yes` → `Saved: it needed a reply.`; `no` → `Saved: no reply needed.`; `already` → `Already answered.`; `not_found` → `APPROVAL_TEXTS.not_found` (plan F18). No message edit (the page holds several items). The answer texts follow plan D31.
 
 **Decisions.** D18, D22.
 
@@ -100,7 +100,7 @@ export async function answerAnsweredCheck(
 5. `/review` with both flags on and 2 candidates → one message whose text holds the page and `You replied to 2 mails`, and whose buttons include `ay:` and `an:`; with `answered_check` off → no block.
 6. A tap `ay:<id>` → the `yes` answer text and the rows of case 2; the M1 reader (`listTruthRows`, stage 10) then reports this mail with `truth: "needs_reply"`, `truthSource: "answered_check"`.
 
-**Check.** `bun test apps/server/test/integration/triage-answered-check.test.ts apps/server/test/integration/channels-commands.test.ts apps/server/test/integration/channels-callbacks.test.ts`
+**Check.** `bun test apps/server/test/integration/triage-answered-check.test.ts apps/server/test/integration/channels-commands.test.ts apps/server/test/integration/channels-callbacks.test.ts apps/server/test/integration/tenancy-features.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/org-flag-cli.test.ts apps/server/src/capability-map.test.ts`
 
 **Done when.** Cases 1–6 pass; `bun run graph:modules` ran if a new import edge appeared.
 

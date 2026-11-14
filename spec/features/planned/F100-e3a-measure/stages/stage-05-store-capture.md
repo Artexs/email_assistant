@@ -61,7 +61,7 @@ export async function clearCapturedHeaders(
 
 **Goal.** The row comes with the mail, in its transaction (D4).
 
-**Files.** `apps/server/src/modules/mail/sync.ts` (`Write` insert variant, `planChunk`, `applyChunk`), `apps/server/src/modules/mail/capture-store.ts` (new: `storeCapture`), `apps/server/test/integration/mail-sync.test.ts` (new cases) or a new `mail-sync-capture.test.ts`, `apps/server/src/platform/log-fields.ts` if a field is new.
+**Files.** `apps/server/src/modules/mail/sync.ts` (`Write` insert variant, `planChunk`, `applyChunk`), `apps/server/src/modules/mail/capture-store.ts` (new: `storeCapture`), `apps/server/test/integration/mail-sync.test.ts` (new cases) or a new `mail-sync-capture.test.ts`, `apps/server/src/platform/log-fields.ts` if a field is new, `docs/capabilities/sync.md` (a new numbered rule "Header capture": one `email_headers` row per stored mail in the transaction of the `emails` insert, the D2 field list with its limits, a savepoint so a header error never loses the mail, `capture_missing` warn line with a count, no back-capture of older mail; Entry points: a `function` row `storeCapture` → `apps/server/src/modules/mail/capture-store.ts` and `insertEmailHeaders`, `getEmailHeaders`, `clearCapturedHeaders` → `apps/server/src/modules/mail/repo/headers.ts`; Data: `email_headers`).
 
 **Interfaces.**
 
@@ -92,7 +92,9 @@ export async function clearCapturedHeaders(
 
 **Goal.** The daily job clears captured texts with the mail body (D5).
 
-**Files.** `apps/server/src/retention.ts` (`Clearers`, `RetentionCounts` gain `capturedHeaders`; `runOrg` calls `clearCapturedHeaders(db, ctx, { before: <the body cut-off> })`), `apps/server/test/integration/retention-job.test.ts` and `retention-clear.test.ts` (counts objects), the retention table: `docs/architecture.md` §7 or `docs/capabilities/retention.md` (whichever holds the table at your HEAD after F095), one row: "Captured headers (display name, Reply-To, Return-Path, Authentication-Results, List-Unsubscribe, List-Id, attachment names, link hosts) | `email_headers` | as the mail body (`data_retention_days`); counts and codes stay".
+**Files.** `apps/server/src/retention.ts` (`Clearers`, `RetentionCounts` gain `capturedHeaders`; `runOrg` calls `clearCapturedHeaders(db, ctx, { before: <the body cut-off> })`; the per-organization log line gains `captured N` after `headers N`, in the form that line has at your base), `apps/server/test/integration/retention-job.test.ts` and `retention-clear.test.ts` (counts objects), and three docs (fact F17):
+  - `docs/architecture.md` §7, the "Retention:" table (it stays there after F095): one row after "Mail body text": "Captured headers (display name, Reply-To, Return-Path, Authentication-Results, List-Unsubscribe, List-Id, attachment names, link hosts) | `email_headers` | as the mail body (`organizations.data_retention_days`); counts and codes stay".
+  - `docs/capabilities/retention.md`: rule 2 table, a row `clearCapturedHeaders` | the six text columns → null, `attachments` and `links` → `[]`, `texts_cleared_at` set | `organizations.data_retention_days`; rule 8, the log line gains `captured N`; the Data paragraph ("The job writes these columns and no others") gains `email_headers` (`from_name`, `reply_to`, `return_path`, `auth_results`, `list_unsubscribe`, `list_id`, `attachments`, `links`, `texts_cleared_at`); Entry points, the `mail/repo/retention.ts` row's neighbour: a `function` row `clearCapturedHeaders` → `apps/server/src/modules/mail/repo/headers.ts`; refresh the "Checked against" line.
 
 **Decisions.** D5.
 
@@ -101,7 +103,7 @@ export async function clearCapturedHeaders(
 1. `runOrg` with an organization of `data_retention_days = 30`, one header row captured 31 days ago and one 1 day ago → `capturedHeaders = 1`, the old row cleared.
 2. The retention log line carries the new count (assert on the counts object, not on text).
 
-**Check.** `bun test apps/server/test/integration/retention-job.test.ts apps/server/test/integration/retention-clear.test.ts`
+**Check.** `bun test apps/server/test/integration/retention-job.test.ts apps/server/test/integration/retention-clear.test.ts apps/server/src/capability-map.test.ts`
 
 **Done when.** Cases 1–2 pass.
 
