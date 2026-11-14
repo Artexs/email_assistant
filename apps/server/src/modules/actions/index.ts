@@ -40,6 +40,7 @@ export {
   type RejectReasonResult,
 } from "./feedback";
 export { getActionFeedback, type ActionFeedbackKind, type ActionFeedbackRow } from "./repo";
+export { listHiddenMoveRows, listMistakeRows, listRejectRows, type HiddenMoveRowWithMail } from "./repo";
 export { ensureMoved, type EnsureExclude, type EnsureResult } from "./move";
 export { MAILBOX_ACTION_TYPES, type MailboxActionType } from "@ea/core";
 export type { ExpireFilter } from "@ea/core";

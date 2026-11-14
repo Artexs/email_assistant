@@ -56,6 +56,7 @@ export {
 } from "./notify";
 export { countApprovals, listAwaitingSendIds, listExpiredApprovals, listUnseenApprovalSends } from "./approvals";
 export { clearActionErrors, clearActionPayloads, type PayloadKeepRule } from "./retention";
+export { listHiddenMoveRows, listMistakeRows, listRejectRows, type HiddenMoveRowWithMail } from "./metrics";
 export {
   getActionFeedback,
   insertMistakeOnce,
