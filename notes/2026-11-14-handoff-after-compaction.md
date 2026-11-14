@@ -23,3 +23,8 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 - Polish `empty` text in texts/review.ts: change to "Brak wiadomości do przeglądu: każda wiadomość z ostatnich 30 dni ma etykietę." ("etykieta" vs panel "ocena": F098 owner choice; pl only, hold is on).
 - Test case 3 in apps/server/test/integration/channels-review.test.ts inserts no mail; add one mail plus a feedback row.
 - Coordinator still has C2 (deploy) and C3 (flag on for pilot) for /review.
+
+## F100 stage 10 review carry-over (landed, PASS)
+- Single `org_id` filter drops are equivalent mutants (composite FKs + `tr.org_id`); the rule "each single drop must fail" does not apply to these readers. A pair drop (emails + tr) fails 5/4 tests.
+- Fixture `seedWeek` (apps/server/test/integration/metrics-fixtures.ts): its `updateTable("mailbox_settings").set({mode:"assist"})` changes no row because `createOrgWithMailbox` inserts no mailbox_settings row. Stage 12 or 17 MUST insert the row (e.g. via config/repo.ts:22) if it reads mode.
+- `WeekQuery.testMail.senders` must be lower case.
