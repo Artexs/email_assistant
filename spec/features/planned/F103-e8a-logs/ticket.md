@@ -32,7 +32,7 @@ The operator searches what the server did, one job run, one request or one event
 
 ## Slices
 
-15 worker jobs, one per stage. Order, parallel rules, review jobs and the VPS stage: [plan.md](plan.md) § "Stages" and § "How to run". No DB migration, no `bun.lock` change. No owner checkpoint.
+19 stages: 18 worker jobs and one VPS stage that the coordinator runs. Order, parallel rules and review jobs: [plan.md](plan.md) § "Stages" and § "How to run". No DB migration, no `bun.lock` change. No owner checkpoint.
 
 ## Sequenced
 

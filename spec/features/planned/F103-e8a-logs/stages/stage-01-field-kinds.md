@@ -102,6 +102,6 @@ export function isLogValue(value: unknown): value is string | number | boolean |
 
 **Check.** `bun test apps/server/src/platform/log.test.ts apps/server/src/platform/http.test.ts`, then the Proof.
 
-**Done when.** The six cases pass; no other test fails; `git diff --stat` shows only the files above and the changed test fixtures; the Proof of `plan.md` (stages 01–12, `/tmp/f103-s01`) prints `PROOF_OK`. The final message lists every test fixture that changed and why.
+**Done when.** The six cases pass; no other test fails; `git diff --stat` shows only the files above and the changed test fixtures; the Proof of `plan.md` (stages 01–16, `/tmp/f103-s01`) prints `PROOF_OK`. The final message lists every test fixture that changed and why.
 
-**Out of scope.** Removing the old-form overload (stage 11). New field names (the conversion stages). Any call-site change outside tests.
+**Out of scope.** Removing the old-form overload (stage 13). New field names (the conversion stages). Any call-site change outside tests.

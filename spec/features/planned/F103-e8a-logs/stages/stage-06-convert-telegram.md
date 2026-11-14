@@ -1,6 +1,6 @@
 # F103 stage 06 — Convert Telegram; a context per update
 
-Part of [`../plan.md`](../plan.md). Review job before the land (Telegram errors can hold the bot token). Needs stage 05 landed (`telegramErrorFields`).
+Part of [`../plan.md`](../plan.md). Review job before the land (Telegram errors can hold the bot token). Needs stage 05 landed (`telegramErrorFields`). May run next to one other conversion stage.
 
 Two steps.
 
@@ -29,13 +29,14 @@ Two steps.
 **Test** (integration, with `bot.handleUpdate` and the helpers of `telegram-helpers.ts`, `LOG_FORMAT` json through `setLogFormat("json")`, spies on `console.log` and `console.error`, `setLogLevel("debug")`; restore all in `afterEach`):
 
 1. One update from an unlinked chat writes `update_unlinked_chat` with `job` `telegram.update` and a `run_id` that is a UUID.
-2. Two updates handled at once (`Promise.all` of two `handleUpdate` calls, one `/help` from a linked chat, one from an unlinked chat) give two different `run_id` values, and each line of one update has one `run_id`.
-3. A command handler that awaits a DB call (the linked `/help` path) writes its lines after the `await` with the same `run_id` as its first line (proves `AsyncLocalStorage` through the grammY chain).
-4. An update whose handler throws (inject the failure the way an existing test does, or a handler dependency that rejects) writes `update_failed` with `update_id` equal to the update's id and no `run_id`.
+2. Two updates from two unlinked chats, handled at once (`Promise.all` of two `handleUpdate` calls), give two `update_unlinked_chat` lines with two different `run_id` values.
+3. Use the fake handlers of `telegram-router.test.ts` (`makeFake`, `setup`, `linkedMember`). A linked chat sends `/status`; the fake `command` handler awaits a 10 ms timer and then rejects. The link guard awaited a DB call (`findChatLink`) before. The `command_failed` line carries `job` `telegram.update` and a UUID `run_id` (the context survived a DB `await` and a timer in the grammY chain).
+4. A callback tap from a linked chat whose fake `callback` handler rejects, while an API transformer (`bot.api.config.use`) makes `answerCallbackQuery` fail with a `GrammyError` 400: the update writes `callback_failed` and `callback_answer_failed`, both with the same `run_id`.
+5. A linked chat sends the plain text `hi`, and the API transformer makes `sendMessage` fail with a `GrammyError` 400. The reply in `bot.on("message")` has no `try`, so `bot.handleUpdate(u)` rejects with a `BotError`: grammY 1.46.0 `handleUpdate` rethrows, and only the polling loop calls the error handler (`node_modules/grammy/out/bot.js`, `handleUpdates`). The test runs `await bot.handleUpdate(u).catch((error) => bot.errorHandler(error))` (`errorHandler` is a public property, `bot.d.ts:132`). The `update_failed` line has `update_id` equal to the update's id, `error` `GrammyError`, `error_code` 400, `method` `sendMessage`, and no `run_id`.
 
 **Check.** `bun test <the test file>`.
 
-**Done when.** The four cases pass.
+**Done when.** The five cases pass.
 
 ## Step 2 — Convert 17 calls
 
@@ -66,7 +67,7 @@ Two steps.
 - `wait_ms` is the wait in milliseconds (the old text printed minutes).
 - `telegramErrorLabel` stays (CLI scripts use it); after this stage no module log line uses it. If no caller is left in `modules/`, keep the export anyway.
 
-**Files.** `bot.ts`, `polling.ts`, `platform/log-fields.ts`, the tests that match old texts (`grep -rn "chat linked\|link token\|unlinked chat\|command failed\|button tap\|editing a message\|polling as\|setMyCommands\|polls this bot\|polling failed\|stopping the bot" apps/server/test apps/server/src --include=*.test.ts`; at least `polling.test.ts`, `telegram-logs.test.ts`, `telegram-router.test.ts`), `eslint.config.js` (add `"apps/server/src/modules/channels/telegram/**/*.ts"` to the `error` block), `log-lint.test.ts` (one case: an old-form line in `apps/server/src/modules/channels/telegram/__log-fixture.ts`, import path `"../../../platform/log"`, gives `[2]`), `docs/known-alerts.md` (D17: the `bot.ts` and `polling.ts` entries, for example the entry with "Source: `apps/server/src/modules/channels/telegram/bot.ts`").
+**Files.** `bot.ts`, `polling.ts`, `platform/log-fields.ts`, the tests that match old texts (`grep -rn "chat linked\|link token\|unlinked chat\|command failed\|button tap\|editing a message\|polling as\|setMyCommands\|polls this bot\|polling failed\|stopping the bot" apps/server/test apps/server/src --include=*.test.ts`; at least `polling.test.ts`, `telegram-logs.test.ts`, `telegram-router.test.ts`), `eslint.config.js` (add `"apps/server/src/modules/channels/telegram/**/*.ts"` to the `error` block), `log-lint.test.ts` (one case: an old-form line in `apps/server/src/modules/channels/telegram/__log-fixture.ts`, import path `"../../../platform/log"`, gives `[2]`), `docs/known-alerts.md` and `deploy/README.md` by D17 (known matches at `0a5c2ee`: the `known-alerts.md` entry with "Source: `apps/server/src/modules/channels/telegram/bot.ts`" near line 585; `deploy/README.md:102` (`another process polls this bot token` → `telegram_polling_conflict`); run the per-row grep for the rest).
 
 **Decisions.** D2, D5, D7, D10, D16, D17.
 

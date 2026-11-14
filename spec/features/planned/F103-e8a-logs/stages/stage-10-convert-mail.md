@@ -1,4 +1,4 @@
-# F103 stage 08 — Convert mail
+# F103 stage 10 — Convert mail
 
 Part of [`../plan.md`](../plan.md). Review job before the land (IMAP and SMTP error texts can hold addresses). Needs stage 01 landed. May run next to one other conversion stage.
 
@@ -6,9 +6,11 @@ Two steps.
 
 ## Step 1 — Convert 29 calls; no `error.message` in a mail log line
 
-**Goal.** Every log call in `modules/mail/` is an event (D5, D6, D7). The three `error.message` reads of `mail/jobs.ts` (lines 54, 71, 78–79) leave the log lines; they print a server reply, which can hold an address.
+**Goal.** Every log call in `modules/mail/` is an event (D5, D6, D7). Four log calls of `mail/jobs.ts` print a server reply today: line 54 (`error.message` of the close), lines 77–79 (`statusError.message`), and lines 83 and 85 (the variable `message`, read from `error.message` at line 71). A server reply can hold an address; after this stage no log line reads it.
 
-**New field names** (`platform/log-fields.ts`): number `fetched`, `stored`, `uid_updated`, `returned`, `relocated`, `cross_copies`, `move_in_flight`, `skipped_own`, `ignored_below_cursor`, `folder_count`, `checked`, `copies`, `limit`, `moved`, `in_inbox`, `duplicates_removed`, `synced`, `not_found`, `failed_runs`; code `sync_mode`, `actor`.
+**New field names** (`platform/log-fields.ts`, each only if it is not there yet): number `fetched`, `stored`, `uid_updated`, `returned`, `relocated`, `cross_copies`, `move_in_flight`, `skipped_own`, `ignored_below_cursor`, `folder_count`, `checked`, `copies`, `limit`, `moved`, `in_inbox`, `duplicates_removed`, `synced`, `not_found`, `failed_runs`; code `sync_mode`, `actor`.
+
+**Lookup codes (host guard).** `modules/mail/host-guard.ts:58, 60, 65` put the system code (`ENOTFOUND`, `ENODATA`, …) only into the `SoftError` message, and `docs/known-alerts.md:31-37` tells DNS failures apart by it. Add `export class MailHostLookupError extends SoftError` in `host-guard.ts` with `readonly code: string` (the system code, or `"UNKNOWN"`) and `name = "MailHostLookupError"`; throw it at those three places with the same message. It stays a `SoftError` (retry unchanged), and `errorFields` gives `error=MailHostLookupError error_code=ENOTFOUND`. Test: `host-guard.test.ts` gets a case: a lookup that rejects with `{ code: "ENOTFOUND" }` throws a `MailHostLookupError` that is an `instanceof SoftError` with `code` `ENOTFOUND`.
 
 **Children.** In `jobs.ts` (the loop body per target) and in each `sync.ts` function that gets `mailboxId`: `const mailboxLog = log.with({ org_id, mailbox_id })` (`org_id` only where `ctx` is in scope, D6). `folder_key` is a `SyncFolderKey` (`INBOX`, `offers`, …), never a server folder path.
 
@@ -62,10 +64,10 @@ Two steps.
 
 ## Step 2 — Lint level, known alerts, README line
 
-**Files.** `eslint.config.js` (add `"apps/server/src/modules/mail/**/*.ts"` to the `error` block); `log-lint.test.ts` (one case: an old-form line in `apps/server/src/modules/mail/__log-fixture.ts` gives `[2]`; stage 02 moved the warn cases out of this folder); `docs/known-alerts.md` (D17: entries for `sync …`, `synced …`, `IMAP connection error`, `backfill …`); `deploy/README.md` § Logs, the sentence "A sync log line has the form `synced <mailbox id>: …`; a failure is `sync <mailbox id> failed: …`" → "A sync run writes `sync_done` with `mailbox_id` and the counts; a failure is `sync_failed` or `sync_soft_error` with `error` and `error_code`."
+**Files.** `eslint.config.js` (add `"apps/server/src/modules/mail/**/*.ts"` to the `error` block); `log-lint.test.ts` (one case: an old-form line in `apps/server/src/modules/mail/__log-fixture.ts` gives `[2]`; stage 02 moved the warn cases out of this folder); `docs/known-alerts.md` and `deploy/README.md` by D17 (known matches at `0a5c2ee`: `known-alerts.md:31` (also the DNS codes: write `error=MailHostLookupError error_code=<code>`), `:143`, `:151`, `:159`, `:502`, `:510`; `deploy/README.md:478` (`sync <mailbox id> rescan:` → `sync_folder_done` with `sync_mode=rescan`); run the per-row grep for the rest); `deploy/README.md` § Logs, the sentence "A sync log line has the form `synced <mailbox id>: …`; a failure is `sync <mailbox id> failed: …`" → "A sync run writes `sync_done` with `mailbox_id` and the counts; a failure is `sync_failed` or `sync_soft_error` with `error` and `error_code`."
 
 **Check.** `grep -n "synced <\|sync <mailbox id> failed" docs/known-alerts.md deploy/README.md` prints nothing.
 
-**Done when.** The lint case passes; the Proof of `plan.md` (`/tmp/f103-s08`) prints `PROOF_OK`; the final message gives the warning count and lists new field names and calls not in the table.
+**Done when.** The lint case passes; the Proof of `plan.md` (`/tmp/f103-s10`) prints `PROOF_OK`; the final message gives the warning count and lists new field names and calls not in the table.
 
 **Out of scope.** Sync behaviour; the F100 sync changes (if F100 has landed lines here, convert them by D16).

@@ -30,6 +30,6 @@ Two steps.
 
 **Goal.** The coordinator sees the backlog fall.
 
-**Done when.** The Proof of `plan.md` (stages 01–12, `/tmp/f103-s03`) prints `PROOF_OK`; the final message gives the `no-restricted-syntax` warning count of `lint.log` (at `0a5c2ee` minus stage 02 and 03: 395 − 55 − 70 = 270, other tickets may change it).
+**Done when.** The Proof of `plan.md` (stages 01–16, `/tmp/f103-s03`) prints `PROOF_OK`; the final message gives the `no-restricted-syntax` warning count of `lint.log` (at `0a5c2ee` minus stage 02 and 03: 395 − 55 − 70 = 270, other tickets may change it).
 
 **Out of scope.** The lint level of `scripts/` (stage 04).

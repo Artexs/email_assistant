@@ -1,8 +1,8 @@
-# F103 stage 14 — The log store (Compose profile `ops`)
+# F103 stage 18 — The log store (Compose profile `ops`)
 
-Part of [`../plan.md`](../plan.md). Review job before the land (the store config decides what is kept and who can read it). Needs stage 13 landed.
+Part of [`../plan.md`](../plan.md). Review job before the land (the store config decides what is kept and who can read it). Needs stage 17 landed.
 
-Three steps. No Docker daemon on the worker machine: the checks use `docker compose config` (V8) only. Stage 15 starts the store on the VPS.
+Three steps. No Docker daemon on the worker machine: the checks use `docker compose config` (V8) only. Stage 19 starts the store on the VPS.
 
 ## Step 1 — The two store services
 
@@ -59,14 +59,14 @@ Three steps. No Docker daemon on the worker machine: the checks use `docker comp
 
 - Add `vlogs-data: {}` and `vlagent-data: {}` to `volumes:`.
 - The images run as root (V7), so the agent reads Docker's `0640` files through the read-only mount.
-- The glob also matches the `json-file` logs of containers of other Compose projects on the same host, if any. The VPS runs only this project (stage 15 checks `docker ps`); write this limit into `docs/capabilities/logs.md` § Limits.
+- The glob also matches the `json-file` logs of containers of other Compose projects on the same host, if any. The VPS runs only this project (stage 19 checks `docker ps -a`); write this limit into `docs/capabilities/logs.md` § Limits.
 
 **Decisions.** P1, D12, D14. V1–V7.
 
-**Test** (add to `apps/server/src/deploy-logging.test.ts` of stage 13).
+**Test** (add to `apps/server/src/deploy-logging.test.ts` of stage 17).
 
-1. `docker compose -f deploy/compose.yaml --profile ops config --no-env-resolution --no-interpolate --format json`: `services.victorialogs.command` contains `-retentionPeriod=30d` and `-retention.maxDiskSpaceUsageBytes=1GiB`; `mem_limit` is 268435456 (256m); `ports[0].host_ip` is `127.0.0.1`; `services.vlagent.volumes` has the containers mount with `read_only: true`; `services.vlagent.ports` is absent; both log with `local`.
-2. Without `--profile ops`, `config` lists no `victorialogs` and no `vlagent`.
+1. `APP_PASSWORD=x MIGRATOR_PASSWORD=x POSTGRES_PASSWORD=x docker compose -f deploy/compose.yaml --profile ops config --no-env-resolution --format json` (no `--no-interpolate`: with it, `config` ignores profiles, V11): `services.victorialogs.command` contains `-retentionPeriod=30d` and `-retention.maxDiskSpaceUsageBytes=1GiB`; `mem_limit` is the string `"268435456"` (256m; V11) and the vlagent one `"67108864"`; `ports[0].host_ip` is `127.0.0.1`; `services.vlagent.volumes` has the containers mount with `read_only: true`; `services.vlagent.ports` is absent; both log with `local`.
+2. The same command without `--profile ops` lists no `victorialogs` and no `vlagent`.
 3. `bash deploy/check-logging.sh` passes (it reads `--profile '*'`, so it checks the two new services).
 
 **Check.** `bun test apps/server/src/deploy-logging.test.ts`; `bash deploy/check-logging.sh`.
@@ -102,12 +102,12 @@ Three steps. No Docker daemon on the worker machine: the checks use `docker comp
 
 **Files and text.**
 
-- `deploy/README.md` § Logs: keep the `jq` line as "without the store"; point to `bash deploy/logs.sh` for the filters; add a sub-section "Log store (search)": start `$C --profile ops up -d`; the UI is `https://<machine>.<tailnet>.ts.net:9443/select/vmui/` after `tailscale serve --bg --https=9443 http://127.0.0.1:9428` (stage 15 sets it up); three queries: one run (`"<run_id>" | unpack_json from _msg | sort by (_time)`), errors of the last hour (`_time:1h | unpack_json from _msg | filter level:=error | sort by (_time)`), counts per event (`_time:24h | unpack_json from _msg | stats by (event) count()`); retention 30 days, at most 1 GiB; memory 256 MB + 64 MB; only the `server` log enters the store; stop: `$C --profile ops stop victorialogs vlagent`.
-- `docs/capabilities/logs.md`: stage 11 creates it. If stage 11 has not landed yet, create it here by the template of `docs/capabilities/README.md` with the store part only (and its index row); stage 11 then adds the logger part. Add the store to "What it does now", the entry points (page `vmui` on the tailnet, CLI `deploy/logs.sh`), the data (VictoriaLogs volume `vlogs-data`, 30 days, 1 GiB), the limits (only `server` lines; the glob would also read another Compose project's `json-file` logs on the same host; no basic auth, tailnet only, D15), and a "Checked against" update.
+- `deploy/README.md` § Logs: keep the `jq` line as "without the store"; point to `bash deploy/logs.sh` for the filters; add a sub-section "Log store (search)": start `$C --profile ops up -d`; the UI is `https://<machine>.<tailnet>.ts.net:9443/select/vmui/` after `tailscale serve --bg --https=9443 http://127.0.0.1:9428` (stage 19 sets it up); three queries: one run (`"<run_id>" | unpack_json from _msg | sort by (_time)`), errors of the last hour (`_time:1h | unpack_json from _msg | filter level:=error | sort by (_time)`), counts per event (`_time:24h | unpack_json from _msg | stats by (event) count()`); retention 30 days, at most 1 GiB; memory 256 MB + 64 MB; only the `server` log enters the store; stop: `$C --profile ops stop victorialogs vlagent`.
+- `docs/capabilities/logs.md`: stage 13 creates it. If stage 13 has not landed yet, create it here by the template of `docs/capabilities/README.md` with the store part only (and its index row); stage 13 then adds the logger part. Add the store to "What it does now", the entry points (page `vmui` on the tailnet, CLI `deploy/logs.sh`), the data (VictoriaLogs volume `vlogs-data`, 30 days, 1 GiB), the limits (only `server` lines; the glob would also read another Compose project's `json-file` logs on the same host; no basic auth, tailnet only, D15), and a "Checked against" update.
 - `docs/known-alerts.md`: one entry `### Log store: vlagent reads no lines` (cause: the Docker root dir is not `/var/lib/docker`, or the server log driver is not `json-file`; fix: `docker info --format '{{.DockerRootDir}}'`, `docker inspect` of the server's log driver, then change the mount).
 
 **Check.** `bun test apps/server/src/capability-map.test.ts`; `bunx prettier --check deploy/README.md docs/capabilities/logs.md docs/known-alerts.md`.
 
-**Done when.** The Proof of `plan.md` for stages 13–14 (`/tmp/f103-s14`) prints `PROOF_OK`.
+**Done when.** The Proof of `plan.md` for stages 17–18 (`/tmp/f103-s18`) prints `PROOF_OK`.
 
-**Out of scope.** Starting anything on the VPS (stage 15). Alerts from the store (E8b uses the app, not the store).
+**Out of scope.** Starting anything on the VPS (stage 19). Alerts from the store (E8b uses the app, not the store).
