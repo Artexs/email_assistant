@@ -7,12 +7,16 @@ import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
 import {
+  getBreakGlassUserId,
+  getMembership,
   getOrgFeature,
+  getUserAuthProfile,
   insertMembership,
   insertOrganization,
   insertUser,
   lockOrganization,
   planStateOfRow,
+  setBreakGlassFlag,
   updateOrganization,
   updateOrganizationPlan,
   upsertOrgFeature,
@@ -267,6 +271,76 @@ export async function setOrgFeature(
     });
     log.info(`organization ${ctx.orgId} flag ${flag} ${enabled ? "on" : "off"} by ${input.actor}`);
     return { kind: "changed", flag, before: row ?? null, enabled };
+  };
+
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+export type SetBreakGlassResult =
+  | { kind: "set"; replaced: string | null } // replaced = the user id that lost the mark
+  | { kind: "unchanged" }
+  | { kind: "not_found" } // no such organization
+  | { kind: "not_owner" } // no membership, or the role is assistant
+  | { kind: "no_two_factor" }; // users.two_factor_enabled is false
+
+// F105 D11. One transaction: the organization lock, the checks, the old mark off, the new mark on, and one audit row per change.
+// The clear runs before the set: the partial unique index never sees two marks.
+export async function setBreakGlassOwner(
+  db: Db,
+  ctx: TenantContext,
+  input: { userId: string; actor: string; now: Date }
+): Promise<SetBreakGlassResult> {
+  return db.transaction().execute(async (trx): Promise<SetBreakGlassResult> => {
+    if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };
+    const membership = await getMembership(trx, ctx, input.userId);
+    if (!membership || membership.role !== "owner") return { kind: "not_owner" };
+    const profile = await getUserAuthProfile(trx, input.userId);
+    if (!profile?.twoFactorEnabled) return { kind: "no_two_factor" };
+
+    const current = await getBreakGlassUserId(trx, ctx);
+    if (current === input.userId) return { kind: "unchanged" };
+    if (current !== null) {
+      await setBreakGlassFlag(trx, ctx, current, false);
+      await recordAudit(trx, ctx, {
+        actor: input.actor,
+        event: auditEvents.orgBreakGlassCleared,
+        data: { user_id: current, reason: "replaced" },
+        at: input.now,
+      });
+    }
+    await setBreakGlassFlag(trx, ctx, input.userId, true);
+    await recordAudit(trx, ctx, {
+      actor: input.actor,
+      event: auditEvents.orgBreakGlassSet,
+      data: { user_id: input.userId },
+      at: input.now,
+    });
+    log.info("org_break_glass_set", { org_id: ctx.orgId, user_id: input.userId });
+    return { kind: "set", replaced: current };
+  });
+}
+
+export type ClearBreakGlassResult = { kind: "cleared"; userId: string } | { kind: "none" } | { kind: "not_found" };
+
+// Takes a transaction too: the operator reset (F105 stage 07) calls it inside its own.
+export async function clearBreakGlassOwner(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  input: { actor: string; now: Date; reason: "cli" | "two_factor_reset" }
+): Promise<ClearBreakGlassResult> {
+  const run = async (trx: Transaction<DB>): Promise<ClearBreakGlassResult> => {
+    if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };
+    const current = await getBreakGlassUserId(trx, ctx);
+    if (current === null) return { kind: "none" };
+    await setBreakGlassFlag(trx, ctx, current, false);
+    await recordAudit(trx, ctx, {
+      actor: input.actor,
+      event: auditEvents.orgBreakGlassCleared,
+      data: { user_id: current, reason: input.reason },
+      at: input.now,
+    });
+    log.info("org_break_glass_cleared", { org_id: ctx.orgId, user_id: current, reason: input.reason });
+    return { kind: "cleared", userId: current };
   };
 
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
