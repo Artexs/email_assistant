@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Decisions P2, D3, D4, D12.
 
 ## Step 1 — Sub-processor registry
 
-**Goal.** One typed list of every outside service that receives data, for the legal pages (stage 02) and the E10b security page.
+**Goal.** One typed list of the outside services that receive data for the legal pages and E10b.
 
 **Files.** New `packages/core/src/legal/subprocessors.ts` (exported from `@ea/core/web`: the web app imports only that entry, and the root re-exports it); its unit test. A server unit test next to the LLM provider registry or config for the checks that need server code.
 
