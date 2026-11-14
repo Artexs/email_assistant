@@ -16,7 +16,10 @@ export interface ActionView {
   waiting?: "send_limit"; // an approved send held by the send limit (F099 D11 a)
 }
 
-export type WouldDoAction = Pick<ActionView, "type" | "status" | "folder" | "reverse" | "kind" | "delegateId" | "waiting">;
+export type WouldDoAction = Pick<
+  ActionView,
+  "type" | "status" | "folder" | "reverse" | "kind" | "delegateId" | "waiting"
+>;
 
 const TENSES: Record<string, string> = {
   logged: "would",

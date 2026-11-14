@@ -1,3 +1,4 @@
+import type { SendLimitKind } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -15,7 +16,7 @@ const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 const TRIAL_WARNING_MS = 3 * DAY_MS;
 
-export type OperatorNoticeKind = "trial_ending" | "llm_cap" | "auth_error_24h" | "auth_mail_failed";
+export type OperatorNoticeKind = "trial_ending" | "llm_cap" | "auth_error_24h" | "auth_mail_failed" | "send_limit";
 
 export interface OperatorNoticeDeps {
   db: Db | Transaction<DB>;
@@ -25,7 +26,7 @@ export interface OperatorNoticeDeps {
 }
 
 export interface OperatorNotices {
-  // The hourly job: trial_ending and auth_error_24h, and one more try of every failed llm_cap notice.
+  // The hourly job: trial_ending and auth_error_24h, and one more try of every failed llm_cap and send_limit notice.
   run(): Promise<void>;
   // Called by the triage job. Never throws, never blocks.
   capReached(ctx: TenantContext, mailboxId: string, dayStart: Date, cap: number): void;
@@ -37,11 +38,13 @@ export interface OperatorNotices {
     code: string,
     now: Date
   ): void;
+  // Called by the committer after a hold commits. Never throws, never blocks.
+  sendLimitReached(ctx: TenantContext, hit: { mailboxId: string; limit: SendLimitKind; until: Date; at: Date }): void;
   // Tests only: resolves when no notify is in flight.
   idle(): Promise<void>;
 }
 
-interface RetryCap {
+interface Retry {
   ctx: TenantContext;
   kind: OperatorNoticeKind;
   text: string;
@@ -54,7 +57,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
   const doneKeys = new Set<string>();
   const inFlight = new Set<string>();
   const failedLogged = new Set<string>();
-  const retryCaps = new Map<string, RetryCap>();
+  const retries = new Map<string, Retry>();
   const running = new Set<Promise<void>>();
 
   async function sendOrLog(kind: OperatorNoticeKind, text: string): Promise<void> {
@@ -88,7 +91,8 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
           log.error(`operator notice ${kind} failed: ${telegramErrorLabel(error)}`);
         }
         // A capped mailbox calls `capReached` on every mail: the next hourly run retries, the triage loop does not.
-        if (kind === "llm_cap") retryCaps.set(key, { ctx, kind, text });
+        // A held mailbox calls `sendLimitReached` on every held send: same rule.
+        if (kind === "llm_cap" || kind === "send_limit") retries.set(key, { ctx, kind, text });
         return;
       }
 
@@ -102,7 +106,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
         log.error(`operator notice ${kind}: ${describeError(error)}`);
         return;
       }
-      retryCaps.delete(key);
+      retries.delete(key);
       doneKeys.add(key);
     } finally {
       inFlight.delete(key);
@@ -151,8 +155,8 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
   }
 
   async function runRetries(): Promise<void> {
-    for (const [key, entry] of [...retryCaps]) {
-      retryCaps.delete(key);
+    for (const [key, entry] of [...retries]) {
+      retries.delete(key);
       await start(entry.ctx, entry.kind, key, entry.text);
     }
   }
@@ -174,7 +178,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
       try {
         const dayIso = dayStart.toISOString();
         const key = `llm_cap:${mailboxId}:${dayIso}`;
-        if (retryCaps.has(key)) return;
+        if (retries.has(key)) return;
         void start(
           ctx,
           "llm_cap",
@@ -197,6 +201,21 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
         );
       } catch (error) {
         log.error(`operator notice auth_mail_failed: ${describeError(error)}`);
+      }
+    },
+
+    sendLimitReached(ctx, hit) {
+      try {
+        const key = `send_limit:${hit.mailboxId}:${hit.at.toISOString().slice(0, 10)}`;
+        if (retries.has(key)) return;
+        void start(
+          ctx,
+          "send_limit",
+          key,
+          `Mailbox ${hit.mailboxId} of org ${ctx.orgId} hit the send limit ${hit.limit} at ${hit.at.toISOString()}; its sends wait until ${hit.until.toISOString()}.`
+        );
+      } catch (error) {
+        log.error(`operator notice send_limit: ${describeError(error)}`);
       }
     },
 

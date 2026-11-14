@@ -1,3 +1,4 @@
+import type { SendLimits } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import {
@@ -58,6 +59,8 @@ export function committerDeps(input: {
   secrets: SecretBox;
   scope: ActionsScope;
   sendScope: SendScope;
+  sendLimits: SendLimits;
+  onSendLimited?: CommitterDeps["onSendLimited"];
 }): CommitterDeps {
   return {
     db: input.db,
@@ -68,6 +71,8 @@ export function committerDeps(input: {
     hooks: delegationHooks({ db: input.db }),
     scope: input.scope,
     sendScope: input.sendScope,
+    sendLimits: input.sendLimits,
+    ...(input.onSendLimited === undefined ? {} : { onSendLimited: input.onSendLimited }),
     now: () => new Date(),
   };
 }

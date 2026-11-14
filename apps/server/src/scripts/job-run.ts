@@ -5,7 +5,7 @@ import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
 import { configureMailHosts } from "../modules/mail";
-import { llmRoleTable, loadConfig, mailAllowLocal } from "../platform/config";
+import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -44,7 +44,13 @@ async function main(): Promise<number> {
         log.warn("do not run the committer here while the server runs on the same database: the log lines double");
         const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
         await createCommitterJob(
-          committerDeps({ db, secrets, scope: actionsScope(config), sendScope: sendScope(config) })
+          committerDeps({
+            db,
+            secrets,
+            scope: actionsScope(config),
+            sendScope: sendScope(config),
+            sendLimits: sendLimits(config),
+          })
         ).run();
       } else if (args.name === "platform.retention") {
         await createRetentionJob({ db, now }).run();
