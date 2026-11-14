@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { relationOf, senderHistorySchema } from "./sender-history";
 
 const base = { isDelegate: false, isVip: false, received: 10, bulkMails: 0, answered: 0, userMailsTo: 0 };

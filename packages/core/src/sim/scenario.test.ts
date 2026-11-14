@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
+
 import { miniScenario } from "./fixtures";
 import { scenarioSchema, validateScenario, type Scenario, type ScenarioIssueCode } from "./scenario";
+
+function at<T>(items: T[], index: number): T {
+  const item = items[index];
+  if (item === undefined) throw new Error(`no item at ${index}`);
+  return item;
+}
 
 function codes(s: Scenario): ScenarioIssueCode[] {
   return validateScenario(s).map((issue) => issue.code);
@@ -14,20 +21,20 @@ describe("validateScenario", () => {
 
   test("two personas with the same address give one duplicate_address naming keys only", () => {
     const s = structuredClone(miniScenario);
-    s.personas[1]!.address = s.personas[0]!.address;
+    at(s.personas, 1).address = at(s.personas, 0).address;
     const issues = validateScenario(s);
     expect(issues.map((issue) => issue.code)).toEqual(["duplicate_address"]);
-    expect(issues[0]!.detail).toContain("kasia");
-    expect(issues[0]!.detail).toContain("prezes");
+    expect(at(issues, 0).detail).toContain("kasia");
+    expect(at(issues, 0).detail).toContain("prezes");
     for (const persona of s.personas) {
-      expect(issues[0]!.detail).not.toContain(persona.displayName);
-      expect(issues[0]!.detail).not.toContain(persona.voice);
+      expect(at(issues, 0).detail).not.toContain(persona.displayName);
+      expect(at(issues, 0).detail).not.toContain(persona.voice);
     }
   });
 
   test("a persona address on a real host is address_not_reserved", () => {
     const s = structuredClone(miniScenario);
-    s.personas[4]!.address = "x@gmail.com";
+    at(s.personas, 4).address = "x@gmail.com";
     expect(codes(s)).toEqual(["address_not_reserved"]);
   });
 
@@ -39,7 +46,7 @@ describe("validateScenario", () => {
 
   test("a delegate that points to a client persona is delegate_not_delegate_group", () => {
     const s = structuredClone(miniScenario);
-    s.delegates[0]!.persona = "client-a";
+    at(s.delegates, 0).persona = "client-a";
     expect(codes(s)).toEqual(["delegate_not_delegate_group"]);
   });
 
@@ -48,7 +55,7 @@ describe("validateScenario", () => {
     s.personas = s.personas.filter((persona) => persona.group !== "phishing");
     const issues = validateScenario(s);
     expect(issues.map((issue) => issue.code)).toEqual(["missing_group"]);
-    expect(issues[0]!.detail).toContain("phishing");
+    expect(at(issues, 0).detail).toContain("phishing");
   });
 
   test("a Tuesday weekStart is not_monday", () => {
@@ -59,7 +66,7 @@ describe("validateScenario", () => {
 
   test("a deadline far after the week is deadline_out_of_range", () => {
     const s = structuredClone(miniScenario);
-    s.urgency.profile.deadlines[0]!.due = "2027-06-01";
+    at(s.urgency.profile.deadlines, 0).due = "2027-06-01";
     expect(codes(s)).toEqual(["deadline_out_of_range"]);
   });
 
@@ -74,14 +81,14 @@ describe("validateScenario", () => {
   test("unknown keys in vip, topics and delegates are reported", () => {
     const s = structuredClone(miniScenario);
     s.urgency.vip = ["nobody"];
-    s.topics[0]!.personas = ["nobody"];
-    s.delegates[0]!.persona = "nobody";
+    at(s.topics, 0).personas = ["nobody"];
+    at(s.delegates, 0).persona = "nobody";
     expect(codes(s).sort()).toEqual(["topic_persona_unknown", "unknown_persona", "vip_unknown"]);
   });
 
   test("a duplicate persona key is duplicate_key", () => {
     const s = structuredClone(miniScenario);
-    s.personas[1]!.key = "prezes";
+    at(s.personas, 1).key = "prezes";
     expect(codes(s)).toContain("duplicate_key");
   });
 });

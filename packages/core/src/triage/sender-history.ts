@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { categories } from "./categories";
 
 export const senderRelations = ["delegate", "vip", "bulk", "known", "new"] as const;
