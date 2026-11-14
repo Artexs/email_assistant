@@ -43,6 +43,12 @@ export const featureFlags = {
     epic: "E3a",
     removeBy: "2027-03-01",
   },
+  llm_pause_line: {
+    default: false,
+    description: "/status and the digest name an LLM pause and its cause.",
+    epic: "E3a",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

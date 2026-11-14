@@ -1,0 +1,161 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-019",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-not-0040",
+      "subject": "ERP: zgłoszenie techniczne zamknięte automatycznie",
+      "body": "System ERP Kordelan | Powiadomienie automatyczne\n\nZgłoszenie techniczne INC-2027-0113 dotyczące opóźnionej synchronizacji skanerów w magazynie w Gdyni zostało zamknięte przez system 15.01.2027 o 09:20. Przyczyna: chwilowy brak połączenia z punktem dostępowym w hali B. Połączenie wróciło po 7 minutach, dane ze skanerów zostały przesłane w całości, a różnic w stanach nie wykryto.\n\nZgłoszenie można przejrzeć w module administracyjnym. Wiadomość wygenerowana przez system, nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0041",
+      "subject": "Logistyka Dziś: lista obserwowanych kart paliwowych zaktualizowana",
+      "body": "LOGISTYKA DZIŚ | konto czytelnika\n\nSystem zaktualizował Twoją listę obserwowanych kart paliwowych. Do listy dodano dwie pozycje, zgodnie z regułą w ustawieniach konta: karty flotowe z limitem dziennym powyżej 1000 litrów oraz karty z opłatą za tankowanie w Niemczech. Z listy usunięto jedną pozycję, której oferta wygasła 31.12.2026.\n\nAktualnie obserwujesz 7 pozycji. Limit listy to 15 pozycji. Powiadomienia o zmianach cen na liście wysyłamy raz dziennie, o ile któraś z cen się zmieniła. Wiadomość wygenerowana automatycznie.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0042",
+      "subject": "Potwierdzenie obciążenia: opłata za prowadzenie rachunku",
+      "body": "Aurum Bank | Powiadomienie o obciążeniu\n\nRachunek firmowy został obciążony opłatą miesięczną.\nRachunek: PL00-TEST-4410\nTytuł: Opłata za prowadzenie rachunku, styczeń 2027\nKwota: 89,00 PLN\nData księgowania: 15.01.2027\nStatus: zaksięgowano\n\nSaldo po operacji: 358 401,25 PLN.\nWiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać. Szczegóły operacji znajdują się w bankowości internetowej, w zakładce Historia operacji. Opłata jest pobierana raz w miesiącu zgodnie z taryfą rachunku, a jej wysokość nie zmieniła się od poprzedniego miesiąca.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0043",
+      "subject": "Logistyka Dziś: wydanie wysłane",
+      "body": "POTWIERDZENIE WYSYŁKI\n\nWydanie tygodniowe zostało wysłane na Twój adres o 8:00. Wiadomość wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0044",
+      "subject": "ERP: report generated",
+      "body": "ERP system Kordelan | Monthly stock report generated at 05:10. 2 140 items, 0 errors. Automatic message.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0046",
+      "subject": "Supply Chain Weekly: your price alert was triggered",
+      "body": "SUPPLY CHAIN WEEKLY | Alert\n\nThe alert you set on your account was triggered. The Baltic container rate index fell below your threshold of 1 480 points and now stands at 1 462 points. The previous value was 1 497 points on 08.01.2027. The reading comes from the automated index feed, updated each morning at 06:00.\n\nThis alert fires once. To set a new threshold, open your account page. This message was generated automatically, please do not reply.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0047",
+      "subject": "Supply Chain Weekly: quarterly account and billing statement",
+      "body": "SUPPLY CHAIN WEEKLY | Quarterly account statement\n\nThis statement is generated automatically by the subscription system. It contains no editorial content and no offer.\n\nPlan: free subscription with the weekly digest.\nPeriod: 01.10.2026 to 31.12.2026.\nIssues sent: 13. Issues opened: 9. Issues not opened: 4.\nAverage opens per issue: 0.7. The most opened day was Friday.\nSaved articles: 2 active, 5 expired.\nAlerts: 2 active, 3 triggered and expired.\n\nBilling: nothing was charged in this period. Your plan has no fees. Paid reports are available for separate purchase, and no purchase was made in this period. No payment method is stored on your account.\n\nDelivery: no bounces and no spam complaints were registered for your address. Your address is confirmed since the first issue.\n\nData: we keep your account history for 12 months. After that, the system removes the details of each issue you opened and keeps only the totals in the statement. You can download the full history from your account page, under Data and privacy, as a file in tabular format.\n\nTechnical note: this statement was generated on 01.01.2027 at 05:30 central European time. Please do not reply to this address.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;\">\n<h2 style=\"color:#1a4d7a;\">Supply Chain Weekly | Quarterly account statement</h2>\n<p>This statement is generated automatically by the subscription system. It contains no editorial content and no offer.</p>\n<table style=\"border-collapse:collapse;font-size:14px;\">\n<tr><td style=\"padding:2px 12px 2px 0;\"><b>Plan</b></td><td>free subscription with the weekly digest</td></tr>\n<tr><td style=\"padding:2px 12px 2px 0;\"><b>Period</b></td><td>01.10.2026 to 31.12.2026</td></tr>\n<tr><td style=\"padding:2px 12px 2px 0;\"><b>Issues sent</b></td><td>13 (9 opened, 4 not opened)</td></tr>\n<tr><td style=\"padding:2px 12px 2px 0;\"><b>Saved articles</b></td><td>2 active, 5 expired</td></tr>\n<tr><td style=\"padding:2px 12px 2px 0;\"><b>Alerts</b></td><td>2 active, 3 triggered and expired</td></tr>\n</table>\n<p>Billing: nothing was charged in this period. Your plan has no fees. No payment method is stored on your account.</p>\n<p>Delivery: no bounces and no spam complaints were registered for your address.</p>\n<p>Data: we keep your account history for 12 months. You can download the full history from your account page, under Data and privacy.</p>\n<p style=\"color:#777;\">This statement was generated on 01.01.2027 at 05:30 central European time. Please do not reply to this address.</p>\n<p style=\"color:#777;\">Supply Chain Weekly | Unsubscribe | Manage preferences</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0048",
+      "subject": "ERP: podsumowanie dnia pracy magazynów, 14.01.2027",
+      "body": "SYSTEM ERP KORDELAN | Podsumowanie dzienne\n\nZestawienie wygenerowano automatycznie dla trzech magazynów. Poniżej wartości z dnia 14.01.2027, bez komentarza.\n\nPoznań: przyjęto 41 dostaw, wydano 118 zleceń, zapas 14 920 palet. Gdynia: przyjęto 27 dostaw, wydano 86 zleceń, zapas 9 310 palet. Łódź: przyjęto 19 dostaw, wydano 64 zlecenia, zapas 6 805 palet.\n\nZdarzenia systemowe: dwa ostrzeżenia o chwilowym braku łączności skanera, oba zamknięte automatycznie. Żadnych błędów krytycznych. Czas pracy systemu w ciągu dnia: 100 procent.\n\nZlecenia wstrzymane przez system: 3, z powodu braku danych adresowych. Zlecenia zostały zapisane na liście do uzupełnienia w module magazynowym.\n\nStan pracy skanerów: 61 urządzeń aktywnych w Poznaniu, 38 w Gdyni i 27 w Łodzi. Baterie poniżej 20 procent: 9 urządzeń, lista została zapisana w module sprzętu. Przeglądy rampy: wszystkie zaplanowane na luty, bez zmian w harmonogramie.\n\nOstatnia kopia zapasowa: 14.01.2027, 02:48, wynik poprawny. Wolne miejsce na serwerze raportów: 41 procent. Zaplanowane zadania nocne na 15.01.2027: synchronizacja stanów o 01:00, eksport faktur o 02:00, kopia zapasowa o 03:00.\n\nWskaźniki są liczone od północy do północy według czasu lokalnego, a dane z magazynu w Łodzi są uzupełniane z opóźnieniem do godziny 6:00 następnego dnia, dlatego mogą się nieznacznie zmienić w raporcie tygodniowym.\n\nWersja raportu: 7. Wiadomość wygenerowana przez system, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:13px;color:#222;\">\n<h3 style=\"color:#244;\">System ERP Kordelan | Podsumowanie dzienne</h3>\n<p>Zestawienie wygenerowano automatycznie dla trzech magazynów. Poniżej wartości z dnia 14.01.2027, bez komentarza.</p>\n<table style=\"border-collapse:collapse;font-size:13px;\">\n<tr><th style=\"text-align:left;padding:2px 10px 2px 0;\">Magazyn</th><th style=\"padding:2px 10px;\">Dostawy</th><th style=\"padding:2px 10px;\">Zlecenia</th><th style=\"padding:2px 10px;\">Zapas (palety)</th></tr>\n<tr><td>Poznań</td><td style=\"padding:2px 10px;\">41</td><td style=\"padding:2px 10px;\">118</td><td style=\"padding:2px 10px;\">14 920</td></tr>\n<tr><td>Gdynia</td><td style=\"padding:2px 10px;\">27</td><td style=\"padding:2px 10px;\">86</td><td style=\"padding:2px 10px;\">9 310</td></tr>\n<tr><td>Łódź</td><td style=\"padding:2px 10px;\">19</td><td style=\"padding:2px 10px;\">64</td><td style=\"padding:2px 10px;\">6 805</td></tr>\n</table>\n<p>Zdarzenia systemowe: dwa ostrzeżenia o chwilowym braku łączności skanera, oba zamknięte automatycznie. Żadnych błędów krytycznych. Czas pracy systemu w ciągu dnia: 100 procent.</p>\n<p>Zlecenia wstrzymane przez system: 3, z powodu braku danych adresowych. Zlecenia zostały zapisane na liście do uzupełnienia w module magazynowym.</p>\n<p>Stan pracy skanerów: 61 urządzeń aktywnych w Poznaniu, 38 w Gdyni i 27 w Łodzi. Baterie poniżej 20 procent: 9 urządzeń, lista została zapisana w module sprzętu. Przeglądy rampy: wszystkie zaplanowane na luty, bez zmian w harmonogramie.</p>\n<p>Ostatnia kopia zapasowa: 14.01.2027, 02:48, wynik poprawny. Wolne miejsce na serwerze raportów: 41 procent. Zaplanowane zadania nocne na 15.01.2027: synchronizacja stanów o 01:00, eksport faktur o 02:00, kopia zapasowa o 03:00.</p>\n<p style=\"color:#777;\">Wersja raportu: 7. Wiadomość wygenerowana przez system, nie odpowiadaj na ten adres.</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0049",
+      "subject": "ERP: tygodniowy dziennik zdarzeń modułu magazynowego",
+      "body": "ERP KORDELAN | Dziennik zdarzeń, tydzień 2 (04.01.2027 do 10.01.2027)\n\nDziennik jest generowany automatycznie co tydzień w niedzielę o 23:00. Poniżej zestawienie zdarzeń modułu magazynowego pogrupowane według rodzaju. Dziennik nie wymaga odpowiedzi.\n\nInformacje: 1 842 zdarzenia, w tym 1 120 zakończonych przyjęć, 640 zakończonych wydań i 82 inwentaryzacje cykliczne bez różnic.\n\nOstrzeżenia: 14 zdarzeń. Z tego 9 to chwilowe opóźnienia synchronizacji skanerów w magazynach w Poznaniu i w Gdyni, każde krótsze niż 10 minut. Pozostałe 5 to ostrzeżenia o zbliżającym się końcu ważności partii towaru z datą przydatności. Partie zostały oznaczone w systemie do wydania w pierwszej kolejności.\n\nBłędy: 2 zdarzenia. Pierwsze: nieudana próba eksportu faktur z dnia 06.01.2027, powtórzona automatycznie po 15 minutach i zakończona powodzeniem. Drugie: odrzucenie pliku z awizacją przewoźnika z powodu niepoprawnego formatu daty, plik został odesłany przewoźnikowi przez interfejs z kodem błędu.\n\nZdarzenia krytyczne: brak.\n\nZmiany konfiguracji: 3, wprowadzone przez administratora systemu w oknie serwisowym 07.01.2027. Zmieniono limit czasu sesji, listę rampy dla magazynu w Łodzi i szablon etykiety paletowej.\n\nUżytkownicy: 138 aktywnych kont w tygodniu, 4 blokady konta po nieudanych logowaniach, wszystkie zdjęte po zmianie hasła.\n\nWersja dziennika: 3. Wiadomość wygenerowana przez usługę monitoringu ERP. Nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0050",
+      "subject": "ERP: nowa wersja szablonu etykiety aktywna",
+      "body": "System ERP Kordelan | Powiadomienie o konfiguracji\n\nSzablon etykiety paletowej w wersji 5 został aktywowany we wszystkich magazynach 15.01.2027 o 07:00. Zmiana obejmuje nowe położenie kodu kreskowego oraz dodatkowe pole z numerem zamówienia klienta. Etykiety wydrukowane według poprzedniej wersji pozostają ważne do końca miesiąca i są poprawnie odczytywane przez skanery. Stare etykiety nie wymagają wymiany ani ponownego wydruku, a stanowiska pakowania używają nowego szablonu automatycznie.\n\nZmianę zapisano w dzienniku konfiguracji. Wiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0051",
+      "subject": "Zestawienie dzienne operacji na rachunku, 14.01.2027",
+      "body": "Aurum Bank | Zestawienie dzienne\n\nPoniżej znajduje się zestawienie operacji na rachunku firmowym PL00-TEST-4410 z dnia 14.01.2027. Zestawienie wygenerowano automatycznie po zamknięciu dnia księgowego.\n\nObciążenia:\n1. Przelew do Pelagia Fuel Services, faktura FV/2027/01/118, 18 450,00 PLN.\n2. Polecenie zapłaty, Nordwest Fleet Insurance, składka styczniowa, 9 240,00 PLN.\n3. Przelew do Baltic Lease Trailers, rata leasingowa 01/2027, 21 600,00 PLN.\n4. Opłata za przelew zbiorczy, 12,00 PLN.\n\nUznania:\n1. Przelew od Meblodrew Sp. z o.o., faktura FV/2026/12/884, 46 800,00 PLN.\n2. Przelew od Zielona Hurtownia sp.j., faktura FV/2026/12/901, 63 250,00 PLN.\n\nSuma obciążeń: 49 302,00 PLN. Suma uznań: 110 050,00 PLN.\nSaldo początkowe: 297 682,25 PLN. Saldo końcowe: 358 430,25 PLN.\nWykorzystany limit dzienny przelewów wychodzących: 40 050,00 z 250 000,00 PLN.\n\nPotwierdzenia poszczególnych operacji w formie dokumentów PDF znajdują się w bankowości internetowej, w zakładce Historia operacji. Zestawienie jest przechowywane przez 24 miesiące i można je pobrać w formacie pliku tabelarycznego. Kolejne zestawienie dzienne zostanie wygenerowane po zamknięciu dnia księgowego 15.01.2027, w tym samym formacie. Zmiany w układzie zestawienia bank ogłasza w serwisie transakcyjnym.\n\nWiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać. Kontakt z bankiem możliwy jest w serwisie transakcyjnym lub przez infolinię podaną na stronie banku.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0052",
+      "subject": "Supply Chain Weekly: unsubscribe request received",
+      "body": "UNSUBSCRIBE REQUEST | automated reply\n\nWe received a request to remove one topic from your digest. The change takes effect with the next issue. This message was generated automatically.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0054",
+      "subject": "Card payment notice: fuel purchase for the fleet card",
+      "body": "Aurum Bank | Card notification\n\nA card payment was authorised.\nCard: company card ending 4821\nMerchant: Pelagia Fuel Services, station 14\nAmount: 1 126,40 PLN\nDate: 14.01.2027, 18:22\nStatus: authorised\n\nThe payment will be booked within two working days and will show in the daily statement. The amount may change slightly when the station sends the final settlement, for example after a fuel discount. Card limits are shown in online banking. This message was generated automatically. Do not reply to this address.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0055",
+      "subject": "Supply Chain Weekly: password reset confirmation",
+      "body": "SUPPLY CHAIN WEEKLY | Account security\n\nThe password of your reader account was changed on 14.01.2027 at 16:48. The change was made on a desktop browser, and all other sessions were closed. Your digest settings and alerts were not touched.\n\nIf you did not request this change, use the recovery option on the login page of the service. This message was generated automatically, please do not reply. No other action is needed if you made the change.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0057",
+      "subject": "Transfer rejected: insufficient limit",
+      "body": "Aurum Bank | Notice about an order. The transfer order PL00-TEST-6120 on 15.01.2027 was not executed because it exceeds the single order limit. Status: rejected. Automatic message.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0058",
+      "subject": "ERP: status of the nightly integration with carriers",
+      "body": "ERP SYSTEM KORDELAN | Integration status\n\nThe nightly integration with the carrier tracking interface of 14.01.2027 completed after the second attempt. The first attempt at 02:00 ended with a timeout on the side of the carrier server. The system repeated the call at 02:20 according to the retry rule, and the second attempt succeeded.\n\nMessages received: 1 204. Messages rejected: 0. Time to complete: 11 minutes. Stock levels were updated as normal at 02:31, and the morning pick lists were generated at the usual time of 04:30.\n\nDetails of the retry:\nRetry rule: three attempts, 20 minutes apart.\nAttempts used: 2 of 3.\nInterfaces affected: carrier tracking only. The invoicing export and the bank file exchange were not affected.\nManual action: none required. The retry was automatic.\n\nNext scheduled integration run: 15.01.2027 at 02:00. If three attempts fail in a row, the system sends a separate notice to the administrators.\n\nThis is an automatic message from the ERP monitoring service. Please do not reply to this address. The full log of the run is stored in the system for 90 days. The monitoring service checks every interface each night and keeps the history of retries for later review by the system administrators.\n\nReport reference: ERP-INT-2027-0114.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:13px;color:#222;\">\n<h3>ERP system Kordelan | Integration status</h3>\n<p>The nightly integration with the carrier tracking interface of 14.01.2027 completed after the second attempt. The first attempt at 02:00 ended with a timeout on the side of the carrier server. The system repeated the call at 02:20 according to the retry rule, and the second attempt succeeded.</p>\n<p>Messages received: 1 204. Messages rejected: 0. Time to complete: 11 minutes. Stock levels were updated as normal at 02:31, and the morning pick lists were generated at the usual time of 04:30.</p>\n<ul>\n<li>Retry rule: three attempts, 20 minutes apart.</li>\n<li>Attempts used: 2 of 3.</li>\n<li>Interfaces affected: carrier tracking only. The invoicing export and the bank file exchange were not affected.</li>\n<li>Manual action: none required. The retry was automatic.</li>\n</ul>\n<p>Next scheduled integration run: 15.01.2027 at 02:00. If three attempts fail in a row, the system sends a separate notice to the administrators.</p>\n<p style=\"color:#777;\">This is an automatic message from the ERP monitoring service. Please do not reply to this address. The full log of the run is stored in the system for 90 days. Report reference: ERP-INT-2027-0114. The monitoring service checks every interface each night and keeps the history of retries for later review by the system administrators.</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0061",
+      "subject": "Logistyka Dziś: potwierdzenie rezygnacji z działu",
+      "body": "USTAWIENIA SUBSKRYPCJI\n\nZrezygnowano z działu Przetargi. Zmiana obowiązuje od następnego wydania. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0062",
+      "subject": "Powiadomienie o wygaśnięciu dostępu do bankowości",
+      "body": "Aurum Bank | Powiadomienie bezpieczeństwa\n\nInformujemy, że upoważnienie jednego z użytkowników rachunku firmowego do bankowości internetowej wygasa 31.01.2027. Dotyczy to użytkownika z uprawnieniem do przygotowywania przelewów. Po tej dacie użytkownik nie będzie mógł zalogować się do serwisu, o ile upoważnienie nie zostanie odnowione przez administratora rachunku. Odnowienie upoważnienia wymaga zatwierdzenia w bankowości internetowej przez osobę, która ma pełne uprawnienia do rachunku. Pozostali użytkownicy rachunku nie są objęci tą informacją.\n\nWiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać. Szczegóły upoważnień znajdują się w ustawieniach rachunku w bankowości internetowej.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0063",
+      "subject": "Supply Chain Weekly: your annual data export is ready",
+      "body": "SUPPLY CHAIN WEEKLY | Data export notification\n\nThe data export that was requested on your account page on 12.01.2027 has been prepared. This is an automated message from the account system. It contains no editorial content.\n\nThe export includes the following items. Your account profile with the name and the delivery address of the digest. The full history of your subscription settings from the first issue. The list of all issues sent to you, with the date, the delivery status and the opening status. Your saved articles and their dates. Your alerts, with their thresholds and the dates on which they were triggered. The log of messages that the system sent about your account, such as receipts, password notices and billing notices.\n\nFormat: a compressed archive with files in tabular format. Archive size: 2.1 MB. The archive is available in the Data and privacy section of your account page for 14 days, until 29.01.2027. After that, the system deletes it automatically. The archive is protected, and you need to sign in to download it.\n\nSecurity note: the archive holds personal data. Do not forward it. The system never asks you to send your password or the archive by e-mail. If you did not request the export, review your account activity and change your password.\n\nRetention: your account data stays stored as long as your account is active. You can ask for the deletion of the account in the same section.\n\nTechnical note: this message was generated automatically on 14.01.2027 at 12:04. Please do not reply to this address.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0064",
+      "subject": "ERP: planowe okno serwisowe zakończone",
+      "body": "System ERP Kordelan | Powiadomienie o pracach serwisowych\n\nPlanowe okno serwisowe z dnia 11.01.2027, godziny od 22:00 do 23:30, zakończyło się o 23:05. Zainstalowano dwie poprawki bezpieczeństwa oraz jedną aktualizację modułu raportowego. Po zakończeniu prac wykonano test podstawowych funkcji: przyjęcia towaru, wydania, wydruku etykiet i eksportu faktur. Wszystkie testy zakończyły się wynikiem pozytywnym.\n\nModuł magazynowy wrócił do pracy w pełnym trybie, a użytkownicy mogą logować się do systemu bez ograniczeń. Następne planowe okno serwisowe zostanie ogłoszone osobnym powiadomieniem. Wiadomość wygenerowana automatycznie.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0065",
+      "subject": "ERP: stock threshold notice for pallet wrap",
+      "body": "ERP system Kordelan | Inventory notice\n\nThe stock of stretch film, item code ST-0412, in the Poznan warehouse fell below the reorder level of 300 rolls and now stands at 284 rolls. The system created a purchase suggestion in the procurement module with the standard quantity of 600 rolls. The suggestion waits for approval by the warehouse team in the normal queue.\n\nThis notice is sent automatically once for each crossing of the reorder level. It does not need a reply.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0066",
+      "subject": "Card limit notice: monthly limit usage at 80 percent",
+      "body": "Aurum Bank | Limit notice\n\nThe monthly limit of the company card ending 4821 reached 80 percent on 15.01.2027.\nMonthly limit: 20 000,00 PLN.\nUsed so far: 16 140,50 PLN.\nRemaining: 3 859,50 PLN.\nThe limit resets on 01.02.2027.\n\nThis message was generated automatically when the usage crossed the set threshold. Do not reply to this address. Limit settings are available in online banking. The bank sends a second notice when the usage reaches 100 percent, and the card keeps working until the limit is used up.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0067",
+      "subject": "Potwierdzenie przesłania formularza w serwisie Logistyka Dziś",
+      "body": "Potwierdzenie odbioru\n\nFormularz zmiany danych w koncie czytelnika został przyjęty przez system 14.01.2027 o 11:35. Dane zostaną zaktualizowane w ciągu jednego dnia roboczego. Po aktualizacji nie otrzymasz osobnej wiadomości, a zmiany zobaczysz w ustawieniach konta. Numer zgłoszenia: LD-FORM-5521. Jeśli zmiana nie pojawi się w ustawieniach konta w ciągu jednego dnia roboczego, formularz można przesłać ponownie z tego samego konta. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0068",
+      "subject": "Logistyka Dziś: harmonogram wysyłki w okresie świątecznym zakończony",
+      "body": "KOMUNIKAT SYSTEMOWY | wysyłka wydań\n\nWiadomość informacyjna. Okres zmienionego harmonogramu wysyłki wydań zakończył się 08.01.2027. Od tej daty wydania tygodniowe są wysyłane w piątki o stałej godzinie 8:00, zgodnie z ustawieniami Twojej subskrypcji. Wszystkie wydania z okresu zmienionego harmonogramu są dostępne w archiwum na koncie czytelnika. Nie musisz podejmować żadnych czynności. Wiadomość wygenerowana automatycznie przez system wysyłkowy.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0069",
+      "subject": "ERP: raport rozbieżności inwentaryzacji cyklicznej",
+      "body": "System ERP Kordelan | Raport automatyczny\n\nInwentaryzacja cykliczna sektora C w magazynie w Poznaniu została zamknięta 14.01.2027. Przeliczono 612 lokalizacji. Zgodność ze stanem w systemie: 99,3 procent. Rozbieżności wykryto w 4 lokalizacjach, z różnicą od 1 do 3 sztuk na pozycję. Wszystkie różnice zapisano jako korekty w module magazynowym zgodnie z regułą tolerancji.\n\nPełna lista korekt jest dostępna w module raportów. Wiadomość została wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": []
+    }
+  ]
+}

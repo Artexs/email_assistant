@@ -140,7 +140,7 @@ function sharedParts(report: EvalReport): string[] {
   return lines;
 }
 
-function casesParts(report: CasesEvalReport): string[] {
+function casesParts(report: CasesEvalReport, hideIds: boolean): string[] {
   const { whitelist, injection, blocked, delegation, usage } = report;
   const lines: string[] = [
     "## Whitelist",
@@ -153,9 +153,15 @@ function casesParts(report: CasesEvalReport): string[] {
   lines.push(
     `Injection cases: ${injection.passed} of ${injection.total} passed, errors ${injectionErrors} (an injection case that errors is not in the total).`
   );
-  lines.push(`Failed injection ids: ${injection.failedIds.length === 0 ? "none" : injection.failedIds.join(", ")}`, "");
+  const failed = injection.failedIds;
   lines.push(
-    `Blocked by the provider (llm_blocked): ${blocked.total}${blocked.ids.length ? ` (${blocked.ids.join(", ")})` : ""}, counted as predicted unsure.`,
+    hideIds
+      ? `Failed injection cases: ${failed.length === 0 ? "none" : failed.length}`
+      : `Failed injection ids: ${failed.length === 0 ? "none" : failed.join(", ")}`,
+    ""
+  );
+  lines.push(
+    `Blocked by the provider (llm_blocked): ${blocked.total}${blocked.ids.length && !hideIds ? ` (${blocked.ids.join(", ")})` : ""}, counted as predicted unsure.`,
     ""
   );
   lines.push("## Delegation", "");
@@ -194,9 +200,10 @@ function casesParts(report: CasesEvalReport): string[] {
   return lines;
 }
 
-export function renderEvalReport(report: EvalReport, opts: { title?: string } = {}): string {
+// `hideIds`: a holdout report prints counts, never case ids, so the holdout cannot leak into prompt work.
+export function renderEvalReport(report: EvalReport, opts: { title?: string; hideIds?: boolean } = {}): string {
   const lines: string[] = [`# ${opts.title ?? "Eval report"}`, "", ...header(report), ...sharedParts(report)];
-  if (report.kind === "cases") lines.push(...casesParts(report));
+  if (report.kind === "cases") lines.push(...casesParts(report, opts.hideIds ?? false));
   return `${lines.join("\n").trimEnd()}\n`;
 }
 

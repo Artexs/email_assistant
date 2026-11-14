@@ -11,6 +11,7 @@ import {
   llmRoleTable,
   loadConfig,
   mailAllowLocal,
+  mailSyncCron,
   operatorChatId,
   sendLimits,
   testMailRule,
@@ -94,7 +95,8 @@ if (config.WEB_BASE_URL !== undefined && config.OPERATOR_CONTACT === undefined) 
 }
 
 const scheduler = createScheduler();
-scheduler.add("mail.sync", "*/5 * * * *", mailSync.run);
+scheduler.add("mail.sync", mailSyncCron(config), mailSync.run);
+log.info("mail_sync_interval", { minutes: Number(config.MAIL_SYNC_EVERY_MIN) });
 scheduler.add("platform.heartbeat", "*/5 * * * *", heartbeat.tick);
 
 // A3: when a scope is `all`, one start line says whom the jobs act on (counts only, no ids). A DB error does not stop the start.
@@ -242,6 +244,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     sendScope: scopeOfSends,
     testMail: testMailRule(config),
     operatorContact: config.OPERATOR_CONTACT ?? null,
+    syncEveryMin: Number(config.MAIL_SYNC_EVERY_MIN),
   });
   telegram = runtime;
   scheduler.add("channels.notifier", "*/15 * * * * *", () => {

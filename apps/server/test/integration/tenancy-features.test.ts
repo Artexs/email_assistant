@@ -172,6 +172,7 @@ describe("org_features", () => {
         { flag: "security_log", enabled: false, source: "default" },
         { flag: "review_command", enabled: false, source: "default" },
         { flag: "mistake_capture", enabled: false, source: "default" },
+        { flag: "llm_pause_line", enabled: false, source: "default" },
       ]);
     });
   });
