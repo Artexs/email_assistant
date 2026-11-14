@@ -2,6 +2,8 @@
 
 # S6f Production on the home VPS
 
+> **Moved 2026-11-14:** S6f is now `F108-e7-t5-production-on-the-vps`. This file is history; the ticket decides.
+
 > **Scope change 2026-11-12:** this segment was "Hosted EU production" (Hetzner, domain, Caddy, image registry, pilot move, staging). The user cut it (master plan § "Scope change", P22, P23): production stays on the home VPS behind Tailscale. The old plan is in Git history (`9cdada6`). The file name stays so that the links in the master plan keep working.
 
 Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (finding 3, P22, P23, D23 (only the timing-test fix), D25, D30, D31 (backup event), D28 (ADR 0019 as changed), "Rules for every step"); ADR 0017 stays as it is. Also replaces the Limen ticket `spec/features/planned/F021-server-env-scope/` (close it with an `outcome.md` when this segment is done). Needs: S6a–S6e merged. Every step on the VPS waits for the user's go.
