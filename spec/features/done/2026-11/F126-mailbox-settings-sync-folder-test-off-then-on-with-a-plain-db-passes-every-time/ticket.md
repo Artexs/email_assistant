@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-14
+landed: 2026-11-14
 ---
 
 # F126 · The sync-folder CLI test passes every time

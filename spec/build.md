@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟠 ACTIVE): The sync-folder CLI test passes every time
 - `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
 - `F100-e3a-measure` (🟠 ACTIVE): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟠 ACTIVE): E7-T2 Platform controls (send limits, feature flags, operator console, security log)
@@ -72,6 +71,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
 - `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
 - `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
@@ -81,5 +81,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F078-auth-verifications-cleanup` (🟢 PROVEN): Expired Better Auth `auth_verifications` rows are deleted by the retention job; landed 2026-11-14
 - `F030-telegram-picker-already-saved` (🟢 PROVEN): Telegram picker: say "Already saved" in the message too; landed 2026-11-14
 - `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
-- `F090-llm-roles` (🟢 PROVEN): LLM calls name a role; provider, model, cap share and prompt version follow the role; landed 2026-11-13
-- 2026-11: 62 landed. spec/features/done/2026-11/
+- 2026-11: 63 landed. spec/features/done/2026-11/
