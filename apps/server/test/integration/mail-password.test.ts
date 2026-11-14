@@ -6,6 +6,7 @@ import type { Transaction } from "kysely";
 
 import {
   connectMailbox,
+  HostNotAllowedError,
   MailAuthError,
   MailboxNotFoundError,
   updateMailboxPassword,
@@ -107,6 +108,47 @@ describe("updateMailboxPassword", () => {
       const rows = await auditRows(trx, ctx.orgId);
       expect(rows).toHaveLength(1);
       expect(rows[0]?.data).toEqual({ mailbox_id: mailboxId, reactivated: true });
+    });
+  });
+
+  test("host_blocked becomes active; the new password is stored; one audit row", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, mailboxId, deps } = await setup(trx, "host_blocked");
+      const result = await updateMailboxPassword(deps(), ctx, { mailboxId, password: "new-pass", now });
+      expect(result).toEqual({ status: "active", reactivated: true });
+      expect((await storedSecret(trx, mailboxId)).password).toBe("new-pass");
+      const mailbox = await getMailbox(trx, ctx, mailboxId);
+      expect(mailbox?.status).toBe("active");
+      expect(mailbox?.status_changed_at.toISOString()).toBe(now.toISOString());
+      const rows = await auditRows(trx, ctx.orgId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.data).toEqual({ mailbox_id: mailboxId, reactivated: true });
+    });
+  });
+
+  test("a host the guard refuses (IMAP) keeps host_blocked and stores nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, mailboxId, deps } = await setup(trx, "host_blocked");
+      const fail = deps({ openProvider: () => Promise.reject(new HostNotAllowedError()) });
+      await expect(updateMailboxPassword(fail, ctx, { mailboxId, password: "new-pass", now })).rejects.toBeInstanceOf(
+        HostNotAllowedError
+      );
+      expect((await storedSecret(trx, mailboxId)).password).toBe("old-pass");
+      expect((await getMailbox(trx, ctx, mailboxId))?.status).toBe("host_blocked");
+      expect(await auditRows(trx, ctx.orgId)).toHaveLength(0);
+    });
+  });
+
+  test("a host the guard refuses (SMTP) keeps host_blocked and stores nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, mailboxId, deps } = await setup(trx, "host_blocked");
+      const fail = deps({ verifySmtp: () => Promise.reject(new HostNotAllowedError()) });
+      await expect(updateMailboxPassword(fail, ctx, { mailboxId, password: "new-pass", now })).rejects.toBeInstanceOf(
+        HostNotAllowedError
+      );
+      expect((await storedSecret(trx, mailboxId)).password).toBe("old-pass");
+      expect((await getMailbox(trx, ctx, mailboxId))?.status).toBe("host_blocked");
+      expect(await auditRows(trx, ctx.orgId)).toHaveLength(0);
     });
   });
 

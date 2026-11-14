@@ -138,14 +138,15 @@
       "body": "Szanowny Panie Wiktorze,\n\nw nawiązaniu do wcześniejszej korespondencji z klientem z Göteborga informuję, że szwedzki urząd celny potwierdził wejście w życie nowych wymogów dokumentowych dla importu żywności chłodzonej. Od pierwszego lutego do każdego zgłoszenia trzeba dołączyć elektroniczne potwierdzenie temperatury z trasy. Nasze biuro odpraw przygotowało już szablon i przetestowało go na dwóch zleceniach.\n\nDla Państwa kierowców zmiana jest bezobsługowa, bo dane z rejestratorów temperatury trafiają do nas automatycznie. Wiadomość ma charakter informacyjny.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
       "thread": [
         {
-          "subject": "Re: Customs documents for Sweden",
-          "body": "Dear Karin, thank you for the questions. Our broker will confirm the requirements this week. Best regards, Wiktor Szalewski"
-        },
-        {
           "subject": "Customs documents for Sweden",
           "body": "Dear Mr Szalewski, could you tell us if any new temperature documents will be needed for the February shipments? Karin Lindqvist"
+        },
+        {
+          "subject": "Re: Customs documents for Sweden",
+          "body": "Dear Karin, thank you for the questions. Our broker will confirm the requirements this week. Best regards, Wiktor Szalewski"
         }
-      ]
+      ],
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "b-inf-0101",

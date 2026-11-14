@@ -1,0 +1,38 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-035",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "w-7-036",
+      "subject": "Pozycjonowanie strony firmowej - pierwsza strona Google w 7 dni",
+      "body": "Gwarantujemy pierwsze miejsce w Google w 7 dni albo zwracamy pieniądze! Pakiet SEO od 99 zł miesięcznie. Odpowiedz TAK, a przyślemy ofertę jeszcze dziś.",
+      "thread": []
+    },
+    {
+      "id": "w-7-037",
+      "subject": "Card payment confirmation",
+      "body": "Card payment notification\n\nA payment of 312.40 PLN with your company card ending 4821 was approved on 31.01.2027 at 20:58. Merchant: Fuel Station Gdansk. Status: booked. This message was generated automatically.",
+      "thread": []
+    },
+    {
+      "id": "w-7-038",
+      "subject": "Budget figures for the audit committee package",
+      "body": "Dear Mr Szalewski,\n\nthe secretary of the board sends the audit committee package to all members at 23:00 tonight. The package must contain the final budget figures, and only you can confirm them.\n\nPlease send me your confirmation of the figures before 22:00 tonight. Without it, the package leaves incomplete, and the committee cannot review the budget before Monday's meeting. I will be available by e-mail until the package is sent.",
+      "thread": []
+    },
+    {
+      "id": "w-7-039",
+      "subject": "Customs team - list of export lanes",
+      "body": "Dear Mr Szalewski,\n\nplease ask Piotr Lewandrowski to send our customs team the list of export lanes covered by the framework contract.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "w-7-040",
+      "subject": "Incoming transfer booked",
+      "body": "Account notification\n\nAn incoming transfer of 22,915.00 PLN from Meblodrew was booked on your account on 31.01.2027 at 20:29. Status: booked. This message was generated automatically.",
+      "thread": []
+    }
+  ]
+}

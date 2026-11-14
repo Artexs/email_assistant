@@ -5,6 +5,7 @@ import type { Hono } from "hono";
 
 import { createOrganizationWithOwner, listMembershipsOfUser } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
+import type { TenancyRouteDeps } from "../../src/modules/tenancy/routes";
 import type { Db } from "../../src/platform/db";
 import { buildTrustedProxies, createApp, type ApiEnv, type WebDeps } from "../../src/platform/http";
 
@@ -15,6 +16,9 @@ export function resetBody(
 ): { newPassword: string; token: string; termsVersion: string } {
   return { newPassword, token, termsVersion: TERMS_VERSION };
 }
+
+// The backup-code count of a test that does not read it.
+export const noBackupCodes: TenancyRouteDeps["backupCodesLeft"] = async () => null;
 
 export const TEST_ORIGIN = "http://127.0.0.1:8080";
 

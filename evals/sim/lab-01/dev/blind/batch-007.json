@@ -338,13 +338,13 @@
       "thread": [
         {
           "from": "wiktor.szalewski@kordelan.test",
-          "subject": "Fuel card agreement renewal",
-          "body": "Dear Mr Szalewski,\n\nthe agreement for your fleet fuel cards ends on 31.01.2027. We propose two renewal tiers, details in the attachment.\n\nEwelina Marszalek"
+          "subject": "Fuel card agreement",
+          "body": "Ewelina, thank you for the call. Please send me both renewal tiers in writing, then I can look at them properly.\n\nWiktor Szalewski"
         },
         {
           "from": "ewelina.marszalek@paliwa-flota.test",
-          "subject": "Re: Fuel card agreement renewal",
-          "body": "Ewelina, thank you. I will review both tiers and come back to you.\n\nWiktor Szalewski"
+          "subject": "Re: Fuel card agreement",
+          "body": "Dear Mr Szalewski,\n\nthe agreement for your fleet fuel cards ends on 31.01.2027. We propose two renewal tiers, details in the attachment.\n\nEwelina Marszalek"
         }
       ],
       "attachments": []

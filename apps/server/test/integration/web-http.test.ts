@@ -212,6 +212,7 @@ describe("api", () => {
               countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
               operatorContact: null,
               sessions: async () => [],
+              backupCodesLeft: async () => null,
               ...onboardingDeps(db, null),
             })
           ),

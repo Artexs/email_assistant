@@ -86,14 +86,15 @@
       "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">ze swojej strony chcę Cię poinformować o stanie prac nad budżetem, bo dostałem od Magdaleny aktualizację harmonogramu i uznałem, że warto, abyś wiedział, jak to wygląda z perspektywy rady. Piszę nieco dłużej, ale tylko informacyjnie.</p><p style=\"margin:0 0 12px 0\">Księgowość zamknęła kontrolę rozliczeń za grudzień. Wszystkie salda zgadzają się z danymi banku, a różnice kursowe zostały zaksięgowane. Wersja robocza budżetu na ten rok jest gotowa i zawiera trzy scenariusze cen paliw. Komitet audytu przeanalizował ją i nie zgłosił zastrzeżeń.</p><p style=\"margin:0 0 12px 0\">Termin zamknięcia budżetu rocznego, czyli piątego lutego, jest realny. Do tego czasu zarząd ma przekazać radzie ostateczną wersję z uwzględnieniem uwag z posiedzenia 28 stycznia. Księgowość zapowiedziała, że przygotuje uwagi w ciągu dwóch dni po posiedzeniu.</p><p style=\"margin:0 0 12px 0\">Przy okazji: rada otrzyma od księgowości także krótkie zestawienie największych odchyleń od budżetu z ubiegłego roku, wraz z objaśnieniem przyczyn. Wersja robocza zawiera to zestawienie jako załącznik, a komitet audytu uznał je za wystarczające i nie prosi o dodatkowe wyjaśnienia. Nie musisz mi odpowiadać na tę wiadomość. Wszystkie materiały są już w portalu rady, więc jeśli ktoś z rady zapyta, wiesz, gdzie je znajdziesz.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
       "thread": [
         {
-          "subject": "Re: Budżet - termin zamknięcia",
-          "body": "Panie Przewodniczący, potwierdzam. Księgowość przygotuje wersję ostateczną po posiedzeniu. Wiktor"
-        },
-        {
           "subject": "Budżet roczny - harmonogram",
           "body": "Szanowny Panie Prezesie, harmonogram zamknięcia budżetu przesyłam w załączeniu. Najważniejsze terminy to 28 stycznia i 5 lutego. Magdalena Czerniak"
+        },
+        {
+          "subject": "Re: Budżet - termin zamknięcia",
+          "body": "Panie Przewodniczący, potwierdzam. Księgowość przygotuje wersję ostateczną po posiedzeniu. Wiktor"
         }
-      ]
+      ],
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "b-inf-0190",
