@@ -210,7 +210,9 @@ describe("orgStatusLines", () => {
     expect(lines?.[0]).toMatch(
       new RegExp(`^org ${a.orgId} plan=trial trial_ends_at=\\S+ max_mailboxes=\\d+ resumed_at=-$`)
     );
-    expect(lines?.[1]).toMatch(/^ {2}mailboxes total=2 active=1 paused=0 auth_error=1 last_sync=(never|\S+)$/);
+    expect(lines?.[1]).toMatch(
+      /^ {2}mailboxes total=2 active=1 paused=0 auth_error=1 host_blocked=0 last_sync=(never|\S+)$/
+    );
     expect(lines?.[2]).toBe("  llm_calls_today=2 telegram_chats=1");
     expect(lines).toHaveLength(3);
 
