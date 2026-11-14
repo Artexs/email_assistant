@@ -175,6 +175,12 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - A form that sits under polling (`useResource` reloads every 30 s) keeps the user's typing with `lib/draft.ts` (`nextDraft`) and the hook `lib/use-draft.ts`: a new server value moves in only while the form has no change.
 - The Telegram answer words live in `packages/core/src/digest/answers.ts`. The web keeps its own keys in `en.ts` (every string stays there for S6), and `lib/activity-text.test.ts` ties each key to the core function (S5d, B2). Change a Telegram answer: the test fails until `en.ts` follows.
 
+## Capability map (PD-009)
+
+- A change that lands a feature or changes behaviour updates `docs/capabilities/<capability>.md` in the same change; once E10a exists, a user-visible change also updates its user doc page (en) (PD-100).
+- Behaviour rules go to the capability page, not to `docs/architecture.md`. A plan that names a section of `architecture.md` that now holds a link line writes to the page it links.
+- The page template and the index: `docs/capabilities/README.md`; `apps/server/src/capability-map.test.ts` checks paths, scripts and ADR numbers.
+
 ## Tests
 
 - `bun run test:unit` and `bun run test:int` run on the local Bun. `bun run test:unit:ci` and `bun run test:int:ci` run on the Bun in `.bun-version`, the version of CI and the server image (`scripts/ci-bun.sh`). A stage proof uses the `:ci` scripts. A test that passes only on the local Bun is a failing test.

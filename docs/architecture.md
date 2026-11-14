@@ -3,6 +3,7 @@
 > **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (`spec/features/done/2026-11/F016-mvp-plan-review/plan.md`), the user's answers and a second review of the rewrite (`spec/features/done/2026-11/F009-docs-and-adr-review/plan.md`):
 > pilot mailbox = Interia over IMAP, pilot host = home VPS, own Postgres. Based on `docs/product-brief.md`.
 > Decisions are in `docs/decisions/` (ADR 0001–0017). The old specs in `.ai/architecture/` are history. When they disagree with this file, this file wins.
+> Behaviour detail per capability (rules, entry points, limits): `docs/capabilities/` (PD-009). This file keeps goals, context, layout, module rules, ports, invariants, data model, security and deployment.
 
 ## 1. Goals and constraints
 

@@ -4,7 +4,7 @@ AI email assistant for managers: it categorizes mail, delegates tasks, filters s
 Now: Astro starter in `src/`, old Bun backend in `backend/`. Target (from S0): Bun workspaces `apps/server`, `apps/web`, `packages/core`; own Postgres; IMAP mail; Telegram; Gemini.
 
 Product (source of truth): `docs/product-brief.md`.
-Architecture and stack: `docs/architecture.md`, decisions in `docs/decisions/` (ADRs).
+Architecture and stack: `docs/architecture.md`, decisions in `docs/decisions/` (ADRs). What each capability does now: `docs/capabilities/`.
 Code patterns: @docs/code-patterns.md (`.ai/AGENT.md` is history: its factory pattern is no longer used).
 Old specs in `.ai/` are history: read them for detail, not for decisions.
 
