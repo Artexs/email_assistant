@@ -17,15 +17,15 @@
 - **D6 SSO session** (stage 05): a callback session is `sso` and ends 12 h after `sso_started_at`; a session made from it inherits both (F9); the trigger keeps the cap through refreshes (F5).
 - **D7 TOTP and SSO** (F105 D27): an SSO sign-in asks no TOTP code (the IdP owns its second factor); the operator console refuses an SSO session. Rejected: a TOTP step after the callback.
 - **D8 SSO required** (stage 06): a refused password sign-in looks like a wrong password, without lockout count or mail; the reset request gives the generic answer; the break-glass owner with TOTP passes; only the operator reopens passwords (`--require off`, a provider removal or a new issuer or domain). Rejected: an `SSO_REQUIRED` code (user enumeration, F082 B1).
-- **D9 Domain proof** (stage 08): our own TXT record with a keyed-hash token; no stored token. Rejected: the plugin's verify endpoint (user session; W4).
-- **D10 `org:sso`** (stages 07–08) and **D11 `org:member`** (stage 09): operator CLIs. The client secret comes from stdin only. Discovery also refuses a host that resolves outside global unicast (spike C3). ADR 0026 point 7 (end a member's sessions): the operator does it on the owner's request (Q3).
+- **D9 Domain proof** (stage 09): our own TXT record with a keyed-hash token; no stored token. Rejected: the plugin's verify endpoint (user session; W4).
+- **D10 `org:sso`** (stages 07–09) and **D11 `org:member`** (stage 10): operator CLIs. The client secret comes from stdin only. Discovery also refuses a host that resolves outside global unicast (spike C3). ADR 0026 point 7 (end a member's sessions): the operator does it on the owner's request (Q3).
 - **D12 Audit**: `sso.*`, `org.member_added`, `web.member_sessions_ended`; ids, codes, domains, counts. Our resolver's refusals get a row; plugin failures and refused passwords a log line.
 - **D13 Flag `sso_sign_in`** (E7-T7, default off, remove by 2027-06-01): off → the callback rejects (`sso_off`) and `GET /api/sign-in-options` says `sso: false`.
-- **D14 Web** (stages 10–12): company sign-in only when a usable provider exists; no password, TOTP or delete controls without a password; a read-only console block.
+- **D14 Web** (stages 11–13): company sign-in only when a usable provider exists; no password, TOTP or delete controls without a password; a read-only console block.
 - **D15 Secrets.** Client secret, IdP tokens, `id_token`, codes and the IdP e-mail never reach a log line, error, audit row, stdout or snapshot. The client secret stays in clear in `sso_providers.oidc_config` (the plugin reads the row; no read hook) and is never exported (Q1).
 - **D16 Edge cases.** One user has one SSO identity; the tenant stays the oldest membership. A CLI write is one transaction that locks the organization row; discovery and DNS run before it; a repeat writes nothing. A callback locks the provider row, so a removal waits and then ends that session. A crash after the callback commit can lose one `sso.login` row (accepted). Tests move `sso_started_at` by SQL, not the clock.
 - **D17 Fake IdP** `apps/server/test/fake-oidc.ts` (stage 03): `node:crypto` RS256 on `Bun.serve` at `http://127.0.0.1:<port>`; no new dependency.
-- **D18 Issuer CHECK** (spike C1): `https://…` or exactly `http://127.0.0.1:<port>` (D17). Safe in production: sign-in fetches refuse loopback outside `trustedOrigins`, which lists no IdP (F6); `org:sso` refuses IP literals (D10). Rejected: a TLS fake IdP, a test-only CHECK ([plan-refresh-1.md](plan-refresh-1.md)).
+- **D18 Issuer CHECK** (spike C1): `https://…` or exactly `http://127.0.0.1:<port>` (D17). Safe in production: sign-in fetches refuse loopback outside `trustedOrigins`, which lists no IdP or loopback origin (F6; stage 15 check 9); `org:sso` refuses IP literals, and `http:` outside `allowOrigins`, which its entry leaves empty (stages 07–08). Rejected: a TLS fake IdP, a test-only CHECK ([plan-refresh-1.md](plan-refresh-1.md)).
 
 ## Owner decisions (defaults taken; `questions.md`)
 
@@ -38,9 +38,9 @@ Q1 client secret in clear; Q2 SSO skips TOTP, operators use a password; Q3 opera
 3. Plugin paths outside D2 answer 404; no user can create a provider [03].
 4. "SSO required" refuses member passwords and resets like a wrong password; the break-glass owner with TOTP passes [06].
 5. An operator with an SSO session gets `403 password_sign_in_required` [05].
-6. `org:sso` and `org:member` do every command of D10, D11; prerequisites exit 1 [07–09].
-7. Web texts in pl and en [10–12]; docs and ADR 0026 [13]; VPS [14]; Entra [15].
-8. D15 holds (log capture in stages 03–09).
+6. `org:sso` and `org:member` do every command of D10, D11; prerequisites exit 1 [07–10].
+7. Web texts in pl and en [11–13]; docs and ADR 0026 [14]; VPS [15]; Entra [16].
+8. D15 holds (log capture in stages 03–10).
 
 ## Rules for every stage
 
@@ -55,45 +55,44 @@ Q1 client secret in clear; Q2 SSO skips TOTP, operators use a password; Q3 opera
 
 ## Proof
 
-Server stages (02–09), NN = stage number:
+Server stages (02–10), NN = stage number:
 
 ```
 mkdir -p /tmp/f119-sNN && bun run lint > /tmp/f119-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f119-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f119-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f119-sNN/int.log 2>&1 && echo PROOF_OK
 ```
 
-Web stages (10–12): add `&& bun run web:build > /tmp/f119-sNN/web.log 2>&1` before `echo`. Stages 01, 13–15: their stage file. One bash call after the last commit.
+Web stages (11–13): add `&& bun run web:build > /tmp/f119-sNN/web.log 2>&1` before `echo`. Stages 01, 14–16: their stage file. One bash call after the last commit.
 
 ## Owner checkpoints and steps
 
 - G1: passed by the coordinator on 2026-11-14 from spike.md; the owner can change Q1 (secret storage) before stage 03. PD-040, PD-041: S1–S10 PASS, no decision broke.
-- **U1 (stage 15):** the owner opens the Entra test tenant (Q10), registers an app, makes test users and pastes the client secret into `org:sso --set --client-secret-stdin`. No agent reads it.
+- **U1 (stage 16):** the owner opens the Entra test tenant (Q10), registers an app, makes test users and pastes the client secret into `org:sso --set --client-secret-stdin`. No agent reads it.
 - After stage 02 lands: `bun run db:migrate` in the main checkout.
 
 ## Review
 
-Review job before the land: stages 02–11 (auth, migration, tenant data, a public route, Polish texts), model `claude-opus-5-5`. Stages 12, 13 land on the worker's proof.
+Review job before the land: stages 02–12 (auth, migration, tenant data, a public route, Polish texts), model `claude-opus-5-5`. Stages 13, 14 land on the worker's proof.
 
 ## Stages
 
-| # | Stage | Needs | Mark |
-| - | ----- | ----- | ---- |
-| 01 | [Spike](stages/stage-01-spike.md) | — | done; G1 passed |
-| 02 | [Migration](stages/stage-02-migration.md) | 01 | `[risky]` migration |
-| 03 | [Plugin, allow-list, fake IdP](stages/stage-03-plugin.md) | 02 | `[risky]` auth, `bun.lock` |
-| 04 | [Member resolution and SSO audit](stages/stage-04-resolve-member.md) | 03 | `[risky]` auth |
-| 05 | [SSO session: mark, 12 h, operator](stages/stage-05-sso-session.md) | 04 | `[risky]` auth |
-| 06 | [SSO required](stages/stage-06-sso-required.md) | 05 | `[risky]` auth |
-| 07 | [`org:sso` set, show, remove](stages/stage-07-org-sso-provider.md) | 04 | `[risky]` security |
-| 08 | [Domain proof and the require switch](stages/stage-08-domain-and-require.md) | 06, 07 | `[risky]` security |
-| 09 | [`org:member`](stages/stage-09-org-member.md) | 05, 07 | `[risky]` tenant data |
-| 10 | [Read surfaces, security-log kinds](stages/stage-10-read-surfaces.md) | 08, 09 | |
-| 11 | [Login page](stages/stage-11-login-page.md) | 10 | review |
-| 12 | [Account card, console block](stages/stage-12-account-console.md) | 10 | |
-| 13 | [Docs and ADR](stages/stage-13-docs.md) | 11, 12 | |
-| 14 | [VPS deploy](stages/stage-14-vps.md) | 13 | `[risky]` real system |
-| 15 | [Entra check](stages/stage-15-entra.md) | 14, U1 | `[risky]` real system |
+- 01 [Spike](stages/stage-01-spike.md): done; G1 passed.
+- 02 [Migration](stages/stage-02-migration.md): needs 01; `[risky]` migration.
+- 03 [Plugin, allow-list, fake IdP](stages/stage-03-plugin.md): needs 02; `[risky]` auth, `bun.lock`.
+- 04 [Member resolution and SSO audit](stages/stage-04-resolve-member.md): needs 03; `[risky]` auth.
+- 05 [SSO session: mark, 12 h, operator](stages/stage-05-sso-session.md): needs 04; `[risky]` auth.
+- 06 [SSO required](stages/stage-06-sso-required.md): needs 05; `[risky]` auth.
+- 07 [Discovery and provider service](stages/stage-07-sso-provider-service.md): needs 04; `[risky]` security.
+- 08 [`org:sso` CLI: show, set, remove](stages/stage-08-org-sso-cli.md): needs 07; `[risky]` security.
+- 09 [Domain proof and the require switch](stages/stage-09-domain-and-require.md): needs 06, 08; `[risky]` security.
+- 10 [`org:member`](stages/stage-10-org-member.md): needs 05, 07; `[risky]` tenant data.
+- 11 [Read surfaces, security-log kinds](stages/stage-11-read-surfaces.md): needs 09, 10.
+- 12 [Login page](stages/stage-12-login-page.md): needs 11; review.
+- 13 [Account card, console block](stages/stage-13-account-console.md): needs 11.
+- 14 [Docs and ADR](stages/stage-14-docs.md): needs 12, 13.
+- 15 [VPS deploy](stages/stage-15-vps.md): needs 14; `[risky]` real system.
+- 16 [Entra check](stages/stage-16-entra.md): needs 15, U1; `[risky]` real system.
 
-Parallel: 07 ∥ 05–06; 09 ∥ 06, 08; 11 ∥ 12.
+Parallel: 07–08 ∥ 05–06; 10 ∥ 06, 08–09; 12 ∥ 13.
 
 ## How to run (coordinator)
 
@@ -103,13 +102,13 @@ Parallel: 07 ∥ 05–06; 09 ∥ 06, 08; 11 ∥ 12.
 
 ## Planning progress
 
-Stages 01–15 `[written]`; `wc -w` (refresh 1): plan 1,499, stages 698, 697, 698, 695, 666, 600, 700, 691, 675, 689, 691, 544, 681, 389, 514.
+Stages 01–16 `[written]`; `wc -w` (refresh 1): plan 1,493, stages 698, 697, 698, 695, 673, 600, 699, 498, 696, 675, 689, 691, 544, 681, 432, 514.
 
 ## Cold review
 
-Review 1 (`claude-opus-5-5`, `[risky]` stages): FAIL, 2 blocking, 16 notes; 15 fixed, N10 accepted ([plan-review-1.md](plan-review-1.md), [response](plan-review-1-response.md)). Refresh 1: review 2 below.
+Review 1 (`claude-opus-5-5`, `[risky]` stages): FAIL, 2 blocking, 16 notes; 15 fixed, N10 accepted ([plan-review-1.md](plan-review-1.md), [response](plan-review-1-response.md)). Refresh 1: review 2 (`claude-opus-5-5`): FAIL, 1 blocking, 8 notes ([plan-review-2.md](plan-review-2.md)); B1 and N1–N8 fixed (N6 also to the coordinator: questions.md Q11); old stage 07 split into 07 and 08 (plan-refresh-1.md).
 
 ## Log
 
 - 2026-11-14: planned at 69473f4e; cold review 1 applied.
-- 2026-11-14: refresh 1 at 4f653db8 after the spike: C1–C5 applied, G1 passed ([plan-refresh-1.md](plan-refresh-1.md)).
+- 2026-11-14: refresh 1 at 4f653db8 after the spike: C1–C5 applied, G1 passed, review 2 applied, 16 stages ([plan-refresh-1.md](plan-refresh-1.md)).

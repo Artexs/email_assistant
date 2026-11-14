@@ -1,22 +1,22 @@
-# F119 stage 12 — Account card and console block
+# F119 stage 13 — Account card and console block
 
-Part of [`../plan.md`](../plan.md). Needs stage 10. May run next to stage 11 (both add keys to `en.ts` and `pl.ts`: on a land conflict, merge `master` and prove again).
+Part of [`../plan.md`](../plan.md). Needs stage 11. May run next to stage 12 (both add keys to `en.ts` and `pl.ts`: on a land conflict, merge `master` and prove again).
 
-## Step 12.1 — Account card for a member without a password
+## Step 13.1 — Account card for a member without a password
 
 **Goal.** A member who signs in only by SSO sees no control that needs a password (D14).
 
 **Files.** `apps/web/src/components/settings/AccountCard.tsx` (and the sections it holds), `en.ts`, `pl.ts`.
 
-**Interfaces.** `/api/me` `hasPassword` and `signInMethod` (stage 10).
+**Interfaces.** `/api/me` `hasPassword` and `signInMethod` (stage 11).
 - `hasPassword: false` → hide "Change password", the two-factor section and the delete block; show `acct_sso_only`. Language, sessions and "sign out everywhere" stay.
 - `signInMethod: "sso"` and `hasPassword: true` → everything stays; add `acct_sso_session` under the sessions list.
 
-## Step 12.2 — Operator console SSO block
+## Step 13.2 — Operator console SSO block
 
 **Files.** `apps/web/src/islands/OperatorPage.tsx` (or its organization detail component), `en.ts`, `pl.ts`.
 
-**Interfaces.** `operatorOrgDetailSchema.sso` (stage 10). `null` → `op_sso_none`. Else one block: domain, proof (`op_sso_proof_dns`, `op_sso_proof_attested`, `op_sso_proof_none`), required yes or no, linked members (a plural with `tp()`), break-glass ready or missing. Read-only; the block says `op_sso_cli` (writes go through `org:sso`).
+**Interfaces.** `operatorOrgDetailSchema.sso` (stage 11). `null` → `op_sso_none`. Else one block: domain, proof (`op_sso_proof_dns`, `op_sso_proof_attested`, `op_sso_proof_none`), required yes or no, linked members (a plural with `tp()`), break-glass ready or missing. Read-only; the block says `op_sso_cli` (writes go through `org:sso`).
 
 **Decisions.** D14. Texts word for word; informal "ty"; at most one colon per line.
 
@@ -42,8 +42,8 @@ Part of [`../plan.md`](../plan.md). Needs stage 10. May run next to stage 11 (bo
 2. Console block: `sso: null` → `op_sso_none`; `{ domain: "x.test", proof: "attested", required: true, linkedMembers: 2, breakGlassReady: false }` → the domain, `op_sso_proof_attested`, required yes, "2 linked members", `op_sso_break_glass_missing`.
 3. `i18n.test.ts`: no Polish text equals its English text; placeholders match; the plural has one, few, many.
 
-**Check.** The web Proof of `plan.md` (`/tmp/f119-s12`).
+**Check.** The web Proof of `plan.md` (`/tmp/f119-s13`).
 
 **Done when.** The three tests pass; `bun run web:build` passes; Proof prints `PROOF_OK`.
 
-**Out of scope.** Writes from the console; a members page; the security-log kinds (stage 10).
+**Out of scope.** Writes from the console; a members page; the security-log kinds (stage 11).

@@ -1,6 +1,6 @@
-# F119 stage 15 — Real check with a Microsoft Entra test tenant
+# F119 stage 16 — Real check with a Microsoft Entra test tenant
 
-Part of [`../plan.md`](../plan.md). `[risky]` (real system, a real identity provider). **The coordinator runs it with the owner** (owner step U1). Needs stage 14. It closes the ticket.
+Part of [`../plan.md`](../plan.md). `[risky]` (real system, a real identity provider). **The coordinator runs it with the owner** (owner step U1). Needs stage 15. It closes the ticket.
 
 ## Owner step U1 (the owner's hands, about 30 min)
 

@@ -19,7 +19,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 03.
 3. A link exists (`auth_accounts`: this `provider_id`, `account_id` = `subject`) and its user's oldest membership is the provider's organization → `link` (`firstLink: false`; a changed IdP e-mail is accepted). A link whose user fails that → `not_a_member`.
 4. No link. `emailVerified === false` → `email_unverified`. The e-mail, lower-cased, has the provider `domain` after the last `@` (a subdomain fails, Q8), and for the issuer `https://accounts.google.com` `hostedDomain` equals the domain (cold review N4) → else `domain_mismatch`.
 5. A user with `users.email` = that e-mail whose oldest membership (the session tenant, `requireTenant`) is the provider's organization → else `not_a_member` (cold review N5: another organization's IdP never opens this tenant).
-6. That user already has an `auth_accounts` row of this provider with another `account_id` → `identity_mismatch` (the IdP account was made again; the operator runs `org:member --unlink-sso`, stage 09).
+6. That user already has an `auth_accounts` row of this provider with another `account_id` → `identity_mismatch` (the IdP account was made again; the operator runs `org:member --unlink-sso`, stage 10).
 7. Else `link` with `firstLink: true`.
 
 The adapter never answers the plugin `continue`: with `requestSignUp: true` that makes a user (spike C5, S9).
@@ -58,4 +58,4 @@ The adapter never answers the plugin `continue`: with `requestSignUp: true` that
 
 **Done when.** The twelve tests pass; Proof prints `PROOF_OK`.
 
-**Out of scope.** The session mark and the 12 h cap (stage 05), the security-log kinds (stage 10).
+**Out of scope.** The session mark and the 12 h cap (stage 05), the security-log kinds (stage 11).

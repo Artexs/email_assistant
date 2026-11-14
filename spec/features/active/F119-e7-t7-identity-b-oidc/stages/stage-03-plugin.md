@@ -4,15 +4,11 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). The only `bun.lock` change
 
 ## Step 03.1 — The fake IdP test helper
 
-**Goal.** A local OIDC provider (D17).
-
-**Files.** `apps/server/test/fake-oidc.ts` (new).
-
-**Interfaces.**
+**Interfaces** (D17).
 - `startFakeOidc(opts?: { emailClaim?: boolean }): Promise<FakeOidc>`; `FakeOidc = { issuer, origin, clientId, clientSecret, setUser(user: { sub; email; emailVerified?; hd? }), stop() }`.
 - Issuer `http://127.0.0.1:<random port>` (the stage 02 CHECK allows it, D18): discovery, `/jwks`, `/authorize` (auto-consent redirect with `code` and `state`; checks `client_id`, `redirect_uri`, PKCE S256), `/token` (client secret, one-time code, verifier; an RS256 `id_token` with the standard claims, `email`, `email_verified`, optional `hd`), `/userinfo`.
 - Keys from `node:crypto`. No dependency, no `jose` or `@better-auth/*` import.
-- Tests add `fake.origin` to `AuthDeps.trustedOrigins` (sign-in fetches refuse a private host otherwise, F6). Production adds no IdP origin there.
+- Tests add `fake.origin` to `AuthDeps.trustedOrigins` (sign-in fetches refuse a private host otherwise, F6); production never does.
 - `ssoSignIn(app, fake, { email, providerId?, requestSignUp? })` (`apps/server/test/sso-helpers.ts`): sign-in → IdP → callback with a cookie jar and fresh `x-client-ip`; returns `{ status, location, sessionCookie | null }`.
 
 ## Step 03.2 — Wire the plugin
@@ -24,7 +20,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). The only `bun.lock` change
 **Interfaces** (`platform/auth-sso.ts`; later stages use them):
 - `isAllowedSsoPath(method, path): boolean` — true only for `POST /sign-in/sso` and `GET /sso/callback/<one segment>`; `isAllowedAuthPath` calls it.
 - `ssoPlugin(deps: { resolveMember?: (identity: SsoIdentity) => Promise<SsoResolution> })`; absent = reject `sso_off`.
-- `SsoIdentity = { providerId: string; issuer: string; subject: string; email: string; emailVerified: boolean | null; hostedDomain: string | null }` (`accountKey.accountId`, `accountKey.issuer`, `providerUser.email`; `email_verified` and `hd` from `verifiedIdTokenClaims`, null when absent; cold review 1, N4).
+- `SsoIdentity = { providerId: string; issuer: string; subject: string; email: string; emailVerified: boolean | null; hostedDomain: string | null }` (from `accountKey`, `providerUser.email` and `verifiedIdTokenClaims`; null when absent; N4, spike C5).
 - `SsoResolution = { kind: "link"; userId; orgId; firstLink: boolean } | { kind: "reject"; code: SsoRefusal; orgId: string | null }`.
 - `SsoRefusal` in `@ea/core` (`packages/core/src/web/sso.ts`, new): `"no_provider" | "sso_off" | "domain_mismatch" | "email_unverified" | "not_a_member" | "identity_mismatch"`. The plugin gets `link` (`profile: "preserve"`) or `reject` (the code).
 - `SSO_SESSION_SECONDS = 43_200` (stage 05).
@@ -47,7 +43,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). The only `bun.lock` change
 7. The 11th `/sign-in/sso` in 60 s from one address: 429.
 8. Log capture over tests 4–7, with stdout and stderr (better-call writes a 500 by `console.error`, spike C4): no client secret, no `code`, no `id_token`, no `ann@x.test`.
 9. `POST /sign-in/sso` with `{ organizationSlug: "a" }` or with `domain`: 400, no `better_auth_error` line.
-10. A callback with an unknown `state`: a redirect to `/login?sso=failed&error=state_mismatch` (spike C4); the log reason is `state_mismatch` (a new `BETTER_AUTH_REASONS` entry).
+10. A callback with an unknown `state`: a redirect to `/login?sso=failed&error=state_mismatch` (spike C4); the log reason is `oauth_state_failed`: a new `BETTER_AUTH_REASONS` entry for the message start `Failed to parse state` (review 2, N4), with its `docs/known-alerts.md` row.
 
 No SSO test asserts the cookie `Max-Age` (30 days on each refresh; the session row decides the end; spike C4).
 

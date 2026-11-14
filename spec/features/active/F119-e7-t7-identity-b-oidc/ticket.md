@@ -31,13 +31,13 @@ Members of an organization with its own identity provider sign in with their com
 
 ## Slices
 
-15 stages, one worker job each ([plan.md](plan.md) § Stages). Stage 01 is the spike; gate G1 (second pass, PD-040, PD-041) follows it ([plan.md](plan.md) § Owner checkpoints). Stage 02 is the only migration; stage 03 the only `bun.lock` change. Stages 14 (VPS) and 15 (real Entra check, owner step U1) come last. Order and lanes: [plan.md](plan.md) § Stages and § How to run.
+16 stages, one worker job each ([plan.md](plan.md) § Stages). Stage 01 is the spike; gate G1 (second pass, PD-040, PD-041) follows it ([plan.md](plan.md) § Owner checkpoints). Stage 02 is the only migration; stage 03 the only `bun.lock` change. Stages 15 (VPS) and 16 (real Entra check, owner step U1) come last. Order and lanes: [plan.md](plan.md) § Stages and § How to run.
 
 ## Sequenced
 
 - Plan after: none (F105 and F099 have `stages/`; their interfaces are on `master` at the plan base).
 - Build after: E7-T2 platform controls (F099, in `spec/features/done/`), E7-T6 identity A (F105, active: stage 15 deployed; must be in `done/`).
-- Gate: Stage 1 is the spike; second pass after it (PD-040, PD-041). Owner step U1 (Entra test tenant, shared with F117 per E09 notes R10) before stage 15.
+- Gate: Stage 1 is the spike; second pass after it (PD-040, PD-041). Owner step U1 (Entra test tenant, shared with F117 per E09 notes R10) before stage 16.
 
 ## Notes
 

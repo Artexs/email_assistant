@@ -1,6 +1,6 @@
 # F119 stage 06 — "SSO required" refuses passwords
 
-Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 05. No switch exists yet: tests set `organizations.sso_required` by SQL; stage 08 adds the CLI.
+Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 05. No switch exists yet: tests set `organizations.sso_required` by SQL; stage 09 adds the CLI.
 
 ## Step 06.1 — The refusal rule
 
@@ -40,4 +40,4 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 05. No switch 
 
 **Done when.** The thirteen tests pass; the F082 lockout tests and the F105 two-factor tests still pass; Proof prints `PROOF_OK`.
 
-**Out of scope.** The CLI switch and its prerequisites (stage 08), texts on the login page (stage 11).
+**Out of scope.** The CLI switch and its prerequisites (stage 09), texts on the login page (stage 12).

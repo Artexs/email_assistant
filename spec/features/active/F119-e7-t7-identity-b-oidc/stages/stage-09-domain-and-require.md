@@ -1,12 +1,12 @@
-# F119 stage 08 — Domain proof and the require switch
+# F119 stage 09 — Domain proof and the require switch
 
-Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 07.
+Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 08.
 
-## Step 08.1 — Prove the domain: DNS TXT or attestation
+## Step 09.1 — Prove the domain: DNS TXT or attestation
 
 **Goal.** PD-041: the plugin signs nobody in until the provider's domain is proved (D3); the operator proves it by DNS, or attests it for a test organization without DNS control.
 
-**Files.** Tenancy service and repo `repo/sso.ts`; `apps/server/src/modules/tenancy/sso-domain-token.ts` (pure, `node:crypto` only); the `org:sso` CLI of stage 07.
+**Files.** Tenancy service and repo `repo/sso.ts`; `apps/server/src/modules/tenancy/sso-domain-token.ts` (pure, `node:crypto` only); the `org:sso` CLI of stage 08.
 
 **Interfaces.**
 - `ssoDomainToken(key: Buffer, orgId: string, domain: string): string` — lower-case hex, first 32 characters of HMAC-SHA256(`key`, `${orgId}:${domain}`).
@@ -14,11 +14,11 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 07
 - TXT record: name `_ea-sso.<domain>`, value `ea-sso=<token>`.
 - `verifySsoDomain(db, ctx, { resolveTxt: (name: string) => Promise<string[][]>, key: Buffer, actor, now }): Promise<{ kind: "verified" | "already" | "none" | "not_found_in_dns" }>` — the DNS read runs before the transaction; a record matches when its chunks joined and trimmed equal the value exactly. Then lock the organization, re-read the row (the domain may have changed: `none` if the provider or domain is gone), set `domain_verified = true`, `domain_proof = 'dns'`, audit `sso.domain_verified` (`provider_id`, `domain`). A DNS error (`ENOTFOUND`, `ENODATA`, timeout) → `not_found_in_dns`, no write.
 - `attestSsoDomain(db, ctx, { confirmDomain, actor, now }): Promise<{ kind: "attested" | "already" | "none" | "confirm_mismatch" }>` — `domain_proof = 'attested'`, audit `sso.domain_attested` (`provider_id`, `domain`).
-- CLI: `org:sso --org-id <id> --verify`; `--attest --confirm <domain>`. Show gets the `txt` line while unproved. `resolveTxt` is `node:dns/promises` `resolveTxt` in the CLI; tests inject a fake. A key change makes unproved tokens new (a proved domain stays proved).
+- CLI: `org:sso --org-id <id> --verify`; `--attest --confirm <domain>`. Show gets the `txt` line while unproved. `resolveTxt` is a `runOrgSso` dep (stage 08): `node:dns/promises` `resolveTxt` in the entry, a fake in tests. A key change makes unproved tokens new (a proved domain stays proved).
 
 **Decisions.** D9, D12, D16.
 
-## Step 08.2 — `--require on|off`
+## Step 09.2 — `--require on|off`
 
 **Goal.** The operator switches "SSO required" only when no member gets locked out.
 
@@ -45,8 +45,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 07
 10. Off: `changed`; again: `unchanged`.
 11. Show prints no token after the proof, and never the secret.
 
-**Check.** The Proof of `plan.md` (`/tmp/f119-s08`).
+**Check.** The Proof of `plan.md` (`/tmp/f119-s09`).
 
 **Done when.** The eleven tests pass; Proof prints `PROOF_OK`.
 
-**Out of scope.** A DNS check in CI against a real resolver; the console (stage 10).
+**Out of scope.** A DNS check in CI against a real resolver; the console (stage 11).

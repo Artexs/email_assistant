@@ -38,7 +38,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 04.
 2. Ann signs in with a password (she has one): `sign_in_method = 'password'`, `expires_at` about `now + 30 days`.
 3. Refresh: move Ann's `sso_started_at` back 2 h by SQL, then `GET /api/auth/get-session` (F5 fires): `expires_at` is `sso_started_at + 12 h`, not 30 days.
 4. `sso_started_at` back 11 h 59 min: `GET /api/me` 200. Back 12 h 1 min: `GET /api/me` 401.
-5. Ann (SSO session, a password, `sso_started_at` 2 h back) turns TOTP on, and in a second run changes the password with `revokeOtherSessions`: the new session is `sso` with the same `sso_started_at` and `expires_at` = that + 12 h.
+5. Ann (SSO session, a password, `sso_started_at` 2 h back) turns TOTP on; in a second run changes the password with `revokeOtherSessions`; in a third turns TOTP off (`/two-factor/disable`, S4): the new session is `sso` with the same `sso_started_at` and `expires_at` = that + 12 h.
 6. A password session with `created_at` 13 h back: `GET /api/me` 200.
 7. Operator Olga (in `OPERATOR_USER_IDS`, TOTP on, member of org A, linked by SSO): SSO session → `GET /api/operator/orgs` 403 `password_sign_in_required` and one `operator_sso_session_refused` line; `GET /operator` → the 404 page.
 8. Olga with password and TOTP code: `GET /api/operator/orgs` 200.
@@ -52,4 +52,4 @@ No test asserts the cookie `Max-Age` (30 days on each refresh; the row decides t
 
 **Done when.** The eleven tests pass; every `WebSession` fake has `signInMethod`; Proof prints `PROOF_OK`.
 
-**Out of scope.** "SSO required" (stage 06), the Account card (stage 12).
+**Out of scope.** "SSO required" (stage 06), the Account card (stage 13).

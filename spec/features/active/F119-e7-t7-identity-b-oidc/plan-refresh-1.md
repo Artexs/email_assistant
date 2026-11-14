@@ -37,7 +37,7 @@ commits after the base that touch the named paths:
 | C5 | stage 05 | The create hook sets both `signInMethod` and `ssoStartedAt` from the current session. | The hook data on `verify-totp` and `/two-factor/disable` already has `ssoStartedAt` but `signInMethod: "password"` (`s4b.log`). |
 | G1 | plan § Owner checkpoints, § Stages, § How to run, status line; stage 01 header; ticket.md § Slices (the stop clause becomes a pointer to plan.md; no progress marker in the ticket body) | "G1: passed by the coordinator on 2026-11-14 from spike.md; the owner can change Q1 (secret storage) before stage 03." Stage 02 needs stage 01, not G1. The "stop after stage 01" step is gone. | Owner order: owner checkpoints are not a stop. S1–S10 PASS and no decision D1–D17 broke. |
 | Q1, Q10 | questions.md | Q1: G1 passed with the default; option (b) needs a probe before stage 03 if the owner picks it. Q10: the S10 input (a free Azure account may be enough for F119 alone; F117 still needs the seat). Both defaults stay. | Keep both as owner decisions with defaults. |
-| size | plan.md, stages 02, 03, 04, 07 | Shorter wording elsewhere in the same files (no decision, test or interface removed). Stage 07 tests 7 and 9 merged into test 7 (eight tests). | Lean-plan limits: plan ≤1,500 words, stage ≤700. |
+| size | plan.md, stages 02, 03, 04, 07 | Shorter wording elsewhere in the same files. The first pass also removed two stage 07 predicate cases (`https://127.0.0.1`, `https://169.254.169.254`); review 2 (N3) found it, and the new stage 07 test 7 has them again. The stage table of `plan.md` became a list (the same fields). | Lean-plan limits: plan ≤1,500 words, stage ≤700. |
 
 ## D18 in full (C1: the issuer CHECK)
 
@@ -47,7 +47,8 @@ Why it is safe in production:
 
 1. The CHECK is a shape guard. The URLs that the plugin fetches are the endpoints in `oidc_config`, and the CHECK does not cover them. The real protection for fetches is elsewhere.
 2. Sign-in fetches refuse a loopback host that is not in Better Auth `trustedOrigins` (F6, `assertEndpointResolvesPublic`). Production lists no IdP origin there. A loopback row fails closed: no session.
-3. `org:sso --set` refuses an IP literal and an `http:` issuer (stage 07 predicate and argument check), and since C3 also a DNS name with a private answer. Only a direct DB write can make such a row, and that writer can change any row anyway.
+3. `org:sso --set` refuses an IP literal (stage 07 predicate), a DNS name with a private answer (C3), and an `http:` issuer whose origin is not in `allowOrigins`; the script entry leaves `allowOrigins` empty and nothing sets it (stage 08, review 2 B1). Only a direct DB write can make such a row, and that writer can change any row anyway.
+4. Dependency (review 2): Better Auth `trustedOrigins` (`WEB_TRUSTED_ORIGINS`) must list no loopback origin on the VPS. `.env.example` ships loopback origins for local work; `deploy/README.md` says to empty the key. Stage 15 check 9 proves it.
 
 Rejected:
 
@@ -63,6 +64,29 @@ Rejected:
 - The `accountKey.issuer` and `verifiedIdTokenClaims` shape (C5) agrees with stage 03 `SsoIdentity`.
 - D16 "discovery and DNS run before the transaction" also covers the C3 lookups.
 
-## Cold review
+## Cold review 2 and what it changed
 
-The refresh changed stages in substance (stage 02 CHECK and grant, stage 07 interface and tests). See `plan.md` § Cold review for the review job and its result.
+Review: [plan-review-2.md](plan-review-2.md) (job `2026-11-14-f119-plan-review-2-7441239e`, `claude-opus-5-5`, candidate `6222d69d`). Model reason: `[risky]` auth, migration and security stages. Verdict FAIL, 1 blocking, 8 notes. It confirmed D18 (safe in production) and C3 (complete for the discovery fetch) from the plugin source.
+
+| Finding | Disposition | Where |
+| ------- | ----------- | ----- |
+| B1 the CLI refuses the `http:` fake IdP, and no interface brings `allowOrigins` into the CLI | Fixed. `runOrgSso(argv, deps)` runs in-process in tests; the script entry passes `allowOrigins: []`; nothing in env or argv sets it. The parser accepts `http:` only for an origin in `allowOrigins`. Tests: args with empty and with set `allowOrigins`; the real entry refuses the fake IdP. The added text did not fit in stage 07 (700 words), so stage 07 became two stages (below). | stage 08 (new) |
+| N1 which address ranges | Fixed. Reuse the mail guard `isLocalAddress`, `LookupAll`, `dnsLookupAll`; they move to `platform/net-address.ts` (`platform/` imports no module). NAT64 case in the test. | stage 07 step 07.1, test 8 |
+| N2 no test for `discovery_dns_failed` | Fixed: `ENOTFOUND` case. The check is a named function, `checkPublicHosts`, so its test makes no network call. | stage 07 test 8 |
+| N3 two predicate cases lost | Fixed: back in test 7, plus `https://localhost.` (trailing dot) and `https://[::1]`. | stage 07 test 7 |
+| N4 `state_mismatch` reason label covers every state failure | Fixed: the reason is `oauth_state_failed` for the message start `Failed to parse state`, with a `docs/known-alerts.md` row. | stage 03 test 10 |
+| N5 `/two-factor/disable` untested | Fixed: third run in test 5. | stage 05 test 5 |
+| N6 G1 by the coordinator differs from 05-execution-plan §2.4; no owner-decisions entry | The coordinator's order decides G1 for this job. Recorded as Q11 `[important: rule-exception]` for `docs/owner-decisions.md` (the coordinator writes it). | questions.md Q11 |
+| N7 D18 cites D10 for the IP-literal rule | Fixed: D18 cites stages 07–08. | plan D18 |
+| (plausible) `trustedOrigins` must hold no loopback origin | Fixed: D18 names the dependency; stage 15 check 9 reads `WEB_TRUSTED_ORIGINS` on the VPS. | plan D18; stage 15 |
+| N8 size | Fixed: stage 07 split; counts in `plan.md` § Planning progress. | plan.md |
+
+### Stage split and new numbers
+
+Old stage 07 (`org:sso`: show, set, remove) became:
+
+- new 07 `stage-07-sso-provider-service.md`: the address guard move, discovery with the DNS check, `buildOidcConfig`, `getSsoState`, `setSsoProvider`, `removeSsoProvider`, `platform/auth-sessions-end.ts`. Tests at service level. Needs 04.
+- new 08 `stage-08-org-sso-cli.md`: `runOrgSso`, the argument parser, show, set, remove. Needs 07.
+
+Old stages 08–15 are now 09–16 (file names, titles, step numbers, `/tmp/f119-sNN`, and every cross reference in `plan.md`, `ticket.md`, `questions.md` and the stage files). `spike.md`, `plan-review-*.md` and stage 01 keep the old numbers: they are records. The F105 references (`stage 15 deployed`, F105's `stages/stage-15-vps.md`) did not change. Old stage 08 (domain proof, now 09) needs 06 and 08, and its `resolveTxt` is a `runOrgSso` dep. Old stage 09 (`org:member`, now 10) still needs 05 and 07.
+

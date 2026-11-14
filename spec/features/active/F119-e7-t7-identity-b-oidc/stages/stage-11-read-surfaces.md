@@ -1,8 +1,8 @@
-# F119 stage 10 — Read surfaces and security-log kinds
+# F119 stage 11 — Read surfaces and security-log kinds
 
-Part of [`../plan.md`](../plan.md). Needs stages 08 and 09. Server, core and the `sec_kind_*` texts; the web stages 11 and 12 use these schemas.
+Part of [`../plan.md`](../plan.md). Needs stages 09 and 10. Server, core and the `sec_kind_*` texts; the web stages 12 and 13 use these schemas.
 
-## Step 10.1 — `GET /api/sign-in-options`
+## Step 11.1 — `GET /api/sign-in-options`
 
 **Goal.** The login page shows company sign-in only when it can work (D14, Q6).
 
@@ -13,15 +13,15 @@ Part of [`../plan.md`](../plan.md). Needs stages 08 and 09. Server, core and the
 - `anySsoUsable(db): Promise<boolean>` — true when one provider is proved and its organization has `sso_sign_in` on (row or default, not killed). No tenant scope. No session needed; `GET` only; `Cache-Control: no-store`; no organization id, domain or count in the answer.
 - A failing read answers `{ sso: false }` and `log.warn("sign_in_options_failed", { ...errorFields(error) })` (the password form still works).
 
-## Step 10.2 — `/api/me` fields
+## Step 11.2 — `/api/me` fields
 
-**Interfaces.** `meSchema` gets `signInMethod: z.enum(["password", "sso"])` (from `WebSession`, stage 05) and `hasPassword: z.boolean()` (a `credential` row in `auth_accounts` for the user; a tenancy repo read, listed as a Better Auth table read for stage 13). Every fake and test of `/api/me` gets both.
+**Interfaces.** `meSchema` gets `signInMethod: z.enum(["password", "sso"])` (from `WebSession`, stage 05) and `hasPassword: z.boolean()` (a `credential` row in `auth_accounts` for the user; a tenancy repo read, listed as a Better Auth table read for stage 14). Every fake and test of `/api/me` gets both.
 
-## Step 10.3 — Operator detail
+## Step 11.3 — Operator detail
 
-**Interfaces.** `operatorOrgDetailSchema` gets `sso: z.strictObject({ domain: z.string(), proof: z.enum(["dns", "attested"]).nullable(), required: z.boolean(), linkedMembers: z.number().int(), breakGlassReady: z.boolean() }).nullable()` from `getSsoState` (stage 07). No issuer URL, client id, secret or member id (PD-047: ids, codes, counts, dates; the domain is the organization's own). The console page renders it in stage 12; until then the page ignores the field.
+**Interfaces.** `operatorOrgDetailSchema` gets `sso: z.strictObject({ domain: z.string(), proof: z.enum(["dns", "attested"]).nullable(), required: z.boolean(), linkedMembers: z.number().int(), breakGlassReady: z.boolean() }).nullable()` from `getSsoState` (stage 07). No issuer URL, client id, secret or member id (PD-047: ids, codes, counts, dates; the domain is the organization's own). The console page renders it in stage 13; until then the page ignores the field.
 
-## Step 10.4 — Security-log kinds and their texts
+## Step 11.4 — Security-log kinds and their texts
 
 **Files.** `packages/core/src/security-log.ts`, `apps/web/src/i18n/en.ts`, `pl.ts` (texts word for word, informal "ty"; for `sec_help` keep the start and change only the end).
 
@@ -54,8 +54,8 @@ Part of [`../plan.md`](../plan.md). Needs stages 08 and 09. Server, core and the
 7. Every new audit code maps to its kind; every kind is in `securityEventKinds` and has a `sec_kind_*` key in `en.ts` and `pl.ts`; no Polish text equals its English text.
 8. The security log of org A after one SSO sign-in and one refusal lists `sso_sign_in` and `sso_refused`.
 
-**Check.** The web Proof of `plan.md` (`/tmp/f119-s10`).
+**Check.** The web Proof of `plan.md` (`/tmp/f119-s11`).
 
 **Done when.** The eight tests pass; Proof prints `PROOF_OK`.
 
-**Out of scope.** Every page and component change (stages 11, 12).
+**Out of scope.** Every page and component change (stages 12, 13).

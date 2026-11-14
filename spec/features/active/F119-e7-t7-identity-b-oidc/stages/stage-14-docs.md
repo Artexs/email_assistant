@@ -1,8 +1,8 @@
-# F119 stage 13 — Docs, ADR 0026, capability pages, runbook
+# F119 stage 14 — Docs, ADR 0026, capability pages, runbook
 
-Part of [`../plan.md`](../plan.md). Needs stages 11 and 12. Docs only.
+Part of [`../plan.md`](../plan.md). Needs stages 12 and 13. Docs only.
 
-## Step 13.1 — Describe what landed
+## Step 14.1 — Describe what landed
 
 **Goal.** A later agent and the operator find every SSO rule in the place the repo keeps it (PD-009: behaviour rules live in `docs/capabilities/`).
 
@@ -12,7 +12,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 11 and 12. Docs only.
 - `docs/capabilities/account-data.md`: `sso_providers` in the export map (config excluded) and the delete cascade.
 - `docs/decisions/0026-identity-tier-1-oidc-totp.md`: status line (points 2–8 accepted and landed by F119); an "Amendment (F119)" section with the facts that differ from the first text: the plugin's provider and domain endpoints are closed and our CLI does both (point 3, 4); our own TXT format; the session mark and its trigger; TOTP is not asked after SSO and the console needs a password session (point 1 and 7); the operator ends member sessions in Stage 2 (point 7); a session made from an SSO session stays SSO with the same 12 h end; Google needs `hd`; no IdP token is stored; the client secret is stored in clear in the provider row (Q1); `--require on` prerequisites and the end of old password sessions.
 - `docs/architecture.md` §5 (tables) and §7 (web security): one line each, pointing to the capability page.
-- `docs/code-patterns.md` § Data access: our SQL on Better Auth tables (`platform/auth-sessions-end.ts` of stages 07–09, the `hasPassword` read, the `auth_accounts` reads of `resolveSsoMember` and `linkedMembers`), next to the F105 exceptions; IdP tokens are never stored (account hooks).
+- `docs/code-patterns.md` § Data access: our SQL on Better Auth tables (`platform/auth-sessions-end.ts` of stages 07–10, the `hasPassword` read, the `auth_accounts` reads of `resolveSsoMember` and `linkedMembers`), next to the F105 exceptions; IdP tokens are never stored (account hooks).
 - `deploy/README.md` § Company sign-in (new): the runbook. (1) Turn on the flag: `bun run org:flag --org-id <id> --flag sso_sign_in --on`. (2) The organization's admin registers an app in Entra or Google: redirect URI from `org:sso --org-id <id>`, scopes `openid email profile`, a tenant-specific issuer for Entra (`https://login.microsoftonline.com/<tenant-id>/v2.0`); every member must reach the panel on the tailnet (ADR 0017). (3) `org:sso --set … --client-secret-stdin` (paste the secret; never on the command line). (4) DNS: add the printed TXT record, then `--verify`; a test organization without DNS: `--attest --confirm <domain>`. (5) `org:member --add` for members who have no account. (6) Optional: a break-glass owner (`org:break-glass`, TOTP on), then `--require on`. (7) An IdP outage: `--require off` reopens passwords; the break-glass owner always gets in. (8) Offboarding: disable the user in the IdP (access ends within 12 h); at once: `org:member --end-sessions`. (9) A plugin upgrade: keep `better-auth` and `@better-auth/sso` on one version, never below 1.6.27, and run the stage 03–06 tests.
 - `docs/known-alerts.md`: one entry per new log line (`sso_refused`, `sso_audit_failed`, `operator_sso_session_refused`, `password_sign_in_refused_sso`, `reset_request_refused_sso`, `sign_in_options_failed`, `sso_flag_killed_with_sso_required`) with source, cause and fix.
 - `notes/2026-11-14-two-factor.md` § For later tickets: mark the F119 seam as done (SSO sessions are marked; the operator guard reads the mark).
@@ -24,7 +24,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 11 and 12. Docs only.
 **Check** (`<files>` = the files this stage changed):
 
 ```
-mkdir -p /tmp/f119-s13 && bunx prettier --check <files> > /tmp/f119-s13/prettier.log 2>&1 && bun run lint > /tmp/f119-s13/lint.log 2>&1 && bun run test:unit:ci > /tmp/f119-s13/unit.log 2>&1 && echo PROOF_OK
+mkdir -p /tmp/f119-s14 && bunx prettier --check <files> > /tmp/f119-s14/prettier.log 2>&1 && bun run lint > /tmp/f119-s14/lint.log 2>&1 && bun run test:unit:ci > /tmp/f119-s14/unit.log 2>&1 && echo PROOF_OK
 ```
 
 **Done when.** Each file above says what the code at `HEAD` does (the worker checks each claim against the code, not against this plan); `PROOF_OK`. A claim of this list that the code does not hold is a question in the final message.

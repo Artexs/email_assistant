@@ -1,8 +1,8 @@
-# F119 stage 11 — Login page: company sign-in
+# F119 stage 12 — Login page: company sign-in
 
-Part of [`../plan.md`](../plan.md). Review before the land (sign-in page, Polish texts). Needs stage 10. Web only.
+Part of [`../plan.md`](../plan.md). Review before the land (sign-in page, Polish texts). Needs stage 11. Web only.
 
-## Step 11.1 — The company sign-in path
+## Step 12.1 — The company sign-in path
 
 **Goal.** A member of an organization with SSO signs in from `/login` without a password (D14).
 
@@ -39,8 +39,8 @@ Part of [`../plan.md`](../plan.md). Review before the land (sign-in page, Polish
 4. Every new key exists in `en.ts` and `pl.ts`; `bun run typecheck` passes.
 5. With `sso: false` the page renders no SSO element (component test if the repo has one for islands; else a pure `loginSections(options)` helper with this test).
 
-**Check.** The web Proof of `plan.md` (`/tmp/f119-s11`).
+**Check.** The web Proof of `plan.md` (`/tmp/f119-s12`).
 
 **Done when.** The five tests pass; `bun run web:build` passes; Proof prints `PROOF_OK`.
 
-**Out of scope.** The Account card and the console (stage 12); a Playwright spec (Q9).
+**Out of scope.** The Account card and the console (stage 13); a Playwright spec (Q9).

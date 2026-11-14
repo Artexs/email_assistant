@@ -1,6 +1,6 @@
-# F119 stage 14 — VPS deploy and checks
+# F119 stage 15 — VPS deploy and checks
 
-Part of [`../plan.md`](../plan.md). `[risky]` (real system, the pilot's sign-in). **The coordinator runs this stage** (`spec/build.md`: VPS and deploy steps are pre-approved; backup first, name the rollback target, verify after). No worker job. Needs stages 01–13 landed and the last `master` CI run green. No other VPS deploy at the same time.
+Part of [`../plan.md`](../plan.md). `[risky]` (real system, the pilot's sign-in). **The coordinator runs this stage** (`spec/build.md`: VPS and deploy steps are pre-approved; backup first, name the rollback target, verify after). No worker job. Needs stages 01–14 landed and the last `master` CI run green. No other VPS deploy at the same time.
 
 ## Before the deploy
 
@@ -22,6 +22,7 @@ Follow `stages/stage-15-vps.md` of F105 (`spec/features/done/<month>/F105-…/`)
 6. The pilot owner signs in with password and TOTP (ask the owner, or read the newest `web.login` row with `second_factor = totp` after `$T`): sign-in still works; `/operator` opens for the owner (a password session).
 7. `$C exec db psql … -Atc "SELECT sign_in_method, count(*) FROM auth_sessions GROUP BY 1"` → only `password`.
 8. Wait 11 minutes: `sync_done` lines for the pilot mailbox.
+9. `$C exec server printenv WEB_TRUSTED_ORIGINS` → empty, or only `https:` panel origins: no `127.0.0.1`, `localhost` or IdP origin (D18: Better Auth `trustedOrigins` must list no loopback; cold review 2). On a fail: empty the key as `deploy/README.md` says and restart; no rollback.
 
 ## Rollback
 
@@ -34,4 +35,4 @@ When step 11 or check 1, 2, 4, 6 or 8 fails: `git checkout <rollback commit>`, `
 
 ## Done when
 
-Checks 1–8 hold and the log line is written. Stage 15 waits for owner step U1.
+Checks 1–9 hold and the log line is written. Stage 16 waits for owner step U1.

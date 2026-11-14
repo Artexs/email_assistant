@@ -1,8 +1,8 @@
-# F119 stage 09 — `org:member`: add, end sessions, unlink
+# F119 stage 10 — `org:member`: add, end sessions, unlink
 
-Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs stages 05 and 07. May run next to stages 06 and 08.
+Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs stages 05 and 07. May run next to stages 06 and 09.
 
-## Step 09.1 — Service functions
+## Step 10.1 — Service functions
 
 **Goal.** An SSO member must exist before the first sign-in (no just-in-time accounts, PD-041), and the operator ends a member's access on the owner's request (ADR 0026 point 7, D11, Q3, Q4). Today no CLI adds a second member (`docs/capabilities/tenancy-and-plans.md` § Limits).
 
@@ -16,7 +16,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs sta
 
 **Decisions.** D11, D12, D16.
 
-## Step 09.2 — The CLI
+## Step 10.2 — The CLI
 
 **Files.** `apps/server/src/scripts/org-member.ts`, `org-member-args.ts` (+ unit test), `package.json` script `org:member`.
 
@@ -27,7 +27,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs sta
 - Exit 1 with the kind for every other result. The CLI prints ids and counts only (`docs/capabilities/account-data.md` rule 17: no address on stdout).
 - To give a new member a password later: `web:invite --org-id --user-id` (unchanged).
 
-## Step 09.3 — Warn before a flag lock-out (cold review N12)
+## Step 10.3 — Warn before a flag lock-out (cold review N12)
 
 `org:flag --flag sso_sign_in --off` and the operator console flag write still apply the change, but when the organization has `sso_required`, the CLI prints `warning: sso_required is on; only the break-glass owner can sign in` and the route answers `{ ..., warning: "sso_required_on" }`. At start, a `FEATURES_OFF` that holds `sso_sign_in` while any organization has `sso_required` logs `log.warn("sso_flag_killed_with_sso_required", { count })`.
 
@@ -43,7 +43,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs sta
 8. stdout and the log capture of 1–6 hold no e-mail address.
 9. `org:flag --flag sso_sign_in --off` on an `sso_required` org: the flag is off and the warning line is printed; on another org: no warning.
 
-**Check.** The Proof of `plan.md` (`/tmp/f119-s09`).
+**Check.** The Proof of `plan.md` (`/tmp/f119-s10`).
 
 **Done when.** The nine tests pass; Proof prints `PROOF_OK`.
 
