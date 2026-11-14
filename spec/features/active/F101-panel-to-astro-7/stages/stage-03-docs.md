@@ -1,72 +1,63 @@
 # F101 stage 03 — Docs
 
-Part of [`../plan.md`](../plan.md). Read its D4, D7, D8, D12, facts F1–F12, N4 and § Rules for every stage first. Needs stage 02 landed.
+Part of [`../plan.md`](../plan.md). Read its D-list, N4, § Rules and [`../probes/facts.md`](../probes/facts.md). Needs stage 02 landed.
 
-Docs only: no code, no `package.json`, no `bun.lock`. Three steps, about 70 changed lines. Write in the style of the file you edit (short sentences, active voice, about ASD-STE100). No real name, tailnet name or address.
+Docs only. Three steps, about 70 lines, in each file's style (about ASD-STE100). No real name, tailnet name or address.
 
 ## Step 1 — ADR 0016 amendment and architecture §7
 
-- **Goal:** the accepted web-panel ADR and the architecture page describe the CSP as it is on Astro 7.
+- **Goal:** the ADR and architecture describe the CSP on Astro 7.
 - **Files:** `docs/decisions/0016-web-panel-static-build-and-better-auth.md`, `docs/architecture.md`.
-- **Interfaces:** none.
-- **Decisions:** D2, D4, D8. ADR status stays `accepted`; earlier text is not rewritten (an amendment adds, like the existing "Amendment (S6b, 2026-11-13)").
-  - ADR 0016: add at the end `## Amendment (Astro 7, <land date of stage 02, YYYY-MM-DD>)` with these points, in this order:
-    1. The panel builds on Astro 7.4.12 (`astro` and `@astrojs/react` are exact pins). Facts and decisions: ticket F101 (Panel to Astro 7). Name the ticket id only, no path: the ticket folder moves from `active/` to `done/` when stage 04 closes it, and a path would break.
-    2. The meta CSP comes from the stable option `security.csp` (Astro 6 made it stable). This replaces the consequence "The hashed CSP depends on the Astro `experimental.csp` flag."
-    3. The integration `apps/web/integrations/csp-style-src.ts` relaxes `style-src` and then checks every built page. The build fails when a page has not exactly one CSP meta, lacks `default-src 'self'` or `script-src`, has `'unsafe-inline'` in `script-src`, or has another `style-src`; and when the build has no page.
-    4. Markdown syntax highlighting is off in the panel, because Shiki writes inline styles that the CSP does not allow.
-  - `docs/architecture.md` §7, the bullet that starts `**CSP (D5):**`: after its last sentence ("…the integration `apps/web/integrations/csp-style-src.ts` sets that after the build."), add: "The same integration fails the build when a page loses its CSP meta or gets `'unsafe-inline'` in `script-src` (ADR 0016, amendment Astro 7)."
+- **Decisions:** D2, D4, D8. Status stays `accepted`; old text is not rewritten (an amendment adds, like "Amendment (S6b, 2026-11-13)").
+  - ADR 0016 ends with `## Amendment (Astro 7, <land date of stage 02>)`, these points in order:
+    1. Astro 7.4.12 (`astro`, `@astrojs/react` exact pins). Source: ticket F101 by id only (the folder moves).
+    2. The meta CSP comes from the stable `security.csp`; this replaces the `experimental.csp` consequence.
+    3. The integration relaxes `style-src`, then checks every page; the build fails on the D4 cases.
+    4. Markdown highlighting is off: Shiki inline styles break the CSP.
+  - Architecture §7, the `**CSP (D5):**` bullet, after its last sentence: "The same integration fails the build when a page loses its CSP meta or gets `'unsafe-inline'` in `script-src` (ADR 0016, amendment Astro 7)."
 - **Test:**
-  1. `grep -c '^## Amendment (Astro 7' docs/decisions/0016-web-panel-static-build-and-better-auth.md` prints `1`.
-  2. `grep -c 'security.csp' docs/decisions/0016-web-panel-static-build-and-better-auth.md` prints `1` or more.
-  3. `grep -c "ADR 0016, amendment Astro 7" docs/architecture.md` prints `1`.
-- **Check:** tests 1–3; `bunx prettier --check` on both files.
-- **Done when:** tests 1–3 hold.
-- **Out of scope:** ADR 0030 (the docs-site ticket F112 updates it); `docs/decisions/README.md` (the ADR status does not change).
+  - T1: the ADR has exactly one line that starts `## Amendment (Astro 7`.
+  - T2: the ADR names `security.csp` at least once.
+  - T3: `docs/architecture.md` holds `ADR 0016, amendment Astro 7` exactly once.
+- **Done when:** T1–T3 hold; prettier passes on both files.
+- **Out of scope:** ADR 0030 (F112); `docs/decisions/README.md`.
 
 ## Step 2 — Capability page and README
 
-- **Goal:** the web-panel capability page (PD-009) and the developer README say what is true after the move.
+- **Goal:** capability page (PD-009) and README are true.
 - **Files:** `docs/capabilities/web-panel.md`, `README.md`.
-- **Interfaces:** none.
 - **Decisions:** D7, D8.
-  - `docs/capabilities/web-panel.md` (written by F095 stage 06): remove the limit item that names the Astro version and this ticket ("Astro version (Panel to Astro 7, F101)" or similar). Where the page describes the static build (`WEB_DIST`), state the version once: "Astro 7.4 static build with React islands". If the page has no such limit item or no static-build text, add the one sentence to its static-build part or, if none exists, to its first section, and say so in the final message. If the page does not exist, stop and ask (F095 must be in `done/` before this ticket builds).
-  - `README.md`, the `bun run web:dev` row of the command table: the description becomes "Starts the Astro dev server (in an agent session Astro runs it in the background: `bunx astro dev stop` in `apps/web` ends it)". Keep the table aligned the way `prettier` formats it.
+  - Capability page: remove the limit item about Astro 5 and F101. The static-build item (`WEB_DIST`) names "Astro 7.4 static build with React islands" once; if a text is missing, use the first section and say so.
+  - `README.md`, the `bun run web:dev` row: "Starts the Astro dev server (in an agent session Astro runs it in the background: `bunx astro dev stop` in `apps/web` ends it)". Keep the table as prettier formats it.
 - **Test:**
-  - Test 4: `grep -c 'F101' docs/capabilities/web-panel.md` prints `0`.
-  - Test 5: `grep -c 'Astro 7' docs/capabilities/web-panel.md` prints `1` or more.
-  - Test 6: `grep -c 'astro dev stop' README.md` prints `1`.
-
-- **Check:** tests 4–6; `bunx prettier --check` on both files.
-- **Done when:** tests 4–6 hold.
-- **Out of scope:** other capability pages; `deploy/README.md` (the deploy steps do not change).
+  - T4: the capability page names `F101` 0 times.
+  - T5: the capability page names `Astro 7` at least once.
+  - T6: `README.md` holds `astro dev stop` exactly once.
+- **Done when:** T4–T6 hold; prettier passes on both files.
+- **Out of scope:** other capability pages; `deploy/README.md`.
 
 ## Step 3 — The Astro note
 
-- **Goal:** the next agent that touches Astro (E4-A pages, the docs site) finds the facts of this move in one place.
-- **Files:** `notes/2026-11-13-astro-starlight-versions.md` (append; same topic, `CLAUDE.md` § Notes).
-- **Interfaces:** none.
-- **Decisions:** D1, D5, D6, D7, D12; facts F1, F6, F9–F13; N4.
-  - Append a section `## Panel on Astro 7 (F101, <land date of stage 02>)` with one bullet each:
-    1. Versions: `astro` 7.4.12 and `@astrojs/react` 7.1.9 exact pins, Tailwind `^4.3.5` (4.1 does not accept Vite 8), Vite 8. Tailwind 4.3 changed the default `--font-sans`; `apps/web/src/styles/global.css` sets the 4.1 stack back in an `@theme` block (F101 D6), and a later Tailwind bump compares the CSS custom properties as F101 stage 02 test 8 does. A bump of `astro` repeats the stage 02 checks of F101 (build check, typecheck, full e2e).
-    2. Config: `security.csp` (not `experimental.csp`); `markdown.syntaxHighlight: false` (Shiki and the CSP).
-    3. `astro check` needs `@astrojs/astro2tsx` 0.1.4 or later in `bun.lock`: 0.1.3 fails with `this.bridge.setLastError is not a function` when `rolldown` hoists `@emnapi/runtime` 2.0 beta. Fix: `bun update @astrojs/astro2tsx`.
-    4. Node: the Astro 7 CLI needs Node 22.23.4 or later; CI pins Node 24 in the `ci` and `e2e` jobs; the server image has no Node and Bun runs the CLI.
-    5. `astro dev` runs in the background in an agent session: `bunx astro dev status`, `bunx astro dev stop`, `bunx astro dev logs` in `apps/web`; `--ignore-lock` keeps it in the foreground. Its log is `apps/web/.astro/dev.log`.
-    6. The Rust compiler of Astro 7 rejects unclosed tags and keeps invalid nesting as written; whitespace between elements follows JSX rules (`compressHTML: 'jsx'`). `src/fetch.ts` is a reserved file name.
-    7. For the docs site: Starlight 0.43.1 (2026-11-14) needs `astro ^7.2.10`; pin `apps/docs` to the same `astro` version as `apps/web`, so Bun installs one copy (F101 D12).
-    8. Open: the Vite 8 dev proxy with `timeout: 95_000` was not tested with a long request (F101 N4).
-  - Also change the existing line "So a maintained Starlight needs Astro 7. The E10 discovery proposes one ticket that moves the panel to Astro 7 first …" so that it says the move is done (F101) and points to the new section. Also change line 5 ("`apps/web` pins `astro` 5.13.7. The newest 5.x is …") so that it starts with "`apps/web` pins `astro` 7.4.12 since F101 (was 5.13.7)." and keeps its release dates. Do not change the other old lines.
+- **Goal:** the next agent that touches Astro finds this move's facts in one place.
+- **Files:** `notes/2026-11-13-astro-starlight-versions.md` (append; `CLAUDE.md` § Notes).
+  - Append `## Panel on Astro 7 (F101, <land date of stage 02>)`, one bullet each, from the facts named:
+    1. Versions and pins (D1, F1); the Tailwind 4.3 font change and the `global.css` block (D6, F13); a later Tailwind bump compares CSS custom properties as stage 02 T8; an `astro` bump repeats the stage 02 checks.
+    2. Config: `security.csp`, not `experimental.csp`; highlight off (D2, D3).
+    3. `astro check` needs `@astrojs/astro2tsx` 0.1.4 or later; quote the 0.1.3 error and the fix (F6).
+    4. Node 22.23.4 or later; CI pins Node 24 in `ci` and `e2e`; the image runs the CLI with Bun (D5, F10).
+    5. `astro dev` in the background in agent sessions; `bunx astro dev status|stop|logs`; `--ignore-lock`; its log file (F11).
+    6. Rust compiler rules, `compressHTML: 'jsx'`, reserved `src/fetch.ts` (F12).
+    7. Docs site: same `astro` pin in `apps/docs` (D12).
+    8. Open: N4.
+  - Also change two old lines: the pin line ("`apps/web` pins `astro` 5.13.7 …") starts "`apps/web` pins `astro` 7.4.12 since F101 (was 5.13.7)." and keeps its dates; the line "So a maintained Starlight needs Astro 7. …" says the move is done (F101) and points to the new section. No other old line changes.
 - **Test:**
-  - Test 7: `grep -c '^## Panel on Astro 7' notes/2026-11-13-astro-starlight-versions.md` prints `1`.
-  - Test 8: `grep -c 'astro2tsx' notes/2026-11-13-astro-starlight-versions.md` prints `1` or more.
-  - Test 9: `grep -c '7.4.12 since F101' notes/2026-11-13-astro-starlight-versions.md` prints `1`.
-
-- **Check:** tests 7–9; `bunx prettier --check` on the file.
-- **Done when:** tests 7–9 hold; one commit holds the five files of this stage (`git add` by path).
-- **Out of scope:** `docs/known-alerts.md` (no new alert); `spec/build.md`.
+  - T7: exactly one line starts `## Panel on Astro 7`.
+  - T8: the note names `astro2tsx` at least once.
+  - T9: the note holds `7.4.12 since F101` exactly once.
+- **Done when:** T7–T9 hold; one commit with the five files.
+- **Out of scope:** `docs/known-alerts.md`.
 
 ## Done when (stage)
 
 - Steps 1–3 hold.
-- The stage 03 Proof command of `plan.md` prints `PROOF_OK` (`/tmp/f101-s03`), with `<files>` = `docs/decisions/0016-web-panel-static-build-and-better-auth.md docs/architecture.md docs/capabilities/web-panel.md README.md notes/2026-11-13-astro-starlight-versions.md`.
+- The stage 03 Proof of `plan.md` prints `PROOF_OK` (`/tmp/f101-s03`), with `<files>` = `docs/decisions/0016-web-panel-static-build-and-better-auth.md docs/architecture.md docs/capabilities/web-panel.md README.md notes/2026-11-13-astro-starlight-versions.md`.
