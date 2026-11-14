@@ -6,8 +6,8 @@ import { errorFields, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { isOrgSuspended } from "../tenancy";
 
-import type { ImapConnectOptions } from "./imap/client";
 import { FLAGS_REFRESH_EVERY_MS, refreshFlags } from "./flags";
+import type { ImapConnectOptions } from "./imap/client";
 import { openMailboxProvider } from "./open";
 import { MailAuthError, type MailProvider } from "./port";
 import { listSyncTargets, markSynced, setMailboxStatus } from "./repo";
