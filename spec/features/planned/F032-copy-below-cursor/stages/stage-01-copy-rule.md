@@ -1,12 +1,12 @@
 # F032 stage 01 — Copy rule and held rows
 
-Part of [`../plan.md`](../plan.md). Lands on the worker's proof. Read D2, D3 and D6 first. Nothing calls the new code yet; stage 02 does.
+Part of [`../plan.md`](../plan.md). Lands on the worker's proof. Read D2, D3, D6. Stage 02 is the first caller.
 
 ## Step 1 — Pure rules in `mail/sync-rules.ts`
 
-**Goal.** The decision for a copy below the cursor, and the filter that drops metas a row already holds.
+**Goal.** The copy decision, and the filter of metas that a row holds.
 
-**Interfaces** (stage 02 uses these names and shapes; the worker may add fields, not rename). `FolderRowAtUid` is a row type, so it lives in `mail/repo/copies.ts` next to `MovedRow` and `MoveCandidateRow` (step 2); `sync-rules.ts` imports it as a type, as it does those two.
+**Interfaces** (stage 02 uses these names; add fields, do not rename). `FolderRowAtUid` is a row type, so it lives in `mail/repo/copies.ts` next to `MovedRow` and `MoveCandidateRow` (step 2); `sync-rules.ts` imports it as a type, as it does those two.
 
 ```ts
 /** A stored row at a UID of one folder (repo/copies.ts). */
@@ -33,12 +33,9 @@ export type BelowCursorCopyDecision =
   | { kind: "cross_copy"; emailId: string };
 
 export function decideBelowCursorCopy(input: {
-  /** S, the synced folder of the check. */
-  folder: string;
-  /** The hit UID in S. */
-  uid: number;
-  /** The moved row whose mail is still in its system folder. */
-  rowId: string;
+  folder: string; // S
+  uid: number; // the hit UID in S
+  rowId: string; // the moved row, still in its system folder
   baseKey: string;
   /** Every copy of the identity: DB rows, copies planned earlier in this check, this run's stores (`run:` ids). */
   copies: readonly KnownCopy[];
@@ -47,7 +44,7 @@ export function decideBelowCursorCopy(input: {
 }): BelowCursorCopyDecision;
 ```
 
-**Decisions.** D2 (the order: `move_in_flight`, `held`, `cross_copy`, `store`), D3 (numbering `copyDedupKey(baseKey, copies.length + 1)`), D6. `dropHeldMetas` compares by `sameMailIdentity` (default `IDENTITY_MODE`) with the row's identity fields, at an equal UID. `held` excludes the row `rowId` itself. `cross_copy` uses the same "matched in another folder than S" test as `decideIncoming` (reuse, do not copy, when a small helper fits).
+**Decisions.** D2 (order), D3 (numbering), D6. `dropHeldMetas` compares by `sameMailIdentity` (default `IDENTITY_MODE`) with the row's identity fields, at an equal UID. `held` excludes the row `rowId` itself. `cross_copy` uses the same "matched in another folder than S" test as `decideIncoming` (reuse, do not copy, when a small helper fits).
 
 **Test** (`apps/server/src/modules/mail/sync-rules.test.ts`; one `KnownCopy` builder; `NOW` = `2026-11-10T12:00:00Z`; S = `INBOX`, hit UID 10, row `r1`):
 
@@ -62,8 +59,6 @@ export function decideBelowCursorCopy(input: {
 **Check.** `bun test apps/server/src/modules/mail/sync-rules.test.ts`
 
 **Done when.** Cases 1.1–1.7 pass; the existing cases pass unchanged.
-
-**Out of scope.** Any caller.
 
 ## Step 2 — `listFolderRowsAtUids` in `mail/repo/copies.ts`
 
@@ -81,7 +76,7 @@ export async function listFolderRowsAtUids(
 ): Promise<FolderRowAtUid[]>;
 ```
 
-**Decisions.** Filters `org_id`, `mailbox_id`, `folder` = the given folder, `uid in uids`. `[]` without a query for an empty list (Postgres refuses `IN ()`). `uid` is `bigint`: map with `Number(...)` as the other reads of the file do. Any identity: the caller compares (D6).
+**Decisions.** Filters `org_id`, `mailbox_id`, `folder` = the given folder, `uid in uids`. `[]` without a query for an empty list . `uid` is `bigint`: map with `Number(...)` as the other reads of the file do. Any identity: the caller compares (D6).
 
 **Test** (`apps/server/test/integration/mail-repo.test.ts`, near the `listFolderUids` / `listMoveCandidates` cases):
 

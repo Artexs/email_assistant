@@ -11,17 +11,15 @@ A copy of a system-moved mail that sits in the mail's source folder below that f
 ## Scope
 
 - The copy branch of the end-of-run check `checkReturnedBelowCursor` (`mail/sync.ts`): a hit whose row's mail is still in its system folder.
-- One pure rule for the copy (store, move in flight, UID held by another row, cross copy) and one repository read.
+- One pure rule for the copy and one repository read.
 - A meta at a UID that a row of the same identity already holds in the folder is dropped before the return match, so a stored copy cannot hide a real return.
-- Docs of the sync capability, architecture §6.1 and the known alert of the check.
-- Decisions, tests and stages: [plan.md](plan.md).
+- The sync docs. Decisions, tests and stages: [plan.md](plan.md).
 
 ## Out of scope
 
 - A mail that the database does not know and that lands below a cursor (for example an Interia re-sort into INBOX, ADR 0014 limit (h)).
 - Copies of mail that the system moved more than 7 days ago (the window of the check).
-- Any change to the return branch beyond the held-meta filter, to the move finder (F029/F064) or to triage.
-- No migration, no `bun.lock` change.
+- Changes to the move finder of the sibling plan (F029/F064) or to triage.
 
 ## Acceptance
 
@@ -44,4 +42,4 @@ Two worker jobs in order (`plan.md` § Stages, § How to run): 01 pure rules and
 ## Notes
 
 - Owner verdict 2026-11-14: keep F029, F032 and F064 as one sync ticket (`docs/owner-decisions.md`); F029 and F064 share one plan in `spec/features/active/F029-sync-return-of-a-later-copy/`.
-- Moved from `tasks/planned/copy-below-cursor.md` on 2026-11-12. The old idea note was the first `plan.md` of this folder (git history).
+- The old idea note (2026-11-07) is in the git history of `plan.md`.
