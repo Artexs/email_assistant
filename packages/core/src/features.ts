@@ -43,6 +43,18 @@ export const featureFlags = {
     epic: "E3a",
     removeBy: "2027-03-01",
   },
+  weekly_report: {
+    default: false,
+    description: "The weekly report message on Monday.",
+    epic: "E3a",
+    removeBy: "2027-03-01",
+  },
+  handled_share: {
+    default: false,
+    description: "The handled-share line in the daily digest.",
+    epic: "E3a",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

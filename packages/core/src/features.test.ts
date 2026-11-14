@@ -51,6 +51,14 @@ describe("featureFlags registry", () => {
     expect(featureEpicPattern.test(featureFlags.mistake_capture.epic)).toBe(true);
   });
 
+  test("weekly_report and handled_share default off and have the epic E3a", () => {
+    for (const key of ["weekly_report", "handled_share"] as const) {
+      expect(featureFlags[key].default).toBe(false);
+      expect(featureFlags[key].epic).toBe("E3a");
+      expect(featureEpicPattern.test(featureFlags[key].epic)).toBe(true);
+    }
+  });
+
   test("featureKeys lists the registry keys in registry order", () => {
     expect<string[]>(featureKeys).toEqual(Object.keys(featureFlags));
     expect(featureKeys.slice(0, 3)).toEqual(["stats_page", "approvals_page", "sent_sync"]);

@@ -16,6 +16,7 @@ import {
   renderSyncStaleNotice,
   renderUrgentNotice,
 } from "../digest/notices";
+import { renderWeeklyReport } from "../digest/weekly";
 import { describeActions } from "../digest/would-do";
 import { textsFor } from "../texts";
 
@@ -125,5 +126,9 @@ export const noticeRenderers = {
   send_held: defineRenderer({
     schema: noticeViewSchemas.send_held,
     telegram: { full: (view, opts) => renderSendHeldNotice(view, textsFor(opts.locale)) },
+  }),
+  weekly_report: defineRenderer({
+    schema: noticeViewSchemas.weekly_report,
+    telegram: { full: (view, opts) => renderWeeklyReport(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;
