@@ -43,3 +43,16 @@ export async function isBreakGlassOwner(db: Db | Transaction<DB>, userId: string
     .executeTakeFirst();
   return row !== undefined;
 }
+
+// No TenantContext: the user gives the rows. The ids of the organizations where the user holds the mark.
+// RLS (F105 F13): like isBreakGlassOwner, call it only with no tenant scope (a CLI, a job).
+export async function listBreakGlassOrgIdsOfUser(db: Db | Transaction<DB>, userId: string): Promise<string[]> {
+  const rows = await db
+    .selectFrom("memberships")
+    .select("org_id")
+    .where("user_id", "=", userId)
+    .where("break_glass", "=", true)
+    .orderBy("org_id")
+    .execute();
+  return rows.map((row) => row.org_id);
+}

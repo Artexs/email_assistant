@@ -21,5 +21,5 @@ export {
   type UserMembership,
 } from "./memberships";
 export { getUserAuthProfile, insertUser, setUserLocale, setUserTerms, type UserAuthProfile } from "./users";
-export { getBreakGlassUserId, isBreakGlassOwner, setBreakGlassFlag } from "./break-glass";
+export { getBreakGlassUserId, isBreakGlassOwner, listBreakGlassOrgIdsOfUser, setBreakGlassFlag } from "./break-glass";
 export { getOrgFeature, listOrgFeatureRows, listOrgFeatureRowsOfAll, upsertOrgFeature } from "./org-features";
