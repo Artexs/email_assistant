@@ -15,6 +15,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   corpusDir,
   readLabels,
+  readManifest,
   readScenario,
   readSlots,
   readTexts,
@@ -27,6 +28,7 @@ import {
   fixtureText,
   miniPlanSpec,
   runSimCli,
+  completeCorpus,
   runSimInProcess,
   type MiniCorpus,
 } from "./sim-fixtures.test-helper";
@@ -417,5 +419,199 @@ describe("blind view and labels", () => {
     expect(result.code).toBe(1);
     expect(result.stdout).toContain("label_unknown b-zzz-9999");
     expect(existsSync(join(c.dir, "dev", "labels"))).toBe(false);
+  });
+});
+
+async function complete(): Promise<MiniCorpus> {
+  corpus = await completeCorpus();
+  return corpus;
+}
+
+const freezeArgs = ["--version", "1", "--date", "2026-11-14", "--min-dev", "5", "--min-holdout", "20"];
+
+async function frozen(): Promise<MiniCorpus> {
+  const c = await complete();
+  const result = await sim(c, "freeze", "mini", ...freezeArgs);
+  expect(result.stdout).toContain("frozen v1");
+  expect(result.code).toBe(0);
+  return c;
+}
+
+describe("freeze", () => {
+  test("6 status says not frozen before freeze and v1 pending after it", async () => {
+    const c = await complete();
+    expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: not frozen");
+    const result = await sim(c, "freeze", "mini", ...freezeArgs);
+    expect(result.code).toBe(0);
+    const manifest = readManifest(c.dir);
+    expect(manifest?.audit).toEqual({
+      status: "pending",
+      list: "audit/v1-list.md",
+      verdicts: "audit/v1-verdicts.json",
+      wrong: 0,
+    });
+    expect(manifest?.frozenAt).toBe("2026-11-14");
+    expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: v1 audit pending (0 wrong)");
+  });
+
+  test("freeze with the CLI floors prints codes and counts and writes no manifest; a second freeze is refused", async () => {
+    const c = await complete();
+    const result = await sim(c, "freeze", "mini", "--version", "1", "--date", "2026-11-14");
+    expect(result.code).toBe(1);
+    expect(result.stdout).toMatch(/^too_few \d+$/m);
+    expect(readManifest(c.dir)).toBeUndefined();
+    expect((await sim(c, "freeze", "mini", ...freezeArgs)).code).toBe(0);
+    const again = await sim(c, "freeze", "mini", ...freezeArgs);
+    expect(again.code).toBe(1);
+    expect(again.stdout).toContain("manifest.json exists");
+  });
+
+  test("freeze refuses a corpus with a check issue or a missing text, naming ids and codes only", async () => {
+    const c = await complete();
+    const slot = slotsOf(c, "dev", "batch-002")[0] as Slot;
+    const file = join(c.dir, "dev", "texts", "batch-002.json");
+    const parsed = JSON.parse(readFileSync(file, "utf8"));
+    parsed.cases = parsed.cases.filter((text: CaseText) => text.id !== slot.id);
+    writeFileSync(file, JSON.stringify(parsed));
+    const result = await sim(c, "freeze", "mini", ...freezeArgs);
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain(`case ${slot.id} text_missing`);
+    expect(readManifest(c.dir)).toBeUndefined();
+  });
+});
+
+function verdictPath(c: MiniCorpus, version = "1"): string {
+  return join(c.dir, "audit", `v${version}-verdicts.json`);
+}
+
+function setVerdicts(c: MiniCorpus, version: string, set: (id: string) => string): string[] {
+  const file = JSON.parse(readFileSync(verdictPath(c, version), "utf8"));
+  for (const entry of file.verdicts) entry.verdict = set(entry.id);
+  writeFileSync(verdictPath(c, version), JSON.stringify(file));
+  return file.verdicts.map((entry: { id: string }) => entry.id);
+}
+
+describe("audit", () => {
+  test("7 audit-list prints paths and counts, never case text; the files hold 30 cases, all pending", async () => {
+    const c = await frozen();
+    const result = await sim(c, "audit-list", "mini", "--version", "1");
+    expect(result.code).toBe(0);
+    const subjects = ["dev", "holdout", "week"].flatMap((part) =>
+      [...readTexts(c.dir, part as SimPart).values()].map((text) => text.subject)
+    );
+    expect(subjects.some((subject) => result.stdout.includes(subject))).toBe(false);
+    expect(result.stdout).toContain("audit/v1-list.md");
+    expect(result.stdout).toContain("audit/v1-verdicts.json");
+    expect(result.stdout).toContain("random 30 contested 0");
+    const verdicts = JSON.parse(readFileSync(verdictPath(c), "utf8"));
+    expect(verdicts.verdicts).toHaveLength(30);
+    expect(verdicts.verdicts.every((entry: { verdict: string }) => entry.verdict === "pending")).toBe(true);
+    const list = readFileSync(join(c.dir, "audit", "v1-list.md"), "utf8");
+    const first = verdicts.verdicts[0].id;
+    expect(list).toContain(`## ${first}`);
+    expect(list).toContain("slot category:");
+    expect(list).toContain("Mail as the checker sees it:");
+    expect(list).toContain("Temat ");
+    // The list is the same on a second run.
+    expect((await sim(c, "audit-list", "mini", "--version", "1")).code).toBe(0);
+    expect(readFileSync(join(c.dir, "audit", "v1-list.md"), "utf8")).toBe(list);
+  });
+
+  test("audit-list adds the contested cases (borderline notes) after the random ones", async () => {
+    const c = await complete();
+    const slot = slotsOf(c, "dev", "batch-001").find((s) => s.category === "info") as Slot;
+    // A borderline note marks the case as contested, even when the labels agree.
+    const file = join(c.dir, "dev", "texts", "batch-001.json");
+    const parsed = JSON.parse(readFileSync(file, "utf8"));
+    for (const text of parsed.cases) if (text.id === slot.id) text.note = "borderline: both fit";
+    writeFileSync(file, JSON.stringify(parsed));
+    expect((await sim(c, "freeze", "mini", ...freezeArgs)).code).toBe(0);
+    const result = await sim(c, "audit-list", "mini", "--version", "1");
+    expect(result.code).toBe(0);
+    const verdicts = JSON.parse(readFileSync(verdictPath(c), "utf8"));
+    const ids = verdicts.verdicts.map((entry: { id: string }) => entry.id);
+    expect(ids).toContain(slot.id);
+    expect(readFileSync(join(c.dir, "audit", "v1-list.md"), "utf8")).toContain("writer note: borderline: both fit");
+  });
+
+  test("5 audit-apply with one wrong verdict gives v1.1, done, wrong 1 and one changed part hash", async () => {
+    const c = await frozen();
+    expect((await sim(c, "audit-list", "mini", "--version", "1")).code).toBe(0);
+    const before = readManifest(c.dir) as NonNullable<ReturnType<typeof readManifest>>;
+    const ids = setVerdicts(c, "1", () => "ok");
+    const target = ids[0] as string;
+    const part = (["dev", "holdout", "week"] as SimPart[]).find((p) =>
+      readSlots(c.dir, p).some((s) => s.id === target)
+    ) as SimPart;
+    const slot = readSlots(c.dir, part).find((s) => s.id === target) as Slot;
+    const other = valueCategories.find((category) => category !== slot.category && category !== "urgent");
+    setVerdicts(c, "1", (id) => (id === target ? `wrong: ${other}` : "ok"));
+
+    const result = await sim(c, "audit-apply", "mini", "--version", "1", "--date", "2026-11-20");
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("wrong 1 pending 0");
+    const after = readManifest(c.dir) as NonNullable<ReturnType<typeof readManifest>>;
+    expect(after.version).toBe("1.1");
+    expect(after.frozenAt).toBe("2026-11-20");
+    expect(after.audit.status).toBe("done");
+    expect(after.audit.wrong).toBe(1);
+    for (const p of ["dev", "holdout", "week"] as const) {
+      expect(after.parts[p].sha256 === before.parts[p].sha256).toBe(p !== part);
+    }
+    expect(readSlots(c.dir, part).find((s) => s.id === target)?.category).toBe(other);
+    expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: v1.1 audit done (1 wrong)");
+
+    // The same file again changes nothing: no second bump.
+    expect((await sim(c, "audit-apply", "mini", "--version", "1", "--date", "2026-11-21")).code).toBe(0);
+    expect((readManifest(c.dir) as NonNullable<ReturnType<typeof readManifest>>).version).toBe("1.1");
+    // A done audit gives no new list.
+    const refused = await sim(c, "audit-list", "mini", "--version", "1");
+    expect(refused.code).toBe(1);
+    expect(refused.stdout).toContain("is done");
+
+    // A later change goes to 1.2.
+    const next = readSlots(c.dir, part).find(
+      (s) => s.id !== target && s.category !== "spam" && s.category !== "urgent"
+    ) as Slot;
+    writeFileSync(
+      verdictPath(c, "1.1"),
+      JSON.stringify({ scenario: "mini", version: "1.1", verdicts: [{ id: next.id, verdict: "wrong: spam" }] })
+    );
+    expect((await sim(c, "audit-apply", "mini", "--version", "1.1", "--date", "2026-11-22")).code).toBe(0);
+    expect((readManifest(c.dir) as NonNullable<ReturnType<typeof readManifest>>).version).toBe("1.2");
+  });
+
+  test("audit-apply with a pending verdict keeps the audit pending; an unknown id changes nothing", async () => {
+    const c = await frozen();
+    expect((await sim(c, "audit-list", "mini", "--version", "1")).code).toBe(0);
+    const ids = setVerdicts(c, "1", () => "ok");
+    setVerdicts(c, "1", (id) => (id === ids[0] ? "pending" : "ok"));
+    const result = await sim(c, "audit-apply", "mini", "--version", "1", "--date", "2026-11-20");
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("pending 1");
+    const manifest = readManifest(c.dir) as NonNullable<ReturnType<typeof readManifest>>;
+    expect(manifest.audit.status).toBe("pending");
+    expect(manifest.version).toBe("1");
+
+    writeFileSync(
+      verdictPath(c),
+      JSON.stringify({ scenario: "mini", version: "1", verdicts: [{ id: "x-nope", verdict: "ok" }] })
+    );
+    const unknown = await sim(c, "audit-apply", "mini", "--version", "1", "--date", "2026-11-20");
+    expect(unknown.code).toBe(1);
+    expect(unknown.stdout).toContain("verdict_unknown x-nope");
+  });
+
+  test("audit-list needs a frozen corpus and never overwrites owner verdicts", async () => {
+    const unfrozen = await complete();
+    expect((await sim(unfrozen, "audit-list", "mini", "--version", "1")).code).toBe(1);
+    unfrozen.cleanup();
+    const c = await complete();
+    expect((await sim(c, "freeze", "mini", ...freezeArgs)).code).toBe(0);
+    expect((await sim(c, "audit-list", "mini", "--version", "1")).code).toBe(0);
+    setVerdicts(c, "1", () => "ok");
+    const refused = await sim(c, "audit-list", "mini", "--version", "1");
+    expect(refused.code).toBe(1);
+    expect(refused.stdout).toContain("not overwritten");
   });
 });
