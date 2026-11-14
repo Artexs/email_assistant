@@ -96,7 +96,7 @@ System prompt content (English, short): the role ("You grade one draft written b
 
 **Goal.** Delegation and clarification drafts of a sim run get judged; the report shows the scores; the judge refuses the drafter's provider (D30, D31).
 
-**Files.** `apps/server/src/modules/triage/eval.ts` (`runCase`, `CaseResult`, the state schema), `eval.test.ts`, `apps/server/src/modules/triage/eval-sim-report.ts` (section), its test, `apps/server/src/scripts/eval.ts` (flags), `evals/README.md`.
+**Files.** `apps/server/src/modules/triage/eval.ts` (`runCase`, `CaseResult`, the state schema), `eval.test.ts`, `apps/server/src/modules/triage/eval-sim-report.ts` (section), its test, `apps/server/src/scripts/eval.ts` (flags), `evals/README.md`, `docs/capabilities/triage.md` (PD-009: rule 13 gains `--judge` with `--judge-provider` and `--judge-model`, and that the judge refuses the classifier's provider; § Entry points gains the function row `judgeDraft` in `apps/server/src/modules/triage/judge.ts`; keep the "Checked against" line).
 
 **Interfaces.**
 

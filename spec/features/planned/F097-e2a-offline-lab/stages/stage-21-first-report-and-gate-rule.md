@@ -56,7 +56,7 @@ test("a sim holdout gate file exists for the current classifier prompt version",
 
 **Goal.** Every later agent sees the gate (D29, P10).
 
-**Files.** `docs/code-patterns.md` (replace the sentence "A prompt or model change of any role runs the eval gate of PD-025 (`bun run eval`, the go/no-go table) before the merge." at line ~95 and "A prompt or model change runs `bun run eval` and must pass the go/no-go table." at line ~160–163), `.agents/limen/styleguide.md` (§ Prefer: replace the last sentence of the LLM line, "A prompt or model change of any role runs `bun run eval` and must pass the go/no-go table."), `evals/README.md` (a "Gate" section), `apps/server/src/modules/triage/prompts/index.ts` (the comment above `prompts`), `apps/server/src/modules/triage/prompts/classifier-v2.ts` comment line 1 is **not** edited (the prompt file stays untouched; its comment is old but harmless — name it in the final message).
+**Files.** `docs/code-patterns.md`, three places (plan fact F22): § Side effects, the sentence "A prompt or model change of any role runs the eval gate of PD-025 (`bun run eval`, the go/no-go table) before the merge." at line ~149; § Tests, "A prompt or model change runs `bun run eval` and must pass the go/no-go table." at line ~223; and § Add an action type or a draft kind, the draft-kind table row 5 ("A prompt or model change for it", right cell "`bun run eval` and its go/no-go table", line ~75): the right cell becomes "the sim gate run and its gate file (§ Side effects)", keep the table aligned with prettier; `.agents/limen/styleguide.md` (§ Prefer: replace the last sentence of the LLM line, "A prompt or model change of any role runs `bun run eval` and must pass the go/no-go table."), `evals/README.md` (a "Gate" section), `docs/capabilities/triage.md` (PD-009: rule 13 gains the gate rule in one sentence and the folder `evals/results/gate/`; § Tests gains `apps/server/src/modules/triage/gate-evidence.test.ts`), `apps/server/src/modules/triage/prompts/index.ts` (the comment above `prompts`), `apps/server/src/modules/triage/prompts/classifier-v2.ts` comment line 1 is **not** edited (the prompt file stays untouched; its comment is old but harmless — name it in the final message).
 
 Text to use (adapt the sentence form to each file):
 
@@ -65,9 +65,9 @@ Text to use (adapt the sentence form to each file):
 
 **Decisions.** D29, P3, P10.
 
-**Check.** `bunx prettier --check docs/code-patterns.md .agents/limen/styleguide.md evals/README.md`
+**Check.** `bunx prettier --check docs/code-patterns.md .agents/limen/styleguide.md evals/README.md docs/capabilities/triage.md && bun test apps/server/src/capability-map.test.ts && grep -c "go/no-go" docs/code-patterns.md .agents/limen/styleguide.md` (the grep prints `0` for both files).
 
-**Done when.** The four files carry the rule.
+**Done when.** The five files carry the rule; no "go/no-go" sentence is left.
 
 ## Proof
 

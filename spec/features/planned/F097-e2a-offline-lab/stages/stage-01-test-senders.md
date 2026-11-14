@@ -33,9 +33,9 @@ TEST_SENDER_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
 export function testMailRule(config: Config): TestMailRule; // parseAddressList(...) lower-cased, deduplicated
 ```
 
-`platform` may not import `modules`: define `TestMailRule` as a structural type in config (`{ senders: string[] }`) or return `string[]` from `testSenderAddresses(config)` and build the rule in the composition roots. Pick the one the border lint accepts; say which in the final message.
+`platform` may not import `modules`: define `TestMailRule` as a structural type in config (`{ senders: string[] }`) or return `string[]` from `testSenderAddresses(config)` and build the rule in the composition roots (the same shape as `sendTestAddresses(config)` at `config.ts:406`, which uses `parseAddressList`). Pick the one the border lint accepts; say which in the final message.
 
-`.env.example`, under `SEND_TEST_ADDRESSES`:
+`.env.example`, directly after the `SEND_TEST_ADDRESSES=` line (before the `SEND_LIMIT_*` keys):
 
 ```
 # Test mail senders (comma list). Mail from these addresses counts as test mail: it is never a real label and only
@@ -43,7 +43,7 @@ export function testMailRule(config: Config): TestMailRule; // parseAddressList(
 TEST_SENDER_ADDRESSES=
 ```
 
-`configSchema` refuses an entry that is not an address (the same check `SEND_TEST_ADDRESSES` uses at `config.ts:258`).
+`configSchema` refuses an entry that is not an address (the same `addressPattern` check `SEND_TEST_ADDRESSES` uses at `config.ts:261-268`, in the `superRefine` of the schema).
 
 **Decisions.** D1.
 
@@ -65,7 +65,7 @@ TEST_SENDER_ADDRESSES=
 
 **Goal.** SQL "real" excludes test senders; SQL "synthetic" includes them (D1).
 
-**Files.** `mailKindFilter` lives in `apps/server/src/modules/mail/repo.ts:34` today, or in `mail/repo/emails.ts` when F091 stage 02 has landed (`grep -rn "export function mailKindFilter" apps/server/src`). Callers (grep `mailKindFilter(` and `mail: MailKind` / `mail: "real"`): `mail/repo` (3), `actions/repo` (2), `triage/repo.ts` (`listUnlabeled`, `listLabeledResults`, the third at line ~384), `triage/feedback.ts` (`listForLabeling`), `triage/gate.ts`, `triage/eval-real.ts`, `scripts/eval.ts` (`runReal`), `scripts/triage-label.ts`, `scripts/triage-cost.ts`, `scripts/testmail-target.ts`, and the integration tests that call them.
+**Files.** `mailKindFilter` lives in `apps/server/src/modules/mail/repo/emails.ts:11` (with `MailKind`; re-exported by `mail/repo/index.ts` and `mail/index.ts`). Callers (grep `mailKindFilter(` and `mail: MailKind` / `mail: "real"`): `mail/repo/claims.ts` (`claimEmails` ~65, `requeueTooOld` ~171), `mail/repo/lookup.ts` (`listThreadContext` ~25), `actions/repo/claims.ts` (~92), `actions/repo/filters.ts` (`mailboxFilterExpr`), `triage/repo.ts` (`listUnlabeled` ~272, `listLabeledResults` ~322, the third at ~384), `triage/feedback.ts` (`listForLabeling`), `triage/gate.ts`, `triage/eval-real.ts`, `scripts/eval.ts` (`runReal`), `scripts/triage-label.ts`, `scripts/triage-cost.ts`, `scripts/testmail-target.ts`, and the integration tests that call them.
 
 **Interfaces.**
 
@@ -98,7 +98,7 @@ The repo functions take the rule in their existing `opts` object: `opts: { mail:
 
 **Goal.** `TRIAGE_LLM_SCOPE=synthetic` and `ACTIONS_SCOPE=synthetic` treat sender test mail as test mail (D1; the old F057 done-when).
 
-**Files.** `apps/server/src/modules/actions/scope.ts`, `actions/repo.ts` (`MailboxClaimFilter`, `mailboxFilterExpr` and the expression at ~line 390), `apps/server/src/composition.ts` (`actionsScope`), `apps/server/src/main.ts`, the mail claim functions with `syntheticOnly` (`mail/repo` ~969, ~1078), the Undo path that calls `scopeAdmits`, their tests.
+**Files.** `apps/server/src/modules/actions/scope.ts`, `actions/repo/filters.ts` (`MailboxClaimFilter`, `mailboxFilterExpr`), `actions/repo/claims.ts` (the expression at ~line 92), `apps/server/src/composition.ts` (`actionsScope`), `apps/server/src/main.ts`, the mail functions with `syntheticOnly` (`claimEmails` in `mail/repo/claims.ts` ~47, caller `triage/jobs.ts:121`; `listThreadContext` in `mail/repo/lookup.ts` ~15, caller `triage/service.ts:472`, which passes `isSyntheticMessageId(…)` today and passes `isTestMail(…)` after this step), the Undo path that calls `scopeAdmits` (`actions/undo.ts:43`; its `mail` object gains `fromAddress`), their tests.
 
 **Interfaces.**
 
@@ -125,3 +125,13 @@ The mail claim functions take `syntheticOnly: false | { testMail: TestMailRule }
 **Done when.** Both cases pass and the old scope tests pass.
 
 **Out of scope.** `SEND_SCOPE` (it filters by recipient, not by mail kind).
+
+## Step 4 — Capability pages
+
+**Goal.** The pages say what counts as test mail now (PD-009, plan fact F19).
+
+**Files.** `docs/capabilities/triage.md`: rule 6 (`TRIAGE_LLM_SCOPE` `synthetic` = a synthetic Message-ID or a sender in `TEST_SENDER_ADDRESSES`), rule 13 (real labels leave out test-sender mail) and rule 15 (`triage:label --synthetic`). `docs/capabilities/actions-and-undo.md`: the `ACTIONS_SCOPE` `synthetic` lines (the claim and the Undo `held` answer, ~lines 49 and 131). One sentence each; keep the "Checked against" line.
+
+**Check.** `bun test apps/server/src/capability-map.test.ts && bunx prettier --check docs/capabilities/triage.md docs/capabilities/actions-and-undo.md`
+
+**Done when.** Both pages carry the rule; the test passes.

@@ -48,7 +48,7 @@ Then `bun run db:migrate` (your job DB) and `bun run db:types`; commit `schema.t
 
 **Goal.** One query returns the review page: unlabelled, triaged, real mail of the last 30 days of the given mailboxes, in a seeded random order (D4).
 
-**Files.** `apps/server/src/modules/triage/repo.ts` (or `triage/repo/<file>.ts` if the module was split), `triage/feedback.ts` (a service wrapper that adds summaries, like `listForLabeling`), `triage/index.ts`, `apps/server/test/integration/triage-review-sample.test.ts` (new).
+**Files.** `apps/server/src/modules/triage/review-repo.ts` (new; `triage/repo.ts` is 629 lines, over the 400-line rule, so it does not grow: plan D38; import `UnlabeledResult` and the helpers it needs from `./repo`), `triage/feedback.ts` (a service wrapper that adds summaries, like `listForLabeling`), `triage/index.ts`, `apps/server/test/integration/triage-review-sample.test.ts` (new).
 
 **Interfaces.**
 
@@ -116,7 +116,7 @@ export function isReviewCallback(c: Callback): boolean; // the four kinds above
 
 The regexes `WITH_CODE` and `WITHOUT_CODE` gain the prefixes; the review prefixes accept the codes `u r i n s d` (`d` = `delegation`), the old prefixes keep `u r i n s` only (`fr:d:…` still parses to `null`). `isFeedbackCallback` stays `"emailId" in callback` (true for the new kinds). The longest value stays 41 bytes.
 
-`apps/server/src/modules/channels/callbacks.ts` must keep compiling: map each review kind to the same branch as its plain kind with a `source` variable (`"review"` for the review kinds, `"telegram"` for the others), and the review picker's buttons use `review_pick` / `review_cancel` so the whole flow stays `review`. The review picker offers the six `reviewLabelCategories` (the digest picker keeps its five). This is the only change in `callbacks.ts` in this stage; keep it small (F088 stage 05 edits the same file).
+`apps/server/src/modules/channels/callbacks.ts` must keep compiling: map each review kind to the same branch as its plain kind with a `source` variable (`"review"` for the review kinds, `"telegram"` for the others), and the review picker's buttons use `review_pick` / `review_cancel` so the whole flow stays `review`. The review picker offers the six `reviewLabelCategories` (the digest picker keeps its five). The pick edit keeps today's `pickedText(category, aiCategory, saved)` (F030). `callbacks.ts` is 393 lines: the review picker and the kind-to-source helpers go into a new `apps/server/src/modules/channels/review-taps.ts`, and `callbacks.ts` gets only the dispatch lines (plan D38). F098 stages 09 and 11 edit `callbacks.ts` too (tap texts): if `packages/core/src/texts/index.ts` exists, every new text follows plan D39.
 
 **Decisions.** D5.
 
@@ -135,3 +135,13 @@ Integration (`apps/server/test/integration/channels-callbacks.test.ts`, one new 
 **Done when.** All cases pass.
 
 **Out of scope.** The `/review` command.
+
+## Step 4 — Capability pages
+
+**Goal.** The pages list the new source and the new prefixes (PD-009, plan fact F19).
+
+**Files.** `docs/capabilities/triage.md`: § Data, the `triage_feedback.source` list gains `review`; § Entry points, the Telegram callbacks row gains `vr:`, `vc:`, `ve:`, `vx:`; § Tests gains `apps/server/test/integration/triage-review-sample.test.ts`. `docs/capabilities/digest-and-notices.md`: rule 10 (callback prefixes) and the Entry points callbacks row gain `vr vc ve vx` with one line on what they do (the review page of stage 04 uses them; `vr:d:` and `vc:d:` accept `delegation`). Keep the "Checked against" line.
+
+**Check.** `bun test apps/server/src/capability-map.test.ts && bunx prettier --check docs/capabilities/triage.md docs/capabilities/digest-and-notices.md`
+
+**Done when.** Both pages carry the lines; the test passes.
