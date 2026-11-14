@@ -41,6 +41,7 @@ Four stages in order ([plan.md](plan.md) § Stages): 01 CSP build check; 02 `[ri
 - Plan after: none.
 - Build after: F095 (E1 Close the MVP) in `spec/features/done/` (§2.1 row 7 of `docs/product/stage-2/05-execution-plan.md`: needs E1; stage 03 edits the web-panel capability page that F095 writes).
 - Gate: —. Stage 02 waits while another `bun.lock` change is in build.
+- Refresh: before stage 01 builds, a `--role planner` job `Refresh F101` (`.agents/limen/planner.md` § Refresh job) checks the plan against `master`, unless `plan-refresh-1.md` exists in this folder. Plan base `a72b214`; F098 and F099 add and change panel pages that the Astro 7 move must cover.
 
 ## Notes
 

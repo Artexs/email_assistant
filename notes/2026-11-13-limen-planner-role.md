@@ -33,3 +33,11 @@
 - Three cases: `needs plan` → planner job; `stages/` → one worker job per stage; neither → one worker job from `ticket.md` (+ old `plan.md`).
 
 - Owner decision 2026-11-13 (late): owner checkpoints and owner steps in a plan are NOT a stop. The coordinator goes on with the plan defaults. Planners: do not add owner checkpoints for review or confirmation; list an owner step only for what needs the owner's hands (VPS, deploy, real secrets, real money). Builders run in parallel without a cap; file gates are advisory; one migration in build at a time. The planner cap (three at once) stays.
+
+## Plan refresh (owner decision 2026-11-14)
+- Problem: plans written while other tickets were still landing name files, functions and tables that later moved (F097 was written before the F091 repo split; F100 and F101 before F098 and F099 built).
+- Rule: a plan whose first stage has not built yet gets a refresh job just before that stage, when `scripts/plan-drift.sh <ticket folder> <plan base>` exits 1 (named paths changed or gone since the plan base). Exit 0: build directly.
+- A refresh is not a new plan: it keeps decisions, scope and stage count, fixes the stages to the code at `HEAD`, writes `plan-refresh-<n>.md`, and runs a cold review only when a stage changed in substance. Method: `.agents/limen/planner.md` § Refresh job.
+- Spawn: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan refresh · FNNN" "Refresh FNNN: make spec/features/<lane>/FNNN-slug/ true for HEAD"`. It counts against the cap of three planners.
+- Plan base: new plans write `Plan base: <sha>` in the `plan.md` status line. Older plans: the `Refresh:` line in `ticket.md` § Sequenced, else the `base` file of the planner job in `.limen/jobs/`.
+- Marked 2026-11-14: F097 (base 9d9bfb8), F100 (10e81b9, after the F097 refresh), F101 (a72b214). Not marked: F095 (nearly built), F098 and F099 (in build; a land conflict resumes the worker), F092 (plan base def6883; its stage 01 reads the live catalog), F102 (already held for a re-check), F103 (planning now).

@@ -40,6 +40,7 @@ An agent or the owner runs one command and gets, in under 10 minutes, per-catego
 - Plan after: none (the plan uses no interface of another unplanned ticket).
 - Build after: F095 (E1 Close the MVP) in `spec/features/done/`.
 - Gate: Owner audit of 50 cases per corpus version — it runs after stage 20 (the corpus freeze) and does not stop the build (plan D36, questions Q1).
+- Refresh: before stage 01 builds, a `--role planner` job `Refresh F097` (`.agents/limen/planner.md` § Refresh job) checks the plan against `master`, unless `plan-refresh-1.md` exists in this folder. Plan base `9d9bfb8`; it was written before the F091 repo split (`apps/server/src/modules/mail/repo.ts` is gone).
 
 ## Notes
 

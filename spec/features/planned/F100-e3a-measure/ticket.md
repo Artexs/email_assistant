@@ -41,6 +41,7 @@ Every Monday the executive gets one Telegram message with the week's numbers: mi
 - Plan after: F097 (E2a Offline lab), which has `stages/`: this plan uses its interfaces (`TestMailRule`, `mailKindFilter(kind, rule)`, feedback source `review`, `/review`, `wilsonInterval`).
 - Build after: F095 (E1 Close the MVP) in `spec/features/done/`. Feature flags come from F087 (landed, the first slice of E7-T2 F099). Stage-level waits: F097 stage 03 landed before F100 stage 04; F097 stages 01 and 03 landed before F100 stages 10 and 11; F097 stage 04 landed before F100 stage 15.
 - Gate: — (owner step O1, the OpenAI budget alert, does not stop the build).
+- Refresh: before stage 01 builds, a `--role planner` job `Refresh F100` (`.agents/limen/planner.md` § Refresh job) checks the plan against `master`, unless `plan-refresh-1.md` exists in this folder. Plan base `10e81b9`; F091 stages 04–05, F098 and F099 change many of its files. It uses F097 interfaces, so it runs after the F097 refresh landed.
 
 ## Notes
 
