@@ -4,6 +4,7 @@ import { describe, expect, spyOn, test } from "bun:test";
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { currentTenantScope } from "./db";
 import {
   authRequest,
   buildTrustedProxies,
@@ -21,7 +22,6 @@ import {
   type ApiEnv,
   type WebDeps,
 } from "./http";
-import { currentTenantScope } from "./db";
 import { setLogFormat, setLogLevel } from "./log";
 
 describe("GET /health", () => {

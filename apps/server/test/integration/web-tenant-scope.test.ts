@@ -3,8 +3,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
-import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { insertSenderRule } from "../../src/modules/config/repo";
+import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { currentTenantScope, withTenantScope } from "../../src/platform/db";
