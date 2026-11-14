@@ -6,7 +6,7 @@ opened: 2026-11-13
 
 ## Outcome
 
-A repository function that forgets its `org_id` filter returns no foreign row on a web request, because Postgres row-level security limits the `app` role to the organization of the request. The code filter stays the first line; RLS is the second. An auditor reads one sentence: tenant isolation is enforced in the database, not only in code. New tables join the policy through the same catalog test that later guards the organization delete and the DSR address map.
+A repository function that forgets its `org_id` filter returns no foreign row on a web request, because Postgres row-level security limits the `app` role to the organization of the request. The code filter stays the first line; RLS is the second. An auditor reads one sentence: the database is a safety net against a missed `org_id` filter, under the tenant filter in code. New tables join the policy through the same catalog test that later guards the organization delete and the DSR address map.
 
 ## Scope
 

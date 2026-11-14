@@ -132,6 +132,7 @@ Catalog walk (no seeding, as `app`, outside a transaction):
 3. For each table of `ALL_POLICY_TABLES`: `pg_policies` (`schemaname = 'public'`) has exactly one row; `policyname = 'tenant_rows'`, `permissive = 'PERMISSIVE'`, `array_to_string(roles, ',') = 'app'`, `cmd = 'ALL'`, `qual` and `with_check` equal `POLICY_TEXT` (`ORG_POLICY_TEXT` for `organizations`).
 4. The tables of `public` with `relrowsecurity = true` (`relkind IN ('r', 'p')`) are exactly `ALL_POLICY_TABLES` (an RLS table without a policy would deny `app` every row).
 5. Every function of `public` with `prosecdef = true` has `app_current_org()` in `prosrc`; the list contains `delete_mailbox`.
+19. Views (a view runs as its owner, `migrator`, and so bypasses RLS unless it has `security_invoker`): every relation of `public` with `relkind = 'v'` has `security_invoker=true` or `security_invoker=on` in `pg_class.reloptions`, and `public` has no relation with `relkind = 'm'` (a materialized view stores rows of every organization). Today `public` has no view: the test passes with two empty lists. Failure message: `view <name> must be created WITH (security_invoker = true), or must not exist (docs/code-patterns.md § Data access)`.
 
 Isolation (one `withRollback` per test; `A = await seedOrg(trx)`, `B = await seedOrg(trx)`):
 
@@ -156,7 +157,7 @@ Writes (each its own `withRollback` with A and B seeded, then `scopeLocal(trx, A
 
 **Check.** `bun test apps/server/test/integration/rls-policy.test.ts` passes; then `bun test apps/server/test/integration/delete-mailbox.test.ts apps/server/test/integration/mail-remove.test.ts apps/server/test/integration/web-mailboxes.test.ts` passes unchanged (the guard does not change the unscoped path).
 
-**Done when.** Tests 1–18 exist and pass; the existing integration suite passes with no test changed.
+**Done when.** Tests 1–19 exist and pass; the existing integration suite passes with no test changed.
 
 **Out of scope.** Any change in `apps/server/src/`; the scope and the driver (stage 02); web tests (stage 03); docs (stage 04).
 

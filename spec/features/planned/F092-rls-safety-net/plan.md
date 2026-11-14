@@ -1,6 +1,6 @@
 # F092 · RLS safety net: plan
 
-> **Status 2026-11-14 — planned.** Four stages written. Cold review: the coordinator runs it (task rule of this planning job). Builds after F087 (closed). Nothing is built yet.
+> **Status 2026-11-14 — planned.** Four stages written; cold review 1 done and its findings fixed (see "Cold review"). Builds after F087 (closed). Nothing is built yet.
 
 Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](questions.md).
 
@@ -8,12 +8,12 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 
 - [x] Collect: ticket, plan input, review §3.9 and §6–§8, `07-foundation-plan.md`, `05-execution-plan.md` §2, ADR 0011 and 0027, `docs/architecture.md` §5 and §7, `docs/code-patterns.md`, the styleguide, the code of `platform/{http,scheduler}.ts`, `platform/db/`, `web.ts`, every `routes.ts`, `mail/remove.ts`, `config/rules.ts`, the migrations, the test helpers.
 - [x] Facts checked (Postgres probes P1–P10, Kysely and Bun probes K1–K8, source reads).
-- [x] Decisions D7–D22.
+- [x] Decisions D7–D23.
 - [x] stage-01-policies [written]
 - [x] stage-02-tenant-scope [written]
 - [x] stage-03-web-scope [written]
 - [x] stage-04-docs [written]
-- [ ] Cold review: the coordinator runs it and files `plan-review-1.md`.
+- [x] Cold review 1 filed (`plan-review-1.md`), fixes logged in "Cold review".
 
 ## Input
 
@@ -51,7 +51,7 @@ Design decisions, as written:
 
 Stages, as written: 1. Migration and policy test. 2. Request transaction. 3. Docs. Open questions, as written: the connect and password-check routes in the request transaction (default: their own short ones); `audit_log` keeps `INSERT`-only for `app` under the policy.
 
-### Design decisions of this plan (D7–D22)
+### Design decisions of this plan (D7–D23)
 
 D1, D3, D4 and D5 stay, made exact below. **D2 is replaced by D7** (reason there). "Default, owner to confirm" marks a small question that is also in [questions.md](questions.md); the stages do not change with its answer.
 
@@ -62,7 +62,7 @@ D1, D3, D4 and D5 stay, made exact below. **D2 is replaced by D7** (reason there
   - Rejected: Kysely's `onReserveConnection` hook (same idea, less code): when the hook throws, `PostgresDriver.acquireConnection` never releases the pg client (K3), so a failed `set_config` would leak a pool slot. Rejected: a second pool for the web (the jobs path still needs a reset, and two pools double the connections).
 - **D8 Policy shape (D1 made exact).** One SQL function holds "unset": `app_current_org() RETURNS uuid LANGUAGE sql STABLE PARALLEL SAFE AS 'SELECT nullif(current_setting(''app.org_id'', true), '''')::uuid'`. Each table: `ALTER TABLE <t> ENABLE ROW LEVEL SECURITY; CREATE POLICY tenant_rows ON <t> FOR ALL TO app USING (app_current_org() IS NULL OR org_id = app_current_org()) WITH CHECK (app_current_org() IS NULL OR org_id = app_current_org());` and on `organizations` with `id`. Reasons: after a `SET LOCAL` or a `set_config(…, '')`, `current_setting('app.org_id', true)` is `''`, not `NULL` (P1), and `''::uuid` is an error; D1 as written would break every query of a connection that once had the setting. The function keeps the rule in one place; Postgres inlines it (P8: the plan still uses the `org_id` index). A value that is not a UUID raises `22P02` on the first query: fail closed (P7). No `FORCE` (ticket: out of scope): `migrator` and `SECURITY DEFINER` functions owned by it bypass the policies (P6).
 - **D9 The table list.** 18 tables with `org_id` (checked against `platform/db/schema.ts`, 2026-11-14; every `org_id` is `NOT NULL`): `actions`, `audit_log`, `chat_link_tokens`, `chat_links`, `delegates`, `delegations`, `digests`, `emails`, `mailbox_credentials`, `mailbox_folders`, `mailbox_settings`, `mailboxes`, `memberships`, `org_features`, `outbox`, `sender_rules`, `triage_feedback`, `triage_results`; plus `organizations` on `id` = 19 policies. The migration names each table explicitly (greppable, reviewable). Stage 01 checks the job DB catalog first: a table with `org_id` that another ticket landed in between joins the migration the same way (the measure ticket F100 plans `email_headers`, `email_flags`, `action_feedback`).
-- **D10 The catalog test (D4 made exact).** The walk reads `pg_catalog` (`pg_class`, `pg_namespace`, `pg_attribute`, `pg_policies`), not `information_schema.columns`: the latter shows only columns the role has a privilege on, so a table without a grant would escape. The walk fails when a table with `org_id` (or `organizations`) lacks RLS, has `FORCE`, has no `tenant_rows` policy or another policy text, or when a table without `org_id` has RLS on (an RLS table with no policy denies `app` everything). The expected policy text is the one Postgres stores (P9).
+- **D10 The catalog test (D4 made exact).** The walk reads `pg_catalog` (`pg_class`, `pg_namespace`, `pg_attribute`, `pg_policies`), not `information_schema.columns`: the latter shows only columns the role has a privilege on, so a table without a grant would escape. The walk fails when a table with `org_id` (or `organizations`) lacks RLS, has `FORCE`, has no `tenant_rows` policy or another policy text, or when a table without `org_id` has RLS on (an RLS table with no policy denies `app` everything). The expected policy text is the one Postgres stores (P9). Views (review N1): a view runs as its owner (`migrator`) and bypasses RLS, so every view in `public` must have `security_invoker` and `public` has no materialized view; today there are none (review scratch catalog).
 - **D11 Per-table isolation test.** The test seeds two organizations with at least one row in each of the 19 tables (in one rolled-back transaction), sets `app.org_id` locally and counts per table. A catalog table that is not in the seeded list still gets the policy text check of D10 (the same text gives the same behaviour); the new-table checklist asks for a seed row too (stage 04).
 - **D12 `delete_mailbox` checks the scope (default, owner to confirm, Q2).** The function is `SECURITY DEFINER`, owned by `migrator`, so it bypasses RLS (P6). The migration replaces its body (the current one is in `20261113100001_outbox_view.sql`) with one new first statement: `IF public.app_current_org() IS NOT NULL AND p_org_id <> public.app_current_org() THEN RAISE EXCEPTION 'mailbox not found' USING ERRCODE = 'P0002'; END IF;`. Same error code as a missing mailbox, so `removeMailbox` answers `not_found` as today (`mail/remove.ts:21`). The catalog test checks that every `SECURITY DEFINER` function in `public` calls `app_current_org()`. Rejected: leave the definer path unguarded (it is the one web path that RLS would not cover).
 - **D13 `audit_log` stays insert-only.** `app` keeps only `INSERT` and `SELECT` (`20261104000001_triage.sql:120`). The `FOR ALL` policy admits an insert with `RETURNING` for the scoped organization and refuses one for another organization (P3). No grant changes.
@@ -78,8 +78,9 @@ D1, D3, D4 and D5 stay, made exact below. **D2 is replaced by D7** (reason there
 - **D17 The web exceptions (D3 made exact; default, owner to confirm, Q3).** Unscoped web paths: `/api/operator/*` (by design, cross-organization reads), `/api/auth/*` (Better Auth, mounted on the app outside the `/api` tenant middleware; its hooks `auditWebEvent` and `termsAcceptedHandler` already name the organization of the user's oldest membership), `/health`, and the page paths (`/`, the static pages; `homePath` reads with the code filter). The membership lookup inside `requireTenant` itself runs before the scope (it finds the scope). The route-walk test lists `/api/operator/` as the one `/api` exception.
 - **D18 Tests set the value only locally.** A test sets `app.org_id` with `select set_config('app.org_id', $1, true)` inside a transaction (it ends with the transaction), never with a session-level `SET` or `set_config(…, false)`: the driver's per-connection memory would then be wrong. Only the driver writes the session value.
 - **D19 Deploy order does not matter.** Policies without the scope code admit every row (nothing sets the value); the scope code without the policies writes a setting nobody reads. So stage 01 may deploy before or after stages 02–03. A code rollback leaves the policies (admit all); `db:rollback` of the migration is safe too.
-- **D20 Long-lived work started in a request.** No route starts background work today (grep for `void (`, `setTimeout`, `.start(` in `routes.ts`, `connect*.ts`, `remove.ts`, 2026-11-14). If a later feature starts long-lived work from a request, it runs it inside `withoutTenantScope` or it stays in the organization of that request. Stage 04 writes this rule.
+- **D20 Long-lived work and long-lived objects made in a request (widened by review N4).** No route starts background work today (grep for `void (`, `setTimeout`, `.start(` in `routes.ts`, `connect*.ts`, `remove.ts`, 2026-11-14), and no route makes an object that outlives the request. The scope follows the async context, so it reaches: work that a request starts (a timer, a loop, a promise chain that outlives the response), and the callbacks of an object made in a request (an `EventEmitter` listener runs in the context of the `emit` call; review probe: `emitter-cb:A`), for example an IMAP IDLE client or a stream. A later feature that does either makes the work or the object inside `withoutTenantScope`, or accepts that it stays in the organization of that request. Stage 04 writes this rule.
 - **D21 No start check.** The server does not check at start that the policies exist (a missing migration = admit all, today's behaviour). The deploy order in `deploy/README.md` runs `db:migrate` before the start. Default, owner to confirm (Q4).
+- **D23 The claim (review N3).** RLS is "a safety net against a missed `org_id` filter". It is not a defence against SQL that runs as `app` and is controlled by an attacker: such SQL can run `set_config('app.org_id', '', false)`, and an empty value admits every row (D1, by design for jobs). Every doc, ADR line and later security page uses this wording, never "isolation is enforced in the database". Stage 04 writes it.
 - **D22 Stage order.** Stage 01 (migration, tests) and stage 02 (driver, scope) touch different files and do not depend on each other: they may run in parallel. Stage 03 needs both (its tests read the policies and the scope). Stage 04 (docs) names what 01–03 built.
 
 ## Differences found at collect (2026-11-14)
@@ -107,7 +108,7 @@ Probes ran in `.tmp-f092-probe/` of the planning worktree (deleted after): a thr
 - **P8** `app_current_org()` (`LANGUAGE sql STABLE`) is inlined: `EXPLAIN` of `where org_id = $A and address = $x` under the policy shows `Index Scan … Index Cond: (org_id = …) AND (address = …)` with the policy as a `Filter`; an `ILIKE` predicate still uses the `org_id` index (bitmap scan).
 - **P9** `pg_policies` as `app`: `policyname = tenant_rows`, `permissive = PERMISSIVE`, `roles = {app}`, `cmd = ALL`, `qual` and `with_check` = `((app_current_org() IS NULL) OR (org_id = app_current_org()))` (for `organizations`: `id` instead of `org_id`). `pg_class.relrowsecurity = t`, `relforcerowsecurity = f`. `app` can read `pg_policies` and `pg_class`.
 - **P10** All 17 real migrations, then the stage 01 migration text, on the throw-away cluster with `dbmate` (from the main checkout's `node_modules`): migrate, rollback and migrate pass. As `app`: the catalog query of stage 01 returns the 18 tables of D9; 19 tables have RLS on, none with `FORCE`; 19 `tenant_rows` policies; `delete_mailbox` is the one `SECURITY DEFINER` function and its body holds `app_current_org()`; under another organization's scope it raises `mailbox not found`.
-- **K1** Kysely 0.29.8 (`node_modules/kysely/dist/kysely.js:567`): `Transaction.transaction()` throws `calling the transaction method for a Transaction is not supported`.
+- **K1** Kysely 0.29.8 (`node_modules/kysely/dist/kysely.js:568`): `Transaction.transaction()` throws `calling the transaction method for a Transaction is not supported`.
 - **K2** Bun 1.4.4 (the `.bun-version` of CI and the image) with Kysely 0.29.8 and `pg` 8.23.1 (probe `ts/probe.ts`, a `ScopedDriver` as D15): scope A → 51 rows of A; then an unscoped query on the same one-connection pool → all rows and setting `''`.
 - **K3** `PostgresDriver.acquireConnection` (`dialect/postgres/postgres-driver.js:22-46`) awaits `onReserveConnection` after `pool.connect()` with no `try`: a throw there leaves the pg client checked out.
 - **K4** `PostgresDriver` keeps one `PostgresConnection` per pg client in a `WeakMap` (`#connections`, same file).
@@ -125,7 +126,7 @@ Probes ran in `.tmp-f092-probe/` of the planning worktree (deleted after): a thr
 
 ## Done when
 
-1. Every table with `org_id` and `organizations` has RLS on, no `FORCE`, and exactly the `tenant_rows` policy of D8; no other table has RLS on; every `SECURITY DEFINER` function calls `app_current_org()`. Shown by: `apps/server/test/integration/rls-policy.test.ts` (catalog walk, stage 01).
+1. Every table with `org_id` and `organizations` has RLS on, no `FORCE`, and exactly the `tenant_rows` policy of D8; no other table has RLS on; every `SECURITY DEFINER` function calls `app_current_org()`; every view has `security_invoker` and there is no materialized view. Shown by: `apps/server/test/integration/rls-policy.test.ts` (catalog walk, stage 01).
 2. Under `app.org_id = A`, every one of the 19 tables shows no B row; with `''` both. A write of a B row under A fails with `42501`; `delete_mailbox` refuses B's mailbox under A. Shown by: `rls-policy.test.ts` (isolation and write cases, stage 01).
 3. The scoped driver writes the scope of the call chain on each acquire, only when it changes, and fails closed. Shown by: `apps/server/src/platform/db/scoped-driver.test.ts`, `tenant-scope.test.ts` (unit) and `apps/server/test/integration/db-tenant-scope.test.ts` (stage 02).
 4. Under a web session of organization A, a deliberately unfiltered query returns zero rows of B; the same query in a job context (no scope) returns both; an operator route returns both. Shown by: `apps/server/test/integration/web-tenant-scope.test.ts` (stage 03).
@@ -180,7 +181,7 @@ mkdir -p /tmp/f092-s04 && bunx prettier --check <files> > /tmp/f092-s04/prettier
 | #   | Step | When |
 | --- | ---- | ---- |
 | U1  | `bun run db:migrate` on the shared dev database (main checkout, no other migration running). Then, as `app`: `select count(*) from pg_policies where policyname = 'tenant_rows'` → 19 (or more if another ticket's table joined, stage 01 final message). | after stage 01 lands |
-| U2  | VPS: the next deploy after stage 03 lands carries the migration and the scope (`deploy/README.md`: backup first, `db:migrate` before the start, name the rollback target). Check after: the panel signs in, `/activity` and `/settings` load, the log has no `http_error` with `row-level security` in the first hour. Board rule: the coordinator does it (pre-approved). | after stage 03 lands |
+| U2  | VPS: the next deploy after stage 03 lands carries the migration and the scope (`deploy/README.md`: backup first, `db:migrate` before the start, name the rollback target). Expect a short lock wait (review N5): `db:migrate` runs while the old server still runs, and `ENABLE ROW LEVEL SECURITY` on 19 tables in one dbmate transaction takes `ACCESS EXCLUSIVE` locks, so it waits for running job transactions. A lock timeout or a deadlock aborts the migration and dbmate rolls it back cleanly: run `db:migrate` again (or stop the old server first). Check after: the panel signs in, `/activity` and `/settings` load, the log has no `http_error` with `row-level security` in the first hour. Board rule: the coordinator does it (pre-approved). | after stage 03 lands |
 
 ## Review
 
@@ -225,8 +226,18 @@ Order: 01 ∥ 02 → 03 → checkpoint 1 → 04 (D22).
 
 ## Cold review
 
-Not run by the planning job (task rule: the coordinator starts it). File the result as `plan-review-1.md` and log the fixes here.
+Review 1 ([`plan-review-1.md`](plan-review-1.md), job `2026-11-14-f092-plan-review-1bb4ad42`, candidate a03104e): FAIL, 1 blocking, 7 notes (the review header says 6; it lists N1–N7). One line per finding:
+
+- B1 stage 02 test 22 expected `""` on a fresh session, which returns `NULL`: fixed with the review's option 1. `setting(db)` is `coalesce(current_setting('app.org_id', true), '')` (stage 02 test list header); test 24 uses the same helper and also runs with the scope list shifted so the first acquires are unscoped. D15 rule 2 stays.
+- N1 the catalog walk does not see views: fixed. Stage 01 test 19 (every view has `security_invoker`, no materialized view); D10 says why; stage 04 adds the rule to the new-table checklist.
+- N2 no test of a chain with a second query after a pool wait: fixed. Stage 02 test 27.
+- N3 the claim "isolation is enforced in the database" is too strong: fixed. New D23; reworded in `ticket.md` § Outcome and in the stage 04 texts (architecture §5 and §7, ADR 0011).
+- N4 callbacks of objects made in a request keep the request scope: fixed. D20 widened; the stage 04 code-patterns text covers callbacks.
+- N5 the migration can wait on locks at deploy: fixed. U2 names the lock wait and the repeat on a deadlock.
+- N6 board drift (`spec/build.md:27`, `07-foundation-plan.md:16`): the coordinator's. Not changed here (this job edits only the F092 folder).
+- N7 plan K1 line number: fixed (`kysely.js:568`).
 
 ## Log
 
 - 2026-11-14: plan written (planning job `2026-11-14-f092-plan-rls-bc12f1b0`).
+- 2026-11-14: cold review 1 filed; B1, N1–N5, N7 fixed; N6 left to the coordinator.

@@ -109,16 +109,17 @@ Comments: one line on each new export, naming ADR 0011 or the rule ("RLS safety 
 
 18. `await withTenantScope(A, () => runJobTick("scope-probe", async () => { seen = currentTenantScope(); }))` → `seen === null`. (Mock `console.log` as the other scheduler tests do.)
 
-`apps/server/test/integration/db-tenant-scope.test.ts` (real DB as `app`; each test builds its own `createDb(process.env.DATABASE_URL ?? "", { max })` and destroys it in `finally`; `setting(db)` = `select current_setting('app.org_id', true) as s`):
+`apps/server/test/integration/db-tenant-scope.test.ts` (real DB as `app`; each test builds its own `createDb(process.env.DATABASE_URL ?? "", { max })` and destroys it in `finally`; `setting(db)` = `select coalesce(current_setting('app.org_id', true), '') as s`: a fresh session returns `NULL`, a session after a driver write returns `''`, and both mean "no scope" for `app_current_org()` (plan P1, D15 rule 2); the helper maps both to `""`):
 
 19. `max: 1`: `withTenantScope(A, () => setting(db))` → `A`; then `setting(db)` outside → `""` (the same connection, reset by the next acquire).
 20. `max: 1`: inside `withTenantScope(A, …)`: `db.transaction().execute((trx) => setting(trx))` → `A`.
 21. `max: 1`: inside `withTenantScope(B, …)`: `db.connection().execute((conn) => conn.transaction().execute((trx) => setting(trx)))` → `B`.
 22. `max: 1`: inside `withTenantScope(A, …)`: `withoutTenantScope(() => setting(db))` → `""`.
 23. `max: 1`, busy pool: `Promise.all([withTenantScope(A, async () => { await sql\`select pg_sleep(0.05)\`.execute(db); return setting(db); }), withTenantScope(B, () => setting(db))])` → `[A, B]`.
-24. `max: 2`: 30 calls in `Promise.all`, scope `[A, B, null][i % 3]`, each returns `{ want: scope ?? "", got: await setting(db) }` → no call with `want !== got`.
+24. `max: 2`: 30 calls in `Promise.all`, scope `[A, B, null][i % 3]`, each returns `{ want: scope ?? "", got: await setting(db) }` (the `coalesce` helper above) → no call with `want !== got`. Run it twice: once as written, once with the scope list shifted to `[null, A, B][i % 3]` (the first acquires of the fresh pool are unscoped).
 25. `max: 1`: a transaction inside scope A that rolls back (throw inside `execute`, catch it) → the next `setting(db)` in scope A reads `A` and the next one outside reads `""` (the value lives outside the transaction).
 26. `max: 1`: `withTenantScope(A, () => db.selectFrom("organizations").select("id").limit(1).execute())` works (a Kysely builder query goes through the driver too), then `setting(db)` outside → `""`.
+27. `max: 1`, a chain of two queries after a pool wait: `Promise.all([withTenantScope(B, async () => { await sql\`select pg_sleep(0.05)\`.execute(db); return setting(db); }), withTenantScope(A, async () => { const first = await setting(db); const second = await setting(db); return [first, second]; })])` → `[B, [A, A]]`. The first query of the A chain waits for the connection that B holds; the second query of the chain must still read its own scope.
 
 **Check.**
 
@@ -128,7 +129,7 @@ bun test apps/server/src/platform/db apps/server/src/platform/scheduler.test.ts 
 
 Then run the whole integration suite once (`bun run test:int:ci`, it is part of the Proof): every existing test must pass unchanged. A failure in an existing test is a finding: report it, do not change the test.
 
-**Done when.** Tests 1–26 exist and pass; `createDb` keeps its old call shape for every caller (`createDb(url)`); no other file than the ones listed changes.
+**Done when.** Tests 1–27 exist and pass; `createDb` keeps its old call shape for every caller (`createDb(url)`); no other file than the ones listed changes.
 
 **Out of scope.** `platform/http.ts` (stage 03); any migration; any log line; a cache or a TTL for the scope; a UUID check in code (D14).
 
