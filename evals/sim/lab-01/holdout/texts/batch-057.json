@@ -33,7 +33,7 @@
     {
       "id": "h-rnt-09",
       "subject": "Re: Nordic contract - what do we tell Karin?",
-      "body": "Wiktor,\n\nfollowing the exchange below, the bank notice about the guarantee is in, so we can move on. I need to know today what we tell Karin about the price list: do we offer twelve months fixed, or six months with a review? Piotr thinks twelve is too risky with the fuel price going up, and he wants a review clause after six months in any case. Karin will ask for our answer in the call on Thursday, so please tell me which version I should offer. Your call.\n\nOliver",
+      "body": "Wiktor,\n\nfollowing the exchange below, the bank notice about the guarantee is in, so we can move on. When you have a moment this week, I would like your answer on the price list for Karin: do we offer twelve months fixed, or six months with a review? Piotr thinks twelve is too risky with the fuel price going up, and he wants a review clause after six months in any case. Karin expects our answer in the call next Thursday, so there is no rush today. Which version do you prefer? Your call.\n\nOliver",
       "thread": [
         {
           "subject": "Nordic contract",
@@ -53,7 +53,8 @@
       ],
       "mustNot": [
         "Do not promise a fixed price list for twelve months without the sales coordinator"
-      ]
+      ],
+      "note": "rewritten: calm question for the executive, no deadline today"
     },
     {
       "id": "h-rnt-10",
