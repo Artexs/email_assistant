@@ -50,6 +50,7 @@
     "org:flag": "bun apps/server/src/scripts/org-flag.ts",
     "org:break-glass": "bun apps/server/src/scripts/org-break-glass.ts",
     "org:invite": "bun apps/server/src/scripts/org-invite.ts",
+    "org:delete": "bun apps/server/src/scripts/org-delete.ts",
     "org:plan": "bun apps/server/src/scripts/org-plan.ts",
     "org:status": "bun apps/server/src/scripts/org-status.ts",
     "web:invite": "bun apps/server/src/scripts/web-invite.ts",
