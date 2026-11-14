@@ -14,6 +14,8 @@ export * from "./settings";
 export * from "./telegram";
 export * from "./terms";
 export * from "../mail/providers";
+export * from "../texts/locale";
+export { userLocales, userLocaleSchema, type UserLocale } from "../tenancy";
 export { UNDO_TEXTS, rightAnswer, pickedText, pickAnswer, type UndoAnswerKind } from "../digest/answers";
 export { categoryLabels, categoryTag } from "../digest/labels";
 export { isLabelCategory, labelCategories, type LabelCategory } from "../digest/callback";
