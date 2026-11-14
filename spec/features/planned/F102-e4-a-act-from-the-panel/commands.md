@@ -26,7 +26,7 @@ Flags: `/approvals*` → `approvals_page`; `/delegates*`, `/delegations*` → `d
 ## Shapes
 
 - `ApprovalItem`: `id` (send), `version`, `state` (`waiting` \| `held`), `draftReady`, `kind`, `mailboxAddress`, `createdAt`, `expiresAt`, `heldBy` (null or `HeldBy`), `delegationId` (null), `setId` (null), `view: ApprovalView` (the card view of `@ea/core`).
-- `ApprovalDetail`: `ApprovalItem` fields, plus `state` also `sending` \| `sent` \| `rejected` \| `expired` \| `failed` \| `superseded`, `currentId` (null), `quote` (full text or null), `delegates` (active `{ id, name, email }` for the picker; empty unless kind `delegation`).
+- `ApprovalDetail`: `ApprovalItem` fields (`view` null when retention cleared the payload), plus `state` also `sending` \| `sent` \| `rejected` \| `expired` \| `failed` \| `superseded`, `currentId` (null), `quote` (full text or null), `delegates` (active `{ id, name, email }` for the picker; empty unless kind `delegation`).
 - `Delegate`: `id`, `name`, `email`, `tags`, `active`, `createdAt`.
 - `DelegationItem`: `kind: "delegation"` (E5b adds kinds), `id`, `status`, `delegate { id, name, email, active }`, `task` (null after retention), `subject`, `dueAt`, `sentAt`, `answeredAt`, `remindersSent`, `reminderWaiting`, `sendId` (null).
 - Filters: `open` (`drafted`, `sent`), `overdue`, `answered`, `closed` (`done`, `cancelled`); default `open`; `limit` 1–100, default 50; `before` = the `next` cursor.
