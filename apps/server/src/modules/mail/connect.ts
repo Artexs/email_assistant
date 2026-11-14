@@ -209,7 +209,7 @@ export async function connectMailbox(
 }
 
 // Tests the IMAP and SMTP login with the new password first: a login error stores nothing.
-// An `auth_error` mailbox becomes `active`; a `paused` one stays paused.
+// An `auth_error` or `host_blocked` mailbox becomes `active`; a `paused` one stays paused.
 export async function updateMailboxPassword(
   deps: ConnectDeps,
   ctx: TenantContext,
@@ -259,7 +259,7 @@ export async function updateMailboxPassword(
     });
     if (!stored) throw new HardError("credentials row missing");
 
-    const reactivated = locked.status === "auth_error";
+    const reactivated = locked.status === "auth_error" || locked.status === "host_blocked";
     if (reactivated) await setMailboxStatus(trx, ctx, mailboxId, "active", now);
     await recordAudit(trx, ctx, {
       actor: input.actor ?? "system",

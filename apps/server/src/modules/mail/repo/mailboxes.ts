@@ -143,7 +143,7 @@ export async function changeMailboxStatus(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  change: { from: "active" | "paused"; to: "active" | "paused"; at: Date }
+  change: { from: MailboxStatus; to: MailboxStatus; at: Date }
 ): Promise<boolean> {
   const result = await db
     .updateTable("mailboxes")
