@@ -68,9 +68,10 @@
     },
     {
       "id": "w-5-092",
-      "subject": "Ceny paliw bez zmian w tym tygodniu",
-      "body": "Przegląd tygodnia\n\nŚrednia cena oleju napędowego w hurcie nie zmieniła się w porównaniu z zeszłym tygodniem.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Alert cen paliw: status subskrypcji SUB-5669",
+      "body": "Automatyczne powiadomienie systemu subskrypcji Logistyka Dzis.\n\nSubskrypcja: Alert cen paliw, nr SUB-5669\nStatus: aktywna\nOstatni odczyt: olej napędowy, hurt, bez zmian\n\nTo wiadomość wygenerowana automatycznie. Nie odpowiadaj na nią.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: automated subscription status message with id and status line, no editorial voice"
     },
     {
       "id": "w-5-093",
