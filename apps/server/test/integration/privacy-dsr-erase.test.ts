@@ -805,6 +805,8 @@ describe("org:dsr --erase CLI", () => {
     expect(lines).toContain("chain delegations 1");
     expect(lines).toContain("scrubbed emails.to_addresses 1");
     expect(lines).toContain("scrubbed email_headers.attachments 1");
+    expect(lines).toContain("blanked outbox 0");
+    expect(lines).toContain("dropped outbox 0");
     expect(lines).toContain("kept delegates 1");
     expect(lines).toContain("kept sender_rules 1");
     expect(lines.at(-1)).toMatch(new RegExp(`^record: dsr erase ${w.orgId} \\d{4}-\\d{2}-\\d{2}$`));

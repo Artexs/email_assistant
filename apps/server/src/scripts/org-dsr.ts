@@ -68,7 +68,8 @@ async function erase(args: Extract<OrgDsrArgs, { mode: "erase" }>, db: Db) {
   line(`chain actions ${result.counts.chain_actions}`);
   line(`chain delegations ${result.counts.chain_delegations}`);
   for (const [key, count] of Object.entries(result.scrubbed)) line(`scrubbed ${key} ${count}`);
-  for (const [key, count] of Object.entries(result.stepCounts)) line(`step ${key} ${count}`);
+  line(`blanked outbox ${result.stepCounts.outbox_blanked ?? 0}`);
+  line(`dropped outbox ${result.stepCounts.outbox_dropped ?? 0}`);
   line(`kept delegates ${result.counts.listed.delegates}`);
   line(`kept sender_rules ${result.counts.listed.sender_rules}`);
   line(`record: dsr erase ${args.orgId} ${new Date().toISOString().slice(0, 10)}`);

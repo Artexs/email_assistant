@@ -7,6 +7,7 @@ import { auditEvents, recordAudit } from "../audit";
 import { DSR_ADDRESS_MAP, normalizeDsrAddress } from "./address-map";
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";
 import { addressPatterns, findOpenActions, matchSubject, rowCondition, type AddressPatterns } from "./dsr-match";
+import { eraseManyMailOutbox } from "./outbox";
 
 const DEADLOCK_CODE = "40P01";
 const FOREIGN_KEY_CODE = "23503";
@@ -24,7 +25,8 @@ const TEXT_LIMITS: Readonly<Record<string, number>> = {
   "outbox.text": 4096,
 };
 
-// One step inside the erase transaction, after the mails are deleted and before the scrub (the outbox stage fills it).
+// One step inside the erase transaction, after the mails are deleted and before the scrub. The default is
+// `eraseManyMailOutbox` (stored digests and approval sets); a test can pass another.
 // It returns flat counts for the audit row. A throw rolls back the whole erase.
 export type EraseStep = (
   trx: Transaction<DB>,
@@ -201,9 +203,8 @@ async function eraseInScope(
       if (mailIds.length > 0) {
         await sql`delete from emails where org_id = ${orgId}::uuid and id = any (${mailIds}::uuid[])`.execute(trx);
       }
-      const stepCounts = input.step
-        ? await input.step(trx, orgId, { mailIds, earliestCreatedAt: earliest.rows[0]?.at ?? null })
-        : {};
+      const step = input.step ?? eraseManyMailOutbox;
+      const stepCounts = await step(trx, orgId, { mailIds, earliestCreatedAt: earliest.rows[0]?.at ?? null });
       const scrubbed = await scrubMentions(trx, orgId, patterns);
 
       // The erase must leave nothing that the match shows. If it does, roll back: a half erase is worse than none.
