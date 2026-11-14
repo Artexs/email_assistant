@@ -7,6 +7,10 @@ export const ADDRESS_PATTERN = /^[^\s@<>,;"'\r\n]+@[^\s@<>,;"'\r\n]+$/;
 export const addressSchema = z.string().regex(ADDRESS_PATTERN);
 export const draftLanguageSchema = z.enum(["pl", "en"]);
 
+// The kinds of a draft and of its send: one list for the schemas, the templates and every reader.
+export const draftKinds = ["delegation", "clarification", "reminder"] as const;
+export type DraftKind = (typeof draftKinds)[number];
+
 const recipientSchema = z.array(addressSchema).length(1);
 // `YYYY-MM-DD` or "" for none. The regex checks the shape only.
 const dueDateSchema = z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/);
@@ -43,7 +47,7 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
 export type DraftPayload = z.infer<typeof draftPayloadSchema>;
 
 export const sendPayloadSchema = z.object({
-  kind: z.enum(["delegation", "clarification", "reminder"]),
+  kind: z.enum(draftKinds),
   to: recipientSchema,
   delegate_id: z.string().uuid().optional(),
   delegation_id: z.string().uuid().optional(),

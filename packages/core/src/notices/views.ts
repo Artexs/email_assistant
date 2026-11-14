@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CHASER_SET_LIMIT, type SendResultKind } from "../digest/approvals";
 import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
+import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
 
 import type { NoticeKind } from "./kinds";
@@ -10,7 +11,7 @@ import type { NoticeKind } from "./kinds";
 // Every object is strict: a view holds exactly the facts that its renderer prints (ADR 0032 point 5).
 const isoDate = z.iso.datetime().transform((value) => new Date(value));
 const id = z.string().min(1);
-const draftKind = z.enum(["delegation", "clarification", "reminder"]);
+const draftKind = z.enum(draftKinds);
 const text = z.string();
 const nullableText = z.string().nullable();
 const timeZone = z.string().min(1);
