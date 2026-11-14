@@ -9,6 +9,7 @@ import {
   withLogContext,
   type LogFields,
 } from "./log";
+import { codeFieldNames, logFieldKind, logFieldNames, numberFieldNames, uuidFieldNames } from "./log-fields";
 
 let out: ReturnType<typeof spyOn>;
 let err: ReturnType<typeof spyOn>;
@@ -132,6 +133,71 @@ test.each<[string, unknown, boolean]>([
   if (name === "status") {
     expect(line.status).toBeNull();
   }
+});
+
+test.each<[string, unknown, boolean]>([
+  ["a UUID id", { mailbox_id: M }, true],
+  ["a short id", { mailbox_id: "m1" }, false],
+  ["an upper-case UUID", { mailbox_id: M.toUpperCase() }, false],
+  ["an id with text before a UUID", { mailbox_id: `x@y.test ${M}` }, false],
+  ["an id with text after a UUID", { mailbox_id: `${M} x` }, false],
+  ["a number id", { mailbox_id: 7 }, false],
+  ["a boolean id", { mailbox_id: true }, false],
+  ["a null id", { mailbox_id: null }, true],
+  ["a count", { count: 3 }, true],
+  ["a zero count", { count: 0 }, true],
+  ["a null count", { count: null }, true],
+  ["a string count", { count: "3" }, false],
+  ["a boolean count", { count: true }, false],
+  ["a NaN count", { count: Number.NaN }, false],
+  ["a code string", { code: "http_503" }, true],
+  ["a code number", { code: 503 }, true],
+  ["a code boolean", { code: true }, true],
+  ["a null code", { code: null }, true],
+  ["a code with a space", { code: "a b" }, false],
+  ["a code with an address", { code: "x@y.test" }, false],
+  ["a code with a URL", { code: "https://x.test" }, false],
+])("kind check: %s", (_name, fields, kept) => {
+  setLogFormat("json");
+  createLog("mail").info("sync_done", fields as LogFields);
+  const line = jsonLine(out);
+  const name = Object.keys(fields as object)[0] as string;
+  if (kept) {
+    expect(line).toHaveProperty(name);
+    expect(line).not.toHaveProperty("dropped_fields");
+  } else {
+    expect(line).not.toHaveProperty(name);
+    expect(line.dropped_fields).toBe(1);
+  }
+});
+
+test("a context run_id that is not a UUID is dropped and counted", () => {
+  setLogFormat("json");
+  withLogContext({ run_id: "r1" }, () => createLog("mail").info("a"));
+  const bad = jsonLine(out);
+  expect(bad).not.toHaveProperty("run_id");
+  expect(bad.dropped_fields).toBe(1);
+  withLogContext({ run_id: R }, () => createLog("mail").info("a"));
+  const good = jsonLine(out);
+  expect(good.run_id).toBe(R);
+  expect(good).not.toHaveProperty("dropped_fields");
+});
+
+test("the field lists join, do not overlap, and give each name its kind", () => {
+  expect(logFieldNames).toEqual([...uuidFieldNames, ...numberFieldNames, ...codeFieldNames]);
+  expect(new Set(logFieldNames).size).toBe(logFieldNames.length);
+  expect(logFieldKind("count")).toBe("number");
+  expect(logFieldKind("org_id")).toBe("uuid");
+  expect(logFieldKind("job")).toBe("code");
+  expect(logFieldKind("subject")).toBeUndefined();
+});
+
+test("a field in the wrong kind does not type-check", () => {
+  // @ts-expect-error count is a number field
+  const badCount: LogFields = { count: "a" };
+  // @ts-expect-error mailbox_id is an id field
+  const badId: LogFields = { mailbox_id: 7 };
+  expect([badCount, badId]).toHaveLength(2);
 });
 
 test("an undefined value is left out and not counted", () => {

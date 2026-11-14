@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { en } from "../src/i18n/en";
 import { E2E_BASE_URL, e2eEnv, GREENMAIL, repoRoot } from "./env";
@@ -127,4 +127,36 @@ export function seedActivity(mailboxId: string): void {
     stdio: "pipe",
     timeout: 30_000,
   });
+}
+
+export interface AlertFill {
+  boxWidth: number;
+  textWidth: number;
+  lines: number;
+}
+
+// The layout of the text inside one alert: the width of the box, the width of the widest text line, and the number of lines.
+// A text node has no element of its own, so the helper measures it with a DOM range. An alert that collapses its bare text
+// into a zero-width column (F127) shows as many lines as words and a narrow text.
+export async function alertFill(alert: Locator): Promise<AlertFill> {
+  return alert.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const box = element.getBoundingClientRect();
+    const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+    // Text lines of an element child (a paragraph) and of a bare text child both land in the range rectangles.
+    const tops = new Set(rects.map((rect) => Math.round(rect.top)));
+    const left = Math.min(...rects.map((rect) => rect.left));
+    const right = Math.max(...rects.map((rect) => rect.right));
+    return { boxWidth: box.width, textWidth: right - left, lines: tops.size };
+  });
+}
+
+// The text of an alert fills its box: at least half as wide, or the whole text fits on one line.
+export function expectAlertFills(fill: AlertFill, name: string): void {
+  const filled = fill.textWidth >= fill.boxWidth / 2 || fill.lines === 1;
+  expect(
+    filled,
+    `${name}: text ${Math.round(fill.textWidth)}px in a box of ${Math.round(fill.boxWidth)}px on ${fill.lines} lines`
+  ).toBe(true);
 }
