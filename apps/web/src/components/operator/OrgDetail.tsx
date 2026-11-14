@@ -1,11 +1,15 @@
 import type { OperatorOrgDetail } from "@ea/core/web";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n";
+import { changeFlag, writeErrorKey } from "../../lib/operator-api";
 import { ageText, dayText, llmTodayText, shortId } from "../../lib/operator-view";
 import { StatusBadge } from "../mailboxes/StatusBadge";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Switch } from "../ui/switch";
+import { PlanDialog } from "./PlanDialog";
 import { PlanBadge } from "./OrgTable";
 
 const runTexts: Record<keyof OperatorOrgDetail["lastRuns"], TextKey> = {
@@ -32,7 +36,34 @@ function Section({ title, children }: { title: TextKey; children: ReactNode }) {
   );
 }
 
-export function OrgDetail({ detail, now }: { detail: OperatorOrgDetail; now: Date }) {
+export function OrgDetail({
+  detail,
+  now,
+  onChanged,
+}: {
+  detail: OperatorOrgDetail;
+  now: Date;
+  // Called after a write: the page reloads the list and the detail.
+  onChanged(): void;
+}) {
+  // The flag whose request runs now; its switch is disabled until the answer comes.
+  const [pendingFlag, setPendingFlag] = useState<string | null>(null);
+
+  const switchFlag = async (flag: string, enabled: boolean) => {
+    setPendingFlag(flag);
+    try {
+      const result = await changeFlag(detail.orgId, { flag, enabled });
+      toast.success(
+        t("op_flag_changed", { flag: result.flag, state: t(result.enabled ? "op_flag_on" : "op_flag_off") })
+      );
+      onChanged();
+    } catch (error) {
+      toast.error(t(writeErrorKey(error)));
+    } finally {
+      setPendingFlag(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -45,6 +76,12 @@ export function OrgDetail({ detail, now }: { detail: OperatorOrgDetail; now: Dat
             <span>{`${t("op_trial_ends")}: ${dayText(detail.trialEndsAt)}`}</span>
             <span>{`${t("op_resumed_at")}: ${dayText(detail.resumedAt)}`}</span>
             <span>{`${t("op_max_mailboxes")}: ${detail.maxMailboxes}`}</span>
+            <PlanDialog
+              orgId={detail.orgId}
+              plan={detail.plan}
+              maxMailboxes={detail.maxMailboxes}
+              onChanged={onChanged}
+            />
           </div>
         </Section>
         <Section title="op_mailboxes_title">
@@ -89,10 +126,18 @@ export function OrgDetail({ detail, now }: { detail: OperatorOrgDetail; now: Dat
           <ul className="flex flex-col gap-1">
             {detail.flags.map((flag) => (
               <li key={flag.flag} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <Switch
+                  size="sm"
+                  checked={flag.enabled}
+                  disabled={pendingFlag !== null || flag.source === "env"}
+                  aria-label={flag.flag}
+                  onCheckedChange={(enabled) => void switchFlag(flag.flag, enabled)}
+                />
                 <span className="font-mono">{flag.flag}</span>
                 <Badge variant={flag.enabled ? "default" : "secondary"}>
                   {t(flag.enabled ? "op_flag_on" : "op_flag_off")}
                 </Badge>
+                {flag.source === "env" && <Badge variant="outline">{t("op_flag_killed")}</Badge>}
                 <span className="text-muted-foreground">{t(sourceTexts[flag.source])}</span>
               </li>
             ))}
