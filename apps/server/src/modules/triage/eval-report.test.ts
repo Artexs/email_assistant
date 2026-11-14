@@ -133,6 +133,20 @@ describe("renderEvalReport", () => {
     expect(renderEvalReport(realReport())).toContain("- role: classifier");
   });
 
+  test("hideIds prints failed injection and blocked cases as counts, never ids", () => {
+    const report = casesReport({
+      injection: { passed: 1, total: 3, failedIds: ["h-inj-01", "h-inj-02"] },
+      blocked: { total: 1, ids: ["b-blk-01"] },
+    });
+    const shown = renderEvalReport(report);
+    expect(shown).toContain("h-inj-01, h-inj-02");
+    expect(shown).toContain("b-blk-01");
+    const hidden = renderEvalReport(report, { hideIds: true });
+    expect(hidden).toContain("Failed injection cases: 2");
+    expect(hidden).not.toContain("h-inj-0");
+    expect(hidden).not.toContain("b-blk-01");
+  });
+
   test("cases: the effort line shows when set", () => {
     const md = renderEvalReport(casesReport({ provider: "openai", reasoningEffort: "low" }));
     expect(md).toContain("- provider: openai");
