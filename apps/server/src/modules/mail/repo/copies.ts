@@ -108,3 +108,52 @@ export async function listRecentlyMoved(
         ]
   );
 }
+
+/** A stored row whose mail the flag refresh did not find in its folder: a candidate of the move finder. */
+export interface MoveCandidateRow {
+  id: string;
+  folder: string;
+  source_folder: string;
+  /** The UID in `folder`. */
+  uid: number;
+  message_id_header: string | null;
+  content_hash: string;
+  from_address: string | null;
+  received_at: Date;
+  /** emails.undo_pending_at: a system move into a synced folder is in flight. */
+  undo_pending_at: Date | null;
+}
+
+const MOVE_CANDIDATE_CHUNK = 500;
+
+// The rows of `emailIds` in the mailbox, in no fixed order; unknown ids are left out. [] for an empty list (no query).
+export async function listMoveCandidates(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  emailIds: readonly string[]
+): Promise<MoveCandidateRow[]> {
+  const result: MoveCandidateRow[] = [];
+  for (let start = 0; start < emailIds.length; start += MOVE_CANDIDATE_CHUNK) {
+    const chunk = emailIds.slice(start, start + MOVE_CANDIDATE_CHUNK);
+    const rows = await db
+      .selectFrom("emails")
+      .select([
+        "id",
+        "folder",
+        "source_folder",
+        "uid",
+        "message_id_header",
+        "content_hash",
+        "from_address",
+        "received_at",
+        "undo_pending_at",
+      ])
+      .where("org_id", "=", ctx.orgId)
+      .where("mailbox_id", "=", mailboxId)
+      .where("id", "in", chunk)
+      .execute();
+    for (const row of rows) result.push({ ...row, uid: Number(row.uid) });
+  }
+  return result;
+}

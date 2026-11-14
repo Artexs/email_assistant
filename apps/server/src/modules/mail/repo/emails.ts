@@ -55,38 +55,42 @@ export async function updateEmailUid(
   return result.numUpdatedRows === 1n;
 }
 // D8 returned: the user put the mail into synced folder `opts.folder`. Only while the row is system-moved.
+// With `from`, only while the row still has that folder and UID.
 export async function markEmailReturned(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
   uid: number,
   at: Date,
-  opts: { folder: string }
+  opts: { folder: string; from?: { folder: string; uid: number } }
 ): Promise<boolean> {
-  const result = await db
+  let query = db
     .updateTable("emails")
     .set({ returned_at: at, folder: opts.folder, source_folder: opts.folder, uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
-    .whereRef("folder", "<>", "source_folder")
-    .executeTakeFirst();
+    .whereRef("folder", "<>", "source_folder");
+  if (opts.from !== undefined) query = query.where("folder", "=", opts.from.folder).where("uid", "=", opts.from.uid);
+  const result = await query.executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
 // D8 relocated: the user moved the mail between synced folders. Only while the row is still in the old source folder.
+// With `fromUid`, only while the row still has that UID.
 export async function markEmailRelocated(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
-  change: { from: string; to: string; uid: number }
+  change: { from: string; to: string; uid: number; fromUid?: number }
 ): Promise<boolean> {
-  const result = await db
+  let query = db
     .updateTable("emails")
     .set({ folder: change.to, source_folder: change.to, uid: change.uid, inbox_uid: change.uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .whereRef("folder", "=", "source_folder")
-    .where("folder", "=", change.from)
-    .executeTakeFirst();
+    .where("folder", "=", change.from);
+  if (change.fromUid !== undefined) query = query.where("uid", "=", change.fromUid);
+  const result = await query.executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
 // Rows that the sync flagged as returned (D12), oldest flag first.
