@@ -20,7 +20,12 @@ export type AuthEventKind =
   | "password_changed"
   | "login_locked"
   | "sessions_revoked"
-  | "other_sessions_revoked";
+  | "other_sessions_revoked"
+  | "two_factor_enabled"
+  | "two_factor_disabled"
+  | "backup_codes_generated"
+  | "backup_code_used"
+  | "two_factor_locked";
 
 export interface AuthDeps {
   databaseUrl: string;
