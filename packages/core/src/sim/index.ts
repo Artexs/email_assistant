@@ -11,3 +11,4 @@ export * from "./plan-week";
 export * from "./random";
 export * from "./scenario";
 export * from "./slot";
+export * from "./to-eval-case";
