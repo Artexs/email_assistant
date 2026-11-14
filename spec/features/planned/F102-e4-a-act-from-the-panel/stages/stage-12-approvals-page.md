@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). Read P2, P5, P6, D5, D11, D13, Q1, Q8, Q13 and [`../commands.md`](../commands.md). Needs stages 07 and 11 landed. New Polish text: the review uses `claude-opus-5-5`.
 
-Two steps in `apps/web`, plus an e2e seed. Never run `web:dev` or `astro dev`.
+Two steps in `apps/web`, plus an e2e seed.
 
 ## Step 1 — Nav, page, list and detail
 
@@ -11,9 +11,9 @@ Two steps in `apps/web`, plus an e2e seed. Never run `web:dev` or `astro dev`.
 - **Decisions:**
   - Nav (D11, Q8): item `approvals` (`/approvals`, label `nav_approvals`) after Activity while `features` holds `approvals_page`, with a count badge from `me.approvalsWaiting` (hidden at 0; "99+" above 99; the badge has an accessible name, e.g. `nav_approvals_badge` "{n} waiting"). Phone tabs: at most 5; the order is Activity, Approvals, Delegations, Mailboxes, Settings, Rules, Stats, and items past 5 show in the user menu on the phone. Stage 18 adds Delegations to the same order. The desktop sidebar shows all.
   - Page: the list (`GET /api/approvals`) and a detail panel for the selected item (`GET /api/approvals/<id>`). The selection is the `id` query parameter (Q1): `/approvals?id=<uuid>` opens that item, also when it is no longer in the list. A `superseded` detail shows "Changed. This is the newest version." and loads `currentId` (`replace` the URL).
-  - The list reloads every 30 s while the tab is visible (the existing poll helper).
-  - Each item shows: the kind title (delegation to `<name> <address>`, question to the sender, reminder), the recipient spelled out, `(inactive)` for an inactive delegate, the subject, the external-sender warning, the due date, "expires in" from `expiresAt`, "Preparing the draft…" while `draftReady` is false, `held` with its reason, "Version n" when n ≥ 2, and the line "The system sends it after your approval. Do not send the draft from your mail client." The detail adds the full body and the quoted mail (plain text, line breaks kept; no HTML from mail).
-  - An empty list says "Nothing waits for your approval."
+  - The list reloads every 30 s while the tab is visible.
+  - An item shows what the Telegram card shows (title by kind, recipient spelled out, `(inactive)`, subject, external-sender warning, due date), plus "expires in", "Preparing the draft…" while `draftReady` is false, the held reason, "Version n" for n ≥ 2, and "The system sends it after your approval. Do not send the draft from your mail client." The detail adds the body and the full quote (plain text, line breaks kept).
+  - Empty list: "Nothing waits for your approval."
 - **Test** (unit): T1: the nav order and the 5-tab limit for each combination of `approvals_page` and `stats_page`; T2: the badge text for 0, 1, 100; T3: the state-to-label map covers every `ApprovalDetail.state`.
 - **Done when:** T1–T3 pass; `bun run typecheck` passes (every key in both languages).
 
