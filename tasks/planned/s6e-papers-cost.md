@@ -2,6 +2,8 @@
 
 # S6e Draft papers and cost model
 
+> **Moved 2026-11-14:** S6e is now `F107-e7-t4-papers-and-cost`. This file is history; the ticket decides.
+
 > **Scope change 2026-11-12:** local production on the home VPS, no outside customers (master plan § "Scope change", P16–P24). This file is rewritten for it; the plan session reads that section first.
 
 Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (P21, D18, D19 and D20 as changed, D27 as changed, D28 (ADR 0020), "Rules for every step"). Needs: S6c merged (the texts describe the delete, the export and the Polish UI). No user step: no lawyer, no domain, no price decision (the price is a placeholder).

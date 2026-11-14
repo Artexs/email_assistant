@@ -2,6 +2,8 @@
 
 # S6 Pre-sale
 
+> **Moved 2026-11-14:** S6a = F077 (done), S6b = F082, S6c = F106, S6e = F107, S6f = F108; other Stage 2 work: `docs/product/stage-2/05-execution-plan.md` §2.1. This file is history; the ticket decides.
+
 Scope: `docs/roadmap.md` §2, row S6. Modules: `docs/modules.md`. Needs: S5 (done, `tasks/done/s5-web-panel.md`).
 Git mode: master (this plan). Each segment builds in `worktree` mode on its own branch `task/s6<x>-<name>`.
 

@@ -2,6 +2,8 @@
 
 # S6c Account and data: delete, export, Polish UI
 
+> **Moved 2026-11-14:** S6c is now `F106-e7-t3-account-data-delete-export-dsr`. This file is history; the ticket decides.
+
 > **Scope change 2026-11-12:** local production on the home VPS, no outside customers (master plan § "Scope change", P16–P24). This file is updated for it; the plan session reads that section first.
 
 Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (P10, P12, D12–D14, D27 (Telegram consent text, draft), "Rules for every step"). Needs: S6b merged (the Account card, the auth mails and `users.locale`). No lawyer step (P19): the Telegram consent text is the agent's draft.
