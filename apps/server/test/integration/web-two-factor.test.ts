@@ -11,8 +11,8 @@ import {
   setBreakGlassOwner,
 } from "../../src/modules/tenancy";
 import { createAuth, type AuthHandle } from "../../src/platform/auth";
-import { backupCodesLeft } from "../../src/platform/auth-two-factor";
 import { createLockoutStore } from "../../src/platform/auth-lockout";
+import { backupCodesLeft } from "../../src/platform/auth-two-factor";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { createApp } from "../../src/platform/http";
