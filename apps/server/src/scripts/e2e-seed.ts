@@ -41,6 +41,8 @@ import {
   e2eTermsOrgName,
   E2E_TRIAL_ORG_NAME,
   E2E_TRIAL_OWNER_EMAIL,
+  E2E_TWO_FACTOR_EMAILS,
+  e2eTwoFactorOrgName,
   type E2eProject,
   type SeedFile,
   seedFilePath,
@@ -60,7 +62,14 @@ async function wipe(migratorUrl: string): Promise<void> {
   try {
     // The organization cascade removes mailboxes, mail, actions, memberships and audit rows.
     await client.query("DELETE FROM organizations WHERE name = ANY($1)", [
-      [E2E_ORG_NAME, E2E_OTHER_ORG_NAME, E2E_TRIAL_ORG_NAME, E2E_PAUSED_ORG_NAME, ...E2E_PROJECTS.map(e2eTermsOrgName)],
+      [
+        E2E_ORG_NAME,
+        E2E_OTHER_ORG_NAME,
+        E2E_TRIAL_ORG_NAME,
+        E2E_PAUSED_ORG_NAME,
+        ...E2E_PROJECTS.map(e2eTermsOrgName),
+        ...E2E_PROJECTS.map(e2eTwoFactorOrgName),
+      ],
     ]);
     // Users are global: the cascade leaves them.
     await client.query("DELETE FROM users WHERE email = ANY($1)", [
@@ -72,6 +81,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         E2E_TRIAL_OWNER_EMAIL,
         E2E_PAUSED_OWNER_EMAIL,
         ...E2E_PROJECTS.map((project) => E2E_TERMS_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_TWO_FACTOR_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_ACTIVITY_MEMBER_EMAILS[project]),
       ],
     ]);
@@ -165,6 +175,18 @@ async function main(): Promise<number> {
           displayName: `E2E Terms ${project}`,
         });
         termsIds[project] = termsOwner.userId;
+      }
+
+      // One organization per project with an owner whose second factor starts off: the two-factor spec turns it on and off.
+      const twoFactorIds = {} as Record<E2eProject, { userId: string; orgId: string }>;
+      for (const project of E2E_PROJECTS) {
+        const twoFactorOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eTwoFactorOrgName(project),
+          timezone: "Europe/Warsaw",
+          email: E2E_TWO_FACTOR_EMAILS[project],
+          displayName: `E2E Two-factor ${project}`,
+        });
+        twoFactorIds[project] = { userId: twoFactorOwner.userId, orgId: twoFactorOwner.orgId };
       }
 
       // The organization of the isolation checks: one mail that the E2E organization must never see.
@@ -278,6 +300,14 @@ async function main(): Promise<number> {
         termsOwners[project] = { userId: termsIds[project], email, password: E2E_MEMBER_PASSWORD };
       }
 
+      const twoFactorOwners = {} as SeedFile["twoFactorOwners"];
+      for (const project of E2E_PROJECTS) {
+        const email = E2E_TWO_FACTOR_EMAILS[project];
+        const twoFactorToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
+        await setPassword(E2E_MEMBER_PASSWORD, twoFactorToken);
+        twoFactorOwners[project] = { ...twoFactorIds[project], email, password: E2E_MEMBER_PASSWORD };
+      }
+
       const seed: SeedFile = {
         orgId: owner.orgId,
         owner: { userId: owner.userId, email: E2E_OWNER_EMAIL, password: E2E_OWNER_PASSWORD },
@@ -286,6 +316,7 @@ async function main(): Promise<number> {
         otherOrg: { orgId: other.orgId, emailId: otherMail.emailId },
         activityMembers,
         termsOwners,
+        twoFactorOwners,
         trialOwner: {
           userId: trial.userId,
           email: E2E_TRIAL_OWNER_EMAIL,

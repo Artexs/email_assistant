@@ -51,6 +51,7 @@
     "org:break-glass": "bun apps/server/src/scripts/org-break-glass.ts",
     "org:invite": "bun apps/server/src/scripts/org-invite.ts",
     "org:delete": "bun apps/server/src/scripts/org-delete.ts",
+    "org:export": "bun apps/server/src/scripts/org-export.ts",
     "org:plan": "bun apps/server/src/scripts/org-plan.ts",
     "org:status": "bun apps/server/src/scripts/org-status.ts",
     "web:invite": "bun apps/server/src/scripts/web-invite.ts",
