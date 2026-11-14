@@ -80,3 +80,10 @@ For F100 stage 19 (docs) and later web work:
 - Stage 07 (operator reset) must split `modules/tenancy/repo.ts` into `repo/` before adding `listBreakGlassOrgIdsOfUser` (the file is at 399 lines; code-patterns limit about 400).
 - Stage 14 docs: `tenancy-and-plans.md` rule 7 (Operator CLIs) may need the `org:break-glass` line too, next to `web-panel.md`.
 - The two-org owner test (setBreakGlassFlag org filter) is added in the s05 fix job before landing.
+
+## F085 s04 review carry-over (landed, PASS)
+- Stage 05 (markHostBlocked): race. `reopenHost` reads the mailbox, then updates with `from: host_blocked`. A new block of the same mailbox between read and write keeps `status = host_blocked`, so the guard passes and an older reopen can overwrite the new block (next sync blocks it again). Stage 05 must either make the reopen compare `status_changed_at` too or accept it with a test/comment.
+- Stage 07 docs: the sync/mailboxes capability page must describe the host re-check (2-minute cadence, two DNS lookups per blocked mailbox per run, no cap).
+- Flaky note: one mutation run showed extra failures that did not repeat (likely a stale Bun transpile cache).
+
+## F105 s07/F100 s19/F029 s04: see commits; F105 stage 14 docs: tenancy-and-plans.md rule 7 may need the org:break-glass line.
