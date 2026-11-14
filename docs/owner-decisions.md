@@ -19,6 +19,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 
 ## Entries
 
+### 2026-11-14 · Two-factor sign-in (F105): no feature flag, a new QR dependency, operators need TOTP · security · new
+- Choice: the plan takes these defaults: no feature flag for two-factor sign-in (a departure from PD-045); the web dependency `uqr` 0.1.3 (MIT, no dependencies) draws the QR code; operators need TOTP for the console, so an operator without TOTP is sent to the settings page; the break-glass owner is set only by the operator through a CLI and cannot turn TOTP off; disabling TOTP needs a live session and the password; enrolling TOTP ends the user's other sessions; no mail is sent for two-factor changes (the security log shows them).
+- Why: sell-ready bar for an operator console and a PD-045 flag would only add a second switch that can lock people out.
+- Undo: change the decisions in `spec/features/planned/F105-e7-t6-identity-a-totp-backup-codes-break-glass/plan.md` (D-lines) before the stages build; after the build, the operator reset `web:two-factor-reset` repairs a locked user.
+- Source: `spec/features/planned/F105-e7-t6-identity-a-totp-backup-codes-break-glass/questions.md` Q1-Q8 and plan.md D27, D28.
+
 ### 2026-11-14 · F097 and F100 build while F095 is still open (F097, F100) · rule-exception · new
 - Choice: the coordinator moved F097 and F100 to active and started their stages, although their ticket § Sequenced says "Build after: F095 in done/", and F095 still has stages 09 and 10 open.
 - Why: F095 stages 01-08 (the capability pages and the docs boundary) had landed. Stages 09-10 are a dated wait and your phone session, and add no code that F097 or F100 use. The rule "owner steps are not a stop" and the idle seats made waiting a waste.

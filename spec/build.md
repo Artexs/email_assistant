@@ -44,7 +44,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F102-e4-a-act-from-the-panel` (🔴 PLANNED, needs plan): E4-A Act from the panel; sequenced after E1, E7-T1, Astro 7; gate —.
 - `F103-e8a-logs` (plan landed, 19 stages): every log line an event, CLI output apart, log store on the tailnet; sequenced after E1; gate —.
 - `F104-e5a-read-sent` (🔴 PLANNED, needs plan): E5a Read Sent; sequenced after E1, E7-T2; gate —.
-- `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🔴 PLANNED, needs plan): E7-T6 Identity A (TOTP, backup codes, break-glass); sequenced after F082; gate —.
+- `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (plan landed, 15 stages): E7-T6 Identity A (TOTP, backup codes, break-glass); stage 01 the only migration, stage 10 changes `bun.lock`; stage 13 waits for F099 stages 12–13; sequenced after F082 (closed); gate —.
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, needs plan): E7-T3 Account data (delete, export, DSR); sequenced after F082, E7-T1; gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, needs plan): E7-T4 Papers and cost; sequenced after E7-T3; gate —.
 - `F108-e7-t5-production-on-the-vps` (🔴 PLANNED, needs plan): E7-T5 Production on the VPS; sequenced after E7-T1 … T4; the E8b drill proves its restore; gate —.
