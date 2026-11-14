@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 // AES-256-GCM for mailbox secrets (ADR 0009).
 // ciphertext = base64 of iv (12 bytes) || auth tag (16 bytes) || encrypted bytes.
@@ -71,4 +71,12 @@ export function createSecretBox(keyBase64: string, keyVersion: number): SecretBo
       }
     },
   };
+}
+
+// DSR tombstones (F106): the SHA-256 hex of the dedup key without a trailing `#<n>` copy suffix.
+// The trigger `emails_skip_tombstoned` computes the same value in SQL; a test pins them equal.
+export function tombstoneKeyHash(dedupKey: string): string {
+  return createHash("sha256")
+    .update(dedupKey.replace(/#[0-9]+$/, ""), "utf8")
+    .digest("hex");
 }

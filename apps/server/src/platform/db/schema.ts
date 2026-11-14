@@ -196,6 +196,12 @@ export interface Digests {
   user_id: string;
 }
 
+export interface DsrTombstones {
+  created_at: Generated<Timestamp>;
+  key_hash: string;
+  org_id: string;
+}
+
 export interface EmailFlags {
   answered: boolean;
   answered_check: string | null;
@@ -437,6 +443,7 @@ export interface DB {
   delegates: Delegates;
   delegations: Delegations;
   digests: Digests;
+  dsr_tombstones: DsrTombstones;
   email_flags: EmailFlags;
   email_headers: EmailHeaders;
   emails: Emails;

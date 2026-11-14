@@ -8,6 +8,7 @@ import { insertLinkToken } from "../../src/modules/channels/repo";
 import { insertSenderRule } from "../../src/modules/config";
 import { insertDigest } from "../../src/modules/reports/repo";
 import { upsertOrgFeature } from "../../src/modules/tenancy/repo";
+import { tombstoneKeyHash } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
@@ -30,6 +31,7 @@ const TENANT_TABLES = [
   "delegates",
   "delegations",
   "digests",
+  "dsr_tombstones",
   "email_flags",
   "email_headers",
   "emails",
@@ -106,6 +108,9 @@ async function seedOrg(trx: Trx): Promise<{ orgId: string; userId: string; mailb
     }
   );
   await upsertOrgFeature(trx, { orgId }, { flag: "stats_page", enabled: true, setBy: "cli", setAt: NOW });
+  await sql`insert into dsr_tombstones (org_id, key_hash) values (${orgId}::uuid, ${tombstoneKeyHash("mid:<rls@x.test>:h1")})`.execute(
+    trx
+  );
   return { orgId, userId, mailboxId };
 }
 
@@ -221,7 +226,7 @@ describe("catalog walk", () => {
     const { rows } = await sql<{ proname: string; prosrc: string }>`
       select p.proname, p.prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'public' and p.prosecdef order by 1`.execute(db);
-    expect(rows.map((row) => row.proname)).toContain("delete_mailbox");
+    expect(rows.map((row) => row.proname)).toEqual(expect.arrayContaining(["delete_mailbox", "delete_organization"]));
     for (const row of rows) {
       expect({ name: row.proname, scoped: row.prosrc.includes("app_current_org()") }).toEqual({
         name: row.proname,
