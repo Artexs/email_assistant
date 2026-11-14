@@ -1,0 +1,319 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-024",
+  "cases": [
+    {
+      "id": "w-4-114",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Gwarancja celna w Hamburgu - kto ponosi koszt",
+      "body": "Szanowny Panie Prezesie,\n\nw sprawie dwóch kontenerów z Hamburga pojawiło się pytanie o koszt gwarancji celnej, który wyniósł około 3 000 euro. Zgodnie z naszą wspólną umową takie koszty dzielimy po połowie, ale w tym przypadku opóźnienie wynikało z braków w dokumentach producenta, a nie z błędu żadnej ze stron.\n\nCzy zgadza się Pan, aby koszt gwarancji pokrył Kordelan w całości, a my uwzględnimy to w rozliczeniu następnego przetargu? Chcę uzyskać Pana odpowiedź przed rozliczeniem miesiąca.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-115",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Aneks do umowy serwisowej naczep - 3 czy 5 lat?",
+      "body": "Cześć Wiktor,\n\ndostałam od Trailerwerk Süd projekt aneksu do umowy serwisowej naczep. Producent proponuje dwie opcje: trzy lata za 24 tysiące euro rocznie albo pięć lat za 21 tysięcy euro rocznie, z gwarancją stałej ceny. Dłuższa opcja jest tańsza w przeliczeniu na rok, ale wiąże nas na dłużej i trudniej będzie zmienić serwis, jeśli jakość spadnie.\n\nKtórą opcję wybierasz? Moja rekomendacja to pięć lat, ale decyzja należy do Ciebie, bo to kilkuletnie zobowiązanie finansowe.\n\nDasz mi znać, kiedy będziesz miał chwilę?",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-116",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spotkanie wspólników online - prośba o zaproszenie",
+      "body": "Szanowny Panie Prezesie,\n\nproponuję krótkie spotkanie wspólników online 4.02.2027 o godzinie 15:00, aby omówić wspólne przetargi przed posiedzeniem w Gdańsku. Spotkanie potrwa 45 minut.\n\nUprzejmie proszę o przekazanie sprawy Dorocie Wilczyńskiej, aby wysłała zaproszenie do czterech osób po Państwa stronie i dołączyła do niego agendę, którą przygotuję i prześlę jej jeszcze dzisiaj. Link do spotkania może wygenerować Państwa asystentka, bo korzystamy z tego samego narzędzia.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-117",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic signing date",
+      "body": "Hi Wiktor,\n\nKarin would like to sign the framework agreement in Gdansk on 10 February. Are you free that day? Let me know.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-118",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Lithuanian customs - rozszerzenie upoważnienia na Łotwę",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za informację o litewskich upoważnieniach. Skoro są ważne do końca 2028 roku, nasz wspólny agent mógłby złożyć wniosek o rozszerzenie uproszczonego tranzytu także na Łotwę. Procedura trwa około dwóch miesięcy i kosztuje około 1 500 euro, ale pozwoliłaby przyspieszyć odprawy w Rydze.\n\nChciałbym poznać Pana stanowisko na piśmie: czy zgadza się Pan, aby agent złożył taki wniosek w imieniu obu naszych firm?",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Lithuanian customs: authorisation confirmed",
+          "body": "Dear Mr Szalewski,\n\nI would like to let you know that the Lithuanian customs office has confirmed in writing that the simplified transit authorisation of our joint customs agent stays valid until the end of 2028. This applies to all shipments of Kordelan and Baltic Freight Partners through the port of Klaipeda.\n\nNo further steps are needed from your side. I am sending this only so that you have the confirmation on record.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-119",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Weekly digest: freight, ports and the cost of waiting",
+      "body": "Good afternoon,\n\nHere is this week's short summary of the markets that matter to logistics teams.\n\nOcean freight\n- Spot rates from Asia to Northern Europe rose again, by 3 percent, as carriers keep capacity tight ahead of the new year holidays in Asia.\n- Rates on the Mediterranean lanes fell 2 percent, the third decline in a row.\n- Carriers reported schedule reliability of 61 percent in December, up from 54 percent a year earlier.\n\nRoad and rail\n- Spot rates for full truckloads in Central Europe were flat, but the number of loads offered per truck fell by 6 percent, a sign of softer demand.\n- Rail freight between China and Poland carried 11 percent more containers than in the same month last year, mostly electronics.\n- Driver shortages remain the main concern of carriers, with almost one in five jobs unfilled in several countries.\n\nCosts and regulation\n- Diesel prices in the European Union were stable. Toll rates for heavy vehicles will rise in two countries from April.\n- A new reporting rule for emissions will apply to shippers with more than 250 employees from 2028.\n\nQuote of the week: \"A supply chain is only as predictable as its slowest handover.\"\n\nThis was the weekly digest. The full report with lane by lane data is available to paid subscribers.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-120",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Security notice: your password was changed",
+      "body": "Password changed\n\nThis is an automatic security message from Supply Chain Weekly. The password of your reader account was changed on 28.01.2027 at 15:33 (CET).\n\nAccount: wiktor.szalewski@kordelan.test\nDevice: laptop, Windows\nApproximate location: Gdansk, Poland\n\nIf you made this change, no action is needed. If you did not change your password, reset it at once in the account settings and check your recent sign-ins. We will never ask for your password by email. Replies to this message are not monitored.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-121",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Płatności zaplanowane na następny tydzień",
+      "body": "Zaplanowane płatności\n\nTo jest automatyczne zestawienie płatności zaplanowanych w bankowości internetowej na okres od 29.01.2027 do 05.02.2027.\n\nLiczba zaplanowanych przelewów: 6\nŁączna kwota: 118 940,00 PLN\nRachunek obciążany: główny rachunek firmowy\n\nLista przelewów\n29.01.2027, Hurtownia Opakowań Północ sp. z o.o., faktura FV/2027/0087, 9 480,00 PLN\n29.01.2027, Serwis Naczep Gdynia sp. z o.o., faktura FV/2027/0231, 6 800,00 PLN\n01.02.2027, Poznań Logistics Park, czynsz za luty, 21 300,00 PLN\n02.02.2027, Ubezpieczenia Flotowe SA, składka za ubezpieczenie, 7 920,00 PLN\n03.02.2027, Skanery Pro sp. z o.o., zamówienie ZK/2027/0148, 10 627,20 PLN\n05.02.2027, Telefonia Biznes sp. z o.o., faktura FV/01/2027/5512, 2 786,40 PLN\n\nPrzelewy zostaną wykonane w wybranych terminach, jeżeli na rachunku będzie wystarczająca ilość środków oraz dostępny limit dzienny. Zaplanowane przelewy można zmienić lub anulować w bankowości internetowej do dnia poprzedzającego termin wykonania.\n\nPłatności za faktury dostawców, czynsz i ubezpieczenia zostały zaplanowane przez dział finansów, a lista nie zawiera przelewów zleconych na bieżąco. Saldo rachunku na dzień sporządzenia zestawienia pokrywa wszystkie zaplanowane przelewy. Zestawienie nie obejmuje poleceń zapłaty ani płatności kartą firmową. Zestawienie jest wysyłane automatycznie w czwartki o godzinie 15:30. To jest automatyczne powiadomienie banku. Prosimy na nie nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-122",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Webinar reminder: freight market outlook, tomorrow at 15:00",
+      "body": "Webinar reminder\n\nThis is an automatic reminder about the webinar you registered for.\n\nTitle: Freight market outlook for the first half of 2027\nDate: 29.01.2027\nTime: 15:00 to 16:00 (CET)\nRegistered attendee: wiktor.szalewski@kordelan.test\nStatus: registration confirmed\n\nThe connection details were sent in your confirmation message. The recording will be available to registered attendees for 30 days after the event. This message was generated automatically, and replies are not monitored.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-123",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie konta czytelnika za styczeń 2027",
+      "body": "Miesięczne podsumowanie konta\n\nTo jest automatyczne podsumowanie aktywności Twojego konta czytelnika w serwisie Magazynu Logistyka Dzis za styczeń 2027.\n\nKonto: wiktor.szalewski@kordelan.test\nPlan: wydanie tygodniowe, wersja podstawowa\nOtrzymane wydania: 4\nUruchomione alerty cenowe: 5\nWykonane eksporty danych: 1\nAktywne subskrypcje alertów: 2\nStatus konta: aktywne\n\nLimity w planie podstawowym\nW planie podstawowym możesz mieć do czterech aktywnych alertów cenowych i do dziesięciu eksportów danych miesięcznie. W styczniu wykorzystałeś 50 procent limitu alertów i 10 procent limitu eksportów. Raporty premium i dostęp do archiwum od 2019 roku są dostępne w planie rozszerzonym.\n\nUstawienia i prywatność\nZ Twoim kontem nie są związane żadne zaległe płatności ani ostrzeżenia bezpieczeństwa. Dane o aktywności konta służą wyłącznie do przygotowania tego podsumowania i do rozliczania limitów. Nie udostępniamy ich innym podmiotom. Możesz w każdej chwili wyłączyć podsumowania w ustawieniach konta czytelnika, w sekcji powiadomień, albo pobrać pełny zapis swoich danych w formacie pliku tekstowego.\n\nDane o Twoim koncie, w tym liczbę otwartych wydań i kliknięć w serwisie, przechowujemy przez dwanaście miesięcy, po czym są one usuwane. Następne podsumowanie wyślemy 28.02.2027. Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-124",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Mody Dziecięcej w Łodzi - promocja dla wystawców",
+      "body": "Szanowni Państwo,\n\nzapraszamy do udziału w Targach Mody Dziecięcej, które odbędą się w kwietniu w Łodzi. To okazja, aby dotrzeć do kilkuset sklepów z odzieżą i zabawkami dla dzieci z całej Polski. Spodziewamy się 12 tysięcy odwiedzających.\n\nPrzy zgłoszeniu do połowy lutego oferujemy zniżkę 30% na wynajem stoiska, bezpłatny wpis w katalogu i trzy bilety na galę wystawców. Wystarczy odpowiedzieć na tę wiadomość.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-125",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spotkanie z audytorem 24.03",
+      "body": "Cześć Wiktorze,\n\nspotkanie rady z audytorem zewnętrznym jest ustalone na 24.03.2027 na godzinę 14:00. Audytor poprosił o informację, kto będzie reprezentował zarząd. Czy weźmiesz udział osobiście, czy do rozmowy o sprawozdaniu wyznaczysz główną księgową?\n\nNapisz mi, którą opcję wybierasz, żebym mógł przekazać to audytorowi. Termin jest jeszcze odległy, więc nie ma pośpiechu. Audytor chce wiedzieć, kto odpowie na pytania dotyczące rezerw i rozliczeń z kontrahentami, więc dobrze, jeśli wybór będzie świadomy.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-126",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana uprawnień użytkownika w bankowości internetowej",
+      "body": "Zmiana uprawnień użytkownika\n\nW bankowości internetowej Twojej firmy zmieniono uprawnienia jednego z użytkowników. Poniżej znajdziesz szczegóły zmiany.\n\nUżytkownik: księgowa, dział finansów\nZmiana: dodano uprawnienie do zatwierdzania płatności do kwoty 50 000,00 PLN\nPoprzednie uprawnienia: przygotowywanie przelewów, podgląd rachunków\nData zmiany: 28.01.2027, 16:31\nZmiany dokonał: administrator bankowości firmowej\nStatus: zapisano\n\nNowe uprawnienie obowiązuje od chwili zapisania zmiany. Przelewy powyżej limitu nadal wymagają akceptacji drugiej osoby z uprawnieniami do podpisu. Zmiana została zapisana w dzienniku zdarzeń bankowości firmowej wraz z adresem urządzenia, z którego ją wykonano. Pełna historia zmian uprawnień jest dostępna w bankowości internetowej, w zakładce ustawień i bezpieczeństwa.\n\nZalecamy regularny przegląd uprawnień użytkowników, szczególnie po zmianach organizacyjnych w firmie, a także po odejściu pracownika, który miał dostęp do rachunków. Administrator może w każdej chwili cofnąć nadane uprawnienia. Zmiany wymagające podwójnej akceptacji pozostają w kolejce do czasu zatwierdzenia przez drugiego administratora, jeżeli firma włączyła taką opcję. Informację o zmianie wysłaliśmy do wszystkich administratorów. Bank nigdy nie prosi o podanie haseł ani kodów autoryzacyjnych w wiadomościach e-mail ani telefonicznie. Jeżeli ta zmiana nie była zaplanowana, skontaktuj się niezwłocznie z infolinią banku dla klientów biznesowych.\n\nTo jest automatyczne powiadomienie banku. Prosimy na nie nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-127",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Faktura za subskrypcję jest gotowa do pobrania",
+      "body": "Faktura gotowa\n\nTo jest automatyczna wiadomość serwisu Magazynu Logistyka Dzis. Faktura za subskrypcję serwisu cen paliw została wystawiona i jest dostępna do pobrania na koncie czytelnika, w zakładce faktur i płatności. Kopię faktury wysłaliśmy także na adres rozliczeniowy firmy.\n\nNumer faktury: FS/2027/01/3318\nData wystawienia: 28.01.2027\nKwota brutto: 290,40 PLN\nStatus: opłacona\nPozycja: subskrypcja serwisu cen paliw, 12 miesięcy\nSposób płatności: karta firmowa\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-128",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okna PCV z 40% rabatem - promocja tylko do niedzieli",
+      "body": "Szanowni Państwo,\n\nwymiana okien nigdy nie była tak tania! Oferujemy okna PCV z pakietem trzyszybowym, montażem w cenie i gwarancją 10 lat. Rabat 40% na wszystkie modele przy zamówieniu do niedzieli.\n\nWyślij wymiary na ten adres, a w ciągu godziny otrzymasz wycenę. Dla pierwszych 30 klientów bezpłatny pomiar, a przy zamówieniu powyżej dziesięciu okien dodatkowo bezpłatny transport i utylizacja starych ram.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-129",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenia rady - zmiana częstotliwości",
+      "body": "Cześć Wiktorze,\n\nmyślę o zmianie rytmu posiedzeń rady w 2027 roku. Zamiast posiedzeń co kwartał chciałbym spotykać się co miesiąc, przynajmniej do końca budżetu i decyzji o flocie. Spotkania mogłyby być krótkie, do dwóch godzin, w formie online. Dzięki temu rada na bieżąco śledziłaby wyniki i postęp zakupu naczep, a zarząd nie musiałby przygotowywać tak obszernych materiałów jak na posiedzenia kwartalne.\n\nChciałbym poznać Twoją opinię na piśmie: czy taki rytm jest dla zarządu do przyjęcia?\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-130",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Serwer zapasowy WMS - Twoja opinia",
+      "body": "Cześć Wiktor,\n\npo awarii w Łodzi proponuję drugi serwer zapasowy WMS za 38 tys. zł. Czy się zgadzasz? Odpisz proszę.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-131",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Limit kredytowy - stanowisko zarządu",
+      "body": "Cześć Wiktorze,\n\nbank zaproponował podniesienie limitu kredytu obrotowego z 10 do 14 milionów złotych na czas zakupu naczep. Rada musi zająć stanowisko na posiedzeniu 3.02, a Twoja opinia będzie dla niej kluczowa, bo wyższy limit zwiększa zadłużenie spółki i zmienia wskaźniki, które monitoruje komitet audytu.\n\nCzy zarząd poprze wniosek o podniesienie limitu do 14 milionów? Proszę o odpowiedź na piśmie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-132",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Umowa sprzedaży - uwagi naszego działu prawnego",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że nasz dział prawny zaakceptował projekt umowy sprzedaży bez uwag. Podpisaną wersję otrzymacie Państwo w przyszłym tygodniu.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-133",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dostawa płyt w dwóch transzach - pytanie",
+      "body": "Szanowny Panie Prezesie,\n\nzamówiliśmy 20 palet płyt meblowych na 12.02.2027. Nasza rampa nie przyjmie wszystkich w jednym oknie, więc zastanawiamy się nad podziałem dostawy. Czy Kordelan może zrealizować ją w dwóch transzach po 10 palet, 12.02 i 13.02, w oknie od 6:00 do 10:00? Chcemy w ten sposób uniknąć kolejki przy rampie i przestojów w produkcji. Proszę o odpowiedź, bo od tego zależy nasz plan produkcji na ten tydzień.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-134",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Opłaty za karty: nowa tabela jednego z operatorów",
+      "body": "Opłaty za karty\n\nKolejny operator opublikował nową tabelę opłat. Opłata za kartę podstawową bez zmian, za dodatkową niższa o 2 zł.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-135",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Digest delivery: next issue scheduled",
+      "body": "Scheduled issue\n\nThe next weekly digest will be sent on 03.02.2027 at 08:00. Automatic message.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-136",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Fuel price for Q2 - fixed or variable discount",
+      "body": "Dear Mr Szalewski,\n\nfollowing up on my question about Q2: do you prefer a fixed or a variable discount? A short written answer is enough.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Fuel price for Q2 - would you fix it?",
+          "body": "Dear Mr Szalewski,\n\nwe are preparing the fuel card offer for the second quarter, and I would like to ask you a direct question. Would you want to fix the discount on the pump price for the whole of Q2, as in your current agreement, or would you prefer to move to a variable discount tied to the wholesale price?\n\nThe fixed option gives you a predictable cost, but it is about 1 percent more expensive at today's wholesale prices. The variable option is cheaper now, but the cost follows the market. I need your answer to prepare the right offer, and a short reply from you is enough.\n\nPlease let me know which option you prefer."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-137",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana dnia wysyłki biuletynu",
+      "body": "Zmiana terminu\n\nOd lutego biuletyn będzie wysyłany w czwartki. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-138",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacje w styczniu - podsumowanie",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótkie podsumowanie reklamacji dostaw w styczniu. Zgłosiliśmy sześć reklamacji, z czego pięć zostało zamkniętych, a jedna jest jeszcze w trakcie rozpatrywania. Średni czas rozpatrzenia wyniósł cztery dni robocze. Łączna wartość uznanych szkód to 71 300 zł.\n\nWszystkie sprawy z naszej strony są obecnie w uporządkowanym stanie. Najczęstszą przyczyną reklamacji były uszkodzenia opakowań zbiorczych, które nie wpłynęły na jakość towaru. Szczegółowe zestawienie z numerami protokołów mamy w aktach i w razie potrzeby udostępnimy.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
