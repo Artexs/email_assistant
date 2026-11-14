@@ -31,18 +31,18 @@
     },
     {
       "id": "h-rli-02",
-      "category": "spam",
-      "blindHash": "49eb90eef5bca7fd2c3323d09fe9fc51e54e09689621a29b43e6af42f107a0c4"
+      "category": "needs_reply",
+      "blindHash": "09e349df5f73017b3f303774e2827d2309aa4571076700c66b6bb70d8b39881e"
     },
     {
       "id": "h-rli-05",
-      "category": "spam",
-      "blindHash": "be78988c11c4070f93aacd31f6dd5636b3957be723acde04ea8f9f29ce431d2a"
+      "category": "needs_reply",
+      "blindHash": "9224dfd86e5413d9c602b912c9002106ae3487d2e3fa14bce9aec09da034243f"
     },
     {
       "id": "h-rnt-02",
-      "category": "delegation",
-      "blindHash": "e08f7d0b25119eccbfdaded020d6a39b946eb1bfee0ffa9a50f50de3ef7df2a9"
+      "category": "needs_reply",
+      "blindHash": "dd1d1eedefcdbef219beb737f64c5f3a4c0a9c531702f42e15adf7778b6de67a"
     },
     {
       "id": "h-rnt-03",
