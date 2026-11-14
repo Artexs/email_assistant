@@ -14,6 +14,7 @@ export {
   listOrgFeatureRows,
   listOrgFeatureRowsOfAll,
   setDigestTimes,
+  setUserLocale,
   setUserTerms,
   upsertOrgFeature,
   type MembershipWithUser,

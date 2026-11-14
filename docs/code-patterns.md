@@ -111,7 +111,7 @@ A module that has something to tell a user through the outbox (digests and notic
   - `insertOrganization`, `insertUser`.
   - `listSyncTargets`, `listMailboxTargets` and `countSyncTargets` (`mail/repo/targets.ts`): the sync, triage, committer, returned and chaser jobs list the active mailboxes of all organizations with `listSyncTargets`; the S4 expiry job lists mailboxes of several statuses with `listMailboxTargets`. `listMailboxTargets` skips the mailboxes of `suspended` organizations unless `includeSuspended: true` (only the expiry asks for it); `listSyncTargets` always skips them; `countSyncTargets` counts the same rows (start log line).
   - `listMembershipsOfUser` (`tenancy/repo.ts`, S5a): the user gives the tenant; the web resolves the organization from the session.
-  - `getUserAuthProfile`, `setUserTerms` (`tenancy/repo.ts`, S6b): the user gives the row; the web resolves the user from the session.
+  - `getUserAuthProfile`, `setUserTerms`, `setUserLocale` (`tenancy/repo.ts`, S6b): the user gives the row; the web resolves the user from the session.
   - `createLockoutStore` functions (`platform/auth-lockout.ts`, S6b): the user gives the row; the table `auth_lockouts` has no `org_id` and goes with the user by cascade.
   - `listOrganizations` (`tenancy/repo.ts`, S6a): the retention job, the operator job and `org:status` walk all organizations.
   - `listOrgFeatureRowsOfAll` (`tenancy/repo.ts`, F087): `GET /api/operator/flags` lists the flags of every organization. Only routes under `/api/operator`, behind `requireOperator`, call it.

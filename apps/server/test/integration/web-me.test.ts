@@ -98,7 +98,7 @@ describe("GET /api/me", () => {
     expect(res.status).toBe(200);
     const me = meSchema.parse(await res.json());
     expect(me.role).toBe("owner");
-    expect(me.user).toEqual({ id: ids.ownerId, email: ids.ownerEmail, displayName: "Owner" });
+    expect(me.user).toEqual({ id: ids.ownerId, email: ids.ownerEmail, displayName: "Owner", locale: null });
     expect(me.organization).toEqual({
       id: ids.orgId,
       name: "Web org",
