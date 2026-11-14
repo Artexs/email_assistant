@@ -142,10 +142,14 @@ describe("fake provider", () => {
     expect(fake.closed).toBe(true);
   });
 
-  test("fetchBodyText gives null when the size is over bodyLimitBytes", async () => {
+  test("fetchContent gives null text and the header capture when the size is over bodyLimitBytes", async () => {
     const fake = createFakeMailProvider({ bodyLimitBytes: 10 });
-    const uid = fake.deliver(INBOX, mail(1), { size: 11 });
-    expect(await fake.fetchBodyText(INBOX, uid)).toBeNull();
+    const msg = { ...mail(1), text: "x".repeat(2000), headers: { "Reply-To": "Desk <desk@example.test>" } };
+    const uid = fake.deliver(INBOX, msg, { size: 2000 });
+    const content = await fake.fetchContent(INBOX, uid);
+    expect(content.text).toBeNull();
+    expect(content.capture?.partsKnown).toBe(false);
+    expect(content.capture?.replyTo).toEqual(["desk@example.test"]);
   });
 
   test("MailNotFoundError has its own name that describeError prints", () => {

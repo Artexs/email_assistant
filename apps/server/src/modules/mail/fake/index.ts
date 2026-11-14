@@ -1,8 +1,10 @@
 import { HardError } from "../../../platform/errors";
+import { contentFromHeaderBlock, contentFromSource } from "../imap/capture";
 import {
   INBOX,
   MailFolderMissingError,
   MailNotFoundError,
+  type FlagsOfMessage,
   type FolderMessageMeta,
   type FolderStatus,
   type MailCapabilities,
@@ -291,14 +293,36 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       return above.sort((a, b) => a.uid - b.uid).map(toMeta);
     },
 
-    async fetchBodyText(folder, uid) {
-      enter("fetchBodyText", folder);
+    async fetchContent(folder, uid) {
+      enter("fetchContent", folder);
       existingFolder(folder);
       const stored = find(folder, uid);
-      if (!stored || stored.size > bodyLimitBytes) return null;
-      if (stored.msg.text !== undefined) return stored.msg.text;
-      if (stored.msg.html !== undefined) return stripTags(stored.msg.html);
-      return null;
+      if (!stored) return { text: null, capture: null };
+      const raw = stored.raw ?? Buffer.from(renderSeedMessage(stored.msg));
+      if (stored.size > bodyLimitBytes) {
+        const end = raw.indexOf("\r\n\r\n");
+        return (await contentFromHeaderBlock(end < 0 ? raw : raw.subarray(0, end))) ?? { text: null, capture: null };
+      }
+      const capture = (await contentFromSource(raw))?.capture ?? null;
+      if (stored.msg.text !== undefined) return { text: stored.msg.text, capture };
+      if (stored.msg.html !== undefined) return { text: stripTags(stored.msg.html), capture };
+      return { text: null, capture };
+    },
+
+    async fetchFlagsIn(folder, uids) {
+      enter("fetchFlagsIn", folder);
+      const wanted = new Set(uids);
+      return (folders.get(folder)?.messages ?? [])
+        .filter((m) => wanted.has(m.uid))
+        .sort((a, b) => a.uid - b.uid)
+        .map(
+          (m): FlagsOfMessage => ({
+            uid: m.uid,
+            flags: [...m.flags].sort(),
+            messageId: m.msg.messageId || null,
+            internalDate: new Date(m.internalDate),
+          })
+        );
     },
 
     async ensureFolder(name) {
