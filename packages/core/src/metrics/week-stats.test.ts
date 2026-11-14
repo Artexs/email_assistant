@@ -20,8 +20,8 @@ import { handledShare } from "./m4";
 import { urgentLatency } from "./m5";
 import { unitCost } from "./m7";
 import { autoEvidence } from "./m8";
-import { buildWeekStats, type WeekRows } from "./week-stats";
 import { weekRange } from "./week";
+import { buildWeekStats, type WeekRows } from "./week-stats";
 
 const timeZone = "Europe/Warsaw";
 const weekStart = "2026-11-16";

@@ -1,5 +1,6 @@
 // M7: cost per mailbox per month, from the week's LLM calls and the reference numbers of the cost model.
 import { costPerMail } from "../triage/cost";
+
 import { costModel } from "./cost-model";
 
 export interface LlmCallRow {

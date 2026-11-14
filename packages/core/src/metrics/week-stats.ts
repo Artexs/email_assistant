@@ -2,10 +2,10 @@
 import type { WeekStats } from "../web/stats";
 import { weekStatsSchema } from "../web/stats";
 
-import { type HandledRow, handledShare } from "./m4";
 import { type MailTruthRow, missedImportant } from "./m1";
 import { type DelegationDueRow, openLoopsOnTime } from "./m2";
 import { type HiddenMoveRow, type MistakeRow, type RejectRow, seriousMistakes } from "./m3";
+import { type HandledRow, handledShare } from "./m4";
 import { type UrgentNoticeRow, urgentLatency } from "./m5";
 import { type LlmCallRow, unitCost } from "./m7";
 import { type GateRow, autoEvidence } from "./m8";
