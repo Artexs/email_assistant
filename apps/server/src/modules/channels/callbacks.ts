@@ -153,7 +153,7 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
   }
   return {
     answer: pickAnswer(saved.saved),
-    edit: { text: pickedText(callback.category, target.category), buttons: [] },
+    edit: { text: pickedText(callback.category, target.category, saved.saved), buttons: [] },
   };
 }
 
