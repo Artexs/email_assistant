@@ -1,10 +1,10 @@
-# F105 stage 05 — Break-glass owner [risky]
+# F105 stage 05 — Break-glass owner: service and CLI
 
-Part of [`../plan.md`](../plan.md). Read its P1, P4, D11, D12, D23, D27 and "Rules for every stage" first. Lane A. Needs stage 03 (it edits the same `web.ts` and auth files; the `memberships.break_glass` column is from stage 01).
+Part of [`../plan.md`](../plan.md). Read its P1, P4, D11, D23, D27 and "Rules for every stage" first. Lane A. Needs stage 03 (the `auditEvents` list it edits; the `memberships.break_glass` column is from stage 01).
 
-`[risky]`: authentication rule and tenant data. A review job checks it before the land; the reviewer tries to mark an assistant, a user without TOTP, two owners of one organization, and to turn TOTP off as the break-glass owner.
+Not `[risky]` by the stage rule (two normal steps), but a review job checks it before the land (tenant data and an auth rule's input); the reviewer tries to mark an assistant, a user without TOTP and two owners of one organization. The refusal at `/two-factor/disable` is stage 06.
 
-Three steps. About 300 changed lines.
+Two steps. About 230 changed lines.
 
 - [ ] **05.1 Repository and service**
   - Goal: the tenancy module sets, clears and reads the break-glass owner of an organization, with one audit row per change, in one transaction.
@@ -21,7 +21,7 @@ Three steps. About 300 changed lines.
     // UserAuthProfile gets `twoFactorEnabled: boolean` (users.two_factor_enabled); getUserAuthProfile selects it.
     export async function getBreakGlassUserId(db: Db | Transaction<DB>, ctx: TenantContext): Promise<string | null>;
     export async function setBreakGlassFlag(trx: Transaction<DB>, ctx: TenantContext, userId: string, on: boolean): Promise<boolean>; // true = a row changed
-    // No TenantContext (the user gives the rows; listed in docs/code-patterns.md by stage 13):
+    // No TenantContext (the user gives the rows; listed in docs/code-patterns.md by stage 14):
     export async function isBreakGlassOwner(db: Db | Transaction<DB>, userId: string): Promise<boolean>; // any membership of the user with break_glass
 
     // tenancy/service.ts
@@ -41,7 +41,7 @@ Three steps. About 300 changed lines.
     ```
 
     `setBreakGlassOwner`, in one transaction: `lockOrganization` (none → `not_found`); `getMembership` (none or `role !== "owner"` → `not_owner`); `getUserAuthProfile(trx, userId).twoFactorEnabled` false → `no_two_factor`; the current holder (`getBreakGlassUserId`) equals the user → `unchanged`; else clear the current holder (if any) with `setBreakGlassFlag(…, false)` and an `org.break_glass_cleared` row (`{ user_id: <old>, reason: "replaced" }`), then `setBreakGlassFlag(…, userId, true)` and an `org.break_glass_set` row (`{ user_id }`). Rows: actor = `input.actor`, `at: input.now`. The clear runs before the set, so the partial unique index never sees two marks.
-    `clearBreakGlassOwner`: the same lock; no holder → `none`; else clear it and write `org.break_glass_cleared` (`{ user_id, reason }`). It accepts a transaction (stage 06 calls it inside its own).
+    `clearBreakGlassOwner`: the same lock; no holder → `none`; else clear it and write `org.break_glass_cleared` (`{ user_id, reason }`). It accepts a transaction (stage 07 calls it inside its own).
   - Decisions: D11, D23.
   - Test (`break-glass.test.ts`; committed rows from `webOrg(db)` of `web-helpers.ts`, cleaned in `afterAll`; TOTP on through `UPDATE users SET two_factor_enabled = true`; `NOW = 2026-11-20T10:00:00Z`):
     1. The owner with TOTP → `set` (`replaced: null`); the membership has `break_glass = true`; one `org.break_glass_set` row with `data = { user_id: <owner> }`, actor `cli`.
@@ -54,42 +54,9 @@ Three steps. About 300 changed lines.
     8. `getUserAuthProfile` returns `twoFactorEnabled` true and false as set; `getMembership` returns `break_glass`.
   - Check: `bun test apps/server/test/integration/break-glass.test.ts apps/server/test/integration/tenancy*.test.ts`; `bun run typecheck`.
   - Done when: tests 1–8 pass.
-  - Out of scope: the CLI (05.3); the reset (stage 06).
+  - Out of scope: the CLI (05.2); the disable refusal (stage 06); the reset (stage 07).
 
-- [ ] **05.2 The break-glass owner cannot turn TOTP off**
-  - Goal: `/two-factor/disable` refuses the break-glass owner before anything changes.
-  - Files: change `apps/server/src/platform/auth.ts` (`AuthDeps`, `hooks.before`); change `apps/server/src/web.ts` (pass `keepsTwoFactor`); change `apps/server/test/integration/web-two-factor.test.ts`.
-  - Interfaces:
-
-    ```ts
-    // AuthDeps
-    // True = the user may not turn TOTP off (the break-glass owner, plan D12). Absent = every user may.
-    keepsTwoFactor?: (userId: string) => Promise<boolean>;
-
-    // hooks.before, a new branch (after the existing ones):
-    if (ctx.path === "/two-factor/disable" && deps.keepsTwoFactor) {
-      const session = await getSessionFromCtx(ctx);
-      if (session && (await deps.keepsTwoFactor(session.user.id))) {
-        throw APIError.from("FORBIDDEN", {
-          code: "BREAK_GLASS_NEEDS_TWO_FACTOR",
-          message: "The break-glass owner keeps two-factor sign-in.",
-        });
-      }
-    }
-    // web.ts createAuth({ …, keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId) })
-    ```
-
-    An error of `keepsTwoFactor` is not caught: the request fails (500) and nothing changes (fail closed).
-  - Decisions: D12.
-  - Test (`web-two-factor.test.ts`, the handle gets `keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId)`):
-    9. An enrolled owner marked break-glass (`setBreakGlassOwner`) → `POST /two-factor/disable { password }` → 403 `BREAK_GLASS_NEEDS_TWO_FACTOR`; `two_factor_enabled` stays true, the row stays, no `web.two_factor_disabled` row.
-    10. After `clearBreakGlassOwner`, the same call → 200 and TOTP is off.
-    11. A handle without `keepsTwoFactor` lets a marked user turn TOTP off (the CLIs and old tests keep working).
-  - Check: `bun test apps/server/test/integration/web-two-factor.test.ts`; `bun run typecheck`.
-  - Done when: tests 9–11 pass.
-  - Out of scope: the panel text for this refusal (stage 10).
-
-- [ ] **05.3 CLI `org:break-glass`**
+- [ ] **05.2 CLI `org:break-glass`**
   - Goal: the operator lists, sets and clears the break-glass owner of an organization.
   - Files: add `apps/server/src/scripts/org-break-glass.ts`, `apps/server/src/scripts/org-break-glass-args.ts`, `apps/server/src/scripts/org-break-glass-args.test.ts`; change the root `package.json` (`"org:break-glass": "bun apps/server/src/scripts/org-break-glass.ts"`, next to `org:flag`).
   - Interfaces:
@@ -110,13 +77,13 @@ Three steps. About 300 changed lines.
     - clear: `clearBreakGlassOwner(db, ctx, { actor: "cli", now: new Date(), reason: "cli" })` → `org <org_id>: break-glass owner <user_id> cleared` or `org <org_id>: no break-glass owner`; `not_found` → exit 1.
   - Decisions: D11.
   - Test (`org-break-glass-args.test.ts`):
-    12. `--org-id <uuid>` → list; `--org-id <uuid> --user-id <uuid>` → set; `--org-id <uuid> --clear` → clear.
-    13. Missing or bad `--org-id`, a bad `--user-id`, `--user-id` with `--clear`, an unknown option, a positional argument → null.
+    9. `--org-id <uuid>` → list; `--org-id <uuid> --user-id <uuid>` → set; `--org-id <uuid> --clear` → clear.
+    10. Missing or bad `--org-id`, a bad `--user-id`, `--user-id` with `--clear`, an unknown option, a positional argument → null.
   - Check: `bun test apps/server/src/scripts/org-break-glass-args.test.ts`; `bun run lint`.
-  - Done when: tests 12–13 pass and `bun run org:break-glass` without arguments prints the usage and exits 1.
+  - Done when: tests 9–10 pass and `bun run org:break-glass` without arguments prints the usage and exits 1.
   - Out of scope: a panel or console page for the choice (questions.md Q1).
 
 ## Done when
 
-- Steps 05.1–05.3 are done and committed by explicit paths.
+- Steps 05.1 and 05.2 are done and committed by explicit paths.
 - The Proof command of `plan.md` for stage 05 (`/tmp/f105-s05`) prints `PROOF_OK`.

@@ -1,10 +1,10 @@
-# F105 stage 07 — Status route
+# F105 stage 08 — Status route
 
-Part of [`../plan.md`](../plan.md). Read its D14, D25 and "Rules for every stage" first. Lane A. Needs stage 04 (`WebSession.twoFactorEnabled`, the `twoFactorOff` option of `webTestApp`) and stage 05 (`MembershipWithUser.break_glass`). May run next to stage 06.
+Part of [`../plan.md`](../plan.md). Read its D14, D25 and "Rules for every stage" first. Lane A. Needs stage 04 (`WebSession.twoFactorEnabled`, the `twoFactorOff` option of `webTestApp`) and stage 05 (`MembershipWithUser.break_glass`). May run next to stage 07.
 
 Two steps. About 200 changed lines.
 
-- [ ] **07.1 Schema and the backup-code count**
+- [ ] **08.1 Schema and the backup-code count**
   - Goal: the web has one schema for the TOTP state, and the server can count the backup codes left without showing them.
   - Files: add `packages/core/src/web/two-factor.ts` and `packages/core/src/web/two-factor.test.ts`; change `packages/core/src/web/index.ts`; change `apps/server/src/platform/auth-two-factor.ts`; add a case to `apps/server/test/integration/web-two-factor.test.ts`.
   - Interfaces:
@@ -34,9 +34,9 @@ Two steps. About 200 changed lines.
     2. `web-two-factor.test.ts`: `backupCodesLeft(handle, id)` of an enrolled user = 10; after one backup-code sign-in = 9; for a user without TOTP = null and one captured `two_factor_codes_unreadable` line with the user id and no code.
   - Check: `bun test packages/core/src/web/two-factor.test.ts apps/server/test/integration/web-two-factor.test.ts`.
   - Done when: tests 1–2 pass.
-  - Out of scope: the route (07.2).
+  - Out of scope: the route (08.2).
 
-- [ ] **07.2 `GET /api/me/two-factor`**
+- [ ] **08.2 `GET /api/me/two-factor`**
   - Goal: a member reads the TOTP state of the own account and why the role needs it.
   - Files: change `apps/server/src/modules/tenancy/routes.ts` (`TenancyRouteDeps`, the route); change `apps/server/src/web.ts` (`apiRouters` passes the dep); change every caller of `tenancyRoutes` and `apiRouters` (`grep -rln "tenancyRoutes(\|apiRouters(" apps/server`: `web-me.test.ts`, `web-http.test.ts`, `web-onboarding.test.ts`, `web-operator.test.ts`, `web-organization.test.ts`, `web-sessions.test.ts`, `web-suspended.test.ts`, `web-terms.test.ts`, `log-context.test.ts` at the plan base); add `noBackupCodes` to `apps/server/test/integration/web-helpers.ts`; add `apps/server/test/integration/web-two-factor-status.test.ts`.
   - Interfaces:
@@ -79,9 +79,9 @@ Two steps. About 200 changed lines.
     10. `twoFactorStatusSchema.parse` passes on every answer; the body text holds no `@x.test` and no user id.
   - Check: `bun test apps/server/test/integration/web-two-factor-status.test.ts apps/server/test/integration/web-me.test.ts apps/server/test/integration/web-sessions.test.ts`; `bun run typecheck`; `bun run lint`.
   - Done when: tests 3–10 pass and every old caller compiles and passes.
-  - Out of scope: the web section (stage 10).
+  - Out of scope: the web section (stage 11).
 
 ## Done when
 
-- Steps 07.1 and 07.2 are done and committed by explicit paths.
-- The Proof command of `plan.md` for stage 07 (`/tmp/f105-s07`) prints `PROOF_OK`.
+- Steps 08.1 and 08.2 are done and committed by explicit paths.
+- The Proof command of `plan.md` for stage 08 (`/tmp/f105-s08`) prints `PROOF_OK`.

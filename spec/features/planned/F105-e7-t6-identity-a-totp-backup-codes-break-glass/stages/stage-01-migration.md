@@ -57,7 +57,7 @@ One step. About 150 changed lines (most of it the generated `schema.ts`).
     9. A new membership has `break_glass = false`.
   - Check: `bun run db:migrate` (the job's own DB from `scripts/limen-prepare.sh`), `bun run db:types`, then `bun test apps/server/test/integration/auth-two-factor-schema.test.ts apps/server/test/integration/auth-public-schema.test.ts apps/server/test/integration/rls-policy.test.ts`; `bun run typecheck`. Then the down step once: `bun run db:rollback` and `bun run db:migrate` again; both succeed.
   - Done when: tests 1–9 pass; `schema.ts` has `AuthTwoFactors`, `Users.two_factor_enabled` and `Memberships.break_glass`; the rollback and the second migrate succeed.
-  - Out of scope: the plugin (stage 02); any repository function (stages 05–07).
+  - Out of scope: the plugin (stage 02); any repository function (stages 05–08).
 
 ## Done when
 

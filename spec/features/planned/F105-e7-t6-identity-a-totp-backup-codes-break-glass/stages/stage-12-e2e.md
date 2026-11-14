@@ -1,10 +1,10 @@
-# F105 stage 11 — E2e seed and spec
+# F105 stage 12 — E2e seed and spec
 
-Part of [`../plan.md`](../plan.md). Read its D16, D17, D24, D25, "Rules for every stage" (the e2e rule: own e2e DB, `flock`) first. Lane C. Needs stage 10 (and so 02–09).
+Part of [`../plan.md`](../plan.md). Read its D16, D17, D24, D25, "Rules for every stage" (the e2e rule: own e2e DB, `flock`) first. Lane C. Needs stage 11 (and so 02–10).
 
 Two steps. About 250 changed lines.
 
-- [ ] **11.1 One two-factor owner per project in the e2e seed**
+- [ ] **12.1 One two-factor owner per project in the e2e seed**
   - Goal: the e2e run has a user per Playwright project whose TOTP the spec can turn on and off without touching the users of other specs.
   - Files: change `apps/server/src/scripts/e2e-seed-args.ts`, `apps/server/src/scripts/e2e-seed.ts`, `apps/server/test/integration/e2e-seed.test.ts`.
   - Interfaces (pattern of the terms owners):
@@ -27,15 +27,15 @@ Two steps. About 250 changed lines.
     2. A second seed run gives new ids and still `two_factor_enabled = false` (set it true with SQL between the runs to prove the reset).
   - Check: `bun test apps/server/test/integration/e2e-seed.test.ts apps/server/src/scripts`.
   - Done when: tests 1–2 pass.
-  - Out of scope: the spec (11.2).
+  - Out of scope: the spec (12.2).
 
-- [ ] **11.2 `two-factor.spec.ts`**
+- [ ] **12.2 `two-factor.spec.ts`**
   - Goal: the browser proves enrolment, sign-in with a code and with a backup code, the used-code refusal, and turning TOTP off.
   - Files: add `apps/web/e2e/totp.ts` (the RFC 6238 helper, `node:crypto` only: `base32Decode`, `totpCode(secretBase32, atMs = Date.now())`; the same code as `apps/server/test/totp.ts`, which the e2e runner must not import); add `apps/web/e2e/tests/two-factor.spec.ts`.
   - Interfaces and behaviour:
     - `test.describe.configure({ mode: "serial" })`. The tests of one project share module variables `secret: string` and `codes: string[]` (each project runs in its own worker with its own user).
     - Address blocks 50 (mobile) and 150 (desktop) (Fact F12). Every sign-in runs in a new browser context (`browser.newContext({ baseURL: E2E_BASE_URL, extraHTTPHeaders: { "x-forwarded-for": nextAddress(base) } })`), so the limit of 3 calls per 10 s on `/two-factor/*` never answers (Fact F5).
-    - Each page collects every console message (`page.on("console")`); `afterEach` asserts that no message holds `secret`, `otpauth`, or any of `codes`, and that `cspErrors` is empty.
+    - Each page collects every console message (`page.on("console")`); `afterEach` asserts that no message holds `secret`, `otpauth`, any of `codes`, or a typed 6-digit code as a whole token (no digit just before or after it; plan § Rules, Secrets), and that `cspErrors` is empty.
   - Test (`two-factor.spec.ts`; user = `readSeed().twoFactorOwners[project]`):
     3. Turn on: sign in (password only) → `/onboarding`; go to `/settings`; in `[data-section=two-factor]` click `tf_turn_on`, fill `password_label`, click `continue`; `[data-qr=totp]` is visible; `secret` = the text of `[data-totp-secret]` without spaces; fill `tf_code_label` with `totpCode(secret)`, click `tf_verify`; `[data-backup-codes] li` has 10 items, each matching `/^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/`; keep them in `codes`; click `tf_codes_done`; the section shows `tf_on_text` and `Backup codes left: 10` (`en.tf_codes_left` with `{count}` = 10).
     4. Sign in with a code (new context): fill the password form → the code step shows `tf_code_label`; fill a wrong code (`"000000"`, or `"111111"` when `"000000"` is the current code) → `tf_error_code`; fill `totpCode(secret)` → the URL ends with `/onboarding`.
@@ -48,5 +48,5 @@ Two steps. About 250 changed lines.
 
 ## Done when
 
-- Steps 11.1 and 11.2 are done and committed by explicit paths.
-- The stage 11 Proof command of `plan.md` (`/tmp/f105-s11`, the web chain plus the whole `test:e2e` under `flock`) prints `PROOF_OK`.
+- Steps 12.1 and 12.2 are done and committed by explicit paths.
+- The stage 12 Proof command of `plan.md` (`/tmp/f105-s12`, the web chain plus the whole `test:e2e` under `flock`) prints `PROOF_OK`.

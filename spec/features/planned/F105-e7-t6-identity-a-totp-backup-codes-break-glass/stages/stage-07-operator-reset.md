@@ -1,4 +1,4 @@
-# F105 stage 06 — Operator reset [risky]
+# F105 stage 07 — Operator reset [risky]
 
 Part of [`../plan.md`](../plan.md). Read its D4, D13, D22, D25 and "Rules for every stage" first. Lane A. Needs stage 05 (`clearBreakGlassOwner`, `getUserAuthProfile.twoFactorEnabled`, `auditEvents.orgBreakGlassCleared`).
 
@@ -6,14 +6,14 @@ Part of [`../plan.md`](../plan.md). Read its D4, D13, D22, D25 and "Rules for ev
 
 Two steps. About 280 changed lines.
 
-- [ ] **06.1 `resetTwoFactorRows` and `resetTwoFactor`**
+- [ ] **07.1 `resetTwoFactorRows` and `resetTwoFactor`**
   - Goal: one transaction turns a user's second factor off, ends the user's sessions and trusted devices, clears the user's break-glass marks, and writes the audit rows.
   - Files: add `apps/server/src/platform/auth-two-factor-reset.ts`; change `apps/server/src/modules/tenancy/repo.ts`, `service.ts`, `index.ts`; change `apps/server/src/modules/audit/repo.ts` (`auditEvents`); add `apps/server/test/integration/two-factor-reset.test.ts`.
   - Interfaces:
 
     ```ts
     // platform/auth-two-factor-reset.ts — Kysely only, no better-auth import (plan D4).
-    // The second place where our SQL touches the Better Auth tables (docs/code-patterns.md § Data access, stage 13 adds it).
+    // The second place where our SQL touches the Better Auth tables (docs/code-patterns.md § Data access, stage 14 adds it).
     export async function resetTwoFactorRows(
       trx: Transaction<DB>,
       userId: string
@@ -26,7 +26,7 @@ Two steps. About 280 changed lines.
     // audit/repo.ts auditEvents
     webTwoFactorReset: "web.two_factor_reset", // data: via, sessions_ended
 
-    // tenancy/repo.ts — no TenantContext (the user gives the rows; stage 13 lists it in docs/code-patterns.md)
+    // tenancy/repo.ts — no TenantContext (the user gives the rows; stage 14 lists it in docs/code-patterns.md)
     export async function listBreakGlassOrgIdsOfUser(db: Db | Transaction<DB>, userId: string): Promise<string[]>;
 
     // tenancy/service.ts
@@ -50,9 +50,9 @@ Two steps. About 280 changed lines.
     7. No captured line holds an address, a secret or a code.
   - Check: `bun test apps/server/test/integration/two-factor-reset.test.ts apps/server/test/integration/break-glass.test.ts`; `bun run typecheck`.
   - Done when: tests 1–7 pass.
-  - Out of scope: the CLI (06.2); a console button (not in this ticket).
+  - Out of scope: the CLI (07.2); a console button (not in this ticket).
 
-- [ ] **06.2 CLI `web:two-factor-reset`**
+- [ ] **07.2 CLI `web:two-factor-reset`**
   - Goal: the operator resets a member's second factor from the host.
   - Files: add `apps/server/src/scripts/web-two-factor-reset.ts`, `apps/server/src/scripts/web-two-factor-reset-args.ts`, `apps/server/src/scripts/web-two-factor-reset-args.test.ts`, `apps/server/test/integration/web-two-factor-reset-cli.test.ts`; change the root `package.json` (`"web:two-factor-reset": "bun apps/server/src/scripts/web-two-factor-reset.ts"`, next to `web:invite`).
   - Interfaces:
@@ -73,9 +73,9 @@ Two steps. About 280 changed lines.
     9. CLI (pattern of `org-flag-cli.test.ts`: `Bun.spawn` of the script, committed rows cleaned in `afterEach`): an enrolled member → exit 0, stdout holds `two-factor sign-in reset` and the user id, and not the address or the organization name; the DB state as test 1; a user of another organization → exit 1 with `user is not a member`.
   - Check: `bun test apps/server/src/scripts/web-two-factor-reset-args.test.ts apps/server/test/integration/web-two-factor-reset-cli.test.ts`; `bun run lint`.
   - Done when: tests 8–9 pass.
-  - Out of scope: the docs line for the operator (stage 13).
+  - Out of scope: the docs line for the operator (stage 14).
 
 ## Done when
 
-- Steps 06.1 and 06.2 are done and committed by explicit paths.
-- The Proof command of `plan.md` for stage 06 (`/tmp/f105-s06`) prints `PROOF_OK`.
+- Steps 07.1 and 07.2 are done and committed by explicit paths.
+- The Proof command of `plan.md` for stage 07 (`/tmp/f105-s07`) prints `PROOF_OK`.

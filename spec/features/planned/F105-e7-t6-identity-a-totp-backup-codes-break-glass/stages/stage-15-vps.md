@@ -1,6 +1,6 @@
-# F105 stage 14 — VPS deploy and checks [risky]
+# F105 stage 15 — VPS deploy and checks [risky]
 
-Part of [`../plan.md`](../plan.md). Read its D10, D25, § Owner steps and § Not verified first. Needs stages 01–13 landed and the `master` CI run of the last land green. Stage 12 may still wait for F099 (plan § How to run, item 6): then this deploy brings 01–11 and 13, and stage 12 goes out with the next deploy of any ticket.
+Part of [`../plan.md`](../plan.md). Read its D10, D25, § Owner steps and § Not verified first. Needs stages 01–14 landed and the `master` CI run of the last land green. Stage 13 may still wait for F099 (plan § How to run, item 6): then this deploy brings 01–12 and 14, and stage 13 goes out with the next deploy of any ticket.
 
 `[risky]`: the real system with the pilot's sign-in. **The coordinator runs this stage itself** (`spec/build.md`: VPS, ssh and deploy steps are pre-approved; backup first, name the rollback target, verify after). No worker job. One owner step (U1): the owner's phone. No other VPS deploy runs at the same time.
 
@@ -53,8 +53,8 @@ When step 11 fails, or check 1, 2, 4 or 9 fails:
 ## After
 
 - When the checks hold for 24 h, `docker image rm ea-server:pre-f105`.
-- Write the result into this ticket's `plan.md` § Log (date, commit, the outputs of checks 1–4 and 6–9, no ids). If stage 12 has landed, close the ticket with `limen ticket done F105`; else close it after stage 12 lands.
+- Write the result into this ticket's `plan.md` § Log (date, commit, the outputs of checks 1–4 and 6–9, no ids). If stage 13 has landed, close the ticket with `limen ticket done F105`; else close it after stage 13 lands.
 
 ## Done when
 
-- Checks 1–9 hold, U1 is done, the log line is written, and the ticket is closed (or waits only for stage 12).
+- Checks 1–9 hold, U1 is done, the log line is written, and the ticket is closed (or waits only for stage 13).

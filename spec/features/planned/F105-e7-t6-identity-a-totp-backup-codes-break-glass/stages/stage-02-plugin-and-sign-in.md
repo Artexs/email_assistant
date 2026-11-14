@@ -90,6 +90,8 @@ One step. About 300 changed lines (half of it the integration test).
     export function base32Decode(input: string): Buffer; // RFC 4648 alphabet, no padding needed
     export function totpCode(secretBase32: string, atMs: number = Date.now()): string; // HMAC-SHA1, counter = floor(atMs / 30_000), 6 digits
     export function secretOfUri(uri: string): string; // new URL(uri).searchParams.get("secret"), throws when missing
+    // plan § Rules, Secrets: a 6-digit code matches only as a whole token (/(^|\D)123456(\D|$)/); any other value as a substring.
+    export function holdsToken(line: string, token: string): boolean;
     ```
 
   - Decisions: D1, D3, D4, D5, D6, D22, D24, D25.
@@ -97,6 +99,7 @@ One step. About 300 changed lines (half of it the integration test).
     - `totp.test.ts` (runs in `test:int`, it is under `apps/server/test`):
       1. RFC 6238 vector: `totpCode("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", 59_000)` = `"287082"`; at `1_111_111_109_000` = `"081804"`.
       2. `secretOfUri("otpauth://totp/A:b?secret=JBSWY3DP&issuer=A")` = `"JBSWY3DP"`.
+      2a. `holdsToken("code 123456 sent", "123456")` and `holdsToken("123456", "123456")` are true; `holdsToken("ms=1234567", "123456")` and `holdsToken("id 91234560", "123456")` are false; `holdsToken("x abcde-12345 y", "abcde-12345")` and `holdsToken("xxotpauth://", "otpauth")` are true.
     - `auth-two-factor.test.ts` (unit):
       3. `TWO_FACTOR_ALLOWED_PATHS` has the five paths and no `get-totp-uri`, `send-otp`, `verify-otp`.
     - `auth.test.ts`: 4. `AUTH_ALLOWED_PATHS.size` is 12 (update the three old size checks); each of the five paths passes with POST; `/two-factor/get-totp-uri`, `/two-factor/send-otp`, `/two-factor/verify-otp`, `/two-factor/view-backup-codes`, `/two-factor/generate-totp` are refused with POST and GET.
@@ -113,10 +116,10 @@ One step. About 300 changed lines (half of it the integration test).
       14. Password reset of the enrolled user (captured link, `resetBody`) → 200; the next sign-in still answers `twoFactorRedirect: true` (F10).
       15. Two `enable` calls of one session at once (`Promise.all`) → exactly one `auth_two_factors` row for the user; at least one answer is 200; if one answer is 500, no captured line holds a secret (D22).
       16. A user locked by the password lockout (a second handle with `lockout: createLockoutStore(db)` and a fixed `now`, 10 wrong passwords) signs in with the right password → 401 `INVALID_EMAIL_OR_PASSWORD`, no `ea.two_factor` cookie (D6).
-      17. Over the whole file: no captured console line contains any enrolment secret, the text `otpauth`, any backup code, or any typed code of these tests.
+      17. Over the whole file: no captured console line holds (`holdsToken`) any enrolment secret, the text `otpauth`, any backup code, or any typed code of these tests (a 6-digit code as a whole token only).
   - Check: `bun test apps/server/src/platform apps/server/test/totp.test.ts apps/server/test/integration/web-two-factor.test.ts apps/server/test/integration/web-auth.test.ts apps/server/test/integration/web-lockout.test.ts apps/server/test/integration/web-auth-logs.test.ts`; `bun run typecheck`; `bun run lint`.
-  - Done when: tests 1–17 pass; the old auth tests pass; `platform/auth.ts` has no `databaseHooks.session`.
-  - Out of scope: the 2FA audit rows, the code lock row and the trusted-device end (stage 03); the operator rule (04); break-glass (05); any web change (08–10).
+  - Done when: tests 1, 2, 2a and 3–17 pass; the old auth tests pass; `platform/auth.ts` has no `databaseHooks.session`.
+  - Out of scope: the 2FA audit rows, the code lock row and the trusted-device end (stage 03); the operator rule (stage 04); break-glass (stages 05, 06); any web change (stages 09–11).
 
 ## Done when
 

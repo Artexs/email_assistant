@@ -1,10 +1,10 @@
-# F105 stage 12 — Security log kinds
+# F105 stage 13 — Security log kinds
 
-Part of [`../plan.md`](../plan.md). Read its D21, P5 and "Rules for every stage" first. Lane D. **Spawn it only when F099 stages 12 and 13 are on `master`** (the registry `packages/core/src/security-log.ts`, the route `GET /api/security-log`, the web helper `apps/web/src/lib/security-log-text.ts`). Needs stage 06 of this ticket (every new audit event exists: stages 03, 05, 06). If F099 changed the registry shape after its stage files, stop and report the difference.
+Part of [`../plan.md`](../plan.md). Read its D21, P5 and "Rules for every stage" first. Lane D. **Spawn it only when F099 stages 12 and 13 are on `master`** (the registry `packages/core/src/security-log.ts`, the route `GET /api/security-log`, the web helper `apps/web/src/lib/security-log-text.ts`). Needs stage 07 of this ticket (every new audit event exists: stages 03, 05, 07). If F099 changed the registry shape after its stage files, stop and report the difference.
 
 Two steps. About 120 changed lines.
 
-- [ ] **12.1 The eight kinds in the registry**
+- [ ] **13.1 The eight kinds in the registry**
   - Goal: the owner security log shows the second-factor and break-glass events.
   - Files: change `packages/core/src/security-log.ts` and `packages/core/src/security-log.test.ts`; change `apps/server/test/integration/web-security-log.test.ts` (new cases).
   - Interfaces:
@@ -34,7 +34,7 @@ Two steps. About 120 changed lines.
   - Done when: tests 1–3 pass.
   - Out of scope: showing which member a break-glass row names (the F099 entry shape has no subject field).
 
-- [ ] **12.2 Texts**
+- [ ] **13.2 Texts**
   - Goal: each new kind has its text in the Account card log.
   - Files: change `apps/web/src/i18n/en.ts` (and `pl.ts` when it exists, D20).
   - Keys (English | Polish):
@@ -59,5 +59,5 @@ Two steps. About 120 changed lines.
 
 ## Done when
 
-- Steps 12.1 and 12.2 are done and committed by explicit paths.
-- The web Proof command of `plan.md` for stage 12 (`/tmp/f105-s12`, with `bun run web:build`) prints `PROOF_OK`.
+- Steps 13.1 and 13.2 are done and committed by explicit paths.
+- The web Proof command of `plan.md` for stage 13 (`/tmp/f105-s13`, with `bun run web:build`) prints `PROOF_OK`.

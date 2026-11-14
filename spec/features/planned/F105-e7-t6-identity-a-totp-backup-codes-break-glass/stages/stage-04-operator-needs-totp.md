@@ -68,7 +68,7 @@ Two steps. About 180 changed lines.
     4. `web-me.test.ts` (it builds the real tenancy routes): `GET /api/me` of an operator in `twoFactorOff` still answers `operator: true` (the nav keeps its link; the page sends the user to the settings).
   - Check: `bun test apps/server/src/platform/http.test.ts apps/server/test/integration/web-operator-page.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/web-me.test.ts`; `bun run lint`.
   - Done when: tests 1–4 pass and the old cases pass.
-  - Out of scope: the settings page text for `?two_factor=required` (stage 10); operator CLIs (no change).
+  - Out of scope: the settings page text for `?two_factor=required` (stage 11); operator CLIs (no change).
 
 ## Done when
 

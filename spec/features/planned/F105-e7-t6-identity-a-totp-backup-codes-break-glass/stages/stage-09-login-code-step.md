@@ -1,10 +1,10 @@
-# F105 stage 08 — Login code step
+# F105 stage 09 — Login code step
 
 Part of [`../plan.md`](../plan.md). Read its D15, D16, D20, "Facts checked" F3–F5 and "Rules for every stage" first. Lane C. Needs stage 02 (the server answers `twoFactorRedirect` and opens the verify paths). Web only. A review job checks it before the land (the sign-in page).
 
 Two steps. About 260 changed lines.
 
-- [ ] **08.1 Client plugin and the code-step helpers**
+- [ ] **09.1 Client plugin and the code-step helpers**
   - Goal: the web client knows the two-factor calls, and one tested helper turns each error of the code step into a text and a "start again" choice.
   - Files: change `apps/web/src/lib/auth-client.ts`; add `apps/web/src/lib/two-factor-errors.ts` and `apps/web/src/lib/two-factor-errors.test.ts`; change `apps/web/src/i18n/en.ts` (and `pl.ts` if it exists, D20).
   - Interfaces:
@@ -70,9 +70,9 @@ Two steps. About 260 changed lines.
     3. `cleanBackupCode`: `"AbCdE-12345"` → same; `" abcde-12345 "` → `"abcde-12345"`; `"abcde12345"` → `"abcde-12345"`; `"abcd-12345"`, `"abcde_12345"`, `""` → null.
   - Check: `bun test apps/web/src/lib/two-factor-errors.test.ts apps/web/src/i18n`; `bun run typecheck`.
   - Done when: tests 1–3 pass; every key of the table is in `en.ts` (and in `pl.ts` when it exists).
-  - Out of scope: the page (08.2).
+  - Out of scope: the page (09.2).
 
-- [ ] **08.2 The code step in `LoginPage`**
+- [ ] **09.2 The code step in `LoginPage`**
   - Goal: after a correct password, a member with TOTP types a code or a backup code, may trust the device, and then lands on the next page.
   - Files: change `apps/web/src/islands/LoginPage.tsx`.
   - Interfaces and behaviour:
@@ -83,12 +83,12 @@ Two steps. About 260 changed lines.
     - A thrown error → `error_generic`.
     - The first line of the default export stays `useLocale();` (the islands test checks it).
   - Decisions: D16.
-  - Test: the helpers of 08.1 carry the logic; stage 11 drives the page in the browser.
+  - Test: the helpers of 09.1 carry the logic; stage 12 drives the page in the browser.
   - Check: `bun run typecheck`; `bun run lint`; `bun run web:build`; `bun test apps/web/src/i18n`.
   - Done when: the build passes and the page has no literal text (every visible string through `t()`).
-  - Out of scope: the Account card (stage 10); e2e (stage 11).
+  - Out of scope: the Account card (stage 11); e2e (stage 12).
 
 ## Done when
 
-- Steps 08.1 and 08.2 are done and committed by explicit paths.
-- The web Proof command of `plan.md` for stage 08 (`/tmp/f105-s08`, with `bun run web:build`) prints `PROOF_OK`.
+- Steps 09.1 and 09.2 are done and committed by explicit paths.
+- The web Proof command of `plan.md` for stage 09 (`/tmp/f105-s09`, with `bun run web:build`) prints `PROOF_OK`.
