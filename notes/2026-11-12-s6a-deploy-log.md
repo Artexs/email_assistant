@@ -13,4 +13,16 @@
 - VPS: backup ok (`ea-20261112T210926Z.dump.age`), `.env` copy `.env.bak-f069`, `git merge --ff-only` to `cab134f`, image built (disk 3.2 GB free after), `down`, `WEB_TRUSTED_PROXIES` 172.18.0.1 -> 172.30.0.1, `up -d --wait db`, `db:migrate` (3 migrations), `up -d --build --wait`.
 - Checks after: gateway of `email-assistant_default` is `172.30.0.1`; `/health` ok; `org:status` pilot org `plan=active max_mailboxes=2`, `mailboxes total=1 active=1`; log start lines `scope targets: 1 active mailboxes in 1 organizations, 0 suspended organizations`, `operator notices: hourly`, `retention: daily at 02:40`; 0 error or warn lines in the first 4 minutes.
 - Rollback: `git checkout 8f6a8b2` on the VPS, `.env.bak-f069` for the proxy value, `$C up -d --build --wait`.
-- Open: one day of the pilot (digest, triage, error count), then the owner's OK; first panel sign-in must write a tailnet `auth_sessions.ip_address` (F069 check 3); the reset-row SQL cleanup (F059 note); then stage 18.5 (close F027, F031, roadmap line).
+- Open: the owner's OK (the one day of the pilot is checked: see "Day check" below); first panel sign-in must write a tailnet `auth_sessions.ip_address` (F069 check 3); the reset-row SQL cleanup (F059 note); then stage 18.5 (close F027, F031, roadmap line).
+
+## Day check (F095 stage 09, 2026-11-14)
+
+Read-only on the VPS (`ssh home_vm`), 2026-11-14 22:44–22:50 UTC. Counts, codes and ids only.
+
+- VPS commit: `69473f4e` (F105 and F106 deployed 2026-11-14). `git merge-base --is-ancestor cab134f HEAD` holds: `HAS_S6A`. The log form is JSON (`a92a2d29`, the F089 land commit, is an ancestor: `JSON_LOGS`).
+- Containers: `db` Up 22 hours (healthy); `server` Up 2 hours (healthy; the deploy of the same day restarted it).
+- Pilot org line: `plan=active trial_ends_at=- max_mailboxes=2 resumed_at=-`; `mailboxes total=1 active=1 paused=0 auth_error=0 host_blocked=0`; `last_sync` 2026-11-14T22:46:01Z.
+- `GET /health`: `{"status":"ok","db":"up"}`.
+- Server log of the last 24 h (548 lines, `docker compose logs --since 24h`): 0 `error`, 5 `warn`: `main legacy_text` 2, `main operator_contact_empty` 1, `main scope_targets` 1, `main triage_scope` 1. Guess: the log covers about the 2 hours since the container was recreated, not the full 24 h.
+- SQL, last 24 h: `triage_results` 12 rows; `outbox` kind `digest` 2 rows, both `sent`.
+- The check answers the "one day of the pilot" item of the Open line above. Left open: the owner's OK, F069 check 3, the F059 cleanup.

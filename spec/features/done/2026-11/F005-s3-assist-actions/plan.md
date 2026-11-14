@@ -282,3 +282,4 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 - 2026-11-07: Stage 19 done (results in § Results). The user added `ACTIONS_SCOPE=synthetic` to the VPS `.env`; restart `up -d --wait` → `actions committer applies mailbox changes to synthetic mail only`. Step 19.2.5 (the second return) skipped: it only confirms a by-design blind spot (D12).
 - 2026-11-07: Step 20.1 done; the week runs from 2026-11-07T19:55:16Z. Task blocked until 2026-11-14T20:00Z (status line).
 - 2026-11-07: S3 closed on the user's request: the implementation and every test run are done; only the one-week measurement is left, in its own blocked task `spec/features/planned/F037-s3-assist-week-result/plan.md`. Task moved to `tasks/done/`.
+- 2026-11-14: one-week assist result (F037 via F095 stage 09): N = 0; passed.
