@@ -60,7 +60,7 @@ A new action type, in this order:
 | 7   | `TYPE_RANK` (`actions/repo/claims.ts`); a claim filter if the type has its own scope                                                                      | typecheck (`Record<ActionType, number>`)                                                   |
 | 8   | Its line in the digest, the notices and the web activity: `phrase` in `core/digest/would-do.ts`, or `NO_PHRASE` in `completeness.test.ts` with the reason | typecheck (exhaustive `switch`); `completeness.test.ts` case 5                             |
 | 9   | A notice for the type, if it has one: § "Notices are facts", checklist "Add a notice kind"                                                                | that checklist's test                                                                      |
-| 10  | `docs/architecture.md` §4.6 (status flow) and `docs/modules.md` §3.5                                                                                      | review only                                                                                |
+| 10  | `docs/capabilities/actions-and-undo.md` § Data (status flow) and `docs/modules.md` §3.5                                                                   | review only                                                                                |
 
 A type that sends mail needs `needs.sender` and an approval record (ADR 0003): the system never sends without one. `completeness.test.ts` case 7 fails until the owner's decision is written into it.
 
