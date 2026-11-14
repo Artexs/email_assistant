@@ -436,7 +436,7 @@ export const pl: Record<TextKey, string> = {
   // security log (Account card)
   sec_title: "Dziennik bezpieczeństwa",
   sec_help:
-    "Logowania, blokady, zmiany hasła i logowania dwuetapowego oraz zakończone sesje tej organizacji z ostatnich 90 dni.",
+    "Logowania, blokady, zmiany hasła i logowania dwuetapowego, zakończone sesje, eksporty danych, odrzucone próby usunięcia i wnioski o dane tej organizacji z ostatnich 90 dni.",
   sec_empty: "Brak zdarzeń bezpieczeństwa z ostatnich 90 dni.",
   sec_kind_sign_in: "Zalogowano",
   sec_kind_locked: "Logowanie zablokowane po nieudanych próbach",
@@ -452,6 +452,10 @@ export const pl: Record<TextKey, string> = {
   sec_kind_two_factor_locked: "Krok kodu zablokowany po błędnych kodach",
   sec_kind_break_glass_set: "Wybrano właściciela awaryjnego",
   sec_kind_break_glass_cleared: "Usunięto właściciela awaryjnego",
+  sec_kind_data_exported: "Wykonano eksport danych",
+  sec_kind_delete_refused: "Odmowa usunięcia organizacji: złe hasło",
+  sec_kind_dsr_find: "Wniosek o dane: wyszukano dane osoby",
+  sec_kind_dsr_erase: "Wniosek o dane: usunięto dane osoby",
   sec_kind_other: "Inne zdarzenie bezpieczeństwa",
   sec_actor_former: "były członek",
   sec_actor_operator: "operator",

@@ -14,6 +14,10 @@ describe("security log registry", () => {
     expect(securityKindOf("web.login")).toBe("sign_in");
     expect(securityKindOf("web.two_factor_locked")).toBe("two_factor_locked");
     expect(securityKindOf("org.break_glass_set")).toBe("break_glass_set");
+    expect(securityKindOf("org.exported")).toBe("data_exported");
+    expect(securityKindOf("org.delete_refused")).toBe("delete_refused");
+    expect(securityKindOf("dsr.find")).toBe("dsr_find");
+    expect(securityKindOf("dsr.erase")).toBe("dsr_erase");
     expect(securityKindOf("toString")).toBeNull();
     expect(securityKindOf("org.plan_changed")).toBeNull();
   });

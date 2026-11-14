@@ -16,7 +16,11 @@ export const securityEventKinds = [
   "two_factor_locked",
   "break_glass_set",
   "break_glass_cleared",
-] as const; // E7-T3 adds the export, delete and DSR kinds
+  "data_exported",
+  "delete_refused",
+  "dsr_find",
+  "dsr_erase",
+] as const;
 
 export type SecurityEventKind = (typeof securityEventKinds)[number];
 
@@ -36,6 +40,10 @@ export const securityEvents = {
   "web.two_factor_locked": "two_factor_locked",
   "org.break_glass_set": "break_glass_set",
   "org.break_glass_cleared": "break_glass_cleared",
+  "org.exported": "data_exported",
+  "org.delete_refused": "delete_refused",
+  "dsr.find": "dsr_find",
+  "dsr.erase": "dsr_erase",
 } as const satisfies Record<string, SecurityEventKind>;
 
 export const securityEventCodes: readonly string[] = Object.keys(securityEvents);

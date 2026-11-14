@@ -131,6 +131,21 @@ describe("GET /api/security-log", () => {
     ]);
   });
 
+  test("6b. the export, refused delete and two data request events show with their kinds; a cli actor is the operator", async () => {
+    await audit(org.orgId, auditEvents.orgExported, "cli", ago(HOUR), { tables: "3", rows: "10" });
+    await audit(org.orgId, auditEvents.orgDeleteRefused, org.ownerId, ago(2 * HOUR), { reason: "wrong_password" });
+    await audit(org.orgId, auditEvents.dsrFind, "cli", ago(3 * HOUR), { mails: "1" });
+    await audit(org.orgId, auditEvents.dsrErase, "cli", ago(4 * HOUR), { mails: "1" });
+    const res = await app().request("/api/security-log", as("owner"));
+    const { entries } = securityLogSchema.parse(await res.json());
+    expect(entries.map((entry) => [entry.kind, entry.actor])).toEqual([
+      ["data_exported", { kind: "operator" }],
+      ["delete_refused", { kind: "member", name: "Owner" }],
+      ["dsr_find", { kind: "operator" }],
+      ["dsr_erase", { kind: "operator" }],
+    ]);
+  });
+
   test("7. 55 sign-ins in the last day → 50 entries, newest first", async () => {
     for (let i = 0; i < 55; i++) await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago((i + 1) * 60_000));
     const res = await app().request("/api/security-log", as("owner"));

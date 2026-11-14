@@ -424,7 +424,7 @@ export const en = {
   // security log (Account card)
   sec_title: "Security log",
   sec_help:
-    "Sign-ins, lockouts, password and two-factor changes, and ended sessions of this organization in the last 90 days.",
+    "Sign-ins, lockouts, password and two-factor changes, sessions ended, data exports, refused delete attempts and data requests of this organization in the last 90 days.",
   sec_empty: "No security events in the last 90 days.",
   sec_kind_sign_in: "Signed in",
   sec_kind_locked: "Sign-in locked after failed tries",
@@ -440,6 +440,10 @@ export const en = {
   sec_kind_two_factor_locked: "Code step locked after wrong codes",
   sec_kind_break_glass_set: "Break-glass owner chosen",
   sec_kind_break_glass_cleared: "Break-glass owner removed",
+  sec_kind_data_exported: "Data export made",
+  sec_kind_delete_refused: "Organization delete refused: wrong password",
+  sec_kind_dsr_find: "Data request: a person's data searched",
+  sec_kind_dsr_erase: "Data request: a person's data erased",
   sec_kind_other: "Other security event",
   sec_actor_former: "a former member",
   sec_actor_operator: "the operator",
