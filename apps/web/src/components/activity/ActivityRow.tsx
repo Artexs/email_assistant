@@ -1,6 +1,6 @@
 import { formatClock, type ActivityItem } from "@ea/core/web";
 
-import { t } from "../../i18n";
+import { getLocale, t } from "../../i18n";
 import { categoryTagText, confidenceText, delegationText, senderText, subjectText } from "../../lib/activity-text";
 import { Badge } from "../ui/badge";
 import { ActionButtons, type ActionButtonsProps } from "./ActionButtons";
@@ -25,7 +25,7 @@ export function ActivityRow({ item, timeZone, now, mailboxAddress, onOpen, onPat
         onClick={() => onOpen(item.emailId)}
       >
         <span className="block truncate text-sm text-muted-foreground">
-          {formatClock(new Date(item.receivedAt), timeZone, now)} · {senderText(item.from)}
+          {formatClock(new Date(item.receivedAt), timeZone, now, getLocale())} · {senderText(item.from)}
           {mailboxAddress !== null && <> · {mailboxAddress}</>}
         </span>
         <span className="block truncate font-medium">{subjectText(item.subject)}</span>

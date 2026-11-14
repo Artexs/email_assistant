@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { t } from "../../i18n";
+import { getLocale, t } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { canWrite } from "../../lib/can-write";
 import { errorText } from "../../lib/errors";
@@ -102,7 +102,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
         <p className="text-sm">
           {data.linkedAt === null
             ? t("tg_linked")
-            : t("tg_linked_since", { date: formatClock(new Date(data.linkedAt), timeZone, now) })}
+            : t("tg_linked_since", { date: formatClock(new Date(data.linkedAt), timeZone, now, getLocale()) })}
         </p>
         <Button variant="outline" disabled={busy} onClick={() => setConfirmOpen(true)}>
           {t("tg_unlink")}
@@ -178,7 +178,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        {t("tg_valid_until", { time: formatClock(expiresAt, timeZone, now) })}
+        {t("tg_valid_until", { time: formatClock(expiresAt, timeZone, now, getLocale()) })}
       </p>
     </div>
   );

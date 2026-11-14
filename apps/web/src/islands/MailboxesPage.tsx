@@ -9,7 +9,7 @@ import { TelegramLink } from "../components/telegram/TelegramLink";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
-import { t, useLocale } from "../i18n";
+import { getLocale, t, useLocale } from "../i18n";
 import { api } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { useNow } from "../lib/use-now";
@@ -86,7 +86,7 @@ function Mailboxes() {
     <div className="flex max-w-3xl flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now) })}
+          {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now, getLocale()) })}
         </p>
         <div className="flex gap-2">
           {isOwner && <Button onClick={() => setConnectOpen(true)}>{t("mb_connect")}</Button>}

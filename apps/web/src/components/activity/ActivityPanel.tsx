@@ -1,6 +1,6 @@
 import { formatClock, type ActivityItem } from "@ea/core/web";
 
-import { t } from "../../i18n";
+import { getLocale, t } from "../../i18n";
 import {
   categoryTagText,
   confidenceText,
@@ -46,7 +46,7 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
             <h3 className="font-medium break-words">{subjectText(item.subject)}</h3>
             <div className="flex flex-col gap-1 text-sm text-muted-foreground">
               <p className="break-words">{senderText(item.from)}</p>
-              <p>{t("act_received", { time: formatClock(new Date(item.receivedAt), timeZone, now) })}</p>
+              <p>{t("act_received", { time: formatClock(new Date(item.receivedAt), timeZone, now, getLocale()) })}</p>
               {mailboxAddress !== null && <p className="break-words">{mailboxAddress}</p>}
               <p>
                 {categoryTagText(item.category)} {confidenceText(item.confidence)}
@@ -67,7 +67,7 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
                       {action.appliedAt !== null
                         ? t("act_action_at", {
                             phrase: action.phrase,
-                            time: formatClock(new Date(action.appliedAt), timeZone, now),
+                            time: formatClock(new Date(action.appliedAt), timeZone, now, getLocale()),
                           })
                         : action.phrase}
                     </li>
@@ -86,7 +86,9 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
                 <p className="text-sm break-words">{delegationText(item.delegation)}</p>
                 {item.delegation.dueAt !== null && (
                   <p className="text-sm text-muted-foreground">
-                    {t("act_dlg_due", { time: formatClock(new Date(item.delegation.dueAt), timeZone, now) })}
+                    {t("act_dlg_due", {
+                      time: formatClock(new Date(item.delegation.dueAt), timeZone, now, getLocale()),
+                    })}
                   </p>
                 )}
               </section>

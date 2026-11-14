@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { textTables } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -7,7 +8,7 @@ import { noDelegationHooks, type DelegationHooks, type SendScope } from "../../s
 import { auditEvents } from "../../src/modules/audit";
 import { createUpdateHandlers, handleCallback, insertOutbox, type CallbackDeps } from "../../src/modules/channels";
 import type { LinkedChat } from "../../src/modules/channels";
-import { APPROVAL_TEXTS, UNDO_TEXTS } from "../../src/modules/channels/callbacks";
+import { APPROVAL_TEXTS } from "../../src/modules/channels/callbacks";
 import { accountPausedText } from "../../src/modules/channels/texts";
 import { delegationHooks, detectReply } from "../../src/modules/delegation";
 import { listLabeledResults } from "../../src/modules/triage";
@@ -223,14 +224,14 @@ describe("handleCallback", () => {
         const mail = await undoMail(trx, s, "info");
 
         const first = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
-        expect(first).toEqual({ answer: UNDO_TEXTS.started });
+        expect(first).toEqual({ answer: textTables.en.answers.undo.started });
         expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
         expect(await feedbackRows(trx, mail.emailId)).toMatchObject([
           { verdict: "wrong", true_category: null, source: "undo", user_id: s.a.userId },
         ]);
 
         const second = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
-        expect(second.answer).toBe(UNDO_TEXTS.already);
+        expect(second.answer).toBe(textTables.en.answers.undo.already);
         expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
         expect(await feedbackRows(trx, mail.emailId)).toHaveLength(1);
       });
@@ -243,7 +244,7 @@ describe("handleCallback", () => {
 
         const result = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
 
-        expect(result.answer).toBe(UNDO_TEXTS.started);
+        expect(result.answer).toBe(textTables.en.answers.undo.started);
         expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
         expect(await feedbackRows(trx, mail.emailId)).toEqual([]);
       });
@@ -256,7 +257,7 @@ describe("handleCallback", () => {
 
         const result = await handleCallback(s.deps, s.link, `fu:${s.info}`);
 
-        expect(result.answer).toBe(UNDO_TEXTS.nothing);
+        expect(result.answer).toBe(textTables.en.answers.undo.nothing);
         expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
         expect(await feedbackRows(trx, s.info)).toEqual([]);
       });
@@ -273,7 +274,7 @@ describe("handleCallback", () => {
 
         const result = await handleCallback(s.deps, s.link, `fu:${s.info}`);
 
-        expect(result.answer).toBe(UNDO_TEXTS.too_old);
+        expect(result.answer).toBe(textTables.en.answers.undo.too_old);
         expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
         expect(await feedbackRows(trx, s.info)).toEqual([]);
       });
@@ -286,7 +287,7 @@ describe("handleCallback", () => {
 
         const result = await handleCallback({ ...s.deps, actionsScope: { kind: "off" } }, s.link, `fu:${mail.emailId}`);
 
-        expect(result.answer).toBe(UNDO_TEXTS.held);
+        expect(result.answer).toBe(textTables.en.answers.undo.held);
         expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
         expect(await feedbackRows(trx, mail.emailId)).toEqual([]);
       });
@@ -301,7 +302,7 @@ describe("handleCallback", () => {
 
         const result = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
 
-        expect(result.answer).toBe(UNDO_TEXTS.started);
+        expect(result.answer).toBe(textTables.en.answers.undo.started);
         expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
         expect(await feedbackRows(trx, mail.emailId)).toMatchObject([{ verdict: "wrong", true_category: "spam" }]);
       });
@@ -1046,7 +1047,7 @@ describe("approval taps", () => {
     await withRollback(db, async (trx) => {
       const { info, link, deps } = await setup(trx);
       expect((await handleCallback(deps, link, `fr:i:${info}`)).answer).toBe("✅ Saved: Info is right.");
-      expect((await handleCallback(deps, link, `fu:${info}`)).answer).toBe(UNDO_TEXTS.nothing);
+      expect((await handleCallback(deps, link, `fu:${info}`)).answer).toBe(textTables.en.answers.undo.nothing);
     });
   });
 });

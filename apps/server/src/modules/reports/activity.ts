@@ -3,6 +3,7 @@ import {
   ACTIVITY_PAGE_SIZE,
   activityRangeMs,
   aiTextFor,
+  textsFor,
   describeAction,
   describeActions,
   isUndoable,
@@ -114,15 +115,19 @@ export async function listActivity(
       category: row.category,
       confidence: row.confidence,
       modelCategory: row.model_category,
-      aiText: aiTextFor({
-        category: row.category,
-        reasonCode: row.reason_code,
-        reason: row.reason,
-        summary: summaries.get(row.email_id) ?? null,
-        modelCategory: row.model_category,
-        confidence: row.confidence,
-        task: tasks.get(row.email_id) ?? null,
-      }),
+      // Stage 13 of the Polish UI plan uses the request locale.
+      aiText: aiTextFor(
+        {
+          category: row.category,
+          reasonCode: row.reason_code,
+          reason: row.reason,
+          summary: summaries.get(row.email_id) ?? null,
+          modelCategory: row.model_category,
+          confidence: row.confidence,
+          task: tasks.get(row.email_id) ?? null,
+        },
+        textsFor("en")
+      ),
       phrase: describeActions(own, names, { stayFolder: row.folder }),
       actions: own
         .filter((action) => !action.reverse)

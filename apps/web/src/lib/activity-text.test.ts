@@ -1,16 +1,17 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import {
   categories,
-  categoryLabels,
   categoryTag,
   labelCategories,
   pickAnswer,
   pickedText,
   rightAnswer,
-  UNDO_TEXTS,
+  textTables,
+  userLocales,
   type ActivityItem,
 } from "@ea/core/web";
 
+import { setLocaleForTest } from "../i18n";
 import {
   categoryName,
   categoryTagText,
@@ -23,6 +24,8 @@ import {
   undoToast,
 } from "./activity-text";
 
+afterEach(() => setLocaleForTest("en"));
+
 const kinds = ["started", "already", "nothing", "too_old", "held"] as const;
 
 function feedback(patch: Partial<NonNullable<ActivityItem["feedback"]>>): NonNullable<ActivityItem["feedback"]> {
@@ -30,34 +33,45 @@ function feedback(patch: Partial<NonNullable<ActivityItem["feedback"]>>): NonNul
 }
 
 describe("words tied to the Telegram source (U6)", () => {
-  test("undo toasts equal UNDO_TEXTS", () => {
-    for (const kind of kinds) expect(undoToast(kind)).toBe(UNDO_TEXTS[kind]);
-  });
+  for (const locale of userLocales) {
+    const texts = textTables[locale];
 
-  test("category names and tags equal the core labels", () => {
-    for (const c of categories) {
-      expect(categoryName(c)).toBe(categoryLabels[c].name);
-      expect(categoryTagText(c)).toBe(categoryTag(c));
-    }
-  });
+    test(`${locale}: undo toasts equal the core undo texts`, () => {
+      setLocaleForTest(locale);
+      for (const kind of kinds) expect(undoToast(kind)).toBe(texts.answers.undo[kind]);
+    });
 
-  test("right and pick toasts equal the Telegram answers", () => {
-    for (const c of labelCategories) {
-      expect(feedbackToast("right", { saved: true, verdict: "right", aiCategory: c }, c)).toBe(rightAnswer(true, c));
-      expect(feedbackToast("right", { saved: false, verdict: "right", aiCategory: c }, c)).toBe(rightAnswer(false, c));
-    }
-    for (const picked of labelCategories) {
-      for (const ai of labelCategories) {
-        expect(feedbackToast("pick", { saved: true, verdict: "wrong", aiCategory: ai }, picked)).toBe(
-          pickedText(picked, ai)
+    test(`${locale}: category names and tags equal the core texts`, () => {
+      setLocaleForTest(locale);
+      for (const c of categories) {
+        expect(categoryName(c)).toBe(texts.categories[c]);
+        expect(categoryTagText(c)).toBe(categoryTag(c, texts));
+      }
+    });
+
+    test(`${locale}: right and pick toasts equal the Telegram answers`, () => {
+      setLocaleForTest(locale);
+      for (const c of labelCategories) {
+        expect(feedbackToast("right", { saved: true, verdict: "right", aiCategory: c }, c)).toBe(
+          rightAnswer(true, c, texts)
+        );
+        expect(feedbackToast("right", { saved: false, verdict: "right", aiCategory: c }, c)).toBe(
+          rightAnswer(false, c, texts)
         );
       }
-    }
-    // Not saved: the same words as the Telegram pick answer.
-    expect(feedbackToast("pick", { saved: false, verdict: "wrong", aiCategory: "info" }, "urgent")).toBe(
-      pickAnswer(false)
-    );
-  });
+      for (const picked of labelCategories) {
+        for (const ai of labelCategories) {
+          expect(feedbackToast("pick", { saved: true, verdict: "wrong", aiCategory: ai }, picked)).toBe(
+            pickedText(picked, ai, true, texts)
+          );
+        }
+      }
+      // Not saved: the same words as the Telegram pick answer.
+      expect(feedbackToast("pick", { saved: false, verdict: "wrong", aiCategory: "info" }, "urgent")).toBe(
+        pickAnswer(false, texts)
+      );
+    });
+  }
 });
 
 describe("row texts", () => {

@@ -16,6 +16,7 @@ import {
   renderUrgentNotice,
 } from "../digest/notices";
 import { describeActions, type WouldDoAction } from "../digest/would-do";
+import { textTables } from "../texts";
 
 import { encodeNoticeView } from "./encode";
 import { MAILBOX_REMOVED_TEXT, type NoticeKind, noticeKinds, type NoticeRenderOptions } from "./kinds";
@@ -106,14 +107,17 @@ const cases: Case[] = [
         emailId: id1,
         from: "boss@example.test",
         subject: "Contract",
-        aiText: aiTextFor({
-          category: "urgent",
-          reasonCode: "llm",
-          reason: "Deadline today",
-          summary: null,
-          modelCategory: null,
-          confidence: 0.91,
-        }),
+        aiText: aiTextFor(
+          {
+            category: "urgent",
+            reasonCode: "llm",
+            reason: "Deadline today",
+            summary: null,
+            modelCategory: null,
+            confidence: 0.91,
+          },
+          textTables.en
+        ),
         receivedAt,
         synthetic: false,
         folderTag: null,

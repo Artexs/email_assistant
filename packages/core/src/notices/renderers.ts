@@ -16,6 +16,7 @@ import {
   renderUrgentNotice,
 } from "../digest/notices";
 import { describeActions } from "../digest/would-do";
+import { textsFor } from "../texts";
 
 import { MAILBOX_REMOVED_TEXT, type NoticeKind, type NoticeRenderOptions } from "./kinds";
 import { noticeViewSchemas } from "./views";
@@ -39,19 +40,22 @@ export const noticeRenderers = {
   urgent: defineRenderer({
     schema: noticeViewSchemas.urgent,
     telegram: {
-      full: (view) =>
+      full: (view, opts) =>
         renderUrgentNotice({
           emailId: view.emailId,
           from: view.from,
           subject: view.subject,
-          aiText: aiTextFor({
-            category: "urgent",
-            reasonCode: view.ai.reasonCode,
-            reason: view.ai.reason,
-            summary: null,
-            modelCategory: null,
-            confidence: 0,
-          }),
+          aiText: aiTextFor(
+            {
+              category: "urgent",
+              reasonCode: view.ai.reasonCode,
+              reason: view.ai.reason,
+              summary: null,
+              modelCategory: null,
+              confidence: 0,
+            },
+            textsFor(opts.locale)
+          ),
           receivedAt: view.receivedAt,
           synthetic: view.synthetic,
           folderTag: view.folderTag,

@@ -1,3 +1,4 @@
+import { textTables } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
 
 import { categoryTag } from "./labels";
@@ -79,15 +80,18 @@ function sortItems(items: readonly DigestItem[]): DigestItem[] {
 function headerLine(input: DigestInput): string {
   const { now, timeZone, slot } = input;
   if (input.kind === "scheduled" && slot !== null) {
-    const day = formatDay(localToInstant(slot.date, slot.time, timeZone), timeZone);
+    // The next stage of the Polish UI plan passes the texts of the row.
+    const day = formatDay(localToInstant(slot.date, slot.time, timeZone), timeZone, "en");
     return `📬 Digest ${slot.time} · ${day}${slot.late ? " (late)" : ""}`;
   }
-  return `📬 Digest now · ${formatDay(now, timeZone)} ${localDateTime(now, timeZone).time}`;
+  // The next stage of the Polish UI plan passes the texts of the row.
+  return `📬 Digest now · ${formatDay(now, timeZone, "en")} ${localDateTime(now, timeZone).time}`;
 }
 
 function mailboxLine(input: DigestInput, mailbox: DigestMailbox): string {
   const { now, timeZone } = input;
-  const clock = (at: Date): string => formatClock(at, timeZone, now);
+  // The next stage of the Polish UI plan passes the texts of the row.
+  const clock = (at: Date): string => formatClock(at, timeZone, now, "en");
   const sync = (at: Date | null): string => (at === null ? "never" : clock(at));
   const suffix = input.mailboxes.length > 1 ? ` · ${cutText(mailbox.address, 40)}` : "";
   const { lastSyncedAt } = mailbox;
@@ -105,7 +109,8 @@ function mailboxLine(input: DigestInput, mailbox: DigestMailbox): string {
 
 function itemBlock(n: number, item: DigestItem): string[] {
   const lines = [
-    `${n}. ${categoryTag(item.category)} · ${senderLabel(item.from)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? " · 🧪 test" : ""}`,
+    // The next stage of the Polish UI plan passes the texts of the row.
+    `${n}. ${categoryTag(item.category, textTables.en)} · ${senderLabel(item.from)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? " · 🧪 test" : ""}`,
     cleanSubject(item.subject),
   ];
   if (item.aiText !== null && item.aiText !== "") lines.push(`💬 ${cutText(item.aiText, 120)}`);
@@ -116,7 +121,8 @@ function itemBlock(n: number, item: DigestItem): string[] {
 function renderListed(input: DigestInput, listed: readonly DigestItem[]): OutMessage {
   const { counts } = input;
   const total = sumCounts(counts, CATEGORY_ORDER);
-  const since = formatClock(input.periodStart, input.timeZone, input.now);
+  // The next stage of the Polish UI plan passes the texts of the row.
+  const since = formatClock(input.periodStart, input.timeZone, input.now, "en");
   const lines = [
     headerLine(input),
     total > 0

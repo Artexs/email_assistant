@@ -1,16 +1,16 @@
+import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
 
-export const categoryLabels: Record<Category, { emoji: string; name: string }> = {
-  urgent: { emoji: "🔴", name: "Urgent" },
-  needs_reply: { emoji: "✉️", name: "Reply" },
-  delegation: { emoji: "👥", name: "Delegate" },
-  unsure: { emoji: "❓", name: "Unsure" },
-  info: { emoji: "ℹ️", name: "Info" },
-  notification: { emoji: "🔔", name: "Notification" },
-  spam: { emoji: "🚫", name: "Spam" },
+export const categoryEmoji: Record<Category, string> = {
+  urgent: "🔴",
+  needs_reply: "✉️",
+  delegation: "👥",
+  unsure: "❓",
+  info: "ℹ️",
+  notification: "🔔",
+  spam: "🚫",
 };
 
-export function categoryTag(category: Category): string {
-  const { emoji, name } = categoryLabels[category];
-  return `${emoji} ${name}`;
+export function categoryTag(category: Category, texts: CoreTexts): string {
+  return `${categoryEmoji[category]} ${texts.categories[category]}`;
 }

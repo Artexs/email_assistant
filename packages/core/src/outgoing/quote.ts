@@ -20,7 +20,7 @@ function polishDay(at: Date, timezone: string): string {
 }
 
 export function formatDateLabel(at: Date, timezone: string, language: "pl" | "en"): string {
-  const day = language === "pl" ? polishDay(at, timezone) : formatDay(at, timezone);
+  const day = language === "pl" ? polishDay(at, timezone) : formatDay(at, timezone, "en");
   return `${day} ${localDateTime(at, timezone).time}`;
 }
 
