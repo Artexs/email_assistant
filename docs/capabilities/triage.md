@@ -40,6 +40,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 10. **Feedback sources** (moved from `docs/architecture.md` §4.4): labeling CLI (S1b); ✅ / ✏️ buttons under each digest line (S2); the Undo button (S3);
     a mail that the user moves back to a synced folder after a system move (`docs/architecture.md` §6.1); the web panel (S5).
     Every source writes a `triage_feedback` row through `triage.recordFeedback()`. A known mail is never triaged again (no loop).
+    - The source `review` is for the labels of the Telegram `/review` page (a random sample of unlabelled real mail, `listReviewSample` in `triage/review-repo.ts`); its buttons are `vr`, `vc`, `ve`, `vx` (see [digest-and-notices.md](digest-and-notices.md) rule 10), so metrics can tell them from digest taps.
     - Check against the code: `triage.returned` (every 15 s) and the Undo path also call `recordFeedback`; the Telegram handler and `POST /api/feedback` set `skipIfSame`, so the same answer twice writes no row.
 11. **Buttons under a digest line (S2)** (moved from `docs/architecture.md` §4.4): ✅ means "the shown category is right": it writes `true_category` = the shown category (verdict `right`).
     ✏️ opens a picker with five categories (Urgent, Reply, Info, Notification, Spam) and Cancel; a pick writes `true_category` = the pick
@@ -58,28 +59,28 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 
 ## Entry points
 
-| Kind     | Name                                                                    | Where                                           |
-| -------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
-| job      | `triage.worker` (`*/15 * * * * *`; only when the scope is not `off`)    | `apps/server/src/modules/triage/jobs.ts`        |
-| job      | `triage.returned` (`*/15 * * * * *`)                                    | `apps/server/src/modules/triage/returned.ts`    |
-| route    | `POST /api/feedback`                                                    | `apps/server/src/modules/triage/routes.ts`      |
-| route    | `POST /api/actions/undo`                                                | `apps/server/src/modules/triage/routes.ts`      |
-| Telegram | callbacks `fr:`, `fc:`, `fe:`, `fx:`, `fu:` (feedback and Undo buttons) | `apps/server/src/modules/channels/callbacks.ts` |
-| CLI      | `bun run triage:label`                                                  | `apps/server/src/scripts/triage-label.ts`       |
-| CLI      | `bun run triage:cost`                                                   | `apps/server/src/scripts/triage-cost.ts`        |
-| CLI      | `bun run eval`                                                          | `apps/server/src/scripts/eval.ts`               |
-| CLI      | `bun run llm:check`                                                     | `apps/server/src/scripts/llm-check.ts`          |
-| function | `triageOne`, `saveTriage`, `finishTriageError`                          | `apps/server/src/modules/triage/service.ts`     |
-| function | `classifyEmail`                                                         | `apps/server/src/modules/triage/classifier.ts`  |
-| function | `recordFeedback`, `recordWebFeedback`                                   | `apps/server/src/modules/triage/feedback.ts`    |
-| function | `createLlmPause`                                                        | `apps/server/src/modules/triage/pause.ts`       |
-| function | `goNoGoFor`, `setCategoryAutoWithGate`                                  | `apps/server/src/modules/triage/gate.ts`        |
-| function | `requeueBackfillWindow`                                                 | `apps/server/src/modules/triage/backfill.ts`    |
-| function | `applyHardRules`                                                        | `packages/core/src/triage/rules.ts`             |
-| function | `decideCategory`                                                        | `packages/core/src/triage/threshold.ts`         |
-| function | `planActions`                                                           | `packages/core/src/triage/planners.ts`          |
-| function | `decidePolicy`                                                          | `packages/core/src/triage/policy.ts`            |
-| function | `createLlmClient` (`generate` per role)                                 | `apps/server/src/platform/llm/client.ts`        |
+| Kind     | Name                                                                                                                                  | Where                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| job      | `triage.worker` (`*/15 * * * * *`; only when the scope is not `off`)                                                                  | `apps/server/src/modules/triage/jobs.ts`        |
+| job      | `triage.returned` (`*/15 * * * * *`)                                                                                                  | `apps/server/src/modules/triage/returned.ts`    |
+| route    | `POST /api/feedback`                                                                                                                  | `apps/server/src/modules/triage/routes.ts`      |
+| route    | `POST /api/actions/undo`                                                                                                              | `apps/server/src/modules/triage/routes.ts`      |
+| Telegram | callbacks `fr:`, `fc:`, `fe:`, `fx:`, `fu:` (feedback and Undo buttons), `vr:`, `vc:`, `ve:`, `vx:` (review buttons, source `review`) | `apps/server/src/modules/channels/callbacks.ts` |
+| CLI      | `bun run triage:label`                                                                                                                | `apps/server/src/scripts/triage-label.ts`       |
+| CLI      | `bun run triage:cost`                                                                                                                 | `apps/server/src/scripts/triage-cost.ts`        |
+| CLI      | `bun run eval`                                                                                                                        | `apps/server/src/scripts/eval.ts`               |
+| CLI      | `bun run llm:check`                                                                                                                   | `apps/server/src/scripts/llm-check.ts`          |
+| function | `triageOne`, `saveTriage`, `finishTriageError`                                                                                        | `apps/server/src/modules/triage/service.ts`     |
+| function | `classifyEmail`                                                                                                                       | `apps/server/src/modules/triage/classifier.ts`  |
+| function | `recordFeedback`, `recordWebFeedback`                                                                                                 | `apps/server/src/modules/triage/feedback.ts`    |
+| function | `createLlmPause`                                                                                                                      | `apps/server/src/modules/triage/pause.ts`       |
+| function | `goNoGoFor`, `setCategoryAutoWithGate`                                                                                                | `apps/server/src/modules/triage/gate.ts`        |
+| function | `requeueBackfillWindow`                                                                                                               | `apps/server/src/modules/triage/backfill.ts`    |
+| function | `applyHardRules`                                                                                                                      | `packages/core/src/triage/rules.ts`             |
+| function | `decideCategory`                                                                                                                      | `packages/core/src/triage/threshold.ts`         |
+| function | `planActions`                                                                                                                         | `packages/core/src/triage/planners.ts`          |
+| function | `decidePolicy`                                                                                                                        | `packages/core/src/triage/policy.ts`            |
+| function | `createLlmClient` (`generate` per role)                                                                                               | `apps/server/src/platform/llm/client.ts`        |
 
 ## Data
 
@@ -102,7 +103,7 @@ emails.status:   pending → processing → triaged → done                (don
 - `emails.status` is one of `pending`, `processing`, `triaged`, `done`, `skipped`; `skip_reason` holds `too_old`, `suspended_backlog` or `body_expired`; `attempts`, `next_attempt_at` and `locked_at` drive the claim (`FOR UPDATE SKIP LOCKED`).
   - Check against the code: no code writes the status `done`. The check constraint of `emails.status` allows it, but a mail stays `triaged` when its actions end, so the flow `triaged → done` above does not happen today.
 - `triage_results`: `category`, `vip`, `confidence`, `reason_code`, `reason`, `fields` (with `model_category`), `model`, `prompt_version`, `tokens_in`, `tokens_out`, `latency_ms`. A mail can have several rows; the newest wins.
-- `triage_feedback`: `verdict` (`right`, `wrong`), `true_category`, `source` (`cli`, `telegram`, `undo`, `imap_move`, `web`), `user_id`.
+- `triage_feedback`: `verdict` (`right`, `wrong`), `true_category`, `source` (`cli`, `telegram`, `undo`, `imap_move`, `web`, `review`), `user_id`.
 - `mailbox_settings`: `mode`, `tool_switches`, `category_policy` (per category: `threshold`, `auto`); the job compares a settings version (rule 9).
 - `sender_rules`: `pattern`, `kind` (`whitelist`, `blocklist`, `vip`); at most 1000 per organization.
 - Audit events: `llm.call` (one per call attempt: role, prompt version, model, outcome, tokens, latency), `email.triaged`, `email.skipped`, `email.requeued`, `action.planned`.
@@ -128,6 +129,7 @@ emails.status:   pending → processing → triaged → done                (don
 - `apps/server/test/integration/triage-feedback.test.ts`
 - `apps/server/test/integration/triage-gate.test.ts`
 - `apps/server/test/integration/triage-repo.test.ts`
+- `apps/server/test/integration/triage-review-sample.test.ts`
 - `apps/server/test/integration/triage-requeue.test.ts`
 - `apps/server/test/integration/triage-returned.test.ts`
 - `apps/server/src/modules/triage/classifier.test.ts`
