@@ -1,6 +1,6 @@
 # Digest and notices
 
-> Checked against the code at `8c98480`, 2026-11-14.
+> Checked against the code at `a765e91`, 2026-11-14.
 
 ## What it does now
 
