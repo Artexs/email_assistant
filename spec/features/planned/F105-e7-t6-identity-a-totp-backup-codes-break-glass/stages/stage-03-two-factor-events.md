@@ -33,7 +33,7 @@ One step. About 250 changed lines.
     ```
 
     `SIGN_IN_AUDIT_PATHS` gets `/two-factor/disable` and `/two-factor/generate-backup-codes`. New handler rules (after the stage 02 rules; `user` of a session = `requestSession.user`):
-    1. `/two-factor/verify-totp`, not an `APIError`, `requestSession` set, `newSession` set → this is the enrolment (Fact F2: it replaces the session; a code check of a user who already has TOTP makes no new session). Then, in this order: `await ctx.context.adapter.deleteMany({ model: "verification", where: [{ field: "value", value: userId }] })` (D9; Fact F6), then `report("two_factor_enabled", userId)`.
+    1. `/two-factor/verify-totp`, not an `APIError`, `requestSession` set, `twoFactorOn(requestSession.user)` false (the snapshot from before the request, Fact F4), `newSession` set → this is the enrolment (Fact F2: it replaces the session; a code check of a user who already has TOTP makes no new session, and the snapshot rule also stops a session refresh from counting). Then, in this order: `await ctx.context.adapter.deleteMany({ model: "verification", where: [{ field: "value", value: userId }] })` (D9; Fact F6), then `report("two_factor_enabled", userId)`.
     2. `/two-factor/verify-backup-code`, not an `APIError`, `requestSession` null, `newSession` set → also `report("backup_code_used", userId)` (after the `login` row of stage 02).
     3. `/two-factor/disable`, not an `APIError`, `requestSession` set → `report("two_factor_disabled", requestSession.user.id)`.
     4. `/two-factor/generate-backup-codes`, not an `APIError`, `requestSession` set → `report("backup_codes_generated", requestSession.user.id)`.
