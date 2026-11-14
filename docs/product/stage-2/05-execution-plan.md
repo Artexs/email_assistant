@@ -39,7 +39,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 6 | E3a Measure | E03 | 19 | E1 (F095); flags from F087 (landed); F097 stage 03 before F100 stage 04, F097 stages 01 and 03 before F100 stages 10-11, F097 stage 04 before F100 stage 15 | — | F100 |
 | 7 | Panel to Astro 7 | E10 (PD-098 area, notes §5) | 4 | E1 | — | F101 |
 | 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1, Astro 7 | — | F102 |
-| 9 | E8a Logs | E08 | ≈ 8 | E1 | — | F103 |
+| 9 | E8a Logs | E08 | 19 | E1 | — | F103 |
 | 10 | E5a Read Sent | E05 | ≈ 7 | E1, E7-T2 | — | F104 |
 | 11 | E7-T6 Identity A (TOTP, backup codes, break-glass) | E07 notes §11 | ≈ 4 | F082 | — | F105 |
 | 12 | E7-T3 Account data (delete, export, DSR) | E07 notes §11 | ≈ 8 | F082, E7-T1 | — | F106 |
