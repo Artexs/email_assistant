@@ -8,10 +8,15 @@ import {
   type CommitterDeps,
   type SendScope,
 } from "./modules/actions";
-import { cancelPendingApprovalRequestsOfClosedSends, SENDER_STALE_MS } from "./modules/channels";
+import {
+  cancelPendingApprovalRequestsOfClosedSends,
+  cancelPendingOutboxOfOrg,
+  SENDER_STALE_MS,
+} from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
 import { composeMessage, mailboxHasUidplus, openImapProvider, openSmtpSender } from "./modules/mail";
+import type { SetOrgPlanHooks } from "./modules/tenancy";
 import { sendTestAddresses, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { DB, Db, TenantContext } from "./platform/db";
@@ -109,4 +114,10 @@ export function resumeHook(
     });
     return expired;
   };
+}
+
+// D20: the hooks of `setOrgPlan` for every caller (the `org:plan` CLI and the operator console), so both suspend and
+// resume the same way: suspend cancels the queued messages, resume closes the sends with an unseen approval request.
+export function orgPlanHooks(db: Db): SetOrgPlanHooks {
+  return { onSuspended: cancelPendingOutboxOfOrg, onResumed: resumeHook(db) };
 }

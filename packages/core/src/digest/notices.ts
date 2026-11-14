@@ -82,7 +82,7 @@ export function renderSendHeldNotice(input: {
   return {
     text: [
       `⏸ Sends from ${cutText(input.address, 60)} wait: ${SEND_HELD_LIMIT_TEXT[input.limit]}.`,
-      `${input.waiting} waiting; the next one goes out at about ${formatClock(input.nextAt, input.timeZone, input.now)}.`,
+      `${input.waiting} waiting; the next one goes out at about ${formatClock(input.nextAt, input.timeZone, input.now, "en")}.`,
     ].join("\n"),
     buttons: [],
   };

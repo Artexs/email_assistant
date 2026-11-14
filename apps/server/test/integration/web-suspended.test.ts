@@ -48,7 +48,11 @@ const WRITE_ROUTES = [
 ];
 
 // Write routes in `SUSPENDED_WRITE_ALLOW`: a paused account may still call them (web-terms.test.ts proves it).
-const ALLOWED_WHEN_SUSPENDED = ["POST /api/me/terms"];
+const ALLOWED_WHEN_SUSPENDED = [
+  "POST /api/me/terms",
+  "POST /api/operator/orgs/:orgId/flags",
+  "POST /api/operator/orgs/:orgId/plan",
+];
 
 let org: WebOrg;
 const sessions = () => ({ owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId });
@@ -125,7 +129,7 @@ describe("a suspended organization on the web (D4, S2)", () => {
       isOrgSuspended: (id) => isOrgSuspended(db, { orgId: id }),
       operatorUserIds: new Set([org.assistantId]),
     });
-    // No POST route exists under /api/operator yet: the gate lets the call through and the router answers 404.
+    // The gate lets the call through; there is no POST /api/operator/flags, so the router answers 404.
     const post = await app.request("/api/operator/flags", as("assistant", { method: "POST", body: {} }));
     expect({ status: post.status, body: await post.json() }).toEqual({ status: 404, body: { error: "not_found" } });
     const other = await app.request("/api/rules", as("assistant", { method: "POST", body: {} }));
@@ -133,6 +137,39 @@ describe("a suspended organization on the web (D4, S2)", () => {
       status: 403,
       body: { error: "org_suspended" },
     });
+  });
+
+  test("a non-operator POST to an operator write route answers 404, also when its organization is suspended (D21)", async () => {
+    // No operatorUserIds, and an operator set that holds another user: the owner and the assistant of the suspended org are not operators.
+    const apps = [
+      suspendedApp(),
+      webTestApp({
+        db,
+        sessions: sessions(),
+        routers: routers(),
+        isOrgSuspended: (id) => isOrgSuspended(db, { orgId: id }),
+        operatorUserIds: new Set([org.otherOwnerId]),
+      }),
+    ];
+    for (const app of apps) {
+      for (const path of [`/api/operator/orgs/${org.otherOrgId}/plan`, `/api/operator/orgs/${org.otherOrgId}/flags`]) {
+        for (const who of ["owner", "assistant"]) {
+          const res = await app.request(path, as(who, { method: "POST", body: { plan: "active" } }));
+          expect({ path, who, status: res.status, body: await res.json() }).toEqual({
+            path,
+            who,
+            status: 404,
+            body: { error: "not_found" },
+          });
+        }
+      }
+    }
+    const plan = await db
+      .selectFrom("organizations")
+      .select("plan")
+      .where("id", "=", org.otherOrgId)
+      .executeTakeFirstOrThrow();
+    expect(plan.plan).toBe("active");
   });
 
   test("reads stay", async () => {
