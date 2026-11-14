@@ -76,6 +76,11 @@ export const auditEvents = {
   webTwoFactorLocked: "web.two_factor_locked", // data: via, locked_until
   webTwoFactorReset: "web.two_factor_reset", // data: via, sessions_ended
   operatorNotice: "operator.notice", // data: kind, key
+  // F106. Every key is flat (a string, number, boolean or null); never an address, a name or a hash of text.
+  orgDeleteRefused: "org.delete_refused", // data: reason, via
+  orgExported: "org.exported", // data: tables, rows
+  dsrFind: "dsr.find", // data: address_hash, mails, mentions, listed_delegates, listed_sender_rules, open_actions
+  dsrErase: "dsr.erase", // data: the keys of dsr.find, tombstones, chain_actions, outbox_blanked, outbox_dropped
 } as const;
 
 export interface AuditEvent {
@@ -89,8 +94,18 @@ export interface AuditEvent {
   at?: Date;
 }
 
+// The type forbids nested data; this guard stops a cast or a JSON value that slips past it (F106 D17).
+function assertFlatData(data: AuditData | undefined): void {
+  for (const [key, value] of Object.entries(data ?? {})) {
+    if (typeof value === "object" && value !== null) {
+      throw new TypeError(`audit data key ${key} is not flat`);
+    }
+  }
+}
+
 // A status change and its audit row go in one transaction: the caller passes `trx`.
 export async function recordAudit(db: DbOrTrx, ctx: TenantContext, event: AuditEvent): Promise<void> {
+  assertFlatData(event.data);
   await db
     .insertInto("audit_log")
     .values({
@@ -133,6 +148,7 @@ export async function hasAuditKey(db: DbOrTrx, ctx: TenantContext, event: string
 
 // One row per organization and event: true when this call wrote it.
 export async function recordAuditOnce(db: DbOrTrx, ctx: TenantContext, event: AuditEvent): Promise<boolean> {
+  assertFlatData(event.data);
   const result = await sql`
     INSERT INTO audit_log (org_id, email_id, action_id, actor, event, reason_code, data, created_at)
     SELECT ${ctx.orgId}, ${event.emailId ?? null}, ${event.actionId ?? null}, ${event.actor}, ${event.event},
