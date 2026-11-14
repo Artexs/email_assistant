@@ -13,6 +13,7 @@ export {
   cancelPendingOutbox,
   cancelPendingOutboxOfOrg,
   claimDueOutbox,
+  closeWaitingApprovalSetsSince,
   countFailedOutboxSince,
   lastOutboxSentAt,
   clearOutboxTexts,

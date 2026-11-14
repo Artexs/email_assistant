@@ -502,13 +502,40 @@ export async function cancelPendingApprovalRequestsOfClosedSends(
   const result = await sql`
     update outbox set status = 'failed', error_code = 'outdated', locked_at = null
     where org_id = ${ctx.orgId} and kind in ('approval', 'approval_set')
-      and (status = 'pending' or (status = 'sending' and locked_at < ${opts.staleBefore}))
-      and not exists (
-        select 1 from actions a
-        where a.org_id = outbox.org_id and a.type = 'send' and a.status = 'awaiting_approval'
-          and ((outbox.kind = 'approval' and outbox.dedup_key = 'approval:' || a.id::text)
-            or (outbox.kind = 'approval_set' and outbox.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
-      )
+      and ${waitingApprovalRequest(opts.staleBefore)}
+      and ${noAwaitingApprovalSend}
+  `.execute(db);
+  return Number(result.numAffectedRows ?? 0);
+}
+
+// The outbox row of `outbox` that no sender has taken: `pending`, or `sending` with a stale claim.
+function waitingApprovalRequest(staleBefore: Date) {
+  return sql`(status = 'pending' or (status = 'sending' and locked_at < ${staleBefore}))`;
+}
+
+// The request of an `outbox` row (`approval` or `approval_set`) has no send that still waits for an answer. One predicate
+// for the resume hook and for the erase of one person's data.
+const noAwaitingApprovalSend = sql`not exists (
+  select 1 from actions a
+  where a.org_id = outbox.org_id and a.type = 'send' and a.status = 'awaiting_approval'
+    and ((outbox.kind = 'approval' and outbox.dedup_key = 'approval:' || a.id::text)
+      or (outbox.kind = 'approval_set' and outbox.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
+)`;
+
+// The erase of one person's data (F106 stage 09): a waiting approval-set request whose sends all closed (the sender holds
+// it, for quiet hours or lag) still lists the erased subject in its view. It becomes `failed` / `outdated` (as at a resume)
+// and loses its text and view. A request of a send that still waits stays: the erase refuses while such a send names the
+// mail. Only rows created at or after `since`. Returns the number of rows changed.
+export async function closeWaitingApprovalSetsSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { since: Date; staleBefore: Date; text: string }
+): Promise<number> {
+  const result = await sql`
+    update outbox set status = 'failed', error_code = 'outdated', locked_at = null, text = ${opts.text}, view = '{}'::jsonb
+    where org_id = ${ctx.orgId} and kind = 'approval_set' and created_at >= ${opts.since}
+      and ${waitingApprovalRequest(opts.staleBefore)}
+      and ${noAwaitingApprovalSend}
   `.execute(db);
   return Number(result.numAffectedRows ?? 0);
 }

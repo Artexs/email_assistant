@@ -2,6 +2,7 @@ import { noticeKinds, type NoticeKind } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB } from "../../platform/db";
+import { closeWaitingApprovalSetsSince, SENDER_STALE_MS } from "../channels";
 
 import type { EraseStep } from "./erase";
 
@@ -41,16 +42,20 @@ const REMOVED = "[removed]";
 //   `sent` or `failed` of a many-mails kind → text `[removed]`, view `{}` (counted `outbox_blanked`); a row that is
 //     blanked already is not counted again.
 //   `pending` or `sending` digests → deleted (`outbox_dropped`; the next slot covers the period, as `delete_mailbox`).
-//   `pending` or `sending` rows of another kind stay: the open-action refusal of the erase means that no waiting
-//     approval request names a mail that goes.
+//   `pending` or `sending` (stale) approval sets whose sends all closed → `failed` / `outdated`, blanked as above (also
+//     counted `outbox_blanked`); a fresh `sending` row is in flight and finishes.
+//   `pending` approval sets with a send that still waits stay: the open-action refusal of the erase means that no such
+//     request names a mail that goes.
 // A message that Telegram has delivered stays in the chat: nothing here can recall it (runbook, stage 10).
 // Runs in the erase transaction; the `org_id` filter is backed by the row-level policy of the tenant scope.
 export const eraseManyMailOutbox: EraseStep = async (trx, orgId, erased) => {
   if (erased.mailIds.length === 0 || erased.earliestCreatedAt === null || MANY_MAILS_KINDS.length === 0) {
     return { outbox_blanked: 0, outbox_dropped: 0 };
   }
+  const blanked = await blank(trx, orgId, erased.earliestCreatedAt);
+  const closed = await closeWaitingSets(trx, orgId, erased.earliestCreatedAt);
   return {
-    ...(await blank(trx, orgId, erased.earliestCreatedAt)),
+    outbox_blanked: blanked.outbox_blanked + closed,
     ...(await drop(trx, orgId, erased.earliestCreatedAt)),
   };
 };
@@ -64,6 +69,17 @@ async function blank(trx: Transaction<DB>, orgId: string, since: Date): Promise<
       and created_at >= ${since}
       and (text is distinct from ${REMOVED} or view <> '{}'::jsonb)`.execute(trx);
   return { outbox_blanked: Number(result.numAffectedRows ?? 0n) };
+}
+
+// A waiting approval set with no send that waits for an answer (the sender holds it for quiet hours or lag): it can list
+// the erased mail from item 2 on, and the sender would render it later. It ends as the resume hook ends it, and is
+// counted as blanked. A set of a send that still waits stays (the erase refuses while that send names the mail).
+async function closeWaitingSets(trx: Transaction<DB>, orgId: string, since: Date): Promise<number> {
+  return closeWaitingApprovalSetsSince(
+    trx,
+    { orgId },
+    { since, staleBefore: new Date(Date.now() - SENDER_STALE_MS), text: REMOVED }
+  );
 }
 
 async function drop(trx: Transaction<DB>, orgId: string, since: Date): Promise<{ outbox_dropped: number }> {

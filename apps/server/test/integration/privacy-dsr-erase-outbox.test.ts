@@ -15,7 +15,7 @@ import {
 import { insertDigest } from "../../src/modules/reports";
 import { createDb, type DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
+import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb } from "./helpers";
 
 // F106 stage 09: the erase blanks stored digests and approval sets that can list the erased mail. The seed is committed
@@ -58,7 +58,7 @@ interface World {
 const digestText = `Digest\n1. ${CUT_SENDER}… — ${SUBJECT}\n   ${AI_TEXT}`;
 const digestView = { text: digestText, buttons: [[{ text: "Open", data: "x" }]] };
 
-async function seed(options: { extraRows?: boolean } = {}): Promise<World> {
+async function seed(options: { extraRows?: boolean; closedSets?: boolean; edge?: boolean } = {}): Promise<World> {
   const t0 = new Date(Date.now() - 6 * HOUR);
   const suffix = randomUUID().slice(0, 8);
   return db.transaction().execute(async (trx) => {
@@ -125,6 +125,12 @@ async function seed(options: { extraRows?: boolean } = {}): Promise<World> {
       createdAt: hoursAfter(1),
       emailId: goneMail,
     });
+    // The request of this set still has a send that waits for an answer: the sender may send it, the erase leaves it.
+    await insertAction(trx, ctx, keptMail, {
+      type: "send",
+      status: "awaiting_approval",
+      payload: { set_id: `pending-${suffix}` },
+    });
     rows.setKeptPending = await outbox(trx, orgId, userId, {
       kind: "approval_set",
       dedup: `approval_set:pending-${suffix}`,
@@ -132,6 +138,36 @@ async function seed(options: { extraRows?: boolean } = {}): Promise<World> {
       createdAt: hoursAfter(1),
       emailId: keptMail,
     });
+    if (options.closedSets === true) {
+      // Waiting sets whose sends all closed (no awaiting_approval send): item 1 is the kept mail, item 2 the erased one.
+      const closed = {
+        kind: "approval_set" as const,
+        createdAt: hoursAfter(1),
+        emailId: keptMail,
+        view: twoItemView(),
+      };
+      rows.closedPending = await outbox(trx, orgId, userId, {
+        ...closed,
+        dedup: `approval_set:c1-${suffix}`,
+        status: "pending",
+      });
+      rows.closedStale = await outbox(trx, orgId, userId, {
+        ...closed,
+        dedup: `approval_set:c2-${suffix}`,
+        status: "sending",
+        lockedAt: new Date(Date.now() - HOUR),
+      });
+      rows.closedFresh = await outbox(trx, orgId, userId, {
+        ...closed,
+        dedup: `approval_set:c3-${suffix}`,
+        status: "sending",
+        lockedAt: new Date(),
+      });
+    }
+    if (options.edge === true) {
+      await digest("edgeAt", "sent", t0);
+      await digest("edgeBefore", "sent", new Date(t0.getTime() - 1));
+    }
     rows.urgentKept = await outbox(trx, orgId, userId, {
       kind: "urgent",
       dedup: `urgent:kept-${suffix}`,
@@ -162,9 +198,11 @@ async function outbox(
     emailId?: string;
     mailboxId?: string;
     digestId?: string;
+    lockedAt?: Date;
+    view?: object;
   }
 ): Promise<string> {
-  const view = row.kind === "digest" || row.kind === "approval_set" ? digestView : { note: "kept" };
+  const view = row.view ?? (row.kind === "digest" || row.kind === "approval_set" ? digestView : { note: "kept" });
   const inserted = await trx
     .insertInto("outbox")
     .values({
@@ -181,11 +219,24 @@ async function outbox(
       created_at: row.createdAt,
       next_attempt_at: row.createdAt,
       sent_at: row.status === "sent" ? row.createdAt : null,
-      locked_at: row.status === "sending" ? row.createdAt : null,
+      locked_at: row.status === "sending" ? (row.lockedAt ?? row.createdAt) : null,
     })
     .returning("id")
     .executeTakeFirstOrThrow();
   return inserted.id;
+}
+
+function twoItemView() {
+  const item = (n: number, subject: string) => ({
+    n,
+    delegateName: "D",
+    address: "d@x.test",
+    subject,
+    dueAt: null,
+    reminder: 1,
+    task: "t",
+  });
+  return { setId: "probe", items: [item(1, "Kept subject"), item(2, SUBJECT)], timeZone: "Europe/Warsaw" };
 }
 
 async function outboxRows(orgId: string): Promise<Record<string, unknown>[]> {
@@ -287,6 +338,41 @@ describe("erase: stored messages that list many mails", () => {
     const before = await Promise.all(names.map((name) => row(w.rows[name] as string)));
     await erased(w);
     expect(await Promise.all(names.map((name) => row(w.rows[name] as string)))).toEqual(before);
+  });
+
+  test("6b. a waiting approval set whose sends all closed is made final and blank: item 2 named the erased mail", async () => {
+    const w = await seed({ closedSets: true });
+    const names = ["closedPending", "closedStale"];
+    for (const name of names) {
+      const before = await row(w.rows[name] as string);
+      expect(JSON.stringify(before?.view)).toContain(SUBJECT);
+    }
+    const awaiting = await row(w.rows.setKeptPending as string);
+    const fresh = await row(w.rows.closedFresh as string);
+    const result = await erased(w);
+    // newSent, setKeptSent and the two closed sets; the digest of the pending slot is dropped.
+    expect(result.stepCounts).toEqual({ outbox_blanked: 4, outbox_dropped: 1 });
+    for (const name of names) {
+      const after = await db
+        .selectFrom("outbox")
+        .select(["status", "error_code", "text", "view", "locked_at"])
+        .where("id", "=", w.rows[name] as string)
+        .executeTakeFirstOrThrow();
+      expect(after).toEqual({ status: "failed", error_code: "outdated", text: "[removed]", view: {}, locked_at: null });
+    }
+    // A set that still has an awaiting send, and a claim that is in flight, stay as they are.
+    expect(await row(w.rows.setKeptPending as string)).toEqual(awaiting);
+    expect(await row(w.rows.closedFresh as string)).toEqual(fresh);
+    expect(JSON.stringify(fresh?.view)).toContain(SUBJECT);
+  });
+
+  test("6c. the window edge: a row created at the earliest erased mail's time is blanked, one a millisecond before stays", async () => {
+    const w = await seed({ edge: true });
+    const before = await row(w.rows.edgeBefore as string);
+    await erased(w);
+    expect(await row(w.rows.edgeAt as string)).toMatchObject({ text: "[removed]", view: {} });
+    expect(await row(w.rows.edgeBefore as string)).toEqual(before);
+    expect(before?.text).toContain(SUBJECT);
   });
 
   test("7. an erase that removes no mail changes no outbox row", async () => {
