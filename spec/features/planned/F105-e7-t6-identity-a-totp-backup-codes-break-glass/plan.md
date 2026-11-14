@@ -155,13 +155,13 @@ Every line maps to a stage test or check (stage in brackets).
 
 Run after the last commit, as one bash call with nothing after it; read the logs in a separate call. In the final message list as proven only what a saved log shows. `test:int:ci` needs no lock: each job has its own DB (`CLAUDE.md`).
 
-Server and core stages (01–07, 12; NN = the stage number):
+Server and core stages (01–07; NN = the stage number):
 
 ```
 mkdir -p /tmp/f105-sNN && bun run lint > /tmp/f105-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f105-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f105-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f105-sNN/int.log 2>&1 && echo PROOF_OK
 ```
 
-Web stages (08, 09, 10, and 12 when it changes `en.ts`): the same chain with `&& bun run web:build > /tmp/f105-sNN/web.log 2>&1` before `&& echo PROOF_OK`.
+Web stages (08, 09, 10, 12): the same chain with `&& bun run web:build > /tmp/f105-sNN/web.log 2>&1` before `&& echo PROOF_OK`.
 
 Stage 11 (e2e): the web chain with `&& flock /tmp/email-assistant-shared-tests.lock env CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e > /tmp/f105-s11/e2e.log 2>&1` before `&& echo PROOF_OK` (the whole suite: the seed change touches every spec).
 
@@ -228,7 +228,7 @@ Order and parallel work:
 | 09 | 08 | 03–07 (not next to another `bun.lock` change of any ticket) | `apps/web/package.json`, `bun.lock` |
 | 10 | 07, 08, 09 | 12 | `AccountCard.tsx`, `en.ts` |
 | 11 | 10 | 12 | the e2e seed and the whole e2e run |
-| 12 | 03, and F099 stages 12–13 | 04–11 | `packages/core/src/security-log.ts`, `en.ts` |
+| 12 | 06, and F099 stages 12–13 | 07–11 | `packages/core/src/security-log.ts`, `en.ts` |
 | 13 | 11 (and 12 if landed) | — | docs |
 | 14 | 13 | — | VPS |
 
