@@ -23,6 +23,7 @@ import {
   type Prediction,
   ruleSummary,
   splitAddress,
+  textIsClean,
   thresholdSweep,
   type ToolSwitches,
   type TriageAnalysis,
@@ -194,11 +195,6 @@ function draftKindOf(actions: PlannedAction[]): DraftKind {
     if (action.type === "create_draft" && action.draft.kind !== "reminder") return action.draft.kind;
   }
   return "none";
-}
-
-// LLM text in a draft holds no address, no link and no long number (the marking removes them; this proves it).
-function textIsClean(text: string): boolean {
-  return !/@|http|www\./i.test(text) && !/\d{9,}/.test(text.replace(/[ -]/g, ""));
 }
 
 // A delegation pair holds when the recipient comes from the case's own data, the text is clean and the send waits for approval.

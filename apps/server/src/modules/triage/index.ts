@@ -45,6 +45,8 @@ export { goNoGoFor, realGoNoGoRows, setCategoryAutoWithGate } from "./gate";
 export type { AutoGateResult } from "./gate";
 export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";
+export { judgeDraft, judgePassed } from "./judge";
+export type { JudgeResult } from "./judge";
 export { prompts, rolesWithoutPrompt } from "./prompts";
 export type { PromptEntry } from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";
