@@ -87,10 +87,11 @@
     },
     {
       "id": "w-5-070",
-      "subject": "Joint venture budget - figure needed by 16:00 today",
-      "body": "Dear Mr Szalewski,\n\nthe annual budget closes on 05.02.2027, and our finance team needs Kordelan's share of joint venture costs today by 16:00. Without it, your share is left out of the close.\n\nDaniel Hargreaves",
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">the annual budget closes on 05.02.2027, and our finance team needs Kordelan's share of joint venture costs today by 16:00. Without it, your share is left out of the close.</p><p style=\"margin:0 0 12px 0\">Daniel Hargreaves</p></div>",
-      "thread": []
+      "subject": "Joint venture budget - your approval needed by 16:00 today",
+      "body": "Dear Mr Szalewski,\n\nour auditor locks the annual budget ledger today at 16:00. I need your own signature on the joint venture cost statement before then. Without it, Kordelan's share is booked as unapproved and the audit fee doubles.\n\nDaniel Hargreaves",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">our auditor locks the annual budget ledger today at 16:00. I need your own signature on the joint venture cost statement before then. Without it, Kordelan's share is booked as unapproved and the audit fee doubles.</p><p style=\"margin:0 0 12px 0\">Daniel Hargreaves</p></div>",
+      "thread": [],
+      "note": "rewritten: executive's own signature is needed before a 16:00 ledger lock today, with a concrete cost; no task for a team member"
     },
     {
       "id": "w-5-071",
