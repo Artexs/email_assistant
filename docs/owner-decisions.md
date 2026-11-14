@@ -17,6 +17,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · F104 plan started while F095 is still open (F104) · scope · new
+- Choice: the F104 plan job started when F095 had stage 10 running and stage 09 waiting for 22:40Z. Your order rule asks for "needs landed" first.
+- Why: F095 is docs and a runbook only; no code that F104 reads depends on it. F099 (the other need) is landed and deployed.
+- Undo: stop the planner job `2026-11-14-f104-plan-e5a-7ba7bb48`; the plan can be re-run after F095 closes.
+- Source: `docs/product/stage-2/05-execution-plan.md` §2.1 row 10.
+
 ### 2026-11-14 · Feedback source "review" added; its down migration deletes review rows (F097) · irreversible · new
 - Choice: migration `20261114110001_feedback_source_review.sql` adds the source `review` to the feedback CHECK. Rolling it back first deletes all `review` rows, because the old CHECK would reject them.
 - Why: the review sample (the owner's audit of 50 cases) must not mix with taps from the digest. Rows only exist after the review flow runs.
