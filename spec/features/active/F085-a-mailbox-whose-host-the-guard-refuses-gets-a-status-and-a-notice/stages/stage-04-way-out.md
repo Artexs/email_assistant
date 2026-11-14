@@ -11,8 +11,8 @@ One `[risky]` step and one small normal step, about 260 changed lines. The way o
   - Files:
     - New `apps/server/src/modules/mail/host-status.ts` (the file of stage 05's `markHostBlocked` too).
     - `apps/server/src/modules/mail/repo/mailboxes.ts` (`changeMailboxStatus`, line 142): `change: { from: MailboxStatus; to: MailboxStatus; at: Date }` (the body does not change).
-    - `apps/server/src/modules/audit/repo.ts`: `auditEvents.mailboxHostAllowed: "mailbox.host_allowed", // data: mailbox_id` after `mailboxRemoved`.
-    - `apps/server/src/modules/mail/jobs.ts`: the first statement of `run()` is `await recheckBlockedHosts({ db: deps.db, now: deps.now });`, before `listSyncTargets`. Read the file at your start: F100 stage 07 (the sync interval) or another ticket may have changed `run()`; the call goes first in any shape.
+    - `apps/server/src/modules/audit/repo.ts`: `auditEvents.mailboxHostAllowed: "mailbox.host_allowed", // data: mailbox_id` after `mailboxRemoved` (line 23; the 2FA events of F105 stage 03 are further down and do not change).
+    - `apps/server/src/modules/mail/jobs.ts`: the first statement of `run()` is `await recheckBlockedHosts({ db: deps.db, now: deps.now });`, before `listSyncTargets`. F100 stage 07 (the sync interval) did not change this file: `run()` starts at line 76 at c16849f (file unchanged since 8720bb0) and the cron comes from `mailSyncCron` (`platform/config.ts:441`). Read the file at your start: F103 or F104 may have changed `run()`; the call goes first in any shape.
     - `apps/server/src/modules/mail/index.ts`: export `checkMailboxHosts` and `type HostCheck` (stage 06 and the committer use the module index). `recheckBlockedHosts` stays internal to the module (only `jobs.ts` calls it).
     - Tests: new `apps/server/src/modules/mail/host-status.test.ts` (unit, no DB), new `apps/server/test/integration/mail-host-status.test.ts`, `apps/server/test/integration/mail-jobs.test.ts`.
   - Interfaces:
