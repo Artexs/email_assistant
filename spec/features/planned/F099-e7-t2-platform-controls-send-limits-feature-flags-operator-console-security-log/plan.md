@@ -9,7 +9,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - [x] Collect: ticket, epic page E07 and its discovery notes §5–§7, §10, §11, `05-execution-plan.md` §2, `decisions.md` PD-044–PD-048, ADR 0027, F087 and F088 (done), F091 (active), F081 (dropped), the code of `actions/{send,committer,repo,transitions}.ts`, `channels/{operator,notice-queue}.ts`, `channels/notices/*`, `tenancy/*`, `audit/repo.ts`, `platform/{http,config}.ts`, `web.ts`, `main.ts`, `composition.ts`, the web shell and Account card, the test helpers.
 - [x] Facts checked (probe P1, reference check P2).
 - [x] Decisions D1–D32.
-- [ ] stage-01-send-limit-rule
+- [x] stage-01-send-limit-rule [written]
 - [ ] stage-02-send-started-column
 - [ ] stage-03-hold-in-the-committer
 - [ ] stage-04-visible-wait-and-operator-notice
