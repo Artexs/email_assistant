@@ -339,3 +339,4 @@ Pre-mortem areas: the pilot move and the staging switch (1–3), the `suspended`
 - 2026-11-12: The user approved the master plan ("ok"). Next: U0, then the S6a `plan-task` session.
 - 2026-11-12: S6a stage plan written and cold-reviewed (`9cdada6`). Then the user cut the scope ("Scope change" section): local production on the home VPS, no customers; P16–P24 by "ok" to the agent's defaults. S6d dropped (F076); S6b, S6c, S6e, S6f rewritten.
 - 2026-11-12: S6b stage plan written as Limen ticket F082 (`plan-task` skill; 15 stages; owner answer "Okay, approve the defaults."). Build after F077 stage 18.
+- 2026-11-14: S6b done as Limen ticket F082: built (stages 1 to 14), group review PASS, deployed to the home VPS with the Bun 1.4.4 image (d117cd6; record: `notes/2026-11-14-f094-vps-deploy.md`). UI checks of the invite link, terms box and lockout wait for the next pilot owner sign-in.
