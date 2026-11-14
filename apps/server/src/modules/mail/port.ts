@@ -122,6 +122,14 @@ export interface MailContent {
   capture: CapturedHeaders | null;
 }
 
+export interface FlagsOfMessage {
+  uid: number;
+  flags: string[];
+  /** The envelope Message-ID, as `MessageMeta.messageId`. */
+  messageId: string | null;
+  internalDate: Date;
+}
+
 export interface FolderMessageMeta extends MessageMeta {
   /** IMAP flags of the message, e.g. "\\Seen", "\\Flagged". */
   flags: string[];
@@ -140,8 +148,12 @@ export interface MailProvider {
   folderStatus(folder: string): Promise<FolderStatus>;
   /** UID FETCH lastUid+1:* in `folder`. Can also return uid <= lastUid (RFC 3501 `*` rule). [] for an empty folder. Throws MailFolderMissingError. */
   fetchAbove(folder: string, lastUid: number): Promise<MessageMeta[]>;
-  /** Null when larger than the size limit, no text, or no such UID. Throws MailFolderMissingError. */
-  fetchBodyText(folder: string, uid: number): Promise<string | null>;
+  /** Text and capture of one mail. Over the size limit: text null and the capture of the header block (`partsKnown` false).
+   *  `{ text: null, capture: null }` when the UID is not in the folder or the source does not parse. Throws MailFolderMissingError. */
+  fetchContent(folder: string, uid: number): Promise<MailContent>;
+  /** IMAP flags of the given UIDs in `folder` with the identity of each mail (to check that a UID still names the same mail),
+   *  ascending by uid; unknown UIDs are left out; [] for [] or a missing folder. */
+  fetchFlagsIn(folder: string, uids: number[]): Promise<FlagsOfMessage[]>;
   /** Creates the folder when it is missing. Returns the path as the server lists it. */
   ensureFolder(name: string): Promise<string>;
   /** Null when the folder has no such UID (also when the folder does not exist). */

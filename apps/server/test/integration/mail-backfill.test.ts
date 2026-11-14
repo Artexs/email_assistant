@@ -151,7 +151,7 @@ describe("backfillInbox", () => {
       const readOnly = [
         "listFolders",
         "folderStatus",
-        "fetchBodyText",
+        "fetchContent",
         "fetchMetaIn",
         "searchSinceIn",
         "fetchByUidsIn",
@@ -253,7 +253,7 @@ describe("backfillInbox", () => {
         fetchAbove: (folder, lastUid) => s.fake.fetchAbove(folder, lastUid),
         searchSinceIn: (folder, since) => s.fake.searchSinceIn(folder, since),
         fetchByUidsIn: (folder, uids) => s.fake.fetchByUidsIn(folder, uids),
-        fetchBodyText: async (folder, uid) => {
+        fetchContent: async (folder, uid) => {
           await updateCursor(
             trx,
             s.ctx,
@@ -261,7 +261,7 @@ describe("backfillInbox", () => {
             { uidValidity: UID_VALIDITY, lastUid: 4 },
             { uidValidity: UID_VALIDITY, lastUid: 5 }
           );
-          return s.fake.fetchBodyText(folder, uid);
+          return s.fake.fetchContent(folder, uid);
         },
         close: () => s.fake.close(),
       };
