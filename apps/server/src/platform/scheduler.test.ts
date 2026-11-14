@@ -2,6 +2,7 @@ import { describe, expect, spyOn, test } from "bun:test";
 
 import { waitFor } from "../../test/wait-for";
 
+import { currentTenantScope, withTenantScope } from "./db/tenant-scope";
 import { createLog, setLogFormat, setLogLevel } from "./log";
 import { createScheduler, runJobTick } from "./scheduler";
 
@@ -177,5 +178,19 @@ describe("scheduler", () => {
     expect(line.error_code).toBe("EAUTH");
     expect(String(line.run_id)).toMatch(UUID);
     expect(raw).not.toContain("MARKER-SCHED");
+  });
+  test("a tick never inherits the tenant scope of its caller", async () => {
+    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    let seen: string | null = "unset";
+    try {
+      await withTenantScope("aaaaaaaa-0000-4000-8000-000000000001", () =>
+        runJobTick("scope-probe", async () => {
+          seen = currentTenantScope();
+        })
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
+    expect(seen).toBeNull();
   });
 });

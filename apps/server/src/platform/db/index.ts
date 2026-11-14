@@ -1,17 +1,22 @@
-import { Kysely, PostgresDialect, sql } from "kysely";
+import { Kysely, sql } from "kysely";
 import { Pool } from "pg";
 
 import type { DB } from "./schema";
+import { ScopedPostgresDialect } from "./scoped-driver";
 
 export type { DB } from "./schema";
 export type { TenantContext } from "./tenant-context";
 
+export { currentTenantScope, withoutTenantScope, withTenantScope } from "./tenant-scope";
+export { ScopedPostgresDialect } from "./scoped-driver";
+
 export type Db = Kysely<DB>;
 
-export function createDb(databaseUrl: string): Db {
+/** One pool, one ScopedPostgresDialect: every connection carries the scope of its call chain (RLS safety net, ADR 0011). */
+export function createDb(databaseUrl: string, opts?: { max?: number }): Db {
   return new Kysely<DB>({
-    dialect: new PostgresDialect({
-      pool: new Pool({ connectionString: databaseUrl, max: 10, connectionTimeoutMillis: 5000 }),
+    dialect: new ScopedPostgresDialect({
+      pool: new Pool({ connectionString: databaseUrl, max: opts?.max ?? 10, connectionTimeoutMillis: 5000 }),
     }),
   });
 }
