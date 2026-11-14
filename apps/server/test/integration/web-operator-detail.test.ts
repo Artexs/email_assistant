@@ -217,7 +217,7 @@ describe("operator detail and notices (F099 stage 08)", () => {
 
   test("6b. an id that is not a UUID answers 404 before any database call", async () => {
     const noDb = new Proxy({}, { get: () => Promise.reject(new Error("database call")) }) as never;
-    const routes = operatorRoutes({ db: noDb, now: () => NOW });
+    const routes = operatorRoutes({ db: noDb, now: () => NOW, planHooks: {} });
     for (const id of ["not-a-uuid", "123", "%20"]) {
       const res = await routes.request(`/orgs/${id}`);
       expect({ id, status: res.status, body: await res.json() }).toEqual({

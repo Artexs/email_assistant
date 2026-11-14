@@ -4,7 +4,7 @@ import { onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { settingsDeps } from "./composition";
+import { orgPlanHooks, settingsDeps } from "./composition";
 import type { ActionsScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import { channelRoutes, getChatLinkForUser, queueMailboxRemovedNotices } from "./modules/channels";
@@ -261,7 +261,7 @@ export function apiRouters(
         ...onboardingDeps(db, extras.botUsername),
       })
     );
-    api.route("/operator", operatorRoutes({ db, now }));
+    api.route("/operator", operatorRoutes({ db, now, planHooks: orgPlanHooks(db) }));
     api.route(
       "/",
       mailRoutes({

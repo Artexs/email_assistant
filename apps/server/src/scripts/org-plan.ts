@@ -1,5 +1,4 @@
-import { resumeHook } from "../composition";
-import { cancelPendingOutboxOfOrg } from "../modules/channels";
+import { orgPlanHooks } from "../composition";
 import { configureMailHosts } from "../modules/mail";
 import { setOrgPlan, type SetOrgPlanResult } from "../modules/tenancy";
 import { loadConfig, mailAllowLocal } from "../platform/config";
@@ -62,7 +61,7 @@ async function main(): Promise<number> {
       db,
       { orgId: args.orgId },
       { ...args, actor: "cli", now: new Date() },
-      { onSuspended: cancelPendingOutboxOfOrg, onResumed: resumeHook(db) }
+      orgPlanHooks(db)
     );
     return report(
       args.orgId,

@@ -201,6 +201,46 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     }
   });
 
+  // F099 stage 09: the same rule for the write routes, with the path forms of /orgs/:orgId/plan and /flags.
+  test("7c. path forms of the POST routes: a non-operator always gets 404, no session 401, no row written", async () => {
+    const app = operatorApp();
+    const id = org.orgId;
+    const paths = ["plan", "flags"].flatMap((leaf) => [
+      `/api/operator/orgs/${id}/${leaf}`,
+      `/api/operator/orgs/${id}/${leaf}/`,
+      `/api/operator//orgs/${id}/${leaf}`,
+      `/api/operator/orgs/${id}//${leaf}`,
+      `/api/operator/%6Frgs/${id}/${leaf}`,
+      `/api/operator/orgs/${id}/%${leaf.charCodeAt(0).toString(16)}${leaf.slice(1)}`,
+      `/api/operator/ORGS/${id}/${leaf}`,
+      `/api/operator/./orgs/${id}/${leaf}`,
+      `/api/operator/x/../orgs/${id}/${leaf}`,
+    ]);
+    const body = { plan: "suspended", flag: "stats_page", enabled: true };
+    for (const who of ["owner", "other"]) {
+      for (const path of paths) {
+        const res = await app.request(path, as(who, { method: "POST", body }));
+        expect({ who, path, status: res.status, body: await res.json() }).toEqual({
+          who,
+          path,
+          status: 404,
+          body: { error: "not_found" },
+        });
+      }
+    }
+    for (const path of paths) {
+      const res = await app.request(path, {
+        method: "POST",
+        headers: { origin: TEST_ORIGIN, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      expect({ path, status: res.status }).toEqual({ path, status: 401 });
+    }
+    const rows = await db.selectFrom("org_features").select("flag").where("org_id", "=", id).execute();
+    expect(rows).toEqual([]);
+    expect(await isOrgSuspended(db, { orgId: id })).toBe(false);
+  });
+
   test("8. the prefix guard does not leak: the owner still reads /api/me", async () => {
     const res = await operatorApp().request("/api/me", as("owner"));
     expect(res.status).toBe(200);

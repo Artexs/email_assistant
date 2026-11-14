@@ -85,3 +85,36 @@ export const operatorNoticesSchema = z.strictObject({
 
 export type OperatorOrgDetail = z.infer<typeof operatorOrgDetailSchema>;
 export type OperatorNotices = z.infer<typeof operatorNoticesSchema>;
+
+// POST /api/operator/orgs/:orgId/plan and /flags (F099 D20): the bodies of the CLIs `org:plan` and `org:flag`.
+export const operatorPlanBodySchema = z.strictObject({
+  plan: orgPlanSchema.optional(),
+  trialDays: z.number().int().min(1).max(365).optional(),
+  maxMailboxes: z.number().int().min(0).max(100).optional(),
+});
+
+export const operatorFlagBodySchema = z.strictObject({
+  flag: z.string().min(1).max(40),
+  enabled: z.boolean(),
+});
+
+export const operatorPlanResultSchema = z.strictObject({
+  result: z.enum(["changed", "unchanged"]),
+  plan: orgPlanSchema,
+  trialEndsAt: z.iso.datetime().nullable(),
+  maxMailboxes: z.number().int().min(0),
+  resumedAt: z.iso.datetime().nullable(),
+  cancelledMessages: z.number().int().min(0), // 0 when unchanged
+  expiredSends: z.number().int().min(0), // 0 when unchanged
+});
+
+export const operatorFlagResultSchema = z.strictObject({
+  result: z.enum(["changed", "unchanged"]),
+  flag: z.string(),
+  enabled: z.boolean(),
+});
+
+export type OperatorPlanBody = z.infer<typeof operatorPlanBodySchema>;
+export type OperatorFlagBody = z.infer<typeof operatorFlagBodySchema>;
+export type OperatorPlanResult = z.infer<typeof operatorPlanResultSchema>;
+export type OperatorFlagResult = z.infer<typeof operatorFlagResultSchema>;
