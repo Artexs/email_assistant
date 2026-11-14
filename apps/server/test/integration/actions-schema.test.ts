@@ -159,4 +159,18 @@ describe("S3 schema: indexes", () => {
       "emails_returned_idx",
     ]);
   });
+
+  test("send_started_at is a nullable timestamptz with a partial index (PD-044)", async () => {
+    const column = await sql<{ data_type: string; is_nullable: string }>`
+      SELECT data_type, is_nullable FROM information_schema.columns
+      WHERE table_name = 'actions' AND column_name = 'send_started_at'
+    `.execute(db);
+    expect(column.rows).toEqual([{ data_type: "timestamp with time zone", is_nullable: "YES" }]);
+
+    const index = await sql<{ indexdef: string }>`
+      SELECT indexdef FROM pg_indexes WHERE indexname = 'actions_send_started_idx'
+    `.execute(db);
+    expect(index.rows).toHaveLength(1);
+    expect(index.rows[0]?.indexdef).toContain("WHERE ((type = 'send'::text) AND (send_started_at IS NOT NULL))");
+  });
 });

@@ -61,6 +61,7 @@ export {
   listFailedUnnotified,
   listExpiredApprovals,
   listSendResultsToNotify,
+  listRecentSends,
   listSendsOfDraft,
   listSendsToNotify,
   listSetSends,

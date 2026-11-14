@@ -31,6 +31,7 @@ export {
   getSend,
   insertSendAgain,
   listOpenReminderSends,
+  listRecentSends,
   listSetSends,
   lockSend,
   setApproved,
