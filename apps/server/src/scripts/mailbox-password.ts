@@ -90,7 +90,7 @@ async function main(): Promise<number> {
       { mailboxId, password, secretKind, now: new Date() }
     );
     log.info(`password updated for mailbox ${mailboxId}; status ${status}`);
-    if (reactivated) log.info("the next sync runs within 5 minutes");
+    if (reactivated) log.info("the next sync runs within the sync interval (MAIL_SYNC_EVERY_MIN, default 2 minutes)");
     if (status === "paused") log.info("the mailbox stays paused: use /resume in Telegram");
     return 0;
   } catch (error) {

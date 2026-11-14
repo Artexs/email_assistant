@@ -92,7 +92,7 @@ Module rules:
 
 ```mermaid
 flowchart TD
-    Tick[Scheduler: every MAIL_SYNC_EVERY_MIN min (default 2)] --> Sync[mail.sync: INBOX and the synced folders above each folder's UID cursor]
+    Tick["Scheduler: every MAIL_SYNC_EVERY_MIN min (default 2)"] --> Sync[mail.sync: INBOX and the synced folders above each folder's UID cursor]
     Sync -->|known mail back in a synced folder after a system move| Ret[(emails.returned_at set)]
     Ret --> FB[triage.returned writes triage_feedback: wrong]
     Sync -->|new dedup key| Store[(emails: status = pending)]
