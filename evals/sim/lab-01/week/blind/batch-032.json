@@ -1,0 +1,343 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-032",
+  "cases": [
+    {
+      "id": "w-6-003",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rada nadzorcza - przygotowania na kolejne posiedzenie",
+      "body": "Cześć Wiktorze,\n\nkrótko o tym, jak wyglądają przygotowania do kolejnego posiedzenia rady. Wiadomość ma charakter informacyjny i nie oczekuję odpowiedzi.\n\nKomitet audytu zakończył pierwszy przegląd materiałów budżetowych i zgłosił tylko kilka drobnych uwag redakcyjnych. Sekretarz rady zbiera teraz poprawki i przygotuje ostateczną wersję dokumentów na początek przyszłego tygodnia. Nie przewiduję zmian w liczbach, więc nie powinno być żadnych niespodzianek.\n\nW sprawie terminu posiedzenia: sala jest zarezerwowana, a dwóch członków rady potwierdziło udział zdalny. Pozostali członkowie potwierdzili obecność na miejscu. Catering zamówiony jest na dwanaście osób, a obiad po posiedzeniu przewidziałem w restauracji niedaleko siedziby.\n\nDodam jeszcze, że audytorzy zakończyli już wstępne badanie sprawozdania i nie mają zastrzeżeń do zasad rachunkowości przyjętych w tym roku. Ich pełny raport trafi do rady razem z pozostałymi dokumentami. Gdyby cokolwiek się zmieniło, dam Ci znać osobno.\n\nNa koniec drobna uwaga organizacyjna: sekretarz rady przygotowuje listę obecności i prosi członków o wcześniejsze wskazanie wymagań dotyczących posiłków. Lista będzie gotowa w środę, a wszelkie zmiany można zgłaszać do piątku. Wiadomość kieruję do Ciebie jako do osoby zarządzającej spółką, żebyś miał pełny obraz stanu przygotowań, bez żadnych zadań po Twojej stronie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-004",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zakończono przeliczanie stanów w magazynie w Poznaniu",
+      "body": "Zadanie zakończone\n\nZadanie przeliczania stanów magazynowych dla magazynu w Poznaniu zakończyło się dziś o godzinie 07:50. Zadanie rozpoczęto o 07:30, a więc trwało 20 minut.\n\nPozycje przeliczone: 8 214\nRóżnice stanów wykryte: 12\nRóżnice skierowane do wyjaśnienia przez zespół magazynu: 12\nBłędy: 0\n\nLista różnic znajduje się w panelu systemu w zakładce inwentaryzacji. System ERP Kordelan wysłał tę wiadomość automatycznie, bez udziału człowieka. Różnice stanów to zwykle drobne rozbieżności po przyjęciach towaru i nie wymagają działania poza kontrolą zespołu magazynu.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-005",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your travel in February - one question for the board calendar",
+      "body": "Dear Wiktor,\n\nI am preparing the calendar of the supervisory board for the spring, and I need your view on one point that depends on your travel. As far as I know, you plan to go to Hamburg in the middle of February. The board meeting on the budget is on 12.02.2027, and a second, shorter meeting on the fleet investment is planned for the end of the month.\n\nWould you prefer to hold the second meeting before your trip, on the last Friday before you leave, or after your return? I would like your answer in writing, because I need to book the room and inform the other members. Either date works for me.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-006",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Rekrutacja do Łodzi - liczba i jedno pytanie",
+      "body": "Cześć Wiktorze,\n\nodpisuję na Twoje pytanie o rekrutację do Łodzi. Na magazyn mamy w toku cztery osoby: dwie po pierwszej rozmowie i dwie po rozmowie z kierownikiem. Jeden z kandydatów oczekuje stawki o 6 procent wyższej od naszych widełek, ale ma bardzo dobre referencje.\n\nMam do Ciebie jedno pytanie: czy zgadzasz się, żebym zaoferował mu wyższą stawkę, jeśli reszta rozmów pójdzie dobrze? Potrzebuję Twojej odpowiedzi, bo to wykracza poza moje upoważnienie.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Rekrutacja do Łodzi - ile osób w toku?",
+          "body": "Rafał,\n\nile osób mamy teraz w toku rekrutacji na magazyn w Łodzi? Odpisz mi tylko liczbę, bez opisu.\n\nWiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-007",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint venture company - name and structure of the bid vehicle",
+      "body": "Dear Mr Szalewski,\n\nI would like to ask for your view on a point of structure, because it will shape the way we submit the next tenders. Until now, we have submitted the joint tenders as a consortium of two companies. Our lawyers suggest that for the Gdynia terminal bid we set up a special purpose company, owned by both partners, which would sign the contract with the buyer and employ a small team for the contract.\n\nThe advantages are clear. The buyer prefers a single contracting party, the liability of each partner stays limited to its share, and the profit split is easier to run through one set of books. The disadvantages are the cost of setting the company up, which our lawyers estimate at about 12 thousand euro in total, and the time of about six weeks that registration takes.\n\nOur preference is the special purpose company, but I know this is a decision for the management of Kordelan, since it involves a share in a new entity and a contribution to its capital of about 50 000 euro from each partner.\n\nDo you support the idea of a joint company for this bid, or would you prefer that we stay with the consortium? I would be grateful for your answer in writing, so that I can discuss it with our lawyers.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-008",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cheap web design - 70% off for new customers",
+      "body": "Hello,\n\nDo you need a new website? Our designers make modern, fast and mobile friendly websites for small and big companies. Only 450 EUR for a complete site with five pages, a contact form and basic SEO.\n\nThis week we give 70 percent off and free hosting for one year. Reply with your company name and we send you a free sample design within 24 hours.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-009",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Oferta w przetargu - brak podpisu, proszę o telefon",
+      "body": "Panie Wiktorze,\n\nw Państwa ofercie brakuje podpisu na formularzu cenowym. Komisja przyjmie uzupełnienie dziś do 15:00, inaczej oferta zostanie odrzucona. Proszę o telefon.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-010",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board calendar for spring - dates fixed",
+      "body": "Dear Wiktor,\n\nfor your information, I have fixed the dates of the supervisory board meetings for the spring. The meeting on the budget stays on 12.02.2027 at 10:00. The second meeting, on the fleet investment, takes place on 26.02.2027 at 14:00. The rooms are booked, and the secretary has sent the calendar invitations to all members.\n\nNo answer is needed. If any of the dates collides with your plans, you can tell the secretary at any time.\n\nRegards,\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-011",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Szkolenia z obsługi klienta - zapisy z rabatem",
+      "body": "Szanowni Państwo,\n\nzadbaj o jakość obsługi klienta w swojej firmie! Organizujemy dwudniowe szkolenia z komunikacji z klientem, rozwiązywania konfliktów i sprzedaży konsultacyjnej. Szkolenia odbywają się online i na miejscu w Gdańsku, Poznaniu i Warszawie, w grupach do piętnastu osób.\n\nDla pierwszych 10 firm, które zgłoszą się do końca lutego, oferujemy rabat 40% oraz bezpłatny test kompetencji dla całego zespołu. Odpowiedz na ten list, a prześlemy program i terminy.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-012",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Drukarki 3D dla firm - promocja do niedzieli",
+      "body": "Zobacz naszą ofertę!\n\nDrukarki 3D z gwarancją 3 lat, dostawa gratis. Rabat 25% do niedzieli. Odpowiedz na tę wiadomość po katalog.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-013",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Printer 3 in Lodz is back online",
+      "body": "Printer status\n\nLabel printer 3 in the warehouse in Lodz is back online since 11:30. The service request was closed automatically.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-014",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cennik transportu 2027 - stan wdrożenia w Meblodrew",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję o stanie wdrożenia nowego cennika transportu w naszym systemie. Wszystkie stawki zostały wprowadzone, a pierwsze zamówienia na luty zostały już zafakturowane według nowych cen. Kontrola próbki 20 dokumentów nie wykazała żadnych różnic.\n\nDział finansowy zgłosił jedynie, że opłata za dodatkowe dostawy będzie rozliczana w osobnej pozycji. Nie wymaga to żadnych zmian po Państwa stronie. Przekazuję informację dla Pana wiadomości.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-015",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie tygodnia: zadania i alarmy systemu magazynowego",
+      "body": "Podsumowanie tygodnia\n\nPoniżej znajdziesz automatyczne podsumowanie zadań i alarmów systemu magazynowego za okres od 24.01.2027 do 30.01.2027. Zestawienie obejmuje magazyny w Gdyni, Poznaniu i Łodzi.\n\nZadania zaplanowane\nZadania wykonane: 98 z 98\nZadania z ostrzeżeniem: 3\nZadania z błędem: 0\nŚredni czas zadania: 7 minut\n\nAlarmy\nAlarmy o niskim zapasie: 14\nAlarmy o przekroczeniu temperatury w strefie chłodniczej: 1, magazyn w Poznaniu, 25.01.2027, 4 minuty, bez wpływu na towar\nAlarmy o awarii skanera: 6\nAlarmy o błędzie synchronizacji: 0\n\nZgłoszenia serwisowe\nOtwarte na początku tygodnia: 4\nZamknięte w tym tygodniu: 7\nOtwarte na koniec tygodnia: 3\nŚredni czas rozwiązania: 3 godziny 10 minut\n\nZmiany w konfiguracji\nW tym tygodniu wprowadzono jedną zmianę konfiguracji: zwiększono limit czasu synchronizacji zamówień w magazynie w Łodzi. Zmiana została zatwierdzona przez administratora systemu i działa od 27.01.2027.\n\nNastępne okno serwisowe zaplanowano na 12.02.2027. Wiadomość została wygenerowana automatycznie przez system ERP Kordelan. Prosimy na nią nie odpowiadać, a szczegółowe dane znajdziesz w panelu administracyjnym, w zakładce raportów tygodniowych, razem z historią alarmów z poprzednich dwunastu tygodni oraz wykresami obciążenia systemu w poszczególnych magazynach. Jeżeli liczba alarmów w którymkolwiek tygodniu przekroczy ustalony próg, dział utrzymania systemu otwiera osobne zgłoszenie i opisuje przyczynę w kolejnym raporcie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-016",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Medyczne - promocja dla pierwszych zgłoszeń",
+      "body": "Szanowni Państwo,\n\nzapraszamy do udziału w Targach Medycznych, które odbędą się w maju w Łodzi. Spotkają się tam producenci sprzętu, firmy farmaceutyczne i dostawcy usług dla szpitali i przychodni. Dla firm, które zgłoszą się do połowy lutego, przygotowaliśmy rabat 30% na stoisko oraz bezpłatny wpis w katalogu.\n\nOdpowiedz na tę wiadomość, a nasz doradca skontaktuje się z Państwem jeszcze dziś.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-017",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Przetarg - cena na drugi kwartał",
+      "body": "Panie Wiktorze,\n\nczy cena za paletę z Państwa oferty obowiązuje także dla dostaw w drugim kwartale? Proszę o odpowiedź na piśmie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Przetarg - prosimy o potwierdzenie ceny do godziny 17:00 dzisiaj",
+          "body": "Szanowny Panie Prezesie,\n\nzamawiający prowadzi dziś ostatnią turę negocjacji cenowych w przetargu na obsługę logistyczną naszej sieci. Prosimy o ostateczne potwierdzenie ceny z oferty w stawce za paletę oraz opłaty za dodatkowe dostawy. Decyzję musimy otrzymać dzisiaj do godziny 17:00, ponieważ po tej godzinie komisja zamyka tabelę porównawczą i przechodzi do wyboru wykonawcy.\n\nJeżeli cena zostanie potwierdzona bez zmian, Państwa oferta pozostanie w rozmowach. Jeśli Państwo chcieliby ją zmienić, prosimy o przekazanie nowej wersji w tym samym terminie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-018",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Fleet financing - signed page needed by 17:00",
+      "body": "Hi Wiktor,\n\nsmall thing: the legal office needs your signed page of the term sheet by 17:00 today. The bank's offer lapses over the weekend, so there is no later date.",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Fleet financing - term sheet signature before 11:00",
+          "body": "Dear Wiktor,\n\nthe bank that offered the fleet financing told me this morning that it withdraws the offer at 11:00 today. The signed term sheet must reach them by then. After 11:00 the rate is gone and the council loses the budget line it has planned for the fleet.\n\nOnly you can sign for the company, so I cannot do it for you. The term sheet is with the legal office and ready for your signature. Please sign it and send it back to the bank before 11:00.\n\nI will be at my desk if anything blocks you.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-019",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Konkurs dla klientów - wygraj telewizor",
+      "body": "Wygraj nagrodę!\n\nJako klient naszego systemu rozliczeń bierzesz udział w losowaniu telewizora o przekątnej 65 cali oraz kart podarunkowych o wartości 500 PLN. Aby zgłosić udział, odpowiedz na tę wiadomość z nazwą firmy i imieniem osoby kontaktowej.\n\nLosowanie odbędzie się w piątek, a laureatów powiadomimy telefonicznie. Udział jest bezpłatny i nie wiąże się z żadnymi zobowiązaniami, a regulamin losowania dostępny jest u naszego konsultanta.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-020",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana wzoru wyciągu bankowego od lutego",
+      "body": "Nowy wzór wyciągu\n\nOd 01.02.2027 bank Aurum zmienia wzór wyciągu z rachunku firmowego. Wyciąg będzie zawierał osobną sekcję z podsumowaniem opłat oraz kolumnę z numerem referencyjnym operacji.\n\nZmiana dotyczy tylko wyglądu dokumentu. Saldo, lista operacji i dane rachunku pozostają bez zmian. Wyciągi z poprzednich miesięcy są dostępne w bankowości internetowej w dotychczasowym formacie.\n\nNie musisz nic robić. Przykładowy wyciąg w nowym wzorze możesz obejrzeć w bankowości internetowej, w zakładce dokumentów. Wiadomość została wygenerowana automatycznie.\n\nPowiadomienia Bankowe",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-021",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana godziny wysyłki alertów",
+      "body": "Alerty dzienne\n\nAlerty dzienne wysyłamy od lutego o 06:30, a nie o 07:00. Zmiana dotyczy wszystkich kont.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-022",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Gwarancja kosztów odpraw w Kłajpedzie - termin rozmowy",
+      "body": "Szanowny Panie Prezesie,\n\nw sprawie wpisania gwaranta kosztów odpraw celnych do oferty chciałbym, aby Państwa zespół zorganizował rozmowę wideo naszych prawników z Państwa działem prawnym. Proszę o polecenie Dorocie Wilczynskiej, aby znalazła wspólny termin w przyszłym tygodniu na półgodzinną rozmowę i rozesłała zaproszenia.\n\nPo naszej stronie weźmie udział dwóch prawników, a po Państwa stronie wystarczy jedna osoba z działu prawnego. Temat rozmowy to brzmienie klauzuli o gwarancji i zakres odpowiedzialności za opłaty w razie sporu o klasyfikację towarów. Wolimy terminy przedpołudniowe, od wtorku do czwartku.\n\nZ poważaniem, Daniel Hargreaves",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Gwarancja kosztów odpraw celnych w Kłajpedzie",
+          "body": "Szanowny Panie Prezesie,\n\nprzygotowując konsorcjalną ofertę, zamawiający prosi nas o wskazanie podmiotu, który gwarantuje pokrycie opłat celnych w przypadku sporu o klasyfikację towarów. Naturalnym kandydatem jest Kordelan, ponieważ to Państwa towary będą przechodzić przez odprawę.\n\nCzy zgadza się Pan, abyśmy w ofercie wpisali Kordelan jako gwaranta kosztów odpraw celnych na trasach przez Kłajpedę? Proszę o odpowiedź na piśmie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-023",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your digest was delivered",
+      "body": "Delivery report\n\nYour weekly digest for 29.01.2027 was delivered to your inbox.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-024",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: December fuel invoice - volume discount confirmed",
+      "body": "Dear Mr Szalewski,\n\nthank you for your question about the December invoice. I checked it together with our billing team, and I am sending you a short status for your information. No action is needed from you.\n\nThe volume discount agreed for the second half of last year is included in the total of the invoice. The discount is shown as a separate line in the summary, and it was subtracted before the amount to pay was calculated. Its value for December is 3 140 PLN, which is 2.1 percent of the net amount of the fuel purchases in that month.\n\nI also checked the invoices for October and November. In both of them, the discount was subtracted in the same way, so there is no difference to settle for the earlier months. The amounts match the totals in your fuel card portal, and the statement you can download from the portal shows the same numbers.\n\nThe volume discount for January will be shown on the invoice that we issue in the first days of February. If the invoice for any month looks different from what you expect, your accounting team can write to the billing desk directly, and they will receive an explanation within one working day.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "December fuel invoice - one short answer please",
+          "body": "Dear Ms Marszalek,\n\nI am going through the December invoice for the fuel cards, and I have one question that I cannot answer from the document itself.\n\nDoes the total already include the volume discount that we agreed for the second half of last year? On my side I see the discount only as a line in the summary, but I cannot tell whether it was subtracted from the amount to pay. A short answer, yes or no, is enough for me, and I will ask my accounting team to continue from there.\n\nRegards,\nWiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-025",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Limit kredytowy - stanowisko komitetu audytu",
+      "body": "Szanowny Panie Wiktorze,\n\ndla Pana wiadomości: komitet audytu zapoznał się z warunkami banku w sprawie podniesienia limitu kredytu obrotowego i nie zgłosił zastrzeżeń do wskaźników zadłużenia po zmianie. Komitet zwrócił uwagę tylko na prowizję banku, która wynosi 0,4 procent od kwoty podwyżki.\n\nRada rozpatrzy sprawę w pełnym składzie na najbliższym posiedzeniu, a materiały trafią do członków razem z pozostałymi dokumentami. Nie oczekuję odpowiedzi na tę wiadomość.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Limit kredytowy - stanowisko zarządu",
+          "body": "Cześć Wiktorze,\n\nbank zaproponował podniesienie limitu kredytu obrotowego z 10 do 14 milionów złotych na czas zakupu naczep. Rada musi zająć stanowisko na posiedzeniu 3.02, a Twoja opinia będzie dla niej kluczowa, bo wyższy limit zwiększa zadłużenie spółki i zmienia wskaźniki, które monitoruje komitet audytu.\n\nCzy zarząd poprze wniosek o podniesienie limitu do 14 milionów? Proszę o odpowiedź na piśmie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-026",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Konsorcjum - jedna kwestia do Pana decyzji",
+      "body": "Szanowny Panie Prezesie,\n\nczy zgadza się Pan, aby Kordelan był wpisany w ofercie jako lider konsorcjum? Proszę o odpowiedź na piśmie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-027",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Odzieży Roboczej - miejsca w promocji",
+      "body": "Zaproszenie na targi!\n\nSzanowni Państwo, w marcu w Lublinie odbędą się Targi Odzieży Roboczej i Środków Ochrony Indywidualnej. Wystawcy z całej Polski pokażą kombinezony, obuwie, rękawice i kaski. W ubiegłym roku targi odwiedziło ponad 7 tysięcy osób z firm produkcyjnych i budowlanych.\n\nDla firm, które zgłoszą się w tym tygodniu, mamy rabat 25% na stoisko i bezpłatny wpis w katalogu. Wystarczy odpowiedzieć na tę wiadomość z nazwą firmy, a nasz doradca przygotuje ofertę jeszcze dziś.",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
