@@ -1,0 +1,38 @@
+// F101 planning probe (2026-11-14). Copy into apps/web of a built checkout as hydrate-check.probe.ts, then:
+// bun hydrate-check.probe.ts dist /login/ /setup/ /settings/ /legal/pl/terms/   (needs @playwright/test and /usr/bin/chromium)
+// It serves dist with the header CSP frame-ancestors 'none', /api answers 401, and prints per page: islands, unhydrated, problems.
+// Serves a built Astro dist and checks in headless Chromium: CSP violations, page errors, hydrated islands.
+import { chromium } from "@playwright/test";
+import { join } from "node:path";
+
+const dist = process.argv[2]!;
+const pages = process.argv.slice(3);
+const server = Bun.serve({
+  port: 0,
+  async fetch(req) {
+    const url = new URL(req.url);
+    if (url.pathname.startsWith("/api/")) return Response.json({ error: "probe" }, { status: 401 });
+    let path = join(dist, url.pathname);
+    if (url.pathname.endsWith("/")) path = join(path, "index.html");
+    let file = Bun.file(path);
+    if (!(await file.exists())) file = Bun.file(join(path, "index.html"));
+    if (!(await file.exists())) return new Response(Bun.file(join(dist, "404.html")), { status: 404, headers: { "content-type": "text/html" } });
+    return new Response(file, { headers: { "content-security-policy": "frame-ancestors 'none'" } });
+  },
+});
+const browser = await chromium.launch({ executablePath: "/usr/bin/chromium" });
+for (const p of pages) {
+  const page = await browser.newPage();
+  const problems: string[] = [];
+  page.on("console", (m) => { if (m.text().includes("Content Security Policy") || m.text().startsWith("csp-violation")) problems.push(m.text()); });
+  page.on("pageerror", (e) => problems.push(`pageerror ${e.message}`));
+  await page.addInitScript(() => document.addEventListener("securitypolicyviolation", (e) => console.warn(`csp-violation ${e.violatedDirective} ${e.blockedURI}`)));
+  await page.goto(`http://127.0.0.1:${server.port}${p}`);
+  await page.waitForTimeout(1500);
+  const islands = await page.locator("astro-island").count();
+  const unhydrated = await page.locator("astro-island[ssr]").count();
+  console.log(JSON.stringify({ page: p, islands, unhydrated, problems }));
+  await page.close();
+}
+await browser.close();
+server.stop();
