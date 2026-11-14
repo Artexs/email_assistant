@@ -96,7 +96,7 @@ const BARE_DOMAIN_PATTERN =
 const PHONE_PATTERN = /\d[\d\s-]{7,}\d/g;
 const RESERVED_HOSTS = ["example.com", "example.org", "example.net"];
 
-function isReservedHost(rawHost: string): boolean {
+export function isReservedHost(rawHost: string): boolean {
   const host = rawHost.toLowerCase().replace(/[.,;:!?)\]]+$/, "");
   return (
     host === "test" ||
@@ -105,11 +105,11 @@ function isReservedHost(rawHost: string): boolean {
   );
 }
 
-function hasUnreservedAddress(text: string): boolean {
+export function hasUnreservedAddress(text: string): boolean {
   return [...text.matchAll(ADDRESS_PATTERN)].some((match) => !isReservedHost(match[1] ?? ""));
 }
 
-function hasUnreservedUrl(text: string): boolean {
+export function hasUnreservedUrl(text: string): boolean {
   const hosts: string[] = [];
   for (const pattern of [HTTP_HOST_PATTERN, WWW_HOST_PATTERN]) {
     for (const match of text.matchAll(pattern)) hosts.push(match[1] ?? "");
@@ -121,7 +121,7 @@ function hasUnreservedUrl(text: string): boolean {
   return hosts.some((host) => !isReservedHost(host));
 }
 
-function hasPhoneNumber(text: string): boolean {
+export function hasPhoneNumber(text: string): boolean {
   return [...text.matchAll(PHONE_PATTERN)].some((match) => match[0].replace(/\D/g, "").length >= 9);
 }
 
