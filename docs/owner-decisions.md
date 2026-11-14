@@ -17,6 +17,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Telegram link needs a consent tick; Polish consent text is an agent draft (F098) · privacy · new
+- Choice: the panel asks for a tick before it makes a Telegram link; the server refuses a link request without the current consent version and writes one `web.telegram_consent` audit row. The consent text says Telegram is a service outside the EU and data can be processed outside the EEA.
+- Why: the Telegram bot gets draft text and quoted mail parts, so the user must agree first (privacy principle).
+- Undo: change the texts in `apps/web/src/i18n/en.ts` and `pl.ts`; raise `TELEGRAM_CONSENT_VERSION` to ask again.
+- Source: `spec/features/active/F098-e7-t1-polish-ui-i18n-frame-first/stages/stage-05-telegram-consent.md`; Opus review notes a to g. A lawyer's check of the text is a Stage 3 question.
+
 ## Entries
 
 ### 2026-11-14 · Two-factor sign-in (F105): no feature flag, a new QR dependency, operators need TOTP · security · new
