@@ -139,6 +139,8 @@ test.each<[string, unknown, boolean]>([
   ["a UUID id", { mailbox_id: M }, true],
   ["a short id", { mailbox_id: "m1" }, false],
   ["an upper-case UUID", { mailbox_id: M.toUpperCase() }, false],
+  ["an id with text before a UUID", { mailbox_id: `x@y.test ${M}` }, false],
+  ["an id with text after a UUID", { mailbox_id: `${M} x` }, false],
   ["a number id", { mailbox_id: 7 }, false],
   ["a boolean id", { mailbox_id: true }, false],
   ["a null id", { mailbox_id: null }, true],
