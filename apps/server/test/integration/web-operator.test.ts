@@ -125,7 +125,15 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "mistake_capture", enabled: false },
       { orgId: org.orgId, flag: "llm_pause_line", enabled: false },
     ]);
-    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual([false, false, false, false, false, false, false]);
+    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
     for (const row of [...rowsOf(body, org.orgId), ...rowsOf(body, org.otherOrgId)]) {
       expect(Object.keys(row).sort()).toEqual(["enabled", "flag", "orgId"]);
     }
