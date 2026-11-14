@@ -66,8 +66,7 @@ Three steps. About 260 changed lines.
   - Goal: the panel can show the operator nav item and gate a web feature on a flag, with no extra request.
   - Files:
     - change `packages/core/src/web/me.ts` (`operator`, `features`) and `packages/core/src/web/me.test.ts`;
-    - change `apps/server/src/modules/tenancy/routes.ts` (`TenancyRouteDeps.isOperator`; the two fields in `GET /me`);
-    - change `apps/server/src/web.ts` (`apiRouters` passes `isOperator`);
+    - change `apps/server/src/modules/tenancy/routes.ts` (the two fields in `GET /me`);
     - change `apps/server/test/integration/web-me.test.ts`;
     - change every test or web fixture that builds a whole `Me` object (`grep -rn "operatorContact:" apps packages --include=*.ts*`), so typecheck passes.
   - Interfaces:
@@ -77,21 +76,16 @@ Three steps. About 260 changed lines.
     operator: z.boolean(),
     features: z.array(z.string()), // the registry keys that are on for the organization (plan D23)
 
-    // tenancy/routes.ts
-    export interface TenancyRouteDeps {
-      …;
-      isOperator: (userId: string) => boolean; // web.ts: the OPERATOR_USER_IDS set (tenancy reads no config)
-    }
-    // GET /me: operator: deps.isOperator(userId),
+    // tenancy/routes.ts — no new dep: the same set that requireOperator reads (plan.md D23, review N12)
+    // GET /me: operator: c.get("web").operatorUserIds?.has(userId) === true,
     //          features: (await featureStates(deps.db, ctx)).filter((state) => state.enabled).map((state) => state.flag)
 
-    // web.ts apiRouters: const operators = operatorUserIds(config); tenancyRoutes({ …, isOperator: (userId) => operators.has(userId) })
     ```
 
   - Decisions: D23.
   - Test:
     7. `me.test.ts`: a `Me` without `operator` or without `features` is refused; `features: ["future_flag"]` is accepted.
-    8. `web-me.test.ts`: the owner (not an operator) gets `operator: false`, `features: []`; with `upsertOrgFeature(db, ctx, { flag: "stats_page", enabled: true, … })` → `features: ["stats_page"]`; with `configureFeatures({ off: ["stats_page"] })` → `features: []` (reset in `afterEach`); with the owner in `OPERATOR_USER_IDS` of the test config → `operator: true`. The body has no field with the list of operator ids.
+    8. `web-me.test.ts`: the owner (not an operator) gets `operator: false`, `features: []`; with `upsertOrgFeature(db, ctx, { flag: "stats_page", enabled: true, … })` → `features: ["stats_page"]`; with `configureFeatures({ off: ["stats_page"] })` → `features: []` (reset in `afterEach`); with the owner in `operatorUserIds` of `webTestApp` → `operator: true`; without `operatorUserIds` → `operator: false`. The body has no field with the list of operator ids.
   - Check: `bun test packages/core/src/web apps/server/test/integration/web-me.test.ts`; `bun run typecheck` (the web uses `Me` through `@ea/core/web`); `bun run web:build`.
   - Done when: tests 7–8 pass; `bun run web:build` passes.
   - Out of scope: the nav item (stage 10), the security-log section (stage 13).

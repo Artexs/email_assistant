@@ -5,7 +5,7 @@ Part of [`../plan.md`](../plan.md). Read its D2, D8, D10, D11 (a), "Facts checke
 Three steps. About 220 changed lines.
 
 - [ ] **4.1 The panel and digest phrase "approved, waiting: send limit"**
-  - Goal: wherever the system describes a send (panel activity, digest, notices), a held send reads as waiting on the send limit.
+  - Goal: the panel activity and the digest describe a held send as waiting on the send limit. The urgent notice keeps its strict view and its text (a view change would break queued rows; plan.md D11 a).
   - Files:
     - change `packages/core/src/digest/would-do.ts` (`ActionView.waiting`, `WouldDoAction`, the send phrase);
     - change `packages/core/src/digest/would-do.test.ts`;
@@ -24,13 +24,15 @@ Three steps. About 220 changed lines.
     // every other send phrase is unchanged (SEND_PHRASES).
 
     // listActionsForEmails: waiting = row.status === "approved" && sendLimitOfError(row.last_error) !== null && row.next_attempt_at !== null
-    //   ? "send_limit" : undefined  (do not set the key at all when undefined: other tests compare whole objects)
+    //   && row.next_attempt_at > now ? "send_limit" : undefined  (do not set the key at all when undefined: other tests compare whole objects)
+    // listActionsForEmails gets a fourth argument `now: Date`; every caller passes its own now (reports/activity.ts `listActivity`,
+    // the digest and notice callers: `grep -rn "listActionsForEmails(" apps/server/src`)
     ```
 
-  - Decisions: D11 (a). An auth-error release sets `next_attempt_at` to null, so a send that waits for a new password never reads as "waiting: send limit".
+  - Decisions: D11 (a). After the window ends, a send that still waits (a paused mailbox, an auth error, `SEND_SCOPE=off`) reads "approved, sending" as today, not "waiting: send limit".
   - Test:
     1. `would-do.test.ts`: `describeAction({ type: "send", status: "approved", waiting: "send_limit", … })` is `"approved, waiting: send limit"`; without `waiting` it stays `"approved, sending"`; `describeActions` of `[flag (ready), that send]` is `"will flag; approved, waiting: send limit"`.
-    2. Integration (activity or reports test): an approved send with `last_error = "send_limit:mailbox_hour"` and `next_attempt_at = NOW + 10 min` → its activity action phrase is `"approved, waiting: send limit"`; the same row with `next_attempt_at = null` → `"approved, sending"`; a row with `last_error = "smtp_421"` → `"approved, sending"`.
+    2. Integration (activity or reports test): an approved send with `last_error = "send_limit:mailbox_hour"` and `next_attempt_at = NOW + 10 min` → its activity action phrase is `"approved, waiting: send limit"`; the same row with `next_attempt_at = NOW − 1 min` → `"approved, sending"`; with `next_attempt_at = null` → `"approved, sending"`; a row with `last_error = "smtp_421"` and `next_attempt_at = NOW + 5 min` → `"approved, sending"`.
   - Check: `bun test packages/core/src/digest apps/server/test/integration/activity-repo.test.ts apps/server/test/integration/reports-activity.test.ts apps/server/test/integration/reports-digest.test.ts`; `bun run typecheck`.
   - Done when: tests 1–2 pass; no other phrase test changed.
   - Out of scope: a web change (the panel prints the server's phrase); the `/status` Telegram command.
@@ -64,7 +66,8 @@ Three steps. About 220 changed lines.
     sendLimitReached(ctx: TenantContext, hit: { mailboxId: string; limit: SendLimitKind; until: Date; at: Date }): void;
     //   key  = `send_limit:${hit.mailboxId}:${hit.at.toISOString().slice(0, 10)}`
     //   text = `Mailbox ${hit.mailboxId} of org ${ctx.orgId} hit the send limit ${hit.limit} at ${hit.at.toISOString()}; its sends wait until ${hit.until.toISOString()}.`
-    //   same start/notify path and dedup as authMailFailed
+    //   same start/notify path and dedup as authMailFailed; a failed send goes into the retry map like llm_cap
+    //   (`if (kind === "llm_cap" || kind === "send_limit") retryCaps.set(…)`; rename the map to `retries` if you touch it)
 
     // composition.ts
     export function committerDeps(input: {
@@ -85,7 +88,7 @@ Three steps. About 220 changed lines.
   - Test (`channels-operator.test.ts`, the file's `withRollback` and `send` fake; `AT = 2026-11-20T10:00:00Z`):
     4. `sendLimitReached(ctx, { mailboxId, limit: "mailbox_hour", until: 10:10Z, at: AT })` → `idle()` → the fake got one text, exactly `Mailbox <mailboxId> of org <orgId> hit the send limit mailbox_hour at 2026-11-20T10:00:00.000Z; its sends wait until 2026-11-20T10:10:00.000Z.`; one `operator.notice` audit row with `data = { kind: "send_limit", key: "send_limit:<mailboxId>:2026-11-20" }`.
     5. A second call at `AT + 3 h` (same UTC day) → no second text. A call at `2026-11-21T00:30:00Z` → a second text.
-    6. A fake `send` that throws → no throw out of `sendLimitReached`; no audit row; one error line with the label only.
+    6. A fake `send` that throws → no throw out of `sendLimitReached`; no audit row; one error line with the label only. Then `run()` with a working `send` → the text goes out once and the audit row exists (the retry).
     7. The text holds no `@`.
   - Check: `bun test apps/server/test/integration/channels-operator.test.ts apps/server/test/integration/main-start-log.test.ts apps/server/src/main.test.ts`; `bun run typecheck`; `bun run lint`.
   - Done when: tests 4–7 pass; `main.ts` and `job-run.ts` pass `sendLimits(config)`.

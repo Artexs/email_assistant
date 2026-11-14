@@ -45,6 +45,7 @@ Each with its expected result:
 
 When step 12 fails, or check 1, 2, 4 or 8 fails:
 
+0. Cancel pending `send_held` rows (the old code has no renderer for the kind): `$C exec db psql … -c "UPDATE outbox SET status = 'failed', error_code = 'outdated' WHERE kind = 'send_held' AND status = 'pending'"`. Held sends stay `approved` and the old code sends them at `next_attempt_at` without a limit check.
 1. `git checkout <commit of runbook 1>`
 2. `docker tag ea-server:pre-f099 ea-server`
 3. `cp .env.bak-f099 .env`

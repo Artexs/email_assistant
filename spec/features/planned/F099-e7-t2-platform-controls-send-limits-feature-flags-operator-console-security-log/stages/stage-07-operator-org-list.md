@@ -23,6 +23,7 @@ Two steps. About 300 changed lines.
     // channels — outbox rows of the organization that failed and were created after `since` (plan D17)
     export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number>;
     //   status = 'failed' AND created_at > since AND org_id = ctx.orgId
+    //   AND (error_code IS NULL OR error_code NOT IN ('outdated', 'expired'))  -- cancellations are not failures
 
     // audit — `llm.call` rows of the organization at or after `since`, per model (the `countLlmCallsSince` shape)
     export async function sumLlmCallsByModelSince(
@@ -36,7 +37,7 @@ Two steps. About 300 changed lines.
   - Decisions: D14, D17, D18.
   - Test (`operator-reads.test.ts`, `withRollback`; `NOW = 2026-11-20T10:00:00Z`; two organizations from `createOrgWithMailbox`):
     1. `countFailedSendsSince(ctx A, NOW − 24 h)`: A has failed sends with `updated_at` −2 h and −30 h, an applied send −1 h → 1. Context B → 0 (tenant filter).
-    2. `countFailedOutboxSince`: A has outbox rows `failed` at −1 h, `failed` at −25 h, `sent` at −1 h → 1. Context B → 0.
+    2. `countFailedOutboxSince`: A has outbox rows `failed` (`error_code` `telegram_error` or any code the sender writes) at −1 h, `failed` at −25 h, `failed` / `outdated` at −1 h, `failed` / `expired` at −1 h, `sent` at −1 h → 1. Context B → 0.
     3. `sumLlmCallsByModelSince(ctx A, 2026-11-20T08:00:00Z)`: `recordLlmCall` rows for A — `gpt-6-luna` × 3 (tokens 100 000 in, 20 000 out each) at 08:00Z, 09:00Z, 09:30Z; `unknown-model` × 2 (tokens null) at 09:00Z; `gpt-6-luna` × 1 at 07:59Z → `[{ model: "gpt-6-luna", calls: 3, tokensIn: 300000, tokensOut: 60000 }, { model: "unknown-model", calls: 2, tokensIn: 0, tokensOut: 0 }]`. Context B → `[]`.
   - Check: `bun test apps/server/test/integration/operator-reads.test.ts`; `bun run typecheck`.
   - Done when: tests 1–3 pass; each function has its tenant-filter case.

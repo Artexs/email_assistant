@@ -81,7 +81,7 @@ One step. About 300 changed lines (most of them tests).
     // (3) the SMTP call, as today
     ```
 
-    `transitions.ts` row `E12` reasons: add `"send limit"`.
+    `transitions.ts` row `E12`: add the reason `"send limit"` and the caller `"send-limit.ts"` (it calls `releaseAction`).
   - Decisions: D4, D6 (the lock, the transaction, the outcome), D7 (`recoverSend` is not touched), D8 (no attempt counted; `approved_at` unchanged), D10 (the callback after the commit, never awaited, never throws out), D12 (`now` from `deps.now()`).
   - Rules for this step:
     - The check and `markApplying` are in one transaction under the lock; nothing else moves between them. Do not call `checkSendLimits` outside that transaction.
