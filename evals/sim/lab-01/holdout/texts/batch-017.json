@@ -1,0 +1,184 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-017",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-inf-0236",
+      "subject": "Customs update: Gdynia lane cleared for February",
+      "body": "Dear Mr Szalewski,\n\nI would like to pass on a short status from our logistics desk, for your awareness only. The customs agent in Gdynia confirmed this morning that all three pallet lots of our January order have been cleared and released. The corrected HS code on the commercial invoice was accepted without further questions, and the agent now lists the whole lane as low risk for the next two months.\n\nFor February we expect the same routine: the first lot of 18 pallets should leave your Gdansk warehouse on 03.02.2027, the second a week later. The agent estimates clearance at one working day per lot, so our delivery windows in Malmo stay unchanged. Our certificate of origin and the cold-chain log are already on file, and no new documents are needed from your side.\n\nI will send another note only if something changes at the border. No action is required from you.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0238",
+      "subject": "Re: Pęknięte palety z ostatniej dostawy",
+      "body": "Dzień dobry, Panie Wiktorze,\n\ndziękuję za wczorajszą odpowiedź. Kontrola potwierdziła, że uszkodzenia dotyczyły tylko dwóch palet, a towar został już odpisany ze stanu.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "subject": "Re: Pęknięte palety z ostatniej dostawy",
+          "body": "Pani Genowefo, dziękuję za zdjęcia. Proszę o spokojne policzenie strat, a dział reklamacji zajmie się resztą. Wiktor Szalewski"
+        },
+        {
+          "subject": "Pęknięte palety z ostatniej dostawy",
+          "body": "Dzień dobry, przy rozładunku w magazynie w Łodzi znaleźliśmy kilka pękniętych palet z makaronem. Wysyłam zdjęcia i numer dostawy. Genowefa Jastrzebska"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0240",
+      "subject": "Supply Chain Weekly: ocean rates ease, air capacity tightens",
+      "body": "SUPPLY CHAIN WEEKLY | Issue 3, January 2027\n\nOcean freight: spot rates on the Baltic to North Sea lanes fell for the third week in a row, now about 6 percent below the December average. Carriers blame weak post-holiday demand.\n\nRoad freight: capacity in Central Europe stays tight. Driver shortages keep contract rates stable, while spot rates show small gains on the Germany to Poland corridor.\n\nWarehousing: vacancy in logistics parks near large Polish cities remains below 4 percent. Developers report new leases for 2027.\n\nCustoms: two ports announced extended gate hours for February.\n\nOur paid report on winter capacity is available to subscribers.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;\">\n<h2 style=\"color:#1a4d7a;\">Supply Chain Weekly | Issue 3, January 2027</h2>\n<p><b>Ocean freight:</b> spot rates on the Baltic to North Sea lanes fell for the third week in a row, now about 6 percent below the December average. Carriers blame weak post-holiday demand.</p>\n<p><b>Road freight:</b> capacity in Central Europe stays tight. Driver shortages keep contract rates stable, while spot rates show small gains on the Germany to Poland corridor.</p>\n<p><b>Warehousing:</b> vacancy in logistics parks near large Polish cities remains below 4 percent. Developers report new leases for 2027.</p>\n<p><b>Customs:</b> two ports announced extended gate hours for February.</p>\n<p style=\"color:#666;\">Our paid report on winter capacity is available to subscribers.</p>\n</body></html>"
+    },
+    {
+      "id": "b-inf-0241",
+      "subject": "Skrót z posiedzenia w Gdyni",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że wczorajsze spotkanie z agentem celnym w Gdyni zakończyło się uzgodnieniem nowego harmonogramu odpraw. Szczegóły zostaną opisane w protokole.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0242",
+      "subject": "Okna rozładunku w Poznaniu bez zmian",
+      "body": "Cześć Wiktor,\n\ndla porządku: okna rozładunku na rampach 4 i 5 w Poznaniu zostają bez zmian do końca stycznia. Brak opóźnień u przewoźników.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0243",
+      "subject": "Board calendar: February travel and meeting dates",
+      "body": "Hi Wiktor,\n\na quick note on the board calendar so that you have the dates in one place. Nothing needs your decision at the moment.\n\nThe supervisory board will meet in person on 28.01.2027 at the head office, as planned. The session starts at 10:00 and should end before 15:00. The agenda covers the annual budget, the status of the fleet purchase and the first reading of the export strategy. The secretary will circulate the papers five days ahead, which is the usual rule.\n\nFor February, two dates are already fixed. On 11.02.2027 the audit committee meets by video, from 09:00 until about 11:00. On 23.02.2027 I plan a visit to the Gdansk warehouse together with two other board members, and I would be glad if the management team showed us the new loading ramps. Your assistant already has these dates, so I do not expect any reply.\n\nMy own travel is limited. I will be abroad between 14.02.2027 and 19.02.2027 and will check mail only in the evening. During that week the deputy chair covers board matters. If something important comes up for the board before then, please let the secretary know and she will pass it on.\n\nThat is all from me for now. I will write again when the final agenda is ready.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0244",
+      "subject": "Informacja o oknach dostaw na luty",
+      "body": "Szanowny Panie Wiktorze,\n\nchciałbym przekazać krótką informację o harmonogramie dostaw do naszych zakładów w lutym. Przesyłam ją wyłącznie dla Państwa wiadomości, żadna odpowiedź nie jest potrzebna.\n\nW naszym zakładzie w Zielonej Górze przebudowujemy dwa stanowiska rozładunkowe. Prace potrwają od 02.02.2027 do 12.02.2027. W tym czasie przyjmujemy dostawy tylko na jednej rampie, w godzinach od 6:00 do 14:00. Dotyczy to zarówno dostaw płyt wiórowych, jak i okuć, które Państwa kierowcy zwykle przywożą we wtorki i czwartki. Uzgodniliśmy już z działem planowania, że w tych dniach przyjmiemy po dwa samochody zamiast czterech, więc nie powinno być kolejek.\n\nPo zakończeniu przebudowy wrócimy do dotychczasowych okien rozładunkowych, a dodatkowo uruchomimy nową rampę dla palet o wysokości do 2,4 metra. Zwiększy to nasze możliwości przyjęć o około jedną trzecią i skróci czas oczekiwania kierowców na placu.\n\nW tym czasie nasz dział planowania pozostaje do dyspozycji pod zwykłym adresem w sprawach bieżących, choć wszystkie ustalone terminy zostają bez zmian. Jeśli w lutym coś się zmieni, na przykład opóźnią się prace budowlane, napiszę osobno. Dziękuję za dotychczasową dobrą współpracę przy dostawach i za stałą punktualność Państwa kierowców, co przy naszych ograniczonych oknach ma duże znaczenie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0245",
+      "subject": "Przetarg sieci: nasz harmonogram wewnętrzny",
+      "body": "Dzień dobry,\n\ninformuję, że nasza komisja zakończyła wstępną ocenę ofert i spotka się ponownie 12.01.2027. Wynik poznają Państwo po tym terminie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0247",
+      "subject": "Export lane status: week 3",
+      "body": "Dear Wiktor,\n\na short status on the export lane, just for your information. All 24 pallets of the January order cleared customs in Gdynia on time. The carrier confirmed arrival in Malmo for the planned window, and the cold-chain log shows no deviation. Our warehouse team will receive the proof of delivery within two days.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Calibri,Arial,sans-serif;font-size:14px;\">\n<p>Dear Wiktor,</p>\n<p>a short status on the export lane, just for your information. All 24 pallets of the January order cleared customs in Gdynia on time. The carrier confirmed arrival in Malmo for the planned window, and the cold-chain log shows no deviation. Our warehouse team will receive the proof of delivery within two days.</p>\n<p>Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p>\n</body></html>"
+    },
+    {
+      "id": "b-inf-0248",
+      "subject": "Joint tender pipeline: where we stand",
+      "body": "Dear Wiktor,\n\nI wanted to share where the joint tender pipeline stands, mainly so that you have the picture before the board meeting. There is nothing for you to decide.\n\nWe have three live opportunities this quarter. The first is the Zielona Hurtownia network tender, where our combined offer is ready and waits only for the final price sheet. The second is a regional distribution contract in the Baltic states, still being scoped. The third is a smaller cross-border contract for furniture components, where the customer postponed the decision to March.\n\nCapacity looks healthy. Our brokerage reserved 40 trailer slots per week for the shared lanes through March, and the rates are close to the current spot level. I see no reason to change the joint plan.\n\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0249",
+      "subject": "Re: Budżet na 2027, wersja robocza",
+      "body": "Dzień dobry,\n\notrzymałem wersję roboczą budżetu od Pani Magdaleny i przekazałem ją pozostałym członkom rady do wglądu. Wstępnie przejrzałem układ pozycji kosztowych i nie mam uwag do podziału na działy. Nie oczekuję odpowiedzi, wrócimy do tematu na posiedzeniu 28.01.2027, gdzie zbiorczo przedstawimy uwagi rady. Dokument zostaje w obiegu wewnętrznym rady do tego czasu. Pani Magdalena przekazała też, że zestawienie kosztów floty będzie uzupełnione po zakończeniu przetargu na naczepy, więc ostateczne liczby poznamy dopiero na posiedzeniu.",
+      "thread": [
+        {
+          "subject": "Budżet na 2027, wersja robocza",
+          "body": "Przesyłam wersję roboczą budżetu rocznego, pozycje kosztowe są zgrupowane po działach. Uwagi można zgłaszać do końca tygodnia. Magdalena Czerniak"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0250",
+      "subject": "Logistyka Dzis: ceny paliw i karty flotowe w styczniu",
+      "body": "LOGISTYKA DZIŚ | wydanie z piątku\n\nCeny paliw: średnia cena oleju napędowego w hurcie spadła w tym tygodniu o 1,8 procent. Analitycy rynku oczekują stabilizacji do połowy lutego, o ile nie zmienią się stawki akcyzy.\n\nKarty flotowe: kilku dużych dostawców paliw wprowadza nowe limity dzienne dla kart paliwowych, zwykle na poziomie 1200 litrów na pojazd. Zmiany obejmą umowy zawierane od 01.02.2027, a dotychczasowe kontrakty działają bez zmian do końca terminu.\n\nOpłaty drogowe: ministerstwo ogłosiło projekt nowych stawek dla pojazdów powyżej 12 ton. Konsultacje potrwają do końca miesiąca.\n\nPrzetargi: dwa duże operatory zapowiedziały przetargi na transport chłodniczy w pierwszym kwartale, szczegóły w następnym wydaniu.\n\nW kolejnym numerze: rozmowa z dyrektorem dużego centrum dystrybucji o kosztach pracy w magazynach.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0251",
+      "subject": "Informacja o terminie spotkania celnego",
+      "body": "Szanowny Panie Wiktorze,\n\nkrótka informacja: nasz agent w Gdyni zmienił godziny pracy biura. Do końca lutego odprawy przyjmuje od 7:00 do 15:30.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0252",
+      "subject": "Logistyka Dziś: skrót tygodnia",
+      "body": "Skrót tygodnia\n\nW tym tygodniu frachty drogowe na trasach do Niemiec utrzymały się na stałym poziomie, a rynek magazynowy zanotował nowe umowy najmu. Pełne wydanie w piątek.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0253",
+      "subject": "Re: Nordic framework, small update",
+      "body": "Hi Wiktor, small update from me, no need to answer. Nordic confirmed they have reviewed the clauses on pallet exchange and indexation and will not push back on either. I spoke to Karin on the phone yesterday and she sounds happy with the draft. Piotr already has the final version for signing on 22.01. I will join the signing remotely from Gdansk, because I am on the road that week and my train gets in late. Karin also said Nordic will send their signatory list by Friday, so nothing is open on our side. Cheers, Oliver",
+      "thread": [
+        {
+          "subject": "Nordic framework agreement, first draft",
+          "body": "Hi Oliver, attached is the first draft of the framework agreement with the main clauses on volumes and delivery windows. Piotr"
+        },
+        {
+          "subject": "Re: Nordic framework agreement, first draft",
+          "body": "Oliver, thanks for the draft. Please keep me posted, I will read the clauses next week. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0257",
+      "subject": "Supply Chain Weekly: quick rate check",
+      "body": "This week in freight: Baltic container rates down 2 percent, trucking steady, no new port delays reported.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0259",
+      "subject": "Supply Chain Weekly: carriers cut winter schedules",
+      "body": "Winter schedules: three large container lines have trimmed sailings on the North Sea to Baltic routes until the end of February. Analysts say the effect on transit times will be small, about one to two days.\n\nRates: the benchmark index for northern Europe ended the week 1.4 percent lower. Contract rates remain flat, and shippers with annual deals see little change.\n\nWarehouses: occupancy at logistics hubs in Poland and Germany stays high, but new supply opens in the spring.\n\nTechnology: a large carrier started a pilot with electronic delivery notes at two terminals.\n\nNext week: our outlook for spring capacity and the January customs figures for the European Union.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0260",
+      "subject": "Logistyka Dziś: wielki przegląd rynku paliw i kart flotowych",
+      "body": "LOGISTYKA DZIŚ | wydanie specjalne o paliwach\n\nRynek paliw w styczniu zaczął się spokojnie. Hurtowa cena oleju napędowego w pierwszym tygodniu roku wzrosła o 0,6 procent, a w drugim spadła o 1,9 procent. Brokerzy tłumaczą ruchy kursem dolara oraz mniejszym popytem w Niemczech. Prognozy na luty wskazują na niewielkie wahania, ale ryzyko skoków pozostaje wysokie, zwłaszcza przy zmianie stawek opłat środowiskowych.\n\nKarty flotowe: dwóch dużych wystawców kart ogłosiło zmiany w limitach dziennych i w prowizjach za tankowanie za granicą. Prowizja dla pojazdów powyżej 12 ton wzrośnie od 01.03.2027 o 0,15 punktu procentowego. Dla mniejszych flot wystawcy proponują pakiety z niższym limitem miesięcznym i bez opłat za obsługę konta w pierwszym roku.\n\nRozmowa tygodnia: dyrektor centrum dystrybucji w Wielkopolsce mówi o tym, jak firma ograniczyła zużycie paliwa o 7 procent dzięki szkoleniom kierowców i lepszemu planowaniu tras. Największe oszczędności dały krótsze postoje na rampach oraz stała kontrola ciśnienia w oponach.\n\nRegulacje: urząd zapowiedział uproszczenie raportowania zużycia paliwa dla przewoźników. Nowe formularze mają być dostępne od kwietnia 2027, a okres przejściowy potrwa do końca roku.\n\nPrzetargi: operatorzy sieci handlowych przygotowują postępowania na transport chłodniczy, o których piszemy szerzej w dziale przetargów.\n\nW następnym wydaniu: koszty serwisu naczep i ceny opon na wiosnę.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0262",
+      "subject": "Pallet and certificate status for February orders",
+      "body": "Dear Mr Szalewski,\n\nas a courtesy, I am sharing the current position on our February orders. The first order of 22 pallets is confirmed for the delivery window of 05.02.2027 in Malmo. Certificates of origin for all three product lines are now valid until the end of June, and the temperature records of the previous quarter were accepted by our quality team without remarks.\n\nOur team in Sweden also updated the unloading plan: pallets will be received on dock 2 between 8:00 and 12:00. This replaces the afternoon slot that we used in January. Your carriers received the new plan from our dispatcher, so nothing more is needed on your side.\n\nI will include the March forecast in my next monthly summary.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0263",
+      "subject": "Supply Chain Weekly: Special issue on the 2027 freight outlook",
+      "body": "SUPPLY CHAIN WEEKLY | Special issue: the 2027 freight outlook\n\nContainer shipping: analysts expect global rates to stay between 8 and 12 percent below the 2026 average through the first half of the year. New vessels entering service add capacity, while carriers keep cutting sailings to hold prices. The largest uncertainty remains the situation on key canal routes, where a longer closure could lift rates quickly.\n\nRoad transport: European contract rates are forecast to rise by 2 to 3 percent, driven by wages and toll changes. Spot rates will follow the economy; many forecasters see weak industrial demand in Germany, which weighs on volumes from Poland. Driver shortages remain the main constraint, with an estimated 80,000 open positions across the region.\n\nAir cargo: capacity is expected to grow faster than demand, which should keep yields under pressure. E-commerce volumes from Asia grow, but at a slower pace than in 2025.\n\nWarehousing: prime logistics rents increase between 3 and 5 percent in major hubs. Automation projects remain the top investment item, followed by energy efficiency.\n\nRegulation: new reporting duties on emissions start for large shippers in the second half of the year. Companies should prepare their data now.\n\nWhat to watch: interest rate decisions, fuel prices and the next round of customs changes.\n\nDownload the full outlook report with regional tables in our paid subscriber area.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0001",
+      "subject": "Logistyka Dziś: potwierdzenie ustawień powiadomień",
+      "body": "Ustawienia Twojej subskrypcji zostały zmienione. Wydanie tygodniowe: piątek, 8:00. Wiadomość wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0003",
+      "subject": "Payment confirmation: transfer to Pelagia Fuel Services",
+      "body": "Aurum Bank | Business notification\n\nTransfer confirmed.\nDebit account: PL00-TEST-4410\nBeneficiary: Pelagia Fuel Services\nTitle: Invoice FV/2027/01/118\nAmount: 18 450,00 PLN\nExecution date: 14.01.2027\nStatus: completed\n\nAvailable balance after the transfer: 342 910,25 PLN.\nDaily limit used: 18 450,00 of 250 000,00 PLN.\nConfirmation reference: PL00-TEST-7731.\nTransfer channel: online banking, approved by two authorised users.\n\nThis message was generated automatically. Do not reply to this address.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0005",
+      "subject": "Powiadomienie o przelewach zbiorczych z dnia 15.01.2027",
+      "body": "Aurum Bank | Powiadomienie systemowe\n\nZlecenie przelewów zbiorczych zostało zrealizowane.\nRachunek obciążany: PL00-TEST-4410\nData realizacji: 15.01.2027\nLiczba przelewów: 6\nŁączna kwota: 74 380,90 PLN\nStatus zlecenia: zrealizowane w całości\n\nSzczegóły przelewów:\n1. Faktura FV/2027/01/121, kwota 12 100,00 PLN, status zrealizowany\n2. Faktura FV/2027/01/122, kwota 8 450,50 PLN, status zrealizowany\n3. Faktura FV/2027/01/125, kwota 21 000,00 PLN, status zrealizowany\n4. Faktura FV/2027/01/127, kwota 9 830,40 PLN, status zrealizowany\n5. Faktura FV/2027/01/129, kwota 14 500,00 PLN, status zrealizowany\n6. Faktura FV/2027/01/131, kwota 8 500,00 PLN, status zrealizowany\n\nSaldo rachunku po realizacji zlecenia: 268 530,35 PLN.\nWykorzystany limit dzienny: 74 380,90 z 250 000,00 PLN.\n\nZlecenie wprowadzono przez użytkownika z uprawnieniem księgowym i zatwierdzono podwójnie, zgodnie z regulaminem rachunku.\n\nWiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać. Potwierdzenia w formie PDF znajdują się w bankowości internetowej w zakładce Historia operacji.\n\nDane do kontaktu z bankiem znajdują się w serwisie transakcyjnym.\n\nZlecenia przelewów zbiorczych w kolejnych dniach roboczych będą wykonywane o tej samej godzinie, o ile na rachunku znajdą się środki. Powiadomienia o odrzuconych zleceniach wysyłamy w osobnej wiadomości. Zestawienie dzienne operacji jest dostępne w serwisie do godziny 20:00 każdego dnia roboczego.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0006",
+      "subject": "Logistyka Dziś: potwierdzenie zapisu na wydanie specjalne",
+      "body": "LOGISTYKA DZIŚ | potwierdzenie\n\nTwój zapis na wydanie specjalne został przyjęty. Wydanie specjalne o rynku paliw ukaże się w przyszłym tygodniu i otrzymasz je po publikacji w formie wiadomości e-mail, na adres podany przy rejestracji. Zapis możesz zmienić lub usunąć w ustawieniach konta. Numer zapisu: LD-2027-0418. Jeśli nie zapisywałeś się na to wydanie, zignoruj tę wiadomość albo zmień ustawienia subskrypcji. Ta wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#333;\">\n<h3 style=\"color:#8a1c1c;\">Potwierdzenie zapisu</h3>\n<p>Twój zapis na wydanie specjalne został przyjęty. Wydanie specjalne o rynku paliw ukaże się w przyszłym tygodniu i otrzymasz je po publikacji w formie wiadomości e-mail, na adres podany przy rejestracji. Zapis możesz zmienić lub usunąć w ustawieniach konta.</p>\n<p style=\"font-size:12px;color:#777;\">Ta wiadomość została wygenerowana automatycznie.</p>\n<p style=\"font-size:12px;color:#777;\">Redakcja Logistyka Dzis | wypisz sie z listy</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0007",
+      "subject": "Login alert: new device",
+      "body": "Aurum Bank | Security notice. A new login to your business account was registered on 14.01.2027 at 08:42. Device: browser on Linux. Status: confirmed with SMS code. This message was generated automatically.",
+      "thread": []
+    }
+  ]
+}
