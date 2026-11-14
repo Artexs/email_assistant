@@ -64,3 +64,7 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 ## F029 s01 review carry-over (landed)
 - Stage 04 docs: architecture.md 6.1 "Known mail" parenthetical sits in the system-moved sentence; the multi-copy rule also covers a first copy in its source folder (test 1.5). Say so in stage 04 docs.
 - Accepted risks (D1, Q4): more locates = more exposure to Interia SEARCH limit (h) for tab-folder copies (false `relocated`); with 6+ copies and only the 6th gone, a new copy is stored silently.
+
+## F097 s18 writers: thread order (holdout 049-057 landed)
+- Thread order in holdout 049-057 was checked by hand only (no command detects a reversed thread). The blind checker and reconcile show a reversed thread only through disagreement. Stage 20 (freeze + owner audit of 50 cases) must include threaded cases. A mechanical check (thread[i] signature name vs slot thread[i].persona) would be a small ticket for the sim check.
+- Slots whose persona language differs from slot.lang were written in slot.lang with the persona signature unchanged.

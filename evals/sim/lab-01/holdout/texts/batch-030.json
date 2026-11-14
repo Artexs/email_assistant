@@ -7,7 +7,7 @@
     {
       "id": "b-rep-0115",
       "subject": "Overdue fuel invoice: your confirmation",
-      "body": "Dear Mr Szalewski,\n\ncould you confirm that the fuel invoice for December, 47 215,30 PLN, will be paid by Friday? Our system shows it as open.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "body": "Dear Mr Szalewski,\n\ncould you confirm to me personally that the fuel invoice for December, 47 215,30 PLN, will be paid by Friday? Our system shows it as open, and I would like your word on it.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
       "thread": [],
       "expectedPoints": [
         "Confirm payment of the December fuel invoice by Friday",
@@ -15,7 +15,8 @@
       ],
       "mustNot": [
         "Do not promise payment of disputed items"
-      ]
+      ],
+      "note": "rewritten: personal confirmation requested from the executive"
     },
     {
       "id": "b-rep-0116",
@@ -34,7 +35,7 @@
     {
       "id": "b-rep-0117",
       "subject": "Dostawy w święta wielkanocne: potrzebujemy Państwa potwierdzenia",
-      "body": "Szanowny Panie Prezesie,\n\nw tym roku Wielkanoc przypada na początek kwietnia, a nasza fabryka zamierza pracować w sobotę przed świętami, aby nadrobić zaległości. Potrzebujemy więc dostaw materiałów opakowaniowych także w piątek i w sobotę.\n\nCzy jest Pan w stanie zapewnić transport w te dni? Jeśli tak, proszę o potwierdzenie, a jeśli nie, o wskazanie ostatniego dnia dostaw przed świętami. Odpowiedź jest dla nas ważna, bo od niej zależy plan pracy zmian produkcyjnych.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "body": "Szanowny Panie Prezesie,\n\nw tym roku Wielkanoc przypada na początek kwietnia, a nasza fabryka zamierza pracować w sobotę przed świętami, aby nadrobić zaległości. Potrzebujemy więc dostaw materiałów opakowaniowych także w piątek i w sobotę.\n\nChciałbym poznać Pana decyzję: czy Kordelan dowiezie towar w te dni? Jeśli tak, proszę o Pana potwierdzenie, a jeśli nie, o wskazanie ostatniego dnia dostaw przed świętami. Pana odpowiedź jest dla nas ważna, bo od niej zależy plan pracy zmian produkcyjnych.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
       "thread": [],
       "expectedPoints": [
         "Confirm deliveries on Friday and Saturday before Easter",
@@ -42,7 +43,8 @@
       ],
       "mustNot": [
         "Do not promise weekend delivery without the operations director"
-      ]
+      ],
+      "note": "rewritten: question for the executive's own decision; no task for a team"
     },
     {
       "id": "b-rep-0118",
@@ -131,7 +133,7 @@
     {
       "id": "b-rep-0123",
       "subject": "Re: Delivery slot on 12 February: please confirm",
-      "body": "Dear Mr Szalewski,\n\nI am following up on the delivery planning that your sales coordinator started with me, as I need your confirmation on the final slot. We have booked the unloading dock for 12 February between 07:00 and 09:00, with 110 pallets. Can you confirm that your truck arrives within this window? If not, please tell me what time you can offer.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "body": "Dear Mr Szalewski,\n\nyou wrote that you would look at the delivery slot of 12 February together with your operations director, so I now ask for your own answer. We have booked the unloading dock for that day between 07:00 and 09:00, with 110 pallets. Can you confirm that the slot works for you? If not, please tell me what time you can offer.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
       "thread": [
         {
           "subject": "Delivery planning February",
@@ -148,7 +150,8 @@
       ],
       "mustNot": [
         "Do not promise a different volume than 110 pallets"
-      ]
+      ],
+      "note": "rewritten: question for the executive's own confirmation, following his own message"
     },
     {
       "id": "b-rep-0124",
@@ -323,7 +326,7 @@
     {
       "id": "b-rep-0140",
       "subject": "Termin przeglądu procedur celnych",
-      "body": "Szanowny Panie Prezesie,\n\nczy może Pan wyznaczyć osobę, która z Państwa strony weźmie udział w przeglądzie procedur celnych 12.02.2027? Proszę o imię i nazwisko do środy.\n\nDaniel Hargreaves",
+      "body": "Szanowny Panie Prezesie,\n\nkto z Kordelan będzie reprezentował firmę w przeglądzie procedur celnych 12.02.2027? Czy zamierza Pan wziąć w nim udział osobiście? Proszę o Pana odpowiedź do środy.\n\nDaniel Hargreaves",
       "thread": [],
       "expectedPoints": [
         "Name the Kordelan person for the customs procedure review on 12.02.2027",
@@ -331,7 +334,8 @@
       ],
       "mustNot": [
         "Do not name more than one person"
-      ]
+      ],
+      "note": "rewritten: question for the executive's own answer about attendance"
     },
     {
       "id": "b-rep-0141",
@@ -351,7 +355,7 @@
     {
       "id": "b-rep-0142",
       "subject": "Re: Framework deal - Karin question",
-      "body": "Wiktor,\n\nKarin asks again about the volume discount in the framework deal. She wants a yes or no on 5 percent above 600 pallets a quarter. Can you tell me today what to answer?\n\nOliver",
+      "body": "Wiktor,\n\nKarin asks again about the volume discount in the framework deal. It is your call: yes or no to 5 percent above 600 pallets a quarter? A reply today would let me answer her.\n\nOliver",
       "thread": [
         {
           "subject": "Framework agreement: discounts",
@@ -368,7 +372,8 @@
       ],
       "mustNot": [
         "Do not agree to a bigger discount than 5 percent"
-      ]
+      ],
+      "note": "rewritten: decision for the executive; deadline softened"
     },
     {
       "id": "b-rep-0143",

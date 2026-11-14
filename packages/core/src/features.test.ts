@@ -66,6 +66,12 @@ describe("featureFlags registry", () => {
     }
   });
 
+  test("answered_check defaults off and has the epic E3a", () => {
+    expect(featureFlags.answered_check.default).toBe(false);
+    expect(featureFlags.answered_check.epic).toBe("E3a");
+    expect(featureEpicPattern.test(featureFlags.answered_check.epic)).toBe(true);
+  });
+
   test("featureKeys lists the registry keys in registry order", () => {
     expect<string[]>(featureKeys).toEqual(Object.keys(featureFlags));
     expect(featureKeys.slice(0, 3)).toEqual(["stats_page", "approvals_page", "sent_sync"]);
