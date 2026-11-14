@@ -279,6 +279,7 @@ describe("telegram schema", () => {
       );
       await expectCode(trx, "urgent_no_email", () => insert({ kind: "urgent" }), "23514");
       await expectCode(trx, "auth_no_mailbox", () => insert({ kind: "auth_error", mailbox_id: null }), "23514");
+      await expectCode(trx, "held_no_mailbox", () => insert({ kind: "send_held", mailbox_id: null }), "23514");
       await expectCode(trx, "error_code", () => insert({ error_code: "Bad Request" }), "23514");
       await expectCode(trx, "sent_no_time", () => insert({ status: "sent" }), "23514");
       await expectCode(trx, "sending_no_lock", () => insert({ status: "sending" }), "23514");

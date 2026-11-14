@@ -44,12 +44,14 @@ export {
 export { draftHasReverse, expireReadyDraft, getDraft, listSendsOfDraft, lockDraft, type DraftRow } from "./drafts";
 export {
   listFailedUnnotified,
+  listSendLimitHolds,
   listSendResultsToNotify,
   listSendsToNotify,
   listSetsToNotify,
   markNotified,
   markResultNotified,
   type FailedAction,
+  type SendLimitHold,
 } from "./notify";
 export { countApprovals, listAwaitingSendIds, listExpiredApprovals, listUnseenApprovalSends } from "./approvals";
 export { clearActionErrors, clearActionPayloads, type PayloadKeepRule } from "./retention";

@@ -11,6 +11,7 @@ import type { OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
   renderUrgentNotice,
@@ -104,5 +105,9 @@ export const noticeRenderers = {
   mailbox_removed: defineRenderer({
     schema: noticeViewSchemas.mailbox_removed,
     telegram: { full: () => ({ text: MAILBOX_REMOVED_TEXT, buttons: [] }) },
+  }),
+  send_held: defineRenderer({
+    schema: noticeViewSchemas.send_held,
+    telegram: { full: (view) => renderSendHeldNotice(view) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;
