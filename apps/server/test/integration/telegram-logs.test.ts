@@ -137,6 +137,7 @@ describe("telegram logs", () => {
           sendScope: { kind: "off" },
           testMail: NO_TEST_SENDERS,
           operatorContact: null,
+          syncEveryMin: 2,
           apiRoot: fake.apiRoot,
           botInfo: testBotInfo,
         });

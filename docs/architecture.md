@@ -92,7 +92,7 @@ Module rules:
 
 ```mermaid
 flowchart TD
-    Tick[Scheduler: every 5 min per mailbox] --> Sync[mail.sync: INBOX and the synced folders above each folder's UID cursor]
+    Tick[Scheduler: every MAIL_SYNC_EVERY_MIN min (default 2)] --> Sync[mail.sync: INBOX and the synced folders above each folder's UID cursor]
     Sync -->|known mail back in a synced folder after a system move| Ret[(emails.returned_at set)]
     Ret --> FB[triage.returned writes triage_feedback: wrong]
     Sync -->|new dedup key| Store[(emails: status = pending)]
@@ -320,7 +320,7 @@ Tenancy:
 - **Synced folders (ADR 0014):** INBOX and the rows of `mailbox_folders`. At Interia the job inserts a row for each default name that the server lists exactly: `Oferty`, `Społeczności`, `Rachunki` (role `sort`) and `Wiadomości-śmieci` (role `junk`; Interia's tabs are folders, `notes/2026-11-07-agentmail-test-mail.md` §10).
   Never `AI/*`, Sent, Drafts, Trash or a user folder. One run per mailbox goes folder by folder: INBOX, the `sort` folders, then the spam folder. An error in a folder other than INBOX gives a warning and the run goes on.
   `bun run mailbox:settings sync-folder --key offers|social|bills|junk --value on|off` is the off switch per folder (INBOX has none); on again clears the cursor (a new 24 h first sync).
-- **Sync cursor:** one per folder: `UIDVALIDITY` + last UID in its `mailbox_folders` row. Every 5 minutes: fetch UIDs above the cursor.
+- **Sync cursor:** one per folder: `UIDVALIDITY` + last UID in its `mailbox_folders` row. Every `MAIL_SYNC_EVERY_MIN` minutes (default 2): fetch UIDs above the cursor.
   The INBOX cursor is also written to `mailboxes.uidvalidity` and `last_uid` (dual write, for a code rollback). IMAP IDLE (push) can come later.
   Trap: `UID FETCH n:*` also returns the highest message when its UID is below n (RFC 3501 range rule, `*` = highest UID). Filter `uid > last_uid` in code.
 - **Dedup key:** `Message-ID` + `content_hash` (hash of the `From` address, the `Date` header (else INTERNALDATE) and RFC822.SIZE).
@@ -524,7 +524,7 @@ Tenancy:
 
   | Job                  | Schedule                                                                      | Page                                                        |
   | -------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------- |
-  | `mail.sync`          | `*/5 * * * *` (every 5 min)                                                   | [sync.md](capabilities/sync.md)                             |
+  | `mail.sync`          | `*/N * * * *` (every `MAIL_SYNC_EVERY_MIN` min; default 2)                    | [sync.md](capabilities/sync.md)                             |
   | `platform.heartbeat` | `*/5 * * * *` (every 5 min)                                                   | Liveness, below                                             |
   | `channels.operator`  | `0 13 * * * *` (hourly at minute 13)                                          | [digest-and-notices.md](capabilities/digest-and-notices.md) |
   | `triage.worker`      | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)        | [triage.md](capabilities/triage.md)                         |

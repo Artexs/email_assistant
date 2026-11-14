@@ -82,7 +82,7 @@ An `auth_error` notice means the mail server refused the stored password. The sy
 2. Store the new password. The CLI tests the IMAP and SMTP login first and saves nothing if the login fails:
    `read -rsp 'New password: ' P && printf '%s' "$P" | $C run --rm -T server bun run mailbox:password --org-id <uuid> --mailbox-id <uuid>; unset P`
    Add `--secret-kind app_password` if the password is an app password.
-3. The mailbox is `active` again. The next sync comes within 5 minutes.
+3. The mailbox is `active` again. The next sync comes within `MAIL_SYNC_EVERY_MIN` minutes (default 2).
 
 A `paused` mailbox stays paused. Use `/resume` in Telegram.
 

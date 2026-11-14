@@ -1250,6 +1250,7 @@ describe("taps of a suspended organization", () => {
       llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
       testMail: NO_TEST_SENDERS,
       operatorContact: "ops@example.test",
+      syncEveryMin: 2,
     });
   }
 

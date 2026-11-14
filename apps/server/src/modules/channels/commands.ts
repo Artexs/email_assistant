@@ -53,6 +53,8 @@ export interface CommandDeps {
   testMail: TestMailRule;
   // Public contact address for the paused answer. null = "the operator".
   operatorContact: string | null;
+  // Minutes between two mail syncs (MAIL_SYNC_EVERY_MIN), for the /resume text.
+  syncEveryMin: number;
 }
 
 const log = createLog("channels");
@@ -264,10 +266,13 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
     else if (result.kind === "already") extra.push(`${address} ${change.already}`);
     else if (result.kind === "auth_error") extra.push(loginError);
   }
-  return { text: [...changeLines(change.to, changed), ...extra].join("\n") || "No mailbox connected.", buttons: [] };
+  return {
+    text: [...changeLines(change.to, changed, deps.syncEveryMin), ...extra].join("\n") || "No mailbox connected.",
+    buttons: [],
+  };
 }
 
-function changeLines(to: "active" | "paused", changed: string[]): string[] {
+function changeLines(to: "active" | "paused", changed: string[], syncEveryMin: number): string[] {
   if (changed.length === 0) return [];
   const list = changed.join(", ");
   return to === "paused"
@@ -278,7 +283,7 @@ function changeLines(to: "active" | "paused", changed: string[]): string[] {
       ]
     : [
         `▶️ Resumed: ${list}`,
-        "The next sync runs within 5 minutes. Mail that came during the pause is read then; mail older than 7 days is not triaged.",
+        `The next sync runs within ${syncEveryMin} minutes. Mail that came during the pause is read then; mail older than 7 days is not triaged.`,
       ];
 }
 

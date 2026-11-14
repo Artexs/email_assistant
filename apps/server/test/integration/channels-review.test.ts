@@ -37,6 +37,7 @@ function depsAt(trx: Transaction<DB>): CommandDeps {
     sendScope: { kind: "all" },
     testMail: { senders: [TEST_SENDER] },
     operatorContact: null,
+    syncEveryMin: 2,
   };
 }
 
