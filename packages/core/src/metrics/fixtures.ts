@@ -1,7 +1,7 @@
 // Row builders for the metric tests. Later stages add more.
+import type { MailTruthRow } from "./m1";
 import type { DelegationDueRow } from "./m2";
 import type { HiddenMoveRow, MistakeRow, RejectRow } from "./m3";
-import type { MailTruthRow } from "./m1";
 
 let counter = 0;
 const nextId = (prefix: string): string => {
