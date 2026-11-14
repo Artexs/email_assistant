@@ -91,7 +91,7 @@ describe("startPolling", () => {
     expect(lines(infoSpy).some((l) => l.includes("polling as @probe_bot (id 7)"))).toBe(true);
     const commands = calls.find((c) => c.method === "setMyCommands")?.body.commands;
     expect(commands).toEqual(BOT_COMMANDS.map((c) => ({ ...c })));
-    expect(commands as unknown[]).toHaveLength(5);
+    expect(commands as unknown[]).toHaveLength(6);
     const updates = calls.filter((c) => c.method === "getUpdates");
     expect(updates.at(-1)?.body.timeout ?? 0).toBe(0);
     expect(updates.at(-1)?.body.limit).toBe(1);

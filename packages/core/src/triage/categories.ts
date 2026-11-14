@@ -28,7 +28,7 @@ export type ReasonCode = (typeof reasonCodes)[number];
 // `triage_results.reason_code` of a row without an LLM answer.
 export const ruleReasonCodes = ["blocklist", "triage_error", "llm_blocked"] as const;
 
-export const feedbackSources = ["cli", "telegram", "undo", "imap_move", "web", "review"] as const;
+export const feedbackSources = ["cli", "telegram", "undo", "imap_move", "web", "review", "answered_check"] as const;
 export type FeedbackSource = (typeof feedbackSources)[number];
 
 export const feedbackVerdicts = ["right", "wrong"] as const;

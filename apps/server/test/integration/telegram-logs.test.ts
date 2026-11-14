@@ -3,6 +3,7 @@ import type { Update } from "grammy/types";
 
 import { createPlanned, noDelegationHooks } from "../../src/modules/actions";
 import { createLinkToken, createTelegramRuntime } from "../../src/modules/channels";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import { setDigestTimes } from "../../src/modules/tenancy";
 import { setLogLevel } from "../../src/platform/log";
@@ -134,6 +135,7 @@ describe("telegram logs", () => {
           hooks: noDelegationHooks,
           uidplus: async () => true,
           sendScope: { kind: "off" },
+          testMail: NO_TEST_SENDERS,
           operatorContact: null,
           apiRoot: fake.apiRoot,
           botInfo: testBotInfo,

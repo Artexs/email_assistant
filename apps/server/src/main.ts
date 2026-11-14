@@ -240,6 +240,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     hooks,
     uidplus,
     sendScope: scopeOfSends,
+    testMail: testMailRule(config),
     operatorContact: config.OPERATOR_CONTACT ?? null,
   });
   telegram = runtime;

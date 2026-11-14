@@ -1,3 +1,5 @@
+import { textTables } from "@ea/core";
+
 export function helpText(): string {
   return [
     "Commands:",
@@ -5,6 +7,7 @@ export function helpText(): string {
     "/status – mailboxes, last sync, LLM calls",
     "/pause – stop reading and triage of your mailboxes",
     "/resume – start them again",
+    textTables.en.review.helpLine,
     "/help – this list",
     "Tap ✅ when the AI category is right, ✏️ to correct it.",
     "↩️ under a digest line undoes what the system did to that mail (7 days).",

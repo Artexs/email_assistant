@@ -22,6 +22,7 @@ afterAll(async () => {
 });
 
 const TENANT_TABLES = [
+  "action_feedback",
   "actions",
   "audit_log",
   "chat_link_tokens",
@@ -29,6 +30,8 @@ const TENANT_TABLES = [
   "delegates",
   "delegations",
   "digests",
+  "email_flags",
+  "email_headers",
   "emails",
   "mailbox_credentials",
   "mailbox_folders",
@@ -58,7 +61,29 @@ async function scopeLocal(trx: Trx, orgId: string): Promise<void> {
 
 async function seedOrg(trx: Trx): Promise<{ orgId: string; userId: string; mailboxId: string }> {
   const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
-  await fillMailbox(trx, { orgId }, mailboxId, userId);
+  const ids = await fillMailbox(trx, { orgId }, mailboxId, userId);
+  const emailId = ids.emailIds[0];
+  const actionId = ids.actionIds[0];
+  if (!emailId || !actionId) throw new Error("fillMailbox made no mail or action");
+  await trx
+    .insertInto("email_headers")
+    .values({ email_id: emailId, org_id: orgId, parts_known: true, captured_at: NOW })
+    .execute();
+  await trx
+    .insertInto("email_flags")
+    .values({ email_id: emailId, org_id: orgId, seen: true, answered: false, flagged: false, checked_at: NOW })
+    .execute();
+  await trx
+    .insertInto("action_feedback")
+    .values({
+      org_id: orgId,
+      action_id: actionId,
+      kind: "mistake",
+      via: "web",
+      created_at: NOW,
+      updated_at: NOW,
+    })
+    .execute();
   await linkChat(trx, { orgId }, userId, randomChatId(), NOW);
   await insertLinkToken(
     trx,
