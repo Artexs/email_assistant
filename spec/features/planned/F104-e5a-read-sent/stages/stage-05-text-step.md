@@ -1,70 +1,57 @@
 # F104 stage 05 — Text step
 
-Part of [`../plan.md`](../plan.md). Review job before the land (mail text into a new table). Needs stage 04 on `master`. Read D7 and D8 first.
+Part of [`../plan.md`](../plan.md). Review before the land (mail text into a new table). Needs stage 04. Read D7, D8.
 
-After this stage `syncSentFolder` runs the header pass and then fetches the text of at most 100 sent mails of the text window (14 days, or the organization's retention when shorter) per call, with the markers E5b needs. No job calls it yet (stage 06).
+After this stage `syncSentFolder` runs the header pass, then fetches the text of at most 100 sent mails of the text window per call, with the markers E5b needs. No job calls it yet.
 
 ## Step 1 — `fetchSentTexts` and `syncSentFolder`
 
-**Goal.** The text step of D7 and the one entry point of D8.
-
-**Files.** `apps/server/src/modules/mail/sent-texts.ts` (new), `apps/server/src/modules/mail/sent-sync.ts` (`syncSentFolder`), `apps/server/src/modules/mail/index.ts`, `apps/server/test/integration/mail-sent-texts.test.ts` (new).
+**Files.** `mail/sent-texts.ts` (new), `mail/sent-sync.ts`, `mail/index.ts`, `mail-sent-texts.test.ts` (new).
 
 **Interfaces.**
 
 ```ts
 // sent-texts.ts
+export const SENT_BODY_TEXT_LIMIT = 100_000; // the same number as the incoming body limit
 export interface SentTextResult { stored: number; gone: number; expired: number; }
-
-/** Assumes the header step of this call ended `done` (the state has a path and a cursor). */
-export async function fetchSentTexts(
-  deps: Pick<SentSyncDeps, "db" | "provider" | "now">,
-  ctx: TenantContext,
-  mailboxId: string,
-  input: { path: string; uidValidity: number; textWindowMs: number; limit?: number } // limit default SENT_TEXT_RUN_LIMIT
-): Promise<SentTextResult>;
+fetchSentTexts(
+  deps: Pick<SentSyncDeps, "db" | "provider" | "now">, ctx, mailboxId,
+  input: { path: string; uidValidity: number; textWindowMs: number; limit?: number } // default SENT_TEXT_RUN_LIMIT
+): Promise<SentTextResult>
 
 // sent-sync.ts
 export interface SentPassResult extends SentHeaderResult { texts: SentTextResult; }
-
-/** The header step, then the text step when the header step returned `done`; else texts are all 0. */
-export async function syncSentFolder(deps: SentSyncDeps, ctx: TenantContext, mailboxId: string): Promise<SentPassResult>;
+syncSentFolder(deps: SentSyncDeps, ctx, mailboxId): Promise<SentPassResult>
 ```
 
 `fetchSentTexts`, with `now = deps.now()`:
 
-1. `expired = await expireSentTexts(db, ctx, mailboxId, { before: now − textWindowMs })`.
-2. `rows = await listPendingSentTexts(db, ctx, mailboxId, { path, uidValidity, since: now − textWindowMs, limit })` (rows of an old path never match: their UIDs belong to another folder).
-3. For each row, one at a time: `content = await deps.provider.fetchContent(path, row.uid)`; `content.text === null && content.capture === null` → `writeSentText(…, { kind: "gone" })` (`gone += 1` when it wrote); else `writeSentText(…, { kind: "stored", bodyText: content.text === null ? null : content.text.slice(0, 100_000), autoSubmitted: capture?.autoSubmitted ?? null, precedence: capture?.precedence ?? null, listId: capture?.listId ?? null, hasCalendar: capture?.hasCalendar ?? null })` (`stored += 1` when it wrote). The read for the guard is `{ path, uid: row.uid, uidValidity }`. No transaction around the loop: each write stands alone.
-4. `MailFolderMissingError` from `fetchContent` ends the loop and is rethrown (the next call's header step reports `folder_missing`). Any other error is rethrown too; the rows written before it stay written.
+1. `expired = expireSentTexts(before: now − textWindowMs)`.
+2. `listPendingSentTexts(path, uidValidity, since: now − textWindowMs, limit)`; rows of an old path never match.
+3. One row at a time: `fetchContent(path, uid)`. Both fields null → write `gone`. Else write `stored` with the text cut to `SENT_BODY_TEXT_LIMIT` and `autoSubmitted`, `precedence`, `listId`, `hasCalendar` from the capture (null when absent). The guard read is `{ path, uid, uidValidity }`. A count rises only when the write changed a row. No transaction around the loop.
+4. Any error from `fetchContent` ends the loop and is rethrown; earlier writes stay.
 
-Put the 100 000 limit in one exported constant `SENT_BODY_TEXT_LIMIT` (the same number as `BODY_TEXT_LIMIT` in `sync.ts`; do not import from `sync.ts`, which keeps that constant private).
+`syncSentFolder`: the header step; on `done` read the state for path and UIDVALIDITY, use the same `textWindowMs` as the header step (it may carry it in its result), and run the text step; else `texts` are all 0.
 
-`syncSentFolder`: `const headers = await syncSentHeaders(deps, ctx, mailboxId)`; when `headers.status === "done"`, read the state (`getSentSyncState`) for `path` and `uidValidity`, compute `textWindowMs` as stage 04 does (`sentTextWindowMs` of the organization's `data_retention_days`; `SentHeaderResult` may carry it to avoid a second read) and call `fetchSentTexts`; return `{ ...headers, texts }`.
+**Test** (the setup of stage 04's file):
 
-**Decisions.** D7, D8.
+1. Initial over A (`NOW − 1 d`, text "Offer by Friday", `Auto-Submitted: no`), B (`− 20 d`), D (system send, `− 2 d`) → `texts.stored 1`; A `stored` with the text and `auto_submitted "no"`; B and D `headers_only`, no text.
+2. `List-Id: <team.x.test>`, `Precedence: bulk` → `list_id "<team.x.test>"`, `precedence "bulk"` (the capture rules of `mail/imap/capture.ts`).
+3. A fake with `bodyLimitBytes: 1000` and a mail of `size 5000` → `stored`, text null, markers set.
+4. 3 pending and `limit 2` → the 2 oldest stored; the next call stores the third.
+5. A pending row whose mail the fake removed → `gone`.
+6. A pending row at `NOW − 13 d`, then `now = NOW + 2 d` → `expired 1`, `headers_only`, no `fetchContent` for it.
+7. A text of 150 000 characters → stored length 100 000.
+8. A reader that wraps the fake and throws `SoftError("timeout")` on the 2nd of 3 `fetchContent` calls → `syncSentFolder` throws; row 1 `stored`, rows 2–3 `pending`; the next call with the plain fake stores both.
+9. Header status `flag_off`, `off`, `no_folder`, `folder_missing`, `cursor_moved` → no `fetchContent`, `texts` all 0.
+10. Read-only: from a `folderCalls` snapshot, `"Sent"` calls are only the five reader methods.
+11. Path change with pending rows A1, A2 of `"Sent"`; `"Wysłane"` holds two mails with the same UIDs → only the `Wysłane` texts are stored; A1, A2 stay `pending` without text, and turn `headers_only` after their window.
+12. Retention 3 d: a pending row at `NOW − 5 d` → `expired 1`, no `fetchContent` for it.
 
-**Test** (integration, `withRollback`, the setup of stage 04's test file; `NOW = 2026-11-20T10:00:00Z`):
+**Check.** `bun test` on `mail-sent-texts.test.ts` and `mail-sent-sync.test.ts`.
 
-1. Initial pass over A (`NOW − 1 d`, text "Offer by Friday", header `Auto-Submitted: no`), B (`NOW − 20 d`), D (system send, `NOW − 2 d`) → `texts.stored 1`; A is `stored` with `body_text "Offer by Friday"` and `auto_submitted "no"`; B and D stay `headers_only` with `body_text` null.
-2. A mail with `List-Id: <team.x.test>` and `Precedence: bulk` → `list_id "<team.x.test>"` and `precedence "bulk"` (the capture rules of `mail/imap/capture.ts`: `precedence` is a lower-case token, `list_id` the header value cut to 300 characters).
-3. A mail whose fake `size` is over the fake's `bodyLimitBytes` (`createFakeMailProvider({ bodyLimitBytes: 1000 })`, `deliver(…, { size: 5000 })`) → `stored`, `body_text` null, markers from the header block.
-4. Limit: 3 pending mails and `limit 2` → `texts.stored 2`; the oldest two by `internal_date` are `stored`; the next call stores the third.
-5. A pending row whose mail was removed from the fake (`fake.remove("Sent", uid)`) before the text step → `gone`.
-6. A pending row with `internal_date NOW − 13 d`, then `now = NOW + 2 d` → `texts.expired 1`, the row is `headers_only`, no `fetchContent` call for it.
-7. A text of 150 000 characters → `body_text` length 100 000.
-8. `fetchContent` fails with `new SoftError("timeout")` on the 2nd of 3 pending rows: pass a reader that wraps the fake method by method (`const reader: SentFolderReader = { folderStatus: (p) => fake.folderStatus(p), fetchAbove: (p, u) => fake.fetchAbove(p, u), searchSinceIn: (p, d) => fake.searchSinceIn(p, d), fetchByUidsIn: (p, u) => fake.fetchByUidsIn(p, u), fetchContent: async (p, u) => { calls += 1; if (calls === 2) throw new SoftError("timeout"); return fake.fetchContent(p, u); } }`) → `syncSentFolder` throws; row 1 is `stored`, rows 2 and 3 `pending`; the next call (the plain fake) stores both.
-9. Header step `flag_off`, `off`, `no_folder`, `folder_missing` or `cursor_moved` → no `fetchContent` call, `texts` all 0.
-10. Read-only: from a `folderCalls.length` snapshot taken after the test's own setup calls, the `"Sent"` entries of `fake.folderCalls` hold only the five reader methods.
-11. A path change with pending rows (cold review 1, M1): rows A1, A2 of `"Sent"` stay `pending` (`limit 0` in the first call, or rows inserted with `insertSentEmails`); then `folder_map.sent = "Wysłane"` with two other mails whose UIDs equal A1's and A2's (the fake numbers each folder from 1) → the call stores the texts of the two `Wysłane` rows only; A1 and A2 stay `pending` with `body_text` null; after `now` passes their window they become `headers_only`.
-12. `data_retention_days = 3`: a pending row at `NOW − 5 d` (inserted directly) → `expired 1`, no `fetchContent` call for it.
+**Out of scope.** The job and logs (06); retention (07).
 
-**Check.** `bun test apps/server/test/integration/mail-sent-texts.test.ts apps/server/test/integration/mail-sent-sync.test.ts`
+## Done when
 
-**Done when.** Cases 1–12 pass; stage 04's cases still pass.
-
-**Out of scope.** The job call and the logs (stage 06); retention (stage 07).
-
-## Done when (stage)
-
-Step 1 done; the Proof command of `plan.md` passes (`/tmp/f104-s05`).
+Cases 1–12 pass; stage 04's cases still pass; the Proof passes (`/tmp/f104-s05`).
