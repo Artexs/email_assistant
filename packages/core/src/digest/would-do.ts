@@ -1,3 +1,4 @@
+import type { DraftKind } from "../triage/payloads";
 import { type ActionType, MOVE_TARGET_NAMES, type MoveTarget } from "../triage/planners";
 
 import { cutText } from "./text";
@@ -10,7 +11,7 @@ export interface ActionView {
   reverse: boolean;
   reversesActionId: string | null;
   appliedAt: Date | null;
-  kind: "delegation" | "clarification" | "reminder" | null; // from the payload of a draft or a send
+  kind: DraftKind | null; // from the payload of a draft or a send
   delegateId: string | null;
 }
 

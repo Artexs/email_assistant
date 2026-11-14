@@ -116,7 +116,8 @@ function payloadOf(action: PlannedAction): Record<string, unknown> {
       return action.draft;
     case "send":
       return action.send;
-    default:
+    case "mark_read":
+    case "flag":
       return {};
   }
 }

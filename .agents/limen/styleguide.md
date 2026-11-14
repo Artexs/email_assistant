@@ -34,6 +34,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - A new user-visible behaviour reads `isFeatureOn(db, ctx, flag)`; the flag is in `packages/core/src/features.ts` with an owner epic and a remove-by date, default off, on for the pilot first. Change a flag only through `setOrgFeature`.
 - Notices are facts: a producer calls `queueNotice({ kind, view, locale })`; the sender renders with `renderNotice` from `@ea/core`. A new kind follows the checklist in `docs/code-patterns.md` § Notices are facts. A view schema change still accepts the views of rows queued in the last 24 h.
 - A change that lands behaviour updates its page in `docs/capabilities/` in the same change (PD-009); behaviour rules go there, not into `docs/architecture.md`.
+- A new action type or draft kind follows `docs/code-patterns.md` § Add an action type or a draft kind; `actions/completeness.test.ts` and `core/triage/draft-kinds.test.ts` fail on most missed places. A file split moves code with the F091 scripts (history merge, `same-bodies.ts`); never rebase that branch.
 
 ## Avoid
 
