@@ -42,3 +42,7 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 - F100 stage 15: first move handleApprovalCallback (~230 lines) from channels/callbacks.ts to its own file (callbacks.ts is 418 lines) before adding lines.
 - Polish style (pl only, F098 stage 12 or a later texts pass): feedbackTaps 'Zapisano jako błąd.' -> 'Oznaczono jako błąd.'; 'Ta wysyłka nie jest odrzucona.' -> 'Ta wysyłka nie została odrzucona.'
 - web-suspended.test.ts:28 comment says "18 write routes", the list holds 20. Flag check runs before id/body validation (flag off + bad id = 404, not 400): E4-A must not expect 400. drafts-and-send.md rule 11 points to measurement.md rule M3 (stage 12 creates the page).
+
+## F100 stage 06 landed (PASS + fixes)
+- touchEmailFlags inserts an all-false row with checked_at = now for notFound/mismatch targets: "last tried", not "flags known". If stage 07/12/15 or the answered check count coverage (share of mail with known flags), they must not treat these rows as read: add a nullable `flags_read_at` column in the stage 16 migration and set it in writeEmailFlags only. Tell the stage 07, 12, 15 and 16 workers.
+- Review gaps: none open. Mutation of touchEmailFlags call fails case 6, N3 and N1.
