@@ -16,6 +16,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
 - `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
 - `F100-e3a-measure` (🟠 ACTIVE): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🟠 ACTIVE): E7-T1 Polish UI (i18n frame first)
@@ -23,6 +24,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F095-e1-close-the-mvp` (🟠 ACTIVE): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets)
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
+- `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
+- `F029-sync-return-of-a-later-copy` (🟠 ACTIVE): Sync sees every user move of a known mail: a later identical copy, and a move below a folder's cursor
 
 ## NEXT
 
@@ -92,7 +95,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
 - `F091-repo-split` (🟢 PROVEN): The big repositories are split by aggregate and action handling is table-driven with a completeness test; landed 2026-11-14
 - `F088-notices-as-facts` (🟢 PROVEN): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry; landed 2026-11-14
+- `F085-a-mailbox-whose-host-the-guard-refuses-gets-a-status-and-a-notice` (🟢 PROVEN): A mailbox whose host the guard refuses gets a status and a notice; landed 2026-11-14
 - `F082-s6b-public-login` (🟢 PROVEN): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list; landed 2026-11-14
 - `F078-auth-verifications-cleanup` (🟢 PROVEN): Expired Better Auth `auth_verifications` rows are deleted by the retention job; landed 2026-11-14
-- `F069-compose-network-subnet` (🟢 PROVEN): Pin the Compose network subnet; landed 2026-11-14
-- 2026-11: 65 landed. spec/features/done/2026-11/
+- 2026-11: 66 landed. spec/features/done/2026-11/
