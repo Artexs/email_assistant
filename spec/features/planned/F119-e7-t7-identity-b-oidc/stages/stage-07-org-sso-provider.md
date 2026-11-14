@@ -1,51 +1,51 @@
 # F119 stage 07 — `org:sso`: show, set, remove
 
-Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stage 04. May run next to stages 05–06 (other files).
+Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stage 04; may run next to 05–06.
 
-## Step 07.1 — Service functions
+## Step 07.1 — Discovery, config and service functions
 
-**Goal.** PD-041: only the operator creates, changes and removes a provider, each with an audit row.
+**Goal.** PD-041: only the operator sets and removes a provider, each with an audit row.
 
-**Files.** Tenancy repo `repo/sso.ts`, tenancy service and `index.ts`, `auditEvents`.
+**Files.** `platform/auth-sso.ts` (discovery, config JSON), `platform/auth-sessions-end.ts` (new: our SQL on `auth_accounts` and `auth_sessions`, Kysely only, no `better-auth` import; stage 09 reuses it; cold review N8), tenancy repo `repo/sso.ts`, service, `index.ts`, `auditEvents`.
 
 **Interfaces.**
-- `getSsoState(db, ctx): Promise<SsoState | null>` with `SsoState = { providerId, issuer, domain, proof: "dns" | "attested" | null, required: boolean, linkedMembers: number, breakGlassReady: boolean }` (`breakGlassReady` = a break-glass owner with TOTP on). Never the config or the secret. Stages 08, 10 use it.
-- `setSsoProvider(db, ctx, input: { issuer, domain, clientId, clientSecret, config: OidcProviderConfig, actor: "cli", now }): Promise<{ kind: "new" | "secret" | "boundary" | "unchanged" } | { kind: "not_found" } | { kind: "domain_taken" }>`.
-  - `config` comes from `discoverProviderConfig` (stage 03), run by the CLI before the transaction (D16).
-  - One transaction: `lockOrganization`, read the row. No row → insert (`provider_id` = org id, `domain_verified = false`, `domain_proof = NULL`): `new`. Same issuer and domain, other client id or secret → update the config only; links and sessions stay: `secret`. Other issuer or domain → update; `domain_verified = false`, `domain_proof = NULL`, `organizations.sso_required = false`, delete the provider's `auth_accounts` rows and every `sso` session of those users: `boundary`. Same everything → `unchanged`, no write, no audit row.
-  - Domain of another organization's provider → `domain_taken`.
-  - Audit `sso.provider_set` (data `provider_id`, `change` = kind, `issuer_host`, `domain`, `links_removed`, `sessions_ended`), actor `cli`.
-- `removeSsoProvider(db, ctx, { actor, now }): Promise<{ kind: "removed"; linksRemoved: number; sessionsEnded: number } | { kind: "none" }>` — one transaction: lock the organization, then the provider row (`FOR UPDATE`; a callback in flight finishes first, D16), delete links, `sso` sessions of those users, the provider, set `sso_required = false`. Audit `sso.provider_removed` (`provider_id`, `links_removed`, `sessions_ended`).
-- The `oidc_config` JSON: the shape `spike.md` S2 proved (the discovered endpoints, `clientId`, `clientSecret`, `pkce: true`, `scopes: ["openid", "email", "profile"]`, `allowIdpInitiated: false`; the `OIDCConfig` type of the plugin). One builder function `buildOidcConfig` in `platform/auth-sso.ts`, so the plugin's shape lives in one file.
+- `discoverProviderConfig(issuer, { allowOrigins: readonly string[], timeoutMs })` wraps `discoverOIDCConfig` with our predicate (F6, cold review B1): a URL passes when it is `https:` and its host is a DNS name (no IP literal, not `localhost`, no `.local`, `.internal`, `.localhost` suffix), or its origin is in `allowOrigins` (tests: the fake IdP). Never Better Auth's `trustedOrigins` (its Origin checks use that list).
+- `buildOidcConfig(discovered, { clientId, clientSecret }): string` — the plugin's JSON as `spike.md` S2 proved (endpoints, `clientId`, `clientSecret`, `pkce: true`, `scopes: ["openid", "email", "profile"]`, `allowIdpInitiated: false`). The CLI calls both and passes the string to tenancy (tenancy never imports Better Auth).
+- `getSsoState(db, ctx): Promise<SsoState | null>`, `SsoState = { providerId, issuer, domain, proof: "dns" | "attested" | null, required, linkedMembers, breakGlassReady }` (`breakGlassReady`: a break-glass owner with TOTP on). Never the config. Stages 08, 10 use it.
+- `setSsoProvider(db, ctx, { issuer, domain, clientId, oidcConfig: string, actor, now }): Promise<{ kind: "new" | "secret" | "boundary" | "unchanged" | "not_found" | "domain_taken" }>`. One transaction: `lockOrganization`, then the provider row `FOR UPDATE` (a callback in flight finishes first; N7), then:
+  - no row → insert (`provider_id` = org id, unproved): `new`;
+  - same issuer, domain and client id (the stored `clientId` read from the JSON), other JSON → update the config; links and sessions stay: `secret`;
+  - other issuer, domain or client id (the plugin's boundary, F10; Entra's `sub` is per app, N1) → update, unproved, `sso_required = false`, delete the provider's links and the `sso` sessions of those users: `boundary`;
+  - identical → `unchanged`, no write;
+  - another organization's domain → `domain_taken`.
+  - Audit `sso.provider_set` (`provider_id`, `change`, `issuer_host`, `domain`, `links_removed`, `sessions_ended`), actor `cli`.
+- `removeSsoProvider(db, ctx, { actor, now }): Promise<{ kind: "removed"; linksRemoved; sessionsEnded } | { kind: "none" }>`: the same lock order; links, their users' `sso` sessions and the provider go; `sso_required = false`; audit `sso.provider_removed`.
 
 **Decisions.** D10, D12, D15, D16.
 
 ## Step 07.2 — The CLI
 
-**Files.** `apps/server/src/scripts/org-sso.ts`, `org-sso-args.ts` (+ unit test), `package.json` script `org:sso`.
+**Files.** `scripts/org-sso.ts`, `org-sso-args.ts` (+ unit test), the `org:sso` script.
 
 **Interfaces.**
-- `bun run org:sso --org-id <uuid>`: show. Prints `provider <id>`, `issuer <host>`, `domain <d> <proof|unproved>`, `required <yes|no>`, `flag sso_sign_in <on|off>`, `break-glass <ready|missing>`, `linked <n>`, `redirect <WEB_BASE_URL>/api/auth/sso/callback/<id>`. Stage 08 adds the `txt` line. No provider: `no provider`.
-- `--set --issuer <https url> --domain <d> --client-id <id> --client-secret-stdin`: reads one line from stdin (trimmed; empty → exit 1 `client_secret_missing`). `--client-secret <value>` does not exist (argv lands in shell history and `ps`). Prints the kind and the redirect line.
-- `--remove --confirm <domain>`: `--confirm` must equal the stored domain (`confirm_mismatch`, exit 1).
-- Domain input: trimmed, lower-cased, must match the stage 02 CHECK (`bad_domain`, exit 1).
-- Discovery failure: exit 1 with `discovery_failed <code>` (the `DiscoveryError` code), nothing written.
-- Errors are event lines; output via `process.stdout.write`; never the secret, never the config.
+- `bun run org:sso --org-id <uuid>`: show `provider`, `issuer <host>`, `domain <d> <proof|unproved>`, `required`, `flag sso_sign_in`, `break-glass <ready|missing>`, `linked <n>`, `redirect <WEB_BASE_URL>/api/auth/sso/callback/<id>`; or `no provider`. Stage 08 adds the `txt` line.
+- `--set --issuer <https url> --domain <d> --client-id <id> --client-secret-stdin`: one stdin line, trimmed (empty → exit 1 `client_secret_missing`). No `--client-secret <value>` (argv lands in shell history and `ps`). Prints the kind and the redirect line.
+- `--remove --confirm <domain>` (`confirm_mismatch`, exit 1). Domains are trimmed, lower-cased and checked as in stage 02 (`bad_domain`). Discovery failure: exit 1 `discovery_failed <code>`, nothing written. Errors are event lines; never the secret or the config.
 
-**Test** (`apps/server/test/integration/org-sso.test.ts`; the fake IdP as issuer, its origin trusted for the test):
+**Test** (`org-sso.test.ts`; the fake IdP as issuer, its origin in `allowOrigins`):
 
-1. Set on org A: `new`, one row, `domain_proof` NULL, one `sso.provider_set` (`change: new`). A second identical set: `unchanged`, no row.
-2. New secret: `secret`; Ann's link and SSO session stay.
-3. New issuer (a second fake IdP): `boundary`; Ann's link and SSO session gone, her password session stays, `sso_required` false, proof NULL; audit counts 1 and 1.
+1. Set on org A: `new`, one row, unproved, one `sso.provider_set` (`change: new`). The same set again: `unchanged`, no row.
+2. New secret: `secret`; Ann's link and SSO session stay. New client id: `boundary`.
+3. New issuer (a second fake IdP): `boundary`; Ann's link and SSO session gone, her password session stays, `sso_required` false, unproved; counts 1 and 1.
 4. Org B sets `x.test`: `domain_taken`.
 5. Remove with `--confirm x.test`: `removed`, counts right, no row, `sso_required` false; again: `none`. `--confirm y.test`: exit 1, nothing changed.
-6. Args unit: missing `--org-id`, `--set` without `--issuer`, `http://` issuer, `--client-secret foo`, two commands at once: usage, exit 1.
-7. Secret from stdin `s3cret-value-1\n`: stored in `oidc_config`; not in stdout, stderr, the log capture or the audit `data`.
-8. Discovery against a stopped fake IdP: exit 1 `discovery_failed`, no row.
-9. Show prints no `clientSecret`, no `s3cret-value-1`.
+6. Args unit: no `--org-id`, `--set` without `--issuer`, an `http://` issuer, `--client-secret foo`, two commands: usage, exit 1.
+7. Secret `s3cret-value-1\n` on stdin: in `oidc_config`; not in stdout, stderr, logs or audit `data`.
+8. Discovery against a stopped fake IdP: exit 1 `discovery_failed`, no row. Unit: the predicate passes `https://login.microsoftonline.com/t/v2.0`, `https://graph.microsoft.com/oidc/userinfo`; refuses `http://idp.x.test`, `https://127.0.0.1`, `https://10.0.0.1`, `https://169.254.169.254`, `https://localhost`, `https://idp.internal`.
+9. Show prints neither `clientSecret` nor the secret.
 
-**Check.** The Proof of `plan.md` (`/tmp/f119-s07`).
+**Check.** `plan.md` § Proof (`/tmp/f119-s07`).
 
-**Done when.** The nine tests pass; Proof prints `PROOF_OK`.
+**Done when.** The nine tests pass; `PROOF_OK`.
 
-**Out of scope.** Proof, attestation, the require switch (stage 08); the console (stage 10).
+**Out of scope.** Proof, attestation, require (stage 08); the console (stage 10).

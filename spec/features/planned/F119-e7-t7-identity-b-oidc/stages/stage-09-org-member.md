@@ -1,12 +1,12 @@
 # F119 stage 09 — `org:member`: add, end sessions, unlink
 
-Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs stage 05. May run next to stages 06–08.
+Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs stages 05 and 07. May run next to stages 06 and 08.
 
 ## Step 09.1 — Service functions
 
 **Goal.** An SSO member must exist before the first sign-in (no just-in-time accounts, PD-041), and the operator ends a member's access on the owner's request (ADR 0026 point 7, D11, Q3, Q4). Today no CLI adds a second member (`docs/capabilities/tenancy-and-plans.md` § Limits).
 
-**Files.** Tenancy service, repo `repo/memberships.ts` and `repo/users.ts`, `index.ts`; `auditEvents`. Session and account deletes are our SQL on Better Auth tables, as `resetTwoFactorRows` (F105 D13): put them in `platform/auth-sessions-end.ts` (Kysely only, no `better-auth` import) and list it in `docs/code-patterns.md` as the third exception (stage 13 writes the doc line).
+**Files.** Tenancy service, repo `repo/memberships.ts` and `repo/users.ts`, `index.ts`; `auditEvents`. Session and link deletes use `platform/auth-sessions-end.ts` (stage 07), never new SQL in tenancy.
 
 **Interfaces.**
 - `addMember(db, ctx, input: { email, displayName, role: "assistant" | "owner", locale: "pl" | "en", actor: "cli", now }): Promise<{ kind: "added"; userId: string } | { kind: "email_taken" } | { kind: "off_domain" } | { kind: "not_found" }>` — one transaction: lock the organization; the e-mail is trimmed and lower-cased; a `users` row with this e-mail anywhere → `email_taken` (one user, one organization: D16); an organization with `sso_required` and an e-mail off its provider domain → `off_domain`; else insert the user (`email_verified = true`, no `auth_accounts` row: no password) and the membership; audit `org.member_added` (`user_id`, `role`).
@@ -27,6 +27,10 @@ Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs sta
 - Exit 1 with the kind for every other result. The CLI prints ids and counts only (`docs/capabilities/account-data.md` rule 17: no address on stdout).
 - To give a new member a password later: `web:invite --org-id --user-id` (unchanged).
 
+## Step 09.3 — Warn before a flag lock-out (cold review N12)
+
+`org:flag --flag sso_sign_in --off` and the operator console flag write still apply the change, but when the organization has `sso_required`, the CLI prints `warning: sso_required is on; only the break-glass owner can sign in` and the route answers `{ ..., warning: "sso_required_on" }`. At start, a `FEATURES_OFF` that holds `sso_sign_in` while any organization has `sso_required` logs `log.warn("sso_flag_killed_with_sso_required", { count })`.
+
 **Test** (`apps/server/test/integration/org-member.test.ts`):
 
 1. Add `eve@x.test` (assistant) to org A: one user without `auth_accounts`, one membership, one `org.member_added`. `Eve@X.test` again: `email_taken`.
@@ -37,9 +41,10 @@ Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, sessions). Needs sta
 6. A user of org B with `--org-id` A: `not_member` for both commands; nothing changed.
 7. Args unit: `--add` without `--email`, a non-UUID `--user-id`, `--role admin`, two commands: usage, exit 1.
 8. stdout and the log capture of 1–6 hold no e-mail address.
+9. `org:flag --flag sso_sign_in --off` on an `sso_required` org: the flag is off and the warning line is printed; on another org: no warning.
 
 **Check.** The Proof of `plan.md` (`/tmp/f119-s09`).
 
-**Done when.** The eight tests pass; Proof prints `PROOF_OK`.
+**Done when.** The nine tests pass; Proof prints `PROOF_OK`.
 
 **Out of scope.** A members page or an owner route (Stage 3); removing a membership.

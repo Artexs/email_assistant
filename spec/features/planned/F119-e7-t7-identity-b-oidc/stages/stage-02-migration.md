@@ -22,8 +22,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration). The only migration of
   - `created_at`, `updated_at timestamptz NOT NULL DEFAULT now()`
   - RLS: `ENABLE ROW LEVEL SECURITY` and the `tenant_rows` policy for `app`, as every `org_id` table (`20261114100002_rls_tenant_policies.sql`). Grants for `app` as the other tables.
 - `organizations.sso_required boolean NOT NULL DEFAULT false`.
-- `auth_sessions.sign_in_method text NOT NULL DEFAULT 'password' CHECK (sign_in_method IN ('password','sso'))`.
-- Function and trigger `auth_sessions_sso_cap` `BEFORE INSERT OR UPDATE ON auth_sessions FOR EACH ROW`: on UPDATE, `NEW.sign_in_method := OLD.sign_in_method`; then, when `NEW.sign_in_method = 'sso'`, `NEW.expires_at := LEAST(NEW.expires_at, NEW.created_at + interval '12 hours')`. It does not lock `created_at` (tests move it, D16).
+- `auth_sessions.sign_in_method text NOT NULL DEFAULT 'password' CHECK (sign_in_method IN ('password','sso'))` and `auth_sessions.sso_started_at timestamptz`, with `CHECK ((sign_in_method = 'sso') = (sso_started_at IS NOT NULL))`. `sso_started_at` is the time of the IdP sign-in; a session made later from an SSO session keeps it (D6, F9).
+- Function and trigger `auth_sessions_sso_cap` `BEFORE INSERT OR UPDATE ON auth_sessions FOR EACH ROW`: on UPDATE, `NEW.sign_in_method := OLD.sign_in_method` and `NEW.sso_started_at := OLD.sso_started_at` unless the update sets `sso_started_at` itself (tests move it, D16); then, when `NEW.sign_in_method = 'sso'`, `NEW.expires_at := LEAST(NEW.expires_at, NEW.sso_started_at + interval '12 hours')`.
 - Down: drop in reverse order.
 
 **Registries (F106 rule 18, `docs/capabilities/account-data.md`).**
@@ -40,10 +40,10 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration). The only migration of
 2. `domain = 'X.test'`, `'x'`, `'-x.test'`: check violation each. `issuer = 'http://idp.x.test'`: check violation.
 3. `domain_verified = true` with `domain_proof = NULL`: check violation; `domain_proof = 'dns'` with `domain_verified = false`: check violation.
 4. `saml_config = '{}'`: check violation.
-5. Insert a session with `sign_in_method = 'sso'`, `created_at = now()`, `expires_at = now() + 30 days`: stored `expires_at = created_at + 12 h`.
-6. Update that row: `expires_at = now() + 30 days` → still `created_at + 12 h`; `sign_in_method = 'password'` → still `'sso'`.
+5. Insert a session with `sign_in_method = 'sso'`, `sso_started_at = now() - 2 h`, `expires_at = now() + 30 days`: stored `expires_at = sso_started_at + 12 h`.
+6. Update that row: `expires_at = now() + 30 days` → still `sso_started_at + 12 h`; `sign_in_method = 'password'` → still `'sso'`; `sso_started_at = now() - 13 h` → `expires_at` in the past.
 7. A `'password'` session with `expires_at = now() + 30 days` keeps it on insert and update.
-8. `sign_in_method = 'other'`: check violation.
+8. `sign_in_method = 'other'`: check violation; `'sso'` without `sso_started_at`, and `'password'` with it: check violation.
 9. RLS: with `app.org_id` = org B, the `app` role sees no row of org A's provider and cannot insert one for org A (as `rls-policy.test.ts`).
 10. Deleting org A removes its provider (cascade); deleting the user in `user_id` sets it NULL.
 

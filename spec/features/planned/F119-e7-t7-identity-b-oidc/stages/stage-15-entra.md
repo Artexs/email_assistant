@@ -20,8 +20,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (real system, a real identity prov
 
 1. `org:sso --org-id <id> --attest --confirm <tenant domain>` (no DNS control of `onmicrosoft.com`) → `attested`; `GET /api/sign-in-options` → `{"sso":true}`.
 2. The owner opens `/login` on a tailnet device, chooses company sign-in, types the test user's e-mail, signs in at Microsoft: the panel opens. Audit: one `sso.login` with `first_link: true` in the test organization.
-3. `auth_sessions` of the test user: `sign_in_method = 'sso'`, `expires_at − created_at = 12:00:00`.
-4. A second Entra user who is not a member signs in: the login page shows `login_sso_error_not_member`; one `sso.refused` row with `not_a_member`; no new `users` row.
+3. `auth_sessions` of the test user: `sign_in_method = 'sso'`, `expires_at − sso_started_at = 12:00:00`.
+4. A second Entra user who is not a member signs in: no new `users` row. With an `email` claim (`spike.md` S10): `login_sso_error_not_member` and one `sso.refused` row; an unlicensed user without one: the generic error and no row (cold review N14).
 5. `org:sso --require on` → `required yes`. The test member's password sign-in (after `web:invite` gave a password): `login_error_credentials`. The break-glass owner signs in with password and TOTP.
 6. The owner disables the test user in Entra; `org:member --end-sessions` ends the session; the next company sign-in fails at Microsoft.
 7. `$C logs --since "$T" server | grep -iE "eyJ|client_secret|<test user e-mail>"` → no line (`grep -c`, never print matches).

@@ -24,9 +24,9 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 07
 
 **Interfaces.**
 - `setSsoRequired(db, ctx, { required: boolean, actor, now }): Promise<{ kind: "changed" | "unchanged" } | { kind: "refused"; reasons: SsoRequireRefusal[]; userIds: string[] }>` with `SsoRequireRefusal = "no_provider" | "unproved" | "flag_off" | "no_break_glass" | "off_domain_members"`.
-- On: one transaction with the organization locked; every prerequisite checked and all failures returned: a provider exists; it is proved; `isFeatureOn(…, "sso_sign_in")` (a `FEATURES_OFF` kill counts as off); a break-glass owner with TOTP on exists (Q7); every member other than the break-glass owner has an e-mail on the domain (`userIds` lists the others). Then `sso_required = true`.
+- On: one transaction with the organization locked; every prerequisite checked and all failures returned: a provider exists; it is proved; `isFeatureOn(…, "sso_sign_in")` (a `FEATURES_OFF` kill counts as off); a break-glass owner with TOTP on exists (Q7); every member other than the break-glass owner has an e-mail on the domain (`userIds` lists the others). Then `sso_required = true`, and in the same transaction delete every `password` session of each member that `isPasswordSignInRefused` (stage 06) now refuses: an old password session must not outlive the rule.
 - Off: always allowed (the operator's way to reopen passwords, D8).
-- Audit `sso.required_changed` (`from`, `to`) on `changed` only.
+- Audit `sso.required_changed` (`from`, `to`, `sessions_ended`) on `changed` only.
 - CLI prints `required yes|no` or `refused <reason>` per reason and `member <user id>` per off-domain member; exit 1 on `refused`.
 
 **Decisions.** D8, D10, D12.
@@ -39,7 +39,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 07
 4. Attest with `--confirm x.test`: `attested`, row `attested`; `--confirm y.test`: `confirm_mismatch`.
 5. After a `boundary` set (stage 07), the proof is gone and show prints the `txt` line with the token of the new domain.
 6. Require on with nothing set: `refused` with `no_provider`, `flag_off`, `no_break_glass`.
-7. Provider proved, flag on, break-glass owner Olaf with TOTP, member Bob `bob@y.test`: `refused` `off_domain_members` with Bob's id; after Bob's e-mail moves to `x.test` (SQL): `changed`, one `sso.required_changed`.
+7. Provider proved, flag on, break-glass owner Olaf with TOTP, member Bob `bob@y.test`: `refused` `off_domain_members` with Bob's id; after Bob's e-mail moves to `x.test` (SQL): `changed`, one `sso.required_changed`; Bob's password session is gone (`GET /api/me` 401), Olaf's password session and Bob's SSO session stay.
 8. Olaf with TOTP off: `refused` `no_break_glass`.
 9. `FEATURES_OFF=sso_sign_in`: `refused` `flag_off`.
 10. Off: `changed`; again: `unchanged`.
