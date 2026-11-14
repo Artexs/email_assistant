@@ -61,3 +61,16 @@ export async function markDigestSent(db: DbOrTrx, ctx: TenantContext, digestId: 
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
+
+// F099 D14: the newest `sent_at` of a digest of the organization, null when none was sent.
+export async function lastDigestSentAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
+  const row = await db
+    .selectFrom("digests")
+    .select("sent_at")
+    .where("org_id", "=", ctx.orgId)
+    .where("sent_at", "is not", null)
+    .orderBy("sent_at", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.sent_at ?? null;
+}

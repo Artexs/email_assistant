@@ -639,6 +639,19 @@ export async function deleteOldLinkTokens(
   }
 }
 
+// F099 D14: the newest `sent_at` of an outbox row of the organization, null when none was sent.
+export async function lastOutboxSentAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
+  const row = await db
+    .selectFrom("outbox")
+    .select("sent_at")
+    .where("org_id", "=", ctx.orgId)
+    .where("sent_at", "is not", null)
+    .orderBy("sent_at", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.sent_at ?? null;
+}
+
 // F099 D17: failed outbox rows created after `since`. The outbox has no failure time; the sender gives up
 // 24 h after the queue time, so `created_at` bounds it. `outdated` and `expired` are cancellations.
 export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number> {

@@ -13,6 +13,7 @@ export {
   insertFeedback,
   getLabelTarget,
   insertTriageResult,
+  lastTriageAt,
   latestFeedback,
   latestTriageResult,
   listActivityRows,
