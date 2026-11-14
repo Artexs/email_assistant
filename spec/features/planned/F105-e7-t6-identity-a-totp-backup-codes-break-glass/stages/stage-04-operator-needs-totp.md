@@ -59,7 +59,7 @@ Two steps. About 180 changed lines.
     }
     ```
 
-    Keep the order of the existing branches; the TOTP branch runs only for an operator. The comment above `requireOperator` names ADR 0027 and ADR 0026 point 1.
+    Keep the order of the existing branches; the TOTP branch runs only for an operator. Keep the form of the final `next()` call as you find it: the RLS ticket (F092 stage 03, in build) wraps it in `withoutTenantScope(() => next())`; if that landed, the TOTP branch goes before that call; if a land conflict shows it, merge both. The comment above `requireOperator` names ADR 0027 and ADR 0026 point 1.
   - Decisions: D10.
   - Test:
     1. `http.test.ts` `requireOperator`: an operator with `twoFactorEnabled: true` → 200; an operator with `false` → 403 `{ error: "two_factor_required" }` and one captured line holding `operator_two_factor_required user_id=u-op`; a non-operator with `false` → 404 `not_found` (not 403).
