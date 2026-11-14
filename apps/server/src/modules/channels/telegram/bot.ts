@@ -19,7 +19,7 @@ const log = createLog("telegram");
 const ANSWER_MAX_CHARS = 200;
 
 // The language of a user who has no linked chat yet (D12). A user with no choice gets the default of plan P2: Polish.
-async function localeOfUser(db: Db | Transaction<DB>, userId: string): Promise<UserLocale> {
+export async function localeOfUser(db: Db | Transaction<DB>, userId: string): Promise<UserLocale> {
   try {
     return (await getUserAuthProfile(db, userId))?.locale ?? "pl";
   } catch (error) {

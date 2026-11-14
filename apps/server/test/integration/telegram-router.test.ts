@@ -7,6 +7,7 @@ import type { Transaction } from "kysely";
 
 import { createLinkToken, createTelegramBot, type CommandName, type LinkedChat } from "../../src/modules/channels";
 import type { CallbackResult, UpdateHandlers } from "../../src/modules/channels/port";
+import { localeOfUser } from "../../src/modules/channels/telegram/bot";
 import type { DB } from "../../src/platform/db";
 
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
@@ -191,6 +192,36 @@ describe("telegram router", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0]?.payload.text).toBe(textTables.en.bot.linkExpired);
       expect(await linkCount(trx, chatId)).toBe(0);
+    });
+  });
+
+  test("D12: a failed locale read falls back to pl and warns with the user id only", async () => {
+    await withRollback(db, async (trx) => {
+      const { userId } = await createOrgWithMailbox(trx);
+      // Only the read of the users table fails; the error text must not reach the log.
+      const failing = new Proxy(trx, {
+        get(target, prop) {
+          if (prop === "selectFrom") {
+            return (table: string) => {
+              if (table === "users") throw new Error("MARKER-DB-DOWN secret detail");
+              return (target.selectFrom as (name: string) => unknown)(table);
+            };
+          }
+          const value: unknown = Reflect.get(target, prop);
+          return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        },
+      });
+      expect(await localeOfUser(failing, userId)).toBe("pl");
+      const warned = lines.filter(
+        (line) => line.level === "error" && line.text.includes("telegram_locale_read_failed")
+      );
+      expect(warned).toHaveLength(1);
+      expect(warned[0]?.text).toContain(userId);
+      expect(warned[0]?.text).not.toContain("MARKER-DB-DOWN");
+      // A working read: no row choice gives pl; a stored choice wins.
+      expect(await localeOfUser(trx, userId)).toBe("pl");
+      await trx.updateTable("users").set({ locale: "en" }).where("id", "=", userId).execute();
+      expect(await localeOfUser(trx, userId)).toBe("en");
     });
   });
 

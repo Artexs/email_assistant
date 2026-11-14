@@ -1,5 +1,7 @@
 import type { UserLocale } from "../tenancy";
 
+import { pluralCategory } from "./locale";
+
 // The command names of the bot. The server keeps its own list (`channels/port.ts`); a test checks that both match.
 export const botCommandNames = ["digest", "status", "pause", "resume", "review", "help"] as const;
 export type BotCommandName = (typeof botCommandNames)[number];
@@ -125,7 +127,7 @@ const PL_HELP = [
   "Stuknij ✅, gdy kategoria AI jest trafna, albo ✏️, aby ją poprawić.",
   "↩️ pod wierszem podsumowania cofa to, co system zrobił z tą wiadomością (7 dni).",
   "📤 pod zatwierdzeniem wysyła szkic; ✖️ odrzuca go (szkic zostaje usunięty).",
-  "✅ Gotowe pod odpowiedzianym zleceniem zamyka je.",
+  "✅ Gotowe pod zleceniem z odpowiedzią zamyka je.",
 ].join("\n");
 
 const EN_TRIAGE: Record<TriageScopeKind, string> = {
@@ -154,6 +156,13 @@ const PL_ACTIONS: Record<TriageScopeKind, string> = {
   synthetic: "tylko wiadomości testowe (ACTIONS_SCOPE=synthetic)",
   all: "prawdziwe wiadomości, według trybu każdej skrzynki (ACTIONS_SCOPE=all)",
 };
+// A Polish count with its noun: "1 przypomnienie", "2 przypomnienia", "5 przypomnień", "22 przypomnienia".
+const PL_REMINDER_NOUN = { one: "przypomnienie", few: "przypomnienia", many: "przypomnień" } as const;
+const plReminders = (count: number): string => {
+  const category = pluralCategory("pl", count);
+  return `${count} ${PL_REMINDER_NOUN[category === "other" ? "many" : category]}`;
+};
+
 const PL_SEND: Record<SendScopeKind, string> = {
   off: "wyłączone",
   self: "tylko na Twoje adresy testowe (SEND_SCOPE=self)",
@@ -310,17 +319,17 @@ export const botTexts = {
       waiting: (count) => `Czeka na klasyfikację: ${count}`,
       triage: (scope) => `Klasyfikacja: ${PL_TRIAGE[scope]}`,
       actions: (scope, counts) =>
-        `Działania: ${PL_ACTIONS[scope]} · ostatnie 24 h – wykonane: ${counts.applied}, cofnięte: ${counts.undone}, nieudane: ${counts.failed}`,
+        `Działania: ${PL_ACTIONS[scope]} · ostatnie 24 h – wykonano ${counts.applied}, cofnięto ${counts.undone}, nie udało się ${counts.failed}`,
       approvals: "Zatwierdzenia",
       approvalsOf: (address) => `Zatwierdzenia ${address}`,
       approvalsLine: (label, waiting, extra) =>
-        `${label}: czeka na Twoje stuknięcie: ${waiting}${extra.oldest === null ? "" : ` (najstarsze: ${extra.oldest})`}${extra.held === null ? "" : ` · ${extra.held}`}`,
-      approvedPaused: (count) => `zatwierdzone: ${count}, wstrzymane: skrzynka jest wstrzymana`,
-      approvedAuthError: (count) => `zatwierdzone: ${count}, wstrzymane: logowanie do skrzynki nie działa`,
-      approvedHeld: (count, scope) => `zatwierdzone: ${count}, wstrzymane przez SEND_SCOPE=${scope}`,
-      approvedSending: (count) => `zatwierdzone: ${count}, trwa wysyłanie`,
+        `${label}: ${waiting} do Twojego stuknięcia${extra.oldest === null ? "" : ` (najstarsze od ${extra.oldest})`}${extra.held === null ? "" : ` · ${extra.held}`}`,
+      approvedPaused: (count) => `zatwierdzono ${count}, wysyłka czeka: skrzynka jest wstrzymana`,
+      approvedAuthError: (count) => `zatwierdzono ${count}, wysyłka czeka: logowanie do skrzynki nie działa`,
+      approvedHeld: (count, scope) => `zatwierdzono ${count}, wysyłka wstrzymana przez SEND_SCOPE=${scope}`,
+      approvedSending: (count) => `zatwierdzono ${count}, trwa wysyłanie`,
       send: (scope) => `Wysyłanie: ${PL_SEND[scope]}`,
-      delegations: (open, overdue) => `Zlecenia: czeka na odpowiedź: ${open}, po terminie: ${overdue}`,
+      delegations: (open, overdue) => `Zlecenia: ${open} bez odpowiedzi, ${overdue} po terminie`,
       llm: (provider, model) => `Model AI: ${provider} · ${model}`,
       noDigestTimes: "Brak godzin podsumowań (bun run digest:times)",
       nextDigest: (time) => `Następne podsumowanie: ${time}`,
@@ -353,7 +362,7 @@ export const botTexts = {
       approvedPaused: "Zatwierdzono. Skrzynka jest wstrzymana, więc wysyłka czeka; /status pokazuje szczegóły.",
       approvedAuthError:
         "Zatwierdzono. Logowanie do skrzynki nie działa, więc wysyłka czeka, aż hasło zostanie poprawione; /status pokazuje szczegóły.",
-      alreadyApproved: (clock) => `Już zatwierdzono ${clock}.`,
+      alreadyApproved: (clock) => `Już zatwierdzono (${clock}).`,
       sending: "Już zatwierdzono, trwa wysyłanie.",
       sent: "Już wysłano.",
       rejected: "Ta wysyłka została odrzucona.",
@@ -376,21 +385,25 @@ export const botTexts = {
         auth_error: "Logowanie do skrzynki nie działa, więc wysyłki czekają",
       },
       sendAgainAlready: "Ponowna wysyłka tej wiadomości została już zatwierdzona.",
-      sendAgainNotFailed: "Ta wysyłka nie ma stanu niepowodzenia.",
+      sendAgainNotFailed: "Ta wysyłka nie zakończyła się błędem.",
       sendAgainDraftGone: "Szkicu już nie ma: wiadomość trzeba sklasyfikować ponownie.",
       sendAgainDelegationClosed: "Zlecenie jest zamknięte: bez ponownej wysyłki.",
       setNothing: "Nie ma co zatwierdzać: przypomnienia zostały już obsłużone.",
-      setApproved: (approved, skipped) => `⏳ Przypomnienia wyjdą w ciągu minuty: ${approved}, pominięto: ${skipped}.`,
+      setApproved: (approved, skipped) => {
+        const category = pluralCategory("pl", approved);
+        const out = { one: "wyjdzie", few: "wyjdą", many: "wyjdzie", other: "wyjdzie" }[category];
+        return `⏳ ${plReminders(approved)} ${out} w ciągu minuty, pominięto: ${skipped}.`;
+      },
       setApprovedHeld: (approved, skipped, note) =>
-        `⏳ Zatwierdzone przypomnienia: ${approved}, pominięto: ${skipped}. ${note}; /status pokazuje szczegóły.`,
-      setRejected: (count) => `✖️ Pominięte przypomnienia: ${count}.`,
+        `⏳ Zatwierdzono ${plReminders(approved)}, pominięto: ${skipped}. ${note}; /status pokazuje szczegóły.`,
+      setRejected: (count) => `✖️ Pominięto ${plReminders(count)}.`,
       done: "✅ Gotowe.",
       doneAlready: "Już gotowe.",
       doneNotClosable: "To zlecenie nie ma jeszcze odpowiedzi.",
       wentOut: "✅ Zlecenie oznaczono jako wysłane. Odpowiedź wykonawcy zostanie teraz dopasowana.",
       wentOutAlready: "Już oznaczono jako wysłane.",
       wentOutSentAgain: "Wiadomość wysłano ponownie: bez zmian.",
-      wentOutNotUnknown: "Ta wysyłka nie ma stanu nieznanego: bez zmian.",
+      wentOutNotUnknown: "Ta wysyłka nie jest w stanie nieznanym: bez zmian.",
       wentOutDelegationNotOpen: "Zlecenie nie czeka już na tę odpowiedź: bez zmian.",
     },
   },
