@@ -6,7 +6,7 @@ import { basename, join } from "node:path";
 
 import { Decrypter, generateX25519Identity, identityToRecipient } from "age-encryption";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
-import { sql } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import { auditEvents } from "../../src/modules/audit";
 import { insertLinkToken } from "../../src/modules/channels/repo";
@@ -17,6 +17,9 @@ import {
   writeEncryptedFile,
   type OrgExportResult,
 } from "../../src/modules/privacy";
+import { insertDigest } from "../../src/modules/reports/repo";
+import { insertMembership, insertUser, upsertOrgFeature } from "../../src/modules/tenancy/repo";
+import type { DB } from "../../src/platform/db";
 
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
 import { testDb } from "./helpers";
@@ -76,16 +79,60 @@ interface Seed {
   verificationIdentifier: string;
 }
 
-// An organization with two members, a mailbox with credentials, mail, triage, actions, outbox rows, a chat link, an unused
-// chat link token, and a password, a session and a reset token of the owner.
-async function seedOrg(): Promise<Seed> {
+// One row in each table that `fillMailbox` leaves empty: the tables whose export filter a wrong join would break.
+async function seedSideTables(trx: Transaction<DB>, orgId: string, userId: string): Promise<void> {
+  const email = await trx
+    .selectFrom("emails")
+    .select("id")
+    .where("org_id", "=", orgId)
+    .orderBy("id")
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  const action = await trx
+    .selectFrom("actions")
+    .select("id")
+    .where("org_id", "=", orgId)
+    .orderBy("id")
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  await trx
+    .insertInto("email_flags")
+    .values({ email_id: email.id, org_id: orgId, seen: true, answered: false, flagged: false, checked_at: NOW })
+    .execute();
+  await trx
+    .insertInto("email_headers")
+    .values({ email_id: email.id, org_id: orgId, parts_known: true, captured_at: NOW })
+    .execute();
+  await insertDigest(
+    trx,
+    { orgId },
+    {
+      userId,
+      slotKey: "2026-11-20T08:00",
+      periodStart: new Date("2026-11-19T16:00:00Z"),
+      periodEnd: NOW,
+    }
+  );
+  await trx
+    .insertInto("action_feedback")
+    .values({ org_id: orgId, action_id: action.id, kind: "mistake", via: "web", created_at: NOW, updated_at: NOW })
+    .execute();
+  await upsertOrgFeature(trx, { orgId }, { flag: "stats_page", enabled: true, setBy: "cli", setAt: NOW });
+}
+
+// An organization with two members (and `sharedUserId` as a third, when given), a mailbox with credentials, mail, triage,
+// actions, outbox rows, a chat link, an unused chat link token, one row in each of `email_flags`, `email_headers`,
+// `digests`, `action_feedback` and `org_features`, and a password, a session and a reset token of the owner.
+async function seedOrg(sharedUserId?: string): Promise<Seed> {
   return db.transaction().execute(async (trx) => {
     const { orgId, userId: ownerId, mailboxId } = await createOrgWithMailbox(trx);
     orgIds.push(orgId);
     userIds.push(ownerId);
     const memberId = await addMember(trx, orgId);
     userIds.push(memberId);
+    if (sharedUserId) await insertMembership(trx, { orgId }, { userId: sharedUserId, role: "assistant" });
     await fillMailbox(trx, { orgId }, mailboxId, ownerId);
+    await seedSideTables(trx, orgId, ownerId);
     const encryptedSecret = `enc-${randomUUID()}`;
     await trx
       .updateTable("mailbox_credentials")
@@ -178,11 +225,26 @@ const exportedNames = Object.entries(EXPORT_MAP)
 
 describe("exportOrganization", () => {
   test("1. the file decrypts; it holds every exported table, the rows of the seed and no row of another organization", async () => {
-    const a = await seedOrg();
-    const b = await seedOrg();
+    // One user is a member of both organizations: it goes out through the membership row of A only.
+    const shared = await insertUser(db, {
+      email: `shared-${randomUUID()}@x.test`,
+      displayName: "Shared",
+      locale: "en",
+    });
+    userIds.push(shared.id);
+    const a = await seedOrg(shared.id);
+    const b = await seedOrg(shared.id);
     const path = outPath();
     const expected: Record<string, number> = {};
     for (const name of exportedNames) expected[name] = await dbCount(name, a.orgId);
+    // Every table that the seed fills has a row in B too, so a filter that lets B in shows as extra rows.
+    for (const name of exportedNames.filter((n) => !["users", "organizations"].includes(n))) {
+      expect({ name, a: (expected[name] ?? 0) > 0, b: (await dbCount(name, b.orgId)) > 0 }).toEqual({
+        name,
+        a: true,
+        b: true,
+      });
+    }
     const result = written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
 
     const { json, text } = await decryptFile(path);
@@ -198,7 +260,18 @@ describe("exportOrganization", () => {
       expect({ name, rows: tables[name]?.length }).toEqual({ name, rows: expected[name] });
       expect(result.rows[name]).toBe(tables[name]?.length ?? -1);
     }
-    expect(tables.users).toHaveLength(2);
+    // No row of B in any table: every row with an `org_id` column belongs to A.
+    for (const name of exportedNames.filter((n) => n !== "users" && n !== "organizations")) {
+      const orgs = new Set((tables[name] ?? []).map((row) => row.org_id));
+      expect({ name, orgs: [...orgs] }).toEqual({ name, orgs: [a.orgId] });
+    }
+    expect((tables.organizations ?? []).map((row) => row.id)).toEqual([a.orgId]);
+    // Users: the two members of A and the shared user; the shared user only through the membership row of A.
+    expect(tables.users?.map((row) => row.id).sort()).toEqual([a.ownerId, a.memberId, shared.id].sort());
+    expect(tables.memberships).toHaveLength(3);
+    expect((tables.memberships ?? []).filter((row) => row.user_id === shared.id)).toEqual([
+      expect.objectContaining({ org_id: a.orgId }),
+    ]);
     for (const name of ["organizations", "mailboxes", "emails", "actions", "triage_results", "outbox", "chat_links"]) {
       expect(tables[name]?.length ?? 0).toBeGreaterThan(0);
     }
@@ -242,6 +315,21 @@ describe("exportOrganization", () => {
     written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
     expect((await stat(path)).mode & 0o777).toBe(0o600);
     expect((await readdir(dir)).filter((name) => name.endsWith(".part"))).toEqual([]);
+  });
+
+  test("3b. after an export the out folder holds exactly the one .age file, and no other file holds the plain text", async () => {
+    const a = await seedOrg();
+    const own = mkdtempSync(join(tmpdir(), "f106-export-dir-"));
+    try {
+      const path = join(own, "org.age");
+      written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+      expect(await readdir(own)).toEqual(["org.age"]);
+      const raw = await readFile(path, "latin1");
+      expect(raw).not.toContain(a.mailboxAddress);
+      expect(raw).not.toContain("ea-org-export");
+    } finally {
+      rmSync(own, { recursive: true, force: true });
+    }
   });
 
   test("4. a second run with the same path gives exists; the first file stays the same; one audit row", async () => {
