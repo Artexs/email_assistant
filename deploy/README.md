@@ -52,6 +52,14 @@ $C run --build --rm server bun run db:migrate
 $C up -d --build --wait
 ```
 
+4. Check the log rotation. Each line must end with `json-file 10m 5`:
+
+```sh
+docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}} {{index .HostConfig.LogConfig.Config "max-size"}} {{index .HostConfig.LogConfig.Config "max-file"}}' $($C ps -q)
+```
+
+   A line that differs: run `$C up -d --force-recreate --wait <service>` for that service, then check again. A recreated container starts a new log file. The first deploy with a changed `logging:` block recreates `db` at `up -d --wait db`: a short DB restart.
+
 ## Logs
 
 The server writes one JSON object per line (ADR 0024). Read them as text:
@@ -59,6 +67,8 @@ The server writes one JSON object per line (ADR 0024). Read them as text:
 ```sh
 $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", (if .event == "legacy_text" then .msg else .event end), (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
 ```
+
+Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. A new service in any Compose file needs the same block. `bash deploy/check-logging.sh` checks it, and CI runs it.
 
 Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. A CLI prints the text form with `$C exec -e LOG_FORMAT=text server bun run <script> …`.
 

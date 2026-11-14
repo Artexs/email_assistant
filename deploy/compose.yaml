@@ -1,8 +1,16 @@
 name: email-assistant
 
+# Docker log rotation for every service: 5 files of 10 MB per container (deploy/README.md § Logs). deploy/check-logging.sh checks it.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
 services:
   db:
     image: postgres:17
+    logging: *logging
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -24,6 +32,7 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
     image: ea-server
+    logging: *logging
     restart: unless-stopped
     stop_grace_period: 45s
     env_file: ../.env
