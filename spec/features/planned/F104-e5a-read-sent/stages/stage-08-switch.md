@@ -29,7 +29,7 @@ export async function setSentSync(
 
 In one transaction (`db.isTransaction ? run(db) : db.transaction().execute(run)`):
 
-1. `isFeatureOn(trx, ctx, "sent_sync")` false → `{ result: "flag_off", deleted: 0 }`.
+1. `input.enabled` true and `isFeatureOn(trx, ctx, "sent_sync")` false → `{ result: "flag_off", deleted: 0 }`. Turning off never checks the flag: the owner can withdraw consent also after the operator turned the flag off (cold review 1, M3).
 2. `getMailbox(trx, ctx, mailboxId)` undefined → `not_found`.
 3. `locked = await lockSentSyncState(trx, ctx, mailboxId)`; undefined → `insertSentSyncState(trx, ctx, mailboxId, { enabled: false })`, then lock again (an older mailbox has no row; the insert is `ON CONFLICT DO NOTHING`, so a parallel setter is safe).
 4. `locked.enabled === input.enabled` → `same`.
@@ -47,9 +47,9 @@ The pass's guard (stage 04, D5) takes the same row lock, so a pass that runs dur
 2. The same call again → `same`, no second audit row.
 3. On with a cursor, `first_pass_at` and 3 sent rows (inserted with `insertSentEmails`) → `enabled: false` → `changed`, `deleted 3`; no sent row of the mailbox; the state is off and clean; the audit row has `count: 3`. Another mailbox's sent rows stay.
 4. Off → on again at `AT + 1 h` → `enabled_at = AT + 1 h`, cursor null (the next pass is a first pass: run `syncSentHeaders` on a fake with one mail and see `mode "initial"`).
-5. Flag off → `flag_off`, no row change, no audit row.
+5. Flag off, `enabled: true` → `flag_off`, no row change, no audit row. Flag off, an enabled row with 2 sent rows, `enabled: false` → `changed`, `deleted 2`, the audit row written.
 6. Unknown mailbox id, and org A's mailbox in org B's context → `not_found`, nothing written in org A.
-7. A pass during the switch: a stage-04 style `deps.isOwnActionId` hook that calls `setSentSync({ enabled: false })` → the pass returns `cursor_moved`, and after it no sent row exists.
+7. A pass during the switch: a stage-04 style `deps.sentOriginOf` hook (case 12 of stage 04) that calls `setSentSync({ enabled: false })` → the pass returns `cursor_moved`, and after it no sent row exists.
 
 **Check.** `bun test apps/server/test/integration/mail-sent-switch.test.ts`
 
@@ -66,7 +66,7 @@ The pass's guard (stage 04, D5) takes the same row lock, so a pass that runs dur
 **Interfaces.**
 
 - `connectMailbox`: before the transaction (after the SMTP check), `const sentSync = await isFeatureOn(deps.db, ctx, "sent_sync")`. Inside `run`, after `insertDefaultSettings`: `await insertSentSyncState(trx, ctx, mailboxId, { enabled: sentSync })`. The `mailbox.connected` audit data becomes `{ mailbox_id: mailboxId, via: meta.via, sent_sync: sentSync }`. The return value gains `sentSync: boolean`: `{ mailboxId, info, sentSync }`. Callers that destructure stay valid.
-- `mailbox-connect.ts`: after the line `connected mailbox <id>`, when `sentSync` is true, one more line in the same form as its neighbours: `sent mail: tracked, read only (turn off: bun run mailbox:settings sent-sync --org-id <org> --mailbox-id <id> --value off)`.
+- `mailbox-connect.ts`: after the line `connected mailbox <id>`, when `sentSync` is true, one more line in the same form as its neighbours: `sent mail: tracked, read only`. Stage 09 adds the off command to this line (the command exists only from stage 09).
 
 **Decisions.** D11; Q3.
 
@@ -86,7 +86,7 @@ The pass's guard (stage 04, D5) takes the same row lock, so a pass that runs dur
 
 **Files.** `docs/capabilities/sent-mail.md`, `docs/capabilities/sync.md` (rule 1, the connect transaction: "… the default settings, the Sent switch row (on when the flag `sent_sync` is on) and the audit row `mailbox.connected`"), `docs/architecture.md` §5 `audit_log` row (add `mailbox.sent_sync_changed` to the event list).
 
-`sent-mail.md`: rules for the switch (on, off deletes, the audit row, the lock shared with the pass, flag off refuses) and for connect; Entry points row `setSentSync` → `apps/server/src/modules/mail/sent-switch.ts`.
+`sent-mail.md`: rules for the switch (on, off deletes, the audit row, the lock shared with the pass, flag off refuses on but allows off) and for connect; Entry points row `setSentSync` → `apps/server/src/modules/mail/sent-switch.ts`.
 
 **Check.** `bun test apps/server/src/capability-map.test.ts`
 

@@ -39,13 +39,14 @@ After the next `mail.sync` run (every 5 min; 2 min after F100 stage 07). Each wi
 6. `$C exec db psql … -Atc "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'outbox_kind_check'"` → the list ends with `'sent_missing'`.
 7. The panel card shows "Last sent mail seen: …" (the owner or a screenshot through the tailnet).
 8. Telegram: no `sent_missing` notice now (the first pass is new; the notice can come only after 7 quiet days).
+9. Answered marks on real mail (plan N4): `$C exec db psql … -Atc "SELECT count(*) FROM sent_emails s JOIN emails e ON e.mailbox_id = s.mailbox_id AND e.message_id_header = s.parent_message_id WHERE s.mailbox_id = '<pilot mailbox id>' AND s.origin = 'user'"` → a count (0 means Interia's clients send no `In-Reply-To`/`References`, or the owner answered no stored mail in the window: write which into the note; with replies known from the owner, 0 is a finding for E5b).
 
 ## After
 
-- Write `notes/<date>-sent-sync-pilot.md`: the counts of checks 4–5 (no subject, no address), the first-pass time from the log lines, N2 and N3 results. Commit it with an explicit path.
+- Write `notes/<date>-sent-sync-pilot.md`: the counts of checks 4, 5 and 9 (no subject, no address), the first-pass time from the log lines, N2, N3 and N4 results. Commit it with an explicit path.
 - Move the ticket to `done/` with the last land (`limen land` closes it).
 
 ## Rollback
 
-- Behaviour wrong but the server healthy: `$C run --rm server bun run org:flag --org-id <pilot org id> --flag sent_sync --off` (the pass, the card and the notice stop at once; the rows stay until retention or the switch's off).
+- Behaviour wrong but the server healthy: `$C run --rm server bun run org:flag --org-id <pilot org id> --flag sent_sync --off` (the pass and the notice stop at once; the card shows "paused" and the owner can still turn the switch off, which deletes the rows; else retention clears text and headers).
 - Server broken: `docker tag ea-server:pre-f104 ea-server && $C up -d --wait` with the rollback commit checked out. Do not roll back the migrations: the old code ignores the new tables and the extra CHECK member.

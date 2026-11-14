@@ -1,6 +1,6 @@
 # F104 stage 06 — Job wiring, GreenMail proof, ADR and docs
 
-Part of [`../plan.md`](../plan.md). Needs stage 05 on `master`. Read D3, D8, D9, D16 first.
+Part of [`../plan.md`](../plan.md). Review job before the land (the pass joins the live sync loop). Needs stage 05 on `master`. Read D3, D6, D8, D9, D16 first.
 
 After this stage each `mail.sync` run reads the Sent folder of every mailbox whose flag and switch are on, on the same IMAP connection, and a Sent error never fails the INBOX sync. A GreenMail test proves that the pass leaves the folder as it was. ADR 0029 is accepted and the docs say "reads Sent read-only".
 
@@ -10,7 +10,7 @@ After this stage each `mail.sync` run reads the Sent folder of every mailbox who
 
 **Files.** `apps/server/test/integration/imap-sent-greenmail.test.ts` (new).
 
-**Interfaces.** Follow `imap-sync-greenmail.test.ts` (connect with `connectMailbox`, `openImapProvider`, `verifySmtpLogin`, inside `withRollback`, a random address `u-<uuid>@localhost`). Then: `setFolderMapEntry(trx, ctx, mailboxId, "sent", "Sent")`; `appendRaw(imap, "Sent", raw1, [])` and `appendRaw(imap, "Sent", raw2, ["\\Seen"])` with `renderSeedMessage` mails dated now − 1 h (raw1 has `inReplyTo`, raw2 has a text body); `upsertOrgFeature(… "sent_sync" on …)`; `writeSentSwitch(… on …)`; open a provider with `openImapProvider(imap)`; read `before = { status: await p.folderStatus("Sent"), flags: await p.fetchFlagsIn("Sent", uids) }` (uids from `p.searchSinceIn("Sent", now − 1 d)`); run `syncSentFolder({ db: trx, provider: p, isOwnActionId: async () => false, now: () => new Date() }, ctx, mailboxId)`; read `after` the same way; close the provider.
+**Interfaces.** Follow `imap-sync-greenmail.test.ts` (connect with `connectMailbox`, `openImapProvider`, `verifySmtpLogin`, inside `withRollback`, a random address `u-<uuid>@localhost`). Then: `setFolderMapEntry(trx, ctx, mailboxId, "sent", "Sent")`; `appendRaw(imap, "Sent", raw1, [])` and `appendRaw(imap, "Sent", raw2, ["\\Seen"])` with `renderSeedMessage` mails dated now − 1 h (raw1 has `inReplyTo`, raw2 has a text body); `upsertOrgFeature(… "sent_sync" on …)`; `writeSentSwitch(… on …)`; open a provider with `openImapProvider(imap)`; read `before = { status: await p.folderStatus("Sent"), flags: await p.fetchFlagsIn("Sent", uids) }` (uids from `p.searchSinceIn("Sent", now − 1 d)`); run `syncSentFolder({ db: trx, provider: p, sentOriginOf: async () => null, now: () => new Date() }, ctx, mailboxId)`; read `after` the same way; close the provider.
 
 **Decisions.** D3, D7.
 
@@ -31,9 +31,11 @@ After this stage each `mail.sync` run reads the Sent folder of every mailbox who
 
 **Goal.** `syncOne` runs `syncSentFolder` after the INBOX sync on the same provider; errors stay inside (D9).
 
-**Files.** `apps/server/src/modules/mail/jobs.ts`, `apps/server/src/platform/log-fields.ts` (only if a field is new; none is planned), `apps/server/test/integration/mail-jobs.test.ts` (three cases).
+**Files.** `apps/server/src/modules/mail/jobs.ts`, `apps/server/src/main.ts` (the job deps), `apps/server/src/platform/log-fields.ts` (only if a field is new; none is planned), `apps/server/test/integration/mail-jobs.test.ts` (three cases; its existing job deps gain `sentOriginOf`).
 
-**Interfaces.** In `syncOne`, after `markSynced` and the folder failure bookkeeping, before `provider.close()` (next to the F100 flag refresh when it exists there; either order):
+**Interfaces.** `MailSyncJobDeps` gains `sentOriginOf: SentSyncDeps["sentOriginOf"]`; `main.ts` wires it next to `isOwnActionId` (line 87 at the plan base): `sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(db, ctx, mailboxId, actionId)` (import from `./modules/actions`). Every other creator of the job deps (tests, scripts: `grep -rn "createMailSyncJob(" apps/server`) gets it too.
+
+In `syncOne`, after `markSynced` and the folder failure bookkeeping, before `provider.close()` (next to the F100 flag refresh when it exists there; either order):
 
 ```ts
 await runSentPass(deps, ctx, mailboxId, provider);
@@ -43,7 +45,7 @@ await runSentPass(deps, ctx, mailboxId, provider);
 // A Sent error never fails the INBOX sync (ADR 0029).
 async function runSentPass(deps: MailSyncJobDeps, ctx: TenantContext, mailboxId: string, provider: MailProvider): Promise<void> {
   try {
-    const result = await syncSentFolder({ db: deps.db, provider, isOwnActionId: deps.isOwnActionId, now: deps.now }, ctx, mailboxId);
+    const result = await syncSentFolder({ db: deps.db, provider, sentOriginOf: deps.sentOriginOf, now: deps.now }, ctx, mailboxId);
     if (result.status === "flag_off" || result.status === "off") return;
     log.info("sent_sync_done", { mailbox_id: mailboxId, status: result.status, kind: result.mode, count: result.stored });
     if (result.texts.stored + result.texts.gone > 0) {
@@ -68,7 +70,7 @@ A `MailAuthError` inside the pass is only logged here (the next INBOX sync sets 
 
 1. One INBOX mail and one `Sent` mail → after `job.run()`: the INBOX mail is in `emails`, the Sent mail in `sent_emails`, `markSynced` ran (`last_synced_at` set).
 2. Flag off → no `sent_emails` row and no `"Sent"` entry in `fake.folderCalls`.
-3. A `Sent` mail with an `X-EA-Action-Id` and an `isOwnActionId` that throws `new HardError("x")` only for that id → the INBOX mail is stored, `last_synced_at` set, the state has `last_error_code "failed"`, and `console.warn` got one call whose text holds `sent_sync_failed` (spy as `actions-close.test.ts` line 301 does with `console.error`).
+3. A `Sent` mail with an `X-EA-Action-Id` and a `sentOriginOf` that throws `new HardError("x")` → the INBOX mail is stored, `last_synced_at` set, the state has `last_error_code "failed"`, and `console.error` got one call whose text holds `sent_sync_failed` (`log.warn` writes to `console.error`, `platform/log.ts` line 135; spy as `actions-close.test.ts` line 301 does).
 
 **Check.** `bun test apps/server/test/integration/mail-jobs.test.ts`
 
@@ -84,7 +86,7 @@ A `MailAuthError` inside the pass is only logged here (the next INBOX sync sets 
 
 **Interfaces.**
 
-- ADR 0029: status line `accepted (F104 stage 06, <date>)`; keep the text; add a section `## Amendments at acceptance (F104)` with four bullets: (1) the "answered by the user" mark of decision 4 is the reader `listUserAnswers` over `sent_emails` (the direct parent only, user mail only; stage 07); (2) decision 3's Sent pass before a system send is wired by E6a (F115) through `syncSentHeaders`; (3) turning the switch off deletes the stored sent mail (default, F104 `questions.md` Q1); (4) the 30- and 14-day windows and the retention count from the Sent folder's INTERNALDATE. `README.md` row 0029: `accepted`.
+- ADR 0029: status line `accepted (F104 stage 06, <date>)`; keep the text; add a section `## Amendments at acceptance (F104)` with five bullets: (1) the "answered by the user" mark of decision 4 is the reader `listUserAnswers` over `sent_emails` (the direct parent only, user mail only; stage 07); (2) decision 3's Sent pass before a system send is wired by E6a (F115) through `syncSentHeaders`; (3) turning the switch off deletes the stored sent mail (default, F104 `questions.md` Q1); (4) the 30- and 14-day windows and the retention count from the Sent folder's INTERNALDATE, and the text window is never longer than the organization's retention; (5) decision 3's "system sends are linked" means a Sent mail whose `X-EA-Action-Id` names a send that went out (`applied` or SMTP started); the user's own send of a system draft is user mail with the action id kept as a link. `README.md` row 0029: `accepted`.
 - `architecture.md` §4.1 rule 1: replace "It never reads `AI/*`, Sent, Drafts, Trash or the user's own folders, so that mail is never touched." by "It reads the Sent folder only read-only, into its own table (ADR 0029, `docs/capabilities/sent-mail.md`), and never changes it. It never reads `AI/*`, Drafts, Trash or the user's own folders, so that mail is never touched." §5 "Synced folders": the sentence "Never `AI/*`, Sent, Drafts, Trash or a user folder." becomes "Never `AI/*`, Drafts, Trash or a user folder; Sent has its own read-only pass after the folders (ADR 0029)." §5 data model table: rows for `sent_emails` and `mailbox_sent_sync` (columns of stage 01; "F104" in the last column, as other rows name their stage).
 - `docs/capabilities/sent-mail.md` (new, the template of `docs/capabilities/README.md`): "What it does now" (the pass, behind the flag and the switch, read-only, own table, system sends linked, text of 14 days); Rules (the order of D4 as numbered rules, the windows, the dedup key, the guard, the text step, the job wiring and its error rule, the log lines); Entry points (`job` `mail.sync` → `apps/server/src/modules/mail/jobs.ts`; `function` `syncSentFolder`, `syncSentHeaders` → `apps/server/src/modules/mail/sent-sync.ts`; `fetchSentTexts` → `apps/server/src/modules/mail/sent-texts.ts`; the repository functions → `apps/server/src/modules/mail/repo/sent-state.ts`, `apps/server/src/modules/mail/repo/sent-emails.ts`); Data (both tables, the `content` states); Limits (no switch in the panel yet: F104 stages 08–10; no analysis: E5b, F116; no pass before a system send: E6a, F115; DSR map: F106); Decisions (`ADR 0029`, PD-116, PD-117); Tests (the stage 03–06 test files). Its "Checked against" line names your base commit.
 - `docs/capabilities/README.md`: one index row `[sent-mail.md](sent-mail.md) | Sent mail | modules/mail (sent-*.ts, repo/sent-*.ts)`.

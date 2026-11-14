@@ -6,6 +6,7 @@ The owner answered the product questions of E5 (PD-115–PD-129: "You can go wit
 
 - Default: "Track my sent mail" off deletes every `sent_emails` row of the mailbox in the same transaction (rows, text, recipients). The card says so before the tap ("Turning it off deletes the sent mail that the assistant stored."). D11, stage 08.
 - Why: the switch is the consent to read Sent; off withdraws it. The "answered by the user" marks of that mailbox go too (they are computed from the rows, D10).
+- Turning off works also while the operator has the organization flag off (the card then says "paused"), so the owner can always withdraw consent (cold review 1, M3).
 - Other option: keep the rows until retention clears them (text after 30 days, headers after 90). Change: drop the `deleteSentEmails` call in `setSentSync` and the card note.
 
 ## Q2 [important: privacy] Retention of sent mail counts from the Sent folder date
@@ -26,7 +27,7 @@ The owner answered the product questions of E5 (PD-115–PD-129: "You can go wit
 
 ## Q5 [minor] "Answered by the user" = a direct reply from the user's mail app
 
-- Default: an incoming mail is answered when a user sent mail (not a system send) names it as its parent (`In-Reply-To`, else the last `References` id); the time is the earliest such reply. A later reply elsewhere in the thread does not mark older mails; readers that want the thread rule build it from `sent_emails.thread_key`. D10, stage 07.
+- Default: an incoming mail is answered when a user sent mail (not a system send; the user's own send of a system draft counts) names it as its parent (`In-Reply-To`, else the last `References` id); the time is the earliest such reply. A later reply elsewhere in the thread does not mark older mails; readers that want the thread rule build it from `sent_emails.thread_key`. D10, stage 07.
 
 ## Q6 [important: user-visible] The "no sent mail seen" notice goes to owners only
 
@@ -39,8 +40,13 @@ The owner answered the product questions of E5 (PD-115–PD-129: "You can go wit
 
 ## Q8 [minor] At most 100 sent texts per sync run
 
-- Default: the first pass stores all headers at once; the text of the 14-day window comes in batches of 100 per run, oldest first. Pending text older than 14 days is never fetched. D7.
+- Default: the first pass stores all headers at once; the text of the window (14 days, or the organization's retention when shorter) comes in batches of 100 per run, oldest first. Pending text older than the window is never fetched. D7.
 
 ## Q9 [minor] The CLI connect sets the switch like the web
 
 - Default: `bun run mailbox:connect` follows the same rule as the web (flag on → switch on) and prints one line that says so and how to turn it off. D11, stage 08 step 2.
+
+## Q10 [important: user-visible] A system draft that the user sends from a mail app is the user's mail
+
+- Default: a Sent mail whose `X-EA-Action-Id` names a system draft counts as the system's send only when the system's send of that draft went out (`applied` or SMTP started). Otherwise it is the user's own send: it gets text, counts as an answer and keeps the action id as a link, so the reply-draft ticket (E6a) can see "sent by the user" (PD-076). D6, stage 03 step 3.
+- Other option: every mail with an own action id is a system send (no text, no answer mark). Change: `sentOriginOf` answers `system` for every own id.

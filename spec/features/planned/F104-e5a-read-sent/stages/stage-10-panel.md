@@ -20,7 +20,7 @@ import type { TextKey } from "../i18n";
 export function sentStatusLine(view: SentSyncView): { key: TextKey; vars?: Record<string, string> } | null;
 ```
 
-Order of the rules (first match wins), for `enabled` true: `folder === null` or `errorCode === "no_folder"` → `sent_no_folder`; `errorCode === "folder_missing"` → `sent_folder_missing`; `errorCode === "failed"` → `sent_failed`; `!firstPassDone` → `sent_first_pass`; `lastSentAt === null` or `storedCount === 0` → `sent_none`; else `{ key: "sent_last", vars: { at: view.lastSentAt } }`. The card renders that one as `t("sent_last", { time: formatClock(new Date(at), timeZone, now, getLocale()) })`, as `MailboxCard.tsx` line 58 renders `mb_last_sync`; every other key renders as `t(key)`.
+Order of the rules (first match wins), for `enabled` true: `flagOn` false → `sent_paused`; `folder === null` or `errorCode === "no_folder"` → `sent_no_folder`; `errorCode === "folder_missing"` → `sent_folder_missing`; `errorCode === "failed"` → `sent_failed`; `!firstPassDone` → `sent_first_pass`; `lastSentAt === null` or `storedCount === 0` → `sent_none`; else `{ key: "sent_last", vars: { at: view.lastSentAt } }`. The card renders that one as `t("sent_last", { time: formatClock(new Date(at), timeZone, now, getLocale()) })`, as `MailboxCard.tsx` line 58 renders `mb_last_sync`; every other key renders as `t(key)`.
 
 Texts (keys in both files; the Polish follows the F098 glossary, P6 of its plan):
 
@@ -36,6 +36,7 @@ Texts (keys in both files; the Polish follows the F098 glossary, P6 of its plan)
 | `sent_first_pass` | The first read of Sent runs at the next sync. | Pierwszy odczyt folderu Wysłane nastąpi przy najbliższej synchronizacji. |
 | `sent_none` | No sent mail in the last 30 days. Does your mail app keep a copy in Sent? | Brak wysłanej poczty z ostatnich 30 dni. Czy Twój program pocztowy zapisuje kopię w folderze Wysłane? |
 | `sent_last` | Last sent mail seen: {time}. | Ostatnia wysłana wiadomość: {time}. |
+| `sent_paused` | Sent mail tracking is paused for your organization. You can turn it off; that deletes the stored sent mail. | Śledzenie wysłanej poczty jest wstrzymane dla Twojej organizacji. Możesz je wyłączyć; to usuwa zapisaną wysłaną pocztę. |
 | `sent_on_toast` | Sent mail is tracked. | Wysłana poczta jest śledzona. |
 | `sent_off_toast` | Sent mail is not tracked. The stored sent mail is deleted. | Wysłana poczta nie jest śledzona. Zapisana wysłana poczta została usunięta. |
 
@@ -44,6 +45,7 @@ Texts (keys in both files; the Polish follows the F098 glossary, P6 of its plan)
 **Test** (unit, `sent-text.test.ts`; a `view(overrides)` helper with `enabled true, folder "Sent", firstPassDone true, lastSentAt "2026-11-19T10:00:00.000Z", storedCount 3, errorCode null`):
 
 1. `enabled false` → null.
+1b. `flagOn false`, `enabled true` → `sent_paused` (before every other rule).
 2. `folder null` → `sent_no_folder`; `errorCode "no_folder"` → `sent_no_folder`.
 3. `errorCode "folder_missing"` → `sent_folder_missing`; `"failed"` → `sent_failed`.
 4. `firstPassDone false` → `sent_first_pass`.
@@ -53,7 +55,7 @@ Texts (keys in both files; the Polish follows the F098 glossary, P6 of its plan)
 
 **Check.** `bun test apps/web/src/lib/sent-text.test.ts && bun run typecheck`
 
-**Done when.** Cases 1–7 pass.
+**Done when.** Cases 1–7 and 1b pass.
 
 ## Step 2 — The card and the connect line
 
@@ -63,7 +65,7 @@ Texts (keys in both files; the Polish follows the F098 glossary, P6 of its plan)
 
 **Interfaces.**
 
-- `SentMailCard({ settings, isOwner, timeZone, onChanged, onMissing })`, the shape of `SyncFoldersCard`: `Card` with `data-card="sent"`, title `sent_title`; one row: label `sent_switch` and a `Switch` (`aria-label` = `t("sent_switch")`, `checked = settings.sentSync.enabled`, disabled when `!isOwner` or pending) that calls `patchSettings(settings.mailboxId, "/sent-sync", { enabled })` and then `onChanged(result, enabled ? "sent_on_toast" : "sent_off_toast")`; under it `t("sent_line")`, the folder path when not null (as the folder rows show `folder.path`), the status line of `sentStatusLine` (muted text), and `t("sent_off_note")` (muted). Errors: `toast.error(t(errorText(error)))`; a 404 calls `onMissing`. Use only the existing `ui/` components.
+- `SentMailCard({ settings, isOwner, timeZone, onChanged, onMissing })`, the shape of `SyncFoldersCard`: `Card` with `data-card="sent"`, title `sent_title`; one row: label `sent_switch` and a `Switch` (`aria-label` = `t("sent_switch")`, `checked = settings.sentSync.enabled`, disabled when `!isOwner`, when pending, or when `!settings.sentSync.flagOn && !settings.sentSync.enabled` (paused: only off is allowed)) that calls `patchSettings(settings.mailboxId, "/sent-sync", { enabled })` and then `onChanged(result, enabled ? "sent_on_toast" : "sent_off_toast")`; under it `t("sent_line")`, the folder path when not null (as the folder rows show `folder.path`), the status line of `sentStatusLine` (muted text), and `t("sent_off_note")` (muted). Errors: `toast.error(t(errorText(error)))`; a 404 calls `onMissing`. Use only the existing `ui/` components.
 - `SettingsPage.tsx`: render `<SentMailCard …/>` after `SyncFoldersCard` only when `data.sentSync !== null`; `timeZone` from `me.organization.timezone` (the page reads `me` already; pass it into `MailboxSettings` if that component does not get it yet).
 - `ConnectDialog.tsx`: a new prop `sentSyncLine: boolean`; when true, one muted paragraph `t("sent_line")` above the dialog footer. `MailboxesPage.tsx` passes `sentSyncLine={me.features.includes("sent_sync")}` (the `AccountCard.tsx` line 282 form).
 

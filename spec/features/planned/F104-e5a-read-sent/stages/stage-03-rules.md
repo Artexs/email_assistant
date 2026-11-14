@@ -1,8 +1,8 @@
-# F104 stage 03 — Read-only port type and pure Sent rules
+# F104 stage 03 — Read-only port type, pure Sent rules, origin of an action id
 
-Part of [`../plan.md`](../plan.md). Needs stage 02 on `master`. Read D3, D4, D6 first.
+Part of [`../plan.md`](../plan.md). Review job before the land (step 3 decides which Sent mail is the system's). Needs stage 02 on `master`. Read D3, D4, D6, D7 first.
 
-After this stage the code has the read-only provider type for the Sent folder and the pure rules that turn one fetched message into a sent row. No job uses them yet.
+After this stage the code has the read-only provider type for the Sent folder, the pure rules that turn one fetched message into a sent row, and the `actions` function that tells a system send from the user's own send of a system draft. No job uses them yet.
 
 ## Step 1 — The read-only type
 
@@ -46,7 +46,12 @@ import type { NewSentEmail } from "./repo";
 
 const DAY_MS = 24 * 3_600_000;
 export const SENT_HEADER_WINDOW_MS = 30 * DAY_MS; // headers of the last 30 days (ADR 0029 decision 5)
-export const SENT_TEXT_WINDOW_MS = 14 * DAY_MS;   // text of the last 14 days
+export const SENT_TEXT_WINDOW_MS = 14 * DAY_MS;   // text of the last 14 days, never past the retention
+
+/** min(SENT_TEXT_WINDOW_MS, retentionDays days). */
+export function sentTextWindowMs(retentionDays: number): number;
+
+export type SentOrigin = "system" | "draft" | null; // the answer of sentOriginOf (step 3)
 export const SENT_CHUNK_SIZE = 50;
 export const SENT_TEXT_RUN_LIMIT = 100;            // text fetches per run
 
@@ -61,39 +66,77 @@ export function parentMessageId(meta: Pick<MessageMeta, "inReplyTo" | "reference
 /** Trimmed, lower case, empty values dropped, the first of equal values kept, order kept. */
 export function cleanAddresses(list: readonly string[]): string[];
 
-/** null when meta.internalDate < now − SENT_HEADER_WINDOW_MS (too old). `ownActionId` = the header value when
- *  isOwnActionId said yes, else null. */
+/** null when meta.internalDate < now − SENT_HEADER_WINDOW_MS (too old). `origin` = what sentOriginOf answered for
+ *  meta.actionId (null when the mail has no such header). */
 export function toNewSentEmail(
   meta: MessageMeta,
-  input: { mailboxId: string; uidValidity: number; now: Date; ownActionId: string | null }
+  input: { mailboxId: string; path: string; uidValidity: number; now: Date; textWindowMs: number; origin: SentOrigin }
 ): NewSentEmail | null;
 
 /** Keeps the first row of each dedup key, in order. */
 export function firstPerDedupKey<T extends { dedupKey: string }>(rows: readonly T[]): T[];
 ```
 
-`toNewSentEmail`: `messageId = normalizeMessageId(meta.messageId)`; `dedupKey = baseDedupKey(messageId, contentHash(meta))`; `referencesIds` = each `meta.references` id through `normalizeMessageId`, nulls dropped; `threadKey = threadKey({ ...meta, messageId }, dedupKey)` (the function of `sync-rules.ts`, as `newRow` in `sync.ts` calls it); `fromAddress` = `cleanAddresses([meta.from])[0] ?? null` (skip when `from` is null); `toAddresses`, `ccAddresses` through `cleanAddresses`; `subject = meta.subject`; `sentAt = meta.date` when it is a valid date, else `meta.internalDate`; `actionId = ownActionId`; `content` = `"headers_only"` when `ownActionId !== null` or `meta.internalDate < now − SENT_TEXT_WINDOW_MS`, else `"pending"`. Import `normalizeMessageId`, `baseDedupKey`, `contentHash`, `threadKey` from `./sync-rules`.
+`toNewSentEmail`: `messageId = normalizeMessageId(meta.messageId)`; `dedupKey = baseDedupKey(messageId, contentHash(meta))`; `referencesIds` = each `meta.references` id through `normalizeMessageId`, nulls dropped; `threadKey = threadKey({ ...meta, messageId }, dedupKey)` (the function of `sync-rules.ts`, as `newRow` in `sync.ts` calls it); `fromAddress` = `cleanAddresses([meta.from])[0] ?? null` (skip when `from` is null); `toAddresses`, `ccAddresses` through `cleanAddresses`; `subject = meta.subject`; `sentAt = meta.date` when it is a valid date, else `meta.internalDate`; `path`, `uidValidity`, `uid = meta.uid`; `origin` = `"system"` when `input.origin === "system"`, else `"user"`; `actionId = input.origin === null ? null : meta.actionId`; `content` = `"headers_only"` when `origin` is `"system"` or `meta.internalDate < now − textWindowMs`, else `"pending"`. Import `normalizeMessageId`, `baseDedupKey`, `contentHash`, `threadKey` from `./sync-rules`.
 
 **Decisions.** D4, D6.
 
-**Test** (unit, no DB; `NOW = 2026-11-20T10:00:00Z`; `meta(overrides)` builds a `MessageMeta` with `uid 1`, `size 100`, `internalDate NOW − 1 d`, `date NOW − 1 d`, `messageId "<s1@x.test>"`, `from "me@x.test"`, `to ["anna@x.test"]`):
+**Test** (unit, no DB; `NOW = 2026-11-20T10:00:00Z`; `input(overrides)` = `{ mailboxId: "m", path: "Sent", uidValidity: 7, now: NOW, textWindowMs: SENT_TEXT_WINDOW_MS, origin: null }`; `meta(overrides)` builds a `MessageMeta` with `uid 1`, `size 100`, `internalDate NOW − 1 d`, `date NOW − 1 d`, `messageId "<s1@x.test>"`, `from "me@x.test"`, `to ["anna@x.test"]`):
 
 1. `sentModeOf({ uidValidity: null }, status(7))` → `initial`; `({ uidValidity: 7 }, status(7))` → `incremental`; `({ uidValidity: 7 }, status(9))` → `rescan`.
 2. `parentMessageId({ inReplyTo: " <in-1@x.test> ", references: ["<r@x.test>"] })` → `"<in-1@x.test>"`; `({ inReplyTo: null, references: ["<r1@x.test>", "<r2@x.test>"] })` → `"<r2@x.test>"`; `({ inReplyTo: null, references: [] })` → `null`; `({ inReplyTo: "  ", references: [] })` → `null`.
 3. `cleanAddresses([" Anna@X.test", "anna@x.test", "", "B@x.test"])` → `["anna@x.test", "b@x.test"]`.
-4. `toNewSentEmail(meta({ inReplyTo: "<in-1@x.test>", references: ["<root@x.test>", "<in-1@x.test>"], cc: ["B@x.test", "b@x.test"] }), { mailboxId: "m", uidValidity: 7, now: NOW, ownActionId: null })` → `parentMessageId "<in-1@x.test>"`, `referencesIds ["<root@x.test>", "<in-1@x.test>"]`, `threadKey "<root@x.test>"`, `ccAddresses ["b@x.test"]`, `content "pending"`, `actionId null`, `dedupKey` = `baseDedupKey("<s1@x.test>", contentHash(meta))`.
+4. `toNewSentEmail(meta({ inReplyTo: "<in-1@x.test>", references: ["<root@x.test>", "<in-1@x.test>"], cc: ["B@x.test", "b@x.test"] }), input())` → `parentMessageId "<in-1@x.test>"`, `referencesIds ["<root@x.test>", "<in-1@x.test>"]`, `threadKey "<root@x.test>"`, `ccAddresses ["b@x.test"]`, `content "pending"`, `origin "user"`, `actionId null`, `path "Sent"`, `uid 1`, `dedupKey` = `baseDedupKey("<s1@x.test>", contentHash(meta))`.
 5. `internalDate NOW − 20 d` → `content "headers_only"`; `internalDate NOW − 31 d` → `null`; `internalDate NOW − 30 d` exactly → a row (the bound is inclusive).
-6. `ownActionId "6f9c…"` (any uuid) with `internalDate NOW − 1 d` → `content "headers_only"`, `actionId` set.
+6. `meta({ actionId: <uuid> })` with `origin "system"` → `origin "system"`, `content "headers_only"`, `actionId` = the uuid; with `origin "draft"` → `origin "user"`, `content "pending"`, `actionId` = the uuid; with `origin null` → `origin "user"`, `actionId null`.
+6b. `textWindowMs: sentTextWindowMs(3)` and `internalDate NOW − 4 d` → `content "headers_only"`; `sentTextWindowMs(30)` = `SENT_TEXT_WINDOW_MS`; `sentTextWindowMs(3)` = 3 days in ms.
 7. `date null` → `sentAt = internalDate`; `date` set → `sentAt = date`.
 8. `messageId null` → `messageId null`, `dedupKey` starts with `hash:`, `threadKey` = the dedup key when no references and no In-Reply-To.
 9. `firstPerDedupKey([{dedupKey:"a", n:1}, {dedupKey:"b", n:2}, {dedupKey:"a", n:3}])` → n 1, 2.
 
 **Check.** `bun test apps/server/src/modules/mail/sent-rules.test.ts`
 
-**Done when.** Cases 1–9 pass.
+**Done when.** Cases 1–9 and 6b pass.
 
-**Out of scope.** Any DB or provider call (stage 04).
+**Out of scope.** Any provider call (stage 04).
+
+## Step 3 — `sentOriginOf` in `actions`
+
+**Goal.** Tell a system send from the user's own send of a system draft by the `X-EA-Action-Id` of a Sent mail (D6; cold review 1, M2).
+
+**Files.** `apps/server/src/modules/actions/repo/planned.ts` (next to `isOwnActionId`), `apps/server/src/modules/actions/repo/index.ts`, `apps/server/src/modules/actions/index.ts`, `apps/server/test/integration/actions-sent-origin.test.ts` (new).
+
+**Interfaces.**
+
+```ts
+/** What the X-EA-Action-Id of a Sent mail of this mailbox means. Any sender can write the header: a value that is not a
+ *  uuid never reaches the query. */
+export async function sentOriginOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  actionId: string
+): Promise<"system" | "draft" | null>;
+```
+
+Rule: not a uuid → null. Read the action `a` with `a.org_id = ctx.orgId`, `a.id = actionId`, `a.type IN ('create_draft', 'send')`, joined to its email with `e.mailbox_id = mailboxId` (the join of `isOwnActionId`); none → null. `a.type = 'send'` and (`status = 'applied'` or `send_started_at IS NOT NULL`) → `system`. `a.type = 'create_draft'` and a `send` action `s` exists with `s.org_id = ctx.orgId`, `s.depends_on_action_id = a.id` and (`s.status = 'applied'` or `s.send_started_at IS NOT NULL`) → `system`. Else → `draft`. One query (a `LEFT JOIN` or an `EXISTS`), every value bound.
+
+**Decisions.** D6.
+
+**Test** (integration, `withRollback`, `insertDraftAndSend(trx, ctx, mailboxId, { sendStatus })` from `fixtures.ts`, which returns `draftId` and `sendId`):
+
+1. Draft id with its send `applied` → `system`; the send id itself → `system`.
+2. Draft id with its send `awaiting_approval` → `draft`; with `rejected` → `draft`.
+3. Draft id with its send `applying` and `send_started_at` set (update the row in the test) → `system`.
+4. `"not-a-uuid"` → null; a random uuid → null; the draft id with another mailbox of the same org → null.
+5. Org B's context with org A's draft id → null.
+
+**Check.** `bun test apps/server/test/integration/actions-sent-origin.test.ts`
+
+**Done when.** Cases 1–5 pass.
+
+**Out of scope.** Wiring it into the job (stage 06); the reply-draft rules of E6a.
 
 ## Done when (stage)
 
-Steps 1–2 done; the Proof command of `plan.md` passes (`/tmp/f104-s03`).
+Steps 1–3 done; the Proof command of `plan.md` passes (`/tmp/f104-s03`).

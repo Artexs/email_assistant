@@ -20,6 +20,8 @@ CREATE TABLE sent_emails (
   org_id uuid NOT NULL,
   mailbox_id uuid NOT NULL,
   dedup_key text NOT NULL,
+  -- Where the mail is now: an IMAP UID names one mail only inside one folder and one UIDVALIDITY.
+  path text NOT NULL CHECK (length(path) BETWEEN 1 AND 200),
   uidvalidity bigint NOT NULL,
   uid bigint NOT NULL,
   message_id text,
@@ -32,6 +34,8 @@ CREATE TABLE sent_emails (
   subject text,
   sent_at timestamptz NOT NULL,
   internal_date timestamptz NOT NULL,
+  -- 'system': the system sent it (X-EA-Action-Id of a sent action). 'user': any other mail, also the user's own send of a system draft.
+  origin text NOT NULL CHECK (origin IN ('user', 'system')),
   action_id uuid,
   content text NOT NULL CHECK (content IN ('pending', 'stored', 'headers_only', 'gone')),
   body_text text,
@@ -44,17 +48,18 @@ CREATE TABLE sent_emails (
   FOREIGN KEY (mailbox_id, org_id) REFERENCES mailboxes (id, org_id) ON DELETE CASCADE,
   UNIQUE (mailbox_id, dedup_key),
   UNIQUE (id, org_id),
-  -- A system send (its X-EA-Action-Id is an action of this mailbox) never gets text.
-  CONSTRAINT sent_emails_system_check CHECK (action_id IS NULL OR content = 'headers_only'),
+  -- A system send names its action and never gets text.
+  CONSTRAINT sent_emails_system_check CHECK (origin = 'user' OR (action_id IS NOT NULL AND content = 'headers_only')),
   CONSTRAINT sent_emails_body_check CHECK (body_text IS NULL OR content = 'stored')
 );
 CREATE INDEX sent_emails_org_id_idx ON sent_emails (org_id);
 CREATE INDEX sent_emails_org_internal_idx ON sent_emails (org_id, internal_date);
 CREATE INDEX sent_emails_parent_idx ON sent_emails (mailbox_id, parent_message_id)
-  WHERE parent_message_id IS NOT NULL AND action_id IS NULL;
+  WHERE parent_message_id IS NOT NULL AND origin = 'user';
 CREATE INDEX sent_emails_thread_idx ON sent_emails (mailbox_id, thread_key);
-CREATE INDEX sent_emails_user_idx ON sent_emails (mailbox_id, internal_date) WHERE action_id IS NULL;
-CREATE INDEX sent_emails_pending_idx ON sent_emails (mailbox_id, internal_date) WHERE content = 'pending';
+CREATE INDEX sent_emails_user_idx ON sent_emails (mailbox_id, path, internal_date) WHERE origin = 'user';
+CREATE INDEX sent_emails_pending_idx ON sent_emails (mailbox_id, path, internal_date) WHERE content = 'pending';
+CREATE INDEX sent_emails_action_idx ON sent_emails (action_id) WHERE action_id IS NOT NULL;
 
 -- One row per mailbox: the "Track my sent mail" switch, the Sent path and its cursor. No row = off.
 CREATE TABLE mailbox_sent_sync (
@@ -93,7 +98,7 @@ and the same for `mailbox_sent_sync`. Add no `GRANT`: the default privileges of 
 
 Then `bun run db:migrate` on the job DB and `bun run db:types`.
 
-**Decisions.** D1, D2, D6, D7 (the `content` states), D14 (the index on `internal_date`).
+**Decisions.** D1, D2, D4 (`path`), D6 (`origin`), D7 (the `content` states), D14 (the index on `internal_date`).
 
 **Test.** Step 2.
 
@@ -109,7 +114,7 @@ Then `bun run db:migrate` on the job DB and `bun run db:types`.
 
 **Files.** `apps/server/test/integration/mail-schema.test.ts` (new `describe("sent mail")`), `apps/server/test/integration/rls-policy.test.ts` (`TENANT_TABLES` and `seedOrg`), `apps/server/test/integration/mailbox-rows.ts` (`fillMailbox`, `countMailboxRows`), `apps/server/test/integration/delete-mailbox.test.ts` and `mail-remove.test.ts` only where an expected object lists the counts by hand.
 
-**Interfaces.** In the tests, insert rows with plain Kysely (`trx.insertInto("sent_emails").values({...})`); the repository comes in stage 02. A minimal sent row: `{ org_id, mailbox_id, dedup_key: "mid:<a@x.test>:h1", uidvalidity: 7, uid: 1, thread_key: "<a@x.test>", sent_at: NOW, internal_date: NOW, content: "pending" }`.
+**Interfaces.** In the tests, insert rows with plain Kysely (`trx.insertInto("sent_emails").values({...})`); the repository comes in stage 02. A minimal sent row: `{ org_id, mailbox_id, dedup_key: "mid:<a@x.test>:h1", path: "Sent", uidvalidity: 7, uid: 1, thread_key: "<a@x.test>", sent_at: NOW, internal_date: NOW, origin: "user", content: "pending" }`.
 
 - `fillMailbox` inserts one `sent_emails` row and one `mailbox_sent_sync` row (`enabled: true, enabled_at: now`) for the mailbox.
 - `countMailboxRows` returns two more keys, `sent_emails` and `mailbox_sent_sync` (count by `org_id` and `mailbox_id`, like `byMailbox`).
@@ -123,7 +128,7 @@ Then `bun run db:migrate` on the job DB and `bun run db:types`.
 2. A `sent_emails` row with the mailbox of org A and the `org_id` of org B fails with `23503`.
 3. Two rows with the same `(mailbox_id, dedup_key)` fail with `23505`; the same key in another mailbox inserts.
 4. `content = 'new'` fails with `23514`.
-5. `action_id` set and `content = 'pending'` fails with `23514` (`sent_emails_system_check`); `action_id` set and `content = 'headers_only'` inserts.
+5. `origin = 'system'` with `content = 'pending'` fails with `23514` (`sent_emails_system_check`); `origin = 'system'` with `action_id` null fails with `23514`; `origin = 'system'`, `action_id` set, `content = 'headers_only'` inserts; `origin = 'user'` with `action_id` set and `content = 'pending'` inserts (the user's send of a system draft); `origin = 'other'` and `path = ''` fail with `23514`.
 6. `body_text = 'x'` and `content = 'pending'` fails with `23514`; with `content = 'stored'` it inserts.
 7. `mailbox_sent_sync` with `enabled = true` and `enabled_at` null fails with `23514`; with `enabled = false` and `last_uid = 5, uidvalidity = 7` fails with `23514`; `uidvalidity` set and `last_uid` null fails with `23514`; `last_error_code = 'other'` fails with `23514`.
 8. Deleting the mailbox deletes its `sent_emails` and `mailbox_sent_sync` rows (count 0 after).

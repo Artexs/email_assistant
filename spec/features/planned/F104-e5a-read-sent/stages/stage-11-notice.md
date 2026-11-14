@@ -93,7 +93,7 @@ export const sentMissingDetector: Detector = {
 };
 ```
 
-`detect`: `on = await isFeatureOn(run.db, run.ctx, "sent_sync")`; `health = on ? new Map((await listSentHealth(run.db, run.ctx)).map((row) => [row.mailboxId, row])) : new Map()`. For each `mailbox` of `run.mailboxes`: `row = health.get(mailbox.id)`; when `mailbox.status !== "active"` or no `row` → `cancelPendingOutbox({ kind: "sent_missing", mailboxId })`, next. `quietSince` = the later of `row.newestUserAt` and `row.firstPassAt`; `run.now − quietSince < SENT_MISSING_AFTER_MS` → cancel pending, next. Else `key = \`sent_missing:${mailbox.id}:${quietSince.getTime()}\``; for each `owner` of `run.owners`: `queue(run.db, run.ctx, { userId: owner.userId, locale: owner.locale, kind: "sent_missing", dedupKey: key, mailboxId: mailbox.id, view: { address: mailbox.address, since: quietSince, now: run.now, timeZone: run.timeZone } }, run.now)` inside `try … catch → warnSkipped("sent_missing", mailbox.id, error)` (the `sync.ts` detector form); then `cancelPendingOutbox({ kind: "sent_missing", mailboxId, exceptDedupKey: key })`.
+`detect`: `on = await isFeatureOn(run.db, run.ctx, "sent_sync")`; `health = on ? new Map((await listSentHealth(run.db, run.ctx)).map((row) => [row.mailboxId, row])) : new Map()`. For each `mailbox` of `run.mailboxes`: `row = health.get(mailbox.id)`; when `mailbox.status !== "active"` or no `row` → `cancelPendingOutbox({ kind: "sent_missing", mailboxId })`, next. `quietSince` = the later of `row.newestUserAt` and `row.firstPassAt`; `run.now − quietSince < SENT_MISSING_AFTER_MS` → cancel pending, next. `row.lastErrorCode !== null` → cancel pending, next (the card names the error). Else `key = \`sent_missing:${mailbox.id}:${quietSince.getTime()}\``; for each `owner` of `run.owners`: `queue(run.db, run.ctx, { userId: owner.userId, locale: owner.locale, kind: "sent_missing", dedupKey: key, mailboxId: mailbox.id, view: { address: mailbox.address, since: quietSince, now: run.now, timeZone: run.timeZone } }, run.now)` inside `try … catch → warnSkipped("sent_missing", mailbox.id, error)` (the `sync.ts` detector form); then `cancelPendingOutbox({ kind: "sent_missing", mailboxId, exceptDedupKey: key })`.
 
 **Decisions.** D15; Q6 (owners only).
 
@@ -107,11 +107,12 @@ export const sentMissingDetector: Detector = {
 6. `first_pass_at NOW − 6 d` → no row.
 7. Flag off, or the mailbox `paused`, or the switch off → no row, and pending rows of the kind for that mailbox are cancelled.
 8. Org B's mailbox in the same run state never gets a row in org A.
+8b. The state has `last_error_code "folder_missing"` (no sent mail for 8 days) → no row; a pending row of the kind is cancelled.
 9. `channels/notices/registry.test.ts` passes (one producer per kind, every kind covered).
 
 **Check.** `bun test apps/server/test/integration/channels-notices.test.ts apps/server/src/modules/channels/notices/registry.test.ts`
 
-**Done when.** Cases 1–9 pass.
+**Done when.** Cases 1–9 and 8b pass.
 
 ## Step 4 — Docs
 

@@ -93,6 +93,7 @@ export type SentContent = "pending" | "stored" | "headers_only" | "gone";
 export interface NewSentEmail {
   mailboxId: string;
   dedupKey: string;
+  path: string;
   uidValidity: number;
   uid: number;
   messageId: string | null;
@@ -105,35 +106,36 @@ export interface NewSentEmail {
   subject: string | null;
   sentAt: Date;
   internalDate: Date;
+  origin: "user" | "system";
   actionId: string | null;
   content: "pending" | "headers_only";
 }
 
-/** One INSERT for all rows (none → 0, no query). ON CONFLICT (mailbox_id, dedup_key) DO UPDATE SET uid, uidvalidity,
- *  updated_at = now() — nothing else changes on a known row. Returns the number of new rows (RETURNING (xmax = 0)).
+/** One INSERT for all rows (none → 0, no query). ON CONFLICT (mailbox_id, dedup_key) DO UPDATE SET path, uidvalidity, uid,
+ *  updated_at = now() — nothing else changes on a known row (its location moves; content, origin and text stay). Returns the number of new rows (RETURNING (xmax = 0)).
  *  The caller passes each dedup key at most once (Postgres refuses a second update of one row in one statement). */
 export async function insertSentEmails(trx: Transaction<DB>, ctx: TenantContext, rows: NewSentEmail[]): Promise<number>;
 
 export interface PendingSentText { id: string; uid: number; }
 
-/** Rows with content 'pending', this uidvalidity, internal_date >= since; oldest internal_date first, then id. */
+/** Rows with content 'pending', this path and uidvalidity, internal_date >= since; oldest internal_date first, then id. */
 export async function listPendingSentTexts(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { uidValidity: number; since: Date; limit: number }
+  opts: { path: string; uidValidity: number; since: Date; limit: number }
 ): Promise<PendingSentText[]>;
 
 export type SentTextWrite =
   | { kind: "stored"; bodyText: string | null; autoSubmitted: string | null; precedence: string | null; listId: string | null; hasCalendar: boolean | null }
   | { kind: "gone" };
 
-/** Guarded: WHERE id AND org_id AND content = 'pending' AND uid = read.uid AND uidvalidity = read.uidValidity. */
+/** Guarded: WHERE id AND org_id AND content = 'pending' AND path = read.path AND uid = read.uid AND uidvalidity = read.uidValidity. */
 export async function writeSentText(
   db: DbOrTrx,
   ctx: TenantContext,
   id: string,
-  read: { uid: number; uidValidity: number },
+  read: { path: string; uid: number; uidValidity: number },
   write: SentTextWrite
 ): Promise<boolean>;
 
@@ -148,14 +150,14 @@ The `org_id` of a new row is `ctx.orgId`. Arrays go in as `text[]` values (Kysel
 
 **Decisions.** D4 (upsert), D6, D7, D11 (delete).
 
-**Test** (same file, same orgs; one `row(n, overrides)` helper that builds a `NewSentEmail` with `dedupKey: "mid:<s{n}@x.test>:h{n}"`, `uidValidity: 7`, `uid: n`):
+**Test** (same file, same orgs; one `row(n, overrides)` helper that builds a `NewSentEmail` with `dedupKey: "mid:<s{n}@x.test>:h{n}"`, `path: "Sent"`, `uidValidity: 7`, `uid: n`, `origin: "user"`):
 
 1. `insertSentEmails` of rows 1, 2 → 2; the stored columns equal the input (arrays, dates, `content`).
-2. Again rows 1, 2 with `uid` 11, 12 and `uidValidity` 8 → 0 new; the rows now hold `uid` 11, 12 and `uidvalidity` 8; `subject`, `content` and `created_at` unchanged.
+2. Again rows 1, 2 with `path "Wysłane"`, `uid` 11, 12 and `uidValidity` 8 → 0 new; the rows now hold that path, `uid` 11, 12 and `uidvalidity` 8; `subject`, `origin`, `content` and `created_at` unchanged.
 3. `insertSentEmails([])` → 0.
-4. `listPendingSentTexts({ uidValidity: 7, since: AT − 14 d, limit: 2 })` over rows with `internal_date` AT − 1 d, AT − 3 d, AT − 20 d (all pending, uidvalidity 7) and one with uidvalidity 8 → the AT − 3 d row, then AT − 1 d; with `limit: 1` only AT − 3 d.
-5. `writeSentText(id, { uid, uidValidity: 7 }, { kind: "stored", bodyText: "Hi", autoSubmitted: null, precedence: null, listId: null, hasCalendar: false })` → true; the row is `stored` with `body_text = "Hi"`; a second call → false.
-6. `writeSentText` with `uid` that differs from the row's → false, row still `pending`; `{ kind: "gone" }` with the right read → `content = 'gone'`, `body_text` null.
+4. `listPendingSentTexts({ path: "Sent", uidValidity: 7, since: AT − 14 d, limit: 2 })` over rows with `internal_date` AT − 1 d, AT − 3 d, AT − 20 d (all pending, `Sent`, uidvalidity 7), one with uidvalidity 8 and one with `path "Old"` (uidvalidity 7) → the AT − 3 d row, then AT − 1 d; with `limit: 1` only AT − 3 d.
+5. `writeSentText(id, { path: "Sent", uid, uidValidity: 7 }, { kind: "stored", bodyText: "Hi", autoSubmitted: null, precedence: null, listId: null, hasCalendar: false })` → true; the row is `stored` with `body_text = "Hi"`; a second call → false.
+6. `writeSentText` with a `uid` or a `path` that differs from the row's → false, row still `pending`; `{ kind: "gone" }` with the right read → `content = 'gone'`, `body_text` null.
 7. `expireSentTexts({ before: AT − 14 d })` → the AT − 20 d row becomes `headers_only`; returns 1; `stored` rows are untouched.
 8. `deleteSentEmails` → the count of org A's mailbox rows; another mailbox's rows stay.
 9. Tenant filter: `listPendingSentTexts`, `writeSentText`, `expireSentTexts`, `deleteSentEmails` in org B's context with org A's ids → `[]`, `false` or 0, and org A's rows unchanged; `insertSentEmails` in org B's context with org A's mailbox id fails with `23503` (the composite FK).

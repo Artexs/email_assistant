@@ -1,6 +1,6 @@
 # F104 stage 07 — Answered reader, summaries, retention
 
-Part of [`../plan.md`](../plan.md). Needs stage 06 on `master`. Read D10, D12 (the summary fields), D14, D15 (the health input) first.
+Part of [`../plan.md`](../plan.md). Review job before the land (retention of mail text). Needs stage 06 on `master`. Read D10, D12 (the summary fields), D14, D15 (the health input) first.
 
 After this stage other code can ask "did the user answer this mail, and when", the settings and the notice can read a short summary per mailbox, and the daily retention job clears sent text and headers.
 
@@ -15,23 +15,24 @@ After this stage other code can ask "did the user answer this mail, and when", t
 ```ts
 export interface UserAnswer { answeredAt: Date; sentEmailId: string; }
 
-/** Per incoming email id: the earliest user sent mail (action_id IS NULL) of the same mailbox whose parent_message_id
- *  equals emails.message_id_header. Ids without an answer are not in the map. [] → empty map, no query.
+/** Per incoming email id: the earliest user sent mail (origin = 'user') of the same mailbox whose parent_message_id
+ *  equals emails.message_id_header (any path: an answer stays an answer after a Sent path change). Ids without an answer are not in the map. [] → empty map, no query.
  *  Chunks of 500 ids. One query per chunk: emails e JOIN sent_emails s ON s.org_id = e.org_id AND
- *  s.mailbox_id = e.mailbox_id AND s.parent_message_id = e.message_id_header AND s.action_id IS NULL,
+ *  s.mailbox_id = e.mailbox_id AND s.parent_message_id = e.message_id_header AND s.origin = 'user',
  *  WHERE e.org_id = ctx.orgId AND e.id IN (…), DISTINCT ON (e.id) ORDER BY e.id, s.sent_at, s.id. */
 export async function listUserAnswers(db: DbOrTrx, ctx: TenantContext, emailIds: readonly string[]): Promise<Map<string, UserAnswer>>;
 
 export interface SentSummary {
-  /** User mail (action_id IS NULL) with internal_date >= since. */
+  /** User mail (origin = 'user') of the state's current path with internal_date >= since. */
   userCount: number;
-  /** The newest internal_date of user mail of the mailbox, any age; null when none. */
+  /** The newest internal_date of user mail of the current path, any age; null when none (or no state path). */
   newestUserAt: Date | null;
 }
 export async function getSentSummary(db: DbOrTrx, ctx: TenantContext, mailboxId: string, opts: { since: Date }): Promise<SentSummary>;
 
-export interface SentHealthRow { mailboxId: string; firstPassAt: Date; newestUserAt: Date | null; }
-/** Mailboxes of the organization with the switch on and a finished first pass, with the newest user internal_date. */
+export interface SentHealthRow { mailboxId: string; firstPassAt: Date; newestUserAt: Date | null; lastErrorCode: SentErrorCode | null; }
+/** Mailboxes of the organization with the switch on and a finished first pass, with the newest user internal_date of the
+ *  state's current path (mailbox_sent_sync LEFT JOIN sent_emails ON mailbox_id AND path = the state's path AND origin = 'user'). */
 export async function listSentHealth(db: DbOrTrx, ctx: TenantContext): Promise<SentHealthRow[]>;
 ```
 
@@ -40,12 +41,12 @@ export async function listSentHealth(db: DbOrTrx, ctx: TenantContext): Promise<S
 **Test** (integration, `withRollback`, two orgs; rows inserted with `insertSentEmails` (stage 02) and incoming mail with `insertTestEmail` from `fixtures.ts`, `message_id_header` set; `NOW = 2026-11-20T10:00:00Z`):
 
 1. Incoming X (`message_id_header "<x@a.test>"`), user sent S1 (`parent "<x@a.test>"`, `sent_at NOW − 2 h`) and S2 (same parent, `NOW − 1 h`) → `listUserAnswers([X])` = `{ X: { answeredAt: NOW − 2 h, sentEmailId: S1 } }`.
-2. A system send (action_id set, same parent) is the only reply → X is not in the map.
+2. A system send (`origin 'system'`, same parent) is the only reply → X is not in the map; a user row with `action_id` set (the user's send of a system draft) is an answer.
 3. A reply with the same parent in another mailbox of the same org → X is not in the map.
 4. Incoming Y with no reply, Z with `message_id_header` null → neither in the map; `listUserAnswers([])` → empty map.
 5. 600 incoming ids, one answered at position 550 → the map holds it (chunking).
-6. `getSentSummary({ since: NOW − 30 d })` over user rows at `NOW − 1 d`, `NOW − 40 d` and a system row at `NOW − 1 h` → `{ userCount: 1, newestUserAt: NOW − 1 d }`; a mailbox with no rows → `{ 0, null }`.
-7. `listSentHealth`: mailbox M1 on with `first_pass_at`, M2 on without `first_pass_at`, M3 off → only M1, with its `newestUserAt`.
+6. `getSentSummary({ since: NOW − 30 d })` with the state path `"Sent"` over user rows of `Sent` at `NOW − 1 d`, `NOW − 40 d`, a system row at `NOW − 1 h` and a user row of path `"Old"` at `NOW − 1 h` → `{ userCount: 1, newestUserAt: NOW − 1 d }`; a mailbox with no rows, and one with no state row → `{ 0, null }`.
+7. `listSentHealth`: mailbox M1 on with `first_pass_at`, M2 on without `first_pass_at`, M3 off → only M1, with its `newestUserAt` (current path only) and `lastErrorCode` (set one to `"folder_missing"` and see it).
 8. Tenant filter: each reader in org B's context with org A's ids → empty map, `{ 0, null }`, `[]`.
 
 **Check.** `bun test apps/server/test/integration/mail-sent-readers.test.ts`

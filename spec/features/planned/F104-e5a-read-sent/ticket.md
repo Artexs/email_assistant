@@ -32,7 +32,7 @@ The assistant knows what the executive sent: it reads the Sent folder of each ma
 
 ## Slices
 
-One worker job per stage, 01 → 12 (`plan.md` § How to run). Stage 11 may run next to stages 08–10; the others wait for the stage before. Stages 01 and 11 add a migration: never next to another migration in build. Stage 12 is a coordinator runbook on the VPS with owner step U1 (the owner turns the pilot switch on).
+One worker job per stage, 01 → 12, each after the one before has landed (`plan.md` § How to run). Stages 01 and 11 add a migration: never next to another migration in build. Stage 12 is a coordinator runbook on the VPS with owner step U1 (the owner turns the pilot switch on).
 
 ## Sequenced
 
