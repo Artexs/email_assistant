@@ -5,8 +5,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { insertOutbox } from "../../src/modules/channels";
-import { operatorRoutes } from "../../src/modules/operator/routes";
 import { insertMailbox } from "../../src/modules/mail/repo";
+import { operatorRoutes } from "../../src/modules/operator/routes";
 import { insertDigest, markDigestSent } from "../../src/modules/reports";
 import { upsertOrgFeature } from "../../src/modules/tenancy";
 import { loadConfig } from "../../src/platform/config";
