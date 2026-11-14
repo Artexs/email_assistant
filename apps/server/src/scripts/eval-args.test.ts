@@ -47,6 +47,16 @@ describe("parseEvalArgs", () => {
     expect(parseEvalArgs(["--fresh-lock"])).toBeUndefined();
   });
 
+  test("--judge and its overrides belong to a sim run, and the overrides need --judge", () => {
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge"])).toMatchObject({ judge: true });
+    expect(
+      parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge", "--judge-provider", "gemini", "--judge-model", "m"])
+    ).toMatchObject({ judge: true, "judge-provider": "gemini", "judge-model": "m" });
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev"])).toMatchObject({ judge: false });
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge-model", "m"])).toBeUndefined();
+    expect(parseEvalArgs(["--judge"])).toBeUndefined();
+  });
+
   test("the real mode keeps its rules", () => {
     expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org])).toMatchObject({ real: true });
     expect(parseEvalArgs(["--real", "--org-id", org])).toBeUndefined();

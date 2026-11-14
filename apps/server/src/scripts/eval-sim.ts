@@ -6,6 +6,7 @@ import { costPerMail } from "@ea/core";
 
 import {
   evalExitCode,
+  evalDelegateAddress,
   evalStateFileName,
   firstEstimateUsd,
   parseCaseResults,
@@ -18,6 +19,7 @@ import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/
 import { createLog } from "../platform/log";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
+import { judgeSetupError } from "./eval-judge-setup";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -64,6 +66,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         model: options.model,
         reasoningEffort: options["reasoning-effort"],
       },
+      ...(options.judge ? { judge: { provider: options["judge-provider"], model: options["judge-model"] } } : {}),
     });
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
@@ -77,6 +80,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     return 1;
   }
   const model = row.model;
+  const judgeRow = options.judge ? table.roles.judge : undefined;
   const effort = row.reasoningEffort;
 
   // A model without a price today cannot be held to a cap, and a zero estimate would mean no cap.
@@ -85,6 +89,14 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   if (estimateUsd === null) {
     log.error(`no price for model ${model}: add it to llmPrices before a sim run`);
     return 1;
+  }
+
+  if (options.judge) {
+    const problem = judgeSetupError(table, startedAt);
+    if (problem !== null) {
+      log.error(problem);
+      return 1;
+    }
   }
 
   let loaded: Awaited<ReturnType<typeof loadSimCases>>;
@@ -122,13 +134,19 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     return 1;
   }
   log.info(
-    `provider=${row.provider} model=${model} effort=${effort ?? "-"} concurrency=${options.concurrency} rpm=${options.rpm} cap=$${cap}`
+    `provider=${row.provider} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=$${cap}`
   );
 
   // The rpm of this process only: the provider row is copied, the config is not changed.
   const limited: LlmRoleTable = {
     ...table,
-    providers: { ...table.providers, [row.provider]: { ...keys, rpm: options.rpm as number } },
+    providers: {
+      ...table.providers,
+      [row.provider]: { ...keys, rpm: options.rpm as number },
+      ...(judgeRow === undefined
+        ? {}
+        : { [judgeRow.provider]: { ...table.providers[judgeRow.provider], rpm: options.rpm as number } }),
+    },
   };
   const llm = (deps.createLlmClient ?? createLlmClient)({ table: limited });
 
@@ -176,6 +194,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         retries: options.retries,
         done,
         concurrency: options.concurrency,
+        ...(judgeRow === undefined ? {} : { judge: { llm, model: judgeRow.model, addressOf: evalDelegateAddress } }),
         budget: {
           capUsd: cap,
           callCostUsd,
