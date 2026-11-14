@@ -95,6 +95,9 @@ async function findHitsIn(
 /**
  * For gone mail (the flag refresh did not find its UID in its folder), looks at the same UID in each synced folder
  * below its cursor and writes the new location of a mail that it finds there.
+ *
+ * An IMAP error propagates to the caller. The writes of the folders before the failing one stay, each folder in its
+ * own transaction; no write follows the failing folder.
  */
 export async function findUserMoves(
   deps: UserMovesDeps,

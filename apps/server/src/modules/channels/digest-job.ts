@@ -4,6 +4,7 @@ import type { Transaction } from "kysely";
 import type { DB, Db } from "../../platform/db";
 import { describeError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
+import type { TestMailRule } from "../mail";
 import { buildDigestMessage, digestPeriodStart, insertDigest, lastDigestSlotKey } from "../reports";
 import { getMembership, getOrganization } from "../tenancy";
 
@@ -16,10 +17,16 @@ const log = createLog("channels");
 export interface DigestJobDeps {
   db: Db | Transaction<DB>;
   now(): Date;
+  testMail: TestMailRule;
 }
 
 // One digest row and one outbox row per member and slot (P1, P2, D15).
-async function scheduleForLink(db: Db | Transaction<DB>, link: LinkedChat, now: Date): Promise<void> {
+async function scheduleForLink(
+  db: Db | Transaction<DB>,
+  link: LinkedChat,
+  now: Date,
+  testMail: TestMailRule
+): Promise<void> {
   const { orgId, userId, linkedAt } = link;
   const ctx = { orgId };
   const member = await getMembership(db, ctx, userId);
@@ -45,6 +52,7 @@ async function scheduleForLink(db: Db | Transaction<DB>, link: LinkedChat, now: 
     slot: { date: slot.date, time: slot.time, late: isLateSlot(slot, now, timeZone) },
     now,
     locale: link.locale,
+    testMail,
   });
 
   const queue = async (trx: Transaction<DB>): Promise<string | null> => {
@@ -74,7 +82,7 @@ export async function scheduleDigests(deps: DigestJobDeps): Promise<void> {
     const now = deps.now();
     for (const link of await listLinkedChats(deps.db, { includeSuspended: false })) {
       try {
-        await scheduleForLink(deps.db, link, now);
+        await scheduleForLink(deps.db, link, now, deps.testMail);
       } catch (error) {
         log.error(`digest for org ${link.orgId} user ${link.userId} failed: ${describeError(error)}`);
       }

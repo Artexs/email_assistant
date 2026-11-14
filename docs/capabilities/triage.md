@@ -54,6 +54,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
     Real-mail evals use mail younger than 30 days (the body is cleared after that, `docs/architecture.md` §7). Pilot exception: backfilled mail up to 180 days (`docs/architecture.md` §6.1).
     - `bun run eval` runs the cases of `evals/cases` (80 synthetic, 16 injection, 12 delegation) against one provider and model, and prints precision and recall per category with a bar (default 0.98) and a minimum support (`--min-kept`, default 30). `bun run eval --real --org-id <uuid> --mailbox-id <uuid>` reads the labels from the DB and makes no LLM call. The gate for `auto` per category uses the same report (`goNoGoFor`: precision at least 98% on at least 30 labelled rows of the mailbox).
     - `bun run eval --sim <scenario> --part dev|holdout|week` runs a synthetic corpus part (`evals/sim/<scenario>/`) through a worker pool (8 calls in flight, 240 requests per minute by default). A run stops at its cap: $1 per run, and the $20 month cap counted from a spend ledger outside git (`$XDG_STATE_HOME/email-assistant/eval-spend.jsonl`). A stopped run is not complete (exit 2) and resumes from its state file; a lock file keeps two runs off one state file. A model without a price in `llmPrices`does not start. The`holdout` part needs a frozen corpus, and its report prints counts, not case ids.
+    - With `--judge` (and the optional `--judge-provider`, `--judge-model` and `--judge-rpm`; the first two override the `judge` role row) every planned delegation or clarification draft is checked by code (`draftCodeChecks`: recipient, clean text, language, length, planted strings) and graded by the `judge` role (`judge-v1`); the report gets a `## Draft judge` section that names the judge provider and model and says that the scores are LLM-scored. `--rpm` is the classifier provider's rate only: the judge provider keeps the rate of the config (`GEMINI_RPM` or `OPENAI_RPM`, or `LLM_JUDGE_RPM` for the role) and `--judge-rpm` replaces it. The judge refuses to start when its provider is the classifier's provider, when its API key is missing (the message names the key) or when its model has no price; a judge call counts in the cap, and judge errors stop the run like classifier errors.
     - Synthetic corpora (a made-up company, mail written by agents, labels fixed before the text) are planned and checked with `bun run sim`; the runbook is `evals/sim/README.md`. A complete corpus freezes into a version with `manifest.json` (counts and hashes); the owner audit (30 random and up to 20 contested cases) is made and applied with `sim audit-list` and `sim audit-apply`.
 14. **Success metric** (moved from `docs/architecture.md` §4.4; not built) ("share of mail handled without the user", target 80–90%):
     handled = mail in `spam`, `notification`, `info`, or `delegation` sent after one tap, with an applied plan
@@ -78,6 +79,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 | CLI      | `bun run llm:check`                                                                                                                   | `apps/server/src/scripts/llm-check.ts`              |
 | function | `triageOne`, `saveTriage`, `finishTriageError`                                                                                        | `apps/server/src/modules/triage/service.ts`         |
 | function | `classifyEmail`                                                                                                                       | `apps/server/src/modules/triage/classifier.ts`      |
+| function | `judgeDraft`                                                                                                                          | `apps/server/src/modules/triage/judge.ts`           |
 | function | `recordFeedback`, `recordWebFeedback`                                                                                                 | `apps/server/src/modules/triage/feedback.ts`        |
 | function | `listAnsweredCandidates`, `countAnsweredWaiting`, `answerAnsweredCheck`                                                               | `apps/server/src/modules/triage/answered-check.ts`  |
 | function | `createLlmPause`                                                                                                                      | `apps/server/src/modules/triage/pause.ts`           |
@@ -142,10 +144,14 @@ emails.status:   pending → processing → triaged → done                (don
 - `apps/server/src/modules/triage/classifier.test.ts`
 - `apps/server/src/modules/triage/pause.test.ts`
 - `apps/server/src/modules/triage/eval.test.ts`
+- `apps/server/src/modules/triage/eval-judge.test.ts`
+- `apps/server/src/modules/triage/judge.test.ts`
 - `apps/server/src/modules/triage/eval-gap.test.ts`
 - `apps/server/src/scripts/eval-args.test.ts`
+- `apps/server/src/scripts/eval-judge-setup.test.ts`
 - `apps/server/src/scripts/eval-ledger.test.ts`
 - `apps/server/src/scripts/eval-sim-load.test.ts`
+- `packages/core/src/sim/draft-checks.test.ts`
 - `packages/core/src/triage/planners.test.ts`
 - `packages/core/src/triage/policy.test.ts`
 - `packages/core/src/triage/rules.test.ts`

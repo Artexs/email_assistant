@@ -1,0 +1,172 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-016",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "w-3-069",
+      "subject": "Opłata za prowadzenie rachunku",
+      "body": "Obciążenie rachunku\n\nRachunek firmowy został obciążony miesięczną opłatą za prowadzenie.\n\nRachunek: główny rachunek firmowy\nOpis: opłata za prowadzenie rachunku i pakiet bankowości internetowej\nKwota: 189,00 PLN\nData obciążenia: 27.01.2027\nStatus: zaksięgowano\n\nOpłata wynika z aktualnej tabeli opłat i prowizji, a jej szczegółowy opis znajdziesz w historii rachunku. Faktura za usługi bankowe zostanie wystawiona na koniec miesiąca i przesłana na adres rozliczeniowy firmy. To jest automatyczne powiadomienie banku. Prosimy na tę wiadomość nie odpowiadać.",
+      "thread": []
+    },
+    {
+      "id": "w-3-070",
+      "subject": "Podsumowanie rozliczeń subskrypcji za rok 2026",
+      "body": "Podsumowanie rozliczeń subskrypcji\n\nPoniżej znajdziesz zestawienie płatności i faktur związanych z Twoim kontem firmowym w serwisie Logistyka Dzis za rok 2026. Wiadomość została wygenerowana automatycznie.\n\nZestawienie faktur\n- Faktura za pakiet alertów o cenach paliw, styczeń 2026: opłacona\n- Faktura za dostęp do archiwum zestawień, kwiecień 2026: opłacona\n- Faktura za raport o rynku frachtów, lipiec 2026: opłacona\n- Faktura za pakiet alertów o przetargach, wrzesień 2026: opłacona\n- Faktura za odnowienie planu firmowego, grudzień 2026: opłacona\n\nPodsumowanie kwot\n- Łączna wartość faktur netto: 1 840,00 zł\n- Podatek VAT: 423,20 zł\n- Łączna wartość brutto: 2 263,20 zł\n- Płatności po terminie: 0\n- Zwroty i korekty: 1, na kwotę 59,00 zł\n\nMetody płatności\n- Przelew bankowy: 3 płatności\n- Karta firmowa: 2 płatności\n- Płatności automatyczne: wyłączone\n\nDostęp do faktur\nWszystkie faktury z roku 2026 są dostępne w panelu konta w zakładce Rozliczenia i pozostaną tam przez 10 lat. Dane do faktur możesz zmienić w ustawieniach konta, jednak zmiana dotyczy tylko dokumentów wystawionych po jej zapisaniu.\n\nJeśli widzisz w zestawieniu pozycję, której nie rozpoznajesz, skorzystaj z formularza kontaktowego w panelu konta. Ta wiadomość ma charakter automatycznego podsumowania i nie wymaga odpowiedzi.",
+      "thread": []
+    },
+    {
+      "id": "w-3-071",
+      "subject": "Zmiana adresu odbiorcy alertów o kartach paliwowych",
+      "body": "Adres alertów zmieniony\n\nAdres e-mail, na który wysyłamy alerty o kartach paliwowych, został zmieniony. Zmiana zaczyna obowiązywać od następnej wiadomości. Poprzedni adres został usunięty z listy odbiorców, a zestawienia z archiwum pozostają dostępne w panelu konta.\n\nJeśli to nie Ty zmieniałeś adres, zmień hasło do konta i skontaktuj się z obsługą serwisu. Nowy adres został potwierdzony automatycznie na podstawie kodu wysłanego podczas zmiany.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "w-3-072",
+      "subject": "Changes to your account plan from 1 February",
+      "body": "Account plan update\n\nThis is an automatic notice about changes to your Supply Chain Weekly account plan. The changes apply from 1.02.2027 and do not require any action on your side.\n\nWhat changes\n- The free digest stays free and keeps its weekly schedule.\n- Archive access for free accounts is extended from 3 to 6 months.\n- The number of saved reports in the reading list rises from 5 to 10.\n- Alerts about freight rates move to the new alert centre in your account.\n\nWhat stays the same\n- Your delivery day and time of the weekly digest.\n- Your email address and language settings.\n- Your saved items and your reading list.\n\nBilling\n- Your free plan has no fees.\n- If you bought a report or a licence, the purchase stays valid for its full period.\n- Invoices already issued are not changed.\n\nPrivacy\nWe do not share your data with third parties for advertising. The updated privacy notice explains which data we store and for how long. It is available in your account under Legal documents, together with the terms of service.\n\nQuestions\nIf you want to change how you receive account notices, open your account settings and choose Notifications. This message was generated automatically, so replies are not monitored.",
+      "thread": []
+    },
+    {
+      "id": "w-3-073",
+      "subject": "Rynek frachtów: tydzień w liczbach",
+      "body": "Rynek frachtów w liczbach\n\nW tym tygodniu na giełdach transportowych dostępnych było o 6 procent mniej ofert niż przed tygodniem, a średnie stawki pozostały bez zmian.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "w-3-074",
+      "subject": "Bazy kontaktów w promocyjnej cenie",
+      "body": "Szanowni Państwo,\n\nnowa baza firm TSL, 90 000 adresów, rabat 55 procent do jutra. Odpowiedz, a wyślemy próbkę.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "w-3-075",
+      "subject": "Wystawcy: rabat na stoisko tylko do piątku!",
+      "body": "Szanowni Państwo,\n\nzapraszamy do wystawiania się na Targach Magazynowych Expo 2027! To najważniejsze spotkanie branży logistycznej w regionie, a my oferujemy Państwu rabat 35 procent na stoisko przy rezerwacji do piątku. Dla pierwszych dziesięciu firm dodajemy darmową reklamę w katalogu targowym i miejsce w strefie gastronomicznej!\n\nLiczba stoisk jest ograniczona, więc nie czekaj! Odpowiedz na tę wiadomość z podaniem nazwy firmy, a nasz opiekun wystawców przygotuje umowę i plan hali jeszcze dziś.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "w-3-076",
+      "subject": "Direct debit executed",
+      "body": "Direct debit\n\nA direct debit was executed on your company account.\n\nAccount: main current account (ending 4417)\nCreditor: Energa Facility Services\nAmount: 5 112.30 PLN\nReference: electricity, warehouse in Poznan, January 2027\nDate: 27.01.2027\nStatus: executed\n\nThis is an automatic message from the bank. Do not reply to this address. Details of the operation are available in online banking. The next debit under this mandate is expected on 27.02.2027, and the mandate can be changed or cancelled by the account administrator.",
+      "thread": []
+    },
+    {
+      "id": "w-3-077",
+      "subject": "Rozliczenie delegacji do Wilna",
+      "body": "Panie Wiktorze,\n\nproszę, aby Magdalena Czerniak rozliczyła faktury hotelowe z mojej zeszłotygodniowej podróży do Wilna i przesłała mi potwierdzenie zwrotu kosztów.",
+      "thread": []
+    },
+    {
+      "id": "w-3-078",
+      "subject": "Power of attorney for the Swedish broker",
+      "body": "Hi Wiktor,\n\nour broker in Gothenburg now wants a power of attorney signed by a member of the management board, so that he can file the customs declarations for Kordelan in Sweden. The previous one expired in December. It is only one page, and the text is the same as last year.\n\nAre you ok to sign it yourself this week, or would you prefer that the other board member does it? I did not want to send it to anyone before I know. Please let me know your answer when you have a moment.",
+      "thread": [],
+      "expectedPoints": [
+        "Czy prezes podpisze pełnomocnictwo dla brokera w Göteborgu osobiście w tym tygodniu, czy zrobi to drugi członek zarządu"
+      ],
+      "mustNot": [
+        "Nie wysyłać pełnomocnictwa do podpisu bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "w-3-079",
+      "subject": "Rekrutacje: pierwsze CV z agencji",
+      "body": "Wiktorze,\n\nagencja przysłała pierwsze CV na stanowiska brygadzistów w Gdyni: pięciu kandydatów, z czego dwóch ma doświadczenie na zmianie nocnej w dużym magazynie. Rozmowy odbędą się w czwartek po południu, prowadzimy je razem z dyrektor operacyjną.\n\nStatus rekrutacji na dziś: rozmowy idą zgodnie z planem, budżet się nie zmienia, a agencja dotrzymuje terminów, pozostałe etapy zostają bez zmian. Po rozmowach zespół HR zapisze wyniki w arkuszu rekrutacji.",
+      "thread": [],
+      "note": "rewritten: removed reply-inviting lines (summary promise and 'do not have to answer'); pure status text"
+    },
+    {
+      "id": "w-3-080",
+      "subject": "Re: Posiedzenie rady - stan przygotowań i budżet",
+      "body": "Panie Prezesie,\n\nwracam do mojego pytania o prezentację nakładów na flotę. Czy uzasadnienie przedstawi Pan osobiście, czy zaproponuje Pan, aby zrobiła to dyrektor operacyjna? Pytam, bo od tego zależy, ile czasu przewidzę w porządku obrad na ten punkt i czy zaproszę ją na posiedzenie.\n\nProszę o krótką odpowiedź na piśmie jeszcze przed posiedzeniem. Pozostałe punkty porządku obrad pozostają bez zmian, a sekretariat rady zajmie się resztą organizacji.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Czy uzasadnienie nakładów na flotę przedstawi prezes, czy dyrektor operacyjna"
+      ],
+      "mustNot": [
+        "Nie zapraszać dyrektor operacyjnej na posiedzenie rady bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "w-3-081",
+      "subject": "Login alert",
+      "body": "Login alert\n\nYou signed in to online banking on 27.01.2027 at 12:09 from a known device. No action needed.",
+      "thread": []
+    },
+    {
+      "id": "w-3-082",
+      "subject": "New business card issued",
+      "body": "Card issued\n\nA new business card has been issued for your company account.\n\nCard type: business debit card\nCardholder: fleet administrator\nCard number: ending 5521\nIssue date: 27.01.2027\nDelivery: courier, to the registered office address\nStatus: issued, not yet activated\n\nThe card must be activated before first use, in online banking or at a bank ATM. This is an automatic message from the bank. Do not reply to this address. If you did not order a card, contact the bank through the official channel.",
+      "thread": []
+    },
+    {
+      "id": "w-3-083",
+      "subject": "Karnet na kawę i przekąski dla Twoich kierowców",
+      "body": "Szanowni Państwo,\n\nPaliwa Flota Billing przygotowało ofertę dla firm transportowych: karnet na kawę, przekąski i ciepłe posiłki na wszystkich naszych stacjach. Kierowca pokazuje kartę flotową przy kasie, a koszt trafia na jedną miesięczną fakturę razem z paliwem. Dzięki temu nie trzeba rozliczać drobnych wydatków z dyspozytorami.\n\nDo końca lutego karnet na pierwszy miesiąc dajemy za darmo, bez żadnej umowy. Wystarczy odpowiedzieć na tę wiadomość z podaniem liczby kierowców w Państwa firmie.",
+      "thread": []
+    },
+    {
+      "id": "w-3-084",
+      "subject": "Re: Obsada magazynu w Gdyni - prosze o Pana opinie",
+      "body": "Wiktorze,\n\ndziękuję za decyzję o widełkach brygadzistów, odnotowałem podwyżkę o 8 procent. Ogłoszenie opublikowaliśmy wczoraj i do dziś wpłynęło 14 zgłoszeń, z czego sześć wygląda obiecująco. Nowa stawka jest już wpisana w system kadrowy dla Gdyni.\n\nInformuję tylko dla Twojej wiadomości. Wrócę do Ciebie, gdy przejdziemy przez pierwszą turę rozmów, nie musisz odpowiadać na tę wiadomość. Raport tygodniowy o stanie rekrutacji w trzech magazynach wyślę w piątek, jak co tydzień.",
+      "thread": []
+    },
+    {
+      "id": "w-3-085",
+      "subject": "Grow your business with real leads",
+      "body": "Hello,\n\nPremium Leads Pro now offers a verified database of 300,000 logistics companies in Europe. Each record includes a name, a position and a working email address, so your first campaign can start the same day.\n\nOrder today and receive the sales kit, a free website audit and 30 days of support at no extra cost. Our clients report a big growth in new enquiries within weeks. Reply to this message and we will send a sample list.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "w-3-086",
+      "subject": "Nowa tabela taryfowa w porcie w Kłajpedzie od 1 marca",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótką informację o zmianach w porcie w Kłajpedzie. Zarząd portu opublikował nową tabelę opłat za postój kontenerów i ładunków chłodniczych, która obowiązuje od 1.03.2027. Opłata za pierwszą dobę postoju pozostaje bez zmian, ale od drugiej doby wzrasta średnio o 12 procent.\n\nNasz agent przeanalizował nowe stawki i uważa, że przy obecnym tempie odpraw wpływ na koszty Kordelan i naszego konsorcjum będzie niewielki. Informacja ma charakter wyłącznie sprawozdawczy, nie wymaga żadnych działań.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "w-3-087",
+      "subject": "Statement available",
+      "body": "Statement ready\n\nYour account statement for 26.01.2027 is available in online banking.",
+      "thread": []
+    },
+    {
+      "id": "w-3-088",
+      "subject": "Zmiana zlecenia stałego",
+      "body": "Zmiana zlecenia stałego\n\nZlecenie stałe na rachunku firmowym zostało zmienione.\n\nOdbiorca: Biuro Rachunkowe Czerniak i Wspólnicy\nPoprzednia kwota: 3 200,00 PLN\nNowa kwota: 3 450,00 PLN\nCzęstotliwość: miesięcznie, 26. dnia miesiąca\nPierwsze wykonanie nowego zlecenia: 26.02.2027\nStatus: aktywne\n\nTo jest automatyczne powiadomienie banku. Prosimy na tę wiadomość nie odpowiadać. Jeśli nie rozpoznajesz tej zmiany, skontaktuj się z opiekunem konta oficjalnym kanałem banku. Zmiana dotyczy tylko kolejnych wykonań zlecenia, a wcześniejsze płatności pozostają bez zmian.",
+      "thread": []
+    },
+    {
+      "id": "w-3-089",
+      "subject": "Zestawienie umów dla rady",
+      "body": "Panie Wiktorze,\n\nproszę, aby Piotr Lewandrowski przygotował dla rady zestawienie umów sprzedaży powyżej miliona złotych, z terminami obowiązywania.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "w-3-090",
+      "subject": "Nordic agreement: signature needed today",
+      "body": "Wiktor,\n\nNordic's finance runs its payment batch today at 16:00. Without your signed agreement in their system, our first invoices wait for the next batch in two weeks.\n\nMagdalena Czerniak | Glowna Ksiegowa | Dzial Finansow",
+      "thread": []
+    },
+    {
+      "id": "w-3-091",
+      "subject": "Zaliczka na naczepy - płatność i księgowanie",
+      "body": "Cześć Wiktorze,\n\nproducent naczep wystawił fakturę zaliczkową na 20 procent wartości zamówienia, czyli 142 000 zł, z terminem płatności do 10.02. Proszę, żeby Magdalena Czerniak sprawdziła fakturę z umową, zaplanowała przelew i zaksięgowała zaliczkę na właściwym koncie inwestycyjnym.\n\nNikt z mojego zespołu nie ma dostępu do rozliczeń inwestycji, więc to jej zadanie. Fakturę zostawiłam w folderze floty.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktorze,</p><p style=\"margin:0 0 12px 0\">producent naczep wystawił fakturę zaliczkową na 20 procent wartości zamówienia, czyli 142 000 zł, z terminem płatności do 10.02. Proszę, żeby Magdalena Czerniak sprawdziła fakturę z umową, zaplanowała przelew i zaksięgowała zaliczkę na właściwym koncie inwestycyjnym.</p><p style=\"margin:0 0 12px 0\">Nikt z mojego zespołu nie ma dostępu do rozliczeń inwestycji, więc to jej zadanie. Fakturę zostawiłam w folderze floty.</p><p style=\"margin:0 0 12px 0\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p></div>",
+      "thread": []
+    },
+    {
+      "id": "w-3-092",
+      "subject": "Przelew odrzucony przez bank odbiorcy",
+      "body": "Przelew odrzucony\n\nBank odbiorcy odrzucił przelew z rachunku firmowego. Środki zostały zwrócone na rachunek.\n\nOdbiorca: Serwis Naczep Gdynia\nKwota: 6 480,00 PLN\nTytuł: Przegląd naczep, faktura styczniowa\nPowód odrzucenia: nieprawidłowy numer rachunku odbiorcy\nData zwrotu: 27.01.2027\nStatus: zwrócono\n\nAby ponowić płatność, sprawdź numer rachunku odbiorcy na fakturze i utwórz nowy przelew w bankowości internetowej. Zwrot nie wiąże się z żadnymi opłatami. To jest automatyczne powiadomienie banku. Prosimy na tę wiadomość nie odpowiadać.",
+      "thread": []
+    },
+    {
+      "id": "w-3-093",
+      "subject": "Przetarg: komisja ogłosi wyniki drugiej tury 12.02",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że komisja przetargowa naszej sieci zakończyła pierwszy etap oceny ofert. Wyniki drugiej tury zostaną ogłoszone 12.02.2027, a do tego czasu komisja nie będzie kontaktować się z uczestnikami.\n\nPierwszy etap oceny objął kryteria cenowe i jakościowe, a w drugiej turze komisja będzie rozmawiać z trzema oferentami. Wiadomość ma charakter wyłącznie informacyjny i nie wymaga odpowiedzi.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    }
+  ]
+}

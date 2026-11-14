@@ -191,7 +191,12 @@ describe("actions logs", () => {
           .set({ status_changed_at: new Date(T0.getTime() - HOUR) })
           .where("id", "=", mailboxId)
           .execute();
-        await detectNotices({ db: trx, now: () => clock, startedAt: new Date(T0.getTime() - HOUR) });
+        await detectNotices({
+          db: trx,
+          now: () => clock,
+          startedAt: new Date(T0.getTime() - HOUR),
+          testMail: NO_TEST_SENDERS,
+        });
         const outbox = await trx
           .selectFrom("outbox")
           .select("id")
