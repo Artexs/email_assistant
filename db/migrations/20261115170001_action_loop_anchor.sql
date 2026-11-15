@@ -1,4 +1,7 @@
 -- migrate:up
+-- The constraints are on a new column (loop_id) or relax a rule: the code of the previous release never writes loop_id,
+-- so every row it writes still passes them. No release has shipped yet, so the first minor release names the contract.
+-- contract: v0.1.0
 -- F116 stage 9: a second anchor for actions. A follow-up answers the user's own sent mail, so it has no incoming mail.
 -- Expand only: `email_id` loses NOT NULL, `loop_id` is new. Every current row keeps its `email_id`; the new CHECKs hold
 -- for it. A row of the old release still passes them (`loop_id` is NULL there).

@@ -74,7 +74,8 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
   },
 };
 
-// Tables that hold one mail's data and go with the mail (`emails` cascades to the rest). Every text, array and jsonb
+// Tables that hold one mail's data and go with the mail (`emails` cascades to the rest); the `actions` and `outbox` rows
+// of a loop go with the loop (`open_loops` cascades to them). Every text, array and jsonb
 // column of these tables is a candidate column in the completeness test, whatever its name.
 export const MESSAGE_TABLES: readonly string[] = [
   "emails",
