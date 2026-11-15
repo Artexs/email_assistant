@@ -138,6 +138,7 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
                 className="min-w-40 flex-1"
                 autoComplete="off"
                 aria-label={t("urg_topic_keywords_label", { n: index + 1 })}
+                aria-invalid={error?.key.startsWith("urg_err_keyword") === true && error.n === index + 1}
                 value={topic.keywords}
                 onChange={(event) =>
                   change({

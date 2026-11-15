@@ -73,3 +73,32 @@ describe("UrgencyForm", () => {
     expect(render(view(profile), true)).toContain(t("urg_vip_text"));
   });
 });
+
+// The wording that the review of the card fixed (calques and a sentence that read "people are rules").
+describe("urgency texts", () => {
+  test("Polish", () => {
+    setLocaleForTest("pl");
+    expect(t("urg_help")).toBe(
+      "Wskaż asystentowi, co w tej skrzynce jest pilne: tematy i terminy. Asystent bierze je pod uwagę, gdy ocenia, czy wiadomość jest pilna."
+    );
+    expect(t("urg_topics_help")).toContain("(najwyżej 10 na temat)");
+    expect(t("urg_vip_text")).toBe("Osoby VIP ustawiasz w regułach VIP dla nadawców.");
+    expect(t("urg_clear_title")).toBe("Usunąć wszystkie tematy i terminy?");
+    expect(t("urg_clear_text", { address: "a@x.test" })).toBe(
+      "Usuniesz wszystkie tematy i terminy skrzynki a@x.test. Reguły VIP pozostaną bez zmian."
+    );
+    expect(t("urg_err_keywords_many", { n: 2 })).toBe("Temat 2: podaj najwyżej 10 słów kluczowych.");
+    expect(t("urg_err_topics_many")).toBe("Możesz dodać najwyżej 20 tematów.");
+    expect(t("urg_err_deadlines_many")).toBe("Możesz dodać najwyżej 20 terminów.");
+  });
+
+  test("English", () => {
+    setLocaleForTest("en");
+    expect(t("urg_help")).toBe(
+      "Tell the assistant what counts as urgent in this mailbox: topics and deadlines. It uses them when it decides whether a mail is urgent."
+    );
+    expect(t("urg_topics_help")).toContain("(up to 10 per topic)");
+    expect(t("urg_err_topics_many")).toBe("You can add at most 20 topics.");
+    expect(t("urg_err_deadlines_many")).toBe("You can add at most 20 deadlines.");
+  });
+});

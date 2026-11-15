@@ -557,11 +557,11 @@ export const en = {
   // F110: the urgency card on the Rules page
   urg_title: "What is urgent for me",
   urg_help:
-    "Tell the assistant what counts as urgent in this mailbox: topics and dates. It reads this text when it decides whether a mail is urgent.",
+    "Tell the assistant what counts as urgent in this mailbox: topics and deadlines. It uses them when it decides whether a mail is urgent.",
   urg_mailbox_label: "Mailbox",
   urg_topics_title: "Topics",
   urg_topics_help:
-    "A subject that matters to you, and words that point to it. Separate the keywords with commas (up to 10).",
+    "A subject that matters to you, and words that point to it. Separate the keywords with commas (up to 10 per topic).",
   urg_topics_empty: "No topics yet.",
   urg_topic_name_label: "Topic {n}: name",
   urg_topic_keywords_label: "Topic {n}: keywords",
@@ -588,8 +588,8 @@ export const en = {
   urg_err_keywords_many: "Topic {n}: use at most 10 keywords.",
   urg_err_deadline_label: "Deadline {n}: the name needs 1 to 80 characters.",
   urg_err_deadline_date: "Deadline {n}: choose a date.",
-  urg_err_topics_many: "Use at most 20 topics.",
-  urg_err_deadlines_many: "Use at most 20 deadlines.",
+  urg_err_topics_many: "You can add at most 20 topics.",
+  urg_err_deadlines_many: "You can add at most 20 deadlines.",
   err_not_found: "It is gone already.",
   err_org_suspended: "This account is paused. Nothing can change now.",
   err_mailbox_limit: "Your plan allows no more mailboxes. Remove one, or contact us to raise the limit.",
