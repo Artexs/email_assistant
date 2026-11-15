@@ -216,3 +216,65 @@ describe("replyMatch", () => {
     expect(match({ autoSubmitted: "auto-replied", receivedAt: after(31) })).toBeNull();
   });
 });
+
+// The probes of the stage: quoted, encoded and look-alike forms of every value the rules read. A form that the rules do not
+// read as the plain value must not match (a missed close is a late follow-up; a false close hides a slip).
+describe("replyMatch probes: quoted, encoded and look-alike forms", () => {
+  const other = { subject: "x", fromAddress: "obcy@example.test" };
+
+  test("a sender address in a quoted, display-name or percent-encoded form is not a recipient", () => {
+    for (const from of [
+      '"anna@example.test"',
+      "'anna@example.test'",
+      '"Anna" <anna@example.test>',
+      "anna%40example.test",
+      "anna&#64;example.test",
+      "anna@EXAMPLE.test.",
+      "anna@example.test\u200b",
+      "аnna@example.test",
+      "anna@exаmple.test",
+    ]) {
+      expect(match({ fromAddress: from })).toBeNull();
+    }
+  });
+
+  test("a subject in a quoted or encoded-word form does not match; a full-width form of the plain subject does", () => {
+    for (const subject of [
+      '"Re: Oferta Q1"',
+      "=?UTF-8?Q?Re=3A_Oferta_Q1?=",
+      "=?UTF-8?B?UmU6IE9mZXJ0YSBRMQ==?=",
+      "Re%3A Oferta Q1",
+      "Re&#58; Oferta Q1",
+      "Oferta Q1 (Re:)",
+    ]) {
+      expect(match({ subject })).toBeNull();
+    }
+    expect(match({ subject: "Ｒｅ： Ｏｆｅｒｔａ　Ｑ１" })).toBe("subject");
+  });
+
+  test("a message id in a percent-encoded, entity or look-alike form does not match; a quoted plain id does", () => {
+    for (const value of [
+      "%3Clast@own.test%3E",
+      "&lt;last@own.test&gt;",
+      "<last@own.test\u200b>",
+      "<lаst@own.test>",
+      "<last@own.test/>",
+      "<last@own%2Etest>",
+    ]) {
+      expect(match({ ...other, inReplyTo: value, referencesHeader: value })).toBeNull();
+    }
+    expect(match({ ...other, inReplyTo: '"<last@own.test>"' })).toBe("thread");
+  });
+
+  test("an Auto-Submitted or Precedence value in a quoted or encoded form is read as written", () => {
+    expect(isAutoReply({ autoSubmitted: '"no"', precedence: null, fromAddress: null })).toBe(true);
+    expect(isAutoReply({ autoSubmitted: "n\u200bo", precedence: null, fromAddress: null })).toBe(true);
+    expect(isAutoReply({ autoSubmitted: null, precedence: '"bulk"', fromAddress: null })).toBe(false);
+    expect(isAutoReply({ autoSubmitted: "no", precedence: "bulk", fromAddress: null })).toBe(true);
+  });
+
+  test("a thread key with a different case or a trailing space is another thread", () => {
+    expect(match({ ...other, threadKey: "<ROOT@own.test>" })).toBeNull();
+    expect(match({ ...other, threadKey: "<root@own.test> " })).toBeNull();
+  });
+});

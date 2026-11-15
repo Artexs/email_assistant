@@ -553,6 +553,7 @@ Tenancy:
   | `actions.expiry`     | `0 7 * * * *` (hourly at minute 7)                                                  | [drafts-and-send.md](capabilities/drafts-and-send.md)       |
   | `delegation.chaser`  | `20 */15 * * * *` (every 15 min; acts from 07:30 local time)                        | [delegation.md](capabilities/delegation.md)                 |
   | `loops.analyze`      | `35 * * * * *` (every minute at second 35; only when the triage scope is not `off`) | [sent-mail.md](capabilities/sent-mail.md) rule 19           |
+  | `loops.match`        | `50 */2 * * * *` (every 2 min; needs no model, runs with the scope `off`)           | [sent-mail.md](capabilities/sent-mail.md) rule 20           |
   | `triage.returned`    | `*/15 * * * * *` (every 15 s)                                                       | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
   | `platform.retention` | `0 40 2 * * *` (daily at 02:40; the backup runs at 03:30, from the host cron)       | [retention.md](capabilities/retention.md)                   |
   | `channels.notifier`  | `*/15 * * * * *` (every 15 s; only when Telegram is on)                             | [digest-and-notices.md](capabilities/digest-and-notices.md) |

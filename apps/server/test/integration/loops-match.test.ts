@@ -301,6 +301,9 @@ describe("matchReplies: follow-up sends of the loop", () => {
       expect((await loopRow(trx, answered.id)).status).toBe("open");
       expect(await hooks.isOpen(trx, org.ctx, quiet.id)).toBe(true);
       expect(await hooks.isOpen(trx, org.ctx, promised.id)).toBe(true);
+      // A promise is not a wait for a reply: a mail in its thread does not stop anything.
+      await reply(trx, org, { threadKey: promised.threadKey, subject: "x" });
+      expect(await hooks.isOpen(trx, org.ctx, promised.id)).toBe(true);
       // An automatic answer does not stop the send.
       await reply(trx, org, { threadKey: quiet.threadKey, autoSubmitted: "auto-replied" });
       expect(await hooks.isOpen(trx, org.ctx, quiet.id)).toBe(true);

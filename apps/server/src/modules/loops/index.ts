@@ -14,6 +14,7 @@ export {
 export type { LoopCloseReason, LoopKind, LoopRow, NewLoop, ReopenResult } from "./repo";
 export { FOLLOW_UP_MIN_WAIT_DAYS, loopHooks } from "./hooks";
 export { clearLoopTexts } from "./retention";
+export { expireFollowUpSends } from "./follow-up-expiry";
 export { onSentOff } from "./sent-off";
 export { extractSent } from "./extractor";
 export type { ExtractMail, ExtractResult, Extraction } from "./extractor";
