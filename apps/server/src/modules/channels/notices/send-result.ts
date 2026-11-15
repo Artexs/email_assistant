@@ -48,7 +48,9 @@ async function resultKindOf(
     case "applied": {
       const copy = result.sent_copy;
       // A copy still `pending` here is older than the wait: the copy step died.
-      return { kind: "sent", sentCopy: copy === "appended" || copy === "found" ? copy : "failed", draftRemoved };
+      // `provider`: the provider saves the copy itself (Graph), so the person sees it as found.
+      const sentCopy = copy === "provider" ? "found" : copy === "appended" || copy === "found" ? copy : "failed";
+      return { kind: "sent", sentCopy, draftRemoved };
     }
     case "failed": {
       const stage = stringOf(result.stage);

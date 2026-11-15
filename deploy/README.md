@@ -753,6 +753,7 @@ The dump holds live `auth_sessions` tokens, password hashes and reset tokens. Af
    - `BACKUP_REMOTE`: `<rclone remote>:<bucket>/<path>`, for example `b2:ea-backups/pilot`.
    - `KEEP_DAYS`: days to keep local files (default 7).
    - `COMPOSE`: default `docker compose`.
+   - `BACKUP_PING_URL` (optional): the Healthchecks.io ping URL of the backup check (see "Status file and ping"). The URL is a secret.
      `deploy/backup.env` is in `.gitignore`.
 4. Run one backup by hand: `deploy/backup.sh`. The last line is `backup ok <name> <bytes>`.
    `backup.sh` calls `rclone copyto --no-check-dest`, because the write-only key cannot read the target (HTTP 401). For an `s3` remote, also add `--s3-no-check-bucket`.
@@ -763,6 +764,13 @@ The dump holds live `auth_sessions` tokens, password hashes and reset tokens. Af
 
 On any failure, `backup.sh` exits with a non-zero code and leaves no `.dump.age` file.
 Check `~/ea-logs/backup.log` for one `backup ok` line each night.
+
+### Status file and ping
+
+- **Status file.** Each run ends by writing `deploy/backup-status/status.json` (one line of JSON, mode 644, written through a `.tmp` file and renamed). A good run writes `{"result":"ok","at":…,"name":…,"bytes":…,"last_ok_at":<same as at>}`. Any non-zero exit after the start, also a bad `deploy/backup.env`, writes `{"result":"failed","at":…,"name":null,"bytes":null,"last_ok_at":<the old value or null>}`. The file is not in git (`.gitignore`); the folder is (`.gitkeep`), so the clone owns it and Docker never creates it as root.
+- **Server check.** `docker compose` mounts the folder read-only into `server` as `/run/ea-backup` and sets `BACKUP_STATUS_FILE=/run/ea-backup/status.json`. The job `ops.slo` reads the file every 5 minutes and sends an operator alert `slo_backup_age` when the file is missing or unreadable, the last run failed, or the last good backup is older than `SLO_BACKUP_MAX_AGE_H` hours (default 26). The mount needs one `$C up -d server` after the update that brings it. Dev and sim keep the check off (`BACKUP_STATUS_FILE` empty).
+- **Disk check.** The same job alerts `slo_disk` when the volume `SLO_DISK_PATH` (default `/`) has less than `SLO_DISK_FREE_PCT` percent (default 15) or less than `SLO_DISK_FREE_GB` GB (default 2) free. It resolves at 5 points and 0.5 GB above those values.
+- **Ping (owner step U2).** In Healthchecks.io make a check "backup" (period 1 day, grace 2 hours) and copy its ping URL into `BACKUP_PING_URL` in `deploy/backup.env` on the VPS. A good run calls the URL; a failed run calls `<url>/fail`. The call uses `curl -m 10 --retry 3`. A failed ping prints `backup ping failed` and never changes the exit code. The script never prints the URL. Leave the value empty to send no ping.
 
 ### Restore test (on the Mac, once a month)
 

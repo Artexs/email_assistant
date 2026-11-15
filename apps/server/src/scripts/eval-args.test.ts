@@ -220,3 +220,62 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     });
   });
 });
+
+describe("--extractor", () => {
+  const base = ["--sim", "lab-01", "--part", "sent-dev", "--extractor"];
+
+  test("T5 a sent part without --extractor is a usage error, also the holdout", () => {
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-holdout"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev"])).toBeUndefined();
+  });
+
+  test("--extractor needs --sim and a sent part", () => {
+    expect(parseEvalArgs(["--extractor"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--extractor"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--extractor"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "holdout", "--extractor"])).toBeUndefined();
+  });
+
+  test("a sent part with --extractor parses to sentPart; the cap and rates default as in a sim run", () => {
+    for (const part of ["sent-dev", "sent-holdout"] as const) {
+      const options = parseEvalArgs(["--sim", "lab-01", "--part", part, "--extractor"]);
+      expect(options).toMatchObject({
+        sim: "lab-01",
+        sentPart: part,
+        extractor: true,
+        concurrency: SIM_DEFAULT_CONCURRENCY,
+        rpm: SIM_DEFAULT_RPM,
+        budgetUsd: 1,
+      });
+      expect(options?.part).toBeUndefined();
+    }
+    expect(parseEvalArgs([...base, "--budget-usd", "0.5", "--rpm", "60", "--model", "m"])).toMatchObject({
+      budgetUsd: 0.5,
+      rpm: 60,
+      model: "m",
+    });
+  });
+
+  test("the classifier options and the other modes are refused", () => {
+    for (const extra of [
+      ["--judge"],
+      ["--escalate"],
+      ["--suspicious"],
+      ["--prompt-version", "classifier-v2"],
+      ["--prompt-parts", "none"],
+      ["--bar", "0.9"],
+      ["--min-kept", "10"],
+      ["--real"],
+      ["--set", "all"],
+      ["--state", "x.jsonl"],
+    ]) {
+      expect(parseEvalArgs([...base, ...extra])).toBeUndefined();
+    }
+  });
+
+  test("the old modes refuse --extractor and a sent part", () => {
+    expect(parseEvalArgs(["--extractor", "--real", "--org-id", org, "--mailbox-id", org])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev", "--suspicious"])).toBeUndefined();
+    expect(parseEvalArgs(["--gap", "--extractor", "--sim-json", "a", "--real-json", "b"])).toBeUndefined();
+  });
+});

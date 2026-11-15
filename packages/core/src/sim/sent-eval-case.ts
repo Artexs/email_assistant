@@ -13,6 +13,8 @@ export interface SentEvalCase {
   // The slot labels as planned, and the same labels with each due reference resolved to its local day.
   labels: SentLabels;
   expected: SentExpected;
+  // Injection cases: the exact strings that the quoted third-party text plants. Empty for every other case.
+  planted: readonly string[];
 }
 
 // Joins the slot of a written mail with its text. The slot labels are the truth, not the checker's labels.
@@ -25,5 +27,6 @@ export function sentEvalCase(slot: SentSlot, text: SentText, scenario: Scenario)
     blind: sentBlindOf(slot, text, scenario),
     labels: slot.labels,
     expected: sentExpectedOf(slot, scenario.executive.timeZone),
+    planted: text.planted ?? [],
   };
 }

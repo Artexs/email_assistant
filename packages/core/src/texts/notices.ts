@@ -34,6 +34,13 @@ export interface NoticeTexts {
     status: string;
   };
   mailboxRemoved: string;
+  // For an OAuth mailbox (F117): replaces `mailboxRemoved`. What the owner does at the provider depends on the secret kind.
+  mailboxRemovedAccess: {
+    googleRevoked: string;
+    googleFailed: string;
+    microsoftWork: string;
+    microsoftPersonal: string;
+  };
   // F109 stage 15: mail of a VIP or whitelisted sender waits while the AI service is paused.
   notTriaged: (sender: string) => string;
   sendHeld: {
@@ -163,6 +170,12 @@ export const noticeTexts = {
       status: "/status shows the mailbox state.",
     },
     mailboxRemoved: "Mailbox removed. Change its password in your mail provider's settings now.",
+    mailboxRemovedAccess: {
+      googleRevoked: "Mailbox removed. Its Google access is withdrawn.",
+      googleFailed: "Mailbox removed. Withdraw its access at myaccount.google.com/permissions now.",
+      microsoftWork: "Mailbox removed. Withdraw the app's access at myapps.microsoft.com now.",
+      microsoftPersonal: "Mailbox removed. Withdraw the app's access at account.live.com/consent/Manage now.",
+    },
     notTriaged: (sender) =>
       `📭 Mail from ${sender} is not triaged yet: the AI service is paused. It is triaged when the service is back.`,
     sendHeld: {
@@ -282,6 +295,12 @@ export const noticeTexts = {
       status: "/status pokazuje stan skrzynki.",
     },
     mailboxRemoved: "Skrzynka usunięta. Zmień teraz jej hasło w ustawieniach dostawcy poczty.",
+    mailboxRemovedAccess: {
+      googleRevoked: "Skrzynka usunięta. Dostęp przez Google został cofnięty.",
+      googleFailed: "Skrzynka usunięta. Cofnij teraz dostęp na myaccount.google.com/permissions.",
+      microsoftWork: "Skrzynka usunięta. Cofnij teraz dostęp aplikacji na myapps.microsoft.com.",
+      microsoftPersonal: "Skrzynka usunięta. Cofnij teraz dostęp aplikacji na account.live.com/consent/Manage.",
+    },
     notTriaged: (sender) =>
       `📭 Wiadomość od ${sender} nie jest jeszcze posortowana: usługa AI ma przerwę. Zostanie posortowana, gdy usługa wróci.`,
     sendHeld: {

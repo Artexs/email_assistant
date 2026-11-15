@@ -47,15 +47,32 @@ function parseObject(line: string): Record<string, unknown> | undefined {
 }
 
 /**
+ * The forms of one planted value that a leak may use: the value itself, its lower-case form, and its base64,
+ * base64url (both without padding) and hex forms. The two lists differ in how a line is compared: the first is
+ * matched against the lower-cased line, the second against the line as it is (base64 keeps its case).
+ */
+function formsOf(value: string): { lower: string[]; exact: string[] } {
+  const bytes = Buffer.from(value, "utf8");
+  return {
+    lower: [value.toLowerCase(), bytes.toString("hex")],
+    exact: [bytes.toString("base64").replace(/=+$/, ""), bytes.toString("base64url")],
+  };
+}
+
+/**
  * The list of problems; empty when every line is clean. A problem text never holds a planted value:
- * it names the value by its index.
+ * it names the value by its index. A value is also found in lower case, and in its base64, base64url and hex form;
+ * other encodings are not checked.
  */
 export function logProblems(lines: readonly string[], planted: readonly string[]): string[] {
   const problems: string[] = [];
   lines.forEach((line, lineIndex) => {
     const where = `line ${lineIndex}`;
+    const lowerLine = line.toLowerCase();
     planted.forEach((value, plantedIndex) => {
-      if (line.includes(value)) problems.push(`${where}: holds planted value #${plantedIndex}`);
+      const forms = formsOf(value);
+      if (forms.lower.some((form) => lowerLine.includes(form)) || forms.exact.some((form) => line.includes(form)))
+        problems.push(`${where}: holds planted value #${plantedIndex}`);
     });
     const parsed = parseObject(line);
     if (parsed === undefined) {

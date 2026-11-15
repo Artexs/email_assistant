@@ -333,8 +333,9 @@ describe("openMailboxProvider", () => {
       expect(error).toBeInstanceOf(HardError);
       expect((error as HardError).message).toBe("oauth not wired");
       expect(seen).toEqual([]);
-      // `String(error)` and the log text hold no token and no refresh token.
-      expect(`${String(error)}\n${format(error)}\n${logLines.join("\n")}`).not.toContain("canary");
+      // `String(error)` and the log text hold no token and no refresh token. The stack in `format(error)` holds file
+      // paths, and a checkout path can hold the word canary: the check names the token text.
+      expect(`${String(error)}\n${format(error)}\n${logLines.join("\n")}`).not.toContain("tok-canary");
     });
   });
 

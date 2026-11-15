@@ -27,6 +27,7 @@ import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable }
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
 import { loadEvalConfig } from "./eval-config";
+import { runExtractorEval } from "./eval-extractor";
 import { evalFailureLine } from "./eval-failure-line";
 import { runSim } from "./eval-sim";
 import { runSuspicious } from "./eval-suspicious";
@@ -104,6 +105,7 @@ async function main(): Promise<number> {
     return 1;
   }
   if (options.gap) return runGap(options);
+  if (options.extractor) return runExtractorEval(options);
   if (options.suspicious) return runSuspicious(options);
   if (options.sim !== undefined) return runSim(options);
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);

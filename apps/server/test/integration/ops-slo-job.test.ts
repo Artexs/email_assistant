@@ -5,6 +5,8 @@ import { sql, type Transaction } from "kysely";
 import {
   runSloTick,
   sendTestAlerts,
+  checkBackupAge,
+  checkDisk,
   checkUrgentLatency,
   type SloCheckEntry,
   type SloReading,
@@ -402,5 +404,60 @@ describe("ops:alert-test", () => {
       })
     ).rejects.toThrow("down");
     expect(reported).toEqual(["slo_disk"]);
+  });
+});
+
+// F114 stage 04: the real disk and backup-age checks as `SloCheckEntry` objects, through the whole tick and the stage 03 texts.
+describe("the ops.slo tick with the disk and backup-age checks", () => {
+  const backupCfg = { ...cfg, backupStatusFile: "/run/ea-backup/status.json" };
+  const entries = (statfs: Parameters<typeof checkDisk>[0], file: () => Promise<string>): SloCheckEntry[] => [
+    { kind: "slo_disk", run: () => checkDisk(statfs, backupCfg) },
+    { kind: "slo_backup_age", run: (now) => checkBackupAge(file, now, backupCfg) },
+  ];
+  const lowDisk = async () => ({ blocks: 1000, bsize: 4096 * 1024, bavail: 129 });
+  const goodDisk = async () => ({ blocks: 1000, bsize: 4096 * 1024, bavail: 800 });
+  const noFile = async (): Promise<string> => Promise.reject(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
+  const goodFile = async (): Promise<string> =>
+    `{"result":"ok","at":"2026-11-20T03:30:05Z","name":"ea-x.dump.age","bytes":10,"last_ok_at":"2026-11-20T03:30:05Z"}`;
+
+  test("9. a low disk and a missing status file each open once, with the real fact names in the text", async () => {
+    await inRollback(async (trx) => {
+      const h = harness(trx);
+      await runSloTick(h.deps(entries(lowDisk, noFile)), T0);
+      expect(h.sent).toHaveLength(2);
+      expect(h.sent[0]?.split("\n").slice(0, 2)).toEqual(["ALERT slo_disk", "Free 12.9 % (0.5 GB)"]);
+      expect(h.sent[1]?.split("\n").slice(0, 2)).toEqual(["ALERT slo_backup_age", "No backup status file"]);
+      expect(await rows(trx, "slo_disk")).toHaveLength(1);
+      expect(await rows(trx, "slo_backup_age")).toHaveLength(1);
+      // five minutes later, nothing changed: no new text
+      await runSloTick(h.deps(entries(lowDisk, noFile)), plus(5 * MINUTE));
+      expect(h.sent).toHaveLength(2);
+    });
+  });
+
+  test("9b. both resolve when the disk has space and the status file is good", async () => {
+    await inRollback(async (trx) => {
+      const h = harness(trx);
+      await runSloTick(h.deps(entries(lowDisk, noFile)), T0);
+      await runSloTick(h.deps(entries(goodDisk, goodFile)), plus(10 * MINUTE));
+      expect(h.sent.map((text) => text.split("\n")[0])).toEqual([
+        "ALERT slo_disk",
+        "ALERT slo_backup_age",
+        "RESOLVED slo_disk (open 10 min)",
+        "RESOLVED slo_backup_age (open 10 min)",
+      ]);
+    });
+  });
+
+  test("9c. with no BACKUP_STATUS_FILE the backup entry reads nothing and opens nothing", async () => {
+    await inRollback(async (trx) => {
+      const h = harness(trx);
+      const off: SloCheckEntry[] = [
+        { kind: "slo_backup_age", run: (now) => checkBackupAge(noFile, now, { ...cfg, backupStatusFile: null }) },
+      ];
+      await runSloTick(h.deps(off), T0);
+      expect(h.sent).toEqual([]);
+      expect(await rows(trx, "slo_backup_age")).toHaveLength(0);
+    });
   });
 });

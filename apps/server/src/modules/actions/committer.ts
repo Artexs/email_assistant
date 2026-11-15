@@ -58,6 +58,8 @@ export interface CommitterDeps {
   openGraphSender?: OpenDeps["openGraphSender"];
   oauthTokens?: OpenDeps["oauthTokens"];
   now(): Date;
+  /** Waits between the looks for a Graph Sent copy (`ApplyDeps.sleep`). Absent: a real wait. */
+  sleep?: ApplyDeps["sleep"];
   batchSize?: number;
   // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).
   hooks?: DelegationHooks;
@@ -281,6 +283,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
         address: mailbox.address,
         capabilities: { uidplus: (mailbox.capabilities as Partial<MailCapabilities>).uidplus === true },
         folderMap: mailbox.folder_map,
+        sendVia: mailbox.send_via,
       },
       // A batch without a draft or a send never reads these two.
       owner: facts?.owner ?? { displayName: mailbox.address },
@@ -289,6 +292,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       sender,
       hooks: deps.hooks ?? noDelegationHooks,
       appendFolders,
+      ...(deps.sleep === undefined ? {} : { sleep: deps.sleep }),
       ...(deps.sendLimits === undefined ? {} : { sendLimits: deps.sendLimits }),
       ...(deps.onSendLimited === undefined ? {} : { onSendLimited: deps.onSendLimited }),
     };

@@ -50,6 +50,12 @@ const deps: RemoveDeps = {
   },
 };
 
+// A password mailbox: no provider, no revoke, no page to name.
+const PASSWORD_REMOVED: Awaited<ReturnType<typeof removeMailbox>> = {
+  kind: "removed",
+  outcome: { authMethod: "password", oauthProvider: null, revoked: null, accessPage: null },
+};
+
 const decision: TriageDecision = {
   finalCategory: "info",
   modelCategory: "info",
@@ -196,7 +202,7 @@ describe("removeMailbox", () => {
       now,
     });
 
-    expect(result).toEqual({ kind: "removed" });
+    expect(result).toEqual(PASSWORD_REMOVED);
     expect(allZero(await counts(s.orgId, s.ids, { exceptEvents: ["mailbox.removed"] }))).toBe(true);
     const audit = await auditRows(s.orgId, "mailbox.removed");
     expect(audit.length).toBe(1);
@@ -269,7 +275,7 @@ describe("removeMailbox", () => {
       now,
     });
 
-    expect(result).toEqual({ kind: "removed" });
+    expect(result).toEqual(PASSWORD_REMOVED);
     expect(await counts(a.orgId, secondIds)).toEqual(beforeSecond);
     expect(await counts(b.orgId, b.ids)).toEqual(beforeB);
   });
@@ -307,7 +313,7 @@ describe("removeMailbox", () => {
       confirmAddress: await addressOf(s.mailboxId),
       now,
     });
-    expect(result).toEqual({ kind: "removed" });
+    expect(result).toEqual(PASSWORD_REMOVED);
 
     expect(await saveTriage(db, s.ctx, mailbox, email, decision, now)).toEqual({ kind: "lost" });
     const results = await db.selectFrom("triage_results").select("id").where("email_id", "=", emailId).execute();
@@ -347,7 +353,7 @@ describe("removeMailbox", () => {
       removal,
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error("remove took over 5 s")), 5000)),
     ]);
-    expect(result).toEqual({ kind: "removed" });
+    expect(result).toEqual(PASSWORD_REMOVED);
     expect(allZero(await counts(s.orgId, s.ids, { exceptEvents: ["mailbox.removed"] }))).toBe(true);
   });
 
@@ -464,7 +470,7 @@ describe("removeMailbox", () => {
       confirmAddress: await addressOf(s.mailboxId),
       now,
     });
-    expect(result).toEqual({ kind: "removed" });
+    expect(result).toEqual(PASSWORD_REMOVED);
 
     const claimed = await claimDueOutbox(db, {
       now,
