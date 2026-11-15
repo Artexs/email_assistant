@@ -17,6 +17,7 @@ import { forceRescan, updateCursor } from "../../src/modules/mail/repo";
 import { RETURN_CHECK_LIMIT } from "../../src/modules/mail/sync";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
+import { setLogLevel } from "../../src/platform/log";
 
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -630,6 +631,7 @@ describe("syncMailbox: incremental", () => {
         crossCopies: 0,
         returnedBelowCursor: 0,
         copiesBelowCursor: 0,
+        copiesStored: 0,
         moveInFlight: 0,
         skippedOwn: 0,
         ignoredBelowCursor: 0,
@@ -1052,6 +1054,46 @@ async function movedRowOf(trx: Db | Transaction<DB>, mailboxId: string) {
   return { ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) };
 }
 
+// Every row of the mailbox with its capture row, in UID order.
+async function copyRowsOf(trx: Db | Transaction<DB>, mailboxId: string) {
+  const rows = await trx
+    .selectFrom("emails")
+    .leftJoin("email_headers", "email_headers.email_id", "emails.id")
+    .select([
+      "emails.id",
+      "emails.dedup_key",
+      "emails.folder",
+      "emails.source_folder",
+      "emails.uid",
+      "emails.inbox_uid",
+      "emails.status",
+      "emails.body_text",
+      "emails.received_at",
+      "emails.returned_at",
+      "emails.undo_pending_at",
+      "email_headers.email_id as header_id",
+    ])
+    .where("emails.mailbox_id", "=", mailboxId)
+    .orderBy("emails.dedup_key")
+    .execute();
+  return rows.map((row) => ({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }));
+}
+
+// Runs `fn` with the debug level on and returns the lines that the logger wrote. Resets the level.
+async function withDebugLines(fn: () => Promise<void>): Promise<string[]> {
+  const out = spyOn(console, "log").mockImplementation(() => undefined);
+  const err = spyOn(console, "error").mockImplementation(() => undefined);
+  setLogLevel("debug");
+  try {
+    await fn();
+    return [...out.mock.calls, ...err.mock.calls].map((call) => call.join(" "));
+  } finally {
+    setLogLevel("info");
+    out.mockRestore();
+    err.mockRestore();
+  }
+}
+
 describe("syncMailbox: returned mail below the cursor", () => {
   const interia = (): FakeMailProvider =>
     createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnUserMove: true, capabilities: { move: false } });
@@ -1094,19 +1136,141 @@ describe("syncMailbox: returned mail below the cursor", () => {
     });
   });
 
-  test("a copy back to INBOX that leaves the mail in its folder is counted, not returned", async () => {
+  test("a copy back to INBOX that leaves the mail in its folder is stored as #2", async () => {
     await withRollback(db, async (trx) => {
       const s = { ...(await setup(trx)), fake: interia() };
       const uid = await storeAndMark(trx, s);
       const inFolder = s.fake.deliver("AI/Info", seed(1));
       await trx.updateTable("emails").set({ uid: inFolder }).where("mailbox_id", "=", s.mailboxId).execute();
+      const [moved] = await copyRowsOf(trx, s.mailboxId);
+      const before = await cursorOf(trx, s.mailboxId);
+      const copyMeta = await s.fake.fetchMetaIn("INBOX", uid);
 
       const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
       expect(result.copiesBelowCursor).toBe(1);
+      expect(result.copiesStored).toBe(1);
+      expect(result.stored).toBe(1);
+      expect(result.captureMissing).toBe(0);
       expect(result.returnedBelowCursor).toBe(0);
-      const row = await movedRowOf(trx, s.mailboxId);
-      expect(row).toMatchObject({ folder: "AI/Info", uid: inFolder, inbox_uid: uid, returned_at: null });
-      expect(await emails(trx, s.mailboxId)).toHaveLength(1);
+
+      const rows = await copyRowsOf(trx, s.mailboxId);
+      expect(rows).toHaveLength(2);
+      const copy = rows.find((row) => row.id !== moved?.id);
+      expect(copy).toMatchObject({
+        dedup_key: `${moved?.dedup_key}#2`,
+        folder: "INBOX",
+        source_folder: "INBOX",
+        uid,
+        inbox_uid: uid,
+        status: "pending",
+        body_text: "Body 1",
+        returned_at: null,
+      });
+      expect(copy?.received_at.getTime()).toBe(copyMeta?.internalDate.getTime());
+      // The copy has a capture row (2.5).
+      expect(copy?.header_id).toBe(copy?.id);
+      expect(rows.find((row) => row.id === moved?.id)).toEqual(moved);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual(before);
+
+      // A second sync counts and stores nothing (2.2).
+      const info = await withDebugLines(async () => {
+        const again = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+        expect(again.copiesBelowCursor).toBe(0);
+        expect(again.copiesStored).toBe(0);
+        expect(again.stored).toBe(0);
+        expect(again.returnedBelowCursor).toBe(0);
+      });
+      expect(info.some((line) => line.includes("returned below cursor: checked 1, returned 0, copies 0"))).toBe(true);
+      expect(info.some((line) => line.includes("sync_below_cursor_copies_stored"))).toBe(false);
+      expect(await copyRowsOf(trx, s.mailboxId)).toHaveLength(2);
+    });
+  });
+
+  test("a stored copy logs the stored count once and no skip line", async () => {
+    await withRollback(db, async (trx) => {
+      const s = { ...(await setup(trx)), fake: interia() };
+      await storeAndMark(trx, s);
+      const inFolder = s.fake.deliver("AI/Info", seed(1));
+      await trx.updateTable("emails").set({ uid: inFolder }).where("mailbox_id", "=", s.mailboxId).execute();
+
+      const lines = await withDebugLines(async () => {
+        await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      });
+      const stored = lines.filter((line) => line.includes("sync_below_cursor_copies_stored"));
+      expect(stored).toHaveLength(1);
+      expect(stored[0]).toContain(`mailbox_id=${s.mailboxId}`);
+      expect(stored[0]).toContain("folder_key=inbox");
+      expect(stored[0]).toContain("count=1");
+      expect(lines.some((line) => line.includes("sync_below_cursor_copy_skipped"))).toBe(false);
+    });
+  });
+
+  test("a copy that another run stored while this check fetched the body is not stored again", async () => {
+    await withRollback(db, async (trx) => {
+      const s = { ...(await setup(trx)), fake: interia() };
+      const uid = await storeAndMark(trx, s);
+      const inFolder = s.fake.deliver("AI/Info", seed(1));
+      await trx.updateTable("emails").set({ uid: inFolder }).where("mailbox_id", "=", s.mailboxId).execute();
+      const [moved] = await copyRowsOf(trx, s.mailboxId);
+      if (moved === undefined) throw new Error("no moved row");
+      const full = await trx.selectFrom("emails").selectAll().where("id", "=", moved.id).executeTakeFirstOrThrow();
+      const provider = onBodyCall(s.fake, async () => {
+        await insertTestEmail(trx, s.ctx, s.mailboxId, {
+          // Another number than the planned #2: only the re-check inside the lock stops this check.
+          dedup_key: `${moved.dedup_key}#3`,
+          message_id_header: full.message_id_header,
+          content_hash: full.content_hash,
+          folder: "INBOX",
+          uid,
+          inbox_uid: uid,
+        });
+      });
+
+      let result: MailboxSyncResult | undefined;
+      const lines = await withDebugLines(async () => {
+        result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
+      });
+      expect(result?.copiesBelowCursor).toBe(1);
+      expect(result?.copiesStored).toBe(0);
+      expect(result?.stored).toBe(0);
+      const rows = await copyRowsOf(trx, s.mailboxId);
+      expect(rows.filter((row) => row.folder === "INBOX")).toHaveLength(1);
+      expect(rows).toHaveLength(2);
+      const skipped = lines.filter((line) => line.includes("sync_below_cursor_copy_skipped"));
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0]).toContain("kind=held");
+      // The id is the moved row's id, never a run id (a run id holds the Message-ID).
+      expect(skipped[0]).toContain(`email_id=${moved.id}`);
+      expect(skipped[0]).toContain(`mailbox_id=${s.mailboxId}`);
+    });
+  });
+
+  test("a copy whose mail gets an Undo marker while this check fetched the body is not stored", async () => {
+    await withRollback(db, async (trx) => {
+      const s = { ...(await setup(trx)), fake: interia() };
+      await storeAndMark(trx, s);
+      const inFolder = s.fake.deliver("AI/Info", seed(1));
+      await trx.updateTable("emails").set({ uid: inFolder }).where("mailbox_id", "=", s.mailboxId).execute();
+      const [moved] = await copyRowsOf(trx, s.mailboxId);
+      const provider = onBodyCall(s.fake, async () => {
+        await trx
+          .updateTable("emails")
+          .set({ undo_pending_at: NOW })
+          .where("id", "=", moved?.id ?? "")
+          .execute();
+      });
+
+      let result: MailboxSyncResult | undefined;
+      const lines = await withDebugLines(async () => {
+        result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
+      });
+      expect(result?.copiesStored).toBe(0);
+      expect(result?.stored).toBe(0);
+      expect(await copyRowsOf(trx, s.mailboxId)).toHaveLength(1);
+      const skipped = lines.filter((line) => line.includes("sync_below_cursor_copy_skipped"));
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0]).toContain("kind=move_in_flight");
+      expect(skipped[0]).toContain(`email_id=${moved?.id}`);
     });
   });
 
@@ -2135,9 +2299,66 @@ describe("syncMailbox: sync folders", () => {
 
       const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
       expect(of(result, "offers")?.copiesBelowCursor).toBe(1);
+      expect(of(result, "offers")?.copiesStored).toBe(1);
       expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
       const row = await rowById(trx, rowId);
       expect(row).toMatchObject({ folder: "AI/Info", uid: inFolder, inbox_uid: uid, returned_at: null });
+      const moved = await trx
+        .selectFrom("emails")
+        .select("dedup_key")
+        .where("id", "=", rowId)
+        .executeTakeFirstOrThrow();
+      const copies = await trx
+        .selectFrom("emails")
+        .select(["dedup_key", "status", "folder", "source_folder", "uid", "inbox_uid"])
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("folder", "=", OFFERS)
+        .where("subject", "=", "Mail 1")
+        .execute();
+      expect(copies).toHaveLength(1);
+      expect(copies[0]).toMatchObject({
+        dedup_key: `${moved.dedup_key}#2`,
+        status: "pending",
+        folder: OFFERS,
+        source_folder: OFFERS,
+      });
+      expect([Number(copies[0]?.uid), Number(copies[0]?.inbox_uid)]).toEqual([uid, uid]);
+    });
+  });
+
+  test("8.2b a user move back of the row's mail after its copy is stored is still a return", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      const uid = s.fake.deliver("INBOX", seed(1), ago(2));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      await trx
+        .updateTable("emails")
+        .set({ folder: "AI/Info", moved_at: new Date(FOLDER_NOW.getTime() - 3_600_000) })
+        .where("mailbox_id", "=", s.mailboxId)
+        .execute();
+      // The system COPY gave the mail its own UID in AI/Info; the INBOX original stays at its UID.
+      const inFolder = s.fake.deliver("AI/Info", seed(1), ago(2));
+      await trx.updateTable("emails").set({ uid: inFolder }).where("mailbox_id", "=", s.mailboxId).execute();
+      // A newer INBOX mail moves the cursor past the folder UID.
+      s.fake.deliver("INBOX", seed(2), ago(1));
+      const first = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(first.copiesStored).toBe(1);
+      expect(first.stored).toBe(2);
+      const before = await copyRowsOf(trx, s.mailboxId);
+      const copy = before.find((row) => row.dedup_key.endsWith("#2"));
+      expect(copy).toMatchObject({ folder: "INBOX", uid, inbox_uid: uid });
+      const moved = before.find((row) => row.folder === "AI/Info");
+
+      expect(s.fake.userMove("AI/Info", inFolder, "INBOX")).toBe(inFolder);
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.returnedBelowCursor).toBe(1);
+      expect(result.copiesStored).toBe(0);
+      const after = await copyRowsOf(trx, s.mailboxId);
+      expect(after).toHaveLength(3);
+      const returned = after.find((row) => row.id === moved?.id);
+      expect(returned).toMatchObject({ folder: "INBOX", uid: inFolder });
+      expect(returned?.returned_at?.getTime()).toBe(FOLDER_NOW.getTime());
+      expect(after.find((row) => row.id === copy?.id)).toEqual(copy);
     });
   });
 

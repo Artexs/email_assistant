@@ -181,6 +181,12 @@ export interface MailProvider {
   close(): Promise<void>;
 }
 
+/** What the Sent code may call: five read methods. A write method is a type error (the system never changes the Sent folder). */
+export type SentFolderReader = Pick<
+  MailProvider,
+  "folderStatus" | "fetchAbove" | "fetchContent" | "searchSinceIn" | "fetchByUidsIn"
+>;
+
 /** Login failure: the job sets the mailbox to `auth_error`. */
 export class MailAuthError extends HardError {
   constructor(message: string, options?: { cause?: unknown }) {

@@ -1,4 +1,11 @@
-export { createPlanned, isOwnActionId, setDelegationId, type CreatedAction, type PlannedActionInput } from "./planned";
+export {
+  createPlanned,
+  isOwnActionId,
+  sentOriginOf,
+  setDelegationId,
+  type CreatedAction,
+  type PlannedActionInput,
+} from "./planned";
 export {
   countActionsSince,
   listActionsForEmail,
