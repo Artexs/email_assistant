@@ -46,16 +46,22 @@ describe("release:prepare and the changelog parser", () => {
     ]);
   });
 
-  test("T8c the real CHANGELOG.md still goes through release:prepare and parses", () => {
+  test("T8c the real CHANGELOG.md, given one Unreleased item, still goes through release:prepare and parses", () => {
+    // The real Unreleased section is empty right after a release: add one item, and use a far version.
+    const changelog = realChangelog.replace(
+      "## [Unreleased]\n",
+      "## [Unreleased]\n\n### For users\n\n- en: A test item.\n  pl: Element testowy.\n"
+    );
     const result = prepareRelease({
-      version: "0.2.0",
+      version: "99.0.0",
       date: "2026-12-01",
-      changelog: realChangelog,
+      changelog,
       packageJson,
     });
     if (!result.ok) throw new Error(result.reason);
     const releases = parseChangelog(result.changelog);
-    expect(releases.map((release) => release.version)).toEqual(["Unreleased", "0.2.0", "0.1.0"]);
+    expect(releases.slice(0, 2).map((release) => release.version)).toEqual(["Unreleased", "99.0.0"]);
+    expect(releases.map((release) => release.version)).toContain("0.1.0");
     expect(releases[1]?.forUsers.length).toBeGreaterThan(0);
     expect(releases[0]?.forUsers).toEqual([]);
   });
