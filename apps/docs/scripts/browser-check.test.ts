@@ -71,7 +71,7 @@ describe("serve.ts", () => {
     const empty = mkdtempSync(join(tmpdir(), "docs-empty-"));
     try {
       const result = Bun.spawnSync(["bun", join(ROOT, "apps/docs/e2e/serve.ts")], {
-        env: { ...process.env, EA_DOCS_DIST_DIR: empty },
+        env: { ...process.env, EA_DOCS_DIST_DIR: empty, DOCS_TEST_URL: "https://example.test" },
       });
       expect(result.exitCode).toBe(1);
       expect(result.stderr.toString()).toContain("[docs-serve]");
@@ -81,15 +81,17 @@ describe("serve.ts", () => {
     }
   });
 
-  test("the spec fails at once, with the build command, when there is no build (no server starts)", () => {
+  test("the spec fails at once, with the build command, when there is no build (a DOCS_TEST_URL run starts no server)", () => {
     const empty = mkdtempSync(join(tmpdir(), "docs-empty-"));
     try {
       const result = Bun.spawnSync(["bunx", "playwright", "test", "-c", "apps/docs/e2e/playwright.config.ts"], {
         cwd: ROOT,
-        env: { ...process.env, EA_DOCS_DIST_DIR: empty },
+        env: { ...process.env, EA_DOCS_DIST_DIR: empty, DOCS_TEST_URL: "https://example.test" },
       });
       expect(result.exitCode).not.toBe(0);
-      expect(`${result.stdout}${result.stderr}`).toContain("dist/index.html is missing: run `bun run docs:build`");
+      expect(`${result.stdout}${result.stderr}`).toContain(
+        "dist/index.html is missing: run `bun run docs:build` before `bun run docs:test`"
+      );
     } finally {
       rmSync(empty, { recursive: true, force: true });
     }
