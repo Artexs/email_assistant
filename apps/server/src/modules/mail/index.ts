@@ -94,7 +94,19 @@ export {
   listThreadContext,
   mailboxHasUidplus,
   mailKindFilter,
+  deleteSentEmails,
+  expireSentTexts,
+  getSentSyncState,
+  insertSentEmails,
+  insertSentSyncState,
+  listPendingSentTexts,
+  lockSentSyncState,
+  markSentPass,
   releaseEmail,
+  resetSentCursor,
+  updateSentCursor,
+  writeSentSwitch,
+  writeSentText,
   setMailboxStatus,
   requeueTooOld,
   setFolderMapEntry,
@@ -104,7 +116,19 @@ export {
   updateEmailLocation,
   writeEmailFlags,
 } from "./repo";
-export type { EmailFlagsRow, EmailHeadersRow, FlagRead, FlagTarget, EmailMeta, MailKind } from "./repo";
+export type {
+  EmailFlagsRow,
+  EmailHeadersRow,
+  FlagRead,
+  FlagTarget,
+  EmailMeta,
+  MailKind,
+  NewSentEmail,
+  SentContent,
+  SentErrorCode,
+  SentSyncState,
+  SentTextWrite,
+} from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   isSyntheticMessageId,
