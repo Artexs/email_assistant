@@ -99,7 +99,9 @@ export function sentSkipReason(facts: SentFacts): SentSkipReason | null {
   return null;
 }
 
-// What the model sees of a mail: no address, no header other than the subject and the date.
+// What the model sees of a mail: no header address (From, To, Cc) and no header other than the subject and the date.
+// The body goes as written, cut to 8,000 characters, inside the nonce data block: an address in a signature can reach
+// the model (triage does the same).
 export interface ExtractorInput {
   subject: string;
   // The sent time in the organization's time zone: the local date, the local time and the weekday name.

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { z } from "zod";
 
 import type { DueRef } from "./dates";
 import {
@@ -60,8 +61,12 @@ describe("sentSkipReason", () => {
     expect(sentSkipReason({ ...base, sentAt: new Date("2026-11-04T12:00:00Z") })).toBeNull();
   });
 
-  test("10 recipients pass; a mix of own and other addresses is not own_only", () => {
-    expect(sentSkipReason({ ...base, to: manyTo.slice(0, 9), cc: ["c@x.example"] })).toBeNull();
+  test("10 recipients (To and Cc together) pass, 11 give too_many", () => {
+    expect(sentSkipReason({ ...base, to: manyTo, cc: manyCc.slice(0, 4) })).toBeNull();
+    expect(sentSkipReason({ ...base, to: manyTo, cc: manyCc })).toBe("too_many");
+  });
+
+  test("a mix of own and other addresses is not own_only", () => {
     expect(sentSkipReason({ ...base, to: ["boss@corp.example", "anna@example.com"] })).toBeNull();
   });
 
@@ -172,6 +177,22 @@ describe("extractorOutputSchema", () => {
     expect(extractorOutputSchema.safeParse({ ...answer, due: { kind: "word", word: "someday" } }).success).toBe(false);
     expect(extractorOutputSchema.safeParse(null).success).toBe(false);
     expect(extractorOutputSchema.safeParse([]).success).toBe(false);
+  });
+});
+
+describe("the JSON schema that the provider gets", () => {
+  test("is a strict object with every output key required and no other key", () => {
+    const json = z.toJSONSchema(extractorOutputSchema) as {
+      type: string;
+      additionalProperties: unknown;
+      required: string[];
+      properties: Record<string, unknown>;
+    };
+    const keys = ["ask", "due", "expects_reply", "language", "promise", "promise_due"];
+    expect(json.type).toBe("object");
+    expect(json.additionalProperties).toBe(false);
+    expect([...json.required].sort()).toEqual(keys);
+    expect(Object.keys(json.properties).sort()).toEqual(keys);
   });
 });
 
