@@ -1,10 +1,10 @@
 # F114 stage 07 — One restore path, the drill stack, `credentials:check`, VPS-lost runbook
 
-Part of [`../plan.md`](../plan.md). Decisions P6, D16–D20. Must not run next to 04 or 05 (all three touch the Compose files). Opus review (restore, live-data safety).
+Part of [`../plan.md`](../plan.md). Decisions P6, D16–D20. Not next to 04 or 05 (Compose files). Opus review (live-data safety).
 
 ## Step 1 — `deploy/compose.drill.yaml` (override over `compose.yaml`)
 
-- `name: ea-drill` (the live project is `email-assistant`); network subnet `172.29.0.0/24`; `server` image `ea-drill-server` (a drill build must never move the live `ea-server:latest` tag); `server` publishes no port (`ports: !reset []`); `server` env file `deploy/drill.env` (ignored by git) replaces `../.env` (not appended).
+- `name: ea-drill` (the live project is `email-assistant`); network subnet `172.29.0.0/24`; `server` image `ea-drill-server` (a drill build must never move the live `ea-server:latest` tag); `server` publishes no port (`ports: !reset []`) and logs with the `local` driver (the live log store reads only `json-file`); `server` env file `deploy/drill.env` (ignored by git) replaces `../.env` (not appended).
 - Forced in `server` env: `TELEGRAM_BOT_TOKEN`, `HEARTBEAT_URL`, `OPERATOR_TELEGRAM_CHAT_ID`, `WEB_BASE_URL` and every LLM provider key empty; `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE`, `SEND_SCOPE` `off`.
 - No `!reset` on the VPS Compose (V2) → fallback: a full drill file; only if stage 08 finds it.
 
@@ -16,7 +16,7 @@ Part of [`../plan.md`](../plan.md). Decisions P6, D16–D20. Must not run next t
 - **Restore steps:** start a timer; `up -d --wait db`; new-host only: refuse (exit 2) when `organizations` has a row; restore (`--stdin`, or `age -d -i <identity>`) into `pg_restore --no-owner --role=<migrator role> --exit-on-error`, privileges kept, so the objects belong to the migrator as after a migrate; print `count organizations=N users=N mailboxes=N emails=N`; drill only: set every mailbox `paused` (no sync of the real mailbox: no sync-off key exists); both: `delete from auth_sessions` (README § Backups rule); migrate (the one-off service of `compose.yaml`); `credentials:check`, `failed > 0` → exit 1 before the server starts; `up -d --wait` (the Compose health check is the `/health` proof); last line `restore ok target=<t> seconds=<n>`.
 - New-host only: after `restore ok`, print the README pointer to replay the `deleted <org id>` and DSR erase lines (README § Account data, Restore).
 - **`--down`:** drill → `down -v`, then `docker image rm ea-drill-server` (never `--rmi all`: `postgres:17` is shared with the live stack); new-host → exit 2.
-- **Decisions:** the plain dump only goes through a pipe. No project name from outside. `restore-test.sh` stays (monthly check).
+- **Decisions:** plain dump only in a pipe; no project name from outside; `restore-test.sh` stays.
 
 ## Step 3 — `bun run credentials:check`
 
@@ -41,6 +41,6 @@ Part of [`../plan.md`](../plan.md). Decisions P6, D16–D20. Must not run next t
 
 ## Done when
 
-Tests 1–8 pass; `bash -n` clean; the Proof of `plan.md` prints `PROOF_OK`.
+Tests 1–8 pass; `bash -n` clean; Proof prints `PROOF_OK`.
 
 Out of scope: running the drill (08); a clean VM (D17).
