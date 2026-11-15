@@ -6,27 +6,41 @@ opened: 2026-11-13
 
 ## Outcome
 
-E4-B Earn trust: the Stage 2 ticket in row 16 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 25 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E04-control-surface.md` and its discovery notes `docs/product/stage-2/epics/E04-discovery-notes.md`; the planning job turns them into stages.
+A new user earns automatic moves per category without labelling mail. At connect the system checks 30 days of the mailbox by itself, shows a "what I would have done" report in the panel, and turns on the recommended categories with one tap. A tripwire and a model or endpoint switch pause a category with a notice. The user can also get the digest by mail, set their own quiet hours, see why and how sure each digest line is, edit "what is urgent for me", and unsubscribe from newsletters with one tap.
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- Evidence for `auto` per ADR 0028: global holdout (gate files), the history check at connect, the tripwire, the re-gate on a model or endpoint switch.
+- Report page, "Turn on recommended", autonomy card with three sources, optional "Check 10 decisions", M8 evidence rows.
+- Why-line gaps, spam review line, per-user quiet hours and report channel, report mail into the own INBOX (ADR 0022).
+- Urgency editor card; bulk unsubscribe (last group, can be cut).
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- Approvals, delegates and delegation pages, nav badge (E4-A, F102).
+- Sent-folder signals for the history check (E5a, F104); sample reply drafts on the report (E6a).
+- Telegram `/review` (F028 in E2a); history backfill of folders other than INBOX (F060).
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- A new mailbox gets a history check with no user step, and its report page shows the result within one hour (stage 07, 14 tests).
+- "Turn on recommended" turns on only eligible moving categories, and the mailbox is in `assist` after it.
+- After a model or endpoint switch, no mail moves under the old grant.
+- Two corrections of applied moves in 7 days turn `auto` off for the category and queue one notice.
+- A mail-only member finds the digest in INBOX, and sync does not triage it.
+- The full list: `plan.md` § Done when (6 checks).
+
+## Slices
+
+One worker job per stage, 25 stages; order, lanes and checkpoints in `plan.md` § Stages and § How to run. Stages 03 and 21 add migrations and never build next to another migration.
 
 ## Sequenced
 
-- Plan after: none (planning may run ahead of the build).
-- Build after: E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command (landed, in `spec/features/done/`); its unsubscribe stage also needs F109 stage 04.
+- Plan after: F102 (E4-A, OpenAPI frame stages 01–03 written), F109 (E3b, suspicious readers, stage 04), F111 (E11b, endpoint in gate files, stage 03). All have `stages/`.
+- Build after: F097 (E2a) and F100 (E3a) in `done/`; F102 stages 01–03, F109 stage 04 and F111 stage 03 landed (all at plan base 9341d9f0). The urgency command of E3b is landed.
 - Gate: —
+- Refresh: before stage 01 builds, if master moved (`scripts/plan-drift.sh`).
 
 ## Notes
 
-Source row: §2.1 # 16. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+Source row: `docs/product/stage-2/05-execution-plan.md` §2.1 # 16. Open defaults: `questions.md`.
