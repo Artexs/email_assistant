@@ -37,6 +37,7 @@ None. Lines go to stdout and stderr of the process; Docker keeps them (`deploy/c
 
 - The log store, the Docker log drivers, the `cli` Compose service and the canary test come with F103 stages 14–19. Today `docker compose logs` is the only reader.
 - A library that prints to the console, and a crash print of the runtime, bypass the event writer until the guards of F103 stage 14 land.
+- The lint rules read the code shape only. They do not catch a logger under another name (an alias, a destructured method, `log['info']`, `this.log`, a logger variable without the `Log` suffix), `.message` reached through a variable, or `console` through an alias or `globalThis`. A review catches these; the runtime turns a free-text event into `log_call_invalid`.
 - The value rule does not stop a secret that looks like a code. Never log a token, a password or a key.
 - Alerts on log lines: E8b (F114).
 
