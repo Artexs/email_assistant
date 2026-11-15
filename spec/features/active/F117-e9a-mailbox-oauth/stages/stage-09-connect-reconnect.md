@@ -68,6 +68,24 @@ AAD `mailbox:<id>`, the current key version (D3, D14). Stage 10 uses the same lo
 
 **Out of scope.** Refresh in later jobs (stage 10), reason texts (stage 11), the panel (16, 18).
 
-## Carry-over from the stage 08 review (F104)
+## Carry-over from the F117 stage 08 review
+
+Source: `review-8.md` (N1, N2, N5).
+
+- **Session user and organization (N1, login CSRF).** The route passes the user of the SESSION and the organization of the session to `finishOAuthCallback` (`input.userId`, `ctx`). It never takes a user or an organization from the query. Then the state consume (`user_id`, `org_id`, provider filters) refuses a callback URL of user A that opens in the session of user B: `oauth_state_invalid`, and A's state row stays.
+- **Public route (N2).** `requireSession` (`platform/http.ts`) answers 401 JSON, but this route always answers `303` and sends "no session" to `/login`. So mount the route before the session guard, as `/api/sign-in-options` is. The route then:
+  - reads the session itself (no session → `303 /login`, the state row stays);
+  - enters the tenant scope itself (F119 rule);
+  - is added to `PUBLIC_ROUTES` in `apps/server/test/integration/web-tenant-scope.test.ts` (the F119 public-route list);
+  - has an `apiDoc`, or a `HIDDEN_ROUTES` entry (`docs/code-patterns.md` ~line 224; `openapi-routes.test.ts` enforces it).
+  The guard's tenant and suspended rules still apply: run them in the route.
+- **Login test with the grant address (N5).** Keep the IMAP login test and the Graph refresh test with `user = grant.address`. The Microsoft `email` claim is not verified by Microsoft (a tenant admin can set it: "nOAuth"). The login with the access token is what binds the address to the real account. The claim order (`email` before `preferred_username`) in `callback.ts` waits for spike row M12.
+- **Added tests.**
+  1. User A's callback URL (state of A, code of A) opened in the session of user B (same organization, and also a user of another organization) → `303 /mailboxes?oauth=oauth_state_invalid`; A's state row still exists; the fake saw no redeem; nothing is stored.
+  2. Route test with no session and a valid query → `303 /login`; the state row stays (test 8 above).
+  3. The route is in `PUBLIC_ROUTES` and passes the tenant-scope test; the OpenAPI test passes.
+  4. A login test fails (fake IMAP refuses the user) when the grant address differs from the login user of the access token → `protocol_disabled`, nothing stored.
+
+## Carry-over from the F104 stage 08 review
 
 A mailbox created by the OAuth callback gets no Sent state row today (= off, the safe side). Set the Sent switch like `connectMailbox` does (the flag `sent_sync` decides): see F104 review-8.md N6.

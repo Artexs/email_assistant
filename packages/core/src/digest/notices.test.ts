@@ -78,6 +78,28 @@ describe("renderUrgentNotice", () => {
     expect(pl[4]).toBe("⚠ Podejrzana wiadomość: domena podobna do znanej, ryzykowny załącznik");
   });
 
+  test("prints the attachment line after the subject line, in both languages", () => {
+    const attachments = {
+      attachments: [{ name: "faktura.pdf", type: "application/pdf", size: 122880, inline: false }],
+      count: 1,
+    };
+    const en = renderUrgentNotice({ ...urgent, attachments }, textTables.en).text.split("\n");
+    expect(en[2]).toBe("Subject: Server down");
+    expect(en[3]).toBe("📎 1: faktura.pdf (120 kB)");
+    expect(en[4]).toBe("💬 The server is down.");
+    const pl = renderUrgentNotice({ ...urgent, attachments: { ...attachments, count: 3 } }, textTables.pl).text.split(
+      "\n"
+    );
+    expect(pl[3]).toBe("📎 3: faktura.pdf (120 kB), +2 więcej");
+  });
+
+  test("a view without attachments, or with only inline parts, renders as before", () => {
+    const before = renderUrgentNotice(urgent, textTables.en);
+    const inline = { attachments: [{ name: "logo.png", type: "image/png", size: 5, inline: true }], count: 1 };
+    expect(renderUrgentNotice({ ...urgent, attachments: inline }, textTables.en)).toEqual(before);
+    expect(before.text).not.toContain("📎");
+  });
+
   test("lists the reasons in the order of the rules, whatever the order of the view", () => {
     const text = renderUrgentNotice({ ...urgent, suspicious: ["risky_attachment", "auth_fail"] }, textTables.en).text;
     expect(text).toContain("⚠ Suspicious: sender check failed, risky attachment");

@@ -1,0 +1,20 @@
+# F110 questions (defaults taken; owner to confirm)
+
+None of these changes the stages. The coordinator copies the `important` items to `docs/owner-decisions.md`.
+
+1. **[important: user-visible] Q1 Provisional global evidence.** The only gate file (lab-01 v1) is `provisional` (owner audit pending). Default: a provisional `go` shows on the card and the report, but does not make a category eligible or recommended. Effect today: no category is recommended until the audit is applied. Other option: count provisional evidence. (plan D2)
+2. **[important: user-visible] Q2 History check outcome.** PD-068 says "pass when the Wilson 95% upper bound ≤ 2% on ≥ 50 acted-on mails". With zero hidden acted-on mails, that needs at least 189 acted-on mails, so most mailboxes would "fail" and stay off, against PD-030 ("only blocks a category that would hide mail the user acted on"). Default: `fail` only when the observed share is over 2% (on ≥ 50); between that and a pass, `inconclusive`, which does not block; under 50, `no_result`. (plan D4)
+3. **[important: user-visible] Q3 Tripwire "one acted-on mail moved".** Default: a correction with the true category `urgent` or `needs_reply` on a mail the category moved. Flags on moved mail are not read (sync does not read `AI/*` folders). (plan D9)
+4. **[minor] Q4** "Turn on recommended" covers `info`, `notification`, `spam` only; `urgent` and `needs_reply` keep the Settings switch (their `auto` only rescues junk-folder mail). (plan D3)
+5. **[important: money] Q5 Unpriced model.** When the classifier model has no price row for the endpoint, the history check does not run (`no_result` / `cost_unknown`), so the $0.25 cap always holds. Other option: run with the 500-mail cap only. (plan D12)
+6. **[important: user-visible] Q6 Kinds by mail.** The mail channel carries `digest`, `weekly_report`, `trust_report_ready` and `autonomy_paused`. Every other notice (urgent, approvals, send results, sync and mailbox problems) stays Telegram only. A mail-only member without Telegram does not get those. (plan D14)
+7. **[minor] Q7** The history check reads INBOX only (the backfill reads INBOX only; F060). Sort folders and the spam folder are not in the history.
+8. **[important: privacy] Q8 History mail rows.** The history backfill stores up to 30 days of INBOX mail as `emails` rows (status `skipped`, reason `history_check`) with the normal retention. This is new stored mail data at connect, before the user turns anything on. Default: yes, behind `trust_ladder`, shown in onboarding ("the system reads the last 30 days to check itself"). (plan D10)
+9. **[minor] Q9** History calls do not count against `LLM_DAILY_CAP`; the check has its own caps (500 mails, $0.25). On the Gemini free tier, 500 extra calls can reach the provider quota and pause triage. (plan D12)
+10. **[minor] Q10** The mail channel picks one mailbox per member (`report_mailbox_id`, default: the oldest active mailbox of the organization).
+11. **[minor] Q11** "Check 10 decisions" writes feedback with the source `review` (same random sample as Telegram `/review`), so metrics treat it as unbiased.
+12. **[minor] Q12** The optional "move to notifications" follow-up after an unsubscribe is out of scope: no sender rule of that kind exists.
+13. **[important: user-visible] Q13 History `fail` after `auto` is on.** A history check that ends `fail` for a category whose `auto` is on (after a re-grant, or a tap before the check ended) pauses it with a notice, unless the grant was `forced` (review 1 N1). (plan D9)
+14. **[minor] Q14** An active trip does not refuse a manual switch on the Settings card: the user turns the category on again deliberately and the trip clears. A tripped category is never "recommended" (review 1 N4). (plan D5)
+15. **[minor] Q15** M7 (cost per mailbox) includes the history-check spend; the daily cap does not (review 1 N9).
+16. **[minor] Q16** One-click unsubscribe trusts a `dkim=pass` of a trusted authserv-id for the From domain; it does not check that the signature covers the `List-Unsubscribe` headers (RFC 8058 asks it). Recorded as a limit (review 1 N11).

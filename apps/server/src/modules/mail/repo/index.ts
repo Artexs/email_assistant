@@ -78,7 +78,13 @@ export {
   clearSentHeaders,
   deleteOldOAuthStates,
 } from "./retention";
-export { clearCapturedHeaders, getEmailHeaders, insertEmailHeaders, type EmailHeadersRow } from "./headers";
+export {
+  clearCapturedHeaders,
+  getEmailHeaders,
+  insertEmailHeaders,
+  listAttachmentInputs,
+  type EmailHeadersRow,
+} from "./headers";
 export {
   getEmailFlags,
   listFlagTargets,

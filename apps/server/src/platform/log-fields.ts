@@ -17,6 +17,7 @@ export const uuidFieldNames = [
 export const numberFieldNames = [
   "count",
   "attempts",
+  "max_attempts",
   "ms",
   "tokens_in",
   "tokens_out",
@@ -79,6 +80,9 @@ export const codeFieldNames = [
   "to_plan",
   "enabled",
   "actor",
+  // actions: the action type (a closed set of six) and the stage of a failed send (`connect`, `login`, `envelope`, `content`, `compose`, `payload`, `unknown`)
+  "action_type",
+  "send_stage",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

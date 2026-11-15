@@ -6,7 +6,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { describeError } from "../../platform/errors";
 import type { LlmClient } from "../../platform/llm";
 import { createLog } from "../../platform/log";
-import { getMailboxSettings, listSenderRules } from "../config";
+import { getMailboxSettings, listSenderRules, parseUrgencyProfile } from "../config";
 import { listDelegates } from "../delegation";
 import {
   claimEmails,
@@ -141,6 +141,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               junkFolder: await getJunkFolderPath(deps.db, ctx, mailboxId),
               resumedAt: org.resumedAt,
               suspicious,
+              urgencyProfile: parseUrgencyProfile(settings.urgency_profile),
             };
             log.debug(`triage ${mailboxId}: delegates ${delegates.length}`);
 
