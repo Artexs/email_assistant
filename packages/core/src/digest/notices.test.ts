@@ -198,8 +198,8 @@ describe("other notices", () => {
       ],
       [
         "admin_consent_required",
-        "Google needs approval for this app, from you or from your administrator. Open the panel, Mailboxes: tap Reconnect, or use the approval link there.",
-        "Ta aplikacja wymaga zatwierdzenia w Google: przez Ciebie lub przez Twojego administratora. Otwórz panel, Skrzynki: stuknij „Połącz ponownie” albo użyj tam linku do zatwierdzenia.",
+        "This app needs approval at Google, from you or from your administrator. Open the panel, Mailboxes: tap Reconnect, or use the approval link there.",
+        "Ta aplikacja wymaga zatwierdzenia w usłudze Google: przez Ciebie lub przez Twojego administratora. Otwórz panel, Skrzynki: stuknij „Połącz ponownie” albo użyj tam linku do zatwierdzenia.",
       ],
       [
         "protocol_disabled",

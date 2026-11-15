@@ -119,7 +119,7 @@ export const noticeTexts = {
           case "oauth_revoked":
             return `Access to the mailbox was withdrawn at ${provider}. Open the panel, Mailboxes, and tap Reconnect.`;
           case "admin_consent_required":
-            return `${provider} needs approval for this app, from you or from your administrator. Open the panel, Mailboxes: tap Reconnect, or use the approval link there.`;
+            return `This app needs approval at ${provider}, from you or from your administrator. Open the panel, Mailboxes: tap Reconnect, or use the approval link there.`;
           case "protocol_disabled":
             return "Your administrator turned off IMAP or SMTP for this mailbox. Ask them to turn it on, then tap Reconnect in the panel.";
           case null:
@@ -223,7 +223,7 @@ export const noticeTexts = {
           case "oauth_revoked":
             return `Dostęp do skrzynki cofnięto po stronie ${provider}. Otwórz panel, Skrzynki, i stuknij „Połącz ponownie”.`;
           case "admin_consent_required":
-            return `Ta aplikacja wymaga zatwierdzenia w ${provider}: przez Ciebie lub przez Twojego administratora. Otwórz panel, Skrzynki: stuknij „Połącz ponownie” albo użyj tam linku do zatwierdzenia.`;
+            return `Ta aplikacja wymaga zatwierdzenia w usłudze ${provider}: przez Ciebie lub przez Twojego administratora. Otwórz panel, Skrzynki: stuknij „Połącz ponownie” albo użyj tam linku do zatwierdzenia.`;
           case "protocol_disabled":
             return "Administrator wyłączył IMAP lub SMTP dla tej skrzynki. Poproś o włączenie, potem stuknij „Połącz ponownie” w panelu.";
           case null:

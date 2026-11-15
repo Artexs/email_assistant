@@ -1,4 +1,10 @@
-import { mailboxStatuses, type FolderKey, type MailboxStatus as CoreMailboxStatus, type SmtpSecurity } from "@ea/core";
+import {
+  authErrorReasons,
+  mailboxStatuses,
+  type FolderKey,
+  type MailboxStatus as CoreMailboxStatus,
+  type SmtpSecurity,
+} from "@ea/core";
 import { sql, type Selectable, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -30,14 +36,8 @@ export type MailboxRow = Omit<
   capabilities: MailCapabilities | Record<string, never>;
   folder_map: Record<string, string>;
 };
-const AUTH_REASONS: readonly AuthErrorReason[] = [
-  "oauth_expired",
-  "oauth_revoked",
-  "admin_consent_required",
-  "protocol_disabled",
-];
 function toAuthReason(value: string | null): AuthErrorReason | null {
-  return AUTH_REASONS.find((reason) => reason === value) ?? null;
+  return authErrorReasons.find((reason) => reason === value) ?? null;
 }
 function toMailboxRow(row: Selectable<DB["mailboxes"]>): MailboxRow {
   return {

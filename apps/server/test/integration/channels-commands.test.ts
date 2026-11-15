@@ -577,6 +577,25 @@ describe("pauseMailboxes and resumeMailboxes", () => {
     });
   });
 
+  test("an OAuth mailbox in auth_error with no reason: the same Reconnect texts for pause, resume and /status", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, link, address } = await setup(trx);
+      await trx
+        .updateTable("mailboxes")
+        .set({ oauth_provider: "microsoft", status: "auth_error", auth_reason: null, status_changed_at: at(-MIN) })
+        .where("id", "=", a.mailboxId)
+        .execute();
+
+      for (const command of [pauseMailboxes, resumeMailboxes]) {
+        const reply = await command(depsAt(trx, T), link);
+        expect(reply.text).toBe(`❌ ${address} has a sign-in error: tap Reconnect in the panel first.`);
+      }
+      const status = (await statusMessage(depsAt(trx, T), link)).text;
+      expect(status).toContain("sign-in error since 10:59 (Reconnect in the panel)");
+      expect(status).not.toContain("mailbox:password");
+    });
+  });
+
   test("an assistant gets the owner-only text and nothing changes", async () => {
     await withRollback(db, async (trx) => {
       const { a, link } = await setup(trx);
