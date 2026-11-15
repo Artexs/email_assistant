@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { type FolderMessageMeta, type MessageMeta } from "./port";
-import type { MoveCandidateRow, MovedRow } from "./repo";
+import type { FolderRowAtUid, MoveCandidateRow, MovedRow } from "./repo";
 
 // Pure dedup and "is this mail new" rules (docs/architecture.md §6.1).
 // A known mail is never triaged again: `update_uid` and `returned` never change `status`.
@@ -93,6 +93,18 @@ function copyNumber(dedupKey: string): number {
   return match?.[1] === undefined ? 1 : Number(match[1]);
 }
 
+/** The first copy that this run matched or stored in a folder other than `folder`. */
+function findMatchedElsewhere(
+  copies: readonly KnownCopy[],
+  matched: ReadonlyMap<string, string>,
+  folder: string
+): KnownCopy | undefined {
+  return copies.find((copy) => {
+    const where = matched.get(copy.id);
+    return where !== undefined && where !== folder;
+  });
+}
+
 /**
  * D7. `folder` = S, the synced folder of the incoming mail. `copies` = rows with the same Message-ID and hash.
  * `matched` maps an email id (or `run:<dedup key>` of a row that this run stored) to the folder where this run
@@ -113,10 +125,7 @@ export function decideIncoming(input: {
   );
   if (inFlight !== undefined) return { kind: "move_in_flight", emailId: inFlight.id };
 
-  const matchedElsewhere = sorted.find((copy) => {
-    const where = matched.get(copy.id);
-    return where !== undefined && where !== folder;
-  });
+  const matchedElsewhere = findMatchedElsewhere(sorted, matched, folder);
   const seenElsewhere = matchedElsewhere !== undefined;
   const free = sorted.filter((copy) => !matched.has(copy.id));
   const here = free.find((copy) => copy.folder === folder);
@@ -271,4 +280,69 @@ export function matchMoved(
     if (row !== undefined) hits.set(row.id, { emailId: row.id, uid: meta.uid });
   }
   return [...hits.values()];
+}
+
+/**
+ * The metas of `metas` that no row of the same identity holds at their UID in the folder. A meta at a UID that such a
+ * row holds is that row's mail (for example a stored copy), not a mail that came back. The order of the rest is kept.
+ */
+export function dropHeldMetas<T extends MessageMeta>(
+  metas: readonly T[],
+  held: readonly FolderRowAtUid[],
+  mode: IdentityMode = IDENTITY_MODE
+): T[] {
+  if (held.length === 0) return [...metas];
+  return metas.filter(
+    (meta) =>
+      !held.some(
+        (row) =>
+          row.uid === meta.uid &&
+          sameMailIdentity(
+            meta,
+            {
+              messageId: row.message_id_header,
+              contentHash: row.content_hash,
+              from: row.from_address,
+              receivedAt: row.received_at,
+            },
+            mode
+          )
+      )
+  );
+}
+
+export type BelowCursorCopyDecision =
+  | { kind: "store"; dedupKey: string }
+  | { kind: "move_in_flight"; emailId: string }
+  | { kind: "held"; emailId: string }
+  | { kind: "cross_copy"; emailId: string };
+
+/**
+ * A copy of a system-moved mail sits in its source folder S below the UID cursor (the hit of the end-of-run check).
+ * In order: a fresh move marker on any copy of the identity → `move_in_flight`; another copy that holds the hit UID in
+ * any folder → `held` (the move finder owns it); a copy that this run matched or stored in a folder other than S →
+ * `cross_copy`; else `store` with the next copy number.
+ */
+export function decideBelowCursorCopy(input: {
+  folder: string;
+  uid: number;
+  rowId: string;
+  baseKey: string;
+  copies: readonly KnownCopy[];
+  matched: ReadonlyMap<string, string>;
+  now: Date;
+}): BelowCursorCopyDecision {
+  const { folder, matched, now } = input;
+  const sorted = [...input.copies].sort((a, b) => copyNumber(a.dedupKey) - copyNumber(b.dedupKey));
+  const inFlight = sorted.find(
+    (copy) => copy.movePendingAt !== null && now.getTime() - copy.movePendingAt.getTime() < MOVE_PENDING_MAX_AGE_MS
+  );
+  if (inFlight !== undefined) return { kind: "move_in_flight", emailId: inFlight.id };
+
+  const held = sorted.find((copy) => copy.id !== input.rowId && copy.uid === input.uid);
+  if (held !== undefined) return { kind: "held", emailId: held.id };
+
+  const matchedElsewhere = findMatchedElsewhere(sorted, matched, folder);
+  if (matchedElsewhere !== undefined) return { kind: "cross_copy", emailId: matchedElsewhere.id };
+  return { kind: "store", dedupKey: copyDedupKey(input.baseKey, input.copies.length + 1) };
 }

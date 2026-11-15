@@ -58,7 +58,12 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
       getSession: async (headers) => {
         const userId = sessions[cookieOf(headers)];
         return userId
-          ? { userId, sessionId: cookieOf(headers), twoFactorEnabled: opts.twoFactorOff?.has(userId) !== true }
+          ? {
+              userId,
+              sessionId: cookieOf(headers),
+              twoFactorEnabled: opts.twoFactorOff?.has(userId) !== true,
+              signInMethod: "password",
+            }
           : null;
       },
     },

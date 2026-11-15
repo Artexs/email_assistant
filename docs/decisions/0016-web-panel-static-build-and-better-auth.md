@@ -63,3 +63,12 @@ S6b hardens the login for outside use. The scope change of S6 keeps the panel be
 - **Own leaked-password check, not the plugin (F7).** The `haveibeenpwned` plugin of Better Auth has no timeout and no way to inject `fetch`. `platform/pwned.ts` asks the range API with a 5 s timeout and fails closed (503).
 - **Terms acceptance.** Every password set carries `TERMS_VERSION` (`packages/core`); the server writes `users.terms_version` and `terms_accepted_at`. A newer version shows a blocking dialog in the panel.
 - **Session list through the internal adapter, not `/list-sessions` (F6).** S6b removes `list-sessions` from the allow-list. It returns each session token, and it answers `403 SESSION_NOT_FRESH` for a session older than one day. The Account card reads `GET /api/me/sessions`, which uses `internalAdapter.listSessions` and returns no token. "Sign out everywhere" writes the audit rows `web.sessions_revoked` and `web.other_sessions_revoked`.
+
+## Amendment (Astro 7, 2026-11-15)
+
+The panel moves from Astro 5 to Astro 7 (ticket F101). Status stays `accepted`. The text above stays as written.
+
+- **Pins:** `astro` 7.4.12 and `@astrojs/react` 7.1.9, both exact (ticket F101).
+- **CSP option:** the meta CSP comes from the stable `security.csp` option. It replaces the `experimental.csp` flag named in the consequences above.
+- **Check:** the integration `apps/web/integrations/csp-style-src.ts` relaxes `style-src`, then checks every built page. The build fails when a page has no CSP meta or has `'unsafe-inline'` in `script-src`.
+- **Markdown:** syntax highlighting is off (`markdown: { syntaxHighlight: false }`). Shiki uses inline styles, and they break the CSP. The panel has no Markdown.

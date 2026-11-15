@@ -31,6 +31,7 @@ import {
   getUserAuthProfile,
   isBreakGlassOwner,
   isOrgSuspended,
+  isPasswordSignInRefused,
   listMembershipsOfUser,
   resolveSsoMember,
   setUserTerms,
@@ -62,7 +63,7 @@ import {
 import type { SecretBox } from "./platform/crypto";
 import type { Db, TenantContext } from "./platform/db";
 import { describeError } from "./platform/errors";
-import { buildTrustedProxies, type WebDeps, type WebSession } from "./platform/http";
+import { buildTrustedProxies, signInMethodOf, type WebDeps, type WebSession } from "./platform/http";
 import { createLog } from "./platform/log";
 import { checkPwnedPassword } from "./platform/pwned";
 
@@ -377,6 +378,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     resetLinkTtlSeconds: 3_600,
     lockout,
     keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId),
+    passwordSignInRefused: (userId) => isPasswordSignInRefused(db, userId),
     resolveSsoMember: (identity) => resolveSsoMember(db, identity),
     onSsoEvent: auditSsoEvent(db),
     ...(config.AUTH_PWNED_CHECK === "on"
@@ -400,6 +402,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
       userId: response.response.user.id,
       sessionId: response.response.session.id,
       twoFactorEnabled: response.response.user.twoFactorEnabled === true,
+      signInMethod: signInMethodOf(response.response.session.signInMethod),
       setCookie: response.headers.getSetCookie(),
     };
   };

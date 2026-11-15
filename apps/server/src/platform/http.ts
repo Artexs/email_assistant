@@ -23,7 +23,13 @@ export interface WebSession {
   userId: string;
   sessionId: string; // the id of the session row, not the cookie token
   twoFactorEnabled: boolean; // the session user has TOTP on (users.two_factor_enabled, read by Better Auth)
+  signInMethod: "password" | "sso"; // an SSO session never passed a TOTP code step (ADR 0026)
   setCookie?: string[]; // refreshed cookies from Better Auth (W17)
+}
+
+// Only the exact value "password" is a password session. A missing or unknown value is SSO: the stricter operator rule (fail closed).
+export function signInMethodOf(value: unknown): WebSession["signInMethod"] {
+  return value === "password" ? "password" : "sso";
 }
 
 export interface ApiEnv {
@@ -271,10 +277,15 @@ export const refuseSuspendedWrites: MiddlewareHandler<ApiEnv> = async (c, next) 
 // D15: every path under /api/operator answers a non-operator like a path that does not exist. The log holds the user id only.
 // F105 D10 (ADR 0026 point 1): an operator needs TOTP. The 404 check stays first, so a non-operator never learns about this rule.
 export const requireOperator: MiddlewareHandler<ApiEnv> = async (c, next) => {
-  const { userId, twoFactorEnabled } = c.get("session");
+  const { userId, twoFactorEnabled, signInMethod } = c.get("session");
   if (c.get("web").operatorUserIds?.has(userId) !== true) {
     log.warn("operator_route_refused", { user_id: userId });
     return c.json({ error: "not_found" }, 404);
+  }
+  // The IdP owns the second factor of an SSO user, so the TOTP state of the user says nothing about this session.
+  if (signInMethod === "sso") {
+    log.warn("operator_sso_session_refused", { user_id: userId });
+    return c.json({ error: "password_sign_in_required" }, 403);
   }
   if (!twoFactorEnabled) {
     log.warn("operator_two_factor_required", { user_id: userId });
@@ -400,6 +411,11 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     if (path === "/") return c.redirect(await homeOf(web, session.userId), 302);
     if (OPERATOR_PAGE.test(path) && web.operatorUserIds?.has(session.userId) !== true) {
       log.warn("operator_page_refused", { user_id: session.userId });
+      c.header("Cache-Control", "private, no-store");
+      return c.html(notFoundHtml, 404);
+    }
+    if (OPERATOR_PAGE.test(path) && session.signInMethod === "sso") {
+      log.warn("operator_sso_session_refused", { user_id: session.userId });
       c.header("Cache-Control", "private, no-store");
       return c.html(notFoundHtml, 404);
     }

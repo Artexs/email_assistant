@@ -4,19 +4,28 @@ import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "b
 import { serialize as serializeCookie } from "hono/utils/cookie";
 import type { Transaction } from "kysely";
 import { Pool } from "pg";
-import { z } from "zod";
 
 import { recordPasswordFailure, type LockoutStore } from "./auth-lockout";
 import {
   isAllowedSsoPath,
   rejectUnknownSsoBodyKeys,
   ssoPlugins,
+  ssoSessionData,
   SSO_SIGN_IN_PATH,
   withoutIdpTokens,
   type SsoEvent,
   type SsoIdentity,
   type SsoResolution,
 } from "./auth-sso";
+import {
+  failingPasswordVerify,
+  isSsoRequiredResetRequest,
+  refuseSsoRequiredSignIn,
+  signInBody,
+  wasSsoRequiredRefusal,
+  type HookContext,
+  type SignInOverride,
+} from "./auth-sso-required";
 import {
   requireSecondFactorCode,
   secondFactorActionOf,
@@ -72,6 +81,10 @@ export interface AuthDeps {
   keepsTwoFactor?: (userId: string) => Promise<boolean>;
   // Who may sign in with the company IdP (F119). Absent = every identity is refused with `sso_off`.
   resolveSsoMember?: (identity: SsoIdentity) => Promise<SsoResolution>;
+  // True = the user's organization requires SSO and the user is not its break-glass owner with TOTP: the password sign-in
+  // and the reset request are refused like a wrong password (ADR 0026 point 6). Absent = never refused (the CLIs and old tests).
+  // Not caught: an error fails the request (500) and nothing changes (fail closed).
+  passwordSignInRefused?: (userId: string) => Promise<boolean>;
   // The audit row of an SSO sign-in or refusal (stage 04). It never throws into Better Auth.
   onSsoEvent?: (event: SsoEvent) => Promise<void>;
 }
@@ -181,32 +194,10 @@ const CHANGE_PASSWORD_PATH = "/change-password";
 const NEW_PASSWORD_PATHS: ReadonlySet<string> = new Set(["/reset-password", "/change-password"]);
 const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 128;
-const emailSchema = z.email();
-
-type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
-
-// Better Auth validates the body after the hooks, so the shape check is the endpoint's own schema (`api/routes/sign-in.mjs`).
-// A body the endpoint would refuse gives null: the endpoint answers its own 400 for every user.
-const signInShape = z.object({
-  email: emailSchema,
-  password: z.string().max(MAX_PASSWORD_LENGTH),
-  callbackURL: z.string().optional(),
-  rememberMe: z.boolean().optional(),
-});
-
-function signInBody(ctx: HookContext): { email: string; password: string } | null {
-  const parsed = signInShape.safeParse(ctx.body);
-  return parsed.success ? { email: parsed.data.email, password: parsed.data.password } : null;
-}
 
 // L13: a locked user gets the answer and the time of a wrong password, also for a request that the endpoint refuses before it checks the password
 // (the form-CSRF middleware, the e-mail and length checks). The hook does not throw: the endpoint runs all its own checks,
 // and its password check always fails. An error of `isLocked` is not caught (fail closed).
-type PasswordApi = HookContext["context"]["password"];
-interface SignInOverride {
-  context: { context: { password: PasswordApi } };
-}
-
 async function lockSignIn(
   ctx: HookContext,
   lockout: LockoutStore,
@@ -216,20 +207,7 @@ async function lockSignIn(
   if (body === null) return undefined;
   const found = await ctx.context.internalAdapter.findUserByEmail(body.email.toLowerCase());
   if (!found || !(await lockout.isLocked(found.user.id, now()))) return undefined;
-  const password = ctx.context.password;
-  return {
-    context: {
-      context: {
-        password: {
-          ...password,
-          verify: async (input) => {
-            await password.verify(input);
-            return false;
-          },
-        },
-      },
-    },
-  };
+  return failingPasswordVerify(ctx);
 }
 
 // L16: no password is set without the current terms. This check runs before the leaked-password check: no outside call without the terms.
@@ -280,6 +258,8 @@ async function rejectLeakedPassword(ctx: HookContext, pwnedCheck: NonNullable<Au
 async function countSignIn(ctx: HookContext, deps: AuthDeps, now: () => Date): Promise<void> {
   const lockout = deps.lockout;
   if (!lockout) return;
+  // A refusal by "SSO required" is no wrong password: no count, no lock, no lock mail.
+  if (wasSsoRequiredRefusal(ctx)) return;
   const returned = ctx.context.returned;
   if (isAPIError(returned)) {
     const body = returned.body as { code?: unknown } | undefined;
@@ -374,6 +354,18 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       },
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24,
+      // How the session was made, and when the IdP sign-in was. The trigger `auth_sessions_sso_cap` ends an SSO session
+      // 12 h after `sso_started_at`, also at each refresh. A client never sets either field.
+      additionalFields: {
+        signInMethod: {
+          type: "string",
+          fieldName: "sign_in_method",
+          input: false,
+          required: false,
+          defaultValue: "password",
+        },
+        ssoStartedAt: { type: "date", fieldName: "sso_started_at", input: false, required: false },
+      },
     },
     account: {
       modelName: "auth_accounts",
@@ -420,10 +412,18 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
             log.info("reset_request_limited");
             return ctx.json(RESET_REQUEST_ANSWER);
           }
+          if (deps.passwordSignInRefused && (await isSsoRequiredResetRequest(ctx, deps.passwordSignInRefused))) {
+            return ctx.json(RESET_REQUEST_ANSWER);
+          }
         }
-        if (ctx.path === SIGN_IN_PATH && deps.lockout) {
-          const locked = await lockSignIn(ctx, deps.lockout, now);
+        if (ctx.path === SIGN_IN_PATH) {
+          // A locked user gets the lockout answer first; both look like a wrong password.
+          const locked = deps.lockout ? await lockSignIn(ctx, deps.lockout, now) : undefined;
           if (locked) return locked;
+          const refused = deps.passwordSignInRefused
+            ? await refuseSsoRequiredSignIn(ctx, deps.passwordSignInRefused)
+            : undefined;
+          if (refused) return refused;
         }
         if (ctx.path === RESET_PASSWORD_PATH) rejectMissingTerms(ctx);
         if (NEW_PASSWORD_PATHS.has(ctx.path) && deps.pwnedCheck) {
@@ -492,6 +492,19 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       signInAuditPlugin(report),
     ],
     databaseHooks: {
+      session: {
+        create: {
+          // `ctx.context.session` is the session of the request: set only for an endpoint that needs one.
+          before: async (session, ctx) => {
+            const extra = ssoSessionData({
+              path: ctx?.path,
+              current: ctx?.context.session?.session ?? null,
+              now: now(),
+            });
+            return extra === undefined ? undefined : { data: { ...session, ...extra } };
+          },
+        },
+      },
       account: {
         // No IdP token is stored (an `id_token` holds the IdP e-mail in clear).
         create: { before: async (account) => withoutIdpTokens(account) },

@@ -295,3 +295,45 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: F106 landed first, so F104 adds the sent columns to its registries. Test organizations have no owner who taps the panel.
 - Undo: scrub only, drop stage 12 (Q11); the CLI turns the switch off only (Q13); add a security-log kind (Q12).
 - Source: `spec/features/planned/F104-e5a-read-sent/questions.md` Q11, Q12, Q13.
+
+### 2026-11-15 · Planner and plan-refresh jobs run at thinking medium (harness) · money/quota · new
+- Choice: planner jobs and plan-refresh jobs spawn with `--thinking medium` (was high). The planner's own cold review stays at high. Jobs already running keep their level.
+- Why: the harness review of 2026-11-15 shows plan jobs are a large share of token cost; the cold review still checks the decisions.
+- Undo: set planner back to high in `spec/build.md` TRACK.
+- Source: `notes/2026-11-15-harness-review.md`, owner decision commit 0499dd1c, rule `harness-2026-11-15`.
+
+### 2026-11-15 · Mailbox OAuth: token memory, flags, consent page, revoke, ID-token check (F117) · security · new
+- Choice: the server keeps access tokens in process memory and reuses each while 5 minutes or more remain (ADR 0031 said "for one job"; stage 19 amends it, because Microsoft rotates the refresh token at each redeem). Flags `mail_oauth_microsoft` and `mail_oauth_google` gate only a new connect. The admin-consent result page sits on the tailnet-only panel (an administrator outside the tailnet sees an error page; the approval still counts). An organization delete revokes no Google token; a single mailbox Remove does. The code does not check the ID-token signature; it checks `aud`, `exp` and `iss` (OIDC Core §3.1.3.7 rule 6, token from the token endpoint).
+- Why: a refresh-token rotation cannot be reused per job; a connected mailbox must keep working with a flag off; the panel is tailnet-only by design.
+- Undo: Q1, Q2, Q4, Q6, Q8 of the questions file give the other option and its change.
+- Source: `spec/features/planned/F117-e9a-mailbox-oauth/questions.md` Q1, Q2, Q4, Q6, Q8.
+
+### 2026-11-15 · Review findings are sorted into three groups; workers run a guard-removal check (harness) · money/quota · new
+- Choice: every stage review task ends with the sort line (BLOCKING, TEST GAP, NOTE). A NOTE is filed as `review-<n>.md` and landed with no repair job. A TEST GAP is one `claude-sonnet-5-5 --thinking medium` continue with no re-review. A BLOCKING finding gets a repair as before. Workers of reviewed stages run the guard-removal check.
+- Why: about 80 % of reviewed stages needed a continue; most findings are test gaps or notes.
+- Undo: remove the "Review findings" line from `spec/build.md` TRACK.
+- Source: `notes/2026-11-15-harness-review.md` section 8, commit 4f6d7536.
+
+### 2026-11-15 · Planners start 2–4 Sonnet scouts (harness) · money/quota · new
+- Choice: planner jobs start 2–4 Sonnet scouts (`--role scout`, `--thinking medium`) and file the packets in `scouts.md`. Refresh jobs start none.
+- Why: fewer cache reads per plan job; the measured cost was about $12–25 per plan.
+- Undo: remove the scout rule from `.agents/limen/planner.md`.
+- Source: `notes/2026-11-15-harness-review.md` section 8.
+
+### 2026-11-15 · Panel approvals and delegations: reminder drafts not editable, any member marks Done, cancel is final, five phone tabs, flags on for pilot (F102) · user-visible · new
+- Choice: reminder drafts can only be approved or rejected in the panel (Q2). A Telegram decision also edits the other owners' cards (Q3). No panel "send all" button (Q4). The panel can approve with no linked Telegram (Q5). Any member can mark a delegation Done; remind, cancel and approvals are owner only (Q7). The phone tab bar keeps five tabs and Rules and Stats move to the user menu (Q8). Stage 20 turns `approvals_page` and `delegation_pages` on for the pilot organization (Q10). A panel cancel sets `user_cancelled` and cannot be undone (Q12). A rollback of stage 20 expires waiting sends of edited drafts (Q17).
+- Why: smallest design that keeps owner-only control and avoids sending a template text instead of an approved edit.
+- Undo: the questions file gives each other option and its change.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q2, Q3, Q4, Q5, Q7, Q8, Q10, Q12, Q17.
+
+### 2026-11-15 · Docs site: no text for flagged features, API and evidence reference later, tag deploy rule, inline styles (F112) · scope · new
+- Choice: the user docs describe nothing that a default-off flag gates, and a test enforces it (Q1). The API reference and the autonomy-evidence reference move to F121, because F102 and F110 have no code yet (Q2). A tag deploys the docs only when it is the newest plain `v<x.y.z>` tag and `CHANGELOG.md` holds that release; a manual run deploys any branch or tag and is the rollback; the first deploy is a manual run on `master` (Q4). The docs site allows `'unsafe-inline'` for styles because Starlight sets `style` attributes, and it has no `frame-ancestors` because a meta tag cannot set it and Pages sets no headers (Q6).
+- Why: docs must not promise what is off; the plan-after rule; a safe, reversible publish path; a limit of the Pages host.
+- Undo: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6 give the other option and its change.
+- Source: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6.
+
+### 2026-11-15 · Operator console gets no axe check in F102 (F102) · scope · new
+- Choice: F102 stage 07 runs the axe accessibility check on every customer page and not on the operator console (Q20). The e2e server reads `OPERATOR_USER_IDS` at boot, before the seed makes user ids.
+- Why: an operator e2e user needs a separate stage; the console is for the owner only.
+- Undo: add a stage that gives the e2e run an operator user, then add the console to the axe spec.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q20.
