@@ -210,6 +210,45 @@ describe("the Sent switch off reaches the stored digest", () => {
     });
   });
 
+  test("a view whose loopIds is not a list of ids names no loop: a scalar, an object key, a nested list, an upper-case id", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const org = await briefOrg(trx);
+      const loop = await loopOf(trx, org, org.mailboxId, marks());
+      const forms: [string, unknown][] = [
+        ["2026-11-19T01:00", loop],
+        ["2026-11-19T02:00", { [loop]: true }],
+        ["2026-11-19T03:00", [[loop]]],
+        ["2026-11-19T04:00", [loop.toUpperCase()]],
+        ["2026-11-19T05:00", [` ${loop}`]],
+        ["2026-11-19T06:00", `[${JSON.stringify(loop)}]`],
+      ];
+      for (const [key, loopIds] of forms) {
+        await insertDigestCopy(trx, org, key, { text: `KEEP-${key}`, buttons: [], loopIds }, "pending", null);
+      }
+      await insertDigestCopy(
+        trx,
+        org,
+        "2026-11-19T07:00",
+        { text: "GONE", buttons: [], loopIds: [loop] },
+        "pending",
+        null
+      );
+
+      await switchOff(trx, org, org.mailboxId);
+
+      const rows = await digestRows(trx, org.ctx.orgId);
+      expect(rows).toHaveLength(7);
+      expect(rows.filter((row) => row.text === "[removed]").map((row) => row.dedup_key)).toEqual([
+        "digest:2026-11-19T07:00",
+      ]);
+      for (const row of rows.filter((row) => row.text !== "[removed]")) {
+        expect(textOf(row)).toStartWith("KEEP-");
+        expect(row.status).toBe("pending");
+      }
+    });
+  });
+
   test("a scan of every table: no value of a closed-by-switch loop is left after the switch; before it, only loops and outbox hold them", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
@@ -355,12 +394,31 @@ describe("the erase of a person (committed rows)", () => {
     const org = await world();
     const person = marks();
     const stranger = marks();
-    await db.transaction().execute(async (trx) => {
+    const personLoop = await db.transaction().execute(async (trx) => {
       await loopOf(trx, org, org.mailboxId, stranger);
-      await loopOf(trx, org, org.mailboxId, person, "2026-11-21T09:00:00Z");
+      return loopOf(trx, org, org.mailboxId, person, "2026-11-21T09:00:00Z");
     });
     await runDigests(db, EIGHT);
-    const [row] = await db.selectFrom("outbox").select(["text", "view"]).where("org_id", "=", org.ctx.orgId).execute();
+    // Views that only look like they name the loop: a scalar, an object key, a nested list, an upper-case id (a probe of the SQL).
+    await db.transaction().execute(async (trx) => {
+      const forms: unknown[] = [personLoop, { [personLoop]: true }, [[personLoop]], [personLoop.toUpperCase()]];
+      for (const [i, loopIds] of forms.entries()) {
+        await insertDigestCopy(
+          trx,
+          org,
+          `2026-11-19T0${i + 1}:00`,
+          { text: `KEEP-${i}`, buttons: [], loopIds },
+          "pending",
+          null
+        );
+      }
+    });
+    const [row] = await db
+      .selectFrom("outbox")
+      .select(["text", "view"])
+      .where("org_id", "=", org.ctx.orgId)
+      .where("dedup_key", "like", "digest:2026-11-20%")
+      .execute();
     // The person's loop is due on Saturday: not in this brief.
     expect(JSON.stringify(row)).toContain(stranger.counterpart);
     expect(JSON.stringify(row)).not.toContain(person.counterpart);
@@ -373,11 +431,16 @@ describe("the erase of a person (committed rows)", () => {
       now: FRIDAY,
     });
     expect(result.kind).toBe("erased");
-    const [after] = await db
+    const after = await db
       .selectFrom("outbox")
-      .select(["text", "view"])
+      .select(["text", "view", "dedup_key"])
       .where("org_id", "=", org.ctx.orgId)
+      .orderBy("dedup_key")
       .execute();
-    expect(JSON.stringify(after)).toContain(stranger.counterpart);
+    expect(after).toHaveLength(5);
+    expect(JSON.stringify(after.find((row) => row.dedup_key.startsWith("digest:2026-11-20")))).toContain(
+      stranger.counterpart
+    );
+    expect(after.filter((row) => textOf(row).startsWith("KEEP-"))).toHaveLength(4);
   });
 });

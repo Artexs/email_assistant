@@ -6,6 +6,7 @@ import { format } from "node:util";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { isFirstDigestOfDay } from "../../src/modules/channels";
 import { markBriefShown } from "../../src/modules/loops";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { buildDigest, buildDigestMessage } from "../../src/modules/reports";
@@ -804,5 +805,82 @@ describe("logs and audit rows", () => {
       logSpy.mockRestore();
       errorSpy.mockRestore();
     }
+  });
+});
+
+describe("the local day of the member", () => {
+  async function queued(trx: Transaction<DB>, org: BriefOrg, slot: string, at: string): Promise<void> {
+    const digest = await trx
+      .insertInto("digests")
+      .values({
+        org_id: org.ctx.orgId,
+        user_id: org.userId,
+        slot_key: slot,
+        period_start: new Date(Date.parse(at) - 24 * 3_600_000),
+        period_end: new Date(at),
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await trx
+      .insertInto("outbox")
+      .values({
+        org_id: org.ctx.orgId,
+        user_id: org.userId,
+        kind: "digest",
+        dedup_key: `digest:${slot}`,
+        digest_id: digest.id,
+        view: JSON.stringify({ text: "x", buttons: [] }),
+        buttons: "[]",
+        created_at: new Date(at),
+        next_attempt_at: new Date(at),
+      })
+      .execute();
+  }
+  const first = (trx: Transaction<DB>, org: BriefOrg, at: string) =>
+    isFirstDigestOfDay(trx, org.ctx, { userId: org.userId, timeZone: "Europe/Warsaw", now: new Date(at) });
+
+  test("the day is the day in the organization zone: 23:45 and 00:30 local are two days, in winter and summer time", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      // 2026-11-20 22:30Z is 23:30 in Warsaw (UTC+1).
+      await queued(trx, org, "2026-11-20T23:30", "2026-11-20T22:30:00Z");
+      expect(await first(trx, org, "2026-11-20T22:45:00Z")).toBe(false);
+      expect(await first(trx, org, "2026-11-20T23:30:00Z")).toBe(true);
+      // Summer time (UTC+2): 2026-07-10 21:30Z is 23:30 local; 22:30Z is 00:30 of the next day.
+      await queued(trx, org, "2026-07-10T23:30", "2026-07-10T21:30:00Z");
+      expect(await first(trx, org, "2026-07-10T21:45:00Z")).toBe(false);
+      expect(await first(trx, org, "2026-07-10T22:30:00Z")).toBe(true);
+    });
+  });
+
+  test("the day of the change back to winter time has 25 hours: a digest at 00:30 and one at 23:45 local are the same day", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      // 2026-10-25: summer time ends at 03:00 local. 00:30 local = 2026-10-24T22:30Z; 23:45 local = 2026-10-25T22:45Z (UTC+1).
+      await queued(trx, org, "2026-10-25T00:30", "2026-10-24T22:30:00Z");
+      expect(await first(trx, org, "2026-10-25T22:45:00Z")).toBe(false);
+      expect(await first(trx, org, "2026-10-25T23:30:00Z")).toBe(true);
+    });
+  });
+
+  test("a digest of a failed row and a row of another organization do not count", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const other = await briefOrg(trx);
+      await queued(trx, other, "2026-11-20T08:00", "2026-11-20T07:00:00Z");
+      await queued(trx, org, "2026-11-20T08:00", "2026-11-20T07:00:00Z");
+      await trx
+        .updateTable("outbox")
+        .set({ status: "failed", error_code: "blocked" })
+        .where("org_id", "=", org.ctx.orgId)
+        .execute();
+      expect(await first(trx, org, "2026-11-20T15:00:00Z")).toBe(true);
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sent", error_code: null, sent_at: new Date("2026-11-20T07:00:05Z") })
+        .where("org_id", "=", org.ctx.orgId)
+        .execute();
+      expect(await first(trx, org, "2026-11-20T15:00:00Z")).toBe(false);
+    });
   });
 });
