@@ -7,6 +7,7 @@ import {
   logFormatFromEnv,
   setLogFormat,
   setLogLevel,
+  setLogRelease,
   withLogContext,
   type LogFields,
 } from "./log";
@@ -528,3 +529,45 @@ export function typeChecks(): void {
   // @ts-expect-error a name that is not on any kind list
   log.info("x", { subject: "a" });
 }
+
+// F114 stage 05 (D10). The release is process state: each test resets it with undefined.
+describe("setLogRelease", () => {
+  // Bun runs the test files in one process: the release must not leak into other files.
+  afterEach(() => setLogRelease(undefined));
+
+  test("before any call a JSON line has no release key", () => {
+    setLogFormat("json");
+    createLog("mail").info("x");
+    expect(jsonLine(out)).not.toHaveProperty("release");
+  });
+
+  test("after the call every JSON line carries release, after the base keys, also the console guard line", () => {
+    setLogFormat("json");
+    setLogRelease("v0.1.0");
+    const log = createLog("mail");
+    log.info("x");
+    expect(jsonLine(out).release).toBe("v0.1.0");
+    log.with({ mailbox_id: M }).warn("y", { count: 1 });
+    expect(Object.keys(jsonLine(err))).toEqual([
+      "time",
+      "level",
+      "module",
+      "event",
+      "msg",
+      "release",
+      "mailbox_id",
+      "count",
+    ]);
+    log.info("x", { release: "v9.9.9" } as never);
+    expect(jsonLine(out).release).toBe("v0.1.0");
+    // the call shape that is not an event writes a drop-only line: it carries the release too
+    (log.info as (...args: unknown[]) => void)("not an event");
+    expect(jsonLine(out).release).toBe("v0.1.0");
+  });
+
+  test("a text line stays unchanged", () => {
+    setLogRelease("v0.1.0");
+    createLog("mail").info("x", { count: 1 });
+    expect(out.mock.calls[0]).toEqual(["[mail]", "x count=1"]);
+  });
+});

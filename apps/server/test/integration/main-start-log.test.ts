@@ -24,6 +24,7 @@ test("bun apps/server/src/main.ts writes JSON event lines", async () => {
       LOG_FORMAT: "json",
       LOG_LEVEL: "info",
       PORT: String(port),
+      EA_RELEASE: "v0.0.1-test",
       // Nothing reaches the outside: no bot, no web, no heartbeat, no LLM, no mailbox change, no send.
       TELEGRAM_BOT_TOKEN: "",
       OPERATOR_TELEGRAM_CHAT_ID: "",
@@ -85,6 +86,12 @@ test("bun apps/server/src/main.ts writes JSON event lines", async () => {
     expect(keys.slice(0, baseKeys.length), `line ${index + 1} base keys`).toEqual(baseKeys);
     const stray = keys.filter((key) => !allowedKeys.has(key));
     expect(stray, `line ${index + 1} stray keys`).toEqual([]);
+  }
+
+  // F114 stage 05: every line carries the release of EA_RELEASE, right after the base keys
+  for (const [index, object] of objects.entries()) {
+    expect(object.release, `line ${index + 1} release`).toBe("v0.0.1-test");
+    expect(Object.keys(object)[baseKeys.length], `line ${index + 1} key after base keys`).toBe("release");
   }
 
   // 21
