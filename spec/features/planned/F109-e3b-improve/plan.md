@@ -119,7 +119,7 @@ Opus review before the land: stages 02, 03, 09, 11, 13, 14, 15. No owner checkpo
 ## Planning progress
 
 - Scouts: 4, all returned (`scouts.md`). All 16 stage files written.
-- Words (`wc -w`): plan 1498; stages 01–16: 695, 483, 695, 542, 539, 499, 461, 674, 560, 533, 573, 651, 449, 559, 577, 556.
+- Words (`wc -w`): plan 1496; stages 01–16: 696, 480, 693, 581, 584, 499, 461, 700, 581, 537, 669, 671, 486, 697, 682, 580.
 
 ## Cold review
 
