@@ -57,3 +57,7 @@ Run `runMailSenderContract("graph", …)` (stage 05) against it: `received` deco
 ## Correction from the stage 04 build (coordinator)
 
 - A refused login is a `MailAuthError` with a `reason`, also for a Graph 401 or 403 (plan decision D15, review B1). Where a test or step above says `login` with a reason (for example line 42: "login, oauth_revoked"), read it as `MailAuthError` with that `reason`. Stage 04 left `reason` on `MailAuthError`; stage 10 sets it.
+
+## Carry-over from the stage 06 review (2026-11-15)
+
+Do not compare Graph scopes by name (`missingResourceScopes(spec, "graph", ...)`) before spike row M2 records the raw `scope` string of a Graph token answer: it may name the scope in a short form (`Mail.Send`). Prove `Mail.Send` by the Graph call itself.
