@@ -87,7 +87,7 @@ describe("laterLoop", () => {
       }
       expect(await later(trx, org, loop.id)).toEqual({ kind: "limit_reached" });
       const row = await loopOf(trx, loop.id);
-      expect([row.due_at.toISOString(), row.later_count]).toEqual([due[2], 3]);
+      expect([row.due_at.toISOString(), row.later_count]).toEqual([due[2] ?? "", 3]);
       const audit = await auditOf(trx, org.ctx.orgId, "loop.later");
       expect(audit).toHaveLength(3);
       expect(audit.every((entry) => entry.actor === org.userId)).toBe(true);
