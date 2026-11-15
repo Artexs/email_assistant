@@ -142,7 +142,16 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ...reasons(["delegates.competence_tags"], "short competence labels that the owner types; not a contact field"),
   ...reasons(["mailboxes.capabilities", "mailboxes.folder_map"], "server capability flags and folder names"),
   ...reasons(
-    ["mailboxes.imap_host", "mailboxes.smtp_host", "mailboxes.protocol", "mailboxes.smtp_security", "mailboxes.status"],
+    [
+      "mailboxes.imap_host",
+      "mailboxes.smtp_host",
+      "mailboxes.protocol",
+      "mailboxes.smtp_security",
+      "mailboxes.status",
+      "mailboxes.send_via",
+      "mailboxes.oauth_provider",
+      "mailboxes.auth_reason",
+    ],
     "host names and codes of our own mailbox setup"
   ),
   ...reasons(
@@ -184,6 +193,7 @@ export const NO_PERSONAL_TABLES: Readonly<Record<string, string>> = {
   email_flags: "a check code",
   mailbox_credentials: "an encrypted secret and its kind",
   mailbox_folders: "folder key, path and role of our own mailbox",
+  mailbox_oauth_states: "a provider code, the hash of a sign-in state and an encrypted verifier",
   mailbox_sent_sync: "folder path, a cursor and codes of the sent-mail sync",
   memberships: "role and digest times of a member",
   org_features: "a flag name and a code",

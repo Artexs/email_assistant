@@ -51,3 +51,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (data integrity, auth). Needs stag
 **Done when.** The tests pass; every `openMailboxProvider` caller in the composition gets `oauthTokens`; the Proof prints `PROOF_OK`.
 
 **Out of scope.** Texts, notices and views (stage 11); Graph (stage 13).
+
+## Carry-over from stage 03 review
+
+- The CHECK `auth_reason IS NULL OR (status = auth_error AND oauth_provider IS NOT NULL)` makes every status writer that moves a mailbox away from `auth_error` fail unless it clears `auth_reason` in the same statement. List every mailbox-status writer (re-auth success, pause, host_blocked, remove) and clear the reason in each; add a test per writer.

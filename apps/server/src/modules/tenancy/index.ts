@@ -28,6 +28,15 @@ export {
   type UserMembership,
 } from "./repo";
 export { resolveSsoMember } from "./sso-resolve";
+export {
+  getSsoState,
+  removeSsoProvider,
+  setSsoProvider,
+  type RemoveSsoProviderResult,
+  type SetSsoProviderInput,
+  type SetSsoProviderResult,
+  type SsoState,
+} from "./sso-provider";
 export { listSecurityLog } from "./security-log";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {

@@ -31,3 +31,8 @@ Part of [`../plan.md`](../plan.md). Needs stages 15 and 18 (all server and web s
 **Done when.** The pages say what the code does at `HEAD` (read each rule against the code once); the spike kit is gone; the Proof prints `PROOF_OK`.
 
 **Out of scope.** `docs/product/stage-2/*` and the epic page (the coordinator); the VPS (stage 21).
+
+## Carry-over from stage 03 review
+
+- Add the OAuth sign-in states (`mailbox_oauth_states`) to `docs/architecture.md` section 7 (retention): the retention page already has a row, section 7 names only `chat_link_tokens` and `auth_verifications`.
+- The migration Down deletes OAuth mailboxes with a raw DELETE (dev-only path): keep it dev-only and say so in the docs.

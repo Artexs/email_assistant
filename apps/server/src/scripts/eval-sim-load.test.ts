@@ -63,6 +63,17 @@ describe("loadSimCases", () => {
     expect(loaded).toMatchObject({ version: "draft", manifestSha: null, audit: "not frozen" });
   });
 
+  test("htmlById holds the HTML part of each case, read from its text", async () => {
+    const c = await written("dev", (text) => ({
+      ...text,
+      html: `<p><a href="https://x.test/a">x.test</a> ${text.id}</p>`,
+    }));
+    const loaded = await load(c, "dev");
+    expect(loaded.cases.length).toBeGreaterThan(0);
+    expect([...loaded.htmlById.keys()].sort()).toEqual(loaded.cases.map((item) => item.id).sort());
+    for (const item of loaded.cases) expect(loaded.htmlById.get(item.id)).toContain(`x.test</a> ${item.id}`);
+  });
+
   test("holdout without a manifest throws; with one it loads and reports the version and audit", async () => {
     const c = await written("holdout");
     await expect(load(c, "holdout", true)).rejects.toThrow(HOLDOUT_NEEDS_FREEZE);

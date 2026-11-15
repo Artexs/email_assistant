@@ -75,6 +75,7 @@ export const auditEvents = {
   webBackupCodesGenerated: "web.backup_codes_generated", // data: via
   webBackupCodeUsed: "web.backup_code_used", // data: via
   webTwoFactorLocked: "web.two_factor_locked", // data: via, locked_until
+  webTwoFactorRefused: "web.two_factor_refused", // data: via, action (disable | backup_codes), reason (missing | wrong | locked)
   webTwoFactorReset: "web.two_factor_reset", // data: via, sessions_ended
   operatorNotice: "operator.notice", // data: kind, key
   // F106. Every key is flat (a string, number, boolean or null); never an address, a name or a hash of text.
@@ -85,6 +86,8 @@ export const auditEvents = {
   // F119. Flat; never the IdP e-mail or a token. The organization is the provider's.
   ssoLogin: "sso.login", // actor: the user; data: provider_id, first_link
   ssoRefused: "sso.refused", // actor: system; data: provider_id, code
+  ssoProviderSet: "sso.provider_set", // actor: cli; data: provider_id, change, issuer_host, domain, links_removed, sessions_ended
+  ssoProviderRemoved: "sso.provider_removed", // actor: cli; data: provider_id, issuer_host, domain, links_removed, sessions_ended
 } as const;
 
 export interface AuditEvent {

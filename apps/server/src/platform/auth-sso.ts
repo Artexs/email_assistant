@@ -1,10 +1,13 @@
-import { sso } from "@better-auth/sso";
-import type { SSOUserResolution, SSOUserResolutionInput } from "@better-auth/sso";
+import { isIP } from "node:net";
+
+import { sso, discoverOIDCConfig, DiscoveryError } from "@better-auth/sso";
+import type { HydratedOIDCConfig, SSOUserResolution, SSOUserResolutionInput } from "@better-auth/sso";
 import type { SsoIdentity, SsoRefusal, SsoResolution } from "@ea/core";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 
 import { errorFields } from "./errors";
 import { createLog } from "./log";
+import { dnsLookupAll, isLocalAddress, type LookupAll } from "./net-address";
 
 const log = createLog("auth_sso");
 
@@ -238,5 +241,113 @@ function ssoPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
     domainVerification: { enabled: true },
     disableImplicitSignUp: true,
     resolveUser: resolver(deps, pending),
+  });
+}
+
+// Discovery of a provider, for the operator CLI (F119, stage 07). The plugin trusts a discovery URL only inside Better Auth's
+// `trustedOrigins`; that list stays the panel list. Discovery gets our own predicate instead, and a DNS check for the
+// hosts it accepts by name (the plugin skips its own DNS check for a trusted URL: `spike.md` C3).
+
+const PRIVATE_SUFFIXES = [".local", ".internal", ".localhost"] as const;
+
+// `https:` with a DNS name: no IP literal (`URL` also turns `127.1` and `2130706433` into dotted form), no `localhost`,
+// no private suffix, no single label. One trailing dot is removed. An origin in `allowOrigins` passes as it is (tests).
+export function isAllowedDiscoveryUrl(url: string, allowOrigins: readonly string[]): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (allowOrigins.includes(parsed.origin)) return true;
+  if (parsed.protocol !== "https:") return false;
+  const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+  if (host === "" || isIP(host.replace(/^\[/, "").replace(/\]$/, "")) !== 0) return false;
+  if (!host.includes(".") || host === "localhost") return false;
+  return !PRIVATE_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
+
+export type HostsCheck = "ok" | "discovery_private_host" | "discovery_dns_failed";
+
+// One answer in a refused range refuses the host. A lookup error or an empty answer is `discovery_dns_failed`.
+export async function checkPublicHosts(hosts: readonly string[], lookup: LookupAll): Promise<HostsCheck> {
+  for (const host of hosts) {
+    let answers: { address: string }[];
+    try {
+      answers = await lookup(host.replace(/\.$/, ""));
+    } catch {
+      return "discovery_dns_failed";
+    }
+    if (answers.length === 0) return "discovery_dns_failed";
+    if (answers.some((answer) => isLocalAddress(answer.address))) return "discovery_private_host";
+  }
+  return "ok";
+}
+
+export type ProviderDiscovery = { kind: "ok"; discovered: HydratedOIDCConfig } | { kind: "failed"; code: string };
+
+export interface DiscoveryOptions {
+  allowOrigins: readonly string[];
+  timeoutMs: number;
+  lookup?: LookupAll;
+}
+
+// The names that need a DNS check: hosts outside `allowOrigins`, once each.
+function hostsToResolve(urls: readonly (string | undefined)[], allowOrigins: readonly string[]): string[] {
+  const hosts = new Set<string>();
+  for (const url of urls) {
+    if (url === undefined) continue;
+    const parsed = new URL(url);
+    if (!allowOrigins.includes(parsed.origin)) hosts.add(parsed.hostname);
+  }
+  return [...hosts];
+}
+
+// The result holds a code, never the plugin's message (it names URLs).
+export async function discoverProviderConfig(issuer: string, options: DiscoveryOptions): Promise<ProviderDiscovery> {
+  const lookup = options.lookup ?? dnsLookupAll;
+  const isTrustedOrigin = (url: string): boolean => isAllowedDiscoveryUrl(url, options.allowOrigins);
+  try {
+    // A URL that the predicate refuses gets its code from the plugin (`discovery_untrusted_origin`), so no lookup runs for it.
+    if (isAllowedDiscoveryUrl(issuer, options.allowOrigins)) {
+      const issuerCheck = await checkPublicHosts(hostsToResolve([issuer], options.allowOrigins), lookup);
+      if (issuerCheck !== "ok") return { kind: "failed", code: issuerCheck };
+    }
+    const discovered = await discoverOIDCConfig({ issuer, timeout: options.timeoutMs, isTrustedOrigin });
+    const endpoints = [
+      discovered.authorizationEndpoint,
+      discovered.tokenEndpoint,
+      discovered.jwksEndpoint,
+      discovered.userInfoEndpoint,
+    ];
+    const endpointCheck = await checkPublicHosts(hostsToResolve(endpoints, options.allowOrigins), lookup);
+    if (endpointCheck !== "ok") return { kind: "failed", code: endpointCheck };
+    return { kind: "ok", discovered };
+  } catch (error) {
+    if (error instanceof DiscoveryError) return { kind: "failed", code: error.code };
+    log.warn("sso_discovery_failed", errorFields(error));
+    return { kind: "failed", code: "discovery_unexpected_error" };
+  }
+}
+
+// The plugin JSON of a provider (`spike.md` S2): the discovered endpoints plus the client. The plugin reads this string
+// from `sso_providers.oidc_config`. Tenancy stores the string and never imports Better Auth.
+export function buildOidcConfig(
+  discovered: HydratedOIDCConfig,
+  client: { clientId: string; clientSecret: string }
+): string {
+  return JSON.stringify({
+    issuer: discovered.issuer,
+    discoveryEndpoint: discovered.discoveryEndpoint,
+    authorizationEndpoint: discovered.authorizationEndpoint,
+    tokenEndpoint: discovered.tokenEndpoint,
+    jwksEndpoint: discovered.jwksEndpoint,
+    ...(discovered.userInfoEndpoint === undefined ? {} : { userInfoEndpoint: discovered.userInfoEndpoint }),
+    tokenEndpointAuthentication: discovered.tokenEndpointAuthentication,
+    clientId: client.clientId,
+    clientSecret: client.clientSecret,
+    pkce: true,
+    scopes: ["openid", "email", "profile"],
+    allowIdpInitiated: false,
   });
 }

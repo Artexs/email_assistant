@@ -1,0 +1,28 @@
+import type { Transaction } from "kysely";
+
+import type { DB } from "./db";
+
+// Kysely only, no better-auth import (F119 N8). The third place where our SQL touches the Better Auth tables
+// (docs/code-patterns.md § Data access), next to `auth-two-factor-reset.ts`.
+// The caller owns the transaction: the deletes commit or roll back with the caller's other writes.
+
+// Removes every link of one SSO provider (`auth_accounts` rows with this provider id) and the SSO sessions of the linked
+// users. A password session of such a user stays. The sessions go first, because the users come from the links.
+export async function endSsoLinksAndSessions(
+  trx: Transaction<DB>,
+  providerId: string
+): Promise<{ linksRemoved: number; sessionsEnded: number }> {
+  const links = await trx.selectFrom("auth_accounts").select("user_id").where("provider_id", "=", providerId).execute();
+  const userIds = [...new Set(links.map((link) => link.user_id))];
+  let sessionsEnded = 0;
+  if (userIds.length > 0) {
+    const sessions = await trx
+      .deleteFrom("auth_sessions")
+      .where("user_id", "in", userIds)
+      .where("sign_in_method", "=", "sso")
+      .executeTakeFirst();
+    sessionsEnded = Number(sessions.numDeletedRows);
+  }
+  const removed = await trx.deleteFrom("auth_accounts").where("provider_id", "=", providerId).executeTakeFirst();
+  return { linksRemoved: Number(removed.numDeletedRows), sessionsEnded };
+}

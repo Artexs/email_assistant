@@ -25,6 +25,7 @@ export const evalUsage = [
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
+  "       bun run eval --sim <scenario> --part dev|holdout|week --suspicious [--out <file.md>]   (suspicious-mail rules, no LLM)",
 ].join("\n");
 
 const optionsSchema = z.object({
@@ -58,6 +59,7 @@ const optionsSchema = z.object({
   "budget-usd": z.coerce.number().positive().optional(),
   "spend-ledger": z.string().min(1).optional(),
   "fresh-lock": z.boolean().default(false),
+  suspicious: z.boolean().default(false),
   judge: z.boolean().default(false),
   "judge-provider": z.enum(llmProviderIds).optional(),
   "judge-model": z.string().min(1).optional(),
@@ -88,6 +90,7 @@ const casesOnly = [
 const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly] as const;
 const simOnly = [
   "part",
+  "suspicious",
   "concurrency",
   "rpm",
   "budget-usd",
@@ -132,6 +135,7 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "budget-usd": { type: "string" },
         "spend-ledger": { type: "string" },
         "fresh-lock": { type: "boolean" },
+        suspicious: { type: "boolean" },
         judge: { type: "boolean" },
         "judge-provider": { type: "string" },
         "judge-model": { type: "string" },
@@ -149,6 +153,13 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD };
     }
     if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
+    if (data.suspicious) {
+      // The rules need no provider, model, judge or spend option: any other option is a usage error.
+      const allowed = new Set<string>(["sim", "part", "suspicious", "out"]);
+      if (data.sim === undefined || data.part === undefined) return undefined;
+      if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
+      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD };
+    }
     if (data.sim !== undefined) {
       if (data.part === undefined) return undefined;
       if (simExcluded.some((key) => values[key] !== undefined)) return undefined;

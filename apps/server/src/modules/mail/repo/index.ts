@@ -62,7 +62,7 @@ export {
 export { countSyncTargets, listAuthErrorMailboxesBefore, listMailboxTargets, listSyncTargets } from "./targets";
 export { claimEmails, countWaiting, finishEmail, releaseEmail, requeueTooOld, type ClaimedEmail } from "./claims";
 export { listEmailsByMessageIds, listFolderEmailKeys, listThreadContext } from "./lookup";
-export { PENDING_BODY_DAYS, clearMailBodies, clearMailHeaders } from "./retention";
+export { PENDING_BODY_DAYS, clearMailBodies, clearMailHeaders, deleteOldOAuthStates } from "./retention";
 export { clearCapturedHeaders, getEmailHeaders, insertEmailHeaders, type EmailHeadersRow } from "./headers";
 export {
   getEmailFlags,

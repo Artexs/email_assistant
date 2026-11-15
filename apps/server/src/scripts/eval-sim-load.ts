@@ -16,6 +16,8 @@ export type SimAudit = "pending" | "done" | "not frozen";
 
 export interface SimCorpusLoad {
   cases: EvalCase[];
+  // The HTML part of a case, by case id; a case with no HTML part has no entry. Only `--suspicious` reads it.
+  htmlById: ReadonlyMap<string, string>;
   version: string;
   // Hash of the manifest file text; null while the corpus is not frozen.
   manifestSha: string | null;
@@ -86,6 +88,7 @@ export async function loadSimCases(input: {
 
   const skipped = { dropped: 0, unwritten: 0, sent: 0 };
   const cases: EvalCase[] = [];
+  const htmlById = new Map<string, string>();
   for (const slot of [...slots].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
     if (slot.direction === "sent") {
       skipped.sent += 1;
@@ -100,6 +103,7 @@ export async function loadSimCases(input: {
       skipped.dropped += 1;
       continue;
     }
+    if (text.html !== undefined && text.html !== "") htmlById.set(slot.id, text.html);
     const parents = parentChain(slot, slotById, texts);
     cases.push(
       await toEvalCase(
@@ -110,6 +114,7 @@ export async function loadSimCases(input: {
   }
   return {
     cases,
+    htmlById,
     version,
     manifestSha: manifest?.sha ?? null,
     audit: manifest?.audit ?? "not frozen",
