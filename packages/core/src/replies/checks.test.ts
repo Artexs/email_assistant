@@ -375,6 +375,17 @@ describe("pins of the number rules", () => {
     expect(failuresOf("Hello, XX12 ABC12345678 please", "en")).toEqual(["account_number"]);
   });
 
+  test("an IBAN with a short tail is found when no word follows; a token over 34 characters is no IBAN", () => {
+    expect(failuresOf("Hello, XX12 ABC12345678.", "en")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, NO93 8601 1117 947.")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, XX12AB12CD34EF56GH78IJ90KL12MN34OP56QR78ST")).toEqual([]);
+  });
+
+  test("a spaced scheme is read through its spaces", () => {
+    expect(failuresOf("Tak, h t t p s ://x.zzzz/a")).toEqual(["link"]);
+    expect(failuresOf("Tak, h t t p ://x.zzzz/a")).toEqual(["link"]);
+  });
+
   test("a long IBAN (31 characters) is one account number, not a phone", () => {
     expect(failuresOf("Tak, MT84MALT011000012345MTLCAST001S")).toEqual(["account_number"]);
     expect(failuresOf("Tak, MT84 MALT 0110 0001 2345 MTLC AST0 01S")).toEqual(["account_number"]);
@@ -487,6 +498,11 @@ describe("invisible blank lines", () => {
     "\ufe0f",
     "\ufffc",
     "\u180b",
+    "\u180f",
+    "\u200c",
+    "\u200f",
+    "\ufeff",
+    "\u00ad",
     "\u2063",
     "\u200b",
     "\u00a0",
@@ -522,6 +538,8 @@ describe("more pins", () => {
   test("the unknown-language limit is 80 characters of the text without extra white space and gaps", () => {
     const words = (length: number) => "Wtorek ".repeat(20).slice(0, length).trimEnd();
     expect(failuresOf(`${words(79)}`)).toEqual([]);
+    expect(failuresOf("x".repeat(79))).toEqual([]);
+    expect(failuresOf("x".repeat(80))).toEqual(["language"]);
     expect(failuresOf(`${"Wtorek ".repeat(20).slice(0, 80)}x`)).toEqual(["language"]);
     // White space is collapsed before the count: 60 characters with many spaces are short.
     expect(failuresOf(`Wtorek${" ".repeat(60)}piątek${" ".repeat(60)}sala`)).toEqual([]);
@@ -539,6 +557,8 @@ describe("more pins", () => {
     expect(failuresOf("Tak,\tnie\ntak")).toEqual([]);
     expect(failuresOf("Tak, \u007f")).toEqual(["control_chars"]);
     expect(failuresOf("Tak, \u0090")).toEqual(["control_chars"]);
+    expect(failuresOf("Tak, \u2028")).toEqual(["control_chars"]);
+    expect(failuresOf("Tak, \u2029")).toEqual(["control_chars"]);
     expect(failuresOf("Tak,\r\nnie")).toEqual([]);
   });
 });

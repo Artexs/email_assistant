@@ -100,7 +100,7 @@ function fromCode(code: number, fallback: string): string {
   return String.fromCodePoint(code);
 }
 
-// "(at)", "[at]", "{dot}", "<dot>" and "[.]" with the Polish words "małpa" and "kropka"; also "jan at firma dot pl".
+// "(at)", "[at]", "{dot}", "<dot>" and "[.]" with the Polish words "małpa" and "kropka"; also "jan at firma dot pl" and "h t t p s://".
 function deobfuscate(text: string): string {
   return text
     .replace(/\s*[[({<]\s*(?:at|małpa|malpa)\s*[\])}>]\s*/gi, "@")
@@ -108,7 +108,6 @@ function deobfuscate(text: string): string {
     .replace(/\s*[[({<]\s*\.\s*[\])}>]\s*/g, ".")
     .replace(/(?<=[\w.+-])\s+(?:at|małpa|malpa)\s+(?=[\w-]+\s+(?:dot|kropka)\s)/gi, "@")
     .replace(/(?<=@[\w-]+(?:\s*\.\s*[\w-]+)*)\s+(?:dot|kropka)\s+(?=[\w-])/gi, ".")
-    .replace(/\bhxxp(s?)\b/gi, "http$1")
     .replace(/\bh\s?t\s?t\s?p(\s?s)?\s?:/gi, (m) => m.replace(/\s/g, ""));
 }
 
