@@ -1,6 +1,6 @@
 # Live lab
 
-> Checked against the code at the F113 stage 06 commit, 2026-11-15.
+> Checked against the code at `58d9df50`, 2026-11-15.
 
 ## What it does now
 
