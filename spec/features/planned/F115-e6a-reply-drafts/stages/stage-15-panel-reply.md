@@ -24,6 +24,11 @@ The F102 approvals page shows and acts on reply drafts; the activity rows get "D
   2. On a flagged mail → the blocked reason text.
   3. Unit: every new key exists in `en.ts` and `pl.ts`; one Polish value test.
 
+## Step 3 — Consent in the panel
+
+- **Goal:** the Telegram card shows the new consent text and "I agree" for a linked user whose consent is older (stage 12 route), no relink.
+- **Test (e2e):** a user linked with the old version sees the button; after the tap it is gone.
+
 ## Proof (web)
 
 ```

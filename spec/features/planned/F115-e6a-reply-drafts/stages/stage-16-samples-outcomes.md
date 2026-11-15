@@ -17,7 +17,7 @@ Shadow mode makes no drafts; the owner can still see three samples on recent rea
 
 ## Step 2 — Outcome counts
 
-- **Goal:** `replyOutcomeCounts(db, ctx, { since })` (`interfaces.md`) from the reply sends, their reasons and the requests: `made` (pairs created), `sent_by_tap` (applied), `sent_by_user`, `rejected`, `expired` (`timeout`), `newer_mail`, `answered`, `original_moved`, `draft_changed`, `no_draft`, `failed`. A superseded version (edit or redraft) counts once, as its newest version.
+- **Goal:** the metric pattern of `docs/code-patterns.md` § Metrics (review G13): a pure function in `packages/core/src/metrics/` over plain rows, a `weekStatsSchema` field `replyDrafts`, and the reader `replyOutcomeRows` in module `replies`, joined in `reports/metrics.ts`. The counts (`ReplyOutcome` of `interfaces.md`) come from the reply sends, their reasons and the requests: `made` (pairs created), `sent_by_tap` (applied), `sent_by_user`, `rejected`, `expired` (`timeout`), `newer_mail`, `answered`, `original_moved`, `draft_changed`, `no_draft`, `failed`. A superseded version (edit or redraft) counts once, as its newest version.
 - **Also:** the E3a weekly report (module `reports`) gets one line "Reply drafts: N made · N sent by tap · N sent by you · N rejected · N expired · N closed" (closed = newer mail + answered + moved + changed), shown only when `made > 0`. Reject reasons of reply sends feed M3 already (PD-057); drafter calls count in M7 through the `llm.call` rows.
 - **Test:**
   1. Fixture: 5 pairs (1 applied, 1 rejected, 1 `newer_mail`, 1 redrafted to version 2 then applied, 1 `timeout`) → `made` 5, `sent_by_tap` 2, `rejected` 1, `newer_mail` 1, `expired` 1.

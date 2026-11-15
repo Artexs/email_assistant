@@ -7,11 +7,15 @@ Adds the draft kind `reply` along the checklist "Add a draft kind" (`docs/code-p
 ## Step 1 — Payload and checklist
 
 - **Goal:** `reply` in `draftKinds` with the payload of `interfaces.md`; every place of the checklist rows 1–4. `DRAFT_TEMPLATES` gets no reply text: the body comes from the payload (`body_text ?? body`), so the checklist's template row is a `NO_TEMPLATE` entry with a reason (or the record type allows it; ask if neither fits).
-- **Decisions:** D14. `to` has exactly one address; `cc` 0–10, no duplicate, none equal to `to`, none equal to an own mailbox (checked by the writer, the schema checks count and shape). Card title: `✍️ Reply to <address>` (en) and the pl text. `draftPhrase` and the digest phrase: "reply drafted". `editApproval` for kind `reply`: editable; its drafts gate is the switch `reply_drafts` (D12), not `create_draft`.
+- **Decisions:** D14. `to` has exactly one address; `cc` 0–10, no duplicate, none equal to `to`, none equal to an own mailbox (checked by the writer, the schema checks count and shape). Card title: `✍️ Reply to <address>` (en) and the pl text. `draftPhrase` and the digest phrase: "reply drafted". `editApproval` for kind `reply`: editable; its drafts gate is the switch `reply_drafts` (D12), not `create_draft`. Recipients `to ∪ cc` (D14, review B1) reach three places that read `payload.to` only today: the SMTP envelope (RCPT for each), the send limits (the recipient-day limit per address), and the `SEND_SCOPE self` claim filter (SQL over the payload: every address of `to` and `cc` must be a test address). The F106 address map gains the payload path `cc` (json rule). The payload carries `folder` (`interfaces.md`).
 - **Test:**
   1. `draft-kinds.test.ts` and `completeness.test.ts` pass with the new kind.
   2. A payload with 11 cc → schema error; with `cc` equal to `to` → writer error.
   3. `editApproval` on a reply with `create_draft` off and `reply_drafts` on → `edited`; with `reply_drafts` off → `drafts_off`.
+  4. A reply with `cc: ["c@z"]` and 5 sends to `c@z` today → held `send_limit:recipient_day`.
+  5. `SEND_SCOPE=self`, `to` a test address, `cc` not → never claimed (stays `approved`, held); both test addresses → sent.
+  7. A sent reply with one `cc` → the SMTP fake sees two RCPT commands.
+  6. A data-request find for `c@z` finds the reply draft by its `cc`.
 
 ## Step 2 — The message
 

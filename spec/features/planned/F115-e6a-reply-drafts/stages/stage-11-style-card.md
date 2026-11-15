@@ -10,7 +10,7 @@ The mailbox settings page gets the switch "Reply drafts" and a style card: displ
 
 ## Step 2 — The style card
 
-- **Goal:** a card per mailbox (on the mailbox page, below the settings card) that replaces the org `SignatureCard` for that mailbox; the org card stays until E6b removes `style_text`, with one line "Each mailbox can have its own signature" and a link.
+- **Goal:** a card per mailbox (on the mailbox page, below the settings card). The org `SignatureCard` becomes read-only (review G9: after the stage 03 copy, an org edit would change nothing): it shows the old text with "Signatures are set per mailbox now" and a link to each mailbox card. The org route stays for E6b's contract step; the panel no longer calls its write.
 - **Decisions:** PD-079; notes §3.9. Fields: display name (one line), signature (multi-line), writing style (multi-line, counter "n / 1000"). The guided form above the free field: form of address (`formal` / `first name` / `mirror the sender`), greeting (free, one line), sign-off (free, one line), length (`short` / `normal`). "Apply" writes these into the writing-style text as plain sentences in the owner's locale (a pure function in `packages/core/src/replies/style-form.ts`, unit-tested); the owner can edit the text after that. The form keeps no state of its own: only the text is saved. Preview calls the preview route with the unsaved values and shows the body below, with "This is a sample. Nothing was sent."; the button is disabled while a call runs.
 - **Test:**
   1. Unit: `styleFromForm({ address: "formal", greeting: "Dzień dobry", signOff: "Pozdrawiam", length: "short" }, "pl")` → a fixed Polish text; the same in `en`.

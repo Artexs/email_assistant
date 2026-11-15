@@ -7,7 +7,7 @@ No double reply: the committer checks "already answered" right before a reply se
 ## Step 1 — Pre-send pass (reply sends only)
 
 - **Goal:** in `applySend`, for kind `reply`, before the copy check of stage 08:
-  0. The DB checks first: a newer mail in the thread → `newer_mail`; the original's folder ≠ the request's folder → `original_moved` (both `notify: true`, the copy removed only if unchanged).
+  0. The DB checks first: `newerMailInThread` (mail index; D7, automatic mail does not count) → `newer_mail`; the original's folder ≠ payload `folder` → `original_moved`. Each close is `closeSend(…, notify: true, claimed: true)`; the copy is deleted only if unchanged.
   1. `syncSentHeaders` for the mailbox with the committer's open provider as the `SentFolderReader` (D10; header step only, no text step). Status `flag_off`, `off` or an error → go on with the flags only; log the result code in `reply_send_checked`.
   2. `fetchFlagsIn(<original folder>, [original uid])` and update `email_flags` for that mail (the same writer as the flag refresh).
   3. Answered = `email_flags.answered` or a `listUserAnswers` hit.
@@ -23,11 +23,12 @@ No double reply: the committer checks "already answered" right before a reply se
 
 ## Step 2 — The sweep
 
-- **Goal:** job `replies.sweep` (every 5 min) closes open reply sends (`awaiting_approval`, or `approved` without `locked_at`) with `closeReplySend(notify: false)` for: answered (`email_flags` or `listUserAnswers`, DB only, no IMAP), `newer_mail`, `original_moved`, `policy_changed` (switch off, shadow mode). At most 200 sends per run, oldest first.
+- **Goal:** job `replies.sweep` (every 5 min) closes open reply sends (`awaiting_approval`, or `approved` without `locked_at`) with `closeSend(claimed: false)` for: answered (`email_flags` or `listUserAnswers`, DB only, no IMAP), `newer_mail`, `original_moved`, `suspicious` (flagged after the draft), `policy_changed` (switch off, shadow mode). `notify` is false for `awaiting_approval` and true for `approved` (the user tapped Send and waits for a result). At most 200 sends per run, oldest first.
 - **Decisions:** D11, D12. The sweep reads no mailbox. Each close is its own transaction with the advisory thread lock (D7). One event line `reply_closed` per close (`action_id`, `reason`).
 - **Test (integration):**
-  1. An open reply; the test sets `email_flags.answered` → next sweep: `expired` / `answered`, no result notice row.
-  2. A newer mail in the thread → `newer_mail`.
+  1. An open reply; the test sets `email_flags.answered` → next sweep: `expired` / `answered`, no result notice row. The same for a held `approved` reply → one result notice row.
+  2. A newer mail in the thread → `newer_mail`; a newer out-of-office mail (`Auto-Submitted: auto-replied`) → stays open.
+  7. A later triage result with `auth_fail` → `suspicious`.
   3. The original's `folder` changed to `Archive` → `original_moved`.
   4. The switch turned off → `policy_changed`; a delegation send of the same mailbox stays open.
   5. An `approved` reply with `locked_at` set → untouched.

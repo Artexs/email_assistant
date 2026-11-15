@@ -10,11 +10,11 @@ Part of [plan.md](plan.md). These names are the contract between stages and for 
 - `replyEligibility(facts, { trigger, now }) → { ok: true, language } | { ok: false, reason: ReplyBlockReason }`. Reasons: `not_checked`, `category`, `junk_source`, `not_a_person`, `own_mailbox`, `suspicious`, `calendar`, `answered`, `too_old`, `language`, `open_newer`. `trigger`: `auto` | `tap` | `redraft` | `sample`.
 - `ReplyFacts`: `triaged` (bool), `category`, `language` (`pl`/`en`/`other`), `fromJunk`, `fromAddress`, `ownAddresses`, `headers` (null or `{ listId, listUnsubscribe, autoSubmitted, precedence, hasCalendar }`), `suspicion` (`{ state: "untriaged" } | { state: "clean" } | { state: "flagged", reasons }`), `answered` (bool), `receivedAt`.
 - `quoteReply(original, language, timeZone) → string`: "On <date>, <name> wrote:" / "<date>, <name> napisał(a):", then `> ` lines, at most `QUOTE_MAX_CHARS`.
-- `normalizeDraftText(text) → string`: CRLF → LF, trailing spaces per line cut, trailing blank lines cut. The hash `draftTextHash(text)` (hex SHA-256 of the normalized text) lives in module `actions` (stage 08).
+- `normalizeDraftText(text) → string`: CRLF → LF, trailing spaces per line cut, trailing blank lines cut. `draftCopyKey({ text, subject, to, cc, attachmentCount, attachments })` → a canonical JSON string (addresses lower case and sorted; attachments as `name|type|size` in part order). The hash `draftCopyHash(copy)` (hex SHA-256 of that string) lives in module `actions` (stage 08).
 
 ## Draft payload kind `reply` (`core/triage/payloads.ts`)
 
-`{ kind: "reply", to: [1 address], cc: address[] (0–10), language, body, gaps: string[], request_id, recipients: "from" | "reply_to" | "all", version?, subject_text?, body_text? }`. The send payload repeats `kind`, `to`, `cc`. `body_text`, when set, replaces `body` (F102 edit).
+`{ kind: "reply", to: [1 address], cc: address[] (0–10), language, body, request_id, folder (of the mail at request time), recipients: "from" | "reply_to" | "all", version?, subject_text?, body_text? }`. Gaps are always derived: `gapsOf(body_text ?? body)`. The send payload repeats `kind`, `to`, `cc`. `body_text`, when set, replaces `body` (F102 edit).
 
 ## Data (stage 03)
 
@@ -25,10 +25,10 @@ Part of [plan.md](plan.md). These names are the contract between stages and for 
 
 ## Server functions
 
-- Module `replies` (layer 3): `createReplyJobs(deps)` → jobs `replies.drafter` (every 15 s) and `replies.sweep` (every 5 min); `requestReply(deps, ctx, { emailId, userId, via, instruction? })` → `{ kind: "queued", requestId } | { kind: "blocked", reason } | { kind: "redraft_limit" } | { kind: "feature_off" }`; `redraftReply(deps, ctx, { sendId, userId, via, instruction })` (same answers plus `changed`, `closed`); `setReplyRecipients(deps, ctx, { sendId, userId, via, mode: "all" | "reply_to" | "from" })` → like `editApproval`'s answers plus `too_many_recipients`, `no_reply_to`; `previewStyle(deps, ctx, { mailboxId, userId })` → `{ body } | { kind: "failed", reason }`; `sampleReplies(deps, ctx, { mailboxId, userId, count: 3 })` → `{ items: { emailId, body }[] }`; `replyOutcomeCounts(db, ctx, { since }) → Record<ReplyOutcome, number>` (`made`, `sent_by_tap`, `sent_by_user`, `rejected`, `expired`, `newer_mail`, `answered`, `original_moved`, `draft_changed`, `no_draft`, `failed`).
-- Module `actions`: `replaceApproval(trx, ctx, { sendId, payload, userId, via, now })` (the F102 supersede core, shared by `editApproval`); `closeReplySend(trx, ctx, { sendId, reason, notify, now })` with reason `answered` | `newer_mail` | `original_moved` | `policy_changed` | `sent_by_user` | `draft_changed`; `approvalExpiresAt(kind, row)`.
+- Module `replies` (layer 3): `createReplyJobs(deps)` → jobs `replies.drafter` (every 15 s) and `replies.sweep` (every 5 min); `requestReply(deps, ctx, { emailId, userId, via, instruction? })` → `{ kind: "queued", requestId } | { kind: "open", sendId } | { kind: "blocked", reason } | { kind: "feature_off" }`; `redraftReply(deps, ctx, { sendId, userId, via, instruction })` (same answers plus `changed`, `closed`); `setReplyRecipients(deps, ctx, { sendId, userId, via, mode: "all" | "reply_to" | "from" })` → like `editApproval`'s answers plus `too_many_recipients`, `no_reply_to`; `previewStyle(deps, ctx, { mailboxId, userId })` → `{ body } | { kind: "failed", reason }`; `sampleReplies(deps, ctx, { mailboxId, userId, count: 3 })` → `{ items: { emailId, body }[] }`; `replyOutcomeRows(db, ctx, { since })` for the core metric `replyOutcomeCounts(rows) → Record<ReplyOutcome, number>` (`made`, `sent_by_tap`, `sent_by_user`, `rejected`, `expired`, `newer_mail`, `answered`, `original_moved`, `draft_changed`, `no_draft`, `failed`).
+- Module `actions`: `replaceApproval(trx, ctx, { sendId, payload, userId, via, now })` (the F102 supersede core, shared by `editApproval`); `closeSend(trx, ctx, { sendId, reason, notify, claimed, now })` for every kind, reasons `answered` | `newer_mail` | `original_moved` | `policy_changed` | `suspicious` | `sent_by_user` | `draft_changed` | `draft_missing`; `claimed: true` = the committer holds the claim of this row; `claimed: false` answers `busy` for a locked row. It edits the Telegram cards through `ApprovalHooks.onDecided` (`expired`); `approvalExpiresAt(kind, row)`.
 - Module `triage`: `suspicionOf(db, ctx, emailIds) → Map<emailId, Suspicion>` (three-state; every id is in the map). `drafter-v1` in the prompt registry.
-- Module `mail`: `replyFactsOf(db, ctx, emailIds)` (headers, flags, user answers, own addresses, folder) and `mailboxProfileOf(db, ctx, mailboxId)`.
+- Module `mail`: `replyFactsOf(db, ctx, emailIds)` (headers, flags, user answers, own addresses, folder), `newerMailInThread(db, ctx, emailId) → boolean` (D7 rule; `actions` and `replies` both call it) and `mailboxProfileOf(db, ctx, mailboxId)`.
 
 ## Telegram callbacks (`core/digest/callback.ts`)
 
@@ -36,10 +36,11 @@ New kinds, each with an action or mail UUID: `reply_review` (start or next, `aft
 
 ## Routes (stage 14; `/api`, behind `approvals_page` and `reply_drafts`)
 
-- `POST /replies` `{ emailId, instruction? }` → 202 `{ requestId }`; 409 `blocked` + `reason`, `redraft_limit`, `feature_off`.
+- `POST /replies` `{ emailId, instruction? }` → 202 `{ requestId }`, or 200 `{ sendId }` when a draft is open; 409 `blocked` + `reason`, `feature_off`.
 - `POST /approvals/:id/redraft` `{ instruction }` → 202 `{ requestId }`; 409 `changed` + `currentId`, `closed`, `redraft_limit`.
 - `POST /approvals/:id/recipients` `{ mode }` → `{ id, version }`; 409 `changed`, `closed`; 400 `too_many_recipients`, `no_reply_to`.
-- `GET /replies/requests/:id` → `{ status, reasonCode, sendId }`.
+- `GET /replies/requests/:id` → `{ status, reasonCode, sendId }` (`superseded` carries the open `sendId` of the thread).
 - `GET|PUT /mailboxes/:id/profile`, `POST /mailboxes/:id/profile/preview`, `POST /mailboxes/:id/reply-samples` (stage 10 and 16).
 - `POST /approvals/:id/approve` gains 409 `has_gaps` and 409 `feature_off` (stage 05).
-- `ApprovalItem` gains for kind `reply`: `gaps`, `cc`, `replyTo` (stored, or null), `instruction`, `redraftsLeft`.
+- `ApprovalItem` gains for kind `reply`: `gaps` (derived), `cc`, `replyTo` (stored, or null), `instruction`, `redraftsLeft`, `sentVisible`.
+- `POST /telegram/consent` `{ version }` (stage 12): an already linked user confirms the new consent; one `web.telegram_consent` audit row.

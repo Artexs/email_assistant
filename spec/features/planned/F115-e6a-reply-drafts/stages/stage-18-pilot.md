@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (deploy, real mailbox, sending to 
 - **Checks (each with its command output in `pilot.md` in this folder; counts and codes only, no mail text):**
   1. `job:run --name replies.drafter` → the log shows `reply_drafted` or `reply_draft_failed` event lines with codes only.
   2. A `needs_reply` mail to the pilot mailbox (from the owner's other address) gets a draft in Drafts within 1 min (the `actions` row `applied` with `copy_hash`).
-  3. **N1a:** the copy hash stays the same after 1 h without an edit (read `provider_result.copy_hash`, run the stage 08 check through a dry-run CLI `bun run reply:check-copy --action-id <id>` that only locates and hashes; add it in this stage if stage 08 did not).
+  3. **N1a:** `bun run reply:check-copy --action-id <id>` (stage 08) prints `same` after 1 h without an edit. Then turn on the flag `draft_copy_check` for the pilot org (D9).
   4. **N1b:** the owner opens Interia webmail: is the draft in the thread? (owner answer in `pilot.md`).
   5. **N1c:** the owner answers one mail from webmail; within 10 min `email_flags.answered` is true or the Sent mark exists, and the sweep closes the draft as `answered`.
 

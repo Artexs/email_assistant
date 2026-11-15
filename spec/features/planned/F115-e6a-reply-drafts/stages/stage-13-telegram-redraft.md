@@ -2,14 +2,12 @@
 
 Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, user text into the LLM). Needs 12.
 
-The other review buttons, the instruction line by Telegram reply, and "✍️ Draft reply" on tap. The service functions here are the ones the routes of stage 14 call.
-
 ## Step 1 — Service functions (module `replies`)
 
 - **Goal:** `requestReply`, `redraftReply`, `setReplyRecipients` as `interfaces.md` names them.
 - **Decisions:**
   - Owners only; flag off → `feature_off`; switch off or shadow → `blocked` / `policy_changed`.
-  - `requestReply` runs `replyEligibility` with trigger `tap` before it inserts a request (a block answers at once), and again in the job. An open reply send for the same mail → answers `{ kind: "queued" }` with no new request, and the caller shows that card.
+  - `requestReply` runs `replyEligibility` with trigger `tap` before it inserts a request (a block answers at once), and again in the job. An open reply send for the same mail → `{ kind: "open", sendId }`, no new request; the caller shows that card.
   - `redraftReply`: the send must be open (`awaiting_approval`); instruction through `cleanUserText` one line, 1–300 characters; at most 5 `redraft` requests per mail (PD-081) → `redraft_limit`. The request has `previous_send_id`; the job makes the new version (stage 07 path). The old send stays open until the new version exists.
   - `setReplyRecipients`: no LLM call. `all` = stored To and Cc minus own mailboxes and minus `to` (D14), at most 10 → else `too_many_recipients`; `reply_to` = the stored Reply-To (none or equal to `From` → `no_reply_to`); `from` = back to the default. A new version through `replaceApproval`; the same recipients as now → `unchanged`.
 - **Test (integration):**
@@ -23,7 +21,7 @@ The other review buttons, the instruction line by Telegram reply, and "✍️ Dr
 ## Step 2 — Buttons and the reply text
 
 - **Goal:** review cards gain ✍️ Redraft, 👥 Reply all, "Use Reply-To" (stage 12 rules on when they show). Redraft → the bot sends a `reply_prompt` message with ForceReply ("Write one line: what should the reply say?"), `reply_markup.force_reply` in the Telegram adapter. A text message in a linked chat that replies (`reply_to_message`) to a sent `reply_prompt` row or to a sent reply review card of that chat → `redraftReply` with the text. Any other free text keeps today's help answer.
-- **Decisions:** the match uses the stored Telegram message id of the outbox row and the chat id; a reply to another chat's card is ignored. The instruction text never reaches a log line or an audit row. After the new version exists, the drafter queues a `reply_result` row for the requesting user: the new card (kind `approval`), or the text for `no_draft` / `failed` with the reason.
+- **Decisions:** the match uses the stored Telegram message id of the outbox row and the chat id; a reply to another chat's card is ignored. The instruction text never reaches a log line or an audit row. When a `tap` or `redraft` request ends, the drafter queues a `reply_result` row for the requesting user: the new card (kind `approval`) for `done`; the open card of the thread for `superseded`; a reason text for `no_draft`, `failed`, `cancelled` (one text per reason, also `closed`: "This draft was closed; nothing changed.").
 - **Test (integration, fake Telegram):**
   1. Tap Redraft → one `reply_prompt` with ForceReply; a reply text → one `redraft` request; the job runs → the user gets the version 2 card.
   2. A reply text to an unrelated bot message → the help answer, no request.

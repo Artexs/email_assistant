@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). Needs 04.
 
-Gives the reply kind its 7-day life, the gap rule, the flag rule, and the shared functions that later stages call: `approvalExpiresAt`, `replaceApproval`, `closeReplySend`.
+Gives the reply kind its 7-day life, the gap rule, the flag rule, and the shared functions that later stages call: `approvalExpiresAt`, `replaceApproval`, `closeSend`.
 
 ## Step 1 — Time limit per kind
 
@@ -26,13 +26,13 @@ Gives the reply kind its 7-day life, the gap rule, the flag rule, and the shared
 
 ## Step 3 — Shared close and replace
 
-- **Goal:** `replaceApproval(trx, ctx, { sendId, payload, userId, via, now })`: the F102 `insertEditedPair` core (locks, version + 1, `supersedes_action_id`, old send `expired` / `superseded`, old draft closed, card edits through `ApprovalHooks.onDecided`), now called by `editApproval` and by stage 13. `closeReplySend(trx, ctx, { sendId, reason, notify, now })`: send `expired` with the reason, draft closed through `closeDraftOfSend`, audit `action.expired` with `reason_code`. `notify: false` sets `result_notified_at` = now (no result notice: the sweep closes quietly); `notify: true` leaves it null (the committer's closes after a tap; texts in stage 09).
-- **Decisions:** a refactor of `editApproval` by move, no behaviour change: `actions-edit.test.ts` passes unchanged. `closeReplySend` refuses a send that is not `awaiting_approval` or `approved` without `locked_at` (returns `{ kind: "busy" }`).
+- **Goal:** `replaceApproval(trx, ctx, { sendId, payload, userId, via, now })`: the F102 `insertEditedPair` core (locks, version + 1, `supersedes_action_id`, old send `expired` / `superseded`, old draft closed, card edits through `ApprovalHooks.onDecided`), now called by `editApproval` and by stage 13. `closeSend(trx, ctx, { sendId, reason, notify, claimed, now })` (`interfaces.md`, every kind): send `expired` with the reason, draft closed through `closeDraftOfSend`, the cards edited through `ApprovalHooks.onDecided` (`expired`), the delegation hook as `expireSend` does, audit `action.expired` with `reason_code`. `notify: false` sets `result_notified_at` = now; `notify: true` leaves it null (a result notice; texts in stage 09).
+- **Decisions:** a refactor of `editApproval` by move, no behaviour change: `actions-edit.test.ts` passes unchanged. `closeSend` with `claimed: false` refuses a send that is not `awaiting_approval` or `approved` without `locked_at` (`{ kind: "busy" }`); `claimed: true` (the committer, holding its claim) also closes its own locked `approved` row, and never an `applying` one.
 - **Test:**
   1. `actions-edit.test.ts` unchanged and green.
   2. `replaceApproval` with a new `cc` → new version 2 with the `cc`; the old send `superseded`.
-  3. `closeReplySend` on an `applying` send → `busy`, nothing changes.
-  4. `closeReplySend(reason: "answered", notify: false)` → send `expired` / `answered`, draft closed, one audit row, `result_notified_at` set.
+  3. `closeSend` on an `applying` send → `busy` (both `claimed` values); on a locked `approved` row: `claimed: false` → `busy`, `claimed: true` → closed.
+  4. `closeSend(reason: "answered", notify: false)` → send `expired` / `answered`, draft closed, one `approval_edit` row per sent card, one audit row, `result_notified_at` set.
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the copy hash (stage 08), the result texts of new reasons (stage 09).

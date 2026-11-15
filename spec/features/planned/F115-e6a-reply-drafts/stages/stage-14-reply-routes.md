@@ -9,7 +9,7 @@ Typed `/api` routes for the panel, on top of the F102 approvals API. Every route
 - **Goal:** `POST /api/replies`, `POST /api/approvals/:id/redraft`, `POST /api/approvals/:id/recipients` and `GET /api/replies/requests/:id` as `interfaces.md` § Routes. Each calls the stage 13 service function with `via: "web"`.
 - **Decisions:** owner for the three writes, member for the read. Body schemas in `packages/core/src/web/replies.ts`. A bad id → 400 `validation`; an unknown or foreign id → 404. The answers map one to one from the service results (`interfaces.md`). The panel polls `GET /api/replies/requests/:id` every 2 s for at most 60 s; the route reads only the request row.
 - **Test (integration):**
-  1. `POST /api/replies` for a clean mail → 202 with a `requestId`; `GET` → `pending`, then (job run) `done` with `sendId`.
+  1. `POST /api/replies` for a clean mail → 202 with a `requestId`; `GET` → `pending`, then (job run) `done` with `sendId`. Again for the same mail → 200 `{ sendId }`.
   2. For a flagged mail → 409 `blocked` + `reason: "suspicious"`.
   3. A member → 403 on each write.
   4. Redraft with 301 characters → 400 `validation`.
@@ -20,7 +20,7 @@ Typed `/api` routes for the panel, on top of the F102 approvals API. Every route
 
 ## Step 2 — The read model
 
-- **Goal:** `ApprovalItem` and `ApprovalDetail` (F102) carry for kind `reply`: `gaps`, `cc`, `replyTo` (stored Reply-To when it differs from `From`, else null), `instruction` (of the request that made the version, or null), `redraftsLeft` (5 minus the redraft count), `sentVisible`. Other kinds: the fields are absent.
+- **Goal:** `ApprovalItem` and `ApprovalDetail` (F102) carry for kind `reply`: `gaps` (= `gapsOf(body_text ?? body)`, so an edit updates them), `cc`, `replyTo` (stored Reply-To when it differs from `From`, else null), `instruction` (of the request that made the version, or null), `redraftsLeft` (5 minus the redraft count), `sentVisible`. Other kinds: the fields are absent.
 - **Decisions:** the fields come from the payload and the request row, not from the mailbox. `expiresAt` already uses `approvalExpiresAt` (stage 05).
 - **Test (integration):**
   1. `GET /api/approvals/:id` for a reply with a gap → `gaps: ["…"]`, `redraftsLeft: 5`.

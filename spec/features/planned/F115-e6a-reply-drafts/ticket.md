@@ -22,7 +22,7 @@ Mail that needs a reply gets a checked draft in its thread, in the mailbox's sty
 
 ## Acceptance
 
-- The holdout report `evals/results/*-drafter-v1-*.md` exists and shows code checks, judge scores and the reply injection set.
+- The holdout report `evals/results/*-drafter-v1-reply.md` exists and shows code checks and judge scores; the reply injection report passes 100%.
 - An integration test: a `needs_reply` mail in `assist` with the switch on gets one `reply` draft in Drafts with `In-Reply-To`; a second mail in the thread closes the first draft.
 - An integration test: an approved send whose Drafts copy changed ends `draft_changed`, no SMTP call, and the copy stays.
 - An integration test: an approved reply whose mail was answered in Sent ends `answered`, no SMTP call.
