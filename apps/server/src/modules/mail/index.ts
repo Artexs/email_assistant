@@ -23,7 +23,7 @@ export { getMailboxView, listMailboxViews } from "./views";
 export { switchMailboxStatus, type SwitchResult } from "./status";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
-export { openMailboxProvider, type OpenDeps } from "./open";
+export { openMailboxProvider, type GraphSenderOptions, type OpenDeps } from "./open";
 export { checkMailboxHosts, markHostBlocked, type HostCheck } from "./host-status";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { FLAGS_CHUNK, FLAGS_REFRESH_EVERY_MS, FLAGS_RUN_LIMIT, FLAGS_WINDOW_MS, refreshFlags } from "./flags";
@@ -48,6 +48,8 @@ export {
   CAPTURE_LIMITS,
   type AuthErrorReason,
   type AuthMaterial,
+  type OAuthTokens,
+  type TokenResource,
   type CapturedAttachment,
   type CapturedHeaders,
   type CapturedLink,
@@ -136,6 +138,15 @@ export type {
   SentTextWrite,
 } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
+export {
+  syncSentFolder,
+  syncSentHeaders,
+  type SentHeaderResult,
+  type SentPassResult,
+  type SentPassStatus,
+  type SentSyncDeps,
+} from "./sent-sync";
+export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
 export {
   isSyntheticMessageId,
   isTestMail,

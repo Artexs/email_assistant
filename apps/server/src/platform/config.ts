@@ -1,6 +1,6 @@
 import { isIP } from "node:net";
 
-import { type FeatureKey, isFeatureKey, type LlmRole, llmRoles, type SendLimits } from "@ea/core";
+import { type FeatureKey, isFeatureKey, isLoopbackApiRoot, type LlmRole, llmRoles, type SendLimits } from "@ea/core";
 import { z } from "zod";
 
 import { type LlmProviderId, llmProviderIds, type LlmRoleSettings, type LlmRoleTable } from "./llm";
@@ -44,22 +44,6 @@ const roleKeyShape = Object.fromEntries(
     (Object.keys(roleKeyFields) as RoleKeyField[]).map((field) => [roleKey(role, field), roleKeyFields[field]])
   )
 ) as { [K in RoleKey]: (typeof roleKeyFields)[K extends `LLM_${string}_${infer F extends RoleKeyField}` ? F : never] };
-
-// Dev only: a loopback root never reaches a real or remote server. `origin` drops userinfo, path, query and hash.
-// A trailing "/" is refused too: grammY throws on an apiRoot that ends with "/".
-export function isLoopbackApiRoot(value: string): boolean {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    return false;
-  }
-  return (
-    (url.protocol === "http:" || url.protocol === "https:") &&
-    ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) &&
-    url.origin === value
-  );
-}
 
 // A browser origin: http(s) with host and optional port, no path, query, hash or trailing "/".
 export function isOrigin(value: string): boolean {

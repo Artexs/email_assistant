@@ -4,11 +4,63 @@ import { buildOutgoingMessage } from "@ea/core";
 import { expect, test } from "bun:test";
 
 import { composeMessage, INBOX, openImapProvider, openSmtpSender } from "../../src/modules/mail";
+import { connectImapClient } from "../../src/modules/mail/imap/client";
+import { runMailSenderContract } from "../contract/mail-sender";
 
 // Local GreenMail (bun run dev:up). Auth is off: a login with a new user creates the mailbox.
 const smtpPort = Number(process.env.TEST_SMTP_PORT ?? "3025");
 const imapPort = Number(process.env.TEST_IMAP_PORT ?? "3143");
 const host = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
+
+// The SMTP sender on GreenMail. GreenMail makes a mailbox for each new address and refuses no login, so the
+// refused-login case runs against the scripted server of `imap/auth-material.test.ts`.
+runMailSenderContract(
+  "smtp-greenmail",
+  async () => {
+    const recipients = { b: `b-${randomUUID()}@localhost`, c: `c-${randomUUID()}@localhost` };
+    return {
+      recipients: () => recipients,
+      open: ({ from }) =>
+        openSmtpSender({
+          host,
+          port: smtpPort,
+          user: from,
+          auth: { kind: "password", password: "greenmail-test" },
+          secure: false,
+        }),
+      // The mail is in the inbox of its recipient (a short wait: GreenMail delivers after the 250).
+      async received(messageId) {
+        for (const user of [recipients.b, recipients.c]) {
+          const client = await connectImapClient({
+            host,
+            port: imapPort,
+            user,
+            auth: { kind: "password", password: "greenmail-test" },
+          });
+          try {
+            const lock = await client.getMailboxLock(INBOX);
+            try {
+              for (let attempt = 0; attempt < 20; attempt += 1) {
+                const [uid] = (await client.search({ header: { "message-id": messageId } }, { uid: true })) || [];
+                if (uid !== undefined) {
+                  const message = await client.fetchOne(String(uid), { source: true }, { uid: true });
+                  if (message !== false && message.source !== undefined) return message.source;
+                }
+                await Bun.sleep(50);
+              }
+            } finally {
+              lock.release();
+            }
+          } finally {
+            await client.logout().catch(() => client.close());
+          }
+        }
+        return null;
+      },
+    };
+  },
+  { noRefusal: "GreenMail with auth off refuses no login; the scripted SMTP server covers it" }
+);
 
 test("a composed message reaches the recipient with the action id and the message id", async () => {
   const sender = `u-${randomUUID()}@localhost`;

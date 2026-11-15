@@ -157,6 +157,62 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
+    "an old-form line in channels/sender.ts fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/sender.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in channels/operator.ts fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/operator.ts",
+          'log.error("operator notice run:", e);',
+          "../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in channels/telegram/ fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/telegram/__log-fixture.ts",
+          "log.info(`x ${y}`);",
+          "../../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "another file of channels stays at warn",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/commands.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([1]);
+    },
+    TIMEOUT
+  );
+
+  test(
     "an event line in platform passes",
     async () => {
       expect(

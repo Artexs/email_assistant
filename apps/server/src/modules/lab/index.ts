@@ -1,0 +1,1 @@
+export { renderLabMessage } from "./message";

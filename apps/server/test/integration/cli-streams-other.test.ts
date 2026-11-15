@@ -23,6 +23,15 @@ const tmp = mkdtempSync(join(tmpdir(), "f103-s04-"));
 // A closed port: the connection is refused at once.
 const deadDb = "postgres://nobody:nobody@127.0.0.1:1/none";
 const databases: string[] = [];
+// The script needs these keys. CI sets the two URLs but not POSTGRES_PASSWORD, so the tests pass all three explicitly.
+// The fallback is the password of the CI Postgres service (`POSTGRES_PASSWORD: postgres` in ci.yml): it is not a secret.
+const migratorUrl = process.env.MIGRATOR_DATABASE_URL ?? "";
+const postgresPassword = process.env.POSTGRES_PASSWORD || "postgres";
+const scriptEnv = {
+  DATABASE_URL: process.env.DATABASE_URL ?? "",
+  MIGRATOR_DATABASE_URL: migratorUrl,
+  POSTGRES_PASSWORD: postgresPassword,
+};
 
 interface Result {
   code: number;
@@ -37,7 +46,7 @@ async function run(
 ): Promise<Result> {
   const proc = Bun.spawn(["bun", resolve(scriptsDir, `${script}.ts`), ...args], {
     cwd: opts.cwd ?? repoRoot,
-    env: { ...process.env, ...opts.env },
+    env: { ...process.env, ...scriptEnv, ...opts.env },
     stdin: opts.stdin === undefined ? "ignore" : new Response(opts.stdin),
     stdout: "pipe",
     stderr: "pipe",
@@ -91,8 +100,6 @@ async function withAdmin<T>(url: string, run: (client: Client) => Promise<T>): P
   }
 }
 
-const migratorUrl = process.env.MIGRATOR_DATABASE_URL ?? "";
-const postgresPassword = process.env.POSTGRES_PASSWORD ?? "";
 const admin = adminUrl(migratorUrl, postgresPassword);
 
 afterAll(async () => {

@@ -1,14 +1,16 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { textTables } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { GrammyError } from "grammy";
+import { BotError, GrammyError, HttpError } from "grammy";
 import type { Transaction } from "kysely";
 
 import { createLinkToken, createTelegramBot, type CommandName, type LinkedChat } from "../../src/modules/channels";
 import type { CallbackResult, UpdateHandlers } from "../../src/modules/channels/port";
 import { localeOfUser } from "../../src/modules/channels/telegram/bot";
 import type { DB } from "../../src/platform/db";
+import { setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -20,28 +22,90 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const TOKEN = "123456:ROUTERTOKENaaaaaaaaaaaaaaaaaaaaaaaaa";
+// The bot token holds MARKER: a leak of the URL of an API call shows in `expectNoMarker`.
+const TOKEN = "123456:MARKERROUTERTOKENaaaaaaaaaaaaaaaaaaaaaaaaa";
+// A fake bot token as an error text: it passes the value rule of the logger, so only a correct field list keeps it out.
+const CANARY = "123456:MARKER-TOKEN";
 const T = new Date("2026-11-06T10:00:00Z");
 const UNKNOWN_TOKEN = "A".repeat(43);
 
-let lines: { level: string; text: string }[] = [];
+// The log is JSON; `lines` holds every line of both console streams, formatted like the console does,
+// so a raw error object shows its fields.
+let lines: string[] = [];
 let logSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
 
 beforeEach(() => {
+  setLogFormat("json");
+  setLogLevel("debug");
   lines = [];
   logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
-    lines.push({ level: "log", text: args.join(" ") });
+    lines.push(format(...args));
   });
   errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
-    lines.push({ level: "error", text: args.join(" ") });
+    lines.push(format(...args));
   });
 });
 
 afterEach(() => {
   logSpy.mockRestore();
   errorSpy.mockRestore();
+  setLogFormat("text");
+  setLogLevel("info");
 });
+
+const BASE_KEYS = ["time", "level", "module", "event", "msg"];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+interface LoggedEvent {
+  level: string;
+  fields: Record<string, unknown>;
+}
+
+// The `telegram` event lines of one name: the level and the fields after the base keys (the context keys `job`
+// and `run_id` come first). A dropped field shows as `dropped_fields`, so an exact match on `fields` also
+// proves that every value passed the logger.
+function eventsOf(event: string): LoggedEvent[] {
+  return lines.flatMap((line) => {
+    const parsed = JSON.parse(line) as Record<string, unknown>;
+    if (parsed.module !== "telegram" || parsed.event !== event) return [];
+    const fields = Object.fromEntries(Object.entries(parsed).filter(([key]) => !BASE_KEYS.includes(key)));
+    return [{ level: String(parsed.level), fields }];
+  });
+}
+
+// The fields of a line that ran in the context of an update.
+const inUpdate = (fields: Record<string, unknown>): Record<string, unknown> => ({
+  job: "telegram.update",
+  run_id: expect.stringMatching(UUID),
+  ...fields,
+});
+
+function expectNoMarker(): void {
+  expect(lines.some((line) => line.includes("MARKER"))).toBe(false);
+}
+
+// A Telegram error of each kind; every one holds the canary where the real one holds the token or a text.
+const telegramErrors: [string, () => unknown, Record<string, unknown>][] = [
+  [
+    "a GrammyError",
+    () =>
+      new GrammyError(
+        "Call to 'sendMessage' failed!",
+        { ok: false, error_code: 403, description: CANARY },
+        "sendMessage",
+        { text: CANARY }
+      ),
+    { error: "GrammyError", error_code: 403, method: "sendMessage" },
+  ],
+  [
+    "an HttpError",
+    () =>
+      new HttpError("Network request for 'sendMessage' failed!", new Error(`https://api.telegram.org/bot${CANARY}/x`)),
+    { error: "HttpError", method: "sendMessage" },
+  ],
+  ["another error", () => new Error(CANARY), { error: "Error" }],
+];
 
 function makeFake() {
   const commands: { link: LinkedChat; name: CommandName }[] = [];
@@ -131,6 +195,9 @@ describe("telegram router", () => {
       expect(calls[0]?.payload.link_preview_options).toEqual({ is_disabled: true });
       expect(calls[0]?.payload.parse_mode).toBeUndefined();
       expect(await linkCount(trx, chatId)).toBe(1);
+      expect(eventsOf("chat_linked")).toEqual([
+        { level: "info", fields: inUpdate({ user_id: userId, org_id: orgId }) },
+      ]);
     });
   });
 
@@ -192,6 +259,7 @@ describe("telegram router", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0]?.payload.text).toBe(textTables.en.bot.linkExpired);
       expect(await linkCount(trx, chatId)).toBe(0);
+      expect(eventsOf("link_token_expired")).toEqual([{ level: "info", fields: inUpdate({}) }]);
     });
   });
 
@@ -212,12 +280,10 @@ describe("telegram router", () => {
         },
       });
       expect(await localeOfUser(failing, userId)).toBe("pl");
-      const warned = lines.filter(
-        (line) => line.level === "error" && line.text.includes("telegram_locale_read_failed")
-      );
-      expect(warned).toHaveLength(1);
-      expect(warned[0]?.text).toContain(userId);
-      expect(warned[0]?.text).not.toContain("MARKER-DB-DOWN");
+      expect(eventsOf("telegram_locale_read_failed")).toEqual([
+        { level: "warn", fields: { user_id: userId, error: "Error" } },
+      ]);
+      expect(lines.some((line) => line.includes("MARKER-DB-DOWN"))).toBe(false);
       // A working read: no choice (null) gives pl; a stored choice wins. The fixture user has `en`.
       await trx.updateTable("users").set({ locale: null }).where("id", "=", userId).execute();
       expect(await localeOfUser(trx, userId)).toBe("pl");
@@ -291,14 +357,12 @@ describe("telegram router", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0]?.method).toBe("answerCallbackQuery");
       expect(calls[0]?.payload.text).toBe(textTables.en.bot.error);
-      const errors = lines.filter((line) => line.level === "error");
-      expect(errors).toHaveLength(1);
-      expect(errors[0]?.text).toContain("callback failed");
-      expect(lines.some((line) => line.text.includes("MARKER-ERR"))).toBe(false);
+      expect(eventsOf("callback_failed")).toEqual([{ level: "error", fields: inUpdate({ error: "Error" }) }]);
+      expect(lines.some((line) => line.includes("MARKER-ERR"))).toBe(false);
     });
   });
 
-  test("button answer and edit errors are logged by label, and the flow goes on", async () => {
+  test("a button answer error is logged by fields and an unmodified edit is no failure; the flow goes on", async () => {
     await withRollback(db, async (trx) => {
       const { fake, bot, calls, tap } = setup(trx);
       const linked = await linkedMember(trx);
@@ -326,12 +390,12 @@ describe("telegram router", () => {
       });
       await tap(linked.chatId, "fe:abc");
       expect(calls.map((call) => call.method)).toEqual(["answerCallbackQuery", "editMessageText", "sendMessage"]);
-      const warns = lines.filter(
-        (line) => line.text.includes("answering a button tap failed") || line.text.includes("editing a message failed")
-      );
-      expect(warns).toHaveLength(1);
-      expect(warns[0]?.text).toContain("answering a button tap failed");
-      expect(lines.some((line) => line.text.includes("MARKER"))).toBe(false);
+      // The 400 "message is not modified" is not a failure: no `message_edit_failed` line.
+      expect(eventsOf("message_edit_failed")).toEqual([]);
+      expect(eventsOf("callback_answer_failed")).toEqual([
+        { level: "warn", fields: inUpdate({ error: "GrammyError", error_code: 500, method: "answerCallbackQuery" }) },
+      ]);
+      expectNoMarker();
     });
   });
 
@@ -350,7 +414,7 @@ describe("telegram router", () => {
     });
   });
 
-  test("a failing command handler replies ERROR_TEXT and logs by label only", async () => {
+  test("a failing command handler replies ERROR_TEXT and logs the error name only", async () => {
     await withRollback(db, async (trx) => {
       const { fake, calls, send } = setup(trx);
       const linked = await linkedMember(trx);
@@ -359,10 +423,8 @@ describe("telegram router", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0]?.method).toBe("sendMessage");
       expect(calls[0]?.payload.text).toBe(textTables.en.bot.error);
-      const errors = lines.filter((line) => line.level === "error");
-      expect(errors).toHaveLength(1);
-      expect(errors[0]?.text).toContain("command failed");
-      expect(lines.some((line) => line.text.includes("MARKER-CMD"))).toBe(false);
+      expect(eventsOf("command_failed")).toEqual([{ level: "error", fields: inUpdate({ error: "Error" }) }]);
+      expect(lines.some((line) => line.includes("MARKER-CMD"))).toBe(false);
     });
   });
 
@@ -380,9 +442,11 @@ describe("telegram router", () => {
       await send(linked.chatId, "/status");
       expect(calls.filter((call) => call.payload.text === textTables.en.bot.error)).toHaveLength(0);
       expect(calls.filter((call) => call.method === "sendMessage")).toHaveLength(1);
-      expect(lines.filter((line) => line.text.includes("replying to a command failed"))).toHaveLength(1);
-      expect(lines.filter((line) => line.text.includes("command failed"))).toHaveLength(1);
-      expect(lines.some((line) => line.text.includes("MARKER"))).toBe(false);
+      expect(eventsOf("command_reply_failed")).toEqual([
+        { level: "warn", fields: inUpdate({ error: "GrammyError", error_code: 500, method: "sendMessage" }) },
+      ]);
+      expect(eventsOf("command_failed")).toEqual([]);
+      expectNoMarker();
     });
   });
 
@@ -401,11 +465,198 @@ describe("telegram router", () => {
         throw new Error("MARKER-ERR");
       };
       await tap(chatId, "fe:BUTTON-DATA-9");
-      const all = lines.map((line) => line.text).join("\n");
+      const all = lines.join("\n");
       expect(lines.length).toBeGreaterThan(0);
       for (const secret of [token, TOKEN, String(chatId), "SECRET-TEXT-123", "BUTTON-DATA-9", "MARKER-ERR"]) {
         expect(all).not.toContain(secret);
       }
     });
   });
+});
+
+describe("telegram router: log lines", () => {
+  const unlinkedUpdate = (updateId: number, chatId: number) => messageUpdate({ updateId, chatId, text: "hi" });
+
+  test("one update writes its lines with job telegram.update and a UUID run_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { bot } = setup(trx);
+      await bot.handleUpdate(unlinkedUpdate(1, randomChatId()));
+      expect(eventsOf("update_unlinked_chat")).toEqual([{ level: "debug", fields: inUpdate({}) }]);
+    });
+  });
+
+  test("two updates at once write two different run_id values", async () => {
+    await withRollback(db, async (trx) => {
+      const { bot } = setup(trx);
+      await Promise.all([
+        bot.handleUpdate(unlinkedUpdate(1, randomChatId())),
+        bot.handleUpdate(unlinkedUpdate(2, randomChatId())),
+      ]);
+      const runIds = eventsOf("update_unlinked_chat").map((event) => event.fields.run_id);
+      expect(runIds).toHaveLength(2);
+      expect(runIds.every((id) => typeof id === "string" && UUID.test(id))).toBe(true);
+      expect(runIds[0]).not.toBe(runIds[1]);
+    });
+  });
+
+  test("a line after an await keeps the run_id: command_failed after a timer", async () => {
+    await withRollback(db, async (trx) => {
+      const { fake, send } = setup(trx);
+      const linked = await linkedMember(trx);
+      fake.handlers.command = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        throw new Error(CANARY);
+      };
+      await send(linked.chatId, "/status");
+      expect(eventsOf("command_failed")).toEqual([{ level: "error", fields: inUpdate({ error: "Error" }) }]);
+      expectNoMarker();
+    });
+  });
+
+  test("callback_failed and callback_answer_failed of one tap share the run_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { fake, bot, tap } = setup(trx);
+      const linked = await linkedMember(trx);
+      fake.state.callback = () => {
+        throw new Error(CANARY);
+      };
+      bot.api.config.use((prev, method, payload) => {
+        if (method === "answerCallbackQuery") {
+          throw new GrammyError("x", { ok: false, error_code: 400, description: CANARY }, method, payload);
+        }
+        return prev(method, payload);
+      });
+      await tap(linked.chatId, "fe:abc");
+      const [failed, answer] = [eventsOf("callback_failed"), eventsOf("callback_answer_failed")];
+      expect(failed).toEqual([{ level: "error", fields: inUpdate({ error: "Error" }) }]);
+      expect(answer).toEqual([
+        { level: "warn", fields: inUpdate({ error: "GrammyError", error_code: 400, method: "answerCallbackQuery" }) },
+      ]);
+      expect(failed[0]?.fields.run_id).toBe(answer[0]?.fields.run_id);
+      expectNoMarker();
+    });
+  });
+
+  test("update_failed of bot.catch carries the update_id and no run_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { bot } = setup(trx);
+      const linked = await linkedMember(trx);
+      bot.api.config.use((_prev, method, payload) => {
+        throw new GrammyError("x", { ok: false, error_code: 400, description: CANARY }, method, payload);
+      });
+      // grammY 1.46: only the polling loop calls the error handler; the test does the same.
+      const failure = await bot.handleUpdate(messageUpdate({ updateId: 4242, chatId: linked.chatId, text: "hi" })).then(
+        () => undefined,
+        (error: unknown) => error
+      );
+      expect(failure).toBeInstanceOf(BotError);
+      await bot.errorHandler(failure as BotError);
+      expect(eventsOf("update_failed")).toEqual([
+        { level: "error", fields: { update_id: 4242, error: "GrammyError", error_code: 400, method: "sendMessage" } },
+      ]);
+      expectNoMarker();
+    });
+  });
+
+  test("link_token_used and link_token_unknown write no id and no token", async () => {
+    await withRollback(db, async (trx) => {
+      const { send } = setup(trx);
+      const { orgId, userId } = await createOrgWithMailbox(trx);
+      const { token } = await createLinkToken(trx, { orgId }, userId, T);
+      await send(randomChatId(), `/start ${token}`);
+      await send(randomChatId(), `/start ${token}`);
+      await send(randomChatId(), `/start ${UNKNOWN_TOKEN}`);
+      expect(eventsOf("link_token_used")).toEqual([{ level: "info", fields: inUpdate({}) }]);
+      expect(eventsOf("link_token_unknown")).toEqual([{ level: "debug", fields: inUpdate({}) }]);
+      expect(lines.some((line) => line.includes(token) || line.includes(UNKNOWN_TOKEN))).toBe(false);
+    });
+  });
+
+  // Each error kind reaches each line through its real path; the line holds the fields, never the canary.
+  for (const [kind, make, expected] of telegramErrors) {
+    describe(`with ${kind}`, () => {
+      test("command_failed", async () => {
+        await withRollback(db, async (trx) => {
+          const { fake, send } = setup(trx);
+          const linked = await linkedMember(trx);
+          fake.handlers.command = () => Promise.reject(make());
+          await send(linked.chatId, "/status");
+          expect(eventsOf("command_failed")).toEqual([{ level: "error", fields: inUpdate(expected) }]);
+          expectNoMarker();
+        });
+      });
+
+      test("callback_failed", async () => {
+        await withRollback(db, async (trx) => {
+          const { fake, tap } = setup(trx);
+          const linked = await linkedMember(trx);
+          fake.state.callback = () => {
+            throw make();
+          };
+          await tap(linked.chatId, "fe:abc");
+          expect(eventsOf("callback_failed")).toEqual([{ level: "error", fields: inUpdate(expected) }]);
+          expectNoMarker();
+        });
+      });
+
+      // The transformer is installed last, so it runs first: it throws before the recorder answers.
+      const failApi = (bot: ReturnType<typeof setup>["bot"], failing: string): void => {
+        bot.api.config.use((prev, method, payload) => {
+          if (method === failing) throw make();
+          return prev(method, payload);
+        });
+      };
+
+      test("command_reply_failed", async () => {
+        await withRollback(db, async (trx) => {
+          const { bot, send } = setup(trx);
+          const linked = await linkedMember(trx);
+          failApi(bot, "sendMessage");
+          await send(linked.chatId, "/status");
+          expect(eventsOf("command_reply_failed")).toEqual([{ level: "warn", fields: inUpdate(expected) }]);
+          expectNoMarker();
+        });
+      });
+
+      test("callback_answer_failed", async () => {
+        await withRollback(db, async (trx) => {
+          const { bot, tap } = setup(trx);
+          const linked = await linkedMember(trx);
+          failApi(bot, "answerCallbackQuery");
+          await tap(linked.chatId, "fe:abc");
+          expect(eventsOf("callback_answer_failed")).toEqual([{ level: "warn", fields: inUpdate(expected) }]);
+          expectNoMarker();
+        });
+      });
+
+      test("message_edit_failed", async () => {
+        await withRollback(db, async (trx) => {
+          const { fake, bot, tap } = setup(trx);
+          const linked = await linkedMember(trx);
+          fake.state.callback = () => ({ answer: "Saved", edit: { text: "Edited", buttons: [] } });
+          failApi(bot, "editMessageText");
+          await tap(linked.chatId, "fe:abc");
+          expect(eventsOf("message_edit_failed")).toEqual([{ level: "warn", fields: inUpdate(expected) }]);
+          expectNoMarker();
+        });
+      });
+
+      test("update_failed", async () => {
+        await withRollback(db, async (trx) => {
+          const { bot } = setup(trx);
+          const linked = await linkedMember(trx);
+          failApi(bot, "sendMessage");
+          const failure = await bot
+            .handleUpdate(messageUpdate({ updateId: 77, chatId: linked.chatId, text: "hi" }))
+            .then(
+              () => undefined,
+              (error: unknown) => error
+            );
+          await bot.errorHandler(failure as BotError);
+          expect(eventsOf("update_failed")).toEqual([{ level: "error", fields: { update_id: 77, ...expected } }]);
+          expectNoMarker();
+        });
+      });
+    });
+  }
 });

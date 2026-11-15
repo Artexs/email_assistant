@@ -2,14 +2,14 @@ import { sendLimitOfError, type SendLimitKind } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { listSendLimitHolds } from "../actions";
 import { auditEvents, hasAuditKey, recordAudit } from "../audit";
 import { listAuthErrorMailboxesBefore } from "../mail";
 import { listOrganizations } from "../tenancy";
 
-import { telegramErrorLabel } from "./telegram/errors";
+import { telegramErrorFields } from "./telegram/errors";
 
 const log = createLog("channels");
 
@@ -63,7 +63,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
 
   async function sendOrLog(kind: OperatorNoticeKind, text: string): Promise<void> {
     if (send === null) {
-      log.warn(`operator notice ${kind}: ${text}`);
+      log.warn("operator_notice_unsent", { kind });
       return;
     }
     await send(text);
@@ -80,7 +80,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
           return;
         }
       } catch (error) {
-        log.error(`operator notice ${kind}: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind, ...errorFields(error) });
         return;
       }
 
@@ -89,7 +89,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
       } catch (error) {
         if (!failedLogged.has(key)) {
           failedLogged.add(key);
-          log.error(`operator notice ${kind} failed: ${telegramErrorLabel(error)}`);
+          log.error("operator_notice_send_failed", { kind, ...telegramErrorFields(error) });
         }
         // A capped mailbox calls `capReached` on every mail: the next hourly run retries, the triage loop does not.
         // A held mailbox calls `sendLimitReached` on every held send: same rule.
@@ -104,7 +104,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
           data: { kind, key },
         });
       } catch (error) {
-        log.error(`operator notice ${kind}: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind, ...errorFields(error) });
         return;
       }
       retries.delete(key);
@@ -134,7 +134,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
             : `Trial of org ${orgId} ended ${iso}.`;
         await start({ orgId }, "trial_ending", `trial_ending:${orgId}:${trialEndsAt.getTime()}`, text);
       } catch (error) {
-        log.error(`operator notice trial_ending: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind: "trial_ending", ...errorFields(error) });
       }
     }
   }
@@ -150,7 +150,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
           `Mailbox ${mailboxId} of org ${orgId} has been in auth_error since ${statusChangedAt.toISOString()}.`
         );
       } catch (error) {
-        log.error(`operator notice auth_error_24h: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind: "auth_error_24h", ...errorFields(error) });
       }
     }
   }
@@ -190,7 +190,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
           await startSendLimit(ctx, { mailboxId: hold.mailboxId, limit, until: hold.nextAt, at: now });
         }
       } catch (error) {
-        log.error(`operator notice send_limit: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind: "send_limit", ...errorFields(error) });
       }
     }
   }
@@ -208,7 +208,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
         try {
           await part();
         } catch (error) {
-          log.error(`operator notice run: ${describeError(error)}`);
+          log.error("operator_notices_failed", { ...errorFields(error) });
         }
       }
     },
@@ -225,7 +225,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
           `Mailbox ${mailboxId} of org ${ctx.orgId} reached the daily LLM cap (${cap} calls) on the quota day from ${dayIso}.`
         );
       } catch (error) {
-        log.error(`operator notice llm_cap: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind: "llm_cap", ...errorFields(error) });
       }
     },
 
@@ -239,7 +239,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
           `Auth mail ${kind} to user ${userId} of org ${ctx.orgId} failed (${code}).`
         );
       } catch (error) {
-        log.error(`operator notice auth_mail_failed: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind: "auth_mail_failed", ...errorFields(error) });
       }
     },
 
@@ -247,7 +247,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
       try {
         void startSendLimit(ctx, hit);
       } catch (error) {
-        log.error(`operator notice send_limit: ${describeError(error)}`);
+        log.error("operator_notice_failed", { kind: "send_limit", ...errorFields(error) });
       }
     },
 

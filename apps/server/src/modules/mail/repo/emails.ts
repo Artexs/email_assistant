@@ -23,10 +23,11 @@ export function mailKindFilter(kind: MailKind, rule: TestMailRule): Expression<S
   if (rule.senders.length === 0) return notSynthetic;
   return eb.and([notSynthetic, eb.or([eb("emails.from_address", "is", null), eb.not(fromSender)])]);
 }
-// `source_folder` has a DB default (INBOX), but no insert path may rely on it (D6).
+// `source_folder` has a DB default (INBOX), but no insert path may rely on it (D6). `from_address_lower` is a generated
+// column: an insert that names it fails (kysely-codegen types it as `Generated`, so the type must leave it out).
 export type NewEmail = Omit<
   Insertable<DB["emails"]>,
-  "id" | "org_id" | "status" | "attempts" | "created_at" | "source_folder"
+  "id" | "org_id" | "status" | "attempts" | "created_at" | "source_folder" | "from_address_lower"
 > & { source_folder: string };
 export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail): Promise<boolean> {
   const result = await db

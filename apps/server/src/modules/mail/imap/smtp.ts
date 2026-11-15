@@ -289,6 +289,7 @@ async function closeConnection(connection: SmtpConnectionLike, polite: boolean):
 /**
  * A sender with one SMTP connection per `send` call. Send is at-most-once: it never retries, and the error's `stage`
  * tells the caller whether the content phase began (D10). Pass the failing step through `classifySmtpError`.
+ * A refused login is a `MailAuthError` at the first `send` (each send logs in on its own connection). After `close`, `send` rejects.
  */
 export async function openSmtpSender(
   opts: SmtpConnectOptions,
@@ -297,8 +298,11 @@ export async function openSmtpSender(
   const { auth: _transportAuth, ...transport } = await smtpConnectOptions(opts);
   const makeConnection = deps.connection ?? defaultConnection;
   const credentials = smtpLoginAuth(opts);
+  let closed = false;
   return {
     async send(input): Promise<SendResult> {
+      // The contract of `MailSender`: a closed sender sends nothing (no connection, so the stage is `connect`).
+      if (closed) throw new SmtpSendError("connect", "ECLOSED", null, false, false);
       const { marks, logger } = createSmtpMarks();
       const connection = makeConnection({
         ...transport,
@@ -356,7 +360,8 @@ export async function openSmtpSender(
       }
     },
     async close() {
-      // No pooled connection: every send closes its own.
+      // No pooled connection: every send closes its own. A later `send` rejects.
+      closed = true;
     },
   };
 }
