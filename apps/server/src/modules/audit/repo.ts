@@ -57,8 +57,8 @@ export const auditEvents = {
   orgFlagChanged: "org.flag_changed", // data: flag, enabled
   orgBreakGlassSet: "org.break_glass_set", // data: user_id
   orgBreakGlassCleared: "org.break_glass_cleared", // data: user_id, reason ("cli" | "replaced" | "two_factor_reset")
-  delegateAdded: "delegate.added",
-  delegateChanged: "delegate.changed",
+  delegateAdded: "delegate.added", // data: delegate_id, via
+  delegateChanged: "delegate.changed", // data: delegate_id, fields (the names of the changed fields in one string, comma between), active (when it changed), via; never a name or a tag
   delegationCreated: "delegation.created",
   delegationSent: "delegation.sent",
   delegationAnswered: "delegation.answered",

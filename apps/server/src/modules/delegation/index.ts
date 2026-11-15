@@ -7,8 +7,11 @@ export {
   detectReply,
   markAnswered,
   setDelegateState,
+  updateDelegate,
   type AddDelegateResult,
   type CloseResult,
+  type DelegateVia,
+  type UpdateDelegateResult,
 } from "./service";
 export {
   bumpReminder,

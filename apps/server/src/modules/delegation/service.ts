@@ -12,13 +12,14 @@ import {
   getDelegate,
   insertDelegate,
   insertDelegation,
+  lockDelegate,
   lockDelegation,
   markDelegationAnswered,
   markDelegationCancelled,
   markDelegationDone,
   markDelegationSent,
   moveDelegationToVersion,
-  setDelegateActive,
+  updateDelegateFields,
   type DelegationStatus,
 } from "./repo";
 
@@ -45,14 +46,19 @@ function normalizeTags(tags: readonly string[]): string[] | null {
   return result;
 }
 
+function cleanName(raw: string): string | null {
+  const name = raw.trim();
+  return name === "" || Array.from(name).length > NAME_MAX ? null : name;
+}
+
 // A delegate's address is never a mailbox address of the organization (modules §3.3).
 export async function addDelegate(
   db: DbOrTrx,
   ctx: TenantContext,
-  input: { name: string; email: string; tags: string[]; actor: string; now: Date }
+  input: { name: string; email: string; tags: string[]; actor: string; via: DelegateVia; now: Date }
 ): Promise<AddDelegateResult> {
-  const name = input.name.trim();
-  if (name === "" || Array.from(name).length > NAME_MAX) return { kind: "invalid", field: "name" };
+  const name = cleanName(input.name);
+  if (name === null) return { kind: "invalid", field: "name" };
   const email = input.email.trim().toLowerCase();
   if (!ADDRESS_PATTERN.test(email)) return { kind: "invalid", field: "email" };
   const tags = normalizeTags(input.tags);
@@ -65,29 +71,78 @@ export async function addDelegate(
     await recordAudit(trx, ctx, {
       actor: input.actor,
       event: auditEvents.delegateAdded,
-      data: { delegate_id: id },
+      data: { delegate_id: id, via: input.via },
       at: input.now,
     });
     return { kind: "added", id };
   });
 }
 
+export type DelegateVia = "web" | "cli";
+
+export type UpdateDelegateResult =
+  | { kind: "changed" | "same" | "not_found" }
+  | { kind: "invalid"; field: "name" | "tags" };
+
+// D10: name, tags and the active state. The address never changes. One audit row per call that changes something; it holds the
+// names of the changed fields, never the old or the new value. A disabled delegate keeps its open delegations.
+export async function updateDelegate(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  input: { id: string; name?: string; tags?: string[]; active?: boolean; actor: string; via: DelegateVia; now: Date }
+): Promise<UpdateDelegateResult> {
+  const name = input.name === undefined ? undefined : cleanName(input.name);
+  if (name === null) return { kind: "invalid", field: "name" };
+  const tags = input.tags === undefined ? undefined : normalizeTags(input.tags);
+  if (tags === null) return { kind: "invalid", field: "tags" };
+  return inTransaction(db, async (trx): Promise<UpdateDelegateResult> => {
+    const current = await lockDelegate(trx, ctx, input.id);
+    if (current === undefined) return { kind: "not_found" };
+    const fields: string[] = [];
+    const patch: { name?: string; tags?: string[]; active?: boolean } = {};
+    if (name !== undefined && name !== current.name) {
+      fields.push("name");
+      patch.name = name;
+    }
+    if (
+      tags !== undefined &&
+      (tags.length !== current.competence_tags.length || tags.some((tag, i) => tag !== current.competence_tags[i]))
+    ) {
+      fields.push("tags");
+      patch.tags = tags;
+    }
+    const activeChanged = input.active !== undefined && input.active !== current.active;
+    if (activeChanged) {
+      fields.push("active");
+      patch.active = input.active;
+    }
+    if (fields.length === 0) return { kind: "same" };
+    await updateDelegateFields(trx, ctx, input.id, patch, input.now);
+    await recordAudit(trx, ctx, {
+      actor: input.actor,
+      event: auditEvents.delegateChanged,
+      data: {
+        delegate_id: input.id,
+        // Audit data is flat (F106 D17): the field names go in one string, in the order name, tags, active.
+        fields: fields.join(","),
+        ...(activeChanged ? { active: input.active } : {}),
+        via: input.via,
+      },
+      at: input.now,
+    });
+    return { kind: "changed" };
+  });
+}
+
+// The CLI switch: `updateDelegate` with the active state only.
 export async function setDelegateState(
   db: DbOrTrx,
   ctx: TenantContext,
   input: { id: string; active: boolean; actor: string; now: Date }
 ): Promise<"changed" | "same" | "not_found"> {
-  return inTransaction(db, async (trx) => {
-    if ((await getDelegate(trx, ctx, input.id)) === undefined) return "not_found";
-    if (!(await setDelegateActive(trx, ctx, input.id, input.active, input.now))) return "same";
-    await recordAudit(trx, ctx, {
-      actor: input.actor,
-      event: auditEvents.delegateChanged,
-      data: { delegate_id: input.id, active: input.active },
-      at: input.now,
-    });
-    return "changed";
-  });
+  const result = await updateDelegate(db, ctx, { ...input, via: "cli" });
+  // No name or tags in the call: `invalid` cannot happen.
+  return result.kind === "invalid" ? "same" : result.kind;
 }
 
 // An impossible calendar date gives null.

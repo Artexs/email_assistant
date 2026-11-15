@@ -56,24 +56,62 @@ export async function insertDelegate(
   return row?.id ?? null;
 }
 
-// Name, id order.
+// Name, id order. `activeFirst` puts the active delegates first (the panel list); `limit` caps the rows.
 export async function listDelegates(
   db: DbOrTrx,
   ctx: TenantContext,
-  opts?: { activeOnly?: boolean }
+  opts?: { activeOnly?: boolean; activeFirst?: boolean; limit?: number }
 ): Promise<DelegateRow[]> {
   return db
     .selectFrom("delegates")
     .selectAll()
     .where("org_id", "=", ctx.orgId)
     .$if(opts?.activeOnly === true, (qb) => qb.where("active", "=", true))
+    .$if(opts?.activeFirst === true, (qb) => qb.orderBy("active", "desc"))
     .orderBy("name")
     .orderBy("id")
+    .$if(opts?.limit !== undefined, (qb) => qb.limit(opts?.limit ?? 0))
     .execute();
 }
 
 export async function getDelegate(db: DbOrTrx, ctx: TenantContext, id: string): Promise<DelegateRow | undefined> {
   return db.selectFrom("delegates").selectAll().where("org_id", "=", ctx.orgId).where("id", "=", id).executeTakeFirst();
+}
+
+// The row locked for the rest of the transaction: two changes of one delegate run one after the other, so each sees the other's result.
+export async function lockDelegate(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string
+): Promise<DelegateRow | undefined> {
+  return trx
+    .selectFrom("delegates")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", id)
+    .forUpdate()
+    .executeTakeFirst();
+}
+
+// The address never changes (F102 D10): the patch has no `email`.
+export async function updateDelegateFields(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string,
+  patch: { name?: string; tags?: string[]; active?: boolean },
+  at: Date
+): Promise<void> {
+  await trx
+    .updateTable("delegates")
+    .set({
+      ...(patch.name === undefined ? {} : { name: patch.name }),
+      ...(patch.tags === undefined ? {} : { competence_tags: patch.tags }),
+      ...(patch.active === undefined ? {} : { active: patch.active }),
+      updated_at: at,
+    })
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .execute();
 }
 
 export async function listDelegateNames(
@@ -105,24 +143,6 @@ export async function listDelegateAddresses(
     .orderBy("email")
     .execute();
   return rows.map((row) => row.email);
-}
-
-// false = no such delegate, or it already has this state.
-export async function setDelegateActive(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  id: string,
-  active: boolean,
-  at: Date
-): Promise<boolean> {
-  const result = await db
-    .updateTable("delegates")
-    .set({ active, updated_at: at })
-    .where("id", "=", id)
-    .where("org_id", "=", ctx.orgId)
-    .where("active", "<>", active)
-    .executeTakeFirst();
-  return result.numUpdatedRows > 0n;
 }
 
 export interface DelegationRow {

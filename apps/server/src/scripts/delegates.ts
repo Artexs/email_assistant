@@ -36,6 +36,7 @@ async function main(): Promise<number> {
           email: command.email,
           tags: command.tags,
           actor: ACTOR,
+          via: "cli",
           now,
         });
         switch (result.kind) {
