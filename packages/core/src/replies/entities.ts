@@ -101,11 +101,13 @@ function dateDigitPlaces(view: string): Set<number> {
   const cover = (start: number, text: string): void => {
     for (let i = 0; i < text.length; i += 1) places.add(start + i);
   };
-  for (const m of view.matchAll(DATE_DMY)) if (isDate(m[1] ?? "", m[2] ?? "", m[3] ?? "")) cover(m.index, m[0]);
-  for (const m of view.matchAll(DATE_YMD)) if (isDate(m[3] ?? "", m[2] ?? "", m[1] ?? "")) cover(m.index, m[0]);
+  for (const m of view.matchAll(DATE_DMY))
+    if (isDate(m[1] as string, m[2] as string, m[3] as string)) cover(m.index, m[0]);
+  for (const m of view.matchAll(DATE_YMD))
+    if (isDate(m[3] as string, m[2] as string, m[1] as string)) cover(m.index, m[0]);
   for (const m of view.matchAll(TIME)) {
-    const [hours, minutes] = m[0].split(":").map(Number);
-    if ((hours ?? 99) <= 23 && (minutes ?? 99) <= 59) cover(m.index, m[0]);
+    const [hours, minutes] = m[0].split(":").map(Number) as [number, number];
+    if (hours <= 23 && minutes <= 59) cover(m.index, m[0]);
   }
   return places;
 }
@@ -129,14 +131,14 @@ function chainsOf(view: string): Chain[] {
   let previousEnd = -1;
   for (const group of view.matchAll(/[A-Za-z0-9]+/g)) {
     const gap = previousEnd < 0 ? "" : view.slice(previousEnd, group.index);
-    const joins = gap !== "" && [...gap].length <= JOINER_MAX && /^[^\p{L}\p{N}]+$/u.test(gap);
+    const joins = [...gap].length <= JOINER_MAX && /^[^\p{L}\p{N}]+$/u.test(gap);
     if (current === null || !joins) {
       current = { text: "", at: [], starts: new Set() };
       chains.push(current);
     }
     // A group right after a letter of another script is the end of a Polish word ("Nakład" → "Nak" and "ad"), not a
     // group of its own.
-    if (group.index === 0 || !/[\p{L}\p{N}]/u.test(view[group.index - 1] ?? ""))
+    if (group.index === 0 || !/[\p{L}\p{N}]/u.test(view[group.index - 1] as string))
       current.starts.add(current.text.length);
     current.text += group[0];
     for (let i = 0; i < group[0].length; i += 1) current.at.push(group.index + i);
@@ -153,13 +155,13 @@ function accountNumbers(view: string): { entities: Entity[]; spans: [number, num
   const dated = dateDigitPlaces(view);
   const allDated = (chain: Chain, from: number, to: number): boolean => {
     for (let i = from; i < to; i += 1) {
-      if (/\d/.test(chain.text[i] ?? "") && !dated.has(chain.at[i] ?? -1)) return false;
+      if (/\d/.test(chain.text[i] as string) && !dated.has(chain.at[i] as number)) return false;
     }
     return true;
   };
   const add = (chain: Chain, from: number, to: number, key: string): void => {
     entities.push({ code: "account_number", key });
-    spans.push([chain.at[from] ?? 0, (chain.at[to - 1] ?? 0) + 1]);
+    spans.push([chain.at[from] as number, (chain.at[to - 1] as number) + 1]);
   };
   for (const chain of chainsOf(view)) {
     // 13 or more digits in a row (a card, a bank account number).
@@ -190,7 +192,7 @@ function accountNumbers(view: string): { entities: Entity[]; spans: [number, num
         end < Math.min(chain.text.length, start + IBAN_MAX) &&
         (digits < IBAN_MIN_DIGITS || end - start < IBAN_MIN)
       ) {
-        if (/\d/.test(chain.text[end] ?? "")) digits += 1;
+        if (/\d/.test(chain.text[end] as string)) digits += 1;
         end += 1;
       }
       if (digits < IBAN_MIN_DIGITS || end - start < IBAN_MIN) continue;
