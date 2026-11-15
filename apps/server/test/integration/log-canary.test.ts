@@ -4,7 +4,7 @@ import { parseToolSwitches } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { createCommitterJob, noDelegationHooks } from "../../src/modules/actions";
+import { createCommitterJob, createPlanned, noDelegationHooks } from "../../src/modules/actions";
 import { createTelegramRuntime, handleCallback, type CallbackDeps, type LinkedChat } from "../../src/modules/channels";
 import { getMailboxSettings, insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
 import { delegationHooks } from "../../src/modules/delegation";
@@ -36,6 +36,7 @@ import { captureLogs, eventLines, logProblems } from "../log-capture";
 import {
   createOrgWithMailbox,
   insertDelegate,
+  insertTriaged,
   isolateChannels,
   linkChat,
   pauseOtherMailboxes,
@@ -389,12 +390,37 @@ describe("log canary", () => {
           await markSynced(trx, ctx, mailboxId, new Date(clock.getTime() - MINUTE));
           await runJobTick("channels.notify", () => runtime.notify());
 
+          // Two triaged mails with planted text reach the digest: an urgent one and an info one with a summary.
+          for (const category of ["urgent", "info"] as const) {
+            const digestMailId = await insertTriaged(trx, ctx, mailboxId, {
+              category,
+              createdAt: new Date(NOW.getTime() + 6 * HOUR),
+              reason: CANARY.reason,
+              subject: CANARY.subject,
+              from: CANARY.senderAddress,
+            });
+            if (category === "info")
+              await createPlanned(trx, ctx, digestMailId, [
+                {
+                  type: "save_summary",
+                  payload: { summary: CANARY.summary },
+                  status: "logged",
+                  idempotencyKey: `summary-${digestMailId}`,
+                },
+              ]);
+          }
           // A digest for the linked member: 08:00 local on the next day.
           clock = new Date("2026-11-21T07:00:00Z");
           await markSynced(trx, ctx, mailboxId, new Date(clock.getTime() - MINUTE));
           await runJobTick("channels.digest", () => runtime.scheduleDigests());
           await runJobTick("channels.notify", () => runtime.notify());
           expect(bot.count("sendMessage")).toBeGreaterThanOrEqual(3);
+          // The digest text holds the planted subject and summary: the test is not vacuous for this path.
+          const sentTexts = bot.calls
+            .filter((call) => call.method === "sendMessage")
+            .map((call) => String(call.payload.text));
+          expect(sentTexts.some((text) => text.includes(CANARY.subject))).toBe(true);
+          expect(sentTexts.some((text) => text.includes(CANARY.summary))).toBe(true);
         } finally {
           await runtime.stop();
         }
