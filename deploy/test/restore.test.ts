@@ -60,7 +60,8 @@ beforeEach(() => {
 
   stub(
     "docker",
-    `bytes="$(cat | wc -c)"
+    `# pg_restore reads the dump (and no more); every other call reads whatever is left on stdin, so a call without </dev/null shows.
+if [[ "$*" == *pg_restore* ]]; then bytes="$(head -c ${DUMP.length} | wc -c)"; else bytes="$(cat | wc -c)"; fi
 args="$*"; args="\${args//$'\\n'/ }"
 echo "docker $args stdin=$bytes proj=\${COMPOSE_PROJECT_NAME:-} rel=\${EA_RELEASE:-}" >>"$CALLS"
 if [[ -f "$S/docker-fail" && "$*" == *"$(cat "$S/docker-fail")"* ]]; then exit 1; fi
@@ -92,7 +93,8 @@ afterEach(() => rmSync(root, { recursive: true, force: true }));
 function run(args: string[], options: { stdin?: string; env?: Record<string, string> } = {}): Run {
   const result = Bun.spawnSync(["bash", join(root, "deploy", "restore.sh"), ...args], {
     cwd: root,
-    stdin: options.stdin === undefined ? "ignore" : Buffer.from(options.stdin),
+    // Bytes after the dump: a docker call that reads stdin and is not pg_restore eats them.
+    stdin: options.stdin === undefined ? "ignore" : Buffer.from(`${options.stdin}TRAILING-BYTES`),
     env: { PATH: `${stubs}:${process.env.PATH ?? ""}`, HOME: root, ...options.env },
   });
   const stdout = result.stdout.toString();
