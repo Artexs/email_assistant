@@ -139,5 +139,9 @@ jobs:
           files="$(docker run --rm --entrypoint find ea-server:ci /app/apps/docs -not -path '*/node_modules/*' -not -name node_modules -type f | sort)"
           echo "$files"
           test "$files" = "/app/apps/docs/package.json"
+      - name: Check that the image holds no Starlight tree
+        run: |
+          docker run --rm --entrypoint test ea-server:ci ! -e /app/node_modules/@astrojs/starlight
+          docker run --rm --entrypoint test ea-server:ci ! -e /app/node_modules/pagefind
       - name: Check that the image holds the built web app
         run: docker run --rm --entrypoint test ea-server:ci -f /app/apps/web/dist/login/index.html

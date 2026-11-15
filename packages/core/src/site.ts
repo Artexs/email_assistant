@@ -6,9 +6,25 @@ export const DOCS_BASE = "/email_assistant";
 
 export type DocsLocale = "en" | "pl";
 
-/** Absolute URL of a docs page. `path` starts with `/`; a page path ends with `/`. English has no locale prefix. */
+/**
+ * Absolute URL of a docs page or file. English has no locale prefix; `pl` adds `/pl`.
+ * `path` is the locale-free site path. It starts with `/`, holds no `..` segment, and ends with `/` for a page.
+ * A file path (the last segment has an extension, such as `/pagefind/pagefind.js`) needs no trailing `/`.
+ * A `?query` or `#anchor` after the path stays as it is.
+ * A `pl` path never starts with `/pl/`: the function adds that prefix itself.
+ */
 export function docsUrl(path: string, locale: DocsLocale): string {
   if (!path.startsWith("/")) throw new Error(`docsUrl path must start with "/": ${path}`);
+  const pathOnly = path.split(/[?#]/, 1)[0] ?? path;
+  const segments = pathOnly.split("/");
+  if (segments.includes("..")) throw new Error(`docsUrl path must not hold a ".." segment: ${path}`);
+  const lastSegment = segments[segments.length - 1] ?? "";
+  if (lastSegment !== "" && !lastSegment.includes(".")) {
+    throw new Error(`docsUrl page path must end with "/": ${path}`);
+  }
+  if (locale === "pl" && (pathOnly === "/pl" || pathOnly.startsWith("/pl/"))) {
+    throw new Error(`docsUrl path already holds the "/pl" prefix: ${path}`);
+  }
   const prefix = locale === "pl" ? "/pl" : "";
   return `${DOCS_ORIGIN}${DOCS_BASE}${prefix}${path}`;
 }
