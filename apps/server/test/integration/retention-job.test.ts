@@ -21,6 +21,7 @@ import {
   suspendOrg,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { insertLoopRow } from "./loops-fixtures";
 
 const db = testDb();
 
@@ -207,6 +208,14 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
       sent_at: over90,
     })
     .execute();
+  // A loop closed over 90 days ago: its subject, ask and addresses go.
+  await insertLoopRow(trx, org, org.mailboxId, {
+    status: "closed",
+    close_reason: "replied",
+    closed_at: over90,
+    subject: text,
+    text,
+  });
   await trx
     .insertInto("chat_link_tokens")
     .values({
@@ -230,6 +239,7 @@ const ZERO: RetentionCounts = {
   errors: 0,
   tasks: 0,
   outbox: 0,
+  loops: 0,
   tokens: 0,
 };
 
@@ -252,6 +262,7 @@ describe("retention job: runOrg", () => {
         errors: 1,
         tasks: 1,
         outbox: 1,
+        loops: 1,
         tokens: 1,
       });
       expect(await job.runOrg(org, NOW)).toEqual(ZERO);
@@ -460,6 +471,7 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
           errors: 1,
           tasks: 1,
           outbox: 1,
+          loops: 0,
           tokens: 1,
         });
         expect(await body(trx, doneOld)).toBeNull();
@@ -500,6 +512,7 @@ describe("retention job: log", () => {
         "error_rows",
         "task_rows",
         "outbox_rows",
+        "loop_rows",
         "token_rows",
       ]) {
         expect(done[0]).toContain(`${key}=1`);

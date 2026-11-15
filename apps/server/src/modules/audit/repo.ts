@@ -66,6 +66,12 @@ export const auditEvents = {
   delegationCancelled: "delegation.cancelled",
   delegationDone: "delegation.done",
   delegationChaserRun: "delegation.chaser_run",
+  // F116. Flat; ids and codes only, never the subject, the ask or an address of a loop. The actor is a user id or "system".
+  loopOpened: "loop.opened", // data: loop_id, kind
+  loopClosed: "loop.closed", // data: loop_id, kind, reason
+  loopReopened: "loop.reopened", // data: loop_id, kind
+  loopLater: "loop.later", // data: loop_id, kind, later_count
+  loopRestarted: "loop.restarted", // data: loop_id, kind
   webLogin: "web.login",
   webPasswordSet: "web.password_set",
   webPasswordChanged: "web.password_changed",
