@@ -1,8 +1,8 @@
 # F102 · E4-A Act from the panel: plan
 
-> **Status 2026-11-15 — planned.** Plan base: 5e07cdf2. 20 stages; nothing built. Drift check before stage 01.
+> **Status 2026-11-15 — planned.** Plan base: d70e540e, refreshed 2026-11-15 ([plan-refresh-1.md](plan-refresh-1.md)). 20 stages; nothing built.
 
-Ticket: [ticket.md](ticket.md). Defaults: [questions.md](questions.md). Interfaces: [commands.md](commands.md). Sources: the E04 epic page and notes, `06-architecture-review.md` §3.8, ADR 0023.
+Ticket: [ticket.md](ticket.md). Defaults: [questions.md](questions.md). Interfaces: [commands.md](commands.md). Sources: E04 epic page, `06-architecture-review.md` §3.8, ADR 0023.
 
 ## Input
 
@@ -24,7 +24,7 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 - **D3 Edit content.** `subject` 1–200, `body` 1–3000 characters after `cleanUserText` (CRLF → LF; drop control characters except `\n`, `\t`; drop bidi controls; trim line ends); the subject is one line. Optional `delegateId` (kind `delegation`; active; not the current one). The quote stays system-made. Draft payload adds `version` (absent = 1), `subject_text`, `body_text`. Kind `reminder`: 400 `not_editable` (Q2). Same text and delegate: 400 `unchanged`. Not `assist` with drafts on: 409 `drafts_off`.
 - **D4 Card sync.** Kind `approval_edit`, column `outbox.edit_of_outbox_id`, dedup per card and outcome. Queued in the decision's transaction for every sent `approval:<send id>` card except the tapped one; the view keeps the card's stored text (as the tap edit; a written exception). `pending` card → `failed` / `answered_elsewhere`; `sending` card → no edit (accepted). The sender drops an edit whose outcome no longer matches the send (`stale_edit`). Edits skip quiet hours; an error → `failed`. `actions` reaches `channels` only through `ApprovalHooks.onDecided`.
 - **D5 Panel link.** Approval view gains optional `version` and `panelUrl` (24 h view rule). `panelUrl` = `<WEB_BASE_URL>/approvals?id=<send id>` when the flag is on and the base URL is set. A text line, not a URL button (Q1).
-- **D6 OpenAPI.** `hono-openapi` 1.6.0, exact pin, `apps/server` only. Only `describeRoute`, never its `validator` (F1). `GET /api/openapi.json` behind login. Hidden: operator routes, `/api/auth/*` (E10). Unit test `openapi-routes.test.ts`: every `apiRouters` route is in the spec or in `HIDDEN_ROUTES` with a reason.
+- **D6 OpenAPI.** `hono-openapi` 1.6.0, exact pin, `apps/server` only. Only `describeRoute`, never its `validator` (F1). `GET /api/openapi.json` behind login. Hidden: operator routes, `/api/auth/*` (E10). The spec and `openapi-routes.test.ts` cover every `/api/*` route of `createApp`, also those before the session guard (Q19): described, or in `HIDDEN_ROUTES` with a reason.
 - **D7 Commands**, roles and answers: [commands.md](commands.md).
 - **D8 Read model** in `channels` (it needs `delegation`, `config`; layers), from `approvalViewFor` (the committer's builder) plus the full quote. `expiresAt` as `commands.md`.
 - **D9 Delegations.** Remind now: `sent` or `overdue`, `reminders_sent` < 2, no waiting reminder (checked under the delegation lock: the dedup), `assist` with `create_draft` on (else 409 `drafts_off`); no due-date or 3-day gate; no set. Cancel: `drafted` → reject its send (card edits; one retry after an edit; `applying` → 409 `sending`); `sent` or `overdue` → `cancelled` / `user_cancelled`, waiting reminders expire. Done: `closeDelegation`.
@@ -37,26 +37,26 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 
 ## Facts checked (2026-11-15)
 
-- **F1** Probe, `hono-openapi` 1.6.0, `hono` 4.13.16, `zod` 4.1.12: async `generateSpecs` walks nested routers; it omits an undescribed route silently, and a `hide: true` route; `describeRoute` after a middleware and `requestBody` with `resolver` work; its `validator` answers its own 400 shape.
-- **F2** `@axe-core/playwright` 4.14.0 needs `playwright-core >=1.0.0` (npm).
+- **F1** Probe, `hono-openapi` 1.6.0, `hono` 4.13.16, `zod` 4.6.7 (lock): async `generateSpecs` walks nested routers; it omits an undescribed route silently, and a `hide: true` route; `describeRoute` after a middleware and `requestBody` with `resolver` work; its `validator` answers its own 400 shape.
+- **F2** `@axe-core/playwright` 4.14.0 needs `playwright-core >=1.0.0`; the lock has 1.65.0.
 - **F3** `renderTemplate` takes no delegate name: a new delegate changes only `to` and the names.
 - **F4** `approve` checks the 48 h limit only with `notified_at` set: a panel approval works with no Telegram link (`actions/approvals.ts`).
 - **F5** A draft APPEND that ends after its sends closed removes the copy (`actions/drafts.ts`); supersede inherits this.
 - **F6** Outbox rows keep the message id and sent text; `ChatChannel.edit` exists.
-- **F7** The phone tab bar has 4 or 5 columns (`Nav.tsx`). A path with no file gets the 404 page; `/approvals?id=` needs no server change.
+- **F7** The phone tab bar has 4 or 5 columns (`Nav.tsx`).
+- **F8** (refresh) Astro 7.4.12 (F101): the build logs `csp checked in 18 page(s)`; 19, 20, 21 after stages 12, 17, 18.
 
 ## Not verified
 
 - **N1** Telegram edit of an old card: stage 09 maps an error to `failed` / `edit_failed`.
 - **N2** Axe violations of the existing pages: stage 07 counts them.
 - **N3** Every existing route shape in `hono-openapi`: stages 01–03.
-- **N4** The panel on the phone: U1.
 
 ## Done when
 
 1. `/api/openapi.json` lists every non-hidden route; the route test passes.
-2. Panel edit, approve and reject work; the Telegram cards follow (stages 08–13).
-3. The delegates and delegations pages work (stages 14–18).
+2. Panel edit, approve and reject work; the Telegram cards follow .
+3. The delegates and delegations pages work .
 4. Every e2e spec has zero axe violations; the keyboard test passes.
 5. Each Proof prints `PROOF_OK`; the stage 20 checks hold.
 
@@ -67,6 +67,7 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 - No mail text, draft text, subject or address in a log, error text or test name.
 - New page keys in `en.ts` and `pl.ts`; new notice and bot texts in `packages/core/src/texts/` (en, pl).
 - A new `/api` route gets `apiDoc` in the same commit (D6).
+- Pages (ADR 0016 amendment): no `is:inline` script, no `on*=` attribute (`security.csp` hashes only Astro's scripts); a new page's spec asserts `cspErrors` empty.
 - A gap or deviation is a question in the final message, not a choice.
 
 ## Proof
@@ -77,7 +78,7 @@ Server and core stages:
 mkdir -p /tmp/f102-sNN && bun run lint > /tmp/f102-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f102-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f102-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f102-sNN/int.log 2>&1 && echo PROOF_OK
 ```
 
-Web stages (07, 12, 13, 17, 18) add before `echo PROOF_OK`: `&& bun run web:build > /tmp/f102-sNN/web.log 2>&1 && grep -q 'csp checked in' /tmp/f102-sNN/web.log && flock /tmp/email-assistant-shared-tests.lock env CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e > /tmp/f102-sNN/e2e.log 2>&1`. Own e2e DB first (F101 stage 02 Step 3, name `f102_sNN_e2e`). Never `web:dev`.
+Web stages (07, 12, 13, 17, 18) add before `echo PROOF_OK`: `&& bun run web:build > /tmp/f102-sNN/web.log 2>&1 && grep -q 'csp checked in' /tmp/f102-sNN/web.log && flock /tmp/email-assistant-shared-tests.lock env CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e > /tmp/f102-sNN/e2e.log 2>&1`. Own e2e DB first (as F101 stage 02 Step 3, name `f102_sNN_e2e`). Never `web:dev`.
 
 ## Owner steps
 
@@ -85,17 +86,17 @@ Web stages (07, 12, 13, 17, 18) add before `echo PROOF_OK`: `&& bun run web:buil
 
 ## Review
 
-Before land, `claude-opus-5-5`: 06, 08, 09, 11, 16 (migration, exactly-once, sending, auth) and 05, 12, 13, 17, 18 (Polish text). `claude-sonnet-5-5`: 01.
+Before land, `claude-opus-5-5`: 06, 08, 09, 11, 16 (risk) and 05, 12, 13, 17, 18 (Polish text). `claude-sonnet-5-5`: 01.
 
 ## Stages
 
-- 01 [OpenAPI frame](stages/stage-01-openapi-frame.md) (`bun.lock`)
+- 01 [OpenAPI frame](stages/stage-01-openapi-frame.md)
 - 02 [Describe routes A](stages/stage-02-describe-routes-a.md); needs 01
 - 03 [Describe routes B](stages/stage-03-describe-routes-b.md); needs 02
 - 04 [Edited draft payload](stages/stage-04-edited-draft-payload.md)
 - 05 [Card texts](stages/stage-05-card-texts.md); needs 04
 - 06 [Migration and edit kind](stages/stage-06-migration.md) `[risky]`; needs 05
-- 07 [Axe frame](stages/stage-07-axe-frame.md) (`bun.lock`); needs 01, F101 done
+- 07 [Axe frame](stages/stage-07-axe-frame.md); needs 01, F101 done
 - 08 [Supersede](stages/stage-08-supersede.md) `[risky]`; needs 04, 06
 - 09 [Card sync](stages/stage-09-card-sync.md) `[risky]`; needs 06, 08
 - 10 [Approvals read API](stages/stage-10-approvals-read-api.md); needs 01, 09
@@ -113,18 +114,14 @@ Before land, `claude-opus-5-5`: 06, 08, 09, 11, 16 (migration, exactly-once, sen
 ## How to run (coordinator)
 
 - Worker `claude-sonnet-5-5` with `--prepare 'bash scripts/limen-prepare.sh'`; ticket in `active/` first.
-- Lanes: {01→02→03}, {04→05→06}, then by "Needs". 01 and 07 never next to another `bun.lock` change; 06 never next to another migration.
+- Lanes: {01→02→03}, {04→05→06}, then by "Needs".
 - Land with the `spec/build.md` land check; drop the job DBs. Stage 20: the coordinator.
 
 ## Planning progress
 
-- [x] Decisions, commands.md, questions.md; stages 01–20 `[written]`. `wc -w`: plan.md 1500; stages 389–699 each.
-- [x] Cold review 1.
+- [x] Stages 01–20, cold review 1; refresh 1 (no scouts). `wc -w`: plan.md 1486; stages 407–699.
 
 ## Cold review
 
-`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): PASS, 17 notes, all fixed in stages 03, 06, 08–11, 13, 15, 20, D1, D3, D4, ticket and Q16–Q18; none rejected.
+`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): PASS, 17 notes, all fixed. Review 2 (refresh, [plan-review-2.md](plan-review-2.md)): `claude-opus-5-5`, because the plan has `[risky]` stages; pending.
 
-## Log
-
-- 2026-11-15: planned (Opus 5.5) at `5e07cdf2`.

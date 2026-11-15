@@ -40,4 +40,4 @@ Two steps in `apps/web`.
 
 ## Done when (stage)
 
-- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s18`); the final message names the page count.
+- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s18`); `web.log` shows `csp checked in 21 page(s)` (one more than before the stage).
