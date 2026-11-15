@@ -130,6 +130,7 @@ export {
   getEmailHeaders,
   getEmailMailbox,
   getEmailMeta,
+  lockEmail,
   getJunkFolderPath,
   getMailbox,
   getMailboxSummary,

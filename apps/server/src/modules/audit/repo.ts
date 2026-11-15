@@ -59,7 +59,7 @@ export const auditEvents = {
   orgBreakGlassCleared: "org.break_glass_cleared", // data: user_id, reason ("cli" | "replaced" | "two_factor_reset")
   delegateAdded: "delegate.added", // data: delegate_id, via
   delegateChanged: "delegate.changed", // data: delegate_id, fields (the names of the changed fields in one string, comma between), active (when it changed), via; never a name or a tag
-  delegationCreated: "delegation.created",
+  delegationCreated: "delegation.created", // data: delegation_id, delegate_id, send_action_id, due, source (triage | button), via (button only: web | telegram | cli)
   delegationSent: "delegation.sent",
   delegationAnswered: "delegation.answered",
   delegationOverdue: "delegation.overdue",

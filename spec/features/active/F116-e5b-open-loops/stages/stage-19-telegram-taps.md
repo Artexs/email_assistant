@@ -47,3 +47,8 @@ Routes and panel (20–22).
 ## Carry-over from stage 17 review
 
 - N5: the keyboard builder drops the loop buttons when loopConsent is false (use the stage 11 choke point) (review-17.md).
+
+## Carry-over from the stage 16 re-review (PASS 5f2f26ab)
+
+- When `delegateMail` gets a caller transaction it writes the send before a key-conflict throw and leaves the rollback to the caller: do not catch that error and commit (stages 19 and 22).
+- `lockEmail` uses `FOR UPDATE`; `FOR NO KEY UPDATE` gives the same serialization without blocking FK inserts on the mail: optional, only with a test.
