@@ -155,6 +155,7 @@ describe("metric row readers: actions, delegation, audit", () => {
       expect(rows[0]).toEqual({
         mailboxId: orgA.mailboxId,
         model: "gpt-6-luna",
+        endpoint: "standard",
         tokensIn: 1036,
         tokensOut: 80,
         at: new Date("2026-11-17T10:00:00Z"),

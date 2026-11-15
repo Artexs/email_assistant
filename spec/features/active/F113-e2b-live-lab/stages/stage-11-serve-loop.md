@@ -68,3 +68,7 @@ Details: [`../review-7.md`](../review-7.md). The `LabMailClient` type is in `not
 - **N1 (client host).** Build the client with `createGreenMailClient({ host: LAB_MAIL_HOST, imapPort: LAB_IMAP_PORT, smtpPort: LAB_SMTP_PORT })` from `modules/lab/seed.ts`. The client already throws `host_refused` for a host that is not loopback. Add a test that the serve wiring uses these constants.
 - **N2 (one writer).** `runInjectorTick` has no lock. `serve` must take an `O_EXCL` lock file (for example `<LAB_STATE_DIR>/locks/serve.lock`, freed on exit, a stale lock taken over as `state.ts` does for the org lock) before the first tick, so a second `lab serve` (for example `docker compose run lab serve`) cannot inject twice. Test: a second `serve` on the same state dir exits 1 and writes no event.
 - **N5 (SDK import rule).** Add a `restrictImports` pattern in `eslint.config.js` for `imapflow`, `mailparser` and `nodemailer` on `apps/server/src/**`, with these files excluded: `modules/mail/imap/**`, `modules/lab/mail-client.ts`, `platform/auth-mail.ts` and `*.test.ts`. Run `bun run lint` to find other imports first. If this stage is full, stage 16 does it.
+
+## Carry-over from the F111 stage 03 review
+
+Pass the endpoint kind to the lab start check (`lab/start.ts`, unpriced-model check): an own endpoint with an unpriced model is wrongly refused; an eu endpoint with only a standard row passes and counts $0 toward the cap. See F111 `review-3.md` N3.

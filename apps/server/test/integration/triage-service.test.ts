@@ -1,4 +1,4 @@
-import type { Category } from "@ea/core";
+import type { Category, LlmEndpointKind } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -252,11 +252,11 @@ interface FakeLlm extends LlmClient {
   requests: { system: string; prompt: string }[];
 }
 
-function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
+function fakeLlm(answer: (() => unknown) | Error, endpoint: LlmEndpointKind = "standard"): FakeLlm {
   const requests: { system: string; prompt: string }[] = [];
   return {
     modelOf: () => "fake-model",
-    endpointOf: () => "standard",
+    endpointOf: () => endpoint,
     requests,
     async generate(req) {
       requests.push({ system: req.system, prompt: req.prompt });
@@ -270,7 +270,7 @@ function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 300,
-          endpoint: "standard",
+          endpoint,
         },
       };
     },
@@ -366,6 +366,7 @@ describe("triageOne", () => {
         mailbox_id: mailbox.id,
         role: "classifier",
         model: "fake-model",
+        endpoint: "standard",
         prompt_version: "classifier-v2",
         tokens_in: 100,
         tokens_out: 20,
@@ -449,6 +450,36 @@ describe("triageOne", () => {
       expect(row?.fields).toMatchObject({ model_category: "info" });
       const triaged = (await audit(trx, emailId)).find((r) => r.event === "email.triaged");
       expect(triaged?.reason_code).toBe("below_threshold");
+    });
+  });
+
+  // F111 D6: the endpoint is in every `llm.call` row. The error branch has no usage: it asks the client.
+  test("an own endpoint: the ok row and the error row both say `own`", async () => {
+    await withRollback(db, async (trx) => {
+      const ok = await setupMail(trx, { from_address: "news@shop.test" });
+      const deps = (llm: LlmClient) => ({
+        db: trx,
+        llm,
+        pause: fakePause(),
+        testMail: NO_TEST_SENDERS,
+        dailyCap: 1000,
+        now: () => now,
+      });
+      await triageOne(deps(fakeLlm(analysis(), "own")), ok.ctx, ok.mailbox, ok.email);
+      expect(
+        (await llmRows(trx, ok.emailId)).map((r) => [r.reason_code, (r.data as { endpoint?: string }).endpoint])
+      ).toEqual([["ok", "own"]]);
+
+      const failed = await setupMail(trx);
+      await triageOne(
+        deps(fakeLlm(new LlmSoftError("http_503", "fake-model"), "own")),
+        failed.ctx,
+        failed.mailbox,
+        failed.email
+      );
+      expect(
+        (await llmRows(trx, failed.emailId)).map((r) => [r.reason_code, (r.data as { endpoint?: string }).endpoint])
+      ).toEqual([["http_503", "own"]]);
     });
   });
 

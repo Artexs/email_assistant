@@ -146,6 +146,7 @@ describe("runSim gate file", () => {
     expect(name).toBe(
       gateFileName({
         role: "classifier",
+        endpoint: "standard",
         promptVersion: "classifier-v2",
         model: MODEL,
         reasoningEffort: file.reasoningEffort,

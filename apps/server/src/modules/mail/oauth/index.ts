@@ -19,3 +19,14 @@ export {
   type MailOAuthProvider,
   type MailOAuthProviderSpec,
 } from "./providers";
+export { mailOAuthRoutes, type MailOAuthRouteDeps } from "./routes";
+export { mailOAuthOptions, startMailOAuth, type MailOAuthStartDeps, type StartResult } from "./start";
+export {
+  consumeOAuthState,
+  createOAuthState,
+  OAUTH_STATE_CAP,
+  OAUTH_STATE_TTL_MS,
+  OAuthStateRefusedError,
+  type ConsumeResult,
+  type OAuthStart,
+} from "./state";
