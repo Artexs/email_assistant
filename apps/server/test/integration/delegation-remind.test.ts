@@ -301,6 +301,25 @@ describe("remindNow", () => {
     });
   });
 
+  test("T6b. a waiting reminder wins over an inactive delegate; without a waiting reminder the inactive delegate is reported", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const waiting = await openDelegation(trx, s);
+      await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
+        delegateId: waiting.delegateId,
+        delegationId: waiting.id,
+        reminder: 1,
+        sendStatus: "awaiting_approval",
+      });
+      // Turning a delegate off does not expire a waiting reminder: both states exist together.
+      await trx.updateTable("delegates").set({ active: false }).where("id", "=", waiting.delegateId).execute();
+      expect(await remind(trx, s, waiting.id)).toEqual({ kind: "reminder_waiting" });
+
+      const idle = await openDelegation(trx, s, { active: false });
+      expect(await remind(trx, s, idle.id)).toEqual({ kind: "delegate_inactive" });
+    });
+  });
+
   test("T7. after a remind, a forced chaser run plans no second reminder for the delegation", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
