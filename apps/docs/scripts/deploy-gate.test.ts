@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { deployDecision, main, newestRelease, type GateRef } from "./deploy-gate";
+import { deployDecision, main, newestRelease, releasedVersions, type GateRef } from "./deploy-gate";
 
 const GATE_SCRIPT = join(import.meta.dir, "deploy-gate.ts");
 const push = (name: string, type: GateRef["type"] = "tag"): GateRef => ({ event: "push", type, name });
@@ -129,6 +129,14 @@ describe("deployDecision", () => {
       expect(decision.deploy).toBe(false);
       expect(decision.error).toBeString();
     }
+  });
+});
+
+describe("releasedVersions", () => {
+  test("the versions of the released entries, newest first, without Unreleased", () => {
+    const text = "# C\n\n## [Unreleased]\n\n## [0.2.0] - 2026-12-01\n\n## [0.1.0] - 2026-11-20\n";
+    expect(releasedVersions(text)).toEqual(["0.2.0", "0.1.0"]);
+    expect(releasedVersions("# C\n## [Unreleased]\n")).toEqual([]);
   });
 });
 

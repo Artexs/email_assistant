@@ -89,6 +89,41 @@ describe("parseChangelog", () => {
     expect(problem(`${head}- en: A.\n  pl: \n`)).toEqual({ message: "changelog_for_users_item", line: 3 });
   });
 
+  test("an en line followed by another en line is changelog_for_users_item at the first line, never a joined pair", () => {
+    const text = "## [0.1.0] - 2026-11-20\n### For users\n- en: A.\n- en: B.\n  pl: b.\n";
+    expect(problem(text)).toEqual({ message: "changelog_for_users_item", line: 3 });
+  });
+
+  test("a comment hides every line in it: unindented headings, For users lines, and a comment between the lines of an item", () => {
+    const text = [
+      "<!--",
+      "## [bad heading",
+      "## [0.1.0] - 2026-13-99",
+      "- en: not an item",
+      "-->",
+      "## [0.2.0] - 2026-12-01",
+      "### For users",
+      "- en: A.",
+      "<!-- note -->",
+      "  pl: a.",
+      "<!--",
+      "- en: B.",
+      "-->",
+      "",
+    ].join("\n");
+    expect(parseChangelog(text)).toEqual([
+      { version: "0.2.0", date: "2026-12-01", forUsers: [{ en: "A.", pl: "a." }] },
+    ]);
+  });
+
+  test("a For users group ends at the next release: a stray item line in the next release is not read", () => {
+    const text = "## [0.2.0] - 2026-12-01\n### For users\n- en: A.\n  pl: a.\n## [0.1.0] - 2026-11-20\n- en: stray\n";
+    expect(parseChangelog(text)).toEqual([
+      { version: "0.2.0", date: "2026-12-01", forUsers: [{ en: "A.", pl: "a." }] },
+      { version: "0.1.0", date: "2026-11-20", forUsers: [] },
+    ]);
+  });
+
   test("T5 a heading that is not plain SemVer is changelog_heading; a bad date is changelog_date", () => {
     expect(problem("## [0.2] - 2026-12-01\n")).toEqual({ message: "changelog_heading", line: 1 });
     expect(problem("# C\n## [0.2.0-rc.1] - 2026-12-01\n")).toEqual({ message: "changelog_heading", line: 2 });
