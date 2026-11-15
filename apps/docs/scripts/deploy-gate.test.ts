@@ -29,7 +29,19 @@ describe("deployDecision", () => {
   });
 
   test("T5 a tag that is not plain SemVer is no release tag", () => {
-    for (const name of ["vtest", "v1", "v1.2", "v0.2.0-rc.1", "v1.2.3+b", "v01.2.3", "v1.2.3.4", "V1.2.3", "v1.2.3 "]) {
+    for (const name of [
+      "vtest",
+      "v1",
+      "v1.2",
+      "v0.2.0-rc.1",
+      "v1.2.3+b",
+      "v01.2.3",
+      "v1.2.3.4",
+      "V1.2.3",
+      "v1.2.3 ",
+      "pv1.2.3",
+      "xv0.2.0",
+    ]) {
       expect(deployDecision(push(name), [name, "v0.1.0"])).toEqual({
         deploy: false,
         reason: `skip: ${name} is not a release tag`,
@@ -66,10 +78,16 @@ describe("deployDecision", () => {
   test("the pushed tag counts when the tag list misses it", () => {
     expect(deployDecision(push("v0.2.0"), []).deploy).toBe(true);
     expect(deployDecision(push("v0.2.0"), ["v0.3.0"]).deploy).toBe(false);
+    expect(deployDecision(push("v0.4.0"), ["v0.3.0"]).deploy).toBe(true);
   });
 
   test("the pushed tag equal to the newest of a list with blank lines and spaces deploys", () => {
     expect(deployDecision(push("v0.2.0"), ["", " v0.1.0 ", "v0.2.0\r", ""]).deploy).toBe(true);
+    // A list entry with a line end or spaces still counts as a release.
+    expect(deployDecision(push("v0.1.0"), ["", " v0.2.0\r"])).toEqual({
+      deploy: false,
+      reason: "skip: v0.1.0 is not the newest release (v0.2.0)",
+    });
   });
 
   test("a bad input is an error that fails the run", () => {
@@ -97,6 +115,7 @@ describe("newestRelease", () => {
 
   test("compares large numbers by value", () => {
     expect(newestRelease(["v9007199254740993.0.0", "v9007199254740992.0.0"])).toBe("v9007199254740993.0.0");
+    expect(newestRelease(["v9007199254740992.0.0", "v9007199254740993.0.0"])).toBe("v9007199254740993.0.0");
   });
 
   test("returns null when no tag is a release tag", () => {
