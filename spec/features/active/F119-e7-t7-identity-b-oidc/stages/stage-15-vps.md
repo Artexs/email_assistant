@@ -36,3 +36,9 @@ When step 11 or check 1, 2, 4, 6 or 8 fails: `git checkout <rollback commit>`, `
 ## Done when
 
 Checks 1–9 hold and the log line is written. Stage 16 waits for owner step U1.
+
+## Carry-over from stage 10 review (N3, N4)
+
+- Gap against plan D16: the comment in `tenancy/members.ts` says that a callback in flight finishes first, but the SSO callback takes no lock on the provider row (a plain SELECT in `getSsoProviderByProviderId`). An unlink that races a callback can leave a new SSO session behind. The impact is low (a new SSO sign-in is allowed after an unlink). Before the deploy decide: lock the provider row in the callback (`FOR SHARE`) with a test, or correct the comment and the plan text.
+- An SSO member added by `org:member` has no password account, but when mail tasks are on, `/request-password-reset` is open and Better Auth can create a credential account from a reset. In an `sso_required` organization the sign-in stays refused; in an organization without it the member can set a password by the reset mail. Decide whether to refuse resets for SSO-only members and say it in the docs.
+- Add the start-up wiring test of `main.ts` (`sso_flag_killed_with_sso_required`): spawn with `FEATURES_OFF=sso_sign_in`, seed one `sso_required` organization, expect one JSON line with `count` at least 1, and none without the kill.
