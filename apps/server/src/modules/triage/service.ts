@@ -17,6 +17,7 @@ import {
   type SenderRule,
   type SuspiciousReason,
   type ToolSwitches,
+  type UrgencyProfile,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -40,8 +41,9 @@ import {
 import { isFeatureOn } from "../tenancy";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
+import { loadClassifierExtras } from "./extras-reader";
 import type { LlmPause } from "./pause";
-import { prompts } from "./prompts";
+import { type ClassifierPromptChoice, productionClassifierChoice } from "./prompts";
 import { insertTriageResult } from "./repo";
 import { assessEmail, type SuspiciousContext } from "./suspicious-context";
 
@@ -66,6 +68,8 @@ export interface TriageMailbox {
   resumedAt: Date | null;
   // The known senders and the protected names of this mailbox, read once per batch (F109 stage 03).
   suspicious: SuspiciousContext;
+  // `mailbox_settings.urgency_profile` of the batch read (null: none). A change mid-batch follows triage rule 9 (F109 stage 10).
+  urgencyProfile: UrgencyProfile | null;
 }
 
 export interface TriageDecision {
@@ -100,6 +104,8 @@ export interface TriageDeps {
   // The most `llm.call` rows of one mailbox per quota day.
   dailyCap: number;
   now(): Date;
+  // Absent: the production prompt (`productionClassifierChoice`). Tests inject another version and part list; the registry stays.
+  prompt?: ClassifierPromptChoice;
 }
 
 export type TriageOutcome =
@@ -337,6 +343,7 @@ async function handleClassifyError(
   email: ClaimedEmail,
   vip: boolean,
   suspiciousReasons: SuspiciousReason[],
+  promptVersion: string,
   error: unknown
 ): Promise<TriageOutcome> {
   const now = deps.now();
@@ -367,7 +374,7 @@ async function handleClassifyError(
         fields: {},
         vip,
         model: null,
-        promptVersion: prompts.classifier.version,
+        promptVersion,
         usage: null,
         auditReasonCode: "llm_blocked",
         delegation: null,
@@ -500,6 +507,19 @@ export async function triageOne(
       ? { testMail: deps.testMail }
       : false,
   });
+  const choice = deps.prompt ?? productionClassifierChoice();
+  // Only a v3 prompt reads the user's data: v2 triage runs no new query. The part list is the one of the prompt.
+  const extras =
+    choice.version === "classifier-v2"
+      ? undefined
+      : await loadClassifierExtras(deps.db, ctx, {
+          mailbox: { id: mailbox.id, urgencyProfile: mailbox.urgencyProfile },
+          email,
+          parts: choice.parts,
+          timezone: mailbox.timezone,
+          testMail: deps.testMail,
+          suspicious: suspiciousReasons,
+        });
   const classifierEmail: ClassifierEmail = {
     from: email.from_address,
     to: email.to_addresses,
@@ -523,6 +543,8 @@ export async function triageOne(
       sender: { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
       allowed: rules.allowed,
       delegates: mailbox.delegates.map(({ id, name, tags }) => ({ id, name, tags })),
+      extras,
+      prompt: choice,
     });
   } catch (error) {
     // A failed audit write must not hide the LLM error from the rules below.
@@ -531,7 +553,7 @@ export async function triageOne(
         emailId: email.id,
         mailboxId: mailbox.id,
         role: "classifier",
-        promptVersion: prompts.classifier.version,
+        promptVersion: choice.version,
         model: deps.llm.modelOf("classifier"),
         // The error branch has no `LlmUsage`: the table says where the call went.
         endpoint: deps.llm.endpointOf("classifier"),
@@ -544,7 +566,7 @@ export async function triageOne(
     } catch (auditError) {
       log.warn(`triage ${email.id}: llm.call audit write failed: ${describeError(auditError)}`);
     }
-    return handleClassifyError(deps, ctx, mailbox, email, rules.vip, suspiciousReasons, error);
+    return handleClassifyError(deps, ctx, mailbox, email, rules.vip, suspiciousReasons, choice.version, error);
   }
   deps.pause.reset();
   const { analysis, usage, promptVersion } = result;

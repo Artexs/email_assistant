@@ -74,6 +74,7 @@ async function committedSetup() {
       junkFolder: null,
       resumedAt: null,
       suspicious: noSuspiciousContext,
+      urgencyProfile: null,
     };
     return { created, ctx, emailId, email, mailbox };
   } catch (error) {
