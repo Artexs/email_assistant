@@ -705,6 +705,19 @@ describe("outbox sender log events", () => {
     });
   });
 
+  test("a failure with a value-rule-safe description writes no description", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.onSend = () => Promise.reject(Object.assign(new Error("x"), { description: "MARKER-DESC" }));
+      await s.run(T);
+      expectEvent("outbox_failed", "error", { outbox_id: id, error: "Error" });
+      expect(allLines().some((line) => line.includes("MARKER"))).toBe(false);
+    });
+  });
+
   test("a failed claim writes outbox_claim_failed with the error name only", async () => {
     const broken = new Proxy(
       {},

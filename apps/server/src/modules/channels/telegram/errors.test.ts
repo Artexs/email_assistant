@@ -16,6 +16,18 @@ describe("telegramErrorFields", () => {
     expect(JSON.stringify(fields)).not.toContain("MARKER");
   });
 
+  test("a GrammyError whose error_code is a string gives no error_code", () => {
+    const error = new GrammyError(
+      "Call to 'sendMessage' failed!",
+      { ok: false, error_code: "123456789:AAH-canary" as unknown as number, description: "x" },
+      "sendMessage",
+      {}
+    );
+    const fields = telegramErrorFields(error);
+    expect(fields).toEqual({ error: "GrammyError", method: "sendMessage" });
+    expect(JSON.stringify(fields)).not.toContain("canary");
+  });
+
   test("an HttpError gives its name and method, never the inner error with the token URL", () => {
     const inner = new Error("fetch failed: https://api.telegram.org/bot123456:MARKER/getUpdates");
     const error = new HttpError("Network request for 'getUpdates' failed!", inner);
