@@ -215,5 +215,8 @@ describe("own quiet hours", () => {
     expect(quietHoursOf(null, null)).toBe(QUIET_HOURS);
     expect(quietHoursOf("23:00", "06:00")).toEqual(night);
     expect(quietHoursOf("10:00", "10:00")).toEqual({ start: "10:00", end: "10:00" });
+    // The table has a check that both columns are null or both set; a half pair would be a bug, never a half range.
+    expect(quietHoursOf("23:00", null)).toBe(QUIET_HOURS);
+    expect(quietHoursOf(null, "06:00")).toBe(QUIET_HOURS);
   });
 });
