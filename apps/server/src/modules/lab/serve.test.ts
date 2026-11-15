@@ -477,8 +477,14 @@ describe("runServe (spec tests 7 and 8)", () => {
   test("a lost lock (a foreign token in the file) ends the loop with exit 1 before the next tick; the lock is released", async () => {
     const labState = start("week-20261123-aaaa");
     let touches = 0;
+    let sleeps = 0;
     const code = await runServe(
       runDeps(labState, {
+        // A loop that does not stop fails the test fast instead of hanging it.
+        sleep: async () => {
+          sleeps += 1;
+          if (sleeps > 3) throw new Error("the loop did not stop");
+        },
         takeLock: () => ({
           // The first touch is ours; the second finds a foreign token.
           touch: () => {
