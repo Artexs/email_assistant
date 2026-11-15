@@ -85,6 +85,12 @@ export const featureFlags = {
     epic: "E3b",
     removeBy: "2027-03-01",
   },
+  attachment_line: {
+    default: false,
+    description: "Notices list the attachments of a mail (name, size).",
+    epic: "E3b",
+    removeBy: "2027-03-01",
+  },
   mail_oauth_microsoft: {
     default: false,
     description: "Connect a Microsoft 365 or Outlook mailbox with Microsoft sign-in.",

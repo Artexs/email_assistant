@@ -128,3 +128,11 @@ describe("Polish dictionary", () => {
     expect(line).not.toContain("na nieznany system");
   });
 });
+
+describe("the Telegram consent text", () => {
+  // Attachment names and sizes reach Telegram in notices (F109 stage 06): the consent text names them, and its version moved with it.
+  test("names the attachments in both languages", () => {
+    expect(en.tg_consent_text).toContain("names and sizes of their attachments");
+    expect(pl.tg_consent_text).toContain("nazwy i rozmiary ich załączników");
+  });
+});

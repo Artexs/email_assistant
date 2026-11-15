@@ -71,7 +71,13 @@ export {
 } from "./claims";
 export { listEmailsByMessageIds, listFolderEmailKeys, listThreadContext } from "./lookup";
 export { PENDING_BODY_DAYS, clearMailBodies, clearMailHeaders, deleteOldOAuthStates } from "./retention";
-export { clearCapturedHeaders, getEmailHeaders, insertEmailHeaders, type EmailHeadersRow } from "./headers";
+export {
+  clearCapturedHeaders,
+  getEmailHeaders,
+  insertEmailHeaders,
+  listAttachmentInputs,
+  type EmailHeadersRow,
+} from "./headers";
 export {
   getEmailFlags,
   listFlagTargets,

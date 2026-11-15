@@ -82,6 +82,7 @@ export {
   SmtpSendError,
   type MailSender,
 } from "./port";
+export { attachmentFactsToShow } from "./attachment-facts";
 export {
   changeMailboxStatus,
   claimEmails,
