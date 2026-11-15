@@ -1,4 +1,10 @@
-import { mailboxStatuses, type FolderKey, type MailboxStatus as CoreMailboxStatus, type SmtpSecurity } from "@ea/core";
+import {
+  authErrorReasons,
+  mailboxStatuses,
+  type FolderKey,
+  type MailboxStatus as CoreMailboxStatus,
+  type SmtpSecurity,
+} from "@ea/core";
 import { sql, type Selectable, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -30,14 +36,8 @@ export type MailboxRow = Omit<
   capabilities: MailCapabilities | Record<string, never>;
   folder_map: Record<string, string>;
 };
-const AUTH_REASONS: readonly AuthErrorReason[] = [
-  "oauth_expired",
-  "oauth_revoked",
-  "admin_consent_required",
-  "protocol_disabled",
-];
 function toAuthReason(value: string | null): AuthErrorReason | null {
-  return AUTH_REASONS.find((reason) => reason === value) ?? null;
+  return authErrorReasons.find((reason) => reason === value) ?? null;
 }
 function toMailboxRow(row: Selectable<DB["mailboxes"]>): MailboxRow {
   return {
@@ -152,18 +152,23 @@ export async function markSynced(db: DbOrTrx, ctx: TenantContext, mailboxId: str
 export type MailboxStatus = CoreMailboxStatus;
 export const mailboxStatusSchema = z.enum(mailboxStatuses);
 // The update is unconditional (an `auth_error` from the sync job wins over a pause). `status_changed_at` moves only when the status really changes.
+// `auth_reason` is written in the same statement (the table CHECK allows a reason only in `auth_error` on an `oauth` mailbox): `reason`
+// counts only for `auth_error`; every other status clears it. A password mailbox keeps NULL, so a reason for it never reaches the CHECK.
 export async function setMailboxStatus(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
   status: MailboxStatus,
-  at?: Date
+  at?: Date,
+  reason?: AuthErrorReason | null
 ): Promise<void> {
+  const authReason = status === "auth_error" ? (reason ?? null) : null;
   await db
     .updateTable("mailboxes")
     .set({
       status,
       status_changed_at: sql<Date>`CASE WHEN status IS DISTINCT FROM ${status} THEN ${at ?? sql`now()`} ELSE status_changed_at END`,
+      auth_reason: sql<string | null>`CASE WHEN oauth_provider IS NOT NULL THEN ${authReason}::text ELSE NULL END`,
     })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
@@ -199,7 +204,8 @@ export async function changeMailboxStatus(
 ): Promise<boolean> {
   let query = db
     .updateTable("mailboxes")
-    .set({ status: change.to, status_changed_at: change.at })
+    // `auth_reason` goes with the status (the table CHECK): none of the targets is `auth_error` with a reason.
+    .set({ status: change.to, status_changed_at: change.at, auth_reason: null })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
     .where("status", "=", change.from);
@@ -216,8 +222,29 @@ export interface MailboxSummary {
   last_synced_at: Date | null;
   status_changed_at: Date;
   created_at: Date;
+  /** Null for a password mailbox. */
+  oauth_provider: "microsoft" | "google" | null;
+  /** Why the OAuth login was refused; null for a password mailbox and outside `auth_error`. */
+  auth_reason: AuthErrorReason | null;
 }
-const summaryColumns = ["id", "address", "status", "last_synced_at", "status_changed_at", "created_at"] as const;
+const summaryColumns = [
+  "id",
+  "address",
+  "status",
+  "last_synced_at",
+  "status_changed_at",
+  "created_at",
+  "oauth_provider",
+  "auth_reason",
+] as const;
+function toSummary(row: Pick<Selectable<DB["mailboxes"]>, (typeof summaryColumns)[number]>): MailboxSummary {
+  return {
+    ...row,
+    status: mailboxStatusSchema.parse(row.status),
+    oauth_provider: row.oauth_provider === "microsoft" || row.oauth_provider === "google" ? row.oauth_provider : null,
+    auth_reason: toAuthReason(row.auth_reason),
+  };
+}
 export async function getMailboxSummary(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -229,7 +256,7 @@ export async function getMailboxSummary(
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
     .executeTakeFirst();
-  return row && { ...row, status: mailboxStatusSchema.parse(row.status) };
+  return row && toSummary(row);
 }
 export async function listMailboxes(db: DbOrTrx, ctx: TenantContext): Promise<MailboxSummary[]> {
   const rows = await db
@@ -239,7 +266,7 @@ export async function listMailboxes(db: DbOrTrx, ctx: TenantContext): Promise<Ma
     .orderBy("created_at")
     .orderBy("id")
     .execute();
-  return rows.map((row) => ({ ...row, status: mailboxStatusSchema.parse(row.status) }));
+  return rows.map(toSummary);
 }
 // The draft removal needs UIDPLUS (D13). An unknown mailbox counts as no UIDPLUS.
 export async function mailboxHasUidplus(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {

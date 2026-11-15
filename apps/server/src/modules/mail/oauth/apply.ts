@@ -277,7 +277,8 @@ async function reconnect(
   // A mailbox removed since the callback check, a password mailbox or one of another provider has nothing to reconnect.
   if (mailbox === undefined || mailbox.oauth_provider !== grant.provider) return refuse(grant, "oauth_failed");
 
-  // The login tests run at the hosts the mailbox uses.
+  // The login tests run at the hosts stored on the mailbox, the hosts the jobs connect to with the new token. A check against the registry
+  // hosts would strand a mailbox after a registry change. No path changes the stored hosts; the insert took them from the registry.
   const tested = await testLogin(deps, grant, client, {
     host: mailbox.imap_host,
     port: mailbox.imap_port,

@@ -13,6 +13,8 @@ import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
   renderHostBlockedNotice,
+  renderNotTriagedNotice,
+  renderSentMissingNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
@@ -142,5 +144,13 @@ export const noticeRenderers = {
   approval_edit: defineRenderer({
     schema: noticeViewSchemas.approval_edit,
     telegram: { full: (view, opts) => approvalEdit(view, textsFor(opts.locale)) },
+  }),
+  not_triaged: defineRenderer({
+    schema: noticeViewSchemas.not_triaged,
+    telegram: { full: (view, opts) => renderNotTriagedNotice(view, textsFor(opts.locale)) },
+  }),
+  sent_missing: defineRenderer({
+    schema: noticeViewSchemas.sent_missing,
+    telegram: { full: (view, opts) => renderSentMissingNotice(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;

@@ -45,7 +45,7 @@ export const mailDocs = {
     params,
     body: mailboxPasswordBodySchema,
     ok: { status: 200, schema: mailboxViewSchema },
-    errors: [ownerOnly, notFound, ...mailErrors],
+    errors: [ownerOnly, notFound, ...mailErrors, { status: 409, codes: ["oauth_mailbox"] }],
   }),
   postMailboxPause: apiDoc({
     operationId: "postMailboxPause",

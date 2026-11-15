@@ -29,7 +29,17 @@ async function detectAuthError(
           kind: "auth_error",
           dedupKey: key,
           mailboxId: mailbox.id,
-          view: { address: mailbox.address, mailboxId: mailbox.id, since: mailbox.status_changed_at, now, timeZone },
+          view: {
+            address: mailbox.address,
+            mailboxId: mailbox.id,
+            oauth:
+              mailbox.oauth_provider === null
+                ? undefined
+                : { provider: mailbox.oauth_provider, reason: mailbox.auth_reason },
+            since: mailbox.status_changed_at,
+            now,
+            timeZone,
+          },
         },
         now
       );

@@ -91,6 +91,12 @@ export const featureFlags = {
     epic: "E3b",
     removeBy: "2027-03-01",
   },
+  degraded_notice: {
+    default: false,
+    description: "During an AI pause, mail from VIP and whitelisted senders gets a 'not triaged yet' notice.",
+    epic: "E3b",
+    removeBy: "2027-03-01",
+  },
   mail_oauth_microsoft: {
     default: false,
     description: "Connect a Microsoft 365 or Outlook mailbox with Microsoft sign-in.",

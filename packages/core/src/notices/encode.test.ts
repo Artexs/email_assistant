@@ -62,6 +62,22 @@ describe("encodeNoticeView", () => {
     expect(() => encodeNoticeView("auth_error", { ...view, mailboxId } as never)).not.toThrow();
   });
 
+  test("an auth_error view with oauth encodes; an old view without it still parses; a bad reason throws", () => {
+    const view = { address: "box@example.test", mailboxId, since: now, now, timeZone };
+    const oauth = { provider: "microsoft", reason: "oauth_expired" };
+    expect(encodeNoticeView("auth_error", { ...view, oauth } as never).oauth).toEqual(oauth);
+    expect(
+      encodeNoticeView("auth_error", { ...view, oauth: { provider: "google", reason: null } } as never)
+    ).toBeDefined();
+    expect(encodeNoticeView("auth_error", view as never).oauth).toBeUndefined();
+    expect(() =>
+      encodeNoticeView("auth_error", { ...view, oauth: { provider: "google", reason: "x" } } as never)
+    ).toThrow(NoticeViewError);
+    expect(() =>
+      encodeNoticeView("auth_error", { ...view, oauth: { provider: "yahoo", reason: null } } as never)
+    ).toThrow(NoticeViewError);
+  });
+
   describe("an approval view", () => {
     const approval = (view: Record<string, unknown>) => ({
       actionId: emailId,

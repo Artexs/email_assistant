@@ -9,6 +9,7 @@ import {
   MailboxExistsError,
   MailboxLimitError,
   MailboxNotFoundError,
+  MailboxOAuthError,
 } from "./port";
 import { mailErrorBody } from "./routes";
 
@@ -16,6 +17,7 @@ describe("mailErrorBody", () => {
   test("maps each error class in order", () => {
     expect(mailErrorBody(new HostNotAllowedError())).toEqual({ status: 400, error: "host_not_allowed" });
     expect(mailErrorBody(new MailboxNotFoundError())).toEqual({ status: 404, error: "not_found" });
+    expect(mailErrorBody(new MailboxOAuthError())).toEqual({ status: 409, error: "oauth_mailbox" });
     expect(mailErrorBody(new MailboxExistsError())).toEqual({ status: 409, error: "mailbox_exists" });
     expect(mailErrorBody(new MailboxLimitError(1))).toEqual({ status: 409, error: "mailbox_limit" });
     expect(mailErrorBody(new MailAuthError("x"))).toEqual({ status: 422, error: "mail_login_failed" });

@@ -21,6 +21,17 @@ describe("the texts registry", () => {
     ["A", "B", 62],
   ];
 
+  // A text with an argument that is not a string or a flag needs its own samples; the key is the end of the path.
+  const ownSamples: Record<string, unknown[][]> = {
+    "authError.fixOAuth": [
+      ["Microsoft", null],
+      ["Google", "oauth_expired"],
+      ["Google", "oauth_revoked"],
+      ["Google", "admin_consent_required"],
+      ["Google", "protocol_disabled"],
+    ],
+  };
+
   // Walks a table: a string is non-empty, an array holds such values, a function returns a non-empty string.
   function walk(path: string, value: unknown, seen: string[]): void {
     seen.push(path);
@@ -30,7 +41,8 @@ describe("the texts registry", () => {
       expect(value.length, path).toBeGreaterThan(0);
       value.forEach((item, index) => walk(`${path}[${index}]`, item, seen));
     } else if (typeof value === "function") {
-      const results = samples.flatMap((args) => {
+      const own = Object.entries(ownSamples).find(([key]) => path.endsWith(key))?.[1];
+      const results = (own ?? samples).flatMap((args) => {
         if (args.length !== value.length) return [];
         const result: unknown = value(...args);
         return [result];

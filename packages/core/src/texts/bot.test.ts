@@ -149,3 +149,35 @@ describe("bot texts", () => {
     expect(edit.rejectedSet("11:07", 2, 1)).toContain("(pominięto 1)");
   });
 });
+
+describe("OAuth mailbox bot texts", () => {
+  test("the status and login error texts of an OAuth mailbox point to the panel, never to mailbox:password", () => {
+    const en = textTables.en.bot;
+    const pl = textTables.pl.bot;
+    expect(en.status.stateAuthErrorOAuth("10:40")).toBe("sign-in error since 10:40 (Reconnect in the panel)");
+    expect(pl.status.stateAuthErrorOAuth("10:40")).toBe("błąd logowania od 10:40 (połącz ponownie w panelu)");
+    expect(en.switch.loginErrorOAuth("a@x.test")).toBe(
+      "❌ a@x.test has a sign-in error: tap Reconnect in the panel first."
+    );
+    expect(pl.switch.loginErrorOAuth("a@x.test")).toBe(
+      "❌ a@x.test ma błąd logowania: najpierw stuknij „Połącz ponownie” w panelu."
+    );
+    for (const text of [
+      en.status.stateAuthErrorOAuth("x"),
+      pl.status.stateAuthErrorOAuth("x"),
+      en.switch.loginErrorOAuth("x"),
+      pl.switch.loginErrorOAuth("x"),
+    ])
+      expect(text).not.toContain("mailbox:password");
+  });
+
+  test("the password texts stay as they are", () => {
+    expect(textTables.en.bot.status.stateAuthError("10:40")).toBe("login error since 10:40 (run mailbox:password)");
+    expect(textTables.en.bot.switch.loginError("a@x.test")).toBe(
+      "❌ a@x.test has a login error: run mailbox:password first."
+    );
+    expect(textTables.pl.bot.switch.loginError("a@x.test")).toBe(
+      "❌ a@x.test: błąd logowania. Najpierw uruchom mailbox:password."
+    );
+  });
+});

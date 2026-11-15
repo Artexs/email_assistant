@@ -314,6 +314,39 @@ describe("scoreLabRun", () => {
         );
       await call(org, "gpt-6-luna");
       await call(other, "other-org-model");
+      // The window starts at 00:00 Warsaw of the start day (2026-11-22T23:00Z): a call before it is not in the report.
+      await recordLlmCall(
+        trx,
+        { orgId: org.orgId },
+        {
+          mailboxId: org.mailboxId,
+          role: "classifier",
+          promptVersion: "test",
+          model: "gpt-6-luna",
+          endpoint: "standard",
+          outcome: "ok",
+          tokensIn: 1000,
+          tokensOut: 200,
+          latencyMs: 10,
+          at: new Date("2026-11-22T22:00:00Z"),
+        }
+      );
+      await recordLlmCall(
+        trx,
+        { orgId: org.orgId },
+        {
+          mailboxId: org.mailboxId,
+          role: "classifier",
+          promptVersion: "test",
+          model: "gpt-6-luna",
+          endpoint: "standard",
+          outcome: "ok",
+          tokensIn: 1000,
+          tokensOut: 200,
+          latencyMs: 10,
+          at: new Date("2026-11-23T06:00:00Z"),
+        }
+      );
 
       const score = await scoreLabRun({ db: trx, state, corpus, now: () => new Date("2026-11-25T10:00:00.000Z") }, RUN);
       expect(score.header).toMatchObject({
@@ -336,6 +369,26 @@ describe("scoreLabRun", () => {
       expect(score.triage.missing).toEqual({ notSynced: 0, notTriaged: 0, skipped: { smtp_failed: 1 } });
       expect(score.sections.coverage).toEqual(coverageOf(run, state.events(RUN)));
       expect(score.sections.sentCopies).toEqual({ appended: 1, seen: 0 });
+      // Stage 13: the second half of the report is scored from the same state and DB.
+      expect(Object.keys(score.sections)).toEqual([
+        "coverage",
+        "sentCopies",
+        "metrics",
+        "delegates",
+        "executive",
+        "limits",
+        "phishing",
+        "mails",
+      ]);
+      // 2 calls in the window (06:00Z before the first slot, 10:00Z): $0.0002 each; the call at 22:00Z the day before is out.
+      const metricsSection = score.sections.metrics as { m7: { calls: number; usd: number } };
+      expect(metricsSection.m7.calls).toBe(2);
+      expect(metricsSection.m7.usd).toBeCloseTo(0.0004, 10);
+      expect(score.sections.limits).toEqual({
+        hits: { mailbox_hour: 0, mailbox_day: 0, recipient_day: 0 },
+        total: 0,
+        heldAtEnd: 0,
+      });
 
       const written = writeLabReport(score, join(dir, "out"));
       expect(written.markdown).toBe(join(dir, "out", `sim-2026-11-25-lab-01-${RUN}.md`));
@@ -343,6 +396,16 @@ describe("scoreLabRun", () => {
       const markdown = readFileSync(written.markdown, "utf8");
       const json = readFileSync(written.json, "utf8");
       expect(markdown).toContain("(partial)");
+      for (const heading of [
+        "## Metrics M2 to M5, M7",
+        "## Delegates",
+        "## Executive",
+        "## Send limits",
+        "## Phishing",
+      ]) {
+        expect(markdown).toContain(heading);
+      }
+      expect(markdown).toContain("no send limit reached");
       expect((JSON.parse(json) as LabScore).header.runId).toBe(RUN);
       for (const slot of [a, b, c]) {
         const text = corpus.texts.get(slot.id);

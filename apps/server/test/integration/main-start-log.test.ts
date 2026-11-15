@@ -100,3 +100,56 @@ test("bun apps/server/src/main.ts writes JSON event lines", async () => {
   const password = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).password : "";
   if (password) expect(output.includes(password)).toBe(false);
 }, 45_000);
+
+// F103 stage 14: main.ts installs both guards. Remove the wiring and this test fails.
+test("main.ts turns a library console.error and an uncaught throw into events and exits 1", async () => {
+  const probe = Bun.serve({ port: 0, fetch: () => new Response() });
+  const port = probe.port;
+  probe.stop(true);
+
+  const proc = Bun.spawn(
+    ["bun", "--preload", "./apps/server/test/integration/wiring-preload.ts", "apps/server/src/main.ts"],
+    {
+      cwd: repoRoot,
+      stdout: "pipe",
+      stderr: "pipe",
+      env: {
+        ...process.env,
+        LOG_FORMAT: "json",
+        LOG_LEVEL: "info",
+        PORT: String(port),
+        TELEGRAM_BOT_TOKEN: "",
+        OPERATOR_TELEGRAM_CHAT_ID: "",
+        WEB_BASE_URL: "",
+        HEARTBEAT_URL: "",
+        TRIAGE_LLM_SCOPE: "off",
+        ACTIONS_SCOPE: "off",
+        SEND_SCOPE: "off",
+      },
+    }
+  );
+  const timer = setTimeout(() => proc.kill("SIGKILL"), 20_000);
+  let output: string;
+  let exitCode: number;
+  try {
+    const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+    output = `${stdout}${stderr}`;
+    exitCode = await proc.exited;
+  } finally {
+    clearTimeout(timer);
+    if (proc.exitCode === null) proc.kill("SIGKILL");
+  }
+
+  expect(exitCode).toBe(1);
+  expect(output).not.toContain("MARKER-WIRING");
+  const events = output
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => (JSON.parse(line) as { event: string }).event);
+  const listening = events.indexOf("server_listening");
+  const consoleOutput = events.indexOf("console_output");
+  const uncaught = events.indexOf("process_uncaught_exception");
+  expect(listening).toBeGreaterThanOrEqual(0);
+  expect(consoleOutput).toBeGreaterThan(listening);
+  expect(uncaught).toBeGreaterThan(consoleOutput);
+}, 30_000);

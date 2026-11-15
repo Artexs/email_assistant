@@ -45,6 +45,13 @@ export {
   type MovedRow,
 } from "./copies";
 export {
+  listWaitingFromSenders,
+  listWaitingSenders,
+  WAITING_SENDER_LIMIT,
+  type WaitingMail,
+  type WaitingQuery,
+} from "./waiting";
+export {
   clearReturned,
   getEmailMailbox,
   getEmailMeta,
@@ -60,7 +67,13 @@ export {
   type MailKind,
   type NewEmail,
 } from "./emails";
-export { countSyncTargets, listAuthErrorMailboxesBefore, listMailboxTargets, listSyncTargets } from "./targets";
+export {
+  countSyncTargets,
+  listAuthErrorMailboxesBefore,
+  listLaggingMailboxes,
+  listMailboxTargets,
+  listSyncTargets,
+} from "./targets";
 export {
   claimEmails,
   countOrgEmails,

@@ -281,6 +281,12 @@ describe("telegram schema", () => {
       await expectCode(trx, "auth_no_mailbox", () => insert({ kind: "auth_error", mailbox_id: null }), "23514");
       await expectCode(trx, "held_no_mailbox", () => insert({ kind: "send_held", mailbox_id: null }), "23514");
       await expectCode(trx, "blocked_no_mailbox", () => insert({ kind: "host_blocked", mailbox_id: null }), "23514");
+      await expectCode(
+        trx,
+        "sent_missing_no_mailbox",
+        () => insert({ kind: "sent_missing", mailbox_id: null }),
+        "23514"
+      );
       await expectCode(trx, "error_code", () => insert({ error_code: "Bad Request" }), "23514");
       await expectCode(trx, "sent_no_time", () => insert({ status: "sent" }), "23514");
       await expectCode(trx, "sending_no_lock", () => insert({ status: "sending" }), "23514");
@@ -403,10 +409,7 @@ describe("outbox view columns (F088)", () => {
     );
     const values = (name: string) =>
       [...(result.rows.find((r) => r.conname === name)?.def.matchAll(/'([a-z_]+)'/g) ?? [])].map((m) => m[1]).sort();
-    // F109 stage 02 added `not_triaged` to the CHECK list; stage 15 adds its renderer and the core kind. Stage 15 removes
-    // this exception, so the two lists are equal again.
-    const KINDS_BEFORE_THEIR_RENDERER = ["not_triaged"];
-    expect(values("outbox_kind_check")).toEqual([...noticeKinds, ...KINDS_BEFORE_THEIR_RENDERER].sort());
+    expect(values("outbox_kind_check")).toEqual([...noticeKinds].sort());
     expect(values("outbox_channel_check")).toEqual([...noticeChannels].sort());
     expect(values("outbox_locale_check")).toEqual([...userLocales].sort());
     expect(values("outbox_detail_check")).toEqual([...noticeDetails].sort());

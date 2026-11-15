@@ -66,7 +66,7 @@ A line that differs: run `$C up -d --force-recreate --wait <service>` for that s
 The server writes one JSON object per line (ADR 0024). Read them as text:
 
 ```sh
-$C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", (if .event == "legacy_text" then .msg else .event end), (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
+$C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", .event, (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
 ```
 
 Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. A new service in any Compose file needs the same block. `bash deploy/check-logging.sh` checks it, and CI runs it.

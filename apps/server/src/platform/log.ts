@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { format } from "node:util";
 
 import { EVENT_CODE, isLogValueOfKind, logFieldKind, type LogFields } from "./log-fields";
 
@@ -25,17 +24,9 @@ export function withLogContext<T>(context: LogContext, fn: () => T): T {
 
 export interface Log {
   debug(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  debug(...args: unknown[]): void;
   info(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  info(...args: unknown[]): void;
   warn(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  warn(...args: unknown[]): void;
   error(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  error(...args: unknown[]): void;
   /** A child logger: every line adds `fields` after the context keys (D3, D8). */
   with(fields: LogFields): Log;
 }
@@ -128,34 +119,62 @@ function contextFields(): FieldSource {
   return ordered;
 }
 
+/** One line: JSON, or text with the event first and the fields as `key=value`. */
+function writeLine(
+  out: (...args: unknown[]) => void,
+  prefix: string,
+  event: string,
+  pairs: readonly Pair[],
+  asJson: boolean
+): void {
+  if (asJson) {
+    out(JSON.stringify(Object.fromEntries(pairs)));
+    return;
+  }
+  const rest = pairs
+    .slice(5)
+    .map(([key, value]) => ` ${key}=${String(value)}`)
+    .join("");
+  out(prefix, `${event}${rest}`);
+}
+
+/** While the console guard is on, the writer sends its lines here, not to console.*. */
+let guardSink: { log: (...args: unknown[]) => void; error: (...args: unknown[]) => void } | undefined;
+
+function sinkFor(level: LogLevel): (...args: unknown[]) => void {
+  const toError = level === "warn" || level === "error";
+  if (guardSink !== undefined) {
+    return toError ? guardSink.error : guardSink.log;
+  }
+  // eslint-disable-next-line no-console
+  return toError ? console.error : console.log;
+}
+
+/** One line of context fields and dropped_fields 1, for a call shape that is not the event form and for library console output. It writes no argument. */
+function writeDropOnly(level: LogLevel, module: string, event: string): void {
+  const line: Pair[] = [
+    ["time", new Date().toISOString()],
+    ["level", level],
+    ["module", module],
+    ["event", event],
+    ["msg", event],
+  ];
+  const dropped = addFields(line, [contextFields()]) + 1;
+  line.push(["dropped_fields", dropped]);
+  droppedTotal += dropped;
+  writeLine(sinkFor(level), `[${module}]`, event, line, resolveFormat() === "json");
+}
+
 function write(level: LogLevel, module: string, childFields: readonly FieldSource[], args: readonly unknown[]): void {
   if (levelOrder[level] < levelOrder[currentLevel]) {
     return;
   }
-  // eslint-disable-next-line no-console
-  const out = level === "warn" || level === "error" ? console.error : console.log;
+  const out = sinkFor(level);
   const prefix = `[${module}]`;
   const asJson = resolveFormat() === "json";
 
   if (!isEventForm(args)) {
-    if (!asJson) {
-      out(prefix, ...args);
-      return;
-    }
-    const line = {
-      time: new Date().toISOString(),
-      level,
-      module,
-      event: "legacy_text",
-      msg: format(...args),
-    };
-    const pairs: Pair[] = Object.entries(line);
-    const dropped = addFields(pairs, [contextFields()]);
-    if (dropped > 0) {
-      pairs.push(["dropped_fields", dropped]);
-      droppedTotal += dropped;
-    }
-    out(JSON.stringify(Object.fromEntries(pairs)));
+    writeDropOnly(level, module, "log_call_invalid");
     return;
   }
 
@@ -174,15 +193,7 @@ function write(level: LogLevel, module: string, childFields: readonly FieldSourc
     droppedTotal += dropped;
   }
 
-  if (asJson) {
-    out(JSON.stringify(Object.fromEntries(pairs)));
-    return;
-  }
-  const rest = pairs
-    .slice(5)
-    .map(([key, value]) => ` ${key}=${String(value)}`)
-    .join("");
-  out(prefix, `${event}${rest}`);
+  writeLine(out, prefix, event, pairs, asJson);
 }
 
 function makeLog(module: string, childFields: readonly FieldSource[]): Log {
@@ -198,3 +209,44 @@ function makeLog(module: string, childFields: readonly FieldSource[]): Log {
 export function createLog(module: string): Log {
   return makeLog(module, []);
 }
+
+/* eslint-disable no-console -- the guard is the one place that reads and replaces console. */
+const guardedMethods = ["log", "info", "debug", "warn", "error", "trace"] as const;
+
+/**
+ * JSON format only (main.ts). Saves the current console.log and console.error as the writer's sink, then replaces
+ * console.log, info, debug, warn, error and trace with a function that writes the event console_output (level warn)
+ * with the context fields and dropped_fields 1, and never its arguments. Returns a function that restores console.
+ */
+export function installConsoleGuard(): () => void {
+  if (guardSink !== undefined) {
+    throw new Error("console guard is on");
+  }
+  const saved = Object.fromEntries(guardedMethods.map((method) => [method, console[method]])) as Record<
+    (typeof guardedMethods)[number],
+    (...args: unknown[]) => void
+  >;
+  const sink = { log: saved.log, error: saved.error };
+  guardSink = sink;
+  // The guarded function reads no argument: a getter on an argument can throw or print.
+  const guarded = (): void => {
+    try {
+      writeDropOnly("warn", "console", "console_output");
+    } catch {
+      // A guard must never throw into the code that called console.
+    }
+  };
+  for (const method of guardedMethods) {
+    console[method] = guarded;
+  }
+  return () => {
+    if (guardSink !== sink) {
+      return;
+    }
+    for (const method of guardedMethods) {
+      console[method] = saved[method];
+    }
+    guardSink = undefined;
+  };
+}
+/* eslint-enable no-console */

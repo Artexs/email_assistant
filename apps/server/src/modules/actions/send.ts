@@ -10,9 +10,9 @@ import type { TenantContext } from "../../platform/db";
 import { describeError, errorFields, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
-import { locateByActionId, MailAuthError, SmtpSendError, type MailProvider } from "../mail";
+import { locateByActionId, MailAuthError, SmtpSendError, type AuthErrorReason, type MailProvider } from "../mail";
 
-import { inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
+import { authErrorOutcome, inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
 import { DELEGATION_DUE_AFTER_MS, HARD_ERROR_TRIES, RETRY_WAIT_MS, SEND_SOFT_CAP_MS } from "./constants";
 import { buildDraftMessage } from "./drafts";
 import {
@@ -38,14 +38,14 @@ export const SENT_COPY_PENDING_MAX_AGE_MS = 10 * 60_000;
 type ProviderResult = Record<string, string | number | boolean | null>;
 
 export type SendOutcome =
-  | { kind: "auth_error" }
+  | { kind: "auth_error"; reason?: AuthErrorReason }
   | { kind: "retry"; soft: boolean; count: boolean }
   | { kind: "failed"; reason: "smtp_rejected" | "smtp_error" | "outcome_unknown"; capped?: true };
 
 // D11, F044. Pure. Maps an error of `sender.send` to what the row does. No branch sends again.
 // `sinceTapMs` is the time since the tap (`approved_at`): a soft error at or after the cap ends the send.
 export function sendOutcomeOf(error: unknown, attempts: number, sinceTapMs = 0): SendOutcome {
-  if (error instanceof MailAuthError) return { kind: "auth_error" };
+  if (error instanceof MailAuthError) return authErrorOutcome(error);
   // Not a typed SMTP error: the system cannot tell where the call stopped, so the mail may have gone out.
   if (!(error instanceof SmtpSendError) || error.stage === "unknown") {
     return { kind: "failed", reason: "outcome_unknown" };
@@ -320,7 +320,7 @@ async function sendFailed(
       countAttempt: false,
       now,
     });
-    return { kind: "auth_error" };
+    return outcome;
   }
   if (outcome.kind === "retry") {
     log.warn("send_retry", {
@@ -475,7 +475,7 @@ async function recoveryFailed(
   action: ClaimedAction,
   error: unknown
 ): Promise<ApplyOutcome> {
-  if (error instanceof MailAuthError) return { kind: "auth_error" };
+  if (error instanceof MailAuthError) return authErrorOutcome(error);
   const now = deps.now();
   const label = describeError(error);
   const soft = error instanceof SoftError;

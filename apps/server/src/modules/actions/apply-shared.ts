@@ -3,7 +3,7 @@ import type { MoveTarget, OutgoingMessage, SendLimits } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import type { MailProvider, MailSender } from "../mail";
+import type { AuthErrorReason, MailAuthError, MailProvider, MailSender } from "../mail";
 
 import type { DelegationHooks } from "./hooks";
 import type { ClaimedAction } from "./repo";
@@ -25,7 +25,7 @@ export type ApplyOutcome =
   // An `applying` draft whose send ended before the APPEND (N12).
   | { kind: "expired"; reason: "send_closed" }
   | { kind: "retry"; soft: boolean }
-  | { kind: "auth_error" }
+  | { kind: "auth_error"; reason?: AuthErrorReason }
   | { kind: "lost" };
 
 // Gives the real path of a folder key. `ensureFolder` runs once per key per run; a path that differs from `folder_map` is stored.
@@ -92,3 +92,8 @@ export type ImapHandler = Extract<ApplyHandler, { needs: { provider: true } }>;
 
 // TypeScript does not narrow a union on a nested field (`needs.provider`); this guard does.
 export const needsImap = (handler: ApplyHandler): handler is ImapHandler => handler.needs.provider;
+
+/** The outcome of a refused login. A reason (OAuth mailboxes only) goes on to the status writer; a password login has none. */
+export function authErrorOutcome(error: MailAuthError): { kind: "auth_error"; reason?: AuthErrorReason } {
+  return error.reason === undefined ? { kind: "auth_error" } : { kind: "auth_error", reason: error.reason };
+}

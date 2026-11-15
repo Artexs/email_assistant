@@ -46,3 +46,7 @@ Tests 1–8 pass; the Proof of `plan.md` prints `PROOF_OK`.
 ## Out of scope
 
 The Healthchecks.io check itself and the `backup.env` value on the VPS (owner step U2, stage 09).
+
+## Carry-over from stage 03 review
+
+Read `review-3.md`. Add the disk and backup-age checks as `SloCheckEntry` objects `{kind: "slo_disk", run}` and `{kind: "slo_backup_age", run}` (not as bare functions); the fact names in the stage 03 texts (`free_pct`, `free_gb`, `age_h`, `failed`, `missing`) must match what your checks return.

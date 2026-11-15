@@ -729,12 +729,10 @@ export async function runEval(
     run: (c, attempts) => runCase(deps, c, input, attempts),
     onResult: async (result) => {
       await deps.onResult?.(result);
-      log.info(
-        "eval_case_done",
-        result.finalCategory === null
-          ? { case_id: result.id, error_code: result.errorCode }
-          : { case_id: result.id, category: result.finalCategory }
-      );
+      log.info("eval_case_done", {
+        case_id: result.id,
+        ...(result.finalCategory === null ? { error_code: result.errorCode } : { category: result.finalCategory }),
+      });
     },
   });
   // The reason text is a sentence: the line carries one of its two names.

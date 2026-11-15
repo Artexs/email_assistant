@@ -35,6 +35,7 @@ export {
   consumeOAuthState,
   createOAuthState,
   finishOAuthCallback,
+  createOAuthTokens,
   mailOAuthCallbackRoutes,
   mailOAuthProviders,
   mailOAuthRoutes,
@@ -57,6 +58,7 @@ export {
   type MailOAuthRouteDeps,
   type OAuthResultCode,
   type OAuthSecret,
+  type OAuthTokensDeps,
   type OAuthGrant,
   type OAuthRefusalCode,
   type OAuthStart,
@@ -79,6 +81,7 @@ export {
   MailboxExistsError,
   MailboxLimitError,
   MailboxNotFoundError,
+  MailboxOAuthError,
   MailFolderMissingError,
   MailNotFoundError,
   CAPTURE_LIMITS,
@@ -131,6 +134,7 @@ export {
   mailboxStatusSchema,
   insertEmailHeaders,
   listAuthErrorMailboxesBefore,
+  listLaggingMailboxes,
   listEmailsByMessageIds,
   listFlagTargets,
   listFolderUids,
@@ -140,6 +144,8 @@ export {
   listSyncFolders,
   listSyncTargets,
   listThreadContext,
+  listWaitingFromSenders,
+  listWaitingSenders,
   mailboxHasUidplus,
   mailKindFilter,
   deleteSentEmails,
@@ -184,6 +190,7 @@ export type {
   SentTextWrite,
   UserAnswer,
 } from "./repo";
+export type { WaitingMail, WaitingQuery } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   syncSentFolder,

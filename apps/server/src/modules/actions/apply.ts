@@ -17,7 +17,14 @@ import {
   type MailProvider,
 } from "../mail";
 
-import { inTransaction, needsImap, type ApplyDeps, type ApplyHandler, type ApplyOutcome } from "./apply-shared";
+import {
+  authErrorOutcome,
+  inTransaction,
+  needsImap,
+  type ApplyDeps,
+  type ApplyHandler,
+  type ApplyOutcome,
+} from "./apply-shared";
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { applyDraft, removeDraft } from "./drafts";
 import { ensureMoved, type EnsureResult } from "./move";
@@ -66,7 +73,7 @@ async function mapProviderError(
   error: unknown
 ): Promise<ApplyOutcome> {
   if (error instanceof MailAuthError) {
-    return { kind: "auth_error" };
+    return authErrorOutcome(error);
   }
   const now = deps.now();
   const label = describeError(error);

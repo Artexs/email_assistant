@@ -2,6 +2,7 @@ import type { SendLimitKind } from "../send-limits";
 import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
 import { suspiciousReasons, type SuspiciousReason } from "../triage/suspicious";
+import { mailOAuthProviderNames, type AuthErrorReason, type MailOAuthProviderKey } from "../web/mail-oauth";
 
 import { attachmentLine, type AttachmentLineInput } from "./attachment-line";
 import { encodeCallback, isLabelCategory } from "./callback";
@@ -70,6 +71,8 @@ export function renderAuthErrorNotice(
   input: {
     address: string;
     mailboxId: string;
+    // Set for an OAuth mailbox: the fix line names the provider and its reason, not mailbox:password.
+    oauth?: { provider: MailOAuthProviderKey; reason: AuthErrorReason | null } | undefined;
     since: Date;
     now: Date;
     timeZone: string;
@@ -77,11 +80,14 @@ export function renderAuthErrorNotice(
   texts: CoreTexts
 ): OutMessage {
   const since = formatClock(input.since, input.timeZone, input.now, texts.locale);
+  const { authError } = texts.notices;
   return {
     text: [
-      texts.notices.authError.first(cutText(input.address, 60), since),
-      texts.notices.authError.noRead,
-      texts.notices.authError.fix(input.mailboxId),
+      authError.first(cutText(input.address, 60), since),
+      authError.noRead,
+      input.oauth === undefined
+        ? authError.fix(input.mailboxId)
+        : authError.fixOAuth(mailOAuthProviderNames[input.oauth.provider], input.oauth.reason),
     ].join("\n"),
     buttons: [],
   };
@@ -100,6 +106,26 @@ export function renderHostBlockedNotice(
       texts.notices.hostBlocked.noRead,
       texts.notices.hostBlocked.recheck,
     ].join("\n"),
+    buttons: [],
+  };
+}
+
+// Mail of a VIP or whitelisted sender waits for triage during an LLM pause (F109 stage 15). The sender goes through the
+// chat-safe text helper; the view holds no subject and no other mail text.
+export function renderNotTriagedNotice(input: { sender: string }, texts: CoreTexts): OutMessage {
+  return { text: texts.notices.notTriaged(senderLabel(input.sender, texts)), buttons: [] };
+}
+
+// The mailbox shows no sent mail for 7 days (F104). The view holds no recipient and no subject.
+export function renderSentMissingNotice(
+  input: { address: string; since: Date; now: Date; timeZone: string },
+  texts: CoreTexts
+): OutMessage {
+  const since = formatClock(input.since, input.timeZone, input.now, texts.locale);
+  return {
+    text: [texts.notices.sentMissing.first(cutText(input.address, 60), since), texts.notices.sentMissing.ask].join(
+      "\n"
+    ),
     buttons: [],
   };
 }
