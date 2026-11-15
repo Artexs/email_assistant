@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-holdout",
+  "batch": "batch-003",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "s-0057",
+      "subject": "Faktury i płatności – paliwo, styczeń",
+      "body": "Dear Ewelina,\n\nthe January fuel invoice was approved and paid on Tuesday. The amount matched our order, so no credit note is needed. Thank you for the clear breakdown per station."
+    },
+    {
+      "id": "s-0058",
+      "subject": "Przetarg sieci Zielona Hurtownia – okna załadunku",
+      "body": "Szanowni Państwo,\n\nw związku z przetargiem sieci Zielona Hurtownia zmieniamy organizację pracy magazynu w Poznaniu. Od 8 lutego okna załadunku dla dostaw hurtowych są przesunięte na godziny poranne, między 6.00 a 10.00. Popołudnia przeznaczamy na dostawy mebli i palety niestandardowe.\n\nPan Tomasz Brzezinski dostaje tę wiadomość w kopii, ponieważ zmiana dotyczy także dostaw dla Meblodrewu. Dotychczasowe zamówienia stałe realizujemy bez zmian, a nowe okna obowiązują wszystkie nowe zamówienia od wskazanej daty.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0059",
+      "subject": "Rekrutacje i obsada magazynów – kierowcy",
+      "body": "Cześć Rafał,\n\npiszę do Ciebie w sprawie obsady transportu na drugi kwartał. Zamykamy rekrutację magazynierów, ale dział operacyjny zgłasza, że przy obecnym wzroście przewozów brakuje nam co najmniej czterech kierowców na trasach krajowych. Dwóch kandydatów przeszło już rozmowy, ale żaden nie ma uprawnień do jazdy z naczepami chłodniczymi, a tych potrzebujemy najbardziej.\n\nDaniel jest w kopii, bo jego firma zaproponowała, że może na krótki czas wypożyczyć kierowców z własnej puli. To rozwiązanie na przejście, ale nie chcę z niego korzystać dłużej niż dwa miesiące, bo koszty szybko rosną.\n\nDlatego mam jedno pytanie do Ciebie: czy w planie rekrutacji HR przewiduje cały proces dla kierowców z uprawnieniami do naczep chłodniczych, czy trzeba go zlecić zewnętrznej agencji? Od odpowiedzi zależy, jak ułożymy rozmowę z Danielem i ile miejsca zostawimy w budżecie na pośrednictwo.\n\nZnam Twoje podejście do szkoleń wewnętrznych, więc na pewno masz już jakiś pomysł. Nie szukam gotowego planu, wystarczy mi kierunek, bo szczegóły i tak będziemy ustalać razem z operacjami."
+    },
+    {
+      "id": "s-0060",
+      "subject": "Re: Umowa ramowa z Nordic Foods Trade",
+      "body": "Oliver,\n\na quick update on the Nordic framework agreement. I spoke with Karin yesterday evening and she confirmed that her team accepts the structure of the price annex. The indexation clause stays as we drafted it, with a review every quarter and a cap of five percent per year. She also agreed to move the termination notice from sixty to ninety days, which is what our legal team wanted from the start.\n\nTwo points are still open on her side. The first one is the section on liability for delayed loads, where her lawyers want a stricter penalty than we offer. The second is the list of delivery points. They added a new warehouse near Gothenburg that is not covered by our current lanes, so the export team will have to check what it takes to serve it.\n\nOverall the talks are in a good place, and the tone is friendly. Karin said that her management board wants to sign before the end of the quarter. I wanted you to have the full picture before your next call with her, since you speak with her more often than I do and she tends to raise the open points with you first.\n\nThanks for keeping the export side so well organised."
+    },
+    {
+      "id": "s-0061",
+      "subject": "Umowa ramowa z Nordic Foods Trade – dopłata paliwowa",
+      "body": "Dear Karin,\n\none question on the framework agreement: does Nordic Foods Trade want a fuel surcharge clause in the agreement, or do you prefer a fixed price per lane? I copy Ewelina Marszalek from Paliwa-Flota, who supplies our fuel cards and knows the current price trend. Please answer by 1 February."
+    },
+    {
+      "id": "s-0062",
+      "subject": "Reklamacje i uszkodzone dostawy – zestawienie liczb",
+      "body": "Szanowna Pani Genowefo, szanowny Panie Matthiasie,\n\nw ostatnich miesiącach rozmawialiśmy kilka razy o kosztach reklamacji związanych z transportem do sieci Zielona Hurtownia, a część z nich dotyczy naczep, które dostarcza firma Trailerwerk Sued. Przygotowałem wspólne zestawienie, żeby obie strony pracowały na tych samych liczbach.\n\nWedług moich danych w czwartym kwartale zgłoszono 37 reklamacji, z czego 22 dotyczyły uszkodzeń palet, 9 braków ilościowych, a 6 opóźnień. Wartość uznanych roszczeń wynosi 52 400 zł netto. Około 40 procent tej kwoty ma związek z zabezpieczeniem ładunku w naczepach, a reszta z przeładunkiem w magazynach pośrednich. Uwzględniłem też korekty, które wystawiliśmy w grudniu, więc suma jest już po rozliczeniach.\n\nProszę o potwierdzenie liczb z zestawienia reklamacji do 15 lutego. Jeśli Państwa dane różnią się od moich, wystarczy zaznaczyć pozycje, które się nie zgadzają, a my sprawdzimy je po naszej stronie. Chcemy zamknąć ten temat przed rozmowami o warunkach na kolejny rok.\n\nDziękuję za pomoc przy tym zestawieniu.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0063",
+      "subject": "Eksport i odprawy celne – ceny paliw",
+      "body": "Oliver, Ewelina,\n\na short note on export and customs. The fuel surcharge on the export lanes stays at the current level until the end of February. Ewelina confirmed it in her last price list, and Karin, who is copied, already knows about it. The customs side did not change either: the Rotterdam and Hamburg clearances run on the usual schedule, and the broker has everything he needs for the next three shipments.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0065",
+      "subject": "Rekrutacje i obsada magazynów – umowa z agencją",
+      "body": "Cześć Rafał,\n\nodeślij proszę podpisaną umowę z agencją rekrutacyjną do 15 lutego. Ewelina jest w kopii, bo przy okazji aktualizujemy karty paliwowe dla nowych osób."
+    },
+    {
+      "id": "s-0066",
+      "subject": "Re: Eksport i odprawy celne",
+      "body": "Oliver,\n\nthanks for the long update from Rotterdam and for the photos of the loading area. I went through everything last night and the picture is clear: the clearance itself is fine, the delay comes from the way the documents are sent to the broker. Your team uploads them in the evening, and the broker only opens his mailbox in the morning, so every load loses half a day.\n\nI talked with Halina about moving the document deadline earlier in the day. She says that the warehouse in Gdańsk can finish the paperwork by two in the afternoon if the drivers get the final loading list by noon. That would save the lost half day without any change on the customs side. The only cost is that the sales team has to confirm the export orders earlier, which they might not like.\n\nBefore I discuss this with the sales coordinator, I need one thing from you. Does the broker accept the documents by email in the afternoon, or does he need the originals first? If it is only the originals, then my idea does not help, and we have to look at a courier solution instead.\n\nYour call on this, you know the broker best.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0068",
+      "subject": "Re: Kalendarz zarządu i podróże służbowe",
+      "body": "Szanowny Panie Przewodniczący,\n\nw kalendarzu zarządu na pierwszy kwartał zostały otwarte dwie sprawy. Proszę o ich wypisanie do 15 lutego, tak jak je Pan widzi.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0069",
+      "subject": "Re: Umowy i cenniki sprzedaży",
+      "body": "Szanowny Panie Tomaszu,\n\nw nawiązaniu do Pana wiadomości: czy plan cennika na drugi kwartał jest przez Państwa zatwierdzony? Proszę o odpowiedź do 9 lutego. Zbigniew Orlowicz jest w kopii.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nTomasz napisał:\n> Panie Prezesie, wstępny plan cennika na drugi kwartał jest u nas na ostatnim etapie."
+    },
+    {
+      "id": "s-0071",
+      "subject": "Eksport i odprawy celne – podsumowanie dla rady",
+      "body": "Dear Daniel,\n\nthank you for the time you spent with our export team on the Baltic corridor last week. I want to summarise where we stand, and I copy the chairman of our supervisory board, Zbigniew Orlowicz, because the board asked about the exposure on the export lanes.\n\nVolumes on the Baltic corridor grew by twelve percent in the last quarter. Customs clearance time dropped from an average of 26 hours to 19 hours, mainly thanks to the earlier submission of documents. The share of loads that needed a second inspection stayed at about four percent, which is within the range your team considers normal. Two shipments were delayed because of missing certificates, and both cases are closed.\n\nOn the cost side, the clearance fees are slightly higher than planned, but the gain in transit time more than covers the difference. We keep the current broker structure for the first half of the year, and the question of adding a second broker is parked for now.\n\nI hope this gives you a clear picture before our next joint tender meeting. Thank you again for the good cooperation on this lane.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0072",
+      "subject": "Re: Karty paliwowe i ceny paliw",
+      "body": "Dear Ewelina, dear Halina,\n\nI read your note on the pricing of fuel cards with interest and I want to share a few thoughts, so that both of you work from the same assumptions. Ewelina knows the supply side and Halina knows how our trucks use the cards, so your two views together should give the full picture.\n\nThe new price list is competitive on the main highways, but the surcharge on regional stations is higher than before. Halina's data shows that about a third of our short-haul trips use regional stations, so the surcharge has a real effect on our costs. We looked at the effect over the last six months, and the difference is roughly 1.5 percent of the total fuel bill.\n\nThe management board agreed that we keep the current card structure until the end of the quarter. After that, we compare the offer of Paliwa-Flota with two other suppliers, using the same usage data. This is a normal procedure for contracts of this size, and it is not a sign that we plan to leave.\n\nI wanted both of you to have this information at the same time.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nEwelina Marszalek wrote:\n> Dear Mr Szalewski, the regional surcharge reflects higher logistics costs for stations outside the main network.\n> Kind regards, Ewelina"
+    },
+    {
+      "id": "s-0073",
+      "subject": "Wspólne przetargi – wariant współpracy",
+      "body": "Cześć Piotr,\n\nwracam do tematu wspólnych przetargów z Baltic Freight Partners. Spotkałem się z Danielem i mamy na stole dwa warianty współpracy. Pierwszy zakłada, że składamy ofertę jako konsorcjum, z jednym wspólnym cennikiem i podziałem przychodów po zakończeniu kontraktu. Drugi to układ lidera i podwykonawcy: ja albo on prowadzimy przetarg, a druga strona dostaje stałą stawkę za swoją część trasy.\n\nKonsorcjum jest ładniejsze marketingowo i pasuje do dużych sieci, ale wymaga wspólnej odpowiedzialności za jakość i szybkich decyzji po obu stronach. Lider z podwykonawcą jest prostszy w rozliczeniach, tylko ryzyko leży głównie po stronie lidera. Wiem, że dużo rozmawiasz z klientami o tym, co ich bardziej przekonuje, a Ty widzisz to z poziomu ofert, więc Twoja ocena jest dla mnie ważna.\n\nPowiedz proszę, który wariant współpracy w przetargach pasuje Twoim zdaniem najlepiej. Interesuje mnie szczególnie, co sprawdzi się w przetargu sieci Zielona Hurtownia.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0074",
+      "subject": "Eksport i odprawy celne – informacja o zmianach",
+      "body": "Dear Karin,\n\nI would like to inform you about two changes in the export and customs process that affect your deliveries. They start next week, and both are meant to reduce delays at the border.\n\nFirst, our export team now sends the transit documents to the broker before the truck leaves the Gdańsk terminal, not after. In the past, the paperwork reached the broker in the evening, and the load waited until the next morning. With the new schedule, the clearance can start as soon as the truck arrives at the border. In the first tests we saved on average eleven hours per shipment.\n\nSecond, we introduced a single contact for customs questions at Kordelan. It is Oliver Pemberton, our Head of Export, and his address is already in the delivery notes. Your logistics team does not have to look for the right person any more, and Oliver sees all the open shipments in one place.\n\nWe do not expect any change in prices, and the current delivery windows stay the same. The changes concern only the internal order of our work.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0075",
+      "subject": "Re: Eksport i odprawy celne",
+      "body": "Dear Karin,\n\nthank you for your message about the clearance times. I can confirm that the delay on the last shipment came from a missing certificate and that the load left the border on Wednesday morning. Our export team has corrected the checklist, so the same error does not happen again. The shipment is expected at the Gothenburg warehouse tomorrow."
+    },
+    {
+      "id": "s-0076",
+      "subject": "Re: Reklamacje i uszkodzone dostawy",
+      "body": "Cześć Halina, cześć Zbigniew,\n\nkrótka informacja o reklamacjach. W tym tygodniu zamknęliśmy sześć zgłoszeń z grudnia, a pięć z nich zakończyło się uznaniem po stronie przewoźnika. Najdroższa sprawa dotyczyła palet z dostawy do Łodzi, gdzie szkoda wyniosła ponad 9 tysięcy złotych. Przewoźnik pokrył ją w całości.\n\nZbigniew dostaje kopię, bo rada pytała o jakość dostaw w tym kwartale. Pozostałe zgłoszenia są w toku, a ich liczba maleje z tygodnia na tydzień.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0078",
+      "subject": "Re: Rekrutacje i obsada magazynów",
+      "body": "Cześć Halina,\n\nczy plan rekrutacji na pierwszy kwartał jest już zatwierdzony przez dział operacyjny?\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nHalina napisała:\n> Wiktor, plan rekrutacji magazynierów wysłałam Ci w piątek, czekam na Twoje uwagi."
+    },
+    {
+      "id": "s-0080",
+      "subject": "Posiedzenie rady – otwarte sprawy",
+      "body": "Cześć Dorota,\n\nrozpisz proszę otwarte punkty dotyczące posiedzenia rady: sala, catering, materiały i lista uczestników. Wystarczy krótka lista, którą mogę przejrzeć przy kawie."
+    },
+    {
+      "id": "s-0081",
+      "subject": "Wspólne przetargi – plan i oferta",
+      "body": "Dear Daniel,\n\nI received your outline of the joint tender plan and it looks reasonable. Please tell me whether the plan is approved by your management as it is, or if some part, for example the split of the rail and sea legs, still needs a change. I need your answer to finalise our side.\n\nI will send the updated joint tender offer by Friday, with the common price sheet and the schedule of both teams.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0084",
+      "subject": "Re: Reklamacje i uszkodzone dostawy",
+      "body": "Szanowna Pani Genowefo,\n\nproszę o odesłanie podpisanego protokołu reklamacji. Bez niego nie wystawimy korekty faktury.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nGenowefa napisała:\n> Panie Prezesie, protokół w załączeniu do podpisu.\n\nWiktor napisał:\n> Pani Genowefo, dziękuję, sprawdzamy dokument po naszej stronie."
+    },
+    {
+      "id": "s-0085",
+      "subject": "Wspólne przetargi z Baltic Freight Partners",
+      "body": "Dear Daniel,\n\nthe first joint tender went out this morning. Both price sheets were checked by our sales team and by your analysts, and the covering letter carries both company names. The submission confirmation arrived within minutes."
+    },
+    {
+      "id": "s-0086",
+      "subject": "Re: Rekrutacje i obsada magazynów",
+      "body": "Cześć Rafał,\n\npotwierdź proszę liczby z naszej poprzedniej wymiany: dwanaście umów podpisanych w styczniu i osiem otwartych ofert w Gdańsku. Odpowiedź przydałaby się do 15 lutego, bo wtedy domykamy plan zatrudnienia.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nWiktor napisał:\n> Rafał, dzięki za zestawienie ofert w Gdańsku.\n\nRafał napisał:\n> Wiktor, przesyłam aktualne liczby z rekrutacji."
+    },
+    {
+      "id": "s-0087",
+      "subject": "Umowa ramowa z Nordic Foods Trade – otwarte punkty",
+      "body": "Dear all,\n\nplease list the open points on the framework agreement as you see them from your side. A short list is enough.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0089",
+      "subject": "Posiedzenie rady – informacja dla rady",
+      "body": "Szanowny Panie Przewodniczący,\n\nchciałbym przekazać Panu kilka informacji przed posiedzeniem rady, żeby członkowie mieli czas na ich przeczytanie. Pan Matthias Brandt z Trailerwerk Sued jest w kopii, ponieważ część informacji dotyczy zakupu naczep i dostawca powinien znać ostateczny harmonogram.\n\nPlan zakupu naczep został przesunięty na drugi kwartał. Dostawca potwierdził cenę z oferty i utrzymał rabat dla zamówień powyżej dziesięciu sztuk. Pierwsze naczepy trafią do naszej floty w kwietniu, a ostatnie w czerwcu. Serwis gwarancyjny będzie prowadzony w naszych warsztatach, co obniża koszty przestojów.\n\nWyniki za ostatni kwartał są zgodne z prognozą: przychody wzrosły o dziewięć procent, a marża operacyjna pozostała na poziomie z poprzedniego roku. Największy wpływ miały ceny paliw oraz nowe kontrakty w eksporcie. Koszty reklamacji spadły o jedną czwartą po wprowadzeniu nowych procedur załadunku.\n\nPełny pakiet dokumentów jest przygotowany i czeka w systemie rady. Na posiedzeniu omówimy te same zagadnienia, tylko w szerszym kontekście budżetu na kolejny rok.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    }
+  ]
+}
