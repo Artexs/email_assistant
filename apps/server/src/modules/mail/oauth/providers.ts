@@ -24,6 +24,9 @@ export interface MailOAuthProviderSpec {
   issuerOk(iss: string): boolean;
 }
 
+/** The organization flag that gates a new connect with the provider (D8). */
+export const mailOAuthFlag = (provider: MailOAuthProvider) => `mail_oauth_${provider}` as const;
+
 export const mailOAuthProviders: Readonly<Record<MailOAuthProvider, MailOAuthProviderSpec>> = {
   microsoft: {
     authorizeUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",

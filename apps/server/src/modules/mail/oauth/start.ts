@@ -7,7 +7,7 @@ import { isFeatureOn } from "../../tenancy";
 import { getMailbox } from "../repo";
 
 import type { MailOAuthClients } from "./client";
-import type { MailOAuthProvider } from "./providers";
+import { mailOAuthFlag, type MailOAuthProvider } from "./providers";
 import { createOAuthState } from "./state";
 
 // The start of a provider sign-in and the options the panel shows (F117 stage 07, D8, D9). The routes call these two functions.
@@ -19,8 +19,6 @@ export interface MailOAuthStartDeps {
   clients: MailOAuthClients;
 }
 
-const flagOf = (provider: MailOAuthProvider) => `mail_oauth_${provider}` as const;
-
 /** `connect`: configured and the flag is on for the organization. `reconnect`: configured (the flag gates a new connect only). */
 export async function mailOAuthOptions(deps: MailOAuthStartDeps, ctx: TenantContext): Promise<MailOAuthOptions> {
   const providers: MailOAuthOptions["providers"] = [];
@@ -28,7 +26,7 @@ export async function mailOAuthOptions(deps: MailOAuthStartDeps, ctx: TenantCont
     const configured = deps.clients[provider] !== undefined;
     providers.push({
       provider,
-      connect: configured && (await isFeatureOn(deps.db, ctx, flagOf(provider))),
+      connect: configured && (await isFeatureOn(deps.db, ctx, mailOAuthFlag(provider))),
       reconnect: configured,
     });
   }
@@ -55,7 +53,7 @@ export async function startMailOAuth(
   if (client === undefined) return { kind: "not_configured" };
   let loginHint: string | undefined;
   if (mailboxId === null) {
-    if (!(await isFeatureOn(deps.db, ctx, flagOf(provider)))) return { kind: "feature_off" };
+    if (!(await isFeatureOn(deps.db, ctx, mailOAuthFlag(provider)))) return { kind: "feature_off" };
   } else {
     const mailbox = await getMailbox(deps.db, ctx, mailboxId);
     if (mailbox === undefined || mailbox.oauth_provider !== provider) return { kind: "not_found" };

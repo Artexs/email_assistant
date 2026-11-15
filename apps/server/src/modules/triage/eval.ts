@@ -38,6 +38,7 @@ import {
   type LlmClient,
   LlmConfigError,
   llmErrorCode,
+  LlmOutputError,
   type LlmProviderId,
   type LlmUsage,
 } from "../../platform/llm";
@@ -376,7 +377,7 @@ interface RunInput {
 type Classified =
   | { kind: "ok"; result: Awaited<ReturnType<typeof classifyEmail>> }
   | { kind: "blocked" }
-  | { kind: "error"; code: string };
+  | { kind: "error"; code: string; issues: readonly string[] };
 
 // Soft errors: wait and try again, at most `retries` more tries. A config error goes to the caller.
 async function classifyWithRetry(
@@ -410,7 +411,7 @@ async function classifyWithRetry(
         await deps.sleep(wait);
         continue;
       }
-      return { kind: "error", code: llmErrorCode(error) };
+      return { kind: "error", code: llmErrorCode(error), issues: error instanceof LlmOutputError ? error.issues : [] };
     }
   }
 }
@@ -482,7 +483,10 @@ async function runCase(
     attempts
   );
   if (classified.kind === "error") {
-    log.warn(`case ${c.id} failed: ${classified.code}`);
+    // Issue paths only (`fields.task:too_big`): no model text.
+    log.warn(
+      `case ${c.id} failed: ${classified.code}${classified.issues.length > 0 ? ` (${classified.issues.join(", ")})` : ""}`
+    );
     return {
       ...base,
       modelCategory: null,

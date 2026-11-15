@@ -20,6 +20,62 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `sso_refused` (fields `org_id`, `code`; the matching success line is `sso_sign_in`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso.ts` (`reportSsoEvent`, level `warn`). One audit row `sso.refused` (`provider_id`, `code`) goes with it. The line holds the organization id and the code only: never the IdP e-mail.
+- **Cause:** A person came back from the company IdP and our resolver refused the sign-in. No user, link or session was made. The code says why: `not_a_member` (no user with this address, or the user belongs to another organization first), `domain_mismatch` (the address is off the provider domain, a subdomain, or for Google the `hd` claim is wrong), `email_unverified` (the IdP said `email_verified: false`), `identity_mismatch` (the user is already linked to another IdP account of this provider), `sso_off` (the flag `sso_sign_in` is off for the organization). A `no_provider` refusal writes no line and no row.
+- **Fix:** No action for one line. For a real person: `not_a_member` → the operator adds them (`bun run org:member --org-id <id> --add …`) or they used the wrong IdP account; `identity_mismatch` → `bun run org:member --org-id <id> --user-id <id> --unlink-sso`, then they sign in again; `sso_off` → `bun run org:flag --org-id <id> --flag sso_sign_in --on`. Many lines in a short time from a stranger mean someone probes the sign-in: the start of `/api/auth/sign-in/sso` allows 10 calls per 60 s per client address.
+- **Status:** won't fix (expected behaviour)
+
+### `sso_audit_failed` (fields `kind`, `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso.ts` (`reportSsoEvent`, level `error`). `kind` is `login` or `refused`.
+- **Cause:** The audit row of an SSO sign-in or refusal (`sso.login`, `sso.refused`) could not be written, usually a database error. The sign-in or the refusal went on as before: a failed audit write never stops it.
+- **Fix:** Check the database (`/health`, the `error_code`). The lost row is not replayed (one lost `sso.login` row is accepted, ADR 0026 amendment). If it repeats, read the `app` role rights on `audit_log` and the foreign key to `organizations`.
+- **Status:** investigating
+
+### `operator_sso_session_refused` (field `user_id`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/http.ts` (`requireOperator` and the `/operator` page guard). Level `warn`. The line holds the event name and the user id only.
+- **Cause:** An operator opened the console or called `/api/operator/*` with a company (SSO) session. The IdP owns the second factor of such a session, so the console needs a password session with TOTP. The API answers `403 { error: "password_sign_in_required" }`; the page answers the 404 page.
+- **Fix:** The operator signs out and signs in with the password and the TOTP code, then opens the console again. The line stops.
+- **Status:** won't fix (a refusal is the expected answer)
+
+### `password_sign_in_refused_sso`, `reset_request_refused_sso` and `password_session_refused_sso` (field `user_id`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso-required.ts` (the first two) and the session hook in `apps/server/src/platform/auth.ts` (the third). Level `info`. The line holds the user id only.
+- **Cause:** The organization of the user has "SSO required", and the user is not its break-glass owner with TOTP on. The password sign-in got the answer of a wrong password (`401 INVALID_EMAIL_OR_PASSWORD`), the reset request got the generic answer and no mail, or a password session was refused at its creation (a sign-in or a code step that passed the first check just before the operator's switch). No lockout count, no lock mail and no audit row follow.
+- **Fix:** No action for one line. A real member signs in with the company account. If the IdP is down, the operator runs `bun run org:sso --org-id <id> --require off`. The break-glass owner is never refused.
+- **Status:** won't fix (a refusal is the expected answer)
+
+### `sign_in_options_failed` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/http.ts` (`GET /api/sign-in-options`, level `warn`).
+- **Cause:** The small read that tells the login page whether company sign-in exists failed, usually a database error. The route answered `{ "sso": false }`, so the login page shows the password form only.
+- **Fix:** Check the database (`/health`). The line stops when the read works again. Members with a company account see no company sign-in button until then.
+- **Status:** investigating
+
+### `sso_flag_killed_with_sso_required` (field `count`) and `sso_flag_check_failed` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/main.ts` at the start (level `warn`; `countSsoRequiredWhileKilled` in `modules/tenancy/sso-require.ts`).
+- **Cause:** `FEATURES_OFF` holds `sso_sign_in`, and `count` organizations require SSO. Company sign-in is closed for them, and the passwords of their members are refused, so only the break-glass owner of each organization can sign in. The second line means that the check itself failed (a database error); the start went on.
+- **Fix:** Remove `sso_sign_in` from `FEATURES_OFF` and restart, or run `bun run org:sso --org-id <id> --require off` for each organization. A failed check: read the `error_code` and check the database.
+- **Status:** won't fix (a warning of a deliberate kill switch)
+
+### `sso_discovery_failed` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso.ts` (`discoverProviderConfig`, level `warn`), in the CLI `bun run org:sso --set`.
+- **Cause:** The discovery of the issuer failed with an error that is not one of the known discovery codes. The CLI printed `error discovery_failed discovery_unexpected_error` and stored nothing.
+- **Fix:** Check the issuer URL and that the server reaches the IdP. Run the command again. A known failure prints its own code (`discovery_private_host`, `discovery_dns_failed`, `issuer_mismatch`).
+- **Status:** investigating
+
 ### `action_no_provider` and `send_no_sender` (fields `action_id`, `action_type` for the first; before F103: `action <id>: no provider for <type>` and `action <id>: no sender for send`)
 
 - **First seen:** 2026-11-15 (F103 stage 09)

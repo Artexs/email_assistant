@@ -1,5 +1,7 @@
 import type { PlanSpec, WeekSpec } from "./plan-spec";
 import type { Scenario, SimPersona } from "./scenario";
+import type { SentPlanSpec } from "./sent-plan-spec";
+import type { SentBlindCase, SentLabel, SentSlot, SentText } from "./sent-slot";
 
 function persona(key: string, group: SimPersona["group"], lang: SimPersona["lang"], host: string): SimPersona {
   return {
@@ -94,4 +96,70 @@ export const miniPlanSpec: PlanSpec = {
     threadShare: 0.2,
   },
   week: defaultWeekSpec,
+};
+
+// One sent mail (F116): an ask with a time-word due and a dated promise, plus the files that belong to it.
+export const miniSentSlot: SentSlot = {
+  id: "s-0001",
+  part: "sent-dev",
+  batch: "batch-001",
+  persona: "szef",
+  to: ["client-a"],
+  cc: ["kasia"],
+  lang: "en",
+  sentAt: "2026-11-18T09:00:00.000Z",
+  labels: {
+    expectsReply: true,
+    ask: "confirm the Oferty dla klientow figures",
+    due: { kind: "word", word: "friday" },
+    promise: "send the updated offer",
+    promiseDue: { kind: "date", date: "2026-11-25" },
+  },
+  hardCases: [],
+  thread: [{ from: "client-a", subject: "Oferty dla klientow", brief: "the first mail of the exchange" }],
+  quoted: true,
+  style: { length: "short", greeting: "formal", signature: true },
+  brief: "Mail to Persona client-a about Oferty dla klientow. It asks the recipient to confirm the figures by friday.",
+};
+
+export const miniSentText: SentText = {
+  id: "s-0001",
+  subject: "Re: Oferty dla klientow",
+  body: "Hello, please confirm the figures by Friday. I will send the updated offer on 2026-11-25.",
+};
+
+export const miniSentBlind: SentBlindCase = {
+  id: "s-0001",
+  from: "szef@mini.test",
+  to: ["client-a@client-a.test"],
+  cc: ["kasia@mini.test"],
+  subject: "Re: Oferty dla klientow",
+  sentAt: "2026-11-18T09:00:00.000Z",
+  body: miniSentText.body,
+  threadSubjects: ["Oferty dla klientow"],
+};
+
+export const miniSentLabel: SentLabel = {
+  id: "s-0001",
+  expectsReply: true,
+  promise: true,
+  due: "2026-11-20",
+  promiseDue: "2026-11-25",
+  blindHash: "a".repeat(64),
+};
+
+// A small sent-bank plan for tests: 13 hard-case slots and 7 others in dev, 26 and 34 in holdout.
+export const miniSentPlanSpec: SentPlanSpec = {
+  seed: 7,
+  batchSize: 25,
+  sizes: { dev: 20, holdout: 60 },
+  hardPerTag: { dev: 1, holdout: 2 },
+  langShare: { pl: 0.6, en: 0.4 },
+  expectsReplyShare: 0.5,
+  promiseShare: 0.25,
+  dueShare: 0.3,
+  delegateShare: 0.2,
+  weekendShare: 0.2,
+  threadShare: 0.35,
+  ccShare: 0.25,
 };
