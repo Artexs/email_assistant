@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
+import { createServer } from "node:net";
 import { resolve } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import { insertDefaultSettings } from "../../src/modules/config";
 import {
   connectMailbox,
   openImapProvider,
+  seedMailbox,
   syncMailbox,
   verifySmtpLogin,
   type ImapConnectOptions,
@@ -198,9 +200,68 @@ describe("mailbox:password", () => {
       });
       expect(unknown.code).toBe(1);
       expect(unknown.stdout).toBe("");
-      expectPrefixed(unknown.stderr, "mailbox-password");
+      // The HardError branch prints its own message and nothing else.
+      expect(unknown.stderr).toBe("[mailbox-password] mailbox not found\n");
     } finally {
       await removeOrg(orgId, userId);
+    }
+  }, 30_000);
+
+  test("the HardError branch: a missing credentials row prints its message to stderr", async () => {
+    const { orgId, userId } = await createOrg(db);
+    try {
+      const { mailboxId, password } = await connectGreenmail({ orgId });
+      await db.deleteFrom("mailbox_credentials").where("mailbox_id", "=", mailboxId).execute();
+      const result = await run("mailbox-password", ["--org-id", orgId, "--mailbox-id", mailboxId], {
+        stdin: `${password}\n`,
+      });
+      expect(result.code).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toBe("[mailbox-password] credentials row missing\n");
+    } finally {
+      await removeOrg(orgId, userId);
+    }
+  }, 30_000);
+
+  test("the MailAuthError branch: a refused login prints `IMAP login failed: the password was not saved` to stderr", async () => {
+    // A minimal IMAP server that refuses every login.
+    const server = createServer((socket) => {
+      socket.write("* OK ready\r\n");
+      let buffer = "";
+      socket.on("data", (chunk) => {
+        buffer += chunk.toString();
+        const lines = buffer.split("\r\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const [tag = "", command = ""] = line.split(" ");
+          const verb = command.toUpperCase();
+          if (verb === "CAPABILITY") socket.write(`* CAPABILITY IMAP4rev1\r\n${tag} OK done\r\n`);
+          else if (verb === "LOGOUT") socket.end(`* BYE\r\n${tag} OK done\r\n`);
+          else socket.write(`${tag} NO [AUTHENTICATIONFAILED] refused\r\n`);
+        }
+      });
+      socket.on("error", () => undefined);
+    });
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    const address = server.address();
+    const fakePort = typeof address === "object" && address !== null ? address.port : 0;
+    const { orgId, userId } = await createOrg(db);
+    try {
+      const { mailboxId, password } = await connectGreenmail({ orgId });
+      await db
+        .updateTable("mailboxes")
+        .set({ imap_host: "127.0.0.1", imap_port: fakePort })
+        .where("id", "=", mailboxId)
+        .execute();
+      const result = await run("mailbox-password", ["--org-id", orgId, "--mailbox-id", mailboxId], {
+        stdin: `${password}\n`,
+      });
+      expect(result.code).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toBe("[mailbox-password] IMAP login failed: the password was not saved\n");
+    } finally {
+      await removeOrg(orgId, userId);
+      await new Promise<void>((done) => server.close(() => done()));
     }
   }, 30_000);
 });
@@ -419,6 +480,53 @@ describe("mailbox:backfill", () => {
       await removeOrg(orgId, userId);
     }
   }, 30_000);
+});
+
+describe("mailbox:backfill cursor", () => {
+  test("a cursor that moves during the backfill: the retry text goes to stderr, stdout stays empty", async () => {
+    const { orgId, userId } = await createOrg(db);
+    try {
+      const { mailboxId, address, imap } = await connectGreenmail({ orgId });
+      await syncOnce(orgId, mailboxId, imap);
+      // One mail in the window that the regular sync has not stored: the backfill writes a chunk.
+      await seedMailbox({ db, secrets }, { orgId }, mailboxId, { count: 1, testAddress: address });
+      const folder = await db
+        .selectFrom("mailbox_folders")
+        .select("id")
+        .where("mailbox_id", "=", mailboxId)
+        .where("key", "=", "inbox")
+        .executeTakeFirstOrThrow();
+
+      const poller = testDb();
+      const started: { running?: Promise<Result> } = {};
+      await db.transaction().execute(async (trx) => {
+        // Hold the folder lock: the backfill has read its cursor and waits for this lock before it writes the chunk.
+        await sql`select id from mailbox_folders where id = ${folder.id} for update`.execute(trx);
+        started.running = run("mailbox-backfill", ["--org-id", orgId, "--mailbox-id", mailboxId]);
+        // Poll on another pool: pg_stat_activity is a snapshot per transaction, and the main pool has one connection.
+        const deadline = Date.now() + 20_000;
+        while (true) {
+          const waiting = await sql<{ n: string }>`
+            select count(*)::text as n from pg_stat_activity
+            where datname = current_database() and wait_event_type = 'Lock'`.execute(poller);
+          if (Number(waiting.rows[0]?.n ?? "0") > 0) break;
+          if (Date.now() > deadline) throw new Error("the backfill never waited for the folder lock");
+          await Bun.sleep(50);
+        }
+        await sql`update mailbox_folders set last_uid = coalesce(last_uid, 0) + 1 where id = ${folder.id}`.execute(trx);
+      });
+      await poller.destroy();
+      // The transaction has committed: the backfill gets the lock and sees the moved cursor.
+      const result = await (started.running ?? Promise.reject(new Error("the backfill did not start")));
+      expect(result.code).toBe(1);
+      expect(result.stdout).not.toContain("[mailbox-backfill]");
+      expect(result.stderr).toBe(
+        "[mailbox-backfill] the regular sync moved the cursor during the backfill; run the same command again (the dedup key stops duplicates)\n"
+      );
+    } finally {
+      await removeOrg(orgId, userId);
+    }
+  }, 60_000);
 });
 
 describe("mailbox:settings", () => {
