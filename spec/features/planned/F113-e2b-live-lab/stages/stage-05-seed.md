@@ -35,7 +35,7 @@ Stage 13 calls `seedLabOrg` with `LAB_TARGETS.demo`.
 - Telegram: make a link token with the `telegram:link` function, then send `/start <token>` as the user through the fake driver client (`createFakeTelegramClient`, chat id 5550001 for lab, 5550002 for demo). Wait up to 60 s for the server to link the chat. On timeout: exit 1 `telegram_link_timeout`; the org stays, and the next `seed` tries the link again.
 - Idempotent: when `orgs.json` names the key and the organization exists, check mailbox, delegates, rules and link, add what is missing, and print `seed: exists` plus the added counts. When `orgs.json` names an org id that is gone: exit 1 `org_gone` (the operator removes the entry by hand; no automatic re-create).
 - `orgs.json` is written after the mailbox exists, before the Telegram step, so a crash in the Telegram step does not make a second organization.
-- Output: org id, mailbox id, counts. No password.
+- Output: ids and counts.
 
 ## Tests (integration: job DB, shared GreenMail with a random mailbox address, fake Telegram in-process)
 
@@ -49,10 +49,6 @@ A test target uses a random address; `LAB_TARGETS` values are checked only in te
 6. `LAB_TARGETS.demo.mailbox` ends in `.test` and differs from the lab mailbox.
 7. Tenant: a second org made by another test is not changed by seed.
 8. After seed, each `LAB_FLAGS_ON` flag is on for the organization; `org_delete` is off. The list test of the Flags rule passes, and fails with a fake extra registry key.
-
-## Check
-
-`bun run test:int` for the new test file, then the Proof.
 
 ## Done when
 

@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Decisions D5, D6, D11, D13.
 
 ## Goal
 
-Pure core functions that turn the frozen week into a dated live run: which slots go out when, and the mail text with its dates moved by the same offset.
+Pure core functions: which slots of the frozen week go out when, and the mail text with its dates moved by the same offset.
 
 ## Files
 
@@ -28,7 +28,7 @@ shiftDatesInText(text: string, offsetDays: number, anchor: string): { text: stri
 liveRunId(mode: LiveMode, startDate: string, hex4: string): string;   // "week-20261123-a1b2"
 ```
 
-`Scenario` and `Slot` are the F097 types in `packages/core/src/sim/`. The caller gives `hex4`; core has no random source.
+`Scenario`, `Slot`: the F097 types. The caller gives `hex4`.
 
 ## Decisions
 
@@ -44,7 +44,6 @@ liveRunId(mode: LiveMode, startDate: string, hex4: string): string;   // "week-2
   - `<Month> d` with an optional `, yyyy` (English).
   - A month form without a year takes the nearest year, like `d.mm`.
 - A dated form with an invalid day or month (`12.50`, `10.30`) stays. Bare years, month and year (`styczeń 2027`, `January 2027`) and ids (`ZK-2027-0143`) stay.
-- Weekday words stay right because the offset is whole weeks.
 
 ## Tests (numbered, fixed values)
 
@@ -65,18 +64,13 @@ Unit, `packages/core/src/sim/live/*.test.ts`, with the real `lab-01` calendar (`
    - `29. Januar 2027` → `27. November 2026`
    - unchanged: `ZK-2027-0143`, `budżet na rok 2027`, `12.50 EUR`, `12.05`, `styczeń 2027`.
    - `shifted` counts the changed forms.
-9. Same input → same output (no clock read).
-10. `liveRunId("week", "2026-11-23", "a1b2")` = `week-20261123-a1b2`.
+9. `liveRunId("week", "2026-11-23", "a1b2")` = `week-20261123-a1b2`.
 
 Corpus test (server): for every week text with offset −364, the dates outside the changed spans do not change. The number of `dd.mm.yyyy` forms within ±90 days of `weekStart` (the test's own regex) equals the number the function shifted.
 
-## Check
-
-`bun test packages/core/src/sim/live` and the corpus test file, then the Proof.
-
 ## Done when
 
-All tests pass. `week/` texts are only read, never written. The Proof of `plan.md` prints `PROOF_OK`.
+Tests pass; `week/` is only read. The Proof prints `PROOF_OK`.
 
 ## Out of scope
 

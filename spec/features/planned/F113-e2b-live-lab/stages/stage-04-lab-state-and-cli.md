@@ -4,8 +4,6 @@ Part of [`../plan.md`](../plan.md). Decisions D8, D12, D13, D17.
 
 ## Step 1 — state store
 
-**Goal.** Run files that survive a crash and tell every part what it already did.
-
 **Files.** `apps/server/src/modules/lab/state.ts` (module `lab`, stage 02 made it).
 
 **Interfaces.**
@@ -32,14 +30,13 @@ createLabState(dir: string): {
 };
 ```
 
-`BotReplyPlan` comes from stage 07; declare it here as an opaque record and let stage 07 narrow it.
+`BotReplyPlan`: an opaque record here; stage 07 narrows it.
 
 **Decisions.**
-- Layout: `<dir>/orgs.json`, `<dir>/runs/<runId>/run.json`, `<dir>/runs/<runId>/events.jsonl`, `<dir>/locks/<org>.lock`.
-- `append` writes one JSON line and syncs it to disk before it returns. The store adds `at` (ISO from the injected clock).
+- Layout: `<dir>/orgs.json`, `<dir>/runs/<runId>/{run.json,events.jsonl}`, `<dir>/locks/<org>.lock`.
+- `append` writes one JSON line and syncs it before it returns; the store adds `at` (injected clock).
 - `events` skips a broken last line (a crash in mid-write) and counts it in `status`.
 - A lock holds the run id. `lock` gives `run_active` while the run of that lock has no `stopped` event. A lock whose run has `stopped` is replaced.
-- Events hold ids, codes and times only (no subject, no text).
 
 ## Step 2 — CLI frame
 
@@ -64,12 +61,12 @@ bun run lab demo-import --file <file> --email <address> [--replace]
 - `start`: reads the scenario and week slots (F097 readers in `scripts/sim-files.ts`), calls `planLiveRun` with `hex4` from `crypto.randomUUID`, writes the run, takes the lock. Default `--date`: tomorrow in Warsaw; for `week` the next Monday. Default `--cap-usd`: 1 (day) or 5 (week); a higher value is refused (`cap_too_high`). It refuses when the org is not in `orgs.json` (`not_seeded`).
 - Month cap: `start` refuses when the eval spend ledger (`scripts/eval-ledger.ts`) shows ≥ $20 this month (`month_cap`). The serve loop writes one ledger line when a run stops.
 - `runSpend(db, ctx, run)`: the run org's `llm.call` audit rows since the plan start, through the E3a reader and core `unitCost` (one price table).
-- `status` prints per run: mode, start, planned, injected, late, bot replies, taps, skips, spend, stopped reason. Counts and ids only.
-- `stop` appends `stopped: operator` and releases the lock.
+- `status` prints counts per run (planned, injected, late, replies, taps, skips, spend, stop reason).
+- `stop`: `stopped: operator`, lock released.
 
 ## Step 3 — capability page
 
-Create `docs/capabilities/live-lab.md` (template in `docs/capabilities/README.md`) and its index row. Rules so far: the env guard and the run state. Later stages add their rules.
+Create `docs/capabilities/live-lab.md` (template in `docs/capabilities/README.md`) and its index row, with the env guard and run state rules.
 
 ## Tests
 
@@ -80,11 +77,11 @@ Create `docs/capabilities/live-lab.md` (template in `docs/capabilities/README.md
 5. `start --cap-usd 6 --mode week` → `cap_too_high`.
 6. `start` with a ledger at $20.10 this month → `month_cap`.
 7. `runSpend` on seeded `llm.call` rows (2 calls of `gpt-6-luna`, 1,000 in, 200 out tokens each) equals 2 × `costPerMail` of that call; a row of another org is not counted.
-8. Args: each usage line parses; an unknown flag fails.
+8. Each usage line parses; an unknown flag fails.
 
 ## Done when
 
-Tests pass; the page and index row exist (`capability-map.test.ts` passes); the Proof prints `PROOF_OK`.
+Tests pass; `capability-map.test.ts` passes; the Proof prints `PROOF_OK`.
 
 ## Out of scope
 

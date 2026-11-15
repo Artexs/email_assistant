@@ -33,12 +33,12 @@ Owner words: "create more synthetic emails that will mock behaviors"; "Looks lik
 - **D10 Executive.** It acts by the slot truth: approve or reject (with reason) drafts, Undo wrong automatic moves, approve reminder sets. No relabel taps, no draft edits. Rules: stage 08.
 - **D11 Hours.** Human delays and working hours (stages 07, 08) come from `mulberry32` seeded by the run id, so a run repeats.
 - **D12 Budget.** Cap $1 a day run, $5 a week run. Spend = the run org's `llm.call` audit rows, priced by `costPerMail`; the month cap uses the eval spend ledger. At the cap the injector stops (`stopped: budget`).
-- **D13 Runs.** Run id `<day|week>-<YYYYMMDD>-<4 hex>`. One active run per organization (lock). State under `LAB_STATE_DIR` (a volume). A week run has a 4-day tail with bots and executive but no new mail; a day run has a 1-day tail.
+- **D13 Runs.** Run id `<day|week>-<YYYYMMDD>-<4 hex>`; one active run per organization; state under `LAB_STATE_DIR` (a volume). Tail with bots and executive, no new mail: 4 days (week), 1 day (day).
 - **D14 Scorer.** Truth = the slot. M1 rows use slot truth; M2–M5 and M7 use the E3a readers with no test senders. The scorer builds rows and never copies a metric formula. Report `evals/results/sim-<date>-lab-01-<mode>-<runId>.md` plus JSON counts; slot ids allowed, no mail text.
 - **D15 Demo.** Organization "Kordelan demo", mailbox `wiktor.szalewski@demo.kordelan.test`, a week run, shadow for days 1–3, assist from day 4 00:00. `demo-reset` deletes only the organization whose id the lab state holds.
-- **D16 Export and import.** `demo-export` writes a JSON seed of the demo organization (no secret, every address on `.test`). `demo-import` creates a new organization with new ids; open actions become `expired`; no Telegram link; the mailbox is paused.
+- **D16 Export and import.** A JSON seed of the demo org (no secret, only `.test` addresses); the import makes a new org with new ids, open actions `expired`, no Telegram link, a paused mailbox.
 - **D17 Borders.** No migration, no new dependency. Module `lab` is a leaf; `main.ts` never starts its loops.
-- **D18 Not seeded.** `week/history.json` (E11a seam). The urgency profile is seeded only when a store exists (E3b seam); VIP rules are seeded.
+- **D18 Not seeded.** `week/history.json` (E11a seam); the urgency profile only when its store exists (E3b seam).
 
 ## Facts checked
 
@@ -46,14 +46,14 @@ Owner words: "create more synthetic emails that will mock behaviors"; "Looks lik
 - **F2** Week: 855 slots (153/154/155/156/155/42/40 a day), 56 delegations (done 23, late 11, out_of_office 8, silent 8, other_address 6), 15 `sent`.
 - **F3** Dates in week texts (probe 2026-11-15): `dd.mm.yyyy` 537, `d.mm` 81, Polish `d <month>` 25, English 19, ISO 0.
 - **F4** Agents cannot reach the local Docker socket (`permission denied`); `docker compose config` runs without it.
-- **F5** No HTTP approve, reject or edit route at HEAD; taps go through `ap:`, `ar:`, `rw:`, `fu:`, `as:`, `ag:`.
+- **F5** No HTTP approve or edit route at HEAD; taps use `ap:`, `ar:`, `rw:`, `fu:`, `as:`, `ag:`.
 
 ## Not verified
 
 - **N1** GreenMail 2.1.15 does not relay to an outside host. C1 sends to `probe@example.com` and checks that no outbound connection happens and the mail stays local.
 - **N2** `network_mode: service:fake-telegram` survives a `server` restart. C1 restarts `server` and checks Telegram and DB.
 - **N3** An `Auto-Submitted` reply does not close a delegation. The scorer reports what happens; a closed one is a finding for E5b.
-- **N4** VPS free disk after O1. C1 checks `df -h /`.
+- **N4** VPS free disk. C1 checks `df -h /`.
 
 ## Done when
 
@@ -94,13 +94,11 @@ Review job before land (Opus): 03, 06, 07, 09, 14 (`[risky]`). Others land on th
 
 ## How to run (coordinator)
 
-Standing spawn command (`spec/build.md` TRACK). Order: 01, 02, 03, 04; then 05, 06, 07, 08 in parallel; 09 after 08; 10 after 05–07 and 09; 11 after 04; 12 after 11; 13 after 10; 14 after 13; 15 last. Drift check before 01.
+Spawn per `spec/build.md` TRACK. Order: 01, 02, 03, 04; then 05, 06, 07, 08 in parallel; 09 after 08; 10 after 05–07 and 09; 11 after 04; 12 after 11; 13 after 10; 14 after 13; 15 last. Drift check before 01.
 
 ## Planning progress
 
-- Scouts: 4 (all answered).
-- Stages written: 01–15.
-- Word counts: see § Log.
+Scouts: 4, all answered. Stages 01–15 `[written]`. Words (`wc -w`): plan 1,500; stages 511–700.
 
 ## Cold review
 

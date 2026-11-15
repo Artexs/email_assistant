@@ -31,6 +31,10 @@ The frozen lab-01 week of made-up mail runs in real time through the real pipeli
 - `bun run lab demo-reset` rebuilds the demo organization; `lab demo-import` loads its export into a dev DB.
 - With a wrong env (real bot token, non-loopback Telegram root, `SEND_SCOPE=all`), `lab` refuses to start.
 
+## Slices
+
+15 stages, one worker job each; order and parallel lanes in `plan.md` § How to run. No migration and no `bun.lock` change in any stage. The VPS runs are coordinator steps after stage 15.
+
 ## Sequenced
 
 - Plan after: none (F097 landed; it is the only ticket whose interfaces this plan uses).
