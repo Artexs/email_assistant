@@ -407,13 +407,14 @@ describe("big LIST", () => {
     },
   });
 
-  test("70 folders and a 48-character folder name still give a result file with the special-use folders by name", async () => {
+  test("100 folders and a 48-character folder name still give a result file with the special-use folders by name", async () => {
     const folders = [
       { path: "INBOX" },
       { path: "[Gmail]/Sent Mail", specialUse: "\\Sent" },
       { path: "[Gmail]/Drafts", specialUse: "\\Drafts" },
       { path: `L${"x".repeat(47)}`, specialUse: "\\Archive" },
       ...Array.from({ length: 66 }, (_, index) => ({ path: `Label number ${index}` })),
+      ...Array.from({ length: 30 }, (_, index) => ({ path: `Archive ${index}`, specialUse: "\\Archive" })),
     ];
     const imap = fakeImap({
       folders,
@@ -429,7 +430,7 @@ describe("big LIST", () => {
       const written = JSON.parse(await readFile(out, "utf8")) as { rows: { evidence: string }[] };
       const evidence = written.rows[0]?.evidence ?? "";
       expect(evidence).toContain("[Gmail]/Sent Mail \\Sent");
-      expect(evidence).toContain("other folders: 66");
+      expect(evidence).toContain("other folders: 88");
       expect(evidence).toContain(`L${"x".repeat(29)}... \\Archive`);
       expect(evidence.length).toBeLessThan(1000);
     }
