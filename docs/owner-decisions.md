@@ -435,3 +435,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the rule was fixed before the run; the gain does not pay for the cost.
 - Undo: a cheaper trigger (smaller share than 24%) or a cheaper second model needs a new trigger version and a new decision (about 1 stage plus a $0.50 dev run). Raise the $3.00 limit only if you accept the cost.
 - Source: `evals/results/2026-11-15-f109-escalation-summary.md`.
+
+### 2026-11-15 · F114 operator alerts: operator chat, English default, new key OPERATOR_LOCALE (F114) · ops · new
+- Choice: the SLO alert goes only to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` by direct send (plan D4), not to the chats of `OPERATOR_USER_IDS` users. A new key `OPERATOR_LOCALE` (`en` default, `pl` optional) sets the language of the alert text.
+- Why: `OPERATOR_USER_IDS` only gates `/api/operator/*`; the plan names the operator group (U3). English stays the default (plan D5).
+- Undo: replace `operatorSend` in `apps/server/src/main.ts` to send to user chats; remove `OPERATOR_LOCALE` to use English only.
+- Source: `spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/plan.md` (P2, D4, D5), job `2026-11-15-f114-s03-ops-slo-job-alert-texts-a4ad9975`.
