@@ -1,6 +1,6 @@
 import { readFile, statfs } from "node:fs/promises";
 
-import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
+import { actionsScope, committerDeps, gateEvidenceDir, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
@@ -16,7 +16,15 @@ import {
   type SloCheckEntry,
 } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
-import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
+import {
+  createLlmPause,
+  createReturnedJob,
+  createTriageJob,
+  loadGateEvidence,
+  type LlmPause,
+  runningEvidenceKey,
+  type TriageScope,
+} from "./modules/triage";
 import {
   ConfigError,
   featuresOff,
@@ -196,6 +204,8 @@ let loopsAnalyzeRun: Promise<void> = Promise.resolve();
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
+// The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
+const gate = { index: loadGateEvidence(gateEvidenceDir(config)), runningKey: runningEvidenceKey(llmTable) };
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
   log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
@@ -333,6 +343,7 @@ const web = webDeps(config, db, {
   botUsername: telegram ? () => telegram.botUsername() : null,
   mailOAuthClients: mailOAuth.clients,
   mailOAuthLogin: { oauthTokens: mailOAuth.tokens },
+  gate,
   onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });
 const app = createApp({ checkDb: () => checkDb(db), web });

@@ -30,7 +30,7 @@ import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials } from "../../src/modules/mail/repo";
 import { contentHash } from "../../src/modules/mail/sync-rules";
-import { createLlmPause, createTriageJob, type TriageScope } from "../../src/modules/triage";
+import { createLlmPause, createTriageJob, noGateEvidence, type TriageScope } from "../../src/modules/triage";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, TenantContext } from "../../src/platform/db";
 import type { LlmClient } from "../../src/platform/llm";
@@ -167,6 +167,7 @@ function settingsDepsOf(trx: Transaction<DB>): SettingsDeps {
   return {
     db: trx,
     now: () => NOW,
+    gate: noGateEvidence,
     expireReady: async (t, c, filter, opts) =>
       expireReady(t, c, filter, {
         ...opts,

@@ -128,6 +128,8 @@ export const codeFieldNames = [
   "feedback",
   "until",
   "day_start",
+  // a gate file name (`classifier-…json`, from the image, never user text)
+  "file",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;
