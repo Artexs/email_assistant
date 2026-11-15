@@ -58,3 +58,9 @@ Existing job cases pass unchanged.
 ## Done when
 
 Steps 1–3 done; `docs/architecture.md` no longer says the sync never reads Sent; the Proof passes (`/tmp/f104-s06`).
+
+## Carry-over from stage 04 review (notes)
+
+- Pass `Db` (not a `Transaction`) to `syncSentHeaders`: with a caller transaction the reset's lock stays held during the IMAP calls.
+- Do not log `error.detail` or `error.message` of a database error: the Postgres detail of a failed CHECK holds the row (addresses, subject).
+- Decide what `result.system` counts before logging it: it counts system rows planned per written chunk, not new system rows (a rescan reports `system 1` with `stored 0`).
