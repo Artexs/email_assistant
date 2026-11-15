@@ -27,6 +27,7 @@ import { createLog } from "../platform/log";
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
 import { runSim } from "./eval-sim";
+import { runSuspicious } from "./eval-suspicious";
 
 const log = createLog("eval");
 
@@ -100,6 +101,7 @@ async function main(): Promise<number> {
     return 1;
   }
   if (options.gap) return runGap(options);
+  if (options.suspicious) return runSuspicious(options);
   if (options.sim !== undefined) return runSim(options);
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
 
