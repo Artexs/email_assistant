@@ -1,0 +1,42 @@
+# F116 stage 14 — Loop commands
+
+Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, roles). Needs stages 11 and 13. Checkpoint C2 follows (a review of 07–14; not a stop).
+
+The service functions of `interfaces.md` § Commands, in module `loops`. Telegram (19) and `/api` (20) call them with their `via`.
+
+## Step 1 — Draft follow-up
+
+- **Goal:** `draftFollowUp(deps, ctx, { loopId, userId, via })` plans one follow-up pair or says why not.
+- **Decisions, checked in this order under the loop lock (D15) and the settings share lock (the chaser's M13 rule):**
+  1. Flag `open_loops` off → `feature_off`; no loop of the org → `not_found`; the user is not an owner → `not_allowed`.
+  2. Loop closed → `closed`; kind `promised` → `not_allowed`.
+  3. A follow-up send of the loop in `awaiting_approval`, `approved` or `applying` → `waiting` with its `sendId`.
+  4. `follow_ups_sent = 2` → `limit_reached`; the second one before `last_follow_up_at` + 3 working days → `too_soon`.
+  5. `thread_key` in `suspiciousThreadKeysOf` → `suspicious` (PD-128; any reason, whatever the `suspicious_mail` flag).
+  6. Mode `shadow` → `would_draft` (one `loop.would_draft` audit row, no action); `assist` with `create_draft` off → `drafts_off`.
+  7. Plan the pair with `createPlanned`: `create_draft` `ready`, `send` `awaiting_approval`, both with `loop_id`; keys `<loop id>:follow_up:<n>` (a repeated tap after a crash finds the pair: answer `waiting`).
+- **Payload:** `n` = `follow_ups_sent + 1`; `waiting` → To and Cc of the loop; `delegated` → To = the delegate's address only, no Cc (the reminder rule of today); `quote` = `body_text` of `last_sent_email_id` (else `sent_email_id`) while it is stored, else null; `subject`, `sent_at` (of that mail) and `language` from the loop.
+- **Test (integration):** T1 a waiting loop in `assist` → a pair with `loop_id`, payload To/Cc equal to the loop; T2 the same tap again → `waiting`, no second pair; T3 shadow → `would_draft`, no action row; T4 a suspicious thread → `suspicious`; T5 `follow_ups_sent` 1 and the last one 2 working days ago → `too_soon`, 3 days → planned with `n` 2; T6 a member → `not_allowed`; T7 a delegated loop → To is the delegate only; T8 sent text cleared by retention → `quote` null.
+
+## Step 2 — Later, Done, Drop, Reopen, Untrack
+
+- **Goal:** the other commands of `interfaces.md`, each under the loop lock, each with one audit row (`via`, ids).
+- **Decisions (D11):**
+  - `laterLoop`: open `waiting` or `delegated`; `later_count < 3` → `due_at = addWorkingDays(max(due_at, now), 3)` at 17:00 local, `later_count + 1`; at 3 → `limit_reached`; `promised` → `not_allowed`. Any linked member.
+  - `doneLoop`: any open loop → `closed` / `done` with `closed_by_user_id`; closed → `already`. Any member.
+  - `dropLoop`: owner; open → `dropped`. `untrackLoop`: owner; only `delegated` → `untracked`.
+  - `reopenLoop`: owner; a closed loop with texts (not `sent_off`, not cleared) → open, the old due (stage 08).
+  - Done, Drop, Untrack expire a waiting follow-up of the loop (`loop_closed`).
+- **Test (integration):** T9 now Fri 2026-11-20 09:00 Warsaw, Later three times from due Mon 2026-11-23 → due Thu 2026-11-26, Tue 12-01, Fri 12-04 (17:00), the fourth → `limit_reached`; T10 Done by a member → `done`, a second Done → `already`; T11 Drop by a member → `not_allowed`; T12 Reopen of a `replied` loop → open with its due; of a `sent_off` loop → `not_allowed`; T13 Untrack of a waiting loop → `not_allowed`; T14 Done with a waiting follow-up → the send `expired` / `loop_closed`.
+
+## Check
+
+`bun test apps/server/test/integration/<the new loops tests>`
+
+## Done when
+
+T1–T14 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s14`).
+
+## Out of scope
+
+The chaser (15), Telegram and routes (19, 20).
