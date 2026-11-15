@@ -324,6 +324,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - A Polish page holds `source` and `sourceHash`. After you change the English page, translate the change, then run `bun run docs:stale --stamp <the Polish file>`. `bun run docs:stale` lists stale pages; `--strict` (the deploy workflow) fails on a stale public page.
 - An entry of `apps/docs/public-content-allow.txt` needs a reason and an exact string. An unused entry fails the build.
 - PD-009 extension (PD-100): a landed user-visible feature updates its user page (en) in the same change. A page describes only what the code does now; a feature behind a default-off flag gets no page until its flag defaults on.
+- The browser check of the built site is `bun run docs:test` (`apps/docs/e2e/`, Chromium, port 8093; build first with `bun run docs:build`; run it under `flock /tmp/email-assistant-shared-tests.lock`). It checks every built page for CSP violations and page errors and for axe WCAG 2.2 AA violations, the search, the page language and the 404 page. A new page needs no entry: the page list comes from `dist`. A violation in Starlight's own markup that config or CSS cannot fix is a question to the owner; never turn an axe rule off.
 - The CI job `docs` and the deploy workflow are only written down and read by tests (`apps/docs/scripts/workflows.test.ts`): never start the deploy workflow to test a change. A workflow gets a `permissions` block, actions pinned to a major, no secret and no `.env`.
 
 ## Tests
