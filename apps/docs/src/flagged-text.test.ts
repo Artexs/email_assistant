@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { featureFlags, featureKeys } from "@ea/core";
 import { en } from "@ea/web/i18n/en";
 import { pl } from "@ea/web/i18n/pl";
 
+import { changelogPage } from "./changelog-page";
 import {
   expandUiText,
   FLAGGED_BOT_TEXT,
@@ -125,5 +126,27 @@ describe("the pages of the docs site", () => {
         problems: [],
       });
     }
+  });
+});
+
+// The changelog page is an in-place page: its text comes from `CHANGELOG.md` through `changelogPage`, not from `src/content/docs`.
+describe("the changelog page", () => {
+  const ROOT = join(import.meta.dir, "../../..");
+  test("T10 the text that the changelog page publishes holds no string of a default-off flag", () => {
+    const page = changelogPage(readFileSync(join(ROOT, "CHANGELOG.md"), "utf8"));
+    expect(flaggedTextProblems(page)).toEqual([]);
+  });
+  test("T10 the built dist/changelog/index.html holds none (runs after docs:build)", () => {
+    const file = join(ROOT, "apps/docs/dist/changelog/index.html");
+    if (!existsSync(file)) return;
+    const text = readFileSync(file, "utf8")
+      .replace(/<script[\s\S]*?<\/script>/g, " ")
+      .replace(/<style[\s\S]*?<\/style>/g, " ")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&#39;|&#x27;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&");
+    expect(text.length).toBeGreaterThan(100);
+    expect(flaggedTextProblems(text)).toEqual([]);
   });
 });

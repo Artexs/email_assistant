@@ -34,7 +34,15 @@ function sourcePageIds(
 }
 
 // Each content stage adds its ids here (stage 07: the tutorial and the FAQ).
-const EXPECTED_PAGE_IDS = ["faq", "index", "operate/install-and-run", "operate/release-checklist", "pl/index", "start"];
+const EXPECTED_PAGE_IDS = [
+  "changelog",
+  "faq",
+  "index",
+  "operate/install-and-run",
+  "operate/release-checklist",
+  "pl/index",
+  "start",
+];
 
 describe("site map", () => {
   test("T2 the source pages are exactly the expected ids: a missing or an extra page fails", () => {
@@ -47,7 +55,7 @@ describe("site map", () => {
   test("each user page is a sidebar item of astro.config.mjs", () => {
     const config = readFileSync(join(import.meta.dir, "../astro.config.mjs"), "utf8");
     const userPages = EXPECTED_PAGE_IDS.filter(
-      (id) => id !== "index" && !id.startsWith("pl/") && !id.startsWith("operate/")
+      (id) => id !== "index" && id !== "changelog" && !id.startsWith("pl/") && !id.startsWith("operate/")
     );
     expect(userPages).toEqual(["faq", "start"]);
     for (const id of userPages)
@@ -74,6 +82,11 @@ describe("site map", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+  test("the changelog page is an in-place page built from CHANGELOG.md", () => {
+    const page = IN_PLACE_PAGES.find((candidate) => candidate.id === "changelog");
+    expect(page?.path).toBe("CHANGELOG.md");
+    expect(page?.transform).toBeFunction();
   });
   test("a missing and an extra page differ from the expected list", () => {
     const dir = mkdtempSync(join(tmpdir(), "f112-site-map-"));

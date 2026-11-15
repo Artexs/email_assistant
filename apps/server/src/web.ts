@@ -51,6 +51,7 @@ import {
   type TenancyRouteDeps,
 } from "./modules/tenancy";
 import { goNoGoFor, triageRoutes } from "./modules/triage";
+import { queueHistoryCheckOnConnect } from "./modules/trust";
 import {
   createAuth,
   expiredSessionCookie,
@@ -353,6 +354,7 @@ export function apiRouters(
           openProvider: openImapProvider,
           verifySmtp: verifySmtpLogin,
           timeouts: WEB_MAIL_TIMEOUTS,
+          onConnected: queueHistoryCheckOnConnect(db),
         },
         allowLocalHosts,
         onRemoved: async (trx, ctx, input) => {
@@ -417,6 +419,7 @@ export function apiPublicRouters(
         openProvider: openImapProvider,
         verifySmtp: verifySmtpLogin,
         timeouts: WEB_MAIL_TIMEOUTS,
+        onConnected: queueHistoryCheckOnConnect(db),
         ...extras.mailOAuthLogin,
       })
     );

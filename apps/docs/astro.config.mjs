@@ -6,7 +6,7 @@ import cspFinalize from "./integrations/csp-finalize";
 import inPlaceCheck from "./integrations/in-place-check";
 import linkCheck from "./integrations/link-check";
 import publicContent from "./integrations/public-content";
-import { IN_PLACE_PAGES, IN_PLACE_SECTION, inPlaceSourcePaths } from "./src/in-place";
+import { IN_PLACE_PAGES, IN_PLACE_SECTION, inOperate, inPlaceSourcePaths } from "./src/in-place";
 
 // The public docs site (ADR 0030). Starlight's own Expressive Code highlights code, so `markdown.syntaxHighlight` stays on.
 export default defineConfig({
@@ -29,7 +29,8 @@ export default defineConfig({
       sidebar: [
         { label: "Start", items: [{ slug: "start" }] },
         { label: "FAQ", items: [{ slug: "faq" }] },
-        { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.map((page) => ({ slug: page.id })) },
+        { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.filter(inOperate).map((page) => ({ slug: page.id })) },
+        ...IN_PLACE_PAGES.filter((page) => !inOperate(page)).map((page) => ({ slug: page.id })),
       ],
     }),
     // After Starlight: it hashes Starlight's inline scripts and checks every page's CSP (plan D3).

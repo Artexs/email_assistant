@@ -1,5 +1,12 @@
 // The tripwire rule (F110 D9): when user corrections pause an `auto` category.
-export type TripReason = "corrections" | "important_hidden" | "model_switch" | "evidence_changed" | "history_fail";
+export const tripReasons = [
+  "corrections",
+  "important_hidden",
+  "model_switch",
+  "evidence_changed",
+  "history_fail",
+] as const;
+export type TripReason = (typeof tripReasons)[number];
 
 export interface TripState {
   tripped: boolean;

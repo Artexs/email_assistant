@@ -35,6 +35,7 @@ beforeAll(async () => {
   fixture = mkdtempSync(join(tmpdir(), "docs-wiring-"));
   put(fixture, "deploy/README.md", "# Runbook\n<script>x()</script>\n");
   put(fixture, "docs/release-checklist.md", "# Checklist\n");
+  put(fixture, "CHANGELOG.md", "# Changelog\n");
   process.env.EA_DOCS_REPO_ROOT = fixture;
   const config = (await import("../astro.config.mjs")).default as { integrations: Integration[] };
   integrations = config.integrations;

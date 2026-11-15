@@ -6,22 +6,31 @@ import { fileURLToPath } from "node:url";
 import { docsLoader } from "@astrojs/starlight/loaders";
 import { DOCS_BASE } from "@ea/core";
 import type { Loader } from "astro/loaders";
+import { changelogPage } from "./changelog-page";
 import { mapOutsideCode, stepFence } from "./markdown-code";
 
 export interface InPlacePage {
   readonly id: string;
   // From the repository root.
   readonly path: string;
+  // Builds the page text from the source text, before `rewriteLinks`. A page without one shows the source as it is.
+  readonly transform?: (markdown: string) => string;
+  // True: the sidebar shows the page as a link of its own. Absent: it sits in the group `IN_PLACE_SECTION`.
+  readonly ownLink?: boolean;
 }
 
-// Order = order in the sidebar section "Operate".
+// Order = order in the sidebar. A page without `ownLink` is in the group "Operate".
 export const IN_PLACE_PAGES: readonly InPlacePage[] = [
   { id: "operate/install-and-run", path: "deploy/README.md" },
   { id: "operate/release-checklist", path: "docs/release-checklist.md" },
+  // The page shows only the "For users" items of released versions (plan P2).
+  { id: "changelog", path: "CHANGELOG.md", transform: changelogPage, ownLink: true },
 ];
 
 // The sidebar section that lists the in-place pages. A sidebar built from the files would group them by their folders.
 export const IN_PLACE_SECTION = "Operate";
+
+export const inOperate = (page: InPlacePage): boolean => page.ownLink !== true;
 
 export const REPO_URL = "https://github.com/Artexs/email_assistant";
 const DEFAULT_REF = "master";
@@ -127,7 +136,8 @@ export function splitSource(text: string, path: string): { title: string; body: 
 export function readInPlaceSource(page: InPlacePage, root: string = repoRoot()): { title: string; body: string } {
   const file = join(root, page.path);
   if (!existsSync(file)) throw new Error(`in_place_source ${page.path}`);
-  return splitSource(readFileSync(file, "utf8"), page.path);
+  const text = readFileSync(file, "utf8");
+  return splitSource(page.transform === undefined ? text : page.transform(text), page.path);
 }
 
 // Starlight's docs loader first, then one store entry per in-place source (probe F6: `filePath` is required).

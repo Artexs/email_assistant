@@ -73,6 +73,7 @@ export {
   updateEmailUid,
   type EmailMeta,
   type MailKind,
+  type InsertableEmail,
   type NewEmail,
 } from "./emails";
 export {

@@ -21,7 +21,7 @@ Part of [`plan.md`](plan.md). A stage that creates a name below keeps it. A work
   - repo: `queueHistoryCheck(db, ctx, mailboxId, reason)` (no-op when one is open); `latestHistoryCheck`; `historyResultFor(db, ctx, mailboxId)` → per moving category `{ outcome, acted, moved, upper, total, wouldMove } | null`; `activeTripsOf(db, ctx, mailboxId): Map<BarCategory, TripState>`; `insertTrip(trx, ctx, { mailboxId, category, grantedAt, reason, counts })` → id or null; `clearTrips(trx, ctx, mailboxId, category, at)`.
   - `historyActedOn(db, ctx, emailIds)` → `Set<emailId>` (D6; the E5a seam), stage 07.
   - `setCategoryAutoWithEvidence` (stage 04), `regateAll` (stage 08), `runTripwire` (stage 09), `trustViewFor` (stage 11; the one reader of the card, the report page and M8).
-- `channels` (stage 10, widened in stage 19): `queueTrustNotice(trx, ctx, { kind, view, mailboxId })`. Stage 20: `isOwnReportMail(db, ctx, mailboxId, id)`.
+- `channels` (stage 10, widened in stage 19): `queueTrustNotice(trx, ctx, { kind, view, mailboxId, now })`, plus `tripId` for `autonomy_paused` (the dedup anchor; stage 10 deviation, a discriminated input); returns the rows queued. Link helpers `trustReportUrlOf(base, mailboxId)`, `trustSettingsUrlOf(base)` → `string | null`. Core: `tripReasons` (the runtime list of `TripReason`). Stage 20: `isOwnReportMail(db, ctx, mailboxId, id)`.
 - `reports` (stage 12): week deps gain `trustEvidence?: (ctx, mailboxId) => Promise<TrustEvidenceRows>`, injected by the composition roots.
 - `triage/suspicious-repo.ts` (stage 22): `suspiciousSendersOf(db, ctx, mailboxId, sendersLower): Promise<Set<string>>`.
 - `trust/newsletters.ts` (stage 22): `listNewsletterSenders(db, ctx, mailboxId, now)`.

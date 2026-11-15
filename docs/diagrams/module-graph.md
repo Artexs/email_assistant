@@ -98,5 +98,6 @@ flowchart BT
   triage --> tenancy
   trust --> config
   trust --> mail
+  trust --> tenancy
   trust --> triage
 ```

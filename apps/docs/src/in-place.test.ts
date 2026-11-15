@@ -135,8 +135,12 @@ describe("docsGitRef", () => {
 describe("the real sources", () => {
   test("T6 the first headings are the page titles", () => {
     const titles = IN_PLACE_PAGES.map((page) => readInPlaceSource(page, repoRoot()).title);
-    expect(titles).toEqual(["Pilot host runbook", "Release checklist"]);
-    expect(IN_PLACE_PAGES.map((page) => page.id)).toEqual(["operate/install-and-run", "operate/release-checklist"]);
+    expect(titles).toEqual(["Pilot host runbook", "Release checklist", "Changelog"]);
+    expect(IN_PLACE_PAGES.map((page) => page.id)).toEqual([
+      "operate/install-and-run",
+      "operate/release-checklist",
+      "changelog",
+    ]);
   });
   test("every relative link of a source resolves inside the repository", () => {
     for (const page of IN_PLACE_PAGES) {
@@ -147,7 +151,11 @@ describe("the real sources", () => {
   });
   test("the source paths are absolute paths under the root", () => {
     for (const path of inPlaceSourcePaths()) expect(path.startsWith("/")).toBe(true);
-    expect(inPlaceSourcePaths("/r")).toEqual(["/r/deploy/README.md", "/r/docs/release-checklist.md"]);
+    expect(inPlaceSourcePaths("/r")).toEqual([
+      "/r/deploy/README.md",
+      "/r/docs/release-checklist.md",
+      "/r/CHANGELOG.md",
+    ]);
   });
 });
 
@@ -172,6 +180,7 @@ describe("inPlaceLoader", () => {
     else process.env.DOCS_GIT_REF = savedRef;
   });
 
+  const CHANGELOG = "# Changelog\n\n## [0.1.0] - 2026-11-20\n";
   const run = async () => {
     const events: string[] = [];
     const entries = new Map<string, Record<string, unknown>>();
@@ -193,8 +202,14 @@ describe("inPlaceLoader", () => {
   test("runs the base loader first, then sets one entry per source with title, body, filePath and rendered", async () => {
     put("deploy/README.md", "# Runbook\n\nSee [the list](../docs/release-checklist.md#x) and [code](../docs/a.md).\n");
     put("docs/release-checklist.md", "# Checklist\n\nBack to [runbook](../deploy/README.md).\n");
+    put("CHANGELOG.md", CHANGELOG);
     const { events, entries } = await run();
-    expect(events).toEqual(["base", "parse operate/install-and-run", "parse operate/release-checklist"]);
+    expect(events).toEqual([
+      "base",
+      "parse operate/install-and-run",
+      "parse operate/release-checklist",
+      "parse changelog",
+    ]);
     const first = entries.get("operate/install-and-run");
     expect(first?.data).toEqual({ title: "Runbook", parsed: true });
     expect(first?.body).toBe(
@@ -208,20 +223,68 @@ describe("inPlaceLoader", () => {
     process.env.DOCS_GIT_REF = "v0.1.0";
     put("deploy/README.md", "# A\n[x](../docs/a.md)\n");
     put("docs/release-checklist.md", "# B\n");
+    put("CHANGELOG.md", CHANGELOG);
     expect((await run()).entries.get("operate/install-and-run")?.body).toContain("/blob/v0.1.0/docs/a.md");
   });
   test("a missing source file fails with in_place_source <path>", async () => {
     put("deploy/README.md", "# A\n");
+    put("CHANGELOG.md", CHANGELOG);
     await expect(run()).rejects.toThrow("in_place_source docs/release-checklist.md");
+  });
+  test("T9 the changelog entry is built by the transform, then its links are rewritten", async () => {
+    put("deploy/README.md", "# A\n");
+    put("docs/release-checklist.md", "# B\n");
+    put(
+      "CHANGELOG.md",
+      [
+        "# Changelog",
+        "",
+        "Header text.",
+        "",
+        "## [Unreleased]",
+        "",
+        "### For users",
+        "",
+        "- en: Unreleased user item.",
+        "  pl: Punkt.",
+        "",
+        "## [0.1.0] - 2026-11-20",
+        "",
+        "### Added",
+        "",
+        "- Operator item.",
+        "",
+        "### For users",
+        "",
+        "- en: See [the list](docs/release-checklist.md).",
+        "  pl: Zobacz.",
+        "",
+      ].join("\n")
+    );
+    const { entries } = await run();
+    const entry = entries.get("changelog");
+    expect(entry?.data).toEqual({ title: "Changelog", parsed: true });
+    expect(entry?.body).toBe(
+      "\n## 0.1.0 - 2026-11-20\n\n- See [the list](/email_assistant/operate/release-checklist/).\n"
+    );
+    expect(entry?.filePath).toBe("../../CHANGELOG.md");
+  });
+  test("a changelog that does not parse fails the load with its error", async () => {
+    put("deploy/README.md", "# A\n");
+    put("docs/release-checklist.md", "# B\n");
+    put("CHANGELOG.md", "# Changelog\n\n## [0.2] - 2026-12-01\n");
+    await expect(run()).rejects.toThrow("changelog_heading (line 3)");
   });
   test("a source without a level-1 heading fails with in_place_source <path>", async () => {
     put("deploy/README.md", "no heading\n");
     put("docs/release-checklist.md", "# B\n");
+    put("CHANGELOG.md", CHANGELOG);
     await expect(run()).rejects.toThrow("in_place_source deploy/README.md");
   });
   test("a link outside the repository fails the load", async () => {
     put("deploy/README.md", "# A\n[x](../../x.md)\n");
     put("docs/release-checklist.md", "# B\n");
+    put("CHANGELOG.md", CHANGELOG);
     await expect(run()).rejects.toThrow("in_place_link_outside ../../x.md in deploy/README.md");
   });
 });

@@ -65,6 +65,16 @@ describe("checkInPlacePages", () => {
     );
     expect(() => checkInPlacePages(dist, PAGES, root)).toThrow("in_place_page operate/b: sidebar");
   });
+  test("a page with its own link needs no section Operate, but still a sidebar link and its title", () => {
+    const own = [{ id: "changelog", path: "docs/b.md", ownLink: true }] as const;
+    const page = built("Bravo", "changelog").replace(">Operate<", ">Other<");
+    put(dist, "changelog/index.html", page);
+    expect(checkInPlacePages(dist, own, root)).toEqual({ checked: 1 });
+    put(dist, "changelog/index.html", page.replace(' aria-current="page"', ""));
+    expect(() => checkInPlacePages(dist, own, root)).toThrow("in_place_page changelog: sidebar");
+    put(dist, "changelog/index.html", built("Other", "changelog"));
+    expect(() => checkInPlacePages(dist, own, root)).toThrow("in_place_page changelog: title");
+  });
   test("a sidebar without the section Operate fails with section", () => {
     pass();
     put(dist, "operate/b/index.html", built("Bravo", "operate/b").replace(">Operate<", ">deploy<"));
