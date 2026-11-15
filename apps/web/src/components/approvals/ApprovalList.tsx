@@ -35,8 +35,8 @@ export function ApprovalList({ items, selectedId, now, onSelect }: ApprovalListP
               onSelect(item.id);
             }}
             className={cn(
-              "block rounded-md border p-3 hover:bg-accent",
-              item.id === selectedId && "border-foreground bg-accent"
+              "block rounded-md border p-3 hover:border-foreground",
+              item.id === selectedId && "border-2 border-foreground"
             )}
           >
             <ApprovalSummary item={item} now={now} />

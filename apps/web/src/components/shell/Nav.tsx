@@ -32,21 +32,28 @@ export interface NavMenuProps {
 // Fixed class names: Tailwind builds only the names that appear whole in the source.
 const TAB_COLUMNS: Record<number, string> = { 4: "grid-cols-4", 5: "grid-cols-5" };
 
-// The count of the approvals item: the number is for the eye, the text for a screen reader. Nothing at 0.
+// The count of the approvals item: the number is for the eye (`Badge`), the text after the label for a screen reader (`BadgeText`),
+// so the link reads "Approvals 1 waiting". Nothing at 0.
+function badgeOf(item: NavItem, count: number): string | null {
+  return item.key === "approvals" ? approvalsBadge(count) : null;
+}
+
 function Badge({ item, count, className }: { item: NavItem; count: number; className: string }) {
-  const text = item.key === "approvals" ? approvalsBadge(count) : null;
+  const text = badgeOf(item, count);
   if (text === null) return null;
   return (
-    <>
-      <span
-        aria-hidden="true"
-        className={cn("rounded-full bg-primary px-1.5 text-[0.7rem] leading-4 text-primary-foreground", className)}
-      >
-        {text}
-      </span>
-      <span className="sr-only">{t("nav_approvals_badge", { n: text })}</span>
-    </>
+    <span
+      aria-hidden="true"
+      className={cn("rounded-full bg-primary px-1.5 text-[0.7rem] leading-4 text-primary-foreground", className)}
+    >
+      {text}
+    </span>
   );
+}
+
+function BadgeText({ item, count }: { item: NavItem; count: number }) {
+  const text = badgeOf(item, count);
+  return text === null ? null : <span className="sr-only">{t("nav_approvals_badge", { n: text })}</span>;
 }
 
 export function BottomTabs({
@@ -82,6 +89,7 @@ export function BottomTabs({
             <Badge item={item} count={approvalsWaiting} className="absolute -top-1.5 left-3" />
           </span>
           <span>{t(item.label)}</span>
+          <BadgeText item={item} count={approvalsWaiting} />
         </a>
       ))}
     </nav>
@@ -101,6 +109,7 @@ function SidebarLink({ item, active, approvalsWaiting }: { item: NavItem; active
       <item.icon className="size-4" aria-hidden="true" />
       <span>{t(item.label)}</span>
       <Badge item={item} count={approvalsWaiting} className="ml-auto" />
+      <BadgeText item={item} count={approvalsWaiting} />
     </a>
   );
 }

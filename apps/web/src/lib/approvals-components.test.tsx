@@ -1,5 +1,5 @@
 /// <reference types="bun" />
-import type { ApprovalDetail } from "@ea/core/web";
+import type { ApprovalDetail, ApprovalItem } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -194,18 +194,24 @@ describe("ApprovalActions", () => {
 });
 
 describe("ApprovalList", () => {
+  const listItem = (id: string): ApprovalItem => ({
+    id,
+    version: 1,
+    state: "waiting",
+    draftReady: true,
+    kind: "delegation",
+    mailboxAddress: "box@x.test",
+    createdAt: "2026-11-20T10:00:00.000Z",
+    delegationId: null,
+    setId: null,
+    expiresAt: "2026-11-22T11:00:00.000Z",
+    heldBy: null,
+    view: view(),
+  });
+
   test("every item is a link to its own id; the selected one is marked", () => {
-    const first = {
-      ...item(),
-      id: SEND,
-      version: 1,
-      kind: "delegation" as const,
-      mailboxAddress: "box@x.test",
-      createdAt: "2026-11-20T10:00:00.000Z",
-      delegationId: null,
-      setId: null,
-    };
-    const second = { ...first, id: "0190f5a0-0000-7000-8000-0000000000a2" };
+    const first = listItem(SEND);
+    const second = listItem("0190f5a0-0000-7000-8000-0000000000a2");
     const html = renderToStaticMarkup(
       <ApprovalList items={[first, second]} selectedId={second.id} now={NOW} onSelect={() => undefined} />
     );

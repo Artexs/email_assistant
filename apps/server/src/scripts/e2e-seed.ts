@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import { TERMS_VERSION } from "@ea/core";
 import { Client } from "pg";
 
-import { insertDefaultSettings } from "../modules/config";
+import { insertDefaultSettings, updateMailboxSettings } from "../modules/config";
 import { configureMailHosts } from "../modules/mail";
 import { insertCredentials, insertInboxFolder, insertMailbox } from "../modules/mail/repo";
 import {
@@ -25,8 +25,13 @@ import { describeError } from "../platform/errors";
 import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
+import { seedApprovalsRows } from "./e2e-approvals-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
+  E2E_APPROVALS_MEMBER_EMAILS,
+  E2E_APPROVALS_OWNER_EMAILS,
+  e2eApprovalsMailbox,
+  e2eApprovalsOrgName,
   E2E_ASSISTANT_EMAILS,
   E2E_DELETE_ASSISTANT_EMAILS,
   E2E_DELETE_OWNER_EMAILS,
@@ -59,6 +64,9 @@ import {
 const out = createCliOutput("e2e-seed");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// The GreenMail of the dev stack (the same host that the Playwright config uses).
+const GREENMAIL_HOST = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
+const ASSIST_SWITCHES = { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: false };
 const TRIAL_DAYS = 10;
 
 const repoRoot = resolve(import.meta.dir, "../../../..");
@@ -78,6 +86,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eTermsOrgName),
         ...E2E_PROJECTS.map(e2eTwoFactorOrgName),
         ...E2E_PROJECTS.map(e2eDeleteOrgName),
+        ...E2E_PROJECTS.map(e2eApprovalsOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -95,6 +104,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_ACTIVITY_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELETE_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELETE_ASSISTANT_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_APPROVALS_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_APPROVALS_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -256,6 +267,70 @@ async function main(): Promise<number> {
         deleteIds[project] = { orgId: deleteOwner.orgId, ownerId: deleteOwner.userId, assistantId: assistant.id };
       }
 
+      // F102 stage 12: one organization per project for the approvals spec. The flags are on; the mailbox is the GreenMail of the dev
+      // stack, so an approved send to the delegate that SEND_SCOPE=self admits goes out and leaves the list. See `e2e-approvals-rows.ts`.
+      const approvalsIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; waitingSendId: string; heldSendId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const approvalsOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eApprovalsOrgName(project),
+          timezone: "Europe/Warsaw",
+          email: E2E_APPROVALS_OWNER_EMAILS[project],
+          displayName: `E2E Approvals owner ${project}`,
+        });
+        const ctx = { orgId: approvalsOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_APPROVALS_MEMBER_EMAILS[project],
+          displayName: `E2E Approvals member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        for (const flag of ["approvals_page", "stats_page", "mistake_capture"] as const) {
+          await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: approvalsOwner.userId, setAt: new Date() });
+        }
+        const mailboxId = randomUUID();
+        await insertMailbox(db, ctx, {
+          id: mailboxId,
+          address: e2eApprovalsMailbox(project),
+          imapHost: GREENMAIL_HOST,
+          imapPort: 3143,
+          smtpHost: GREENMAIL_HOST,
+          smtpPort: 3025,
+          capabilities: {
+            move: true,
+            uidplus: true,
+            idle: false,
+            condstore: false,
+            specialUse: false,
+            keywords: false,
+          },
+          folderMap: { drafts: "Drafts" },
+        });
+        await insertInboxFolder(db, ctx, mailboxId);
+        const mailboxSecret = secretBox.encrypt("e2e-approvals-box-password", `mailbox:${mailboxId}`);
+        await insertCredentials(db, ctx, {
+          mailboxId,
+          encryptedSecret: mailboxSecret.ciphertext,
+          secretKind: "password",
+          keyVersion: mailboxSecret.keyVersion,
+        });
+        await insertDefaultSettings(db, ctx, mailboxId);
+        // The assist mode with the draft switch on, as the approvals need it (an approval of a draft-less mailbox is a shadow plan).
+        await db
+          .transaction()
+          .execute((trx) =>
+            updateMailboxSettings(trx, ctx, mailboxId, { mode: "assist", toolSwitches: ASSIST_SWITCHES })
+          );
+        const rows = await seedApprovalsRows(db, ctx, mailboxId, approvalsOwner.userId, new Date());
+        approvalsIds[project] = {
+          orgId: approvalsOwner.orgId,
+          ownerId: approvalsOwner.userId,
+          memberId: member.id,
+          ...rows,
+        };
+      }
+
       // The organization of the isolation checks: one mail that the E2E organization must never see.
       const other = await createOrganizationWithOwner(db, {
         orgName: E2E_OTHER_ORG_NAME,
@@ -388,6 +463,22 @@ async function main(): Promise<number> {
         };
       }
 
+      const approvalsOrgs = {} as SeedFile["approvalsOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_APPROVALS_OWNER_EMAILS[project];
+        const memberEmail = E2E_APPROVALS_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = approvalsIds[project];
+        approvalsOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          waitingSendId: ids.waitingSendId,
+          heldSendId: ids.heldSendId,
+        };
+      }
+
       // The reset stores the current terms; the terms owners then go back to an old version.
       const termsOwners = {} as SeedFile["termsOwners"];
       for (const project of E2E_PROJECTS) {
@@ -436,6 +527,7 @@ async function main(): Promise<number> {
           password: E2E_OWNER_PASSWORD,
           orgId: stats.orgId,
         },
+        approvalsOrgs,
       };
       const path = seedFilePath(repoRoot);
       await mkdir(dirname(path), { recursive: true });
@@ -444,7 +536,7 @@ async function main(): Promise<number> {
       await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, { mode: 0o600 });
 
       out.print(
-        `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")} members ${E2E_PROJECTS.map((project) => memberIds[project]).join(",")} trial org ${trial.orgId} paused org ${paused.orgId}`
+        `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")} members ${E2E_PROJECTS.map((project) => memberIds[project]).join(",")} trial org ${trial.orgId} paused org ${paused.orgId} approvals orgs ${E2E_PROJECTS.map((project) => approvalsIds[project].orgId).join(",")}`
       );
       return 0;
     } finally {
