@@ -81,9 +81,10 @@ function roleOf(raw: unknown): string | undefined {
 /**
  * Reads `classifier-*.json` files with `role: "classifier"` (an `extractor` file has another schema; an `escalation`
  * file proves a cascade). A missing directory or a file that does not parse is no start error: one `warn` line with
- * the name of the first such file and the count (no content), and the file is skipped.
+ * the name of the first such file and the count (no content), and the file is skipped. `quiet` drops the `info` line
+ * (a CLI prints through its own output and must not add log lines to a command that reads no evidence).
  */
-export function loadGateEvidence(dir: string): GateIndex {
+export function loadGateEvidence(dir: string, opts: { quiet?: boolean } = {}): GateIndex {
   let names: string[];
   try {
     names = readdirSync(dir)
@@ -106,7 +107,7 @@ export function loadGateEvidence(dir: string): GateIndex {
     }
   }
   if (skipped.length > 0) log.warn("gate_evidence_skipped", { count: skipped.length, file: skipped[0] ?? null });
-  log.info("gate_evidence_loaded", { count: files.length });
+  if (opts.quiet !== true) log.info("gate_evidence_loaded", { count: files.length });
   return { files };
 }
 

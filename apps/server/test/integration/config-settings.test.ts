@@ -15,6 +15,7 @@ import {
 } from "../../src/modules/config";
 import { mailboxHasUidplus } from "../../src/modules/mail";
 import { noGateEvidence } from "../../src/modules/triage";
+import { clearTrips } from "../../src/modules/trust";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { HardError } from "../../src/platform/errors";
 
@@ -55,6 +56,7 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
     db: trx,
     now: () => NOW,
     gate: noGateEvidence,
+    clearTrips,
     expireReady: async (t, c, filter, opts) =>
       expireReady(t, c, filter, {
         ...opts,
@@ -151,7 +153,7 @@ describe("settings setters", () => {
   test("setCategoryAuto needs the gate", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const base = { category: "info", auto: true, threshold: 0.9, actor: "cli" } as const;
+      const base = { category: "info", auto: true, threshold: 0.9, grantBy: "real_labels", actor: "cli" } as const;
       await setCategoryAuto(s.deps, s.ctx, s.mailboxId, { ...base, gate: GO });
       expect((await settingsRow(trx, s)).category_policy).toMatchObject({ info: { auto: true, threshold: 0.9 } });
       const audit = await auditRows(trx, s, "mailbox.policy_changed");
@@ -280,6 +282,7 @@ describe("gate close (B3)", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await setCategoryAuto(s.deps, s.ctx, s.mailboxId, {
+        grantBy: "real_labels",
         category: "info",
         auto: true,
         threshold: 0.8,
@@ -289,6 +292,7 @@ describe("gate close (B3)", () => {
       const info = await readyMail(trx, s, "info", ["move", "mark_read", "flag"]);
       const spam = await readyMail(trx, s, "spam", ["move"]);
       const result = await setCategoryAuto(s.deps, s.ctx, s.mailboxId, {
+        grantBy: "real_labels",
         category: "info",
         auto: false,
         gate: GO,
@@ -364,6 +368,7 @@ describe("gate close (B3)", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await setCategoryAuto(s.deps, s.ctx, s.mailboxId, {
+        grantBy: "real_labels",
         category: "info",
         auto: true,
         threshold: 0.7,
@@ -373,6 +378,7 @@ describe("gate close (B3)", () => {
       const mail = await readyMail(trx, s, "info", ["move", "mark_read", "flag"]);
       const forced = { ...GO, decision: "no-go", forced: true } as const;
       const lower = await setCategoryAuto(s.deps, s.ctx, s.mailboxId, {
+        grantBy: "real_labels",
         category: "info",
         auto: true,
         threshold: 0.5,
@@ -381,6 +387,7 @@ describe("gate close (B3)", () => {
       });
       expect(lower).toMatchObject({ changed: true, expired: 0 });
       const higher = await setCategoryAuto(s.deps, s.ctx, s.mailboxId, {
+        grantBy: "real_labels",
         category: "info",
         auto: true,
         threshold: 0.95,

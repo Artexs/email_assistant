@@ -4,7 +4,7 @@ import { type GateEvidenceDeps, onboardingOf, scopeInfoOf, type ScopeEnv } from 
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { orgPlanHooks, sentSwitchHooks, settingsDeps, uidplusOf } from "./composition";
+import { autoSetter, orgPlanHooks, sentSwitchHooks, settingsDeps, uidplusOf } from "./composition";
 import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
@@ -50,7 +50,7 @@ import {
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";
-import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
+import { goNoGoFor, triageRoutes } from "./modules/triage";
 import { queueHistoryCheckOnConnect } from "./modules/trust";
 import {
   createAuth,
@@ -259,14 +259,17 @@ export function settingsRouteDeps(
   gate?: GateEvidenceDeps
 ): SettingsRouteDeps {
   const settings = settingsDeps(db, now, gate);
+  const setAuto = autoSetter(settings, testMail);
   return {
     db,
     now,
     settings,
     goNoGo: (ctx, id, at) => goNoGoFor(db, ctx, id, at, testMail),
     setAuto: async (ctx, id, input) => {
-      const result = await setCategoryAutoWithGate(settings, ctx, id, input, testMail);
-      return result.kind === "refused" ? result : { kind: "changed", change: result.change };
+      const result = await setAuto(ctx, id, input);
+      return result.kind === "refused"
+        ? { kind: "refused", gate: result.gate, ...(result.evidence ? { blocks: result.evidence.blocks } : {}) }
+        : { kind: "changed", change: result.change };
     },
     listSyncFolders: async (ctx, id) =>
       (await listSyncFolders(db, ctx, id, { enabledOnly: false })).map(({ key, role, path, enabled }) => ({

@@ -39,3 +39,7 @@ Part of [`../plan.md`](../plan.md). Risk: mail moves without the user under a mo
 ## Out of scope
 
 The tripwire on corrections (stage 09). A re-run of the global eval (E2a tooling).
+
+## Carry-over from stage 04 review
+
+- N2: decide what happens to ready move and mark_read rows written under the old key after a model or prompt change (review-4.md).

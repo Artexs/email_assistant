@@ -1,10 +1,10 @@
 import {
   actionStatusFor,
   applyHardRules,
-  autoFor,
   decideCategory,
   decidePolicy,
   delegationInputOf,
+  effectiveAutoFor,
   nextQuotaDayStart,
   planActions,
   QUOTA_TIMEZONE,
@@ -12,6 +12,7 @@ import {
   type Category,
   type CategoryPolicy,
   type DelegationInput,
+  type EvidenceKey,
   type MailboxMode,
   type PlannedAction,
   type SenderRule,
@@ -61,6 +62,8 @@ export interface TriageMailbox {
   mode: MailboxMode;
   toolSwitches: ToolSwitches;
   policy: CategoryPolicy;
+  // The key of the classifier that runs now (the job gets it from the composition root). `auto` counts only under it.
+  runningKey: EvidenceKey;
   rules: readonly SenderRule[];
   movesSupported: boolean;
   // The active delegates of the organization, read once per mailbox run.
@@ -209,7 +212,7 @@ export async function saveTriage(
   now: Date
 ): Promise<TriageOutcome> {
   const emailLog = emailLogOf(ctx, email);
-  const categoryAuto = autoFor(mailbox.policy, decision.finalCategory);
+  const categoryAuto = effectiveAutoFor(mailbox.policy, decision.finalCategory, mailbox.runningKey);
   const items: PlannedActionInput[] = planActions(
     decision.finalCategory,
     decision.summary,

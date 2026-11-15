@@ -55,7 +55,8 @@ export const settingsDocs = {
   }),
   patchSettingsAuto: apiDoc({
     operationId: "patchSettingsAuto",
-    summary: "Turn auto mode of a category on or off. The go/no-go gate can refuse it (owner only).",
+    summary:
+      "Turn auto mode of a category on or off (owner only). The go/no-go gate refuses it with 409 `no_go`; with the flag `trust_ladder` on, `blocks` names the evidence that is missing. `force` sets it anyway.",
     tags: ["settings"],
     params: z.object({ mailboxId, category: z.enum(barCategories) }),
     body: autoBodySchema,

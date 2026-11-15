@@ -1,4 +1,4 @@
-import { mailboxModes, parseCategoryPolicy, parseToolSwitches } from "@ea/core";
+import { type EvidenceKey, mailboxModes, parseCategoryPolicy, parseToolSwitches } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -42,6 +42,8 @@ export interface TriageJobDeps {
   testMail: TestMailRule;
   batchSize: number;
   dailyCap: number;
+  // The key of the running classifier: `auto` granted under another key moves no mail Never read from env here.
+  runningKey: EvidenceKey;
   // `MAIL_TRUSTED_AUTHSERV_IDS` (lower case): authserv-ids that the suspicious-mail rules trust besides the IMAP host of the mailbox.
   trustedAuthservIds?: readonly string[];
   now(): Date;
@@ -135,6 +137,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               mode: modeSchema.parse(settings.mode),
               toolSwitches: parseToolSwitches(settings.tool_switches),
               policy: parseCategoryPolicy(settings.category_policy),
+              runningKey: deps.runningKey,
               rules,
               movesSupported: capabilities.move === true || capabilities.uidplus === true,
               delegates,
