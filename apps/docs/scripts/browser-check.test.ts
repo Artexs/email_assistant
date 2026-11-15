@@ -71,7 +71,8 @@ describe("serve.ts", () => {
     const empty = mkdtempSync(join(tmpdir(), "docs-empty-"));
     try {
       const result = Bun.spawnSync(["bun", join(ROOT, "apps/docs/e2e/serve.ts")], {
-        env: { ...process.env, EA_DOCS_DIST_DIR: empty, DOCS_TEST_URL: "https://example.test" },
+        env: { ...process.env, EA_DOCS_DIST_DIR: empty },
+        timeout: 10_000,
       });
       expect(result.exitCode).toBe(1);
       expect(result.stderr.toString()).toContain("[docs-serve]");
@@ -87,6 +88,7 @@ describe("serve.ts", () => {
       const result = Bun.spawnSync(["bunx", "playwright", "test", "-c", "apps/docs/e2e/playwright.config.ts"], {
         cwd: ROOT,
         env: { ...process.env, EA_DOCS_DIST_DIR: empty, DOCS_TEST_URL: "https://example.test" },
+        timeout: 25_000,
       });
       expect(result.exitCode).not.toBe(0);
       expect(`${result.stdout}${result.stderr}`).toContain(
