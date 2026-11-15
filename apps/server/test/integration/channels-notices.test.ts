@@ -17,6 +17,7 @@ import {
   addMember,
   createOrgWithMailbox,
   insertAction,
+  insertAttachmentHeaders,
   insertDelegate,
   insertDelegation,
   insertDraftAndSend,
@@ -222,6 +223,72 @@ describe("urgent notices", () => {
         expect("suspicious" in (row.view as object)).toBe(false);
         expect(row.text).not.toContain("⚠");
       }
+    });
+  });
+
+  test("7-9 the urgent view holds the attachment fact only while the flag is on; a mail without a headers row gets no line and no error", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const on = await org(trx);
+      const off = await org(trx);
+      const other = await org(trx);
+      await setOrgFeature(trx, on.ctx, { flag: "attachment_line", enabled: true, actor: "cli", now: T });
+      await setOrgFeature(trx, other.ctx, { flag: "attachment_line", enabled: true, actor: "cli", now: T });
+      const pdf = { name: "faktura.pdf", type: "application/pdf", size: 122880, inline: false };
+      const urgent = (o: Org) =>
+        insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const onId = await urgent(on);
+      const offId = await urgent(off);
+      const noRowId = await urgent(other);
+      await insertAttachmentHeaders(trx, on.ctx, onId, [pdf]);
+      await insertAttachmentHeaders(trx, off.ctx, offId, [pdf]);
+      // Test 9: flag on, no `email_headers` row.
+      expect(noRowId).toBeString();
+
+      await run(trx);
+
+      const onRows = await rows(trx, on.orgId, "urgent");
+      expect(onRows).toHaveLength(2);
+      for (const row of onRows) {
+        expect(row.email_id).toBe(onId);
+        expect((row.view as { attachments?: unknown }).attachments).toEqual({
+          attachments: [{ ...pdf }],
+          count: 1,
+        });
+        const lines = row.text.split("\n");
+        expect(lines[lines.indexOf(lines.find((l) => l.startsWith("Subject:")) as string) + 1]).toBe(
+          "📎 1: faktura.pdf (120 kB)"
+        );
+      }
+      // Test 8: flag off: no field, the text of today.
+      for (const row of await rows(trx, off.orgId, "urgent")) {
+        expect(row.email_id).toBe(offId);
+        expect("attachments" in (row.view as object)).toBe(false);
+        expect(row.text).not.toContain("📎");
+      }
+      for (const row of await rows(trx, other.orgId, "urgent")) {
+        expect(row.email_id).toBe(noRowId);
+        expect("attachments" in (row.view as object)).toBe(false);
+        expect(row.text).not.toContain("📎");
+      }
+      // No attachment name in a log line.
+      expect(errorLines.join("\n")).not.toContain("faktura");
+    });
+  });
+
+  test("an urgent mail with inline parts only gets no attachment field", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setOrgFeature(trx, o.ctx, { flag: "attachment_line", enabled: true, actor: "cli", now: T });
+      const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      await insertAttachmentHeaders(trx, o.ctx, emailId, [
+        { name: "logo.png", type: "image/png", size: 5, inline: true },
+      ]);
+      await run(trx);
+      const found = await rows(trx, o.orgId, "urgent");
+      expect(found.length).toBeGreaterThan(0);
+      for (const row of found) expect("attachments" in (row.view as object)).toBe(false);
     });
   });
 

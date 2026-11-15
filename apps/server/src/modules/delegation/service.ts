@@ -17,6 +17,7 @@ import {
   markDelegationCancelled,
   markDelegationDone,
   markDelegationSent,
+  moveDelegationToVersion,
   setDelegateActive,
   type DelegationStatus,
 } from "./repo";
@@ -286,6 +287,20 @@ export function delegationHooks(_deps: { db: Db }): DelegationHooks {
         at: input.at,
       });
       return "changed";
+    },
+    onSuperseded: async (trx, ctx, input) => {
+      const delegation = await lockDelegation(trx, ctx, input.delegationId);
+      if (delegation === undefined) return false;
+      return moveDelegationToVersion(trx, ctx, input.delegationId, {
+        draftActionId: input.draftActionId,
+        sendActionId: input.sendActionId,
+        delegateId: input.delegateId,
+        at: input.at,
+      });
+    },
+    activeDelegate: async (trx, ctx, delegateId) => {
+      const delegate = await getDelegate(trx, ctx, delegateId);
+      return delegate?.active === true ? { id: delegate.id, name: delegate.name, email: delegate.email } : undefined;
     },
     isOpen: async (trx, ctx, delegationId, kind) => {
       const delegation = await lockDelegation(trx, ctx, delegationId);

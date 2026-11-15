@@ -18,6 +18,7 @@ import {
 } from "../../src/modules/actions";
 import {
   expireReadyDraft,
+  insertEditedPair,
   insertSendAgain,
   type PlannedActionInput,
   setApproved,
@@ -523,6 +524,47 @@ describe("transitions map: entry writers", () => {
         expect(again.status).toBe(entry.status);
         expect(old.status).toBe("failed");
       }
+    });
+  });
+
+  test("insertEditedPair writes the entry statuses; each new row names the row it replaces", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      const ctx = { orgId };
+      const old = await insertDraftAndSend(trx, ctx, mailboxId, {});
+      const created = await insertEditedPair(trx, ctx, {
+        emailId: old.emailId,
+        oldDraftId: old.draftId,
+        oldSendId: old.sendId,
+        draftPayload: {},
+        sendPayload: {},
+      });
+      expect(created).not.toBeNull();
+      const entries = entriesOf("insertEditedPair");
+      expect(sorted(entries.flatMap((entry) => entry.types))).toEqual(["create_draft", "send"]);
+      for (const entry of entries) {
+        const id = entry.types[0] === "send" ? created?.sendId : created?.draftId;
+        const row = await trx
+          .selectFrom("actions")
+          .select(["type", "status", "supersedes_action_id"])
+          .where("id", "=", id as string)
+          .executeTakeFirstOrThrow();
+        expect(row).toEqual({
+          type: entry.types[0] as string,
+          status: entry.status,
+          supersedes_action_id: entry.types[0] === "send" ? old.sendId : old.draftId,
+        });
+      }
+      // The keys make a second pair for the same rows a no-op.
+      expect(
+        await insertEditedPair(trx, ctx, {
+          emailId: old.emailId,
+          oldDraftId: old.draftId,
+          oldSendId: old.sendId,
+          draftPayload: {},
+          sendPayload: {},
+        })
+      ).toBeNull();
     });
   });
 });

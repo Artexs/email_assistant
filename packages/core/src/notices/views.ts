@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { CHASER_SET_LIMIT, type SendResultKind } from "../digest/approvals";
+import { ATTACHMENT_LINE_NAMES } from "../digest/attachment-line";
 import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
 import { sendLimitKinds } from "../send-limits";
@@ -28,6 +29,12 @@ const wouldDoActionSchema = z.strictObject({
   delegateId: nullableText,
 });
 
+// The link to the panel page of a send: a text line on the approval card. One line, http or https, no space.
+export const panelUrlSchema = z
+  .string()
+  .max(300)
+  .regex(/^https?:\/\/\S+$/);
+
 const approvalViewSchema = z.strictObject({
   kind: draftKind,
   recipient: z.strictObject({ name: nullableText, address: text }),
@@ -39,11 +46,7 @@ const approvalViewSchema = z.strictObject({
   quote: z.strictObject({ text, cut: z.boolean() }).nullable(),
   synthetic: z.boolean(),
   version: z.number().int().min(1).optional(),
-  panelUrl: z
-    .string()
-    .max(300)
-    .regex(/^https?:\/\/\S+$/)
-    .optional(),
+  panelUrl: panelUrlSchema.optional(),
 });
 
 const sendResultKindSchema = z.discriminatedUnion("kind", [
@@ -92,6 +95,20 @@ const digestView = z.strictObject({
   buttons: outButtonsSchema,
 });
 
+const attachmentFactSchema = z.strictObject({
+  attachments: z
+    .array(
+      z.strictObject({
+        name: z.string().max(200).nullable(),
+        type: z.string().max(200),
+        size: z.number().min(0),
+        inline: z.boolean(),
+      })
+    )
+    .max(ATTACHMENT_LINE_NAMES),
+  count: z.number().int().min(1),
+});
+
 const urgentView = z.strictObject({
   emailId: id,
   from: nullableText,
@@ -105,6 +122,8 @@ const urgentView = z.strictObject({
   stayFolder: text,
   // Optional on read: a view queued before F109 has no field.
   suspicious: z.array(z.enum(suspiciousReasons)).optional(),
+  // Optional on read, written only when the flag `attachment_line` is on and the mail has an attachment to show (F109 stage 06).
+  attachments: attachmentFactSchema.optional(),
   now: isoDate,
   timeZone,
 });

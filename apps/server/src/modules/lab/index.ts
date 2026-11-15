@@ -1,3 +1,4 @@
+export { MAX_ERRORS_PER_REPLY, runDelegateBotsTick, type BotDeps, type BotTickResult } from "./bots";
 export { renderLabMessage } from "./message";
 export { LAB_MAILBOXES, labAddresses, loadLabCorpus, type LabCorpus } from "./corpus";
 export {
@@ -53,3 +54,18 @@ export {
   type StartRefusal,
   type StartResult,
 } from "./start";
+export {
+  LATE_AFTER_SEC,
+  MAX_ERRORS_PER_SLOT,
+  MAX_PER_TICK,
+  runInjectorTick,
+  type InjectorDeps,
+  type InjectorTick,
+} from "./injector";
+export {
+  createLabMailClient,
+  LabMailError,
+  type LabMailClient,
+  type LabMailClientOptions,
+  type LabMailErrorCode,
+} from "./mail-client";

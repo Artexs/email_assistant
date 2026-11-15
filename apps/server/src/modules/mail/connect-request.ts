@@ -11,7 +11,7 @@ export async function connectMailboxRequest(
   deps: ConnectDeps & { allowLocalHosts: boolean },
   ctx: TenantContext,
   input: { body: ConnectMailboxBody; actor: string }
-): Promise<{ mailboxId: string; info: MailServerInfo }> {
+): Promise<{ mailboxId: string; info: MailServerInfo; sentSync: boolean }> {
   const { body, actor } = input;
   const servers = serversFor(body);
   if (!deps.allowLocalHosts && (isLocalMailHost(servers.imapHost) || isLocalMailHost(servers.smtpHost))) {

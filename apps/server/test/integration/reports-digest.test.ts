@@ -20,6 +20,7 @@ import type { DB } from "../../src/platform/db";
 import {
   createOrgWithMailbox,
   insertAction,
+  insertAttachmentHeaders,
   insertDelegate,
   insertDelegation,
   insertDraftAndSend,
@@ -363,6 +364,7 @@ describe("buildDigestMessage", () => {
         role: "classifier",
         promptVersion: "test",
         model: "test-model",
+        endpoint: "standard",
         outcome: "http_429_quota",
         tokensIn: null,
         tokensOut: null,
@@ -561,6 +563,66 @@ describe("buildDigestMessage: suspicious mail", () => {
       const forB = (await buildDigestMessage(trx, ctxB, request)).text;
       expect(forB).toContain("SUBJECT-B");
       expect(forB).not.toContain("Suspicious");
+    });
+  });
+});
+
+describe("digest attachment line (F109 stage 06)", () => {
+  const request = {
+    kind: "on_demand" as const,
+    periodStart: at(-3 * HOUR),
+    periodEnd: T,
+    slot: null,
+    now: T,
+    locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
+  };
+  const pdf = { name: "faktura.pdf", type: "application/pdf", size: 122880, inline: false };
+
+  test("flag on: the line after the subject; flag off, no row, and another organization: no line", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const ctxB = { orgId: b.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      await insertDefaultSettings(trx, ctxB, b.mailboxId);
+      const withFile = await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "info",
+        createdAt: at(-2 * HOUR),
+        subject: "SUBJECT-FILE",
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "info",
+        createdAt: at(-90 * MIN),
+        subject: "SUBJECT-NOROW",
+      });
+      const inOther = await insertTriaged(trx, ctxB, b.mailboxId, {
+        category: "info",
+        createdAt: at(-2 * HOUR),
+        subject: "SUBJECT-OTHER",
+      });
+      await insertAttachmentHeaders(trx, ctx, withFile, [pdf]);
+      await insertAttachmentHeaders(trx, ctxB, inOther, [{ ...pdf, name: "other-org.pdf" }]);
+
+      const off = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(off).toContain("SUBJECT-FILE");
+      expect(off).not.toContain("📎");
+
+      await setOrgFeature(trx, ctx, { flag: "attachment_line", enabled: true, actor: "cli", now: T });
+      const on = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(on).toContain("SUBJECT-FILE\n📎 1: faktura.pdf (120 kB)");
+      expect(on.match(/📎/g)).toHaveLength(1);
+      expect(on).not.toContain("other-org");
+
+      // B has the flag off: its digest has no line, although the flag of A is on.
+      const forB = (await buildDigestMessage(trx, ctxB, request)).text;
+      expect(forB).toContain("SUBJECT-OTHER");
+      expect(forB).not.toContain("📎");
+      await setOrgFeature(trx, ctxB, { flag: "attachment_line", enabled: true, actor: "cli", now: T });
+      const forBOn = (await buildDigestMessage(trx, ctxB, request)).text;
+      expect(forBOn).toContain("📎 1: other-org.pdf (120 kB)");
+      expect(forBOn).not.toContain("faktura");
     });
   });
 });

@@ -1,6 +1,6 @@
 # Sent mail
 
-> Checked against the code at `189c4b66`, 2026-11-15.
+> Checked against the code at `f64c7256`, 2026-11-15.
 
 ## What it does now
 
@@ -19,17 +19,26 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 9. **Job and error rule.** The job calls `syncSentFolder` with a plain `Db` after `markSynced` and the flag refresh. `flag_off` and `off` log nothing. Any error is caught: one `sent_sync_failed` warning, then `mailbox_sent_sync.last_error_code = failed`. When that write fails too, one `sent_sync_mark_failed` warning. A login error in the pass is only logged; the next INBOX sync sets `auth_error`.
 10. **Log lines.** Fields come from the allow list (`platform/log-fields.ts`): `sent_sync_done` (`mailbox_id`, `status`, `kind` = the mode, `count` = new rows), `sent_texts_done` (`mailbox_id`, `count` = rows that the text step processed, also rows whose text is null: too big, or no text), `sent_texts_gone` (`mailbox_id`, `count` = rows marked `gone`), `sent_sync_failed` and `sent_sync_mark_failed` (`mailbox_id`, `error`, `error_code`). No line holds a subject, address, path, text or the message of an error. The count `system` of the pass result is not logged: it counts the system rows of each written chunk, so a rescan reports it with `stored 0`.
 
+11. **Readers.** `listUserAnswers(db, ctx, emailIds)` answers "did the user reply to this mail, and when": per incoming mail, the earliest user row (`origin = user`, order `sent_at` then row id) of the same mailbox, in any Sent path, whose `parent_message_id` equals `emails.message_id_header`. A system send never counts; a user row with an action id does. A mail without a reply or without a Message-ID is absent from the map. Ids go in chunks of 500; no ids, no query. `getSentSummary(db, ctx, mailboxId, { since })` counts the user rows of the current path with `internal_date >= since` and gives the newest `internal_date` of any age; no state or no path gives `{ 0, null }`. `listSentHealth(db, ctx)` lists the mailboxes of the organization with the switch on and a first pass: pass times, the newest user date of the current path and the error code. All three take a plain `Db` or a transaction, filter by `org_id` and the mailbox, and write nothing.
+12. **Retention.** The daily job clears the stored text (`clearSentBodies`) after the organization's `data_retention_days` and the subject and addresses (`clearSentHeaders`) after 90 days, both counted from `internal_date` (the date in Sent), not from the store time. The row stays: `content` stays `stored`, and `message_id`, `parent_message_id`, `thread_key`, `dedup_key`, `origin` and the times stay, so `listUserAnswers` answers after the clear. The functions work in batches with `FOR UPDATE SKIP LOCKED`; a repeat changes nothing. The retention log line adds the counts `sent body` and `sent headers`: no subject, address or text (`retention.md`).
+
+13. **The switch (consent).** "Track my sent mail" is the consent to read Sent. `setSentSync(db, ctx, mailboxId, { enabled, actor, at })` is the only way to change it. One transaction, in this order: on with the flag `sent_sync` off gives `flag_off` and writes nothing (off never checks the flag, so the user can always withdraw); a mailbox that is not in the organization gives `not_found`; the state row is locked (a mailbox without a row gets an off row first); the same value gives `same` and no audit row. A change writes the switch with `enabled_at = at` (on) or `null` (off) and clears the folder, the cursor and the pass fields, so the next pass is `initial`. Off also deletes the `sent_emails` rows of this mailbox (`deleteSentEmails`; the count goes to the result) and nothing else: no received mail, no row of another mailbox or organization, no tombstone. The lock is the one of the pass (rule 6): a pass that read the old state writes nothing after the change. Each change writes one audit row `mailbox.sent_sync_changed` (data: `mailbox_id`, `enabled`, `count`; actor and time from the caller). The event is not in the security log of the owner. It carries no consent version: sent mail stays in our database and goes to no LLM and no Telegram chat yet. A feature that sends sent-mail data to Telegram or an LLM must add the consent text and its version first.
+14. **Connect.** `connectMailbox` reads the flag before its transaction and inserts the state row with that value: flag on gives a mailbox with the switch on (the connect dialog shows the one plain line, stage 10; `mailbox:connect` prints `sent mail: tracked, read only`), flag off gives an off row. The audit row `mailbox.connected` has `sent_sync`. A mailbox that connects while the flag is off stays off when the flag goes on later: the owner turns it on.
+
 ## Entry points
 
-| Kind     | Name                                                                       | Where                                              |
-| -------- | -------------------------------------------------------------------------- | -------------------------------------------------- |
-| job      | `mail.sync` (runs the Sent pass last)                                      | `apps/server/src/modules/mail/jobs.ts`             |
-| function | `syncSentFolder`, `syncSentHeaders`                                        | `apps/server/src/modules/mail/sent-sync.ts`        |
-| function | `fetchSentTexts`                                                           | `apps/server/src/modules/mail/sent-texts.ts`       |
-| function | `toNewSentEmail`, `sentModeOf`, `sentTextWindowMs`                         | `apps/server/src/modules/mail/sent-rules.ts`       |
-| function | `insertSentEmails`, `writeSentText`, `expireSentTexts`, `deleteSentEmails` | `apps/server/src/modules/mail/repo/sent-emails.ts` |
-| function | `getSentSyncState`, `lockSentSyncState`, `writeSentSwitch`, `markSentPass` | `apps/server/src/modules/mail/repo/sent-state.ts`  |
-| function | `sentOriginOf`                                                             | `apps/server/src/modules/actions/repo/planned.ts`  |
+| Kind     | Name                                                                       | Where                                               |
+| -------- | -------------------------------------------------------------------------- | --------------------------------------------------- |
+| job      | `mail.sync` (runs the Sent pass last)                                      | `apps/server/src/modules/mail/jobs.ts`              |
+| function | `syncSentFolder`, `syncSentHeaders`                                        | `apps/server/src/modules/mail/sent-sync.ts`         |
+| function | `fetchSentTexts`                                                           | `apps/server/src/modules/mail/sent-texts.ts`        |
+| function | `toNewSentEmail`, `sentModeOf`, `sentTextWindowMs`                         | `apps/server/src/modules/mail/sent-rules.ts`        |
+| function | `insertSentEmails`, `writeSentText`, `expireSentTexts`, `deleteSentEmails` | `apps/server/src/modules/mail/repo/sent-emails.ts`  |
+| function | `getSentSyncState`, `lockSentSyncState`, `writeSentSwitch`, `markSentPass` | `apps/server/src/modules/mail/repo/sent-state.ts`   |
+| function | `listUserAnswers`, `getSentSummary`, `listSentHealth`                      | `apps/server/src/modules/mail/repo/sent-readers.ts` |
+| function | `clearSentBodies`, `clearSentHeaders`                                      | `apps/server/src/modules/mail/repo/retention.ts`    |
+| function | `setSentSync`                                                              | `apps/server/src/modules/mail/sent-switch.ts`       |
+| function | `sentOriginOf`                                                             | `apps/server/src/modules/actions/repo/planned.ts`   |
 
 ## Data
 
@@ -43,9 +52,9 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - One mail that makes `fetchContent` fail on every run (a server `BAD` on one UID) holds the text step: the order is oldest first and the error ends the step. It clears when the row leaves the text window, after up to 14 days. The pass logs `sent_sync_failed` each run.
 - Worst case of one run: 100 text fetches of up to 5 MB each, one after another, on the connection of the mailbox. It adds to the run time of `mail.sync`.
 - Mail moved into Sent by hand after it is older than 30 days is not stored (`tooOld`).
-- No switch in the panel, the CLI or the connect flow yet, so the switch is not settable by the product: F104 stages 08 to 10. No retention clear of `sent_emails` yet (stage 07), no "no sent mail seen" notice (stage 11), no DSR erase of sent mail (stage 12).
+- The switch is set by `setSentSync` and at connect; no panel, route or CLI command calls `setSentSync` yet (F104 stages 09 and 10). No "no sent mail seen" notice (stage 11), no DSR erase of sent mail (stage 12).
 - No analysis of sent mail by the LLM: E5b. No pass before a system send: E6a (F115).
-- The answered mark (`listUserAnswers`) is not built yet (stage 07).
+- `listUserAnswers` reads a direct reply only (the parent id): a later reply elsewhere in the thread does not mark older mails; a reader that wants the thread rule builds it from `thread_key`. No caller yet: E3a, E4-B, E11a, E6 (reply drafts) and E5b (open loops) use it. F116 (open loops) note: Sent text goes after `data_retention_days` and the recipients after 90 days, so a loop that stays open longer than `data_retention_days` needs its own copy of what it needs.
 
 ## Decisions
 
@@ -58,8 +67,14 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - `apps/server/test/integration/mail-jobs.test.ts`
 - `apps/server/test/integration/mail-sent-sync.test.ts`
 - `apps/server/test/integration/mail-sent-sync-concurrent.test.ts`
+- `apps/server/test/integration/mail-sent-switch.test.ts`
+- `apps/server/test/integration/mail-connect.test.ts`
 - `apps/server/test/integration/mail-sent-texts.test.ts`
 - `apps/server/test/integration/mail-sent-repo.test.ts`
+- `apps/server/test/integration/mail-sent-readers.test.ts`
+- `apps/server/test/integration/retention-clear.test.ts`
+- `apps/server/test/integration/retention-clear-sent-concurrent.test.ts`
+- `apps/server/test/integration/retention-job.test.ts`
 - `apps/server/test/integration/actions-sent-origin.test.ts`
 - `apps/server/src/modules/mail/sent-rules.test.ts`
 - `apps/server/src/modules/mail/sent-reader.test.ts`

@@ -2,6 +2,7 @@
 export * from "./actions";
 export * from "./activity";
 export * from "./errors";
+export * from "./mail-oauth";
 export * from "./mailboxes";
 export * from "./me";
 export * from "./next-path";

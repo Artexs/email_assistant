@@ -31,13 +31,20 @@ export { MOVE_CHECK_CHUNK, findUserMoves, type UserMovesDeps, type UserMovesResu
 export {
   createMailOAuthClient,
   createMailOAuthClients,
+  consumeOAuthState,
+  createOAuthState,
   mailOAuthProviders,
+  mailOAuthRoutes,
   missingResourceScopes,
   OAuthGrantError,
   OAuthSoftError,
+  OAuthStateRefusedError,
   requiredResourceScopes,
+  type ConsumeResult,
   type MailOAuthClient,
   type MailOAuthClients,
+  type MailOAuthRouteDeps,
+  type OAuthStart,
   type MailOAuthProvider,
   type MailOAuthProviderSpec,
   type TokenAnswer,
@@ -82,12 +89,15 @@ export {
   SmtpSendError,
   type MailSender,
 } from "./port";
+export { attachmentFactsToShow } from "./attachment-facts";
 export {
   changeMailboxStatus,
   claimEmails,
   clearMailBodies,
   PENDING_BODY_DAYS,
   clearMailHeaders,
+  clearSentBodies,
+  clearSentHeaders,
   deleteOldOAuthStates,
   clearReturned,
   clearCapturedHeaders,
@@ -122,7 +132,10 @@ export {
   getSentSyncState,
   insertSentEmails,
   insertSentSyncState,
+  getSentSummary,
   listPendingSentTexts,
+  listSentHealth,
+  listUserAnswers,
   lockSentSyncState,
   markSentPass,
   releaseEmail,
@@ -149,8 +162,11 @@ export type {
   NewSentEmail,
   SentContent,
   SentErrorCode,
+  SentHealthRow,
+  SentSummary,
   SentSyncState,
   SentTextWrite,
+  UserAnswer,
 } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
@@ -161,6 +177,7 @@ export {
   type SentPassStatus,
   type SentSyncDeps,
 } from "./sent-sync";
+export { setSentSync, type SentSwitchInput, type SentSwitchResult } from "./sent-switch";
 export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
 export {
   isSyntheticMessageId,

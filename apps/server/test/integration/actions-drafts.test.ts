@@ -11,6 +11,7 @@ import {
   createCommitterJob,
   createFolderResolver,
   listFailedUnnotified,
+  noApprovalHooks,
   noDelegationHooks,
   reject,
   RETRY_WAIT_MS,
@@ -518,7 +519,7 @@ describe("applyDraft", () => {
       const deps = depsOf(s, trx, NOW, {
         beforeCommit: async () => {
           const result = await reject(
-            { db: trx, hooks: noDelegationHooks, uidplus: async () => true },
+            { db: trx, hooks: noDelegationHooks, approvalHooks: noApprovalHooks, uidplus: async () => true },
             s.ctx,
             p.sendId,
             { userId: s.userId, via: "cli", now: NOW }
@@ -776,11 +777,16 @@ describe("a failing draft and a reject on two connections", () => {
           (error: unknown) => ({ error })
         );
         await new Promise((resolve) => setTimeout(resolve, 500));
-        return reject({ db: trx, hooks: noDelegationHooks, uidplus: async () => true }, ctx, p.sendId, {
-          userId: created.userId,
-          via: "cli",
-          now: NOW,
-        });
+        return reject(
+          { db: trx, hooks: noDelegationHooks, approvalHooks: noApprovalHooks, uidplus: async () => true },
+          ctx,
+          p.sendId,
+          {
+            userId: created.userId,
+            via: "cli",
+            now: NOW,
+          }
+        );
       });
       const outcome = await failing;
 

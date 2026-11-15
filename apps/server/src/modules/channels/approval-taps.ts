@@ -17,23 +17,21 @@ import { createLog } from "../../platform/log";
 import {
   approve,
   approveSet,
-  getSend,
   markWentOut,
   reject,
   rejectSet,
   sendAgain,
-  sendFilterFor,
-  sendScopeAdmits,
   type ActionsScope,
   type ApprovalDeps,
   type DelegationHooks,
   type SendScope,
 } from "../actions";
 import { closeDelegation } from "../delegation";
-import { getMailbox, mailboxStatusSchema } from "../mail";
 import { getOrganization, isFeatureOn } from "../tenancy";
 
 import { handleMistakeTap, handleReasonTap } from "./action-feedback-taps";
+import { cardEditHooks } from "./card-edits";
+import { heldReason } from "./held-reason";
 import type { CallbackResult, LinkedChat } from "./port";
 import { findOutboxByDedup } from "./repo";
 
@@ -89,7 +87,13 @@ export async function handleApprovalCallback(
   const organization = await getOrganization(deps.db, ctx);
   if (organization === undefined) return { answer: taps.notFound };
   const timeZone = organization.timezone;
-  const approvals: ApprovalDeps = { db: deps.db, hooks: deps.hooks, uidplus: deps.uidplus };
+  // After a decision the hook queues the edits of the other cards of the send (not the tapped one: the answer edits it).
+  const approvals: ApprovalDeps = {
+    db: deps.db,
+    hooks: deps.hooks,
+    approvalHooks: cardEditHooks({ sendScope: deps.sendScope }),
+    uidplus: deps.uidplus,
+  };
   const input = { userId: link.userId, via: "telegram" as const, now };
   // The card as the user got it (the stored text) plus one status line (docs/architecture.md §4.5). A row that was never
   // sent has no text: no edit, only the answer.
@@ -143,6 +147,8 @@ export async function handleApprovalCallback(
           return { answer: taps.rejected };
         case "failed":
           return { answer: taps.failed };
+        case "superseded":
+          return { answer: taps.changed };
         case "draft_not_ready":
           return { answer: taps.draftNotReady };
         case "not_found":
@@ -165,6 +171,7 @@ export async function handleApprovalCallback(
         };
       }
       if (result.kind === "already") return { answer: statusText(taps, result.status) ?? taps.notFound };
+      if (result.kind === "superseded") return { answer: taps.changed };
       return { answer: taps.notFound };
     }
     case "approve_set": {
@@ -282,25 +289,6 @@ function heldAnswers(taps: CoreTexts["bot"]["taps"]): Record<HeldBy, string> {
     auth_error: taps.approvedAuthError,
     host_blocked: taps.approvedHostBlocked,
   };
-}
-
-// Why the committer will not claim the send just approved: the state of the mailbox first, then the scope (as /status).
-// A send or mailbox that cannot be read counts as held by the scope: the toast must not promise a send.
-async function heldReason(deps: CallbackDeps, ctx: TenantContext, actionId: string): Promise<HeldBy | undefined> {
-  const send = await getSend(deps.db, ctx, actionId);
-  const mailbox = send === undefined ? undefined : await getMailbox(deps.db, ctx, send.email.mailbox_id);
-  if (send === undefined || mailbox === undefined) return "scope";
-  const to = Array.isArray(send.payload.to) ? send.payload.to.filter((item) => typeof item === "string") : [];
-  switch (mailboxStatusSchema.parse(mailbox.status)) {
-    case "paused":
-      return "paused";
-    case "auth_error":
-      return "auth_error";
-    case "host_blocked":
-      return "host_blocked";
-    case "active":
-      return sendScopeAdmits(sendFilterFor(deps.sendScope), to) ? undefined : "scope";
-  }
 }
 
 // A set holds the first cause found among its approved sends: the mailbox is the same, the recipients can differ.

@@ -70,8 +70,21 @@ export {
   type ClaimedEmail,
 } from "./claims";
 export { listEmailsByMessageIds, listFolderEmailKeys, listThreadContext } from "./lookup";
-export { PENDING_BODY_DAYS, clearMailBodies, clearMailHeaders, deleteOldOAuthStates } from "./retention";
-export { clearCapturedHeaders, getEmailHeaders, insertEmailHeaders, type EmailHeadersRow } from "./headers";
+export {
+  PENDING_BODY_DAYS,
+  clearMailBodies,
+  clearMailHeaders,
+  clearSentBodies,
+  clearSentHeaders,
+  deleteOldOAuthStates,
+} from "./retention";
+export {
+  clearCapturedHeaders,
+  getEmailHeaders,
+  insertEmailHeaders,
+  listAttachmentInputs,
+  type EmailHeadersRow,
+} from "./headers";
 export {
   getEmailFlags,
   listFlagTargets,
@@ -103,3 +116,11 @@ export {
   type SentErrorCode,
   type SentSyncState,
 } from "./sent-state";
+export {
+  getSentSummary,
+  listSentHealth,
+  listUserAnswers,
+  type SentHealthRow,
+  type SentSummary,
+  type UserAnswer,
+} from "./sent-readers";

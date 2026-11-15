@@ -47,3 +47,8 @@ Also read `notes/2026-11-13-measured-core-facts.md` again: if the F100 pilot pro
 ## Carry-over from stage 04 review
 
 - Clarify the consent rule in `docs/code-patterns.md` (§ The consent version, "a new field of a notice"): bump `TELEGRAM_CONSENT_VERSION` when a new kind of mail-derived data reaches Telegram (addresses, names, domains, subject, body, attachment names or types, link hosts). Fixed phrases that our own code picks from our own codes (the suspicious warning line, category tags, would-do phrases) do not bump. Source: `review-4.md` N2.
+
+## Carry-over from stage 06 review
+
+- `docs/capabilities/retention.md` must say that the cut attachment names in `outbox.view` and `outbox.text` can stay up to `RETENTION_TEXT_DAYS` (90 days), longer than `email_headers.attachments` (the org's `data_retention_days`, default 30, minimum 1). Up to 3 names per urgent view. Subjects in the view live as long. Source: `review-6.md` N3.
+- `docs/capabilities/digest-and-notices.md` (attachment line rule): the line shows the MIME type when the name is empty, so the consent text says "names (or file types)". After retention the count includes inline and calendar parts (N5). Source: `review-6.md` N2, N5.

@@ -453,6 +453,26 @@ describe("renderNotice", () => {
     expect(noticeViewSchemas.urgent.safeParse({ ...encoded, suspicious: ["bogus"] }).success).toBe(false);
   });
 
+  test("an urgent view queued before the attachment line has no field; a view with the field prints the line", () => {
+    const old: NoticeView<"urgent"> = { ...urgentView };
+    expect("attachments" in old).toBe(false);
+    const oldRendered = renderNotice("urgent", encodeNoticeView("urgent", old), opts);
+    expect(oldRendered.ok && oldRendered.message.text).not.toContain("📎");
+    const view: NoticeView<"urgent"> = {
+      ...urgentView,
+      attachments: { attachments: [{ name: "a.pdf", type: "application/pdf", size: 10, inline: false }], count: 1 },
+    };
+    const rendered = renderNotice("urgent", encodeNoticeView("urgent", view), opts);
+    expect(rendered.ok && rendered.message.text).toContain("📎 1: a.pdf (10 B)");
+    const encoded = encodeNoticeView("urgent", view);
+    expect(noticeViewSchemas.urgent.safeParse({ ...encoded, attachments: { attachments: [], count: 0 } }).success).toBe(
+      false
+    );
+    expect(
+      noticeViewSchemas.urgent.safeParse({ ...encoded, attachments: { count: 1, attachments: [], extra: 1 } }).success
+    ).toBe(false);
+  });
+
   test("a renderer that throws gives ok: false", () => {
     const view = { ...encodeNoticeView("urgent", urgentView), emailId: "e1" };
     expect(renderNotice("urgent", view, opts)).toEqual({ ok: false });

@@ -3,6 +3,7 @@ import type { Category, MailboxMode } from "../triage/categories";
 import type { SuspiciousReason } from "../triage/suspicious";
 import type { MailboxStatus } from "../web/mailboxes";
 
+import { attachmentLine, type AttachmentLineInput } from "./attachment-line";
 import { categoryTag } from "./labels";
 import { llmPauseLine, type LlmPause } from "./llm-pause";
 import { formatClock, formatDay, localDateTime, localToInstant } from "./local-time";
@@ -41,6 +42,8 @@ export interface DigestItem {
   undoable: boolean;
   // Set only while the flag `suspicious_mail` is on. Absent reads as none.
   suspicious?: readonly SuspiciousReason[];
+  // Set only while the flag `attachment_line` is on and the mail has an attachment to show (F109 stage 06).
+  attachments?: AttachmentLineInput;
   // A draft exists or is planned for the mail (an original `create_draft` action). A flagged delegation shows "no draft" only without one.
   hasDraft?: boolean;
 }
@@ -124,6 +127,8 @@ function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {
     `${n}. ${categoryTag(item.category, texts)} · ${senderLabel(item.from, texts)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? ` · ${texts.common.test}` : ""}`,
     cleanSubject(item.subject, texts),
   ];
+  const attachments = item.attachments === undefined ? null : attachmentLine(item.attachments, texts.locale);
+  if (attachments !== null) lines.push(attachments);
   if (item.aiText !== null && item.aiText !== "") lines.push(`💬 ${cutText(item.aiText, 120)}`);
   const warning = suspiciousLine(item.suspicious, texts);
   if (warning !== null) lines.push(warning);

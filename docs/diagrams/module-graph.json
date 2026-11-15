@@ -17,6 +17,7 @@
   ],
   "edges": [
     ["actions", "audit"],
+    ["actions", "config"],
     ["actions", "mail"],
     ["actions", "tenancy"],
     ["channels", "actions"],

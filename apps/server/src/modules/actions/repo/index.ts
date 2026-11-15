@@ -44,12 +44,14 @@ export {
   listRecentSends,
   listSetSends,
   lockMailboxSends,
+  newestVersionOf,
   lockSend,
   setApproved,
   setExpired,
   setRejected,
   type SendRow,
 } from "./sends";
+export { insertEditedPair } from "./edit";
 export { draftHasReverse, expireReadyDraft, getDraft, listSendsOfDraft, lockDraft, type DraftRow } from "./drafts";
 export {
   listFailedUnnotified,

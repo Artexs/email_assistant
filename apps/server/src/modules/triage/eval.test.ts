@@ -1,7 +1,15 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { delegateIdOf, type EvalCase, EVAL_RECEIVED_AT, evalCaseSchema, type LlmRole, selectCases } from "@ea/core";
+import {
+  delegateIdOf,
+  type EvalCase,
+  EVAL_RECEIVED_AT,
+  evalCaseSchema,
+  type LlmEndpointKind,
+  type LlmRole,
+  selectCases,
+} from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
@@ -825,7 +833,12 @@ describe("runEval worker pool", () => {
 });
 
 describe("evalStateFileName", () => {
-  const base = { reasoningEffort: null, promptVersion: PROMPT_VERSION, set: "all" };
+  const base = {
+    reasoningEffort: null,
+    promptVersion: PROMPT_VERSION,
+    set: "all",
+    endpoint: "standard" as LlmEndpointKind,
+  };
 
   test("Gemini name has no effort part", () => {
     expect(evalStateFileName({ ...base, model: "gemini-3.5-flash-lite" })).toBe(
@@ -853,5 +866,32 @@ describe("evalStateFileName", () => {
 
   test("subset suffix and unsafe characters", () => {
     expect(evalStateFileName({ ...base, model: "a/b c", perCategory: 3 })).toBe("a_b_c-classifier-v2-all-pc3.jsonl");
+  });
+
+  // F111 D8: a resume never mixes the results of two endpoints.
+  test("eu and own add their endpoint; standard keeps the old name", () => {
+    const standard = evalStateFileName({ ...base, model: "gpt-6-luna" });
+    expect(standard).toBe("gpt-6-luna-classifier-v2-all.jsonl");
+    expect(evalStateFileName({ ...base, model: "gpt-6-luna", endpoint: "eu" })).toBe(
+      "gpt-6-luna-classifier-v2-all-eu.jsonl"
+    );
+    expect(evalStateFileName({ ...base, model: "gpt-6-luna", endpoint: "own" })).toBe(
+      "gpt-6-luna-classifier-v2-all-own.jsonl"
+    );
+    expect(evalStateFileName({ ...base, model: "gpt-6-luna", endpoint: "own", perCategory: 3 })).toBe(
+      "gpt-6-luna-classifier-v2-all-pc3-own.jsonl"
+    );
+  });
+
+  test("a v3 label with parts and own ends with the endpoint; other parts give another name", () => {
+    const name = (parts: readonly ClassifierV3Part[]) =>
+      evalStateFileName({
+        ...base,
+        endpoint: "own",
+        model: "gpt-6-luna",
+        promptVersion: promptLabel({ version: "classifier-v3", parts }),
+      });
+    expect(name(["history", "urgency"])).toBe("gpt-6-luna-classifier-v3_history_urgency_-all-own.jsonl");
+    expect(name(["urgency"])).not.toBe(name(["history", "urgency"]));
   });
 });

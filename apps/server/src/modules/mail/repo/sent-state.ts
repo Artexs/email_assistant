@@ -21,7 +21,7 @@ export interface SentSyncState {
   lastErrorCode: SentErrorCode | null;
 }
 
-function isSentErrorCode(value: string): value is SentErrorCode {
+export function isSentErrorCode(value: string): value is SentErrorCode {
   return SENT_ERROR_CODES.includes(value);
 }
 function toNumber(value: string | null): number | null {
