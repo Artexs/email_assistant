@@ -143,6 +143,30 @@ describe("open loops in a data request", () => {
     expect((await match(w.orgId, w.person)).mentions).toEqual({});
   });
 
+  test("2c: the text goes also when the person is only a To or only a Cc recipient", async () => {
+    const w = await seedWorld();
+    const onlyTo = await seedLoop(w, {
+      counterpart: w.other,
+      to_addresses: [w.other, w.person],
+      text: "send the plan",
+    });
+    const onlyCc = await seedLoop(w, {
+      counterpart: w.other,
+      to_addresses: [w.other],
+      cc_addresses: [w.person],
+      text: "call back",
+    });
+    const result = await erase(w);
+    expect(result.kind).toBe("erased");
+    for (const id of [onlyTo, onlyCc]) {
+      const row = await loopRow(id);
+      expect(row.text).toBeNull();
+      expect(row.counterpart).toBe(w.other);
+      expect(row.to_addresses).toEqual([w.other]);
+      expect(row.cc_addresses).toEqual([]);
+    }
+  });
+
   test("2b: a short address makes the scrubbed subject longer: it is cut to the 300 characters of the CHECK", async () => {
     const w = await seedWorld();
     const person = "a@b.co";
