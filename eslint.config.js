@@ -251,6 +251,7 @@ export default tseslint.config(
       "apps/server/src/modules/delegation/**/*.ts",
       "apps/server/src/modules/mail/**/*.ts",
       "apps/server/src/modules/tenancy/**/*.ts",
+      "apps/server/src/modules/triage/**/*.ts",
     ],
     ignores: ["**/*.test.ts"],
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors] },
