@@ -71,7 +71,8 @@ test("mode, switch and auto", async ({ page }, testInfo) => {
   await expect(dialog.getByText(en.assist_title)).toBeVisible();
   await expect(dialog.getByText(en.badge_triage_off)).toBeVisible();
   await expect(dialog.getByText(en.badge_actions_synthetic)).toBeVisible();
-  await expect(dialog.getByText(en.badge_send_off)).toBeVisible();
+  // The e2e server has SEND_SCOPE=self (the approvals spec sends one mail to a test address): see `e2e/env.ts`.
+  await expect(dialog.getByText(en.badge_send_self)).toBeVisible();
   await expectNoA11yViolations(page);
   await dialog.getByRole("button", { name: en.assist_usual }).click();
   await expect(page.getByText(en.mode_assist_toast)).toBeVisible();

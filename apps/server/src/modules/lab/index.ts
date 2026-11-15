@@ -24,6 +24,17 @@ export {
 } from "./executive";
 export { orgHasMail } from "./org-mail";
 export {
+  createOrgLookup,
+  LabResetError,
+  previewReset,
+  resetDemo,
+  resetOrg,
+  type LabOrgRow,
+  type ResetDeps,
+  type ResetErrorCode,
+  type ResetPreview,
+} from "./reset";
+export {
   LAB_FLAGS_OFF,
   LAB_FLAGS_ON,
   LAB_IMAP_PORT,
@@ -78,6 +89,7 @@ export {
 export {
   createLabMailClient,
   LabMailError,
+  type LabMailAdmin,
   type LabMailClient,
   type LabMailClientOptions,
   type LabMailErrorCode,

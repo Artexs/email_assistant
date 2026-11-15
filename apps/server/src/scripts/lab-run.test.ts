@@ -15,6 +15,7 @@ import {
   type LabCorpus,
   type LabModel,
   type LabOrg,
+  type LabOrgRow,
   type RunSpend,
   type ServeStatus,
   type SeedResult,
@@ -66,6 +67,11 @@ describe("lab command", () => {
   let serveStatus: ServeStatus | undefined;
   let scoreCalls: [string, string | undefined][] = [];
   let scoreResult: { markdown: string; json: string; partial: boolean } | Error;
+  let orgRows: Record<string, LabOrgRow | undefined> = {};
+  let deleted: string[] = [];
+  let emptied: string[] = [];
+  let mailCount = 0;
+  let seedWrites = false;
 
   beforeEach(() => {
     seedCalls = [];
@@ -74,6 +80,14 @@ describe("lab command", () => {
       created: true,
       added: { mailbox: 1, delegates: 3, rules: 2, flags: 11, linked: true, relinked: false },
     };
+    orgRows = {
+      "o-lab": { name: "Kordelan lab", mailboxes: [LAB_MAILBOXES.lab] },
+      "o-demo": { name: "Kordelan demo", mailboxes: [LAB_MAILBOXES.demo] },
+    };
+    deleted = [];
+    emptied = [];
+    mailCount = 4;
+    seedWrites = false;
     stored = [];
     storeError = undefined;
     serveCalls = 0;
@@ -104,9 +118,25 @@ describe("lab command", () => {
     corpus,
     models,
     orgHasMail: async () => hasMail,
+    reset: {
+      lookupOrg: async (orgId) => orgRows[orgId],
+      mail: {
+        countMessages: async () => mailCount,
+        emptyMailbox: async (mailbox) => {
+          emptied.push(mailbox);
+          return mailCount;
+        },
+      },
+      deleteOrg: async ({ orgId }) => {
+        deleted.push(orgId);
+        return { kind: "deleted", mailboxAddresses: [] };
+      },
+    },
     seed: async (target) => {
       seedCalls.push(target);
       if (seedResult instanceof Error) throw seedResult;
+      // The real seed writes the entry of the org it made.
+      if (seedWrites) state().writeOrgs({ ...state().readOrgs(), [target.key]: seedResult.org });
       return seedResult;
     },
     storeUrgency: async (org: LabOrg, plan) => {
@@ -166,6 +196,8 @@ describe("lab command", () => {
       ["stop", "--run", "day-20261123-aaaa"],
       ["seed"],
       ["score", "--run", "day-20261123-aaaa"],
+      ["reset", "--org", "lab", "--yes"],
+      ["demo-reset", "--yes"],
     ]) {
       failed = [];
       expect(await run(argv)).toBe(1);
@@ -178,13 +210,92 @@ describe("lab command", () => {
 
   test("commands of later stages exit 1 with not built", async () => {
     for (const argv of [
-      ["reset", "--org", "lab", "--yes"],
-      ["demo-reset", "--yes"],
+      ["demo-export", "--day", "4", "--out", "/tmp/x.json"],
+      ["demo-import", "--file", "/tmp/x.json", "--email", "a@dev.test"],
     ]) {
       failed = [];
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not built");
     }
+  });
+
+  test("reset without --yes prints what it would delete and exits 1 with confirm_needed; nothing changes", async () => {
+    seedOrgs();
+    expect(await run(["reset", "--org", "lab"])).toBe(1);
+    expect(printed).toEqual([`reset lab: would delete org o-lab and 4 mails of ${LAB_MAILBOXES.lab}`]);
+    expect(failed).toEqual(["refused: confirm_needed"]);
+    expect(deleted).toEqual([]);
+    expect(emptied).toEqual([]);
+    expect(seedCalls).toEqual([]);
+    expect(state().readOrgs().lab?.orgId).toBe("o-lab");
+    printed = [];
+    failed = [];
+    expect(await run(["demo-reset"])).toBe(1);
+    expect(printed).toEqual([`reset demo: would delete org o-demo and 4 mails of ${LAB_MAILBOXES.demo}`]);
+    expect(failed).toEqual(["refused: confirm_needed"]);
+    expect(deleted).toEqual([]);
+    expect(runFolders()).toEqual([]);
+  });
+
+  test("reset --yes deletes the org, empties the mailbox, seeds again and stops the open run of that org with a ledger line", async () => {
+    seedOrgs();
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23", "--org", "lab"])).toBe(0);
+    spend = { kind: "ok", usd: 0.25, calls: 3, unpricedCalls: 0 };
+    printed = [];
+    expect(await run(["reset", "--org", "lab", "--yes"])).toBe(0);
+    expect(printed).toEqual(["reset: lab org o-new rebuilt"]);
+    expect(deleted).toEqual(["o-lab"]);
+    expect(emptied).toEqual([LAB_MAILBOXES.lab]);
+    expect(seedCalls.map((target) => target.key)).toEqual(["lab"]);
+    expect(state().readOrgs().lab).toBeUndefined();
+    expect(state().readOrgs().demo?.orgId).toBe("o-demo");
+    expect(state().activeRuns()).toEqual([]);
+    expect(
+      state()
+        .events("day-20261123-aaaa")
+        .some((e) => e.t === "stopped" && e.reason === "operator")
+    ).toBe(true);
+    expect(ledgerLines()).toHaveLength(1);
+    expect(ledgerLines()[0]).toContain("day-20261123-aaaa");
+  });
+
+  test("reset: an org whose name is not the lab name is org_mismatch; nothing is deleted, emptied or stopped", async () => {
+    seedOrgs();
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23", "--org", "demo"])).toBe(0);
+    orgRows["o-demo"] = { name: "Kordelan lab", mailboxes: [LAB_MAILBOXES.demo] };
+    failed = [];
+    expect(await run(["demo-reset", "--yes"])).toBe(1);
+    expect(failed).toEqual(["refused: org_mismatch"]);
+    expect(deleted).toEqual([]);
+    expect(emptied).toEqual([]);
+    expect(state().activeRuns()).toEqual(["day-20261123-aaaa"]);
+  });
+
+  test("demo-reset --yes resets demo, then starts a week run with assist from day 4", async () => {
+    seedOrgs();
+    seedWrites = true;
+    seedResult = {
+      org: { orgId: "o-new", mailboxId: "m-new", address: LAB_MAILBOXES.demo, chatId: 5550002 },
+      created: true,
+      added: { mailbox: 1, delegates: 3, rules: 2, flags: 11, linked: true, relinked: false },
+    };
+    expect(await run(["demo-reset", "--yes", "--date", "2026-11-23"])).toBe(0);
+    expect(printed).toEqual(["demo-reset: org o-new run week-20261123-aaaa"]);
+    expect(deleted).toEqual(["o-demo"]);
+    expect(emptied).toEqual([LAB_MAILBOXES.demo]);
+    expect(state().readRun("week-20261123-aaaa")).toMatchObject({ org: "demo", modePlan: { assistFromDay: 4 } });
+    expect(stored).toEqual(["o-new week-20261123-aaaa 4"]);
+  });
+
+  test("demo-reset: a refused start is start_refused with its code; the org is already rebuilt", async () => {
+    seedOrgs();
+    seedWrites = true;
+    // The fake seed writes no mail, but the check says the org holds some.
+    hasMail = true;
+    expect(await run(["demo-reset", "--yes", "--date", "2026-11-23"])).toBe(1);
+    expect(failed).toEqual(["refused: start_refused (org_not_fresh)"]);
+    expect(runFolders()).toEqual([]);
+    expect(deleted).toEqual(["o-demo"]);
   });
 
   test("score: an unknown run is refused; a known run prints the paths and passes --out on", async () => {

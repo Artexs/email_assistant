@@ -1,6 +1,4 @@
-import { format } from "node:util";
-
-import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import type { Update } from "grammy/types";
 
 import { createPlanned, noDelegationHooks } from "../../src/modules/actions";
@@ -8,7 +6,7 @@ import { createLinkToken, createTelegramRuntime } from "../../src/modules/channe
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import { setDigestTimes } from "../../src/modules/tenancy";
-import { setLogFormat, setLogLevel } from "../../src/platform/log";
+import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import { createOrgWithMailbox, insertTriaged, isolateChannels } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -18,11 +16,6 @@ const db = testDb();
 
 afterAll(async () => {
   await db.destroy();
-});
-
-afterEach(() => {
-  setLogFormat("text");
-  setLogLevel("info");
 });
 
 const T0 = new Date("2026-11-06T10:00:00Z");
@@ -110,11 +103,8 @@ async function waitFor(condition: () => boolean, what: string): Promise<void> {
 
 describe("telegram logs", () => {
   test("no log line holds a token, a chat id, mail text or a summary", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
-    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    const capture = captureLogs();
     const fake = startFakeBotApi();
-    setLogFormat("json");
-    setLogLevel("debug");
     let linkToken = "";
     let emailId = "";
     try {
@@ -225,19 +215,7 @@ describe("telegram logs", () => {
         expect(outbox.some((row) => row.kind === "digest" && row.status === "sent")).toBe(true);
       });
 
-      // Every line is JSON; the format call shows the fields of a raw error object like the console does.
-      const outputLines = [...logSpy.mock.calls, ...errorSpy.mock.calls].map((call: unknown[]) => format(...call));
-      const output = outputLines.join("\n");
-      const telegram = outputLines
-        .map((line) => JSON.parse(line) as Record<string, unknown>)
-        .filter((line) => line.module === "telegram");
-      const events = telegram.map((line) => line.event);
-      expect(events).toContain("chat_linked");
-      expect(events).toContain("telegram_polling_started");
-      // No free-text line and no dropped field: every value passed the logger.
-      expect(events).not.toContain("log_call_invalid");
-      expect(telegram.some((line) => "dropped_fields" in line)).toBe(false);
-      for (const marker of [
+      const planted = [
         MARKERS.token,
         MARKERS.token.split(":")[1] ?? "",
         MARKERS.subject,
@@ -247,14 +225,15 @@ describe("telegram logs", () => {
         MARKERS.chatId,
         linkToken,
         `fr:u:${emailId}`,
-      ]) {
-        expect(marker).not.toBe("");
-        expect(output).not.toContain(marker);
-      }
+      ];
+      for (const value of planted) expect(value).not.toBe("");
+      // Every line is JSON with allowed keys and no dropped field: every value passed the logger.
+      expect(logProblems(capture.lines, planted)).toEqual([]);
+      expect(eventLines(capture.lines, "chat_linked").length).toBeGreaterThan(0);
+      expect(eventLines(capture.lines, "telegram_polling_started").length).toBeGreaterThan(0);
     } finally {
       fake.stop();
-      logSpy.mockRestore();
-      errorSpy.mockRestore();
+      capture.stop();
     }
   }, 30_000);
 });

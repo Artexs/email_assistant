@@ -335,6 +335,12 @@ async function sendOne(input: SendInput, planned: PlannedEvent): Promise<boolean
     write({ t: "skip", code: "received_gone", ref: planned.key });
     return false;
   }
+  // After a mailbox reset that changes UIDVALIDITY, a UID can point to another mail: the key of the plan names the
+  // Message-ID of the mail it was planned for, so a different mail ends the item (review 8, note 9).
+  if (parsed.messageId !== planned.key.slice(0, planned.key.lastIndexOf(":"))) {
+    write({ t: "skip", code: "received_changed", ref: planned.key });
+    return false;
+  }
   const to = senderAddressOf(parsed);
   const allowed = [from, to].every((address) => address !== undefined && deps.allowedAddresses.has(address));
   if (to !== runMailbox.toLowerCase() || !allowed) {

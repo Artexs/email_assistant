@@ -137,8 +137,10 @@ async function insertTombstones(trx: Transaction<DB>, orgId: string, dedupKeys: 
 
 // The erase of one person's data (F106 account data ticket), on the owner's instruction. One transaction, so a failure
 // at any point changes nothing. Order: lock the organization; lock the sync folders (sync and backfill apply their chunks
-// under this lock, so a chunk planned before the erase meets the tombstone); match; refuse; lock the mails that go;
-// tombstones; delete the chain actions and the mails; the step of the outbox stage; scrub the kept rows; check that the
+// under this lock, so a chunk planned before the erase meets the tombstone) and the Sent state rows (the Sent pass does
+// the same); match; refuse; lock the mails that go;
+// tombstones (mails and sent mails); delete the chain actions, the mails and the sent mails; kept pending sent mails
+// become headers only; the step of the outbox stage; scrub the kept rows; check that the
 // match is empty; one audit row with the hash and counts.
 // The module logs nothing and puts no address in a result or an error: the CLI prints ids and counts.
 async function eraseInScope(
@@ -171,6 +173,12 @@ async function eraseInScope(
         .executeTakeFirst();
       if (!org) return { kind: "not_found" };
       await sql`select id from mailbox_folders where org_id = ${orgId}::uuid order by id for update`.execute(trx);
+      // The Sent pass writes under the row lock of its state row: a chunk planned before this erase waits here, and then
+      // meets the tombstone.
+      await sql`
+        select mailbox_id from mailbox_sent_sync where org_id = ${orgId}::uuid order by mailbox_id for update`.execute(
+        trx
+      );
 
       const match = await matchSubject(trx, orgId, address);
       if (match.ownAddress) return { kind: "own_address" };
@@ -189,11 +197,11 @@ async function eraseInScope(
       const patterns = addressPatterns(address);
       const late = await findOpenActions(trx, orgId, patterns.json, mailIds, match.chainActions);
       if (late.length > 0) return { kind: "open_actions", actionIds: late };
-      const tombstones = await insertTombstones(
-        trx,
-        orgId,
-        match.mails.map((mail) => mail.dedupKey)
-      );
+      const sentIds = match.sentMails.map((mail) => mail.id);
+      const tombstones = await insertTombstones(trx, orgId, [
+        ...match.mails.map((mail) => mail.dedupKey),
+        ...match.sentMails.map((mail) => mail.dedupKey),
+      ]);
 
       if (match.chainActions.length > 0) {
         await sql`delete from actions where org_id = ${orgId}::uuid and id = any (${match.chainActions}::uuid[])`.execute(
@@ -203,13 +211,30 @@ async function eraseInScope(
       if (mailIds.length > 0) {
         await sql`delete from emails where org_id = ${orgId}::uuid and id = any (${mailIds}::uuid[])`.execute(trx);
       }
+      if (sentIds.length > 0) {
+        await sql`delete from sent_emails where org_id = ${orgId}::uuid and id = any (${sentIds}::uuid[])`.execute(trx);
+      }
+      // A kept sent mail that waits for its text could name the person again when the text arrives: it keeps headers only.
+      const keptSent = [
+        ...new Set(
+          Object.entries(match.mentions)
+            .filter(([key]) => key.startsWith("sent_emails."))
+            .flatMap(([, ids]) => ids)
+        ),
+      ];
+      if (keptSent.length > 0) {
+        await sql`
+          update sent_emails set content = 'headers_only', updated_at = now()
+          where org_id = ${orgId}::uuid and id = any (${keptSent}::uuid[]) and content = 'pending'`.execute(trx);
+      }
       const step = input.step ?? eraseManyMailOutbox;
       const stepCounts = await step(trx, orgId, { mailIds, earliestCreatedAt: earliest.rows[0]?.at ?? null });
       const scrubbed = await scrubMentions(trx, orgId, patterns);
 
       // The erase must leave nothing that the match shows. If it does, roll back: a half erase is worse than none.
       const after = await matchSubject(trx, orgId, address);
-      if (after.mails.length > 0 || Object.keys(after.mentions).length > 0) throw new Error("dsr_erase_incomplete");
+      if (after.mails.length > 0 || after.sentMails.length > 0 || Object.keys(after.mentions).length > 0)
+        throw new Error("dsr_erase_incomplete");
 
       await recordAudit(
         trx,

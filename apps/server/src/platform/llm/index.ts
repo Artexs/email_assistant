@@ -2,6 +2,7 @@ export type { GenerateFn, GenerateRequest, GenerateResult, LlmCall, LlmClient, L
 export { createLlmClient, createRateLimiter } from "./client";
 export {
   configCodes,
+  isLlmError,
   LlmBlockedError,
   LlmConfigError,
   llmErrorCode,

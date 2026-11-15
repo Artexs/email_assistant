@@ -44,6 +44,14 @@ export interface LabMailClient {
   newestUid(mailbox: string, folder: string): Promise<number>;
 }
 
+/** What the org reset needs on top of `LabMailClient`. Only a mailbox in `allowedAddresses` (else `address_refused`). */
+export interface LabMailAdmin {
+  /** The number of mails in every folder of the mailbox. */
+  countMessages(mailbox: string): Promise<number>;
+  /** Deletes every mail in every folder of the mailbox and returns the count. The folders stay. */
+  emptyMailbox(mailbox: string): Promise<number>;
+}
+
 export interface LabMailClientOptions {
   host: string;
   imapPort: number;
@@ -93,13 +101,31 @@ async function withImap<T>(
   }
 }
 
+// Every selectable folder of the mailbox, with the lock of the folder held while `fn` runs.
+async function eachFolder(client: ImapFlow, readOnly: boolean, fn: () => Promise<number>): Promise<number> {
+  let total = 0;
+  for (const folder of await client.list()) {
+    if (folder.flags.has("\\Noselect") || folder.flags.has("\\NonExistent")) continue;
+    const lock = await client.getMailboxLock(folder.path, { readOnly });
+    try {
+      total += await fn();
+    } finally {
+      lock.release();
+    }
+  }
+  return total;
+}
+
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 // The client talks to the sim GreenMail only. In the sim stack GreenMail shares the network namespace of the lab, so its
 // host is loopback (`LAB_MAIL_HOST`); any other host is refused before a connection opens, so no lab mail can leave the stack.
-export function createLabMailClient(options: LabMailClientOptions): LabMailClient {
+export function createLabMailClient(options: LabMailClientOptions): LabMailClient & LabMailAdmin {
   if (!LOOPBACK_HOSTS.has(options.host.toLowerCase())) throw new LabMailError("host_refused");
   const allowed = new Set([...options.allowedAddresses].map((address) => address.toLowerCase()));
+  const requireAllowed = (mailbox: string): void => {
+    if (!allowed.has(mailbox.toLowerCase())) throw new LabMailError("address_refused");
+  };
   return {
     async smtpSend({ envelopeFrom, to, raw }) {
       if (!allowed.has(envelopeFrom.toLowerCase()) || !allowed.has(to.toLowerCase())) {
@@ -167,6 +193,24 @@ export function createLabMailClient(options: LabMailClientOptions): LabMailClien
           lock.release();
         }
       });
+    },
+
+    async countMessages(mailbox) {
+      requireAllowed(mailbox);
+      return withImap(options, mailbox, "imap_fetch", (client) =>
+        eachFolder(client, true, async () => (client.mailbox === false ? 0 : client.mailbox.exists))
+      );
+    },
+
+    async emptyMailbox(mailbox) {
+      requireAllowed(mailbox);
+      return withImap(options, mailbox, "imap_fetch", (client) =>
+        eachFolder(client, false, async () => {
+          const count = client.mailbox === false ? 0 : client.mailbox.exists;
+          if (count > 0) await client.messageDelete("1:*");
+          return count;
+        })
+      );
     },
 
     newestUid(mailbox, folder) {

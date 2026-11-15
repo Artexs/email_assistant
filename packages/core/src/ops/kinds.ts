@@ -17,7 +17,7 @@ export interface SloCheck {
   facts: Record<string, number>;
 }
 
-// The thresholds of the checks that read the database (F114 stage 02). Set by the `SLO_*` keys of `platform/config`.
+// The thresholds of the service-level checks (F114 stages 02 and 04). Set by the `SLO_*` keys of `platform/config`.
 export interface SloThresholds {
   syncLagMin: number;
   urgentLatencyMin: number;
@@ -26,4 +26,11 @@ export interface SloThresholds {
   llmFailPct: number;
   llmClearPct: number;
   repeatH: number;
+  // Disk: the volume path, the free percent and the free gigabytes that open the alert.
+  diskPath: string;
+  diskFreePct: number;
+  diskFreeGb: number;
+  // Backup: hours since the last good backup, and the status file path (null = the backup check is off).
+  backupMaxAgeH: number;
+  backupStatusFile: string | null;
 }
