@@ -90,6 +90,8 @@ export { createLlmPause } from "./pause";
 export type { LlmPause } from "./pause";
 export { finishTriageError, HARD_ERROR_TRIES, saveTriage, triageOne } from "./service";
 export type { TriageDecision, TriageDeps, TriageMailbox, TriageOutcome } from "./service";
+export { assessEmail, loadSuspiciousContext } from "./suspicious-context";
+export type { SuspiciousContext, SuspiciousContextInput } from "./suspicious-context";
 export { createTriageJob } from "./jobs";
 export type { TriageJobDeps, TriageScope } from "./jobs";
 export { requeueBackfillWindow } from "./backfill";

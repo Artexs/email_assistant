@@ -57,6 +57,13 @@ export function normalizeMailDomain(raw: string): string | null {
   return isValidMailDomain(domain) ? domain : null;
 }
 
+// The e-mail has the provider domain after the last `@`; a subdomain does not match (one domain per provider, Q8). Both
+// sides are lower case.
+export function hasMailDomain(email: string, domain: string): boolean {
+  const at = email.lastIndexOf("@");
+  return at > 0 && email.slice(at + 1) === domain;
+}
+
 function clientIdOf(oidcConfig: string): string | null {
   try {
     const parsed: unknown = JSON.parse(oidcConfig);

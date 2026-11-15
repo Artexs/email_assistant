@@ -17,6 +17,7 @@ import {
   createOrgWithMailbox,
   insertTestEmail,
   linkChat,
+  noSuspiciousContext,
   randomChatId,
   renderedOf,
   testCapabilities,
@@ -62,6 +63,7 @@ const decision: TriageDecision = {
   usage: null,
   auditReasonCode: "newsletter",
   delegation: null,
+  suspiciousReasons: [],
 };
 
 // A committed organization with a filled mailbox and a linked owner.
@@ -295,6 +297,7 @@ describe("removeMailbox", () => {
       timezone: "Europe/Warsaw",
       junkFolder: null,
       resumedAt: null,
+      suspicious: noSuspiciousContext,
     };
 
     const result = await removeMailbox(deps, s.ctx, s.mailboxId, {

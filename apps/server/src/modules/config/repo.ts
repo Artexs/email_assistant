@@ -5,6 +5,7 @@ import {
   type SenderRule,
   type SenderRuleKind,
   type ToolSwitches,
+  type UrgencyProfile,
 } from "@ea/core";
 import { sql, type Selectable, type Transaction } from "kysely";
 import { z } from "zod";
@@ -73,7 +74,12 @@ export async function updateMailboxSettings(
   trx: Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
-  patch: { mode?: MailboxMode; toolSwitches?: ToolSwitches; categoryPolicy?: CategoryPolicy }
+  patch: {
+    mode?: MailboxMode;
+    toolSwitches?: ToolSwitches;
+    categoryPolicy?: CategoryPolicy;
+    urgencyProfile?: UrgencyProfile | null;
+  }
 ): Promise<boolean> {
   const result = await trx
     .updateTable("mailbox_settings")
@@ -81,6 +87,9 @@ export async function updateMailboxSettings(
       ...(patch.mode === undefined ? {} : { mode: patch.mode }),
       ...(patch.toolSwitches === undefined ? {} : { tool_switches: JSON.stringify(patch.toolSwitches) }),
       ...(patch.categoryPolicy === undefined ? {} : { category_policy: JSON.stringify(patch.categoryPolicy) }),
+      ...(patch.urgencyProfile === undefined
+        ? {}
+        : { urgency_profile: patch.urgencyProfile === null ? null : JSON.stringify(patch.urgencyProfile) }),
       updated_at: sql`now()`,
     })
     .where("org_id", "=", ctx.orgId)

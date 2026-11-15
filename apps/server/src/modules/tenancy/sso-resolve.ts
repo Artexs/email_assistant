@@ -11,6 +11,7 @@ import {
   hasOtherSsoAccount,
   listMembershipsOfUser,
 } from "./repo";
+import { hasMailDomain } from "./sso-provider";
 
 const GOOGLE_ISSUER = "https://accounts.google.com";
 
@@ -20,12 +21,6 @@ const reject = (code: SsoRefusal, orgId: string | null): SsoResolution => ({ kin
 async function oldestOrgIdOf(db: Db | Transaction<DB>, userId: string): Promise<string | undefined> {
   const [first] = await listMembershipsOfUser(db, userId);
   return first?.org_id;
-}
-
-// The e-mail has the provider domain after the last `@`; a subdomain does not match (Q8).
-function hasDomain(email: string, domain: string): boolean {
-  const at = email.lastIndexOf("@");
-  return at > 0 && email.slice(at + 1) === domain;
 }
 
 // Who may sign in through the provider of an organization (F119 D5, PD-041). Never creates a user, and never answers
@@ -46,7 +41,7 @@ export async function resolveSsoMember(db: Db | Transaction<DB>, identity: SsoId
 
   if (identity.emailVerified === false) return reject("email_unverified", orgId);
   const email = identity.email.trim().toLowerCase();
-  if (!hasDomain(email, provider.domain)) return reject("domain_mismatch", orgId);
+  if (!hasMailDomain(email, provider.domain)) return reject("domain_mismatch", orgId);
   if (provider.issuer === GOOGLE_ISSUER && identity.hostedDomain?.toLowerCase() !== provider.domain) {
     return reject("domain_mismatch", orgId);
   }

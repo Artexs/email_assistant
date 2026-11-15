@@ -25,7 +25,7 @@ const extras = {
   botUsername: null,
 };
 
-// The 20 write routes of S6a (F4), written out: a new write route fails this test until it is listed here.
+// The write routes of S6a (F4) and later stages, written out: a new write route fails this test until it is listed here.
 const WRITE_ROUTES = [
   "DELETE /api/channels/telegram/link",
   "DELETE /api/mailboxes/:id",
@@ -47,6 +47,7 @@ const WRITE_ROUTES = [
   "POST /api/mailboxes/:id/resume",
   "POST /api/onboarding/keep-mode",
   "POST /api/rules",
+  "PUT /api/settings/:mailboxId/urgency",
 ];
 
 // Write routes in `SUSPENDED_WRITE_ALLOW`: a paused account may still call them (web-terms.test.ts proves it).

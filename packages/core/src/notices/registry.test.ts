@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { aiTextFor } from "../digest/ai-text";
 import {
+  approvalEdit,
   renderApprovalRequest,
   renderApprovalSetRequest,
   renderDelegationAnswered,
@@ -270,6 +271,11 @@ const cases: Case[] = [
     direct: (texts) =>
       renderHostBlockedNotice({ address: "box@example.test", since: receivedAt, now, timeZone }, texts),
   },
+  {
+    kind: "approval_edit",
+    view: { original: "📤 Send? Contract", outcome: "approved", at: now, timeZone },
+    direct: (texts) => approvalEdit({ original: "📤 Send? Contract", outcome: "approved", at: now, timeZone }, texts),
+  },
 ];
 
 // The view of a case, as the outbox row stores it.
@@ -306,6 +312,47 @@ describe("the weekly report view", () => {
 
   test("has a renderer", () => {
     expect(noticeRenderers.weekly_report.schema).toBe(noticeViewSchemas.weekly_report);
+  });
+});
+
+describe("the approval_edit view", () => {
+  const view = {
+    original: "📤 Send? Contract",
+    outcome: "approved" as const,
+    at: new Date("2026-11-20T13:05:00.000Z"),
+    timeZone: "Europe/Warsaw",
+  };
+  const stored = encodeNoticeView("approval_edit", view);
+
+  test("T5: renders the stored text and one status line, with no buttons", () => {
+    expect(renderNotice("approval_edit", stored, opts)).toEqual({
+      ok: true,
+      message: { text: "📤 Send? Contract\n\n⏳ Approved 14:05, sending.", buttons: [] },
+    });
+  });
+
+  test("every outcome renders; approved_held keeps Reject for its send", () => {
+    for (const outcome of ["approved", "rejected", "changed", "expired"] as const) {
+      expect(renderNotice("approval_edit", encodeNoticeView("approval_edit", { ...view, outcome }), opts).ok).toBe(
+        true
+      );
+    }
+    const held = renderNotice(
+      "approval_edit",
+      encodeNoticeView("approval_edit", { ...view, outcome: "approved_held", heldBy: "scope", actionId: id1 }),
+      opts
+    );
+    expect(held.ok && held.message.buttons).toEqual([[{ text: "✖️ Reject", data: `ar:${id1}` }]]);
+    // No heldBy: the view renders to nothing, so queueNotice refuses it.
+    expect(renderNotice("approval_edit", { ...stored, outcome: "approved_held" }, opts)).toEqual({ ok: false });
+  });
+
+  test("T5: an extra field, an unknown outcome and an empty text are refused", () => {
+    expect(noticeViewSchemas.approval_edit.safeParse({ ...stored, counts: { done: 1, skipped: 0 } }).success).toBe(
+      false
+    );
+    expect(noticeViewSchemas.approval_edit.safeParse({ ...stored, outcome: "approved_set" }).success).toBe(false);
+    expect(noticeViewSchemas.approval_edit.safeParse({ ...stored, original: "" }).success).toBe(false);
   });
 });
 

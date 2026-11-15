@@ -113,6 +113,8 @@ function planDelegation(input: DelegationInput | undefined): PlannedAction[] {
 export interface PlanSource {
   // The mail's source_folder is the path of the mailbox's junk row (D11).
   fromJunk: boolean;
+  // F109 D6: a suspicious `delegation` mail plans nothing: no draft, no send, and no move out of the Junk folder.
+  holdDelegation?: boolean;
 }
 
 // The plan for a mail from the spam folder (D11): the normal move gate decides; no flag, no VIP exception.
@@ -138,6 +140,7 @@ export function planActions(
   delegation?: DelegationInput,
   source?: PlanSource
 ): PlannedAction[] {
+  if (source?.holdDelegation === true && category === "delegation") return [];
   const fromJunk = source?.fromJunk ? planFromJunk(category) : undefined;
   if (fromJunk !== undefined) return fromJunk;
   switch (category) {

@@ -20,7 +20,14 @@ export {
   type MembershipWithUser,
   type UserMembership,
 } from "./memberships";
-export { getUserAuthProfile, insertUser, setUserLocale, setUserTerms, type UserAuthProfile } from "./users";
+export {
+  getUserAuthProfile,
+  insertSsoUserOnce,
+  insertUser,
+  setUserLocale,
+  setUserTerms,
+  type UserAuthProfile,
+} from "./users";
 export { getBreakGlassUserId, isBreakGlassOwner, listBreakGlassOrgIdsOfUser, setBreakGlassFlag } from "./break-glass";
 export { getOrgFeature, listOrgFeatureRows, listOrgFeatureRowsOfAll, upsertOrgFeature } from "./org-features";
 export {
@@ -43,6 +50,7 @@ export {
   type SsoStateRow,
 } from "./sso-provider";
 export {
+  countSsoRequiredOrgs,
   hasUsableBreakGlass,
   readSsoRequired,
   setDomainProof,
