@@ -308,8 +308,11 @@ describe("fetchSentTexts and syncSentFolder", () => {
       put(org, 4, ago(2 * DAY), { text: "new four" }, "Wysłane");
       await setFolderMapEntry(trx, org.ctx, org.mailboxId, "sent", "Wysłane");
 
+      const calls = org.provider.calls.length;
       const result = await syncSentFolder(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(result.texts).toEqual({ stored: 2, gone: 0, expired: 0 });
+      // Only the two mails of the new folder are fetched (the old rows are not asked for).
+      expect(textCalls(org, calls)).toBe(2);
       // Both folders use the UIDs 1 and 2: order by subject.
       const bySubject = async () =>
         (await rowsOf(trx, org)).sort((a, b) => (a.subject ?? "").localeCompare(b.subject ?? ""));
@@ -401,12 +404,19 @@ describe("fetchSentTexts and syncSentFolder", () => {
     },
   ];
 
-  for (const move of MOVES) {
-    test(`14: a row that changed (${move.name}) during the fetch gets no text and does not count`, async () => {
+  for (const [move, mailGone] of MOVES.flatMap(
+    (entry) =>
+      [
+        [entry, false],
+        [entry, true],
+      ] as const
+  )) {
+    test(`14: a row that changed (${move.name}, mail ${mailGone ? "gone" : "present"}) during the fetch gets no text and does not count`, async () => {
       await withRollback(db, async (trx) => {
         const org = await newOrg(trx);
-        put(org, 1, ago(DAY), { text: "Offer by Friday" });
+        const uid = put(org, 1, ago(DAY), { text: "Offer by Friday" });
         await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
+        if (mailGone) org.provider.remove("Sent", uid);
         const plain: SentFolderReader = org.provider;
         const changing: SentFolderReader = {
           folderStatus: (path) => plain.folderStatus(path),
