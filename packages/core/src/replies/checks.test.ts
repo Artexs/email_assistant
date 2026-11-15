@@ -751,3 +751,63 @@ describe("pins of the second re-review", () => {
     }
   });
 });
+
+describe("pins of the link and address keys (mutation survivors)", () => {
+  test("a scheme keeps its first characters in the key (up to 20)", () => {
+    expect(failuresOf("Tak, xyzdefghij://x.example dziękuję", "pl", ["abcdefghij://x.example"])).toEqual(["link"]);
+    expect(
+      failuresOf("Tak, zBCDEFGHIJKLMNOPQRST://x.example dziękuję", "pl", ["aBCDEFGHIJKLMNOPQRST://x.example"])
+    ).toEqual(["link"]);
+    expect(failuresOf("Tak, abcdefghij://x.example dziękuję", "pl", ["abcdefghij://x.example"])).toEqual([]);
+  });
+
+  test("each scheme without slashes is a link", () => {
+    for (const scheme of ["mailto", "tel", "javascript", "data", "file", "ftp", "sms", "callto", "vbscript", "ssh"]) {
+      expect({ scheme, failures: failuresOf(`Tak, ${scheme}:abc`) }).toEqual({ scheme, failures: ["link"] });
+    }
+  });
+
+  test("an address never holds an at sign in its local part", () => {
+    // The address is y@firma.pl, the part after the last at sign.
+    expect(failuresOf("Tak, x@y@firma.pl dziękuję", "pl", ["y@firma.pl"])).toEqual([]);
+    expect(failuresOf("Tak, y@firma.pl dziękuję", "pl", ["y@firma.pl"])).toEqual([]);
+  });
+
+  test("a link or an address loses the punctuation at its end", () => {
+    for (const mark of [".", ",", ";", ":", "!", "?", ")", "]", "}", ">", '"', "'", "`"]) {
+      const link = `Tak, patrz https://x.example/a${mark}`;
+      expect({ link, failures: failuresOf(link, "pl", ["https://x.example/a"]) }).toEqual({ link, failures: [] });
+      const bare = `Tak, patrz evil.com/a${mark}`;
+      expect({ bare, failures: failuresOf(bare, "pl", ["evil.com/a"]) }).toEqual({ bare, failures: [] });
+      const address = `Tak, patrz jan@firma.pl${mark}`;
+      expect({ address, failures: failuresOf(address, "pl", ["jan@firma.pl"]) }).toEqual({ address, failures: [] });
+    }
+  });
+
+  test("a bare domain: the path, the end, the labels and the place before it", () => {
+    expect(failuresOf("Tak, evil.com/b", "pl", ["evil.com/a"])).toEqual(["link"]);
+    expect(failuresOf("Tak, evil.community")).toEqual([]);
+    expect(failuresOf("Tak, other-site.com", "pl", ["my-site.com"])).toEqual(["link"]);
+    expect(failuresOf("Tak, xwww.y.zzzz")).toEqual([]);
+    // The domain of an address is no link: after the at sign, after a dot or a hyphen of it.
+    expect(failuresOf("Tak, jan@mail.firma.pl", "pl", ["jan@mail.firma.pl"])).toEqual([]);
+    expect(failuresOf("Tak, jan@my-firma.pl", "pl", ["jan@my-firma.pl"])).toEqual([]);
+    expect(failuresOf("Tak, jan%40firma.pl", "pl", ["jan@firma.pl"])).toEqual([]);
+    expect(failuresOf("Tak, jan&#64;firma.pl", "pl", ["jan@firma.pl"])).toEqual([]);
+  });
+
+  test("a link key is lower case with its white space collapsed", () => {
+    expect(failuresOf("Tak, https://x.example/a", "pl", ["HTTPS://X.EXAMPLE/A"])).toEqual([]);
+  });
+
+  test("a space that is no plain space separates the digits of a phone number", () => {
+    expect(failuresOf("Tak, 600\u1680100\u1680200")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 600\u2009100\u2009200")).toEqual(["phone"]);
+  });
+
+  test("złotówek is a currency", () => {
+    expect(failuresOf("Tak, 123 456 789 złotówek dziękuję")).toEqual([]);
+    expect(failuresOf("Tak, 123 456 789 złotówki dziękuję")).toEqual([]);
+    expect(failuresOf("Tak, 123 456 789 dolarów dziękuję")).toEqual([]);
+  });
+});

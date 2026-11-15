@@ -89,9 +89,14 @@ function decodeOnce(text: string): string {
     .replace(/\\x([0-9a-f]{2})/gi, (m, hex: string) => fromCode(Number.parseInt(hex, 16), m));
 }
 
-// A code that is a control character or out of range stays as the entity text.
+// A control character, or a code out of range, stays as the entity text.
 function fromCode(code: number, fallback: string): string {
-  return code < 0x20 || code > 0x10ffff ? fallback : String.fromCodePoint(code);
+  if (code < 0x20) return fallback;
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return fallback;
+  }
 }
 
 // "(at)", "[at]", "{dot}", "<dot>" and "[.]" with the Polish words "małpa" and "kropka"; also "jan at firma dot pl" and "h t t p s://".
@@ -123,9 +128,7 @@ export function decodedView(text: string): string {
 
 /** Every view of a text that a check scans. The first is the plain view. */
 export function viewsOf(text: string): string[] {
-  const plain = plainView(text);
-  const decoded = decodedView(text);
-  return decoded === plain ? [plain] : [plain, decoded];
+  return [plainView(text), decodedView(text)];
 }
 
 /** Lookalike letters of other scripts become Latin; used for scheme and header names. */

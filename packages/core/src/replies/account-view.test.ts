@@ -372,3 +372,96 @@ describe("random accounts and ordinary sentences (seeded)", () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe("pins of the account view (mutation survivors)", () => {
+  test("the window of an IBAN: 15 to 34 characters, 10 digits", () => {
+    // 14 characters: too short. 15 characters and 10 digits: an IBAN.
+    expect(failuresOf("Tak, NL12AB12345678.")).toEqual([]);
+    expect(failuresOf("Tak, NL12ABC12345678.")).toEqual(["account_number"]);
+    // 34 characters with the 10th digit last: an IBAN. 35 characters: the 10th digit is out of the window.
+    expect(failuresOf(`Tak, NL12${"A".repeat(22)}12345678.`)).toEqual(["account_number"]);
+    expect(failuresOf(`Tak, NL12${"A".repeat(23)}12345678.`)).toEqual([]);
+    // 9 digits in 15 characters: no. 10 digits in 16: yes.
+    expect(failuresOf("Tak, NL12ABCD1234567.")).toEqual([]);
+    expect(failuresOf("Tak, NL12ABCD12345678.")).toEqual(["account_number"]);
+    // The check digits are two digits.
+    expect(failuresOf("Tak, NL1A2B3CD12345678.")).toEqual([]);
+  });
+
+  test("a word that ends with a country code and a digit, then a group of digits, is no start", () => {
+    expect(failuresOf("Tak, w dniach1 5 18 11 2026 abc")).toEqual(["phone"]);
+    expect(failuresOf("Tak, w dniach15 18 11 2026 abc")).toContain("account_number");
+  });
+
+  test("a number sign, a fraction or an emoji between two groups", () => {
+    // A character that is a number (U+2180, a Roman numeral) is no joiner; an emoji is one character, three of them make a joiner.
+    expect(failuresOf("Tak, 4111 1111 1111\u21801111")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 4111 1111 1111😀😀😀1111")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 4111 1111 1111😀😀😀😀1111")).toEqual(["phone"]);
+  });
+
+  test("a typed IBAN with a currency after it is the same IBAN with another currency after it", () => {
+    expect(failuresOf("Tak, NL91 ABNA 0417 1643 00 EUR dziękuję.", ["Konto NL91 ABNA 0417 1643 00 PLN"])).toEqual([]);
+    expect(failuresOf("Tak, NL91 ABNA 0417 1643 01 EUR dziękuję.", ["Konto NL91 ABNA 0417 1643 00 PLN"])).toEqual([
+      "account_number",
+    ]);
+  });
+
+  test("a date range with one more digit at its start or end is no exempt run", () => {
+    expect(failuresOf("Tak, 7 15.11.2026 - 30.11.2026")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 15.11.2026 - 30.11.2026 7")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 2026-13-01 2026-12-01")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 2026-12-01 2026-12-32")).toEqual(["account_number"]);
+  });
+
+  test("two account numbers in one text: both are cut, nothing is left", () => {
+    expect(failuresOf("Tak, 4111 1111 1111 1111 oraz 5500 0000 0000 0004 dziękuję.")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 4111 1111 1111 1111 oraz NL91 ABNA 0417 1643 00 oraz 5500 0000 0000 0004.")).toEqual([
+      "account_number",
+    ]);
+  });
+
+  test("the cut covers the whole number: no digit of it is left for the phone count", () => {
+    expect(failuresOf("Tak, 4111 1111 1111 1111    600 100 20")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 600 100 20    4111 1111 1111 1111")).toEqual(["account_number"]);
+  });
+
+  test("a cut leaves a break: a phone number does not join across a cut amount", () => {
+    expect(failuresOf("Tak, 12345 1,5 zł 67890")).toEqual([]);
+  });
+
+  test("a phone number may hold brackets and parentheses", () => {
+    expect(failuresOf("Tak, 600 (100) 200")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 600 [100] 200")).toEqual(["phone"]);
+    expect(failuresOf("Tak, (600) 100 200")).toEqual(["phone"]);
+  });
+
+  test("a time is a time only with its digits alone", () => {
+    expect(failuresOf("Tak, 11:223 4567 890")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 111:22 4567 890")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 11:22 4567 8901")).toEqual([]);
+  });
+
+  test("an amount keeps its digits together: a 12-digit amount with decimals and groups", () => {
+    for (const amount of [
+      "12 345 678 901,5",
+      "12.345.678.901,5",
+      "12 345 678 901.5",
+      "12345678901,5",
+      "1234567890,50",
+      "123.456.789.012",
+      "123 456 789 012",
+    ]) {
+      for (const text of [`Tak, ${amount} zł dziękuję`, `Tak, zł ${amount} dziękuję`, `Tak, € ${amount} dziękuję`]) {
+        expect({ text, failures: failuresOf(text) }).toEqual({ text, failures: [] });
+      }
+    }
+    expect(failuresOf("Tak, 123456789,50")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 123456789,500 zł")).toEqual(["phone"]);
+  });
+
+  test("a typed card does not allow a phone number that starts with its digits", () => {
+    expect(failuresOf("Tak, tel 411111111 dziękuję", ["Karta 4111 1111 1111 1111"])).toEqual(["phone"]);
+    expect(failuresOf("Tak, karta 4111 1111 1111 1111 dziękuję", ["Karta 4111 1111 1111 1111"])).toEqual([]);
+  });
+});

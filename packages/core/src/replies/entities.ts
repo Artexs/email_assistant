@@ -47,20 +47,20 @@ const JOINER_MAX = 3;
 const DATE_DMY = /(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?!\d)/g;
 const DATE_YMD = /(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)/g;
 const TIME = /(?<!\d)\d{1,2}:\d{2}(?::\d{2})?(?!\d)/g;
-const NUMBER = String.raw`\d{1,3}(?:[ .]\d{3})*[,.]\d{1,2}(?!\d)|\d+[,.]\d{1,2}(?!\d)|\d+(?: \d{3})*`;
+const NUMBER = String.raw`\d+(?:[ .]\d{3})*(?:[,.]\d{1,2})?`;
 const CURRENCY = String.raw`(?:zł|zl|pln|eur|usd|gbp|chf|czk|euro|euros|dolar\p{L}*|złot\p{L}*|[€$£])`;
 // The match has at most 12 digits: every run of 13 or more digits is an account number and is gone before this cut.
 const AMOUNT = new RegExp(
   [
     `(?<!\\p{L})${CURRENCY}\\s?(?:${NUMBER})`,
-    `(?<!\\d)(?:${NUMBER})\\s?${CURRENCY}(?![\\p{L}\\d])`,
+    `(?:${NUMBER})\\s?${CURRENCY}(?![\\p{L}\\d])`,
     String.raw`(?<!\d)\d{1,3}(?:[ .]\d{3})*[,.]\d{2}(?!\d)`,
   ].join("|"),
   "giu"
 );
 
 // A run of digits that allows spaces, dashes, dots, brackets and a leading plus: a phone number.
-const DIGIT_RUN = /(?<!\d)\+?[([]?\d[\d ()[\].-]*\d/g;
+const DIGIT_RUN = /(?<!\d)\+?\d[\d ()[\].-]*\d/g;
 // A cut leaves this text: no run of digits can join across it.
 const SEPARATOR = " ; ";
 
@@ -138,8 +138,7 @@ function chainsOf(view: string): Chain[] {
     }
     // A group right after a letter of another script is the end of a Polish word ("Nakład" → "Nak" and "ad"), not a
     // group of its own.
-    if (group.index === 0 || !/[\p{L}\p{N}]/u.test(view[group.index - 1] as string))
-      current.starts.add(current.text.length);
+    if (group.index === 0 || !/\p{L}/u.test(view[group.index - 1] as string)) current.starts.add(current.text.length);
     current.text += group[0];
     for (let i = 0; i < group[0].length; i += 1) current.at.push(group.index + i);
     previousEnd = group.index + group[0].length;
@@ -155,7 +154,7 @@ function accountNumbers(view: string): { entities: Entity[]; spans: [number, num
   const dated = dateDigitPlaces(view);
   const allDated = (chain: Chain, from: number, to: number): boolean => {
     for (let i = from; i < to; i += 1) {
-      if (/\d/.test(chain.text[i] as string) && !dated.has(chain.at[i] as number)) return false;
+      if (!dated.has(chain.at[i] as number)) return false;
     }
     return true;
   };
@@ -173,7 +172,7 @@ function accountNumbers(view: string): { entities: Entity[]; spans: [number, num
     // characters that hold 10 digits make 15 characters or more. The key is the whole text up to 34 characters, without
     // letters at its end.
     for (let start = 0; start + IBAN_MIN <= chain.text.length; start += 1) {
-      if (!/^[A-Za-z]{2}\d{2}/.test(chain.text.slice(start, start + 4))) continue;
+      if (!/^\d{2}$/.test(chain.text.slice(start + 2, start + 4))) continue;
       // The start is a group start, or the code and the check digits are in one group ("kontoNL91…"). A code that is a
       // group of its own, apart from its check digits ("NL 91 ABNA"), is no word of the text: a word such as
       // "do 31.12.2026" or "No 12" is no IBAN. A word that ends with two letters of a country code and a group of digits after it
@@ -195,7 +194,7 @@ function accountNumbers(view: string): { entities: Entity[]; spans: [number, num
         if (/\d/.test(chain.text[end] as string)) digits += 1;
         end += 1;
       }
-      if (digits < IBAN_MIN_DIGITS || end - start < IBAN_MIN) continue;
+      if (digits < IBAN_MIN_DIGITS) continue;
       const last = Math.min(chain.text.length, start + IBAN_MAX);
       add(
         chain,
