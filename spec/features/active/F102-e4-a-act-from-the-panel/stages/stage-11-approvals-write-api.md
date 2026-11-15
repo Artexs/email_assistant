@@ -42,3 +42,7 @@ Part of [`../plan.md`](../plan.md). Read P2, P6, D2, D3, D15, F4 and [`../comman
 ## Carry-over from stage 08 review
 
 - `editApproval` and `approve` do not validate ids. A `sendId` or `delegateId` that is not a UUID reaches Postgres and gives a 500. The route must validate both (400 `validation`) before it calls the function. Add route tests with a bad `sendId` and a bad `delegateId`.
+
+## Carry-over from stage 09 review
+
+- A panel approve of a send that timed out (`approve` answers `expired` with `byThisTap` true) expires the send but queues no card edit: every Telegram card stays live (a tap on it answers `expired`). The route must map that answer, and the stage must accept this gap in writing (Q18: the hourly expiry job edits no card; stage 15 owns that work).
