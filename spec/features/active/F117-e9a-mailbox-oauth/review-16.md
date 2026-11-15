@@ -14,3 +14,6 @@ Notes:
 - `oauth_err_admin` ("link below") claims a link that comes only in stage 17: only a hand-made `?oauth=admin_consent_required` URL shows it today (flags off, no provider before stages 17 and 18). Keep stages 17 and 18 before any flag turns on.
 - `isBrowsableUrl` took `http:` and any host (not an open redirect: the host comes from the server registry): now `https:` only.
 - After a good start `pending` stays true: the dialog could not be closed after Back from the provider when the browser restores the page from the bfcache: a `pageshow` handler resets it.
+
+## Re-review (Opus narrow, PASS 1580bd8b)
+B1 and B2 fixed and landed; e2e spec `mailbox-oauth.spec.ts` kills mutations r1–r3. Carry-over to stage 18 (NOTE): the prop `ConnectDialogProps.initialOauthProviders` is now dead (only `ConnectForm` uses it; its comment is wrong): remove it. The real bfcache restore is tested with a synthetic `pageshow` only (low risk).
