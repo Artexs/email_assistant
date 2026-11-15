@@ -20,9 +20,9 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
-### `committer_open_failed`, `committer_folders_failed`, `committer_facts_failed`, `committer_close_failed`, `committer_release_failed`, `committer_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`)
+### `committer_open_failed`, `committer_folders_failed`, `committer_facts_failed`, `committer_close_failed`, `committer_release_failed`, `committer_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`; before F103: `committer <mailboxId>: open failed: …`, `sync folders failed`, `facts failed`, `close failed`, `release failed`, `committer <mailboxId> failed: …`)
 
-- **First seen:** 2026-11-15 (F103 stage 08; before: `committer <mailboxId>: open failed: …`, `sync folders failed`, `facts failed`, `close failed`, `release failed`, `committer <mailboxId> failed: …`)
+- **First seen:** 2026-11-15 (F103 stage 08)
 - **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`; `committer_close_failed` is `warn`, the others `error`).
 - **Cause:** One step of a committer run for one mailbox failed: the open of the IMAP or SMTP connection with an error that is not a login or soft error (`open_failed`), the read of the sync folders (`folders_failed`), the read of the owner and organization texts (`facts_failed`), the close of a connection (`close_failed`), the release of the claimed rows (`release_failed`), or the whole run of the mailbox (`failed`). The line has the error name and code only, never the error text.
 - **Fix:** After `folders_failed`, `facts_failed` or `open_failed` the batch is released and the next tick (15 s) tries again. A release that failed leaves the rows locked until the lock is stale (10 min). If one mailbox repeats, run `bun run mailbox:check` and read the database and network logs of the same time.
