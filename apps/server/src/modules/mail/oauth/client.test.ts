@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, te
 
 import { startFakeMailOAuth, type FakeMailOAuth } from "../../../../test/fake-mail-oauth";
 import { HardError, SoftError } from "../../../platform/errors";
+import type { AuthErrorReason } from "../port";
 
 import { createMailOAuthClient, OAuthGrantError, OAuthSoftError, type MailOAuthClient } from "./client";
 import type { MailOAuthProvider, MailOAuthProviderSpec } from "./providers";
@@ -120,7 +121,7 @@ describe("authorizeUrl", () => {
 });
 
 describe("error map (D17)", () => {
-  const grantCases: [string, MailOAuthProvider, Parameters<FakeMailOAuth["failNext"]>[0], string][] = [
+  const grantCases: [string, MailOAuthProvider, Parameters<FakeMailOAuth["failNext"]>[0], AuthErrorReason][] = [
     ["invalid_grant 70008", "microsoft", { status: 400, error: "invalid_grant", aadsts: 70008 }, "oauth_expired"],
     ["invalid_grant 700082", "microsoft", { status: 400, error: "invalid_grant", aadsts: 700082 }, "oauth_expired"],
     ["invalid_grant 700084", "microsoft", { status: 400, error: "invalid_grant", aadsts: 700084 }, "oauth_expired"],
