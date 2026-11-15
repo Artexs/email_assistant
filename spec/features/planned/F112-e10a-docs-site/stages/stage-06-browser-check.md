@@ -12,6 +12,7 @@ Two steps.
   - `serve.ts`: a Bun static server for `apps/docs/dist` under `DOCS_BASE` on `127.0.0.1:8093` (fixed; next to the panel e2e ports 8081 and 8092). It serves `<path>/index.html` for a path that ends in `/`, and `404.html` with status 404 otherwise.
   - `docs:test` = `bunx playwright test -c apps/docs/e2e/playwright.config.ts`; the build must exist first (the spec fails with a clear message when `dist/index.html` is missing). One project, desktop Chromium 1280×800; `CHROMIUM_PATH` as in the panel e2e config.
   - The page list comes from the built `.html` files, not from a hand list.
+  - Env `DOCS_TEST_URL` (stage 14): when set, the tests open that site instead of starting `serve.ts`; the page list still comes from the local `dist` (build the same commit first).
   - The violation listener uses `addInitScript` with the `securitypolicyviolation` event (F4 check script) plus console errors that contain `Content Security Policy`.
   - axe: tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`. A violation in Starlight's own markup that this repo cannot fix by config or CSS is a question with the rule id; do not disable a rule without an answer (N4).
   - Local runs: always under `flock /tmp/email-assistant-shared-tests.lock` (fixed port).
