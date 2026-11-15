@@ -405,3 +405,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the rule was fixed before the run; a whitelisted mail must never fail. The error is probably random model output, but that is a guess.
 - Undo: if you accept one `bad_output` as noise, say so: a stage then switches the pointer to v3 (step 2 of stage 11, ~1 stage, no new run needed if you accept the existing one).
 - Source: `evals/results/2026-11-15-f109-v3-dev-summary.md` (section "Stage 11 decision"), `evals/results/2026-11-15-sim-lab-01-holdout-gpt-6-luna-classifier-v3.md`.
+
+### 2026-11-15 · F116 open loops plan: second migration, consent bump, switch-off clears texts (F116) · privacy · new
+- Choice (plan defaults, 25 stages): (1) Follow-ups need a second anchor (`actions.loop_id`, `outbox.loop_id`, stage 09 migration), so new threads work too. (2) A hand forward becomes an `open_loops` row of kind `delegated`, not a `delegations` row. (3) Stage 17 bumps the Telegram consent version and gates the send side; older consent sees counts and a panel link only. (4) "Track my sent mail" off closes loops as `sent_off` and clears their texts. (5) "Waiting on you" = `needs_reply` from the last 14 days with no `\Answered` and no later sent mail in the thread. (6) Ignored loop closes as `stale` 30 days after due date. (7) Extractor eval up to $4 total, `--budget-usd 1` per run (inside the lab rule). (8) Gate bars use Wilson 95% lower bound (about 95% measured recall).
+- Why: the plan follows E5b and PD-119/120/122; open questions are in `questions.md` (19 items; 1, 2, 3, 4, 5, 17, 18 matter most).
+- Undo: flag off; cut stages 17–23 if unwanted; spend is capped per run.
+- Source: `spec/features/planned/F116-e5b-open-loops/questions.md`, `plan.md`, `plan-review-1.md`, `plan-review-1-fixes.md`.
