@@ -35,4 +35,4 @@ Part of [`../plan.md`](../plan.md). Read P2, P5, P6, D5, D11, D13, Q1, Q8, Q13 a
 
 ## Done when (stage)
 
-- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s12`); `web.log` shows `csp checked in 19 page(s)` (one more than before the stage).
+- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s12`); `web.log` shows `csp checked in <n> page(s)` (n: one more than on `master` before; name both).

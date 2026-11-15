@@ -12,7 +12,7 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 
 - **P1 (PD-029)** E4-A = command contract, approvals with edit, delegates, delegation dashboard, axe on every page, card sync (F039), the panel half of F075. Not here: E4-B, E6, E5b work.
 - **P2 (PD-031)** Telegram and the panel both approve. Edit only in the panel, while `awaiting_approval`: a new version that replaces the Drafts copy and needs a new tap. No free-text recipient.
-- **P3 (PD-035)** Every user action is a typed `/api` route in OpenAPI (ADR 0023). Axe WCAG 2.2 A/AA, zero violations, on every panel page; a keyboard test for approvals.
+- **P3 (PD-035)** Every user action is a typed `/api` route in OpenAPI (ADR 0023). Axe WCAG 2.2 A/AA, zero violations, on every customer page (operator console: Q20); a keyboard test for approvals.
 - **P4 (PD-045)** New pages behind flags, default off: `approvals_page` (exists), `delegation_pages` (new, epic `E4-A`, remove-by 2027-03-01).
 - **P5 (PD-057)** After a panel reject, an optional reason through the existing reject-reason route.
 - **P6** Owner only: approve, reject, edit, remind, cancel, delegate writes. Any member: reads and Done (as Telegram `dd:`). Q7.
@@ -24,7 +24,7 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 - **D3 Edit content.** `subject` 1–200, `body` 1–3000 characters after `cleanUserText` (CRLF → LF; drop control characters except `\n`, `\t`; drop bidi controls; trim line ends); the subject is one line. Optional `delegateId` (kind `delegation`; active; not the current one). The quote stays system-made. Draft payload adds `version` (absent = 1), `subject_text`, `body_text`. Kind `reminder`: 400 `not_editable` (Q2). Same text and delegate: 400 `unchanged`. Not `assist` with drafts on: 409 `drafts_off`.
 - **D4 Card sync.** Kind `approval_edit`, column `outbox.edit_of_outbox_id`, dedup per card and outcome. Queued in the decision's transaction for every sent `approval:<send id>` card except the tapped one; the view keeps the card's stored text (as the tap edit; a written exception). `pending` card → `failed` / `answered_elsewhere`; `sending` card → no edit (accepted). The sender drops an edit whose outcome no longer matches the send (`stale_edit`). Edits skip quiet hours; an error → `failed`. `actions` reaches `channels` only through `ApprovalHooks.onDecided`.
 - **D5 Panel link.** Approval view gains optional `version` and `panelUrl` (24 h view rule). `panelUrl` = `<WEB_BASE_URL>/approvals?id=<send id>` when the flag is on and the base URL is set. A text line, not a URL button (Q1).
-- **D6 OpenAPI.** `hono-openapi` 1.6.0, exact pin, `apps/server` only. Only `describeRoute`, never its `validator` (F1). `GET /api/openapi.json` behind login. Hidden: operator routes, `/api/auth/*` (E10). The spec and `openapi-routes.test.ts` cover every `/api/*` route of `createApp`, also those before the session guard (Q19): described, or in `HIDDEN_ROUTES` with a reason.
+- **D6 OpenAPI.** `hono-openapi` 1.6.0, exact pin, `apps/server` only. Only `describeRoute`, never its `validator` (F1). `GET /api/openapi.json` behind login. Hidden: operator routes, `/api/auth/*` (E10). `openApiSpec(root)` and `openapi-routes.test.ts` cover every `/api/*` route of `createApp`, also public ones (Q19, Q21): described, or hidden with a reason.
 - **D7 Commands**, roles and answers: [commands.md](commands.md).
 - **D8 Read model** in `channels` (it needs `delegation`, `config`; layers), from `approvalViewFor` (the committer's builder) plus the full quote. `expiresAt` as `commands.md`.
 - **D9 Delegations.** Remind now: `sent` or `overdue`, `reminders_sent` < 2, no waiting reminder (checked under the delegation lock: the dedup), `assist` with `create_draft` on (else 409 `drafts_off`); no due-date or 3-day gate; no set. Cancel: `drafted` → reject its send (card edits; one retry after an edit; `applying` → 409 `sending`); `sent` or `overdue` → `cancelled` / `user_cancelled`, waiting reminders expire. Done: `closeDelegation`.
@@ -44,13 +44,13 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 - **F5** A draft APPEND that ends after its sends closed removes the copy (`actions/drafts.ts`); supersede inherits this.
 - **F6** Outbox rows keep the message id and sent text; `ChatChannel.edit` exists.
 - **F7** The phone tab bar has 4 or 5 columns (`Nav.tsx`).
-- **F8** (refresh) Astro 7.4.12 (F101): the build logs `csp checked in 18 page(s)`; 19, 20, 21 after stages 12, 17, 18.
+- **F8** (refresh) Astro 7.4.12 (F101): the build logs `csp checked in 18 page(s)`; stages 12, 17, 18 each add one.
 
 ## Not verified
 
 - **N1** Telegram edit of an old card: stage 09 maps an error to `failed` / `edit_failed`.
 - **N2** Axe violations of the existing pages: stage 07 counts them.
-- **N3** Every existing route shape in `hono-openapi`: stages 01–03.
+- **N3** Every existing route shape in `hono-openapi`, and a route on the root app: stages 01–03.
 
 ## Done when
 
@@ -67,7 +67,7 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 - No mail text, draft text, subject or address in a log, error text or test name.
 - New page keys in `en.ts` and `pl.ts`; new notice and bot texts in `packages/core/src/texts/` (en, pl).
 - A new `/api` route gets `apiDoc` in the same commit (D6).
-- Pages (ADR 0016 amendment): no `is:inline` script, no `on*=` attribute (`security.csp` hashes only Astro's scripts); a new page's spec asserts `cspErrors` empty.
+- Pages (plan rule; ADR 0016 hashes `script-src`): no `is:inline` script, no `on*=` attribute; a new page's spec asserts `cspErrors` empty.
 - A gap or deviation is a question in the final message, not a choice.
 
 ## Proof
@@ -119,9 +119,9 @@ Before land, `claude-opus-5-5`: 06, 08, 09, 11, 16 (risk) and 05, 12, 13, 17, 18
 
 ## Planning progress
 
-- [x] Stages 01–20, cold review 1; refresh 1 (no scouts). `wc -w`: plan.md 1486; stages 407–699.
+- [x] Stages 01–20, cold review 1; refresh 1 (no scouts). `wc -w`: plan.md 1498; stages 418–699.
 
 ## Cold review
 
-`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): PASS, 17 notes, all fixed. Review 2 (refresh, [plan-review-2.md](plan-review-2.md)): `claude-opus-5-5`, because the plan has `[risky]` stages; pending.
+`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): PASS, 17 notes, all fixed. Review 2 ([plan-review-2.md](plan-review-2.md), refresh): PASS, 9 notes; 8 fixed, N8 needs an F119 edit.
 

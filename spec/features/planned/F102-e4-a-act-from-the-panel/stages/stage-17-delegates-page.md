@@ -35,4 +35,4 @@ Two steps in `apps/web`.
 
 ## Done when (stage)
 
-- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s17`); `web.log` shows `csp checked in 20 page(s)` (one more than before the stage).
+- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s17`); `web.log` shows `csp checked in <n> page(s)` with n one more than on `master` before the stage; the final message names both.

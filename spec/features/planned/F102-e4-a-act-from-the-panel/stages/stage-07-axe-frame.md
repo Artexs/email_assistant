@@ -18,10 +18,11 @@ Part of [`../plan.md`](../plan.md). Read P3, D13, D14, F2, N2 and the web Proof.
 - **Goal:** each existing panel page has zero violations.
 - **Files:** the specs in `apps/web/e2e/tests/`; the pages, islands and UI parts that a violation names.
 - **Decisions:**
-  - Each page that a spec opens gets one helper call after the page has loaded its data (and one more with an open dialog where a spec opens one): Login, Setup, Forgot, Onboarding, Activity (with the detail panel open), Mailboxes, Settings (with the Account card), Rules, Stats (flag on), Operator (operator user), a legal page, 404. The desktop and the mobile project both run them.
-  - At `d70e540e` no spec opens Stats or Operator. Add `stats.spec.ts` (seed org with `stats_page` on) and `operator.spec.ts` (a seeded TOTP user in the e2e `OPERATOR_USER_IDS`; a password session, as F119 refuses SSO). If the operator user needs more than the seed and the e2e env, skip Operator and report it (Q20).
+  - Each page that a spec opens gets one helper call after the page has loaded its data (and one more with an open dialog where a spec opens one): Login, Setup, Forgot, Onboarding, Activity (with the detail panel open), Mailboxes, Settings (with the Account card), Rules, Stats (flag on), a legal page, 404. The desktop and the mobile project both run them.
+  - No spec opens Stats at `d70e540e`: add `stats.spec.ts` with its own seed organization that has `stats_page` on. Never turn the flag on for the main seed organization (`auth.spec.ts` counts its 4 phone tabs).
+  - The operator console is out of this ticket (Q20): the e2e server reads `OPERATOR_USER_IDS` at boot, before the seed makes the user ids.
   - Fix the violations in the code, not in the check, inside the CSP rule of `plan.md` § Rules: labels, names of icon buttons (`aria-label` from an i18n key in `en.ts` and `pl.ts`), contrast through the theme tokens, landmarks, heading order. A visible change stays as small as the fix needs.
-  - Budget: about 200 changed lines of fixes. If the first run shows more, stop before the fixes and report the violations per page and rule (N2); the coordinator splits the stage.
+  - Budget: about 200 changed lines of fixes (the Stats spec and seed do not count). If the first run shows more, stop before the fixes and report the violations per page and rule (N2); the coordinator splits the stage.
 - **Test:**
   - T2: every page in the list above runs the helper in at least one spec, on `desktop` and `mobile`.
   - T3: the full e2e suite passes, with zero violations.

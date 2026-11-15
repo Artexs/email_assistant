@@ -14,6 +14,7 @@ Each item is a default that the planner took. The stages do not change with the 
 - **Q12 [important: user-visible]** Cancel a delegation from the panel is a new user action: status `cancelled`, reason `user_cancelled`, no Undo. A `drafted` delegation rejects its waiting send. Decision D9.
 
 - **Q17 [important: production]** A rollback of stage 20 expires every waiting send of an edited draft (`policy_changed`): the old code would send the template text, not the approved edit. Other option: leave them and risk a send of a text the owner did not approve.
+- **Q20 [important: scope]** (refresh 1; default, owner to confirm) The operator console gets no axe check in F102. This narrows P3 ("every panel page") to the customer pages. Reason: the e2e server reads `OPERATOR_USER_IDS` at boot, before the seed makes the user ids; an e2e operator needs a fixed user id and TOTP enrolment (review 2, N3). Other option: a new F102 stage for an e2e operator user and its axe spec. The coordinator can file a follow-up ticket.
 
 ## Minor
 
@@ -27,4 +28,4 @@ Each item is a default that the planner took. The stages do not change with the 
 - **Q16 [minor]** A mailbox without UIDPLUS keeps the old Drafts copy after an edit (as after a reject today); the edit dialog tells the user to delete it. Other option: refuse the edit on such a mailbox.
 - **Q18 [minor]** A panel cancel of a `sent` or `overdue` delegation edits the cards of its expired reminders (outcome `expired`). The hourly expiry job still edits no card (as today).
 - **Q19 [minor]** (refresh 1; default, owner to confirm) The OpenAPI file and the route check cover every `/api/*` route of the whole app, not only the routers behind login. So the public `GET /api/sign-in-options` of F119 stage 11 is in the file. Reason: the route check must see every route. Other option: check only the logged-in routers and leave public routes out of the file.
-- **Q20 [minor]** (refresh 1; default, owner to confirm) Stage 07 adds an e2e operator user for the axe check of the operator console. If that needs more than the e2e seed and env, the console stays out of the axe check, and stage 07 reports it. Reason: the console is the operator's page, not a customer page. Other option: a new stage for an e2e operator.
+- **Q21 [minor]** (refresh 1; default, owner to confirm) The OpenAPI file has one cookie security scheme `session` as its default; a public route (`apiDoc` with `public: true`) sets `security: []`. Reason: the E10 docs site publishes the file, and a client must know which call needs no session (review 2, N7). Other option: no security scheme in the file.
