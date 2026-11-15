@@ -12,7 +12,7 @@ import { MESSAGE_MAX_CHARS, type OutButton, type OutMessage } from "./message";
 import { feedbackButtons, suspiciousLine } from "./notices";
 import { cleanSubject, cutText, senderLabel } from "./text";
 import { rateText } from "./weekly";
-import { aiLine, fitsText, whySuffix } from "./why-line";
+import { aiLine, whySuffix } from "./why-line";
 
 export const DIGEST_MAX_LINES = 15;
 
@@ -51,8 +51,6 @@ export interface DigestItem {
   // Set only while the flag `why_lines` is on (F110 stage 16). Absent reads as no mark: the item renders as before.
   confidence?: number | null;
   rule?: SenderRuleKind | null;
-  // The competence tags of the chosen delegate of a `delegation` item (user config).
-  delegateTags?: readonly string[] | null;
 }
 
 export interface DigestHandled {
@@ -141,9 +139,8 @@ function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {
   const warning = suspiciousLine(item.suspicious, texts);
   if (warning !== null) lines.push(warning);
   // A flagged delegation mail gets no draft: that line replaces the "would do" line.
-  const noDraft = warning !== null && item.category === "delegation" && item.hasDraft !== true;
   lines.push(
-    `→ ${noDraft ? texts.suspicious.noDraft : `${item.wouldDo}${item.category === "delegation" ? fitsText(item.delegateTags, texts) : ""}`}`
+    `→ ${warning !== null && item.category === "delegation" && item.hasDraft !== true ? texts.suspicious.noDraft : item.wouldDo}`
   );
   return lines;
 }

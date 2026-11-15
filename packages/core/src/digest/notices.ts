@@ -62,7 +62,8 @@ export function renderUrgentNotice(
   const ai = aiLine(
     input.aiText,
     whySuffix({ category: "urgent", confidence: input.confidence, rule: input.rule }, texts),
-    200
+    200,
+    { printEmpty: true }
   );
   if (ai !== null) lines.push(ai);
   const warning = suspiciousLine(input.suspicious, texts);

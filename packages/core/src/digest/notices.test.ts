@@ -125,6 +125,28 @@ describe("renderUrgentNotice", () => {
     expect(renderUrgentNotice({ ...urgent, confidence: null, rule: null }, textTables.en)).toEqual(before);
   });
 
+  test("B1. an empty AI text keeps the old output byte for byte without a mark, and gives the mark line with one", () => {
+    const empty = { ...urgent, aiText: "" };
+    expect(renderUrgentNotice(empty, textTables.en).text).toBe(
+      "🔴 Urgent mail\nFrom: Ann <ann@firma.test>\nSubject: Server down\n💬 \nReceived 07:42\n→ would flag"
+    );
+    expect(renderUrgentNotice({ ...empty, confidence: null, rule: null }, textTables.en).text).toBe(
+      renderUrgentNotice(empty, textTables.en).text
+    );
+    // TG2: with a mark the empty text gives the mark line.
+    const marked = renderUrgentNotice({ ...empty, confidence: 0.8 }, textTables.en).text.split("\n");
+    expect(marked.slice(2, 5)).toEqual(["Subject: Server down", "💬 80%", "Received 07:42"]);
+  });
+
+  test("TG3. an AI text over 200 characters is cut at 200, and the mark stays after the cut", () => {
+    const long = { ...urgent, aiText: "y".repeat(300) };
+    const lineOf = (text: string): string => text.split("\n").find((line) => line.startsWith("💬")) ?? "";
+    expect(lineOf(renderUrgentNotice(long, textTables.en).text)).toBe(`💬 ${"y".repeat(199)}…`);
+    expect(lineOf(renderUrgentNotice({ ...long, confidence: 0.9 }, textTables.en).text)).toBe(
+      `💬 ${"y".repeat(199)}… · 90%`
+    );
+  });
+
   test("lists the reasons in the order of the rules, whatever the order of the view", () => {
     const text = renderUrgentNotice({ ...urgent, suspicious: ["risky_attachment", "auth_fail"] }, textTables.en).text;
     expect(text).toContain("⚠ Suspicious: sender check failed, risky attachment");

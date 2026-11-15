@@ -52,15 +52,6 @@ export interface DigestRequest {
   testMail: TestMailRule;
 }
 
-// The competence tags of the delegate of the first original draft or send action of a mail, or null.
-function chosenDelegateTags(
-  actions: readonly { delegateId: string | null; reverse: boolean }[],
-  tags: ReadonlyMap<string, string[]>
-): string[] | null {
-  const chosen = actions.find((action) => action.delegateId !== null && !action.reverse);
-  return chosen?.delegateId == null ? null : (tags.get(chosen.delegateId) ?? null);
-}
-
 // A digest that failed (never sent) does not move the start, so the next sent digest covers its mail.
 export async function digestPeriodStart(
   db: Db,
@@ -159,7 +150,13 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       },
       texts
     ),
-    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, texts),
+    // F110 stage 16: with the flag on, a delegation draft names the competence tags of its delegate.
+    wouldDo: describeActions(
+      actions.get(row.email_id) ?? [],
+      names,
+      { stayFolder: row.folder, ...(whyOn ? { delegateTags } : {}) },
+      texts
+    ),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
     suspicious: suspicious.get(row.email_id) ?? [],
     ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
@@ -169,9 +166,6 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
           // No model mark for a result that no model made (a rule, an error): confidence 1 or 0 there is not a measure.
           confidence: hasModelMark(row.reason_code) ? row.confidence : null,
           rule: row.rule,
-          ...(row.category === "delegation"
-            ? { delegateTags: chosenDelegateTags(actions.get(row.email_id) ?? [], delegateTags) }
-            : {}),
         }
       : {}),
   }));

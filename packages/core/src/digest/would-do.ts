@@ -4,6 +4,7 @@ import type { DraftKind } from "../triage/payloads";
 import { type ActionType, MOVE_TARGET_NAMES, type MoveTarget } from "../triage/planners";
 
 import { cutText } from "./text";
+import { skillsLabel } from "./why-line";
 
 export interface ActionView {
   id: string;
@@ -65,16 +66,22 @@ function sendPhrase(action: WouldDoAction, texts: CoreTexts): string | undefined
 function draftPhrase(
   action: WouldDoAction,
   names: ReadonlyMap<string, string>,
+  tags: ReadonlyMap<string, readonly string[]> | undefined,
   tense: ActionTense,
   texts: CoreTexts
 ): string {
   const name = action.delegateId === null ? null : (names.get(action.delegateId) ?? null);
-  return texts.wouldDo.draft(tense, action.kind ?? "delegation", name);
+  const kind = action.kind ?? "delegation";
+  // F110 stage 16: the competence tags only for a delegation draft, and only when the caller passes them (flag `why_lines`).
+  const skills =
+    kind === "delegation" && action.delegateId !== null ? skillsLabel(tags?.get(action.delegateId), texts) : null;
+  return texts.wouldDo.draft(tense, kind, name, skills);
 }
 
 function phrase(
   action: WouldDoAction,
   names: ReadonlyMap<string, string>,
+  tags: ReadonlyMap<string, readonly string[]> | undefined,
   tense: ActionTense,
   texts: CoreTexts
 ): string | null {
@@ -86,7 +93,7 @@ function phrase(
     case "move":
       return texts.wouldDo.move(tense, action.folder === null ? null : MOVE_TARGET_NAMES[action.folder]);
     case "create_draft":
-      return draftPhrase(action, names, tense, texts);
+      return draftPhrase(action, names, tags, tense, texts);
     case "save_summary":
     case "send":
       return null;
@@ -107,7 +114,7 @@ export function describeAction(
   if (action.type === "send") return sendPhrase(action, texts) ?? null;
   const tense = tenseOf(action);
   if (tense === undefined) return null;
-  const text = phrase(action, names, tense, texts);
+  const text = phrase(action, names, undefined, tense, texts);
   return text === null ? null : `${texts.wouldDo.tense[tense]} ${text}`;
 }
 
@@ -115,7 +122,7 @@ export function describeAction(
 export function describeActions(
   actions: readonly WouldDoAction[],
   names: ReadonlyMap<string, string>,
-  opts: { stayFolder?: string },
+  opts: { stayFolder?: string; delegateTags?: ReadonlyMap<string, readonly string[]> },
   texts: CoreTexts
 ): string {
   const groups = new Map<ActionTense, string[]>();
@@ -129,7 +136,7 @@ export function describeActions(
     }
     const tense = tenseOf(action);
     if (tense === undefined) continue;
-    const text = phrase(action, names, tense, texts);
+    const text = phrase(action, names, opts.delegateTags, tense, texts);
     if (text === null) continue;
     groups.set(tense, [...(groups.get(tense) ?? []), text]);
   }

@@ -7,6 +7,7 @@ import { isFeedbackCallback, parseCallback } from "./callback";
 import { DIGEST_MAX_LINES, renderDigest, type DigestInput, type DigestItem, type DigestMailbox } from "./digest";
 import { MESSAGE_MAX_CHARS, type OutMessage } from "./message";
 import { cutText } from "./text";
+import { describeActions, type ActionView } from "./would-do";
 
 const timeZone = "Europe/Warsaw";
 const now = new Date("2026-11-06T07:00:00Z");
@@ -19,6 +20,20 @@ const mailbox: DigestMailbox = {
   statusChangedAt: new Date("2026-11-01T00:00:00Z"),
   mode: "shadow",
 };
+
+function act(type: ActionView["type"], status: string): ActionView {
+  return {
+    id: "a1",
+    type,
+    status,
+    folder: null,
+    reverse: false,
+    reversesActionId: null,
+    appliedAt: null,
+    kind: null,
+    delegateId: null,
+  };
+}
 
 function uuid(n: number): string {
   return `0190a1b2-c3d4-7e5f-8a9b-${n.toString(16).padStart(12, "0")}`;
@@ -148,21 +163,28 @@ describe("why lines (F110 stage 16)", () => {
       "💬 AI text 1",
       "→ would flag",
     ]);
-    expect(one({ confidence: null, rule: null, delegateTags: null })).toBe(one({}));
+    expect(one({ confidence: null, rule: null })).toBe(one({}));
   });
 
-  test("5. a delegation shows the first 3 tags of the chosen delegate, each cut at 30 characters", () => {
-    const tags = ["finance", "legal", "hr", "it"];
-    const base = { wouldDo: "would draft a delegation to Anna", delegateTags: tags };
-    expect(lineOf(one(base, "delegation"), "→")).toBe("→ would draft a delegation to Anna (fits: finance, legal, hr)");
-    const long = "x".repeat(40);
-    expect(lineOf(one({ ...base, delegateTags: [long] }, "delegation"), "→")).toBe(
-      `→ would draft a delegation to Anna (fits: ${"x".repeat(29)}…)`
+  test("5. the tags sit next to the delegate name in the would-do line, not after the send state", () => {
+    const names = new Map([["d1", "Anna Nowak"]]);
+    const actions = [
+      { ...act("create_draft", "ready"), kind: "delegation" as const, delegateId: "d1" },
+      act("send", "awaiting_approval"),
+    ];
+    const wouldDo = (texts: CoreTexts, withTags: boolean): string =>
+      describeActions(
+        actions,
+        names,
+        withTags ? { delegateTags: new Map([["d1", ["finance", "legal", "hr", "it"]]]) } : {},
+        texts
+      );
+    const en = lineOf(one({ wouldDo: wouldDo(textTables.en, true) }, "delegation"), "→");
+    expect(en).toBe("→ will draft a delegation to Anna Nowak (skills: finance, legal, hr); waits for your approval");
+    // No tags: the line of today.
+    expect(lineOf(one({ wouldDo: wouldDo(textTables.en, false) }, "delegation"), "→")).toBe(
+      "→ will draft a delegation to Anna Nowak; waits for your approval"
     );
-    expect(lineOf(one({ ...base, delegateTags: [] }, "delegation"), "→")).toBe("→ would draft a delegation to Anna");
-    expect(lineOf(one({ ...base, delegateTags: null }, "delegation"), "→")).toBe("→ would draft a delegation to Anna");
-    // Only a delegation item has the tags.
-    expect(lineOf(one({ wouldDo: "would flag", delegateTags: tags }, "needs_reply"), "→")).toBe("→ would flag");
   });
 
   test("6. the Polish texts", () => {
@@ -174,9 +196,6 @@ describe("why lines (F110 stage 16)", () => {
     expect(lineOf(one({ rule: "blocklist" }, "spam", textTables.pl), "💬")).toContain(
       "reguła: nadawca z listy blokowanych"
     );
-    expect(
-      lineOf(one({ wouldDo: "zrobiłby – x", delegateTags: ["finanse", "prawo"] }, "delegation", textTables.pl), "→")
-    ).toBe("→ zrobiłby – x (kompetencje: finanse, prawo)");
   });
 
   test("7. 15 items with all suffixes and an attachment line each stay listed within the limit", () => {
@@ -185,18 +204,29 @@ describe("why lines (F110 stage 16)", () => {
       count: 1,
     };
     const categories: Category[] = ["urgent", "needs_reply", "delegation"];
-    const items = Array.from({ length: 15 }, (_, index) => {
-      const category = categories[index % 3] as Category;
-      return item(index + 1, category, {
-        attachments,
-        confidence: 0.85,
-        rule: index % 5 === 0 ? "vip" : null,
-        wouldDo: "would draft a delegation to Anna Kowalska",
-        delegateTags: ["finance", "legal", "human resources"],
-        aiText: "Asks for the signed contract before Friday noon",
-      });
-    });
     for (const texts of [textTables.en, textTables.pl]) {
+      const items = Array.from({ length: 15 }, (_, index) => {
+        const category = categories[index % 3] as Category;
+        return item(index + 1, category, {
+          attachments,
+          confidence: 0.85,
+          rule: index % 5 === 0 ? "vip" : null,
+          // Only a delegation item has a draft, so only its line holds the tags.
+          wouldDo:
+            category === "delegation"
+              ? describeActions(
+                  [
+                    { ...act("create_draft", "ready"), kind: "delegation", delegateId: "d1" },
+                    act("send", "awaiting_approval"),
+                  ],
+                  new Map([["d1", "Anna Kowalska"]]),
+                  { delegateTags: new Map([["d1", ["finance", "legal", "human resources"]]]) },
+                  texts
+                )
+              : "would flag",
+          aiText: "Asks for the signed contract before Friday noon",
+        });
+      });
       const message = render(input({ counts: { urgent: 5, needs_reply: 5, delegation: 5 }, items }), texts);
       expect(blockStarts(message.text)).toHaveLength(15);
       expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
@@ -213,6 +243,46 @@ describe("why lines (F110 stage 16)", () => {
       "💬 Not sure · rule: whitelisted sender"
     );
     expect(lineOf(one({ aiText: null, confidence: 0.55 }, "unsure"), "💬")).toBe("");
+  });
+
+  test("N2. with the longest fields the flag on may list up to 3 fewer items than the flag off (accepted, en 7 against 10), never fewer than 7", () => {
+    const attachments = {
+      attachments: [{ name: "n".repeat(40), type: "application/pdf", size: 122880, inline: false }],
+      count: 1,
+    };
+    for (const texts of [textTables.en, textTables.pl]) {
+      const items = (on: boolean): DigestItem[] =>
+        Array.from({ length: 15 }, (_, index) =>
+          item(index + 1, "delegation", {
+            from: "f".repeat(60),
+            subject: "s".repeat(120),
+            attachments,
+            aiText: "a".repeat(200),
+            wouldDo: describeActions(
+              [
+                { ...act("create_draft", "ready"), kind: "delegation", delegateId: "d1" },
+                act("send", "awaiting_approval"),
+              ],
+              new Map([["d1", "Anna Nowak"]]),
+              on ? { delegateTags: new Map([["d1", ["t".repeat(40), "u".repeat(40), "v".repeat(40)]]]) } : {},
+              texts
+            ),
+            ...(on ? { confidence: 0.85, rule: index % 2 === 0 ? "whitelist" : null } : {}),
+          })
+        );
+      const listed = (on: boolean): number =>
+        blockStarts(render(input({ counts: { delegation: 15 }, items: items(on) }), texts).text).length;
+      expect(listed(true)).toBeLessThanOrEqual(listed(false));
+      expect(listed(false) - listed(true)).toBeLessThanOrEqual(3);
+      expect(listed(true)).toBeGreaterThanOrEqual(7);
+    }
+  });
+
+  test("TG2. an empty AI text with a mark gives the mark line; without a mark the digest prints no line", () => {
+    expect(lineOf(one({ aiText: "", confidence: 0.8 }), "💬")).toBe("💬 80%");
+    expect(lineOf(one({ aiText: "", rule: "vip" }), "💬")).toBe("💬 rule: VIP sender");
+    expect(one({ aiText: "" })).not.toContain("💬");
+    expect(one({ aiText: "", confidence: null, rule: null })).not.toContain("💬");
   });
 
   test("a long AI text is cut before the mark, so the mark stays", () => {

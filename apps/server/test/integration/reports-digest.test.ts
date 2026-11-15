@@ -678,11 +678,18 @@ describe("digest why lines (F110 stage 16)", () => {
         confidence: 0.55,
         fields: { model_category: "info" },
       });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "spam",
+        createdAt: at(-95 * MIN),
+        subject: "SUBJECT-OLDBLOCK",
+        reasonCode: "blocklist",
+        confidence: 1,
+      });
       const anna = await insertDelegate(trx, ctx, {
         name: "Anna Nowak",
         tags: ["finance", "legal", "hr", "it"],
       });
-      await insertDraftAndSend(trx, ctx, a.mailboxId, {
+      const delegated = await insertDraftAndSend(trx, ctx, a.mailboxId, {
         delegateId: anna,
         delegateName: "Anna Nowak",
         task: "Prepare the offer",
@@ -690,6 +697,15 @@ describe("digest why lines (F110 stage 16)", () => {
         sendStatus: "awaiting_approval",
         createdAt: at(-80 * MIN),
         subject: "SUBJECT-DELEGATED",
+      });
+      // TG6: a reverse draft that carries another delegate (created before the original) never shows its tags or its name.
+      const bob = await insertDelegate(trx, ctx, { name: "Bob Reverse", tags: ["secret-tag"] });
+      await insertAction(trx, ctx, delegated.emailId, {
+        type: "create_draft",
+        status: "applied",
+        payload: { kind: "delegation", delegate_id: bob },
+        reversesActionId: delegated.draftId,
+        createdAt: at(-85 * MIN),
       });
       await insertTriaged(trx, ctxB, b.mailboxId, {
         category: "info",
@@ -703,7 +719,7 @@ describe("digest why lines (F110 stage 16)", () => {
       expect(off).toContain("SUBJECT-MODEL\n💬 A model reason\n");
       expect(off).not.toContain("85%");
       expect(off).not.toContain("rule:");
-      expect(off).not.toContain("fits:");
+      expect(off).not.toContain("skills:");
 
       await setOrgFeature(trx, ctx, { flag: "why_lines", enabled: true, actor: "cli", now: T });
       const on = (await buildDigestMessage(trx, ctx, request)).text;
@@ -715,11 +731,21 @@ describe("digest why lines (F110 stage 16)", () => {
       // An unsure item keeps its guess percent only.
       expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).toContain("55%");
       expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).not.toContain("·");
-      expect(on).toContain("(fits: finance, legal, hr)");
+      // The tags sit next to the delegate name, before the send state (N1); at most 3.
+      expect(on).toContain(
+        "will draft a delegation to Anna Nowak (skills: finance, legal, hr); waits for your approval"
+      );
       expect(on).not.toContain(", it)");
+      // The same delegation with the flag off: the line of today.
+      expect(off).toContain("will draft a delegation to Anna Nowak; waits for your approval");
+      // TG1: an old blocklist row has no rule key and confidence 1: no percent.
+      expect(on).toMatch(/SUBJECT-OLDBLOCK\n💬 The sender is on your blocklist\.\n/);
+      expect(on).not.toContain("100%");
 
       // The flag is per organization.
       const forB = (await buildDigestMessage(trx, ctxB, request)).text;
+      expect(on).not.toContain("secret-tag");
+      expect(on).not.toContain("Bob Reverse");
       expect(forB).toContain("SUBJECT-OTHER\n💬 Other reason\n");
       expect(forB).not.toContain("%");
     });

@@ -25,9 +25,9 @@ export function hasModelMark(reasonCode: string): boolean {
 }
 
 // The confidence in percent, rounded down to a multiple of 5 (0.999 reads 95: a mark must not promise more than it knows).
-// The small term keeps a product like 0.29 * 20 = 5.8 and 0.7 * 20 = 14.000000000000002 on the right side.
+// A value outside 0 to 1 is clamped. Plain `Math.floor`: a confidence with up to 3 decimals gives the exact step.
 export function confidencePercent(confidence: number): number {
-  const steps = Math.floor(Math.min(Math.max(confidence, 0), 1) * (100 / PERCENT_STEP) + 1e-9);
+  const steps = Math.floor(Math.min(Math.max(confidence, 0), 1) * (100 / PERCENT_STEP));
   return steps * PERCENT_STEP;
 }
 
@@ -43,18 +43,25 @@ export function whySuffix(input: WhyInput, texts: CoreTexts): string | null {
 
 // The `💬` line of an item: the AI text, then ` · <suffix>`. An item with no AI text gets the suffix on a line of its own.
 // The AI text is cut before the suffix joins it, so a long text never cuts the mark away.
-export function aiLine(aiText: string | null, suffix: string | null, maxText: number): string | null {
-  const text = aiText === null || aiText === "" ? null : cutText(aiText, maxText);
-  if (text === null) return suffix === null ? null : `💬 ${suffix}`;
-  return suffix === null ? `💬 ${text}` : `💬 ${text} · ${suffix}`;
+// Without a suffix the old rules hold byte for byte: the digest skips an empty text; the urgent notice (`printEmpty`) prints `💬 `.
+export function aiLine(
+  aiText: string | null,
+  suffix: string | null,
+  maxText: number,
+  opts: { printEmpty?: boolean } = {}
+): string | null {
+  const present = aiText !== null && (aiText !== "" || opts.printEmpty === true);
+  const text = present ? cutText(aiText, maxText) : null;
+  if (suffix === null) return text === null ? null : `💬 ${text}`;
+  return text === null || text === "" ? `💬 ${suffix}` : `💬 ${text} · ${suffix}`;
 }
 
-// ` (fits: a, b, c)` after the "would do" line of a delegation item, or "". At most 3 tags, 30 characters each.
-export function fitsText(tags: readonly string[] | null | undefined, texts: CoreTexts): string {
-  if (tags === undefined || tags === null) return "";
+// The competence tags of a delegate as a label, `skills: a, b, c`, or null. At most 3 tags, 30 characters each; a blank tag is left out first.
+export function skillsLabel(tags: readonly string[] | null | undefined, texts: CoreTexts): string | null {
+  if (tags === undefined || tags === null) return null;
   const shown = tags
     .map((tag) => cutText(tag, WHY_FIT_TAG_MAX))
     .filter((tag) => tag !== "")
     .slice(0, WHY_FIT_TAGS);
-  return shown.length === 0 ? "" : ` (${texts.why.fits(shown.join(", "))})`;
+  return shown.length === 0 ? null : texts.why.fits(shown.join(", "));
 }

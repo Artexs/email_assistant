@@ -325,6 +325,44 @@ describe("urgent notices", () => {
     });
   });
 
+  test("B1: an urgent mail with an empty reason prints the empty AI line with the flag off, and the mark line with it on", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const on = await org(trx);
+      const off = await org(trx);
+      await setOrgFeature(trx, on.ctx, { flag: "why_lines", enabled: true, actor: "cli", now: T });
+      const make = (o: Org) =>
+        insertTriaged(trx, o.ctx, o.mailboxId, {
+          category: "urgent",
+          createdAt: at(-10 * MINUTE),
+          reason: "",
+          confidence: 0.87,
+        });
+      const onId = await make(on);
+      const offId = await make(off);
+
+      await run(trx);
+
+      const lines = async (o: Org, emailId: string) => {
+        const row = (await rows(trx, o.orgId, "urgent")).find((entry) => entry.email_id === emailId);
+        if (row === undefined) throw new Error("no urgent row");
+        return row.text.split("\n");
+      };
+      const offLines = await lines(off, offId);
+      expect(offLines.slice(2, 5)).toEqual([
+        expect.stringMatching(/^Subject:/),
+        "💬 ",
+        expect.stringMatching(/^Received/),
+      ]);
+      const onLines = await lines(on, onId);
+      expect(onLines.slice(2, 5)).toEqual([
+        expect.stringMatching(/^Subject:/),
+        "💬 85%",
+        expect.stringMatching(/^Received/),
+      ]);
+    });
+  });
+
   test("an urgent mail with inline parts only gets no attachment field", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);

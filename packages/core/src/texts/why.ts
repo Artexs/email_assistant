@@ -6,14 +6,14 @@ import type { SenderRuleKind } from "../triage/rules";
 export interface WhyTexts {
   // The mark of a result that a sender rule shaped. It replaces the percent: a rule is not a model mark.
   rule: Record<SenderRuleKind, string>;
-  // The competence tags of the chosen delegate, joined with commas, after the "would do" line of a delegation item.
+  // The label of the competence tags of a delegate, joined with commas. The would-do phrase of a delegation draft puts it next to the name.
   fits: (tags: string) => string;
 }
 
 export const whyTexts = {
   en: {
     rule: { vip: "rule: VIP sender", whitelist: "rule: whitelisted sender", blocklist: "rule: blocked sender" },
-    fits: (tags) => `fits: ${tags}`,
+    fits: (tags) => `skills: ${tags}`,
   },
   pl: {
     rule: {

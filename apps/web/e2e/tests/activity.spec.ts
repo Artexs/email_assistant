@@ -1,10 +1,12 @@
+import { execFileSync } from "node:child_process";
+
 import { expect, test, type Page } from "@playwright/test";
 
 import { ACTIVITY_SUBJECTS } from "../../../server/src/scripts/e2e-seed-args";
 import { en } from "../../src/i18n/en";
 import { t } from "../../src/i18n";
 import { expectNoA11yViolations } from "../a11y";
-import { E2E_BASE_URL } from "../env";
+import { E2E_BASE_URL, e2eEnv, repoRoot } from "../env";
 import {
   cleanUpOrg,
   connectGreenMail,
@@ -17,6 +19,20 @@ import {
 import { readSeed } from "../seed";
 
 test.describe.configure({ mode: "serial" });
+
+// F110 stage 16: the rule hit shows only while the flag `why_lines` is on. The CLI of the platform (`bun run org:flag`) with the
+// e2e env, as the OAuth spec does. The flag is on for the seed organization only while this file runs.
+function setFlag(flag: string, enabled: boolean): void {
+  const { orgId } = readSeed();
+  execFileSync(
+    "bun",
+    ["apps/server/src/scripts/org-flag.ts", "--org-id", orgId, "--flag", flag, enabled ? "--on" : "--off"],
+    { cwd: repoRoot, env: e2eEnv(), stdio: "pipe" }
+  );
+}
+
+test.beforeAll(() => setFlag("why_lines", true));
+test.afterAll(() => setFlag("why_lines", false));
 
 let errors: string[] = [];
 
