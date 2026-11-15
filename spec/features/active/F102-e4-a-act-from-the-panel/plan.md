@@ -15,7 +15,7 @@ Owner (PD-029–036): "The rest is fine. Use the default values." Job (2026-11-1
 - **P3 (PD-035)** Every user action is a typed `/api` route in OpenAPI (ADR 0023). Axe WCAG 2.2 A/AA, zero violations, on every customer page (operator console: Q20); a keyboard test for approvals.
 - **P4 (PD-045)** New pages behind flags, default off: `approvals_page` (exists), `delegation_pages` (new, epic `E4-A`, remove-by 2027-03-01).
 - **P5 (PD-057)** After a panel reject, an optional reason through the existing reject-reason route.
-- **P6** Owner only: approve, reject, edit, remind, cancel, delegate writes. Any member: reads and Done (as Telegram `dd:`). Q7.
+- **P6** Owner only: approve, reject, edit, remind, cancel, delegate writes. Any member: reads and Done (as Telegram `dd:`). Q7. Remind now is not hidden when it cannot work: it stays visible with `aria-disabled` and the reason as text (the five 409 codes).
 
 ### Design decisions
 

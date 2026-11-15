@@ -115,8 +115,9 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
         return c.json({ error: "changed", currentId: result.currentId }, 409);
       case "draft_not_ready":
         return c.json({ error: "draft_not_ready" }, 409);
-      // `expired` with `byThisTap`: the send timed out and this call expired it. It queues no card edit, so the Telegram cards stay
-      // live (accepted in writing: the expiry job edits no card; the stage of the delegations API owns that work, F102 questions Q18). A tap on such a card answers `expired`.
+      // `expired` with `byThisTap`: the send timed out and this call expired it. `approve` queued the `expired` card edit for every
+      // sent card (the panel has no card of its own), so the Telegram cards lose their buttons (F102 stage 18). The hourly expiry
+      // job still edits no card (Q18): a tap on a card of such a send answers `expired`.
       case "expired":
         return c.json({ error: "closed", state: "expired" }, 409);
       case "sending":

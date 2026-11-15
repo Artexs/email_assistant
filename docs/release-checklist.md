@@ -5,7 +5,7 @@ Every VPS deploy is a release: a tagged version (a patch version is fine). Do th
 1. **CI is green on the commit you tag.** Open the CI run of that commit on `master`. Do not tag a commit with a red or running CI.
 2. **The changelog has the entry.** `CHANGELOG.md` has one line per user-visible change under `## [Unreleased]`, in product words (no ticket ids, no names of people). Groups: Added, Changed, Fixed, Removed, Security.
 3. **A model or prompt changed?** Attach the E2 holdout report to the release: `bun run eval --sim lab-01 --part holdout` (add `--judge` for a drafter change), with the report and the gate file under `evals/results/` committed. A prompt or model change with no such report does not ship.
-4. **Sim stack (F113).** If a file of the sim stack changed (`deploy/compose.sim.yaml`, `deploy/Dockerfile.sim`, `deploy/sim.env.example`, the sim code), rebuild `ea-sim` on its host.
+4. **Sim stack (F113).** If a file of the sim stack changed (`deploy/compose.sim.yaml`, `deploy/Dockerfile.sim`, `deploy/sim.env.example`, the sim code), rebuild `ea-sim` on its host after step 8, from the checkout of the new tag (`deploy/README.md` § Sim stack, steps 1 to 6). A sim deploy never uses a bare commit.
 5. **Owner-facing changes are in the capability pages** (`docs/capabilities/`), in the same change as the code.
 6. **Migrations follow the contract rule.** `bun run db:check-migrations` passes. A migration works with the code of the previous release (`docs/code-patterns.md` § Migrations).
 7. **Prepare, commit, tag, push.**
