@@ -70,7 +70,10 @@ export interface CallbackInput {
 const CONSENT_NUMBERS: readonly string[] = ["90094", "90095", "65001"];
 /** An ID token may be up to 5 minutes past its `exp` (clock skew). */
 const EXP_SKEW_MS = 5 * 60_000;
-const ADDRESS = z.email({ pattern: z.regexes.html5Email });
+// The same rule as `addressSchema` of @ea/core (not exported there): the HTML5 pattern and at most 254 characters.
+const ADDRESS = z.email({ pattern: z.regexes.html5Email }).max(254);
+const GUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+const MICROSOFT_MAIL_SCOPE = /^(?:https:\/\/outlook\.office(?:365)?\.com\/)?imap\.accessasuser\.all$/;
 
 const refuse = (provider: MailOAuthProvider, code: OAuthRefusalCode): CallbackResult => {
   log.info("oauth_callback_refused", { provider, code });
@@ -89,12 +92,12 @@ function codeOfQueryError(error: string, description: string | undefined): OAuth
 
 /**
  * Does the answer's scope list hold the one mail scope of the provider? Google names it in full. Microsoft may answer the full form or
- * the short form (`IMAP.AccessAsUser.All`), and leaves out `offline_access` and `openid`. The check is case-insensitive.
+ * the short form (`IMAP.AccessAsUser.All`); the full form must name a Microsoft Outlook host (`outlook.office.com`, `outlook.office365.com`). Microsoft leaves out `offline_access` and `openid`. The check is case-insensitive.
  */
 function hasMailScope(provider: MailOAuthProvider, scopes: readonly string[]): boolean {
   const lower = scopes.map((scope) => scope.toLowerCase());
   if (provider === "google") return lower.includes("https://mail.google.com/");
-  return lower.some((scope) => scope === "imap.accessasuser.all" || scope.endsWith("/imap.accessasuser.all"));
+  return lower.some((scope) => MICROSOFT_MAIL_SCOPE.test(scope));
 }
 
 /**
@@ -159,8 +162,10 @@ export async function finishOAuthCallback(
     if (claims.emailVerified !== true) return refuse(provider, "oauth_failed");
     rawAddress = claims.email;
   } else {
-    // The issuer (a GUID, `issuerOk`) names the tenant too: the two must agree, so `tid` is a GUID as well.
-    if (claims.tid === null || !claims.iss.toLowerCase().includes(`/${claims.tid.toLowerCase()}/`)) {
+    // `issuerOk` made the issuer `https://login.microsoftonline.com/<tenant GUID>/v2.0`. `tid` must be a GUID and equal that path segment
+    // (not a part of the URL: the host segment must never pass as a tenant).
+    const issuerTenant = claims.iss.split("/")[3]?.toLowerCase();
+    if (claims.tid === null || !GUID.test(claims.tid) || claims.tid.toLowerCase() !== issuerTenant) {
       return refuse(provider, "oauth_failed");
     }
     tenantId = claims.tid.toLowerCase();

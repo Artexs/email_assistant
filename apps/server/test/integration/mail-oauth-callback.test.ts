@@ -286,6 +286,17 @@ describe("the callback check", () => {
       scopes: ["https://x.test/NotIMAP.AccessAsUser.All"],
     });
     expect(await finish("microsoft", lookalike.query)).toEqual(refused("oauth_scope_missing"));
+    // The full form must name a Microsoft Outlook host.
+    const evil = await signIn("microsoft", {
+      address: "a@x.test",
+      scopes: ["https://evil.test/IMAP.AccessAsUser.All"],
+    });
+    expect(await finish("microsoft", evil.query)).toEqual(refused("oauth_scope_missing"));
+    const legacy = await signIn("microsoft", {
+      address: "a@x.test",
+      scopes: ["https://outlook.office365.com/IMAP.AccessAsUser.All"],
+    });
+    expect((await finish("microsoft", legacy.query)).ok).toBe(true);
   });
 
   test("7. ID token: email_verified false, another audience, expired, another issuer all give oauth_failed", async () => {
@@ -304,6 +315,9 @@ describe("the callback check", () => {
       claims: { tid: "22222222-2222-2222-2222-222222222222" },
     });
     expect(await finish("microsoft", mismatch.query)).toEqual(refused("oauth_failed"));
+    // The host name of the issuer URL is a path segment too, but it is no tenant.
+    const host = await signIn("microsoft", { address: "a@x.test", claims: { tid: "login.microsoftonline.com" } });
+    expect(await finish("microsoft", host.query)).toEqual(refused("oauth_failed"));
     // An audience list that holds the client id passes; the exp of 4 minutes ago is inside the skew.
     const list = await signIn("google", {
       address: "a@x.test",
@@ -317,6 +331,8 @@ describe("the callback check", () => {
     expect(await finish("google", none.query)).toEqual(refused("oauth_failed"));
     const bad = await signIn("google", { address: "a@x.test", claims: { email: "not an address" } });
     expect(await finish("google", bad.query)).toEqual(refused("oauth_failed"));
+    const long = await signIn("google", { address: "a@x.test", claims: { email: `${"a".repeat(287)}@x.test` } });
+    expect(await finish("google", long.query)).toEqual(refused("oauth_failed"));
     const answer: TokenAnswer = {
       accessToken: "at-stub",
       expiresInSec: 3600,
