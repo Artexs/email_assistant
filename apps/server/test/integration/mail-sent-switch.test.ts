@@ -5,7 +5,13 @@ import { afterAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { setSentSync } from "../../src/modules/mail";
-import { getSentSyncState, insertSentEmails, lockSentSyncState, type NewSentEmail } from "../../src/modules/mail/repo";
+import {
+  deleteSentEmails,
+  getSentSyncState,
+  insertSentEmails,
+  lockSentSyncState,
+  type NewSentEmail,
+} from "../../src/modules/mail/repo";
 import { syncSentHeaders } from "../../src/modules/mail/sent-sync";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -199,6 +205,8 @@ describe("setSentSync", () => {
           deleted: 0,
         });
       }
+      // The delete itself filters by organization: the context of org B removes no row of org A.
+      expect(await deleteSentEmails(trx, b.ctx, a.mailboxId)).toBe(0);
       expect(await stateOf(trx, a)).toEqual(stateBefore);
       expect(await rowsOf(trx, a)).toHaveLength(1);
       expect(await auditRows(trx, a.ctx.orgId)).toEqual([]);
