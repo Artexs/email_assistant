@@ -679,7 +679,7 @@ Start time `T0`. Use the test mailbox only.
    Move the mail back to INBOX. After the next sync, the row has `returned_at` set and no new row exists.
 3. Forced rescan at about hour 24:
    `$C run --rm -T server bun run mailbox:rescan --org-id <org> --mailbox-id <id>`
-   The next sync writes `sync_folder_done sync_mode=rescan`.
+   The next sync writes a `sync_folder_done` line with `sync_mode=rescan` (in the text form `org_id`, `mailbox_id` and `folder_key` stand between the two words, so search for `sync_mode=rescan`).
 4. At the end (48 hours or more), right after a sync:
    `$C run --rm -T server bun run mailbox:audit --org-id <org> --mailbox-id <id> --since <T0 ISO time>`
    The output must be `missing=0 duplicates=0` with exit code 0.
