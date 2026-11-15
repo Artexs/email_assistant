@@ -12,7 +12,7 @@ Code: `apps/server/src/modules/mail/oauth/` (`state.ts`, `start.ts`, `routes.ts`
 ## Binding rules enforced in code
 
 - The table's foreign keys check the user and the organization one by one, not the pair. `createOAuthState` reads the membership (`getMembership`) and throws `OAuthStateRefusedError("not_a_member")` for a user who is not a member of `ctx.orgId`. `consumeOAuthState` checks the membership again after its delete (a member removed between start and callback gets `oauth_state_invalid`; the row is gone either way).
-- Membership is checked, not the owner role. The start route is owner only (`requireOwner`). **Stage 08 must check the owner role again at the callback** (a member demoted after the start must not connect).
+- Membership is checked, not the owner role. The start route is owner only (`requireOwner`). **Stage 09 checks the owner role again at the callback** (`stages/stage-09-connect-reconnect.md` line 52: a demoted owner gives `oauth_failed`). Stage 08 has no route and no role check.
 - A Reconnect state needs an OAuth mailbox of the same provider in the same organization: `createOAuthState` checks it in its transaction (`OAuthStateRefusedError("mailbox_not_found")`); `startMailOAuth` answers 404 first.
 - The cap is 5 live rows per user and organization. A transaction advisory lock keyed by organization and user makes two parallel starts safe (mutation m11 fails test 7 three times in three).
 - `state` shape check: a value that is not 43 base64url characters answers `oauth_state_invalid` with no DB call (mutation m28 removes the check: all 20 tests still pass, as the hash lookup misses anyway; the check only saves a query).

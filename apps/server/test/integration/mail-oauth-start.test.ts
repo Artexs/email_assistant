@@ -254,6 +254,18 @@ describe("the state store", () => {
     expect(await rowsOf(org.ownerId)).toHaveLength(OAUTH_STATE_CAP);
   });
 
+  test("7b. single use under a parallel double consume: 8 parallel consumes on the pool, 20 rounds, exactly one winner each round", async () => {
+    for (let round = 0; round < 20; round += 1) {
+      const made = await createOAuthState(db, secrets, ctxA(), startOf("google", org.ownerId), NOW);
+      const input = { state: made.state, provider: "google" as const, userId: org.ownerId };
+      const results = await Promise.all(
+        Array.from({ length: 8 }, () => consumeOAuthState(db, secrets, ctxA(), input, NOW))
+      );
+      expect({ round, wins: results.filter((result) => result.ok).length }).toEqual({ round, wins: 1 });
+    }
+    expect(await rowsOf(org.ownerId)).toHaveLength(0);
+  });
+
   test("8. the binding: user U is a member of organization B only; a state for organization A and U is refused", async () => {
     const outsider = org.otherOwnerId; // an owner of the other organization, no member of ours
     await expect(createOAuthState(db, secrets, ctxA(), startOf("google", outsider), NOW)).rejects.toBeInstanceOf(
