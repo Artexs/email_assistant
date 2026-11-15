@@ -5,7 +5,7 @@ import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { setDigestTimes } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
-import { linkChat, randomChatId } from "./fixtures";
+import { isolateChannels, linkChat, randomChatId, renderedOf } from "./fixtures";
 import { consentRow, CURRENT_CONSENT } from "./follow-up-fixtures";
 import { commandOrg, FRIDAY, type CommandOrg } from "./loops-commands-fixtures";
 import { insertLoopRow } from "./loops-fixtures";
@@ -65,5 +65,26 @@ export const waitingLoop = (
     wait_from_at: new Date("2026-11-10T09:00:00Z"),
     ...over,
   });
+
+// The text of every digest row of the organization, as the sender renders it, by dedup key.
+export async function digestTexts(trx: Transaction<DB>, orgId: string): Promise<string[]> {
+  const rows = await trx
+    .selectFrom("outbox")
+    .select(["kind", "view", "channel", "detail", "locale", "text", "buttons", "dedup_key"])
+    .where("org_id", "=", orgId)
+    .where("kind", "=", "digest")
+    .orderBy("dedup_key")
+    .execute();
+  return rows.map((row) => renderedOf(row).text);
+}
+
+export const loopRow = (trx: Transaction<DB>, id: string) =>
+  trx.selectFrom("open_loops").selectAll().where("id", "=", id).executeTakeFirstOrThrow();
+
+// The channels of other tests are switched off for the transaction, then the organization of the test is made.
+export async function ready(trx: Transaction<DB>, opts: Parameters<typeof briefOrg>[1] = {}): Promise<BriefOrg> {
+  await isolateChannels(trx);
+  return briefOrg(trx, opts);
+}
 
 export { FRIDAY };
