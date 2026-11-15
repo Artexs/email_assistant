@@ -5,6 +5,7 @@ import {
   nextLocalDate,
   planLiveRun,
   type LiveMode,
+  type LlmEndpointKind,
   type SimEnvIssue,
 } from "@ea/core";
 
@@ -38,11 +39,17 @@ export interface StartInput {
   reuse: boolean;
 }
 
+export interface LabModel {
+  model: string;
+  endpoint: LlmEndpointKind;
+}
+
 export interface StartDeps {
   state: LabState;
   corpus: LabCorpus;
-  // The models the stack is configured to call. The caller names the roles the lab uses.
-  models: readonly string[];
+  // The models the stack is configured to call, each with the endpoint kind of its role's provider (an own server
+  // costs 0 and needs no price row; an eu endpoint needs an eu row). The caller names the roles the lab uses.
+  models: readonly LabModel[];
   orgHasMail(orgId: string): Promise<boolean>;
   // Stores the urgency profile of the run on the org mailbox (`storeRunUrgencyProfile`).
   storeUrgency(org: LabOrg, plan: LabRun["plan"]): Promise<unknown>;
@@ -95,9 +102,14 @@ export async function startLabRun(input: StartInput, deps: StartDeps): Promise<S
   const capUsd = state.capFor(requested);
   if (capUsd <= 0) return refuse("month_cap");
 
-  // A call with no price would count $0 toward the cap. The stack must not hold such a model.
-  const unpriced = [...new Set(deps.models)].filter((model) => costPerMail(model, 0, 0, deps.now()) === null);
-  if (unpriced.length > 0) return refuse("model_unpriced", unpriced.join(","));
+  // A call with no price would count $0 toward the cap. The stack must not hold such a model. The price row depends on
+  // the endpoint kind: an own server is never unpriced, an eu endpoint with only a standard row is.
+  const unpriced = new Set(
+    deps.models
+      .filter(({ model, endpoint }) => costPerMail(model, 0, 0, deps.now(), endpoint) === null)
+      .map(({ model }) => model)
+  );
+  if (unpriced.size > 0) return refuse("model_unpriced", [...unpriced].join(","));
 
   if (!input.reuse && (await deps.orgHasMail(org.orgId))) return refuse("org_not_fresh");
 
@@ -116,9 +128,9 @@ export async function startLabRun(input: StartInput, deps: StartDeps): Promise<S
 export const labEnvIssues = (env: Record<string, string | undefined>, corpus: LabCorpus): SimEnvIssue[] =>
   checkSimEnv(env, labAddresses(corpus));
 
-// One ledger line per run: a second call, or a serve loop that wrote the line first, adds none. Returns true when it wrote.
-export function writeRunLedgerLine(state: LabState, runId: string, usd: number, now: Date, label: string): boolean {
-  const written = readLedger(state.ledgerPath())
+// True when the ledger holds a line of the run: the run has ended, or a stop crashed between the line and `stopRun`.
+export function ledgerHasRun(state: LabState, runId: string): boolean {
+  return readLedger(state.ledgerPath())
     .split("\n")
     .some((line) => {
       try {
@@ -127,7 +139,11 @@ export function writeRunLedgerLine(state: LabState, runId: string, usd: number, 
         return false;
       }
     });
-  if (written) return false;
+}
+
+// One ledger line per run: a second call, or a serve loop that wrote the line first, adds none. Returns true when it wrote.
+export function writeRunLedgerLine(state: LabState, runId: string, usd: number, now: Date, label: string): boolean {
+  if (ledgerHasRun(state, runId)) return false;
   appendLedgerLine(state.ledgerPath(), ledgerLine({ runId, at: now, usd, label }));
   return true;
 }

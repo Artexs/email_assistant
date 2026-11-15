@@ -5,6 +5,7 @@ import type { ClassifierEmail, ClassifierExtras, SenderContext } from "../classi
 import * as classifierV2 from "./classifier-v2";
 import * as classifierV3 from "./classifier-v3";
 import { type ClassifierV3Part, optionalParts } from "./classifier-v3";
+import * as escalationV1 from "./escalation-v1";
 import * as judgeV1 from "./judge-v1";
 
 /** The prompt of one role in one version; the builders differ per role. */
@@ -65,6 +66,14 @@ export const prompts = {
     buildSystem: classifierV2.buildSystemPrompt,
     buildUser: classifierV2.buildUserPrompt,
   },
+  escalation: {
+    role: "escalation",
+    version: escalationV1.PROMPT_VERSION,
+    // The classifier version whose text this prompt uses. It must equal `prompts.classifier.version`.
+    base: escalationV1.BASE_VERSION,
+    buildSystem: escalationV1.buildSystemPrompt,
+    buildUser: escalationV1.buildUserPrompt,
+  },
   judge: {
     role: "judge",
     version: judgeV1.PROMPT_VERSION,
@@ -97,5 +106,4 @@ export function promptLabel(choice: { version: string; parts: readonly Classifie
 export const rolesWithoutPrompt = {
   drafter: "E6a",
   extractor: "E5b",
-  escalation: "E3b",
 } as const satisfies Partial<Record<LlmRole, string>>;

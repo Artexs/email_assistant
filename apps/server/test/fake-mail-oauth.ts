@@ -46,6 +46,8 @@ export interface FakeMailOAuth {
   }): string;
   /** The next token or revoke request gets this answer. "timeout": no answer until `stop()`. */
   failNext(answer: FakeFailure): void;
+  /** The next refresh-token request gets this answer (a code redeem before it passes). Stage 09: the `graph` refresh of a Microsoft connect. */
+  failNextRefresh(answer: FakeFailure): void;
   /** Per provider: does a refresh give a new refresh token? Microsoft true, Google false. */
   rotate: Record<MailOAuthProvider, boolean>;
   calls: FakeMailOAuthCall[];
@@ -94,6 +96,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
   const issuedRefreshTokens: string[] = [];
   const rotate: Record<MailOAuthProvider, boolean> = { microsoft: true, google: false };
   const failures: FakeFailure[] = [];
+  const refreshFailures: FakeFailure[] = [];
   let origin = "";
   let counter = 0;
   let release: () => void = () => undefined;
@@ -188,6 +191,12 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
     }
     if (grant === "refresh_token") {
       calls.push({ provider, grant, scope, codeVerifierOk: false });
+      const refreshFailure = refreshFailures.shift();
+      if (refreshFailure === "timeout") {
+        await stopped;
+        return new Response("stopped", { status: 503 });
+      }
+      if (refreshFailure !== undefined) return errorAnswer(refreshFailure);
       const old = form.get("refresh_token") ?? "";
       const entry = refreshTokens.get(old);
       if (entry === undefined || !entry.live || entry.provider !== provider) return invalidGrant(provider);
@@ -274,6 +283,9 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
     },
     failNext(answer) {
       failures.push(answer);
+    },
+    failNextRefresh(answer) {
+      refreshFailures.push(answer);
     },
     rotate,
     calls,

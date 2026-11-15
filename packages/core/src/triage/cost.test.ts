@@ -39,6 +39,15 @@ describe("costPerMail", () => {
     }
   });
 
+  test("gpt-6.1-terra (the escalation model) has a standard price row with a source and a date", () => {
+    const rows = llmPrices["gpt-6.1-terra"] ?? [];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ inputPerM: 1, cachedInputPerM: 0.05, outputPerM: 5 });
+    expect(rows[0]?.source).toStartWith("https://");
+    expect(rows[0]?.checked).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(costPerMail("gpt-6.1-terra", 1e6, 1e6, new Date("2026-11-15T00:00:00Z"))).toBeCloseTo(6, 10);
+  });
+
   test("the EU price row is marked unverified (secondary source)", () => {
     const eu = (llmPrices["gpt-6-luna"] ?? []).filter((row) => row.endpoint === "eu");
     expect(eu).toHaveLength(1);

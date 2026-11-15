@@ -2,6 +2,7 @@ export {
   changeMailboxStatus,
   countMailboxesOfOrg,
   findMailboxIdByAddress,
+  finishMailboxReconnect,
   getMailbox,
   getMailboxSummary,
   insertMailbox,
@@ -32,7 +33,7 @@ export {
   type Cursor,
   type SyncFolderRow,
 } from "./folders";
-export { getCredentials, insertCredentials, updateCredentials } from "./credentials";
+export { getCredentials, insertCredentials, updateCredentials, type CredentialKind } from "./credentials";
 export {
   findCopies,
   listFolderRowsAtUids,

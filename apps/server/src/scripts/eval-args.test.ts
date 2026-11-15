@@ -137,6 +137,49 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     ).toBeUndefined();
   });
 
+  // F109 stage 12 test 6.
+  describe("--escalate", () => {
+    const sim = ["--sim", "lab-01", "--part", "dev"];
+
+    test("--escalation-model or --escalation-reasoning-effort without --escalate is a usage error", () => {
+      expect(parseEvalArgs([...sim, "--escalation-model", "gpt-6.1-terra"])).toBeUndefined();
+      expect(parseEvalArgs([...sim, "--escalation-reasoning-effort", "none"])).toBeUndefined();
+      expect(
+        parseEvalArgs([...sim, "--escalation-model", "gpt-6.1-terra", "--escalation-reasoning-effort", "none"])
+      ).toBeUndefined();
+    });
+
+    test("--escalate alone and with both overrides parse; the sim defaults stay", () => {
+      expect(parseEvalArgs([...sim, "--escalate"])).toMatchObject({ escalate: true, budgetUsd: 1 });
+      expect(
+        parseEvalArgs([
+          ...sim,
+          "--escalate",
+          "--escalation-model",
+          "gpt-6.1-terra",
+          "--escalation-reasoning-effort",
+          "none",
+        ])
+      ).toMatchObject({ escalate: true, "escalation-model": "gpt-6.1-terra", "escalation-reasoning-effort": "none" });
+      expect(parseEvalArgs(sim)).toMatchObject({ escalate: false });
+    });
+
+    test("an unknown effort value is a usage error", () => {
+      expect(parseEvalArgs([...sim, "--escalate", "--escalation-reasoning-effort", "loud"])).toBeUndefined();
+    });
+
+    test("the escalation flags are sim-only: the old mode, --real, --gap and --suspicious refuse them", () => {
+      expect(parseEvalArgs(["--escalate"])).toBeUndefined();
+      expect(parseEvalArgs(["--escalation-model", "gpt-6.1-terra"])).toBeUndefined();
+      expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--escalate"])).toBeUndefined();
+      expect(parseEvalArgs([...sim, "--suspicious", "--escalate"])).toBeUndefined();
+    });
+
+    test("--escalate takes no prompt flag away: v2 stays the production prompt", () => {
+      expect(parseEvalArgs([...sim, "--escalate"])?.prompt).toEqual(productionClassifierChoice());
+    });
+  });
+
   // Review N5: both flags are pinned to the production prompt when v3 is the pointer.
   describe("N5: the production pointer is v3", () => {
     const production = productionClassifierChoice("classifier-v3", ["attachments", "list", "urgency"]);

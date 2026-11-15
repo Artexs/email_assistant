@@ -6,6 +6,9 @@ export type LlmEndpointKind = "standard" | "eu" | "own";
 
 export interface LlmPrice {
   inputPerM: number;
+  // The price of cached input tokens, for the record. `costPerMail` does not use it: a usage holds no cached count,
+  // so every input token is charged at `inputPerM` (an upper bound).
+  cachedInputPerM?: number;
   outputPerM: number;
   // First day (UTC, YYYY-MM-DD) of this price. No `from` = valid from the start.
   from?: string;
@@ -39,6 +42,10 @@ export const llmPrices: Record<string, LlmPrice[]> = {
       source: "E11 discovery notes §6 (opsware.co 2026-10-16, secondary)",
       checked: "2026-11-13",
     },
+  ],
+  // Read on the OpenAI price page, standard tier, 2026-11-15 (the escalation role of F109).
+  "gpt-6.1-terra": [
+    { inputPerM: 1, cachedInputPerM: 0.05, outputPerM: 5, source: OPENAI_PRICING_URL, checked: "2026-11-15" },
   ],
 };
 

@@ -107,8 +107,7 @@ services:
       interval: 30s
       retries: 3
 
-  # `bun run lab serve` is built in stage 11 of F113. Until then the command exits 1 (the script `lab` does not exist).
-  # Stage 11 must exec the script itself (`exec bun apps/server/src/scripts/<lab script>.ts serve`), so signals reach the lab (review N6).
+  # `lab serve` runs the injector, the delegate bots and the scripted executive. `exec` of the script itself (not `bun run lab`) makes bun PID 1 of the container, so a stop signal reaches the serve loop.
   lab:
     build: *sim-build
     image: ea-sim-server
@@ -125,7 +124,7 @@ services:
     command:
       - sh
       - -c
-      - bun run lab:env-check && exec bun run lab serve
+      - bun run lab:env-check && exec bun apps/server/src/scripts/lab.ts serve
     volumes:
       - lab-state:/var/lib/ea-lab
     depends_on:
