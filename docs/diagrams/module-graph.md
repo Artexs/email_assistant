@@ -49,6 +49,7 @@ flowchart BT
   delegation --> config
   delegation --> mail
   delegation --> tenancy
+  lab --> audit
   lab --> mail
   mail --> audit
   mail --> config

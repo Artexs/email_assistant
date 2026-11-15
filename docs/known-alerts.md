@@ -111,10 +111,10 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none. It may appear after the activity spec; it is harmless (the seeded mail is not in GreenMail). No retry follows. An `error` line in the same run is not expected: diagnose that one.
 - **Status:** won't fix (expected)
 
-### `organization <id> timezone changed by <actor>` and `organization <id> signature changed by <actor>`
+### `org_timezone_changed` and `org_signature_changed` (fields `org_id`, `actor`)
 
 - **First seen:** 2026-11-11 (S5c)
-- **Source:** `apps/server/src/modules/tenancy/service.ts`, `updateOrganizationSettings`. Level `info`. One line for each changed field. `<actor>` is the user id. The audit rows are `org.timezone_changed` (`from`, `to`) and `org.style_changed` (`set`, no text).
+- **Source:** `apps/server/src/modules/tenancy/service.ts`, `updateOrganizationSettings`. Level `info`. One line for each changed field. `actor` is the user id. The lines hold no value (no zone, no signature text). The audit rows are `org.timezone_changed` (`from`, `to`) and `org.style_changed` (`set`, no text).
 - **Cause:** the owner changed the organization timezone or the signature in the panel. A timezone change can skip, delay or bring forward one or more digests on that day (`notes/2026-11-11-web-settings-rules-facts.md`). A signature change applies to every message built after it, also to the send of an older draft.
 - **Fix:** none. It is a record, not an error.
 - **Status:** won't fix (expected)
@@ -135,11 +135,11 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none needed for one line. Many lines in a row for one provider mean an outage or a changed server setting: check the preset hosts in `packages/core/src/mail/providers.ts`. WP and o2 user-name formats are not verified (`notes/2026-11-11-web-mailboxes-facts.md`).
 - **Status:** won't fix (expected)
 
-### `web: telegram getMe failed: <label>`
+### `telegram_get_me_failed` (fields `error`, `error_code`, `method`)
 
 - **First seen:** 2026-11-11 (S5b)
 - **Source:** `apps/server/src/modules/channels/routes.ts`. Warning. Only `POST /api/channels/telegram/link` logs it. `GET /api/channels/telegram` and `/api/me` swallow the failure (`.catch(() => null)`). A `getMe` outage shows in the log only when someone clicks "Link Telegram".
-- **Cause:** the Telegram API is not reachable (network, wrong `TELEGRAM_API_ROOT`, bad token) or the 3 s limit ran out. The label is `telegramErrorLabel`.
+- **Cause:** the Telegram API is not reachable (network, wrong `TELEGRAM_API_ROOT`, bad token) or the 3 s limit ran out. `error` is `GrammyError`, `HttpError` or the error name; `error_code` and `method` show for a Telegram error (`telegramErrorFields`, never the description).
 - **Fix:** check the network and the bot token. The link route then answers 502 `telegram_unreachable` and writes no token row. `/api/me` shows `botUsername: null`.
 - **Status:** investigating (per case)
 
@@ -418,7 +418,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Set `TELEGRAM_BOT_TOKEN` in the `.env` of that environment (only the user edits `.env`), then run the command again. The other jobs (`actions.expiry`, `delegation.chaser`) need no token.
 - **Status:** won't fix (expected behaviour)
 
-### `notice send_result queued: outbox <id>`
+### `notice_queued` with `kind` `send_result` (fields `kind`, `outbox_id`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live, the dev run (stage 19) and the VPS runs (stages 22, 23) are open)
 - **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `info`).
@@ -426,7 +426,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action for the line. Read the message in Telegram; the meaning of each text is in `deploy/README.md`, "Approvals and sends". The same line exists for the kinds `approval_set` and `delegation_answered`.
 - **Status:** won't fix (expected behaviour)
 
-### `notice approval queued: outbox <id>`
+### `notice_queued` with `kind` `approval` (fields `kind`, `outbox_id`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live, the dev run (stage 19) and the VPS runs (stages 22, 23) are open)
 - **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `info`).
@@ -434,33 +434,33 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action. If no request arrives in Telegram, check that an owner is linked (`telegram:link`) and that the draft is `applied`.
 - **Status:** won't fix (expected behaviour)
 
-### `chaser <mailboxId>: skipped settings`
+### `chaser_skipped_settings` (fields `org_id`, `mailbox_id`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and process start). The same file writes `chaser <mailboxId>: skipped gate` once, when the first tick comes before 07:30 local time or after the run of the day.
+- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and process start). The same file writes `chaser_skipped` with `reason` `gate` once, when the first tick comes before 07:30 local time or after the run of the day.
 - **Cause:** The mailbox is not in mode `assist`, or its switch `create_draft` is off, or the settings changed during the run (the chaser compares the settings version). The chaser makes no reminder for this mailbox.
-- **Fix:** No action if you want no reminders. To get them: `mailbox:settings mode --mode assist` and `mailbox:settings switch --name create_draft --value on` (`deploy/README.md`, "Assist mode"). `skipped gate` is normal.
+- **Fix:** No action if you want no reminders. To get them: `mailbox:settings mode --mode assist` and `mailbox:settings switch --name create_draft --value on` (`deploy/README.md`, "Assist mode"). `chaser_skipped` with `reason` `gate` is normal. `chaser_forced` (same fields) shows a run with `--force`.
 - **Status:** won't fix (expected behaviour)
 
-### `chaser <mailboxId>: due <n>, overdue <o>, reminders <r>`
+### `chaser_done` (fields `mailbox_id`, `due`, `overdue`, `reminders`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and day, only when `<n>` > 0).
-- **Cause:** The daily chaser run found `<n>` delegations past their due date. It marked `<o>` of them `overdue` and planned `<r>` reminders (draft + send, `awaiting_approval`). The owners get one approval message for the set.
+- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and day, only when `due` > 0).
+- **Cause:** The daily chaser run found `due` delegations past their due date (a count). It marked `overdue` of them `overdue` and planned `reminders` reminders (draft + send, `awaiting_approval`). The owners get one approval message for the set.
 - **Fix:** No action. Tap 📤 Send all or ✖️ Skip all in Telegram. A reminder never goes out without a tap.
 - **Status:** won't fix (expected behaviour)
 
-### `notice <kind> <id>: skipped: <error>`
+### `notice_skipped` (fields `kind`, `item_id`, `error`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `warn`; `<kind>` is `approval`, `approval_set`, `send_result` or `delegation_answered`). Once per process and row.
+- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `warn`; `kind` is `approval`, `approval_set`, `send_result`, `delegation_answered` and more; `item_id` is the row id (for `weekly_report` the organization id); `error` is the error name). Once per process and row. One line of the `send_held` kind (a hold with an unknown limit text) has `reason` `unknown_send_limit` and no `error`; it repeats on each tick. Other `send_held` skips carry `error` like the rest.
 - **Cause:** The notice job could not build the message for one row (for example a draft payload that does not parse, a missing mailbox, or a missing organization). It skips that row and goes on with the others. The row keeps failing on every tick until someone fixes it, and the owner gets no message for it.
 - **Fix:** Find the row with a read-only query (`$C exec db psql -U postgres -d email_assistant -c "<sql>"`):
   `approval`: `select id, status, notified_at, payload->>'kind' from actions where id = '<id>';`
   `approval_set`: `select id, status, notified_at from actions where payload->>'set_id' = '<id>';`
   `send_result`: `select id, status, status_reason, result_notified_at from actions where id = '<id>';`
   `delegation_answered`: `select id, status, answered_notified_at from delegations where id = '<id>';`
-  Read `<error>` and the row, and fix the cause (a bug: file it with the action type, never with the payload). To stop the retries you can set `notified_at` (approval), `result_notified_at` (send_result) or `answered_notified_at` (delegation_answered) by hand: this writes to the database, so do it only after the user says go.
+  Read `error` and the row (`<id>` is `item_id`), and fix the cause (a bug: file it with the action type, never with the payload). To stop the retries you can set `notified_at` (approval), `result_notified_at` (send_result) or `answered_notified_at` (delegation_answered) by hand: this writes to the database, so do it only after the user says go.
 - **Status:** investigating
 
 ### `expiry <mailboxId>: expired <n> (timeout <t>, draft_missing <d>, not_notified <u>, not_seen <s>, held_timeout <h>)`
@@ -527,7 +527,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action if you did not want `auto` on. Read the line `go/no-go <category>: …` before it. To set `auto` anyway, run the command again with `--force`; the audit row records `forced`.
 - **Status:** won't fix (expected behaviour)
 
-### `notice action_failed queued: outbox <id>`
+### `notice_queued` with `kind` `action_failed` (fields `kind`, `outbox_id`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `info`).
@@ -639,20 +639,20 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Read the fields. A database error: check the DB and the migration state. Repeat the tap. If it repeats, file a bug with the fields (never with a message text). The lines of the same update share the `run_id`.
 - **Status:** investigating
 
-### `digest for org <id> user <id> failed: <label>`
+### `digest_member_failed` (fields `org_id`, `user_id`, `error`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/digest-job.ts` (`[channels]`, level `error`).
 - **Cause:** Building or saving the digest of one member failed (for example a database error or a missing organization). The other members continue. The slot stays open, so the next minute tries again.
-- **Fix:** Read the label. If it repeats every minute, check the DB and the member's `digest_times` (`bun run digest:times`). A late slot older than 6 hours is skipped.
+- **Fix:** Read `error`. If it repeats every minute, check the DB and the member's `digest_times` (`bun run digest:times`). A late slot older than 6 hours is skipped.
 - **Status:** investigating
 
-### `notices for org <id> failed: <label>`
+### `notices_org_failed` (fields `org_id`, `error`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `error`).
 - **Cause:** Notice detection for one organization failed (database error or missing organization). The other organizations continue. The next tick (15 s) tries again.
-- **Fix:** Read the label. If it repeats, check the DB and the organization row.
+- **Fix:** Read `error`. If it repeats, check the DB and the organization row.
 - **Status:** investigating
 
 ### `outbox_resent_after_stale` (field `outbox_id`)
@@ -759,12 +759,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check `GEMINI_API_KEY`, `GEMINI_MODEL_CLASSIFIER` and the Google project. Then restart the server. The pause uses the same backoff as a soft error and the mail gets no try count.
 - **Status:** investigating (per case)
 
-### `LLM config error <code>: check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER and the OpenAI project (billing, budget, model access); triage paused for <n> min, until <time>`
+### `LLM config error <code>: check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER, OPENAI_BASE_URL and the OpenAI project (billing, budget, model access); triage paused for <n> min, until <time>`
 
 - **First seen:** 2026-11-06
 - **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`) with `LLM_PROVIDER=openai`. Codes: `http_401` (bad key), `http_403` (no access or region), `http_404` (unknown model), `http_429_quota`, `http_400_schema`, `schema_not_strict`.
 - **Cause:** See the code. `http_429_quota`: no money on the OpenAI account or the project budget is spent; a retry does not help. `http_400_schema`: OpenAI rejects the strict schema, so every mail would fail. `schema_not_strict`: our own check found a schema object that breaks the strict rules (a code change).
-- **Fix:** `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER` and the OpenAI project. `http_429_quota`: add credit or raise the budget, then wait for the pause to end or restart the server. `/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07; flag `llm_pause_line`). `http_400_schema`: run `bun run llm:check --provider openai`, check the strict schema adapter and the rejected keywords (`notes/2026-11-06-openai-api-facts.md`). `schema_not_strict`: make every property required and nullable, `additionalProperties: false`.
+- **Fix:** `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER`, `OPENAI_BASE_URL` (`llm_settings` and `llm:check` show the endpoint kind and host) and the OpenAI project. `http_429_quota`: add credit or raise the budget, then wait for the pause to end or restart the server. `/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07; flag `llm_pause_line`). `http_400_schema`: run `bun run llm:check --provider openai`, check the strict schema adapter and the rejected keywords (`notes/2026-11-06-openai-api-facts.md`). `schema_not_strict`: make every property required and nullable, `additionalProperties: false`.
 - **Status:** investigating (per case)
 
 ### `triage <mailboxId>: no mailbox_settings row, mailbox skipped`

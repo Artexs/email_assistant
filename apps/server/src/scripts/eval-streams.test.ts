@@ -84,6 +84,7 @@ function fakeClient(slots: Slot[], opts: { failFrom?: number; configError?: bool
   let calls = 0;
   return {
     modelOf: () => MODEL,
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls;
       calls += 1;
@@ -101,6 +102,7 @@ function fakeClient(slots: Slot[], opts: { failFrom?: number; configError?: bool
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 5,
+          endpoint: "standard",
         },
       };
     },

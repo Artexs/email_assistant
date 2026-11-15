@@ -80,8 +80,13 @@ export async function handleApprovalCallback(
   const taps = texts.bot.taps;
   if (callback.kind !== "delegation_done" && link.role !== "owner") return { answer: taps.ownerOnly };
   const now = deps.now();
-  const id = "actionId" in callback ? callback.actionId : "setId" in callback ? callback.setId : callback.delegationId;
-  log.info(`tap ${callback.kind} ${id} by user ${link.userId}`);
+  const target =
+    "actionId" in callback
+      ? { action_id: callback.actionId }
+      : "setId" in callback
+        ? { approval_set_id: callback.setId }
+        : { delegation_id: callback.delegationId };
+  log.info("tap_received", { kind: callback.kind, user_id: link.userId, ...target });
   const organization = await getOrganization(deps.db, ctx);
   if (organization === undefined) return { answer: taps.notFound };
   const timeZone = organization.timezone;

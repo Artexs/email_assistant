@@ -55,6 +55,8 @@ export const meSchema = z.object({
   terms: z.object({ accepted: z.boolean(), current: z.string() }),
   operator: z.boolean(),
   features: z.array(z.string()), // the registry keys that are on for the organization (plan D23)
+  signInMethod: z.enum(["password", "sso"]), // how this session was made (F119 D6)
+  hasPassword: z.boolean(), // the user has a password credential; an SSO member made by `org:member` has none (F119 D14)
 });
 export type Me = z.infer<typeof meSchema>;
 

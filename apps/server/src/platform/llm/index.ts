@@ -13,4 +13,4 @@ export {
 export type { LlmProvider, LlmProviderId } from "./providers";
 export { llmProviderIds, llmProviders } from "./providers";
 export type { LlmProviderSettings, LlmRoleSettings, LlmRoleTable } from "./settings";
-export { uniformRoleTable } from "./settings";
+export { llmEndpointFields, uniformRoleTable } from "./settings";

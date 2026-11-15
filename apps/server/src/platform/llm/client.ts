@@ -1,4 +1,4 @@
-import type { LlmRole, PromptVersion } from "@ea/core";
+import type { LlmEndpointKind, LlmRole, PromptVersion } from "@ea/core";
 import { z } from "zod";
 
 import { createLog } from "../log";
@@ -80,6 +80,8 @@ export interface LlmUsage {
   latencyMs: number;
   role: LlmRole;
   promptVersion: string;
+  /** Where the call ran; stage 03 writes it to the audit row. */
+  endpoint: LlmEndpointKind;
 }
 
 export interface LlmCall<T, R extends LlmRole> {
@@ -96,6 +98,8 @@ export interface LlmCall<T, R extends LlmRole> {
 export interface LlmClient {
   /** The model of the role's row in the role table. */
   modelOf(role: LlmRole): string;
+  /** The endpoint kind of the role's provider row. The error branch has no usage and reads this. */
+  endpointOf(role: LlmRole): LlmEndpointKind;
   generate<T, R extends LlmRole>(call: LlmCall<T, R>): Promise<{ data: T; usage: LlmUsage }>;
 }
 
@@ -140,7 +144,13 @@ export function createLlmClient(opts: {
     if (generate === undefined) {
       const apiKey = opts.table.providers[row.provider].apiKey;
       if (apiKey === undefined) throw new LlmConfigError("missing_key", model);
-      generate = providerOf(row.provider).createGenerate({ apiKey, reasoningEffort: row.reasoningEffort });
+      const provider = opts.table.providers[row.provider];
+      generate = providerOf(row.provider).createGenerate({
+        apiKey,
+        reasoningEffort: row.reasoningEffort,
+        baseUrl: provider.baseUrl,
+        endpoint: provider.endpoint,
+      });
       generators.set(key, generate);
     }
     return generate;
@@ -148,6 +158,7 @@ export function createLlmClient(opts: {
 
   return {
     modelOf: (role) => opts.table.roles[role].model,
+    endpointOf: (role) => opts.table.providers[opts.table.roles[role].provider].endpoint,
 
     async generate(call) {
       const row = opts.table.roles[call.role];
@@ -176,6 +187,7 @@ export function createLlmClient(opts: {
           tokensIn: result.tokensIn,
           tokensOut: result.tokensOut,
           latencyMs: now() - started,
+          endpoint: opts.table.providers[row.provider].endpoint,
         };
         log.debug("llm_call_ok", {
           role: call.role,

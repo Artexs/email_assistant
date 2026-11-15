@@ -4,7 +4,7 @@ import { type ClassifierDelegate, type ClassifierEmail, classifyEmail } from "..
 import { createCliOutput } from "../platform/cli";
 import { llmRoleTable, loadConfig } from "../platform/config";
 import { describeError } from "../platform/errors";
-import { createLlmClient, type LlmUsage } from "../platform/llm";
+import { createLlmClient, llmEndpointFields, type LlmUsage } from "../platform/llm";
 
 import { greetingCall, parseLlmCheckArgs, usage } from "./llm-check-args";
 
@@ -50,9 +50,10 @@ async function main() {
 
   const llm = createLlmClient({ table });
 
+  const where = llmEndpointFields(table, args.role);
   const line = (check: string, used: LlmUsage, extra = "") =>
     out.print(
-      `role=${used.role} provider=${row.provider} model=${used.model} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
+      `role=${used.role} provider=${row.provider} model=${used.model} endpoint=${used.endpoint} host=${where.host ?? "-"} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
     );
 
   const greeting = await llm.generate(greetingCall(args.role));

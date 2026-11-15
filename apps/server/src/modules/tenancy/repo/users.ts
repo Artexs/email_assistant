@@ -84,3 +84,16 @@ export async function setUserLocale(db: Db | Transaction<DB>, userId: string, lo
   const result = await db.updateTable("users").set({ locale }).where("id", "=", userId).executeTakeFirst();
   return Number(result.numUpdatedRows) === 1;
 }
+
+// True when the user has a password: a `credential` row in `auth_accounts` (a Better Auth table read, F119 stage 11).
+// An SSO member made by `org:member --add` has none. No TenantContext: the user gives the row.
+export async function hasPasswordCredential(db: Db | Transaction<DB>, userId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("auth_accounts")
+    .select("id")
+    .where("user_id", "=", userId)
+    .where("provider_id", "=", "credential")
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}

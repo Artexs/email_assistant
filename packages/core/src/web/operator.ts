@@ -75,6 +75,16 @@ export const operatorOrgDetailSchema = z.strictObject({
   failures24h: z.strictObject({ sends: z.number().int(), outbox: z.number().int() }),
   llmToday: operatorLlmTodaySchema,
   flags: z.array(z.strictObject({ flag: z.string(), enabled: z.boolean(), source: z.enum(["env", "row", "default"]) })),
+  // F119 PD-047: the domain is the organization's own; no issuer URL, client id, secret or member id.
+  sso: z
+    .strictObject({
+      domain: z.string(),
+      proof: z.enum(["dns", "attested"]).nullable(),
+      required: z.boolean(),
+      linkedMembers: z.number().int(),
+      breakGlassReady: z.boolean(),
+    })
+    .nullable(),
   at: z.iso.datetime(),
 });
 

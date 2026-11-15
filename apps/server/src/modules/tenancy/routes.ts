@@ -28,6 +28,7 @@ import {
   getMembership,
   getOrganization,
   getUserAuthProfile,
+  hasPasswordCredential,
   setDigestTimes,
   setUserLocale,
   setUserTerms,
@@ -72,7 +73,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
 
   app.get("/me", tenancyDocs.getMe, async (c) => {
     const ctx = c.get("ctx");
-    const { userId } = c.get("session");
+    const { userId, signInMethod } = c.get("session");
     const organization = await getOrganization(deps.db, ctx);
     const member = await getMembership(deps.db, ctx, userId);
     if (!organization || !member) return c.json({ error: "not_found" }, 404);
@@ -102,6 +103,8 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       // The same set that requireOperator reads (plan D23). The body never lists the operator ids.
       operator: c.get("web").operatorUserIds?.has(userId) === true,
       features: (await featureStates(deps.db, ctx)).filter((state) => state.enabled).map((state) => state.flag),
+      signInMethod,
+      hasPassword: await hasPasswordCredential(deps.db, userId),
     };
     return c.json(me);
   });

@@ -6,6 +6,7 @@ export {
   getOrgFeature,
   getOrgPlan,
   getUserAuthProfile,
+  hasPasswordCredential,
   insertMembership,
   insertUser,
   isBreakGlassOwner,
@@ -37,6 +38,7 @@ export {
   type UnlinkSsoResult,
 } from "./members";
 export { resolveSsoMember } from "./sso-resolve";
+export { anySsoUsable } from "./sso-sign-in";
 export {
   getSsoState,
   normalizeMailDomain,
