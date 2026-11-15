@@ -142,10 +142,8 @@ async function plan(
   now: Date
 ): Promise<DelegateMailResult> {
   const { email, delegate, settings } = found;
-  const switches = settings === undefined ? undefined : parseToolSwitches(settings.tool_switches);
-  if (settings === undefined || switches === undefined || settings.mode !== "assist" || !switches.create_draft) {
-    return { kind: "drafts_off" };
-  }
+  // No settings row: the mailbox has no drafts.
+  if (settings === undefined) return { kind: "drafts_off" };
   const organization = await getOrganization(trx, ctx);
   if (organization === undefined) throw new HardError("organization not found");
 
@@ -172,19 +170,22 @@ async function plan(
     throw new HardError("the planner made no delegation pair");
   }
   const draft = draftAction.draft;
+  // The policy of triage decides: a draft is `ready` and a send waits for approval only in `assist` mode with the switch
+  // `create_draft` on. Any other answer means drafts are off (shadow mode, or the switch off).
   const statusOf = (action: PlannedAction) =>
     actionStatusFor(
       decidePolicy(action, {
-        mode: "assist",
-        toolSwitches: switches,
+        mode: settings.mode === "assist" ? "assist" : "shadow",
+        toolSwitches: parseToolSwitches(settings.tool_switches),
         category: "delegation",
         categoryAuto: false,
         vip: false,
         movesSupported: false,
       })
     );
-  // A draft that is `ready` and a send that waits for a tap. Anything else means drafts are off.
-  if (statusOf(draftAction) !== "ready" || statusOf(sendAction) !== "awaiting_approval") return { kind: "drafts_off" };
+  const draftStatus = statusOf(draftAction);
+  const sendStatus = statusOf(sendAction);
+  if (draftStatus !== "ready" || sendStatus !== "awaiting_approval") return { kind: "drafts_off" };
 
   // The attempt number: a rejected or finished delegation of this mail leaves its keys, so the next pick gets new ones.
   const k = 1 + (await countDelegationsOfEmail(trx, ctx, email.id, "button"));
@@ -192,13 +193,13 @@ async function plan(
     {
       type: "create_draft",
       payload: draft,
-      status: "ready",
+      status: draftStatus,
       idempotencyKey: `${email.id}:create_draft:delegation:button:${k}`,
     },
     {
       type: "send",
       payload: sendPayloadFor(draft),
-      status: "awaiting_approval",
+      status: sendStatus,
       idempotencyKey: `${email.id}:send:delegation:button:${k}`,
       dependsOn: "create_draft",
     },
