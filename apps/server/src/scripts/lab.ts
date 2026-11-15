@@ -3,11 +3,10 @@ import { isAbsolute, resolve } from "node:path";
 
 import { llmRoles } from "@ea/core";
 
-import { createLabState, loadLabCorpus, runSpend } from "../modules/lab";
-import { countOrgEmails } from "../modules/mail";
+import { createLabState, loadLabCorpus, orgHasMail, runSpend } from "../modules/lab";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig, llmRoleTable } from "../platform/config";
-import { assertAppRole, createDb, withTenantScope } from "../platform/db";
+import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
 import { parseLabArgs, usage } from "./lab-args";
@@ -44,7 +43,7 @@ async function main(): Promise<number> {
       state,
       corpus: await loadLabCorpus(SIM_ROOT, SCENARIO),
       models: LAB_ROLES.map((role) => table.roles[role].model),
-      orgHasMail: async (orgId) => (await withTenantScope(orgId, () => countOrgEmails(db, { orgId }))) > 0,
+      orgHasMail: (orgId) => orgHasMail(db, orgId),
       spendOf: async (runId) => {
         const run = state.readRun(runId);
         const org = state.readOrgs()[run.org];

@@ -13,6 +13,7 @@ export {
   type LoggedLabEvent,
   type StopReason,
 } from "./state";
+export { orgHasMail } from "./org-mail";
 export { runSpend, type RunSpend } from "./run-spend";
 export {
   DEFAULT_CAP_USD,

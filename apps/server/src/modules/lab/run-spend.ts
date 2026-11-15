@@ -1,7 +1,6 @@
 import { costPerMail, localToInstant } from "@ea/core";
 
 import type { Db } from "../../platform/db";
-import { withTenantScope } from "../../platform/db";
 import { listLlmCallRows } from "../audit";
 
 import type { LabRun } from "./state";
@@ -24,9 +23,7 @@ export async function runSpend(db: Db, orgId: string, run: LabRun): Promise<RunS
   const start = localToInstant(run.plan.startDate, "00:00", "Europe/Warsaw");
   // A day after the tail end: the run writes nothing later, so the bound never hides a call of the run.
   const end = new Date(new Date(run.plan.tailEndsAt).getTime() + DAY_MS);
-  const rows = await withTenantScope(orgId, () =>
-    listLlmCallRows(db, { orgId }, { range: { start, end }, mailboxId: null })
-  );
+  const rows = await listLlmCallRows(db, { orgId }, { range: { start, end }, mailboxId: null });
   let usd = 0;
   let unpricedCalls = 0;
   for (const row of rows) {

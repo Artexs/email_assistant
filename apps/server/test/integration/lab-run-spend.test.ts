@@ -2,8 +2,7 @@ import { costPerMail, type LiveRunPlan } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { recordLlmCall } from "../../src/modules/audit";
-import { runSpend, type LabRun } from "../../src/modules/lab";
-import { countOrgEmails } from "../../src/modules/mail";
+import { orgHasMail, runSpend, type LabRun } from "../../src/modules/lab";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -101,16 +100,17 @@ describe("lab run spend (stage 05 test 7)", () => {
   });
 });
 
-describe("countOrgEmails (stage 05 test 6, org_not_fresh)", () => {
-  test("counts every mail row of the org and no row of another org", async () => {
+describe("orgHasMail (stage 05 test 6, org_not_fresh)", () => {
+  test("is true after one mail row of the org, whatever its status; a mail of another org does not count", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
-      expect(await countOrgEmails(trx, { orgId: a.orgId })).toBe(0);
-      await insertTestEmail(trx, { orgId: a.orgId }, a.mailboxId);
-      await insertTestEmail(trx, { orgId: b.orgId }, b.mailboxId, { status: "triaged" });
-      expect(await countOrgEmails(trx, { orgId: a.orgId })).toBe(1);
-      expect(await countOrgEmails(trx, { orgId: b.orgId })).toBe(1);
+      expect(await orgHasMail(trx, a.orgId)).toBe(false);
+      await insertTestEmail(trx, { orgId: b.orgId }, b.mailboxId);
+      expect(await orgHasMail(trx, a.orgId)).toBe(false);
+      await insertTestEmail(trx, { orgId: a.orgId }, a.mailboxId, { status: "triaged" });
+      expect(await orgHasMail(trx, a.orgId)).toBe(true);
+      expect(await orgHasMail(trx, b.orgId)).toBe(true);
     });
   });
 });
