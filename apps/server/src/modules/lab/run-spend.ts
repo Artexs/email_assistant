@@ -27,7 +27,8 @@ export async function runSpend(db: Db, orgId: string, run: LabRun): Promise<RunS
   let usd = 0;
   let unpricedCalls = 0;
   for (const row of rows) {
-    const cost = row.model === null ? null : costPerMail(row.model, row.tokensIn ?? 0, row.tokensOut ?? 0, row.at);
+    const cost =
+      row.model === null ? null : costPerMail(row.model, row.tokensIn ?? 0, row.tokensOut ?? 0, row.at, row.endpoint);
     if (cost === null) unpricedCalls += 1;
     else usd += cost;
   }

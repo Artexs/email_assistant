@@ -1,7 +1,7 @@
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { listMailboxTargets } from "../mail";
@@ -113,7 +113,7 @@ export async function closeDraftOfSend(
     const folder = draft.provider_result?.folder;
     const uid = draft.provider_result?.uid;
     if (typeof kind !== "string" || typeof folder !== "string") {
-      log.warn(`applied draft ${draftId} has no folder or kind: no reverse row`);
+      log.warn("draft_reverse_missing", { action_id: draftId });
       return "none";
     }
     await insertReverse(trx, ctx, {
@@ -184,9 +184,16 @@ export function createExpiryJob(deps: ExpiryDeps): { run(): Promise<void> } {
     }
     const total = counts.timeout + counts.draft_missing + counts.not_notified + counts.not_seen + counts.held_timeout;
     if (total > 0) {
-      log.info(
-        `expiry ${mailboxId}: expired ${total} (timeout ${counts.timeout}, draft_missing ${counts.draft_missing}, not_notified ${counts.not_notified}, not_seen ${counts.not_seen}, held_timeout ${counts.held_timeout})`
-      );
+      log.info("expiry_done", {
+        org_id: ctx.orgId,
+        mailbox_id: mailboxId,
+        count: total,
+        expired_timeout: counts.timeout,
+        expired_draft_missing: counts.draft_missing,
+        expired_not_notified: counts.not_notified,
+        expired_not_seen: counts.not_seen,
+        expired_held_timeout: counts.held_timeout,
+      });
     }
   }
 
@@ -200,7 +207,7 @@ export function createExpiryJob(deps: ExpiryDeps): { run(): Promise<void> } {
         try {
           await expireMailbox({ orgId }, mailboxId);
         } catch (error) {
-          log.error(`expiry ${mailboxId} failed: ${describeError(error)}`);
+          log.error("expiry_failed", { org_id: orgId, mailbox_id: mailboxId, ...errorFields(error) });
         }
       }
     },

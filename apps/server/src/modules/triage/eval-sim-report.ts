@@ -4,6 +4,7 @@ import {
   type Category,
   computeMetrics,
   type EvalCase,
+  type LlmEndpointKind,
   type LlmRole,
   type SimGateRow,
   type SimPart,
@@ -14,7 +15,7 @@ import {
 import { z } from "zod";
 
 import type { CaseResult, CasesEvalReport } from "./eval";
-import { num, pct, table } from "./eval-format";
+import { endpointSuffix, num, pct, table } from "./eval-format";
 import { classifierV3Parts } from "./prompts";
 
 // The gate file only ever carries this bar and this minimum support (D27): a looser run writes none.
@@ -219,6 +220,10 @@ export const gateFileSchema = z.object({
   date: z.string(),
   role: z.string(),
   provider: z.string(),
+  // Where the run's calls went. A file without the keys is from before F111: `standard`, host unknown (null).
+  // A gate file proves one model and prompt on one endpoint and host. `host` is the host name only (no port, no path).
+  endpoint: z.enum(["standard", "eu", "own"]).default("standard"),
+  host: z.string().nullable().default(null),
   model: z.string(),
   reasoningEffort: z.string().nullable(),
   promptVersion: z.string(),
@@ -267,6 +272,8 @@ export function buildGateFile(input: SimReportInput & { now: Date }): GateFile {
     date: input.now.toISOString().slice(0, 10),
     role: report.role,
     provider: report.provider,
+    endpoint: report.endpoint,
+    host: report.host,
     model: report.model,
     reasoningEffort: report.reasoningEffort,
     promptVersion: report.promptVersion,
@@ -281,8 +288,10 @@ export function buildGateFile(input: SimReportInput & { now: Date }): GateFile {
 
 const safe = (part: string): string => part.replace(/[^\w.-]/g, "_");
 
+// The name has no prompt parts (F109 stage 11). `standard` keeps the old name; `eu` and `own` add `-<endpoint>`.
 export function gateFileName(input: {
   role: LlmRole;
+  endpoint: LlmEndpointKind;
   promptVersion: string;
   model: string;
   reasoningEffort: string | null;
@@ -292,7 +301,7 @@ export function gateFileName(input: {
   const parts = [input.role, input.promptVersion, input.model, input.reasoningEffort ?? "default", input.scenario].map(
     safe
   );
-  return `${parts.join("-")}-v${safe(input.version)}.json`;
+  return `${parts.join("-")}-v${safe(input.version)}${endpointSuffix(input.endpoint)}.json`;
 }
 
 // The gate file says "go" only for a full holdout run at the default bar: a looser or partial run writes none.

@@ -61,3 +61,9 @@ export async function finishOAuthCallback(
 **Done when.** The tests pass; the Proof prints `PROOF_OK`.
 
 **Out of scope.** The route, the redirect and the mailbox write (stage 09).
+
+## Carry-over from stage 07 review
+
+- Consume the state with the provider of the route path (`consumeOAuthState` filters by provider). It re-checks the membership of the user in the organization: a removed member gets `oauth_state_invalid`. The owner role is not checked there: stage 09 checks it at the callback route (a demoted owner → `oauth_failed`).
+- Pass the pool to `consumeOAuthState`, never a caller's transaction.
+

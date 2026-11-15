@@ -129,6 +129,51 @@ describe("an own endpoint never gets OpenAI credentials", () => {
   });
 });
 
+// F111 stage 02 review: the SDK reads more of the env than the key, the organization and the project.
+describe("other env variables of the SDK stay home (own endpoint)", () => {
+  test("OPENAI_ADMIN_KEY and OPENAI_WEBHOOK_SECRET never reach the client", () => {
+    process.env.OPENAI_ADMIN_KEY = "sk-ADMIN-MARKER";
+    process.env.OPENAI_WEBHOOK_SECRET = "whsec-MARKER";
+    for (const endpoint of ["own", "standard", "eu"] as const) {
+      const client = new OpenAI(openAiClientOptions("k", "https://api.openai.com/v1", endpoint));
+      expect(client.adminAPIKey).toBeNull();
+      expect(client.webhookSecret).toBeNull();
+    }
+  });
+
+  test("the server sees no admin key (a request on the real SDK)", async () => {
+    process.env.OPENAI_ADMIN_KEY = "sk-ADMIN-MARKER";
+    const headers = await callOwnServer({});
+    expect(JSON.stringify(headers)).not.toContain("ADMIN-MARKER");
+  });
+
+  // Checked on SDK 7.53.0: `defaultHeaders: {}` alone does not stop the env headers (the SDK merges them with the
+  // option, an empty option included). A null value per header name does.
+  test("OPENAI_CUSTOM_HEADERS: an empty defaultHeaders still lets the env header through (the SDK fact)", async () => {
+    process.env.OPENAI_CUSTOM_HEADERS = "x-env-leak: LEAK-MARKER";
+    const fake = fakeServer();
+    try {
+      const client = new OpenAI({ ...openAiClientOptions("k", fake.url, "own"), defaultHeaders: {} });
+      await client.responses.create({ model: "m", input: "p" });
+      expect(fake.seen[0]?.["x-env-leak"]).toBe("LEAK-MARKER");
+    } finally {
+      await fake.server.stop(true);
+    }
+  });
+
+  test("OPENAI_CUSTOM_HEADERS: the adapter options null each env header; the server sees none", async () => {
+    process.env.OPENAI_CUSTOM_HEADERS = "x-env-leak: LEAK-MARKER\nX-Second:two\nno colon line";
+    expect(openAiClientOptions("k", "http://127.0.0.1:1/v1", "own").defaultHeaders).toEqual({
+      "x-env-leak": null,
+      "X-Second": null,
+    });
+    const headers = await callOwnServer({});
+    expect(headers["x-env-leak"]).toBeUndefined();
+    expect(headers["x-second"]).toBeUndefined();
+    expect(JSON.stringify(headers)).not.toContain("LEAK-MARKER");
+  });
+});
+
 describe("the OpenAI client log level", () => {
   test("N3: OPENAI_LOG=debug in the env does not change the client option", () => {
     process.env.OPENAI_LOG = "debug";

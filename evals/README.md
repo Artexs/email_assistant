@@ -78,7 +78,8 @@ A line holds ids, categories, numbers and codes only, no mail text.
 
 - On start, cases with a result and no error are skipped (no LLM call). A case blocked by Google counts as done.
 - Cases that ended in an error run again. The report shows "N error cases: run again with the same command to retry them".
-- The default state file name holds the model, the effort (OpenAI), the prompt version and the set. After a change of the expected labels in `evals/cases`, use `--fresh`.
+- The default state file name holds the model, the effort (OpenAI), the prompt version and the set, and `-eu` or `-own` at the end for a run on that endpoint (F111). After a change of the expected labels in `evals/cases`, use `--fresh`.
+- An explicit `--state <file>` path gets no endpoint suffix. Keep one endpoint per file: a resume reads the results as they are.
 - After 3 cases in a row end in an error (retries used up), the run stops. The report says "run not complete" and the exit code is 2.
   Run the same command again later (for example after the daily quota reset at midnight Pacific time).
 - Exit codes: 0 = pass, 1 = a check failed (whitelist below 100%, an injection case failed, or more than 10% errors in a complete run), 2 = run not complete.
@@ -111,13 +112,21 @@ OpenAI has no free daily quota. The project budget and the rate limit apply. A 1
 - `--provider`, `--model`, `--reasoning-effort`, `--retries`, `--limit`, `--bar`, `--min-kept`, `--out`: as above.
 
 The run refuses to start when the classifier model has no price in `llmPrices`. A new call starts only while `spent + (in flight + 1) × average call cost` stays under the cap (the first estimate is the price of 2,000 tokens in and 300 out). Calls in flight finish and count. A failed or blocked attempt, also a retry inside a case, is charged at the larger of the average call cost and the first estimate; a retry that could pass the cap does not run. A cost that is unknown, NaN or infinite is charged at that same value. A model with no price today, or an estimate of 0, refuses the run. The exit code is 2 when the run stops at a cap or after 3 errors in a row; the same command resumes it.
-The state file is `evals/.runs/<model>[-<effort>]-<prompt-version>-sim-<scenario>-v<version>-<part>.jsonl`; a lock file `<state>.lock` keeps two runs off it. The ledger gets one line per run, also after a stop, with the new spend only.
+The state file is `evals/.runs/<model>[-<effort>]-<prompt-version>-sim-<scenario>-v<version>-<part>[-eu|-own].jsonl`; a lock file `<state>.lock` keeps two runs off it. The ledger gets one line per run, also after a stop, with the new spend only.
+
+### Endpoint (F111)
+
+The run goes to the endpoint of `OPENAI_BASE_URL` (default `https://api.openai.com/v1`). Set it in the shell for one run, for example `OPENAI_BASE_URL=http://127.0.0.1:11500/v1 bun run eval --sim lab-01 --part holdout --provider openai --model <tag>`. A shell variable wins over the same key in `.env` (checked, Bun 1.4.4). The start check of `triage.md` rule 16 applies. The run line and the report header print `endpoint=<standard|eu|own> host=<host>` (host name only: no port, no path).
+
+- `standard` and `eu`: the run has a USD cap, and the model needs a price row for that endpoint. A model with no row, or a price of 0, refuses the run. A model with only a standard row is refused on `eu`.
+- `own`: no USD cap, no price check and no month cap; the ledger line is `$0` and the price line of the report says `own endpoint: cost 0`. `--judge` is refused with an own classifier: the judge is a paid provider, so the run would have no cap.
+- The state file and the gate file carry `-eu` or `-own`, so two endpoints never share a resume. The EU price row is unverified (secondary source) and each report says so.
 
 ## Gate
 
-A prompt or model change of any role runs `bun run eval --sim lab-01 --part holdout` (and `--judge` for a drafter change) and commits the report and the gate file `evals/results/gate/<role>-<promptVersion>-<model>-<effort>-<corpus>-v<version>.json` before the merge. The old case set (`bun run eval`) still runs as a smoke check. The sim gate needs ≥ 200 holdout cases per category and the Wilson 95 % lower bound of precision ≥ the bar (PD-024, PD-025, ADR 0028). Prompt tuning reads only `evals/sim/*/dev/`; never open `holdout/`.
+A prompt or model change of any role runs `bun run eval --sim lab-01 --part holdout` (and `--judge` for a drafter change) and commits the report and the gate file `evals/results/gate/<role>-<promptVersion>-<model>-<effort>-<corpus>-v<version>[-eu|-own].json` before the merge. A gate file proves one model and prompt on one endpoint and host: it holds `endpoint` and `host`, and a file for another endpoint does not stand in for the default one. The old case set (`bun run eval`) still runs as a smoke check. The sim gate needs ≥ 200 holdout cases per category and the Wilson 95 % lower bound of precision ≥ the bar (PD-024, PD-025, ADR 0028). Prompt tuning reads only `evals/sim/*/dev/`; never open `holdout/`.
 
-Two checks watch the rule. The CI test `apps/server/src/modules/triage/gate-evidence.test.ts` checks only the prompt version: a gate file must exist for the current classifier prompt version (CI has no LLM key, so it checks the evidence, not the numbers). The release checklist (E8) checks that the model in the VPS `.env` has a gate file.
+Two checks watch the rule. The CI test `apps/server/src/modules/triage/gate-evidence.test.ts` checks only the prompt version: a `standard` gate file (no `-eu` or `-own` in the name, `endpoint` `standard`) must exist for the current classifier prompt version (CI has no LLM key, so it checks the evidence, not the numbers). It still parses every gate file of the version, also the `-eu` and `-own` ones. The release checklist (E8) checks that the model in the VPS `.env` has a gate file.
 
 ## Results
 
