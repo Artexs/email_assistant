@@ -73,6 +73,7 @@ beforeAll(async () => {
     {
       secrets: createSecretBox(randomBytes(32).toString("base64"), 1),
       actionsScope: { kind: "off" },
+      sendScope: { kind: "off" },
       botUsername: null,
     }
   );

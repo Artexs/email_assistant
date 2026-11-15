@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n";
 import { changeFlag, writeErrorKey } from "../../lib/operator-api";
-import { ageText, dayText, llmTodayText, shortId } from "../../lib/operator-view";
+import { ageText, dayText, llmTodayText, shortId, ssoLines } from "../../lib/operator-view";
 import { StatusBadge } from "../mailboxes/StatusBadge";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -33,6 +33,27 @@ function Section({ title, children }: { title: TextKey; children: ReactNode }) {
       <h3 className="text-sm font-semibold">{t(title)}</h3>
       {children}
     </section>
+  );
+}
+
+// Read-only (F119 D14): the operator changes the provider with the CLI `org:sso`.
+function SsoSection({ sso }: { sso: OperatorOrgDetail["sso"] }) {
+  const lines = ssoLines(sso);
+  return (
+    <Section title="op_sso_title">
+      {lines === null ? (
+        <p className="text-muted-foreground">{t("op_sso_none")}</p>
+      ) : (
+        <ul data-section="sso" className="flex flex-col gap-1">
+          <li>{`${t("op_sso_domain")}: ${lines.domain}`}</li>
+          <li>{lines.proof}</li>
+          <li>{`${t("op_sso_required")}: ${lines.required}`}</li>
+          <li>{lines.linked}</li>
+          <li>{lines.breakGlass}</li>
+        </ul>
+      )}
+      <p className="text-muted-foreground">{t("op_sso_cli")}</p>
+    </Section>
   );
 }
 
@@ -143,6 +164,7 @@ export function OrgDetail({
             ))}
           </ul>
         </Section>
+        <SsoSection sso={detail.sso} />
       </CardContent>
     </Card>
   );

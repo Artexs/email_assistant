@@ -73,7 +73,7 @@ Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/
 
 Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. A CLI prints the text form with `$C exec -e LOG_FORMAT=text server bun run <script> …`.
 
-A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync log line has the form `synced <mailbox id>: folders <n>, fetched <n>, …`; a failure is `sync <mailbox id> failed: …` (`mail/jobs.ts`).
+A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync run writes `sync_done` with `mailbox_id` and the counts; a failure is `sync_failed` or `sync_soft_error` with `error` and `error_code` (`mail/jobs.ts`).
 
 ## Login error (`auth_error`)
 
@@ -229,7 +229,7 @@ A member turns on two-factor sign-in in Settings → Account: password, QR code 
 
 The operator needs it too. The console and `/api/operator/*` refuse an operator without it. Turn it on before the next console use.
 
-Break-glass owner (one owner of an organization; for the later "SSO required" rule). List the owners and their state, set the owner, or clear it:
+Break-glass owner (one owner of an organization; the one exception to "SSO required", section Company sign-in). List the owners and their state, set the owner, or clear it:
 
 ```sh
 $C run --rm server bun run org:break-glass --org-id <uuid>
@@ -248,6 +248,43 @@ A member who lost the phone and the backup codes:
 Never change `WEB_AUTH_SECRET` without a plan to reset every member's second factor: the secrets and codes are encrypted with it, and a new value makes them unreadable. Each member then needs the reset above.
 
 Each change is an audit row (`web.two_factor_enabled`, `web.two_factor_disabled`, `web.two_factor_reset`, `web.backup_codes_generated`, `web.backup_code_used`, `web.two_factor_locked`, `org.break_glass_set`, `org.break_glass_cleared`) and shows in the security log of an organization.
+
+### Company sign-in (F119)
+
+Members of an organization sign in with the company account of their own identity provider (IdP): Microsoft Entra ID, Google Workspace or another OIDC provider. Only the operator sets it up. No account is made at sign-in: a person must be a member first. The rules are in `docs/capabilities/web-panel.md` rule 4 and `docs/capabilities/tenancy-and-plans.md` rule 7. The decision is ADR 0026.
+
+Before you start:
+
+- Every member must reach the panel on the tailnet (ADR 0017). The IdP sends the browser back to the panel address, so a device outside the tailnet cannot finish a sign-in.
+- Keep `WEB_TRUSTED_ORIGINS` empty (section Web panel). It must list no IdP and no loopback origin: the sign-in refuses a loopback address only while the list does not name it.
+- Below, `<org-id>` is the organization id, `<company-domain>` is the mail domain of the members (the part after `@` in their addresses), and `<tenant-id>` is the Entra directory id. Never write a real tenant id, a secret or a link with a token into the repo or into a ticket.
+
+1. Turn on the flag (off by default; removal date 2027-06-01):
+   `$C run --rm server bun run org:flag --org-id <org-id> --flag sso_sign_in --on`
+2. The administrator of the organization registers an app in the IdP.
+   - The redirect URI is the panel address plus the callback path: `<WEB_BASE_URL>/api/auth/sso/callback/<org-id>`. `org:sso` prints it as the `redirect` line after step 3.
+   - Scopes: `openid email profile`. Copy the client id. Make one client secret. Keep the secret out of chat, tickets and shell history.
+   - Entra: App registrations → New registration, one directory only (single tenant), platform Web. The issuer is tenant-specific: `https://login.microsoftonline.com/<tenant-id>/v2.0`. The issuer with `common` fails (`issuer_mismatch`). A member needs an e-mail address on the account (the `mail` attribute): Entra sends the `email` claim only for an account that has one. The Microsoft documentation names no `email_verified` claim for Entra; the check refuses only an explicit `false`. These Entra facts come from the Microsoft documentation of 2026-11-14. No real tenant has confirmed them yet (F119 stage 16).
+   - Google Workspace: an OAuth client of type Web application. The issuer is `https://accounts.google.com`. The sign-in needs the claim `hd` to equal the domain, so a personal Google account never matches. Google runs on the same code and has no real check yet.
+3. Store the provider. Paste the secret at the prompt; it never goes on the command line:
+
+   ```sh
+   read -rs S; printf '%s\n' "$S" | $C run --rm -T server bun run --silent org:sso --org-id <org-id> --set --issuer <issuer-url> --domain <company-domain> --client-id <client-id> --client-secret-stdin; unset S
+   ```
+
+   - `read -rs` does not echo the secret. `bun run --silent` keeps the command line off stderr: `bun run` otherwise prints the whole command, so a wrong call such as `--client-secret <value>` would show the secret once more, and the shell would keep it in its history. Without the pipe, on a terminal, the input echoes and ends only with Ctrl-D: use the pipe.
+   - The command fetches the discovery document of the issuer. It refuses an issuer that is not `https:`, an IP address, a host that resolves to a private address, and a domain that another organization holds. It stores the secret in clear in the database (`sso_providers.oidc_config`): the backups hold it, the export does not. It prints `set new` and the `redirect` line.
+   - To rotate the secret, make a new one in the IdP and run the same command. It prints `set secret` and keeps the proof and the links. A new issuer, domain or client id prints `set boundary`: it drops the domain proof, "SSO required", every link and every SSO session. Warn the members first.
+
+4. Prove the domain. `$C run --rm server bun run org:sso --org-id <org-id>` prints the line `txt _ea-sso.<company-domain> ea-sso=<token>`. Add it as a DNS TXT record of that domain. The token is not a secret. When the record is live, run `$C run --rm server bun run org:sso --org-id <org-id> --verify`. It prints `verified`, or `error not_found_in_dns` (wait for DNS and run it again). For a test organization with no DNS control (for example an `onmicrosoft.com` domain), the operator vouches for the domain instead: `$C run --rm server bun run org:sso --org-id <org-id> --attest --confirm <company-domain>`. Each of the two writes an audit row (`sso.domain_verified`, `sso.domain_attested`). Attest only a domain that you know the organization owns.
+5. Add the members that have no account yet: `$C run --rm server bun run org:member --org-id <org-id> --add --email <address> --display-name <name> [--role assistant|owner] [--lang pl|en]`. The address must be the address that the IdP sends. A member who already has an account needs no add: the first company sign-in links the IdP identity by e-mail. A member made by `org:member --add` has no password. When the flag is on and the domain is proved, the login page offers company sign-in: `curl -sS https://<machine>.<tailnet>.ts.net/api/sign-in-options` prints `{"sso":true}`. The member opens the panel, chooses "Sign in with your company account" and types the work e-mail. `org:sso --org-id <org-id>` then shows `linked <n>`.
+6. Optional: refuse passwords ("SSO required"). First make a break-glass owner with two-factor sign-in on (section Two-factor sign-in: the owner turns it on in Settings → Account, then you run `org:break-glass`). Then run `$C run --rm server bun run org:sso --org-id <org-id> --require on`. It refuses, with a list of reasons, until all of these hold: a provider, a proved domain, the flag on, a break-glass owner with TOTP, and every other member on the domain. When it goes on, every password session and every pending code step of the other members ends. A password sign-in or reset of such a member then looks like a wrong password. Only the break-glass owner keeps password and TOTP.
+7. An IdP outage: `$C run --rm server bun run org:sso --org-id <org-id> --require off` reopens passwords at once for members who have one. A member made by `org:member --add` has no password: make a setup link with `web:invite --user-id` (section Give a member a password), or wait for the IdP. The break-glass owner always gets in. Turning the flag `sso_sign_in` off does not reopen passwords: it also closes company sign-in, so only the break-glass owner can sign in. `org:flag` prints a warning for that case. A server start with `FEATURES_OFF` that holds the flag logs `sso_flag_killed_with_sso_required`.
+8. Offboarding. Disable the person in the IdP: a company session ends within 12 hours at most, and the IdP refuses a new sign-in. To end access at once, run `$C run --rm server bun run org:member --org-id <org-id> --user-id <user-id> --end-sessions`. Every `org:member` command needs `--org-id`. The command ends every session of the user in every organization (sessions belong to the user); `--only-sso` ends only the company sessions. `--unlink-sso` removes the IdP link and every company session of the user. The next company sign-in links again by e-mail, so disable the person in the IdP first. No CLI removes a member. If the organization does not require SSO, a member who has a password can still sign in with it after the IdP account is disabled.
+9. Remove the provider: `$C run --rm server bun run org:sso --org-id <org-id> --remove --confirm <company-domain>`. It deletes the links and the company sessions and turns "SSO required" off.
+10. A plugin upgrade. Keep `better-auth` and `@better-auth/sso` on one exact version, never below 1.6.27 (an older plugin allowed account takeover through its domain check: GHSA-8c5h-wx78-2cfg). After an upgrade, run these tests before you deploy: `apps/server/test/integration/web-sso-plugin.test.ts`, `web-sso-resolve.test.ts`, `web-sso-session.test.ts`, `web-sso-required.test.ts` and `sso-provider-service.test.ts`. They check that a user cannot register a provider, that `requestSignUp: true` makes no user, that a callback session ends after 12 hours, and that the operator writes take turns with the plugin's lock on the provider row.
+
+Every change is an audit row (`sso.login`, `sso.refused`, `sso.provider_set`, `sso.provider_removed`, `sso.domain_verified`, `sso.domain_attested`, `sso.required_changed`, `sso.unlinked`, `org.member_added`, `web.member_sessions_ended`) and shows in the security log of the organization. The log lines and their causes are in `docs/known-alerts.md`: `sso_refused`, `sso_audit_failed`, `password_sign_in_refused_sso`, `reset_request_refused_sso`, `operator_sso_session_refused`, `sign_in_options_failed` and `sso_flag_killed_with_sso_required`.
 
 ### After the first deploy of S6b
 
@@ -679,7 +716,7 @@ Start time `T0`. Use the test mailbox only.
    Move the mail back to INBOX. After the next sync, the row has `returned_at` set and no new row exists.
 3. Forced rescan at about hour 24:
    `$C run --rm -T server bun run mailbox:rescan --org-id <org> --mailbox-id <id>`
-   The next sync log line has `sync <mailbox id> rescan:`.
+   The next sync writes a `sync_folder_done` line with `sync_mode=rescan` (in the text form `org_id`, `mailbox_id` and `folder_key` stand between the two words, so search for `sync_mode=rescan`).
 4. At the end (48 hours or more), right after a sync:
    `$C run --rm -T server bun run mailbox:audit --org-id <org> --mailbox-id <id> --since <T0 ISO time>`
    The output must be `missing=0 duplicates=0` with exit code 0.

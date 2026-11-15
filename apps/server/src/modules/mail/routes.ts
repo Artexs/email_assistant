@@ -9,7 +9,7 @@ import {
 import { Hono, type Context } from "hono";
 
 import type { Db } from "../../platform/db";
-import { HardError, SoftError, describeError } from "../../platform/errors";
+import { errorFields, HardError, SoftError } from "../../platform/errors";
 import { parseBody, requireOwner, type ApiEnv } from "../../platform/http";
 import { createLog } from "../../platform/log";
 
@@ -96,7 +96,7 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
     } catch (error) {
       const mapped = mailErrorBody(error);
       if (!mapped) throw error;
-      if (mapped.status >= 422) log.info(`web: mailbox connect failed: ${describeError(error)}`);
+      if (mapped.status >= 422) log.info("mailbox_connect_failed", errorFields(error));
       return c.json({ error: mapped.error }, mapped.status);
     }
   });
@@ -117,7 +117,7 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
     } catch (error) {
       const mapped = mailErrorBody(error);
       if (!mapped) throw error;
-      if (mapped.status >= 422) log.info(`web: mailbox password check failed: ${describeError(error)}`);
+      if (mapped.status >= 422) log.info("mailbox_password_check_failed", errorFields(error));
       return c.json({ error: mapped.error }, mapped.status);
     }
     const view = await getMailboxView(db, ctx, id, scopeEnv);
