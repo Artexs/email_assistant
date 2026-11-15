@@ -6,27 +6,42 @@ opened: 2026-11-13
 
 ## Outcome
 
-E10a Docs site: the Stage 2 ticket in row 18 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 10 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E10-go-to-market-readiness.md` and its discovery notes `docs/product/stage-2/epics/E10-discovery-notes.md`; the planning job turns them into stages.
+A stranger, a new user and the operator can read the product's docs on a public static site, built from this repository. The site holds a tutorial, how-to guides, a reference, explanations, an FAQ (English, with Polish for the user set), the operator docs read in place from `deploy/`, and the changelog. CI proves that each page keeps a strict CSP, shows no private data and has no broken link. The panel gets a Help link and a "What is new" card behind a flag. Source: E10 decisions 1–18 (`docs/product/stage-2/epics/E10-go-to-market-readiness.md`), ADR 0030.
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- A new docs app on Starlight, on the same Astro as the panel.
+- Build checks: CSP, public content, links, stale Polish pages; a browser check.
+- CI job and a GitHub Pages deploy workflow; the first publication.
+- User docs for what the code does now; operator docs in place.
+- `CHANGELOG.md` format and parser; the panel Help link and card.
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- Home and positioning, security, pricing pages, demo video, cold read, API reference: E10b (F121).
+- Behaviour behind a default-off flag (plan P2).
+- Release scripts and tags: E8b (F114).
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- `bun run docs:build` passes and logs its three check lines ([plan.md](plan.md) D9).
+- A broken CSP, a real tailnet host, a non-example mail address, an external asset or a broken link fails the build.
+- `bun run docs:stale` exits 0.
+- The browser check shows 0 CSP violations and 0 axe violations.
+- CI job `docs` is green on `master`.
+- The site answers at `https://artexs.github.io/email_assistant/` after the owner's first deploy.
+- All checks: [plan.md](plan.md) § Done when (6 items).
+
+## Slices
+
+14 stages, one worker job each ([plan.md](plan.md) § Stages, § How to run). Stages 01 and 06 change `bun.lock`: never next to another `bun.lock` change. No migration. Owner step O1 (Pages settings, first deploy) before stage 14.
 
 ## Sequenced
 
-- Plan after: none (planning may run ahead of the build).
-- Build after: E1, Astro 7 (landed, in `spec/features/done/`).
-- Gate: —
+- Plan after: none (F102 and F114 interfaces are not used: plan P3, D12).
+- Build after: F095 (E1) and F101 (Astro 7) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 18).
+- Gate: —. Stage 14 waits for owner step O1.
 
 ## Notes
 
-Source row: §2.1 # 18. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+Source row: §2.1 # 18. Small defaults: [questions.md](questions.md).
