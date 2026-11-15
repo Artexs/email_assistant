@@ -63,6 +63,7 @@ export {
   getEmailMailbox,
   getEmailMeta,
   insertEmail,
+  lockEmail,
   listReturned,
   mailKindFilter,
   markEmailRelocated,

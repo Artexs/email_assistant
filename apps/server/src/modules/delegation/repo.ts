@@ -1,3 +1,4 @@
+import { DELEGATION_REMINDER_LIMIT } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -8,12 +9,13 @@ type DbOrTrx = Db | Transaction<DB>;
 
 const delegationStatusSchema = z.enum(["drafted", "sent", "answered", "overdue", "done", "cancelled"]);
 export type DelegationStatus = z.infer<typeof delegationStatusSchema>;
+export type DelegationSource = "triage" | "button";
 
 // The reason of a cancel by the user (F102 stage 15). It is final.
 export const USER_CANCELLED = "user_cancelled";
 
 // The chaser sends at most this many reminders for one delegation (D23).
-export const MAX_REMINDER_SENDS = 2;
+export const MAX_REMINDER_SENDS = DELEGATION_REMINDER_LIMIT;
 
 // A delegation is open while the chaser can still act on it: the draft waits, the task is out, or it is overdue with a
 // reminder left. Retention keeps the task text and the applied draft payload of an open delegation (A23, F083).
@@ -186,6 +188,8 @@ export async function insertDelegation(
     taskSummary: string;
     dueAt: Date | null;
     createdAt: Date;
+    // `triage` (the default of the column) or `button` (the Delegate command, F116).
+    source?: DelegationSource;
   }
 ): Promise<string> {
   const row = await trx
@@ -201,10 +205,48 @@ export async function insertDelegation(
       due_at: input.dueAt,
       created_at: input.createdAt,
       updated_at: input.createdAt,
+      ...(input.source === undefined ? {} : { source: input.source }),
     })
     .returning("id")
     .executeTakeFirstOrThrow();
   return row.id;
+}
+
+// The Delegate command of a mail (F116 stage 16) asks two questions about the delegations of one mail.
+// A delegation that still waits for the delegate: the draft waits, the task is out, or it is overdue.
+export async function findOpenDelegationOfEmail(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("delegations")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", emailId)
+    .where("status", "in", ["drafted", "sent", "overdue"])
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.id;
+}
+
+// How many delegations of this source the mail has had, in any state (the attempt number of the Delegate keys).
+export async function countDelegationsOfEmail(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  source: DelegationSource
+): Promise<number> {
+  const row = await db
+    .selectFrom("delegations")
+    .select((eb) => eb.fn.countAll<string>().as("n"))
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", emailId)
+    .where("source", "=", source)
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
 }
 
 export async function getDelegation(db: DbOrTrx, ctx: TenantContext, id: string): Promise<DelegationRow | undefined> {

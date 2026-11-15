@@ -8,6 +8,7 @@ import {
   type BarCategory,
   type CategoryPolicy,
   type ExpireFilter,
+  type GateEvidenceDeps,
   type GoDecision,
   type MailboxActionType,
   type MailboxMode,
@@ -34,6 +35,8 @@ export class SettingsNotFoundError extends HardError {
 export interface SettingsDeps {
   db: Db | Transaction<DB>;
   now(): Date;
+  // The global evidence of the running classifier, built once at start (F110 stage 02). Stage 04 reads it in the setter.
+  gate: GateEvidenceDeps;
   // Required, so typecheck stops a caller that forgets it (the CLI now, the S5 page later).
   expireReady(
     trx: Transaction<DB>,

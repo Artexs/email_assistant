@@ -79,14 +79,20 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     expect(await editRows(s.org.orgId)).toEqual([]);
   });
 
-  test("T6. a send that waited 49 hours: 409 closed, state expired; the send expires and no card edit is queued (Q18)", async () => {
+  test("T6. a send that waited 49 hours: 409 closed, state expired; the send expires and each owner's card gets the expired edit", async () => {
     const s = await setup();
     const id = await addSend(s, { notifiedAt: new Date(NOW.getTime() - 49 * HOUR) });
     const res = await s.app.request(`/api/approvals/${id}/approve`, post("owner", "approve"));
     expect(res.status).toBe(409);
     expect(approvalConflictSchema.parse(await res.json())).toEqual({ error: "closed", state: "expired" });
     expect(await send(id)).toMatchObject({ status: "expired", status_reason: "timeout" });
-    expect(await editRows(s.org.orgId)).toEqual([]);
+    // F102 stage 18: the panel has no card of its own, so both owners' cards lose their buttons (review 9 N3, review 15 N1).
+    const rows = await editRows(s.org.orgId);
+    expect(rows.map((row) => row.user_id).sort()).toEqual([s.org.ownerId, s.u2].sort());
+    expect(rows.every((row) => row.status === "pending" && row.dedup_key.endsWith(":expired"))).toBe(true);
+    // A second approve answers 409 and queues no second edit (the send is not closed by this request any more).
+    await s.app.request(`/api/approvals/${id}/approve`, post("owner", "approve"));
+    expect(await editRows(s.org.orgId)).toHaveLength(2);
   });
 
   test("T6b. a closed send answers 409 closed with its state, for approve and reject", async () => {

@@ -1,0 +1,25 @@
+# Strings that the public-content check lets through (apps/docs/integrations/public-content.ts).
+# One per line: <exact string> | <reason>. An entry that no built file needs fails the build.
+# These are the translator credits of Pagefind UI, bundled by Starlight 0.43.1 into _astro/ui-core.*.js.
+# A Starlight update that changes the credits fails the build: review the new strings, then edit this list.
+amit@thetechbasket.com | Pagefind UI translator credit in the Starlight search bundle
+apjanco@upenn.edu | Pagefind UI translator credit in the Starlight search bundle
+bogdan@surfverse.com | Pagefind UI translator credit in the Starlight search bundle
+dev@valtlai.fi | Pagefind UI translator credit in the Starlight search bundle
+dr@jones.dk | Pagefind UI translator credit in the Starlight search bundle
+info@adamlaki.com | Pagefind UI translator credit in the Starlight search bundle
+jan@cloudcannon.com | Pagefind UI translator credit in the Starlight search bundle
+liam@cloudcannon.com | Pagefind UI translator credit in the Starlight search bundle
+mail@marufalom.com | Pagefind UI translator credit in the Starlight search bundle
+mail@salif.eu | Pagefind UI translator credit in the Starlight search bundle
+mlarreaegi@codesyntax.com | Pagefind UI translator credit in the Starlight search bundle
+montazar@nanawee.tech | Pagefind UI translator credit in the Starlight search bundle
+nicolas@theologique.ch | Pagefind UI translator credit in the Starlight search bundle
+nirtamir2@gmail.com | Pagefind UI translator credit in the Starlight search bundle
+ptphon@gmail.com | Pagefind UI translator credit in the Starlight search bundle
+vladdnepr1989@gmail.com | Pagefind UI translator credit in the Starlight search bundle
+# Operator docs read in place (deploy/README.md): examples and a fixed address, not private data.
+p@x.test.vcf | Attachment file name that deploy/README.md uses as an example of an address the mail filter does not match
+a@b.com.pl | Example address that deploy/README.md uses to show that the mail filter keeps it apart from a@b.com
+a@b.com | Example address in the address-pattern rules of deploy/README.md
+100.100.100.100 | Tailscale's fixed DNS address, the same in every tailnet (deploy/README.md, resolver check)

@@ -8,7 +8,7 @@ import { type HiddenMoveRow, type MistakeRow, type RejectRow, seriousMistakes } 
 import { type HandledRow, handledShare } from "./m4";
 import { type UrgentNoticeRow, urgentLatency } from "./m5";
 import { type LlmCallRow, unitCost } from "./m7";
-import { type GateRow, autoEvidence } from "./m8";
+import { type GateRow, realLabelEvidence } from "./m8";
 import { weekRange } from "./week";
 
 export interface WeekRows {
@@ -38,6 +38,6 @@ export function buildWeekStats(
     m4: handledShare(rows.handled),
     m5: urgentLatency(rows.urgent, { timeZone: opts.timeZone }),
     m7: unitCost(rows.llmCalls, { mailboxes: rows.mailboxes }),
-    m8: autoEvidence(rows.gates),
+    m8: realLabelEvidence(rows.gates),
   });
 }

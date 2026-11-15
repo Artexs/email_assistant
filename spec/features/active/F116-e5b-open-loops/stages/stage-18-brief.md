@@ -51,3 +51,7 @@ Buttons on these lines (19).
 ## Carry-over from stage 11 (worker, 2026-11-15)
 
 - `loopConsentOf(db, ctx, userIds)` exists (`channels/consent.ts`); stage 11 uses it for the card and the result notice. A new sender of loop data must also be added to the list in `channels/consent-gate.test.ts`.
+
+## Carry-over from stage 11 review
+
+- N8: add the digest sender to the consent-gate source scan on purpose (review-11.md).

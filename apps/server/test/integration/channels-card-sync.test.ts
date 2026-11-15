@@ -528,6 +528,74 @@ describe("card sync: decisions call the hook once, with the right input", () => 
     });
   });
 
+  test("a tap on a send past its limit expires it and calls the hook once with the tapper as the exception (F102 stage 18)", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      await trx
+        .updateTable("actions")
+        .set({ notified_at: new Date(NOW.getTime() - 49 * 3_600_000) })
+        .where("id", "=", w.sendId)
+        .execute();
+      const calls: { decision: string; sendId: string; exceptUserId?: string; at: Date }[] = [];
+      const spy: ApprovalHooks = {
+        onDecided: async (_trx, _ctx, input) => {
+          calls.push(input);
+        },
+      };
+      const real = cardEditHooks({ sendScope: { kind: "all" } });
+      const hooks: ApprovalHooks = {
+        onDecided: async (t, c, input) => {
+          await spy.onDecided(t, c, input);
+          await real.onDecided(t, c, input);
+        },
+      };
+      const deps = depsOf(w, { kind: "all" }, hooks);
+      expect(await approve(deps, w.ctx, w.sendId, { userId: w.u1, via: "telegram", now: NOW })).toEqual({
+        kind: "expired",
+        byThisTap: true,
+      });
+      // The second tap finds the send closed: no second hook call.
+      expect(await approve(deps, w.ctx, w.sendId, { userId: w.u2, via: "telegram", now: NOW })).toEqual({
+        kind: "expired",
+        byThisTap: false,
+      });
+      expect(calls).toEqual([{ decision: "expired", sendId: w.sendId, exceptUserId: w.u1, at: NOW }]);
+      // The tapped card is the handler's own edit; the card of the other owner loses its buttons.
+      expect((await editRows(w)).map((row) => [row.edit_of_outbox_id, row.dedup_key])).toEqual([
+        [w.c2, `approval_edit:${w.c2}:expired`],
+      ]);
+      const sender = senderOf(w);
+      await sender.run();
+      expect(sender.channel.edited).toEqual([
+        { chatId: w.chat2, messageId: 502, message: { text: `CARD-TWO\n\n${edits.expired(CLOCK)}`, buttons: [] } },
+      ]);
+    });
+  });
+
+  test("a decision that read its clock earlier but commits later still ends the card (review 9 N1)", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const off: SendScope = { kind: "off" };
+      // The approve read the clock at t2 and committed first; its edit goes out. The reject read t1 < t2 and committed after it.
+      const t2 = new Date(NOW.getTime() + 2000);
+      await approve(depsOf(w, off), w.ctx, w.sendId, { userId: w.u1, via: "web", now: t2 });
+      const sender = senderOf(w);
+      await sender.run(t2);
+      expect(sender.channel.edited).toHaveLength(2);
+      await reject(depsOf(w, off), w.ctx, w.sendId, { userId: w.u1, via: "web", now: NOW });
+      await sender.run(new Date(t2.getTime() + 1000));
+      const rows = await editRows(w);
+      expect(rows.filter((row) => row.status === "failed")).toEqual([]);
+      // Both cards end with the rejection (the two rows have the same time, so their order is not fixed).
+      expect(
+        sender.channel.edited
+          .slice(2)
+          .map((edit) => edit.message.text)
+          .sort()
+      ).toEqual([`CARD-ONE\n\n${edits.rejected(CLOCK)}`, `CARD-TWO\n\n${edits.rejected(CLOCK)}`]);
+    });
+  });
+
   test("a failure of the card sync is logged and the decision stays", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);

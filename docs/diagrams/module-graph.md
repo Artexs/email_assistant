@@ -28,6 +28,7 @@ flowchart BT
   subgraph group5["Layer 5"]
     operator
     privacy
+    trust
   end
   subgraph group6["Layer 6"]
     lab

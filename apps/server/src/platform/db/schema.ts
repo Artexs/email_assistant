@@ -5,8 +5,9 @@
 
 import type { ColumnType } from "kysely";
 
-export type Generated<T> =
-  T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S, I | undefined, U> : ColumnType<T, T | undefined, T>;
+export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S, I | undefined, U>
+  : ColumnType<T, T | undefined, T>;
 
 export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
 
@@ -21,6 +22,8 @@ export type JsonObject = {
 export type JsonPrimitive = boolean | number | string | null;
 
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
+
+export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
@@ -135,6 +138,18 @@ export interface AuthVerifications {
   identifier: string;
   updated_at: Generated<Timestamp>;
   value: string;
+}
+
+export interface AutonomyTrips {
+  category: string;
+  cleared_at: Timestamp | null;
+  counts: Generated<Json>;
+  granted_at: Timestamp;
+  id: Generated<string>;
+  mailbox_id: string;
+  org_id: string;
+  reason: string;
+  tripped_at: Generated<Timestamp>;
 }
 
 export interface ChatLinks {
@@ -276,6 +291,39 @@ export interface Emails {
   undo_pending_at: Timestamp | null;
 }
 
+export interface HistoryCheckItems {
+  acted_on: Generated<boolean>;
+  category: string;
+  check_id: string;
+  confidence: number;
+  cost_usd: Generated<Numeric>;
+  email_id: string;
+  org_id: string;
+  reason_code: string;
+  source: string;
+  would_move: boolean;
+}
+
+export interface HistoryChecks {
+  attempts: Generated<number>;
+  backfill_done_at: Timestamp | null;
+  capped: Generated<boolean>;
+  cost_usd: Generated<Numeric>;
+  created_at: Generated<Timestamp>;
+  finished_at: Timestamp | null;
+  id: Generated<string>;
+  key: Json | null;
+  locked_at: Timestamp | null;
+  mailbox_id: string;
+  next_attempt_at: Generated<Timestamp>;
+  no_result_reason: string | null;
+  org_id: string;
+  reason: string;
+  result: Json | null;
+  status: Generated<string>;
+  window_start: Timestamp | null;
+}
+
 export interface MailboxCredentials {
   created_at: Generated<Timestamp>;
   encrypted_secret: string;
@@ -366,6 +414,10 @@ export interface Memberships {
   created_at: Generated<Timestamp>;
   digest_times: Generated<string[]>;
   org_id: string;
+  quiet_end: string | null;
+  quiet_start: string | null;
+  report_channel: Generated<string>;
+  report_mailbox_id: string | null;
   role: string;
   user_id: string;
 }
@@ -589,6 +641,7 @@ export interface DB {
   auth_sessions: AuthSessions;
   auth_two_factors: AuthTwoFactors;
   auth_verifications: AuthVerifications;
+  autonomy_trips: AutonomyTrips;
   chat_link_tokens: ChatLinkTokens;
   chat_links: ChatLinks;
   delegates: Delegates;
@@ -598,6 +651,8 @@ export interface DB {
   email_flags: EmailFlags;
   email_headers: EmailHeaders;
   emails: Emails;
+  history_check_items: HistoryCheckItems;
+  history_checks: HistoryChecks;
   mailbox_credentials: MailboxCredentials;
   mailbox_folders: MailboxFolders;
   mailbox_oauth_states: MailboxOauthStates;

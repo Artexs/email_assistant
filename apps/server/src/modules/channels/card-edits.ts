@@ -7,7 +7,7 @@ import { createLog } from "../../platform/log";
 import type { ApprovalHooks, SendScope } from "../actions";
 import { getOrganization } from "../tenancy";
 
-import { failPendingCardsOfSend, listCardsOfSend } from "./card-edits-repo";
+import { failPendingCardsOfSend, listCardsOfSend, newestEditCreatedAt } from "./card-edits-repo";
 import { heldReason } from "./held-reason";
 import { queueNotice } from "./notice-queue";
 import { OUTBOX_REMOVED_TEXT } from "./repo";
@@ -61,6 +61,12 @@ export async function queueCardEdits(
     ) {
       continue;
     }
+    // A decision reads its clock before it waits for the send lock, so a decision that commits later can carry an earlier time.
+    // The sender drops a row when a newer row of the card went out (`newerEditSent`): the row of the later decision must
+    // sort after the earlier one, or the card would keep the older result (review 9 N1). One millisecond after the newest row.
+    const newest = await newestEditCreatedAt(trx, ctx, card.id);
+    const queuedAt =
+      newest !== null && newest.getTime() >= input.at.getTime() ? new Date(newest.getTime() + 1) : input.at;
     const id = await queueNotice(trx, ctx, {
       userId: card.userId,
       locale: card.locale,
@@ -79,6 +85,7 @@ export async function queueCardEdits(
         ...(input.outcome === "approved_held" ? { actionId: input.sendId } : {}),
       },
       now: input.at,
+      createdAt: queuedAt,
     });
     if (id !== null) queued += 1;
   }

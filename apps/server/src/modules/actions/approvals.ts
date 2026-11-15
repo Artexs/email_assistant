@@ -100,6 +100,34 @@ function isStale(lockedAt: Date | null, now: Date): boolean {
   return lockedAt === null || lockedAt.getTime() < now.getTime() - STALE_AFTER_MS;
 }
 
+// A tap or a panel approve that finds the send past its time limit closes it. The cards of the other owners lose their buttons
+// (F102 stage 18: this path queued no card edit before); the tapped card of a Telegram tap is the handler's own edit.
+async function expireByTap(
+  trx: Transaction<DB>,
+  deps: ApprovalDeps,
+  ctx: TenantContext,
+  send: SendRow,
+  input: ApprovalInput,
+  reason: "timeout" | "not_notified"
+): Promise<ApproveResult> {
+  const closed = await expireSend(trx, ctx, send.id, {
+    reason,
+    now: input.now,
+    actor: input.userId,
+    hooks: deps.hooks,
+    uidplus: await deps.uidplus(ctx, send.mailbox_id),
+  });
+  if (closed) {
+    await deps.approvalHooks.onDecided(trx, ctx, {
+      sendId: send.id,
+      decision: "expired",
+      ...decidedBy(input),
+      at: input.now,
+    });
+  }
+  return { kind: "expired", byThisTap: true };
+}
+
 // The caller holds the lock of the row. The owner check is the caller's (D26): the Telegram handler checks the role.
 async function approveRow(
   trx: Transaction<DB>,
@@ -112,26 +140,12 @@ async function approveRow(
     case "awaiting_approval": {
       // The hourly job is late by up to an hour: a tap in that window must not send (D18).
       if (send.notified_at !== null && send.notified_at.getTime() + APPROVAL_TTL_MS < input.now.getTime()) {
-        await expireSend(trx, ctx, send.id, {
-          reason: "timeout",
-          now: input.now,
-          actor: input.userId,
-          hooks: deps.hooks,
-          uidplus: await deps.uidplus(ctx, send.mailbox_id),
-        });
-        return { kind: "expired", byThisTap: true };
+        return expireByTap(trx, deps, ctx, send, input, "timeout");
       }
       // A send that no owner was told about (`notified_at` null: no linked Telegram chat) has the 7-day limit of the expiry job; the panel
       // can approve it, so the check runs here too, for the same reason: the hourly job is late by up to an hour.
       if (send.notified_at === null && send.created_at.getTime() + UNNOTIFIED_TTL_MS < input.now.getTime()) {
-        await expireSend(trx, ctx, send.id, {
-          reason: "not_notified",
-          now: input.now,
-          actor: input.userId,
-          hooks: deps.hooks,
-          uidplus: await deps.uidplus(ctx, send.mailbox_id),
-        });
-        return { kind: "expired", byThisTap: true };
+        return expireByTap(trx, deps, ctx, send, input, "not_notified");
       }
       // A send whose draft is not in Drafts yet (or never will be) must not go out: the tap changes nothing.
       const draft =

@@ -42,3 +42,7 @@ M2 (23), docs (24).
 
 - Until the panel "Confirm" button exists, an owner linked by the CLI has no consent that counts (an unlink withdraws it): that owner gets the `loop_consent` line and reads follow-ups in the panel. Keep `open_loops` off until this stage lands (N6).
 - The approvals page already shows To, Cc and the number of a follow-up and lets an owner edit it (stage 11). A Playwright case for "a reload removes the row while the Edit dialog is open" was not written (see the notes file).
+
+## Carry-over from stage 11 review
+
+- TG-4: the Playwright case S11 (loop closes while Edit is open) of review-11.md, if stage 21 did not add it.

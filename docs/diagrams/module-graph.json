@@ -14,7 +14,8 @@
     "reports",
     "tenancy",
     "testmail",
-    "triage"
+    "triage",
+    "trust"
   ],
   "edges": [
     ["actions", "audit"],

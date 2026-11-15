@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, spyOn, test } from "bun:test";
 
-import { actionsScope, committerDeps, sendScope } from "./composition";
+import { actionsScope, committerDeps, gateEvidenceDir, sendScope } from "./composition";
 import { noLoopHooks } from "./modules/actions";
 import type { OAuthTokens } from "./modules/mail";
 import { loadConfig } from "./platform/config";
@@ -201,4 +201,37 @@ describe("sendScope writes one send_scope event per scope", () => {
       expect(output).not.toContain("x.test");
     });
   }
+});
+
+// F110 stage 02: the server reads the gate files from `GATE_EVIDENCE_DIR`, default `evals/results/gate` of the repo.
+describe("gateEvidenceDir", () => {
+  test("the default folder holds the committed classifier gate files", () => {
+    const dir = gateEvidenceDir(configWith({}));
+    expect(readdirSync(dir).some((name) => name.startsWith("classifier-") && name.endsWith(".json"))).toBe(true);
+  });
+
+  test("GATE_EVIDENCE_DIR overrides it, and a relative path is a config error", () => {
+    expect(gateEvidenceDir(configWith({ GATE_EVIDENCE_DIR: "/srv/gate" }))).toBe("/srv/gate");
+    expect(gateEvidenceDir(configWith({ GATE_EVIDENCE_DIR: "" }))).toBe(gateEvidenceDir(configWith({})));
+    expect(() => configWith({ GATE_EVIDENCE_DIR: "gate" })).toThrow();
+  });
+});
+
+describe("the gate evidence is built once at start (F110 stage 02)", () => {
+  const main = read("main.ts");
+
+  test("main.ts reads the gate files once and hands the result to the web settings deps", () => {
+    expect(main.match(/loadGateEvidence\(/g)).toHaveLength(1);
+    expect(main).toContain("loadGateEvidence(gateEvidenceDir(config))");
+    expect(callOf(main, "webDeps")).toContain("gate,");
+  });
+
+  test("the image copies the gate files to the path the reader defaults to", () => {
+    const dockerfile = readFileSync(join(import.meta.dir, "../../../deploy/Dockerfile"), "utf8");
+    expect(dockerfile).toContain("COPY evals/results/gate evals/results/gate\n");
+  });
+
+  test("the web passes the gate to the one settings deps builder", () => {
+    expect(callOf(read("web.ts"), "settingsDeps")).toContain("gate");
+  });
 });

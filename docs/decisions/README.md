@@ -36,9 +36,9 @@ Template:
 | 0018 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
 | 0019 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
 | 0020 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
-| 0021 | Simulator stack: separate Compose project with GreenMail, fake Telegram          | proposed                                            |
+| 0021 | Simulator stack: separate Compose project with GreenMail, fake Telegram          | accepted                                            |
 | 0022 | Report mail goes into the user's own INBOX by IMAP APPEND                        | proposed                                            |
-| 0023 | Every user action is a typed HTTP command described in OpenAPI                   | proposed                                            |
+| 0023 | Every user action is a typed HTTP command described in OpenAPI                   | accepted (PD-035, F102)                             |
 | 0024 | Structured logs, tailnet log store, operator alerts checked by the app           | proposed                                            |
 | 0025 | Not used                                                                         | not used                                            |
 | 0026 | Identity tier 1: OIDC per organization, TOTP, break-glass owner                  | point 1 accepted (F105); points 2–7 proposed        |
