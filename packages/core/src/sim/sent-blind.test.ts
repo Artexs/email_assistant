@@ -65,6 +65,15 @@ describe("slot label and checker label", () => {
     expect(sentExpectedOf(endOfWeek, zone).due).toBe("2026-11-27");
   });
 
+  test("the day is the local day of sentAt: 23:30 UTC is already Thursday in Warsaw", () => {
+    const night = {
+      ...miniSentSlot,
+      sentAt: "2026-11-18T23:30:00.000Z",
+      labels: { ...miniSentSlot.labels, due: { kind: "word" as const, word: "tomorrow" as const } },
+    };
+    expect(sentExpectedOf(night, zone).due).toBe("2026-11-20");
+  });
+
   test("T7 the fields in which the labels differ", () => {
     const expected = sentExpectedOf(miniSentSlot, zone);
     expect(sentLabelDisagreements(expected, miniSentLabel)).toEqual([]);

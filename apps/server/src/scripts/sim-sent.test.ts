@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import {
   miniScenario,
+  miniSentPlanSpec,
   sentBlindBatchFileSchema,
   sentExpectedOf,
   sentFixtureText,
@@ -74,6 +75,17 @@ describe("sent plan", () => {
     expect(slotFiles(corpus)).toEqual(before);
     expect((await sim(corpus, "plan", "mini", "--bank", "sent", "--force")).code).toBe(0);
     expect(slotFiles(corpus)).toEqual(before);
+  });
+
+  test("a new plan removes the batch files of the old plan", async () => {
+    const c = await planned();
+    expect(readdirSync(join(c.dir, "sent-holdout", "slots"))).toHaveLength(3);
+    writeFileSync(
+      join(c.dir, "sent-plan-spec.json"),
+      JSON.stringify({ ...miniSentPlanSpec, sizes: { dev: 20, holdout: 40 } })
+    );
+    expect((await sim(c, "plan", "mini", "--bank", "sent")).code).toBe(0);
+    expect(readdirSync(join(c.dir, "sent-holdout", "slots")).sort()).toEqual(["batch-001.json", "batch-002.json"]);
   });
 
   test("a plan of the sent bank leaves the incoming parts alone", async () => {
@@ -252,12 +264,27 @@ describe("sent blind export, labels, reconcile", () => {
     expect((await sim(c, "check", "mini", "--part", "sent-dev", "--batches", "1-1")).stdout).toContain(
       `case ${slot.id} label_stale`
     );
-    // Reconcile ignores a stale label.
+    // Reconcile ignores a stale label, also one that disagrees with the slot.
+    const stored = join(c.dir, "sent-dev", "labels", "batch-001.json");
+    const file = JSON.parse(readFileSync(stored, "utf8")) as { labels: { id: string; expectsReply: boolean }[] };
+    const own = file.labels.find((label) => label.id === slot.id) as { expectsReply: boolean };
+    own.expectsReply = !own.expectsReply;
+    writeFileSync(stored, JSON.stringify(file));
     expect((await sim(c, "reconcile", "mini", "--part", "sent-dev", "--batches", "1-1")).stdout).toBe("");
     await sim(c, "blind-export", "mini", "--part", "sent-dev", "--batches", "1-1");
     expect((await sim(c, "stale", "mini", "--part", "sent-dev", "--batches", "1-1")).stdout.trim()).toBe(
       `stale ${slot.id}`
     );
+  });
+
+  test("check reports a label of a case that has no text as label_unknown", async () => {
+    const c = await complete();
+    const slot = slotOf(c, "sent-dev", () => true);
+    const texts = [...readSentTexts(c.dir, "sent-dev").values()].filter((text) => text.id !== slot.id);
+    writeSentTexts(c, "sent-dev", "batch-001", texts);
+    const result = await sim(c, "check", "mini", "--part", "sent-dev", "--batches", "1-1");
+    expect(result.stdout).toContain(`case ${slot.id} missing_text`);
+    expect(result.stdout).toContain(`case ${slot.id} label_unknown`);
   });
 
   test("reconcile lists the id and the fields in which a fresh label differs from the slot", async () => {

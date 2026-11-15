@@ -117,7 +117,6 @@ function brief(cmd: Cmd<"brief">): SentSimResult {
   const file = readSentSlotBatch(dir, cmd.part, batchName(cmd.batch));
   if (file === undefined) return fail(`${cmd.part}/slots/${batchName(cmd.batch)}.json: missing`);
   const used = new Set(file.slots.flatMap((slot) => [...slot.to, ...slot.cc, ...slot.thread.map((item) => item.from)]));
-  used.delete(scenario.executive.key);
   const personas = scenario.personas
     .filter((persona) => used.has(persona.key))
     .map(({ key, displayName, address, group, lang, voice, signature }) => ({
@@ -353,10 +352,9 @@ function freeze(cmd: Cmd<"freeze">): SentSimResult {
 
   const body = sentManifestBody(input);
   const previous = readSentManifest(dir);
+  // A part hash covers the slots and the texts, so a dropped case changes it too.
   const same =
-    previous !== undefined &&
-    sentParts.every((part) => previous.parts[part]?.sha256 === body.parts[part].sha256) &&
-    JSON.stringify(previous.dropped) === JSON.stringify(body.dropped);
+    previous !== undefined && sentParts.every((part) => previous.parts[part]?.sha256 === body.parts[part].sha256);
   if (previous !== undefined && same) return ok([`unchanged ${previous.version}`]);
 
   const manifest: SentManifest = {
