@@ -4,7 +4,13 @@ import { resolve } from "node:path";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
-import { getSentSyncState, insertSentEmails, setFolderMapEntry, writeSentSwitch } from "../../src/modules/mail/repo";
+import {
+  getSentSyncState,
+  insertSentEmails,
+  setFolderMapEntry,
+  writeSentSwitch,
+  type NewSentEmail,
+} from "../../src/modules/mail/repo";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 
 import { createOrgWithMailbox } from "./fixtures";
@@ -55,6 +61,11 @@ async function runSettings(args: string[]) {
   return { code, stdout, stderr };
 }
 
+// The repository function takes a transaction.
+function insertRows(ctx: { orgId: string }, rows: NewSentEmail[]): Promise<number> {
+  return db.transaction().execute((trx) => insertSentEmails(trx, ctx, rows));
+}
+
 async function setup(opts: { flag: boolean; switchOn?: boolean; rows?: number }) {
   const box = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
   created.push(box);
@@ -65,7 +76,7 @@ async function setup(opts: { flag: boolean; switchOn?: boolean; rows?: number })
     await db.transaction().execute((trx) => writeSentSwitch(trx, ctx, box.mailboxId, { enabled: true, at: AT }));
   for (let n = 1; n <= (opts.rows ?? 0); n += 1) {
     const at = new Date(AT.getTime() - n * DAY);
-    await insertSentEmails(db, ctx, [
+    await insertRows(ctx, [
       {
         mailboxId: box.mailboxId,
         dedupKey: `mid:<cli-sent-${n}-${box.mailboxId}@x.test>:h1`,

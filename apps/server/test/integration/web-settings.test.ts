@@ -11,6 +11,7 @@ import {
   insertInboxFolder,
   insertMailbox,
   insertSentEmails,
+  type NewSentEmail,
   setFolderMapEntry,
   writeSentSwitch,
 } from "../../src/modules/mail/repo";
@@ -435,6 +436,11 @@ async function setFlag(orgId: string, enabled: boolean): Promise<void> {
   await upsertOrgFeature(db, { orgId }, { flag: "sent_sync", enabled, setBy: "test", setAt: NOW });
 }
 
+// The repository function takes a transaction.
+function insertRows(ctx: { orgId: string }, rows: NewSentEmail[]): Promise<number> {
+  return db.transaction().execute((trx) => insertSentEmails(trx, ctx, rows));
+}
+
 // One sent row; the internal date is `ageDays` before NOW.
 async function putSent(
   orgId: string,
@@ -444,7 +450,7 @@ async function putSent(
   origin: "user" | "system" = "user"
 ): Promise<void> {
   const at = new Date(NOW.getTime() - ageDays * DAY);
-  await insertSentEmails(db, { orgId }, [
+  await insertRows({ orgId }, [
     {
       mailboxId,
       dedupKey: `mid:<settings-sent-${n}-${mailboxId}@x.test>:h1`,
