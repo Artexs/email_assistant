@@ -12,8 +12,10 @@ import {
   loadLabCorpus,
   LabSeedError,
   type LabCorpus,
+  type LabModel,
   type LabOrg,
   type RunSpend,
+  type ServeStatus,
   type SeedResult,
   type SeedTarget,
 } from "../modules/lab";
@@ -33,6 +35,8 @@ beforeAll(async () => {
   corpus = await loadLabCorpus(ROOT, "lab-01");
 });
 
+const LUNA: LabModel = { model: "gpt-6-luna", endpoint: "standard" };
+
 const simEnv = (): Record<string, string | undefined> => ({
   LAB_STACK: "ea-sim",
   MAIL_ALLOW_LOCAL_HOSTS: "true",
@@ -51,12 +55,14 @@ describe("lab command", () => {
   let hasMail = false;
   let spend: RunSpend = { kind: "ok", usd: 0, calls: 0, unpricedCalls: 0 };
   let hexes: string[] = [];
-  let models: string[] = ["gpt-6-luna"];
+  let models: LabModel[] = [LUNA];
   let env = simEnv();
   let seedCalls: SeedTarget[] = [];
   let seedResult: SeedResult | Error;
   let stored: string[] = [];
   let storeError: Error | undefined;
+  let serveCalls = 0;
+  let serveStatus: ServeStatus | undefined;
 
   beforeEach(() => {
     seedCalls = [];
@@ -67,13 +73,15 @@ describe("lab command", () => {
     };
     stored = [];
     storeError = undefined;
+    serveCalls = 0;
+    serveStatus = undefined;
     dir = mkdtempSync(join(tmpdir(), "f113-s05-lab-"));
     printed = [];
     failed = [];
     hasMail = false;
     spend = { kind: "ok", usd: 0, calls: 0, unpricedCalls: 0 };
     hexes = ["aaaa", "bbbb", "cccc", "dddd"];
-    models = ["gpt-6-luna"];
+    models = [LUNA];
     env = simEnv();
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -101,6 +109,11 @@ describe("lab command", () => {
       stored.push(`${org.orgId} ${plan.runId} ${plan.deadlines.length}`);
     },
     spendOf: async () => spend,
+    serveStatus: () => serveStatus,
+    serve: async () => {
+      serveCalls += 1;
+      return 0;
+    },
     now: () => NOW,
     hex4: () => hexes.shift() ?? "ffff",
     cli,
@@ -150,7 +163,6 @@ describe("lab command", () => {
   test("commands of later stages exit 1 with not built", async () => {
     for (const argv of [
       ["reset", "--org", "lab", "--yes"],
-      ["serve"],
       ["score", "--run", "day-20261123-aaaa"],
       ["demo-reset", "--yes"],
     ]) {
@@ -158,6 +170,32 @@ describe("lab command", () => {
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not built");
     }
+  });
+
+  test("serve: a bad env exits 1 before the loop starts; a good env hands over to the serve loop", async () => {
+    env = { ...simEnv(), SEND_SCOPE: "all" };
+    expect(await run(["serve"])).toBe(1);
+    expect(failed.join("\n")).toContain("refused: env is not the sim stack");
+    expect(serveCalls).toBe(0);
+    env = simEnv();
+    expect(await run(["serve"])).toBe(0);
+    expect(serveCalls).toBe(1);
+  });
+
+  test("status shows the serve heartbeat of an active run, not of a stopped one", async () => {
+    seedOrgs();
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    serveStatus = {
+      tickAt: "2026-11-23T09:00:30.000Z",
+      runs: { "day-20261123-aaaa": { injector: 2, bots_failed: 1 } },
+    };
+    printed = [];
+    expect(await run(["status"])).toBe(0);
+    expect(printed.join("\n")).toContain("serve tick 2026-11-23T09:00:30.000Z · fails injector 2 bots_failed 1");
+    state().stopRun("day-20261123-aaaa", "operator");
+    printed = [];
+    expect(await run(["status"])).toBe(0);
+    expect(printed.join("\n")).not.toContain("serve tick");
   });
 
   test("seed prints the ids and counts of the org and picks the target of the flag", async () => {
@@ -283,10 +321,26 @@ describe("lab command", () => {
 
   test("N8: a configured model with no price is refused as model_unpriced; no run folder", async () => {
     seedOrgs();
-    models = ["gpt-6-luna", "x-unknown"];
+    models = [LUNA, { model: "x-unknown", endpoint: "standard" }];
     expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(1);
     expect(failed.join("\n")).toContain("model_unpriced (x-unknown)");
     expect(runFolders()).toEqual([]);
+  });
+
+  test("N3: the price check uses the endpoint kind of the role: own never refused, eu needs an eu row", async () => {
+    seedOrgs();
+    // An own server costs 0 and has no price row: not refused.
+    models = [LUNA, { model: "x-own-model", endpoint: "own" }];
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    state().stopRun("day-20261123-aaaa", "operator");
+    // A model with a standard row only, on an eu endpoint, would count $0 toward the cap: refused.
+    models = [LUNA, { model: "gemini-3.5-flash-lite", endpoint: "eu" }];
+    printed = [];
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(1);
+    expect(failed.join("\n")).toContain("model_unpriced (gemini-3.5-flash-lite)");
+    // The eu row of gpt-6-luna exists: not refused.
+    models = [{ model: "gpt-6-luna", endpoint: "eu" }];
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-24"])).toBe(0);
   });
 
   test("8: stop writes stopped: operator and one ledger line, also when it runs twice", async () => {

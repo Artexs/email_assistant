@@ -41,6 +41,7 @@ export interface WebTestOptions {
   db: Db;
   sessions: Record<string, string>; // cookie value -> user id
   routers: WebDeps["routers"];
+  publicRouters?: WebDeps["publicRouters"]; // routes before the session guard (the OAuth callback)
   dist?: string; // default: a folder that does not exist
   homePath?: WebDeps["homePath"];
   isOrgSuspended?: WebDeps["isOrgSuspended"];
@@ -79,6 +80,7 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     ...(opts.homePath ? { homePath: opts.homePath } : {}),
     routers: opts.routers,
+    ...(opts.publicRouters ? { publicRouters: opts.publicRouters } : {}),
     ...(opts.isOrgSuspended ? { isOrgSuspended: opts.isOrgSuspended } : {}),
     ...(opts.operatorUserIds ? { operatorUserIds: opts.operatorUserIds } : {}),
     ...(opts.anySsoUsable ? { anySsoUsable: opts.anySsoUsable } : {}),

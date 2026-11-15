@@ -6,9 +6,11 @@ import {
   LAB_TARGETS,
   type LabCorpus,
   type LabEvent,
+  type LabModel,
   type LabOrg,
   type LabState,
   type RunSpend,
+  type ServeStatus,
   type SeedResult,
   type SeedTarget,
   startLabRun,
@@ -23,28 +25,25 @@ export interface LabDeps {
   env: Record<string, string | undefined>;
   state: LabState;
   corpus: LabCorpus;
-  // The models the stack is configured to call (roles the lab uses).
-  models: readonly string[];
+  // The models the stack is configured to call (roles the lab uses), each with the endpoint kind of its provider.
+  models: readonly LabModel[];
   orgHasMail(orgId: string): Promise<boolean>;
   // Makes or repairs the lab organization of the target.
   seed(target: SeedTarget): Promise<SeedResult>;
   // Stores the urgency profile of a started run on the org mailbox.
   storeUrgency(org: LabOrg, plan: LiveRunPlan): Promise<unknown>;
   spendOf(runId: string): Promise<RunSpend>;
+  // The heartbeat file of the serve process, if it wrote one.
+  serveStatus(): ServeStatus | undefined;
+  // The serve loop: runs until a signal; returns the exit code.
+  serve(): Promise<number>;
   now(): Date;
   hex4(): string;
   cli: CliOutput;
 }
 
 // A later stage fills each of these; until then the command exits 1.
-const NOT_BUILT: readonly LabCommand["kind"][] = [
-  "reset",
-  "serve",
-  "score",
-  "demo-reset",
-  "demo-export",
-  "demo-import",
-];
+const NOT_BUILT: readonly LabCommand["kind"][] = ["reset", "score", "demo-reset", "demo-export", "demo-import"];
 
 const usdText = (spend: RunSpend): string =>
   spend.kind === "unpriced"
@@ -60,6 +59,10 @@ async function statusLine(deps: LabDeps, runId: string): Promise<string> {
   const events = deps.state.events(runId);
   const stopped = events.find((event) => event.t === "stopped");
   const spend = await deps.spendOf(runId);
+  const serve = deps.serveStatus();
+  const counts = Object.entries(serve?.runs[runId] ?? {})
+    .map(([part, n]) => `${part} ${n}`)
+    .join(" ");
   return [
     `run ${runId} org ${run.org} cap $${run.capUsd.toFixed(2)}`,
     `planned ${run.plan.items.length}`,
@@ -70,6 +73,9 @@ async function statusLine(deps: LabDeps, runId: string): Promise<string> {
     `skips ${count(events, (e) => e.t === "skip")}`,
     `spend ${usdText(spend)}`,
     `stopped ${stopped?.t === "stopped" ? stopped.reason : "no"}`,
+    ...(serve === undefined || stopped !== undefined
+      ? []
+      : [`serve tick ${serve.tickAt}${counts === "" ? "" : ` · fails ${counts}`}`]),
   ].join(" · ");
 }
 
@@ -159,6 +165,8 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
       );
       return 0;
     }
+    case "serve":
+      return deps.serve();
     default:
       return 1;
   }

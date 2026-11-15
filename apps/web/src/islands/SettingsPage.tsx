@@ -18,6 +18,7 @@ import { AccountCard } from "../components/settings/AccountCard";
 import { CategoriesCard } from "../components/settings/CategoriesCard";
 import { DigestTimesCard } from "../components/settings/DigestTimesCard";
 import { ModeCard } from "../components/settings/ModeCard";
+import { SentMailCard } from "../components/settings/SentMailCard";
 import { SignatureCard } from "../components/settings/SignatureCard";
 import { SyncFoldersCard } from "../components/settings/SyncFoldersCard";
 import { TimezoneCard } from "../components/settings/TimezoneCard";
@@ -32,12 +33,13 @@ import { useResource } from "../lib/use-resource";
 interface MailboxSettingsProps {
   mailbox: MailboxView;
   isOwner: boolean;
+  timeZone: string;
   listLoading: boolean;
   reloadMailboxes(): void;
   reloadMe(): void;
 }
 
-function MailboxSettings({ mailbox, isOwner, listLoading, reloadMailboxes, reloadMe }: MailboxSettingsProps) {
+function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailboxes, reloadMe }: MailboxSettingsProps) {
   const { data, error, loading, reload, mutate } = useResource(() => api(settingsPath(mailbox.id), settingsViewSchema));
 
   // A 404 on the settings means the mailbox is gone (removed in another tab): the list decides what is selected.
@@ -78,6 +80,15 @@ function MailboxSettings({ mailbox, isOwner, listLoading, reloadMailboxes, reloa
       <ModeCard mailbox={mailbox} settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
       <CategoriesCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
       <SyncFoldersCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
+      {data.sentSync !== null && (
+        <SentMailCard
+          settings={data}
+          isOwner={isOwner}
+          timeZone={timeZone}
+          onChanged={onChanged}
+          onMissing={reloadMailboxes}
+        />
+      )}
     </>
   );
 }
@@ -198,6 +209,7 @@ function Settings() {
           key={mailbox.id}
           mailbox={mailbox}
           isOwner={isOwner}
+          timeZone={me.organization.timezone}
           listLoading={loading}
           reloadMailboxes={reload}
           reloadMe={reloadMe}

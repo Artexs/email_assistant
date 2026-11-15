@@ -403,6 +403,21 @@ export const pl: Record<TextKey, string> = {
   folder_junk: "Spam",
   folder_on_toast: "Synchronizacja włączona: {folder}.",
   folder_off_toast: "Synchronizacja wyłączona: {folder}.",
+  sent_title: "Wysłane",
+  sent_switch: "Śledź moją wysłaną pocztę",
+  sent_line:
+    "Asystent czyta folder Wysłane, żeby wiedzieć, na co czekasz. Nie zmienia ani nie usuwa tam Twoich wiadomości.",
+  sent_off_note: "Wyłączenie usuwa wysłaną pocztę zapisaną przez asystenta.",
+  sent_no_folder: "W tej skrzynce nie ma folderu Wysłane.",
+  sent_folder_missing: "Folderu Wysłane nie ma już na serwerze.",
+  sent_failed: "Ostatni odczyt folderu Wysłane nie powiódł się. Następna synchronizacja spróbuje ponownie.",
+  sent_first_pass: "Pierwszy odczyt folderu Wysłane nastąpi przy najbliższej synchronizacji.",
+  sent_none: "Brak wysłanej poczty z ostatnich 30 dni. Czy Twój program pocztowy zapisuje kopię w folderze Wysłane?",
+  sent_last: "Ostatnia wysłana wiadomość: {time}.",
+  sent_paused:
+    "Śledzenie wysłanej poczty jest wstrzymane dla Twojej organizacji. Możesz je wyłączyć; to usunie zapisaną wysłaną pocztę.",
+  sent_on_toast: "Wysłana poczta jest śledzona.",
+  sent_off_toast: "Wysłana poczta nie jest śledzona. Zapisana wysłana poczta została usunięta.",
   digest_title: "Godziny podsumowań (Twoje)",
   digest_help:
     "Kiedy przychodzą Twoje podsumowania w Telegramie, w strefie czasowej organizacji ({timezone}). Maksymalna liczba godzin: {max}.",

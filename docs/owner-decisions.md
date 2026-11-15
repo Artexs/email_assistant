@@ -399,3 +399,33 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: refusing needs code and a plan change; the owner can still require SSO per organization.
 - Undo: a later ticket adds a refusal for SSO-only members. Also open: axe checks for the company sign-in block, the Account card of a member with no password and `/operator` (no e2e spec opens them).
 - Source: `notes/2026-11-15-f119-sso-docs-facts.md`, `deploy/README.md` section "Company sign-in (F119)".
+
+### 2026-11-15 · F109 v3 prompt holdout: no ship by the rule (F109) · quality · new
+- Choice: `classifier-v3[list]` is NOT shipped. Ship rule 4 failed: whitelist 314 of 315 (one `bad_output` on `h-rli-01`, counted as not correct). Rules 1, 2, 3, 5 pass by a wide margin (spam precision 80.3–88.8 → 97.6–99.9, K 74 → 34, cost $1.187 vs $1.148 per mailbox per month). Production stays `classifier-v2`; stages 12 and 13 build on v2. Spend $0.28 of the $0.60 cap; the one run is used.
+- Why: the rule was fixed before the run; a whitelisted mail must never fail. The error is probably random model output, but that is a guess.
+- Undo: if you accept one `bad_output` as noise, say so: a stage then switches the pointer to v3 (step 2 of stage 11, ~1 stage, no new run needed if you accept the existing one).
+- Source: `evals/results/2026-11-15-f109-v3-dev-summary.md` (section "Stage 11 decision"), `evals/results/2026-11-15-sim-lab-01-holdout-gpt-6-luna-classifier-v3.md`.
+
+### 2026-11-15 · F116 open loops plan: second migration, consent bump, switch-off clears texts (F116) · privacy · new
+- Choice (plan defaults, 25 stages): (1) Follow-ups need a second anchor (`actions.loop_id`, `outbox.loop_id`, stage 09 migration), so new threads work too. (2) A hand forward becomes an `open_loops` row of kind `delegated`, not a `delegations` row. (3) Stage 17 bumps the Telegram consent version and gates the send side; older consent sees counts and a panel link only. (4) "Track my sent mail" off closes loops as `sent_off` and clears their texts. (5) "Waiting on you" = `needs_reply` from the last 14 days with no `\Answered` and no later sent mail in the thread. (6) Ignored loop closes as `stale` 30 days after due date. (7) Extractor eval up to $4 total, `--budget-usd 1` per run (inside the lab rule). (8) Gate bars use Wilson 95% lower bound (about 95% measured recall).
+- Why: the plan follows E5b and PD-119/120/122; open questions are in `questions.md` (19 items; 1, 2, 3, 4, 5, 17, 18 matter most).
+- Undo: flag off; cut stages 17–23 if unwanted; spend is capped per run.
+- Source: `spec/features/planned/F116-e5b-open-loops/questions.md`, `plan.md`, `plan-review-1.md`, `plan-review-1-fixes.md`.
+
+### 2026-11-15 · F114 alerts, releases and restore drill plan (F114) · production · new
+- Choice (plan defaults, 9 stages): (1) New table `ops_alerts` has no `org_id` (host-wide alert state, numbers only, like `auth_lockouts`): a rule exception. (2) After stage 09 every VPS deploy is a release by `deploy/release.sh <tag>`; a batch deploy becomes a patch version. (3) The restore drill runs on the VPS in a separate stack (`ea-drill`, own volume and image, subnet 172.29.0.0/24, no port), not on a clean VM on the PC (no VM tool; E8 decision 9 asked for a clean VM). The `age` key stays on the PC; the plain dump goes over ssh. (4) `/health` shows no version; the release name goes into every log line and the container env. (5) The drill copies `CREDENTIALS_KEY` from the live `.env` into a mode-600 file it deletes, so it does not check your password-manager copy of the key. (6) `release.sh` never rolls back by itself; it prints the rollback command. Cold review FAIL (B1: the drill override missed the `cli` service) fixed in the plan.
+- Why: the plan follows E8b; open questions are in `questions.md` (Q1–Q6 important).
+- Undo: cut stages 05–09; the alert job stays off with no `OPERATOR_TELEGRAM_CHAT_ID`.
+- Source: `spec/features/planned/F114-e8b-alerts-and-releases-incl-the-restore-drill/questions.md`, `plan.md`, `plan-review-1.md`. Owner steps: U1 `age` identity file on the PC (only for the stage 09 drill), U2 Healthchecks.io "backup" check URL in `BACKUP_PING_URL`, U3 "EA operator" Telegram group, U4 read five test notices; gate PD-055.
+
+### 2026-11-15 · F116 plan refresh: consent version after a same-day bump (F116) · privacy · new
+- Choice: F109 stage 06 already set `TELEGRAM_CONSENT_VERSION = "2026-11-15"`. F116 stage 17 must set a version greater than that (land date, or `<date>.2` on a day with a bump). This breaks the code-patterns same-day rule for this stage only; option: land stage 17 on a later day.
+- Why: a consent to the F109 text must not count as consent to loop data (the F109 text has no loop sentence).
+- Undo: none needed; a later version only asks again.
+- Source: `spec/features/active/F116-e5b-open-loops/plan-refresh-1.md`, `questions.md` item 20.
+
+### 2026-11-15 · F104 Sent switch texts: truth of "never changes Sent", no retention line (F104) · privacy · new
+- Choice: (1) The text "The assistant reads Sent, never changes it" is not exact: the assistant's own send can append a copy into Sent. The stage 10 fix changes the text to "reads Sent and does not change or delete your mail there". (2) The consent texts name no retention (30 days headers, 14 days text, off = delete). Not added: sent-mail rule 13 says no consent version bump while Sent data goes to no LLM or Telegram. Add a retention line before the flag goes on for any real org if you want it.
+- Why: E5 §4.1 wording was the owner's; a consent text must be true.
+- Undo: restore the old sentence in `apps/web/src/i18n/en.ts` and `pl.ts` (`sent_line`).
+- Source: `.limen/jobs/2026-11-15-f104-review-s10-opus-sent-switch-422e67bb/result` (N1, N2), `spec/features/active/F104-e5a-read-sent/review-10.md`.
