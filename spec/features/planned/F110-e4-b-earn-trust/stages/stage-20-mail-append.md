@@ -35,4 +35,4 @@ Part of [`../plan.md`](../plan.md). Risk: sending to people, own-mail dedup (ADR
 
 ## Out of scope
 
-OAuth adapters (E9 implements `appendMessage` there). SMTP, relays, replies to the report.
+SMTP, relays, replies to the report. OAuth report mailboxes are in scope: F117 opens them by XOAUTH2 through `openMailboxProvider`, as the committer does (review 2 N7).

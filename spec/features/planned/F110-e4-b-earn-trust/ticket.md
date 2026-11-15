@@ -39,7 +39,7 @@ One worker job per stage, 26 stages; order, lanes and checkpoints in `plan.md` �
 - Plan after: F102 (E4-A, OpenAPI frame stages 01–03 written), F109 (E3b, suspicious readers, stage 04), F111 (E11b, endpoint in gate files, stage 03). All have `stages/`.
 - Build after: F097 (E2a) and F100 (E3a) in `done/`; F102 stages 01–03, F109 stage 04 and F111 stage 03 landed (all at plan base 9341d9f0). The urgency command of E3b is landed.
 - Gate: —
-- Refresh: before stage 01 builds, if master moved (`scripts/plan-drift.sh`).
+- Refresh: before stage 01 builds, if master moved (`scripts/plan-drift.sh`). Refresh 1 base: 17b2a369 ([plan-refresh-1.md](plan-refresh-1.md)).
 
 ## Notes
 
