@@ -626,3 +626,101 @@ describe("digest attachment line (F109 stage 06)", () => {
     });
   });
 });
+
+describe("digest why lines (F110 stage 16)", () => {
+  const request = {
+    kind: "on_demand" as const,
+    periodStart: at(-3 * HOUR),
+    periodEnd: T,
+    slot: null,
+    now: T,
+    locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
+  };
+
+  test("flag on: percent, rule, delegate tags; flag off and another organization: the text of today", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const ctxB = { orgId: b.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      await insertDefaultSettings(trx, ctxB, b.mailboxId);
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "info",
+        createdAt: at(-2 * HOUR),
+        subject: "SUBJECT-MODEL",
+        reason: "A model reason",
+        confidence: 0.87,
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "needs_reply",
+        createdAt: at(-110 * MIN),
+        subject: "SUBJECT-VIP",
+        reason: "A VIP asks",
+        confidence: 0.95,
+        fields: { rule: "vip" },
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "spam",
+        createdAt: at(-100 * MIN),
+        subject: "SUBJECT-BLOCKED",
+        reasonCode: "blocklist",
+        confidence: 1,
+        fields: { rule: "blocklist" },
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "unsure",
+        createdAt: at(-90 * MIN),
+        subject: "SUBJECT-UNSURE",
+        reason: "Cannot tell",
+        confidence: 0.55,
+        fields: { model_category: "info" },
+      });
+      const anna = await insertDelegate(trx, ctx, {
+        name: "Anna Nowak",
+        tags: ["finance", "legal", "hr", "it"],
+      });
+      await insertDraftAndSend(trx, ctx, a.mailboxId, {
+        delegateId: anna,
+        delegateName: "Anna Nowak",
+        task: "Prepare the offer",
+        draftStatus: "ready",
+        sendStatus: "awaiting_approval",
+        createdAt: at(-80 * MIN),
+        subject: "SUBJECT-DELEGATED",
+      });
+      await insertTriaged(trx, ctxB, b.mailboxId, {
+        category: "info",
+        createdAt: at(-2 * HOUR),
+        subject: "SUBJECT-OTHER",
+        reason: "Other reason",
+        confidence: 0.87,
+      });
+
+      const off = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(off).toContain("SUBJECT-MODEL\n💬 A model reason\n");
+      expect(off).not.toContain("85%");
+      expect(off).not.toContain("rule:");
+      expect(off).not.toContain("fits:");
+
+      await setOrgFeature(trx, ctx, { flag: "why_lines", enabled: true, actor: "cli", now: T });
+      const on = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(on).toContain("SUBJECT-MODEL\n💬 A model reason · 85%\n");
+      expect(on).toContain("SUBJECT-VIP\n💬 A VIP asks · rule: VIP sender\n");
+      // A blocked sender: the fixed blocklist text and the rule, no percent.
+      expect(on).toMatch(/SUBJECT-BLOCKED\n💬 [^\n]*· rule: blocked sender\n/);
+      expect(on).not.toContain("100%");
+      // An unsure item keeps its guess percent only.
+      expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).toContain("55%");
+      expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).not.toContain("·");
+      expect(on).toContain("(fits: finance, legal, hr)");
+      expect(on).not.toContain(", it)");
+
+      // The flag is per organization.
+      const forB = (await buildDigestMessage(trx, ctxB, request)).text;
+      expect(forB).toContain("SUBJECT-OTHER\n💬 Other reason\n");
+      expect(forB).not.toContain("%");
+    });
+  });
+});

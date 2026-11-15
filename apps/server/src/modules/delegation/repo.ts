@@ -134,6 +134,22 @@ export async function listDelegateNames(
   return new Map(rows.map((row) => [row.id, row.name]));
 }
 
+// The competence tags of delegates (F110 stage 16): words the organization wrote, never mail text.
+export async function listDelegateTags(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  ids: readonly string[]
+): Promise<Map<string, string[]>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .selectFrom("delegates")
+    .select(["id", "competence_tags"])
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "in", [...ids])
+    .execute();
+  return new Map(rows.map((row) => [row.id, row.competence_tags]));
+}
+
 // For `isExternalSender` (D8). Lower case by the column check.
 export async function listDelegateAddresses(
   db: DbOrTrx,

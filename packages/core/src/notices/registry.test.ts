@@ -584,6 +584,18 @@ describe("renderNotice", () => {
     ).toBe(false);
   });
 
+  test("an urgent view with the why keys prints the mark; a bad key is refused", () => {
+    const view: NoticeView<"urgent"> = { ...urgentView, confidence: 0.87, rule: null };
+    const rendered = renderNotice("urgent", encodeNoticeView("urgent", view), opts);
+    expect(rendered.ok && rendered.message.text).toContain(" · 85%");
+    const ruled = renderNotice("urgent", encodeNoticeView("urgent", { ...view, rule: "vip" }), opts);
+    expect(ruled.ok && ruled.message.text).toContain(" · rule: VIP sender");
+    const encoded = encodeNoticeView("urgent", view);
+    for (const bad of [{ confidence: 1.5 }, { confidence: "high" }, { rule: "boss@firma.test" }]) {
+      expect(noticeViewSchemas.urgent.safeParse({ ...encoded, ...bad }).success).toBe(false);
+    }
+  });
+
   test("a renderer that throws gives ok: false", () => {
     const view = { ...encodeNoticeView("urgent", urgentView), emailId: "e1" };
     expect(renderNotice("urgent", view, opts)).toEqual({ ok: false });

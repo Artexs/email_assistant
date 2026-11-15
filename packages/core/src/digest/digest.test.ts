@@ -115,6 +115,111 @@ describe("attachment line", () => {
   });
 });
 
+describe("why lines (F110 stage 16)", () => {
+  const lineOf = (text: string, start: string): string => text.split("\n").find((line) => line.startsWith(start)) ?? "";
+  const one = (extra: Partial<DigestItem>, category: Category = "info", texts: CoreTexts = textTables.en): string =>
+    render(input({ counts: { [category]: 1 }, items: [item(1, category, extra)] }), texts).text;
+
+  test("1. confidence 0.87 and no rule: the percent after the AI text", () => {
+    expect(lineOf(one({ confidence: 0.87, rule: null }), "💬")).toBe("💬 AI text 1 · 85%");
+  });
+
+  test("2. the percent rounds down to a multiple of 5, a zero percent is not shown", () => {
+    expect(lineOf(one({ confidence: 0.7 }), "💬")).toBe("💬 AI text 1 · 70%");
+    expect(lineOf(one({ confidence: 0.999 }), "💬")).toBe("💬 AI text 1 · 95%");
+    expect(lineOf(one({ confidence: 1 }), "💬")).toBe("💬 AI text 1 · 100%");
+    expect(lineOf(one({ confidence: 0.29 }), "💬")).toBe("💬 AI text 1 · 25%");
+    expect(lineOf(one({ confidence: 0.04 }), "💬")).toBe("💬 AI text 1");
+    expect(lineOf(one({ confidence: null }), "💬")).toBe("💬 AI text 1");
+  });
+
+  test("3. a rule replaces the percent", () => {
+    expect(lineOf(one({ confidence: 0.9, rule: "vip" }), "💬")).toBe("💬 AI text 1 · rule: VIP sender");
+    expect(lineOf(one({ confidence: 0.9, rule: "whitelist" }), "💬")).toBe("💬 AI text 1 · rule: whitelisted sender");
+    expect(lineOf(one({ confidence: 1, rule: "blocklist" }, "spam"), "💬")).toBe("💬 AI text 1 · rule: blocked sender");
+  });
+
+  test("4. an item without the keys renders as today", () => {
+    const lines = one({}).split("\n");
+    const first = lines.indexOf("1. ℹ️ Info · Ann1 <ann1@firma.test>");
+    expect(lines.slice(first, first + 4)).toEqual([
+      "1. ℹ️ Info · Ann1 <ann1@firma.test>",
+      "Subject 1",
+      "💬 AI text 1",
+      "→ would flag",
+    ]);
+    expect(one({ confidence: null, rule: null, delegateTags: null })).toBe(one({}));
+  });
+
+  test("5. a delegation shows the first 3 tags of the chosen delegate, each cut at 30 characters", () => {
+    const tags = ["finance", "legal", "hr", "it"];
+    const base = { wouldDo: "would draft a delegation to Anna", delegateTags: tags };
+    expect(lineOf(one(base, "delegation"), "→")).toBe("→ would draft a delegation to Anna (fits: finance, legal, hr)");
+    const long = "x".repeat(40);
+    expect(lineOf(one({ ...base, delegateTags: [long] }, "delegation"), "→")).toBe(
+      `→ would draft a delegation to Anna (fits: ${"x".repeat(29)}…)`
+    );
+    expect(lineOf(one({ ...base, delegateTags: [] }, "delegation"), "→")).toBe("→ would draft a delegation to Anna");
+    expect(lineOf(one({ ...base, delegateTags: null }, "delegation"), "→")).toBe("→ would draft a delegation to Anna");
+    // Only a delegation item has the tags.
+    expect(lineOf(one({ wouldDo: "would flag", delegateTags: tags }, "needs_reply"), "→")).toBe("→ would flag");
+  });
+
+  test("6. the Polish texts", () => {
+    expect(lineOf(one({ confidence: 0.87 }, "info", textTables.pl), "💬")).toBe("💬 AI text 1 · 85%");
+    expect(lineOf(one({ rule: "vip" }, "info", textTables.pl), "💬")).toBe("💬 AI text 1 · reguła: nadawca VIP");
+    expect(lineOf(one({ rule: "whitelist" }, "info", textTables.pl), "💬")).toContain(
+      "reguła: nadawca z listy dozwolonych"
+    );
+    expect(lineOf(one({ rule: "blocklist" }, "spam", textTables.pl), "💬")).toContain(
+      "reguła: nadawca z listy blokowanych"
+    );
+    expect(
+      lineOf(one({ wouldDo: "zrobiłby – x", delegateTags: ["finanse", "prawo"] }, "delegation", textTables.pl), "→")
+    ).toBe("→ zrobiłby – x (kompetencje: finanse, prawo)");
+  });
+
+  test("7. 15 items with all suffixes and an attachment line each stay listed within the limit", () => {
+    const attachments = {
+      attachments: [{ name: "faktura-listopad.pdf", type: "application/pdf", size: 122880, inline: false }],
+      count: 1,
+    };
+    const categories: Category[] = ["urgent", "needs_reply", "delegation"];
+    const items = Array.from({ length: 15 }, (_, index) => {
+      const category = categories[index % 3] as Category;
+      return item(index + 1, category, {
+        attachments,
+        confidence: 0.85,
+        rule: index % 5 === 0 ? "vip" : null,
+        wouldDo: "would draft a delegation to Anna Kowalska",
+        delegateTags: ["finance", "legal", "human resources"],
+        aiText: "Asks for the signed contract before Friday noon",
+      });
+    });
+    for (const texts of [textTables.en, textTables.pl]) {
+      const message = render(input({ counts: { urgent: 5, needs_reply: 5, delegation: 5 }, items }), texts);
+      expect(blockStarts(message.text)).toHaveLength(15);
+      expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    }
+  });
+
+  test("8. an item without AI text gets its own line; an unsure item shows one percent only", () => {
+    expect(lineOf(one({ aiText: null, confidence: 0.8 }), "💬")).toBe("💬 80%");
+    expect(lineOf(one({ aiText: null, rule: "vip" }), "💬")).toBe("💬 rule: VIP sender");
+    expect(one({ aiText: null })).not.toContain("💬");
+    const unsure = one({ aiText: "Not sure (maybe info, 55%)", confidence: 0.55 }, "unsure");
+    expect(lineOf(unsure, "💬")).toBe("💬 Not sure (maybe info, 55%)");
+    expect(lineOf(one({ aiText: "Not sure", confidence: 0.55, rule: "whitelist" }, "unsure"), "💬")).toBe(
+      "💬 Not sure · rule: whitelisted sender"
+    );
+    expect(lineOf(one({ aiText: null, confidence: 0.55 }, "unsure"), "💬")).toBe("");
+  });
+
+  test("a long AI text is cut before the mark, so the mark stays", () => {
+    expect(lineOf(one({ aiText: "y".repeat(300), confidence: 0.9 }), "💬")).toBe(`💬 ${"y".repeat(119)}… · 90%`);
+  });
+});
+
 function input(extra: Partial<DigestInput> = {}): DigestInput {
   return {
     kind: "scheduled",

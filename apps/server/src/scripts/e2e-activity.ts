@@ -1,5 +1,6 @@
 import { Client } from "pg";
 
+import { upsertOrgFeature } from "../modules/tenancy";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
@@ -49,6 +50,12 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const result = await seedActivityRows(db, { orgId }, mailboxId, new Date());
+    // F110 stage 16: the Activity spec shows the rule hit, which the flag `why_lines` turns on. The row stays after the spec.
+    await upsertOrgFeature(
+      db,
+      { orgId },
+      { flag: "why_lines", enabled: true, setBy: "e2e-activity", setAt: new Date() }
+    );
     out.print(`seeded ${result.total} activity rows for mailbox ${mailboxId}`);
     return 0;
   } finally {

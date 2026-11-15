@@ -103,6 +103,28 @@ describe("renderUrgentNotice", () => {
     expect(before.text).not.toContain("📎");
   });
 
+  test("F110 stage 16: the percent or the rule after the AI line, in both languages", () => {
+    const lineOf = (text: string): string => text.split("\n").find((line) => line.startsWith("💬")) ?? "";
+    expect(lineOf(renderUrgentNotice({ ...urgent, confidence: 0.87 }, textTables.en).text)).toBe(
+      "💬 The server is down. · 85%"
+    );
+    expect(lineOf(renderUrgentNotice({ ...urgent, confidence: 0.87, rule: "vip" }, textTables.en).text)).toBe(
+      "💬 The server is down. · rule: VIP sender"
+    );
+    expect(lineOf(renderUrgentNotice({ ...urgent, confidence: 0.87, rule: "vip" }, textTables.pl).text)).toBe(
+      "💬 The server is down. · reguła: nadawca VIP"
+    );
+    expect(lineOf(renderUrgentNotice({ ...urgent, confidence: 0.99 }, textTables.pl).text)).toBe(
+      "💬 The server is down. · 95%"
+    );
+    // No AI text: the mark has a line of its own, in the place of the AI line.
+    const bare = renderUrgentNotice({ ...urgent, aiText: null, confidence: 0.8 }, textTables.en).text.split("\n");
+    expect(bare.slice(2, 5)).toEqual(["Subject: Server down", "💬 80%", "Received 07:42"]);
+    // A view without the keys, or with null keys, renders as before.
+    const before = renderUrgentNotice(urgent, textTables.en);
+    expect(renderUrgentNotice({ ...urgent, confidence: null, rule: null }, textTables.en)).toEqual(before);
+  });
+
   test("lists the reasons in the order of the rules, whatever the order of the view", () => {
     const text = renderUrgentNotice({ ...urgent, suspicious: ["risky_attachment", "auth_fail"] }, textTables.en).text;
     expect(text).toContain("⚠ Suspicious: sender check failed, risky attachment");

@@ -75,6 +75,8 @@ export const noticeRenderers = {
             ),
             ...(view.suspicious === undefined ? {} : { suspicious: view.suspicious }),
             ...(view.attachments === undefined ? {} : { attachments: view.attachments }),
+            confidence: view.confidence,
+            rule: view.rule,
             now: view.now,
             timeZone: view.timeZone,
           },

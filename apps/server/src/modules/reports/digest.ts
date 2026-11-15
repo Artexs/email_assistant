@@ -2,6 +2,7 @@ import {
   aiTextFor,
   describeActions,
   handledShare,
+  hasModelMark,
   isUndoable,
   mailboxModes,
   renderDigest,
@@ -18,7 +19,7 @@ import { HardError } from "../../platform/errors";
 import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
-import { countOpenDelegations, listDelegateNames } from "../delegation";
+import { countOpenDelegations, listDelegateNames, listDelegateTags } from "../delegation";
 import {
   attachmentFactsToShow,
   countWaiting,
@@ -49,6 +50,15 @@ export interface DigestRequest {
   now: Date;
   locale: UserLocale;
   testMail: TestMailRule;
+}
+
+// The competence tags of the delegate of the first original draft or send action of a mail, or null.
+function chosenDelegateTags(
+  actions: readonly { delegateId: string | null; reverse: boolean }[],
+  tags: ReadonlyMap<string, string[]>
+): string[] | null {
+  const chosen = actions.find((action) => action.delegateId !== null && !action.reverse);
+  return chosen?.delegateId == null ? null : (tags.get(chosen.delegateId) ?? null);
 }
 
 // A digest that failed (never sent) does not move the start, so the next sent digest covers its mail.
@@ -125,6 +135,10 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     rows.map((row) => row.email_id)
   );
 
+  // F110 stage 16: the keys of the why line go into the items only while the flag is on.
+  const whyOn = await isFeatureOn(db, ctx, "why_lines");
+  const delegateTags = whyOn ? await listDelegateTags(db, ctx, [...delegateIds]) : new Map<string, string[]>();
+
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
     category: row.category,
@@ -150,6 +164,16 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     suspicious: suspicious.get(row.email_id) ?? [],
     ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
     hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
+    ...(whyOn
+      ? {
+          // No model mark for a result that no model made (a rule, an error): confidence 1 or 0 there is not a measure.
+          confidence: hasModelMark(row.reason_code) ? row.confidence : null,
+          rule: row.rule,
+          ...(row.category === "delegation"
+            ? { delegateTags: chosenDelegateTags(actions.get(row.email_id) ?? [], delegateTags) }
+            : {}),
+        }
+      : {}),
   }));
 
   const skippedTooOld = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range, { reasonCode: "too_old" });

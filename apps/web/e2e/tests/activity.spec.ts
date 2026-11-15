@@ -78,6 +78,10 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await expect(delegated.getByRole("button", { name: rightLabel(en.act_cat_delegation) })).toHaveCount(0);
   await expect(delegated).toContainText(t("act_dlg_line", { name: "Ola", status: en.act_dlg_drafted }));
 
+  // F110 stage 16: the rule hit shows on the row of a VIP result, and on no other row.
+  await expect(reply).toContainText(en.act_rule_vip);
+  await expect(moved).not.toContainText(en.act_rule_vip);
+
   // The panel.
   await moved.getByText(ACTIVITY_SUBJECTS.moved).click();
   const panel = page.getByRole("dialog");
@@ -85,6 +89,14 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await expect(panel).toContainText("Automated shipping update.");
   await expect(panel).toContainText("done: move to AI/Notifications");
   await expect(panel).toContainText("done: mark read");
+  await expectNoA11yViolations(page);
+  await expect(panel).not.toContainText(en.act_rule_hit_vip);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // The panel of the VIP result names the rule.
+  await reply.getByText(ACTIVITY_SUBJECTS.reply).click();
+  await expect(page.getByRole("dialog")).toContainText(en.act_rule_hit_vip);
   await expectNoA11yViolations(page);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);

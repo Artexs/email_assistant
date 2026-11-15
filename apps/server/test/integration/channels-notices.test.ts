@@ -278,6 +278,53 @@ describe("urgent notices", () => {
     });
   });
 
+  test("F110 stage 16: the urgent view holds the why keys only while why_lines is on", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const on = await org(trx);
+      const off = await org(trx);
+      await setOrgFeature(trx, on.ctx, { flag: "why_lines", enabled: true, actor: "cli", now: T });
+      const urgent = (o: Org, fields: Record<string, unknown>, extra: { reasonCode?: string } = {}) =>
+        insertTriaged(trx, o.ctx, o.mailboxId, {
+          category: "urgent",
+          createdAt: at(-10 * MINUTE),
+          confidence: 0.87,
+          fields,
+          ...extra,
+        });
+      const ruleId = await urgent(on, { rule: "vip" });
+      const modelId = await urgent(on, { rule: null });
+      // A result that no model made (an old blocklist row without the rule key): no percent.
+      const noModelId = await urgent(on, {}, { reasonCode: "blocklist" });
+      const offId = await urgent(off, { rule: "vip" });
+
+      await run(trx);
+
+      const viewOf = async (o: Org, emailId: string) => {
+        const row = (await rows(trx, o.orgId, "urgent")).find((entry) => entry.email_id === emailId);
+        if (row === undefined) throw new Error("no urgent row");
+        return { view: row.view as Record<string, unknown>, text: row.text };
+      };
+      const withRule = await viewOf(on, ruleId);
+      expect(withRule.view).toMatchObject({ confidence: 0.87, rule: "vip" });
+      expect(withRule.text).toContain("rule: VIP sender");
+      expect(withRule.text).not.toContain("85%");
+      const withPercent = await viewOf(on, modelId);
+      expect(withPercent.view).toMatchObject({ confidence: 0.87, rule: null });
+      expect(withPercent.text).toContain("85%");
+      const noModel = await viewOf(on, noModelId);
+      expect(noModel.view).toMatchObject({ confidence: null, rule: null });
+      expect(noModel.text).not.toContain("%");
+
+      // Flag off: no keys in the view, and no mark in the text.
+      const flagOff = await viewOf(off, offId);
+      expect("confidence" in flagOff.view).toBe(false);
+      expect("rule" in flagOff.view).toBe(false);
+      expect(flagOff.text).not.toContain("VIP sender");
+      expect(flagOff.text).not.toContain("%");
+    });
+  });
+
   test("an urgent mail with inline parts only gets no attachment field", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
