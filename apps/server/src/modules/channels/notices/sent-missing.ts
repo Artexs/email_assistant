@@ -24,11 +24,11 @@ export const sentMissingDetector: Detector = {
       const row = health.get(mailbox.id);
       const quietSince =
         row === undefined ? null : new Date(Math.max(row.newestUserAt?.getTime() ?? 0, row.firstPassAt.getTime()));
-      // `lastPassAt` before `firstPassAt` is a pass of an older period that ended late: no pass of this period yet.
+      // A pass of an older period that ends late can set `last_pass_at` in a new period. The quiet period of the new
+      // period starts at its first pass, so such a write alone never makes a notice.
       const observed =
         row !== undefined &&
         row.lastPassAt !== null &&
-        row.lastPassAt.getTime() >= row.firstPassAt.getTime() &&
         run.now.getTime() - row.lastPassAt.getTime() <= SENT_PASS_FRESH_MS;
       const quiet = quietSince !== null && run.now.getTime() - quietSince.getTime() >= SENT_MISSING_AFTER_MS;
       if (mailbox.status !== "active" || row === undefined || row.lastErrorCode !== null || !observed || !quiet) {

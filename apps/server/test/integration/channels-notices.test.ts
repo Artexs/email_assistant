@@ -2300,14 +2300,14 @@ describe("sent_missing notices", () => {
     });
   });
 
-  test("9b: a pass of an older period that ended late gives no row (a last pass before the first pass)", async () => {
+  test("9b: a stale pass that writes last_pass_at in a new period gives no row before 7 days of that period", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
-      const o = await sentOrg(trx, { firstPass: at(-8 * DAY), lastPass: at(-30 * MINUTE) });
+      const o = await sentOrg(trx);
       await run(trx);
       expect(await missing(trx, o)).toHaveLength(2);
 
-      // The stale pass marks `last_pass_at` with its own start, which is before the first pass of the new period.
+      // Off, then on: the new period has a first pass 20 minutes ago. An old pass marks its own start time.
       await trx
         .updateTable("mailbox_sent_sync")
         .set({ first_pass_at: at(-20 * MINUTE), last_pass_at: at(-30 * MINUTE) })
