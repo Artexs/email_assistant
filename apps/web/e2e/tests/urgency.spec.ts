@@ -258,3 +258,23 @@ test("T6: Clear all asks first; Cancel sends nothing; Confirm sends a null profi
   expect(await storedProfile(page, org().seeded.id)).not.toBeNull();
   expect(errors).toEqual([]);
 });
+
+test("T7: with the flag off the Rules page has no urgency card, though the organization has a mailbox", async ({
+  context,
+  page,
+}) => {
+  // The paused organization: one mailbox and no flag `urgency_editor`.
+  const errors = await startSession(context, page, readSeed().pausedOwner);
+  const settingsRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/settings/")) settingsRequests.push(request.url());
+  });
+  await page.goto("/rules");
+  await expect(page.locator("[data-kind=vip]")).toBeVisible();
+  const mailboxes = await page.request.get("/api/mailboxes");
+  expect(((await mailboxes.json()) as unknown[]).length).toBe(1);
+  await expect(card(page)).toHaveCount(0);
+  await expect(page.getByText(en.urg_title)).toHaveCount(0);
+  expect(settingsRequests).toEqual([]);
+  expect(errors).toEqual([]);
+});

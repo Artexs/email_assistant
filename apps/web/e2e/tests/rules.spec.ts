@@ -38,9 +38,6 @@ test("add, a duplicate, a bad pattern, delete", async ({ page }) => {
   await expect(form).toBeVisible();
   const vip = page.locator("[data-kind=vip]");
   await expect(vip.getByText(en.rules_empty)).toBeVisible();
-  // The flag `urgency_editor` is off for this organization: the page has no urgency card and loads no settings.
-  await expect(page.locator("[data-card=urgency]")).toHaveCount(0);
-  await expect(page.getByText(en.urg_title)).toHaveCount(0);
   expect(logged).toEqual([]);
   await expectNoA11yViolations(page);
 
