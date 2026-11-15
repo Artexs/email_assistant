@@ -17,7 +17,7 @@ Two steps. Markdown about 400 lines, one test.
   - No API page (P3) and no autonomy-evidence page (F110); no operator command.
   - Commands behind a default-off flag (for example `/review`) are left out (P2).
 - **Test** (`reference.test.ts`, reads the `.mdx` source as text; a test may import server code, `docs/code-patterns.md` § borders):
-  - T1: every command of `BOT_COMMANDS` (`apps/server/src/modules/channels/telegram/polling.ts`) that has no default-off flag appears on `reference/telegram` as `` `/name` ``; every `` `/name` `` in that page is in `BOT_COMMANDS`.
+  - T1: every command of `BOT_COMMANDS` (`apps/server/src/modules/channels/telegram/polling.ts`) that has no default-off flag appears on `reference/telegram` as `` `/name` ``; every `` `/name` `` in that page is in `BOT_COMMANDS`, except `/start` (linking, if the page names it).
   - T2: every entry of `categories` (`packages/core/src/triage/categories.ts`, 7 at the plan base) appears as a row on `reference/categories`, and no other.
   - T3: `bun run docs:build` passes.
 - **Done when:** T1–T3 hold.
