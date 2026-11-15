@@ -18,7 +18,7 @@ import { suspiciousThreadKeysOf } from "../triage";
 
 import { FOLLOW_UP_MIN_WAIT_DAYS, loopHooks } from "./hooks";
 import { inTransaction, logCommand, mayAct, type LoopCommandDeps, type LoopCommandInput } from "./loop-commands";
-import { getLoop, lockLoop, type LoopRow } from "./repo";
+import { getLoop, lockLoop, type LoopRow, type LoopVia } from "./repo";
 
 // F116 stage 14: the user asks for a follow-up of a loop. The command plans one `create_draft` and one `send` that waits
 // for a tap (nothing leaves before that), or says why it plans nothing. Telegram and `/api` call it.
@@ -89,11 +89,16 @@ async function attemptOf(trx: Transaction<DB>, ctx: TenantContext, loopId: strin
   return Number(row.count) + 1;
 }
 
-type Verdict = { kind: "stop"; result: DraftFollowUpResult } | { kind: "go"; n: 1 | 2 };
+export type FollowUpVerdict = { kind: "stop"; result: DraftFollowUpResult } | { kind: "go"; n: 1 | 2 };
 
 // The rules 2 to 5 of the stage, on the locked loop.
-async function judge(trx: Transaction<DB>, ctx: TenantContext, loop: LoopRow, now: Date): Promise<Verdict> {
-  const stop = (result: DraftFollowUpResult): Verdict => ({ kind: "stop", result });
+export async function judgeFollowUp(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  loop: LoopRow,
+  now: Date
+): Promise<FollowUpVerdict> {
+  const stop = (result: DraftFollowUpResult): FollowUpVerdict => ({ kind: "stop", result });
   if (loop.status === "closed") return stop({ kind: "closed" });
   if (loop.kind === "promised") return stop({ kind: "not_allowed" });
   const open = await waitingSend(trx, ctx, loop.id);
@@ -139,14 +144,14 @@ async function draftOf(
 async function auditPlanned(
   trx: Transaction<DB>,
   ctx: TenantContext,
-  input: { loopId: string; userId: string; via: string; at: Date },
+  input: { loopId: string; actor: string; via: PlanVia; at: Date },
   created: readonly CreatedAction[]
 ): Promise<void> {
   for (const action of created) {
     await recordAudit(trx, ctx, {
       emailId: null,
       actionId: action.id,
-      actor: input.userId,
+      actor: input.actor,
       event: auditEvents.actionPlanned,
       data: { action_type: action.type, status: action.status, loop_id: input.loopId, via: input.via },
       at: input.at,
@@ -167,7 +172,7 @@ async function decide(
   const loop = await lockLoop(trx, ctx, input.loopId);
   if (loop === undefined) return { kind: "not_found" };
   if (!(await mayAct(trx, ctx, input.userId, "owner"))) return { kind: "not_allowed" };
-  const verdict = await judge(trx, ctx, loop, now);
+  const verdict = await judgeFollowUp(trx, ctx, loop, now);
   if (verdict.kind === "stop") return verdict.result;
 
   const settings = hasSettings ? await getMailboxSettings(trx, ctx, mailboxId) : undefined;
@@ -184,10 +189,27 @@ async function decide(
   }
   if (!parseToolSwitches(settings.tool_switches).create_draft) return { kind: "drafts_off" };
 
-  const draft = await draftOf(trx, ctx, loop, verdict.n);
-  if (draft === undefined) return { kind: "not_allowed" };
-  const k = await attemptOf(trx, ctx, loop.id, verdict.n);
-  const keyOf = (type: string) => `${loop.id}:${type}:follow_up:${verdict.n}:${k}`;
+  const planned = await planFollowUpPair(trx, ctx, loop, verdict.n, { actor: input.userId, via: input.via, now });
+  return planned === undefined ? { kind: "not_allowed" } : { kind: "planned", sendId: planned };
+}
+
+// Who started the plan. `chaser` is the daily job (stage 15): the actor of its rows is `system`.
+export type PlanVia = LoopVia | "chaser";
+
+// The planning core, shared by the command and the chaser: one `create_draft` and one `send` that waits for a tap. The
+// caller holds the locks (the loop; for the command also the settings share lock) and has run `judgeFollowUp`. Returns the
+// id of the send, or `undefined` when no safe recipient is left (the schema refuses the loop's addresses): no row is written.
+export async function planFollowUpPair(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  loop: LoopRow,
+  n: 1 | 2,
+  input: { actor: string; via: PlanVia; now: Date }
+): Promise<string | undefined> {
+  const draft = await draftOf(trx, ctx, loop, n);
+  if (draft === undefined) return undefined;
+  const k = await attemptOf(trx, ctx, loop.id, n);
+  const keyOf = (type: string) => `${loop.id}:${type}:follow_up:${n}:${k}`;
   const items: PlannedActionInput[] = [
     {
       type: "create_draft",
@@ -210,8 +232,19 @@ async function decide(
     // rolls the transaction back. Never catch it and commit: a half pair or a second pair must not stay.
     throw new HardError("the follow-up keys exist after the loop lock");
   }
-  await auditPlanned(trx, ctx, { loopId: loop.id, userId: input.userId, via: input.via, at: now }, created);
-  return { kind: "planned", sendId: send.id };
+  await auditPlanned(trx, ctx, { loopId: loop.id, actor: input.actor, via: input.via, at: input.now }, created);
+  return send.id;
+}
+
+// True when a follow-up send with this number exists in any state (also `failed` with an unknown outcome, which may have
+// gone out). The chaser offers each number once: a card that was rejected or expired is not offered again by the job.
+export async function followUpOffered(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  loopId: string,
+  n: number
+): Promise<boolean> {
+  return (await attemptOf(trx, ctx, loopId, n)) > 1;
 }
 
 // The command. The flag, the loop and the right of the user are read as the stage says: `feature_off`, `not_found`,

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
 import { parseToolSwitches } from "@ea/core";
@@ -12,25 +11,13 @@ import {
   lockMailboxSettings,
   updateMailboxSettings,
 } from "../../src/modules/config";
-import {
-  CHASER_SET_LIMIT,
-  createChaserJob,
-  getDelegation,
-  reminderDecision,
-  runChaserForMailbox,
-} from "../../src/modules/delegation";
+import { CHASER_SET_LIMIT, getDelegation, reminderDecision, runChaserForMailbox } from "../../src/modules/delegation";
+import { createLoopChaserJob } from "../../src/modules/loops";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { setLogLevel } from "../../src/platform/log";
 
-import {
-  createOrgWithMailbox,
-  insertAction,
-  insertDelegate,
-  insertDelegation,
-  insertDraftAndSend,
-  pauseOtherMailboxes,
-  suspendOrg,
-} from "./fixtures";
+import { openDelegation } from "./delegation-chaser-fixtures";
+import { createOrgWithMailbox, insertAction, insertDraftAndSend, pauseOtherMailboxes, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -46,7 +33,6 @@ const at0729 = new Date("2026-11-10T06:29:00Z");
 const at0730 = new Date("2026-11-10T06:30:00Z");
 const at0745 = new Date("2026-11-10T06:45:00Z");
 const nextDay = new Date("2026-11-11T06:30:00Z");
-const dueAt = new Date("2026-11-09T16:00:00Z"); // yesterday 17:00 Warsaw
 
 async function enableAssist(
   trx: Transaction<DB>,
@@ -81,55 +67,6 @@ async function setup(trx: Transaction<DB>, opts: { mode?: "assist" | "shadow"; c
 }
 
 type Setup = Awaited<ReturnType<typeof setup>>;
-
-// An open delegation (the original delegation mail, its draft and send, the delegation row).
-async function openDelegation(
-  trx: Transaction<DB>,
-  s: { ctx: TenantContext; mailboxId: string; userId: string },
-  opts: {
-    status?: string;
-    active?: boolean;
-    dueDate?: string;
-    remindersSent?: number;
-    lastReminderAt?: Date | null;
-    dueAt?: Date | null;
-    referencesHeader?: string | null;
-  } = {}
-) {
-  const delegateId = await insertDelegate(trx, s.ctx, { name: "Anna", active: opts.active ?? true });
-  const delegate = await trx
-    .selectFrom("delegates")
-    .select("email")
-    .where("id", "=", delegateId)
-    .executeTakeFirstOrThrow();
-  const pair = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
-    delegateId,
-    delegateName: "Anna",
-    to: delegate.email,
-    task: "Prepare the offer",
-    dueDate: opts.dueDate ?? "2026-11-09",
-    language: "pl",
-    sendStatus: "applied",
-    approved: { userId: s.userId, at: new Date("2026-11-05T09:00:00Z") },
-    messageId: "<orig@x.test>",
-    referencesHeader: opts.referencesHeader === undefined ? "<root@x.test>" : opts.referencesHeader,
-    createdAt: new Date("2026-11-05T08:00:00Z"),
-  });
-  const sentMessageId = `<sent-${randomUUID()}@x.test>`;
-  const id = await insertDelegation(trx, s.ctx, {
-    mailboxId: s.mailboxId,
-    emailId: pair.emailId,
-    delegateId,
-    draftActionId: pair.draftId,
-    sendActionId: pair.sendId,
-    status: opts.status ?? "sent",
-    dueAt: opts.dueAt === undefined ? dueAt : opts.dueAt,
-    sentMessageId,
-    remindersSent: opts.remindersSent,
-    lastReminderAt: opts.lastReminderAt,
-  });
-  return { id, delegateId, delegateEmail: delegate.email, sentMessageId, ...pair };
-}
 
 async function reminderRows(trx: Transaction<DB>, ctx: TenantContext, emailId?: string) {
   return trx
@@ -475,13 +412,13 @@ describe("runChaserForMailbox", () => {
   });
 });
 
-describe("createChaserJob", () => {
+describe("createLoopChaserJob", () => {
   test("(8) shadow mode or the switch off: skipped, nothing changes", async () => {
     for (const patch of [{ mode: "shadow" as const }, { createDraft: false }]) {
       await withRollback(db, async (trx) => {
         const s = await setup(trx, patch);
         const d = await openDelegation(trx, s);
-        await createChaserJob({ db: trx, now: () => at0730 }).run();
+        await createLoopChaserJob({ db: trx, now: () => at0730 }).run();
         expect((await getDelegation(trx, s.ctx, d.id))?.status).toBe("sent");
         expect(await reminderRows(trx, s.ctx)).toEqual([]);
         expect(await auditRows(trx, s.ctx, "delegation.chaser_run")).toEqual([]);
@@ -493,7 +430,7 @@ describe("createChaserJob", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const d = await openDelegation(trx, s);
-      const job = createChaserJob({ db: trx, now: () => at0729 });
+      const job = createLoopChaserJob({ db: trx, now: () => at0729 });
       await job.run();
       expect(await reminderRows(trx, s.ctx, d.emailId)).toEqual([]);
       await job.run({ force: true });
@@ -502,7 +439,7 @@ describe("createChaserJob", () => {
   });
 });
 
-describe("createChaserJob with a suspended organization", () => {
+describe("createLoopChaserJob with a suspended organization", () => {
   test("a suspended organization gets no reminder and no run marker; the active one does", async () => {
     await withRollback(db, async (trx) => {
       const a = await setup(trx);
@@ -516,7 +453,7 @@ describe("createChaserJob with a suspended organization", () => {
       const delegationB = await openDelegation(trx, b);
       await suspendOrg(trx, b.orgId);
 
-      await createChaserJob({ db: trx, now: () => at0730 }).run();
+      await createLoopChaserJob({ db: trx, now: () => at0730 }).run();
 
       expect(await reminderRows(trx, a.ctx, delegationA.emailId)).toHaveLength(2);
       expect(await auditRows(trx, a.ctx, "delegation.chaser_run")).toHaveLength(1);
@@ -527,9 +464,9 @@ describe("createChaserJob with a suspended organization", () => {
   });
 });
 
-describe("createChaserJob log", () => {
+describe("createLoopChaserJob log", () => {
   // Runs `body` with the console spies; returns every printed line (format() shows an object with its fields).
-  async function captured(body: () => Promise<void>): Promise<string[]> {
+  async function captured(body: () => Promise<unknown>): Promise<string[]> {
     const lines: string[] = [];
     const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
     const errorSpy = spyOn(console, "error").mockImplementation(
@@ -549,12 +486,12 @@ describe("createChaserJob log", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await openDelegation(trx, s);
-      const job = createChaserJob({ db: trx, now: () => at0729 });
+      const job = createLoopChaserJob({ db: trx, now: () => at0729 });
       const lines = await captured(async () => {
         await job.run();
         await job.run();
       });
-      expect(lines).toEqual([`[delegation] chaser_skipped org_id=${s.orgId} mailbox_id=${s.mailboxId} reason=gate`]);
+      expect(lines).toEqual([`[loops] chaser_skipped org_id=${s.orgId} mailbox_id=${s.mailboxId} reason=gate`]);
     });
   });
 
@@ -562,12 +499,12 @@ describe("createChaserJob log", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx, { mode: "shadow" });
       await openDelegation(trx, s);
-      const job = createChaserJob({ db: trx, now: () => at0730 });
+      const job = createLoopChaserJob({ db: trx, now: () => at0730 });
       const lines = await captured(async () => {
         await job.run();
         await job.run();
       });
-      expect(lines).toEqual([`[delegation] chaser_skipped_settings org_id=${s.orgId} mailbox_id=${s.mailboxId}`]);
+      expect(lines).toEqual([`[loops] chaser_skipped_settings org_id=${s.orgId} mailbox_id=${s.mailboxId}`]);
     });
   });
 
@@ -575,9 +512,9 @@ describe("createChaserJob log", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await openDelegation(trx, s);
-      const lines = await captured(() => createChaserJob({ db: trx, now: () => at0729 }).run({ force: true }));
+      const lines = await captured(() => createLoopChaserJob({ db: trx, now: () => at0729 }).run({ force: true }));
       expect(lines).toEqual([
-        `[delegation] chaser_forced org_id=${s.orgId} mailbox_id=${s.mailboxId}`,
+        `[loops] chaser_forced org_id=${s.orgId} mailbox_id=${s.mailboxId}`,
         `[delegation] chaser_done mailbox_id=${s.mailboxId} due=1 overdue=1 reminders=1`,
       ]);
     });
@@ -588,7 +525,7 @@ describe("createChaserJob log", () => {
       const s = await setup(trx);
       await openDelegation(trx, s, { status: "overdue", remindersSent: 0, lastReminderAt: null });
       await openDelegation(trx, s, { status: "overdue", remindersSent: 2 });
-      const lines = await captured(() => createChaserJob({ db: trx, now: () => at0730 }).run());
+      const lines = await captured(() => createLoopChaserJob({ db: trx, now: () => at0730 }).run());
       expect(lines).toEqual([`[delegation] chaser_done mailbox_id=${s.mailboxId} due=1 overdue=0 reminders=1`]);
     });
   });
@@ -599,10 +536,8 @@ describe("createChaserJob log", () => {
       await openDelegation(trx, s);
       // The time zone text reaches the Intl error message: the token must not reach the log.
       await trx.updateTable("organizations").set({ timezone: "123456:MARKER-TZ" }).where("id", "=", s.orgId).execute();
-      const lines = await captured(() => createChaserJob({ db: trx, now: () => at0730 }).run());
-      expect(lines).toEqual([
-        `[delegation] chaser_failed org_id=${s.orgId} mailbox_id=${s.mailboxId} error=RangeError`,
-      ]);
+      const lines = await captured(() => createLoopChaserJob({ db: trx, now: () => at0730 }).run());
+      expect(lines).toEqual([`[loops] chaser_failed org_id=${s.orgId} mailbox_id=${s.mailboxId} error=RangeError`]);
       expect(lines.join("\n")).not.toContain("MARKER");
     });
   });

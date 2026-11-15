@@ -67,6 +67,8 @@ export const auditEvents = {
   delegationDone: "delegation.done",
   delegationRemindRequested: "delegation.remind_requested", // data: delegation_id, reminder (1 or 2), via; the actor is the user
   delegationChaserRun: "delegation.chaser_run",
+  // F116 stage 15: the loop part of the chaser ran for a mailbox. Flat; data: mailbox_id, follow_ups, stale, expired, forced (counts and ids only).
+  loopsChaserRun: "loops.chaser_run",
   // F116. Flat; ids and codes only, never the subject, the ask or an address of a loop. The actor is a user id or "system".
   loopOpened: "loop.opened", // data: loop_id, kind
   loopClosed: "loop.closed", // data: loop_id, kind, reason

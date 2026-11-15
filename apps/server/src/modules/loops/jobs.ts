@@ -5,6 +5,7 @@ import { isFeatureOn, isOrgSuspended } from "../tenancy";
 import { createLlmPause } from "../triage";
 
 import { type AnalyzeDeps, analyzeSent, DEFAULT_LIMIT, emptyResult, type AnalyzeResult } from "./analyze";
+import { runLoopChaser, type LoopChaserDeps, type LoopChaserResult } from "./chaser";
 import { emptyMatchResult, matchReplies, type MatchResult } from "./match";
 import type { DbOrTrx } from "./repo";
 
@@ -107,4 +108,59 @@ export function createLoopMatchJob(deps: LoopMatchJobDeps): LoopMatchJob {
       return total;
     },
   };
+}
+
+export interface LoopChaserJobDeps extends LoopChaserDeps {
+  // Only for tests of an error outside the run.
+  run?: typeof runLoopChaser;
+}
+
+export interface LoopChaserJob {
+  // `loops.chaser`: the one chaser (delegation reminders, loop follow-ups, stale and expired closes). Each tick visits every
+  // mailbox; a mailbox acts once per local day from 07:30. `force` skips both gates.
+  run(opts?: { force?: boolean }): Promise<LoopChaserResult & { mailboxes: number; mailboxErrors: number }>;
+}
+
+export function createLoopChaserJob(deps: LoopChaserJobDeps): LoopChaserJob {
+  // One line per mailbox and reason, not one per tick.
+  const warnedSettings = new Set<string>();
+  const warnedSkips = new Set<string>();
+  return {
+    async run(opts) {
+      const total = { ...skipped(), mailboxes: 0, mailboxErrors: 0 };
+      const targets = await listSyncTargets(deps.db);
+      for (const { orgId, mailboxId } of targets) {
+        const ctx = { orgId };
+        const mailboxLog = log.with({ org_id: orgId, mailbox_id: mailboxId });
+        try {
+          if (await isOrgSuspended(deps.db, ctx)) continue;
+          if (opts?.force === true) mailboxLog.info("chaser_forced");
+          const result = await (deps.run ?? runLoopChaser)(deps, ctx, mailboxId, {
+            now: deps.now(),
+            force: opts?.force === true,
+          });
+          if (result.skipped === null) {
+            total.mailboxes += 1;
+            for (const key of ["due", "overdue", "reminders", "followUps", "stale", "expired"] as const)
+              total[key] += result[key];
+          } else if (result.skipped === "settings" && !warnedSettings.has(mailboxId)) {
+            warnedSettings.add(mailboxId);
+            mailboxLog.info("chaser_skipped_settings");
+          } else if (result.skipped === "gate" && !warnedSkips.has(`${mailboxId}:gate`)) {
+            warnedSkips.add(`${mailboxId}:gate`);
+            mailboxLog.info("chaser_skipped", { reason: "gate" });
+          }
+        } catch (error) {
+          // The error of one mailbox does not stop the next.
+          total.mailboxErrors += 1;
+          mailboxLog.error("chaser_failed", { ...errorFields(error) });
+        }
+      }
+      return total;
+    },
+  };
+}
+
+function skipped(): LoopChaserResult {
+  return { skipped: null, due: 0, overdue: 0, reminders: 0, followUps: 0, stale: 0, expired: 0 };
 }

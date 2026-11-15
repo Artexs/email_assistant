@@ -3,8 +3,8 @@ import { readFile, statfs } from "node:fs/promises";
 import { actionsScope, committerDeps, gateEvidenceOf, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
-import { createChaserJob, delegationHooks } from "./modules/delegation";
-import { createLoopJobs, createLoopMatchJob } from "./modules/loops";
+import { delegationHooks } from "./modules/delegation";
+import { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "./modules/loops";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
 import {
   checkBackupAge,
@@ -275,12 +275,13 @@ scheduler.add("actions.expiry", "0 7 * * * *", () => {
   return expiryRun;
 });
 log.info("job_scheduled", { job: "actions.expiry" });
-const chaser = createChaserJob({ db, now: () => new Date() });
-scheduler.add("delegation.chaser", "20 */15 * * * *", () => {
-  chaserRun = chaser.run();
+// The one chaser (delegation reminders, loop follow-ups, stale and expired loops). It replaces `delegation.chaser`.
+const chaser = createLoopChaserJob({ db, now: () => new Date() });
+scheduler.add("loops.chaser", "20 */15 * * * *", () => {
+  chaserRun = chaser.run().then(() => undefined);
   return chaserRun;
 });
-log.info("job_scheduled", { job: "delegation.chaser" });
+log.info("job_scheduled", { job: "loops.chaser" });
 const returned = createReturnedJob({ db, now: () => new Date() });
 scheduler.add("triage.returned", "*/15 * * * * *", () => {
   returnedRun = returned.run();

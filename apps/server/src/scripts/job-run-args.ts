@@ -2,14 +2,16 @@ import { parseArgs } from "node:util";
 
 export const usage = [
   "usage:",
-  "  bun run job:run --name actions.expiry|delegation.chaser|actions.committer|channels.notifier|platform.retention|loops.analyze|loops.match [--force]",
-  "  --force: only with delegation.chaser; skips the 07:30 and once-per-day gate.",
+  "  bun run job:run --name actions.expiry|loops.chaser|delegation.chaser|actions.committer|channels.notifier|platform.retention|loops.analyze|loops.match [--force]",
+  "  --force: only with loops.chaser (or its alias delegation.chaser); skips the 07:30 and once-per-day gate.",
+  "  delegation.chaser is an alias of loops.chaser: the one chaser runs both parts.",
   "  Do not run actions.committer while the server runs on the same database.",
   "  Exit 0: the job ran once. Exit 1: usage error or failure.",
 ].join("\n");
 
 export const jobNames = [
   "actions.expiry",
+  "loops.chaser",
   "delegation.chaser",
   "actions.committer",
   "channels.notifier",
@@ -36,7 +38,7 @@ export function parseJobRunArgs(argv: string[]): JobRunArgs | null {
     const name = jobNames.find((candidate) => candidate === values.name);
     if (name === undefined || positionals.length > 0) return null;
     const force = values.force === true;
-    if (force && name !== "delegation.chaser") return null;
+    if (force && name !== "loops.chaser" && name !== "delegation.chaser") return null;
     return { name, force };
   } catch {
     return null;
