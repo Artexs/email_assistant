@@ -399,3 +399,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: refusing needs code and a plan change; the owner can still require SSO per organization.
 - Undo: a later ticket adds a refusal for SSO-only members. Also open: axe checks for the company sign-in block, the Account card of a member with no password and `/operator` (no e2e spec opens them).
 - Source: `notes/2026-11-15-f119-sso-docs-facts.md`, `deploy/README.md` section "Company sign-in (F119)".
+
+### 2026-11-15 · F109 v3 prompt holdout: no ship by the rule (F109) · quality · new
+- Choice: `classifier-v3[list]` is NOT shipped. Ship rule 4 failed: whitelist 314 of 315 (one `bad_output` on `h-rli-01`, counted as not correct). Rules 1, 2, 3, 5 pass by a wide margin (spam precision 80.3–88.8 → 97.6–99.9, K 74 → 34, cost $1.187 vs $1.148 per mailbox per month). Production stays `classifier-v2`; stages 12 and 13 build on v2. Spend $0.28 of the $0.60 cap; the one run is used.
+- Why: the rule was fixed before the run; a whitelisted mail must never fail. The error is probably random model output, but that is a guess.
+- Undo: if you accept one `bad_output` as noise, say so: a stage then switches the pointer to v3 (step 2 of stage 11, ~1 stage, no new run needed if you accept the existing one).
+- Source: `evals/results/2026-11-15-f109-v3-dev-summary.md` (section "Stage 11 decision"), `evals/results/2026-11-15-sim-lab-01-holdout-gpt-6-luna-classifier-v3.md`.
