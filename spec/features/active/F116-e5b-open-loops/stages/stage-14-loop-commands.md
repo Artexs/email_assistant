@@ -44,3 +44,7 @@ The chaser (15), Telegram and routes (19, 20).
 ## Carry-over from stage 08 review
 
 - The commands `laterLoop` and `reopenLoop` share names with the repo functions exported from `loops/index.ts`: alias the repo functions or rename the commands. Repo `laterLoop` takes a computed `dueAt` and refuses no kind: the command refuses `promised` with `not_allowed` (review-8.md N1, N2).
+
+## Carry-over from stage 10 review
+
+- N2: strip CR/LF from the subject in the writer. N4: D12 says a `delegated` loop sends to the counterpart only; stage 10 allows the full loop To and Cc: enforce D12 in the writer (review-10.md).

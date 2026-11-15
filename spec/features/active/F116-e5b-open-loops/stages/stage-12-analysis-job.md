@@ -53,3 +53,7 @@ Read `review-6.md`: check that Gemini accepts the extractor schema (`oneOf` is s
 ## Carry-over from stage 08 review
 
 - Lock order: `onSentOff` locks the sent-sync state first, then the loops; this job locks the loop first, then sends. Confirm no deadlock with `setSentSync` (review-8.md N9).
+
+## Carry-over from stage 10 review
+
+- N2: the payload `subject` accepts CR/LF (`z.string().max(300)`): strip line breaks in the writer (review-10.md).

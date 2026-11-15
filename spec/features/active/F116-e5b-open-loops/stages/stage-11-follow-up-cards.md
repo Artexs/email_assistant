@@ -41,3 +41,7 @@ Planning a follow-up (14, 15), the loop lines in the digest (18).
 ## Carry-over from stage 09 (worker, 2026-11-15)
 
 The `outbox` mail-kind checks accept `email_id` or `loop_id` (stage 09 migration) for `urgent`, `action_failed`, `approval`, `approval_set`, `send_result`, `delegation_answered` and `approval_edit`. No check limits `outbox.loop_id` to the follow-up kinds; the card code does. The card detectors and the approval list leave loop rows out until stage 10/11 (`stage-10-follow-up-kind.md` § Carry-over from stage 09 lists each reader). A card edit (F102 `approval_edit`) of a loop card reads `outbox.loop_id`; `edit_of_outbox_id` stays the link to the sent card.
+
+## Carry-over from stage 10 review
+
+- N1: `onSentOff` clears the loop To and Cc, so an approved follow-up claimed before the switch-off ends `failed / bad_payload`, and after SMTP + crash + switch-off `failed / outcome_unknown` (`follow_ups_sent` 0, no second mail): the failure notices handle both. N6: `heldReason` of a loop send says scope (`getSend` is mail-only). N7: `detectForOrg` has no catch per detector: add one with the follow-up cards, so a `NoticeViewError` cannot stop the later detectors of the org (review-10.md).
