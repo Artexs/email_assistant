@@ -9,6 +9,9 @@ type DbOrTrx = Db | Transaction<DB>;
 const delegationStatusSchema = z.enum(["drafted", "sent", "answered", "overdue", "done", "cancelled"]);
 export type DelegationStatus = z.infer<typeof delegationStatusSchema>;
 
+// The reason of a cancel by the user (F102 stage 15). It is final.
+export const USER_CANCELLED = "user_cancelled";
+
 // The chaser sends at most this many reminders for one delegation (D23).
 export const MAX_REMINDER_SENDS = 2;
 
@@ -309,7 +312,8 @@ async function updateDelegation(
   return result.numUpdatedRows > 0n;
 }
 
-// Also from `cancelled`: "Send again" after `outcome_unknown` (D6). `due_at` keeps a set value.
+// Also from `cancelled`: "Send again" after `outcome_unknown`. `due_at` keeps a set value. A delegation that the user cancelled
+// (`user_cancelled`, F102 stage 15) stays cancelled: no send reopens it.
 export async function markDelegationSent(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -328,7 +332,12 @@ export async function markDelegationSent(
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "in", ["drafted", "cancelled"])
+    .where((eb) =>
+      eb.or([
+        eb("status", "=", "drafted"),
+        eb.and([eb("status", "=", "cancelled"), eb("status_reason", "is distinct from", USER_CANCELLED)]),
+      ])
+    )
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
@@ -356,13 +365,17 @@ export async function markDelegationOverdue(
   return updateDelegation(trx, ctx, id, ["sent"], { status: "overdue", updated_at: at });
 }
 
+// Only a `drafted` delegation is cancelled by the system. The user's own cancel (`user_cancelled`, F102 stage 15) also takes `sent`
+// and `overdue`; `answered`, `done` and `cancelled` never change.
 export async function markDelegationCancelled(
   trx: Transaction<DB>,
   ctx: TenantContext,
   id: string,
   next: { reason: string; at: Date }
 ): Promise<boolean> {
-  return updateDelegation(trx, ctx, id, ["drafted"], {
+  const from: readonly DelegationStatus[] =
+    next.reason === USER_CANCELLED ? ["drafted", "sent", "overdue"] : ["drafted"];
+  return updateDelegation(trx, ctx, id, from, {
     status: "cancelled",
     status_reason: next.reason,
     updated_at: next.at,
@@ -603,4 +616,61 @@ export async function clearDelegationTasks(
     total += changed;
     if (changed === 0) return total;
   }
+}
+
+// The cursor of the delegation list: the `created_at` of the last row as text with microseconds (a JS date holds milliseconds
+// only), and its id. The list order is `created_at` desc, then `id`.
+export interface DelegationPageCursor {
+  createdAtKey: string;
+  id: string;
+}
+
+export type DelegationPageRow = Omit<WithNames, "delegate_name"> & {
+  delegate_name: string;
+  delegate_email: string;
+  delegate_active: boolean;
+  created_at_key: string;
+  reminder_waiting: boolean;
+};
+
+// One page of the delegation list (F102 stage 15): `limit` rows after the cursor, in the states `statuses`. The caller asks for one
+// row more than it shows. Every table in the query is filtered by `org_id`.
+export async function listDelegationPage(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { statuses: readonly DelegationStatus[]; cursor?: DelegationPageCursor; limit: number }
+): Promise<DelegationPageRow[]> {
+  const cursor = opts.cursor;
+  const rows = await namedQuery(db, ctx)
+    .select([
+      "g.email as delegate_email",
+      "g.active as delegate_active",
+      sql<string>`to_char(d.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`.as("created_at_key"),
+      (eb) =>
+        eb
+          .exists(
+            eb
+              .selectFrom("actions as a")
+              .select("a.id")
+              .where("a.org_id", "=", ctx.orgId)
+              .where("a.type", "=", "send")
+              .where("a.status", "in", ["awaiting_approval", "approved", "applying"])
+              .where(sql<string>`a.payload->>'delegation_id'`, "=", sql<string>`d.id::text`)
+              .where(sql<boolean>`jsonb_exists(a.payload, 'reminder')`)
+          )
+          .$castTo<boolean>()
+          .as("reminder_waiting"),
+    ])
+    .where("d.status", "in", [...opts.statuses])
+    .$if(cursor !== undefined, (qb) =>
+      qb.where(
+        sql<boolean>`(d.created_at < ${cursor?.createdAtKey}::timestamptz
+          or (d.created_at = ${cursor?.createdAtKey}::timestamptz and d.id > ${cursor?.id}::uuid))`
+      )
+    )
+    .orderBy("d.created_at", "desc")
+    .orderBy("d.id")
+    .limit(opts.limit)
+    .execute();
+  return rows.map(toDelegationRow);
 }

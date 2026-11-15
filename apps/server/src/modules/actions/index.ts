@@ -30,6 +30,7 @@ export {
   type ApprovalDeps,
   type ApprovalInput,
   type ApproveResult,
+  type RejectInput,
   type RejectResult,
   type SendAgainResult,
   type WentOutResult,

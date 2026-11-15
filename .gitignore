@@ -50,3 +50,7 @@ apps/web/e2e/playwright-report/
 # docs app build output and generated types
 apps/docs/dist/
 apps/docs/.astro/
+
+# release state of deploy/release.sh and deploy/rollback.sh (the folder is in git, the file is not)
+deploy/release-state/state
+deploy/release-state/state.tmp

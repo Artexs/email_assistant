@@ -654,6 +654,24 @@ describe("LOG_FORMAT", () => {
   });
 });
 
+describe("EA_RELEASE", () => {
+  test("defaults to dev, and an empty value is dev", () => {
+    expect(loadConfig(fullEnv).EA_RELEASE).toBe("dev");
+    expect(loadConfig({ ...fullEnv, EA_RELEASE: "" }).EA_RELEASE).toBe("dev");
+  });
+
+  test("accepts a version tag and a 40 character name", () => {
+    expect(loadConfig({ ...fullEnv, EA_RELEASE: "v0.1.0" }).EA_RELEASE).toBe("v0.1.0");
+    expect(loadConfig({ ...fullEnv, EA_RELEASE: "pre-v0.1.0" }).EA_RELEASE).toBe("pre-v0.1.0");
+    expect(loadConfig({ ...fullEnv, EA_RELEASE: "a".repeat(40) }).EA_RELEASE).toBe("a".repeat(40));
+  });
+
+  test("a value with a space, or longer than 40 characters, throws ConfigError and names the key", () => {
+    expect(configError({ ...fullEnv, EA_RELEASE: "v 1" }).keys).toEqual(["EA_RELEASE"]);
+    expect(configError({ ...fullEnv, EA_RELEASE: "a".repeat(41) }).keys).toEqual(["EA_RELEASE"]);
+  });
+});
+
 describe("send limits", () => {
   const keys = ["SEND_LIMIT_MAILBOX_HOUR", "SEND_LIMIT_MAILBOX_DAY", "SEND_LIMIT_RECIPIENT_DAY"] as const;
 

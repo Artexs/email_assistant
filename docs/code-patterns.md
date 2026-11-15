@@ -187,8 +187,18 @@ Every text that a user reads has an English and a Polish version, from the first
 - Status changes and their `audit_log` row go in one transaction.
 - A function that changes `actions.status` gets a row in `actions/transitions.ts` and a case in `actions-transitions.test.ts`.
 - Work items are claimed with `FOR UPDATE SKIP LOCKED`. Conditional updates (`WHERE status = …`) guard every status change.
-- Schema changes only through a new dbmate file `db/migrations/YYYYMMDDHHMMSS_<name>.sql` with `-- migrate:up` and `-- migrate:down`. Never edit an applied migration.
+- Schema changes only through a new dbmate file `db/migrations/YYYYMMDDHHMMSS_<name>.sql` with `-- migrate:up` and `-- migrate:down`. Never edit an applied migration. Rules: § Migrations.
 - Migrations run as the `migrator` role with `bun run db:migrate`. The server runs as the `app` role.
+
+## Migrations
+
+- **Forward only.** A live database never gets `db:rollback`. The `-- migrate:down` part is for the dev database. A release rolls back by code (`deploy/rollback.sh`), not by schema.
+- **Expand, then contract.** Release N adds (a table, a nullable column, a column with a default, an index, a wider CHECK list) and its code writes the new shape. A later release removes what the code no longer uses (a drop, a rename, a type change, `SET NOT NULL`, a narrower CHECK list), after the release that stopped the use is deployed.
+- **A release's migration works with the code of the previous release.** The rollback target runs on the new schema. Check it: the previous code must still read and write every table and column that it knew.
+- **A contract statement carries `-- contract: v<x.y.z>`** on its own line in the file: the release that stopped the use. `bun run db:check-migrations` (CI, `ci` job, before `db:migrate`) fails a migration newer than `CONTRACT_CHECK_AFTER` that holds `DROP TABLE|COLUMN|TYPE|VIEW|SCHEMA|SEQUENCE|EXTENSION`, `RENAME`, `ALTER COLUMN … TYPE`, `SET NOT NULL`, `TRUNCATE`, `REVOKE`, `ADD CONSTRAINT` on a table that the file does not create, or `DROP CONSTRAINT|INDEX|FUNCTION|TRIGGER|POLICY x` that the file does not create again. A replace (drop `x`, create `x`) passes. Only the `-- migrate:up` part is read, comments and quoted strings excluded.
+- **A narrowed CHECK is a contract.** A replace that makes a CHECK list shorter (for example a `kind IN (...)` list) passes the script, because the script does not read the list. The reviewer checks the lists of every replaced constraint and adds the `-- contract:` line by hand. The same holds for a new `NOT NULL` column with no default and a new unique index on data that already exists.
+- **A broken migration gets a forward fix or a restore.** Do not edit an applied migration. Ship a new migration in a patch release, or restore from the backup taken by `deploy/release.sh` (`deploy/README.md` § Release).
+- The cutoff is the newest migration at the base of the check. Do not move it to hide a finding.
 
 ## Side effects
 

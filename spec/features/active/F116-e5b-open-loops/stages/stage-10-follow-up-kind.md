@@ -52,3 +52,7 @@ Stage 09 hides loop-anchored rows from every reader of mail with `email_id IS NO
 - `metrics.ts` readers (`actions/repo/metrics.ts`) join `emails`: loop rows do not count in M2 until stage 23.
 - Tests for these live in `apps/server/test/integration/actions-loop-anchor.test.ts` (loop pair fixture `insertLoopActionPair` in `loops-fixtures.ts`); each filter you remove changes a test there: turn it into the positive test.
 - The 7-day mail-age limit of the claim does not apply to drafts and sends (F8 in `facts.md`); a loop row has no mail age at all.
+
+## Carry-over from stage 09 review
+
+- `findChains` in the privacy code uses `not (email_id = any(goes))`: NULL for a loop row, check it. Mailbox removal and delete paths that look for sends in flight through `emails`. `audit_log_action_id_org_id_fkey` is ON DELETE CASCADE: deleting a loop deletes its actions and their audit rows (no code deletes loops today). The outbox sender sends any loop row of a card kind that has text: no database rule limits the kinds, stage 11 enforces it in code. Closed loop-anchored payloads: erase sets `actions.payload` and `outbox.text` to `[removed]`: keep a regression test. Roll back every loop-row test (a committed loop row breaks the stage 07 Down guard). See review-9.md.

@@ -46,6 +46,14 @@ describe("main", () => {
     expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?send: operatorSend,/);
   });
 
+  // F114 stage 05: main.ts and the job runner stamp the release on every JSON line.
+  test("main.ts and the job-run script call setLogRelease with the config value", () => {
+    expect(readFileSync(mainPath, "utf8")).toContain("setLogRelease(config.EA_RELEASE);");
+    expect(readFileSync(join(import.meta.dir, "scripts", "job-run.ts"), "utf8")).toContain(
+      "setLogRelease(config.EA_RELEASE);"
+    );
+  });
+
   // F114 stage 04: the disk and backup-age checks are entries `{kind, run}` of the `ops.slo` check list (not bare functions),
   // and the job runs that list.
   test("the ops.slo check list holds the disk and backup-age entries", () => {

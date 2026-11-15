@@ -10,7 +10,7 @@ import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } fr
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { withLogContext } from "../platform/log";
+import { setLogRelease, withLogContext } from "../platform/log";
 import { createRetentionJob } from "../retention";
 
 import { parseJobRunArgs, usage } from "./job-run-args";
@@ -25,6 +25,7 @@ async function main(): Promise<number> {
     return 1;
   }
   const config = loadConfig();
+  setLogRelease(config.EA_RELEASE);
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
   if (args.name === "channels.notifier" && config.TELEGRAM_BOT_TOKEN === undefined) {
     out.fail("TELEGRAM_BOT_TOKEN is empty");

@@ -4,9 +4,9 @@ import { encodeCallback } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { SendScope } from "../../src/modules/actions";
-import { approvalRoutes } from "../../src/modules/channels";
+import { approvalRoutes, cardEditHooks } from "../../src/modules/channels";
 import { insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
-import { delegationHooks } from "../../src/modules/delegation";
+import { delegationHooks, delegationRoutes } from "../../src/modules/delegation";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { isOrgSuspended, setOrgFeature } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
@@ -65,7 +65,8 @@ export function approvalKit(db: Db) {
     return id;
   }
 
-  async function setup(opts: { flag?: boolean; sendScope?: SendScope } = {}) {
+  // `flag` is `approvals_page` (default on); `delegationFlag` is `delegation_pages` (default off; the delegation routes are mounted always).
+  async function setup(opts: { flag?: boolean; delegationFlag?: boolean; sendScope?: SendScope } = {}) {
     const org = await webOrg(db);
     orgs.push(org);
     const ctx = { orgId: org.orgId };
@@ -74,6 +75,11 @@ export function approvalKit(db: Db) {
     if (opts.flag !== false) {
       for (const orgId of [org.orgId, org.otherOrgId]) {
         await setOrgFeature(db, { orgId }, { flag: "approvals_page", enabled: true, actor: "cli", now: NOW });
+      }
+    }
+    if (opts.delegationFlag === true) {
+      for (const orgId of [org.orgId, org.otherOrgId]) {
+        await setOrgFeature(db, { orgId }, { flag: "delegation_pages", enabled: true, actor: "cli", now: NOW });
       }
     }
     // A second owner with a Telegram chat: U1 and U2 both hold a sent card of the send.
@@ -91,6 +97,15 @@ export function approvalKit(db: Db) {
         api.route(
           "/",
           approvalRoutes({ db, now: () => NOW, sendScope, hooks: delegationHooks({ db }), uidplus: async () => true })
+        );
+        api.route(
+          "/",
+          delegationRoutes({
+            db,
+            now: () => NOW,
+            approvalHooks: cardEditHooks({ sendScope }),
+            uidplus: async () => true,
+          })
         );
       },
     });

@@ -348,7 +348,9 @@ describe("expireReminderActions", () => {
       const other = await pair(trx, s.ctx, s.mailboxId, { sendPayload: reminderPayload(randomUUID()) });
 
       const result = await expireReminderActions(trx, s.ctx, delegationId, { now, uidplus: true, actor: "system" });
-      expect(result).toEqual({ sends: 3 });
+      expect(result.sends).toBe(3);
+      // The ids of the sends that this call closed (the user's cancel queues their card edits).
+      expect([...result.sendIds].sort()).toEqual([awaiting.sendId, applied.sendId, approved.sendId].sort());
 
       for (const p of [awaiting, applied, approved]) {
         expect(await getSend(trx, s.ctx, p.sendId)).toMatchObject({

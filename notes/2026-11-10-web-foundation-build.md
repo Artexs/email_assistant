@@ -49,3 +49,10 @@ Written at the end of the S5a build (`spec/features/done/2026-11/F050-s5a-web-fo
 
 - `.github/dependabot.yml` exists (stage 15.1): version 2, ecosystem `bun`, `directory: /`, weekly, only `better-auth`, at most 2 open PRs, commit prefix `deps`.
 - Not verified: whether Dependabot finds `better-auth` in the workspace manifests from `/`. The first weekly run after the merge tells (user step 4 of the S5a task). The fallback is a second entry with `directory: /apps/server`.
+
+## F117 fix (2026-11-15): `nextAddress` overflowed the fourth octet
+
+`nextAddress(base)` returned `198.51.100.${base + counter}`. The counter is per worker and counts every call. After F117 stage 16 added three tests to
+`mailbox-oauth.spec.ts`, the desktop terms tests (base 200) got hosts 258 to 261: no IP address. The server (`clientAddress` in `platform/http.ts`) then
+used the proxy address 127.0.0.1, so the four terms tests shared one login bucket (3 per 10 s). The fourth sign-in (`the main owner sees no dialog`) was refused (guess: the 3 per 10 s limit) and stayed on `/login`; with valid addresses it passes.
+Mobile was safe only because its counter is smaller. Fix: `nextAddress` now returns `198.18.<host / 256>.<host % 256>`, always valid. Literal addresses in specs stay in 198.51.100.0/24 and 203.0.113.0/24.

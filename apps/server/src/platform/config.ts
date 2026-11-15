@@ -102,6 +102,14 @@ const baseSchema = z.object({
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   // json = one JSON object per line (the VPS); text = "[module] event key=value" (dev). ADR 0024.
   LOG_FORMAT: z.preprocess(emptyAsUndefined, z.enum(["json", "text"]).default("json")),
+  // The release name: the image build sets it (deploy/Dockerfile ARG EA_RELEASE); every JSON log line carries it. F114 D10.
+  EA_RELEASE: z.preprocess(
+    emptyAsUndefined,
+    z
+      .string()
+      .regex(/^[A-Za-z0-9._-]{1,40}$/)
+      .default("dev")
+  ),
   CREDENTIALS_KEY: z.string().refine(isCredentialsKey, "must be base64 of 32 bytes"),
   CREDENTIALS_KEY_VERSION: z.coerce.number().int().positive().default(1),
   HEARTBEAT_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),

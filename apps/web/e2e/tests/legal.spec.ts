@@ -24,7 +24,7 @@ function onMobile(): boolean {
   return test.info().project.name === "mobile";
 }
 
-// The two projects run in different worker processes, so each gets its own block of the 198.51.100.0/24 range.
+// The two projects run in different worker processes, so each gets its own block of the `nextAddress` range (see helpers.ts).
 // The blocks differ from the ones of auth.spec.ts and forgot.spec.ts, which run in the same workers.
 function addressBase(): number {
   return onMobile() ? 70 : 170;

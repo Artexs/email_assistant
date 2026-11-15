@@ -37,6 +37,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
+      args:
+        EA_RELEASE: ${EA_RELEASE:-dev}
     image: ea-server
     logging: *logging-collected
     restart: unless-stopped
