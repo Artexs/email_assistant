@@ -38,3 +38,8 @@ Also read `notes/2026-11-13-measured-core-facts.md` again: if the F100 pilot pro
 **Done when.** The pages and the note are committed; the final message lists the checked names and the three send-limit maxima; Proof `PROOF_OK`.
 
 **Out of scope.** `docs/product/stage-2/*` and other epics' pages: the final message lists the edits that the coordinator applies (the E3 epic page status line, the §2.1 row 15 stage count).
+
+## Carry-over from stage 03 review
+
+- Copy the accepted limits of stage 03 into the capability page: a forged own address or org domain counts as known (only `auth_fail` catches it); CEO names that are not members, delegates or VIPs are not protected; old rows read as `{}`; the error path stores `{}`. Source: `notes/2026-11-15-f109-s03-suspicious-triage.md`.
+- With the flag off, reasons are stored and the plan is unchanged; each batch loads the context (up to 4 queries) and each mail reads its header row (1 query). Say so (the stage text, not "no extra query").

@@ -501,7 +501,16 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
               current: ctx?.context.session?.session ?? null,
               now: now(),
             });
-            return extra === undefined ? undefined : { data: { ...session, ...extra } };
+            if (extra !== undefined) return { data: { ...session, ...extra } };
+            // A password session of a member that "SSO required" refuses: no session. The before hook of the sign-in checks
+            // this too, but outside the transaction of the operator's switch, so a sign-in that passed it just before the
+            // commit would still get a session here, or a two-factor challenge that `/two-factor/verify-totp` turns into one.
+            // This hook covers `/sign-in/email` and `/two-factor/verify-totp` in one place. An error of the check fails closed.
+            if (deps.passwordSignInRefused && (await deps.passwordSignInRefused(session.userId))) {
+              log.info("password_session_refused_sso", { user_id: session.userId });
+              return false;
+            }
+            return undefined;
           },
         },
       },

@@ -29,6 +29,9 @@ export const numberFieldNames = [
   "recipient_day",
   // outbox sender
   "wait_ms",
+  // telegram
+  "update_id",
+  "bot_id",
 ] as const;
 /** Code fields: the F089 D7 rule (D1, D2). Values come from closed sets, never from mail, users or outside text. */
 export const codeFieldNames = [

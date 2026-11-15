@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { type CaseText, evalCaseSchema, type SimPart } from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
+import { readSlots, writeJson, writeSlots } from "../platform/sim-files";
+
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
-import { readSlots, writeJson, writeSlots } from "./sim-files";
 import { createMiniCorpus, fixtureText, type MiniCorpus } from "./sim-fixtures.test-helper";
 
 let corpus: MiniCorpus | undefined;

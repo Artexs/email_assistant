@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
+import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
 import { consoleErrors, cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
@@ -59,6 +60,7 @@ test("the account card lists the signed-in devices", async ({ page, browser }, t
   const rows = account.locator("[data-session]");
   await expect(rows).toHaveCount(1);
   await expect(rows.locator("[data-badge=this-device]")).toHaveText(en.acct_this_device);
+  await expectNoA11yViolations(page);
 
   // A second sign-in of the same user: a new context with its own client address.
   const other = await browser.newContext({

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { isLoopbackApiRoot } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import {
@@ -7,7 +8,6 @@ import {
   ConfigError,
   featuresOff,
   featuresOffFromEnv,
-  isLoopbackApiRoot,
   llmRoleTable,
   loadConfig,
   loadTestmailConfig,

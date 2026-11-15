@@ -38,6 +38,15 @@ export {
   type SetSsoProviderResult,
   type SsoState,
 } from "./sso-provider";
+export {
+  attestSsoDomain,
+  verifySsoDomain,
+  type AttestSsoDomainResult,
+  type VerifySsoDomainInput,
+  type VerifySsoDomainResult,
+} from "./sso-domain";
+export { ssoDomainKey, ssoDomainRecord, ssoDomainToken } from "./sso-domain-token";
+export { setSsoRequired, type SetSsoRequiredResult, type SsoRequireRefusal } from "./sso-require";
 export { listSecurityLog } from "./security-log";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {

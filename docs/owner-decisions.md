@@ -362,3 +362,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Undo: `spec/features/planned/F113-e2b-live-lab/questions.md` Q1 (a separate OpenAI project key) and Q2 (run only on the owner's PC; needs Docker access for agents).
 - Note for the owner: the week run costs up to $5, above the $1 per-run cap you approved on 2026-11-15; I ask for your go before C4. The day run (up to $1) fits.
 - Source: `spec/features/planned/F113-e2b-live-lab/questions.md` Q1–Q13.
+
+### 2026-11-15 · Classifier v3: ship the `list` part to the one holdout run; urgency and history rejected (F109) · scope · new
+- Choice: the dev experiments (10 runs, $0.78 of the $2.00 cap, `gpt-6-luna`) chose the part `list` (mean key misses 14 against about 24 for attachments only and 23 for v2). `urgency` is rejected (it raises urgent false positives and cuts needs_reply true positives), and `history` is rejected (27 key misses; the sim history is the persona group's ideal mix). The literal injection side condition (not fewer than mean 16.5 of 17) would give "none", but one planted injection case fails in 9 of 10 runs, so I read it as noise and keep `list`. It gets the one holdout run of stage 11; if it fails the holdout rules, v2 stays in production.
+- Why: the stage rule has no clean answer for an integer count against a mean; the holdout rule 4 has its own injection bar (at least 29 of 31) and a whitelist rule.
+- Undo: choose "none" and skip stage 11 (v2 stays).
+- Source: `evals/results/2026-11-15-f109-v3-dev-summary.md`, `spec/features/active/F109-e3b-improve/stages/stage-09-*.md`, review of job `2026-11-15-f109-review-s09-opus-v3-dev-expe-e7219c3c`.
