@@ -30,7 +30,7 @@ Part of [plan.md](plan.md). These names are the contract between the stages and 
 - `loopHooks(deps): LoopHooks` wired in `main.ts`. `LoopHooks` is defined in `actions` with `noLoopHooks`: `isOpen(trx, ctx, loopId) → boolean`, `onFollowUpSent(trx, ctx, { loopId, sendId, messageId, at })`, `anchorOf(trx, ctx, loopId) → LoopAnchor | undefined` (`mailboxId`, `messageId`, `referencesIds`, `subject`, `to`, `cc`, `language`, `quote` (the own sent text or null), `sentAt`).
 - `onSentOff(trx, ctx, { mailboxId, at })` → injected into `mail.setSentSync` as `SentSwitchHooks.onDisabled` (default no-op).
 
-## Module `delegation`
+## Module `loops`: manual delegation
 
 - `delegateMail(deps, ctx, { emailId, delegateId, userId, via })` → `{ kind: "planned", sendId, delegationId } | { kind: "exists", delegationId } | { kind: "delegate_inactive" } | { kind: "drafts_off" } | { kind: "not_delegable" } | { kind: "feature_off" } | { kind: "not_found" }`.
 
@@ -48,5 +48,5 @@ Part of [plan.md](plan.md). These names are the contract between the stages and 
 - `POST /loops/:id/follow-up` (owner), `/later` (member), `/done` (member), `/drop` (owner), `/reopen` (owner), `/untrack` (owner). 409 codes = the command kinds.
 - `POST /emails/:id/delegate` (owner) `{ delegateId }` → 200 `{ sendId, delegationId }`; 409 `exists`, `delegate_inactive`, `drafts_off`, `not_delegable`.
 - `GET|PATCH /mailboxes/:id/settings` gain `loopWaitDays` (1–10) and `autoFollowUp` (bool).
-- `DelegationItem.kind` gains `"sent_delegation"` (an `open_loops` row of kind `delegated`) on `GET /delegations`.
+- The Delegated tab reads `GET /delegations` (F102) and `GET /loops?kind=delegated` and shows them as two lists; `DelegationItem` does not change.
 - `POST /telegram/consent` `{ version }`: from F115 stage 12 when landed, else stage 17 adds it with the same shape.
