@@ -355,3 +355,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: one endpoint per deployment is the smallest safe design; the PC GPU is free; a strict URL rule stops a stray env var from redirecting mail text.
 - Undo: `spec/features/planned/F111-e11b-private-model-option/questions.md` Q1–Q5; a per-organization endpoint needs a stage before 07 after the PD-110 second pass.
 - Source: `spec/features/planned/F111-e11b-private-model-option/questions.md`.
+
+### 2026-11-15 · Live lab: production key on the sim stack, caps $1 and $5, runs on the VPS, no new phishing corpus (F113) · money · new
+- Choice: the sim stack (`ea-sim`, a second Compose project on the production VPS, own port 8180, subnet, volumes and env file, about 1.5 GB of memory) uses the production OpenAI key: the coordinator copies it inside the VPS into `deploy/sim.env` and never prints it. The lab has its own caps: $1 per day run and $5 per week run, inside the $20 month cap. A live day needs at least 2 GB free disk; the live week waits for owner step O1 (grow the VPS root volume, PD-055) (Q1, Q2). Dates in mail text move with the run's whole-week offset; bare years, month-and-year and ids stay (Q3). No new corpus text and no "not mine" delegate answer: the frozen v1 corpus stays, so the live lab says nothing new about phishing beyond F109 (Q4). `server` and `lab` share the fake Telegram's network namespace, so the loopback check on `TELEGRAM_API_ROOT` stays (Q5). The executive taps only approve, reject with reason, Undo, reminder sets and send again; each measured run starts on a fresh lab organization (Q6–Q13).
+- Why: a second key would add a secret to manage; the VPS already runs the production stack; the lab week is the first real measure of M1–M7.
+- Undo: `spec/features/planned/F113-e2b-live-lab/questions.md` Q1 (a separate OpenAI project key) and Q2 (run only on the owner's PC; needs Docker access for agents).
+- Note for the owner: the week run costs up to $5, above the $1 per-run cap you approved on 2026-11-15; I ask for your go before C4. The day run (up to $1) fits.
+- Source: `spec/features/planned/F113-e2b-live-lab/questions.md` Q1–Q13.

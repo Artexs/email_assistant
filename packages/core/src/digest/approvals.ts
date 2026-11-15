@@ -89,6 +89,7 @@ export function renderApprovalRequest(
   if (view.kind === "clarification") title = t.title.clarification(address);
   if (view.kind === "reminder") title = t.title.reminder(`${nameText}${address}`);
   const head = [view.synthetic ? `${title} · ${texts.common.test}` : title];
+  if (view.version !== undefined && view.version >= 2) head.push(t.versionLine(view.version));
   if (view.sender !== null) {
     // The view stores the English placeholder (plan D19); the renderer prints it in the row's language.
     const stored =
@@ -109,7 +110,9 @@ export function renderApprovalRequest(
       if (quote.replaced) lines.push(t.linksHidden);
       if (quote.cut) lines.push(t.quoteCut);
     }
-    lines.push("", t.sendLine);
+    lines.push("");
+    if (view.panelUrl !== undefined) lines.push(t.panelLine(view.panelUrl));
+    lines.push(t.sendLine);
     return lines.join("\n");
   };
   const quoteAt = (max: number) => {
@@ -368,7 +371,8 @@ export type ApprovalEditOutcome =
   | "rejected_set"
   | "went_out"
   | "done"
-  | "marked_mistake";
+  | "marked_mistake"
+  | "changed";
 
 export type HeldBy = "scope" | "paused" | "auth_error" | "host_blocked";
 
@@ -433,6 +437,9 @@ export function approvalEdit(
       break;
     case "marked_mistake":
       line = t.edit.markedMistake(time);
+      break;
+    case "changed":
+      line = t.edit.changed(time);
       break;
   }
   const tail = `\n\n${line}`;

@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 
 ## Step 1 — Known-sender context
 
-**Goal.** One reader gives the `assessSuspicious` context of one mailbox, once per mailbox batch.
+**Goal.** One reader gives the `assessSuspicious` context of a mailbox, once per batch.
 
 **Files.** New `apps/server/src/modules/triage/suspicious-context.ts`; config key `MAIL_TRUSTED_AUTHSERV_IDS` (comma list, empty default, lower case) in `platform/config.ts` and `.env.example`.
 
@@ -12,11 +12,11 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 
 **Decisions (D4).**
 
-- Known addresses: the organization's mailbox addresses, active delegates, exact-address `whitelist` and `vip` rules (mailbox and organization), and frequent senders: an address with at least 3 mails in this mailbox in the last 90 days that each have `suspicious_reasons = '{}'` and a newest category other than `spam` (review N1, N15: flagged mail never makes its sender known).
+- Known addresses: the organization's mailbox addresses, active delegates, exact-address `whitelist` and `vip` rules (mailbox and organization), and frequent senders: an address with 3 or more mails in this mailbox in the last 90 days, each with `suspicious_reasons = '{}'` and a newest category other than `spam` (review N1, N15: flagged mail never makes its sender known). Query `emails.from_address_lower = lower($sender)` (stage 02 index), never `lower(from_address)`.
 - Known by domain: the domains of the organization's mailbox addresses, delegates and domain rules (`@corp.test`), except `freeMailDomains` (stage 01).
-- `knownDomains`: the registrable domains of the known addresses and domain rules, but not of frequent senders (a frequent sender's domain never silences `lookalike_domain` for others).
+- `knownDomains`: the registrable domains of known addresses and domain rules, not of frequent senders (they never silence `lookalike_domain` for others).
 - `protectedNames`: delegate names, organization member names, and the newest `email_headers.from_name` of each exact `vip` address in the last 90 days (review N16: CEO-fraud names).
-- Accepted limit (stage 16 writes it): mail that forges an own address or own domain counts as known; only `auth_fail` catches it.
+- Accepted limit (stage 16 writes it): mail that forges an own address or domain counts as known; only `auth_fail` catches it.
 - `trustedAuthservIds`: the registrable domain of the mailbox IMAP host, plus `MAIL_TRUSTED_AUTHSERV_IDS` (D2).
 
 ## Step 2 — Reasons on every triage result

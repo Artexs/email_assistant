@@ -41,3 +41,9 @@ Part of [`../plan.md`](../plan.md). Read D4, D5, F6, N1 and [`../commands.md`](.
 ## Done when (stage)
 
 - Steps 1 and 2 hold. The Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s09`).
+
+## Carry-over from stage 05 review
+
+- `panelUrl` sends the panel host name (for example a `*.ts.net` tailnet host) and the send id to Telegram. `docs/code-patterns.md` § "The consent version" says a new field in Telegram content may need a consent text change and a version bump. The consent text lists mail data only. Decide in this stage whether the panel link needs a bump; record the decision (and the reason) in the plan log. If the link is off by default (flag off or no base URL), no bump is needed.
+- When `WEB_BASE_URL` is unset, set no `panelUrl` (core renders no link line without it).
+- Add a test for a newline in a `panelUrl` (stage 05 test gap TG2): the encoder must refuse it.

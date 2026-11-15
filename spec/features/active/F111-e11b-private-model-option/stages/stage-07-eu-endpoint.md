@@ -21,14 +21,14 @@ Release-note rule for both branches: this stage changes no VPS env and no deploy
 
 **Goal.** EU evidence for the production model (PD-110: every new endpoint passes the gate; D8).
 
-**Command** (file loaded, as in A1): `bun run eval --sim lab-01 --part holdout --provider openai --model gpt-6-luna --reasoning-effort none --out evals/results/<date>-sim-lab-01-holdout-gpt-6-luna-eu-classifier-v2.md` (defaults: concurrency 8, rpm 240, cap $1; expected about $0.30). Long run: `nohup`, poll, resume with the same command.
+**Command** (file loaded, as in A1): `bun run eval --sim lab-01 --part holdout --provider openai --model gpt-6-luna --reasoning-effort none --out evals/results/<date>-sim-lab-01-holdout-gpt-6-luna-eu-<prompt>.md` (`<prompt>` and no prompt flags as in stage 05; defaults: concurrency 8, rpm 240, cap $1; expected about $0.30). Long run: `nohup`, poll, resume the same way.
 
 **Price.** Read OpenAI's pricing page for regional processing. Replace the D7 EU row of `gpt-6-luna` with the page's numbers, the page URL as `source` and today as `checked`. If the page shows no regional price, keep the 1.10× row and say so. Update the cost tests of stage 03 to the new numbers. If the run line does not print `endpoint=eu`, stop: the env file did not load.
 
 **Test.**
-1. Gate file `classifier-classifier-v2-gpt-6-luna-none-lab-01-v1-eu.json` exists, parses, `endpoint` `eu`.
+1. Gate file `classifier-<production promptVersion>-gpt-6-luna-none-lab-01-v1-eu.json` exists (v2 now), parses, `endpoint` `eu`, `promptParts` as production.
 2. The report has `endpoint=eu host=eu.api.openai.com` and no case id (the grep of stage 05).
-3. In the final message: per category go or no-go next to the standard-endpoint gate file of F097 stage 21. A difference larger than 2 points of precision in any category is named (same model, other region: it should not differ).
+3. In the final message: per category go or no-go next to the standard-endpoint gate file of the same prompt version. A difference larger than 2 points of precision in any category is named (same model, other region).
 
 **Done when.** Cases 1–3 hold; the run cost is in the final message.
 

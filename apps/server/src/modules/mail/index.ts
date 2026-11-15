@@ -139,6 +139,15 @@ export type {
 } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
+  syncSentFolder,
+  syncSentHeaders,
+  type SentHeaderResult,
+  type SentPassResult,
+  type SentPassStatus,
+  type SentSyncDeps,
+} from "./sent-sync";
+export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
+export {
   isSyntheticMessageId,
   isTestMail,
   NO_TEST_SENDERS,

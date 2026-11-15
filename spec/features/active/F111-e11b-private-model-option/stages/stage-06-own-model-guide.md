@@ -14,7 +14,7 @@ Part of [`../plan.md`](../plan.md). Review before the land (published claims). D
 3. Hardware: the home VPS cannot host a model; the measured GPU, memory and seconds per mail from the stage 05 record; mail volume as `200 × <mean tokensIn of the stage 21 report>` prompt tokens a day (not the discovery estimate).
 4. Setup with Ollama: the env lines `OPENAI_BASE_URL`, `OPENAI_ENDPOINT_KIND=own` (only for a remote https server), `OPENAI_API_KEY` placeholder, `OPENAI_TIMEOUT_MS`, `OPENAI_API_STYLE` if stage 04 was built; `OLLAMA_CONTEXT_LENGTH=8192` and why (a cut prompt gives false answers).
 5. The `auto` rule as it is at `HEAD` (D13): `auto` per category comes from the mailbox's real-label gate and does not follow a model or endpoint switch. Operator step: before a switch, set every `auto` category back to `assist`; turn `auto` on again only for categories that pass the gate on the new model. Name F110 as the ticket that will re-gate by itself. If F110 has landed at `HEAD` and re-gates, describe that instead and say so in the final message.
-6. Results: per model and category go or no-go, precision, recall, next to the `gpt-6-luna` standard baseline; links to the reports, the gate files and the run record.
+6. Results: per model and category go or no-go, precision, recall, next to the `gpt-6-luna` standard baseline of the same prompt label, which the guide names (if production moved since stage 05, the guide says the numbers are for the older prompt); links to the reports, the gate files and the run record.
 
 **Decisions.** D2, D3, D7, D12, D13, D14.
 

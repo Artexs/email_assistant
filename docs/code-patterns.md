@@ -257,7 +257,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - Template literals for strings with variables, never `+` concatenation.
 - Use the `log` util (`platform/log`), never `console.log`. The rules are in § Logs.
 - Folder keys in logs and audit rows, never paths from mail data or user input.
-- Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `errorFields(error)` in an event line, `describeError(error)` only in an old-form line that E8a has not converted yet.
+- Telegram errors: in an event line use `...telegramErrorFields(error)` (`error`, `error_code`, `method`); `telegramErrorLabel(error)` only in an old-form line that E8a has not converted yet. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `errorFields(error)` in an event line, `describeError(error)` only in an old-form line that E8a has not converted yet.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
 - A comment states the rule in one sentence. If it needs a source, it names an ADR (`ADR 0014`) or a ticket folder path (`spec/features/done/2026-11/F083-…/`). No bare stage or decision codes (`S3`, `D29`, `U11`, `A23`, `F079`): their plan files move, and no reader can resolve them. Fix the codes of a comment when you change its code; no mass edit.
 
