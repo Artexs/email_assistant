@@ -29,3 +29,5 @@ export {
   renderExtractorReport,
 } from "./extractor-report";
 export type { ExtractorGateFile } from "./extractor-report";
+export { delegateMail, delegateTaskText } from "./delegate";
+export type { DelegateMailDeps, DelegateMailResult, DelegateMailVia } from "./delegate";

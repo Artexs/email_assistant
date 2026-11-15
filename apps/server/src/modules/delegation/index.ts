@@ -22,7 +22,9 @@ export { decodeDelegationCursor, encodeDelegationCursor, listDelegationItems } f
 export {
   bumpReminder,
   clearDelegationTasks,
+  countDelegationsOfEmail,
   countOpenDelegations,
+  findOpenDelegationOfEmail,
   countPendingReminderSends,
   findDelegationBySendAction,
   findOpenDelegationByMessageIds,
@@ -38,6 +40,7 @@ export {
   listDelegations,
   listDueDelegations,
   listLatestDelegationsByEmailIds,
+  lockDelegate,
   lockDelegation,
   markAnsweredNotified,
   markDelegationOverdue,
@@ -47,6 +50,7 @@ export {
 export { listDelegationDueRows, listDelegationOutcomes, type DelegationOutcomeRow } from "./metrics-repo";
 export type {
   DelegateRow,
+  DelegationSource,
   DelegationPageCursor,
   DelegationPageRow,
   DelegationRow,
