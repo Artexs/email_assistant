@@ -19,12 +19,12 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟠 ACTIVE): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
+- `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
 - `F106-e7-t3-account-data-delete-export-dsr` (🟠 ACTIVE): E7-T3 Account data (delete, export, DSR)
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
 - `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
 - `F103-e8a-logs` (🟠 ACTIVE): E8a Logs
 - `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
-- `F097-e2a-offline-lab` (🟠 ACTIVE): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
 - `F032-copy-below-cursor` (🟠 ACTIVE): Store and triage a copy that lands below the UID cursor
@@ -92,6 +92,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
+- `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
 - `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
 - `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
@@ -100,5 +101,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🟢 PROVEN): E7-T1 Polish UI (i18n frame first); landed 2026-11-14
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
 - `F095-e1-close-the-mvp` (🟢 PROVEN): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets); landed 2026-11-14
-- `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
-- 2026-11: 71 landed. spec/features/done/2026-11/
+- 2026-11: 72 landed. spec/features/done/2026-11/
