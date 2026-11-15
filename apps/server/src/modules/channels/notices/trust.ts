@@ -1,4 +1,4 @@
-import { panelUrlSchema, type NoticeView } from "@ea/core";
+import { trustReportUrlSchema, trustSettingsUrlSchema, type NoticeView } from "@ea/core";
 import { type Transaction } from "kysely";
 
 import { type DB, type TenantContext } from "../../../platform/db";
@@ -9,14 +9,16 @@ import { listLinkedChatsOfOrg } from "../repo";
 // URL that the view schema accepts gives a link; no base URL, or a refused link, gives null (the text has no link line).
 export function trustReportUrlOf(base: string | undefined, mailboxId: string): string | null {
   if (base === undefined) return null;
-  const url = panelUrlSchema.safeParse(`${base.replace(/\/+$/, "")}/report?mailbox=${encodeURIComponent(mailboxId)}`);
+  const url = trustReportUrlSchema.safeParse(
+    `${base.replace(/\/+$/, "")}/report?mailbox=${encodeURIComponent(mailboxId)}`
+  );
   return url.success ? url.data : null;
 }
 
 // The Settings page of the panel: `<WEB_BASE_URL>/settings`.
 export function trustSettingsUrlOf(base: string | undefined): string | null {
   if (base === undefined) return null;
-  const url = panelUrlSchema.safeParse(`${base.replace(/\/+$/, "")}/settings`);
+  const url = trustSettingsUrlSchema.safeParse(`${base.replace(/\/+$/, "")}/settings`);
   return url.success ? url.data : null;
 }
 

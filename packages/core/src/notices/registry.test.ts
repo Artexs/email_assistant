@@ -296,11 +296,15 @@ const cases: Case[] = [
       recommended: ["info", "spam"],
       blocked: 1,
       checked: 212,
-      reportUrl: "https://app.example.test/report?mailbox=x",
+      reportUrl: "https://app.example.test/report?mailbox=22222222-2222-4222-8222-222222222222",
     },
     direct: (texts) =>
       renderTrustReportReadyNotice(
-        { checked: 212, recommended: ["info", "spam"], reportUrl: "https://app.example.test/report?mailbox=x" },
+        {
+          checked: 212,
+          recommended: ["info", "spam"],
+          reportUrl: "https://app.example.test/report?mailbox=22222222-2222-4222-8222-222222222222",
+        },
         texts
       ),
   },

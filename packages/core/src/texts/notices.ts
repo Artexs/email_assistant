@@ -229,7 +229,7 @@ export const noticeTexts = {
         `⏸ Automatic moves for ${category} are off: new test results no longer support them.`,
       historyFail: (category) =>
         `⏸ Automatic moves for ${category} are off: the check of your last 30 days found mail you needed among them.`,
-      again: "Turn it on again in Settings.",
+      again: "Turn them on again in Settings.",
       link: (url) => `Settings: ${url}`,
     },
     sendHeld: {
@@ -368,22 +368,22 @@ export const noticeTexts = {
       result: "Przypomnienie o odpowiedzi ma nowy status. Sprawdź go w panelu.",
     },
     trustReady: {
-      first: (checked) => `📋 Sprawdzenie jest gotowe. Przejrzane wiadomości z ostatnich 30 dni: ${checked}.`,
+      first: (checked) => `📋 Sprawdzanie poczty z ostatnich 30 dni zakończone. Przejrzane wiadomości: ${checked}.`,
       recommended: (categories) => `Polecane do włączenia: ${categories}`,
       none: "Na razie nie ma nic do włączenia.",
       link: (url) => `Raport: ${url}`,
     },
     autonomyPaused: {
       corrections: (category, count) =>
-        `⏸ Automatyczne przenoszenie dla kategorii ${category} jest wyłączone. Liczba Twoich poprawek w ciągu 7 dni: ${count}.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: w ciągu 7 dni poprawiono ${count} z tych przeniesień.`,
       importantHidden: (category) =>
-        `⏸ Automatyczne przenoszenie dla kategorii ${category} jest wyłączone: jedno z przeniesień ukryło wiadomość, która była Ci potrzebna.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: jedno z przeniesień ukryło wiadomość, która była Ci potrzebna.`,
       modelSwitch: (category) =>
-        `⏸ Automatyczne przenoszenie dla kategorii ${category} jest wyłączone: zmienił się model AI i nie ma jeszcze potwierdzenia dla tej kategorii.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: zmienił się model AI, a nowy model nie ma jeszcze potwierdzonych wyników dla tej kategorii.`,
       evidenceChanged: (category) =>
-        `⏸ Automatyczne przenoszenie dla kategorii ${category} jest wyłączone: nowe wyniki testów już go nie potwierdzają.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: nowe wyniki testów już go nie uzasadniają.`,
       historyFail: (category) =>
-        `⏸ Automatyczne przenoszenie dla kategorii ${category} jest wyłączone: sprawdzenie ostatnich 30 dni wykazało wśród przeniesionych wiadomości takie, które były Ci potrzebne.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: sprawdzenie poczty z ostatnich 30 dni wykryło wśród przeniesionych wiadomości takie, które były Ci potrzebne.`,
       again: "Włącz je ponownie w Ustawieniach.",
       link: (url) => `Ustawienia: ${url}`,
     },

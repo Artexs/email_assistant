@@ -82,7 +82,7 @@ describe("queueTrustNotice", () => {
   test("the stored view renders in the locale of the row", async () => {
     await withRollback(db, async (trx) => {
       const { ctx, owner2, mailboxId } = await setup(trx);
-      const view = readyView(mailboxId, "https://app.example.test/report?mailbox=x");
+      const view = readyView(mailboxId, `https://app.example.test/report?mailbox=${mailboxId}`);
       await queueTrustNotice(trx, ctx, { kind: "trust_report_ready", view, mailboxId, now });
       const row = (await rowsOf(trx, ctx.orgId)).find((r) => r.user_id === owner2);
       const rendered = renderNotice("trust_report_ready", row?.view, {
@@ -90,7 +90,9 @@ describe("queueTrustNotice", () => {
         detail: "full",
         locale: "pl",
       });
-      expect(rendered.ok && rendered.message.text).toContain("Raport: https://app.example.test/report?mailbox=x");
+      expect(rendered.ok && rendered.message.text).toContain(
+        `Raport: https://app.example.test/report?mailbox=${mailboxId}`
+      );
     });
   });
 

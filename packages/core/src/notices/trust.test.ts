@@ -51,7 +51,7 @@ describe("trust_report_ready", () => {
 
   test("the Polish text names the categories and has full diacritics", () => {
     expect(textOf("trust_report_ready", ready, "pl")).toBe(
-      `📋 Sprawdzenie jest gotowe. Przejrzane wiadomości z ostatnich 30 dni: 212.\nPolecane do włączenia: Info, Spam\nRaport: ${reportUrl}`
+      `📋 Sprawdzanie poczty z ostatnich 30 dni zakończone. Przejrzane wiadomości: 212.\nPolecane do włączenia: Info, Spam\nRaport: ${reportUrl}`
     );
   });
 
@@ -95,7 +95,7 @@ describe("trust_report_ready", () => {
 
 describe("autonomy_paused", () => {
   test("the English text of each reason is the one of the stage", () => {
-    const tail = `\nTurn it on again in Settings.\nSettings: ${settingsUrl}`;
+    const tail = `\nTurn them on again in Settings.\nSettings: ${settingsUrl}`;
     expect(textOf("autonomy_paused", paused("corrections"), "en")).toBe(
       `⏸ Automatic moves for Notification are off: you corrected 2 of them in 7 days.${tail}`
     );
@@ -123,7 +123,7 @@ describe("autonomy_paused", () => {
           expect(text).not.toMatch(/undefined|null|NaN|\[object/);
           expect(text.startsWith("⏸ ")).toBe(true);
           expect(text).toContain(
-            locale === "en" ? "Turn it on again in Settings." : "Włącz je ponownie w Ustawieniach."
+            locale === "en" ? "Turn them on again in Settings." : "Włącz je ponownie w Ustawieniach."
           );
         }
       }
@@ -135,7 +135,7 @@ describe("autonomy_paused", () => {
       expect(textOf("autonomy_paused", paused(reason), "pl")).not.toBe(textOf("autonomy_paused", paused(reason), "en"));
     }
     expect(textOf("autonomy_paused", paused("corrections", { corrections: 5 }), "pl")).toContain(
-      "Liczba Twoich poprawek w ciągu 7 dni: 5."
+      "poprawiono 5 z tych przeniesień."
     );
   });
 
@@ -161,10 +161,134 @@ describe("autonomy_paused", () => {
   });
 
   test("the text holds no field of the view that is not a category, a count or a fixed phrase (D15)", () => {
-    const canary = "canary-mailbox-0000-4000-8000-000000000000";
+    const canary = "99999999-9999-4999-8999-999999999999";
     const text = textOf("autonomy_paused", { ...paused("corrections"), mailboxId: canary }, "en");
     expect(text).not.toContain(canary);
-    const ok = textOf("trust_report_ready", { ...ready, mailboxId: canary }, "en");
-    expect(ok.replace(reportUrl, "")).not.toContain(canary);
+    const ok = textOf("trust_report_ready", { ...ready, mailboxId: canary, reportUrl: null }, "en");
+    expect(ok).not.toContain(canary);
+  });
+});
+
+// Review of stage 10 (P1-P7, TG1-TG3): every text is pinned in en and pl, and the links are strict.
+describe("pinned texts", () => {
+  const plPrefix = "⏸ Automatyczne przenoszenie wiadomości z kategorii „Powiadomienie” zostało wyłączone";
+  const plTail = `\nWłącz je ponownie w Ustawieniach.\nUstawienia: ${settingsUrl}`;
+  const enPrefix = "⏸ Automatic moves for Notification are off";
+  const enTail = `\nTurn them on again in Settings.\nSettings: ${settingsUrl}`;
+  const exact: [string, string, string][] = [
+    ["corrections", "you corrected 2 of them in 7 days.", "w ciągu 7 dni poprawiono 2 z tych przeniesień."],
+    [
+      "important_hidden",
+      "one of them hid a mail you needed.",
+      "jedno z przeniesień ukryło wiadomość, która była Ci potrzebna.",
+    ],
+    [
+      "model_switch",
+      "the AI model changed and has no proof yet for this category.",
+      "zmienił się model AI, a nowy model nie ma jeszcze potwierdzonych wyników dla tej kategorii.",
+    ],
+    ["evidence_changed", "new test results no longer support them.", "nowe wyniki testów już go nie uzasadniają."],
+    [
+      "history_fail",
+      "the check of your last 30 days found mail you needed among them.",
+      "sprawdzenie poczty z ostatnich 30 dni wykryło wśród przeniesionych wiadomości takie, które były Ci potrzebne.",
+    ],
+  ];
+
+  test.each(exact)("%s: exact en and pl text", (reason, en, pl) => {
+    expect(textOf("autonomy_paused", paused(reason), "en")).toBe(`${enPrefix}: ${en}${enTail}`);
+    expect(textOf("autonomy_paused", paused(reason), "pl")).toBe(`${plPrefix}: ${pl}${plTail}`);
+  });
+
+  test("the Polish category name is quoted", () => {
+    expect(textOf("autonomy_paused", paused("history_fail", { category: "needs_reply" }), "pl")).toContain(
+      "z kategorii „Odpowiedz” zostało"
+    );
+  });
+
+  test("ready: exact pl text with no category, and the checked counts 0 and 1 in en", () => {
+    expect(textOf("trust_report_ready", { ...ready, recommended: [], reportUrl: null }, "pl")).toBe(
+      "📋 Sprawdzanie poczty z ostatnich 30 dni zakończone. Przejrzane wiadomości: 212.\nNa razie nie ma nic do włączenia."
+    );
+    expect(textOf("trust_report_ready", { ...ready, checked: 0, reportUrl: null }, "en")).toContain(
+      "looked at 0 mails"
+    );
+    expect(textOf("trust_report_ready", { ...ready, checked: 1, reportUrl: null }, "en")).toContain(
+      "looked at 1 mail from"
+    );
+  });
+});
+
+describe("the links of a trust notice (TG1)", () => {
+  const good = (value: string) =>
+    noticeViewSchemas.trust_report_ready.safeParse({ ...ready, reportUrl: value }).success;
+  const goodSettings = (value: string) =>
+    noticeViewSchemas.autonomy_paused.safeParse(paused("corrections", { settingsUrl: value })).success;
+
+  test("the two real forms pass, http too", () => {
+    expect(good(reportUrl)).toBe(true);
+    expect(good(`http://localhost:8081/report?mailbox=${mailboxId}`)).toBe(true);
+    expect(goodSettings(settingsUrl)).toBe(true);
+    expect(goodSettings("http://localhost:8081/settings")).toBe(true);
+  });
+
+  const host = "https://app.example.test";
+  const bad: [string, string][] = [
+    ["userinfo", `https://user:pw@app.example.test/report?mailbox=${mailboxId}`],
+    ["user only", `https://app.test@evil.test/report?mailbox=${mailboxId}`],
+    ["NUL", `${host}/report?mailbox=${mailboxId}\u0000`],
+    ["BEL", `${host}/report?mailbox=${mailboxId}\u0007`],
+    ["ESC", `${host}/rep\u001bort?mailbox=${mailboxId}`],
+    ["right-to-left override", `${host}/report?mailbox=${mailboxId}\u202e`],
+    ["isolate", `${host}/report?mailbox=${mailboxId}\u2066`],
+    ["zero width space", `${host}/re\u200bport?mailbox=${mailboxId}`],
+    ["address in the query", `${host}/report?mailbox=${mailboxId}&to=boss@corp.test`],
+    ["other query", `${host}/report?mailbox=boss@corp.test`],
+    ["no query", `${host}/report`],
+    ["fragment", `${host}/report?mailbox=${mailboxId}#boss@corp.test`],
+    ["other path", `${host}/approvals?mailbox=${mailboxId}`],
+    ["upper case scheme", `HTTPS://app.example.test/report?mailbox=${mailboxId}`],
+    ["javascript", "javascript:alert(1)"],
+    ["data", "data:text/html,x"],
+    ["too long", `https://${"a".repeat(300)}.test/report?mailbox=${mailboxId}`],
+  ];
+
+  test.each(bad)("report link refused: %s", (_name, value) => {
+    expect(good(value)).toBe(false);
+  });
+
+  test.each([
+    ["userinfo", "https://user:pw@app.example.test/settings"],
+    ["user only", "https://app.test@evil.test/settings"],
+    ["BEL", `${settingsUrl}\u0007`],
+    ["bidi", `${settingsUrl}\u202e`],
+    ["address in the query", `${settingsUrl}?to=boss@corp.test`],
+    ["fragment", `${settingsUrl}#x`],
+    ["other path", "https://app.example.test/report"],
+    ["javascript", "javascript:alert(1)"],
+    ["upper case scheme", "HTTPS://app.example.test/settings"],
+  ])("settings link refused: %s", (_name, value) => {
+    expect(goodSettings(value)).toBe(false);
+  });
+
+  test("a report link of another mailbox than the view is refused", () => {
+    expect(good(`${host}/report?mailbox=99999999-9999-4999-8999-999999999999`)).toBe(false);
+  });
+});
+
+describe("hardening of the views", () => {
+  test("a mailbox id that is not a uuid is refused (an address cannot ride in it)", () => {
+    expect(noticeViewSchemas.trust_report_ready.safeParse({ ...ready, mailboxId: "boss@corp.test" }).success).toBe(
+      false
+    );
+    expect(
+      noticeViewSchemas.autonomy_paused.safeParse(paused("corrections", { mailboxId: "boss@corp.test" })).success
+    ).toBe(false);
+  });
+
+  test("a duplicate category is refused", () => {
+    expect(noticeViewSchemas.trust_report_ready.safeParse({ ...ready, recommended: ["info", "info"] }).success).toBe(
+      false
+    );
   });
 });
