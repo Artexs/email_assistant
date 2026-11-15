@@ -119,7 +119,10 @@ describe("the sent switch hooks are wired into every caller of setSentSync", () 
         expect(callOf(text.slice(call.index), "setSentSync"), file).toContain("sentSwitchHooks");
       }
       expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web.ts"]);
-      expect(read("composition.ts")).toContain("onDisabled: (trx, ctx, input) => onSentOff(trx, ctx, input)");
+      // The hook closes the loops (`onSentOff`) and then clears the follow-up cards (`clearLoopCards`), in one transaction.
+      const wiring = read("composition.ts");
+      expect(wiring).toContain("await onSentOff(trx, ctx, input);");
+      expect(wiring).toContain("await clearLoopCards(trx, ctx, input);");
     })();
   });
 });

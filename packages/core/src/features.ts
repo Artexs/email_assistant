@@ -133,6 +133,19 @@ export const featureFlags = {
     epic: "E4-B",
     removeBy: "2027-03-01",
   },
+  why_lines: {
+    default: false,
+    description:
+      "The digest, the urgent notice and the Activity page show how sure the system was and which sender rule hit.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
+  docs_links: {
+    default: false,
+    description: "The Help link and the What is new card in the panel.",
+    epic: "E10a",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

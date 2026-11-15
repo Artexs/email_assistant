@@ -1,0 +1,114 @@
+---
+title: Telegram
+description: Look up the bot commands, the buttons, the notices and the quiet hours.
+capabilities:
+  - digest-and-notices
+  - drafts-and-send
+  - delegation
+---
+
+The bot sends you the digest and the notices. It answers your commands.
+The texts of the bot follow your language setting. This page shows the English texts.
+To link your chat, follow the [tutorial](../../start/). The link opens the bot with `/start`. You do not type it yourself.
+If you send any other text, the bot answers with the help text.
+
+## Commands
+
+| Command   | Who         | What it does                                                                                                                                  |
+| --------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/digest` | Each member | Sends the digest now, for the period up to now. The time of your next scheduled digest does not change. The header reads `📬 Digest now`.     |
+| `/status` | Each member | Shows your mailboxes, the AI calls of today, waiting approvals, open delegations, the time of your next digest and the quiet hours.           |
+| `/pause`  | Owner       | Pauses all mailboxes of your organization. The system stops reading and sorting them and sends no urgent notice for them. Digests still come. |
+| `/resume` | Owner       | Starts the paused mailboxes again. The next sync reads the mail of the pause. It does not sort mail older than 7 days.                        |
+| `/help`   | Each member | Shows the list of commands and what the buttons do. It also works while your account is paused.                                               |
+
+- A member who is not an owner gets the answer "Only the owner can pause or resume the mailboxes."
+- `/pause` and `/resume` skip a mailbox with a login error or with the badge **Server not allowed**. The answer says why.
+- `/status` also shows what the server allows for sorting, for changes in the mailbox and for sending.
+- While your operator pauses your account, every command except `/help` answers "account paused". Taps on buttons get the same answer.
+
+## The digest
+
+One digest is one message. It holds at most 15 mails and at most 4096 characters.
+When the mails do not fit, the system leaves out the last ones and adds a line `+N more`.
+
+| Part           | Text                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header         | `📬 Digest 08:00 · day`. A digest that is more than 10 minutes late has the mark `(late)`.                                                         |
+| Count line     | The number of mails since the last digest and how many need action.                                                                                |
+| Mailbox line   | One line for each mailbox: `🔄 Last sync`, `⚠️ Last sync (late)`, `⏸ Paused since`, `❌ Login error since` or `⛔ Mail server not allowed since`. |
+| `NEEDS ACTION` | Urgent mail, mail that needs a reply, mail for a delegate and unsure mail.                                                                         |
+| `OTHER MAIL`   | Info, notification and spam mail.                                                                                                                  |
+| Footer         | `+N more`, mail that the system did not process, mail that waits for sorting, delegations and the shadow mode line.                                |
+
+Each mail line shows a number, the category, the sender, the subject, a short line from the AI and a line that starts with `→`.
+The `→` line tells what the system did or would do. The digest holds no mail body.
+
+The footer lines:
+
+- `📭 Not processed (older than 7 days)` counts mail that the system skipped because it is too old.
+- `📭 Not processed (from the account pause)` counts mail that came before the end of an account pause.
+- `⏳ Waiting for triage` counts mail that the AI did not sort yet.
+- `👥 Delegations` counts open delegations and overdue delegations.
+- `Shadow mode: the system changed nothing in your mailbox.` shows when every mailbox is in shadow mode.
+
+## Buttons
+
+Every button has English text here. In Polish the texts are different, but the buttons work the same way.
+
+| Button                       | Where                             | What it does                                                                                              | Who         |
+| ---------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------- |
+| `✅ n`                       | Digest                            | The category of mail `n` is right. The system records your answer. An unsure mail has no such button.     | Each member |
+| `✏️ n`                       | Digest                            | Opens a list of categories for mail `n`. Pick the right one, or press `✖️ Cancel`.                        | Each member |
+| `↩️ n`                       | Digest                            | Undoes what the system did to mail `n`. It shows only while an Undo is possible: 7 days after the change. | Each member |
+| `✅ Right`, `✏️ Change`      | Urgent notice                     | The same as `✅ n` and `✏️ n` for the one urgent mail.                                                    | Each member |
+| `📤 Send`, `✖️ Reject`       | Approval request                  | `📤 Send` approves the draft. `✖️ Reject` drops it and removes the draft.                                 | Owner       |
+| `📤 Send all`, `✖️ Skip all` | Set of reminders                  | Approves or skips all reminders in the message. One set holds up to 10 reminders.                         | Owner       |
+| `📤 Send again`              | Result of a send with an error    | Approves a new send of the same draft.                                                                    | Owner       |
+| `✅ It went out`             | Result of a send, outcome unknown | You tell the system that the mail went out. The system sends nothing.                                     | Owner       |
+| `✅ Done`                    | Notice of an answered delegation  | Closes the delegation.                                                                                    | Each member |
+
+After you tap a button on an approval request, the bot adds one line to the same message.
+The line says `⏳ Approved`, `✖️ Rejected` or `⌛ Expired`. For a reminder set it counts the reminders. After `✅ It went out` it says `✅ Marked as sent`.
+
+## Notices
+
+The system sends a notice when something needs your attention. Each notice comes once for each event.
+Owners get all kinds. A member who is not an owner gets only the kinds marked "each member".
+
+| Notice              | When it comes                                                                                                  | Who         | Buttons                           |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- | ----------- | --------------------------------- |
+| Urgent mail         | A mail got the category `urgent` in the last 24 hours. No notice for a paused mailbox or for junk folder mail. | Each member | `✅ Right`, `✏️ Change`           |
+| Action failed       | A move, a flag or a mark as read ended as failed. The text says where the mail stays.                          | Owners      | None                              |
+| Login error         | The mail server refused the login of a mailbox. No mail is lost. The system does not read the mailbox.         | Owners      | None                              |
+| Server not allowed  | The name of the mail server points to a private or local address. The system does not connect.                 | Owners      | None                              |
+| Sync late           | The last good sync of a mailbox is older than 30 minutes. One notice for each episode.                         | Owners      | None                              |
+| Sync works again    | The sync is fresh again after a late notice.                                                                   | Owners      | None                              |
+| Approval request    | A draft waits for your tap. It shows the recipient, the full draft and a quote of the original mail.           | Owners      | `📤 Send`, `✖️ Reject`            |
+| Set of reminders    | Reminders for overdue delegations wait for your tap.                                                           | Owners      | `📤 Send all`, `✖️ Skip all`      |
+| Result of a send    | A send ended: sent, not sent, refused, expired, rejected or outcome unknown.                                   | Owners      | `📤 Send again`, `✅ It went out` |
+| Sends held          | A send waits because a send limit is reached. The text names the limit and the time of the next send.          | Owners      | None                              |
+| Delegation answered | A delegate answered your task.                                                                                 | Each member | `✅ Done`                         |
+| Mailbox removed     | An owner removed a mailbox. The text tells you to change its password at your mail provider.                   | Owners      | None                              |
+
+`📤 Send again` shows after a send error or an unknown outcome. It does not show after a refusal of the mail server. `✅ It went out` shows only for an unknown outcome of a delegation.
+Details of sending: [The assistant never sends alone](../../explanation/never-sends-alone/).
+
+## Quiet hours
+
+Quiet hours run from 22:00 to 07:00 in the time zone of your organization. You cannot change them.
+
+- A notice waits until 07:00. This holds for every kind of notice.
+- A digest comes at its time, also in quiet hours.
+- The line that the bot adds to an approval message after a tap does not wait. It only edits a message that you already have.
+- A message that waits longer than 24 hours expires and the system does not send it.
+
+## Kinds of message
+
+| Kind   | What it is                                                                                   | Quiet hours | Limit                                        |
+| ------ | -------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------- |
+| Digest | A message at your digest times. Set the times in [Settings](../settings/).                   | No          | At most 3 messages for you every 15 seconds. |
+| Notice | A message for one event, from the table above.                                               | Yes         | The same limit.                              |
+| Reply  | The answer to a command or to a button. It comes at once. It shows a short text or a pop-up. | No          | None                                         |
+
+The numbers are in [Limits](../limits/).

@@ -7,6 +7,7 @@ export const uuidFieldNames = [
   "email_id",
   "action_id",
   "delegation_id",
+  "loop_id",
   "outbox_id",
   "approval_set_id",
   "item_id",
@@ -116,6 +117,8 @@ export const codeFieldNames = [
   "to_plan",
   "enabled",
   "actor",
+  // who started a loop command: web, telegram or cli
+  "via",
   // the sync mode of one folder run: initial, incremental or rescan
   "sync_mode",
   // actions: the action type (a closed set of six) and the stage of a failed send (`connect`, `login`, `envelope`, `content`, `compose`, `payload`, `unknown`)

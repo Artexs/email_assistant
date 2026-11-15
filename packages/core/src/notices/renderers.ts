@@ -12,6 +12,7 @@ import type { OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderAutonomyPausedNotice,
   renderHostBlockedNotice,
   renderNotTriagedNotice,
   renderLoopConsentNotice,
@@ -19,6 +20,7 @@ import {
   renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
+  renderTrustReportReadyNotice,
   renderUrgentNotice,
 } from "../digest/notices";
 import { renderWeeklyReport } from "../digest/weekly";
@@ -75,6 +77,8 @@ export const noticeRenderers = {
             ),
             ...(view.suspicious === undefined ? {} : { suspicious: view.suspicious }),
             ...(view.attachments === undefined ? {} : { attachments: view.attachments }),
+            confidence: view.confidence,
+            rule: view.rule,
             now: view.now,
             timeZone: view.timeZone,
           },
@@ -173,5 +177,13 @@ export const noticeRenderers = {
   loop_consent: defineRenderer({
     schema: noticeViewSchemas.loop_consent,
     telegram: { full: (view, opts) => renderLoopConsentNotice(view, textsFor(opts.locale)) },
+  }),
+  trust_report_ready: defineRenderer({
+    schema: noticeViewSchemas.trust_report_ready,
+    telegram: { full: (view, opts) => renderTrustReportReadyNotice(view, textsFor(opts.locale)) },
+  }),
+  autonomy_paused: defineRenderer({
+    schema: noticeViewSchemas.autonomy_paused,
+    telegram: { full: (view, opts) => renderAutonomyPausedNotice(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;

@@ -6,6 +6,7 @@ import {
   confidenceText,
   delegationText,
   feedbackStateText,
+  ruleLine,
   senderText,
   subjectText,
 } from "../../lib/activity-text";
@@ -55,6 +56,7 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
             <section className="flex flex-col gap-1">
               <h4 className="text-sm font-medium">{t("act_section_why")}</h4>
               <p className="text-sm break-words whitespace-pre-line">{item.aiText ?? t("act_no_reason")}</p>
+              {item.rule !== null && <p className="text-sm">{ruleLine(item.rule)}</p>}
             </section>
             <section className="flex flex-col gap-1">
               <h4 className="text-sm font-medium">{t("act_section_did")}</h4>

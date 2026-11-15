@@ -4,6 +4,7 @@ import type { Transaction } from "kysely";
 import { createPlanned } from "../../src/modules/actions";
 import { auditEvents, recordAudit, recordLlmCall } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
+import { listDelegateTags } from "../../src/modules/delegation";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import {
@@ -623,6 +624,145 @@ describe("digest attachment line (F109 stage 06)", () => {
       const forBOn = (await buildDigestMessage(trx, ctxB, request)).text;
       expect(forBOn).toContain("📎 1: other-org.pdf (120 kB)");
       expect(forBOn).not.toContain("faktura");
+    });
+  });
+});
+
+describe("digest why lines (F110 stage 16)", () => {
+  const request = {
+    kind: "on_demand" as const,
+    periodStart: at(-3 * HOUR),
+    periodEnd: T,
+    slot: null,
+    now: T,
+    locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
+  };
+
+  test("flag on: percent, rule, delegate tags; flag off and another organization: the text of today", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const ctxB = { orgId: b.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      await insertDefaultSettings(trx, ctxB, b.mailboxId);
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "info",
+        createdAt: at(-2 * HOUR),
+        subject: "SUBJECT-MODEL",
+        reason: "A model reason",
+        confidence: 0.87,
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "needs_reply",
+        createdAt: at(-110 * MIN),
+        subject: "SUBJECT-VIP",
+        reason: "A VIP asks",
+        confidence: 0.95,
+        fields: { rule: "vip" },
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "spam",
+        createdAt: at(-100 * MIN),
+        subject: "SUBJECT-BLOCKED",
+        reasonCode: "blocklist",
+        confidence: 1,
+        fields: { rule: "blocklist" },
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "unsure",
+        createdAt: at(-90 * MIN),
+        subject: "SUBJECT-UNSURE",
+        reason: "Cannot tell",
+        confidence: 0.55,
+        fields: { model_category: "info" },
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "spam",
+        createdAt: at(-95 * MIN),
+        subject: "SUBJECT-OLDBLOCK",
+        reasonCode: "blocklist",
+        confidence: 1,
+      });
+      const anna = await insertDelegate(trx, ctx, {
+        name: "Anna Nowak",
+        tags: ["finance", "legal", "hr", "it"],
+      });
+      const delegated = await insertDraftAndSend(trx, ctx, a.mailboxId, {
+        delegateId: anna,
+        delegateName: "Anna Nowak",
+        task: "Prepare the offer",
+        draftStatus: "ready",
+        sendStatus: "awaiting_approval",
+        createdAt: at(-80 * MIN),
+        subject: "SUBJECT-DELEGATED",
+      });
+      // TG6: a reverse draft that carries another delegate (created before the original) never shows its tags or its name.
+      const bob = await insertDelegate(trx, ctx, { name: "Bob Reverse", tags: ["secret-tag"] });
+      await insertAction(trx, ctx, delegated.emailId, {
+        type: "create_draft",
+        status: "applied",
+        payload: { kind: "delegation", delegate_id: bob },
+        reversesActionId: delegated.draftId,
+        createdAt: at(-85 * MIN),
+      });
+      await insertTriaged(trx, ctxB, b.mailboxId, {
+        category: "info",
+        createdAt: at(-2 * HOUR),
+        subject: "SUBJECT-OTHER",
+        reason: "Other reason",
+        confidence: 0.87,
+      });
+
+      const off = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(off).toContain("SUBJECT-MODEL\n💬 A model reason\n");
+      expect(off).not.toContain("85%");
+      expect(off).not.toContain("rule:");
+      expect(off).not.toContain("skills:");
+
+      await setOrgFeature(trx, ctx, { flag: "why_lines", enabled: true, actor: "cli", now: T });
+      const on = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(on).toContain("SUBJECT-MODEL\n💬 A model reason · 85%\n");
+      expect(on).toContain("SUBJECT-VIP\n💬 A VIP asks · rule: VIP sender\n");
+      // A blocked sender: the fixed blocklist text and the rule, no percent.
+      expect(on).toMatch(/SUBJECT-BLOCKED\n💬 [^\n]*· rule: blocked sender\n/);
+      expect(on).not.toContain("100%");
+      // An unsure item keeps its guess percent only.
+      expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).toContain("55%");
+      expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).not.toContain("·");
+      // The tags sit next to the delegate name, before the send state (N1); at most 3.
+      expect(on).toContain(
+        "will draft a delegation to Anna Nowak (skills: finance, legal, hr); waits for your approval"
+      );
+      expect(on).not.toContain(", it)");
+      // The same delegation with the flag off: the line of today.
+      expect(off).toContain("will draft a delegation to Anna Nowak; waits for your approval");
+      // TG1: an old blocklist row has no rule key and confidence 1: no percent.
+      expect(on).toMatch(/SUBJECT-OLDBLOCK\n💬 The sender is on your blocklist\.\n/);
+      expect(on).not.toContain("100%");
+
+      // The flag is per organization.
+      const forB = (await buildDigestMessage(trx, ctxB, request)).text;
+      expect(on).not.toContain("secret-tag");
+      expect(on).not.toContain("Bob Reverse");
+      expect(forB).toContain("SUBJECT-OTHER\n💬 Other reason\n");
+      expect(forB).not.toContain("%");
+    });
+  });
+});
+
+describe("listDelegateTags (F110 stage 16)", () => {
+  test("returns the tags of the own organization only", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const ctxA = { orgId: a.orgId };
+      const ctxB = { orgId: b.orgId };
+      const own = await insertDelegate(trx, ctxA, { tags: ["finance", "legal"] });
+      const other = await insertDelegate(trx, ctxB, { tags: ["secret-b"] });
+      expect(await listDelegateTags(trx, ctxA, [own, other])).toEqual(new Map([[own, ["finance", "legal"]]]));
+      expect(await listDelegateTags(trx, ctxA, [])).toEqual(new Map());
     });
   });
 });

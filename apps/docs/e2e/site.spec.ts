@@ -105,3 +105,16 @@ test("T5 an unknown path answers 404 with the Starlight 404 page", async ({ page
   expect(seen.violations, "CSP violations").toEqual([]);
   expect(seen.pageErrors, "page errors").toEqual([]);
 });
+
+test("T10 the changelog page shows released versions with a date and no operator text", async ({ page }) => {
+  await open(page, `${DOCS_BASE}/changelog/`);
+  await expect(page.locator("main h1")).toHaveText("Changelog");
+  const headings = await page.locator("main h2").allTextContents();
+  expect(headings.length).toBeGreaterThan(0);
+  for (const heading of headings) expect(heading).toMatch(/^\d+\.\d+\.\d+ - \d{4}-\d{2}-\d{2}$/);
+  expect(headings).toContain("0.1.0 - 2026-11-15");
+  const text = await page.locator("main").innerText();
+  for (const operatorText of ["Unreleased", "Offline quality lab", "Keep a Changelog", "release:prepare"]) {
+    expect(text).not.toContain(operatorText);
+  }
+});

@@ -1,0 +1,66 @@
+---
+title: Shadow mode and assist mode
+description: Learn why a new mailbox starts in shadow mode and how the system earns the right to move your mail.
+capabilities:
+  - actions-and-undo
+  - triage
+  - measurement
+---
+
+import UiText from "../../../components/UiText.astro";
+
+Each mailbox has a mode. The mode decides if the system may change your mail.
+This page explains the two modes, the switches, the check for automatic moves and the Undo.
+
+## The two modes
+
+**Shadow mode** is the start mode of a new mailbox. The system reads and sorts your mail and reports the result.
+It changes nothing in your mailbox. It makes no draft and sends no mail.
+The digest shows what the system would do. The line that starts with `→` says it, for example "would move to AI/Info".
+
+**Assist mode** lets the system apply the changes that the switches allow. The system can move, mark as read and flag mail.
+It can also write drafts. In assist mode too, nothing is sent without your approval. Read [The assistant never sends alone](../never-sends-alone/).
+
+Only an owner can change the mode. You switch it in **<UiText k="nav_settings" />**. Switching back to shadow mode stops all changes at once.
+
+## Why you start in shadow mode
+
+You cannot judge a sorter before you see its results. Shadow mode lets you watch the sorting on your own mail without a risk.
+You see where the system would put each mail. You tap `✅ n` when it is right and `✏️ n` when it is wrong.
+After some days you know if the system fits your mail.
+
+## The switches
+
+A switch allows one kind of change in one mailbox. The five switches are Move, Mark as read, Flag, drafts and move of unsure mail.
+All switches are off at the start. When you choose assist mode, the dialog offers the usual set: Move, Mark as read and Flag on, move of unsure mail off.
+The switch for drafts stays as it is. You can also keep your own switches.
+
+A change needs the right mode and the right switch. A move and a mark as read also need auto for the category of the mail.
+A VIP mail never gets a move or a mark as read. [Settings](../../reference/settings/) lists each switch.
+
+## Why automatic moves are earned
+
+A wrong move hides a mail that you need. The system must not move mail of a category until it has shown that it sorts this category well.
+That is why auto exists for each category and is off at the start.
+
+To turn auto on, the category must pass a check. The check reads your ratings of the category.
+A category passes when its precision is at least 98 % on at least 30 mails that you rated.
+The precision tells how many of the mails that the system put in the category were right.
+With fewer than 30 rated mails the card shows that it needs more ratings. It does not show a precision.
+
+Your ratings come from the buttons `✅ n` and `✏️ n`, from the page **<UiText k="nav_activity" />**, from each Undo and from mail that you move back by hand.
+So the shadow period does a job: it collects the ratings that the check needs.
+
+An owner can still turn auto on for a category that did not pass. The panel asks for a second confirmation, and the choice is yours.
+The Undo makes this choice less risky.
+
+## Undo
+
+Each change of the system in your mailbox has an Undo: a move, a flag and a mark as read.
+
+- Press `↩️ n` under a digest line, or **<UiText k="act_btn_undo" />** on the page **<UiText k="nav_activity" />**.
+- The Undo works for 7 days after the change. After that, the Undo is not possible.
+- An Undo of a move puts the mail back in the folder where it was.
+- An Undo counts as a rating: the system records that the sort was wrong.
+
+The system cannot take back a mail that it sent. This is one more reason why every send needs your tap first.
