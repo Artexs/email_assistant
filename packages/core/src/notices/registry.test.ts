@@ -12,6 +12,7 @@ import { MESSAGE_MAX_CHARS, type OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderAutonomyPausedNotice,
   renderHostBlockedNotice,
   renderLoopConsentNotice,
   renderNotTriagedNotice,
@@ -19,6 +20,7 @@ import {
   renderSentMissingNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
+  renderTrustReportReadyNotice,
   renderUrgentNotice,
 } from "../digest/notices";
 import { renderWeeklyReport } from "../digest/weekly";
@@ -286,6 +288,27 @@ const cases: Case[] = [
     kind: "loop_consent",
     view: { about: "approval" },
     direct: (texts) => renderLoopConsentNotice({ about: "approval" }, texts),
+  },
+  {
+    kind: "trust_report_ready",
+    view: {
+      mailboxId: id2,
+      recommended: ["info", "spam"],
+      blocked: 1,
+      checked: 212,
+      reportUrl: "https://app.example.test/report?mailbox=x",
+    },
+    direct: (texts) =>
+      renderTrustReportReadyNotice(
+        { checked: 212, recommended: ["info", "spam"], reportUrl: "https://app.example.test/report?mailbox=x" },
+        texts
+      ),
+  },
+  {
+    kind: "autonomy_paused",
+    view: { mailboxId: id2, category: "info", reason: "corrections", corrections: 2, settingsUrl: null },
+    direct: (texts) =>
+      renderAutonomyPausedNotice({ category: "info", reason: "corrections", corrections: 2, settingsUrl: null }, texts),
   },
   {
     kind: "approval_edit",
