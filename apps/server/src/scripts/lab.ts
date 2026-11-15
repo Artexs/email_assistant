@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { isAbsolute, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { isAbsolute, join, resolve } from "node:path";
 
 import { llmRoles } from "@ea/core";
 
@@ -15,11 +16,13 @@ import {
   readServeStatus,
   runServe,
   runSpend,
+  scoreLabRun,
   SERVE_EVERY_MS,
   SERVE_HEARTBEAT_MS,
   seedLabOrg,
   storeRunUrgencyProfile,
   takeServeLock,
+  writeLabReport,
   writeServeStatus,
 } from "../modules/lab";
 import { configureMailHosts, openImapProvider, verifySmtpLogin } from "../modules/mail";
@@ -36,6 +39,7 @@ const cli = createCliOutput("lab");
 
 const SCENARIO = "lab-01";
 const SIM_ROOT = resolve(import.meta.dir, "../../../../evals/sim");
+const RESULTS_DIR = resolve(import.meta.dir, "../../../../evals/results");
 // The lab runs no judge: its model is not a cost of a live run.
 const LAB_ROLES = llmRoles.filter((role) => role !== "judge");
 // Seed waits this long for the server to link the fake chat after `/start`.
@@ -118,6 +122,14 @@ async function main(): Promise<number> {
         const org = state.readOrgs()[run.org];
         if (org === undefined) throw new Error("lab state: the run org is not in orgs.json");
         return runSpend(db, org.orgId, run);
+      },
+      // Default report folder: `evals/results/` where the repo has it; the sim image has only `evals/sim`, so there it is
+      // `<LAB_STATE_DIR>/results/` (the runbook copies the files out).
+      score: async (runId, out) => {
+        const score = await scoreLabRun({ db, state, corpus, now: () => new Date() }, runId);
+        const dir =
+          out === undefined ? (existsSync(RESULTS_DIR) ? RESULTS_DIR : join(stateDir, "results")) : resolve(out);
+        return { ...writeLabReport(score, dir), partial: score.header.partial };
       },
       serveStatus: () => readServeStatus(stateDir),
       serve: () => {

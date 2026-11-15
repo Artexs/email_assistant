@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { APPROVAL_QUOTE_MAX, approvalDetailSchema, approvalListSchema, meSchema, type ApprovalDetail } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
-import { editApproval, getSend, noApprovalHooks, type SendScope } from "../../src/modules/actions";
+import { editApproval, getSend, noApprovalHooks, noDelegationHooks, type SendScope } from "../../src/modules/actions";
 import { approvalRoutes } from "../../src/modules/channels";
 import { approvalViewFor } from "../../src/modules/channels/notices/approval";
 import { insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
@@ -68,7 +68,10 @@ async function setup(opts: { flag?: boolean; sendScope?: SendScope } = {}) {
     db,
     sessions: { owner: org.ownerId, member: org.assistantId, other: org.otherOwnerId },
     routers: (api) => {
-      api.route("/", approvalRoutes({ db, now: () => NOW, sendScope }));
+      api.route(
+        "/",
+        approvalRoutes({ db, now: () => NOW, sendScope, hooks: noDelegationHooks, uidplus: async () => true })
+      );
       api.route(
         "/",
         tenancyRoutes({

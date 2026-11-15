@@ -1,0 +1,418 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-holdout",
+  "batch": "batch-009",
+  "cases": [
+    {
+      "id": "sh-lmk-06",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Eksport i odprawy celne: plan",
+      "sentAt": "2027-01-28T14:30:00.000Z",
+      "body": "Hi Oliver,\n\nPlease tell me if you approve the export and customs plan for the Gdańsk lanes. A short yes or no is enough for now.\n\nLet me know if you have any questions on the figures.\n\nWiktor",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-lmk-07",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "karin.lindqvist@nordicfoods-trade.test"
+      ],
+      "cc": [],
+      "subject": "Umowa ramowa: status po naszej stronie",
+      "sentAt": "2027-01-28T06:21:00.000Z",
+      "body": "Dear Karin,\n\nI want to give you a short summary of where the framework agreement stands on our side, so that you have the full picture before your internal review.\n\nOur legal team has finished its first pass through the draft. The main points are settled: the term of three years, the annual price review in January, and the delivery windows at the Gdańsk terminal. Two clauses remain open on our side. The first covers liability for temperature deviations during transport, and the second covers the notice period for volume changes. Both are normal items in an agreement of this size, and our teams have discussed similar wording with other clients before.\n\nHalina Strzemecka and Piotr Lewandrowski have both reviewed the commercial annex. They are comfortable with the volume bands and the rebate steps, and they see no operational obstacle to the schedule your team proposed in December. The warehouse in Gdańsk has enough capacity for the planned pallets, even during the busy weeks before Easter.\n\nThat is the whole status from our side. Nothing here needs a decision from you at the moment. Kordelan values the relationship with Nordic Foods Trade, and our board knows how important this agreement is for both companies.\n\nLet me know if you have any questions about the points above.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-mny-01",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "g.jastrzebska@hurtownia-zielona.test",
+        "tomasz.brzezinski@meblodrew.test",
+        "rafal.kwiecinski@kordelan.test",
+        "ewelina.marszalek@paliwa-flota.test",
+        "daniel.hargreaves@baltic-freight-partners.test",
+        "karin.lindqvist@nordicfoods-trade.test",
+        "matthias.brandt@trailerwerk-sued.test",
+        "z.orlowicz@rada-kordelan.test"
+      ],
+      "cc": [
+        "oliver.pemberton@kordelan.test",
+        "halina.strzemecka@kordelan.test",
+        "piotr.lewandrowski@kordelan.test"
+      ],
+      "subject": "Reklamacje: jeden punkt zgłoszeń",
+      "sentAt": "2027-01-31T11:04:00.000Z",
+      "body": "Dear all,\n\nFor your information: we now have a single intake point for damaged-delivery claims. Every claim goes into the shared claims register, and the register shows the status of each case to all departments. Halina Strzemecka's team keeps the register, and the sales coordinators see the same list.\n\nIn January we recorded 41 claims, and 29 of them are closed. Most open cases come from two deliveries to the Meblodrew warehouse and one delivery to Zielona Hurtownia.\n\nThis message is a general update for the distribution list.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-mny-02",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "tomasz.brzezinski@meblodrew.test",
+        "z.orlowicz@rada-kordelan.test",
+        "ewelina.marszalek@paliwa-flota.test",
+        "rafal.kwiecinski@kordelan.test",
+        "daniel.hargreaves@baltic-freight-partners.test",
+        "oliver.pemberton@kordelan.test",
+        "halina.strzemecka@kordelan.test",
+        "matthias.brandt@trailerwerk-sued.test"
+      ],
+      "cc": [
+        "karin.lindqvist@nordicfoods-trade.test",
+        "g.jastrzebska@hurtownia-zielona.test",
+        "dorota.wilczynska@kordelan.test",
+        "piotr.lewandrowski@kordelan.test"
+      ],
+      "subject": "Terminy dostaw: okna rozładunku w Gdańsku",
+      "sentAt": "2027-01-26T06:15:00.000Z",
+      "body": "Szanowni Państwo,\n\ninformuję o zmianach w oknach rozładunku. Magazyn w Gdańsku przyjmuje teraz dostawy w dni robocze w godzinach 6:00–14:00, a w czwartki także w oknie popołudniowym. Okno sobotnie nie jest już dostępne. Zmiany wynikają z nowej obsady zmian i z remontu rampy numer 4.\n\nHalina Strzemecka koordynuje harmonogram po stronie operacyjnej, a kopię planu mają wszyscy dyrektorzy. Zestawienie obejmuje trzy największe okna dla klientów sieciowych.\n\nWiadomość ma charakter informacyjny i trafia do wszystkich osób z listy.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-mny-03",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "rafal.kwiecinski@kordelan.test",
+        "halina.strzemecka@kordelan.test",
+        "ewelina.marszalek@paliwa-flota.test",
+        "g.jastrzebska@hurtownia-zielona.test",
+        "z.orlowicz@rada-kordelan.test",
+        "daniel.hargreaves@baltic-freight-partners.test",
+        "tomasz.brzezinski@meblodrew.test",
+        "karin.lindqvist@nordicfoods-trade.test"
+      ],
+      "cc": [
+        "oliver.pemberton@kordelan.test",
+        "matthias.brandt@trailerwerk-sued.test",
+        "dorota.wilczynska@kordelan.test",
+        "piotr.lewandrowski@kordelan.test"
+      ],
+      "subject": "Rekrutacje: pierwsza grupa na zmianie",
+      "sentAt": "2027-01-31T14:57:00.000Z",
+      "body": "Hi all,\n\nQuick note: the first group of new warehouse operators has finished training and is now on shift in Gdańsk. The second group is in the hiring pipeline, and HR has the numbers. Good progress from everyone involved.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-mny-04",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "ewelina.marszalek@paliwa-flota.test",
+        "halina.strzemecka@kordelan.test",
+        "daniel.hargreaves@baltic-freight-partners.test",
+        "tomasz.brzezinski@meblodrew.test",
+        "z.orlowicz@rada-kordelan.test",
+        "oliver.pemberton@kordelan.test",
+        "g.jastrzebska@hurtownia-zielona.test",
+        "rafal.kwiecinski@kordelan.test"
+      ],
+      "cc": [
+        "karin.lindqvist@nordicfoods-trade.test",
+        "matthias.brandt@trailerwerk-sued.test",
+        "magdalena.czerniak@kordelan.test"
+      ],
+      "subject": "Faktury Paliwa-Flota: nowy układ",
+      "sentAt": "2027-01-28T10:28:00.000Z",
+      "body": "Dear all,\n\nFor your information: our fuel supplier Paliwa-Flota has changed the layout of its invoices. The card number and the fuel type now sit on separate lines, and the payment terms stay at 30 days. The earlier message from Ewelina Marszalek is below.\n\nThe finance team already uses the new layout in its booking tool, so the change needs no action from the other departments.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nEwelina Marszalek wrote:\n> Dear Wiktor,\n> Our invoices carry a new layout with the card number and the fuel type on separate lines. The payment terms stay at 30 days.\n> Regards, Ewelina",
+      "threadSubjects": [
+        "Faktury i platnosci"
+      ]
+    },
+    {
+      "id": "sh-mny-05",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "rafal.kwiecinski@kordelan.test",
+        "matthias.brandt@trailerwerk-sued.test",
+        "oliver.pemberton@kordelan.test",
+        "tomasz.brzezinski@meblodrew.test",
+        "z.orlowicz@rada-kordelan.test",
+        "daniel.hargreaves@baltic-freight-partners.test",
+        "ewelina.marszalek@paliwa-flota.test",
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [
+        "karin.lindqvist@nordicfoods-trade.test",
+        "halina.strzemecka@kordelan.test",
+        "dorota.wilczynska@kordelan.test"
+      ],
+      "subject": "Rekrutacje: stan obsady magazynów",
+      "sentAt": "2027-01-27T14:54:00.000Z",
+      "body": "Hi everyone,\n\nA short update from HR and operations. We filled 12 of the 18 open warehouse positions, and the remaining six are at the interview stage. Rafal Kwiecinski runs the process and keeps the list of open roles.\n\nThe shift plan for the Gdańsk and Poznań sites now includes the new colleagues, so the early shifts are covered again.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-mny-07",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "daniel.hargreaves@baltic-freight-partners.test",
+        "matthias.brandt@trailerwerk-sued.test",
+        "karin.lindqvist@nordicfoods-trade.test",
+        "ewelina.marszalek@paliwa-flota.test",
+        "rafal.kwiecinski@kordelan.test",
+        "halina.strzemecka@kordelan.test",
+        "oliver.pemberton@kordelan.test",
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [
+        "tomasz.brzezinski@meblodrew.test",
+        "z.orlowicz@rada-kordelan.test",
+        "piotr.lewandrowski@kordelan.test"
+      ],
+      "subject": "Wspólne przetargi z Baltic Freight Partners: stan współpracy",
+      "sentAt": "2027-01-27T11:29:00.000Z",
+      "body": "Szanowni Państwo,\n\nchcę poinformować wszystkich o stanie naszej współpracy z Baltic Freight Partners przy wspólnych przetargach. Po rozmowach z Danielem Hargreavesem ustaliliśmy zasady, na których startujemy w kolejnych postępowaniach: Baltic Freight Partners odpowiada za kontakty z zagranicznymi nadawcami, a Kordelan za transport krajowy i obsługę magazynową.\n\nPierwsze zgłoszenie obejmuje trasy z portu w Gdańsku do trzech centrów dystrybucyjnych na południu kraju. Koordynacja po naszej stronie leży u Piotra Lewandrowskiego, a część operacyjną prowadzi Halina Strzemecka. Dział finansów przygotował wzór kalkulacji kosztów, z którego korzystają obie strony, dzięki czemu liczby w ofertach są porównywalne.\n\nZasady podziału marży i odpowiedzialności za szkody opisuje wspólny załącznik do porozumienia. Kopia załącznika jest w folderze zarządu. Rada nadzorcza zna kierunek tej współpracy i przyjęła go bez zastrzeżeń. Dla zespołów handlowych oznacza to jedno: wspólne oferty przechodzą przez te same ręce co nasze własne.\n\nTa wiadomość ma charakter informacyjny, trafia do wszystkich osób zaangażowanych w przetargi i nie wymaga odpowiedzi.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-ooo-01",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "daniel.hargreaves@baltic-freight-partners.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wspólne przetargi z Baltic Freight Partners",
+      "sentAt": "2027-01-27T13:10:00.000Z",
+      "body": "Dear Daniel,\n\nI know you are away, but the tender timeline leaves little room. Please tell me which option for the joint tenders fits best: the split by lanes or the split by clients. I will deliver the numbers for the joint tenders by 9 February.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nDaniel Hargreaves wrote:\n> Automatic reply: I am currently out of the office with limited access to email. For urgent matters please contact the Baltic Freight Partners front desk.\n> Kind regards, Daniel",
+      "threadSubjects": [
+        "Wspolne przetargi z Baltic Freight Partners"
+      ]
+    },
+    {
+      "id": "sh-ooo-02",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [],
+      "subject": "Re: Przetarg sieci Zielona Hurtownia",
+      "sentAt": "2027-01-25T06:27:00.000Z",
+      "body": "Szanowna Pani Genowefo,\n\nwiem, że jest Pani chwilowo poza biurem, ale sprawa przetargu sieci Zielona Hurtownia czeka na Pani stanowisko. W poprzedniej wiadomości zapytałem o warunki dostaw do oddziałów. Proszę odpowiedzieć na to pytanie: czy zaproponowane warunki dostaw odpowiadają Pani sieci?\n\nWiktor\n\nGenowefa Jastrzebska napisała:\n> Dziękuję za wiadomość. Jestem poza biurem i mam ograniczony dostęp do poczty. W pilnych sprawach proszę kontaktować się z sekretariatem Zielonej Hurtowni.\n\nWiktor Szalewski napisał:\n> Pani Genowefo, przesyłam wstępne warunki dostaw do oddziałów sieci. Proszę o odpowiedź, czy odpowiadają Pani sieci.",
+      "threadSubjects": [
+        "Przetarg sieci Zielona Hurtownia",
+        "Re: Przetarg sieci Zielona Hurtownia"
+      ]
+    },
+    {
+      "id": "sh-ooo-03",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "karin.lindqvist@nordicfoods-trade.test"
+      ],
+      "cc": [],
+      "subject": "Re: Eksport i odprawy celne",
+      "sentAt": "2027-01-30T11:20:00.000Z",
+      "body": "Dear Karin,\n\nI see from your automatic reply that you are out of the office, so please treat this message as information only. The customs clearance for the last Nordic shipment is complete, and the goods left the border terminal without further inspection. Oliver Pemberton confirmed the release with the broker.\n\nWiktor\n\nKarin Lindqvist wrote:\n> Automatic reply: I am out of the office and read my email only occasionally. Procurement colleagues can help with urgent matters.\n> Best regards, Karin\n\nWiktor Szalewski wrote:\n> Karin, thank you for the document list. The export papers for your next shipment are with Oliver Pemberton.",
+      "threadSubjects": [
+        "Eksport i odprawy celne",
+        "Re: Eksport i odprawy celne"
+      ]
+    },
+    {
+      "id": "sh-ooo-05",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "dorota.wilczynska@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Posiedzenie rady nadzorczej i budżet",
+      "sentAt": "2027-01-25T09:14:00.000Z",
+      "body": "Hi Dorota,\n\nI know your out-of-office reply says you are away, but the board meeting plan cannot wait much longer, so I write anyway. Read this when you are back at your desk.\n\nHere is where we stand. The supervisory board meeting needs a format, and I see two workable options. Option one is a full-day meeting at the Gdańsk office, with the budget review in the morning and the risk discussion after lunch. Option two is two shorter sessions, one online and one in person, with the budget review in the first and the risks in the second. Zbigniew Orlowicz prefers fewer travel days, but he did not rule out either variant. The finance team can support both, and Magdalena Czerniak needs about the same preparation time for each.\n\nFor the room and the catering, the first option is simpler. For board members who travel a long way, the second one is easier. I lean a little towards the first option, but you know the calendars and the habits of the board better than I do.\n\nSo please tell me which option for the board meeting fits best, and add the reasons you see.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nDorota Wilczynska wrote:\n> Automatic reply: I am away from the office and read my mail only occasionally. For urgent matters, please call the board office.\n\nWiktor Szalewski wrote:\n> Dorota, thanks for the board calendar. I look at the options for the meeting format.",
+      "threadSubjects": [
+        "Posiedzenie rady nadzorczej i budzet",
+        "Re: Posiedzenie rady nadzorczej i budzet"
+      ]
+    },
+    {
+      "id": "sh-ooo-06",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "System magazynowy: dwa warianty naprawy",
+      "sentAt": "2027-01-27T09:51:00.000Z",
+      "body": "Cześć Halino,\n\nwiem z automatycznej odpowiedzi, że jesteś poza biurem, ale piszę, bo sprawa systemu magazynowego nie może stać. Dostawca proponuje dwa warianty po ostatniej awarii ERP: pełną migrację modułu przyjęć albo łatkę z dodatkowym monitoringiem. Napisz, który wariant systemu magazynowego pasuje Twoim zdaniem lepiej, i dodaj jedno zdanie uzasadnienia.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": [
+        "System magazynowy i awarie ERP",
+        "Re: System magazynowy i awarie ERP",
+        "Re: System magazynowy i awarie ERP"
+      ]
+    },
+    {
+      "id": "sh-ooo-07",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "dorota.wilczynska@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz zarządu: jedno pytanie",
+      "sentAt": "2027-01-25T15:02:00.000Z",
+      "body": "Cześć Doroto,\n\nwidzę Twoją automatyczną odpowiedź, ale piszę mimo to. Odpowiedz mi proszę na pytanie o kalendarz zarządu: czy wyjazd do Gdańska koliduje z posiedzeniem rady?\n\nWiktor",
+      "threadSubjects": [
+        "Kalendarz zarzadu i podroze sluzbowe"
+      ]
+    },
+    {
+      "id": "sh-ots-02",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "tomasz.brzezinski@meblodrew.test",
+        "matthias.brandt@trailerwerk-sued.test"
+      ],
+      "cc": [],
+      "subject": "Terminy dostaw i okna rozładunku",
+      "sentAt": "2027-01-29T12:31:00.000Z",
+      "body": "Szanowni Panowie,\n\ninformuję, że okna rozładunku w Gdańsku pozostają bez zmian. Dostawy dla Meblodrew i naczepy od Trailerwerk Sued mają stałe godziny przyjęcia. Poniżej poprzednia korespondencja.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nTomasz Brzezinski napisał:\n> Dziękuję za informację. Sprawdzimy okna rozładunku po naszej stronie.\n\nWiktor Szalewski napisał:\n> Panie Tomaszu, okna rozładunku w Gdańsku ustala Halina Strzemecka z działu operacyjnego.",
+      "threadSubjects": [
+        "Karty paliwowe i ceny paliw",
+        "Re: Karty paliwowe i ceny paliw"
+      ]
+    },
+    {
+      "id": "sh-ots-03",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "karin.lindqvist@nordicfoods-trade.test"
+      ],
+      "cc": [],
+      "subject": "Eksport i odprawy celne: dokumenty",
+      "sentAt": "2027-01-26T06:25:00.000Z",
+      "body": "Dear Karin,\n\nI would like to share a short update on the export documents for your shipments. The customs broker in Gdańsk has now received the complete set of papers, and the clearance for the last two containers ran without delay. Oliver Pemberton follows the process on our side and reports directly to me.\n\nThe earlier exchange is below for reference.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nKarin Lindqvist wrote:\n> Dear Wiktor, thank you for the quick answer. We note that the papers go through the Gdańsk broker.\n> Best regards, Karin\n\nWiktor Szalewski wrote:\n> Karin, the export papers for your containers are with Oliver Pemberton.\n\nKarin Lindqvist wrote:\n> Dear Wiktor, we plan the next shipments to the Baltic terminal and want to align the customs documents.",
+      "threadSubjects": [
+        "Posiedzenie rady nadzorczej i budzet",
+        "Re: Posiedzenie rady nadzorczej i budzet",
+        "Re: Posiedzenie rady nadzorczej i budzet"
+      ]
+    },
+    {
+      "id": "sh-ots-04",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "magdalena.czerniak@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenie rady: rezerwa na reklamacje",
+      "sentAt": "2027-01-30T13:55:00.000Z",
+      "body": "Hi Magdalena,\n\nBefore the supervisory board meeting I need one thing from finance. Please answer this question: does the budget draft already include the reserve for the pending delivery claims? The board chair will probably ask about it, and I want to give a straight answer.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": [
+        "Reklamacje i uszkodzone dostawy"
+      ]
+    },
+    {
+      "id": "sh-ots-05",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test",
+        "daniel.hargreaves@baltic-freight-partners.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacje i uszkodzone dostawy",
+      "sentAt": "2027-01-29T06:50:00.000Z",
+      "body": "Cześć Halino, cześć Danielu,\n\ninformuję Was, że dwie reklamacje uszkodzonych dostaw z grudnia są już zamknięte. Przewoźnik zaakceptował protokoły szkód, a zwrot kosztów trafił do klientów. Poniżej wcześniejsza wiadomość Haliny w tej sprawie.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nHalina Strzemecka napisała:\n> Cześć Wiktor, dwie reklamacje z grudnia nadal czekają na protokół szkody od przewoźnika.",
+      "threadSubjects": [
+        "Eksport i odprawy celne"
+      ]
+    },
+    {
+      "id": "sh-ots-06",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg sieci Zielona Hurtownia: podpisany dokument",
+      "sentAt": "2027-01-28T17:38:00.000Z",
+      "body": "Szanowna Pani Genowefo,\n\ndziękuję za materiały do przetargu sieci Zielona Hurtownia. Proszę o odesłanie podpisanego dokumentu przetargowego do 9 lutego, bo od tego zależy złożenie oferty w terminie. Jeśli coś w dokumencie budzi wątpliwości, Piotr Lewandrowski wyjaśni szczegóły.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nGenowefa Jastrzebska napisała:\n> Dzień dobry Panie Prezesie, przesyłam dokument przetargowy do przejrzenia. Zawiera warunki cenowe i harmonogram dostaw.\n> Genowefa Jastrzebska",
+      "threadSubjects": [
+        "Rekrutacje i obsada magazynow"
+      ]
+    },
+    {
+      "id": "sh-ots-07",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "rafal.kwiecinski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacje i obsada magazynów",
+      "sentAt": "2027-01-26T17:19:00.000Z",
+      "body": "Cześć Rafale,\n\nkrótka informacja po rozmowie w zarządzie: obsada magazynu w Gdańsku jest na dobrym poziomie, a zespół nocny działa bez zastojów. Obecny plan rekrutacji zostaje bez zmian, więc nic nie musisz poprawiać. Dobra robota Twojego zespołu.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": [
+        "Wspolne przetargi z Baltic Freight Partners"
+      ]
+    },
+    {
+      "id": "sh-pst-01",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "z.orlowicz@rada-kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz zarządu: otwarte punkty",
+      "sentAt": "2027-01-25T06:19:00.000Z",
+      "body": "Witaj Zbigniewie,\n\nprosiłem o listę otwartych punktów dotyczących kalendarza zarządu do 18 stycznia, a nadal jej nie widziałem. Prześlij mi ją proszę. Chodzi o wszystkie wyjazdy i spotkania z radą, które nie mają jeszcze potwierdzonego terminu.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-pst-03",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "daniel.hargreaves@baltic-freight-partners.test",
+        "rafal.kwiecinski@kordelan.test"
+      ],
+      "cc": [
+        "tomasz.brzezinski@meblodrew.test"
+      ],
+      "subject": "Wspólne przetargi: wybór wariantu",
+      "sentAt": "2027-01-26T14:33:00.000Z",
+      "body": "Dear Daniel and Rafal,\n\nI asked for your view on the joint tender options by 20 January, and I still have no answer. Please tell me which option for the joint tenders fits best.\n\nWiktor",
+      "threadSubjects": [
+        "Wspolne przetargi z Baltic Freight Partners"
+      ]
+    },
+    {
+      "id": "sh-pst-04",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "rafal.kwiecinski@kordelan.test",
+        "tomasz.brzezinski@meblodrew.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacje i obsada: podpisany dokument",
+      "sentAt": "2027-01-31T09:58:00.000Z",
+      "body": "Cześć Rafale, cześć Tomaszu,\n\ndokument o obsadzie magazynów miał wrócić podpisany do 28 stycznia, a jeszcze go nie mam. Odeślijcie mi go proszę podpisanego.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-pst-05",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "z.orlowicz@rada-kordelan.test",
+        "ewelina.marszalek@paliwa-flota.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz zarządu: liczby",
+      "sentAt": "2027-01-27T11:33:00.000Z",
+      "body": "Cześć Zbigniewie, cześć Ewelino,\n\nprosiłem o potwierdzenie liczb do kalendarza zarządu do 21 stycznia i nie dostałem odpowiedzi. Potwierdźcie mi je proszę jeszcze raz: chodzi o dni podróży i terminy posiedzeń.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "sh-pst-06",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Eksport i odprawy celne: pytanie",
+      "sentAt": "2027-01-27T17:15:00.000Z",
+      "body": "Hi Oliver,\n\nI asked you to answer my question about the export lanes by 21 January, and the answer has not arrived. Please reply with a yes or no on the customs route for the Nordic lane.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    }
+  ]
+}
