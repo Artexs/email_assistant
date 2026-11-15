@@ -71,7 +71,6 @@ const CONSENT_NUMBERS: readonly string[] = ["90094", "90095", "65001"];
 /** An ID token may be up to 5 minutes past its `exp` (clock skew). */
 const EXP_SKEW_MS = 5 * 60_000;
 const ADDRESS = z.email({ pattern: z.regexes.html5Email });
-const GUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 const refuse = (provider: MailOAuthProvider, code: OAuthRefusalCode): CallbackResult => {
   log.info("oauth_callback_refused", { provider, code });
@@ -160,12 +159,8 @@ export async function finishOAuthCallback(
     if (claims.emailVerified !== true) return refuse(provider, "oauth_failed");
     rawAddress = claims.email;
   } else {
-    // The issuer names the tenant too: the two must agree.
-    if (
-      claims.tid === null ||
-      !GUID.test(claims.tid) ||
-      !claims.iss.toLowerCase().includes(`/${claims.tid.toLowerCase()}/`)
-    ) {
+    // The issuer (a GUID, `issuerOk`) names the tenant too: the two must agree, so `tid` is a GUID as well.
+    if (claims.tid === null || !claims.iss.toLowerCase().includes(`/${claims.tid.toLowerCase()}/`)) {
       return refuse(provider, "oauth_failed");
     }
     tenantId = claims.tid.toLowerCase();

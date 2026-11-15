@@ -283,7 +283,7 @@ describe("the callback check", () => {
     // A scope that only ends alike is not the scope.
     const lookalike = await signIn("microsoft", {
       address: "a@x.test",
-      scopes: ["https://x.test/NotIMAP.AccessAsUser.All2"],
+      scopes: ["https://x.test/NotIMAP.AccessAsUser.All"],
     });
     expect(await finish("microsoft", lookalike.query)).toEqual(refused("oauth_scope_missing"));
   });
@@ -322,9 +322,18 @@ describe("the callback check", () => {
       expiresInSec: 3600,
       refreshToken: "rt-stub",
       scopes: [GOOGLE_MAIL],
-      idToken: idTokenOf({}),
+      idToken: idTokenOf({
+        iss: "https://accounts.google.com",
+        aud: fake.clientId,
+        exp: Math.floor(Date.now() / 1000) + 300,
+        email: "a@x.test",
+        email_verified: true,
+      }),
     };
     const base = (over: Partial<TokenAnswer>) => stubClient("google", async () => ({ ...answer, ...over }));
+    // The stub answer is valid as it is: only the one change below makes it fail.
+    const fine = await signIn("google", { address: "a@x.test" });
+    expect((await finish("google", fine.query, { use: base({}) })).ok).toBe(true);
     for (const over of [{ refreshToken: null }, { idToken: null }, { idToken: "not-a-jwt" }, { idToken: "a.b.c" }]) {
       const { query } = await signIn("google", { address: "a@x.test" });
       expect(await finish("google", query, { use: base(over) })).toEqual(refused("oauth_failed"));
@@ -354,10 +363,10 @@ describe("the callback check", () => {
   });
 
   test("9. Reconnect for ann@x.test: the provider answers eve@x.test: oauth_wrong_account; the same address in other case passes", async () => {
-    const mailboxId = await addOAuthMailbox(org.orgId, "google", "ann@x.test");
+    const mailboxId = await addOAuthMailbox(org.orgId, "google", "Ann@X.test");
     const wrong = await signIn("google", { address: "eve@x.test", mailboxId });
     expect(await finish("google", wrong.query)).toEqual(refused("oauth_wrong_account"));
-    const same = await signIn("google", { address: "ANN@x.test", mailboxId });
+    const same = await signIn("google", { address: "ann@X.test", mailboxId });
     const result = await finish("google", same.query);
     expect(result.ok && result.grant.start.mailboxId).toBe(mailboxId);
     // A mailbox removed after the start: nothing to reconnect.
@@ -456,20 +465,37 @@ describe("the state binding at the callback", () => {
 describe("D18", () => {
   test("17. canary: code, state, verifier, tokens and the ID token are in no log line, no error and no refusal", async () => {
     const secretsSeen: string[] = [];
-    const attempts: { provider: MailOAuthProvider; address: string; over?: Record<string, unknown> }[] = [
-      { provider: "google", address: "canary@x.test" },
-      { provider: "microsoft", address: "canary@x.test" },
-      { provider: "google", address: "canary@x.test", over: { emailVerified: false } },
-      { provider: "google", address: "canary@x.test", over: { wrongVerifier: true } },
-      { provider: "google", address: "canary@x.test", over: { scopes: ["openid"] } },
+    // The real client with a tap: every value that goes to or comes from the token endpoint is a secret to look for.
+    const tapped = (provider: MailOAuthProvider): MailOAuthClients => {
+      const real = clients[provider];
+      if (real === undefined) throw new Error("no client");
+      return stubClient(provider, async (code, verifier) => {
+        secretsSeen.push(code, verifier);
+        const answer = await real.redeemCode(code, verifier);
+        secretsSeen.push(
+          answer.accessToken,
+          answer.refreshToken ?? "",
+          answer.idToken ?? "",
+          answer.idToken?.split(".")[1] ?? ""
+        );
+        return answer;
+      });
+    };
+    const attempts: { provider: MailOAuthProvider; over?: Record<string, unknown> }[] = [
+      { provider: "google" },
+      { provider: "microsoft" },
+      { provider: "google", over: { emailVerified: false } },
+      { provider: "google", over: { wrongVerifier: true } },
+      { provider: "google", over: { scopes: ["openid"] } },
+      { provider: "microsoft", over: { claims: { aud: "other" } } },
     ];
-    const outputs: unknown[] = [];
+    const outputs: CallbackResult[] = [];
     for (const attempt of attempts) {
-      const { query, state } = await signIn(attempt.provider, { address: attempt.address, ...(attempt.over ?? {}) });
+      const { query, state } = await signIn(attempt.provider, { address: "canary@x.test", ...(attempt.over ?? {}) });
       secretsSeen.push(query.code ?? "", state);
-      outputs.push(await finish(attempt.provider, query));
-      // A faulty token endpoint with a description that holds the user and a trace.
-      const faulty = await signIn(attempt.provider, { address: attempt.address });
+      outputs.push(await finish(attempt.provider, query, { use: tapped(attempt.provider) }));
+      // A faulty token endpoint with a description that holds the code.
+      const faulty = await signIn(attempt.provider, { address: "canary@x.test" });
       fake.failNext({
         status: 400,
         error: "invalid_grant",
@@ -477,9 +503,11 @@ describe("D18", () => {
         description: `AADSTS70008: ${faulty.query.code}`,
       });
       secretsSeen.push(faulty.query.code ?? "", faulty.state);
-      outputs.push(await finish(attempt.provider, faulty.query));
+      outputs.push(await finish(attempt.provider, faulty.query, { use: tapped(attempt.provider) }));
     }
+    // An error in the query with a description that holds the state and the code.
     const error = await signIn("microsoft", { address: "canary@x.test" });
+    secretsSeen.push(error.state, error.query.code ?? "");
     outputs.push(
       await finish("microsoft", {
         error: "access_denied",
@@ -487,36 +515,22 @@ describe("D18", () => {
         state: error.state,
       })
     );
-    secretsSeen.push(error.state, error.query.code ?? "");
-    // The verifier of each state is not known after consume; the verifiers the fake accepted are the ones of the stored rows, so a
-    // fresh state gives one to compare with.
-    const made = await createOAuthState(db, secrets, ctxA(), startOf("google", org.ownerId), new Date());
-    secretsSeen.push(made.state);
-    const [row] = await stateRows();
-    secretsSeen.push(
-      secrets.decrypt(
-        { ciphertext: row?.encrypted_verifier ?? "", keyVersion: row?.key_version ?? 0 },
-        `oauth_state:${row?.id}`
-      )
-    );
     secretsSeen.push(...fake.issuedRefreshTokens, fake.clientSecret);
+    const grants = outputs.filter((output) => output.ok);
+    const refusals = outputs.filter((output) => !output.ok);
+    expect(grants).toHaveLength(2);
+    expect(refusals.length).toBeGreaterThan(8);
     // A grant holds its tokens by design (stage 09 stores them). A refusal and the log lines hold none.
-    const refusals = outputs.filter((output) => !(output as CallbackResult).ok);
-    expect(refusals.length).toBeGreaterThan(5);
     const seen = [...logLines, ...refusals.map((output) => inspect(output, { depth: 10 }))].join("\n");
     expect(logLines.length).toBeGreaterThan(0);
-    expect(secretsSeen.length).toBeGreaterThan(10);
+    expect(secretsSeen.filter((value) => value !== "").length).toBeGreaterThan(30);
     for (const value of secretsSeen) {
       expect({ value: value.slice(0, 6), leaked: value !== "" && seen.includes(value) }).toEqual({
         value: value.slice(0, 6),
         leaked: false,
       });
     }
-    for (const output of refusals) expect(Object.keys(output as object)).toEqual(["ok", "code"]);
-    // The ID token of an accepted answer is not in a log line either.
-    const ok = await signIn("google", { address: "canary@x.test" });
-    const grant = await finish("google", ok.query);
-    expect(grant.ok).toBe(true);
+    for (const output of refusals) expect(Object.keys(output)).toEqual(["ok", "code"]);
     expect(logLines.join("\n")).not.toMatch(/eyJ|id_token/);
   });
 
