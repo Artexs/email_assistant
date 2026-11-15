@@ -33,7 +33,14 @@ export {
   type Cursor,
   type SyncFolderRow,
 } from "./folders";
-export { getCredentials, insertCredentials, updateCredentials, type CredentialKind } from "./credentials";
+export {
+  getCredentials,
+  insertCredentials,
+  listCredentialsPage,
+  updateCredentials,
+  type CredentialKind,
+  type CredentialRow,
+} from "./credentials";
 export {
   findCopies,
   listFolderRowsAtUids,

@@ -14,6 +14,8 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
+import { credentialsLine } from "../../apps/server/src/scripts/credentials-check-lines";
+
 // F114 stage 07: `deploy/restore.sh` in a temp copy of the repo layout, with recording stubs (`docker`, `age`, `openssl`) first
 // on PATH. No real Docker, no real data. The `docker` stub records one line per call, with the number of stdin bytes it read, so a
 // test sees which call got the dump. Switches are files in `stubs/`:
@@ -26,6 +28,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 const DEPLOY = join(import.meta.dir, "..");
 const DUMP = "PLAIN-DUMP-BYTES";
+// What `bun run credentials:check` prints: the line of the real script (`credentials-check-lines.ts`) after the prefix of createCliOutput
+// (`[credentials-check] `, as `apps/server/src/platform/cli.ts` writes it). The stub fills in `failed` from the switch.
+const CREDS_FAILED_MARK = "99999";
+const CREDS_LINE_TEMPLATE = `[credentials-check] ${credentialsLine({ ok: 4, failed: Number(CREDS_FAILED_MARK) })}`;
 const DRILL_CONFIG_OK = JSON.stringify({ name: "ea-drill", services: { db: {}, server: {} } });
 
 let root: string;
@@ -75,7 +81,7 @@ if [[ "$*" == *"from organizations"* ]]; then
   exit 0
 fi
 if [[ "$*" == *"credentials:check"* ]]; then
-  if [[ -f "$S/creds-line" ]]; then cat "$S/creds-line"; else echo "credentials ok=4 failed=$(cat "$S/creds-failed" 2>/dev/null || echo 0)"; fi
+  if [[ -f "$S/creds-line" ]]; then cat "$S/creds-line"; else failed="$(cat "$S/creds-failed" 2>/dev/null || echo 0)"; echo "${CREDS_LINE_TEMPLATE.replace(CREDS_FAILED_MARK, "$failed")}"; fi
   exit 0
 fi
 exit 0`
@@ -262,7 +268,7 @@ describe("restore.sh drill", () => {
     expect(lines.filter((line) => / build /.test(line))).toHaveLength(1);
     expect(lines.find((line) => line.includes("pg_restore"))).toContain("--no-owner --role=migrator --exit-on-error");
     expect(result.stdout).toContain("count organizations=2 users=3 mailboxes=1 emails=40");
-    expect(result.stdout).toContain("credentials ok=4 failed=0");
+    expect(result.stdout).toContain("[credentials-check] credentials ok=4 failed=0");
     expect(lastLine(result.stdout)).toMatch(/^restore ok target=drill seconds=\d+$/);
     expect(result.stdout).not.toContain("deleted <org id>");
   });
@@ -338,6 +344,31 @@ describe("restore.sh drill", () => {
     expect(result.output).toContain("restore failed at credentials");
     expect(dockerCalls().some((line) => line.includes(" up -d --no-build --wait"))).toBe(false);
     expect(result.stdout).not.toContain("restore ok");
+  });
+
+  test("restore.sh reads the failed count of the real line format: the prefixed line and the bare line, one count each", () => {
+    writeDrillEnv();
+    for (const [line, code] of [
+      [`[credentials-check] ${credentialsLine({ ok: 3, failed: 0 })}\n`, 0],
+      [`${credentialsLine({ ok: 3, failed: 0 })}\n`, 0],
+      [`[credentials-check] ${credentialsLine({ ok: 3, failed: 2 })}\n`, 1],
+      [`${credentialsLine({ ok: 3, failed: 12 })}\n`, 1],
+      // A line with another prefix, an extra word or a missing number is no result line.
+      [`[other] ${credentialsLine({ ok: 3, failed: 0 })}\n`, 1],
+      [`[credentials-check] ${credentialsLine({ ok: 3, failed: 0 })} extra\n`, 1],
+      ["[credentials-check] credentials ok=3 failed=\n", 1],
+    ] as const) {
+      setSwitch("creds-line", line);
+      expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code, line).toBe(code);
+    }
+  });
+
+  test("the failed count is read from the result line, whatever else the call prints before it", () => {
+    writeDrillEnv();
+    setSwitch("creds-line", `warm-up noise\n[credentials-check] ${credentialsLine({ ok: 1, failed: 1 })}\n`);
+    const result = run(["--target", "drill", "--stdin"], { stdin: DUMP });
+    expect(result.code).toBe(1);
+    expect(result.output).toContain("1 mailbox secrets do not open");
   });
 
   test("a credentials:check that prints no result line exits 1 and never starts the server", () => {

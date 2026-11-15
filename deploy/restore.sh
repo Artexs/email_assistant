@@ -232,7 +232,9 @@ restore() {
   local creds failed
   creds="$("${C[@]}" run --rm -T cli bun run credentials:check </dev/null)"
   echo "$creds"
-  failed="$(printf '%s\n' "$creds" | sed -n 's/^credentials ok=[0-9]* failed=\([0-9]*\)$/\1/p' | tail -n 1)"
+  # The result line is `[credentials-check] credentials ok=<n> failed=<m>` (createCliOutput adds the prefix; the script holds the
+  # text in apps/server/src/scripts/credentials-check-lines.ts). The bare line is accepted too.
+  failed="$(printf '%s\n' "$creds" | sed -n 's/^\(\[credentials-check\] \)\{0,1\}credentials ok=[0-9]\{1,\} failed=\([0-9]\{1,\}\)$/\2/p' | tail -n 1)"
   [[ "$failed" =~ ^[0-9]+$ ]] || { echo "restore: credentials:check printed no result line" >&2; exit 1; }
   if ((failed > 0)); then
     echo "restore: $failed mailbox secrets do not open with this CREDENTIALS_KEY; the server stays down" >&2
