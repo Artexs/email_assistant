@@ -81,6 +81,7 @@ const eventNames = {
   backup_codes_generated: auditEvents.webBackupCodesGenerated,
   backup_code_used: auditEvents.webBackupCodeUsed,
   two_factor_locked: auditEvents.webTwoFactorLocked,
+  two_factor_refused: auditEvents.webTwoFactorRefused,
 } satisfies Record<AuthEventKind, string>;
 
 // D4: a login or a password change is a row in the audit log of the user's oldest organization. It never throws.

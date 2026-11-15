@@ -80,8 +80,12 @@ export const pl: Record<TextKey, string> = {
   tf_codes_unknown: "Liczba pozostałych kodów zapasowych jest nieznana.",
   tf_codes_few: "Zostało mało kodów zapasowych. Utwórz nowe.",
   tf_password_help_enable: "Wpisz hasło, aby zacząć.",
-  tf_password_help_codes: "Wpisz hasło. Stare kody zapasowe przestaną działać.",
-  tf_password_help_disable: "Wpisz hasło. Logowanie będzie wtedy wymagać tylko hasła.",
+  tf_password_help_codes: "Wpisz hasło i kod z aplikacji albo kod zapasowy. Stare kody zapasowe przestaną działać.",
+  tf_password_help_disable:
+    "Wpisz hasło i kod z aplikacji albo kod zapasowy. Logowanie będzie wtedy wymagać tylko hasła.",
+  tf_confirm_code_label: "Kod z aplikacji albo kod zapasowy",
+  tf_confirm_code_format: "Wpisz 6 cyfr z aplikacji albo kod zapasowy, na przykład abcde-12345.",
+  tf_error_code_required: "Wpisz kod z aplikacji albo kod zapasowy.",
   tf_scan_title: "Połącz aplikację uwierzytelniającą",
   tf_scan_step_app:
     "Otwórz aplikację uwierzytelniającą w telefonie, na przykład Google Authenticator, Microsoft Authenticator lub Aegis, i zeskanuj ten kod QR.",
@@ -450,6 +454,7 @@ export const pl: Record<TextKey, string> = {
   sec_kind_backup_codes_new: "Utworzono nowe kody zapasowe",
   sec_kind_backup_code_used: "Zalogowano kodem zapasowym",
   sec_kind_two_factor_locked: "Krok kodu zablokowany po błędnych kodach",
+  sec_kind_two_factor_refused: "Odmowa zmiany logowania dwuetapowego: brak kodu albo błędny kod",
   sec_kind_break_glass_set: "Wybrano właściciela awaryjnego",
   sec_kind_break_glass_cleared: "Usunięto właściciela awaryjnego",
   sec_kind_data_exported: "Wykonano eksport danych",

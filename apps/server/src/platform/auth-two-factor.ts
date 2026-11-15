@@ -1,6 +1,6 @@
 import { type BetterAuthPlugin } from "better-auth";
 import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
-import { twoFactor } from "better-auth/plugins";
+import { TWO_FACTOR_ERROR_CODES, twoFactor } from "better-auth/plugins";
 
 import type { AuthEventKind, AuthHandle } from "./auth";
 import { errorFields } from "./errors";
@@ -71,11 +71,128 @@ const SIGN_IN_AUDIT_PATHS: ReadonlySet<string> = new Set([
   GENERATE_BACKUP_CODES_PATH,
 ]);
 
-function twoFactorOn(user: object): boolean {
+export function twoFactorOn(user: object): boolean {
   return (user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled === true;
 }
 
 type AuditContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
+
+// F128: turning two-factor off and making new backup codes need a code, not only the password.
+// The code goes through the plugin's own verify (`verifyTOTP`, `verifyBackupCode`); no code check is written here.
+// The plugin counts failed codes only at sign-in, so the lock-out is applied here on the same columns and numbers.
+export const SECOND_FACTOR_ACTIONS: Readonly<Record<string, "disable" | "backup_codes" | undefined>> = {
+  [DISABLE_PATH]: "disable",
+  [GENERATE_BACKUP_CODES_PATH]: "backup_codes",
+};
+
+export function secondFactorActionOf(path: string): "disable" | "backup_codes" | null {
+  return Object.hasOwn(SECOND_FACTOR_ACTIONS, path) ? (SECOND_FACTOR_ACTIONS[path] ?? null) : null;
+}
+
+// The two verify endpoints of the plugin. `auth.ts` passes `auth.api` after the instance exists.
+interface VerifyInput {
+  body: { code: string };
+  headers: Headers;
+}
+export interface CodeApi {
+  verifyTOTP: (input: VerifyInput) => Promise<unknown>;
+  verifyBackupCode: (input: VerifyInput) => Promise<unknown>;
+}
+
+export interface SecondFactorInput {
+  userId: string;
+  action: "disable" | "backup_codes";
+  api: CodeApi | null;
+  report: AuthReport;
+  now: () => Date;
+}
+
+interface TwoFactorRow {
+  id: string;
+  failedVerificationCount?: number | null;
+  lockedUntil?: Date | null;
+}
+type Refusal = "missing" | "wrong" | "locked";
+
+// A TOTP code is digits only. A backup code always holds a dash, so the shape picks the verify with no second try.
+const DIGITS = /^\d+$/;
+
+function isWrongCode(error: unknown): boolean {
+  return isAPIError(error) && error.statusCode === 401 && WRONG_CODE_ERRORS.has(String(error.body?.code));
+}
+
+async function countWrongCode(ctx: AuditContext, row: TwoFactorRow, input: SecondFactorInput): Promise<void> {
+  const counted = await ctx.context.adapter.incrementOne<{ failedVerificationCount?: number | null }>({
+    model: "twoFactor",
+    where: [{ field: "id", value: row.id }],
+    increment: { failedVerificationCount: 1 },
+  });
+  if ((counted?.failedVerificationCount ?? 0) < TWO_FACTOR_LOCK.maxFailedAttempts) return;
+  const lockedUntil = new Date(input.now().getTime() + TWO_FACTOR_LOCK.durationSeconds * 1000);
+  const locked = await ctx.context.adapter.incrementOne({
+    model: "twoFactor",
+    where: [
+      { field: "id", value: row.id },
+      { field: "failedVerificationCount", operator: "gte", value: TWO_FACTOR_LOCK.maxFailedAttempts },
+    ],
+    increment: {},
+    set: { lockedUntil },
+  });
+  if (locked && counted?.failedVerificationCount === TWO_FACTOR_LOCK.maxFailedAttempts) {
+    await input.report("two_factor_locked", input.userId, { locked_until: lockedUntil.toISOString() });
+  }
+}
+
+async function clearCount(ctx: AuditContext, row: TwoFactorRow): Promise<void> {
+  await ctx.context.adapter.update({
+    model: "twoFactor",
+    where: [{ field: "id", value: row.id }],
+    update: { failedVerificationCount: 0, lockedUntil: null },
+  });
+}
+
+// Runs in `hooks.before` of the two paths, for a session whose user has TOTP on. Order: the password first (a wrong
+// password uses up no code and gives no answer about a code), then the lock, then the code. Every refusal is a
+// security-log row with the action and the reason, never the code. The break-glass check runs before this one.
+export async function requireSecondFactorCode(ctx: AuditContext, input: SecondFactorInput): Promise<void> {
+  await ctx.context.password.checkPassword(input.userId, ctx);
+  const refuse = async (reason: Refusal): Promise<void> => {
+    await input.report("two_factor_refused", input.userId, { action: input.action, reason });
+  };
+  const given = (ctx.body as { code?: unknown } | undefined)?.code;
+  const code = typeof given === "string" ? given.trim() : "";
+  if (code === "") {
+    await refuse("missing");
+    throw APIError.from("BAD_REQUEST", {
+      code: "TWO_FACTOR_CODE_REQUIRED",
+      message: "A code from the authenticator app or a backup code is required.",
+    });
+  }
+  const row = await ctx.context.adapter.findOne<TwoFactorRow>({
+    model: "twoFactor",
+    where: [{ field: "userId", value: input.userId }],
+  });
+  if (row?.lockedUntil) {
+    if (row.lockedUntil.getTime() > input.now().getTime()) {
+      await refuse("locked");
+      throw APIError.from("TOO_MANY_REQUESTS", TWO_FACTOR_ERROR_CODES.ACCOUNT_TEMPORARILY_LOCKED);
+    }
+    await clearCount(ctx, row);
+  }
+  // Fail closed: no API or no headers is an error, never a pass.
+  if (!input.api || !ctx.headers) throw new Error("The second-factor check has no verify API.");
+  const verify = { body: { code }, headers: ctx.headers };
+  try {
+    await (DIGITS.test(code) ? input.api.verifyTOTP(verify) : input.api.verifyBackupCode(verify));
+  } catch (error) {
+    if (isWrongCode(error)) {
+      if (row) await countWrongCode(ctx, row, input);
+      await refuse("wrong");
+    }
+    throw error;
+  }
+  if (row && (row.failedVerificationCount ?? 0) > 0) await clearCount(ctx, row);
+}
 
 const WRONG_CODE_ERRORS: ReadonlySet<string> = new Set(["INVALID_CODE", "INVALID_BACKUP_CODE"]);
 

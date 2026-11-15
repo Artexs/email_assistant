@@ -8,7 +8,12 @@ import { authClient } from "../../lib/auth-client";
 import { singleFlight } from "../../lib/single-flight";
 import { groupSecret, totpSecretOf } from "../../lib/totp-setup";
 import { withoutCodesAfter, type FlowEvent } from "../../lib/two-factor-flow";
-import { accountTwoFactorError, cleanTotpCode, type AccountTwoFactorError } from "../../lib/two-factor-errors";
+import {
+  accountTwoFactorError,
+  cleanConfirmCode,
+  cleanTotpCode,
+  type AccountTwoFactorError,
+} from "../../lib/two-factor-errors";
 import { useResource } from "../../lib/use-resource";
 import { Alert } from "../ui/alert";
 import { Button } from "../ui/button";
@@ -89,6 +94,7 @@ export function TwoFactorSection() {
   function start(next: Purpose) {
     clearErrors();
     setPassword("");
+    setCode("");
     setPurpose(next);
     setView("password");
   }
@@ -111,6 +117,16 @@ export function TwoFactorSection() {
       clearErrors();
       setPending(true);
       const typed = password;
+      // F128: turning it off and new codes need a code too (one field: the app code or a backup code).
+      // The client types know only `password`; the code goes in `fetchOptions.body`, which Better Auth merges into the body.
+      const confirmed = purpose === "enable" ? null : cleanConfirmCode(code);
+      if (purpose !== "enable" && confirmed === null) {
+        setPending(false);
+        return setFieldError({
+          field: "code",
+          key: code.trim() === "" ? "tf_error_code_required" : "tf_confirm_code_format",
+        });
+      }
       try {
         if (purpose === "enable") {
           const { data, error: authError } = await authClient.twoFactor.enable({ password: typed });
@@ -123,7 +139,10 @@ export function TwoFactorSection() {
           setSetup({ uri, codes: data.backupCodes });
           setView("scan");
         } else if (purpose === "codes") {
-          const { data, error: authError } = await authClient.twoFactor.generateBackupCodes({ password: typed });
+          const { data, error: authError } = await authClient.twoFactor.generateBackupCodes({
+            password: typed,
+            fetchOptions: { body: { code: confirmed } },
+          });
           const failure = accountTwoFactorError(authError);
           if (failure !== null) return show(failure);
           if (data === null || data === undefined) return setError("error_generic");
@@ -131,7 +150,10 @@ export function TwoFactorSection() {
           setCodes(data.backupCodes);
           setView("codes");
         } else {
-          const { error: authError } = await authClient.twoFactor.disable({ password: typed });
+          const { error: authError } = await authClient.twoFactor.disable({
+            password: typed,
+            fetchOptions: { body: { code: confirmed } },
+          });
           const failure = accountTwoFactorError(authError);
           if (failure !== null) return show(failure);
           toast.success(t("tf_off_toast"));
@@ -143,6 +165,7 @@ export function TwoFactorSection() {
         setError("error_generic");
       } finally {
         setPassword("");
+        setCode("");
         setPending(false);
       }
     });
@@ -275,6 +298,27 @@ export function TwoFactorSection() {
               </p>
             ) : null}
           </div>
+          {purpose === "enable" ? null : (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="tf-confirm-code">{t("tf_confirm_code_label")}</Label>
+              <Input
+                id="tf-confirm-code"
+                name="one-time-code"
+                autoComplete="one-time-code"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                aria-invalid={fieldError?.field === "code"}
+                aria-describedby={fieldError?.field === "code" ? "tf-confirm-code-error" : undefined}
+              />
+              {fieldError?.field === "code" ? (
+                <p id="tf-confirm-code-error" role="alert" className="text-destructive text-sm">
+                  {t(fieldError.key)}
+                </p>
+              ) : null}
+            </div>
+          )}
           {error === null ? null : (
             <p role="alert" className="text-destructive text-sm">
               {t(error)}
