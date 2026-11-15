@@ -54,6 +54,8 @@ export {
   toClassifierInput,
   toPrediction,
 } from "./eval";
+export { suspiciousReasonsOf, suspiciousThreadKeysOf } from "./suspicious-repo";
+export { suspiciousReasonsToShow } from "./suspicious-show";
 export { firstEstimateUsd } from "./eval-pool";
 export type { CaseResult, CaseUsage, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
 export { goNoGoFor, realGoNoGoRows, setCategoryAutoWithGate } from "./gate";

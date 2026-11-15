@@ -146,6 +146,36 @@ describe("GET /api/security-log", () => {
     ]);
   });
 
+  test("6c. F119: one SSO sign-in and one refusal show as sso_sign_in and sso_refused; the other company sign-in events show with their kinds", async () => {
+    await audit(org.orgId, auditEvents.ssoLogin, org.ownerId, ago(HOUR), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoRefused, "system", ago(2 * HOUR), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoProviderSet, "cli", ago(3 * HOUR), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoProviderRemoved, "cli", ago(4 * HOUR), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoDomainVerified, "cli", ago(5 * HOUR), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoDomainAttested, "cli", ago(6 * HOUR), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoRequiredChanged, "cli", ago(7 * HOUR), { from: "false", to: "true" });
+    await audit(org.orgId, auditEvents.ssoUnlinked, "cli", ago(8 * HOUR), { user_id: org.assistantId });
+    await audit(org.orgId, auditEvents.orgMemberAdded, "cli", ago(9 * HOUR), { user_id: org.assistantId });
+    await audit(org.orgId, auditEvents.webMemberSessionsEnded, "cli", ago(10 * HOUR), { user_id: org.assistantId });
+    await audit(org.otherOrgId, auditEvents.ssoLogin, org.otherOwnerId, ago(HOUR), { provider_id: org.otherOrgId });
+    const res = await app().request("/api/security-log", as("owner"));
+    const { entries } = securityLogSchema.parse(await res.json());
+    expect(entries.map((entry) => [entry.kind, entry.actor])).toEqual([
+      ["sso_sign_in", { kind: "member", name: "Owner" }],
+      ["sso_refused", { kind: "system" }],
+      ["sso_provider_set", { kind: "operator" }],
+      ["sso_provider_removed", { kind: "operator" }],
+      ["sso_domain_verified", { kind: "operator" }],
+      ["sso_domain_attested", { kind: "operator" }],
+      ["sso_required_changed", { kind: "operator" }],
+      ["sso_unlinked", { kind: "operator" }],
+      ["member_added", { kind: "operator" }],
+      ["member_sessions_ended", { kind: "operator" }],
+    ]);
+    // The member id of the data never reaches the body.
+    expect(JSON.stringify(entries)).not.toContain(org.assistantId);
+  });
+
   test("7. 55 sign-ins in the last day → 50 entries, newest first", async () => {
     for (let i = 0; i < 55; i++) await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago((i + 1) * 60_000));
     const res = await app().request("/api/security-log", as("owner"));

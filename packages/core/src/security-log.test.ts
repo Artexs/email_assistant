@@ -19,6 +19,17 @@ describe("security log registry", () => {
     expect(securityKindOf("org.delete_refused")).toBe("delete_refused");
     expect(securityKindOf("dsr.find")).toBe("dsr_find");
     expect(securityKindOf("dsr.erase")).toBe("dsr_erase");
+    // F119: every audit code of company sign-in and of the member commands maps to its own kind.
+    expect(securityKindOf("sso.login")).toBe("sso_sign_in");
+    expect(securityKindOf("sso.refused")).toBe("sso_refused");
+    expect(securityKindOf("sso.provider_set")).toBe("sso_provider_set");
+    expect(securityKindOf("sso.provider_removed")).toBe("sso_provider_removed");
+    expect(securityKindOf("sso.domain_verified")).toBe("sso_domain_verified");
+    expect(securityKindOf("sso.domain_attested")).toBe("sso_domain_attested");
+    expect(securityKindOf("sso.required_changed")).toBe("sso_required_changed");
+    expect(securityKindOf("sso.unlinked")).toBe("sso_unlinked");
+    expect(securityKindOf("org.member_added")).toBe("member_added");
+    expect(securityKindOf("web.member_sessions_ended")).toBe("member_sessions_ended");
     expect(securityKindOf("toString")).toBeNull();
     expect(securityKindOf("org.plan_changed")).toBeNull();
   });

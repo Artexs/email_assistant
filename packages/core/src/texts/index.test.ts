@@ -55,6 +55,29 @@ describe("the texts registry", () => {
     });
   }
 
+  test("the warning texts have fixed values", () => {
+    expect(textTables.en.suspicious.line("x")).toBe("⚠ Suspicious: x");
+    expect(textTables.pl.suspicious.line("x")).toBe("⚠ Podejrzana wiadomość: x");
+    expect(textTables.en.suspicious.noDraft).toBe("no draft: suspicious mail");
+    expect(textTables.pl.suspicious.noDraft).toBe("bez szkicu: podejrzana wiadomość");
+    expect(textTables.pl.suspicious.reason).toEqual({
+      auth_fail: "nadawca nie przeszedł weryfikacji",
+      lookalike_domain: "domena podobna do znanej",
+      display_name_spoof: "fałszywa nazwa nadawcy",
+      reply_to_mismatch: "odpowiedzi idą do innej domeny",
+      link_mismatch: "link prowadzi gdzie indziej",
+      risky_attachment: "ryzykowny załącznik",
+    });
+    expect(textTables.en.suspicious.reason).toEqual({
+      auth_fail: "sender check failed",
+      lookalike_domain: "look-alike domain",
+      display_name_spoof: "fake sender name",
+      reply_to_mismatch: "replies go to another domain",
+      link_mismatch: "link goes elsewhere",
+      risky_attachment: "risky attachment",
+    });
+  });
+
   test("both locales have the same keys", () => {
     const keys = (value: unknown, path: string): string[] =>
       typeof value === "object" && value !== null && !Array.isArray(value)

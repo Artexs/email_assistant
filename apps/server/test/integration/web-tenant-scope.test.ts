@@ -35,6 +35,10 @@ const extras = {
 // The one /api exception (ADR 0027): operator routes read across organizations.
 const UNSCOPED_PREFIXES = ["/api/operator/"];
 
+// The routes before the session guard (`createApp` mounts them): no session, so no organization and no scope. They are
+// not walked; a test below checks that they run outside any scope.
+const PUBLIC_ROUTES = ["GET /api/sign-in-options"];
+
 let org: WebOrg;
 let mailboxA: { id: string; address: string };
 let mailboxB: { id: string; address: string };
@@ -134,7 +138,7 @@ describe("the route walk", () => {
         (route) => route.path.startsWith("/api/") && !route.path.startsWith("/api/auth") && route.method !== "ALL"
       );
       for (const { method, path: pattern } of entries) {
-        if (walked.has(`${method} ${pattern}`)) continue;
+        if (walked.has(`${method} ${pattern}`) || PUBLIC_ROUTES.includes(`${method} ${pattern}`)) continue;
         walked.add(`${method} ${pattern}`);
         const path = pattern.replace(/:[A-Za-z]+/g, () => randomUUID());
         seen.length = 0;
@@ -148,6 +152,25 @@ describe("the route walk", () => {
       errorSpy.mockRestore();
       logSpy.mockRestore();
     }
+  });
+
+  test("a public route reads with no session and no tenant scope", async () => {
+    const scopes: (string | null)[] = [];
+    const app = webTestApp({
+      db,
+      sessions: { owner: org.ownerId },
+      routers: () => undefined,
+      anySsoUsable: async () => {
+        scopes.push(currentTenantScope());
+        return false;
+      },
+    });
+    const res = await app.request("/api/sign-in-options");
+    expect(res.status).toBe(200);
+    expect(scopes).toEqual([null]);
+    // The listed route still exists: a rename or a removal fails here, so the list never goes stale.
+    const keys = new Set(walkApp().routes.map((route) => `${route.method} ${route.path}`));
+    for (const key of PUBLIC_ROUTES) expect(keys.has(key)).toBe(true);
   });
 
   test("the walked set holds the known routes", () => {
