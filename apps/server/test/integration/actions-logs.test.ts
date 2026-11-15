@@ -234,11 +234,13 @@ describe("actions logs", () => {
         expect(output).toContain(done("applied=3 failed=1 retry=1"));
         expect(output).toContain(done("applied=0 failed=0 retry=1"));
         expect(output).toContain(done("applied=0 failed=1 retry=0"));
-        expect(output).toContain(`action ${missing.actionIds[0]}: failed mail_not_found`);
-        expect(output).toContain(`action ${flagFails.actionIds[0]}: HardError, try 1 of 3`);
-        expect(output).toContain(`action ${flagFails.actionIds[0]}: failed hard_error`);
+        expect(output).toContain(`action_failed action_id=${missing.actionIds[0]} reason=mail_not_found`);
+        expect(output).toContain(
+          `action_retry action_id=${flagFails.actionIds[0]} attempts=1 max_attempts=3 error=HardError`
+        );
+        expect(output).toContain(`action_failed action_id=${flagFails.actionIds[0]} reason=hard_error`);
         for (const reverse of reverseRows) {
-          expect(output).toContain(`action ${reverse.id}: applied ${reverse.type}`);
+          expect(output).toContain(`action_applied action_id=${reverse.id} action_type=${reverse.type}`);
         }
         expect(output).toContain(`returned ${mailboxId}: processed 1`);
         expect(output).toContain(`notice_queued kind=action_failed outbox_id=${outbox[0]?.id}`);

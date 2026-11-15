@@ -16,6 +16,7 @@ export { addSenderRule, removeSenderRule, type AddRuleResult } from "./rules";
 export {
   closedBy,
   getSettingsView,
+  parseUrgencyProfile,
   setCategoryAuto,
   setMode,
   setToolSwitch,
