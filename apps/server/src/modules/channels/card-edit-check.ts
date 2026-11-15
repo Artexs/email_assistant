@@ -45,7 +45,10 @@ export async function checkCardEdit(db: Db | Transaction<DB>, row: ClaimedOutbox
   if (row.editOfOutboxId === null || !outcome.success) return { ok: false, code: "no_target" };
   const target = await getEditTarget(db, ctx, { targetId: row.editOfOutboxId, userId: row.userId });
   if (target === undefined) return { ok: false, code: "no_target" };
-  const fixedText = outcome.data.original === textTables[row.locale].approvals.followUpRemoved;
+  // The fixed text of any locale: the row's locale and the card owner's locale are the same today, but the check needs neither.
+  const fixedText = Object.values(textTables).some(
+    (texts) => texts.approvals.followUpRemoved === outcome.data.original
+  );
   if (target.text === OUTBOX_REMOVED_TEXT && !fixedText) return { ok: false, code: "no_target" };
   const send = await getSend(db, ctx, target.sendId);
   if (send === undefined || !sendHas(outcome.data.outcome, send)) return { ok: false, code: "stale_edit" };
