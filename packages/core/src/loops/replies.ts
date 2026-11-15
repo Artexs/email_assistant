@@ -8,9 +8,10 @@ export const SUBJECT_MATCH_DAYS = 30;
 const MAX_SUBJECT = 500;
 const MAX_HEADER = 20_000;
 
-// `Re:`, `Odp:`, `Fwd:`, `FW:`, `PD:` in any case and with any spacing, repeated. Run after the spaces are collapsed:
-// one space at most on each side of the colon, so the repeat cannot backtrack.
-const SUBJECT_PREFIXES = /^(?:(?:re|odp|fwd|fw|pd) ?: ?)+/;
+// `Re:`, `Odp:`, `Fwd:`, `FW:`, `PD:` and the same words of other mail programs (`AW`, `SV`, `WG`, `TR`, `Antw`), in any case and
+// with any spacing, with a count (`Re[2]:`, `Re(2):`) and a tag of a gateway (`[EXT]`), repeated. Run after the spaces are
+// collapsed: one space at most on each side of the colon, so the repeat cannot backtrack.
+const SUBJECT_PREFIXES = /^(?:(?:re|odp|fwd|fw|pd|aw|sv|wg|tr|antw) ?(?:[[(]\d{1,3}[\])])? ?: ?|\[ext(?:ernal)?\] ?)+/;
 
 // Text that looks like a space or a mark but is none: NFKC turns a full-width colon and a no-break space into the plain
 // character, and `\p{Cf}` / `\p{Cc}` drop zero-width, bidi and control characters. A look-alike letter (a Cyrillic "е" in
@@ -30,8 +31,16 @@ export function normalizeSubject(subject: string | null | undefined): string {
     .replace(/ +/g, " ")
     .trim()
     .toLowerCase();
-  return collapsed.replace(SUBJECT_PREFIXES, "").trim();
+  // A closing dot or space is not part of the subject.
+  return collapsed
+    .replace(SUBJECT_PREFIXES, "")
+    .replace(/[ .]+$/, "")
+    .trim();
 }
+
+// The subject of an automatic answer that some servers send with no `Auto-Submitted` header (Outlook, on-premises Exchange).
+const AUTO_SUBJECTS =
+  /^(?:automatic reply|autoreply|auto-reply|out of office|odpowied[źz] automatyczna|nieobecno[śs][ćc]) ?:/;
 
 // The Message-ID tokens of an In-Reply-To or References value. `<id>` tokens when there are any (a comment next to them
 // is ignored); else the bare words. An id is compared whole: `<x<id>>` or an id with a suffix is another id.
@@ -67,11 +76,13 @@ function localPartOf(address: string): string {
 }
 
 // An automatic answer never closes a loop. RFC 3834: any `Auto-Submitted` value except `no` marks an automatic mail;
-// `Precedence` bulk, junk, list or auto_reply too; the system senders (`mailer-daemon`, `postmaster`, `noreply`) too.
+// `Precedence` bulk, junk, list or auto_reply too; the system senders (`mailer-daemon`, `postmaster`, `noreply`) too; a subject
+// that starts with an out-of-office phrase and a colon (after the reply prefixes) too.
 export function isAutoReply(input: {
   autoSubmitted: string | null;
   precedence: string | null;
   fromAddress: string | null;
+  subject?: string | null;
 }): boolean {
   const autoSubmitted = (input.autoSubmitted ?? "").trim().toLowerCase();
   if (autoSubmitted !== "") {
@@ -80,6 +91,7 @@ export function isAutoReply(input: {
   }
   const precedence = (input.precedence ?? "").trim().toLowerCase();
   if (AUTO_PRECEDENCE.has(precedence)) return true;
+  if (AUTO_SUBJECTS.test(normalizeSubject(input.subject))) return true;
   const from = (input.fromAddress ?? "").trim().toLowerCase();
   return from !== "" && NO_REPLY_LOCAL_PARTS.has(localPartOf(from));
 }
@@ -135,6 +147,14 @@ export function replyMatch(
     bySubject = subject !== "" && normalizeSubject(mail.subject) === subject && recipients.includes(from);
   }
   if (!inThread && !bySubject) return null;
-  if (isAutoReply({ autoSubmitted: mail.autoSubmitted, precedence: mail.precedence, fromAddress: from })) return "auto";
+  if (
+    isAutoReply({
+      autoSubmitted: mail.autoSubmitted,
+      precedence: mail.precedence,
+      fromAddress: from,
+      subject: mail.subject,
+    })
+  )
+    return "auto";
   return inThread ? "thread" : "subject";
 }

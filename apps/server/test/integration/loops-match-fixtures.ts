@@ -31,11 +31,17 @@ export interface Reply {
   autoSubmitted?: string | null;
   precedence?: string | null;
   mailboxId?: string;
+  // A fixed id (to sort against the order of receipt), the folder the mail came from, a triage category.
+  id?: string;
+  sourceFolder?: string;
+  category?: string;
 }
 
 // One incoming mail with an optional `email_headers` row. Returns its id.
 export async function reply(trx: Transaction<DB>, org: Org, opts: Reply = {}): Promise<string> {
   const values: Insertable<DB["emails"]> = {
+    ...(opts.id === undefined ? {} : { id: opts.id }),
+    ...(opts.sourceFolder === undefined ? {} : { source_folder: opts.sourceFolder }),
     org_id: org.ctx.orgId,
     mailbox_id: opts.mailboxId ?? org.mailboxId,
     dedup_key: `test:${randomUUID()}`,
@@ -50,6 +56,19 @@ export async function reply(trx: Transaction<DB>, org: Org, opts: Reply = {}): P
     references_header: opts.references ?? null,
   };
   const row = await trx.insertInto("emails").values(values).returning("id").executeTakeFirstOrThrow();
+  if (opts.category !== undefined) {
+    await trx
+      .insertInto("triage_results")
+      .values({
+        org_id: org.ctx.orgId,
+        email_id: row.id,
+        category: opts.category,
+        confidence: 0.9,
+        reason_code: "direct_request",
+        created_at: new Date(),
+      })
+      .execute();
+  }
   if (opts.autoSubmitted !== undefined || opts.precedence !== undefined) {
     await trx
       .insertInto("email_headers")
@@ -99,4 +118,30 @@ export async function closedAudit(conn: Pick<Transaction<DB>, "selectFrom">, org
     .where("event", "=", "loop.closed")
     .execute();
   return rows.filter((row) => (row.data as { loop_id?: string }).loop_id === loopId);
+}
+
+// The junk folder of the mailbox, as the sync stores it.
+export async function junkFolder(trx: Transaction<DB>, org: Org, path = "Junk"): Promise<string> {
+  await trx
+    .insertInto("mailbox_folders")
+    .values({ org_id: org.ctx.orgId, mailbox_id: org.mailboxId, key: "junk", path, role: "junk" })
+    .execute();
+  return path;
+}
+
+// `count` mails from `from` inside the 30 days, with a subject that is not the loop subject. Returns nothing.
+export async function recipientMails(trx: Transaction<DB>, org: Org, from: string, count: number): Promise<void> {
+  const rows: Insertable<DB["emails"]>[] = Array.from({ length: count }, (_, i) => ({
+    org_id: org.ctx.orgId,
+    mailbox_id: org.mailboxId,
+    dedup_key: `test:${randomUUID()}`,
+    thread_key: `<${randomUUID()}@other.test>`,
+    content_hash: "h",
+    uid: 2_000_000 + i,
+    received_at: new Date(after(1).getTime() + i * 1000),
+    status: "done",
+    from_address: from,
+    subject: `Other ${i}`,
+  }));
+  await trx.insertInto("emails").values(rows).execute();
 }

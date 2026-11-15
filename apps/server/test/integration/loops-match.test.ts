@@ -13,8 +13,10 @@ import {
   after,
   closedAudit,
   JAN,
+  junkFolder,
   loopRow,
   loopsOrg,
+  recipientMails,
   reply,
   RUN_AT,
   SUBJECT,
@@ -105,16 +107,63 @@ describe("matchReplies: close by reply", () => {
     });
   });
 
-  test("the first match in received order wins", async () => {
+  test("the first match in received order wins, also when its id sorts last", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
       const loop = await waiting(trx, org);
-      const bySubject = await reply(trx, org, { at: after(1) });
-      await reply(trx, org, { at: after(2), threadKey: loop.threadKey });
+      // The ids sort against the order of receipt: only the order by `received_at` gives the early mail.
+      const bySubject = await reply(trx, org, { at: after(1), id: "ffffffff-0000-4000-8000-000000000001" });
+      await reply(trx, org, { at: after(2), threadKey: loop.threadKey, id: "00000000-0000-4000-8000-000000000001" });
       await run(trx, org);
       const row = await loopRow(trx, loop.id);
       expect(row.close_reason).toBe("replied_subject");
       expect(row.closed_by_email_id).toBe(bySubject);
+    });
+  });
+
+  test("200 mails from a recipient do not hide a reply in the thread", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const loop = await waiting(trx, org);
+      await recipientMails(trx, org, ANNA, 205);
+      const mail = await reply(trx, org, { threadKey: loop.threadKey, at: after(20), subject: "Inna sprawa" });
+      expect((await run(trx, org)).replied).toBe(1);
+      expect((await loopRow(trx, loop.id)).closed_by_email_id).toBe(mail);
+      // The hook reads the same rows.
+      const other = await waiting(trx, org, { subject: "Drugi temat" });
+      await reply(trx, org, { threadKey: other.threadKey, at: after(21), subject: "x" });
+      expect(await loopHooks().isOpen(trx, org.ctx, other.id)).toBe(false);
+    });
+  });
+
+  test("a mail from the junk folder or with the category spam never closes a loop; an old spam verdict does not count", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const path = await junkFolder(trx, org);
+      const a = await waiting(trx, org, { subject: "A" });
+      const b = await waiting(trx, org, { subject: "B" });
+      const c = await waiting(trx, org, { subject: "C" });
+      await reply(trx, org, { threadKey: a.threadKey, sourceFolder: path });
+      await reply(trx, org, { threadKey: b.threadKey, category: "spam" });
+      expect(await loopHooks().isOpen(trx, org.ctx, a.id)).toBe(true);
+      expect((await run(trx, org)).replied).toBe(0);
+      expect((await loopRow(trx, a.id)).status).toBe("open");
+      expect((await loopRow(trx, b.id)).status).toBe("open");
+      // A mail from another folder counts.
+      await reply(trx, org, { threadKey: c.threadKey, sourceFolder: "Archive" });
+      expect((await run(trx, org)).replied).toBe(1);
+      expect((await loopRow(trx, c.id)).status).toBe("closed");
+    });
+  });
+
+  test("an out-of-office mail with no Auto-Submitted header (subject prefix) is automatic", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const loop = await waiting(trx, org);
+      await reply(trx, org, { threadKey: loop.threadKey, subject: "Automatic reply: Oferta Q1" });
+      expect(await run(trx, org)).toMatchObject({ replied: 0, autoMarked: 1 });
+      expect((await loopRow(trx, loop.id)).status).toBe("open");
+      expect(await loopHooks().isOpen(trx, org.ctx, loop.id)).toBe(true);
     });
   });
 
@@ -304,6 +353,10 @@ describe("matchReplies: follow-up sends of the loop", () => {
       // A promise is not a wait for a reply: a mail in its thread does not stop anything.
       await reply(trx, org, { threadKey: promised.threadKey, subject: "x" });
       expect(await hooks.isOpen(trx, org.ctx, promised.id)).toBe(true);
+      // The own address, in any case, is no reply: the send goes on.
+      const own = await ownAddress(trx, org);
+      await reply(trx, org, { threadKey: quiet.threadKey, from: own.toUpperCase(), subject: "y" });
+      expect(await hooks.isOpen(trx, org.ctx, quiet.id)).toBe(true);
       // An automatic answer does not stop the send.
       await reply(trx, org, { threadKey: quiet.threadKey, autoSubmitted: "auto-replied" });
       expect(await hooks.isOpen(trx, org.ctx, quiet.id)).toBe(true);

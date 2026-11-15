@@ -228,7 +228,7 @@ describe.each(pairs)("a reply against the switch off of the Sent tracking (%s)",
 });
 
 describe.each(pairs)("a reply against the committer that sends the approved follow-up (%s)", (_name, connA) => {
-  test("20 loops: each send is applied with one mail or expired with none; every loop closes; no deadlock", async () => {
+  test("20 loops with a reply: every send expires `loop_closed`, no mail goes out, every loop closes, no deadlock", async () => {
     const b = await box(app, orgs, users);
     const sender = createFakeMailSender();
     const rows: Awaited<ReturnType<typeof pair>>[] = [];
@@ -267,21 +267,16 @@ describe.each(pairs)("a reply against the committer that sends the approved foll
       ]),
       12_000
     );
-    let applied = 0;
+    // Every reply is in before the claim, so `isOpen` is false for each send: none is applied and no mail goes out.
     for (const item of outs) {
       if (item === null) continue;
       const r = await app.selectFrom("actions").selectAll().where("id", "=", item.action.id).executeTakeFirstOrThrow();
-      if (r.status === "applied") {
-        applied += 1;
-        expect(item.out).toEqual({ kind: "applied" });
-      } else {
-        expect(item.out).toEqual({ kind: "expired", reason: "loop_closed" });
-        expect(r).toMatchObject({ status: "expired", status_reason: "loop_closed" });
-      }
+      expect(item.out).toEqual({ kind: "expired", reason: "loop_closed" });
+      expect(r).toMatchObject({ status: "expired", status_reason: "loop_closed" });
     }
     // A last run closes what no run reached before the sends finished.
     await matchReplies({ db: connA }, b.ctx, b.mailboxId, { now: new Date() });
     for (const p of rows) expect((await loopRow(app, p.loopId)).status).toBe("closed");
-    expect(sender.sent.length).toBe(applied);
+    expect(sender.sent).toHaveLength(0);
   }, 30_000);
 });

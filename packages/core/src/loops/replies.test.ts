@@ -278,3 +278,56 @@ describe("replyMatch probes: quoted, encoded and look-alike forms", () => {
     expect(match({ ...other, threadKey: "<root@own.test> " })).toBeNull();
   });
 });
+
+describe("subject prefixes of other mail programs and out-of-office subjects", () => {
+  test("AW, SV, WG, TR, Antw, a count, a gateway tag and a closing dot are not part of the subject", () => {
+    for (const subject of [
+      "AW: Oferta Q1",
+      "SV: Oferta Q1",
+      "WG: Oferta Q1",
+      "TR: Oferta Q1",
+      "Antw: Oferta Q1",
+      "Re[2]: Oferta Q1",
+      "Re(3): Oferta Q1",
+      "[EXT] Re: Oferta Q1",
+      "Re: [EXT] Oferta Q1",
+      "[External] Oferta Q1",
+      "Re: Oferta Q1.",
+      "Re: Oferta Q1 ..",
+    ]) {
+      expect(normalizeSubject(subject)).toBe("oferta q1");
+      expect(match({ subject })).toBe("subject");
+    }
+  });
+
+  test("a word that only starts like a prefix stays", () => {
+    expect(normalizeSubject("Award: Q1")).toBe("award: q1");
+    expect(normalizeSubject("Transfer: Q1")).toBe("transfer: q1");
+    expect(normalizeSubject("[EXTRA] Q1")).toBe("[extra] q1");
+    expect(normalizeSubject("[EXT]")).toBe("");
+    expect(normalizeSubject("Re[x]: Q1")).toBe("re[x]: q1");
+  });
+
+  test("an out-of-office subject is automatic, with or without reply prefixes, in English and Polish", () => {
+    for (const subject of [
+      "Automatic reply: Oferta Q1",
+      "Autoreply: Oferta Q1",
+      "Auto-Reply: Oferta Q1",
+      "Out of Office: Oferta Q1",
+      "Re: Out of office : Oferta Q1",
+      "Odpowiedź automatyczna: Oferta Q1",
+      "Odpowiedz automatyczna: Oferta Q1",
+      "Nieobecność: Oferta Q1",
+    ]) {
+      expect(isAutoReply({ autoSubmitted: null, precedence: null, fromAddress: "anna@example.test", subject })).toBe(
+        true
+      );
+      expect(match({ subject, threadKey: "<root@own.test>" })).toBe("auto");
+    }
+    for (const subject of ["Oferta Q1", "Out of office hours", "Automatic reply to your offer", null, undefined]) {
+      expect(isAutoReply({ autoSubmitted: null, precedence: null, fromAddress: "anna@example.test", subject })).toBe(
+        false
+      );
+    }
+  });
+});

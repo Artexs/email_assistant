@@ -1,4 +1,5 @@
 import { replyMatch, SUBJECT_MATCH_DAYS, type ReplyMail } from "@ea/core";
+import { sql } from "kysely";
 
 import type { TenantContext } from "../../platform/db";
 
@@ -24,9 +25,11 @@ function bareId(messageId: string | null): string | null {
   return bare === "" || /[\s<>]/.test(bare) ? null : bare;
 }
 
-// The incoming mails of the mailbox after the wait began that can answer the loop: in its thread, naming its Message-ID in
-// In-Reply-To or References, or from one of its recipients within 30 days. A superset: `replyMatch` decides. Oldest first.
-// The mail joins `email_headers` for the auto test; no row means not automatic.
+// The incoming mails of the mailbox after the wait began that can answer the loop. Two reads, each with its own limit, so
+// many mails from a recipient cannot hide a reply in the thread: (1) in its thread or naming its Message-ID in In-Reply-To or
+// References; (2) from one of its recipients within 30 days. A superset: `replyMatch` decides. Oldest first. A mail in the
+// junk folder of the mailbox, or whose latest triage category is `spam`, never counts. The mail joins `email_headers` for the
+// auto test; no row means not automatic.
 export async function replyCandidates(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -36,54 +39,75 @@ export async function replyCandidates(
   const recipients = [...loop.to_addresses, ...loop.cc_addresses].map((address) => address.trim().toLowerCase());
   const id = bareId(loop.message_id);
   const subjectUntil = new Date(loop.wait_from_at.getTime() + SUBJECT_MATCH_DAYS * DAY_MS);
-  let query = db
-    .selectFrom("emails as e")
-    .leftJoin("email_headers as h", (join) => join.onRef("h.email_id", "=", "e.id").onRef("h.org_id", "=", "e.org_id"))
-    .select([
-      "e.id",
-      "e.thread_key",
-      "e.received_at",
-      "e.from_address",
-      "e.subject",
-      "e.in_reply_to",
-      "e.references_header",
-      "h.auto_submitted",
-      "h.precedence",
-    ])
-    .where("e.org_id", "=", ctx.orgId)
-    .where("e.mailbox_id", "=", loop.mailbox_id)
-    .where("e.received_at", ">", loop.wait_from_at)
-    .where("e.from_address_lower", "is not", null)
-    .where((eb) =>
-      eb.or([
-        eb("e.thread_key", "=", loop.thread_key),
-        ...(id === null
-          ? []
-          : [
-              eb(eb.fn("strpos", [eb.fn.coalesce("e.in_reply_to", eb.val("")), eb.val(id)]), ">", 0),
-              eb(eb.fn("strpos", [eb.fn.coalesce("e.references_header", eb.val("")), eb.val(id)]), ">", 0),
-            ]),
-        ...(recipients.length === 0
-          ? []
-          : [eb.and([eb("e.from_address_lower", "in", recipients), eb("e.received_at", "<=", subjectUntil)])]),
-      ])
-    );
   const own = ownAddresses.map((address) => address.trim().toLowerCase());
-  if (own.length > 0) query = query.where("e.from_address_lower", "not in", own);
-  const rows = await query.orderBy("e.received_at").orderBy("e.id").limit(MAX_CANDIDATES).execute();
-  return rows.map((row) => ({
-    emailId: row.id,
-    mail: {
-      threadKey: row.thread_key,
-      receivedAt: row.received_at,
-      fromAddress: row.from_address,
-      subject: row.subject,
-      inReplyTo: row.in_reply_to,
-      referencesHeader: row.references_header,
-      autoSubmitted: row.auto_submitted,
-      precedence: row.precedence,
-    },
-  }));
+  const base = () => {
+    let query = db
+      .selectFrom("emails as e")
+      .leftJoin("email_headers as h", (join) =>
+        join.onRef("h.email_id", "=", "e.id").onRef("h.org_id", "=", "e.org_id")
+      )
+      .select([
+        "e.id",
+        "e.thread_key",
+        "e.received_at",
+        "e.from_address",
+        "e.subject",
+        "e.in_reply_to",
+        "e.references_header",
+        "h.auto_submitted",
+        "h.precedence",
+      ])
+      .where("e.org_id", "=", ctx.orgId)
+      .where("e.mailbox_id", "=", loop.mailbox_id)
+      .where("e.received_at", ">", loop.wait_from_at)
+      .where("e.from_address_lower", "is not", null).where(sql<boolean>`NOT EXISTS (
+        SELECT 1 FROM mailbox_folders f
+        WHERE f.org_id = e.org_id AND f.mailbox_id = e.mailbox_id AND f.role = 'junk' AND f.path = e.source_folder
+      )`).where(sql<boolean>`NOT EXISTS (
+        SELECT 1 FROM (
+          SELECT tr.category FROM triage_results tr
+          WHERE tr.org_id = e.org_id AND tr.email_id = e.id
+          ORDER BY tr.created_at DESC, tr.id DESC LIMIT 1
+        ) t WHERE t.category = 'spam'
+      )`);
+    if (own.length > 0) query = query.where("e.from_address_lower", "not in", own);
+    return query.orderBy("e.received_at").orderBy("e.id").limit(MAX_CANDIDATES);
+  };
+  const byThread = base().where((eb) =>
+    eb.or([
+      eb("e.thread_key", "=", loop.thread_key),
+      ...(id === null
+        ? []
+        : [
+            eb(eb.fn("strpos", [eb.fn.coalesce("e.in_reply_to", eb.val("")), eb.val(id)]), ">", 0),
+            eb(eb.fn("strpos", [eb.fn.coalesce("e.references_header", eb.val("")), eb.val(id)]), ">", 0),
+          ]),
+    ])
+  );
+  const byRecipient =
+    recipients.length === 0
+      ? undefined
+      : base().where("e.from_address_lower", "in", recipients).where("e.received_at", "<=", subjectUntil);
+  const [threadRows, recipientRows] = await Promise.all([
+    byThread.execute(),
+    byRecipient === undefined ? Promise.resolve([]) : byRecipient.execute(),
+  ]);
+  const rows = new Map([...threadRows, ...recipientRows].map((row) => [row.id, row]));
+  return [...rows.values()]
+    .sort((a, b) => a.received_at.getTime() - b.received_at.getTime() || (a.id < b.id ? -1 : 1))
+    .map((row) => ({
+      emailId: row.id,
+      mail: {
+        threadKey: row.thread_key,
+        receivedAt: row.received_at,
+        fromAddress: row.from_address,
+        subject: row.subject,
+        inReplyTo: row.in_reply_to,
+        referencesHeader: row.references_header,
+        autoSubmitted: row.auto_submitted,
+        precedence: row.precedence,
+      },
+    }));
 }
 
 export interface ReplyDecision {
