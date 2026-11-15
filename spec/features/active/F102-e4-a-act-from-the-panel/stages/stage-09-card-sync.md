@@ -47,3 +47,10 @@ Part of [`../plan.md`](../plan.md). Read D4, D5, F6, N1 and [`../commands.md`](.
 - `panelUrl` sends the panel host name (for example a `*.ts.net` tailnet host) and the send id to Telegram. `docs/code-patterns.md` § "The consent version" says a new field in Telegram content may need a consent text change and a version bump. The consent text lists mail data only. Decide in this stage whether the panel link needs a bump; record the decision (and the reason) in the plan log. If the link is off by default (flag off or no base URL), no bump is needed.
 - When `WEB_BASE_URL` is unset, set no `panelUrl` (core renders no link line without it).
 - Add a test for a newline in a `panelUrl` (stage 05 test gap TG2): the encoder must refuse it.
+
+## Carry-over from stage 06 review
+
+- No row of kind `approval_edit` can exist before this stage; this stage lands the first caller of `queueCardEdits` and the sender edit branch in ONE commit (a claimed `approval_edit` row would be sent as a new message otherwise).
+- The sender must load the target card with `org_id = row.org_id` and `user_id` and fail the row on a mismatch (the database also refuses a cross-organization pointer after the stage 06 rework).
+- A test with two owners and `exceptUserId` set for a held approval (stage 06 TG2).
+- The edit copies a card text: refuse when the stored text is `[removed]` (retention cleared it): the sender must not show that text.

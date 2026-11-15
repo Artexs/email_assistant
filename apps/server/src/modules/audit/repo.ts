@@ -88,6 +88,9 @@ export const auditEvents = {
   ssoRefused: "sso.refused", // actor: system; data: provider_id, code
   ssoProviderSet: "sso.provider_set", // actor: cli; data: provider_id, change, issuer_host, domain, links_removed, sessions_ended
   ssoProviderRemoved: "sso.provider_removed", // actor: cli; data: provider_id, issuer_host, domain, links_removed, sessions_ended
+  ssoDomainVerified: "sso.domain_verified", // actor: cli; data: provider_id, domain (the DNS proof)
+  ssoDomainAttested: "sso.domain_attested", // actor: cli; data: provider_id, domain (the attestation of a test organization)
+  ssoRequiredChanged: "sso.required_changed", // actor: cli; data: from, to, sessions_ended
 } as const;
 
 export interface AuditEvent {

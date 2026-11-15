@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
-import { createOrganizationWithOwner, setOrgFeature, setSsoProvider } from "../../src/modules/tenancy";
+import { createOrganizationWithOwner, setOrgFeature, setSsoProvider, ssoDomainRecord } from "../../src/modules/tenancy";
 import { buildOidcConfig, discoverProviderConfig } from "../../src/platform/auth-sso";
 import { createDb, type Db } from "../../src/platform/db";
 import type { LookupAll } from "../../src/platform/net-address";
@@ -21,6 +21,7 @@ const script = resolve(import.meta.dir, "../../src/scripts/org-sso.ts");
 const WEB = "https://app.example.test";
 const SECRET = "s3cret-value-1";
 const NOW = new Date("2026-11-15T10:00:00.000Z");
+const DOMAIN_KEY = Buffer.alloc(32, 9);
 
 let fake: FakeOidc;
 const orgIds: string[] = [];
@@ -92,6 +93,10 @@ async function cli(argv: string[], over: Partial<OrgSsoDeps> = {}, secret = `${S
     allowOrigins: [fake.origin],
     lookup: publicLookup,
     now: () => NOW,
+    resolveTxt: async () => {
+      throw new Error("ENOTFOUND");
+    },
+    domainKey: DOMAIN_KEY,
     webBaseUrl: WEB,
     ...over,
   });
@@ -186,16 +191,18 @@ describe("org:sso", () => {
     expect(await providerRows(org.orgId)).toHaveLength(1);
   });
 
-  test("4. show: the eight lines for org A, no provider for org B", async () => {
+  test("4. show: the nine lines for org A (with the txt line while unproved), no provider for org B", async () => {
     const orgA = await seedOrg();
     const orgB = await seedOrg();
     expect((await cli(setArgv(orgA))).code).toBe(0);
+    const record = ssoDomainRecord(DOMAIN_KEY, orgA.orgId, orgA.domain);
     const shown = await cli(["--org-id", orgA.orgId]);
     expect(shown.code).toBe(0);
     expect(shown.out).toEqual([
       `provider ${orgA.orgId}`,
       `issuer ${new URL(fake.issuer).host}`,
       `domain ${orgA.domain} unproved`,
+      `txt ${record.name} ${record.value}`,
       "required no",
       "flag sso_sign_in off",
       "break-glass missing",

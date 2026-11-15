@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { en } from "../../src/i18n/en";
 import { pl } from "../../src/i18n/pl";
 import { legalDocs, legalLangs, legalPath, type LegalDoc } from "../../src/lib/legal";
+import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, nextAddress } from "../helpers";
 
 function textsOf(lang: (typeof legalLangs)[number]) {
@@ -47,6 +48,7 @@ for (const lang of legalLangs) {
       await expect(page.getByText(texts.legal_stub_text)).toBeVisible();
       await expect(page.getByRole("link", { name: texts.go_to_sign_in })).toHaveAttribute("href", "/login");
       expect(errors).toEqual([]);
+      await expectNoA11yViolations(page);
     });
   }
 }

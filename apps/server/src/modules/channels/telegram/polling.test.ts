@@ -1,7 +1,10 @@
+import { format } from "node:util";
+
 import { botCommandNames, textTables } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { Bot } from "grammy";
 
+import { setLogFormat, setLogLevel } from "../../../platform/log";
 import { commandNames } from "../port";
 
 import { BOT_COMMANDS, startPolling } from "./polling";
@@ -13,12 +16,14 @@ type FakeServer = ReturnType<typeof Bun.serve>;
 
 const servers: FakeServer[] = [];
 let infoSpy: ReturnType<typeof spyOn>;
-let warnSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
+// Every line of both console streams, formatted like the console does, so a raw error object shows its fields.
+let written: string[] = [];
 
 const ok = (result: unknown): Response => Response.json({ ok: true, result });
+// The description holds the bot token: only a correct field list keeps it out of a log line.
 const fail = (code: number): Response =>
-  Response.json({ ok: false, error_code: code, description: `fake ${code}` }, { status: code });
+  Response.json({ ok: false, error_code: code, description: `fake ${code} ${TOKEN}` }, { status: code });
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const me = { id: 7, is_bot: true, first_name: "b", username: "probe_bot", can_join_groups: false };
@@ -65,12 +70,41 @@ async function until(check: () => boolean): Promise<void> {
   expect(check()).toBe(true);
 }
 
-const lines = (spy: ReturnType<typeof spyOn>): string[] => spy.mock.calls.map((args: unknown[]) => args.join(" "));
+const BASE_KEYS = ["time", "level", "module", "event", "msg"];
+
+interface LoggedEvent {
+  level: string;
+  fields: Record<string, unknown>;
+}
+
+// The `telegram` event lines of one name: the level and the fields after the base keys. A dropped field shows as
+// `dropped_fields`, so an exact match on `fields` also proves that every value passed the logger.
+function eventsOf(event: string): LoggedEvent[] {
+  return written.flatMap((line) => {
+    const parsed = JSON.parse(line) as Record<string, unknown>;
+    if (parsed.module !== "telegram" || parsed.event !== event) return [];
+    const fields = Object.fromEntries(Object.entries(parsed).filter(([key]) => !BASE_KEYS.includes(key)));
+    return [{ level: String(parsed.level), fields }];
+  });
+}
+
+const expectNoMarker = (): void => {
+  for (const line of written) {
+    expect(line).not.toContain("MARKER");
+    expect(line).not.toContain("probe_bot");
+  }
+};
 
 beforeEach(() => {
-  infoSpy = spyOn(console, "log").mockImplementation(() => undefined);
-  warnSpy = spyOn(console, "error").mockImplementation(() => undefined);
-  errorSpy = warnSpy;
+  setLogFormat("json");
+  setLogLevel("debug");
+  written = [];
+  infoSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+    written.push(format(...args));
+  });
+  errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+    written.push(format(...args));
+  });
 });
 
 afterEach(() => {
@@ -78,7 +112,9 @@ afterEach(() => {
     void server.stop(true);
   }
   infoSpy.mockRestore();
-  warnSpy.mockRestore();
+  errorSpy.mockRestore();
+  setLogFormat("text");
+  setLogLevel("info");
 });
 
 describe("startPolling", () => {
@@ -91,7 +127,8 @@ describe("startPolling", () => {
     await polling.stop();
     await polling.done;
 
-    expect(lines(infoSpy).some((l) => l.includes("polling as @probe_bot (id 7)"))).toBe(true);
+    expect(eventsOf("telegram_polling_started")).toEqual([{ level: "info", fields: { bot_id: 7 } }]);
+    expectNoMarker();
     const menus = calls.filter((c) => c.method === "setMyCommands");
     expect(menus).toHaveLength(2);
     // 1. The default menu (English): today's list, no language code.
@@ -129,9 +166,12 @@ describe("startPolling", () => {
     await polling.stop();
 
     expect(sleeps).toEqual([60_000, 120_000]);
-    const errors = lines(errorSpy).filter((l) => l.includes("409"));
-    expect(errors).toHaveLength(2);
-    expect(errors[1]).toContain("next try in 2 min");
+    // `wait_ms` is the wait in milliseconds; the description of Telegram (it holds the token here) is not logged.
+    expect(eventsOf("telegram_polling_conflict")).toEqual([
+      { level: "error", fields: { wait_ms: 60_000 } },
+      { level: "error", fields: { wait_ms: 120_000 } },
+    ]);
+    expectNoMarker();
   });
 
   test("a good getUpdates call resets the retry count", async () => {
@@ -169,29 +209,30 @@ describe("startPolling", () => {
     });
     await polling.done;
 
-    expect(lines(errorSpy).filter((l) => l.includes("rejected (401)"))).toHaveLength(1);
+    expect(eventsOf("telegram_polling_token_rejected")).toEqual([{ level: "error", fields: {} }]);
     expect(slept).toBe(0);
+    expectNoMarker();
     await polling.stop();
   });
 
   test("goes on when setMyCommands fails", async () => {
     const { bot, calls } = startFake({ setMyCommands: () => fail(400) });
     const polling = startPolling(bot);
-    await until(
-      () => lines(warnSpy).filter((l) => l.includes("setMyCommands failed: GrammyError setMyCommands 400")).length >= 2
-    );
+    await until(() => eventsOf("telegram_set_commands_failed").length >= 2);
     await until(() => calls.some((c) => c.method === "getUpdates"));
     await polling.stop();
 
-    // One warning for each of the two calls.
-    expect(lines(warnSpy).filter((l) => l.includes("setMyCommands failed"))).toHaveLength(2);
+    // One warning for each of the two calls; the description (it holds the token here) is not logged.
+    const failed = { level: "warn", fields: { error: "GrammyError", error_code: 400, method: "setMyCommands" } };
+    expect(eventsOf("telegram_set_commands_failed")).toEqual([failed, failed]);
+    expectNoMarker();
   });
 
   test("the default sleep ends early on stop", async () => {
     const { bot, calls } = startFake({ getUpdates: () => fail(409) });
     const polling = startPolling(bot);
     await until(() => calls.some((c) => c.method === "getUpdates"));
-    await until(() => lines(errorSpy).some((l) => l.includes("409")));
+    await until(() => eventsOf("telegram_polling_conflict").length >= 1);
 
     const started = Date.now();
     await polling.stop();
@@ -213,7 +254,43 @@ describe("startPolling", () => {
     await until(() => calls.filter((c) => c.method === "getUpdates").length >= 1);
     await polling.stop();
 
-    expect(lines(warnSpy).filter((l) => l.includes("stopping the bot failed"))).toHaveLength(1);
+    expect(eventsOf("telegram_stop_failed")).toEqual([
+      { level: "warn", fields: { error: "GrammyError", error_code: 500, method: "getUpdates" } },
+    ]);
+    expectNoMarker();
+  });
+
+  // grammY retries a network error and a 5xx inside `bot.start`; a 404 and any other error leave it.
+  test("a refused getMe writes telegram_polling_failed with the fields only", async () => {
+    const { bot, calls } = startFake({ getMe: (_b, call) => (call === 1 ? fail(404) : ok(me)) });
+    const polling = startPolling(bot, { sleep: async () => undefined });
+    await until(() => calls.filter((c) => c.method === "getUpdates").length >= 1);
+    await polling.stop();
+
+    expect(eventsOf("telegram_polling_failed")).toEqual([
+      { level: "error", fields: { error: "GrammyError", error_code: 404, method: "getMe", wait_ms: 60_000 } },
+    ]);
+    expectNoMarker();
+  });
+
+  test("another error writes telegram_polling_failed with the error name only", async () => {
+    const { bot, calls } = startFake();
+    let first = true;
+    bot.api.config.use((prev, method, payload, signal) => {
+      if (method === "getMe" && first) {
+        first = false;
+        throw new Error(`https://api.telegram.org/bot${TOKEN}/getMe`);
+      }
+      return prev(method, payload, signal);
+    });
+    const polling = startPolling(bot, { sleep: async () => undefined });
+    await until(() => calls.filter((c) => c.method === "getUpdates").length >= 1);
+    await polling.stop();
+
+    expect(eventsOf("telegram_polling_failed")).toEqual([
+      { level: "error", fields: { error: "Error", wait_ms: 60_000 } },
+    ]);
+    expectNoMarker();
   });
 
   test("no log line holds the token", async () => {
@@ -222,7 +299,8 @@ describe("startPolling", () => {
     await until(() => calls.filter((c) => c.method === "getUpdates").length >= 2);
     await polling.stop();
 
-    for (const line of [...lines(infoSpy), ...lines(warnSpy), ...lines(errorSpy)]) {
+    expect(written.length).toBeGreaterThan(0);
+    for (const line of written) {
       expect(line).not.toContain("TOKEN");
     }
   });
