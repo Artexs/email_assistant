@@ -12,6 +12,8 @@ import {
   type MailboxActionType,
   type MailboxMode,
   type ToolSwitches,
+  type UrgencyProfile,
+  urgencyProfileSchema,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -45,6 +47,8 @@ export interface SettingsView {
   mode: MailboxMode;
   toolSwitches: ToolSwitches;
   categoryPolicy: CategoryPolicy;
+  // null: none set.
+  urgencyProfile: UrgencyProfile | null;
   movesSupported: boolean;
 }
 
@@ -99,8 +103,15 @@ function toView(row: MailboxSettingsRow, movesSupported: boolean): SettingsView 
     mode: row.mode as MailboxMode,
     toolSwitches: parseToolSwitches(row.tool_switches),
     categoryPolicy: parseCategoryPolicy(row.category_policy),
+    urgencyProfile: parseUrgencyProfile(row.urgency_profile),
     movesSupported,
   };
+}
+
+// A stored value that no longer parses reads as no profile (the writer only stores valid ones).
+function parseUrgencyProfile(value: unknown): UrgencyProfile | null {
+  const parsed = urgencyProfileSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 function inTransaction<T>(db: SettingsDeps["db"], run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
@@ -272,4 +283,40 @@ export async function setToolSwitch(
     close: { field: "switch", name: input.name, to: input.value },
     warnings: [],
   }));
+}
+
+// Who sets the profile. `web` carries the signed-in user; `cli` is the operator.
+export type UrgencyVia = { via: "web"; userId: string } | { via: "cli" };
+
+// The profile may name people, so the audit row holds counts and `via` only. An empty profile is stored as null.
+// The write takes the settings row lock and sets `updated_at`: a triage batch that read an older version retries.
+export async function setUrgencyProfile(
+  db: SettingsDeps["db"],
+  ctx: TenantContext,
+  mailboxId: string,
+  profile: UrgencyProfile | null,
+  by: UrgencyVia
+): Promise<{ changed: boolean; stored: UrgencyProfile | null }> {
+  const next = profile && (profile.topics.length > 0 || profile.deadlines.length > 0) ? profile : null;
+  return inTransaction(db, async (trx) => {
+    const row = await lockMailboxSettings(trx, ctx, mailboxId);
+    if (!row) {
+      throw new SettingsNotFoundError();
+    }
+    if (JSON.stringify(parseUrgencyProfile(row.urgency_profile)) === JSON.stringify(next)) {
+      return { changed: false, stored: next };
+    }
+    await updateMailboxSettings(trx, ctx, mailboxId, { urgencyProfile: next });
+    await recordAudit(trx, ctx, {
+      actor: by.via === "web" ? by.userId : "cli",
+      event: auditEvents.settingsUrgencySet,
+      data: {
+        mailbox_id: mailboxId,
+        topics: next?.topics.length ?? 0,
+        deadlines: next?.deadlines.length ?? 0,
+        via: by.via,
+      },
+    });
+    return { changed: true, stored: next };
+  });
 }

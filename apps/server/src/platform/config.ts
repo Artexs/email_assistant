@@ -136,6 +136,9 @@ const baseSchema = z.object({
   SEND_LIMIT_MAILBOX_HOUR: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(20)),
   SEND_LIMIT_MAILBOX_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(100)),
   SEND_LIMIT_RECIPIENT_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(5)),
+  // Comma list of authserv-ids (hosts) whose `Authentication-Results` header the suspicious-mail rules trust, besides the
+  // registrable domain of the mailbox IMAP host (F109 D2). Empty = none.
+  MAIL_TRUSTED_AUTHSERV_IDS: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Minutes between two mail syncs (D7 of F100): 2, 3 or 5. Empty = 2.
   MAIL_SYNC_EVERY_MIN: z.preprocess(emptyAsUndefined, z.enum(["2", "3", "5"]).default("2")),
   // Empty = the web is off.
@@ -419,6 +422,11 @@ export function sendLimits(config: Config): SendLimits {
     mailboxDay: config.SEND_LIMIT_MAILBOX_DAY,
     recipientDay: config.SEND_LIMIT_RECIPIENT_DAY,
   };
+}
+
+/** `MAIL_TRUSTED_AUTHSERV_IDS`: lower case, unique, no empty entry. */
+export function mailTrustedAuthservIds(config: Config): string[] {
+  return parseAddressList(config.MAIL_TRUSTED_AUTHSERV_IDS);
 }
 
 /** The cron expression of the `mail.sync` job: every `MAIL_SYNC_EVERY_MIN` minutes. */

@@ -27,6 +27,15 @@ export {
   type UserAuthProfile,
   type UserMembership,
 } from "./repo";
+export {
+  addMember,
+  endMemberSessions,
+  unlinkSso,
+  type AddMemberInput,
+  type AddMemberResult,
+  type EndMemberSessionsResult,
+  type UnlinkSsoResult,
+} from "./members";
 export { resolveSsoMember } from "./sso-resolve";
 export {
   getSsoState,
@@ -46,7 +55,12 @@ export {
   type VerifySsoDomainResult,
 } from "./sso-domain";
 export { ssoDomainKey, ssoDomainRecord, ssoDomainToken } from "./sso-domain-token";
-export { setSsoRequired, type SetSsoRequiredResult, type SsoRequireRefusal } from "./sso-require";
+export {
+  countSsoRequiredWhileKilled,
+  setSsoRequired,
+  type SetSsoRequiredResult,
+  type SsoRequireRefusal,
+} from "./sso-require";
 export { listSecurityLog } from "./security-log";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {
@@ -66,6 +80,7 @@ export {
   type SetBreakGlassResult,
   type SetOrgFeatureInput,
   type SetOrgFeatureResult,
+  type SetOrgFeatureWarning,
   type SetOrgPlanHooks,
   type SetOrgPlanInput,
   type SetOrgPlanResult,

@@ -95,6 +95,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
         secrets,
         openProvider: openImapProvider,
         isOwnActionId: async () => false,
+        sentOriginOf: async () => null,
         now,
       }).run();
       await createTriageJob({

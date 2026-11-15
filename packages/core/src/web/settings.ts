@@ -2,6 +2,7 @@ import { syncFolderKeys, syncFolderRoles } from "../mail/sync-folders";
 import { mailboxModes } from "../triage/categories";
 import { barCategories } from "../triage/metrics";
 import { toolSwitchNames } from "../triage/settings";
+import { urgencyProfileSchema } from "../triage/urgency-profile";
 
 import { z } from "./zod";
 
@@ -53,6 +54,8 @@ export const settingsViewSchema = z.object({
   movesSupported: z.boolean(),
   categories: z.array(categorySettingSchema),
   syncFolders: z.array(syncFolderViewSchema),
+  // null: no profile set. An empty profile is stored as null.
+  urgencyProfile: urgencyProfileSchema.nullable(),
   bar: z.number(),
   minKept: z.number().int(),
 });
@@ -69,5 +72,7 @@ export type SettingsWebChange = z.infer<typeof settingsChangeSchema>;
 export const modeBodySchema = z.object({ mode: z.enum(mailboxModes), keepSwitches: z.boolean() });
 export const switchBodySchema = z.object({ value: z.boolean() });
 export const autoBodySchema = z.object({ auto: z.boolean(), force: z.boolean().optional() });
+// `null` clears the profile. An empty profile clears it too.
+export const urgencyBodySchema = z.object({ profile: urgencyProfileSchema.nullable() });
 export const syncFolderBodySchema = z.object({ enabled: z.boolean() });
 export const noGoBodySchema = z.object({ error: z.literal("no_go"), gate: gateViewSchema });

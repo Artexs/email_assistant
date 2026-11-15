@@ -70,6 +70,7 @@ function jobWith(trx: Transaction<DB>, fakes: Map<string, MailProvider>, clock: 
       return fake;
     },
     isOwnActionId: async () => false,
+    sentOriginOf: async () => null,
     now: () => clock.at,
   });
 }

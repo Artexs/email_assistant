@@ -32,6 +32,7 @@ export async function buildSettingsView(
       gate: gates[category],
     })),
     syncFolders,
+    urgencyProfile: view.urgencyProfile,
     bar: GATE_BAR,
     minKept: GATE_MIN_KEPT,
   };

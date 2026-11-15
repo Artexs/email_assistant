@@ -316,4 +316,47 @@ describe("operator writes (F099 stage 09, D20, D21)", () => {
     expect(typeof hooks.onSuspended).toBe("function");
     expect(typeof hooks.onResumed).toBe("function");
   });
+
+  test("8. sso_sign_in off on an SSO-required organization answers the warning; another organization and another flag do not (F119 N12)", async () => {
+    const app = operatorApp();
+    const body = async (orgId: string, flag: string, enabled: boolean) => {
+      const res = await app.request(flagUrl(orgId), post("assistant", { flag, enabled }));
+      expect(res.status).toBe(200);
+      return (await res.json()) as OperatorFlagResult;
+    };
+    await db.updateTable("organizations").set({ sso_required: true }).where("id", "=", org.otherOrgId).execute();
+    try {
+      // The write applies; the answer carries the warning, in the same shape on a repeat.
+      expect(await body(org.otherOrgId, "sso_sign_in", false)).toEqual({
+        result: "changed",
+        flag: "sso_sign_in",
+        enabled: false,
+        warning: "sso_required_on",
+      });
+      expect(await flagRowsOfB()).toMatchObject([{ flag: "sso_sign_in", enabled: false }]);
+      expect(await body(org.otherOrgId, "sso_sign_in", false)).toMatchObject({
+        result: "unchanged",
+        warning: "sso_required_on",
+      });
+      // On, and another flag off: no warning.
+      expect(await body(org.otherOrgId, "sso_sign_in", true)).toEqual({
+        result: "changed",
+        flag: "sso_sign_in",
+        enabled: true,
+      });
+      expect(await body(org.otherOrgId, "stats_page", false)).toEqual({
+        result: "changed",
+        flag: "stats_page",
+        enabled: false,
+      });
+    } finally {
+      await db.updateTable("organizations").set({ sso_required: false }).where("id", "=", org.otherOrgId).execute();
+    }
+    // The same write on an organization without the rule: no warning (organization A has no rule either).
+    expect(await body(org.otherOrgId, "sso_sign_in", false)).toEqual({
+      result: "changed",
+      flag: "sso_sign_in",
+      enabled: false,
+    });
+  });
 });
