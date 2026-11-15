@@ -23,6 +23,7 @@ import { composeMessage, type MailCapabilities, type NewEmail } from "../../src/
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
+import type { SuspiciousContext } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 export const testCapabilities: MailCapabilities = {
@@ -598,3 +599,11 @@ export function testNoticeView(
       });
   }
 }
+
+// A suspicious context with no known sender, no known domain and no trusted header: no rule can fire. For tests that do not read reasons.
+export const noSuspiciousContext: SuspiciousContext = {
+  isKnown: () => false,
+  knownDomains: [],
+  protectedNames: [],
+  trustedAuthservIds: [],
+};

@@ -29,6 +29,8 @@ export interface TriageResultInput {
   tokensIn: number | null;
   tokensOut: number | null;
   latencyMs: number | null;
+  // Codes of `suspiciousReasons`; default none.
+  suspiciousReasons?: readonly string[];
 }
 
 export interface LatestTriageResult {
@@ -113,6 +115,7 @@ export async function insertTriageResult(db: DbOrTrx, ctx: TenantContext, row: T
       tokens_in: row.tokensIn,
       tokens_out: row.tokensOut,
       latency_ms: row.latencyMs,
+      suspicious_reasons: [...(row.suspiciousReasons ?? [])],
     })
     .returning("id")
     .executeTakeFirstOrThrow();
