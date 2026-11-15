@@ -136,7 +136,8 @@ const smtpTransport = (target: SmtpTarget) =>
     host: target.host,
     port: target.port,
     secure: target.secure,
-    requireTLS: !target.secure,
+    // A local test server (127.0.0.1) speaks plain SMTP; a real host must use TLS.
+    ...(target.host === "127.0.0.1" ? { ignoreTLS: true } : { requireTLS: !target.secure }),
     auth: { type: "OAuth2", user: target.user, accessToken: target.accessToken },
     connectionTimeout: 15_000,
     greetingTimeout: 15_000,

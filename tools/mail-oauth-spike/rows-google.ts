@@ -9,7 +9,7 @@ import {
   smtpSend,
 } from "./mail";
 import { errorCodes, randomToken, scopeText, text, tokenRequest } from "./oauth";
-import { word } from "./redact";
+import { capability, folderPath } from "./redact";
 import {
   appendTest,
   askKind,
@@ -63,8 +63,8 @@ const g2: Row = {
     const capabilities = [...session.capabilities.keys()].map((key) => key.toUpperCase());
     const list = await folders(ctx, session);
     const missing = ["SPECIAL-USE", "MOVE", "UIDPLUS"].filter((name) => !capabilities.includes(name));
-    const evidence = `XOAUTH2 login works; CAPABILITY: ${capabilities.map(word).join(" ")}; LIST: ${list
-      .map((folder) => `${word(folder.path)} ${folder.specialUse ?? "-"}`)
+    const evidence = `XOAUTH2 login works; CAPABILITY: ${capabilities.map(capability).join(" ")}; LIST: ${list
+      .map((folder) => `${folderPath(folder.path)} ${folder.specialUse ?? "-"}`)
       .join(" | ")}`;
     return missing.length === 0 ? pass(evidence) : fail(`missing ${missing.join(", ")}; ${evidence}`);
   },

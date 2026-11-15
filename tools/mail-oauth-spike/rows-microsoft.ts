@@ -9,7 +9,7 @@ import {
   smtpLogin,
 } from "./mail";
 import { errorCodes, MS_GRAPH_SCOPE, randomToken, REDIRECT_URI, text, tokenRequest } from "./oauth";
-import { word } from "./redact";
+import { capability, folderPath, word } from "./redact";
 import {
   aadstsOf,
   appendTest,
@@ -92,8 +92,8 @@ const m4: Row = {
     const missingFolders = (["\\Sent", "\\Drafts", "\\Trash", "\\Junk"] as const).filter(
       (flag) => !list.some((folder) => folder.specialUse === flag)
     );
-    const evidence = `CAPABILITY: ${capabilities.map(word).join(" ")}; LIST: ${list
-      .map((folder) => `${word(folder.path)} ${folder.specialUse ?? "-"}`)
+    const evidence = `CAPABILITY: ${capabilities.map(capability).join(" ")}; LIST: ${list
+      .map((folder) => `${folderPath(folder.path)} ${folder.specialUse ?? "-"}`)
       .join(" | ")}`;
     const gaps = [...missingCapabilities, ...missingFolders.map((flag) => `special-use ${flag}`)];
     return gaps.length === 0 ? pass(evidence) : fail(`missing ${gaps.join(", ")}; ${evidence}`);

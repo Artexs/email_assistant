@@ -63,3 +63,13 @@ const SAFE_WORD = /^[A-Za-z0-9_. -]{1,40}$/;
 
 /** A short server word (an error code, a status) that is safe to quote. Anything else becomes `?`. */
 export const word = (value: unknown): string => (typeof value === "string" && SAFE_WORD.test(value) ? value : "?");
+
+const CAPABILITY = /^[A-Za-z0-9_.=+-]{1,40}$/;
+const FOLDER = /^[\p{L}\p{N}[\]/._ -]{1,80}$/u;
+
+/** An IMAP capability name such as `AUTH=XOAUTH2`. Anything else becomes `?`. */
+export const capability = (value: unknown): string =>
+  typeof value === "string" && CAPABILITY.test(value) ? value : "?";
+
+/** A folder path such as `[Gmail]/Sent Mail` or `Wysłane`. A path with other characters becomes `?`. */
+export const folderPath = (value: unknown): string => (typeof value === "string" && FOLDER.test(value) ? value : "?");
