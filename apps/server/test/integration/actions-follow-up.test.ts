@@ -32,7 +32,7 @@ import { captureLogs, logProblems } from "../log-capture";
 import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
-import { depsOf as sentDepsOf, newOrg, put } from "./mail-sent-fixtures";
+import { depsOf as sentDepsOf, newOrg, put, siblingMailbox } from "./mail-sent-fixtures";
 
 // F116 stage 10: the follow-up kind goes through the committer. A follow-up hangs on a loop (`loop_id`), not on a mail.
 // Every test runs in a transaction that is rolled back: a committed loop row would break the Down guard of the stage 07 test.
@@ -609,6 +609,49 @@ describe("T10 the switch off ends a waiting follow-up", () => {
         .where("reverses_action_id", "=", approved.draftId)
         .execute();
       expect(reverses).toHaveLength(1);
+    });
+  });
+});
+
+describe("T10b the switch off of one mailbox leaves the follow-ups of another mailbox of the organization", () => {
+  test("mailbox B keeps its waiting and its approved follow-up, and its loop stays open", async () => {
+    configureFeatures({ off: [] });
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const sibling = await siblingMailbox(trx, org);
+      const a: Setup = {
+        ctx: org.ctx,
+        userId: org.userId,
+        mailboxId: org.mailboxId,
+        address: "me@corp.test",
+        fake: createFakeMailProvider(),
+        sender: createFakeMailSender(),
+        folderMap: {},
+      };
+      const waitingA = await followUp(trx, a, { draftStatus: "ready", sendStatus: "awaiting_approval" });
+      const approvedA = await followUp(trx, a, { draftStatus: "applied", sendStatus: "approved" });
+      const waitingB = await followUp(trx, a, {
+        mailboxId: sibling.mailboxId,
+        draftStatus: "ready",
+        sendStatus: "awaiting_approval",
+      });
+      const approvedB = await followUp(trx, a, {
+        mailboxId: sibling.mailboxId,
+        draftStatus: "applied",
+        sendStatus: "approved",
+      });
+
+      await setSentSync(trx, a.ctx, a.mailboxId, { enabled: false, actor: "user-1", at: NOW }, sentSwitchHooks);
+
+      for (const item of [waitingA, approvedA]) {
+        expect(await row(trx, item.sendId)).toMatchObject({ status: "expired", status_reason: "loop_closed" });
+      }
+      expect((await row(trx, waitingB.sendId)).status).toBe("awaiting_approval");
+      expect((await row(trx, approvedB.sendId)).status).toBe("approved");
+      expect((await row(trx, waitingB.draftId)).status).toBe("ready");
+      expect((await row(trx, approvedB.draftId)).status).toBe("applied");
+      expect((await loopOf(trx, waitingB.loopId)).status).toBe("open");
+      expect((await loopOf(trx, approvedB.loopId)).status).toBe("open");
     });
   });
 });

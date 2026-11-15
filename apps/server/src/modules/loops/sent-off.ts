@@ -9,7 +9,9 @@ import { clearedTexts } from "./retention";
 
 // The hook of `setSentSync` (`SentSwitchHooks.onDisabled`). Turning off "Track my sent mail" closes every open loop of
 // the mailbox as `sent_off` and clears its texts at once. A closed loop stays as it is (retention clears it later). One
-// audit row per closed loop. Returns the number closed. The expiry of waiting follow-up drafts comes with the follow-up kind.
+// audit row per closed loop. Returns the number closed.
+// A follow-up of the mailbox that waits for a tap, or is approved and not yet claimed, ends `expired` / `loop_closed`
+// (`expireWaitingFollowUps`).
 export async function onSentOff(
   trx: Transaction<DB>,
   ctx: TenantContext,
