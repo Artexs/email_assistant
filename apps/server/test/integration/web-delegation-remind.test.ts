@@ -218,13 +218,16 @@ describe("remindNow on two connections", () => {
     });
     await holding;
     const call = remindNow({ db }, d.ctx, d.id, { userId: s.org.ownerId, via: "web", now: LATER });
-    const state = await Promise.race([
-      call.then(() => "settled"),
-      new Promise((r) => setTimeout(() => r("waiting"), 80)),
-    ]);
-    expect(state).toBe("waiting");
-    release();
-    await setter;
+    try {
+      const state = await Promise.race([
+        call.then(() => "settled"),
+        new Promise((resolve) => setTimeout(() => resolve("waiting"), 80)),
+      ]);
+      expect(state).toBe("waiting");
+    } finally {
+      release();
+      await setter;
+    }
     expect(await call).toEqual({ kind: "drafts_off" });
     expect(await reminderSends(s.org.orgId)).toEqual([]);
   });
