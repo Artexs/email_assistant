@@ -283,6 +283,7 @@ describe("audit repository", () => {
         mailbox_id: a.mailboxId,
         role: "judge",
         model: "m-j",
+        endpoint: "standard",
         prompt_version: "judge-v1",
         tokens_in: null,
         tokens_out: null,
