@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { MailFolderMissingError, type SentFolderReader } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
-import { setFolderMapEntry, writeSentSwitch } from "../../src/modules/mail/repo";
+import { expireSentTexts, setFolderMapEntry, writeSentSwitch } from "../../src/modules/mail/repo";
 import { SENT_TEXT_WINDOW_MS } from "../../src/modules/mail/sent-rules";
 import {
   syncSentFolder,
@@ -20,7 +21,20 @@ import { SoftError } from "../../src/platform/errors";
 
 import { insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { ago, DAY, depsOf, HOUR, newOrg, NOW, put, rowOf, rowsOf, stateOf, type Org } from "./mail-sent-fixtures";
+import {
+  ago,
+  DAY,
+  depsOf,
+  HOUR,
+  newOrg,
+  NOW,
+  put,
+  rowOf,
+  rowsOf,
+  siblingMailbox,
+  stateOf,
+  type Org,
+} from "./mail-sent-fixtures";
 
 const db = testDb();
 
@@ -368,7 +382,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
       await syncSentHeaders(depsOf(trx, mine), mine.ctx, mine.mailboxId);
       await syncSentHeaders(depsOf(trx, other), other.ctx, other.mailboxId);
 
-      // The ids of the other mailbox with this organization: no row matches.
+      // The mailbox id of the other organization with this organization's context: no row matches.
       const crossed = await fetchSentTexts(depsOf(trx, mine), mine.ctx, other.mailboxId, await inputOf(trx, other));
       expect(crossed).toEqual({ stored: 0, gone: 0, expired: 0 });
       expect((await rowOf(trx, other, "Subject 1")).content).toBe("pending");
@@ -377,6 +391,83 @@ describe("fetchSentTexts and syncSentFolder", () => {
       const result = await fetchSentTexts(depsOf(trx, mine), mine.ctx, mine.mailboxId, await inputOf(trx, mine));
       expect(result.stored).toBe(1);
       expect((await rowOf(trx, other, "Subject 1")).content).toBe("pending");
+    });
+  });
+
+  test("15: the oldest pending row goes first, also when the UID order differs from the date order", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      // The highest UID holds the oldest mail; the lowest UID holds the newest.
+      put(org, 1, ago(DAY));
+      put(org, 2, ago(2 * DAY));
+      put(org, 3, ago(3 * DAY));
+      await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
+      const input = await inputOf(trx, org, { limit: 2 });
+      expect(await fetchSentTexts(depsOf(trx, org), org.ctx, org.mailboxId, input)).toMatchObject({ stored: 2 });
+      const byUid = (await rowsOf(trx, org)).map((row) => [row.subject, row.content]);
+      expect(byUid).toEqual([
+        ["Subject 1", "pending"],
+        ["Subject 2", "stored"],
+        ["Subject 3", "stored"],
+      ]);
+    });
+  });
+
+  test("16: the expiry of one mailbox changes only its own rows and counts them", async () => {
+    await withRollback(db, async (trx) => {
+      const first = await newOrg(trx);
+      const second = await siblingMailbox(trx, first);
+      put(first, 1, ago(13 * DAY));
+      put(first, 2, ago(12 * DAY));
+      put(second, 3, ago(13 * DAY));
+      await syncSentHeaders(depsOf(trx, first), first.ctx, first.mailboxId);
+      await syncSentHeaders(depsOf(trx, second), second.ctx, second.mailboxId);
+
+      const before = new Date(NOW.getTime() - DAY);
+      expect(
+        await expireSentTexts(trx, first.ctx, first.mailboxId, { before: new Date(NOW.getTime() - 11 * DAY) })
+      ).toBe(2);
+      expect(await expireSentTexts(trx, first.ctx, first.mailboxId, { before })).toBe(0);
+      expect((await rowsOf(trx, first)).map((row) => row.content)).toEqual(["headers_only", "headers_only"]);
+      expect((await rowsOf(trx, second)).map((row) => row.content)).toEqual(["pending"]);
+    });
+  });
+
+  test("17: a pass that rethrows a fetchContent error writes no console line with the path, uid or subject", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const uid = put(org, 1, ago(DAY));
+      const plain: SentFolderReader = org.provider;
+      const failing: SentFolderReader = {
+        folderStatus: (path) => plain.folderStatus(path),
+        fetchAbove: (path, from) => plain.fetchAbove(path, from),
+        searchSinceIn: (path, since) => plain.searchSinceIn(path, since),
+        fetchByUidsIn: (path, uids) => plain.fetchByUidsIn(path, uids),
+        fetchContent: async () => {
+          throw new SoftError("timeout");
+        },
+      };
+      const lines: string[] = [];
+      const methods = ["log", "info", "warn", "error", "debug"] as const;
+      const saved = methods.map((method) => console[method]);
+      for (const method of methods) console[method] = (...args: unknown[]) => void lines.push(format(...args));
+      const stdout = process.stdout.write.bind(process.stdout);
+      const stderr = process.stderr.write.bind(process.stderr);
+      process.stdout.write = ((chunk: unknown) => (lines.push(String(chunk)), true)) as typeof process.stdout.write;
+      process.stderr.write = ((chunk: unknown) => (lines.push(String(chunk)), true)) as typeof process.stderr.write;
+      try {
+        await expect(syncSentFolder(depsOf(trx, org, { provider: failing }), org.ctx, org.mailboxId)).rejects.toThrow(
+          SoftError
+        );
+      } finally {
+        methods.forEach((method, i) => (console[method] = saved[i] as never));
+        process.stdout.write = stdout;
+        process.stderr.write = stderr;
+      }
+      const text = lines.join("\n");
+      expect(text).not.toContain("Sent");
+      expect(text).not.toContain("Subject 1");
+      expect(text).not.toContain(`uid ${uid}`);
     });
   });
 
