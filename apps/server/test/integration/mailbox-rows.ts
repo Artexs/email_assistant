@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { sql, type Transaction } from "kysely";
 
@@ -109,6 +109,21 @@ export async function fillMailbox(
   ]);
   await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: now });
 
+  // A Reconnect state row; the repository of the sign-in state comes with the OAuth flow.
+  await trx
+    .insertInto("mailbox_oauth_states")
+    .values({
+      org_id: ctx.orgId,
+      user_id: userId,
+      provider: "microsoft",
+      mailbox_id: mailboxId,
+      state_hash: createHash("sha256").update(randomUUID()).digest("hex"),
+      encrypted_verifier: "verifier",
+      key_version: 1,
+      expires_at: new Date("2026-11-10T10:10:00Z"),
+    })
+    .execute();
+
   return { mailboxId, emailIds, actionIds };
 }
 
@@ -124,7 +139,13 @@ export async function countMailboxRows(
   const except = opts?.exceptEvents ?? [];
 
   const byMailbox = async (
-    table: "mailboxes" | "mailbox_credentials" | "mailbox_settings" | "mailbox_folders" | "mailbox_sent_sync"
+    table:
+      | "mailboxes"
+      | "mailbox_credentials"
+      | "mailbox_settings"
+      | "mailbox_folders"
+      | "mailbox_sent_sync"
+      | "mailbox_oauth_states"
   ) => {
     const column = table === "mailboxes" ? "id" : "mailbox_id";
     const row = await trx
@@ -194,6 +215,7 @@ export async function countMailboxRows(
     sender_rules: await single("sender_rules"),
     sent_emails: await single("sent_emails"),
     mailbox_sent_sync: await byMailbox("mailbox_sent_sync"),
+    mailbox_oauth_states: await byMailbox("mailbox_oauth_states"),
     audit_log_by_email: await audit("email_id"),
     audit_log_by_action: await audit("action_id"),
     audit_log_by_mailbox: await audit("mailbox"),

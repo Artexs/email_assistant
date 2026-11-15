@@ -37,6 +37,7 @@ const TENANT_TABLES = [
   "emails",
   "mailbox_credentials",
   "mailbox_folders",
+  "mailbox_oauth_states",
   "mailbox_sent_sync",
   "mailbox_settings",
   "mailboxes",

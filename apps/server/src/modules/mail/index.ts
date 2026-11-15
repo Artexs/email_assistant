@@ -67,6 +67,7 @@ export {
   clearMailBodies,
   PENDING_BODY_DAYS,
   clearMailHeaders,
+  deleteOldOAuthStates,
   clearReturned,
   clearCapturedHeaders,
   countSyncTargets,
