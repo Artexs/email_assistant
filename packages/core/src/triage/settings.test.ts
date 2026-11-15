@@ -62,7 +62,7 @@ const KEY_A: EvidenceKey = {
 };
 const grantOf = (key: EvidenceKey) => ({ key, by: "evidence", at: "2026-11-10T10:00:00.000Z" });
 
-describe("effectiveAutoFor (F110 D7)", () => {
+describe("effectiveAutoFor (ADR 0028)", () => {
   test("auto with a grant on the running key: true", () => {
     const policy = parseCategoryPolicy({ notification: { auto: true, grant: grantOf(KEY_A) } });
     expect(effectiveAutoFor(policy, "notification", { ...KEY_A, promptParts: [] })).toBe(true);
@@ -82,7 +82,7 @@ describe("effectiveAutoFor (F110 D7)", () => {
     }
   });
 
-  test("only the endpoint differs: false (D7, the data region changed)", () => {
+  test("only the endpoint differs: false (the data region changed)", () => {
     const policy = parseCategoryPolicy({ spam: { auto: true, grant: grantOf(KEY_A) } });
     expect(effectiveAutoFor(policy, "spam", { ...KEY_A, endpoint: "eu" })).toBe(false);
   });

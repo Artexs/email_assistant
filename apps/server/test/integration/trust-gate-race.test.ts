@@ -35,6 +35,30 @@ afterAll(async () => {
 const NOW = new Date("2026-11-11T12:00:00Z");
 const PARALLEL = 8;
 
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+// True when a session waits for a lock that session `holderPid` holds. `pg_locks` shows the sessions of every role.
+async function someoneWaitsFor(holderPid: number): Promise<boolean> {
+  const { rows } = await sql<{ n: number }>`
+    select count(*)::int as n from pg_locks l
+    where not l.granted and ${holderPid} = any (pg_blocking_pids(l.pid))`.execute(ownerDb);
+  return (rows[0]?.n ?? 0) > 0;
+}
+
+async function waitUntilBlockedBy(holderPid: number): Promise<void> {
+  const deadline = Date.now() + 5000;
+  while (!(await someoneWaitsFor(holderPid))) {
+    if (Date.now() >= deadline) throw new Error("the second setter never waited for the settings lock");
+    await Bun.sleep(10);
+  }
+}
+
 function keyOf(model: string): EvidenceKey {
   return {
     provider: "gemini",
@@ -146,6 +170,31 @@ for (const [role, conn] of [
           .where("mailbox_id", "=", org.mailboxId)
           .execute();
         expect(trips).toEqual([{ id: tripId, cleared_at: NOW }]);
+      });
+    });
+
+    test("a second setter waits for the settings lock of the first, then finds `auto` on: no second change, no second audit row", async () => {
+      await withCommittedOrg(conn, async (org) => {
+        const held = deferred();
+        const release = deferred();
+        let holderPid = 0;
+        // Setter A runs inside its own transaction and does not commit until `release`.
+        const writerA = conn.transaction().execute(async (trx) => {
+          const pid = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
+          holderPid = pid.rows[0]?.pid ?? 0;
+          const first = await setCategoryAutoWithEvidence(gateDeps(trx, keyOf("m-a")), org, org.mailboxId, input(true));
+          held.resolve();
+          await release.promise;
+          return first;
+        });
+        await held.promise;
+        const writerB = setCategoryAutoWithEvidence(gateDeps(conn, keyOf("m-a")), org, org.mailboxId, input(true));
+        await waitUntilBlockedBy(holderPid);
+        release.resolve();
+        const [first, second] = await Promise.all([writerA, writerB]);
+        expect(first.kind === "changed" && first.change.changed).toBe(true);
+        expect(second.kind === "changed" && second.change.changed).toBe(false);
+        expect(await policyAudit(conn, org.orgId)).toHaveLength(1);
       });
     });
 

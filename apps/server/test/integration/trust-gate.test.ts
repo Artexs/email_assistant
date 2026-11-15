@@ -332,7 +332,7 @@ describe("setCategoryAutoWithEvidence", () => {
   test("auto on again under a new running key is a change with a new grant; the same key is no change", async () => {
     await withRollback(db, async (trx) => {
       const keyB: EvidenceKey = { ...KEY, model: "gemini-4" };
-      const s = await setup(trx, gateOf(gateFile({ info: 0.8 }), gateFile({ info: 0.85 }, { key: keyB })));
+      const s = await setup(trx, gateOf(gateFile({ info: 0.8 }), gateFile({ info: 0.8 }, { key: keyB })));
       await setCategoryAutoWithEvidence(s.deps, s.ctx, s.mailboxId, turnOn("info"));
       const same = await setCategoryAutoWithEvidence(s.deps, s.ctx, s.mailboxId, turnOn("info"));
       expect(same.kind === "changed" && same.change.changed).toBe(false);
@@ -341,7 +341,7 @@ describe("setCategoryAutoWithEvidence", () => {
       const onB = {
         settings: {
           ...s.settings,
-          gate: { ...gateOf(gateFile({ info: 0.8 }), gateFile({ info: 0.85 }, { key: keyB })), runningKey: keyB },
+          gate: { ...gateOf(gateFile({ info: 0.8 }), gateFile({ info: 0.8 }, { key: keyB })), runningKey: keyB },
         },
         testMail: NO_TEST_SENDERS,
       };
