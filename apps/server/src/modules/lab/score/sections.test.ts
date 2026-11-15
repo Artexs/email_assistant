@@ -71,6 +71,18 @@ describe("delegates table (stage 13 tests 1 and 2)", () => {
     expect(text).toContain("| late | 2 | 2 | 1 | 0 | 2 | 2 | 0 | 0 | 1 differ |");
   });
 
+  test("late expects a reminder: answered with no reminder differs, and so does a reminder with no answer", () => {
+    const section = scoreDelegates(
+      [
+        delegation("late", { answered: true, reminders: 1 }),
+        delegation("late", { answered: true, reminders: 0 }),
+        delegation("late", { answered: false, reminders: 1 }),
+      ],
+      []
+    );
+    expect(row(section, "late")).toMatchObject({ planned: 3, answered: 2, reminders: 2, differ: 2 });
+  });
+
   test("2: other_address answered 1 is a finding for E5b; not answered is ok", () => {
     const flagged = scoreDelegates([delegation("other_address", { answered: true }), delegation("other_address")], []);
     expect(row(flagged, "other_address")).toMatchObject({ planned: 2, answered: 1, differ: 1, finding: true });

@@ -301,8 +301,13 @@ async function fillWorld(trx: Transaction<DB>, org: Org) {
   const [done] = byBehaviour("done") as [Slot];
   const [silent] = byBehaviour("silent") as [Slot];
   const [ooo] = byBehaviour("out_of_office") as [Slot];
-  const phishing = slotsWith((slot) => slot.hardCases.includes("phishing_urgent_push"), 2);
-  const slotIds = [done, silent, ooo, ...phishing].map((slot) => slot.id);
+  const phishing = slotsWith((slot) => slot.hardCases.includes("phishing_urgent_push"), 4);
+  const [lateUrgent] = slotsWith(
+    (slot) => slot.category === "urgent" && !slot.hardCases.some((tag) => tag.startsWith("phishing_")),
+    1
+  ) as [Slot];
+  const notInjected = phishing[3] as Slot;
+  const slotIds = [done, silent, ooo, ...phishing, lateUrgent].map((slot) => slot.id);
   const run = runOf(WEEK, "week", slotIds);
 
   // done: answered. silent: sent Mon 11-23 10:00 Warsaw, due Thu 11-26; overdue, 1 reminder. out_of_office: answered by an auto-reply.
@@ -324,12 +329,14 @@ async function fillWorld(trx: Transaction<DB>, org: Org) {
     autoSubmitted: "auto-replied",
   });
 
-  // Two phishing mails triaged urgent: both get an urgent notice, the first has a suspicious reason.
+  // Three phishing mails triaged urgent: two get an urgent notice (the first has a suspicious reason), the third gets none.
+  // The fourth phishing slot is in the plan and was not injected.
   await setOrgFeature(trx, ctx, { flag: "suspicious_mail", enabled: true, actor: "cli", now: NOW });
-  const [warned, unwarned] = phishing as [Slot, Slot];
-  for (const [slot, reasons, minute] of [
-    [warned, ["lookalike_domain"], 10],
-    [unwarned, [], 20],
+  const [warned, unwarned, unnoticed] = phishing as [Slot, Slot, Slot];
+  for (const [slot, reasons, minute, notice] of [
+    [warned, ["lookalike_domain"], 10, true],
+    [unwarned, [], 20, true],
+    [unnoticed, [], 30, false],
   ] as const) {
     const receivedAt = new Date(`2026-11-24T10:${minute}:00Z`);
     const emailId = await insertTriaged(trx, ctx, org.mailboxId, {
@@ -338,6 +345,7 @@ async function fillWorld(trx: Transaction<DB>, org: Org) {
       messageId: idOf(WEEK.id, slot.id),
       suspiciousReasons: reasons,
     });
+    if (!notice) continue;
     await trx
       .insertInto("outbox")
       .values({
@@ -391,7 +399,13 @@ async function fillWorld(trx: Transaction<DB>, org: Org) {
 
   await llmCall(trx, org, "2026-11-24T10:00:00Z");
   const events: LabEvent[] = [
-    ...injected(run, slotIds),
+    // The fourth phishing slot is planned and not injected; an urgent slot went out 400 s late.
+    ...injected(
+      run,
+      slotIds.filter((id) => id !== notInjected.id)
+    ).map((event) =>
+      event.t === "inject_done" && event.slotId === lateUrgent.id ? { ...event, lateBySec: 400 } : event
+    ),
     { t: "tap_planned", key: "1:ap:a", at: "2026-11-24T09:00:00Z", data: "ap:a", messageId: 1 },
     { t: "tap_done", key: "1:ap:a", data: "ap:a" },
     { t: "skip", code: "unmapped", ref: "2:b" },
@@ -468,17 +482,19 @@ describe("the five sections read the run window of one organization (stage 13 te
       // The one llm call of the org inside the run days.
       expect(after.metrics.m7).toMatchObject({ calls: 1, tail: { calls: 0 } });
       expect(after.metrics.m7.usd).toBeCloseTo(0.0002, 10);
-      // Phishing: 2 injected, 2 triaged urgent, 2 notices, the warning on 1 of them (the flag is on in the org).
+      // Phishing: 4 planned, 3 injected, 3 triaged urgent, 2 notices, the warning on 1 of them (the flag is on in the org).
       expect(after.phishing).toMatchObject({
-        injected: 2,
-        triagedUrgent: 2,
+        injected: 3,
+        triagedUrgent: 3,
         noticed: 2,
         warned: 1,
         warningField: true,
         unwarnedUrgentPush: 1,
       });
       // M5: both urgent mails arrived at 11:10 and 11:20 Warsaw and were noticed after 5 minutes.
-      expect(after.metrics.m5).toMatchObject({ urgent: 2, noticed: 2, withoutNotice: 0, p90Minutes: 5 });
+      // The third urgent mail (11:30 Warsaw) got no notice. The first injection was late: its slot is listed.
+      expect(after.metrics.m5).toMatchObject({ urgent: 3, noticed: 2, withoutNotice: 1, p90Minutes: 5 });
+      expect(after.metrics.m5Late).toEqual([world.slotIds[7]]);
 
       // The other organization's own context holds its rows and none of the first org's (it has no run mail of the first).
       const otherCtx = { orgId: other.orgId };

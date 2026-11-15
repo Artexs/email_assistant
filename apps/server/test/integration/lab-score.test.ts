@@ -314,6 +314,39 @@ describe("scoreLabRun", () => {
         );
       await call(org, "gpt-6-luna");
       await call(other, "other-org-model");
+      // The window starts at 00:00 Warsaw of the start day (2026-11-22T23:00Z): a call before it is not in the report.
+      await recordLlmCall(
+        trx,
+        { orgId: org.orgId },
+        {
+          mailboxId: org.mailboxId,
+          role: "classifier",
+          promptVersion: "test",
+          model: "gpt-6-luna",
+          endpoint: "standard",
+          outcome: "ok",
+          tokensIn: 1000,
+          tokensOut: 200,
+          latencyMs: 10,
+          at: new Date("2026-11-22T22:00:00Z"),
+        }
+      );
+      await recordLlmCall(
+        trx,
+        { orgId: org.orgId },
+        {
+          mailboxId: org.mailboxId,
+          role: "classifier",
+          promptVersion: "test",
+          model: "gpt-6-luna",
+          endpoint: "standard",
+          outcome: "ok",
+          tokensIn: 1000,
+          tokensOut: 200,
+          latencyMs: 10,
+          at: new Date("2026-11-23T06:00:00Z"),
+        }
+      );
 
       const score = await scoreLabRun({ db: trx, state, corpus, now: () => new Date("2026-11-25T10:00:00.000Z") }, RUN);
       expect(score.header).toMatchObject({
@@ -347,6 +380,10 @@ describe("scoreLabRun", () => {
         "phishing",
         "mails",
       ]);
+      // 2 calls in the window (06:00Z before the first slot, 10:00Z): $0.0002 each; the call at 22:00Z the day before is out.
+      const metricsSection = score.sections.metrics as { m7: { calls: number; usd: number } };
+      expect(metricsSection.m7.calls).toBe(2);
+      expect(metricsSection.m7.usd).toBeCloseTo(0.0004, 10);
       expect(score.sections.limits).toEqual({
         hits: { mailbox_hour: 0, mailbox_day: 0, recipient_day: 0 },
         total: 0,
