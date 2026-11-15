@@ -12,6 +12,7 @@ import { scoreLimitsSection } from "../../src/modules/lab/score/limits";
 import { scoreMetricsSection } from "../../src/modules/lab/score/metrics";
 import { scorePhishingSection } from "../../src/modules/lab/score/phishing";
 import type { SectionScope } from "../../src/modules/lab/score/section";
+import { listDelegationOutcomes } from "../../src/modules/delegation";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
@@ -295,6 +296,57 @@ describe("M3 of the run window takes the truth of the slot (stage 13)", () => {
       expect((await scoreMetricsSection(trx, ctx, scope, joined)).section.m3.hiddenImportant).toBe(1);
       // With no slot truth (no joined row) the feedback reader has none either, so the move counts as nothing.
       expect((await scoreMetricsSection(trx, ctx, scope, [])).section.m3.hiddenImportant).toBe(0);
+    });
+  });
+});
+
+describe("review fixes of stage 13", () => {
+  test("TG1: delegations of org A are not read with the context of org B, even with the email id of org A", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const other = await createOrgWithMailbox(trx);
+      const [slot] = byBehaviour("done") as [Slot];
+      const emailId = await addDelegation(trx, org, WEEK.id, { slot });
+      expect(await listDelegationOutcomes(trx, { orgId: org.orgId }, [emailId])).toHaveLength(1);
+      expect(await listDelegationOutcomes(trx, { orgId: other.orgId }, [emailId])).toEqual([]);
+    });
+  });
+
+  test("TG2: two delegations on one mail: the newest sent one is the one scored", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const ctx = { orgId: org.orgId };
+      const [slot] = byBehaviour("done") as [Slot];
+      const run = runOf(WEEK, "week", [slot.id]);
+      // The older delegation was cancelled after a send with no answer; the newer one was answered.
+      const emailId = await addDelegation(trx, org, WEEK.id, {
+        slot,
+        status: "cancelled",
+        sentAt: new Date("2026-11-23T09:00:00.000Z"),
+      });
+      const delegateId = await insertDelegate(trx, ctx);
+      const approved = {
+        approvedAt: new Date("2026-11-24T08:00:00Z"),
+        approvedBy: org.userId,
+        approvedVia: "telegram",
+      };
+      const draftId = await insertAction(trx, ctx, emailId, { type: "create_draft", status: "applied" });
+      const sendId = await insertAction(trx, ctx, emailId, { type: "send", status: "applied", ...approved });
+      await insertDelegation(trx, ctx, {
+        mailboxId: org.mailboxId,
+        emailId,
+        delegateId,
+        draftActionId: draftId,
+        sendActionId: sendId,
+        status: "answered",
+        sentAt: new Date("2026-11-24T09:00:00.000Z"),
+        answeredAt: new Date("2026-11-24T10:00:00.000Z"),
+        createdAt: new Date("2026-11-24T08:30:00.000Z"),
+      });
+      const events = injected(run, [slot.id]);
+      const joined = await joinRun(trx, ctx, run, events, corpus, org.mailboxId);
+      const delegates = await scoreDelegatesSection(trx, ctx, scopeOf(run, events, org), joined);
+      expect(delegates.rows.find((row) => row.behaviour === "done")).toMatchObject({ sent: 1, answered: 1, differ: 0 });
     });
   });
 });
