@@ -313,6 +313,20 @@ describe("row-level security of the queue (app role)", () => {
     });
   });
 
+  test("with no scope the claim of one organization still takes only its own check, also when another organization's is older", async () => {
+    await withHistoryBox(appDb, { mails: 0 }, async (boxA) => {
+      await withHistoryBox(appDb, { mails: 0 }, async (boxB) => {
+        // B's check is older than A's: a claim without the organization filter would take B's.
+        await queue(boxB);
+        await queue(boxA);
+        const claim = await claimNextCheck(appDb, boxA, boxA.clock.now);
+        expect(claim.kind).toBe("claimed");
+        if (claim.kind === "claimed") expect(claim.check.mailboxId).toBe(boxA.mailboxId);
+        expect(await theCheck(appDb, boxB)).toMatchObject({ locked_at: null });
+      });
+    });
+  });
+
   test("the flag_on queue writes for the organization of the scope only", async () => {
     await withHistoryBox(appDb, { mails: 0 }, async (boxA) => {
       await withHistoryBox(appDb, { mails: 0 }, async (boxB) => {

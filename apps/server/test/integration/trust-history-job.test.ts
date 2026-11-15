@@ -16,7 +16,7 @@ import {
 } from "../../src/modules/trust";
 import { SoftError } from "../../src/platform/errors";
 
-import { suspendOrg } from "./fixtures";
+import { insertTestEmail, suspendOrg } from "./fixtures";
 import { testDb } from "./helpers";
 import {
   advance,
@@ -499,33 +499,73 @@ describe("step 3: the flags wait", () => {
     });
   });
 
-  test("a mail with an older flag row keeps the check waiting until a read is newer than the backfill", async () => {
+  test("a flag row older than the backfill keeps the check waiting until a read is newer; mail outside the window or INBOX does not count", async () => {
     await withHistoryBox(db, {}, async (box) => {
       await queue(box);
       box.fake.failOn("fetchFlagsIn", new SoftError("flags lost"));
       const job = jobOf(db, box);
       await job.run();
       const doneAt = box.clock.now;
-      advance(box, 2 * MINUTE_MS);
-      await job.run();
-      expect((await theCheck(db, box)).status).toBe("waiting_flags");
-      // The sync job reads the flags a minute later: a row with `checked_at` after the backfill time ends the wait.
-      const mails = await db.selectFrom("emails").select("id").where("mailbox_id", "=", box.mailboxId).execute();
-      for (const mail of mails) {
-        await db
+      // Two mails that the check does not judge: older than the window, and in another folder. Neither has a flag row.
+      await db.transaction().execute(async (trx) => {
+        await insertTestEmail(trx, box, box.mailboxId, {
+          folder: "INBOX",
+          uid: 901,
+          received_at: new Date(doneAt.getTime() - 40 * 86_400_000),
+        });
+        await insertTestEmail(trx, box, box.mailboxId, { folder: "Archive", uid: 902, received_at: doneAt });
+      });
+      const mails = await db
+        .selectFrom("emails")
+        .select(["id", "uid"])
+        .where("mailbox_id", "=", box.mailboxId)
+        .where("uid", "<", "900")
+        .execute();
+      expect(mails).toHaveLength(5);
+      const flagRow = (emailId: string, checkedAt: Date) =>
+        db
           .insertInto("email_flags")
           .values({
-            email_id: mail.id,
+            email_id: emailId,
             org_id: box.orgId,
             seen: false,
             answered: false,
             flagged: false,
-            checked_at: new Date(doneAt.getTime() + MINUTE_MS),
+            checked_at: checkedAt,
           })
           .execute();
-      }
+      // Every mail of the window has a row, but from before the backfill: the flags are not known yet.
+      for (const mail of mails) await flagRow(mail.id, new Date(doneAt.getTime() - 86_400_000));
+      advance(box, 2 * MINUTE_MS);
+      await job.run();
+      expect((await theCheck(db, box)).status).toBe("waiting_flags");
+      // The sync job reads the flags a minute after the backfill: every row is newer, the wait ends.
+      await db
+        .updateTable("email_flags")
+        .set({ checked_at: new Date(doneAt.getTime() + MINUTE_MS) })
+        .where(
+          "email_id",
+          "in",
+          mails.map((mail) => mail.id)
+        )
+        .execute();
       advance(box, MINUTE_MS);
       await job.run();
+      expect((await theCheck(db, box)).status).toBe("classifying");
+    });
+  });
+
+  test("a suspended org waits in the flags step too: no step before the resume", async () => {
+    await withHistoryBox(db, {}, async (box) => {
+      await queue(box);
+      await jobOf(db, box).run();
+      expect((await theCheck(db, box)).status).toBe("waiting_flags");
+      await db.transaction().execute((trx) => suspendOrg(trx, box.orgId));
+      await jobOf(db, box).run();
+      expect((await theCheck(db, box)).status).toBe("waiting_flags");
+      await db.updateTable("organizations").set({ plan: "active" }).where("id", "=", box.orgId).execute();
+      advance(box, HISTORY_RETRY_MS);
+      await jobOf(db, box).run();
       expect((await theCheck(db, box)).status).toBe("classifying");
     });
   });
