@@ -1,0 +1,27 @@
+# F113 stage 08 review notes (Opus review of `6a3af6e5`, verdict PASS)
+
+Review result: `.limen/jobs/2026-11-15-f113-review-s08-opus-delegate-bo-ccf30118/result`; logs `/tmp/f113-s08-review/`. The fixes below are in the commit that follows `6a3af6e5` on the stage 08 branch.
+
+## Test gaps
+
+- **TG1 — fixed.** Test "P1" in `apps/server/test/integration/lab-bots.test.ts`: a lab mail with `Reply-To`, `Cc` and `Bcc` outside gets one reply, `To:` the run mailbox only; the reply holds no outside address and no `Cc`/`Bcc`/`Reply-To` header; no outside mailbox gets mail; no `skip` event (nothing refused). Mutation own1 (reply to the Reply-To address) fails it: `/tmp/f113-s08/mut-own1-reply-to.log`.
+- **TG2 — fixed.** Test 10 has a mail from another delegate's own address (not the alias): no event, nothing planned. Mutation own2 (drop `addresses.add(persona.address)`) fails it: `/tmp/f113-s08/mut-own2-no-own-address.log`.
+
+## Notes
+
+1. **Inbound `Auto-Submitted` — fixed.** The bots skip a mail whose `Auto-Submitted` is set and is not `no` (`skip auto_submitted`, RFC 3834). Reason: the server sets no `Auto-Submitted` on a delegation or a reminder (grep of `apps/server/src`: only `capture.ts` reads it), and spec test 8 sends plain reminders, so no mail a bot must answer is automatic. Tests: "an automatic mail … gets no reply; Auto-Submitted: no does"; mutation own3 fails it.
+2. **Endless retries — fixed.** New event `bot_error {key, code}` on each failed send. `MAX_ERRORS_PER_REPLY = 5` (same style as stage 07 `MAX_ERRORS_PER_SLOT`); the 5th error writes `skip send_failed` (ref = key) and the item ends. A render error is code `render_failed`. A crash between the 5th error and its skip: the next tick writes the skip and tries nothing. Tests: "failed sends" (3 cases plus the `render_failed` case); mutations own4 and own5 fail them.
+3. **Long subject — fixed.** The reply subject is cut to 200 characters; a subject that holds CR/LF is refused (`render_failed`). Test "a long subject is cut …"; mutation own6 fails it. Equivalent mutant: removing the explicit CR/LF check survives (`mut-own8-no-linebreak-check.log`), because `renderSeedMessage` refuses a header with a line break too; the check stays as a second guard.
+4. **Mail client host — done in the merge; wiring is stage 11.** No default exists and no code calls the factory yet. Stage 11 passes `LAB_MAIL_HOST` and `LAB_MAIL_PASSWORD` (see its carry-over). Option for the stage 07 reconciliation: refuse a non-loopback host in the factory.
+5. **Stage 07 overlap — reconciled in the merge of master (stage 07 landed first).** One `LabMailClient` (4 shared methods plus `newestUid`) and one factory `createLabMailClient({host, imapPort, smtpPort, password, allowedAddresses})` with both guards (`host_refused`, `address_refused`), `LabMailError(code, cause?)` with `detail`, the union of codes, the stage 07 empty and missing-folder handling and the 15 s timeouts. The injector test uses the factory with `labAddresses`. `docs/code-patterns.md` names `lab/bots.ts` as a `mailparser` user. Original proposal: Both branches add `modules/lab/mail-client.ts`, the lab `index.ts` exports and `docs/capabilities/live-lab.md` rows; `docs/code-patterns.md` of stage 07 says only `mail/imap/` imports `mailparser`, but `bots.ts` does. Proposed reconciliation (review): one `LabMailClient` with the 4 shared methods plus `newestUid`; one factory `createLabMailClient({host, imapPort, smtpPort, password, allowedAddresses})` with the envelope guard; error codes = stage 07 detailed codes plus `address_refused`, `LabMailError(code, cause?)`; stage 07's empty and missing-folder handling in `fetchSince`; stage 08's timeouts; name `lab/bots.ts` in the `mailparser` rule or move the parse into `mail-client.ts`. Stage 07 lands first; this branch was not merged with master and the stage 07 branch was not touched.
+6. **Master conflict in `docs/capabilities/live-lab.md` — resolved in the merge (Seed 7, Injector 8, Status 9, Executive rules 10, Delegate bots 11).** Master has rules 7 Seed, 8 Status and 9 Executive rules; the bots rule becomes rule 10; join both entry-point tables.
+7. **`deploy/sim.env.example` — fixed.** The comment now says 26 addresses (23 scenario addresses plus 3 aliases). The three aliases are required by `lab-env-check.test.ts` test 4.
+8. **First-tick cursor — accepted, stage 11 carry-over.** Run the bots tick before the first injector tick; one serve process per run.
+9. **`sendOne` compares no Message-ID — open, stage 14 carry-over.** After a UIDVALIDITY change a UID may point to another mail; the recipient guard still holds, only the threading headers would be wrong.
+10. **`receivedAt` from the `Date` header — accepted.** Both are server-controlled in the lab.
+11. **One IMAP failure stopped the whole tick — fixed.** A `LabMailError` of one delegate read is caught per delegate and counted in `failed`; the other delegates and `sendDue` still run. Test "a failed read of one delegate inbox …" (both orders); mutation own7 fails it.
+12. **Verified, no issue:** N12 tests (`bot.test.ts`, `message.test.ts`), canary events test, back-on date formats, no Cc/Bcc copy, replay guard (m5), no migration, no `bun.lock` change.
+
+## Mutation logs (this round)
+
+`/tmp/f113-s08/mut-own{1-reply-to,2-no-own-address,3-no-autosubmitted-skip,4-no-cap,5-no-crash-skip,6-no-subject-cut,7-no-delegate-catch,8-no-linebreak-check}.log`. Seven fail one named test each; own8 is the equivalent mutant of note 3.

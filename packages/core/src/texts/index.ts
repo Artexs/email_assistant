@@ -4,6 +4,7 @@ import type { UserLocale } from "../tenancy";
 import { aiTextTexts, type AiTextTexts } from "./ai-text";
 import { answerTexts, type AnswerTexts } from "./answers";
 import { approvalTexts, type ApprovalTexts } from "./approvals";
+import { attachmentTexts, type AttachmentTexts } from "./attachments";
 import { botTexts, type BotCommandName, type BotTexts } from "./bot";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
@@ -20,6 +21,7 @@ export type {
   AiTextTexts,
   AnswerTexts,
   ApprovalTexts,
+  AttachmentTexts,
   BotCommandName,
   BotTexts,
   CategoryTexts,
@@ -38,6 +40,7 @@ export interface CoreTexts {
   categories: CategoryTexts;
   answers: AnswerTexts;
   aiText: AiTextTexts;
+  attachments: AttachmentTexts;
   wouldDo: WouldDoTexts;
   common: CommonTexts;
   notices: NoticeTexts;
@@ -55,6 +58,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     categories: categoryTexts.en,
     answers: answerTexts.en,
     aiText: aiTextTexts.en,
+    attachments: attachmentTexts.en,
     wouldDo: wouldDoTexts.en,
     common: commonTexts.en,
     notices: noticeTexts.en,
@@ -70,6 +74,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     categories: categoryTexts.pl,
     answers: answerTexts.pl,
     aiText: aiTextTexts.pl,
+    attachments: attachmentTexts.pl,
     wouldDo: wouldDoTexts.pl,
     common: commonTexts.pl,
     notices: noticeTexts.pl,

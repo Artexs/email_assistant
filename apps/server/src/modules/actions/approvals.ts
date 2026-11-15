@@ -24,7 +24,8 @@ import {
 export interface ApprovalDeps {
   db: Db | Transaction<DB>;
   hooks: DelegationHooks;
-  // What a decision does for the cards of other channels. `editApproval` and the decisions call it from a later stage; `noApprovalHooks` does nothing.
+  // What a decision does for the cards of other channels: `approve`, `reject` and `editApproval` call `onDecided` in their
+  // transaction after a change. The tap handler and the web build the real hook (`cardEditHooks`); `noApprovalHooks` does nothing.
   approvalHooks: ApprovalHooks;
   // Reads `mailboxes.capabilities`; a dependency so tests can set it.
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
@@ -54,6 +55,12 @@ export type RejectResult =
   | { kind: "already"; status: string }
   | { kind: "superseded"; currentId: string }
   | { kind: "not_found" };
+
+// The user whose own card the decision edits in place: the tap on a Telegram card edits that card itself, so the hook
+// must leave it alone (D4). A decision from the panel or the CLI has no such card.
+export function decidedBy(input: ApprovalInput): { exceptUserId?: string } {
+  return input.via === "telegram" ? { exceptUserId: input.userId } : {};
+}
 
 // An `expired` send with the reason `superseded` is an old version: no decision applies to it.
 function isSuperseded(send: SendRow): boolean {
@@ -115,6 +122,12 @@ async function approveRow(
         data: { via: input.via },
         at: input.now,
       });
+      await deps.approvalHooks.onDecided(trx, ctx, {
+        sendId: send.id,
+        decision: "approved",
+        ...decidedBy(input),
+        at: input.now,
+      });
       return { kind: "approved" };
     }
     case "approved":
@@ -169,6 +182,12 @@ async function rejectRow(
   if (typeof delegationId === "string" && !("reminder" in send.payload)) {
     await deps.hooks.onCancelled(trx, ctx, { delegationId, reason: "rejected", at: input.now });
   }
+  await deps.approvalHooks.onDecided(trx, ctx, {
+    sendId: send.id,
+    decision: "rejected",
+    ...decidedBy(input),
+    at: input.now,
+  });
   return { kind: "rejected" };
 }
 

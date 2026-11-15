@@ -57,3 +57,7 @@ Texts (both files; Polish per D17):
 ## Done when
 
 Steps 1–3 done; the Proof passes (`/tmp/f104-s10`).
+
+## Carry-over from the stage 08 review (F104)
+
+Do not turn the flag `sent_sync` on for any non-lab org before this stage lands (see review-8.md N5). Until stage 09 an owner cannot turn the switch off.

@@ -9,7 +9,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError, SoftError } from "../../platform/errors";
 import { auditEvents, recordAudit } from "../audit";
 import { insertDefaultSettings } from "../config";
-import { getOrgPlan } from "../tenancy";
+import { getOrgPlan, isFeatureOn } from "../tenancy";
 
 import type { ImapConnectOptions } from "./imap/client";
 import type { SmtpConnectOptions } from "./imap/smtp";
@@ -29,6 +29,7 @@ import {
   insertCredentials,
   insertInboxFolder,
   insertMailbox,
+  insertSentSyncState,
   lockMailbox,
   lockMailboxLimit,
   setMailboxStatus,
@@ -128,7 +129,7 @@ export async function connectMailbox(
   ctx: TenantContext,
   input: ConnectInput,
   meta: ConnectMeta = { actor: "system", via: "cli" }
-): Promise<{ mailboxId: string; info: MailServerInfo }> {
+): Promise<{ mailboxId: string; info: MailServerInfo; sentSync: boolean }> {
   const valid = connectInputSchema.parse(input);
 
   // Before any login: a duplicate never opens a connection.
@@ -162,6 +163,8 @@ export async function connectMailbox(
     timeouts?.deadlineMs
   );
 
+  // "Track my sent mail" starts on only while the organization flag is on: with it off, the connect dialog shows no Sent line, so there is no consent.
+  const sentSync = await isFeatureOn(deps.db, ctx, "sent_sync");
   const mailboxId = randomUUID();
   const secret = deps.secrets.encrypt(valid.password, `mailbox:${mailboxId}`);
 
@@ -191,10 +194,11 @@ export async function connectMailbox(
       keyVersion: secret.keyVersion,
     });
     await insertDefaultSettings(trx, ctx, mailboxId);
+    await insertSentSyncState(trx, ctx, mailboxId, { enabled: sentSync });
     await recordAudit(trx, ctx, {
       actor: meta.actor,
       event: auditEvents.mailboxConnected,
-      data: { mailbox_id: mailboxId, via: meta.via },
+      data: { mailbox_id: mailboxId, via: meta.via, sent_sync: sentSync },
     });
   };
 
@@ -205,7 +209,7 @@ export async function connectMailbox(
     if (isMailboxAddressViolation(error)) throw new MailboxExistsError({ cause: error });
     throw error;
   }
-  return { mailboxId, info };
+  return { mailboxId, info, sentSync };
 }
 
 // Tests the IMAP and SMTP login with the new password first: a login error stores nothing.

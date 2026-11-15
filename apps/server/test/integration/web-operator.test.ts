@@ -145,6 +145,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "org_delete", enabled: false },
       { orgId: org.orgId, flag: "sso_sign_in", enabled: false },
       { orgId: org.orgId, flag: "suspicious_mail", enabled: false },
+      { orgId: org.orgId, flag: "attachment_line", enabled: false },
       { orgId: org.orgId, flag: "mail_oauth_microsoft", enabled: false },
       { orgId: org.orgId, flag: "mail_oauth_google", enabled: false },
     ]);

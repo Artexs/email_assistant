@@ -114,6 +114,27 @@ export async function insertTestEmail(
   return row.id;
 }
 
+// The `email_headers` row of a mail with the captured attachments (F109 stage 06). `count` defaults to the list length.
+export async function insertAttachmentHeaders(
+  trx: Transaction<DB>,
+  ctx: { orgId: string },
+  emailId: string,
+  attachments: { name: string | null; type: string; size: number; inline: boolean }[],
+  count: number = attachments.length
+): Promise<void> {
+  await trx
+    .insertInto("email_headers")
+    .values({
+      email_id: emailId,
+      org_id: ctx.orgId,
+      attachments: JSON.stringify(attachments),
+      attachment_count: count,
+      parts_known: true,
+      captured_at: new Date(),
+    })
+    .execute();
+}
+
 // Other tests and dev data leave active mailboxes in the DB; the job tests want only their own. The rollback undoes it.
 export async function pauseOtherMailboxes(trx: Transaction<DB>): Promise<void> {
   await trx.updateTable("mailboxes").set({ status: "paused" }).where("status", "=", "active").execute();

@@ -209,6 +209,9 @@ export async function deleteChatLinks(db: DbOrTrx, ctx: TenantContext, userId: s
   return Number(result.numDeletedRows);
 }
 
+// The text of a `sent` or `failed` row after retention (A23); the view is `{}` then.
+export const OUTBOX_REMOVED_TEXT = "[removed]";
+
 export const outboxKinds = noticeKinds;
 export type OutboxKind = NoticeKind;
 
@@ -221,6 +224,10 @@ export const outboxFailCodes = [
   "too_many_errors",
   "bad_view",
   "answered_elsewhere",
+  // `approval_edit` rows (F102 card sync): the card follows an outcome that the send no longer has, the card is gone, or Telegram refused the edit.
+  "stale_edit",
+  "no_target",
+  "edit_failed",
 ] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];
 
@@ -307,6 +314,8 @@ export interface ClaimedOutbox {
   lockedAt: Date;
   createdAt: Date;
   digestId: string | null;
+  // Only kind `approval_edit`: the card that the row edits.
+  editOfOutboxId: string | null;
   wasStale: boolean;
 }
 
@@ -365,6 +374,7 @@ export async function claimDueOutbox(
       "o.locked_at",
       "o.created_at",
       "o.digest_id",
+      "o.edit_of_outbox_id",
       "picked.was_stale",
     ])
     .execute();
@@ -384,6 +394,7 @@ export async function claimDueOutbox(
       lockedAt: row.locked_at ?? opts.now,
       createdAt: row.created_at,
       digestId: row.digest_id,
+      editOfOutboxId: row.edit_of_outbox_id,
       wasStale: Boolean(row.was_stale),
     }))
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -593,7 +604,7 @@ export async function clearOutboxTexts(
   for (;;) {
     const result = await db
       .updateTable("outbox")
-      .set({ text: "[removed]", view: JSON.stringify({}) })
+      .set({ text: OUTBOX_REMOVED_TEXT, view: JSON.stringify({}) })
       .where("org_id", "=", ctx.orgId)
       .where(
         "id",
@@ -604,7 +615,9 @@ export async function clearOutboxTexts(
           .where("org_id", "=", ctx.orgId)
           .where("created_at", "<", opts.before)
           .where("status", "in", ["sent", "failed"])
-          .where((eb) => eb.or([eb("text", "is distinct from", "[removed]"), sql<boolean>`view <> '{}'::jsonb`]))
+          .where((eb) =>
+            eb.or([eb("text", "is distinct from", OUTBOX_REMOVED_TEXT), sql<boolean>`view <> '{}'::jsonb`])
+          )
           .orderBy("id")
           .limit(batch)
           .forUpdate()
@@ -618,7 +631,13 @@ export async function clearOutboxTexts(
   for (;;) {
     const result = await db
       .updateTable("outbox")
-      .set({ status: "failed", error_code: "expired", locked_at: null, text: "[removed]", view: JSON.stringify({}) })
+      .set({
+        status: "failed",
+        error_code: "expired",
+        locked_at: null,
+        text: OUTBOX_REMOVED_TEXT,
+        view: JSON.stringify({}),
+      })
       .where("org_id", "=", ctx.orgId)
       .where(
         "id",

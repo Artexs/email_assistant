@@ -40,6 +40,19 @@ export const en = {
   login_help_summary: "No password yet?",
   login_help_text:
     "Setup links are created on the server with web:invite. A link works once, for 24 hours. If yours has expired, ask for a new one.",
+  // company sign-in (F119 stage 12)
+  login_sso_hint: "Does your company use single sign-on? Sign in with your company account.",
+  login_sso_button: "Sign in with your company account",
+  login_sso_email: "Work e-mail",
+  login_sso_submit: "Continue",
+  login_sso_back: "Back to password sign-in",
+  login_sso_error_no_provider: "Company sign-in is not set up for this address. Sign in with your password.",
+  login_sso_error_rate: "Too many attempts. Wait a minute and try again.",
+  login_sso_error_not_member: "This company account has no access. Ask the operator to add you.",
+  login_sso_error_domain: "This company account uses another domain. Use your work e-mail.",
+  login_sso_error_identity: "Your company account changed. Ask the operator to unlink the old one.",
+  login_sso_error_off: "Company sign-in is off for your organization. Sign in with your password or ask the operator.",
+  login_sso_error_generic: "Company sign-in failed. Try again or ask the operator.",
   // two-factor code step
   tf_code_title: "Two-factor sign-in",
   tf_code_label: "Code from your authenticator app",
@@ -284,7 +297,7 @@ export const en = {
   tg_unlinked_toast: "Telegram unlinked.",
   tg_consent_title: "What goes to Telegram",
   tg_consent_text:
-    "Telegram receives the messages of this bot: the sender and subject of your mails, the AI's short reason or summary, the texts of drafts that wait for your approval with the quoted part of the original mail, the names of delegates and the addresses of your mailboxes. Telegram is a service outside the EU, and data can be processed outside the European Economic Area. Chats with a bot are not end-to-end encrypted (from sender to recipient only). Telegram keeps the messages until you delete them in the chat. You can withdraw your consent at any time by unlinking Telegram. Messages that are already in the chat stay there until you delete them.",
+    "Telegram receives the messages of this bot: the sender and subject of your mails, the names (or file types) and sizes of their attachments, the AI's short reason or summary, the texts of drafts that wait for your approval with the quoted part of the original mail, the names of delegates and the addresses of your mailboxes. Telegram is a service outside the EU, and data can be processed outside the European Economic Area. Chats with a bot are not end-to-end encrypted (from sender to recipient only). Telegram keeps the messages until you delete them in the chat. You can withdraw your consent at any time by unlinking Telegram. Messages that are already in the chat stay there until you delete them.",
   tg_consent_label: "I consent to these data going to Telegram.",
   tg_consent_outdated: "The consent text has changed. Reload the page and read it again.",
   // onboarding

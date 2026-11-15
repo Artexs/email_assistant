@@ -295,7 +295,7 @@ export function delegationHooks(_deps: { db: Db }): DelegationHooks {
         draftActionId: input.draftActionId,
         sendActionId: input.sendActionId,
         delegateId: input.delegateId,
-        at: new Date(),
+        at: input.at,
       });
     },
     activeDelegate: async (trx, ctx, delegateId) => {
