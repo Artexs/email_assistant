@@ -35,15 +35,18 @@ const idSchema = z.uuid();
 
 // The name of a closed send for the page: the one that `stateOf` gives the detail route, so one send has one name in approve,
 // reject, edit and the detail (`applied` is `sent`, `applying` is `sending`, `approved` is `held` or `sending` by the lock). The services
-// answer with the raw status; the read names it. A send that cannot be read or is not closed is a bug: HardError, never a made-up name.
+// answer with the raw status; the read names it. A send that is not a send state for the page (`logged`, `ready`, `undone`: a plan
+// that never reached approval) has no name: undefined, and the route answers 404 as the detail route and approve do. A send that is
+// still waiting or was replaced is no closed send: HardError, never a made-up name.
 async function closedStateOf(
   deps: ApprovalRouteDeps,
   ctx: TenantContext,
   sendId: string
-): Promise<ApprovalClosedState> {
+): Promise<ApprovalClosedState | undefined> {
   const send = await getSend(deps.db, ctx, sendId);
   const state = send === undefined ? undefined : stateOf(send, deps.now());
-  if (state === undefined || !approvalClosedStates.includes(state as ApprovalClosedState)) {
+  if (state === undefined) return undefined;
+  if (!approvalClosedStates.includes(state as ApprovalClosedState)) {
     throw new HardError("a closed send has no closed state");
   }
   return state as ApprovalClosedState;
@@ -140,8 +143,11 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
         return c.json<ApprovalRejectAnswer>({ status: "rejected" });
       case "superseded":
         return c.json({ error: "changed", currentId: result.currentId }, 409);
-      case "already":
-        return c.json({ error: "closed", state: await closedStateOf(deps, ctx, id) }, 409);
+      case "already": {
+        const state = await closedStateOf(deps, ctx, id);
+        if (state === undefined) return c.json({ error: "not_found" }, 404);
+        return c.json({ error: "closed", state }, 409);
+      }
       case "not_found":
         return c.json({ error: "not_found" }, 404);
     }
@@ -167,7 +173,9 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
       case "closed": {
         // Its own codes stay; a raw status gets the name that `stateOf` gives (the edit read it under the lock, the name needs the lock time).
         const own = approvalEditClosedCodes.find((code) => code === result.state);
-        return c.json({ error: "closed", state: own ?? (await closedStateOf(deps, ctx, id)) }, 409);
+        const state = own ?? (await closedStateOf(deps, ctx, id));
+        if (state === undefined) return c.json({ error: "not_found" }, 404);
+        return c.json({ error: "closed", state }, 409);
       }
       case "drafts_off":
         return c.json({ error: "drafts_off" }, 409);
