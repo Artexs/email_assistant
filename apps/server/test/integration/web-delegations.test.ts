@@ -5,7 +5,13 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { setDelegationId } from "../../src/modules/actions";
 import { cardEditHooks } from "../../src/modules/channels";
-import { cancelByUser, delegationHooks, markAnswered, type CancelByUserDeps } from "../../src/modules/delegation";
+import {
+  cancelByUser,
+  delegationHooks,
+  lockDelegation,
+  markAnswered,
+  type CancelByUserDeps,
+} from "../../src/modules/delegation";
 
 import { insertDelegate, insertDelegation } from "./fixtures";
 import { testDb } from "./helpers";
@@ -515,6 +521,30 @@ describe("POST /api/delegations/:id/cancel", () => {
       expect(await row(d.id)).toEqual({ status: "cancelled", status_reason: "user_cancelled" });
     }
     expect(await auditRows(s.org.orgId, "delegation.cancelled")).toHaveLength(6);
+  });
+
+  test("T10c. a held row lock of the delegation blocks the cancel of a sent delegation until the holder commits", async () => {
+    const s = await setup({ delegationFlag: true });
+    const w = await world(s);
+    const deps: CancelByUserDeps = {
+      db,
+      hooks: delegationHooks({ db }),
+      approvalHooks: cardEditHooks({ sendScope: { kind: "all" } }),
+      uidplus: async () => true,
+    };
+    let settled = false;
+    let pending: ReturnType<typeof cancelByUser> | undefined;
+    await db.transaction().execute(async (trx) => {
+      expect(await lockDelegation(trx, w.ctx, w.d2.id)).toMatchObject({ id: w.d2.id });
+      pending = cancelByUser(deps, w.ctx, w.d2.id, { userId: s.org.ownerId, via: "web", now: NOW });
+      void pending.then(() => {
+        settled = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(settled).toBe(false);
+    });
+    expect(await pending).toEqual({ kind: "cancelled" });
+    expect(await row(w.d2.id)).toEqual({ status: "cancelled", status_reason: "user_cancelled" });
   });
 
   test("T10b. a cancel of a drafted delegation and a cancel at once: one 200, one 409", async () => {
