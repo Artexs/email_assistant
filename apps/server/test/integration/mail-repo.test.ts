@@ -1162,6 +1162,26 @@ describe("mail repository: listFolderRowsAtUids", () => {
     });
   });
 
+  test("leaves out the rows of another mailbox of the same org", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const otherMailboxId = randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: otherMailboxId,
+        address: `other-${otherMailboxId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await insertEmail(trx, a.ctx, newEmail(otherMailboxId, { uid: 10 }));
+      expect(await listFolderRowsAtUids(trx, a.ctx, a.mailboxId, "INBOX", [10])).toEqual([]);
+      expect(await listFolderRowsAtUids(trx, a.ctx, otherMailboxId, "INBOX", [10])).toHaveLength(1);
+    });
+  });
+
   test("leaves out the rows of another org", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
