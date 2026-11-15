@@ -32,6 +32,7 @@ import {
 } from "../../src/modules/lab";
 import { listMailboxes, type ConnectDeps } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
+import { imapFlowOptions } from "../../src/modules/mail/imap/client";
 import { listOrgFeatureRows } from "../../src/modules/tenancy";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
@@ -217,17 +218,36 @@ describe("seedLabOrg (F113 stage 06)", () => {
     });
   });
 
-  test("1b: the lab mailbox host is the GreenMail service name and nothing else (the env guard does not check it)", async () => {
+  test("1b: the lab mailbox host is the loopback address 127.0.0.1 and nothing else (the env guard does not check it)", async () => {
     await withRollback(db, async (trx) => {
       const h = harness(trx);
       const target = randomTarget();
       const { org } = await seedLabOrg(h.deps, corpus.scenario, target);
-      expect(LAB_MAIL_HOST).toBe("greenmail");
+      expect(LAB_MAIL_HOST).toBe("127.0.0.1");
+      // The reason: the server opens plain IMAP and SMTP (GreenMail on 3143 and 3025) only to a loopback host.
+      expect(
+        imapFlowOptions(
+          { host: LAB_MAIL_HOST, port: LAB_IMAP_PORT, user: "u", auth: { kind: "password", password: "p" } },
+          { host: LAB_MAIL_HOST }
+        ).secure
+      ).toBe(false);
+      expect(() =>
+        imapFlowOptions(
+          {
+            host: "greenmail",
+            port: LAB_IMAP_PORT,
+            user: "u",
+            auth: { kind: "password", password: "p" },
+            secure: false,
+          },
+          { host: "greenmail" }
+        )
+      ).toThrow("plain IMAP");
       expect(h.connects).toEqual([
         {
-          host: "greenmail",
+          host: "127.0.0.1",
           port: LAB_IMAP_PORT,
-          smtpHost: "greenmail",
+          smtpHost: "127.0.0.1",
           smtpPort: LAB_SMTP_PORT,
           address: target.mailbox,
         },
@@ -237,7 +257,7 @@ describe("seedLabOrg (F113 stage 06)", () => {
         .select(["imap_host", "imap_port", "smtp_host", "smtp_port"])
         .where("id", "=", org.mailboxId)
         .executeTakeFirstOrThrow();
-      expect(row).toEqual({ imap_host: "greenmail", imap_port: 3143, smtp_host: "greenmail", smtp_port: 3025 });
+      expect(row).toEqual({ imap_host: "127.0.0.1", imap_port: 3143, smtp_host: "127.0.0.1", smtp_port: 3025 });
       // The demo target uses the same host: there is no other.
       const demo = await seedLabOrg(harness(trx).deps, corpus.scenario, randomTarget(LAB_TARGETS.demo));
       const demoRow = await trx
@@ -245,7 +265,7 @@ describe("seedLabOrg (F113 stage 06)", () => {
         .select(["imap_host", "smtp_host"])
         .where("id", "=", demo.org.mailboxId)
         .executeTakeFirstOrThrow();
-      expect(demoRow).toEqual({ imap_host: "greenmail", smtp_host: "greenmail" });
+      expect(demoRow).toEqual({ imap_host: "127.0.0.1", smtp_host: "127.0.0.1" });
       expect((await getMailboxSettings(trx, { orgId: demo.org.orgId }, demo.org.mailboxId))?.mode).toBe("shadow");
     });
   });

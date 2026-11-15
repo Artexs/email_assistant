@@ -47,7 +47,7 @@ async function main(): Promise<number> {
   }
 
   const config = loadConfig();
-  // The lab mailbox is on GreenMail inside the sim stack; the env guard has already required local hosts.
+  // The lab mailbox host is 127.0.0.1 (GreenMail shares the namespace of the stack); the env guard has already required local hosts.
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {

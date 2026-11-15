@@ -11,10 +11,13 @@ import { LAB_MAILBOXES } from "./corpus";
 import type { FakeTgClient } from "./fake-tg";
 import type { LabOrg, LabOrgKey, LabState } from "./state";
 
-// The mail host of every lab mailbox is the GreenMail service name of the sim stack, and nothing else. The env guard
-// (`checkSimEnv`) does not check mailbox hosts: only this constant keeps a lab mailbox off a real mail server. Seed
-// never takes a host from the command line, the env or a file.
-export const LAB_MAIL_HOST = "greenmail";
+// The mail host of every lab mailbox is the loopback address 127.0.0.1, and nothing else. In the sim stack GreenMail
+// joins the network namespace of `fake-telegram`, like `server` and `lab` (`deploy/compose.sim.yaml`), so it is on
+// 127.0.0.1. The server opens plain IMAP and SMTP only to a loopback host: a service name such as `greenmail` would get
+// TLS on a plain port. The env guard (`checkSimEnv`) does not check mailbox hosts: only this constant keeps a lab
+// mailbox off a real mail server. Seed never takes a host from the command line, the env or a file. The injector and the
+// delegate bots (later stages) run in the `lab` container, in the same namespace, and use the same host.
+export const LAB_MAIL_HOST = "127.0.0.1";
 export const LAB_IMAP_PORT = 3143;
 export const LAB_SMTP_PORT = 3025;
 // GreenMail runs with auth off: any password logs in. Not a secret.
@@ -37,8 +40,13 @@ export const LAB_TARGETS: Record<LabOrgKey, SeedTarget> = {
 };
 
 // Every key of `packages/core/src/features.ts` is in exactly one list. `mistake_capture` is on: the executive needs the
-// reason buttons. `org_delete` and `sso_sign_in` stay off: the lab never deletes its org and has no SSO.
-export const LAB_FLAGS_OFF = ["org_delete", "sso_sign_in"] as const satisfies readonly FeatureKey[];
+// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab never deletes its org, has no SSO and no OAuth mailbox (its mailbox is a GreenMail password login).
+export const LAB_FLAGS_OFF = [
+  "org_delete",
+  "sso_sign_in",
+  "mail_oauth_microsoft",
+  "mail_oauth_google",
+] as const satisfies readonly FeatureKey[];
 export const LAB_FLAGS_ON = [
   "stats_page",
   "approvals_page",
