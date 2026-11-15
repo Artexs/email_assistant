@@ -54,6 +54,11 @@ describe("sent shapes", () => {
     expect(sentSlotSchema.safeParse(slotWith({ lang: "de" })).success).toBe(false);
   });
 
+  test("a brief over 300 characters is refused", () => {
+    expect(sentSlotSchema.safeParse(slotWith({ brief: "x".repeat(300) })).success).toBe(true);
+    expect(sentSlotSchema.safeParse(slotWith({ brief: "x".repeat(301) })).success).toBe(false);
+  });
+
   test("a thread holds at most 3 mails", () => {
     const mail = { from: "client-a", subject: "Temat", brief: "an earlier mail" };
     expect(sentSlotSchema.safeParse(slotWith({ thread: [mail, mail, mail] })).success).toBe(true);
@@ -73,14 +78,12 @@ describe("sent shapes", () => {
     expect(tagged("time_word_due", { labels: labelsWith({ due: { kind: "date", date: "2026-11-20" } }) })).toBe(false);
     expect(tagged("time_word_due")).toBe(true);
     expect(tagged("many_recipients", { labels: quiet })).toBe(false);
+    const allNull = labelsWith({ expectsReply: false, ask: null, due: null, promise: null, promiseDue: null });
+    expect(tagged("many_recipients", { labels: allNull })).toBe(false);
     const many = Array.from({ length: 11 }, (_, i) => `p${i}`);
-    expect(
-      tagged("many_recipients", {
-        labels: labelsWith({ expectsReply: false, ask: null, due: null, promise: null, promiseDue: null }),
-        to: many,
-        cc: [],
-      })
-    ).toBe(true);
+    expect(tagged("many_recipients", { labels: allNull, to: many, cc: [] })).toBe(true);
+    expect(tagged("many_recipients", { labels: allNull, to: many.slice(0, 6), cc: many.slice(6) })).toBe(true);
+    expect(tagged("many_recipients", { labels: allNull, to: many.slice(0, 10), cc: [] })).toBe(false);
     expect(tagged("injection_quote", { quoted: false })).toBe(false);
     expect(tagged("other_thread_subject", { thread: [], quoted: false })).toBe(false);
   });
