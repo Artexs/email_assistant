@@ -57,3 +57,8 @@ Integration, fake `send` and clock, `now = 2026-11-20T10:00:00Z`, fake checks:
 The new tests 1–11 pass; the job is in `main.ts`; the docs entries exist; the Proof prints `PROOF_OK`.
 
 Out of scope: disk and backup checks (04); the console list (F081); outbox rows (alerts are direct sends).
+
+## Carry-over from stage 01 review
+
+- `markAlertSent` (`modules/operator/alerts-repo.ts`) has no state guard: a second `resolved` mark overwrites `resolved_sent_at`. The job must follow `nextAlertStep` and call each mark once per step.
+- Note: the old-release `EXPORT_MAP` completeness test (master code with the `ops_alerts` table present) fails only in CI, not at runtime. A rollback image keeps working.

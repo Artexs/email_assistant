@@ -30,8 +30,20 @@ export const numberFieldNames = [
   "mailbox_hour",
   "mailbox_day",
   "recipient_day",
-  // outbox sender
+  // outbox sender and testmail send
   "wait_ms",
+  // retention job: rows cleared per kind
+  "body_rows",
+  "header_rows",
+  "sent_body_rows",
+  "sent_header_rows",
+  "captured_header_rows",
+  "triage_rows",
+  "payload_rows",
+  "error_rows",
+  "task_rows",
+  "outbox_rows",
+  "token_rows",
   // telegram
   "update_id",
   "bot_id",
@@ -105,6 +117,9 @@ export const codeFieldNames = [
   // actions: the action type (a closed set of six) and the stage of a failed send (`connect`, `login`, `envelope`, `content`, `compose`, `payload`, `unknown`)
   "action_type",
   "send_stage",
+  // testmail send: the batch name and the case id from the testmail corpus
+  "batch",
+  "case_id",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

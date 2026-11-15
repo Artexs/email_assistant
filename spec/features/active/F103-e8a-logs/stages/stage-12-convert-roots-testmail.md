@@ -28,7 +28,7 @@ File, old text (start) → event: fields. Levels stay.
 - `web.ts`: `AUTH_PWNED_CHECK=off: …` → `pwned_check_off`: `config_key: "AUTH_PWNED_CHECK"`.
 - `web.ts`: `operator ids: N` → `web_operators`: `count`.
 - `web.ts`: `web is on: ${origin}, dist ${dist}` → `web_on`: — (origin and path are not logged).
-- `retention.ts`: `retention org …: body N, headers N, captured N, …` → `retention_org_done`: `org_id` and the nine `*_rows` counts; keeps its condition (only when a count is above 0).
+- `retention.ts`: `retention org …: body N, headers N, captured N, …` → `retention_org_done`: `org_id` and the eleven `*_rows` counts (the nine named above, plus `sent_body_rows` and `sent_header_rows`); keeps its condition (only when a count is above 0).
 - `retention.ts`: `retention org … failed:` → `retention_org_failed`: `org_id`, `...errorFields`.
 - `retention.ts`: `retention: N organizations, N rows` → `retention_done`: `org_count`, `count`.
 - `retention.ts`: `retention failed:` → `retention_failed`: `...errorFields`.

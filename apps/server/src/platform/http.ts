@@ -49,6 +49,9 @@ export interface WebDeps {
   listMembershipsOfUser: (userId: string) => Promise<{ org_id: string; role: MembershipRole }[]>;
   homePath?: (userId: string) => Promise<"/onboarding" | "/activity">; // where "/" goes; default "/onboarding"
   routers?: (api: Hono<ApiEnv>) => void; // web.ts mounts the module routers (after requireTenant)
+  // Routes before the session guard (F117: the OAuth callback answers 303 /login, not 401). Each reads the session itself and enters the
+  // tenant scope itself; the tenant-scope test lists them in `PUBLIC_ROUTES`.
+  publicRouters?: (api: Hono<ApiEnv>) => void;
   isOrgSuspended?: (orgId: string) => Promise<boolean>; // absent: no organization is suspended (old tests)
   resetRequestOpen?: boolean; // absent = false: /request-password-reset answers 404
   operatorUserIds?: ReadonlySet<string>; // D16: absent = nobody is an operator
@@ -409,6 +412,12 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     }
     return c.json({ sso } satisfies SignInOptions);
   });
+
+  if (web.publicRouters !== undefined) {
+    const publicApi = new Hono<ApiEnv>();
+    web.publicRouters(publicApi);
+    app.route("/api", publicApi);
+  }
 
   const api = new Hono<ApiEnv>();
   api.use("*", requireSession);

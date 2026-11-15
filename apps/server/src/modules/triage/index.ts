@@ -13,7 +13,7 @@ export { triageRoutes } from "./routes";
 export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";
 export type { LabelInput } from "./label-input";
-export { classifyEmail, EMPTY_EXTRAS } from "./classifier";
+export { classifyEmail, EMPTY_EXTRAS, escalateEmail } from "./classifier";
 export type { ClassifierEmail, ClassifierExtras, SenderContext } from "./classifier";
 export { deadlinesInWindow } from "./classifier-extras";
 export { loadClassifierExtras, SENDER_HISTORY_DAYS } from "./extras-reader";
@@ -71,6 +71,7 @@ export type { JudgeResult } from "./judge";
 export {
   buildGateFile,
   gateFileName,
+  gateIdentityOf,
   gateFileRefusal,
   gateFileSchema,
   renderSimSections,

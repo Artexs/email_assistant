@@ -1,0 +1,10 @@
+# F113 stage 11 review (Opus): PASS at b9538028, notes and the fixes
+
+Source: job result `2026-11-15-f113-review-s11-opus-serve-loop-80a95fe2`, logs `/tmp/f113-rev11/`. No blocking finding. The fixes are in the stage 11 branch after the review.
+
+- **NOTE 1** (serve lock in the sim stack): fixed. `lab` joins the network namespace of `fake-telegram`, and Docker copies the host name of the joined container, so every lab container (and `docker compose run lab`) has one host name and its own PID namespace. The "same host" rule let a second serve (pid 1) take a fresh lock, and a serve could not tell it had lost the lock. Now the lock holds the PID namespace id; stale at once only when host and namespace are ours and the pid is dead (or our pid with another token); across namespaces only the 90 s age counts; `touch()` returns false for a foreign token or a missing file and the loop stops with exit 1. Tests in `serve-files.test.ts` and `serve.test.ts`; mutations in `/tmp/f113-s11b/mut-*.log`.
+- **TG1** (order in `finishRun`): fixed. Tests: a `stopRun` that throws leaves the ledger line; a ledger write that throws stops nothing. The swap mutation (M2) now fails 4 tests.
+- **NOTE 2** (crash between ledger line and stop): fixed. Each tick ends at once, through `finish`, an active run that has a ledger line (`error:ledger_line`). Test 2b and a mutation.
+- **NOTE 3** (docs and lint disagree): fixed. `docs/code-patterns.md` states one rule, the folder rule that ESLint enforces (`modules/mail/`, `modules/lab/`, `platform/auth-mail.ts`). The rule is looser than carry-over N5 inside those folders, and stricter for tests outside them.
+- **NOTE 4** (`allowedAddresses` is per corpus, not per run org): accepted. It matches the carry-over text; the second-org test shows the other org's mailbox and the delegate inboxes get nothing.
+- **NOTE 5** (literal `"tg"`, wording of rule 21): fixed. `executive.ts` exports `SEEN_PART` and `serve.ts` uses it. Rule 21 names `exec bun apps/server/src/scripts/lab.ts serve` as the service command.

@@ -56,7 +56,8 @@ import {
   type LabelEntry,
 } from "../platform/sim-files";
 
-import type { SimCommand } from "./sim-args";
+import { isSentCommand, type IncomingSimCommand, type SimCommand } from "./sim-args";
+import { runSentSim } from "./sim-sent-commands";
 
 // A command returns its output lines and an exit code; the script prints them. Lines hold counts, ids and codes, never mail text.
 export interface SimResult {
@@ -155,7 +156,7 @@ function rangeSlots(data: PartData, range: { from: number; to: number } | undefi
 
 const partsOf = (part: SimPart | undefined): readonly SimPart[] => (part === undefined ? simParts : [part]);
 
-function plan(cmd: Extract<SimCommand, { kind: "plan" }>): SimResult {
+function plan(cmd: Extract<IncomingSimCommand, { kind: "plan" }>): SimResult {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const spec = readPlanSpec(dir);
@@ -183,7 +184,7 @@ type Counts = ReturnType<typeof zero>;
 const countsLine = (c: Counts) =>
   `slots ${c.slots} written ${c.written} dropped ${c.dropped} labelled ${c.labelled} agree ${c.agree} disagree ${c.disagree} borderline ${c.borderline}`;
 
-async function status(cmd: Extract<SimCommand, { kind: "status" }>): Promise<SimResult> {
+async function status(cmd: Extract<IncomingSimCommand, { kind: "status" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const manifest = readManifest(dir);
@@ -235,7 +236,7 @@ async function status(cmd: Extract<SimCommand, { kind: "status" }>): Promise<Sim
   return ok(lines);
 }
 
-function brief(cmd: Extract<SimCommand, { kind: "brief" }>): SimResult {
+function brief(cmd: Extract<IncomingSimCommand, { kind: "brief" }>): SimResult {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const file = readSlotBatch(dir, cmd.part, batchName(cmd.batch));
@@ -272,7 +273,7 @@ function brief(cmd: Extract<SimCommand, { kind: "brief" }>): SimResult {
   return ok([JSON.stringify(out, null, 2)]);
 }
 
-async function check(cmd: Extract<SimCommand, { kind: "check" }>): Promise<SimResult> {
+async function check(cmd: Extract<IncomingSimCommand, { kind: "check" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const spec = readPlanSpec(dir);
@@ -335,7 +336,7 @@ async function check(cmd: Extract<SimCommand, { kind: "check" }>): Promise<SimRe
   return { code: issues === 0 ? 0 : 1, lines };
 }
 
-async function blindExport(cmd: Extract<SimCommand, { kind: "blind-export" }>): Promise<SimResult> {
+async function blindExport(cmd: Extract<IncomingSimCommand, { kind: "blind-export" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const data = loadPart(dir, cmd.part);
@@ -355,7 +356,7 @@ async function blindExport(cmd: Extract<SimCommand, { kind: "blind-export" }>): 
 
 const labelInputSchema = z.array(z.object({ id: z.string(), category: z.enum(valueCategories) }).strict());
 
-async function labelImport(cmd: Extract<SimCommand, { kind: "label-import" }>): Promise<SimResult> {
+async function labelImport(cmd: Extract<IncomingSimCommand, { kind: "label-import" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const batch = batchName(cmd.batch);
@@ -392,7 +393,7 @@ async function labelImport(cmd: Extract<SimCommand, { kind: "label-import" }>): 
   return ok([`label ${batch} imported ${given.length} total ${labels.length}`]);
 }
 
-async function stale(cmd: Extract<SimCommand, { kind: "stale" }>): Promise<SimResult> {
+async function stale(cmd: Extract<IncomingSimCommand, { kind: "stale" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const data = loadPart(dir, cmd.part);
@@ -407,7 +408,7 @@ async function stale(cmd: Extract<SimCommand, { kind: "stale" }>): Promise<SimRe
   return ok(lines);
 }
 
-async function reconcile(cmd: Extract<SimCommand, { kind: "reconcile" }>): Promise<SimResult> {
+async function reconcile(cmd: Extract<IncomingSimCommand, { kind: "reconcile" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const data = loadPart(dir, cmd.part);
@@ -451,7 +452,7 @@ async function freshLabels(scenario: Scenario, data: PartData): Promise<Map<stri
 
 const MAX_ISSUE_LINES = 10;
 
-async function freeze(cmd: Extract<SimCommand, { kind: "freeze" }>): Promise<SimResult> {
+async function freeze(cmd: Extract<IncomingSimCommand, { kind: "freeze" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const spec = readPlanSpec(dir);
@@ -554,7 +555,7 @@ function auditSection(item: Awaited<ReturnType<typeof auditPool>>[number], group
   return lines.join("\n");
 }
 
-async function auditList(cmd: Extract<SimCommand, { kind: "audit-list" }>): Promise<SimResult> {
+async function auditList(cmd: Extract<IncomingSimCommand, { kind: "audit-list" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const spec = readPlanSpec(dir);
@@ -611,7 +612,7 @@ async function auditList(cmd: Extract<SimCommand, { kind: "audit-list" }>): Prom
   ]);
 }
 
-async function auditApply(cmd: Extract<SimCommand, { kind: "audit-apply" }>): Promise<SimResult> {
+async function auditApply(cmd: Extract<IncomingSimCommand, { kind: "audit-apply" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);
   const scenario = readScenario(dir);
   const manifest = readManifest(dir);
@@ -661,6 +662,7 @@ async function auditApply(cmd: Extract<SimCommand, { kind: "audit-apply" }>): Pr
 
 export async function runSim(cmd: SimCommand): Promise<SimResult> {
   try {
+    if (isSentCommand(cmd)) return runSentSim(cmd);
     switch (cmd.kind) {
       case "plan":
         return plan(cmd);

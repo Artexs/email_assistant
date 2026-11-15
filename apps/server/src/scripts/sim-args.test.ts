@@ -110,4 +110,107 @@ describe("parseSimArgs", () => {
     expect(parseSimArgs(["audit-list", "lab-01", "--version", "1", "--date", "2026-11-14"])).toBeUndefined();
     expect(parseSimArgs(["audit-apply", "lab-01", "--date", "2026-11-14"])).toBeUndefined();
   });
+
+  test("--bank sent selects the sent plan and the sent freeze; incoming commands carry no bank field", () => {
+    expect(parseSimArgs(["plan", "lab-01", "--bank", "sent"])).toEqual({
+      kind: "plan",
+      scenario: "lab-01",
+      bank: "sent",
+      force: false,
+    });
+    expect(parseSimArgs(["plan", "lab-01", "--bank", "sent", "--force"])).toMatchObject({ bank: "sent", force: true });
+    expect(parseSimArgs(["plan", "lab-01", "--bank", "incoming"])).toEqual({
+      kind: "plan",
+      scenario: "lab-01",
+      force: false,
+    });
+    expect(parseSimArgs(["plan", "lab-01"])).not.toHaveProperty("bank");
+    expect(parseSimArgs(["freeze", "lab-01", "--bank", "sent"])).toEqual({
+      kind: "freeze",
+      scenario: "lab-01",
+      bank: "sent",
+      minDev: 49,
+      minHoldout: 245,
+    });
+    expect(
+      parseSimArgs([
+        "freeze",
+        "lab-01",
+        "--bank",
+        "sent",
+        "--date",
+        "2026-11-15",
+        "--min-dev",
+        "3",
+        "--min-holdout",
+        "9",
+      ])
+    ).toMatchObject({ date: "2026-11-15", minDev: 3, minHoldout: 9 });
+  });
+
+  test("a bad bank value, or --bank on another command, gives undefined", () => {
+    expect(parseSimArgs(["plan", "lab-01", "--bank", "other"])).toBeUndefined();
+    expect(parseSimArgs(["check", "lab-01", "--bank", "sent"])).toBeUndefined();
+    expect(parseSimArgs(["status", "lab-01", "--bank", "sent"])).toBeUndefined();
+    // The sent freeze has no version; the incoming flags do not mix in.
+    expect(parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--version", "1"])).toBeUndefined();
+    expect(parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--part", "sent-dev"])).toBeUndefined();
+    expect(parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--date", "2026-13-40"])).toBeUndefined();
+    expect(parseSimArgs(["freeze", "lab-01", "--bank", "incoming", "--date", "2026-11-14"])).toBeUndefined();
+  });
+
+  test("a sent part selects the sent form of the commands that take a part", () => {
+    expect(parseSimArgs(["brief", "lab-01", "--part", "sent-dev", "--batch", "2"])).toEqual({
+      kind: "brief",
+      scenario: "lab-01",
+      bank: "sent",
+      part: "sent-dev",
+      batch: 2,
+    });
+    expect(parseSimArgs(["check", "lab-01", "--part", "sent-holdout", "--batches", "1-10"])).toEqual({
+      kind: "check",
+      scenario: "lab-01",
+      bank: "sent",
+      part: "sent-holdout",
+      range: { from: 1, to: 10 },
+    });
+    expect(parseSimArgs(["status", "lab-01", "--part", "sent-dev"])).toMatchObject({ bank: "sent", kind: "status" });
+    expect(parseSimArgs(["blind-export", "lab-01", "--part", "sent-dev", "--batches", "1-2"])).toMatchObject({
+      bank: "sent",
+      kind: "blind-export",
+    });
+    expect(parseSimArgs(["stale", "lab-01", "--part", "sent-dev", "--batches", "1-2"])).toMatchObject({ bank: "sent" });
+    expect(parseSimArgs(["reconcile", "lab-01", "--part", "sent-dev", "--batches", "1-2"])).toMatchObject({
+      bank: "sent",
+    });
+    expect(
+      parseSimArgs([
+        "label-import",
+        "lab-01",
+        "--part",
+        "sent-dev",
+        "--batch",
+        "1",
+        "--checker",
+        "m",
+        "--file",
+        "/tmp/x.json",
+      ])
+    ).toMatchObject({ bank: "sent", kind: "label-import", part: "sent-dev" });
+    // Incoming parts keep their form and carry no bank field.
+    expect(parseSimArgs(["check", "lab-01", "--part", "dev"])).not.toHaveProperty("bank");
+    expect(parseSimArgs(["status", "lab-01"])).toEqual({ kind: "status", scenario: "lab-01" });
+  });
+
+  test("a sent part with a missing flag, or a part on a command that has none, gives undefined", () => {
+    expect(parseSimArgs(["brief", "lab-01", "--part", "sent-dev"])).toBeUndefined();
+    expect(parseSimArgs(["reconcile", "lab-01", "--part", "sent-dev"])).toBeUndefined();
+    expect(parseSimArgs(["audit-list", "lab-01", "--part", "sent-dev", "--version", "1"])).toBeUndefined();
+    expect(
+      parseSimArgs(["freeze", "lab-01", "--part", "sent-dev", "--version", "1", "--date", "2026-11-15"])
+    ).toBeUndefined();
+    // A part status is for the sent parts only.
+    expect(parseSimArgs(["status", "lab-01", "--part", "dev"])).toBeUndefined();
+    expect(usage).toContain("--bank sent");
+  });
 });

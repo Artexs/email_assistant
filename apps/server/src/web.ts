@@ -21,11 +21,13 @@ import {
   getSentSyncView,
   listMailboxes,
   listSyncFolders,
+  mailOAuthCallbackRoutes,
   mailOAuthRoutes,
   mailRoutes,
   openImapProvider,
   setSentSync,
   setSyncFolderEnabled,
+  type ApplyGrantDeps,
   type MailOAuthClients,
   type TestMailRule,
   verifySmtpLogin,
@@ -71,7 +73,7 @@ import {
 } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db, TenantContext } from "./platform/db";
-import { describeError } from "./platform/errors";
+import { errorFields } from "./platform/errors";
 import { buildTrustedProxies, signInMethodOf, type WebDeps, type WebSession } from "./platform/http";
 import { createLog } from "./platform/log";
 import { checkPwnedPassword } from "./platform/pwned";
@@ -100,7 +102,7 @@ export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
     try {
       const [membership] = await listMembershipsOfUser(db, userId);
       if (!membership) {
-        log.warn(`web: no organization for user ${userId}`);
+        log.warn("web_no_organization", { user_id: userId });
         return;
       }
       await recordAudit(
@@ -109,7 +111,7 @@ export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
         { event: eventNames[kind], actor: userId, data: { via: "web", ...data } }
       );
     } catch (error) {
-      log.error(`web: audit ${kind} failed: ${describeError(error)}`);
+      log.error("web_audit_failed", { kind, ...errorFields(error) });
     }
   };
 }
@@ -145,7 +147,7 @@ export function termsAcceptedHandler(db: Db, now: () => Date): AuthDeps["onTerms
         }
       });
     } catch (error) {
-      log.error(`web: terms record failed for user ${userId}: ${describeError(error)}`);
+      log.error("terms_record_failed", { user_id: userId, ...errorFields(error) });
     }
   };
 }
@@ -163,7 +165,7 @@ export function authMailFailedHandler(
         if (!membership) return;
         notify({ orgId: membership.org_id }, userId, kind, code);
       } catch (error) {
-        log.error(`web: auth mail notice for user ${userId} failed: ${describeError(error)}`);
+        log.error("web_auth_mail_notice_failed", { user_id: userId, ...errorFields(error) });
       }
     })();
   };
@@ -294,6 +296,8 @@ export interface WebExtras {
   botUsername: (() => Promise<string>) | null; // null: Telegram is off
   /** Default: the clients of the config (`createMailOAuthClients`). A test passes clients that point at the fake token server. */
   mailOAuthClients?: MailOAuthClients;
+  /** Default: the IMAP and SMTP adapters. A test passes a login that refuses (the callback tests). `oauthTokens` is the cache the Reconnect drops. */
+  mailOAuthLogin?: Partial<Pick<ApplyGrantDeps, "openProvider" | "verifySmtp" | "oauthTokens">>;
   onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
 }
 
@@ -367,15 +371,40 @@ export function apiRouters(
   };
 }
 
+// The routes before the session guard (`WebDeps.publicRouters`): the provider redirect of the mailbox OAuth flow answers 303 to
+// `/login` without a session, so it cannot sit behind `requireSession`. The route reads the session and enters the tenant scope itself.
+export function apiPublicRouters(
+  config: Config,
+  db: Db,
+  extras: WebExtras,
+  now: () => Date
+): NonNullable<WebDeps["publicRouters"]> {
+  return (api) => {
+    api.route(
+      "/",
+      mailOAuthCallbackRoutes({
+        db,
+        now,
+        secrets: extras.secrets,
+        clients: extras.mailOAuthClients ?? createMailOAuthClients(config),
+        openProvider: openImapProvider,
+        verifySmtp: verifySmtpLogin,
+        timeouts: WEB_MAIL_TIMEOUTS,
+        ...extras.mailOAuthLogin,
+      })
+    );
+  };
+}
+
 // null: the web is off.
 export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime | null {
   if (config.WEB_BASE_URL === undefined) {
-    log.info("web is off (WEB_BASE_URL is empty)");
+    log.info("web_off", { config_key: "WEB_BASE_URL" });
     return null;
   }
   const baseUrl = new URL(config.WEB_BASE_URL);
   if (baseUrl.protocol === "http:" && !LOOPBACK_HOSTS.includes(baseUrl.hostname)) {
-    log.warn("WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure");
+    log.warn("web_cookies_not_secure", { config_key: "WEB_BASE_URL" });
   }
   const origins = [baseUrl.origin, ...webTrustedOrigins(config)];
   const settings = authMailSettings(config);
@@ -388,12 +417,9 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
           localeOf: async (userId) => (await getUserAuthProfile(db, userId))?.locale ?? "pl",
           onFailed: authMailFailedHandler(db, extras.onAuthMailFailed),
         });
-  log.info(
-    mailTasks === null
-      ? "auth mail: off (the CLI prints invite and reset links)"
-      : "auth mail: on (reset by e-mail is open)"
-  );
-  if (config.AUTH_PWNED_CHECK === "off") log.warn("AUTH_PWNED_CHECK=off: leaked passwords are not refused");
+  if (mailTasks === null) log.info("auth_mail_off");
+  else log.info("auth_mail_on");
+  if (config.AUTH_PWNED_CHECK === "off") log.warn("pwned_check_off", { config_key: "AUTH_PWNED_CHECK" });
   const lockout = createLockoutStore(db);
   const onEvent = auditWebEvent(db);
   const sendLockoutMail: AuthDeps["sendLockoutMail"] =
@@ -442,8 +468,8 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
   };
 
   const operators = operatorUserIds(config);
-  log.info(`operator ids: ${operators.size}`);
-  log.info(`web is on: ${baseUrl.origin}, dist ${dist}`);
+  log.info("web_operators", { count: operators.size });
+  log.info("web_on");
   return {
     auth: { handler: (req) => handle.auth.handler(req), getSession },
     db,
@@ -455,6 +481,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     homePath: homePathOf(db, extras.botUsername),
+    publicRouters: apiPublicRouters(config, db, extras, now),
     routers: apiRouters(
       config,
       db,
