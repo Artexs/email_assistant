@@ -390,9 +390,13 @@ describe("org:member (F119 stage 10)", () => {
     await signIn(b, bUser.email);
     await seedSession(eve.userId, "password");
     expect(await linkCount(eve.userId)).toBe(1);
+    // A link to another provider is not this organization's: it stays (the unlink names the provider of its organization).
+    await seedLink(eve.userId, b.orgId);
 
     const result = await cli("--org-id", a.orgId, "--user-id", eve.userId, "--unlink-sso");
     expect(result).toEqual({ code: 0, out: ["unlinked, sessions 1"], err: [] });
+    expect(await linkCount(eve.userId)).toBe(1);
+    await db.deleteFrom("auth_accounts").where("user_id", "=", eve.userId).where("provider_id", "=", b.orgId).execute();
     expect(await linkCount(eve.userId)).toBe(0);
     expect(await sessionMethods(eve.userId)).toEqual(["password"]);
     expect((await me(signed.sessionCookie ?? "")).status).toBe(401);
@@ -503,9 +507,12 @@ describe("org:member locks (two connections)", () => {
       { orgId: a.orgId },
       { email, displayName: "Lee", role: "assistant", locale: "pl", actor: "test", now: NOW }
     );
-    expect(await pending(add)).toBe(true);
+    const waited = await pending(add);
+    // Release first, so a failed check does not leave the lock held.
     release();
     await holder;
+    await add.catch(() => undefined);
+    expect(waited).toBe(true);
     // The rule went on while the add waited: the add reads it after the lock and refuses the address.
     expect(await add).toEqual({ kind: "off_domain" });
     expect(await userRows(email)).toEqual([]);
@@ -550,10 +557,13 @@ describe("org:member locks (two connections)", () => {
     });
     await lockedPromise;
     const unlink = unlinkSso(db, { orgId: a.orgId }, { userId: eve.userId, actor: "test", now: NOW });
-    expect(await pending(unlink)).toBe(true);
-    expect(await linkCount(eve.userId)).toBe(1);
+    const waited = await pending(unlink);
+    const linksWhileHeld = await linkCount(eve.userId);
     release();
     await holder;
+    await unlink.catch(() => undefined);
+    expect(waited).toBe(true);
+    expect(linksWhileHeld).toBe(1);
     expect(await unlink).toEqual({ kind: "unlinked", sessionsEnded: 0 });
     expect(await linkCount(eve.userId)).toBe(0);
   });
