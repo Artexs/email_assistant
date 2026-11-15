@@ -39,4 +39,4 @@ Part of [`../plan.md`](../plan.md). Web stage. Flags `user_quiet_hours` and `rep
 
 ## Out of scope
 
-Sending by mail (stage 19). Per-user time zones.
+Sending by mail (stages 19–20). Per-user time zones.

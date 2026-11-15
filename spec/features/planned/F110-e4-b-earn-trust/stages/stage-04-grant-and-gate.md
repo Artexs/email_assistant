@@ -22,14 +22,15 @@ Part of [`../plan.md`](../plan.md). Risk: it decides when mail moves without the
   - D5. Inputs: `globalEvidenceFor(index, runningKey)`, `historyResultFor`, `activeTripsOf`, `realGoNoGoRows`.
   - `force: true` on a refused category → `auto` on with `grant.by = "forced"`; the audit row keeps `forced: true` and the block list.
   - An eligible on → `grant.by = "evidence"`; the threshold = the gate file's category threshold when set, else the current one.
-  - Turning `auto` on clears the active trips of that category in the same transaction as the policy write (give `setCategoryAuto` an optional in-transaction callback; do not open a second transaction).
+  - Turning `auto` on clears the active trips of that category in the same transaction as the policy write (give `setCategoryAuto` an optional in-transaction callback; do not open a second transaction). An active trip alone does not refuse a manual switch (stage 01: `eligible` ignores `tripped`).
+  - Flag off (review 1 N5): the old `setCategoryAutoWithGate` also writes a grant with the running key (`by: "evidence"` on a real-label `go`, `"forced"` with force) and clears trips through the same callback. The composition root injects the clear, so `triage` does not import `trust`.
   - `auto: false` never reads evidence.
 - **Test** (`apps/server/test/integration/trust-gate.test.ts`, a fixture gate index in the deps):
   1. Flag on, global `go` non-provisional for `notification`, no history, no labels → `changed`, grant `evidence`, threshold from the file.
   2. Flag on, global provisional `go` → `refused`, blocks `["global_provisional"]`; same with `force` → `changed`, grant `forced`, audit `forced: true`.
   3. Flag on, history `fail` for `spam` → `refused` `["history_fail"]`.
-  4. Flag on, an active trip, then `auto` on with `force` → the trip has `cleared_at` set; one transaction (a forced error after the policy write leaves both unchanged).
-  5. Flag off → the old real-label behaviour (one existing `triage-gate.test.ts` case still passes unchanged).
+  4. Flag on, global `go`, an active trip `corrections` → `auto` on without force, grant `evidence`, the trip has `cleared_at` set; one transaction (a forced error after the policy write leaves both unchanged).
+  5. Flag off → the old real-label behaviour (the existing `triage-gate.test.ts` cases pass); the stored grant has `by: "evidence"` or `"forced"` and the running key; an active trip is cleared.
   6. A member (not owner) → 403, as today.
 - **Check:** `bun test apps/server/test/integration/trust-gate.test.ts apps/server/test/integration/triage-gate.test.ts`
 

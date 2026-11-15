@@ -1,4 +1,4 @@
-# F110 stage 20 — "What is urgent for me" editor
+# F110 stage 21 — "What is urgent for me" editor
 
 Part of [`../plan.md`](../plan.md). Web stage. Flag `urgency_editor`. Polish text: review by `claude-opus-5-5`.
 
@@ -24,7 +24,7 @@ Part of [`../plan.md`](../plan.md). Web stage. Flag `urgency_editor`. Polish tex
 ## Done when
 
 - Flag off → the Rules page looks as today.
-- Proof (`s20`, with the web part) prints `PROOF_OK`.
+- Proof (`s21`, with the web part) prints `PROOF_OK`.
 
 ## Out of scope
 

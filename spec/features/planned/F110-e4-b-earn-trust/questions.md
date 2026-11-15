@@ -14,3 +14,7 @@ None of these changes the stages. The coordinator copies the `important` items t
 10. **[minor] Q10** The mail channel picks one mailbox per member (`report_mailbox_id`, default: the oldest active mailbox of the organization).
 11. **[minor] Q11** "Check 10 decisions" writes feedback with the source `review` (same random sample as Telegram `/review`), so metrics treat it as unbiased.
 12. **[minor] Q12** The optional "move to notifications" follow-up after an unsubscribe is out of scope: no sender rule of that kind exists.
+13. **[important: user-visible] Q13 History `fail` after `auto` is on.** A history check that ends `fail` for a category whose `auto` is on (after a re-grant, or a tap before the check ended) pauses it with a notice, unless the grant was `forced` (review 1 N1). (plan D9)
+14. **[minor] Q14** An active trip does not refuse a manual switch on the Settings card: the user turns the category on again deliberately and the trip clears. A tripped category is never "recommended" (review 1 N4). (plan D5)
+15. **[minor] Q15** M7 (cost per mailbox) includes the history-check spend; the daily cap does not (review 1 N9).
+16. **[minor] Q16** One-click unsubscribe trusts a `dkim=pass` of a trusted authserv-id for the From domain; it does not check that the signature covers the `List-Unsubscribe` headers (RFC 8058 asks it). Recorded as a limit (review 1 N11).

@@ -1,4 +1,4 @@
-# F110 stage 23 — One-click unsubscribe POST `[risky]`
+# F110 stage 24 — One-click unsubscribe POST `[risky]`
 
 Part of [`../plan.md`](../plan.md). Risk: a server request to a URL from untrusted mail (SSRF), an action toward a third party.
 
@@ -28,7 +28,7 @@ Part of [`../plan.md`](../plan.md). Risk: a server request to a URL from untrust
 ## Step 2 — The command
 
 - **Goal:** an owner's tap sends one request, recorded before it leaves (D17, crash rule).
-- **Files:** `POST /api/newsletters/:mailboxId/unsubscribe` (owner only, `apiDoc`, body `{ sender }`); show the stage 22 button.
+- **Files:** `POST /api/newsletters/:mailboxId/unsubscribe` (owner only, `apiDoc`, body `{ sender }`); show the stage 23 button.
 - **Decisions:**
   - Re-read the sender with `listNewsletterSenders`: absent (spam, suspicious, not a newsletter) → 409 `not_allowed`; `method` not `one_click` → 409 `no_one_click`.
   - Insert `unsubscribe_requests` (`requested`) and commit first; unique `(mailbox_id, sender_lower)`: a second tap → 409 `already_requested` with the stored state, no request.
@@ -43,7 +43,7 @@ Part of [`../plan.md`](../plan.md). Risk: a server request to a URL from untrust
 ## Done when
 
 - The guard check of `spec/build.md` TRACK is in the final message.
-- Proof (`s23`) prints `PROOF_OK` (add the web part when the stage 22 button changed).
+- Proof (`s24`) prints `PROOF_OK` (add the web part when the stage 23 button changed).
 
 ## Out of scope
 

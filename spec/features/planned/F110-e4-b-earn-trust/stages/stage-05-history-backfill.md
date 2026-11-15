@@ -9,6 +9,7 @@ Part of [`../plan.md`](../plan.md). Risk: sync and dedup, stored mail data (Q8).
 - **Decisions:**
   - `history`: a newly stored mail gets `status = 'skipped'`, `skip_reason = 'history_check'`, `backfilled_at` set; it gets its `email_headers` row as today; the cursor does not move; `requeueBackfillWindow` is not called.
   - A mail that already exists (any status) is not changed (dedup key, `ON CONFLICT DO NOTHING`).
+  - `backfill` (the operator CLI) re-queues real `history_check` mail of its window as it re-queues `too_old` mail: the operator asked to triage that window (review 1 N8).
   - The same refusals as today (never synced, UIDVALIDITY change, suspended org, window > 180 days) come back as a typed result, not a throw, so stage 06 can map them to `no_result_reason`.
   - Every place that counts `skipped` mail by reason (digest footers, `/status`, M-metrics) must ignore `history_check`. Grep the uses of `skip_reason` and `too_old`; list them in the final message.
 - **Test** (extend `mailbox-backfill-cli.test.ts` or a new `mail-history-backfill.test.ts`, GreenMail):
@@ -17,6 +18,7 @@ Part of [`../plan.md`](../plan.md). Risk: sync and dedup, stored mail data (Q8).
   3. The triage worker claims none of the 2 (`triage-job` helper).
   4. The digest for that day shows no "skipped" footer line for them.
   5. `purpose` omitted → today's behaviour (an existing test passes unchanged).
+  6. After test 1, `purpose: "backfill"` over the same window → the 2 history mails are `pending`.
 
 ## Step 2 — Queue a check at connect and from the CLI
 
@@ -35,7 +37,7 @@ Part of [`../plan.md`](../plan.md). Risk: sync and dedup, stored mail data (Q8).
 
 ## Done when
 
-- The CLI is listed in `package.json` scripts and in `docs/capabilities/sync.md` § Entry points (one line; stage 24 writes the rest).
+- The CLI is listed in `package.json` scripts and in `docs/capabilities/sync.md` § Entry points (one line; stage 25 writes the rest).
 - Proof (`s05`) prints `PROOF_OK`.
 
 ## Out of scope

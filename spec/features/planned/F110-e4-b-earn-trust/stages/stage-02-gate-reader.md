@@ -6,7 +6,7 @@ Part of [`../plan.md`](../plan.md).
 
 - **Goal:** the server knows the global evidence of the running classifier key (D1, D2, P9).
 - **Files:** new `apps/server/src/modules/triage/evidence.ts`; `deploy/Dockerfile` (add `COPY evals/results/gate evals/results/gate`); `main.ts` wiring; config key `GATE_EVIDENCE_DIR` (default: `evals/results/gate` from the repo root, as the eval scripts resolve it).
-- **Interfaces:** `loadGateEvidence(dir): GateIndex`, `runningEvidenceKey(llm, promptVersion): EvidenceKey`, `globalEvidenceFor(index, key): Record<BarCategory, GlobalEvidence>` ([interfaces.md](../interfaces.md)). Parse each file with the existing `gateFileSchema` (`eval-sim-report.ts`). A file without `endpoint` is `standard` (`docs/capabilities/triage.md` rule 16). `reasoningEffort` comes from the role row of the LLM table (`null` when the provider has none, also for an `own` endpoint).
+- **Interfaces:** `loadGateEvidence(dir): GateIndex`, `runningEvidenceKey(llm, promptVersion): EvidenceKey`, `globalEvidenceFor(index, key): Record<BarCategory, GlobalEvidence>` ([interfaces.md](../interfaces.md)). Parse each file with the existing `gateFileSchema` (`eval-sim-report.ts`). A file without `endpoint` is `standard` with `host` null (`docs/capabilities/triage.md` rule 16); a file without `promptParts` has none. The running key takes `reasoningEffort` from the classifier role row (`null` when the provider has none, also for `own`), `promptParts` from the production prompt choice (`triage/prompts/index.ts`), and `host` from the checked endpoint (`llm_settings` host).
 - **Decisions:** D1, D2. A missing directory or a file that does not parse is not a start error: log one `warn` line with the file name and the count (no content), skip the file. `GlobalEvidence.cases` = the category `support`; `file` = the file name only.
 - **Test** (`triage/evidence.test.ts`, fixture files in a temp folder):
   1. One file for `openai/gpt-6-luna/none/classifier-v2`, no `endpoint` key → matches the running key with `standard`; `info` = `go`, threshold 0.95, provisional true.
@@ -16,6 +16,8 @@ Part of [`../plan.md`](../plan.md).
   5. A file with another `promptVersion` or `reasoningEffort` → not matched.
   6. A broken JSON file next to a good one → the good one is read, one `warn` line, no throw.
   7. Missing directory → empty index, every category `none`.
+  8. Two `own` files for one model, hosts `llm-a` and `llm-b`; running host `llm-b` → the `llm-b` file (review 1 B4).
+  9. A file with `promptParts: ["folder_hint"]`, running prompt with no parts → not matched.
 - **Check:** `bun test apps/server/src/modules/triage/evidence.test.ts`
 
 ## Step 2 — Keep the real file readable in CI
@@ -27,7 +29,7 @@ Part of [`../plan.md`](../plan.md).
 ## Done when
 
 - The index is built once at start and passed through the deps that later stages use (`SettingsDeps` or the triage deps; one place, named in your final message).
-- A `docker build` is not run here; the `COPY` line is reviewed by reading the Dockerfile. The image build runs in stage 25.
+- A `docker build` is not run here; the `COPY` line is reviewed by reading the Dockerfile. The image build runs in stage 26.
 - Proof (`s02`) prints `PROOF_OK`.
 
 ## Out of scope

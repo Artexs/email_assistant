@@ -23,7 +23,7 @@ A new user earns automatic moves per category without labelling mail. At connect
 
 ## Acceptance
 
-- A new mailbox gets a history check with no user step, and its report page shows the result within one hour (stage 07, 14 tests).
+- A new mailbox gets a history check with no user step, and its report page shows the result within one hour (stage 07 test 8, stage 14 tests).
 - "Turn on recommended" turns on only eligible moving categories, and the mailbox is in `assist` after it.
 - After a model or endpoint switch, no mail moves under the old grant.
 - Two corrections of applied moves in 7 days turn `auto` off for the category and queue one notice.
@@ -32,7 +32,7 @@ A new user earns automatic moves per category without labelling mail. At connect
 
 ## Slices
 
-One worker job per stage, 25 stages; order, lanes and checkpoints in `plan.md` § Stages and § How to run. Stages 03 and 21 add migrations and never build next to another migration.
+One worker job per stage, 26 stages; order, lanes and checkpoints in `plan.md` § Stages and § How to run. Stages 03 and 22 add migrations and never build next to another migration.
 
 ## Sequenced
 

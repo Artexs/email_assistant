@@ -2,17 +2,18 @@
 
 Part of [`../plan.md`](../plan.md). Risk: exactly-once notice, user signals that change behaviour. Behind `trust_ladder`.
 
-## Step 1 — Count corrections per granted category
+## Step 1 — Count corrections per granted category; pause on history `fail`
 
 - **Goal:** a category whose moves the user corrects is paused, with one notice (D9, P2).
 - **Files:** `trust/tripwire.ts`; job `trust.tripwire` every 60 s in `main.ts`. Read the corrections with one query per org.
 - **Interfaces:** `runTripwire(deps, now): Promise<{ tripped: number }>`; uses `tripwireDue` (stage 01).
 - **Decisions:**
   - Scope: orgs with `trust_ladder` on, not `suspended`; mailboxes in `assist`; categories with `auto: true` and a grant.
-  - A correction (D9): a `triage_feedback` row with verdict `wrong` (any source: `telegram`, `web`, `undo`, `imap_move`, `review`, `cli`), `created_at` after the grant `at`, on a mail whose `move` action for this category (the category of the triage result that planned it) is `applied` or later undone. `important` = the feedback `true_category` is `urgent` or `needs_reply`.
+  - A correction (D9): a `triage_feedback` row with verdict `wrong` (any source: `telegram`, `web`, `undo`, `imap_move`, `review`, `cli`), `created_at` after the grant `at`, on a mail whose `move` action for this category (the category of the triage result that planned it) became `applied` after the grant `at` (it may be undone later). Both times are after the grant (review 1 T3). `tripwireDue` gets only these corrections. `important` = the feedback `true_category` is `urgent` or `needs_reply`.
   - Several feedback rows of one mail count once (the newest wins, as `listLabeledResults`).
   - A trip: in one transaction under the settings share-lock: `setCategoryAuto(false)` (audit `data.reason: "tripwire"`, with the counts), `insertTrip(reason, counts, granted_at = grant.at)`, and `autonomy_paused` for each linked owner. `insertTrip` returning null (already tripped for this grant) → nothing more.
   - The trip stays active until the user turns `auto` on again (stage 04 clears it); corrections before that new grant never count again.
+  - History `fail` (review 1 N1, ADR 0028 point 2): the same run pauses a category with `auto` on whose newest `done` history check has `fail` and finished after the grant `at`: trip `history_fail`, same transaction shape, one notice. A `forced` grant is not paused by this rule (the user chose it against the evidence).
 - **Test** (`apps/server/test/integration/trust-tripwire.test.ts`, fixed clock):
   1. Grant 2026-11-01T10:00Z; two `undo` corrections on 11-03 and 11-06 of applied `notification` moves → trip `corrections`, `auto` off, one outbox row per linked owner.
   2. One `web` correction with true category `needs_reply` → trip `important_hidden`.
@@ -23,6 +24,8 @@ Part of [`../plan.md`](../plan.md). Risk: exactly-once notice, user signals that
   7. Two job runs at once → one trip row, one notice per owner.
   8. Flag off → no trip.
   9. After a trip, the owner turns `auto` on again (stage 04 path) → the trip is cleared; the old corrections do not trip again on the next run.
+  10. Grant G1 11-01T10:00Z, moves applied 11-02 and 11-03, trip, re-grant G2 11-05T10:00Z, `wrong` feedback on those two old moves at 11-06 and 11-07 → no trip.
+  11. Grant `regate` at 11-01; a history check finishes `done` with `spam` `fail` at 11-01T12:00Z → `spam` paused, trip `history_fail`, one notice; a `forced` grant → not paused.
 - **Check:** `bun test apps/server/test/integration/trust-tripwire.test.ts`
 
 ## Done when
