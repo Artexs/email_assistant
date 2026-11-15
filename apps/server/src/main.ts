@@ -154,7 +154,7 @@ const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
-  log.info("llm_settings", llmEndpointFields(llmTable, "classifier"));
+  log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
   const llm = createLlmClient({ table: llmTable });
   const triage = createTriageJob({
     db,
