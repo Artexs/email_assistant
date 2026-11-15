@@ -66,7 +66,7 @@ function resolveDay(word: DueWord, local: { date: string; time: string; weekday:
       if (local.weekday === friday) {
         return addLocalDays(local.date, local.time < DUE_TIME ? 0 : 7);
       }
-      return addLocalDays(local.date, local.weekday === 0 ? 5 : (friday - local.weekday + 7) % 7);
+      return addLocalDays(local.date, (friday - local.weekday + 7) % 7);
     }
     default:
       return addLocalDays(local.date, daysToNext(local.weekday, weekdayWords.indexOf(word)));
