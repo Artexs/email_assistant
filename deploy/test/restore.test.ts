@@ -363,6 +363,46 @@ describe("restore.sh drill", () => {
     }
   });
 
+  test("TG1. restore.sh needs exactly one exact result line: two lines fail with no up and no line content in the message", () => {
+    writeDrillEnv();
+    const good = `[credentials-check] ${credentialsLine({ ok: 3, failed: 0 })}`;
+    const bad = `[credentials-check] ${credentialsLine({ ok: 3, failed: 2 })}`;
+    for (const [text, why] of [
+      [`${bad}\n${good}\n`, "failed=2 then failed=0"],
+      [`${good}\n${good}\n`, "two identical good lines"],
+      [`${good}\n${bad}\n`, "failed=0 then failed=2"],
+    ] as const) {
+      rmSync(join(root, "calls.log"), { force: true });
+      setSwitch("creds-line", text);
+      const result = run(["--target", "drill", "--stdin"], { stdin: DUMP });
+      expect(result.code, why).toBe(1);
+      expect(result.output, why).toContain("printed 2 result lines, not exactly 1");
+      expect(
+        result.output
+          .split("\n")
+          .filter((line) => line.startsWith("restore:"))
+          .join("\n"),
+        why
+      ).not.toContain("ok=");
+      expect(
+        dockerCalls().some((line) => line.includes(" up -d --no-build --wait")),
+        why
+      ).toBe(false);
+      expect(result.stdout, why).not.toContain("restore ok");
+    }
+  });
+
+  test("TG1. one exact result line with noise lines around it passes", () => {
+    writeDrillEnv();
+    setSwitch(
+      "creds-line",
+      `noise before\n[credentials-check] ${credentialsLine({ ok: 3, failed: 0 })}\nnoise after credentials ok=1 failed=9\n`
+    );
+    const result = run(["--target", "drill", "--stdin"], { stdin: DUMP });
+    expect(result.code).toBe(0);
+    expect(lastLine(result.stdout)).toMatch(/^restore ok target=drill seconds=\d+$/);
+  });
+
   test("the failed count is read from the result line, whatever else the call prints before it", () => {
     writeDrillEnv();
     setSwitch("creds-line", `warm-up noise\n[credentials-check] ${credentialsLine({ ok: 1, failed: 1 })}\n`);
