@@ -280,7 +280,9 @@ describe("the row lock of a delegate change", () => {
         send(s, "owner", "PATCH", `/${id}`, { active: false }),
       ]);
       expect(answers.map((res) => res.status)).toEqual([200, 200]);
-      const rows = (await auditOf(s.org.orgId, "delegate.changed")).filter((row) => row.data?.["delegate_id"] === id);
+      const rows = (await auditOf(s.org.orgId, "delegate.changed")).filter(
+        (row) => (row.data as { delegate_id?: string } | null)?.delegate_id === id
+      );
       expect(rows).toHaveLength(1);
     }
   });
