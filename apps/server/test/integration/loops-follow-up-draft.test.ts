@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { draftFollowUp, oneLineSubject, type DraftFollowUpResult } from "../../src/modules/loops";
+import { doneLoop, draftFollowUp, oneLineSubject, reopenLoop, type DraftFollowUpResult } from "../../src/modules/loops";
 import type { DB } from "../../src/platform/db";
 import { captureLogs, eventLines, logProblems } from "../log-capture";
 
@@ -244,7 +244,8 @@ describe("draftFollowUp: recipients", () => {
       const org = await commandOrg(trx);
       const loop = await commandLoop(trx, org, {
         kind: "delegated",
-        to_addresses: [ANNA, "extra@example.test"],
+        // The counterpart is not the first address: a fallback to `to_addresses[0]` would write to the wrong person.
+        to_addresses: ["extra@example.test", ANNA],
         cc_addresses: [JAN],
         counterpart: ANNA,
       });
@@ -253,6 +254,24 @@ describe("draftFollowUp: recipients", () => {
         expect(payloadOf(row).to).toEqual([ANNA]);
         expect(payloadOf(row).cc ?? []).toEqual([]);
       }
+    });
+  });
+
+  test("B1 a delegated loop whose counterpart a data erase cleared gives not_allowed and no row, never the other To address", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await commandOrg(trx);
+      // The state that the erase writes: the counterpart is null, the delegate address is removed from To, the client stays.
+      const loop = await commandLoop(trx, org, {
+        kind: "delegated",
+        to_addresses: ["client-x@example.test"],
+        cc_addresses: [],
+        counterpart: null,
+        subject: null,
+        text: null,
+        texts_cleared_at: FRIDAY,
+      });
+      expect(await tap(trx, org, loop.id)).toEqual({ kind: "not_allowed" });
+      expect(await actionsOfLoop(trx, loop.id)).toEqual([]);
     });
   });
 
@@ -334,6 +353,26 @@ describe("draftFollowUp: a new tap after a closed follow-up", () => {
       });
     });
   }
+
+  test("Done ends the follow-up, Reopen opens the loop, the next tap plans a new pair with k 2", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await commandOrg(trx);
+      const loop = await commandLoop(trx, org);
+      expect((await tap(trx, org, loop.id)).kind).toBe("planned");
+      const deps = { db: trx, now: () => FRIDAY };
+      const input = { loopId: loop.id, userId: org.userId, via: "web" as const };
+      expect(await doneLoop(deps, org.ctx, input)).toEqual({ kind: "ok" });
+      expect(await reopenLoop(deps, org.ctx, input)).toEqual({ kind: "ok" });
+      expect((await tap(trx, org, loop.id)).kind).toBe("planned");
+      const keys = (await actionsOfLoop(trx, loop.id)).map((row) => row.idempotency_key).sort();
+      expect(keys).toEqual([
+        `${loop.id}:create_draft:follow_up:1:1`,
+        `${loop.id}:create_draft:follow_up:1:2`,
+        `${loop.id}:send:follow_up:1:1`,
+        `${loop.id}:send:follow_up:1:2`,
+      ]);
+    });
+  });
 
   for (const status of ["approved", "applying"] as const) {
     test(`a ${status} send still waits: the tap answers waiting`, async () => {

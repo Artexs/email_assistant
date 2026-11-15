@@ -77,3 +77,4 @@ export {
 } from "./commands";
 export { listUrgentCandidates, listUrgentNoticeTimes, type UrgentCandidate } from "./metrics-repo";
 export { heldReason, type HeldReasonDeps } from "./held-reason";
+export { clearLoopCards } from "./loop-cards";

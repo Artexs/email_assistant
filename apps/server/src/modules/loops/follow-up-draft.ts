@@ -53,13 +53,11 @@ export function oneLineSubject(subject: string | null): string {
   return (last >= 0xd800 && last <= 0xdbff ? cut.slice(0, -1) : cut).trim();
 }
 
-// The recipients of a follow-up come from the loop row only. A `delegated` loop writes to the address that the mail went
-// to, no Cc (the delegate's own side thread stays private).
+// The recipients of a follow-up come from the loop row only. A `delegated` loop writes to its `counterpart` alone, no Cc
+// (the delegate's own side thread stays private). With no counterpart (a data erase cleared it) there is no recipient:
+// `to_addresses` may then hold another person, so it is never a fallback.
 export function recipientsOf(loop: LoopRow): { to: string[]; cc: string[] } {
-  if (loop.kind === "delegated") {
-    const first = loop.counterpart ?? loop.to_addresses[0];
-    return { to: first === undefined ? [] : [first], cc: [] };
-  }
+  if (loop.kind === "delegated") return { to: loop.counterpart === null ? [] : [loop.counterpart], cc: [] };
   return { to: [...loop.to_addresses], cc: [...loop.cc_addresses] };
 }
 

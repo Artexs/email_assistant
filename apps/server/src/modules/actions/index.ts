@@ -60,6 +60,7 @@ export {
   claimActions,
   clearActionErrors,
   clearActionPayloads,
+  clearLoopSentCopies,
   countActionsSince,
   countClaimable,
   countFailedSendsSince,

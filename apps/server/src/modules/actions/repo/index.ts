@@ -74,7 +74,7 @@ export {
   type SendLimitHold,
 } from "./notify";
 export { countApprovals, listAwaitingSendIds, listExpiredApprovals, listUnseenApprovalSends } from "./approvals";
-export { clearActionErrors, clearActionPayloads, type PayloadKeepRule } from "./retention";
+export { clearActionErrors, clearActionPayloads, clearLoopSentCopies, type PayloadKeepRule } from "./retention";
 export {
   listExpiredUnapprovedSends,
   listHiddenMoveRows,

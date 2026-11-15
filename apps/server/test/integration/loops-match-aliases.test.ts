@@ -4,7 +4,7 @@ import { loopHooks, matchReplies } from "../../src/modules/loops";
 
 import { testDb, withRollback } from "./helpers";
 import { sentMail } from "./loops-analyze-fixtures";
-import { ANNA, loopRow, loopsOrg, reply, RUN_AT, waiting } from "./loops-match-fixtures";
+import { ANNA, JAN, loopRow, loopsOrg, reply, RUN_AT, waiting } from "./loops-match-fixtures";
 import { siblingMailbox } from "./mail-sent-fixtures";
 
 // F116 stage 14 (carry-over of the stage 13 review, N2): an alias of the user is not a mailbox address, but the user wrote
@@ -75,15 +75,49 @@ describe("an alias of the user does not close a loop", () => {
     });
   });
 
-  test("the subject rule uses the same own addresses: an alias in the recipients of the loop is not a reply", async () => {
+  test("a person of the loop who also sends as the user is a stranger: the reply closes the loop (To, Cc, counterpart)", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      // Send-as or delegate access: the people below appear as From in the Sent rows of the mailbox.
+      for (const address of [ANNA, JAN, "third@example.test"]) await sentMail(trx, org, { fromAddress: address });
+      const byTo = await waiting(trx, org);
+      const byCc = await waiting(trx, org);
+      const byCounterpart = await waiting(trx, org, {
+        to_addresses: ["first@example.test"],
+        cc_addresses: [],
+        counterpart: "third@example.test",
+      });
+      await reply(trx, org, { from: ANNA, threadKey: byTo.threadKey, subject: "Anything" });
+      await reply(trx, org, { from: JAN, threadKey: byCc.threadKey, subject: "Anything" });
+      await reply(trx, org, { from: "third@example.test", threadKey: byCounterpart.threadKey, subject: "Anything" });
+      const out = await matchReplies({ db: trx }, org.ctx, org.mailboxId, { now: RUN_AT });
+      expect(out.replied).toBe(3);
+      for (const loop of [byTo, byCc, byCounterpart]) expect((await loopRow(trx, loop.id)).status).toBe("closed");
+    });
+  });
+
+  test("the people of one loop do not free the alias for another loop: a stranger's loop still ignores that alias", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
       await sentMail(trx, org, { fromAddress: ALIAS });
-      // The user put the alias in Cc of its own mail; a mail from the alias in another thread is not an answer.
+      await sentMail(trx, org, { fromAddress: ANNA });
+      // The loop to anna frees anna only; the alias stays own for it.
+      const toAnna = await waiting(trx, org);
+      await reply(trx, org, { from: ALIAS, threadKey: toAnna.threadKey, subject: "Note to self" });
+      const out = await matchReplies({ db: trx }, org.ctx, org.mailboxId, { now: RUN_AT });
+      expect(out.replied).toBe(0);
+      expect((await loopRow(trx, toAnna.id)).status).toBe("open");
+    });
+  });
+
+  test("the subject rule: a recipient who is also a Sent From address closes the loop by subject", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      await sentMail(trx, org, { fromAddress: ALIAS });
       const loop = await waiting(trx, org, { cc_addresses: [ALIAS] });
       await reply(trx, org, { from: ALIAS, subject: "Re: Oferta Q1" });
-      expect((await matchReplies({ db: trx }, org.ctx, org.mailboxId, { now: RUN_AT })).replied).toBe(0);
-      expect((await loopRow(trx, loop.id)).status).toBe("open");
+      expect((await matchReplies({ db: trx }, org.ctx, org.mailboxId, { now: RUN_AT })).repliedSubject).toBe(1);
+      expect((await loopRow(trx, loop.id)).status).toBe("closed");
     });
   });
 
@@ -108,6 +142,11 @@ describe("an alias of the user does not close a loop", () => {
       const stranger = await waiting(trx, org);
       await reply(trx, org, { from: ANNA, threadKey: stranger.threadKey, subject: "Anything" });
       expect(await loopHooks().isOpen(trx, org.ctx, stranger.id)).toBe(false);
+      // A recipient of the loop who is also a Sent From address: the reply counts, so the follow-up must not go out.
+      await sentMail(trx, org, { fromAddress: JAN });
+      const recipient = await waiting(trx, org);
+      await reply(trx, org, { from: JAN, threadKey: recipient.threadKey, subject: "Anything" });
+      expect(await loopHooks().isOpen(trx, org.ctx, recipient.id)).toBe(false);
     });
   });
 });

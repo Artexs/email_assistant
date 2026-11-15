@@ -13,6 +13,7 @@ import {
 import {
   cancelPendingApprovalRequestsOfClosedSends,
   cancelPendingOutboxOfOrg,
+  clearLoopCards,
   SENDER_STALE_MS,
 } from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
@@ -126,8 +127,12 @@ export function committerDeps(input: {
 
 // Turning off "Track my sent mail" ends the loops that the Sent mail started, in the same transaction. The web and the CLI
 // pass this to `setSentSync`; a caller without it would leave open loops that hold the texts of deleted mail.
+// The same transaction also clears the follow-up cards that copy the Sent mail (`clearLoopCards`: `channels` sits above `loops`).
 export const sentSwitchHooks: SentSwitchHooks = {
-  onDisabled: (trx, ctx, input) => onSentOff(trx, ctx, input),
+  onDisabled: async (trx, ctx, input) => {
+    await onSentOff(trx, ctx, input);
+    await clearLoopCards(trx, ctx, input);
+  },
 };
 
 // The one builder of the settings setters' deps: the CLI and the web call it, so both close the gate the same way.
