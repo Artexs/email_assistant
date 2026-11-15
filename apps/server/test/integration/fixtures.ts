@@ -177,9 +177,13 @@ export async function insertTriaged(
     subject?: string | null;
     from?: string | null;
     messageId?: string | null;
+    // The `suspicious_reasons` of the result row (default none) and the thread of the mail (default a new thread).
+    suspiciousReasons?: readonly string[];
+    threadKey?: string;
   }
 ): Promise<string> {
   const emailId = await insertTestEmail(trx, ctx, mailboxId, {
+    ...(opts.threadKey === undefined ? {} : { thread_key: opts.threadKey }),
     status: "triaged",
     received_at: opts.receivedAt ?? opts.createdAt,
     subject: opts.subject ?? null,
@@ -196,6 +200,7 @@ export async function insertTriaged(
       reason_code: opts.reasonCode ?? "direct_request",
       reason: opts.reason ?? null,
       fields: JSON.stringify(opts.fields ?? {}),
+      suspicious_reasons: [...(opts.suspiciousReasons ?? [])],
       created_at: opts.createdAt,
     })
     .execute();

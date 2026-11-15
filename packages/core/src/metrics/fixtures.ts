@@ -86,6 +86,7 @@ export function llmCallRow(overrides: Partial<LlmCallRow> = {}): LlmCallRow {
   return {
     mailboxId: null,
     model: "gpt-6-luna",
+    endpoint: "standard",
     tokensIn: 1036,
     tokensOut: 80,
     at: new Date("2026-11-17T10:00:00Z"),

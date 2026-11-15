@@ -33,6 +33,21 @@ export interface DelegationHooks {
     delegationId: string,
     kind: "reminder" | "delegation"
   ): Promise<boolean>;
+  // A panel edit replaced the waiting send and its draft (F102 ticket). Locks the delegation row (lock order: send, then delegation).
+  // true: the delegation was `drafted` and now points at the new draft, the new send and the delegate of the new version.
+  // false: any other state or no such delegation; the caller rolls the edit back.
+  onSuperseded(
+    trx: Transaction<DB>,
+    ctx: TenantContext,
+    input: { delegationId: string; draftActionId: string; sendActionId: string; delegateId: string }
+  ): Promise<boolean>;
+  // The reader that lets `actions` resolve the delegate of an edit without importing `delegation` (layer rule).
+  // undefined: no such delegate in this organization, or it is not active.
+  activeDelegate(
+    trx: Transaction<DB>,
+    ctx: TenantContext,
+    delegateId: string
+  ): Promise<{ id: string; name: string; email: string } | undefined>;
 }
 
 export const noDelegationHooks: DelegationHooks = {
@@ -41,4 +56,24 @@ export const noDelegationHooks: DelegationHooks = {
   onCancelled: async () => false,
   onWentOut: async () => "not_open",
   isOpen: async () => false,
+  onSuperseded: async () => false,
+  activeDelegate: async () => undefined,
 };
+
+// F102 ticket: what a decision does for the cards of other channels. The real hook is built in `channels` (stage 09);
+// `actions` only calls it, in the transaction of the decision. The hook, not the caller, finds out whether an approved
+// send is held and by what, so no caller passes `heldBy`.
+export interface ApprovalHooks {
+  onDecided(
+    trx: Transaction<DB>,
+    ctx: TenantContext,
+    input: {
+      sendId: string;
+      decision: "approved" | "rejected" | "changed" | "expired";
+      exceptUserId?: string;
+      at: Date;
+    }
+  ): Promise<void>;
+}
+
+export const noApprovalHooks: ApprovalHooks = { onDecided: () => Promise.resolve() };

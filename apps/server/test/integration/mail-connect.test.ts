@@ -19,11 +19,12 @@ import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules
 import {
   findMailboxIdByAddress,
   getMailbox,
+  getSentSyncState,
   insertMailbox,
   lockMailboxLimit,
   setMailboxStatus,
 } from "../../src/modules/mail/repo";
-import { createOrganizationWithOwner } from "../../src/modules/tenancy";
+import { configureFeatures, createOrganizationWithOwner, upsertOrgFeature } from "../../src/modules/tenancy";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
@@ -367,8 +368,14 @@ describe("connectMailbox: duplicates, audit, timeouts", () => {
         .orderBy("id")
         .execute();
       expect(rows).toHaveLength(2);
-      expect(rows[0]).toEqual({ actor: "system", data: { mailbox_id: first.mailboxId, via: "cli" } });
-      expect(rows[1]).toEqual({ actor: userId, data: { mailbox_id: second.mailboxId, via: "web" } });
+      expect(rows[0]).toEqual({
+        actor: "system",
+        data: { mailbox_id: first.mailboxId, via: "cli", sent_sync: false },
+      });
+      expect(rows[1]).toEqual({
+        actor: userId,
+        data: { mailbox_id: second.mailboxId, via: "web", sent_sync: false },
+      });
       expect(Object.keys(rows[1]?.data as object)).not.toContain("address");
     });
   });
@@ -481,6 +488,42 @@ describe("mailbox:connect CLI", () => {
     }
   });
 
+  test("prints the sent mail line only while the flag is on, and the switch row follows", async () => {
+    for (const flag of [false, true]) {
+      const suffix = randomUUID();
+      const { orgId, userId } = await createOrg(db, suffix);
+      try {
+        if (flag)
+          await upsertOrgFeature(db, { orgId }, { flag: "sent_sync", enabled: true, setBy: "test", setAt: new Date() });
+        const proc = runConnect(
+          [
+            "--org-id",
+            orgId,
+            "--address",
+            `s-${suffix}@localhost`,
+            "--imap-host",
+            imapHost,
+            "--imap-port",
+            imapPort,
+            "--smtp-host",
+            imapHost,
+            "--smtp-port",
+            smtpPort,
+          ],
+          `cli-pw-${randomUUID()}\n`
+        );
+        const [code, stdout] = await Promise.all([proc.exited, new Response(proc.stdout).text()]);
+        expect(code).toBe(0);
+        expect(stdout.includes("sent mail: tracked, read only")).toBe(flag);
+        const mailboxId = /\[mailbox-connect\] connected mailbox (\S+)/.exec(stdout)?.[1] ?? "";
+        expect((await getSentSyncState(db, { orgId }, mailboxId))?.enabled).toBe(flag);
+      } finally {
+        await db.deleteFrom("organizations").where("id", "=", orgId).execute();
+        await db.deleteFrom("users").where("id", "=", userId).execute();
+      }
+    }
+  });
+
   test("a duplicate address exits 1 before any login", async () => {
     const suffix = randomUUID();
     const { orgId, userId } = await createOrg(db, suffix);
@@ -518,6 +561,82 @@ describe("mailbox:connect CLI", () => {
     const proc = runConnect(["--org-id", randomUUID(), "--address", "u@localhost"]);
     expect(await proc.exited).toBe(1);
     expect(await new Response(proc.stderr).text()).toContain("usage");
+  });
+});
+
+describe("connectMailbox: Track my sent mail", () => {
+  const NOW = new Date("2026-11-20T10:00:00Z");
+
+  function depsFor(trx: Db | Transaction<DB>, login: "ok" | "bad" = "ok"): ConnectDeps {
+    return {
+      db: trx,
+      secrets,
+      openProvider: async () => {
+        if (login === "bad") throw new MailAuthError("IMAP login failed");
+        return fakeWithFolders();
+      },
+      verifySmtp: async () => undefined,
+    };
+  }
+
+  async function connectedAudit(trx: Transaction<DB>, orgId: string) {
+    return trx
+      .selectFrom("audit_log")
+      .select("data")
+      .where("org_id", "=", orgId)
+      .where("event", "=", "mailbox.connected")
+      .execute();
+  }
+
+  test("1: flag on: the switch row is on, the audit row and the result say so", async () => {
+    await withRollback(db, async (trx) => {
+      configureFeatures({ off: [] });
+      const { orgId } = await createOrg(trx);
+      const ctx = { orgId };
+      await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
+      const result = await connectMailbox(depsFor(trx), ctx, input("pw"));
+      expect(result.sentSync).toBe(true);
+      const state = await getSentSyncState(trx, ctx, result.mailboxId);
+      expect(state).toMatchObject({ enabled: true, path: null, lastUid: null });
+      expect(state?.enabledAt).toBeInstanceOf(Date);
+      expect((await connectedAudit(trx, orgId))[0]?.data).toMatchObject({ sent_sync: true });
+    });
+  });
+
+  test("2: flag off: the switch row is off, the audit row and the result say so", async () => {
+    await withRollback(db, async (trx) => {
+      configureFeatures({ off: [] });
+      const { orgId } = await createOrg(trx);
+      const ctx = { orgId };
+      const result = await connectMailbox(depsFor(trx), ctx, input("pw"));
+      expect(result.sentSync).toBe(false);
+      expect(await getSentSyncState(trx, ctx, result.mailboxId)).toMatchObject({ enabled: false, enabledAt: null });
+      expect((await connectedAudit(trx, orgId))[0]?.data).toMatchObject({ sent_sync: false });
+    });
+  });
+
+  test("3: a failed IMAP login writes no state row", async () => {
+    await withRollback(db, async (trx) => {
+      configureFeatures({ off: [] });
+      const { orgId } = await createOrg(trx);
+      const ctx = { orgId };
+      await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
+      await expect(connectMailbox(depsFor(trx, "bad"), ctx, input("pw"))).rejects.toBeInstanceOf(MailAuthError);
+      const rows = await trx.selectFrom("mailbox_sent_sync").select("mailbox_id").where("org_id", "=", orgId).execute();
+      expect(rows).toEqual([]);
+      expect(await connectedAudit(trx, orgId)).toEqual([]);
+    });
+  });
+
+  test("4: the flag of another organization does not switch it on", async () => {
+    await withRollback(db, async (trx) => {
+      configureFeatures({ off: [] });
+      const other = await createOrg(trx);
+      await upsertOrgFeature(trx, other, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
+      const { orgId } = await createOrg(trx);
+      const result = await connectMailbox(depsFor(trx), { orgId }, input("pw"));
+      expect(result.sentSync).toBe(false);
+    });
   });
 });
 

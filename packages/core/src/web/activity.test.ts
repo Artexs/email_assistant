@@ -80,10 +80,19 @@ describe("activityItemSchema", () => {
     undoPending: false,
     feedback: { verdict: "right", trueCategory: "notification", source: "web", at: "2026-11-11T09:05:00.000Z" },
     delegation: { delegateName: "Ola", status: "drafted", dueAt: "2026-11-13T09:00:00.000Z" },
+    suspicious: ["link_mismatch"],
   };
 
   test("parses a full item", () => {
     expect(activityItemSchema.parse(full)).toEqual(full);
+  });
+
+  test("suspicious holds rule codes only and is required", () => {
+    expect(activityItemSchema.safeParse({ ...full, suspicious: [] }).success).toBe(true);
+    expect(activityItemSchema.safeParse({ ...full, suspicious: ["unknown_code"] }).success).toBe(false);
+    const without: Partial<typeof full> = { ...full };
+    delete without.suspicious;
+    expect(activityItemSchema.safeParse(without).success).toBe(false);
   });
 
   test("parses an item with null fields", () => {

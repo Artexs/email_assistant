@@ -38,3 +38,7 @@ Part of [`../plan.md`](../plan.md). Read P2, P6, D2, D3, D15, F4 and [`../comman
 ## Done when (stage)
 
 - Step 1 holds. The Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s11`).
+
+## Carry-over from stage 08 review
+
+- `editApproval` and `approve` do not validate ids. A `sendId` or `delegateId` that is not a UUID reaches Postgres and gives a 500. The route must validate both (400 `validation`) before it calls the function. Add route tests with a bad `sendId` and a bad `delegateId`.
