@@ -451,6 +451,7 @@ describe("log canary", () => {
         "sync_done",
         "sync_soft_error",
         "sync_failed",
+        "outbox_refused",
         "sync_auth_error",
         "triage_done",
         "send_retry",
