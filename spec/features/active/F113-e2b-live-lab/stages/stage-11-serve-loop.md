@@ -65,8 +65,20 @@ Scoring (stages 12–13) and demo reset (stage 14).
 
 Source: [`../review-8.md`](../review-8.md).
 
-- **Mail client options.** `createLabMailClient` has no default for the host or the password. Build it in the serve script from `LAB_MAIL_HOST` and `LAB_MAIL_PASSWORD`, read the same way as in `seed.ts` (stage 06). Also pass `allowedAddresses` = `labAddresses(corpus)`. The test default `127.0.0.1` is not a production default. (The stage 07 reconciliation decides the final factory name and options.)
+- **Mail client options.** One factory serves the injector and the bots: `createLabMailClient({ host, imapPort, smtpPort, password, allowedAddresses })`. It has no defaults. Build ONE client in the serve script and pass it to both ticks: `host: LAB_MAIL_HOST`, `imapPort: LAB_IMAP_PORT`, `smtpPort: LAB_SMTP_PORT`, `password: LAB_MAIL_PASSWORD` (all from `seed.ts`), `allowedAddresses: new Set(labAddresses(corpus))` (it includes the `other_address` aliases and the run mailboxes). The client refuses a non-loopback host (`host_refused`) and an envelope address outside the list (`address_refused`).
 - **Order in a tick.** Run the bots tick before the first injector tick of a run. The first bots tick sets the UID cursor of each delegate inbox; no delegation mail can exist before it, because a delegation needs an executive tap.
 - **One serve process per run.** Two ticks at the same time would both send a due reply. Take a lock file per run (or per org) in the serve process and refuse to start a second one.
 - **Result counts.** `runDelegateBotsTick` returns `failed` too: a failed send of one reply, or a failed read of one delegate inbox (the tick goes on). Show it in the heartbeat and the status line. A reply ends after 5 failed sends (`bot_error` events, then `skip send_failed`); the scorer counts these skips.
 - **Message-ID compare (stage 14).** `sendOne` reads the received mail again by UID only. After a mailbox reset that changes UIDVALIDITY, a UID can point to another mail. Stage 14 (org reset) must either reset the bot cursors and plans of the run or compare the `Message-ID` of the mail with the key of the plan before a send.
+
+## Carry-over from the stage 07 review (N1, N2, N5)
+
+Details: [`../review-7.md`](../review-7.md). The `LabMailClient` type is in `notes/2026-11-15-f113-s07-mail-client-for-s08.md`.
+
+- **N1 (client host).** Build the client with `createLabMailClient` and the constants of `modules/lab/seed.ts` (see the stage 08 carry-over below for the full option list). The client already throws `host_refused` for a host that is not loopback. Add a test that the serve wiring uses these constants.
+- **N2 (one writer).** `runInjectorTick` has no lock. `serve` must take an `O_EXCL` lock file (for example `<LAB_STATE_DIR>/locks/serve.lock`, freed on exit, a stale lock taken over as `state.ts` does for the org lock) before the first tick, so a second `lab serve` (for example `docker compose run lab serve`) cannot inject twice. Test: a second `serve` on the same state dir exits 1 and writes no event.
+- **N5 (SDK import rule).** Add a `restrictImports` pattern in `eslint.config.js` for `imapflow`, `mailparser` and `nodemailer` on `apps/server/src/**`, with these files excluded: `modules/mail/imap/**`, `modules/lab/mail-client.ts`, `modules/lab/bots.ts` (it parses the mail of the delegate inbox with `mailparser`), `platform/auth-mail.ts` and `*.test.ts`. Run `bun run lint` to find other imports first. If this stage is full, stage 16 does it.
+
+## Carry-over from the F111 stage 03 review
+
+Pass the endpoint kind to the lab start check (`lab/start.ts`, unpriced-model check): an own endpoint with an unpriced model is wrongly refused; an eu endpoint with only a standard row passes and counts $0 toward the cap. See F111 `review-3.md` N3.

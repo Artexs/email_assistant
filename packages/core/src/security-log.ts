@@ -21,6 +21,16 @@ export const securityEventKinds = [
   "delete_refused",
   "dsr_find",
   "dsr_erase",
+  "sso_sign_in",
+  "sso_refused",
+  "sso_provider_set",
+  "sso_provider_removed",
+  "sso_domain_verified",
+  "sso_domain_attested",
+  "sso_required_changed",
+  "sso_unlinked",
+  "member_added",
+  "member_sessions_ended",
 ] as const;
 
 export type SecurityEventKind = (typeof securityEventKinds)[number];
@@ -46,6 +56,16 @@ export const securityEvents = {
   "org.delete_refused": "delete_refused",
   "dsr.find": "dsr_find",
   "dsr.erase": "dsr_erase",
+  "sso.login": "sso_sign_in",
+  "sso.refused": "sso_refused",
+  "sso.provider_set": "sso_provider_set",
+  "sso.provider_removed": "sso_provider_removed",
+  "sso.domain_verified": "sso_domain_verified",
+  "sso.domain_attested": "sso_domain_attested",
+  "sso.required_changed": "sso_required_changed",
+  "sso.unlinked": "sso_unlinked",
+  "org.member_added": "member_added",
+  "web.member_sessions_ended": "member_sessions_ended",
 } as const satisfies Record<string, SecurityEventKind>;
 
 export const securityEventCodes: readonly string[] = Object.keys(securityEvents);

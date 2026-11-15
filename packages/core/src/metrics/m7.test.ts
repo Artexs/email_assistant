@@ -29,6 +29,23 @@ describe("unitCost", () => {
     expect(cost).toMatchObject({ llmCalls: 1, unpricedCalls: 1, llmUsdWeek: 0 });
   });
 
+  test("an own endpoint call costs 0 and is never unpriced (F111 D7)", () => {
+    const cost = unitCost(
+      [llmCallRow({ endpoint: "own", model: "SpeakLeash/bielik", tokensIn: 1_000_000, tokensOut: 0 })],
+      {
+        mailboxes: 1,
+      }
+    );
+    expect(cost).toMatchObject({ llmCalls: 1, llmUsdWeek: 0, unpricedCalls: 0 });
+  });
+
+  test("an eu call takes the EU row; a model with no EU row is unpriced on eu", () => {
+    const eu = unitCost([llmCallRow({ endpoint: "eu", tokensIn: 1_000_000, tokensOut: 1_000_000 })], { mailboxes: 1 });
+    expect(eu.llmUsdWeek).toBeCloseTo(0.66, 10);
+    const unpriced = unitCost([llmCallRow({ endpoint: "eu", model: "gemini-3.8-flash" })], { mailboxes: 1 });
+    expect(unpriced).toMatchObject({ unpricedCalls: 1, llmUsdWeek: 0 });
+  });
+
   test("zero mailboxes count as one", () => {
     expect(unitCost(week(), { mailboxes: 0 })).toEqual(unitCost(week(), { mailboxes: 1 }));
     expect(unitCost(week(), { mailboxes: 0 }).mailboxes).toBe(1);

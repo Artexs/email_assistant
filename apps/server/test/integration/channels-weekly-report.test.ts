@@ -1,3 +1,5 @@
+import { format } from "node:util";
+
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -34,7 +36,7 @@ beforeEach(() => {
   logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
   errorLines = [];
   errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
-    errorLines.push(args.join(" "));
+    errorLines.push(format(...args));
   });
   warnSpy = spyOn(console, "warn").mockImplementation((): void => undefined);
 });
@@ -200,7 +202,7 @@ describe("weekly report detector", () => {
     });
   });
 
-  test("a later week's failure logs again, with the week in the log id", async () => {
+  test("a later week's failure logs again; the logged id is the organization id", async () => {
     await withRollback(db, async (trx) => {
       const o = await orgA(trx);
       await flag(trx, o.ctx, "weekly_report");
@@ -209,17 +211,19 @@ describe("weekly report detector", () => {
           throw new Error("test failure");
         },
       };
-      const warnings = () => errorLines.filter((line) => line.includes(`weekly_report ${o.ctx.orgId}:`));
+      const warnLine = `[channels] notice_skipped kind=weekly_report item_id=${o.ctx.orgId} error=Error`;
+      const warnings = () => errorLines.filter((line) => line.includes("kind=weekly_report"));
 
       await tick(trx, MONDAY_0900, broken);
       // The retry after the window fails again: the same week and the same id log once only.
       await tick(trx, new Date(MONDAY_0900.getTime() + 20 * MINUTE), broken);
       expect(warnings()).toHaveLength(1);
-      expect(warnings()[0]).toContain(`${o.ctx.orgId}:2026-11-16`);
+      expect(warnings()[0]).toBe(warnLine);
 
       await tick(trx, NEXT_MONDAY_0900, broken);
       expect(warnings()).toHaveLength(2);
-      expect(warnings()[1]).toContain(`${o.ctx.orgId}:2026-11-23`);
+      expect(warnings()[1]).toBe(warnLine);
+      expect(errorLines.join("\n")).not.toContain("test failure");
     });
   });
 

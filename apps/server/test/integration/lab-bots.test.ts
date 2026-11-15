@@ -713,7 +713,7 @@ describe("delegate bots", () => {
       ...world.mail,
       fetchSince: (mailbox, folder, afterUid) =>
         mailbox === world.other.address
-          ? Promise.reject(new LabMailError("imap_failed"))
+          ? Promise.reject(new LabMailError("imap_fetch"))
           : world.mail.fetchSince(mailbox, folder, afterUid),
     };
     // The persona list puts the failing delegate after the working one, so this also covers the order the other way.
@@ -726,7 +726,7 @@ describe("delegate bots", () => {
       ...world.mail,
       fetchSince: (mailbox, folder, afterUid) =>
         mailbox === world.delegate.address
-          ? Promise.reject(new LabMailError("imap_failed"))
+          ? Promise.reject(new LabMailError("imap_fetch"))
           : world.mail.fetchSince(mailbox, folder, afterUid),
     };
     expect(await runDelegateBotsTick({ ...world.deps, mail: reversed }, world.runId)).toMatchObject({

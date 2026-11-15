@@ -70,6 +70,7 @@ export const noticeRenderers = {
               { stayFolder: view.stayFolder },
               texts
             ),
+            ...(view.suspicious === undefined ? {} : { suspicious: view.suspicious }),
             now: view.now,
             timeZone: view.timeZone,
           },

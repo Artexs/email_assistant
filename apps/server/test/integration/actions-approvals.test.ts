@@ -12,6 +12,7 @@ import {
   listSendsToNotify,
   listSetsToNotify,
   markResultNotified,
+  noApprovalHooks,
   noDelegationHooks,
   reject,
   rejectSet,
@@ -55,7 +56,7 @@ function recordingHooks() {
 const openHooks: DelegationHooks = { ...noDelegationHooks, isOpen: async () => true };
 
 function depsOf(trx: Transaction<DB>, hooks: DelegationHooks, uidplus = true): ApprovalDeps {
-  return { db: trx, hooks, uidplus: async () => uidplus };
+  return { db: trx, hooks, approvalHooks: noApprovalHooks, uidplus: async () => uidplus };
 }
 
 async function setup(trx: Transaction<DB>) {

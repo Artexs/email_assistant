@@ -1,5 +1,4 @@
 export { MAX_ERRORS_PER_REPLY, runDelegateBotsTick, type BotDeps, type BotTickResult } from "./bots";
-export { createLabMailClient, LabMailError, type LabMailClient, type LabMailClientOptions } from "./mail-client";
 export { renderLabMessage } from "./message";
 export { LAB_MAILBOXES, labAddresses, loadLabCorpus, type LabCorpus } from "./corpus";
 export {
@@ -15,7 +14,26 @@ export {
   type LoggedLabEvent,
   type StopReason,
 } from "./state";
+export { createFakeTgClient, FakeTgError, type FakeButton, type FakeMessage, type FakeTgClient } from "./fake-tg";
 export { orgHasMail } from "./org-mail";
+export {
+  LAB_FLAGS_OFF,
+  LAB_FLAGS_ON,
+  LAB_IMAP_PORT,
+  LAB_MAIL_HOST,
+  LAB_MAIL_PASSWORD,
+  LAB_SMTP_PORT,
+  LAB_TARGETS,
+  LabSeedError,
+  seedLabOrg,
+  unlistedFlags,
+  type SeedAdded,
+  type SeedDeps,
+  type SeedErrorCode,
+  type SeedResult,
+  type SeedTarget,
+} from "./seed";
+export { storeRunUrgencyProfile, type UrgencyDeps } from "./urgency";
 export { runSpend, type RunSpend } from "./run-spend";
 export {
   DEFAULT_CAP_USD,
@@ -29,3 +47,18 @@ export {
   type StartRefusal,
   type StartResult,
 } from "./start";
+export {
+  LATE_AFTER_SEC,
+  MAX_ERRORS_PER_SLOT,
+  MAX_PER_TICK,
+  runInjectorTick,
+  type InjectorDeps,
+  type InjectorTick,
+} from "./injector";
+export {
+  createLabMailClient,
+  LabMailError,
+  type LabMailClient,
+  type LabMailClientOptions,
+  type LabMailErrorCode,
+} from "./mail-client";

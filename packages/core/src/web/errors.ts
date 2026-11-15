@@ -25,6 +25,8 @@ export const apiErrorCodes = [
   "wrong_name",
   "wrong_password",
   "locked",
+  "feature_off",
+  "not_configured",
   "internal",
 ] as const;
 export type ApiErrorCode = (typeof apiErrorCodes)[number];

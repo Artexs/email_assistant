@@ -19,6 +19,7 @@ import {
   approveSet,
   getSend,
   markWentOut,
+  noApprovalHooks,
   reject,
   rejectSet,
   sendAgain,
@@ -79,12 +80,23 @@ export async function handleApprovalCallback(
   const taps = texts.bot.taps;
   if (callback.kind !== "delegation_done" && link.role !== "owner") return { answer: taps.ownerOnly };
   const now = deps.now();
-  const id = "actionId" in callback ? callback.actionId : "setId" in callback ? callback.setId : callback.delegationId;
-  log.info(`tap ${callback.kind} ${id} by user ${link.userId}`);
+  const target =
+    "actionId" in callback
+      ? { action_id: callback.actionId }
+      : "setId" in callback
+        ? { approval_set_id: callback.setId }
+        : { delegation_id: callback.delegationId };
+  log.info("tap_received", { kind: callback.kind, user_id: link.userId, ...target });
   const organization = await getOrganization(deps.db, ctx);
   if (organization === undefined) return { answer: taps.notFound };
   const timeZone = organization.timezone;
-  const approvals: ApprovalDeps = { db: deps.db, hooks: deps.hooks, uidplus: deps.uidplus };
+  // The card edits after a decision come in the card sync stage; until then no hook runs.
+  const approvals: ApprovalDeps = {
+    db: deps.db,
+    hooks: deps.hooks,
+    approvalHooks: noApprovalHooks,
+    uidplus: deps.uidplus,
+  };
   const input = { userId: link.userId, via: "telegram" as const, now };
   // The card as the user got it (the stored text) plus one status line (docs/architecture.md §4.5). A row that was never
   // sent has no text: no edit, only the answer.
@@ -138,6 +150,8 @@ export async function handleApprovalCallback(
           return { answer: taps.rejected };
         case "failed":
           return { answer: taps.failed };
+        case "superseded":
+          return { answer: taps.changed };
         case "draft_not_ready":
           return { answer: taps.draftNotReady };
         case "not_found":
@@ -160,6 +174,7 @@ export async function handleApprovalCallback(
         };
       }
       if (result.kind === "already") return { answer: statusText(taps, result.status) ?? taps.notFound };
+      if (result.kind === "superseded") return { answer: taps.changed };
       return { answer: taps.notFound };
     }
     case "approve_set": {

@@ -69,7 +69,8 @@ function appFor(
   ids: { ownerId: string; assistantId: string; nobodyId: string },
   operatorContact: string | null = null,
   operatorUserIds?: ReadonlySet<string>,
-  twoFactorOff?: ReadonlySet<string>
+  twoFactorOff?: ReadonlySet<string>,
+  ssoUsers?: ReadonlySet<string>
 ) {
   return webTestApp({
     db,
@@ -77,6 +78,7 @@ function appFor(
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
     ...(operatorUserIds ? { operatorUserIds } : {}),
     ...(twoFactorOff ? { twoFactorOff } : {}),
+    ...(ssoUsers ? { ssoUsers } : {}),
     routers: (api) =>
       api.route(
         "/",
@@ -161,6 +163,26 @@ describe("GET /api/me", () => {
     const app = appFor(ids, null, new Set([ids.ownerId]), new Set([ids.ownerId]));
     const me = meSchema.parse(await (await app.request("/api/me", as("good-owner"))).json());
     expect(me.operator).toBe(true);
+  });
+
+  test("signInMethod and hasPassword: an SSO session of a member without a password; a password session with one (F119 stage 11)", async () => {
+    const ids = await setup();
+    // Olaf (the owner) has a password credential. Ann (the assistant) has an SSO link only: no password.
+    await db
+      .insertInto("auth_accounts")
+      .values({ account_id: ids.ownerId, provider_id: "credential", user_id: ids.ownerId, password: "x-not-a-hash" })
+      .execute();
+    await db
+      .insertInto("auth_accounts")
+      .values({ account_id: "idp-subject-ann", provider_id: ids.orgId, user_id: ids.assistantId })
+      .execute();
+    const app = appFor(ids, null, undefined, undefined, new Set([ids.assistantId]));
+    const ann = meSchema.parse(await (await app.request("/api/me", as("good-assistant"))).json());
+    expect(ann.signInMethod).toBe("sso");
+    expect(ann.hasPassword).toBe(false);
+    const olaf = meSchema.parse(await (await app.request("/api/me", as("good-owner"))).json());
+    expect(olaf.signInMethod).toBe("password");
+    expect(olaf.hasPassword).toBe(true);
   });
 
   test("returns the trial end and the plan to every member", async () => {
@@ -285,6 +307,31 @@ describe("real webDeps getSession", () => {
       const me = meSchema.parse(await res.json());
       expect(me.mailboxCount).toBe(2);
       expect(me.mailboxesInAuthError).toBe(1);
+      // The real session: a password sign-in with a credential row (F119 stage 11, step 11.2).
+      expect(me.signInMethod).toBe("password");
+      expect(me.hasPassword).toBe(true);
+
+      // The real wiring of GET /api/sign-in-options: no cookie; false, then true for a proved provider with the flag on.
+      const options = async () => (await app.request("/api/sign-in-options")).json() as Promise<unknown>;
+      expect(await options()).toEqual({ sso: false });
+      await db
+        .insertInto("sso_providers")
+        .values({
+          provider_id: ids.orgId,
+          org_id: ids.orgId,
+          issuer: "https://idp.x.test",
+          domain: "x.test",
+          domain_verified: true,
+          domain_proof: "dns",
+          oidc_config: "{}",
+        })
+        .execute();
+      await upsertOrgFeature(
+        db,
+        { orgId: ids.orgId },
+        { flag: "sso_sign_in", enabled: true, setBy: "test", setAt: new Date("2026-11-20T10:00:00Z") }
+      );
+      expect(await options()).toEqual({ sso: true });
     } finally {
       await web.close();
     }

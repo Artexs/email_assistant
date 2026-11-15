@@ -7,6 +7,8 @@ export const uuidFieldNames = [
   "action_id",
   "delegation_id",
   "outbox_id",
+  "approval_set_id",
+  "item_id",
   "user_id",
   "run_id",
   "request_id",
@@ -32,6 +34,21 @@ export const numberFieldNames = [
   // telegram
   "update_id",
   "bot_id",
+  // committer and expiry job
+  "applied",
+  "failed",
+  "retry",
+  "closed",
+  "sent",
+  "expired_timeout",
+  "expired_draft_missing",
+  "expired_not_notified",
+  "expired_not_seen",
+  "expired_held_timeout",
+  // delegation chaser
+  "due",
+  "overdue",
+  "reminders",
 ] as const;
 /** Code fields: the F089 D7 rule (D1, D2). Values come from closed sets, never from mail, users or outside text. */
 export const codeFieldNames = [
@@ -55,6 +72,13 @@ export const codeFieldNames = [
   "config_key",
   "flag",
   "release",
+  // digest slot key, chat command, plan names, the user or the CLI that made a change
+  "slot",
+  "command",
+  "from_plan",
+  "to_plan",
+  "enabled",
+  "actor",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

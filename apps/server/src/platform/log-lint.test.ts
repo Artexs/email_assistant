@@ -199,15 +199,79 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
-    "another file of channels stays at warn",
+    "an old-form line in another file of channels fails",
     async () => {
       expect(
         await logEventSeverities(
-          "apps/server/src/modules/channels/commands.ts",
+          "apps/server/src/modules/channels/__log-fixture.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in channels/notices/ fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/notices/__log-fixture.ts",
+          "log.info(`x ${y}`);",
+          "../../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in actions/committer.ts and actions/expiry.ts fails; another actions file only warns",
+    async () => {
+      for (const file of ["committer.ts", "expiry.ts"]) {
+        expect(
+          await logEventSeverities(
+            `apps/server/src/modules/actions/${file}`,
+            "log.info(`x ${y}`);",
+            "../../platform/log"
+          )
+        ).toEqual([2]);
+      }
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/actions/apply.ts",
           "log.info(`x ${y}`);",
           "../../platform/log"
         )
       ).toEqual([1]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in delegation fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/delegation/__log-fixture.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in tenancy fails, also in its repo/ folder",
+    async () => {
+      for (const file of ["__log-fixture.ts", "repo/__log-fixture.ts"]) {
+        const importPath = file.includes("/") ? "../../../platform/log" : "../../platform/log";
+        expect(
+          await logEventSeverities(`apps/server/src/modules/tenancy/${file}`, "log.info(`x ${y}`);", importPath)
+        ).toEqual([2]);
+      }
     },
     TIMEOUT
   );

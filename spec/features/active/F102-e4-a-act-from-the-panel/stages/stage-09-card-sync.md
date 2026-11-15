@@ -54,3 +54,7 @@ Part of [`../plan.md`](../plan.md). Read D4, D5, F6, N1 and [`../commands.md`](.
 - The sender must load the target card with `org_id = row.org_id` and `user_id` and fail the row on a mismatch (the database also refuses a cross-organization pointer after the stage 06 rework).
 - A test with two owners and `exceptUserId` set for a held approval (stage 06 TG2).
 - The edit copies a card text: refuse when the stored text is `[removed]` (retention cleared it): the sender must not show that text.
+
+## Carry-over from stage 08 review
+
+- Add `at: Date` to the input of `DelegationHooks.onSuperseded` (and update `commands.md`). Stage 08 sets `delegations.updated_at` with `new Date()`; the hook should take the clock of the caller. Update `delegationHooks` in `delegation/service.ts` and `editApproval` in `actions/edit.ts`.

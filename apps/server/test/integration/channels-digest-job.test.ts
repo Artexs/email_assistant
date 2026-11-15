@@ -1,3 +1,5 @@
+import { format } from "node:util";
+
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -6,7 +8,7 @@ import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import { markDigestSent } from "../../src/modules/reports";
 import { setDigestTimes } from "../../src/modules/tenancy";
-import type { DB, TenantContext } from "../../src/platform/db";
+import type { DB, Db, TenantContext } from "../../src/platform/db";
 
 import {
   addMember,
@@ -31,14 +33,18 @@ const L = new Date("2026-11-05T20:00:00Z");
 const HOUR = 3_600_000;
 
 let errorLines: string[] = [];
+let infoLines: string[] = [];
 let logSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
 
 beforeEach(() => {
   errorLines = [];
-  logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+  infoLines = [];
+  logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+    infoLines.push(format(...args));
+  });
   errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
-    errorLines.push(args.join(" "));
+    errorLines.push(format(...args));
   });
 });
 
@@ -286,10 +292,36 @@ describe("scheduleDigests", () => {
       expect(await digests(trx, a.orgId)).toHaveLength(1);
       expect(await outbox(trx, a.orgId)).toHaveLength(1);
       expect(await digests(trx, b.orgId)).toHaveLength(0);
-      const lines = errorLines.filter((line) => line.includes(b.orgId));
-      expect(lines).toHaveLength(1);
-      expect(errorLines.filter((line) => line.includes(a.orgId))).toHaveLength(0);
+      expect(errorLines).toEqual([
+        `[channels] digest_member_failed org_id=${b.orgId} user_id=${b.ownerId} error=RangeError`,
+      ]);
     });
+  });
+
+  test("a queued digest logs digest_queued with the slot and the ids", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+
+      await run(trx, "2026-11-06T07:00:00Z");
+      const [row] = await outbox(trx, o.orgId);
+      expect(infoLines).toEqual([
+        `[channels] digest_queued slot=2026-11-06T08:00 user_id=${o.ownerId} outbox_id=${row?.id}`,
+      ]);
+      await run(trx, "2026-11-06T07:00:00Z");
+      expect(infoLines).toHaveLength(1);
+    });
+  });
+
+  test("a database error stops the run, logs digests_failed and never the error text", async () => {
+    const broken = {
+      selectFrom: () => {
+        throw new Error("123456:MARKER-DB-TOKEN");
+      },
+    } as unknown as Db;
+
+    await scheduleDigests({ db: broken, now: () => new Date("2026-11-06T07:00:00Z"), testMail: NO_TEST_SENDERS });
+    expect(errorLines).toEqual(["[channels] digests_failed error=Error"]);
   });
 
   test("an urgent result is in the text, with the last sync", async () => {

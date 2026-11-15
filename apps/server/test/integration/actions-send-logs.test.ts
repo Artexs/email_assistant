@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { parseToolSwitches } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
@@ -13,7 +14,7 @@ import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials, markSynced } from "../../src/modules/mail/repo";
 import { createSecretBox } from "../../src/platform/crypto";
-import { setLogLevel } from "../../src/platform/log";
+import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import {
   createOrgWithMailbox,
@@ -35,6 +36,7 @@ afterAll(async () => {
 
 afterEach(() => {
   setLogLevel("info");
+  setLogFormat(logFormatFromEnv(process.env));
 });
 
 const MINUTE = 60_000;
@@ -51,12 +53,19 @@ const MARKERS = {
   sender: `marker-sender-${run}@x.test`,
   body: `MARKER-BODY-${run}`,
   task: `MARKER-TASK-${run}`,
+  // The server reply of the refused send, with an address in it.
+  reply: `550 5.1.1 marker-reply-${run}@x.test unknown`,
 };
 
 describe("send logs", () => {
   test("no S4 log line holds a recipient, a subject, a task, a draft text or an SMTP reply; the expected lines appear", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
-    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    // format() shows an error object that was logged raw with its fields.
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    const errorSpy = spyOn(console, "error").mockImplementation(
+      (...args: unknown[]) => void lines.push(format(...args))
+    );
+    setLogFormat("text");
     setLogLevel("debug");
     try {
       await withRollback(db, async (trx) => {
@@ -132,7 +141,10 @@ describe("send logs", () => {
         const sender = {
           send: async (input: Parameters<typeof smtp.send>[0]) => {
             sends += 1;
-            if (sends === 2) smtp.failNext(new SmtpSendError("envelope", "EENVELOPE", 550, true, false));
+            if (sends === 2)
+              smtp.failNext(
+                new SmtpSendError("envelope", "EENVELOPE", 550, true, false, { cause: new Error(MARKERS.reply) })
+              );
             return smtp.send(input);
           },
           close: () => smtp.close(),
@@ -238,9 +250,7 @@ describe("send logs", () => {
         await createChaserJob({ db: trx, now: () => clock }).run();
         await notices();
 
-        const output = [...logSpy.mock.calls, ...errorSpy.mock.calls]
-          .map((call: unknown[]) => call.map(String).join(" "))
-          .join("\n");
+        const output = lines.join("\n");
 
         for (const marker of [
           ...Object.values(MARKERS),
@@ -257,12 +267,15 @@ describe("send logs", () => {
         for (const pair of [first, second]) expect(output).toContain(`action ${pair.draftId}: applied create_draft`);
         expect(output).toContain(`action ${appliedSend?.id}: applied send`);
         expect(output).toContain(`action ${rejectedSend?.id}: failed smtp_rejected (stage envelope, code 550)`);
-        for (const id of approvals) expect(output).toContain(`notice approval queued: outbox ${id}`);
-        for (const id of results) expect(output).toContain(`notice send_result queued: outbox ${id}`);
+        for (const id of approvals) expect(output).toContain(`notice_queued kind=approval outbox_id=${id}`);
+        for (const id of results) expect(output).toContain(`notice_queued kind=send_result outbox_id=${id}`);
+        const ids = `org_id=${orgId} mailbox_id=${mailboxId}`;
         expect(output).toContain(
-          `expiry ${mailboxId}: expired 1 (timeout 1, draft_missing 0, not_notified 0, not_seen 0, held_timeout 0)`
+          `expiry_done ${ids} count=1 expired_timeout=1 expired_draft_missing=0 expired_not_notified=0 expired_not_seen=0 expired_held_timeout=0`
         );
-        expect(output).toContain(`chaser ${mailboxId}: due 1, overdue 1, reminders 1`);
+        // Two committer runs sent: the first (drafts) applies two drafts, the second applies one send and refuses one.
+        expect(output).toContain(`committer_done ${ids} applied=1 failed=1 retry=0 closed=0 sent=1`);
+        expect(output).toContain(`chaser_done mailbox_id=${mailboxId} due=1 overdue=1 reminders=1`);
       });
     } finally {
       logSpy.mockRestore();

@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { clearMailBodies } from "../../src/modules/mail";
+import { clearMailBodies, clearSentBodies, clearSentHeaders } from "../../src/modules/mail";
 import { listOrganizations } from "../../src/modules/tenancy";
 import { deleteExpiredVerifications } from "../../src/platform/auth";
 import type { DB } from "../../src/platform/db";
-import { createRetentionJob, type RetentionCounts } from "../../src/retention";
+import { createRetentionJob, type Clearers, type RetentionCounts } from "../../src/retention";
 
 import {
   createOrgWithMailbox,
@@ -40,10 +41,10 @@ let errorSpy: ReturnType<typeof spyOn>;
 beforeEach(() => {
   lines = [];
   logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
-    lines.push(args.join(" "));
+    lines.push(format(...args));
   });
   errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
-    lines.push(args.join(" "));
+    lines.push(format(...args));
   });
 });
 
@@ -122,6 +123,30 @@ async function insertCaptured(trx: Transaction<DB>, orgId: string, emailId: stri
     .execute();
 }
 
+// A stored Sent row with a text, a subject and addresses; `text` is the canary of the log test.
+async function insertSentRow(trx: Transaction<DB>, org: Org, text: string, internalDate: Date): Promise<void> {
+  await trx
+    .insertInto("sent_emails")
+    .values({
+      org_id: org.orgId,
+      mailbox_id: org.mailboxId,
+      dedup_key: `sent:${randomUUID()}`,
+      path: "Sent",
+      uidvalidity: "1",
+      uid: String(Math.floor(Math.random() * 1_000_000)),
+      thread_key: `sent-thread-${randomUUID()}`,
+      from_address: `${text}@x.test`,
+      to_addresses: [`${text}@x.test`],
+      subject: text,
+      body_text: text,
+      origin: "user",
+      content: "stored",
+      sent_at: internalDate,
+      internal_date: internalDate,
+    })
+    .execute();
+}
+
 // One row per kind of the A23 list, all over 90 days (the mail body is over the 30 days of the organization).
 async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
   const ctx = { orgId: org.orgId };
@@ -134,6 +159,8 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
   });
   // The mail of the other rows is new: its own body and headers stay.
   const fresh = await insertTestEmail(trx, ctx, org.mailboxId, { status: "done", created_at: ago(DAY_MS) });
+  await insertSentRow(trx, org, text, over90);
+  await insertSentRow(trx, org, "fresh", ago(DAY_MS));
   // The captured texts of the old mail are over the 30 days of the organization; those of the fresh mail are not.
   await insertCaptured(trx, org.orgId, old, text, ago(31 * DAY_MS));
   await insertCaptured(trx, org.orgId, fresh, text, ago(DAY_MS));
@@ -194,6 +221,8 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
 const ZERO: RetentionCounts = {
   body: 0,
   headers: 0,
+  sentBody: 0,
+  sentHeaders: 0,
   capturedHeaders: 0,
   triage: 0,
   payloads: 0,
@@ -214,6 +243,8 @@ describe("retention job: runOrg", () => {
       expect(await job.runOrg(org, NOW)).toEqual({
         body: 1,
         headers: 1,
+        sentBody: 1,
+        sentHeaders: 1,
         capturedHeaders: 1,
         triage: 1,
         payloads: 1,
@@ -223,6 +254,37 @@ describe("retention job: runOrg", () => {
         tokens: 1,
       });
       expect(await job.runOrg(org, NOW)).toEqual(ZERO);
+    });
+  });
+
+  test("a sent row loses its text after the organization's period and its subject and addresses after 90 days", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx, 7);
+      await insertSentRow(trx, a, "ten", ago(10 * DAY_MS));
+      await insertSentRow(trx, a, "forty", ago(40 * DAY_MS));
+      const job = createRetentionJob({ db: trx, now: () => NOW });
+      const state = () =>
+        trx
+          .selectFrom("sent_emails")
+          .select(["subject", "body_text", "content"])
+          .where("org_id", "=", a.orgId)
+          .orderBy("internal_date", "desc")
+          .execute();
+
+      const counts = await job.runOrg({ id: a.orgId, dataRetentionDays: 7 }, NOW);
+
+      expect(counts).toEqual({ ...ZERO, sentBody: 2 });
+      expect(await state()).toEqual([
+        { subject: "ten", body_text: null, content: "stored" },
+        { subject: "forty", body_text: null, content: "stored" },
+      ]);
+
+      const later = new Date(NOW.getTime() + 60 * DAY_MS);
+      expect(await job.runOrg({ id: a.orgId, dataRetentionDays: 7 }, later)).toEqual({ ...ZERO, sentHeaders: 1 });
+      expect(await state()).toEqual([
+        { subject: "ten", body_text: null, content: "stored" },
+        { subject: null, body_text: null, content: "stored" },
+      ]);
     });
   });
 
@@ -389,6 +451,8 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
         expect(await job.runOrg(org, NOW)).toEqual({
           body: 3,
           headers: 1,
+          sentBody: 0,
+          sentHeaders: 0,
           capturedHeaders: 1,
           triage: 1,
           payloads: 2,
@@ -423,7 +487,7 @@ describe("retention job: log", () => {
       expect(await body(trx, old)).toBeNull();
       const joined = lines.join("\n");
       expect(joined).toContain(
-        `[retention] retention org ${a.orgId}: body 1, headers 1, captured 1, triage 1, payloads 1, errors 1, tasks 1, outbox 1, tokens 1`
+        `[retention] retention org ${a.orgId}: body 1, headers 1, sent body 1, sent headers 1, captured 1, triage 1, payloads 1, errors 1, tasks 1, outbox 1, tokens 1`
       );
       expect(joined).not.toContain("TopSecretText");
       expect(joined).not.toContain("@x.test");
@@ -462,6 +526,52 @@ describe("retention job: an error in one organization", () => {
       expect(await body(trx, secondMail)).toBeNull();
     });
   });
+});
+
+describe("retention job: an error in a Sent clear function", () => {
+  const failing = (name: string, failOrg: string): Partial<Clearers> => {
+    const fail = (original: typeof clearSentBodies): typeof clearSentBodies => {
+      return async (dbOrTrx, ctx, opts) => {
+        if (ctx.orgId === failOrg) throw new Error("CanaryText failed@x.test");
+        return original(dbOrTrx, ctx, opts);
+      };
+    };
+    return name === "clearSentBodies"
+      ? { clearSentBodies: fail(clearSentBodies) }
+      : { clearSentHeaders: fail(clearSentHeaders) };
+  };
+  for (const name of ["clearSentBodies", "clearSentHeaders"]) {
+    test(`${name} fails with mail text in its message: the log holds the error name only; the next organization runs`, async () => {
+      await withRollback(db, async (trx) => {
+        const a = await newOrg(trx, 30);
+        const b = await newOrg(trx, 30);
+        const mine = new Set([a.orgId, b.orgId]);
+        const first = (await listOrganizations(trx)).find((org) => mine.has(org.id));
+        const firstOrg = first?.id === a.orgId ? a : b;
+        const secondOrg = firstOrg === a ? b : a;
+        await insertSentRow(trx, firstOrg, "CanaryText", over90);
+        await insertSentRow(trx, secondOrg, "OtherText", over90);
+
+        await createRetentionJob({
+          db: trx,
+          now: () => NOW,
+          clearers: failing(name, firstOrg.orgId),
+        }).run();
+
+        const joined = lines.join("\n");
+        expect(lines.filter((line) => line.includes(`retention org ${firstOrg.orgId} failed: `))).toHaveLength(1);
+        expect(joined).not.toContain("CanaryText");
+        expect(joined).not.toContain("OtherText");
+        expect(joined).not.toContain("@x.test");
+        const rows = await trx
+          .selectFrom("sent_emails")
+          .select(["body_text", "subject"])
+          .where("org_id", "=", secondOrg.orgId)
+          .execute();
+        expect(rows).toEqual([{ body_text: null, subject: null }]);
+      });
+    });
+  }
 });
 
 describe("retention job: auth_verifications", () => {

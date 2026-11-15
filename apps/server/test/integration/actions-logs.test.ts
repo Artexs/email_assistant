@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { encodeCallback } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
@@ -12,7 +13,7 @@ import { contentHash } from "../../src/modules/mail/sync-rules";
 import { createReturnedJob } from "../../src/modules/triage";
 import { createSecretBox } from "../../src/platform/crypto";
 import { HardError } from "../../src/platform/errors";
-import { setLogLevel } from "../../src/platform/log";
+import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import {
   createOrgWithMailbox,
@@ -32,6 +33,7 @@ afterAll(async () => {
 
 afterEach(() => {
   setLogLevel("info");
+  setLogFormat(logFormatFromEnv(process.env));
 });
 
 const MINUTE = 60_000;
@@ -45,14 +47,21 @@ const MARKERS = {
   subject: `MARKER-SUBJECT-${run}`,
   sender: `marker-sender-${run}@x.test`,
   summary: `MARKER-SUMMARY-${run}`,
+  // An error text with an address in it: only the error name may reach a line.
+  error: `MARKER-ERRMSG marker-error-${run}@x.test`,
 };
 
 type ActionType = "save_summary" | "flag" | "mark_read" | "move";
 
 describe("actions logs", () => {
   test("no log line holds a subject, an address, a summary or a folder path; the expected lines appear", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
-    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    // format() shows an error object that was logged raw with its fields.
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    const errorSpy = spyOn(console, "error").mockImplementation(
+      (...args: unknown[]) => void lines.push(format(...args))
+    );
+    setLogFormat("text");
     setLogLevel("debug");
     try {
       await withRollback(db, async (trx) => {
@@ -119,7 +128,7 @@ describe("actions logs", () => {
         });
         // The hard error hits the flag of the first mail on each of three runs.
         for (let attempt = 0; attempt < 3; attempt += 1) {
-          fake.failOn("setFlags", new HardError("MARKER-ERRMSG"), 1);
+          fake.failOn("setFlags", new HardError(MARKERS.error), 1);
           await committer.run();
           clock = new Date(clock.getTime() + 6 * MINUTE);
         }
@@ -205,9 +214,7 @@ describe("actions logs", () => {
           .execute();
         expect(outbox).toHaveLength(1);
 
-        const output = [...logSpy.mock.calls, ...errorSpy.mock.calls]
-          .map((call: unknown[]) => call.map(String).join(" "))
-          .join("\n");
+        const output = lines.join("\n");
 
         for (const marker of [
           MARKERS.subject,
@@ -217,13 +224,16 @@ describe("actions logs", () => {
           "ea-seed.test",
           "AI/Info",
           "MARKER-ERRMSG",
+          MARKERS.error,
         ]) {
           expect(output).not.toContain(marker);
         }
 
-        expect(output).toContain(`committer ${mailboxId}: applied 3, failed 1, retry 1`);
-        expect(output).toContain(`committer ${mailboxId}: applied 0, failed 0, retry 1`);
-        expect(output).toContain(`committer ${mailboxId}: applied 0, failed 1, retry 0`);
+        const done = (counts: string) =>
+          `committer_done org_id=${orgId} mailbox_id=${mailboxId} ${counts} closed=0 sent=0`;
+        expect(output).toContain(done("applied=3 failed=1 retry=1"));
+        expect(output).toContain(done("applied=0 failed=0 retry=1"));
+        expect(output).toContain(done("applied=0 failed=1 retry=0"));
         expect(output).toContain(`action ${missing.actionIds[0]}: failed mail_not_found`);
         expect(output).toContain(`action ${flagFails.actionIds[0]}: HardError, try 1 of 3`);
         expect(output).toContain(`action ${flagFails.actionIds[0]}: failed hard_error`);
@@ -231,7 +241,7 @@ describe("actions logs", () => {
           expect(output).toContain(`action ${reverse.id}: applied ${reverse.type}`);
         }
         expect(output).toContain(`returned ${mailboxId}: processed 1`);
-        expect(output).toContain(`notice action_failed queued: outbox ${outbox[0]?.id}`);
+        expect(output).toContain(`notice_queued kind=action_failed outbox_id=${outbox[0]?.id}`);
       });
     } finally {
       logSpy.mockRestore();
