@@ -441,3 +441,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: `OPERATOR_USER_IDS` only gates `/api/operator/*`; the plan names the operator group (U3). English stays the default (plan D5).
 - Undo: replace `operatorSend` in `apps/server/src/main.ts` to send to user chats; remove `OPERATOR_LOCALE` to use English only.
 - Source: `spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/plan.md` (P2, D4, D5), job `2026-11-15-f114-s03-ops-slo-job-alert-texts-a4ad9975`.
+
+### 2026-11-15 · F116 extractor: addresses in the mail body go to the model (F116) · privacy · new
+- Choice: the sent-mail extractor (`extractor-v1`) gets the mail body as written (cut to 8,000 characters, inside a nonce data block). No header address (From, To, Cc) goes to the model, but an address in the body (a signature) can. Triage already works this way. The Telegram rule "never a raw mail body" does not cover an LLM call.
+- Why: the plan lists the body in the model input; masking addresses would change the prompt and could cost recall.
+- Undo: a new prompt version `extractor-v2` that masks addresses in the body, plus one eval run (stage 06 shape).
+- Source: `spec/features/active/F116-e5b-open-loops/review-5.md`, job `2026-11-15-f116-review-s05-opus-loops-modul-6bcb0bc3`.
