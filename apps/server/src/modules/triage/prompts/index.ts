@@ -11,8 +11,8 @@ export interface PromptEntry<R extends LlmRole> {
   [builder: string]: unknown;
 }
 
-// The prompt each role uses now. A new version is a new file `<role>-v<n>.ts`, a new entry here and a passing eval
-// (docs/code-patterns.md § Side effects).
+// The prompt each role uses now. A new version is a new file `<role>-v<n>.ts`, a new entry here and a sim gate run with
+// its gate file in evals/results/gate/ (docs/code-patterns.md § Side effects; gate-evidence.test.ts checks the file).
 export const prompts = {
   classifier: {
     role: "classifier",

@@ -112,6 +112,18 @@ OpenAI has no free daily quota. The project budget and the rate limit apply. A 1
 The run refuses to start when the classifier model has no price in `llmPrices`. A new call starts only while `spent + (in flight + 1) × average call cost` stays under the cap (the first estimate is the price of 2,000 tokens in and 300 out). Calls in flight finish and count. A failed or blocked attempt, also a retry inside a case, is charged at the larger of the average call cost and the first estimate; a retry that could pass the cap does not run. A cost that is unknown, NaN or infinite is charged at that same value. A model with no price today, or an estimate of 0, refuses the run. The exit code is 2 when the run stops at a cap or after 3 errors in a row; the same command resumes it.
 The state file is `evals/.runs/<model>[-<effort>]-<prompt-version>-sim-<scenario>-v<version>-<part>.jsonl`; a lock file `<state>.lock` keeps two runs off it. The ledger gets one line per run, also after a stop, with the new spend only.
 
+## Gate
+
+A prompt or model change of any role runs `bun run eval --sim lab-01 --part holdout` (and `--judge` for a drafter change) and commits the report and the gate file `evals/results/gate/<role>-<promptVersion>-<model>-<effort>-<corpus>-v<version>.json` before the merge. The old case set (`bun run eval`) still runs as a smoke check. The sim gate needs ≥ 200 holdout cases per category and the Wilson 95 % lower bound of precision ≥ the bar (PD-024, PD-025, ADR 0028). Prompt tuning reads only `evals/sim/*/dev/`; never open `holdout/`.
+
+Two checks watch the rule. The CI test `apps/server/src/modules/triage/gate-evidence.test.ts` checks only the prompt version: a gate file must exist for the current classifier prompt version (CI has no LLM key, so it checks the evidence, not the numbers). The release checklist (E8) checks that the model in the VPS `.env` has a gate file.
+
+## Results
+
+- `evals/results/gate/`: the gate file per prompt version and corpus (first: `classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json`).
+- `evals/results/2026-11-15-sim-lab-01-holdout-gpt-6-luna-classifier-v2.md`: the first holdout report. Dev judge report: `2026-11-15-sim-lab-01-dev-gpt-6-luna-classifier-v2-judge.md`.
+- `evals/results/2026-11-15-sim-vs-real-gap-lab-01.md`: the first sim-vs-real gap report. Both `notification` and `spam` read `no gap` (real n 54 and 78). Real labels never unlock `auto` (ADR 0028).
+
 ## Subset rule
 
 `selectCases` picks the same subset every time.

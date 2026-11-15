@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { format } from "node:util";
 
-import { EVENT_CODE, isLogFieldName, isLogValue, type LogFields } from "./log-fields";
+import { EVENT_CODE, isLogValueOfKind, logFieldKind, type LogFields } from "./log-fields";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogFormat = "json" | "text";
@@ -96,7 +96,8 @@ function addFields(pairs: Pair[], sources: readonly FieldSource[]): number {
         if (value === undefined) {
           continue;
         }
-        if (isLogFieldName(key) && isLogValue(value) && !seen.has(key)) {
+        const kind = logFieldKind(key);
+        if (kind !== undefined && isLogValueOfKind(kind, value) && !seen.has(key)) {
           seen.add(key);
           pairs.push([key, value]);
         } else {

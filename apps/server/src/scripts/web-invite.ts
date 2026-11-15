@@ -3,15 +3,15 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { getMembership, getUserAuthProfile } from "../modules/tenancy";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { deliverInvite } from "./invite-delivery";
 import { pickMemberId } from "./pick-member";
 
-const log = createLog("web-invite");
+const out = createCliOutput("web-invite");
 
 const usage = "usage: bun run web:invite --org-id <uuid> [--user-id <uuid>] [--print]";
 
@@ -44,7 +44,7 @@ function describeFailure(error: unknown): string {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -52,18 +52,18 @@ async function main(): Promise<number> {
   const baseUrl = config.WEB_BASE_URL;
   const secret = config.WEB_AUTH_SECRET;
   if (baseUrl === undefined || secret === undefined) {
-    log.error("WEB_BASE_URL is empty: the web is off; set WEB_BASE_URL and WEB_AUTH_SECRET first");
+    out.fail("WEB_BASE_URL is empty: the web is off; set WEB_BASE_URL and WEB_AUTH_SECRET first");
     return 1;
   }
 
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    const userId = await pickMemberId(db, options.orgId, options.userId, log);
+    const userId = await pickMemberId(db, options.orgId, options.userId, out);
     if (userId === undefined) return 1;
     const membership = await getMembership(db, { orgId: options.orgId }, userId);
     if (!membership) {
-      log.error("user is not a member of this organization");
+      out.fail("user is not a member of this organization");
       return 1;
     }
 
@@ -76,10 +76,10 @@ async function main(): Promise<number> {
       email: membership.email,
       locale: profile?.locale ?? "pl",
       print: options.print,
-      log,
+      out,
     });
   } catch (error) {
-    log.error(describeFailure(error));
+    out.fail(describeFailure(error));
     return 1;
   } finally {
     await db.destroy();
@@ -89,6 +89,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(describeFailure(error));
+    out.fail(describeFailure(error));
     process.exit(1);
   });

@@ -5,28 +5,29 @@ import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
 import { configureMailHosts } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog, withLogContext } from "../platform/log";
+import { withLogContext } from "../platform/log";
 import { createRetentionJob } from "../retention";
 
 import { parseJobRunArgs, usage } from "./job-run-args";
 
-const log = createLog("job-run");
+const out = createCliOutput("job-run");
 
 // Runs one job once with the deps of `main.ts`. For dev and ops checks; it logs ids and counts only, like the server.
 async function main(): Promise<number> {
   const args = parseJobRunArgs(process.argv.slice(2));
   if (args === null) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
   const config = loadConfig();
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
   if (args.name === "channels.notifier" && config.TELEGRAM_BOT_TOKEN === undefined) {
-    log.error("TELEGRAM_BOT_TOKEN is empty");
+    out.fail("TELEGRAM_BOT_TOKEN is empty");
     return 1;
   }
   return await withLogContext({ job: args.name, run_id: randomUUID() }, async () => {
@@ -41,7 +42,7 @@ async function main(): Promise<number> {
       } else if (args.name === "delegation.chaser") {
         await createChaserJob({ db, now }).run({ force: args.force });
       } else if (args.name === "actions.committer") {
-        log.warn("do not run the committer here while the server runs on the same database: the log lines double");
+        out.fail("do not run the committer here while the server runs on the same database: the log lines double");
         const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
         await createCommitterJob(
           committerDeps({
@@ -75,10 +76,10 @@ async function main(): Promise<number> {
         });
         await runtime.notify();
       }
-      log.info(`${args.name}: ran once`);
+      out.print(`${args.name}: ran once`);
       return 0;
     } catch (error) {
-      log.error(`${args.name} failed: ${describeError(error)}`);
+      out.fail(`${args.name} failed: ${describeError(error)}`);
       return 1;
     } finally {
       await db.destroy().catch(() => undefined);

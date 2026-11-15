@@ -12,7 +12,15 @@ const log = createLog("auth_sso");
 // Better Auth loads the plugin with a small surface: two paths, no provider endpoints, no sign-up.
 
 export const SSO_SIGN_IN_PATH = "/sign-in/sso";
-const SSO_CALLBACK_PREFIX = "/sso/callback/";
+const SSO_CALLBACK_PATH = "/sso/callback";
+const SSO_CALLBACK_PREFIX = `${SSO_CALLBACK_PATH}/`;
+
+// The plugin also has the shared callback `/sso/callback` (no provider id, used with `redirectURI`). Our HTTP gate keeps it closed
+// (`isAllowedSsoPath`), but every hook that must know "this is an SSO callback" matches both forms, so a gate change cannot leave
+// a callback session unmarked. `path` is the route template, not the concrete path.
+export function isSsoCallbackPath(path: string | undefined): boolean {
+  return path === SSO_CALLBACK_PATH || path?.startsWith(SSO_CALLBACK_PREFIX) === true;
+}
 
 // An SSO session ends this long after the IdP sign-in (the session hook and the database trigger enforce it).
 export const SSO_SESSION_SECONDS = 43_200;
@@ -28,6 +36,47 @@ export function isAllowedSsoPath(method: string, path: string): boolean {
 }
 
 export type { SsoIdentity, SsoResolution };
+
+export interface SsoSessionData {
+  signInMethod: "sso";
+  ssoStartedAt: Date;
+  expiresAt: Date;
+}
+
+// The `sso_started_at` of a session row: a `Date` from the adapter, a string in a copied value. Anything else is no mark.
+function startOf(value: unknown): Date | null {
+  const at = value instanceof Date ? value : typeof value === "string" ? new Date(value) : null;
+  return at !== null && !Number.isNaN(at.getTime()) ? at : null;
+}
+
+// What the session hook of `platform/auth.ts` adds to a new session row.
+// `path` is the route template (`/sso/callback/:providerId`), so the match is by prefix, never by the concrete path.
+// `current` is the session of the request, if the endpoint has one (TOTP turn-on, `/change-password`): a session made from an
+// SSO session keeps its method and its start, because Better Auth copies the fields but sets the defaults after them.
+// A sign-in path has no current session, so a password sign-in never inherits. `undefined` = a plain password session.
+export function ssoSessionData(input: {
+  path: string | undefined;
+  current: object | null | undefined;
+  now: Date;
+}): SsoSessionData | undefined {
+  if (isSsoCallbackPath(input.path)) {
+    return {
+      signInMethod: "sso",
+      ssoStartedAt: input.now,
+      expiresAt: new Date(input.now.getTime() + SSO_SESSION_SECONDS * 1000),
+    };
+  }
+  const current: { signInMethod?: unknown; ssoStartedAt?: unknown } = input.current ?? {};
+  if (current.signInMethod !== "sso") return undefined;
+  // An SSO session without a start cannot exist (the pair CHECK); if it does, fail closed: no new session.
+  const started = startOf(current.ssoStartedAt);
+  if (started === null) throw new Error("sso_session_without_start");
+  return {
+    signInMethod: "sso",
+    ssoStartedAt: started,
+    expiresAt: new Date(started.getTime() + SSO_SESSION_SECONDS * 1000),
+  };
+}
 
 // A row for the audit log (ADR 0026 point 8). `data` is flat: ids and codes only, never the IdP e-mail.
 export interface SsoEvent {
@@ -144,7 +193,7 @@ function ssoAuditPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
       after: [
         {
           // `ctx.path` is the route template `/sso/callback/:providerId` (`spike.md`, finding on `ctx.path`).
-          matcher: (context: { path?: string }) => context.path?.startsWith(SSO_CALLBACK_PREFIX) === true,
+          matcher: (context: { path?: string }) => isSsoCallbackPath(context.path),
           handler: createAuthMiddleware(async (ctx) => {
             const userId = ctx.context.newSession?.user.id;
             if (userId === undefined) return;
