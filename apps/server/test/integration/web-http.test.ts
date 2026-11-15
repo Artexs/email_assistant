@@ -11,7 +11,7 @@ import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { buildTrustedProxies, createApp, parseBody, type WebDeps } from "../../src/platform/http";
 import { setLogLevel } from "../../src/platform/log";
-import { onboardingDeps, webDeps } from "../../src/web";
+import { auditWebEvent, authMailFailedHandler, onboardingDeps, webDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 
@@ -553,7 +553,7 @@ describe("real webDeps", () => {
       );
       if (web === null) throw new Error("webDeps returned null");
       expect([...(web.operatorUserIds ?? [])]).toEqual([operatorId]);
-      expect(lines.some((line) => line.includes("operator ids: 1"))).toBe(true);
+      expect(lines.some((line) => line.includes("web_operators") && line.includes("count=1"))).toBe(true);
       expect(lines.filter((line) => line.includes(operatorId))).toEqual([]);
     } finally {
       logSpy.mockRestore();
@@ -631,6 +631,99 @@ describe("real webDeps", () => {
     } finally {
       logSpy.mockRestore();
     }
-    expect(lines.some((line) => line.includes("web is off (WEB_BASE_URL is empty)"))).toBe(true);
+    expect(lines.some((line) => line.includes("web_off") && line.includes("config_key=WEB_BASE_URL"))).toBe(true);
+  });
+});
+
+describe("web root events", () => {
+  const CANARY = "canary-web-failure@x.test";
+
+  /** Every line the three console channels get while `run` runs, before the platform filter of the writer. */
+  async function captureLines(run: () => Promise<void> | void): Promise<string[]> {
+    const lines: string[] = [];
+    const spies = (["log", "warn", "error"] as const).map((method) =>
+      spyOn(console, method).mockImplementation((...args: unknown[]): void => {
+        lines.push(args.join(" "));
+      })
+    );
+    try {
+      await run();
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+    return lines;
+  }
+
+  const failingSelect = new Proxy(db, {
+    get(target, property) {
+      if (property === "selectFrom") {
+        return () => {
+          throw new Error(CANARY);
+        };
+      }
+      const value: unknown = Reflect.get(target, property);
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+    },
+  });
+
+  test("an http base URL on another host writes events with the config key; no host, port or path in any line", async () => {
+    let web: ReturnType<typeof webDeps> = null;
+    const lines = await captureLines(() => {
+      web = webDeps(
+        loadConfig({
+          ...process.env,
+          WEB_BASE_URL: "http://panel.x.test:4321",
+          WEB_AUTH_SECRET: "x".repeat(40),
+          WEB_DIST: dist,
+          ...AUTH_MAIL_OFF,
+          AUTH_PWNED_CHECK: "off",
+        }),
+        db,
+        extras
+      );
+    });
+    try {
+      for (const event of ["web_cookies_not_secure", "auth_mail_off", "pwned_check_off", "web_operators", "web_on"]) {
+        expect(lines.filter((line) => line.includes(event))).toHaveLength(1);
+      }
+      expect(lines.filter((line) => line.includes("web_cookies_not_secure"))[0]).toContain("config_key=WEB_BASE_URL");
+      expect(lines.filter((line) => line.includes("pwned_check_off"))[0]).toContain("config_key=AUTH_PWNED_CHECK");
+      const all = lines.join("\n");
+      expect(all).not.toContain("panel.x.test");
+      expect(all).not.toContain("4321");
+      expect(all).not.toContain("ea-web-dist-");
+    } finally {
+      await (web as ReturnType<typeof webDeps>)?.close();
+    }
+  });
+
+  test("a user with no organization writes web_no_organization with the user id", async () => {
+    const userId = randomUUID();
+    const lines = await captureLines(() => auditWebEvent(db)("login", userId));
+    const found = lines.filter((line) => line.includes("web_no_organization"));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toContain(`user_id=${userId}`);
+  });
+
+  test("a failed audit writes web_audit_failed with the kind and the error name only", async () => {
+    const lines = await captureLines(() => auditWebEvent(failingSelect)("login", randomUUID()));
+    const found = lines.filter((line) => line.includes("web_audit_failed"));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toContain("kind=login");
+    expect(found[0]).toContain("error=Error");
+    expect(lines.join("\n")).not.toContain(CANARY);
+  });
+
+  test("a failed notice lookup writes web_auth_mail_notice_failed with the user id and the error name only", async () => {
+    const userId = randomUUID();
+    const lines = await captureLines(async () => {
+      authMailFailedHandler(failingSelect, () => undefined)(userId, "reset", "smtp_failed");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    const found = lines.filter((line) => line.includes("web_auth_mail_notice_failed"));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toContain(`user_id=${userId}`);
+    expect(found[0]).toContain("error=Error");
+    expect(lines.join("\n")).not.toContain(CANARY);
   });
 });

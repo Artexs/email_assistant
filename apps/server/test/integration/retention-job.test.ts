@@ -104,7 +104,7 @@ describe("retention job: run", () => {
       expect(await body(trx, rows.b40)).toBeNull();
       expect(await body(trx, rows.c10)).toBe("Body text");
       expect(await body(trx, rows.c40)).toBeNull();
-      expect(lines.some((line) => /^\[retention\] retention: \d+ organizations, \d+ rows$/.test(line))).toBe(true);
+      expect(lines.some((line) => /^\[retention\] retention_done .*org_count=\d+ count=\d+$/.test(line))).toBe(true);
     });
   });
 });
@@ -486,9 +486,23 @@ describe("retention job: log", () => {
 
       expect(await body(trx, old)).toBeNull();
       const joined = lines.join("\n");
-      expect(joined).toContain(
-        `[retention] retention org ${a.orgId}: body 1, headers 1, sent body 1, sent headers 1, captured 1, triage 1, payloads 1, errors 1, tasks 1, outbox 1, tokens 1`
-      );
+      const done = lines.filter((line) => line.includes("retention_org_done") && line.includes(a.orgId));
+      expect(done).toHaveLength(1);
+      for (const key of [
+        "body_rows",
+        "header_rows",
+        "sent_body_rows",
+        "sent_header_rows",
+        "captured_header_rows",
+        "triage_rows",
+        "payload_rows",
+        "error_rows",
+        "task_rows",
+        "outbox_rows",
+        "token_rows",
+      ]) {
+        expect(done[0]).toContain(`${key}=1`);
+      }
       expect(joined).not.toContain("TopSecretText");
       expect(joined).not.toContain("@x.test");
       expect(joined).not.toContain(old);
@@ -521,7 +535,9 @@ describe("retention job: an error in one organization", () => {
       });
       await job.run();
 
-      expect(lines.filter((line) => line.includes(`retention org ${firstOrg.orgId} failed: `))).toHaveLength(1);
+      expect(
+        lines.filter((line) => line.includes("retention_org_failed") && line.includes(firstOrg.orgId))
+      ).toHaveLength(1);
       expect(await body(trx, firstMail)).toBe("Body text");
       expect(await body(trx, secondMail)).toBeNull();
     });
@@ -559,7 +575,9 @@ describe("retention job: an error in a Sent clear function", () => {
         }).run();
 
         const joined = lines.join("\n");
-        expect(lines.filter((line) => line.includes(`retention org ${firstOrg.orgId} failed: `))).toHaveLength(1);
+        expect(
+          lines.filter((line) => line.includes("retention_org_failed") && line.includes(firstOrg.orgId))
+        ).toHaveLength(1);
         expect(joined).not.toContain("CanaryText");
         expect(joined).not.toContain("OtherText");
         expect(joined).not.toContain("@x.test");

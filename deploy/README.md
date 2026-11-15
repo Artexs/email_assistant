@@ -163,9 +163,9 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
    - `WEB_TRUSTED_PROXIES`: `172.30.0.1` (the gateway from step 1).
    - Leave `WEB_TRUSTED_ORIGINS`, `MAIL_ALLOW_LOCAL_HOSTS`, `WEB_MAIL_ALLOW_LOCAL`, `WEB_DIST`, the `AUTH_SMTP_*` keys and `AUTH_MAIL_FROM` empty. Leave `AUTH_PWNED_CHECK` empty (on).
 3. Do the section Update. The migrations of S5 run there.
-4. Check the log for the start line `web is on: https://…, dist /app/apps/web/dist`: `$C logs server | grep 'web'`
-   The output must show no other line with `web:` or `WEB_BASE_URL is http://`. It must also show `auth mail: off (the CLI prints invite and reset links)`.
-   Two lines must not show: `AUTH_PWNED_CHECK=off: leaked passwords are not refused` and `mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed`. Search for them: `$C logs server | grep -E 'AUTH_PWNED_CHECK=off|MAIL_ALLOW_LOCAL_HOSTS'`
+4. Check the log for the start events `web_on` and `web_operators`: `$C logs server | grep -E 'web_|auth_mail'`
+   The output must show no `web_off`, `web_cookies_not_secure` or `web_dist_missing` line. It must also show `auth_mail_off` (the CLI prints invite and reset links).
+   Two lines must not show: `pwned_check_off` and `mail_local_hosts_allowed`. Search for them: `$C logs server | grep -E 'pwned_check_off|mail_local_hosts_allowed'`
 5. Start Tailscale Serve (you, sudo): `sudo tailscale serve --bg 8080`
 6. Check Serve: `tailscale serve status`
 
@@ -272,8 +272,8 @@ Every member sees the terms dialog once at the next sign-in. The legal pages are
 | Certificate error on the first visit                                        | HTTPS is off in the admin console, or the first certificate is not ready | Turn HTTPS on. Wait a short time. Do not retry in a loop: the certificate authority has a rate limit.           |
 | `403 bad_origin` on every save                                              | `WEB_BASE_URL` is not the URL in the browser bar                         | Set `WEB_BASE_URL` to the exact URL of the browser bar. Run `$C up -d --wait server`.                           |
 | All members share one rate limit, or `auth_sessions.ip_address` is `172.x`  | `WEB_TRUSTED_PROXIES` is not the gateway of the Compose network          | Set it to `172.30.0.1` in `.env`, as the pinned file says. Run `$C up -d --wait server`.                        |
-| `web is off` in the log                                                     | `WEB_BASE_URL` is empty                                                  | Set `WEB_BASE_URL` in `.env`. Run `$C up -d --wait server`.                                                     |
-| `web: dist folder missing` in the log                                       | The image has no web build                                               | Rebuild: `$C up -d --build --wait`.                                                                             |
+| `web_off` in the log                                                        | `WEB_BASE_URL` is empty                                                  | Set `WEB_BASE_URL` in `.env`. Run `$C up -d --wait server`.                                                     |
+| `web_dist_missing` in the log                                               | The image has no web build                                               | Rebuild: `$C up -d --build --wait`.                                                                             |
 | The setup link says `This link was used or has expired. Ask for a new one.` | The link was used, or it is older than 24 hours                          | Make a new link (section Give a member a password).                                                             |
 | The panel URL is wrong, or the name is `ubuntu`                             | The first `tailscale up` registered the machine under the host name      | Run `sudo tailscale set --hostname=email-assistant`. Set `WEB_BASE_URL` to the new URL.                         |
 | Lookups for IMAP, SMTP or Telegram fail after Tailscale starts              | Tailscale changed the host resolver                                      | Run `sudo tailscale set --accept-dns=false`. Check: `resolvectl status \| grep -c 100.100.100.100` prints `0`.  |
@@ -463,7 +463,7 @@ $C run --rm server bun run job:run --name channels.notifier
 $C run --rm server bun run job:run --name platform.retention
 ```
 
-`channels.notifier` needs `TELEGRAM_BOT_TOKEN`. `platform.retention` clears the old texts of every organization (the server runs it daily at 02:40); the log line `retention org <id>: …` holds counts only. Do not run `--name actions.committer` while the server runs on the same database: the log lines double.
+`channels.notifier` needs `TELEGRAM_BOT_TOKEN`. `platform.retention` clears the old texts of every organization (the server runs it daily at 02:40); the log event `retention_org_done` holds `org_id` and the row counts (`body_rows`, `header_rows`, …) only. Do not run `--name actions.committer` while the server runs on the same database: the log lines double.
 
 ### What the system never does
 
