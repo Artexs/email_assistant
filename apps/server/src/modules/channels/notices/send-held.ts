@@ -20,7 +20,7 @@ export const sendHeldDetector: Detector = {
       if (mailbox === undefined || mailbox.status !== "active") continue;
       const limit = sendLimitOfError(hold.lastError);
       if (limit === null) {
-        log.warn(`notice send_held ${mailbox.id}: skipped: unknown send limit text`);
+        log.warn("notice_skipped", { kind: "send_held", item_id: mailbox.id, reason: "unknown_send_limit" });
         continue;
       }
       held.add(mailbox.id);

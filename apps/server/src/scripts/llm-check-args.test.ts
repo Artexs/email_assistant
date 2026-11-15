@@ -30,15 +30,21 @@ const classifierRow: LlmRoleSettings = {
 };
 
 function twoProviderTable(): LlmRoleTable {
-  const base = uniformRoleTable(classifierRow, { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 });
+  const base = uniformRoleTable(classifierRow, {
+    apiKeyName: "OPENAI_API_KEY",
+    apiKey: "o-key",
+    rpm: 60,
+    baseUrl: null,
+    endpoint: "standard",
+  });
   return {
     roles: {
       ...base.roles,
       judge: { provider: "gemini", model: "gem-j", timeoutMs: 50, rpm: null, reasoningEffort: null },
     },
     providers: {
-      openai: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 },
-      gemini: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 30 },
+      openai: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60, baseUrl: null, endpoint: "standard" },
+      gemini: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 30, baseUrl: null, endpoint: "standard" },
     },
   };
 }

@@ -1,0 +1,14 @@
+# The sim stack image (F113, deploy/compose.sim.yaml). It adds the fake Telegram and the lab corpus to a server image.
+# EA_SERVER_IMAGE is a tag that only the sim stack uses (docker build -f deploy/Dockerfile -t ea-sim-base .).
+# Never pass the production tag `ea-server`: a build of the sim image must not move it (apps/server/src/scripts/sim-compose-check.ts checks the Compose file).
+ARG EA_SERVER_IMAGE
+FROM ${EA_SERVER_IMAGE}
+
+# The base image ends with USER bun; the copy and the chown need root.
+USER root
+COPY tools/fake-telegram/src tools/fake-telegram/src
+COPY evals/sim evals/sim
+# A named volume copies the owner of this folder on its first use: without the chown the lab gets EACCES (review T12).
+RUN mkdir -p /var/lib/ea-lab && chown bun:bun /var/lib/ea-lab
+
+USER bun

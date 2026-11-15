@@ -288,9 +288,11 @@ describe("renderEvalReport", () => {
       tokensIn: 10,
       tokensOut: 5,
       latencyMs: 20,
+      endpoint: "standard",
     };
     const llm: LlmClient = {
       modelOf: () => "gemini-3.5-flash-lite",
+      endpointOf: () => "standard",
       async generate<T, R extends LlmRole>(_req: LlmCall<T, R>) {
         const data = {
           category: "info",
