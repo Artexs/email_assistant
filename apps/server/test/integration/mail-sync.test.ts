@@ -1216,7 +1216,8 @@ describe("syncMailbox: returned mail below the cursor", () => {
       const full = await trx.selectFrom("emails").selectAll().where("id", "=", moved.id).executeTakeFirstOrThrow();
       const provider = onBodyCall(s.fake, async () => {
         await insertTestEmail(trx, s.ctx, s.mailboxId, {
-          dedup_key: `${moved.dedup_key}#2`,
+          // Another number than the planned #2: only the re-check inside the lock stops this check.
+          dedup_key: `${moved.dedup_key}#3`,
           message_id_header: full.message_id_header,
           content_hash: full.content_hash,
           folder: "INBOX",
