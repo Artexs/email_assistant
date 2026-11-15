@@ -50,6 +50,8 @@ export const queuedBy = {
   digest: "channels/digest-job.ts",
   mailbox_removed: "channels/notices/mailbox-removed.ts",
   approval_edit: "channels/card-edits.ts",
+  // The one line for an owner whose consent does not cover open-loop data: queued by the approval and send-result detectors.
+  loop_consent: "channels/notices/loop-consent.ts",
 } as const satisfies Partial<Record<NoticeKind, string>>;
 
 async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat[], now: Date): Promise<void> {

@@ -20,8 +20,9 @@ async function detectClosedFollowUps(db: DbOrTrx, ctx: TenantContext): Promise<v
   }
 }
 
+// `kinds` is empty on purpose: the kind `approval_edit` has one producer in `queuedBy` (`card-edits.ts`, the same `queueCardEdits`).
 export const followUpClosedDetector: Detector = {
   name: "follow-up-closed",
-  kinds: ["approval_edit"],
+  kinds: [],
   detect: (run) => detectClosedFollowUps(run.db, run.ctx),
 };
