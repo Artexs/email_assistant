@@ -71,9 +71,12 @@ describe("operator console SSO block (F119 stage 13)", () => {
     expect(ssoLines(full)?.linked).toBe("2 linked members");
     expect(ssoLines({ ...full, linkedMembers: 1 })?.linked).toBe("1 linked member");
     setLocaleForTest("pl");
-    expect(ssoLines({ ...full, linkedMembers: 1 })?.linked).toBe("1 połączony członek");
-    expect(ssoLines({ ...full, linkedMembers: 3 })?.linked).toBe("3 połączeni członkowie");
-    expect(ssoLines({ ...full, linkedMembers: 5 })?.linked).toBe("5 połączonych członków");
+    expect(ssoLines({ ...full, linkedMembers: 1 })?.linked).toBe("1 połączona osoba");
+    expect(ssoLines({ ...full, linkedMembers: 3 })?.linked).toBe("3 połączone osoby");
+    expect(ssoLines({ ...full, linkedMembers: 5 })?.linked).toBe("5 połączonych osób");
+    // TG1: 12–14 take the many form, 22–24 the few form.
+    expect(ssoLines({ ...full, linkedMembers: 22 })?.linked).toBe("22 połączone osoby");
+    expect(ssoLines({ ...full, linkedMembers: 12 })?.linked).toBe("12 połączonych osób");
   });
 
   test("proof, required and break-glass map to their own texts", () => {

@@ -34,7 +34,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 11. May run next to stage 12 (bo
 | `op_sso_break_glass_ready` | Break-glass owner ready | Właściciel awaryjny gotowy |
 | `op_sso_break_glass_missing` | No break-glass owner with TOTP | Brak właściciela awaryjnego z TOTP |
 | `op_sso_cli` | Change it with bun run org:sso. | Zmienisz to poleceniem bun run org:sso. |
-| `op_sso_linked` (plural) | one: {count} linked member · other: {count} linked members | one: {count} połączony członek · few: {count} połączonych członków · many: {count} połączonych członków |
+| `op_sso_linked` (plural) | one: {count} linked member · other: {count} linked members | one: {count} połączona osoba · few: {count} połączone osoby · many: {count} połączonych osób |
 
 **Test** (`apps/web/src/i18n/*.test.ts`, the web unit tests of the Account card and the operator page that exist; a pure helper with its own test where a component has none):
 

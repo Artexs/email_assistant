@@ -763,9 +763,9 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
   },
   ob_rules: { one: "1 reguła", few: "{count} reguły", many: "{count} reguł" },
   op_sso_linked: {
-    one: "{count} połączony członek",
-    few: "{count} połączeni członkowie",
-    many: "{count} połączonych członków",
+    one: "{count} połączona osoba",
+    few: "{count} połączone osoby",
+    many: "{count} połączonych osób",
   },
   expired_suffix: {
     one: "Anulowano 1 zaplanowaną akcję.",
