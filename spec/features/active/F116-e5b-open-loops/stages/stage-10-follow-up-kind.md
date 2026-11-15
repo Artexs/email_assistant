@@ -36,3 +36,7 @@ T1–T10 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s10`).
 ## Out of scope
 
 Planning (14, 15), cards (11).
+
+## Carry-over from stage 09 review
+
+- `findChains` in the privacy code uses `not (email_id = any(goes))`: NULL for a loop row, check it. Mailbox removal and delete paths that look for sends in flight through `emails`. `audit_log_action_id_org_id_fkey` is ON DELETE CASCADE: deleting a loop deletes its actions and their audit rows (no code deletes loops today). The outbox sender sends any loop row of a card kind that has text: no database rule limits the kinds, stage 11 enforces it in code. Closed loop-anchored payloads: erase sets `actions.payload` and `outbox.text` to `[removed]`: keep a regression test. Roll back every loop-row test (a committed loop row breaks the stage 07 Down guard). See review-9.md.
