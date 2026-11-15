@@ -2,6 +2,15 @@
 
 Part of [`../plan.md`](../plan.md). Review before the land (published claims). Docs only. Needs stage 05 (`evals/results/<date>-own-model-runs.md` and the two reports).
 
+## Order change (owner, 2026-11-15)
+
+Stage 06 builds now, before stage 05 (owner step O2 is later). Without stage 05:
+- Content 3 (hardware) gives the PC facts of plan F5 and says "not measured yet (stage 05)" for GPU memory and seconds per mail.
+- Content 6 (results) is one line: "Not measured yet. Stage 05 adds the numbers after owner step O2." No number, no go or no-go.
+- Test 1 has no pairs; tests 2 and 3 hold as written.
+- Step 2: the dated amendment lists D2 and D3 and says the own-model results are not measured yet.
+Stage 05 then adds the hardware numbers, the results table and the amendment links to these pages; its own Done when gets these doc lines.
+
 ## Step 1 — The guide
 
 **Goal.** An operator can run the product on an own model and knows the cost in quality and hardware, and every sentence is true at `HEAD` (ADR 0035 Consequences; D13).

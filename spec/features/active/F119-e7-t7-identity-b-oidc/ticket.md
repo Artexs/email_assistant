@@ -37,7 +37,7 @@ Members of an organization with its own identity provider sign in with their com
 
 - Plan after: none (F105 and F099 have `stages/`; their interfaces are on `master` at the plan base).
 - Build after: E7-T2 platform controls (F099, in `spec/features/done/`), E7-T6 identity A (F105, active: stage 15 deployed; must be in `done/`).
-- Gate: Stage 1 is the spike; second pass after it (PD-040, PD-041). Owner step U1 (Entra test tenant, shared with F117 per E09 notes R10) before stage 16.
+- Gate: Stage 1 is the spike; second pass after it (PD-040, PD-041). Owner step U1 (Entra test tenant, shared with F117 per E09 notes R10) before stage 16. Owner, 2026-11-15: no real tenant now ("if that's not necessary explicitly important ... skip the tests there and just proceed"). Stage 16 is skipped; the ticket closes after stage 15 with "Entra sign-in: not proven live". The fakes of stages 03–13 are the proof. Stage 15 runs after the v0.2.0 release (it carries stages 01–14).
 
 ## Notes
 

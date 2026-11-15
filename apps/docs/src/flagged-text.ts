@@ -23,6 +23,7 @@ export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>>
   mail_oauth_google: ["oauth_btn_google", "oauth_google_hint"],
   user_quiet_hours: ["notify_quiet_title", "notify_quiet_use_default"],
   report_mail: ["notify_channel_title", "notify_channel_both"],
+  urgency_editor: ["urg_title", "urg_topic_add"],
 };
 
 // Telegram texts and lines of the digest: literal parts of `packages/core/src/texts` and `digest`, English and Polish.
