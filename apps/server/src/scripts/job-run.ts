@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
 
-import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "../composition";
+import { actionsScope, committerDeps, loopsLlmScope, mailOAuthRuntime, sendScope, uidplusOf } from "../composition";
 import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
+import { createLoopJobs } from "../modules/loops";
 import { configureMailHosts } from "../modules/mail";
 import { createCliOutput } from "../platform/cli";
 import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
+import { createLlmClient } from "../platform/llm";
 import { setLogRelease, withLogContext } from "../platform/log";
 import { createRetentionJob } from "../retention";
 
@@ -29,6 +31,11 @@ async function main(): Promise<number> {
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
   if (args.name === "channels.notifier" && config.TELEGRAM_BOT_TOKEN === undefined) {
     out.fail("TELEGRAM_BOT_TOKEN is empty");
+    return 1;
+  }
+  const llmScope = args.name === "loops.analyze" ? loopsLlmScope(config) : null;
+  if (args.name === "loops.analyze" && llmScope === null) {
+    out.fail("TRIAGE_LLM_SCOPE is off: the Sent analysis needs the model");
     return 1;
   }
   return await withLogContext({ job: args.name, run_id: randomUUID() }, async () => {
@@ -57,6 +64,16 @@ async function main(): Promise<number> {
         ).run();
       } else if (args.name === "platform.retention") {
         await createRetentionJob({ db, now }).run();
+      } else if (args.name === "loops.analyze") {
+        if (llmScope === null) throw new Error("the model scope is off");
+        const llm = createLlmClient({ table: llmRoleTable(config) });
+        const jobs = createLoopJobs({ db, llm, dailyCap: config.LLM_DAILY_CAP, scope: llmScope, now });
+        const run = await jobs.analyze.run();
+        // Counts only: no id, no address, no text.
+        out.print(
+          `${args.name}: ran once (mailboxes ${run.mailboxes}, analysed ${run.analysed}, skipped ${run.skipped}, opened ${run.opened}, restarted ${run.restarted}, promises closed ${run.promisesClosed}, waiting ${run.waiting}, failed ${run.failed}, mailbox errors ${run.mailboxErrors}${run.stopped ? ", stopped by the model" : ""})`
+        );
+        return 0;
       } else {
         const row = llmRoleTable(config).roles.classifier;
         const runtime = createTelegramRuntime({

@@ -4,6 +4,7 @@ import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } f
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
+import { createLoopJobs } from "./modules/loops";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
 import {
   checkBackupAge,
@@ -190,6 +191,7 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
+let loopsAnalyzeRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
@@ -216,6 +218,13 @@ if (scope !== null) {
     triageRun = triage.run();
     return triageRun;
   });
+  // The Sent analysis of the open loops uses the same model client and the same scope: with the scope off, no mail goes out.
+  const loopJobs = createLoopJobs({ db, llm, dailyCap: config.LLM_DAILY_CAP, scope, now: () => new Date() });
+  scheduler.add("loops.analyze", "35 * * * * *", () => {
+    loopsAnalyzeRun = loopJobs.analyze.run().then(() => undefined);
+    return loopsAnalyzeRun;
+  });
+  log.info("job_scheduled", { job: "loops.analyze" });
 }
 
 // The runs of the committer, the returned job and the S4 jobs that are going now. Shutdown waits for them.
@@ -350,6 +359,7 @@ async function shutdown(): Promise<void> {
   await Promise.race([
     Promise.allSettled([
       triageRun,
+      loopsAnalyzeRun,
       committerRun,
       returnedRun,
       expiryRun,
