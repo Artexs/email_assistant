@@ -307,3 +307,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a refresh-token rotation cannot be reused per job; a connected mailbox must keep working with a flag off; the panel is tailnet-only by design.
 - Undo: Q1, Q2, Q4, Q6, Q8 of the questions file give the other option and its change.
 - Source: `spec/features/planned/F117-e9a-mailbox-oauth/questions.md` Q1, Q2, Q4, Q6, Q8.
+
+### 2026-11-15 · Review findings are sorted into three groups; workers run a guard-removal check (harness) · money/quota · new
+- Choice: every stage review task ends with the sort line (BLOCKING, TEST GAP, NOTE). A NOTE is filed as `review-<n>.md` and landed with no repair job. A TEST GAP is one `claude-sonnet-5-5 --thinking medium` continue with no re-review. A BLOCKING finding gets a repair as before. Workers of reviewed stages run the guard-removal check.
+- Why: about 80 % of reviewed stages needed a continue; most findings are test gaps or notes.
+- Undo: remove the "Review findings" line from `spec/build.md` TRACK.
+- Source: `notes/2026-11-15-harness-review.md` section 8, commit 4f6d7536.
+
+### 2026-11-15 · Planners start 2–4 Sonnet scouts (harness) · money/quota · new
+- Choice: planner jobs start 2–4 Sonnet scouts (`--role scout`, `--thinking medium`) and file the packets in `scouts.md`. Refresh jobs start none.
+- Why: fewer cache reads per plan job; the measured cost was about $12–25 per plan.
+- Undo: remove the scout rule from `.agents/limen/planner.md`.
+- Source: `notes/2026-11-15-harness-review.md` section 8.
