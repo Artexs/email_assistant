@@ -136,6 +136,19 @@ export const E2E_APPROVALS_COUNT = 6;
 // How many of them wait for an approval (the nav badge): all but the held one.
 export const E2E_APPROVALS_WAITING = 5;
 
+// F102 stage 17: one organization per project for the delegates spec (it adds, edits and turns delegates off, so each project needs its
+// own). The flag `delegation_pages` is on. It holds one delegate and no mailbox; the member is an assistant.
+export const E2E_DELEGATES_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-delegates-owner-mobile@x.test",
+  desktop: "e2e-delegates-owner-desktop@x.test",
+};
+export const E2E_DELEGATES_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-delegates-member-mobile@x.test",
+  desktop: "e2e-delegates-member-desktop@x.test",
+};
+export const e2eDelegatesOrgName = (project: E2eProject): string => `E2E Delegates ${project}`;
+export const E2E_DELEGATES_ANNA = { name: "Anna Nowak", email: "anna@example.com", tags: ["finance"] } as const;
+
 export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-activity-mobile@x.test",
   desktop: "e2e-activity-desktop@x.test",
@@ -173,6 +186,14 @@ export interface SeedFile {
   trialOwner: { userId: string; email: string; password: string; orgId: string; trialEndsAt: string };
   pausedOwner: { userId: string; email: string; password: string; orgId: string; mailboxId: string };
   statsOwner: { userId: string; email: string; password: string; orgId: string };
+  delegatesOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      member: { userId: string; email: string; password: string };
+    }
+  >;
   approvalsOrgs: Record<
     E2eProject,
     {

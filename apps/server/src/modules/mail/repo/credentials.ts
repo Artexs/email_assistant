@@ -48,3 +48,26 @@ export async function getCredentials(
     .where("mailbox_id", "=", mailboxId)
     .executeTakeFirst();
 }
+
+export interface CredentialRow {
+  mailbox_id: string;
+  encrypted_secret: string;
+  secret_kind: string;
+  key_version: number;
+}
+
+// Credentials check entry point (F114): reads the stored secrets of all organizations, so it takes no TenantContext. One page in
+// the order of the mailbox id; `after` is the last id of the page before (null for the first page). The caller decrypts and
+// prints counts only; the rows never leave the process.
+export async function listCredentialsPage(
+  db: DbOrTrx,
+  opts: { after: string | null; limit: number }
+): Promise<CredentialRow[]> {
+  let query = db
+    .selectFrom("mailbox_credentials")
+    .select(["mailbox_id", "encrypted_secret", "secret_kind", "key_version"])
+    .orderBy("mailbox_id")
+    .limit(opts.limit);
+  if (opts.after !== null) query = query.where("mailbox_id", ">", opts.after);
+  return query.execute();
+}

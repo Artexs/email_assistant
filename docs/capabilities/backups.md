@@ -25,16 +25,20 @@ Every night the VPS makes an encrypted copy of the whole Postgres database and s
 5. **After a real restore.** The dump holds live `auth_sessions` tokens, password hashes and reset tokens. After a real restore, run `delete from auth_sessions;` and ask the members to sign in again.
 6. **A backup before each deploy.** `deploy/release.sh` (`deploy/README.md` § Release) runs `deploy/backup.sh` as its first step; the last stdout line must be `backup ok <name> <bytes>`. It comes before the disk check and the update.
 
+7. **The restore path and the drill.** `deploy/restore.sh --target drill|new-host` restores a backup for the twice-a-year drill (on the VPS, in the separate project `ea-drill`) and for a new host after a lost VPS. The decrypt step runs on the owner's machine (`age -d -i <identity> <file> | ssh <host> 'cd <repo> && deploy/restore.sh --target <t> --stdin'`), so the key never goes to the VPS. Both targets refuse a database that already has tables. After the restore and the migrate, `bun run credentials:check` must report `failed=0` before the server starts. The rules, the safety list of the drill and the exit codes are in `docs/capabilities/operations.md` § Restore; the steps are in `deploy/README.md` § VPS lost. Targets: RPO 24 h, RTO 2 h. The drill passes when its row counts of `organizations`, `users`, `mailboxes` and `emails` lie between the live counts right before and right after the drill backup.
+
 ## Entry points
 
-| Kind | Name                                                                                                              | Where                       |
-| ---- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| CLI  | `deploy/backup.sh` (host cron `30 3 * * *`; by hand before a deploy)                                              | `deploy/backup.sh`          |
-| CLI  | `deploy/restore-test.sh <backup> <age identity>` (on the Mac, once a month)                                       | `deploy/restore-test.sh`    |
-| CLI  | settings of the backup: `BACKUP_DIR`, `AGE_RECIPIENT`, `BACKUP_REMOTE`, `KEEP_DAYS`, `COMPOSE`, `BACKUP_PING_URL` | `deploy/backup.env.example` |
-| file | `status.json` in `deploy/backup-status` (the last run; read by the `ops.slo` backup check)                        | `deploy/backup.sh`          |
-| job  | `platform.heartbeat` (`*/5 * * * *`; the dead-man's-switch, not a backup job)                                     | `apps/server/src/main.ts`   |
-| CLI  | runbook sections Backups and Update                                                                               | `deploy/README.md`          |
+| Kind | Name                                                                                                              | Where                                          |
+| ---- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| CLI  | `deploy/backup.sh` (host cron `30 3 * * *`; by hand before a deploy)                                              | `deploy/backup.sh`                             |
+| CLI  | `deploy/restore-test.sh <backup> <age identity>` (on the Mac, once a month)                                       | `deploy/restore-test.sh`                       |
+| CLI  | `deploy/restore.sh --target drill\|new-host` (the drill, and a new host after a lost VPS)                         | `deploy/restore.sh`                            |
+| CLI  | `bun run credentials:check` (run by `restore.sh` before the server starts)                                        | `apps/server/src/scripts/credentials-check.ts` |
+| CLI  | settings of the backup: `BACKUP_DIR`, `AGE_RECIPIENT`, `BACKUP_REMOTE`, `KEEP_DAYS`, `COMPOSE`, `BACKUP_PING_URL` | `deploy/backup.env.example`                    |
+| file | `status.json` in `deploy/backup-status` (the last run; read by the `ops.slo` backup check)                        | `deploy/backup.sh`                             |
+| job  | `platform.heartbeat` (`*/5 * * * *`; the dead-man's-switch, not a backup job)                                     | `apps/server/src/main.ts`                      |
+| CLI  | runbook sections Backups and Update                                                                               | `deploy/README.md`                             |
 
 ## Data
 
@@ -42,7 +46,7 @@ The backup holds the whole database. Files: `BACKUP_DIR/ea-<UTC time>.dump.age` 
 
 ## Limits
 
-- No timed restore drill on a clean VM yet: E8b (F114, PD-054; target RPO 24 h and RTO 2 h).
+- No timed restore drill has run yet: the first one is F114 stage 09 on the VPS (PD-054; target RPO 24 h and RTO 2 h). `restore.sh` is tested with stub commands only, so its real run on Docker is not shown yet.
 - The alert for a late or failed backup (`slo_backup_age`, F114 stage 04) reads the status file, so it cannot see a backup that never started when the host itself is off (then the Healthchecks.io ping check, with a grace of 2 h, is the second sign) or a status file that is stale for another reason: a restore that copies back an old file would hide a failed run until the age passes 26 h.
 - The Healthchecks.io check and the value of `BACKUP_PING_URL` on the VPS are made by the owner (step U2); the repo holds no URL.
 - The backup holds the database only. The file `.env` is not in it, so a restore on a new host also needs `CREDENTIALS_KEY` (it decrypts the stored mailbox passwords) and the other secrets from the owner's own copy.
@@ -57,6 +61,8 @@ The backup holds the whole database. Files: `BACKUP_DIR/ea-<UTC time>.dump.age` 
 
 - `deploy/test/backup.test.ts`: `backup.sh` in a temp copy of the layout with stub `docker`, `age`, `rclone` and `curl` (status file, ping).
 - `deploy/test/compose-backup-status.test.ts`: the mount and the key in the Compose files.
+- `deploy/test/restore.test.ts`, `deploy/test/compose-drill.test.ts`: `restore.sh` with stub commands, and the drill override.
+- `apps/server/test/integration/credentials-check.test.ts`: `credentials:check` and its agreement with `restore.sh`.
 - `apps/server/src/modules/operator/slo-host-checks.test.ts`: the backup-age check.
 
 The restore test is `deploy/restore-test.sh`, run by hand (`deploy/README.md` § Backups).

@@ -53,3 +53,7 @@ Stage 10 opened the committer side for a loop action: the claim and its counts, 
 - The follow-up `ApprovalView.sender` is null (like a reminder); `ApprovalView.recipient` is the first To only and has no Cc field. The card needs To and Cc.
 - `loopHooks()` takes no argument (the stage text says `loopHooks(deps)`): nothing needed a dependency.
 - Not claimed by the committer, by design: a follow-up send is claimed only when `approved` with `approved_at`, its draft `applied`, and every address of To and Cc passes `SEND_SCOPE self`.
+
+## Carry-over from stage 10 review
+
+- N1: `onSentOff` clears the loop To and Cc, so an approved follow-up claimed before the switch-off ends `failed / bad_payload`, and after SMTP + crash + switch-off `failed / outcome_unknown` (`follow_ups_sent` 0, no second mail): the failure notices handle both. N6: `heldReason` of a loop send says scope (`getSend` is mail-only). N7: `detectForOrg` has no catch per detector: add one with the follow-up cards, so a `NoticeViewError` cannot stop the later detectors of the org (review-10.md).

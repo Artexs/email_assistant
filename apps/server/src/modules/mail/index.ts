@@ -24,6 +24,7 @@ export { switchMailboxStatus, type SwitchResult } from "./status";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { openMailboxProvider, type GraphSenderOptions, type OpenDeps } from "./open";
+export { countDecryptableCredentials, type CredentialCounts } from "./credentials-check";
 export { checkMailboxHosts, markHostBlocked, type HostCheck } from "./host-status";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { FLAGS_CHUNK, FLAGS_REFRESH_EVERY_MS, FLAGS_RUN_LIMIT, FLAGS_WINDOW_MS, refreshFlags } from "./flags";

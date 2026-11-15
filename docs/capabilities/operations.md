@@ -41,21 +41,40 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 7. **A failed release** leaves `pending` set. `release.sh` refuses to run again until `deploy/rollback.sh` ran. After a release or a rollback the VPS checkout is detached; run `git checkout master` before a `git merge --ff-only`.
 8. **Migration rule.** Migrations are forward only and follow expand and contract (`docs/code-patterns.md` § Migrations). CI runs `bun run db:check-migrations`: a migration newer than the cutoff `CONTRACT_CHECK_AFTER` (`apps/server/src/scripts/check-migrations-rules.ts`) that holds a contract statement (drop, rename, type change, `SET NOT NULL`, `TRUNCATE`, `REVOKE`, a new constraint on an old table) fails unless the file has a line `-- contract: v<x.y.z>`. The check does not see a replace that narrows a CHECK list; a reviewer must.
 
+### Restore
+
+1. **One restore path.** `deploy/restore.sh --target drill|new-host (--stdin | <file.dump.age> <identity file>)` restores a backup for the twice-a-year drill and for a new host. The plain dump travels in a pipe and never touches a disk. Only the `pg_restore` call reads stdin; every other `docker` call gets `</dev/null`. The age identity stays on the machine that runs `age`.
+2. **The empty-target guard.** After `up -d --wait db` and before the image build, both targets read the table count of the `public` schema. More than 0 tables, or a count that is not a number, stops the script: exit 2 for tables (a `new-host` restore never goes over data; a drill needs `--down` first), exit 1 for an unreadable count. A refused run changes nothing.
+3. **The steps** (after the guard): build the server image once, `pg_restore --no-owner --role=migrator --exit-on-error`, print `count organizations=N users=N mailboxes=N emails=N`, clear `auth_sessions` (drill: also pause every mailbox and clear `ops_alerts`), `db:migrate`, `credentials:check`, then `up -d --no-build --wait`. The last line is `restore ok target=<t> seconds=<n>`. Exit 2: refused, nothing changed. Exit 1: a step failed; a drill stack stays up for a look.
+4. **`bun run credentials:check`** proves that the `CREDENTIALS_KEY` of the environment opens every stored mailbox secret before the server starts. `countDecryptableCredentials` (`apps/server/src/modules/mail/credentials-check.ts`) reads `mailbox_credentials` of all organizations (no `TenantContext`; `docs/code-patterns.md` § Data access) in pages of 200 and decrypts each row with the AAD `mailbox:<id>`. A password, an app password or an OAuth secret counts in `ok` when it opens (an OAuth secret must also have the stored shape). A wrong key, a wrong key version, changed data or a secret sealed for another mailbox counts in `failed`; no error leaves for a bad row. A database error exits 1; it is never `ok=0 failed=0`.
+5. **The output holds counts only.** The one result line is `[credentials-check] credentials ok=<n> failed=<m>` (`createCliOutput` writes the prefix; the text is `credentialsLine` in `apps/server/src/scripts/credentials-check-lines.ts`). No secret, key, password, address, id or error text is printed. A failed run prints `[credentials-check] failed: <error name> [code]`, never the message. Exit 0 when the rows were read, also with `failed` above 0; exit 1 on a config or database error.
+6. **`restore.sh` reads that line.** It takes the number after `failed=` from the last line that is the exact result line (with the prefix, or bare). `failed` above 0, or no result line, exits 1 before the server starts. A test runs the real script under `restore.sh` and checks that both agree.
+7. **Drill safety** (`deploy/compose.drill.yaml`, `restore.sh --target drill`). The drill shares nothing with the live stack:
+   - Own project `ea-drill` (own volume and network, subnet `172.29.0.0/24`), image `ea-drill-server`, no published port, `restart: "no"`, `local` log driver (the log store never sees a drill line).
+   - Env file `drill.env` in `deploy/` (made by `--init-env`, mode 600: new database passwords and only the two credentials keys of the live `.env`); the live `.env` is not read.
+   - No Telegram token, heartbeat URL, operator chat, web base URL or LLM key; `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE` and `SEND_SCOPE` are `off`; every restored mailbox is `paused` before the server starts, so nothing syncs a real mailbox.
+   - The script refuses a resolved project named `email-assistant` and a drill service with a published port. It never passes a Compose profile and unsets `COMPOSE_*` variables of the caller.
+   - `--down` removes the project, its volume and the image `ea-drill-server` (never `--rmi all`: `postgres:17` is shared with the live stack).
+
 ## Entry points
 
-| Kind     | Name                                                                                                                       | Where                                            |
-| -------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| job      | `ops.slo` (`30 */5 * * * *`)                                                                                               | `apps/server/src/main.ts`                        |
-| function | `runSloTick`                                                                                                               | `apps/server/src/modules/operator/slo-job.ts`    |
-| function | `checkSyncLag`, `checkUrgentLatency`, `checkLlmErrors`, `checkDisk`, `checkBackupAge`                                      | `apps/server/src/modules/operator/slo-checks.ts` |
-| function | `sloAlertText`                                                                                                             | `apps/server/src/modules/operator/slo-texts.ts`  |
-| function | `nextAlertStep`                                                                                                            | `packages/core/src/ops/alert-step.ts`            |
-| CLI      | `bun run ops:alerts [--days 7]`: one line per incident of the last days (kind, opened, notices, resolved or `open`, facts) | `apps/server/src/scripts/ops-alerts.ts`          |
-| CLI      | `bun run ops:alert-test (--kind <kind> \| --all)`: sends the `TEST` text through the real path, writes no row              | `apps/server/src/scripts/ops-alert-test.ts`      |
-| CLI      | `bun run release:prepare <x.y.z>`: version and changelog for a release                                                     | `apps/server/src/scripts/release-prepare.ts`     |
-| CLI      | `bun run db:check-migrations`: contract statements in new migrations (CI)                                                  | `apps/server/src/scripts/check-migrations.ts`    |
-| script   | `deploy/release.sh <tag>`, `deploy/rollback.sh`                                                                            | `deploy/release.sh`, `deploy/rollback.sh`        |
-| config   | `SLO_*`, `BACKUP_STATUS_FILE`, `OPERATOR_TELEGRAM_CHAT_ID`, `OPERATOR_LOCALE`                                              | `apps/server/src/platform/config.ts`             |
+| Kind     | Name                                                                                                                       | Where                                               |
+| -------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| job      | `ops.slo` (`30 */5 * * * *`)                                                                                               | `apps/server/src/main.ts`                           |
+| function | `runSloTick`                                                                                                               | `apps/server/src/modules/operator/slo-job.ts`       |
+| function | `checkSyncLag`, `checkUrgentLatency`, `checkLlmErrors`, `checkDisk`, `checkBackupAge`                                      | `apps/server/src/modules/operator/slo-checks.ts`    |
+| function | `sloAlertText`                                                                                                             | `apps/server/src/modules/operator/slo-texts.ts`     |
+| function | `nextAlertStep`                                                                                                            | `packages/core/src/ops/alert-step.ts`               |
+| CLI      | `bun run ops:alerts [--days 7]`: one line per incident of the last days (kind, opened, notices, resolved or `open`, facts) | `apps/server/src/scripts/ops-alerts.ts`             |
+| CLI      | `bun run ops:alert-test (--kind <kind> \| --all)`: sends the `TEST` text through the real path, writes no row              | `apps/server/src/scripts/ops-alert-test.ts`         |
+| CLI      | `bun run release:prepare <x.y.z>`: version and changelog for a release                                                     | `apps/server/src/scripts/release-prepare.ts`        |
+| CLI      | `bun run db:check-migrations`: contract statements in new migrations (CI)                                                  | `apps/server/src/scripts/check-migrations.ts`       |
+| script   | `deploy/release.sh <tag>`, `deploy/rollback.sh`                                                                            | `deploy/release.sh`, `deploy/rollback.sh`           |
+| script   | `deploy/restore.sh --target drill\|new-host`: the restore for a drill and for a new host                                   | `deploy/restore.sh`                                 |
+| compose  | `deploy/compose.drill.yaml`: the override of the drill stack (project `ea-drill`)                                          | `deploy/compose.drill.yaml`                         |
+| CLI      | `bun run credentials:check`: does `CREDENTIALS_KEY` open every stored mailbox secret? Prints counts only                   | `apps/server/src/scripts/credentials-check.ts`      |
+| function | `countDecryptableCredentials`                                                                                              | `apps/server/src/modules/mail/credentials-check.ts` |
+| config   | `SLO_*`, `BACKUP_STATUS_FILE`, `OPERATOR_TELEGRAM_CHAT_ID`, `OPERATOR_LOCALE`                                              | `apps/server/src/platform/config.ts`                |
 
 ## Data
 
@@ -69,7 +88,8 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 - The alert text is one language per server (`OPERATOR_LOCALE`), not one per reader.
 - The operator console list of alerts is F081.
 - The release and rollback scripts are not run on the VPS yet (F114 stage 09), and there is no `v0.1.0` tag yet. `deploy/test/` runs them with stub commands only.
-- The restore drill: F114 stages 07 to 09.
+- The restore path and the drill file are tested with stub commands only. The real drill, with the measured time, is F114 stage 09. The runbook for a lost host is `deploy/README.md` § VPS lost.
+- `credentials:check` reads every credentials row in one process and needs the database role `app` and the config of the server (`loadConfig`). It does not check that a mailbox login works, only that the stored secret opens.
 
 ## Decisions
 
@@ -87,6 +107,8 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 - `deploy/test/release.test.ts`
 - `deploy/test/rollback.test.ts`
 - `deploy/test/release-identity.test.ts`
+- `deploy/test/restore.test.ts`, `deploy/test/compose-drill.test.ts`
+- `apps/server/test/integration/credentials-check.test.ts`
 - `apps/server/src/scripts/check-migrations.test.ts`
 - `apps/server/src/scripts/release-prepare.test.ts`
 - `packages/core/src/ops/alert-step.test.ts`

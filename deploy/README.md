@@ -97,7 +97,7 @@ The script runs the line below and keeps the lines that match your filters. The 
 $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", .event, (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
 ```
 
-Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. Only `server` writes `json-file`, the files that the log store reads. Every other service (Postgres, `cli`, the store itself) writes `local`, so its lines never reach the store. A new service in any Compose file needs the `local` block. `bash deploy/check-logging.sh` checks the drivers and fails on a one-off command that runs in `server`, and CI runs it.
+Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. Only `server` writes `json-file`, the files that the log store reads. Every other service (Postgres, `cli`, the store itself) writes `local`, so its lines never reach the store. A new service in any Compose file needs the `local` block. `bash deploy/check-logging.sh` checks the drivers and fails on a one-off command that runs in `server`, and CI runs it. It also checks the restore drill file set (`compose.yaml` with `compose.drill.yaml`): there every service writes `local` (a drill line never reaches the store), and no service except `db`, `server` and `cli` runs without a profile.
 
 Follow one job run or one request: use `--run` or `--request` of `deploy/logs.sh`; the browser shows the request id in the `x-request-id` response header. One-off commands run in the `cli` service (`$C run --rm cli bun run <script> …`): readable text, never in the log store. `$C exec server …` prints to your terminal only.
 
@@ -840,3 +840,38 @@ Check `~/ea-logs/backup.log` for one `backup ok` line each night.
 3. Compare the counts with the VPS at backup time:
    `$C exec db psql -U postgres -d email_assistant -c "select count(*) from emails"`
 4. Write the date and the counts in the task log.
+
+## VPS lost
+
+Use this section when the host is gone and you need a new one. The same restore path runs the twice-a-year drill (§ Drill). Targets: RPO 24 h (the nightly backup), RTO 2 h. Measured drill time: not measured yet (the first drill is F114 stage 09; the result goes here).
+
+What you need before you start: the age identity (`~/ea-backup-key.txt`) on your own machine, a password manager that holds the `.env` keys, and a read key for the B2 bucket on your own machine.
+
+### New host
+
+1. Install on the new Ubuntu host: Docker with the Compose plugin, git and Tailscale. Join the tailnet as in § Web panel, Tailscale (once).
+2. Clone the repo and go into it. Check out the tag that ran last (`git tag --sort=-v:refname | head -n 1`).
+3. Make `.env` as in § First install (`cp .env.example .env && chmod 600 .env`). Take these keys from the password manager. Never type a value into a chat or a ticket:
+   - `CREDENTIALS_KEY` and `CREDENTIALS_KEY_VERSION`: the old values. A new key cannot open the stored mailbox passwords.
+   - `TELEGRAM_BOT_TOKEN`, `OPERATOR_TELEGRAM_CHAT_ID`, `HEARTBEAT_URL`.
+   - The LLM keys and the web keys (`WEB_BASE_URL`, `WEB_AUTH_SECRET` and the others of § Turn it on).
+   - `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`: new values. Make each with `openssl rand -hex 24`. The restore makes the roles with them.
+4. Get the latest backup file from B2 on your own machine, with the read key (the VPS key cannot read).
+5. Restore. The plain dump goes through the pipe and never touches a disk. On your own machine:
+   `age -d -i ~/ea-backup-key.txt <file>.dump.age | ssh <host> 'cd <repo> && deploy/restore.sh --target new-host --stdin'`
+6. The script starts the database, refuses a database that has tables (exit 2), builds the image once, restores the dump, clears `auth_sessions`, migrates and then runs `bun run credentials:check`.
+   - The check prints one line, `credentials ok=<n> failed=<m>`, with counts only. With `failed` above 0, the script stops with exit 1 and the server stays down: `CREDENTIALS_KEY` or `CREDENTIALS_KEY_VERSION` in `.env` is not the one that sealed the stored secrets. Fix the key, empty the database (`$C down -v`; this is for the new host only, never for the live host), and run step 5 again.
+   - The last line is `restore ok target=new-host seconds=<n>`. Write down the seconds.
+7. Replay the deletes. A restore brings back deleted organizations and erased data. Run again each `deleted <org id>` line of `org:delete` and each `record: dsr erase` line of `org:dsr` from your own notes (§ Restore (D20) of Account data).
+8. Set up the rest, each in its own section: `deploy/backup.env` and the cron line (§ Backups, VPS setup); Tailscale Serve (§ Web panel, Turn it on, steps 5 and 6); the two Healthchecks.io checks, the heartbeat (§ Heartbeat) and the backup ping (§ Backups, Status file and ping).
+9. Run the first release so the release state exists: `deploy/release.sh <tag>` (§ Release). Ask the members to sign in again.
+
+### Drill
+
+Run it twice a year, on the VPS, in the separate project `ea-drill` (own volume, own network `172.29.0.0/24`, no host port, image `ea-drill-server`). The drill never touches the live database, the live volumes or a real mailbox. It sends nothing: no Telegram, no heartbeat, no web, no LLM call, no mail. Never use a Compose profile with the drill files. The steps are Part C of `spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/stages/stage-09-vps-release-and-drill.md` until the drill result is written below. In short:
+
+1. Write down the ids and start times of the live `db` and `server` containers, and the live row counts before and after a fresh `deploy/backup.sh`.
+2. In a fresh clone at the tag: `deploy/restore.sh --target drill --init-env <live repo>/.env`. It copies only the credentials keys from the live file and makes new database passwords.
+3. On your own machine: `age -d -i ~/ea-backup-key.txt <file>.dump.age | ssh <host> 'cd <clone> && deploy/restore.sh --target drill --stdin'`. The last line is `restore ok target=drill seconds=<n>`. The `credentials ok=<n> failed=0` line comes before it.
+4. Each drill count lies between the live count before and after the backup. The live container ids and start times did not change.
+5. Remove it: `deploy/restore.sh --target drill --down` (removes the project, its volume and its image `ea-drill-server`, never `postgres:17`), then delete the clone.

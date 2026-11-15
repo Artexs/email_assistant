@@ -103,6 +103,65 @@ describe("deploy/check-logging.sh", () => {
   });
 });
 
+describe("deploy/check-logging.sh --drill (restore drill file set, F114 stage 07)", () => {
+  const drillCompose = (services: Record<string, { logging: string; extra?: string }>): string =>
+    `services:\n${Object.entries(services)
+      .map(([name, s]) => `  ${name}:\n    image: x\n${s.logging}\n${s.extra ?? ""}`)
+      .join("")}`;
+
+  test("passes on the real drill file set: every service local, no log store service outside a profile", () => {
+    const result = check([]);
+    expect(result.err).toBe("");
+    expect(result.out).toContain("logging ok (drill): every service local; services: ");
+  });
+
+  test("a drill set with server on json-file fails (the drill must stay out of the log store)", () => {
+    const path = write(
+      "drill-json.yaml",
+      drillCompose({ server: { logging: block("json-file") }, db: { logging: block("local") } })
+    );
+    const result = check(["--drill", path]);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("server must be local");
+  });
+
+  test("a drill set passes with server on local and the store service behind a profile", () => {
+    const path = write(
+      "drill-ok.yaml",
+      drillCompose({
+        server: { logging: block("local") },
+        db: { logging: block("local") },
+        "store-tool": { logging: block("local"), extra: "    profiles: [ops]\n" },
+      })
+    );
+    const result = check(["--drill", path]);
+    expect(result.err).toBe("");
+    expect(result.code).toBe(0);
+  });
+
+  test("a drill set fails when a service outside db, server and cli has no profile, or has the profile cli", () => {
+    for (const [name, extra] of [
+      ["drill-noprofile.yaml", ""],
+      ["drill-cliprofile.yaml", "    profiles: [cli, ops]\n"],
+    ] as const) {
+      const path = write(
+        name,
+        drillCompose({
+          server: { logging: block("local") },
+          "store-tool": { logging: block("local"), extra },
+        })
+      );
+      const result = check(["--drill", path]);
+      expect(result.code, name).toBe(1);
+      expect(result.err, name).toContain("the drill must not run store-tool");
+    }
+  });
+
+  test("--drill without a file fails", () => {
+    expect(check(["--drill"]).code).toBe(1);
+  });
+});
+
 // Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
 // The `server` service has `env_file: ../.env`. The CI checkout has no .env, and the Compose of the runner checks that this file
 // exists even with --no-env-resolution. So the file goes to a throwaway project folder with an empty .env, and the repo stays clean.
@@ -171,15 +230,21 @@ describe("deploy/compose.yaml profile ops (the log store)", () => {
     expect(agent?.mem_limit).toBe("67108864");
     expect(agent?.ports).toBeUndefined();
     // Only the container logs (read-only) and its own volume: no Docker socket, no other host path.
-    expect(agent?.volumes).toEqual([
+    // Compare only these fields: Compose versions differ in default bind/volume options.
+    const volumes = (agent?.volumes ?? []).map(({ type, source, target, read_only }) => ({
+      type,
+      source,
+      target,
+      read_only: read_only ?? false,
+    }));
+    expect(volumes).toEqual([
       {
         type: "bind",
         source: "/var/lib/docker/containers",
         target: "/var/lib/docker/containers",
         read_only: true,
-        bind: {},
       },
-      { type: "volume", source: "vlagent-data", target: "/vlagent", volume: {} },
+      { type: "volume", source: "vlagent-data", target: "/vlagent", read_only: false },
     ]);
     expect(agent?.command).toContain("-fileCollector.glob=/var/lib/docker/containers/*/*-json.log");
     expect(agent?.logging?.driver).toBe("local");
