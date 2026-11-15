@@ -17,6 +17,8 @@ export interface FakeMailOAuthCall {
   /** The `scope` form field; null when the client sent none. */
   scope: string | null;
   codeVerifierOk: boolean;
+  /** The refresh token a refresh request presented; null for a code redeem. Test canaries only: never print it. */
+  refreshToken: string | null;
 }
 
 export type FakeFailure = { status: number; error: string; aadsts?: number; description?: string } | "timeout";
@@ -50,6 +52,8 @@ export interface FakeMailOAuth {
   failNextRefresh(answer: FakeFailure): void;
   /** Per provider: does a refresh give a new refresh token? Microsoft true, Google false. */
   rotate: Record<MailOAuthProvider, boolean>;
+  /** The `expires_in` of the access tokens the server issues from now on (default 3599). */
+  expiresIn: number;
   calls: FakeMailOAuthCall[];
   /** The refresh tokens that a revoke call got and accepted. */
   revoked: string[];
@@ -95,6 +99,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
   const revoked: string[] = [];
   const issuedRefreshTokens: string[] = [];
   const rotate: Record<MailOAuthProvider, boolean> = { microsoft: true, google: false };
+  const state = { expiresIn: 3599 };
   const failures: FakeFailure[] = [];
   const refreshFailures: FakeFailure[] = [];
   let origin = "";
@@ -167,7 +172,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
         (entry.challenge === null
           ? /^[A-Za-z0-9_.~-]{43,128}$/.test(verifier)
           : createHash("sha256").update(verifier).digest("base64url") === entry.challenge);
-      calls.push({ provider, grant, scope, codeVerifierOk: verifierOk });
+      calls.push({ provider, grant, scope, codeVerifierOk: verifierOk, refreshToken: null });
       if (entry === undefined || entry.provider !== provider || form.get("redirect_uri") === null || !verifierOk) {
         return invalidGrant(provider);
       }
@@ -183,14 +188,14 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
       return Response.json({
         token_type: "Bearer",
         access_token: next("at"),
-        expires_in: 3599,
+        expires_in: state.expiresIn,
         refresh_token: refresh,
         scope: entry.scopes.join(" "),
         id_token: idToken(provider, entry),
       });
     }
     if (grant === "refresh_token") {
-      calls.push({ provider, grant, scope, codeVerifierOk: false });
+      calls.push({ provider, grant, scope, codeVerifierOk: false, refreshToken: form.get("refresh_token") });
       const refreshFailure = refreshFailures.shift();
       if (refreshFailure === "timeout") {
         await stopped;
@@ -211,7 +216,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
       return Response.json({
         token_type: "Bearer",
         access_token: next("at"),
-        expires_in: 3599,
+        expires_in: state.expiresIn,
         ...(fresh === null ? {} : { refresh_token: fresh }),
         scope: granted.join(" "),
       });
@@ -288,6 +293,12 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
       refreshFailures.push(answer);
     },
     rotate,
+    get expiresIn() {
+      return state.expiresIn;
+    },
+    set expiresIn(value: number) {
+      state.expiresIn = value;
+    },
     calls,
     revoked,
     issuedRefreshTokens,

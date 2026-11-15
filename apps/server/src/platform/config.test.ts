@@ -17,6 +17,7 @@ import {
   operatorUserIds,
   sendLimits,
   sendTestAddresses,
+  sloThresholds,
   testMailRule,
   mailAllowLocal,
   mailAllowLocalFromEnv,
@@ -736,5 +737,64 @@ describe("mailbox OAuth keys (F117 D7)", () => {
     });
     expect(config.MAIL_OAUTH_GOOGLE_CLIENT_ID).toBe("id");
     expect(config.MAIL_OAUTH_MICROSOFT_CLIENT_ID).toBeUndefined();
+  });
+});
+
+describe("OPERATOR_LOCALE (F114)", () => {
+  test("empty gives en; pl is allowed; another value is refused", () => {
+    expect(loadConfig(fullEnv).OPERATOR_LOCALE).toBe("en");
+    expect(loadConfig({ ...fullEnv, OPERATOR_LOCALE: "" }).OPERATOR_LOCALE).toBe("en");
+    expect(loadConfig({ ...fullEnv, OPERATOR_LOCALE: "pl" }).OPERATOR_LOCALE).toBe("pl");
+    expect(configError({ ...fullEnv, OPERATOR_LOCALE: "de" }).keys).toEqual(["OPERATOR_LOCALE"]);
+  });
+});
+
+describe("SLO thresholds (F114)", () => {
+  test("1. no key set gives the defaults", () => {
+    expect(sloThresholds(loadConfig(fullEnv))).toEqual({
+      syncLagMin: 15,
+      urgentLatencyMin: 10,
+      llmWindowMin: 30,
+      llmMinCalls: 5,
+      llmFailPct: 20,
+      llmClearPct: 10,
+      repeatH: 6,
+    });
+    const empty = { ...fullEnv, SLO_SYNC_LAG_MIN: "", SLO_REPEAT_H: "" };
+    expect(sloThresholds(loadConfig(empty)).syncLagMin).toBe(15);
+    expect(sloThresholds(loadConfig({ ...fullEnv, SLO_SYNC_LAG_MIN: "30", SLO_REPEAT_H: "2" }))).toMatchObject({
+      syncLagMin: 30,
+      repeatH: 2,
+    });
+  });
+
+  test("2. a clear percent that is not below the fail percent names both keys", () => {
+    const keys = configError({ ...fullEnv, SLO_LLM_FAIL_PCT: "10", SLO_LLM_CLEAR_PCT: "10" }).keys;
+    expect(keys).toContain("SLO_LLM_FAIL_PCT");
+    expect(keys).toContain("SLO_LLM_CLEAR_PCT");
+    expect(configError({ ...fullEnv, SLO_LLM_FAIL_PCT: "5", SLO_LLM_CLEAR_PCT: "30" }).keys).toContain(
+      "SLO_LLM_CLEAR_PCT"
+    );
+    expect(() => loadConfig({ ...fullEnv, SLO_LLM_FAIL_PCT: "11", SLO_LLM_CLEAR_PCT: "10" })).not.toThrow();
+  });
+
+  test("3. a value out of range stops the start and names the key", () => {
+    const bad: [string, string][] = [
+      ["SLO_REPEAT_H", "0"],
+      ["SLO_REPEAT_H", "169"],
+      ["SLO_SYNC_LAG_MIN", "4"],
+      ["SLO_SYNC_LAG_MIN", "1441"],
+      ["SLO_URGENT_LATENCY_MIN", "0"],
+      ["SLO_URGENT_LATENCY_MIN", "241"],
+      ["SLO_LLM_WINDOW_MIN", "4"],
+      ["SLO_LLM_MIN_CALLS", "0"],
+      ["SLO_LLM_FAIL_PCT", "0"],
+      ["SLO_LLM_FAIL_PCT", "101"],
+      ["SLO_LLM_CLEAR_PCT", "-1"],
+      ["SLO_LLM_CLEAR_PCT", "1.5"],
+    ];
+    for (const [key, value] of bad) {
+      expect(configError({ ...fullEnv, [key]: value }).keys).toContain(key);
+    }
   });
 });

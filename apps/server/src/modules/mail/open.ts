@@ -7,6 +7,7 @@ import { createLog } from "../../platform/log";
 
 import type { ImapConnectOptions } from "./imap/client";
 import type { SmtpConnectOptions } from "./imap/smtp";
+import { guardOAuthSender, isLoginRefused, protocolDisabled } from "./oauth/login";
 import type { AuthMaterial, MailProvider, MailSender, OAuthTokens } from "./port";
 import { getCredentials, getMailbox, type MailboxRow } from "./repo";
 
@@ -60,12 +61,27 @@ export async function openMailboxProvider(
       ),
     };
   }
-  const provider = await deps.openProvider({
+  const imapOptions = (material: AuthMaterial): ImapConnectOptions => ({
     host: mailbox.imap_host,
     port: mailbox.imap_port,
     user: mailbox.address,
-    auth,
+    auth: material,
   });
+  let provider: MailProvider;
+  try {
+    provider = await deps.openProvider(imapOptions(auth));
+  } catch (error) {
+    const tokens = deps.oauthTokens;
+    if (!oauth || tokens === undefined || !isLoginRefused(error)) throw error;
+    // `accessToken` does not say where a token came from, so a refused login always costs one refresh: the cached token may be stale.
+    tokens.drop(mailboxId);
+    auth = { kind: "oauth", accessToken: await tokens.accessToken(ctx, mailboxId, "mail", { fresh: true }) };
+    try {
+      provider = await deps.openProvider(imapOptions(auth));
+    } catch (retryError) {
+      throw isLoginRefused(retryError) ? protocolDisabled() : retryError;
+    }
+  }
   if (opts.withSender !== true) return { provider, sender: null, mailbox };
   try {
     const sender = await openSenderFor(deps, ctx, mailbox, auth);
@@ -95,11 +111,12 @@ async function openSenderFor(
     });
   }
   if (deps.openSender === undefined) return null;
-  return deps.openSender({
+  const sender = await deps.openSender({
     host: mailbox.smtp_host,
     port: mailbox.smtp_port,
     security: mailbox.smtp_security,
     user: mailbox.address,
     auth,
   });
+  return auth.kind === "oauth" ? guardOAuthSender(sender) : sender;
 }

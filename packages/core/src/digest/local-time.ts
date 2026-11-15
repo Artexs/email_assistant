@@ -138,3 +138,27 @@ export function quietEnd(at: Date, timeZone: string, quiet: QuietHours = QUIET_H
   }
   return localToInstant(date, quiet.end, timeZone);
 }
+
+// Minutes from `from` to `to` that lie outside the quiet hours of the time zone (F114 urgent check). The sender holds
+// a notice in quiet hours by the time of the send, so the minutes in quiet hours are not late. Zero when `to <= from`.
+export function lateMin(from: Date, to: Date, timeZone: string, quiet: QuietHours = QUIET_HOURS): number {
+  const fromMs = from.getTime();
+  const toMs = to.getTime();
+  if (toMs <= fromMs) return 0;
+  let quietMs = 0;
+  if (quiet.start !== quiet.end) {
+    const wraps = quiet.start > quiet.end;
+    // One quiet window starts on each local date; the window of the day before `from` can still cover it.
+    let date = localDateTime(new Date(fromMs - 36 * 3_600_000), timeZone).date;
+    const lastDate = localDateTime(to, timeZone).date;
+    let more = true;
+    while (more) {
+      const windowStart = localToInstant(date, quiet.start, timeZone).getTime();
+      const windowEnd = localToInstant(wraps ? nextLocalDate(date) : date, quiet.end, timeZone).getTime();
+      quietMs += Math.max(0, Math.min(toMs, windowEnd) - Math.max(fromMs, windowStart));
+      more = date < lastDate;
+      if (more) date = nextLocalDate(date);
+    }
+  }
+  return (toMs - fromMs - quietMs) / 60_000;
+}

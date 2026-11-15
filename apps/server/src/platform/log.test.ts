@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import {
   createLog,
   droppedLogFields,
+  installConsoleGuard,
   logFormatFromEnv,
   setLogFormat,
   setLogLevel,
@@ -235,33 +236,49 @@ test("the text event form prints the prefix and key=value pairs", () => {
   expect(out.mock.calls[2]).toEqual(["[mail]", "sync_done status=null"]);
 });
 
-test("the old form in text prints as before", () => {
-  createLog("mail").info("sync 12 done:", 5);
-  expect(out.mock.calls[0]).toEqual(["[mail]", "sync 12 done:", 5]);
+// Another call shape writes no argument (D9): the line says that the call was invalid and counts one drop.
+const raw = createLog("mail") as unknown as { info: (...args: unknown[]) => void; warn: (...args: unknown[]) => void };
+
+test("another call shape writes one log_call_invalid line in JSON and text, and no argument", () => {
+  setLogFormat("json");
+  const before = droppedLogFields();
+  raw.info("free text MARKER", { org_id: O });
+  expect(out).toHaveBeenCalledTimes(1);
+  const line = jsonLine(out);
+  expect(line).toMatchObject({ event: "log_call_invalid", msg: "log_call_invalid", level: "info", dropped_fields: 1 });
+  expect(Object.keys(line)).toEqual(["time", "level", "module", "event", "msg", "dropped_fields"]);
+  setLogFormat("text");
+  raw.info("free text MARKER", { org_id: O });
+  expect(out.mock.calls[1]).toEqual(["[mail]", "log_call_invalid dropped_fields=1"]);
+  expect(droppedLogFields() - before).toBe(2);
+  const written = JSON.stringify(out.mock.calls);
+  expect(written.includes("MARKER")).toBe(false);
+  expect(written.includes("free text")).toBe(false);
+  expect(written.includes(O)).toBe(false);
 });
 
-test("the old form in JSON is one legacy_text line", () => {
+test("a log_call_invalid line goes to stderr at warn", () => {
   setLogFormat("json");
-  createLog("mail").warn("sync %s failed", "box-1", 3);
+  raw.warn("sync 12 failed", new Error("SECRET"));
   expect(err).toHaveBeenCalledTimes(1);
-  const line = jsonLine(err);
-  expect(line).toMatchObject({ event: "legacy_text", msg: "sync box-1 failed 3", level: "warn" });
-  expect(Object.keys(line)).toEqual(["time", "level", "module", "event", "msg"]);
+  expect(jsonLine(err)).toMatchObject({ event: "log_call_invalid", level: "warn", dropped_fields: 1 });
+  expect(JSON.stringify(err.mock.calls).includes("SECRET")).toBe(false);
 });
 
 test.each<[unknown[], string]>([
   [["sync_done"], "sync_done"],
   [["sync_done", { count: 1 }], "sync_done"],
-  [["Sync_done"], "legacy_text"],
-  [["sync done"], "legacy_text"],
-  [["sync_done", "x"], "legacy_text"],
-  [["sync_done", { count: 1 }, 2], "legacy_text"],
-  [["sync_done", new Error("e")], "legacy_text"],
+  [["Sync_done"], "log_call_invalid"],
+  [["sync done"], "log_call_invalid"],
+  [["sync_done", "x"], "log_call_invalid"],
+  [["sync_done", { count: 1 }, 2], "log_call_invalid"],
+  [["sync_done", new Error("e")], "log_call_invalid"],
   [["sync_done", Object.create(null)], "sync_done"],
-  [["a".repeat(65)], "legacy_text"],
-])("event or old form: %j", (args, event) => {
+  [["a".repeat(65)], "log_call_invalid"],
+  [[], "log_call_invalid"],
+])("event or invalid call: %j", (args, event) => {
   setLogFormat("json");
-  (createLog("mail").info as (...a: unknown[]) => void)(...args);
+  raw.info(...args);
   expect(jsonLine(out).event).toBe(event);
 });
 
@@ -290,9 +307,9 @@ test("logFormatFromEnv gives json only for the exact value json", () => {
   expect(logFormatFromEnv({ LOG_FORMAT: "" })).toBe("text");
 });
 
-test("a call writes one line, also with a newline in an old-form argument", () => {
+test("a call writes one line, also with a newline in an invalid argument", () => {
   setLogFormat("json");
-  createLog("mail").info("sync %s", "a\nb");
+  raw.info("sync %s", "a\nb");
   expect(out).toHaveBeenCalledTimes(1);
   expect(String(out.mock.calls[0]?.[0]).includes("\n")).toBe(false);
 });
@@ -400,18 +417,14 @@ describe("context", () => {
     expect(keysAfterMsg(out)).toEqual(["job", "run_id", "org_id"]);
   });
 
-  test("the old form in JSON carries the context", () => {
-    withLogContext({ run_id: R }, () => log.info("free text 1"));
+  test("an invalid call carries the context, in JSON and in text", () => {
+    withLogContext({ run_id: R }, () => raw.info("free text MARKER", { org_id: O }));
     const line = jsonLine(out);
-    expect(line.event).toBe("legacy_text");
-    expect(line.msg).toBe("free text 1");
-    expect(line.run_id).toBe(R);
-  });
-
-  test("the old form in text stays unchanged, with no context", () => {
+    expect(line).toMatchObject({ event: "log_call_invalid", run_id: R, dropped_fields: 1 });
+    expect(line.org_id).toBeUndefined();
     setLogFormat("text");
-    withLogContext({ run_id: R }, () => log.info("free text 1"));
-    expect(out.mock.calls[0]).toEqual(["[mail]", "free text 1"]);
+    withLogContext({ run_id: R }, () => raw.info("free text MARKER"));
+    expect(out.mock.calls.at(-1)).toEqual(["[mail]", `log_call_invalid run_id=${R} dropped_fields=1`]);
   });
 
   test("the text event form shows the context keys", () => {
@@ -432,3 +445,86 @@ describe("context", () => {
     expect(await withLogContext({ run_id: R }, async () => 8)).toBe(8);
   });
 });
+
+/* eslint-disable no-console -- the guard test calls console on purpose. */
+describe("console guard", () => {
+  let restore: (() => void) | undefined;
+  const lines = (spy: ReturnType<typeof spyOn>): Record<string, unknown>[] =>
+    spy.mock.calls.map((call: unknown[]) => JSON.parse(String(call[0])) as Record<string, unknown>);
+
+  beforeEach(() => {
+    setLogFormat("json");
+    restore = installConsoleGuard();
+  });
+
+  afterEach(() => {
+    restore?.();
+    restore = undefined;
+  });
+
+  test("console.error from outside the logger writes one text-free event", () => {
+    console.error("# SERVER_ERROR: MARKER-1 at x.test");
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err.mock.calls[0]).toHaveLength(1);
+    const [line] = lines(err);
+    expect(line).toMatchObject({ event: "console_output", level: "warn", dropped_fields: 1 });
+    expect(JSON.stringify(err.mock.calls)).not.toContain("MARKER");
+  });
+
+  test("the logger still writes its own lines through the saved console", () => {
+    createLog("m").info("a", { count: 1 });
+    expect(out).toHaveBeenCalledTimes(1);
+    expect(lines(out)[0]).toMatchObject({ event: "a", count: 1 });
+    expect(JSON.stringify(out.mock.calls)).not.toContain("console_output");
+    expect(err).not.toHaveBeenCalled();
+  });
+
+  test("a console_output line carries the context fields", () => {
+    withLogContext({ job: "mail.sync", run_id: R }, () => console.log("MARKER-2"));
+    expect(lines(err)[0]).toMatchObject({ event: "console_output", job: "mail.sync", run_id: R });
+    expect(JSON.stringify(err.mock.calls)).not.toContain("MARKER");
+  });
+
+  test("info, debug, warn and trace each write one console_output line", () => {
+    for (const method of ["info", "debug", "warn", "trace"] as const) {
+      err.mockClear();
+      console[method]("MARKER-3");
+      expect(err).toHaveBeenCalledTimes(1);
+      expect(lines(err)[0]).toMatchObject({ event: "console_output" });
+    }
+    expect(out).not.toHaveBeenCalled();
+  });
+
+  test("a getter on an argument is never read", () => {
+    const trap = {
+      get secret(): string {
+        throw new Error("read");
+      },
+    };
+    expect(() => console.log(trap, `${"MARKER-4"}`)).not.toThrow();
+    expect(err).toHaveBeenCalledTimes(1);
+  });
+
+  test("restore puts the console back; a second install works after it and throws while on", () => {
+    expect(() => installConsoleGuard()).toThrow("console guard is on");
+    restore?.();
+    restore = undefined;
+    expect(console.log).toBe(out as unknown as typeof console.log);
+    restore = installConsoleGuard();
+    expect(console.log).not.toBe(out as unknown as typeof console.log);
+    console.log("MARKER-5");
+    expect(lines(err)[0]).toMatchObject({ event: "console_output" });
+    expect(() => installConsoleGuard()).toThrow("console guard is on");
+  });
+});
+
+/* eslint-enable no-console */
+
+// Type test: the typecheck checks names and kinds. This function is never called.
+export function typeChecks(): void {
+  const log = createLog("mail");
+  // @ts-expect-error a number field with a string value
+  log.info("x", { count: "a" });
+  // @ts-expect-error a name that is not on any kind list
+  log.info("x", { subject: "a" });
+}
