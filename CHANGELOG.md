@@ -17,6 +17,8 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
 ### For users
 
 - en: A public docs site with guides and this list of changes.
