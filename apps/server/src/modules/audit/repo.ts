@@ -75,6 +75,7 @@ export const auditEvents = {
   webBackupCodesGenerated: "web.backup_codes_generated", // data: via
   webBackupCodeUsed: "web.backup_code_used", // data: via
   webTwoFactorLocked: "web.two_factor_locked", // data: via, locked_until
+  webTwoFactorRefused: "web.two_factor_refused", // data: via, action (disable | backup_codes), reason (missing | wrong | locked)
   webTwoFactorReset: "web.two_factor_reset", // data: via, sessions_ended
   operatorNotice: "operator.notice", // data: kind, key
   // F106. Every key is flat (a string, number, boolean or null); never an address, a name or a hash of text.

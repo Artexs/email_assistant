@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
 import { pl } from "../i18n/pl";
-import { accountTwoFactorError, cleanBackupCode, cleanTotpCode, codeStepError } from "./two-factor-errors";
+import {
+  accountTwoFactorError,
+  cleanBackupCode,
+  cleanConfirmCode,
+  cleanTotpCode,
+  codeStepError,
+} from "./two-factor-errors";
 
 describe("codeStepError", () => {
   test("maps each error to its key and restart choice", () => {
@@ -55,6 +61,18 @@ describe("accountTwoFactorError", () => {
       field: null,
       key: "tf_error_break_glass",
     });
+    expect(accountTwoFactorError({ status: 401, code: "INVALID_BACKUP_CODE" })).toEqual({
+      field: "code",
+      key: "tf_error_backup_code",
+    });
+    expect(accountTwoFactorError({ status: 400, code: "TWO_FACTOR_CODE_REQUIRED" })).toEqual({
+      field: "code",
+      key: "tf_error_code_required",
+    });
+    expect(accountTwoFactorError({ status: 429, code: "ACCOUNT_TEMPORARILY_LOCKED" })).toEqual({
+      field: null,
+      key: "tf_error_locked",
+    });
     for (const code of ["TOTP_ALREADY_ENABLED", "TWO_FACTOR_NOT_ENABLED", "TOTP_NOT_ENABLED"]) {
       expect(accountTwoFactorError({ status: 400, code })).toEqual({ field: null, key: "tf_error_state" });
     }
@@ -71,6 +89,15 @@ describe("cleanTotpCode", () => {
     expect(cleanTotpCode("123 456")).toBe("123456");
     expect(cleanTotpCode(" 123456 ")).toBe("123456");
     for (const bad of ["12345", "1234567", "12a456", ""]) expect(cleanTotpCode(bad)).toBeNull();
+  });
+});
+
+describe("cleanConfirmCode", () => {
+  test("takes an app code or a backup code and nothing else", () => {
+    expect(cleanConfirmCode("123 456")).toBe("123456");
+    expect(cleanConfirmCode(" AbCdE12345 ")).toBe("AbCdE-12345");
+    expect(cleanConfirmCode("abcde-12345")).toBe("abcde-12345");
+    for (const bad of ["", "12345", "1234567", "abc"]) expect(cleanConfirmCode(bad)).toBeNull();
   });
 });
 

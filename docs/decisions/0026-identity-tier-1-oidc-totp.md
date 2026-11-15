@@ -47,3 +47,14 @@ F105 lands point 1 and the TOTP part of point 8. It fixes these details:
 - **No replay guard.** The same TOTP code works again inside its window. A stolen code needs the password too, and the window is short. Accepted.
 - **No e-mail codes and no passkeys.** The paths `get-totp-uri`, `send-otp` and `verify-otp` answer 404.
 - **Secret.** The plugin encrypts the TOTP secret and the backup codes with `WEB_AUTH_SECRET`. A new value makes every second factor unreadable; each user then needs the operator reset.
+
+## Amendment (F128, 2026-11-15)
+
+The owner replaces the F105 rule "turning TOTP off needs a live session and the password" (F105 decision D28). A person with a stolen session and a leaked password must not be able to remove the second factor.
+
+- **Turning TOTP off and making new backup codes** need the password and a code: a current code from the authenticator app, or one unused backup code (the request uses it up). A fresh session stays not required.
+- **One hook, the plugin's own verify.** `hooks.before` of `/two-factor/disable` and `/two-factor/generate-backup-codes` calls the plugin's `verifyTOTP` or `verifyBackupCode` (a code of digits is a TOTP code, any other is a backup code). No second code check exists. The plugin counts failed codes only at sign-in, so the hook counts each try on the same columns, before the code check and in one guarded atomic step (parallel requests cannot pass the limit together) (`failed_verification_count`, `locked_until`) with the same numbers: the account lock of 10 codes for 15 minutes is shared between the sign-in and these two paths.
+- **Order.** The break-glass refusal, then the password (a wrong password uses up no code and tells nothing about a code), then the lock, then the code.
+- **Audit.** A refusal (missing, wrong or locked) is `web.two_factor_refused` with `action` and `reason`; it never holds a code. A hook that makes the 10th wrong code also writes `web.two_factor_locked`.
+- **Accepted.** A thief with a session can spend the 10 wrong codes and lock the real user's code step for 15 minutes. The lock is per account, as at sign-in. A wrong password with a right backup code uses up no code.
+- A user with TOTP off has no code to give: the hook does nothing for that user. An SSO session of a user with TOTP on is asked for the code like any session.

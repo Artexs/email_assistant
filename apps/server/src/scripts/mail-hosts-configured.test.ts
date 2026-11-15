@@ -5,8 +5,17 @@ import { describe, expect, test } from "bun:test";
 
 const SERVER_SRC = join(import.meta.dir, "..");
 // Helper files of a script are no entry points: they open no mail connection. A `-load.ts` file reads corpus files
-// and parses mail text; the entry point that calls it owns the process.
-const EXCLUDED_SUFFIXES = [".test.ts", "-args.ts", "-lines.ts", "-rows.ts", "-commands.ts", "-load.ts"];
+// and parses mail text; the entry point that calls it owns the process. `eval-suspicious.ts` only reads a pure link
+// extractor of the mail module and runs inside `eval.ts`.
+const EXCLUDED_SUFFIXES = [
+  ".test.ts",
+  "-args.ts",
+  "-lines.ts",
+  "-rows.ts",
+  "-commands.ts",
+  "-load.ts",
+  "-suspicious.ts",
+];
 const MAIL_IMPORT = /from "\.\.\/modules\/mail|from "\.\.\/composition"/;
 
 function selectedFiles(): string[] {

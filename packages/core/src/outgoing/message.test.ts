@@ -58,6 +58,47 @@ describe("buildOutgoingMessage", () => {
     expect(message.text).toBe(`${message.parts.body}\n\n${message.parts.quote}`);
   });
 
+  test("T5 a payload without the edit fields builds the template message", () => {
+    const message = buildOutgoingMessage(input(delegation));
+    expect(message.subject).toBe("Fwd: Oferta");
+    expect(message.parts.body).toContain("przekazuję do realizacji: Przygotuj ofertę");
+    expect(message.parts.body.trimEnd().endsWith("Artek")).toBe(true);
+    expect(message.parts.quote).toContain("> Prosze o oferte.");
+    expect(message.text).toBe(`${message.parts.body}\n\n${message.parts.quote}`);
+  });
+
+  test("T6 body_text replaces the template body and keeps the quote", () => {
+    const text = "Hello Anna,\nplease send the report.\n\nAdam";
+    const plain = buildOutgoingMessage(input(delegation));
+    const edited = buildOutgoingMessage(input({ ...delegation, body_text: text, version: 2 }));
+    expect(edited.parts.body).toBe(text);
+    expect(edited.parts.quote).toBe(plain.parts.quote);
+    expect(edited.text).toBe(`${text}\n\n${plain.parts.quote}`);
+    expect(edited.subject).toBe(plain.subject);
+    expect(edited.messageId).toBe(plain.messageId);
+    expect(edited.references).toEqual(plain.references);
+    expect(edited.headers).toEqual(plain.headers);
+  });
+
+  test("T7 subject_text replaces the subject with no prefix", () => {
+    const plain = buildOutgoingMessage(input(delegation));
+    const edited = buildOutgoingMessage(input({ ...delegation, subject_text: "Budget 2027" }));
+    expect(edited.subject).toBe("Budget 2027");
+    expect(edited.parts).toEqual(plain.parts);
+    const clarification = {
+      kind: "clarification",
+      to: ["klient@firma.pl"],
+      question: "Jaki termin?",
+      language: "en",
+      subject_text: "Budget 2027",
+      body_text: "Which date?",
+    } satisfies DraftPayload;
+    const message = buildOutgoingMessage(input(clarification));
+    expect(message.subject).toBe("Budget 2027");
+    expect(message.parts.body).toBe("Which date?");
+    expect(message.inReplyTo).toBe("<orig@firma.pl>");
+  });
+
   test("is deterministic", () => {
     expect(buildOutgoingMessage(input(delegation))).toEqual(buildOutgoingMessage(input(delegation)));
   });

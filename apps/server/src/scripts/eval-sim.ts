@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { costPerMail } from "@ea/core";
+import { costPerMail, type EvalCase } from "@ea/core";
 
 import {
   buildGateFile,
+  type ClassifierExtras,
   evalExitCode,
   evalDelegateAddress,
   gateFileName,
@@ -13,16 +14,17 @@ import {
   evalStateFileName,
   firstEstimateUsd,
   parseCaseResults,
-  prompts,
+  promptLabel,
   renderEvalReport,
   runEval,
   simMetaOf,
 } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { type Config, ConfigError, llmRoleTable, loadConfig } from "../platform/config";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
-import { createLog } from "../platform/log";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
+import { classifierExtrasOfCase } from "./eval-extras";
 import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import {
   acquireStateLock,
@@ -36,8 +38,9 @@ import {
   runCap,
 } from "./eval-ledger";
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
+import { corpusDir, readScenario } from "./sim-files";
 
-const log = createLog("eval");
+const cli = createCliOutput("eval");
 
 const simRoot = resolve(import.meta.dir, "../../../../evals/sim");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
@@ -45,6 +48,17 @@ const gateDir = resolve(import.meta.dir, "../../../../evals/results/gate");
 
 function out(text: string): void {
   process.stdout.write(`${text}\n`);
+}
+
+function extrasMapperOf(
+  options: EvalOptions,
+  root: string,
+  scenarioId: string,
+  htmlById: ReadonlyMap<string, string>
+): ((c: EvalCase) => ClassifierExtras) | undefined {
+  if (options.prompt.version === "classifier-v2") return undefined;
+  const scenario = readScenario(corpusDir(scenarioId, root));
+  return (evalCase) => classifierExtrasOfCase(evalCase, scenario, htmlById.get(evalCase.id));
 }
 
 // What a test replaces: the CLI passes none of them.
@@ -76,13 +90,13 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     });
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
-    log.error(evalUsage);
+    cli.fail(evalUsage);
     return 1;
   }
   const row = table.roles.classifier;
   const keys = table.providers[row.provider];
   if (keys.apiKey === undefined) {
-    log.error(`${keys.apiKeyName} is missing`);
+    cli.fail(`${keys.apiKeyName} is missing`);
     return 1;
   }
   const model = row.model;
@@ -93,14 +107,14 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   const startedAt = (deps.now ?? (() => new Date()))();
   const estimateUsd = firstEstimateUsd(model, startedAt);
   if (estimateUsd === null) {
-    log.error(`no price for model ${model}: add it to llmPrices before a sim run`);
+    cli.fail(`no price for model ${model}: add it to llmPrices before a sim run`);
     return 1;
   }
 
   if (options.judge) {
     const problem = judgeSetupError(table, startedAt);
     if (problem !== null) {
-      log.error(problem);
+      cli.fail(problem);
       return 1;
     }
   }
@@ -109,7 +123,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   try {
     loaded = await loadSimCases({ root, scenario, part, requireManifest: part === "holdout" });
   } catch (error) {
-    log.error(
+    cli.fail(
       error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE
         ? HOLDOUT_NEEDS_FREEZE
         : `corpus load failed: ${error instanceof Error ? error.name : "unknown error"}`
@@ -117,9 +131,12 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     return 1;
   }
   const cases = options.limit === undefined ? loaded.cases : loaded.cases.slice(0, options.limit);
-  log.info(
+  cli.print(
     `corpus ${scenario} v${loaded.version} part ${part}: ${cases.length} cases, skipped dropped ${loaded.skipped.dropped} unwritten ${loaded.skipped.unwritten} sent ${loaded.skipped.sent}`
   );
+
+  // The scenario holds the known senders and the time zone of the extras.
+  const extrasOf = extrasMapperOf(options, root, scenario, loaded.htmlById);
 
   let ledgerPath: string;
   try {
@@ -127,7 +144,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       options["spend-ledger"] ??
       defaultLedgerPath({ XDG_STATE_HOME: process.env.XDG_STATE_HOME, HOME: process.env.HOME });
   } catch (error) {
-    log.error(error instanceof Error ? error.message : "no ledger path");
+    cli.fail(error instanceof Error ? error.message : "no ledger path");
     return 1;
   }
   const cap = runCap({
@@ -136,10 +153,10 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     monthCap: MONTH_CAP_USD,
   });
   if (cap <= 0) {
-    log.error("month budget used");
+    cli.fail("month budget used");
     return 1;
   }
-  log.info(
+  cli.print(
     `provider=${row.provider} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=$${cap}`
   );
 
@@ -157,7 +174,8 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     evalStateFileName({
       model,
       reasoningEffort: effort,
-      promptVersion: prompts.classifier.version,
+      // The version and the sorted parts: two variants never share a state file.
+      promptVersion: promptLabel(options.prompt),
       set: `sim-${scenario}-v${loaded.version}-${part}`,
     })
   );
@@ -166,7 +184,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   try {
     release = acquireStateLock(stateFile, startedAt, { fresh: options["fresh-lock"] });
   } catch (error) {
-    log.error(error instanceof Error ? error.message : "state lock failed");
+    cli.fail(error instanceof Error ? error.message : "state lock failed");
     return 1;
   }
 
@@ -176,7 +194,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   try {
     if (options.fresh) rmSync(stateFile, { force: true });
     const done = existsSync(stateFile) ? parseCaseResults(readFileSync(stateFile, "utf8")) : [];
-    log.info(`state ${stateFile}: ${done.length} earlier results`);
+    cli.print(`state ${stateFile}: ${done.length} earlier results`);
     const report = await runEval(
       {
         llm,
@@ -195,6 +213,9 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         minKept: options["min-kept"],
         retries: options.retries,
         done,
+        prompt: options.prompt,
+        // Only v3 reads extras; v2 ignores them.
+        ...(extrasOf === undefined ? {} : { extrasOf }),
         concurrency: options.concurrency,
         ...(judgeRow === undefined
           ? {}
@@ -222,7 +243,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     // The gate file of a full holdout run at the default bar (D27); an older file of the same name is replaced.
     const refusal = gateFileRefusal(options, report);
     if (refusal !== null) {
-      log.info(refusal);
+      cli.print(refusal);
     } else {
       const dir = deps.gateDir ?? gateDir;
       const name = gateFileName({
@@ -235,13 +256,13 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       });
       mkdirSync(dir, { recursive: true });
       writeFileSync(resolve(dir, name), `${JSON.stringify(buildGateFile({ ...sim, now: new Date() }), null, 2)}\n`);
-      log.info(`gate file: evals/results/gate/${name}`);
+      cli.print(`gate file: evals/results/gate/${name}`);
     }
-    if (!report.complete) log.warn(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
+    if (!report.complete) cli.fail(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
     return evalExitCode(report);
   } catch (error) {
     if (error instanceof LlmConfigError) {
-      log.error(`LLM config error ${error.code}`);
+      cli.fail(`LLM config error ${error.code}`);
       return 1;
     }
     throw error;

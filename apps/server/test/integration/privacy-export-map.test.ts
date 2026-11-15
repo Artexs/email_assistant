@@ -22,6 +22,7 @@ const SKIPPED = [
   "chat_link_tokens",
   "dsr_tombstones",
   "mailbox_credentials",
+  "mailbox_oauth_states",
   "schema_migrations",
 ];
 

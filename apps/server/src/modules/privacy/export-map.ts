@@ -158,6 +158,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "created_at",
     "updated_at"
   ),
+  mailbox_oauth_states: secret("tokens: OAuth sign-in state, short-lived"),
   mailbox_sent_sync: byOrg(
     "mailbox_id",
     "org_id",
@@ -190,7 +191,10 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "folder_map",
     "created_at",
     "status_changed_at",
-    "smtp_security"
+    "smtp_security",
+    "send_via",
+    "oauth_provider",
+    "auth_reason"
   ),
   memberships: byOrg("org_id", "user_id", "role", "digest_times", "created_at", "break_glass"),
   org_features: byOrg("org_id", "flag", "enabled", "set_by", "set_at"),

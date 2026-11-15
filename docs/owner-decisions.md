@@ -343,3 +343,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the numbers show a real gap, but production change needs a measured win.
 - Undo: `spec/features/planned/F109-e3b-improve/questions.md` Q1, Q4–Q9, Q18 give the other option and its change.
 - Source: `spec/features/planned/F109-e3b-improve/questions.md`.
+
+### 2026-11-15 · Phishing flag stays off: the sim holdout misses the non-phishing flag-rate target by definition (F109) · scope · new
+- Choice: the first measurement of the suspicious-mail rules on the sim holdout (one run, rules unchanged) gives recall 21 of 21, 0 of 315 whitelisted cases flagged, and 67 of 1392 (4.8%) non-phishing cases flagged against the target of at most 2%. All 67 are plain spam from the one phishing persona (`billing@paliwa-fiota.test`) with a look-alike domain, so they count as non-phishing only because their slot has no `phishing_*` tag. By persona, 0 of 1325 other senders are flagged. Per the Q4 rule the `suspicious_mail` flag stays off. No second holdout run is made.
+- Why: the written target is missed, and the sim has one phishing persona, so recall mostly tests one rule (`lookalike_domain`).
+- Undo: change the definition of "phishing" in `eval-suspicious.ts` to the persona group and rerun the dev part only; a flag turn-on for the pilot organization is a later owner decision after real mail shows the rate.
+- Source: `notes/2026-11-15-f109-s05-suspicious-measurement.md`, `evals/results/2026-11-15-sim-lab-01-holdout-suspicious.md`, `spec/features/active/F109-e3b-improve/questions.md` Q4.

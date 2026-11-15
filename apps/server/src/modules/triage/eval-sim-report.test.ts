@@ -103,6 +103,7 @@ function report(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     provider: "openai",
     reasoningEffort: "none",
     promptVersion: "classifier-v2",
+    promptParts: null,
     cases,
     cost: { spentUsd: 1.23456, capUsd: 5, stoppedByBudget: false },
     complete: true,
