@@ -87,6 +87,8 @@ export interface TriageDecision {
   delegation: DelegationInput | null;
   // The codes of `assessSuspicious`, computed before the LLM call; `triage_results.suspicious_reasons`. Empty on the error path.
   suspiciousReasons: SuspiciousReason[];
+  // D6: a flagged `delegation` mail (flag `suspicious_mail` on, reasons not empty) plans nothing, also from the Junk folder.
+  holdDelegation?: boolean;
 }
 
 export interface TriageDeps {
@@ -200,7 +202,10 @@ export async function saveTriage(
     decision.finalCategory,
     decision.summary,
     decision.delegation ?? undefined,
-    { fromJunk: mailbox.junkFolder !== null && email.source_folder === mailbox.junkFolder }
+    {
+      fromJunk: mailbox.junkFolder !== null && email.source_folder === mailbox.junkFolder,
+      holdDelegation: decision.holdDelegation === true,
+    }
   ).map((action) => ({
     type: action.type,
     payload: payloadOf(action),
@@ -555,7 +560,7 @@ export async function triageOne(
   });
 
   const { category, belowThreshold } = decideCategory(analysis, mailbox.policy);
-  // D6: a flagged delegation mail gets no draft, no send and no delegations row. The category and the INBOX place stay.
+  // D6: a flagged delegation mail gets no draft, no send, no delegations row and no move (also from Junk). The category stays.
   const flaggedDelegation =
     suspiciousReasons.length > 0 && category === "delegation" && (await isFeatureOn(deps.db, ctx, "suspicious_mail"));
   const delegation = flaggedDelegation ? null : delegationInputOf(analysis, mailbox.delegates, email.from_address);
@@ -579,6 +584,7 @@ export async function triageOne(
       auditReasonCode: belowThreshold ? "below_threshold" : analysis.reason_code,
       delegation,
       suspiciousReasons,
+      holdDelegation: flaggedDelegation,
     },
     deps.now()
   );

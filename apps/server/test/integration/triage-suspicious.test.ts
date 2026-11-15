@@ -6,7 +6,8 @@ import type { Transaction } from "kysely";
 
 import { listActionsForEmail } from "../../src/modules/actions";
 import { insertDefaultSettings, insertSenderRule } from "../../src/modules/config";
-import { NO_TEST_SENDERS } from "../../src/modules/mail";
+import { ensureSyncFolders, insertEmailHeaders, NO_TEST_SENDERS } from "../../src/modules/mail";
+import { contentFromSource } from "../../src/modules/mail/imap/capture";
 import { configureFeatures, setOrgFeature } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import { createLlmPause, createTriageJob, insertTriageResult } from "../../src/modules/triage";
@@ -331,6 +332,66 @@ describe("suspicious reasons in triage", () => {
   });
 });
 
+describe("a flagged delegation mail from the Junk folder (D6, review TG2)", () => {
+  async function junkScene(trx: Transaction<DB>) {
+    const s = await scene(trx);
+    await enableAssist(trx, s);
+    await ensureSyncFolders(trx, s.ctx, s.mailboxId, [{ key: "junk", path: "Junk", role: "junk" }], now);
+    const delegateId = await insertDelegate(trx, s.ctx, { name: "Anna", email: "anna@paliwa-flota.test" });
+    return { s, delegateId };
+  }
+
+  async function junkMail(trx: Transaction<DB>, s: Scene, from: string): Promise<string> {
+    return insertTestEmail(trx, s.ctx, s.mailboxId, {
+      from_address: from,
+      received_at: new Date(now.getTime() - 60_000),
+      source_folder: "Junk",
+    });
+  }
+
+  test("R1. flag on, reasons not empty, delegation from Junk: an empty plan (no draft, no send, no row, no move)", async () => {
+    await withRollback(db, async (trx) => {
+      const { s, delegateId } = await junkScene(trx);
+      await flag(trx, s, true);
+      const emailId = await junkMail(trx, s, "billing@paliwa-fiota.test");
+      await runJob(trx, fakeLlm("delegation", delegateId));
+      const result = await trx
+        .selectFrom("triage_results")
+        .selectAll()
+        .where("email_id", "=", emailId)
+        .executeTakeFirstOrThrow();
+      expect(result.category).toBe("delegation");
+      expect(result.suspicious_reasons).toEqual(["lookalike_domain"]);
+      expect(await listActionsForEmail(trx, s.ctx, emailId)).toEqual([]);
+      expect(await trx.selectFrom("delegations").select("id").where("email_id", "=", emailId).execute()).toEqual([]);
+    });
+  });
+
+  test("R1b. an unflagged delegation mail from Junk keeps today's move to inbox, flag on or off", async () => {
+    for (const enabled of [true, false]) {
+      await withRollback(db, async (trx) => {
+        const { s, delegateId } = await junkScene(trx);
+        await flag(trx, s, enabled);
+        const emailId = await junkMail(trx, s, "jan@klient.test");
+        await runJob(trx, fakeLlm("delegation", delegateId));
+        const actions = await listActionsForEmail(trx, s.ctx, emailId);
+        expect(actions.map((a) => [a.type, a.payload])).toEqual([["move", { folder: "inbox" }]]);
+      });
+    }
+  });
+
+  test("R1c. flag off, flagged delegation mail from Junk: today's move to inbox (the flag gates the plan)", async () => {
+    await withRollback(db, async (trx) => {
+      const { s, delegateId } = await junkScene(trx);
+      await flag(trx, s, false);
+      const emailId = await junkMail(trx, s, "billing@paliwa-fiota.test");
+      await runJob(trx, fakeLlm("delegation", delegateId));
+      const actions = await listActionsForEmail(trx, s.ctx, emailId);
+      expect(actions.map((a) => [a.type, a.payload])).toEqual([["move", { folder: "inbox" }]]);
+    });
+  });
+});
+
 describe("the known-sender rule (D4, review N1, N15)", () => {
   const mismatch = { replyTo: ["other@elsewhere.test"] };
 
@@ -497,6 +558,56 @@ describe("trusted authserv-ids (D2)", () => {
         { trustedAuthservIds: ["evil.test"] }
       );
       expect(configured.reasons).toEqual(["auth_fail"]);
+    });
+  });
+});
+
+describe("forged Authentication-Results through real capture (D2, review TG1)", () => {
+  const source = (...headers: string[]) =>
+    Buffer.from([...headers, "From: boss@somewhere.test", "To: me@corp.test", "Subject: x", "", "hi"].join("\r\n"));
+
+  // Real capture, the real header store, then the triage job: the same path as a synced mail.
+  async function viaCapture(trx: Transaction<DB>, s: Scene, raw: Buffer): Promise<SuspiciousReason[]> {
+    const content = await contentFromSource(raw);
+    if (content?.capture === undefined || content.capture === null) throw new Error("no capture");
+    const dedupKey = `test:${randomUUID()}`;
+    const emailId = await insertTestEmail(trx, s.ctx, s.mailboxId, {
+      from_address: "boss@somewhere.test",
+      dedup_key: dedupKey,
+      received_at: new Date(now.getTime() - 60_000),
+    });
+    expect(await insertEmailHeaders(trx, s.ctx, { mailboxId: s.mailboxId, dedupKey }, content.capture, now)).toBe(true);
+    await runJob(trx, fakeLlm("info"));
+    const result = await trx
+      .selectFrom("triage_results")
+      .select("suspicious_reasons")
+      .where("email_id", "=", emailId)
+      .executeTakeFirstOrThrow();
+    return result.suspicious_reasons as SuspiciousReason[];
+  }
+
+  test("a trusted top header with dmarc=fail gives auth_fail; a lower forged dmarc=pass does not clear it", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx, { imapHost: "imap.corp.test" });
+      const reasons = await viaCapture(
+        trx,
+        s,
+        source(
+          "Authentication-Results: mx.corp.test; dmarc=fail header.from=somewhere.test",
+          "Received: from evil.test by mx.corp.test",
+          "Authentication-Results: mx.corp.test; dmarc=pass spf=pass dkim=pass"
+        )
+      );
+      expect(reasons).toEqual(["auth_fail"]);
+    });
+  });
+
+  test("the ids corp.test.evil.test and evilcorp.test are not trusted for the host imap.corp.test", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx, { imapHost: "imap.corp.test" });
+      for (const id of ["corp.test.evil.test", "evilcorp.test"]) {
+        expect(await viaCapture(trx, s, source(`Authentication-Results: ${id}; dmarc=fail`))).toEqual([]);
+      }
     });
   });
 });
