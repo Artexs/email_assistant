@@ -1,0 +1,54 @@
+# The restore drill stack (ticket F114-e8b-alerts-and-releases-incl-the-restore-drill, stage 07). Use it only through `deploy/restore.sh --target drill`:
+#   docker compose -p ea-drill -f deploy/compose.yaml -f deploy/compose.drill.yaml --env-file deploy/drill.env
+# It is an override of deploy/compose.yaml. The drill shares nothing with the live stack: its own project (`ea-drill`, so its own
+# volume `ea-drill_db-data`), its own network, its own image tag, no published port, no env file of the live server, no real
+# outbound channel (Telegram, heartbeat, operator chat, web, LLM), no mail send. `restore.sh --down` removes all of it.
+# Needs Compose 2.24 or later (`!reset`, `!override`). Anchors do not cross files, so the log block is written out here.
+name: ea-drill
+
+x-logging-local: &logging-local
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "5"
+
+# `server` and every service that runs the server image get the same block. Compose resolves `extends` before it merges an
+# override, so `cli` (it extends `server`) needs its own copy: the base block of `server` alone would not reach it.
+x-drill-server: &drill-server
+  image: ea-drill-server
+  # `run` skips ports, but `up` would publish them: the drill publishes none.
+  ports: !reset []
+  # The live server logs json-file, the files the log store reads. The drill must never reach that store: `local` only.
+  logging: *logging-local
+  # The fresh clone has no `.env`; the drill env file (made by `restore.sh --init-env`) holds only the drill passwords and the
+  # two credentials keys. `!override` replaces the `../.env` of the base file; without it the list would append.
+  env_file: !override
+    - drill.env
+  environment:
+    # No real channel. An empty value switches each one off.
+    TELEGRAM_BOT_TOKEN: ""
+    HEARTBEAT_URL: ""
+    OPERATOR_TELEGRAM_CHAT_ID: ""
+    WEB_BASE_URL: ""
+    GEMINI_API_KEY: ""
+    OPENAI_API_KEY: ""
+    OPENAI_OWN_API_KEY: ""
+    # No LLM call, no action, no mail send.
+    TRIAGE_LLM_SCOPE: "off"
+    ACTIONS_SCOPE: "off"
+    SEND_SCOPE: "off"
+
+services:
+  server:
+    <<: *drill-server
+
+  cli:
+    <<: *drill-server
+
+# `!override` replaces the live subnet; a plain list would append a second one.
+networks:
+  default:
+    ipam:
+      config: !override
+        - subnet: 172.29.0.0/24
+          gateway: 172.29.0.1

@@ -103,6 +103,65 @@ describe("deploy/check-logging.sh", () => {
   });
 });
 
+describe("deploy/check-logging.sh --drill (restore drill file set, F114 stage 07)", () => {
+  const drillCompose = (services: Record<string, { logging: string; extra?: string }>): string =>
+    `services:\n${Object.entries(services)
+      .map(([name, s]) => `  ${name}:\n    image: x\n${s.logging}\n${s.extra ?? ""}`)
+      .join("")}`;
+
+  test("passes on the real drill file set: every service local, no log store service outside a profile", () => {
+    const result = check([]);
+    expect(result.err).toBe("");
+    expect(result.out).toContain("logging ok (drill): every service local; services: ");
+  });
+
+  test("a drill set with server on json-file fails (the drill must stay out of the log store)", () => {
+    const path = write(
+      "drill-json.yaml",
+      drillCompose({ server: { logging: block("json-file") }, db: { logging: block("local") } })
+    );
+    const result = check(["--drill", path]);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("server must be local");
+  });
+
+  test("a drill set passes with server on local and the store service behind a profile", () => {
+    const path = write(
+      "drill-ok.yaml",
+      drillCompose({
+        server: { logging: block("local") },
+        db: { logging: block("local") },
+        "store-tool": { logging: block("local"), extra: "    profiles: [ops]\n" },
+      })
+    );
+    const result = check(["--drill", path]);
+    expect(result.err).toBe("");
+    expect(result.code).toBe(0);
+  });
+
+  test("a drill set fails when a service outside db, server and cli has no profile, or has the profile cli", () => {
+    for (const [name, extra] of [
+      ["drill-noprofile.yaml", ""],
+      ["drill-cliprofile.yaml", "    profiles: [cli, ops]\n"],
+    ] as const) {
+      const path = write(
+        name,
+        drillCompose({
+          server: { logging: block("local") },
+          "store-tool": { logging: block("local"), extra },
+        })
+      );
+      const result = check(["--drill", path]);
+      expect(result.code, name).toBe(1);
+      expect(result.err, name).toContain("the drill must not run store-tool");
+    }
+  });
+
+  test("--drill without a file fails", () => {
+    expect(check(["--drill"]).code).toBe(1);
+  });
+});
+
 // Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
 const composeConfig = (profile: string | null) => {
   const result = Bun.spawnSync(
