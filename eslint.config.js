@@ -249,6 +249,7 @@ export default tseslint.config(
       // Stage 07 replaces these two files with the folder `modules/channels/`.
       "apps/server/src/modules/channels/sender.ts",
       "apps/server/src/modules/channels/operator.ts",
+      "apps/server/src/modules/channels/telegram/**/*.ts",
     ],
     ignores: ["**/*.test.ts"],
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors] },
