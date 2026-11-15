@@ -1,6 +1,8 @@
 import { approvalConflictSchema, approvalDetailSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
+import { ACTION_STATUSES } from "../../src/modules/actions/transitions";
+
 import { testDb } from "./helpers";
 import { approvalKit, HOUR, NOW, post, type Seed } from "./web-approvals-kit";
 import { as } from "./web-helpers";
@@ -57,6 +59,35 @@ describe("one send has one name in approve, reject, edit and the detail", () => 
         // The schema of the apiDoc accepts exactly the names that the detail route uses.
         expect(approvalConflictSchema.safeParse(answer.body).success).toBe(true);
       }
+    }
+  });
+
+  test("a send whose status is not a send state (logged, undone) is 404 in the detail and all three writes, never 500", async () => {
+    const s = await setup();
+    // A plan that never reached approval stays `logged` (shadow mode, `create_draft` off) when the mailbox goes to assist mode.
+    // Every status of the enum is listed: a new status fails here until it gets a name or a place in the list.
+    const named = ["awaiting_approval", "approved", "applying", "applied", "rejected", "expired", "failed"];
+    const notSendStates = ACTION_STATUSES.filter((status) => !named.includes(status));
+    expect(notSendStates).toEqual(["ready", "undone", "logged"]);
+    // The database refuses a send in `ready` (`actions_send_never_ready_check`), so no such row exists to read.
+    for (const status of notSendStates.filter((status) => status !== "ready")) {
+      const id = await addSend(s, { sendStatus: status });
+      const detail = await s.app.request(`/api/approvals/${id}`, as("owner"));
+      expect({ dbStatus: status, route: "detail", code: detail.status }).toEqual({
+        dbStatus: status,
+        route: "detail",
+        code: 404,
+      });
+      for (const route of ["approve", "reject", "edit"] as const) {
+        const answer = await call(s, id, route, route === "edit" ? EDIT : {});
+        expect({ dbStatus: status, route, ...answer }).toEqual({
+          dbStatus: status,
+          route,
+          status: 404,
+          body: { error: "not_found" },
+        });
+      }
+      expect((await send(id)).status).toBe(status);
     }
   });
 
