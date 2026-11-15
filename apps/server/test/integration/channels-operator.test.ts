@@ -643,9 +643,12 @@ describe("operator notices: log events", () => {
         trx
       );
       await createOperatorNotices({ db: trx, now: () => NOW, send: recorder().send }).run();
-      const kinds = eventsOf("operator_notice_failed").map((event) => event.fields.kind);
-      expect(kinds).toContain("trial_ending");
-      expect(kinds).toContain("auth_error_24h");
+      const events = eventsOf("operator_notice_failed");
+      for (const kind of ["trial_ending", "auth_error_24h"]) {
+        expect(events.filter((event) => event.fields.kind === kind)).toEqual([
+          { level: "error", fields: { kind, error: "TypeError" } },
+        ]);
+      }
     });
   });
 });
