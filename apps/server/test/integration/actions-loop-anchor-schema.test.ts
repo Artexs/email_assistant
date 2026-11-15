@@ -312,6 +312,16 @@ describe("migration: Down and Up", () => {
         await sql.raw(down).execute(trx);
         expect(await columnState(trx)).toEqual(WITHOUT_ANCHOR);
         expect(await oldRows(trx, o.orgId)).toEqual(before);
+        // The old rule is back: a card with no mail is refused.
+        await expectSqlState(
+          trx,
+          () =>
+            sql`insert into outbox (org_id, user_id, kind, dedup_key, text, next_attempt_at, created_at)
+              values (${o.orgId}::uuid, ${o.userId}::uuid, 'approval', ${`test:${randomUUID()}`}, 'x', now(), now())`.execute(
+              trx
+            ),
+          CHECK
+        );
 
         await sql.raw(up).execute(trx);
         expect(await columnState(trx)).toEqual(WITH_ANCHOR);
