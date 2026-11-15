@@ -10,6 +10,7 @@ import {
   countClaimable,
   createCommitterJob,
   createFolderResolver,
+  noApprovalHooks,
   noDelegationHooks,
   releaseActions,
   sendOutcomeOf,
@@ -850,7 +851,12 @@ describe("applySend: crashes and the recovery of an applying send", () => {
       });
       const p = await pair(trx, s, { sendStatus: "awaiting_approval", notifiedAt: at(-5) });
       const input = { userId: s.userId, via: "telegram" as const, now: NOW };
-      const approvals = { db: trx, hooks: noDelegationHooks, uidplus: async () => true };
+      const approvals = {
+        db: trx,
+        hooks: noDelegationHooks,
+        approvalHooks: noApprovalHooks,
+        uidplus: async () => true,
+      };
 
       expect(await approve(approvals, s.ctx, p.sendId, input)).toEqual({ kind: "approved" });
       expect((await approve(approvals, s.ctx, p.sendId, input)).kind).toBe("already_approved");
@@ -1067,7 +1073,12 @@ describe("send end to end", () => {
         .set({ notified_at: NOW })
         .where("id", "=", send?.id as string)
         .execute();
-      const approvals = { db: trx, hooks: delegationHooks({ db }), uidplus: async () => true };
+      const approvals = {
+        db: trx,
+        hooks: delegationHooks({ db }),
+        approvalHooks: noApprovalHooks,
+        uidplus: async () => true,
+      };
       expect(
         await approve(approvals, s.ctx, send?.id as string, { userId: s.userId, via: "telegram", now: NOW })
       ).toEqual({ kind: "approved" });

@@ -7,6 +7,7 @@ import {
   approve,
   createCommitterJob,
   expireReady,
+  noApprovalHooks,
   noDelegationHooks,
   type ActionsScope,
   type SendScope,
@@ -384,7 +385,7 @@ describe("two organizations under scope all (D2)", () => {
       expect(smtp.sender.calls).toEqual([]);
 
       const approved = await approve(
-        { db: trx, hooks: noDelegationHooks, uidplus: async () => true },
+        { db: trx, hooks: noDelegationHooks, approvalHooks: noApprovalHooks, uidplus: async () => true },
         b.ctx,
         pairB.sendId,
         { userId: b.userId, via: "telegram", now: new Date(NOW.getTime() + MINUTE) }

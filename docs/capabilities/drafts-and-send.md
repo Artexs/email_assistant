@@ -122,6 +122,15 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
     - The web has the same two actions, owner only: `POST /api/actions/:id/reject-reason` with `{ reason }` and `POST /api/actions/:id/mistake` (`actions/routes.ts`). Flag off or an unknown or foreign id: 404; a bad id or reason: 400; an action in the wrong state: 409 (`not_rejected`, `not_sent`, `too_late`); a mistake that was marked before: 200 `{ status: "already" }`.
     - One `action_feedback` row per action and kind. Each write adds an audit row in the same transaction: `action.reject_reason` (the reason in `reason_code`) or `action.mistake`; `data.via` is `telegram` or `web`.
 
+12. **An edit replaces a waiting send (`editApproval`, `actions/edit.ts`; F102; no route or panel yet).** The send must be `awaiting_approval`; the owner check is the caller's.
+    - One transaction. Lock order: the mailbox settings row (share, first statement), the old send, its draft, the delegation. Mode not `assist`, or `create_draft` off, answers `drafts_off`. A setter that runs at the same time waits for the edit and then closes the new send (`policy_changed`).
+    - The new draft (`ready`) is the old payload plus `version` (old + 1), `subject_text` and `body_text` (cleaned with `cleanUserText`; subject 1–200, body 1–3000 characters). A new delegate also changes `to`, `delegate_id` and `delegate_name`. The new send is `awaiting_approval` with the same payload and the new `to`. Each has `supersedes_action_id` and the key `<old id>:edit`.
+    - The old send ends `expired` with the reason `superseded` and `result_notified_at` set, so no result notice goes out and the expiry job ignores it. The old draft closes like after a reject (`closeDraftOfSend`, reason `expired`): `ready` → `expired`; `applied` with UIDPLUS → a reverse row that deletes the Drafts copy; `applying` → the APPEND path closes it. Without UIDPLUS the old copy stays in Drafts.
+    - A `drafted` delegation points at the new draft, send and delegate (`DelegationHooks.onSuperseded`); any other state undoes the edit and answers `closed`. `DelegationHooks.activeDelegate` lets `actions` read the delegate without importing `delegation`.
+    - Answers: `edited`, `changed` (the send was replaced; `currentId` is the newest version), `closed` (with the state), `not_editable` (a reminder), `unchanged` (the same text and delegate as the built message), `delegate_inactive`, `drafts_off`, `not_found`. A `delegateId` on a kind other than `delegation`, and text that is empty or too long after cleaning, throw a `ValidationError`.
+    - `approve` and `reject` of the old send answer `superseded` with `currentId`; a Telegram tap on it answers `taps.changed`. The audit row `action.edited` (on the new send) holds `previous_action_id`, `version`, `delegate_changed` and `via`, never text.
+    - Metric readers skip a superseded send because they read other states: `listRejectRows` (only `rejected`), `listMistakeRows` (only `applied`), `listHiddenMoveRows` (moves), `countFailedSendsSince` (only `failed`), `listRecentSends` (`applying`, `applied`, `failed`), `listExpiredApprovals` (only `awaiting_approval` and `approved`) and `listSendResultsToNotify` (`result_notified_at` is set). The digest phrase says "changed in the panel".
+
 ## Entry points
 
 | Kind     | Name                                                                                                           | Where                                                      |
@@ -138,6 +147,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
 | function | `applyDraft`, `buildDraftMessage`                                                                              | `apps/server/src/modules/actions/drafts.ts`                |
 | function | `applySend`, `sendOutcomeOf`                                                                                   | `apps/server/src/modules/actions/send.ts`                  |
 | function | `approve`, `reject`, `approveSet`, `rejectSet`, `sendAgain`, `markWentOut`                                     | `apps/server/src/modules/actions/approvals.ts`             |
+| function | `editApproval`                                                                                                 | `apps/server/src/modules/actions/edit.ts`                  |
 | function | `createExpiryJob`, `expireSend`, `closeDraftOfSend`, `expireReminderActions`                                   | `apps/server/src/modules/actions/expiry.ts`                |
 | function | `expireUnseenApprovals`                                                                                        | `apps/server/src/modules/actions/expire.ts`                |
 | function | `sendFilterFor`, `sendScopeAdmits`                                                                             | `apps/server/src/modules/actions/scope.ts`                 |
@@ -190,6 +200,7 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `apps/server/test/integration/actions-drafts.test.ts`
 - `apps/server/test/integration/actions-send.test.ts`
 - `apps/server/test/integration/actions-approvals.test.ts`
+- `apps/server/test/integration/actions-edit.test.ts`
 - `apps/server/test/integration/actions-resume-approvals.test.ts`
 - `apps/server/test/integration/actions-close.test.ts`
 - `apps/server/test/integration/actions-feedback.test.ts`

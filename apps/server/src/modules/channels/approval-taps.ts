@@ -19,6 +19,7 @@ import {
   approveSet,
   getSend,
   markWentOut,
+  noApprovalHooks,
   reject,
   rejectSet,
   sendAgain,
@@ -84,7 +85,13 @@ export async function handleApprovalCallback(
   const organization = await getOrganization(deps.db, ctx);
   if (organization === undefined) return { answer: taps.notFound };
   const timeZone = organization.timezone;
-  const approvals: ApprovalDeps = { db: deps.db, hooks: deps.hooks, uidplus: deps.uidplus };
+  // The card edits after a decision come in the card sync stage; until then no hook runs.
+  const approvals: ApprovalDeps = {
+    db: deps.db,
+    hooks: deps.hooks,
+    approvalHooks: noApprovalHooks,
+    uidplus: deps.uidplus,
+  };
   const input = { userId: link.userId, via: "telegram" as const, now };
   // The card as the user got it (the stored text) plus one status line (docs/architecture.md §4.5). A row that was never
   // sent has no text: no edit, only the answer.
@@ -138,6 +145,8 @@ export async function handleApprovalCallback(
           return { answer: taps.rejected };
         case "failed":
           return { answer: taps.failed };
+        case "superseded":
+          return { answer: taps.changed };
         case "draft_not_ready":
           return { answer: taps.draftNotReady };
         case "not_found":
@@ -160,6 +169,7 @@ export async function handleApprovalCallback(
         };
       }
       if (result.kind === "already") return { answer: statusText(taps, result.status) ?? taps.notFound };
+      if (result.kind === "superseded") return { answer: taps.changed };
       return { answer: taps.notFound };
     }
     case "approve_set": {

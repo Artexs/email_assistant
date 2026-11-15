@@ -32,6 +32,7 @@ flowchart BT
     lab
   end
   actions --> audit
+  actions --> config
   actions --> mail
   actions --> tenancy
   channels --> actions
