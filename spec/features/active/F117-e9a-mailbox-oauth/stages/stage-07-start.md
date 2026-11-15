@@ -60,3 +60,7 @@ export async function consumeOAuthState(db: Db, secrets: SecretBox, ctx: TenantC
 **Done when.** The tests pass; the Proof prints `PROOF_OK`.
 
 **Out of scope.** The callback (stage 08), the panel (stage 16).
+
+## Carry-over from stage 03 review
+
+- The state table lets a row carry a `user_id` with no membership in its `org_id`. This stage must enforce the binding in code and add a test (user U is a member of org B only; a state for org A and user U is refused).

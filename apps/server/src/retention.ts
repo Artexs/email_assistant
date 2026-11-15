@@ -3,7 +3,13 @@ import type { Transaction } from "kysely";
 import { clearActionErrors, clearActionPayloads } from "./modules/actions";
 import { clearOutboxTexts, deleteOldLinkTokens } from "./modules/channels";
 import { clearDelegationTasks, isOpenDelegationDraft } from "./modules/delegation";
-import { clearCapturedHeaders, clearMailBodies, clearMailHeaders, PENDING_BODY_DAYS } from "./modules/mail";
+import {
+  clearCapturedHeaders,
+  clearMailBodies,
+  clearMailHeaders,
+  deleteOldOAuthStates,
+  PENDING_BODY_DAYS,
+} from "./modules/mail";
 import { listOrganizations } from "./modules/tenancy";
 import { clearTriageTexts } from "./modules/triage";
 import { deleteExpiredVerifications } from "./platform/auth";
@@ -19,6 +25,8 @@ const DAY_MS = 24 * HOUR_MS;
 // A23: every text of the §7 list goes after this period, except the mail body (the organization's `data_retention_days`).
 export const RETENTION_TEXT_DAYS = 90;
 export const LINK_TOKEN_GRACE_MS = 24 * HOUR_MS;
+// An OAuth sign-in state row goes this long after it expired.
+export const OAUTH_STATE_GRACE_MS = HOUR_MS;
 // A reset or invite token row goes this long after it expired.
 export const VERIFICATION_GRACE_MS = 24 * HOUR_MS;
 
@@ -44,6 +52,7 @@ export interface Clearers {
   clearDelegationTasks: typeof clearDelegationTasks;
   clearOutboxTexts: typeof clearOutboxTexts;
   deleteOldLinkTokens: typeof deleteOldLinkTokens;
+  deleteOldOAuthStates: typeof deleteOldOAuthStates;
   deleteExpiredVerifications: typeof deleteExpiredVerifications;
 }
 
@@ -76,6 +85,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     clearDelegationTasks,
     clearOutboxTexts,
     deleteOldLinkTokens,
+    deleteOldOAuthStates,
     deleteExpiredVerifications,
     ...deps.clearers,
   };
@@ -96,9 +106,10 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     const errors = await clearers.clearActionErrors(db, ctx, { before: textsBefore });
     const tasks = await clearers.clearDelegationTasks(db, ctx, { before: textsBefore });
     const outbox = await clearers.clearOutboxTexts(db, ctx, { before: textsBefore });
-    const tokens = await clearers.deleteOldLinkTokens(db, ctx, {
-      before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS),
-    });
+    // The `tokens` count holds the link tokens and the OAuth sign-in states.
+    const tokens =
+      (await clearers.deleteOldLinkTokens(db, ctx, { before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS) })) +
+      (await clearers.deleteOldOAuthStates(db, ctx, { before: new Date(now.getTime() - OAUTH_STATE_GRACE_MS) }));
     const counts = { body, headers, capturedHeaders, triage, payloads, errors, tasks, outbox, tokens };
     if (sumOf(counts) > 0) {
       log.info(

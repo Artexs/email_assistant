@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-07
+landed: 2026-11-15
 ---
 
 # F032 · Store and triage a copy that lands below the UID cursor

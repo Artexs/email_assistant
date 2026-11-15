@@ -51,3 +51,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 08
 **Done when.** The eleven tests pass; Proof prints `PROOF_OK`.
 
 **Out of scope.** A DNS check in CI against a real resolver; the console (stage 11).
+
+## Carry-over from stage 06 review (N4) and stage 07 review
+
+- A two-factor challenge that is pending (cookie of 600 s) when `sso_required` goes on is not ended by stage 06. Stage 09 must delete the `2fa-*` verifications of refused members when it deletes their password sessions, or `verify-totp` must re-check `passwordSignInRefused`. Add a test: Pia (not break-glass, TOTP on) starts a password sign-in, the switch goes on, then `verify-totp` gives no session.
+- A removal or boundary change turns `sso_required` off, so it opens password sign-in and does not close it. No stage-07 change is needed for that.

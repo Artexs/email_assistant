@@ -5,13 +5,14 @@ import { z } from "zod";
 
 import { configureMailHosts, deliverTestMail, listEmailsByMessageIds } from "../modules/mail";
 import { buildRealReport, listLatestTriageByEmailIds, renderEvalReport, type LabeledResult } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
-import { createLog, setLogLevel } from "../platform/log";
+import { setLogLevel } from "../platform/log";
 
-const log = createLog("testmail-target");
+const cli = createCliOutput("testmail-target");
 
 const usage = [
   "usage: bun run testmail:target deliver --org-id <uuid> --mailbox-id <uuid> [--check-only] < input.json",
@@ -185,7 +186,7 @@ async function main(): Promise<number> {
     return options.command === "deliver" ? await runDeliver(options, input) : await runCompare(options, input);
   } catch (error) {
     // A HardError message is written for the operator and holds no secret; every other error shows its label only.
-    log.error(`failed: ${error instanceof HardError ? error.message : describeError(error)}`);
+    cli.fail(`failed: ${error instanceof HardError ? error.message : describeError(error)}`);
     return 1;
   }
 }
@@ -193,6 +194,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    cli.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });
