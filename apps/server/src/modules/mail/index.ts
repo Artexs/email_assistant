@@ -77,6 +77,7 @@ export {
   deleteOldOAuthStates,
   clearReturned,
   clearCapturedHeaders,
+  countOrgEmails,
   countSyncTargets,
   countWaiting,
   finishEmail,
