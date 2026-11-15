@@ -423,12 +423,50 @@ describe("the known-sender rule (D4, review N1, N15)", () => {
     await withRollback(db, async (trx) => {
       const s = await scene(trx);
       for (let i = 0; i < 3; i++) await earlierMail(trx, s, "a@shop-example.test", { category: "info" });
-      const { reasons } = await triaged(trx, s, { from: "b@shop-exampel.test" }, fakeLlm("info"));
+      // Both senders are in the same batch: the frequent one is known, its domain is not.
+      const frequentMail = await insertTestEmail(trx, s.ctx, s.mailboxId, {
+        from_address: "a@shop-example.test",
+        received_at: new Date(now.getTime() - 120_000),
+      });
+      const { emailId, reasons } = await triaged(trx, s, { from: "b@shop-exampel.test" }, fakeLlm("info"));
       expect(reasons).toEqual([]);
+      const frequentResult = await trx
+        .selectFrom("triage_results")
+        .select("suspicious_reasons")
+        .where("email_id", "=", frequentMail)
+        .executeTakeFirst();
+      expect(frequentResult?.suspicious_reasons).toEqual([]);
+      expect(emailId).not.toBe(frequentMail);
       // The same frequent domain as a known domain (an exact whitelist rule) makes the look-alike visible.
       await insertSenderRule(trx, s.ctx, { mailboxId: null, pattern: "a@shop-example.test", kind: "whitelist" });
       const flagged = await triaged(trx, s, { from: "c@shop-exampel.test" }, fakeLlm("info"));
       expect(flagged.reasons).toEqual(["lookalike_domain"]);
+    });
+  });
+});
+
+describe("own addresses (D4, review N16)", () => {
+  test("6g. the mailbox address and its domain are known: forged own mail is known, only auth_fail can catch it", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      const mailbox = await trx
+        .selectFrom("mailboxes")
+        .select("address")
+        .where("id", "=", s.mailboxId)
+        .executeTakeFirstOrThrow();
+      const mismatch = { replyTo: ["other@elsewhere.test"] };
+      const own = await triaged(trx, s, { from: mailbox.address, headers: mismatch }, fakeLlm("info"));
+      expect(own.reasons).toEqual([]);
+      const sameDomain = await triaged(trx, s, { from: "colleague@x.test", headers: mismatch }, fakeLlm("info"));
+      expect(sameDomain.reasons).toEqual([]);
+      // The accepted limit: a forged own address is known. A trusted failing header still flags it.
+      const forged = await triaged(
+        trx,
+        s,
+        { from: mailbox.address, headers: { authResults: "imap.x.test; dmarc=fail" } },
+        fakeLlm("info")
+      );
+      expect(forged.reasons).toEqual(["auth_fail"]);
     });
   });
 });
@@ -545,6 +583,44 @@ describe("tenant scope (test 9)", () => {
       for (const fromName of ["Zofia Nowak", "Piotr Wisniewski", "Adam Prezes"]) {
         const { reasons } = await triaged(trx, a, { from: "n@unknown.test", headers: { fromName } }, fakeLlm("info"));
         expect(reasons).toEqual(["display_name_spoof"]);
+      }
+    });
+  });
+
+  test("9c. the VIP display name comes from this mailbox only: mail of another organization or mailbox gives no name", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await scene(trx);
+      const b = await createOrgWithMailbox(trx);
+      const bCtx: TenantContext = { orgId: b.orgId };
+      const secondId = randomUUID();
+      await trx
+        .insertInto("mailboxes")
+        .values({
+          id: secondId,
+          org_id: a.orgId,
+          address: `second-${randomUUID()}@x.test`,
+          imap_host: "imap.x.test",
+          imap_port: 993,
+          smtp_host: "smtp.x.test",
+          smtp_port: 465,
+        })
+        .execute();
+      await insertSenderRule(trx, a.ctx, { mailboxId: null, pattern: "ceo@shared-vip.test", kind: "vip" });
+      const otherOrgMail = await insertTestEmail(trx, bCtx, b.mailboxId, {
+        from_address: "ceo@shared-vip.test",
+        status: "triaged",
+        received_at: new Date(now.getTime() - DAY),
+      });
+      await insertHeaders(trx, bCtx, otherOrgMail, { fromName: "Karol Obcy" });
+      const otherMailboxMail = await insertTestEmail(trx, a.ctx, secondId, {
+        from_address: "ceo@shared-vip.test",
+        status: "triaged",
+        received_at: new Date(now.getTime() - DAY),
+      });
+      await insertHeaders(trx, a.ctx, otherMailboxMail, { fromName: "Marek Inny" });
+      for (const fromName of ["Karol Obcy", "Marek Inny"]) {
+        const { reasons } = await triaged(trx, a, { from: "n@unknown.test", headers: { fromName } }, fakeLlm("info"));
+        expect(reasons).toEqual([]);
       }
     });
   });
