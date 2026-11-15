@@ -43,6 +43,7 @@ export const numberFieldNames = [
   "error_rows",
   "task_rows",
   "outbox_rows",
+  "loop_rows",
   "token_rows",
   // telegram
   "update_id",

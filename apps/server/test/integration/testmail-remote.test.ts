@@ -128,7 +128,7 @@ describe("testmail:remote main", () => {
     const code = await main(["deliver", "--batch", batchId, "--dry-run"], makeDeps(ok));
     expect(code).toBe(0);
     expect(stdout.join("")).toContain(
-      `ssh -o BatchMode=yes home_vm cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env run --rm -T -v /tmp/ea-testmail-${uuid}.js:/tmp/ea-testmail-${uuid}.js:ro server bun /tmp/ea-testmail-${uuid}.js deliver`
+      `ssh -o BatchMode=yes home_vm cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env run --rm -T -v /tmp/ea-testmail-${uuid}.js:/tmp/ea-testmail-${uuid}.js:ro cli bun /tmp/ea-testmail-${uuid}.js deliver`
     );
     expect(calls).toEqual([]);
     expect(existsSync(paths.lockFile)).toBe(false);

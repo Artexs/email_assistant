@@ -11,9 +11,12 @@ import {
   createOrgLookup,
   createLabState,
   createServeMailClient,
+  exportDemo,
+  importDemo,
   labEnvIssues,
   loadLabCorpus,
   orgHasMail,
+  readSeedFile,
   readServeStatus,
   runServe,
   runSpend,
@@ -24,6 +27,7 @@ import {
   storeRunUrgencyProfile,
   takeServeLock,
   writeLabReport,
+  writeNewSeedFile,
   writeServeStatus,
 } from "../modules/lab";
 import { configureMailHosts, openImapProvider, verifySmtpLogin } from "../modules/mail";
@@ -99,7 +103,8 @@ async function main(): Promise<number> {
       reset: {
         lookupOrg: createOrgLookup(db),
         mail: createServeMailClient(corpus),
-        deleteOrg: ({ orgId, confirmName }) => deleteOrganization(db, { orgId, confirmName, via: "cli" }),
+        deleteOrg: ({ orgId, confirmName, expect }) =>
+          deleteOrganization(db, { orgId, confirmName, expect, via: "cli" }),
       },
       seed: (target) => {
         // The env guard has run before: a loopback root is set.
@@ -139,6 +144,13 @@ async function main(): Promise<number> {
         const dir =
           out === undefined ? (existsSync(RESULTS_DIR) ? RESULTS_DIR : join(stateDir, "results")) : resolve(out);
         return { ...writeLabReport(score, dir), partial: score.header.partial };
+      },
+      // `demo-export` reads one org (the demo org of `orgs.json`); `demo-import` makes a new org in this database.
+      demo: {
+        exportSeed: (orgId, run, day) => exportDemo(db, { orgId }, run, day, { scenario: SCENARIO }),
+        importSeed: (seed, opts) => importDemo(db, seed, opts),
+        writeNewFile: writeNewSeedFile,
+        readFile: readSeedFile,
       },
       serveStatus: () => readServeStatus(stateDir),
       serve: () => {

@@ -4,7 +4,7 @@ import { onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { orgPlanHooks, settingsDeps, uidplusOf } from "./composition";
+import { orgPlanHooks, sentSwitchHooks, settingsDeps, uidplusOf } from "./composition";
 import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
@@ -15,7 +15,7 @@ import {
   queueMailboxRemovedNotices,
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
-import { delegationHooks } from "./modules/delegation";
+import { delegateRoutes, delegationHooks } from "./modules/delegation";
 import {
   createMailOAuthClients,
   getSentSyncView,
@@ -272,7 +272,8 @@ export function settingsRouteDeps(db: Db, now: () => Date, testMail: TestMailRul
       setSyncFolderEnabled(db, ctx, id, input.key, input.enabled, input.actor, input.now),
     getSentSync: (ctx, id) => getSentSyncView(db, ctx, id, now()),
     setSentSync: async (ctx, id, input) =>
-      (await setSentSync(db, ctx, id, { enabled: input.enabled, actor: input.actor, at: input.now })).result,
+      (await setSentSync(db, ctx, id, { enabled: input.enabled, actor: input.actor, at: input.now }, sentSwitchHooks))
+        .result,
   };
 }
 
@@ -373,6 +374,7 @@ export function apiRouters(
       "/",
       approvalRoutes({ db, now, sendScope: extras.sendScope, hooks: delegationHooks({ db }), uidplus: uidplusOf(db) })
     );
+    api.route("/", delegateRoutes({ db, now }));
   };
 }
 

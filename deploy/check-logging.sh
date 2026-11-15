@@ -49,6 +49,32 @@ check_set() {
     exit 1
   fi
 
+  # The log store services keep every log on the host (ADR 0024 point 5): they get no Docker socket, no host network,
+  # no network but the default one, and vlagent sends only to victorialogs. One message per fault.
+  local store_bad
+  store_bad="$(printf '%s' "$config" | jq -r '
+    (.services.victorialogs // empty | select(.network_mode != null)
+      | "check-logging: victorialogs must not set network_mode"),
+    (.services.vlagent // empty | select(.network_mode != null)
+      | "check-logging: vlagent must not set network_mode"),
+    (.services.victorialogs // empty | select(((.networks // {}) | keys) != ["default"] and ((.networks // {}) | keys) != [])
+      | "check-logging: victorialogs must use the default network only"),
+    (.services.vlagent // empty | select(((.networks // {}) | keys) != ["default"] and ((.networks // {}) | keys) != [])
+      | "check-logging: vlagent must use the default network only"),
+    (.services.vlagent // empty
+      | select(([.volumes[]? | select(.target == "/var/lib/docker/containers") | select(.read_only == true and .source == "/var/lib/docker/containers")] | length) != 1
+          or ([.volumes[]? | select(.target != "/var/lib/docker/containers" and .type != "volume")] | length) != 0
+          or ([.volumes[]? | select(.target != "/var/lib/docker/containers")] | length) != 1)
+      | "check-logging: vlagent volumes must be the read-only container-log mount and one named volume, nothing else"),
+    (.services.vlagent // empty
+      | select(([.command[]? | select(startswith("-remoteWrite.url=http://victorialogs:9428/"))] | length) != 1
+          or ([.command[]? | select(startswith("-remoteWrite.url="))] | length) != 1)
+      | "check-logging: vlagent must send only to http://victorialogs:9428/")')"
+  if [ -n "$store_bad" ]; then
+    echo "$store_bad" >&2
+    exit 1
+  fi
+
   local others
   others="$(printf '%s' "$config" | jq -r '.services | keys | map(select(. != "server")) | join(" ")')"
   echo "logging ok: server json-file; local: $others"

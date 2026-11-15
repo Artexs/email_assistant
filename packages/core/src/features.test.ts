@@ -44,9 +44,10 @@ describe("featureFlags registry", () => {
     }
   });
 
-  test("the three placeholder flags exist and default off", () => {
+  test("the placeholder flags exist and default off", () => {
     expect(featureFlags.stats_page.default).toBe(false);
     expect(featureFlags.approvals_page.default).toBe(false);
+    expect(featureFlags.delegation_pages.default).toBe(false);
     expect(featureFlags.sent_sync.default).toBe(false);
   });
 
@@ -86,7 +87,7 @@ describe("featureFlags registry", () => {
 
   test("featureKeys lists the registry keys in registry order", () => {
     expect<string[]>(featureKeys).toEqual(Object.keys(featureFlags));
-    expect(featureKeys.slice(0, 3)).toEqual(["stats_page", "approvals_page", "sent_sync"]);
+    expect(featureKeys.slice(0, 4)).toEqual(["stats_page", "approvals_page", "delegation_pages", "sent_sync"]);
   });
 
   test("isFeatureKey accepts registry keys only", () => {

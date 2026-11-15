@@ -15,6 +15,7 @@ import {
 } from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
+import { onSentOff } from "./modules/loops";
 import {
   composeMessage,
   createMailOAuthClients,
@@ -26,6 +27,7 @@ import {
   openSmtpSender,
   type MailOAuthClients,
   type OAuthTokens,
+  type SentSwitchHooks,
 } from "./modules/mail";
 import type { SetOrgPlanHooks } from "./modules/tenancy";
 import { sendTestAddresses, testMailRule, type Config } from "./platform/config";
@@ -109,6 +111,12 @@ export function committerDeps(input: {
     now: () => new Date(),
   };
 }
+
+// Turning off "Track my sent mail" ends the loops that the Sent mail started, in the same transaction. The web and the CLI
+// pass this to `setSentSync`; a caller without it would leave open loops that hold the texts of deleted mail.
+export const sentSwitchHooks: SentSwitchHooks = {
+  onDisabled: (trx, ctx, input) => onSentOff(trx, ctx, input),
+};
 
 // The one builder of the settings setters' deps: the CLI and the web call it, so both close the gate the same way.
 export function settingsDeps(db: Db, now: () => Date): SettingsDeps {

@@ -453,3 +453,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the lab persona delegates more per day than a normal executive. For a real user 5 per recipient per day may be right.
 - Undo: leave the limit as is (the lab shows `send_held`); or raise `SEND_LIMIT_RECIPIENT_DAY` for the lab org only.
 - Source: `notes/2026-11-15-e3b-improve-results.md` (send-limit re-check), job `2026-11-15-f109-s16-capability-pages-result-4a208d30`.
+
+### 2026-11-15 · F116 loops: text retention, restart and sent_off reopen (F116) · product · new
+- Choice: (1) open loops keep their texts until they close; closed loops clear after the retention period; (2) `restartLoop` keeps `surfaced_at` (a restarted loop is not "new" in the brief); (3) a `sent_off` loop (Sent sync turned off) clears its texts and cannot reopen.
+- Why: an open loop needs its text to be useful; clearing it would break the brief. A cleared loop has nothing to show on reopen.
+- Undo: (1) clear open loops too after the Sent copy clears; (2) set `surfaced_at` to null in `restartLoop`; (3) allow reopen and show an empty loop.
+- Source: job `2026-11-15-f116-s08-loop-repository-retenti-22f82745`, stage 08.

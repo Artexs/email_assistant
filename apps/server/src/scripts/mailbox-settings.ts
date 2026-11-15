@@ -1,6 +1,6 @@
 import { describeSettings, MAILBOX_ACTION_TYPES, type SettingsSnapshot, type UrgencyProfile } from "@ea/core";
 
-import { settingsDeps } from "../composition";
+import { sentSwitchHooks, settingsDeps } from "../composition";
 import { countReadyOriginals, expireReady } from "../modules/actions";
 import { getSettingsView, setMode, setToolSwitch, setUrgencyProfile, type SettingsChange } from "../modules/config";
 import {
@@ -72,11 +72,13 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
       return 0;
     }
     case "sent-sync": {
-      const { result, deleted } = await setSentSync(db, ctx, mailboxId, {
-        enabled: command.value,
-        actor: ACTOR,
-        at: now,
-      });
+      const { result, deleted } = await setSentSync(
+        db,
+        ctx,
+        mailboxId,
+        { enabled: command.value, actor: ACTOR, at: now },
+        sentSwitchHooks
+      );
       if (result === "flag_off") {
         out.fail("sent sync: the organization flag sent_sync is off (turn it on with: bun run org:flag)");
         return 1;

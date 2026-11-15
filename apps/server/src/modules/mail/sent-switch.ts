@@ -15,6 +15,14 @@ export interface SentSwitchInput {
   at: Date;
 }
 
+// A module above `mail` reacts to the switch inside the same transaction (the composition roots fill it in).
+export interface SentSwitchHooks {
+  /** Runs when the switch goes from on to off, before the stored sent mail is deleted. */
+  onDisabled(trx: Transaction<DB>, ctx: TenantContext, input: { mailboxId: string; at: Date }): Promise<unknown>;
+}
+
+export const noSentSwitchHooks: SentSwitchHooks = { onDisabled: async () => undefined };
+
 // The consent to read the Sent folder of one mailbox: "Track my sent mail".
 // On needs the organization flag and starts a new first pass. Off always works (the user can always withdraw)
 // and deletes the stored sent mail of this mailbox: only `sent_emails` rows, never received mail.
@@ -23,7 +31,8 @@ export async function setSentSync(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
-  input: SentSwitchInput
+  input: SentSwitchInput,
+  hooks: SentSwitchHooks = noSentSwitchHooks
 ): Promise<{ result: SentSwitchResult; deleted: number }> {
   const run = async (trx: Transaction<DB>) => {
     if (input.enabled && !(await isFeatureOn(trx, ctx, "sent_sync")))
@@ -40,6 +49,7 @@ export async function setSentSync(
     if (state === undefined || state.enabled === input.enabled) return { result: "same" as const, deleted: 0 };
 
     await writeSentSwitch(trx, ctx, mailboxId, { enabled: input.enabled, at: input.at });
+    if (!input.enabled) await hooks.onDisabled(trx, ctx, { mailboxId, at: input.at });
     const deleted = input.enabled ? 0 : await deleteSentEmails(trx, ctx, mailboxId);
     await recordAudit(trx, ctx, {
       actor: input.actor,

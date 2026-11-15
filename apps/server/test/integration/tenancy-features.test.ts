@@ -168,6 +168,7 @@ describe("org_features", () => {
       expect(await featureStates(trx, ctx)).toEqual([
         { flag: "stats_page", enabled: true, source: "row" },
         { flag: "approvals_page", enabled: false, source: "default" },
+        { flag: "delegation_pages", enabled: false, source: "default" },
         { flag: "sent_sync", enabled: false, source: "env" },
         { flag: "security_log", enabled: false, source: "default" },
         { flag: "review_command", enabled: false, source: "default" },

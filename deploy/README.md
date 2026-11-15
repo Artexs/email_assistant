@@ -61,9 +61,24 @@ docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}} {{index .HostC
 
 A line that differs: run `$C up -d --force-recreate --wait <service>` for that service, then check again. A recreated container starts a new log file. The first deploy with a changed `logging:` block recreates `db` at `up -d --wait db`: a short DB restart.
 
+Runbook for the first deploy with the changed log drivers (F103 stage 19):
+
+1. Take a backup first (§ Backups).
+2. Run `$C stop server` before the `db` recreate. The server pool has no `pool.on("error")` handler, so a running `server` can restart when `db` restarts.
+3. Run `$C up -d --wait db`. The new `logging:` block recreates `db`; the named volume `db-data` stays.
+4. Run `$C up -d --wait`.
+
+On the dev machine, the next `up` of the shared dev stack also recreates `db` and `greenmail`.
+
 ## Logs
 
-The server writes one JSON object per line (ADR 0024). Read them as text:
+The server writes one JSON object per line (ADR 0024). Read them as text, without the store, from the repo root:
+
+```sh
+bash deploy/logs.sh [--since 1h] [--run <run_id>] [--request <request_id>] [--event <code>] [--level warn] [--follow]
+```
+
+The script runs the line below and keeps the lines that match your filters. The line alone needs only `jq`:
 
 ```sh
 $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", .event, (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
@@ -71,9 +86,42 @@ $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, 
 
 Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. Only `server` writes `json-file`, the files that the log store reads. Every other service (Postgres, `cli`, the store itself) writes `local`, so its lines never reach the store. A new service in any Compose file needs the `local` block. `bash deploy/check-logging.sh` checks the drivers and fails on a one-off command that runs in `server`, and CI runs it.
 
-Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. One-off commands run in the `cli` service (`$C run --rm cli bun run <script> …`): readable text, never in the log store. `$C exec server …` prints to your terminal only.
+Follow one job run or one request: use `--run` or `--request` of `deploy/logs.sh`; the browser shows the request id in the `x-request-id` response header. One-off commands run in the `cli` service (`$C run --rm cli bun run <script> …`): readable text, never in the log store. `$C exec server …` prints to your terminal only.
 
 A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync run writes `sync_done` with `mailbox_id` and the counts; a failure is `sync_failed` or `sync_soft_error` with `error` and `error_code` (`mail/jobs.ts`).
+
+### Log store (search)
+
+The log store (VictoriaLogs, with the agent vlagent) is in the Compose profile `ops`. Without the profile nothing changes. Start it and stop it:
+
+```sh
+$C --profile ops up -d
+$C --profile ops stop victorialogs vlagent
+```
+
+The UI is `https://<machine>.<tailnet>.ts.net:9443/select/vmui/`. Tailscale Serve proxies to `127.0.0.1:9428` (set up on the VPS in F103 stage 19; the store has no basic auth). Each server line is stored as text in `_msg`, so every query unpacks it first. Three queries to paste in the UI:
+
+```
+"<run_id>" | unpack_json from _msg | sort by (_time)
+```
+
+```
+_time:1h | unpack_json from _msg | filter level:="error" | sort by (_time)
+```
+
+```
+* | unpack_json from _msg | stats by (event) count() as lines | sort by (lines desc)
+```
+
+Limits:
+
+- It keeps 30 days and at most 1 GiB; it uses at most 256 MB (store) and 64 MB (agent) of memory.
+- It holds only `server` lines: the agent reads only `json-file` logs, and only `server` writes them. Postgres, `cli`, `exec` and the store itself never reach it.
+- The agent also reads the `json-file` logs of any other Compose project on the host. Check with `docker ps -a` before the first start.
+- The agent runs as root, because Docker writes its log files with mode `0640`.
+- The agent buffers at most 500 MB on disk (`-remoteWrite.maxDiskUsagePerURL`, volume `vlagent-data`) while the store is down.
+- The read-only mount of `/var/lib/docker/containers` also lets the `vlagent` container read the `config.v2.json` of each container (its environment and secrets). `vlagent` ships only the `*-json.log` files. For this reason the agent does not use the Docker socket, and it runs only under the profile `ops`.
+- No lines? See `docs/known-alerts.md` § "Log store: vlagent reads no lines".
 
 ## Login error (`auth_error`)
 

@@ -69,6 +69,26 @@ describe("the token store is wired into every composition root", () => {
   });
 });
 
+// F116 stage 8: "Track my sent mail" off must close the open loops. A caller of `setSentSync` without the hook would
+// leave them open with the texts of the deleted sent mail. The roots run at start, so the test reads the source.
+describe("the sent switch hooks are wired into every caller of setSentSync", () => {
+  test("every file outside the mail module that calls setSentSync passes sentSwitchHooks; the hook is onSentOff", () => {
+    return (async () => {
+      const callers: string[] = [];
+      for await (const file of new Bun.Glob("**/*.ts").scan({ cwd: import.meta.dir })) {
+        if (file.endsWith(".test.ts") || file.startsWith("modules/mail/")) continue;
+        const text = read(file);
+        const call = /await\s+setSentSync\(/.exec(text);
+        if (call === null) continue;
+        callers.push(file);
+        expect(callOf(text.slice(call.index), "setSentSync"), file).toContain("sentSwitchHooks");
+      }
+      expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web.ts"]);
+      expect(read("composition.ts")).toContain("onDisabled: (trx, ctx, input) => onSentOff(trx, ctx, input)");
+    })();
+  });
+});
+
 describe("committerDeps", () => {
   test("passes the token store on to the committer", () => {
     const oauthTokens: OAuthTokens = { accessToken: async () => "token", drop: () => undefined };

@@ -3,6 +3,7 @@ import type { Transaction } from "kysely";
 import { clearActionErrors, clearActionPayloads } from "./modules/actions";
 import { clearOutboxTexts, deleteOldLinkTokens } from "./modules/channels";
 import { clearDelegationTasks, isOpenDelegationDraft } from "./modules/delegation";
+import { clearLoopTexts } from "./modules/loops";
 import {
   clearCapturedHeaders,
   clearMailBodies,
@@ -43,6 +44,7 @@ export interface RetentionCounts {
   errors: number;
   tasks: number;
   outbox: number;
+  loops: number;
   tokens: number;
 }
 
@@ -57,6 +59,7 @@ export interface Clearers {
   clearActionErrors: typeof clearActionErrors;
   clearDelegationTasks: typeof clearDelegationTasks;
   clearOutboxTexts: typeof clearOutboxTexts;
+  clearLoopTexts: typeof clearLoopTexts;
   deleteOldLinkTokens: typeof deleteOldLinkTokens;
   deleteOldOAuthStates: typeof deleteOldOAuthStates;
   deleteExpiredVerifications: typeof deleteExpiredVerifications;
@@ -92,6 +95,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     clearActionErrors,
     clearDelegationTasks,
     clearOutboxTexts,
+    clearLoopTexts,
     deleteOldLinkTokens,
     deleteOldOAuthStates,
     deleteExpiredVerifications,
@@ -117,6 +121,8 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     const errors = await clearers.clearActionErrors(db, ctx, { before: textsBefore });
     const tasks = await clearers.clearDelegationTasks(db, ctx, { before: textsBefore });
     const outbox = await clearers.clearOutboxTexts(db, ctx, { before: textsBefore });
+    // The loop texts go 90 days after the loop closed; an open loop keeps them.
+    const loops = await clearers.clearLoopTexts(db, ctx, { before: textsBefore, now });
     // The `tokens` count holds the link tokens and the OAuth sign-in states.
     const tokens =
       (await clearers.deleteOldLinkTokens(db, ctx, { before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS) })) +
@@ -132,6 +138,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
       errors,
       tasks,
       outbox,
+      loops,
       tokens,
     };
     if (sumOf(counts) > 0) {
@@ -147,6 +154,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
         error_rows: errors,
         task_rows: tasks,
         outbox_rows: outbox,
+        loop_rows: loops,
         token_rows: tokens,
       });
     }

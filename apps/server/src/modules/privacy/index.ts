@@ -1,4 +1,4 @@
-export { deleteOrganization, type OrgDeleteResult } from "./delete";
+export { deleteOrganization, type OrgDeleteExpect, type OrgDeleteResult, type OrgDeleteScopedResult } from "./delete";
 export {
   addressRegex,
   DSR_ADDRESS_MAP,

@@ -13,3 +13,11 @@ Notes:
 - N3: the export reuses only stage 14 guard 1 (the exact org name); guards 2 and 3 are replaced by the address scan and the host check. Optional: refuse a mailbox row whose address is not `LAB_TARGETS.demo.mailbox`.
 - N5: the schema check does not catch a new text or uuid column that holds a row id without an FK (current such columns are Message-ID or hash keys with no row ids). Old user ids in `audit_log.actor` map only when the same id is in a `userRefs` column.
 - N4: the seed file has no size limit (the operator supplies it).
+
+## Re-review (Opus narrow, PASS 5a97fd5c, landed at 06d62992)
+B1 and TG1 closed. The scan refuses 11 forms in export and import, 48 hidden-character and double-encoded forms, and runs in linear time (5 MB in under 0.4 s); all 250,029 strings of lab-01 pass and the whole lab week exports and imports. `--replace` refuses an org with an active mailbox, a real secret, no credential row or no mailbox.
+
+Notes (carry to stage 16 docs):
+- Some exotic forms still pass the scan: `&#64` and `&#x40` with no semicolon, `=40` quoted-printable, RFC 2047 words, the encoded full-width at sign after NFKC, `(at)` forms. None is a plain address. Optional: NFKC again after the decode, and accept entities without the semicolon.
+- 24.8 says "never deleted" for a renamed real org: too strong (a zero-mailbox org of only the `--email` user with a zero-mailbox seed; the in-transaction `expect` reads addresses and members only, not status or secret). Reword to "refused unless every mailbox is a paused import placeholder".
+- A bare `@` in live LLM text fails the export (fails safe); run the export once on the real lab week before C6.
