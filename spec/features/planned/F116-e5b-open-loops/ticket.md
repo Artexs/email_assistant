@@ -24,7 +24,7 @@ E5b Open loops: the Stage 2 ticket in row 22 of `docs/product/stage-2/05-executi
 ## Sequenced
 
 - Plan after: none (planning may run ahead of the build).
-- Build after: E2a, E3a, E4-A, E5a (landed, in `spec/features/done/`).
+- Build after: E2a, E3a, E4-A, E5a (landed, in `spec/features/done/`); F109 stage 04 (`suspiciousThreadKeysOf`).
 - Gate: Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122)
 
 ## Notes

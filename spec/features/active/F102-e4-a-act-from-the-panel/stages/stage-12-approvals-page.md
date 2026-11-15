@@ -2,8 +2,6 @@
 
 Part of [`../plan.md`](../plan.md). Read P2, P5, P6, D5, D11, D13, Q1, Q8, Q13 and [`../commands.md`](../commands.md). Needs stages 07 and 11 landed. New Polish text: the review uses `claude-opus-5-5`.
 
-Two steps in `apps/web`, plus an e2e seed.
-
 ## Step 1 — Nav, page, list and detail
 
 - **Goal:** with `approvals_page` on, a member sees every waiting draft and opens one by link.
@@ -20,7 +18,7 @@ Two steps in `apps/web`, plus an e2e seed.
 ## Step 2 — Approve, reject, reason; e2e
 
 - **Goal:** an owner approves or rejects from the page; a member only reads.
-- **Files:** the components of Step 1, the e2e seed (`apps/server/src/scripts/e2e-seed.ts` or a new seed beside it: one organization with a waiting delegation send whose draft is applied, a held send, and a member), a new `apps/web/e2e/tests/approvals.spec.ts`.
+- **Files:** the components of Step 1, the e2e seed (`apps/server/src/scripts/e2e-seed.ts` or a new seed beside it; output through its `createCliOutput`, ids only: one organization with a waiting delegation send whose draft is applied, a held send, and a member), a new `apps/web/e2e/tests/approvals.spec.ts`.
 - **Decisions:**
   - Buttons Approve and Reject for an owner (`canWrite` and the role), only Reject for `held`, none for a member and for other states. One request at a time per item; buttons are disabled while it runs.
   - Answers: `approved` → "Approved, sending."; `approved_held` → the `heldBy` text; 409 `changed` → load `currentId` with "This draft was changed. Check the new version."; 409 `draft_not_ready`, `closed` → a short text and a reload; others → the existing error banner.
@@ -37,4 +35,4 @@ Two steps in `apps/web`, plus an e2e seed.
 
 ## Done when (stage)
 
-- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s12`); the final message names the page count of `csp checked in <n> page(s)`.
+- Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s12`); `web.log` shows `csp checked in <n> page(s)` (n: one more than on `master` before; name both).

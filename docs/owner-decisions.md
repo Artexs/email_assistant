@@ -331,3 +331,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: docs must not promise what is off; the plan-after rule; a safe, reversible publish path; a limit of the Pages host.
 - Undo: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6 give the other option and its change.
 - Source: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6.
+
+### 2026-11-15 · Operator console gets no axe check in F102 (F102) · scope · new
+- Choice: F102 stage 07 runs the axe accessibility check on every customer page and not on the operator console (Q20). The e2e server reads `OPERATOR_USER_IDS` at boot, before the seed makes user ids.
+- Why: an operator e2e user needs a separate stage; the console is for the owner only.
+- Undo: add a stage that gives the e2e run an operator user, then add the console to the axe spec.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q20.
+
+### 2026-11-15 · Improve: gate on defaults, spend caps, ship rules, escalation cost limit (F109) · money · new
+- Choice: the second pass after the first holdout report is taken on defaults. The holdout shows urgent false negatives at 14.1% and needs_reply at 6.2% against the target of under 2%, so the escalation experiment is built, and production escalation follows only on a "ship" decision (Q1). Real LLM spend caps: stage 09 $2.00, stage 11 $0.60, stage 13 $2.50, total at most $5.10; the escalation holdout run is capped at $1.50, above the $1 default run cap (Q7). v3 ships only when it beats v2 on one holdout run by max(4, 2 × run noise) key misses with no proven precision loss; the full 98% gate is not the rule (Q5, Q6). Escalation ships only when hidden important mail is at most half and classifier plus escalation cost at most $3 per mailbox per month (Q8). Phishing flags need recall at least 90% on the holdout, 0 flags on whitelisted mail and at most 2% on other mail, else the flag stays off (Q4). A flagged delegation mail plans nothing (Q9). v3 rolls back after 14 days on the pilot if the gap report says gap or key misses go up (Q18).
+- Why: the numbers show a real gap, but production change needs a measured win.
+- Undo: `spec/features/planned/F109-e3b-improve/questions.md` Q1, Q4–Q9, Q18 give the other option and its change.
+- Source: `spec/features/planned/F109-e3b-improve/questions.md`.

@@ -5,14 +5,14 @@ import { countReadyOriginals, expireReady } from "../modules/actions";
 import { getSettingsView, setMode, setToolSwitch, type SettingsChange } from "../modules/config";
 import { configureMailHosts, listSyncFolders, setSyncFolderEnabled, type TestMailRule } from "../modules/mail";
 import { setCategoryAutoWithGate } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal, testMailRule } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { describeSyncFolder, parseSettingsArgs, usage, type SettingsCommand } from "./mailbox-settings-args";
 
-const log = createLog("mailbox-settings");
+const out = createCliOutput("mailbox-settings");
 
 const ACTOR = "cli";
 
@@ -21,23 +21,23 @@ function printTable(before: SettingsSnapshot, after: SettingsSnapshot): void {
   describeSettings(after).forEach((line, index) => {
     const old = beforeLines[index];
     if (old === line) {
-      log.info(line);
+      out.print(line);
       return;
     }
-    log.info(`${old} -> ${line.slice(line.indexOf(":") + 2)}`);
+    out.print(`${old} -> ${line.slice(line.indexOf(":") + 2)}`);
   });
 }
 
 function printChange(result: SettingsChange): void {
   printTable(result.before, result.after);
   for (const warning of result.warnings) {
-    log.info(`warning: ${warning}`);
+    out.print(`warning: ${warning}`);
   }
   if (!result.changed) {
-    log.info("no change");
+    out.print("no change");
   }
   if (result.expired > 0 || result.closedGate) {
-    log.info(`expired ${result.expired} ready actions and sends`);
+    out.print(`expired ${result.expired} ready actions and sends`);
   }
 }
 
@@ -48,19 +48,19 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
   switch (command.kind) {
     case "show": {
       const view = await getSettingsView(deps, ctx, mailboxId);
-      describeSettings(view).forEach((line) => log.info(line));
+      describeSettings(view).forEach((line) => out.print(line));
       for (const row of await listSyncFolders(db, ctx, mailboxId, { enabledOnly: false })) {
-        log.info(describeSyncFolder(row));
+        out.print(describeSyncFolder(row));
       }
       return 0;
     }
     case "sync-folder": {
       const result = await setSyncFolderEnabled(db, ctx, mailboxId, command.key, command.value, ACTOR, now);
       if (result === "not_found") {
-        log.error(`sync folder ${command.key}: no such folder row (the sync adds it when the server lists the folder)`);
+        out.fail(`sync folder ${command.key}: no such folder row (the sync adds it when the server lists the folder)`);
         return 1;
       }
-      log.info(
+      out.print(
         `sync folder ${command.key}: ${command.value ? "on" : "off"} (${result === "changed" ? "changed" : "no change"})`
       );
       return 0;
@@ -99,12 +99,12 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
       );
       if (result.gate) {
         const { gate } = result;
-        log.info(
+        out.print(
           `go/no-go ${command.category}: ${gate.decision}, precision ${gate.precision ?? "n/a"}, kept ${gate.kept}, threshold ${gate.threshold ?? "n/a"}${command.force ? " FORCED" : ""}`
         );
       }
       if (result.kind === "refused") {
-        log.error(`refused: ${command.category} did not pass go/no-go (use --force to set auto on anyway)`);
+        out.fail(`refused: ${command.category} did not pass go/no-go (use --force to set auto on anyway)`);
         return 2;
       }
       printChange(result.change);
@@ -116,8 +116,8 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
         .execute((trx) =>
           expireReady(trx, ctx, { mailboxId, types: MAILBOX_ACTION_TYPES }, { now, reason: "manual", actor: ACTOR })
         );
-      log.info(`expired ${expired.length} ready actions`);
-      log.info(`ready mailbox actions left: ${await countReadyOriginals(db, ctx, mailboxId)}`);
+      out.print(`expired ${expired.length} ready actions`);
+      out.print(`ready mailbox actions left: ${await countReadyOriginals(db, ctx, mailboxId)}`);
       return 0;
     }
   }
@@ -126,7 +126,7 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
 async function main(): Promise<number> {
   const command = parseSettingsArgs(process.argv.slice(2));
   if (!command) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -138,7 +138,7 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     return await run(command, db, new Date(), testMailRule(config));
   } catch (error) {
-    log.error("failed:", describeError(error));
+    out.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -148,6 +148,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", describeError(error));
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });
