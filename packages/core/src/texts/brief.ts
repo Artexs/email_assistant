@@ -67,9 +67,9 @@ export const briefTexts = {
     replyLine: (from, subject, age) => `✍️ ${from} · ${subject} · ${age}`,
     ageUnderHour: "<1 godz.",
     ageHours: (hours) => `${hours} godz.`,
-    ageDays: (days) => `${days} d`,
+    ageDays: (days) => `${days} ${polish(days, "dzień", "dni", "dni")}`,
     waitingLine: (who, since, what) =>
-      who === null ? `⏳ Brak odpowiedzi od ${since} · ${what}` : `⏳ Brak odpowiedzi od ${who} od ${since} · ${what}`,
+      who === null ? `⏳ Brak odpowiedzi od ${since} · ${what}` : `⏳ ${who} nie odpowiada od ${since} · ${what}`,
     waitingMarker: {
       autoReply: "tylko automatyczna odpowiedź",
       wouldDraft: "przygotowałbym przypomnienie o odpowiedzi",
@@ -86,7 +86,9 @@ export const briefTexts = {
     openLoops: (waiting, promised) => {
       const parts = [
         ...(waiting > 0 ? [`${waiting} ${polish(waiting, "oczekująca", "oczekujące", "oczekujących")}`] : []),
-        ...(promised > 0 ? [`${promised} ${polish(promised, "obietnica", "obietnice", "obietnic")} z terminem`] : []),
+        ...(promised > 0
+          ? [`${promised} ${polish(promised, "obietnica", "obietnice", "obietnic")} z terminem na dziś`]
+          : []),
       ];
       return `🔁 Otwarte sprawy: ${parts.join(", ")}`;
     },

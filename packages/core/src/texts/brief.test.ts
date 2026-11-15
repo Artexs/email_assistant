@@ -14,10 +14,10 @@ describe("the count line of a later digest", () => {
     [5, 0, "🔁 Otwarte sprawy: 5 oczekujących"],
     [12, 0, "🔁 Otwarte sprawy: 12 oczekujących"],
     [22, 0, "🔁 Otwarte sprawy: 22 oczekujące"],
-    [0, 1, "🔁 Otwarte sprawy: 1 obietnica z terminem"],
-    [0, 3, "🔁 Otwarte sprawy: 3 obietnice z terminem"],
-    [0, 5, "🔁 Otwarte sprawy: 5 obietnic z terminem"],
-    [3, 1, "🔁 Otwarte sprawy: 3 oczekujące, 1 obietnica z terminem"],
+    [0, 1, "🔁 Otwarte sprawy: 1 obietnica z terminem na dziś"],
+    [0, 3, "🔁 Otwarte sprawy: 3 obietnice z terminem na dziś"],
+    [0, 5, "🔁 Otwarte sprawy: 5 obietnic z terminem na dziś"],
+    [3, 1, "🔁 Otwarte sprawy: 3 oczekujące, 1 obietnica z terminem na dziś"],
   ] as const)("pl %i waiting, %i promised", (waiting, promised, line) => {
     expect(pl.openLoops(waiting, promised)).toBe(line);
   });
@@ -62,6 +62,7 @@ describe("the fixed lines", () => {
 
   test("age words", () => {
     expect([en.ageUnderHour, en.ageHours(3), en.ageDays(2)]).toEqual(["<1 h", "3 h", "2 d"]);
-    expect([pl.ageUnderHour, pl.ageHours(3), pl.ageDays(2)]).toEqual(["<1 godz.", "3 godz.", "2 d"]);
+    expect([pl.ageUnderHour, pl.ageHours(3), pl.ageDays(2)]).toEqual(["<1 godz.", "3 godz.", "2 dni"]);
+    expect([1, 5, 22].map((days) => pl.ageDays(days))).toEqual(["1 dzień", "5 dni", "22 dni"]);
   });
 });

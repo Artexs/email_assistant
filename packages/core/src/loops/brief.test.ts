@@ -169,12 +169,12 @@ describe("the lines (T2, Polish and English)", () => {
       "",
       "🔴 Jan Kowalski <jan@firma.test> · Pilna zmiana terminu · 2 godz.",
       "",
-      "✍️ Jan Kowalski <jan@firma.test> · Oferta Q1 · 3 d",
+      "✍️ Jan Kowalski <jan@firma.test> · Oferta Q1 · 3 dni",
       "",
-      "⏳ Brak odpowiedzi od anna@example.test od wt. 10.11 · Oferta Q1",
-      "⏳ Brak odpowiedzi od b@example.test od wt. 10.11 · Umowa · tylko automatyczna odpowiedź",
-      "⏳ Brak odpowiedzi od c@example.test od wt. 10.11 · Cennik · przygotowałbym przypomnienie o odpowiedzi",
-      "⏳ Brak odpowiedzi od d@example.test od wt. 10.11 · Plan · tylko automatyczna odpowiedź · przypomnienie czeka na Twoje zatwierdzenie",
+      "⏳ anna@example.test nie odpowiada od wt. 10.11 · Oferta Q1",
+      "⏳ b@example.test nie odpowiada od wt. 10.11 · Umowa · tylko automatyczna odpowiedź",
+      "⏳ c@example.test nie odpowiada od wt. 10.11 · Cennik · przygotowałbym przypomnienie o odpowiedzi",
+      "⏳ d@example.test nie odpowiada od wt. 10.11 · Plan · tylko automatyczna odpowiedź · przypomnienie czeka na Twoje zatwierdzenie",
       "",
       "🤝 Obietnica dla anna@example.test: wysłać ofertę · termin pt. 20.11",
       "",
@@ -284,7 +284,7 @@ describe("the consent of the user (T4)", () => {
       "en",
       en,
       [
-        "⏳ Waiting on others: 2",
+        "⏳ Waiting on others: 1",
         "🤝 Promised: 1",
         "⌛ Closed without an answer: 1",
         "Confirm the new Telegram terms in the panel to see them here.",
@@ -294,7 +294,7 @@ describe("the consent of the user (T4)", () => {
       "pl",
       pl,
       [
-        "⏳ Czekasz na odpowiedź: 2",
+        "⏳ Czekasz na odpowiedź: 1",
         "🤝 Obietnice: 1",
         "⌛ Zamknięte bez odpowiedzi: 1",
         "Potwierdź nowe zasady Telegrama w panelu, aby zobaczyć je tutaj.",
@@ -441,6 +441,32 @@ describe("the brief inside the digest", () => {
     expect(message.buttons.flat().map((button) => button.text)).toEqual(["✅ 1", "✏️ 1", "✅ 2", "✏️ 2"]);
   });
 
+  test("the delegation footer stays when no ⏳ line names a delegation, and for a member without consent (review 18 N3)", () => {
+    const footer = "Delegations: 1 waiting for a reply, 1 overdue";
+    const loopsOnly = fullInput({ waitingDelegations: part([]) });
+    const only = renderDigestWithBrief(
+      base({ brief: { sections: loopSections(loopsOnly), urgentEmailIds: [], openLoops: null } }),
+      en
+    ).message.text;
+    expect(only).toContain(footer);
+    // A delegation due later is in the footer count only: no ⏳ line for it.
+    expect(only).not.toContain("Marta");
+    const uncovered = renderDigestWithBrief(
+      base({
+        brief: { sections: loopSections({ ...fullInput(), consent: false }), urgentEmailIds: [], openLoops: null },
+      }),
+      en
+    ).message.text;
+    expect(uncovered).toContain(footer);
+    // The ⏳ count of a member without consent counts loops only: the delegation is in the footer.
+    expect(uncovered).toContain("⏳ Waiting on others: 3");
+    expect(uncovered).not.toContain("Marta");
+    // A ⏳ line with a delegation: the footer goes.
+    const named = renderDigestWithBrief(base({ brief: { sections, urgentEmailIds: [], openLoops: null } }), en).message
+      .text;
+    expect(named).not.toContain(footer);
+  });
+
   test("a later digest keeps the delegation footer and adds the count line", () => {
     const text = renderDigestWithBrief(
       base({ brief: { sections: null, urgentEmailIds: [], openLoops: { waiting: 3, promised: 1 } } }),
@@ -454,7 +480,7 @@ describe("the brief inside the digest", () => {
         base({ brief: { sections: null, urgentEmailIds: [], openLoops: { waiting: 0, promised: 2 } } }),
         pl
       ).message.text
-    ).toContain("🔁 Otwarte sprawy: 2 obietnice z terminem");
+    ).toContain("🔁 Otwarte sprawy: 2 obietnice z terminem na dziś");
   });
 
   test("no brief: the digest is the one of today", () => {

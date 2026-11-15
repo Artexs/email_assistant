@@ -235,9 +235,10 @@ function renderListed(
   if (input.skippedTooOld > 0) footer.push(texts.digest.notProcessedOld(input.skippedTooOld));
   if (input.skippedBacklog > 0) footer.push(texts.digest.notProcessedBacklog(input.skippedBacklog));
   if (input.waiting > 0) footer.push(texts.digest.waiting(input.waiting));
-  // The ⏳ section of the first digest of the day names the delegations: its footer line goes (D16).
-  const firstOfDay = input.brief?.sections !== undefined && input.brief.sections !== null;
-  if (!firstOfDay && input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
+  // The footer line of the delegations goes only when a ⏳ line of the first digest of the day names a delegation (D16, review 18 N3):
+  // else a delegation due later, or a member without consent, would see no delegation at all.
+  const delegationShown = input.brief?.sections?.waiting.lines.some((line) => "delegation" in line) === true;
+  if (!delegationShown && input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
     footer.push(texts.digest.delegations(input.delegations.open, input.delegations.overdue));
   }
   const openLoops = input.brief?.openLoops ?? null;

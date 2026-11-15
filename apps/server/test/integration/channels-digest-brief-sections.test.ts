@@ -221,7 +221,7 @@ describe("language, shadow, links", () => {
       await runDigests(trx, EIGHT);
       const [text = ""] = await digestTexts(trx, org.ctx.orgId);
       expect(text).toContain("📌 DO ZAŁATWIENIA DZIŚ");
-      expect(text).toContain("⏳ Brak odpowiedzi od anna@example.test od wt. 10.11 · send the offer");
+      expect(text).toContain("⏳ anna@example.test nie odpowiada od wt. 10.11 · send the offer");
     });
   });
 

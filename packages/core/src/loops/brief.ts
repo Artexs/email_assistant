@@ -130,7 +130,14 @@ export function loopSections(input: BriefInput): BriefSections {
   return {
     urgent: section(input.urgent, mailLine("urgent"), true, mails(input.urgent)),
     reply: section(input.reply, mailLine("reply"), true, mails(input.reply)),
-    waiting: section({ rows: waitingOrder, total: waitingTotal }, (row) => row.line, consent, waitingOrder),
+    waiting: consent
+      ? section({ rows: waitingOrder, total: waitingTotal }, (row) => row.line, consent, waitingOrder)
+      : // Delegations are not loop data (D17): their footer line stays, so the count is of loops only (review 18 N3).
+        {
+          lines: [],
+          more: 0,
+          hidden: Math.max(input.waitingLoops.total, input.waitingLoops.rows.length),
+        },
     promised: section(
       input.promised,
       (loop) => ({ section: "promised", loop }),
