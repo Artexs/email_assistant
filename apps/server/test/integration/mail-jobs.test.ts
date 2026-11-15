@@ -723,12 +723,59 @@ describe("the Sent pass in the sync job", () => {
       const done = capture.lines.filter((line) => line.includes("sent_sync_done"));
       expect(done).toHaveLength(1);
       expect(done[0]).toContain(box.mailboxId);
+      expect(done[0]).toMatch(/ status=done /);
+      expect(done[0]).toMatch(/ duration_ms=\d+$/);
       expect(capture.lines.filter((line) => line.includes("sent_texts_done"))).toHaveLength(1);
       expect(box.mailboxId).toMatch(UUID_LOWER);
       const all = capture.lines.join("\n");
       for (const secret of [SENT_SUBJECT, "canary-77aa", "to1@x.test", "me@corp.test", box.address, "Sent"]) {
         expect(all).not.toContain(secret);
       }
+    });
+  });
+
+  test("1b: a Sent fetchContent that never returns: the run ends near the budget, the log says budget, the connection closes, no error code", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      await enableSent(trx, box);
+      const o = openers();
+      const fake = await fakeWithMail(box, o, true);
+      let contentCalls = 0;
+      const inboxContent = fake.fetchContent.bind(fake);
+      fake.fetchContent = (folder, uid) => {
+        if (folder !== "Sent") return inboxContent(folder, uid);
+        contentCalls += 1;
+        return new Promise(() => undefined);
+      };
+
+      const capture = captureConsole();
+      const started = performance.now();
+      try {
+        await createMailSyncJob({
+          db: trx,
+          secrets,
+          openProvider: o.openProvider,
+          isOwnActionId: async () => false,
+          sentOriginOf: async () => null,
+          now: () => NOW,
+          sentBudgetMs: 50,
+        }).run();
+      } finally {
+        capture.restore();
+      }
+
+      expect(performance.now() - started).toBeLessThan(2_000);
+      expect(contentCalls).toBe(1);
+      expect(fake.closed).toBe(true);
+      const done = capture.lines.filter((line) => line.includes("sent_sync_done"));
+      expect(done).toHaveLength(1);
+      expect(done[0]).toMatch(/ status=budget /);
+      expect(done[0]).toMatch(/ duration_ms=\d+$/);
+      expect(capture.lines.filter((line) => line.includes("sent_sync_failed"))).toEqual([]);
+      const state = await getSentSyncState(trx, { orgId: box.orgId }, box.mailboxId);
+      expect(state?.lastPassAt).toEqual(NOW);
+      expect(state?.lastErrorCode).toBeNull();
     });
   });
 
