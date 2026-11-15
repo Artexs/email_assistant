@@ -37,30 +37,28 @@ const log = createLog("main");
 // The one value goes to the committer and to the Telegram runtime.
 export function actionsScope(config: Config): ActionsScope {
   if (config.ACTIONS_SCOPE === "off") {
-    log.info("actions committer: mailbox changes are off (ACTIONS_SCOPE=off)");
+    log.info("actions_scope", { config_key: "ACTIONS_SCOPE", scope: "off" });
     return { kind: "off" };
   }
   if (config.ACTIONS_SCOPE === "synthetic") {
-    log.info("actions committer applies mailbox changes to test mail only");
+    log.info("actions_scope", { config_key: "ACTIONS_SCOPE", scope: "synthetic" });
     return { kind: "synthetic", testMail: testMailRule(config) };
   }
-  log.warn(
-    "actions committer applies mailbox changes to the real mail of every active mailbox, by its mode (ACTIONS_SCOPE=all)"
-  );
+  log.warn("actions_scope", { config_key: "ACTIONS_SCOPE", scope: "all" });
   return { kind: "all" };
 }
 
 // D16, D31. The config check guarantees the list for `self`.
 export function sendScope(config: Config): SendScope {
   if (config.SEND_SCOPE === "off") {
-    log.info("sends: off (SEND_SCOPE=off)");
+    log.info("send_scope", { config_key: "SEND_SCOPE", scope: "off" });
     return { kind: "off" };
   }
   if (config.SEND_SCOPE === "self") {
-    log.warn("sends go only to the SEND_TEST_ADDRESSES list (SEND_SCOPE=self)");
+    log.warn("send_scope", { config_key: "SEND_SCOPE", scope: "self" });
     return { kind: "self", addresses: sendTestAddresses(config) };
   }
-  log.warn("sends go to real recipients after an owner's tap (SEND_SCOPE=all)");
+  log.warn("send_scope", { config_key: "SEND_SCOPE", scope: "all" });
   return { kind: "all" };
 }
 

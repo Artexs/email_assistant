@@ -23,6 +23,7 @@ const SKIPPED = [
   "dsr_tombstones",
   "mailbox_credentials",
   "mailbox_oauth_states",
+  "ops_alerts",
   "schema_migrations",
 ];
 

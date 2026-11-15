@@ -22,9 +22,9 @@ import {
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError, SoftError } from "../../platform/errors";
+import { errorFields, SoftError } from "../../platform/errors";
 import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
-import { createLog } from "../../platform/log";
+import { createLog, type Log } from "../../platform/log";
 import { createPlanned, setDelegationId, type CreatedAction, type PlannedActionInput } from "../actions";
 import { auditEvents, countLlmCallsSince, recordAudit, recordLlmCall } from "../audit";
 import { lockSettingsForShare } from "../config";
@@ -48,6 +48,11 @@ import { insertTriageResult } from "./repo";
 import { assessEmail, type SuspiciousContext } from "./suspicious-context";
 
 const log = createLog("triage");
+
+// D6: one child per mail; the ids of the lines of one mail stay out of each call.
+function emailLogOf(ctx: TenantContext, email: ClaimedEmail): Log {
+  return log.with({ org_id: ctx.orgId, mailbox_id: email.mailbox_id, email_id: email.id });
+}
 
 export interface TriageMailbox {
   id: string;
@@ -203,6 +208,7 @@ export async function saveTriage(
   decision: TriageDecision,
   now: Date
 ): Promise<TriageOutcome> {
+  const emailLog = emailLogOf(ctx, email);
   const categoryAuto = autoFor(mailbox.policy, decision.finalCategory);
   const items: PlannedActionInput[] = planActions(
     decision.finalCategory,
@@ -231,7 +237,7 @@ export async function saveTriage(
 
   const run = async (trx: Transaction<DB>): Promise<TriageOutcome> => {
     if ((await lockSettingsForShare(trx, ctx, mailbox.id)) !== mailbox.settingsVersion) {
-      log.debug(`triage ${email.id}: settings changed, mail released`);
+      emailLog.debug("triage_released_settings_changed");
       const released = await releaseEmail(trx, ctx, email.id, email.locked_at, {
         nextAttemptAt: null,
         countAttempt: false,
@@ -239,7 +245,7 @@ export async function saveTriage(
       return released ? { kind: "settings_changed" } : { kind: "lost" };
     }
     if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "triaged" }))) {
-      log.warn(`triage ${email.id}: lost the claim`);
+      emailLog.warn("triage_claim_lost");
       return { kind: "lost" };
     }
     const answeredDelegationId = await markReply(trx, ctx, mailbox.id, email, now);
@@ -295,9 +301,10 @@ export async function saveTriage(
 
   const result = await (db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run));
   if (result.kind === "triaged") {
-    log.info(
-      `triage ${email.id}: mailbox ${mailbox.id} category ${decision.finalCategory} code ${decision.auditReasonCode}`
-    );
+    emailLog.info("triage_done", {
+      category: decision.finalCategory,
+      reason: decision.auditReasonCode,
+    });
   }
   return result;
 }
@@ -346,6 +353,7 @@ async function handleClassifyError(
   promptVersion: string,
   error: unknown
 ): Promise<TriageOutcome> {
+  const emailLog = emailLogOf(ctx, email);
   const now = deps.now();
   // Soft and config errors: the mail is not at fault. Release it without a count and pause the client.
   if (error instanceof SoftError || error instanceof LlmConfigError) {
@@ -389,7 +397,11 @@ async function handleClassifyError(
       countAttempt: true,
     });
     if (!released) return { kind: "lost" };
-    log.warn(`triage ${email.id}: ${describeError(error)}, try ${email.attempts + 1} of ${HARD_ERROR_TRIES}`);
+    emailLog.warn("triage_retry", {
+      attempts: email.attempts + 1,
+      max_attempts: HARD_ERROR_TRIES,
+      ...errorFields(error),
+    });
     return { kind: "retry_later" };
   }
   return finishTriageError(deps, ctx, mailbox, email);
@@ -409,9 +421,10 @@ async function skipEmail(
   email: ClaimedEmail,
   reason: SkipReason
 ): Promise<TriageOutcome> {
+  const emailLog = emailLogOf(ctx, email);
   const run = async (trx: Transaction<DB>): Promise<TriageOutcome> => {
     if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "skipped", skipReason: reason }))) {
-      log.warn(`triage ${email.id}: lost the claim`);
+      emailLog.warn("triage_claim_lost");
       return { kind: "lost" };
     }
     // A late reply still closes the loop.
@@ -436,6 +449,7 @@ export async function triageOne(
   mailbox: TriageMailbox,
   email: ClaimedEmail
 ): Promise<TriageOutcome> {
+  const emailLog = emailLogOf(ctx, email);
   if (email.backfilled_at === null && email.received_at.getTime() < deps.now().getTime() - MAX_AGE_MS) {
     return skipEmail(deps, ctx, mailbox, email, "too_old");
   }
@@ -564,7 +578,7 @@ export async function triageOne(
         at: deps.now(),
       });
     } catch (auditError) {
-      log.warn(`triage ${email.id}: llm.call audit write failed: ${describeError(auditError)}`);
+      emailLog.warn("llm_audit_failed", errorFields(auditError));
     }
     return handleClassifyError(deps, ctx, mailbox, email, rules.vip, suspiciousReasons, choice.version, error);
   }

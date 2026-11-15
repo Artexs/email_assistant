@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-holdout",
+  "batch": "batch-006",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "s-0154",
+      "subject": "Reklamacje - pytanie o uszkodzone palety",
+      "body": "Szanowna Pani Genowefo,\n\nczy uszkodzenia palet z ostatniej dostawy powstały według Pani przy rozładunku w hurtowni, czy dopiero na trasie? Od odpowiedzi zależy, kogo obciążymy kosztami.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0156",
+      "subject": "Re: Faktury i platnosci",
+      "body": "Dear Ewelina,\n\nthank you for the corrected statement of the fuel invoices. Our accounting team has reviewed it, and two lines for the export trucks still look different from our own records. Please confirm the figures for January once more, so that both sides use the same amounts before we close the month. I will deliver our side of the numbers, with the card usage per truck, by next week.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0157",
+      "subject": "Kalendarz zarządu - liczby",
+      "body": "Cześć Zbigniew,\n\nkrótko o kalendarzu zarządu na najbliższe tygodnie. Dorota uporządkowała wszystkie wyjazdy służbowe i spotkania z klientami, więc plan jest teraz spójny. W lutym zarząd spędzi łącznie osiem dni poza biurem: dwa w Gdańsku, trzy w Rotterdamie i trzy na targach branżowych. Pozostałe dni są zarezerwowane na przeglądy budżetowe i posiedzenie rady, o którym rozmawiamy od tygodni.\n\nLiczby z kalendarza, czyli liczbę dni podróży, koszty wyjazdów i obłożenie sal, dostarczę Ci do przyszłej środy. Dorota przygotowuje je w jednym zestawieniu, żebyś nie musiał szukać danych w kilku miejscach. Daniel Hargreaves jest w kopii, bo część wyjazdów dotyczy wspólnych przetargów z jego firmą i warto, żeby znał nasze terminy z wyprzedzeniem.\n\nSprawy kalendarza prowadzimy z Dorotą bez zakłóceń, a zmiany w planie zgłaszam na bieżąco. Wyjazdy do Rotterdamu i Gdańska zaplanowaliśmy tak, aby żaden z nich nie wypadał w tygodniu, w którym rada zbiera materiały. Pozostawiliśmy też jeden wolny dzień w każdym tygodniu na sprawy, których nie da się przewidzieć, na przykład awarię albo pilne spotkanie z klientem.\n\nWiktor"
+    },
+    {
+      "id": "s-0158",
+      "subject": "Eksport i odprawy celne - podsumowanie tygodnia",
+      "body": "Dear Karin, dear Oliver,\n\nI would like to give you both a short summary of the export week. The three trucks to Gothenburg left on schedule, and the customs clearance on our side took less than two hours for each of them. The documents for the Nordic Foods Trade pallets were complete, including the certificates that Karin's team asked for in their last note. The broker reported no remarks from the port authority.\n\nOn the planning side, the new weekly slot on the Rotterdam lane is now stable. We kept the Tuesday departure and moved the Friday departure to Thursday, because the customs office there closes early before the weekend. This change reduced the waiting time at the border, and the drivers confirm that the queues are shorter than they were a month ago.\n\nThe cost per load stays within the range that we presented to Nordic at the start of the quarter. Oliver's team keeps the customs files in the shared folder, and Karin's team can see the current status of each shipment there.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0159",
+      "subject": "Umowa ramowa z Nordic Foods Trade - status",
+      "body": "Dear Karin,\n\nI wanted to let you know that the framework agreement with Nordic Foods Trade has passed our internal legal review. The clauses on delivery windows, pallet exchange and certificates are now in the form that your procurement team proposed, with two small changes in the wording of the liability section. Our board is satisfied with the structure of the document, and the commercial terms match the offer from last autumn.\n\nThank you for the clear and well prepared comments from your side."
+    },
+    {
+      "id": "s-0160",
+      "subject": "Terminy dostaw i okna rozładunku - nowy grafik",
+      "body": "Dear Karin, dear Tomasz, dear Oliver,\n\na short update for all three of you, because the new unloading schedule affects each of your deliveries. At the Gdańsk terminal the windows are now split into two blocks: early morning for the food importers and late morning for the furniture and general cargo. The Nordic Foods Trade pallets keep the Tuesday and Thursday slots. Meblodrew keeps the Wednesday slot, and the export trailers load on Friday.\n\nThe operations team has already updated the dock plan and the roster. The first week under the new schedule ran without delays, and the average waiting time of a truck at the gate fell below forty minutes."
+    },
+    {
+      "id": "s-0161",
+      "subject": "Re: Kalendarz zarzadu i podroze sluzbowe",
+      "body": "Szanowny Panie Przewodniczący,\n\nw odpowiedzi na Pańską wiadomość przekazuję informację o kalendarzu zarządu w najbliższych tygodniach. Podróże służbowe w lutym obejmują wizytę w terminalu w Gdańsku oraz wyjazd do Rotterdamu, gdzie odbędą się spotkania z agentem celnym i z przedstawicielami portu. Wszystkie terminy zostały uzgodnione z asystentką zarządu i wpisane do wspólnego kalendarza, a sale na posiedzenie rady zarezerwowano z wyprzedzeniem. Koszty podróży mieszczą się w budżecie zarządu na ten kwartał i nie wymagają dodatkowej decyzji rady.\n\nPosiedzenie rady nadzorczej odbędzie się w pierwotnym terminie. Kalendarz zarządu nie koliduje z żadnym punktem porządku obrad, a część podróży zaplanowano tak, aby zarząd był w biurze w dniach, w których rada przygotowuje materiały. Wszelkie zmiany w planie wyjazdów będą opisane w aktualizacji kalendarza prowadzonej przez asystentkę. Zarząd ograniczył liczbę wyjazdów do niezbędnego minimum i połączył spotkania w Rotterdamie w jedną podróż, aby skrócić czas nieobecności w biurze.\n\nZ poważaniem\nWiktor Szalewski\n\nZbigniew Orłowicz napisał:\n> Panie Wiktorze, proszę o informację o kalendarzu zarządu na najbliższe tygodnie, ze szczególnym uwzględnieniem wyjazdów służbowych."
+    },
+    {
+      "id": "s-0162",
+      "subject": "Zakup naczep i serwis floty - stan prac",
+      "body": "Cześć Halino, cześć Karin,\n\nkrótko o zakupie naczep i serwisie floty, bo sprawa dotyczy Was obu z różnych powodów. Dostawca naczep zakończył wstępne oględziny floty i przesłał ofertę na sześć nowych naczep chłodniczych. Cena mieści się w budżecie, a czas dostawy wynosi około dziesięciu tygodni. Przy okazji serwisu zakończono przegląd siedmiu starszych naczep i trzy z nich wymagają wymiany układów hamulcowych.\n\nKarin, piszę do Ciebie, ponieważ nowe naczepy chłodnicze zwiększą dostępność transportu dla dostaw spożywczych, o których rozmawiamy z Twoim zespołem w ramach umowy ramowej. Halina odpowiada za harmonogram serwisu i potwierdziła, że przeglądy da się zmieścić w ciągu dwóch tygodni bez wyłączania tras eksportowych z ruchu.\n\nWiadomość ma charakter informacyjny. Wszystkie dokumenty dotyczące oferty i serwisu leżą we wspólnym folderze floty. Dostawca naczep zaproponował także pakiet serwisowy na trzy lata, który obejmuje przeglądy okresowe i wymianę części zużywalnych. Oferta zawiera cenę ryczałtową za każdy przegląd, co ułatwia planowanie kosztów floty w kolejnych kwartałach.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0163",
+      "subject": "Kalendarz zarządu - luty i marzec",
+      "body": "Cześć Zbigniew,\n\nwysyłam skrót planu zarządu na luty i marzec. Luty zaczyna się od przeglądów budżetowych i spotkań z działem finansów. W drugim tygodniu odwiedzam terminal w Gdańsku i omawiam z Haliną grafik rozładunków. W trzecim tygodniu jadę do Rotterdamu, gdzie zaplanowano spotkania z agentem celnym i przedstawicielami portu, a ostatni tydzień miesiąca zajmą przygotowania do posiedzenia rady.\n\nW marcu mamy dwa wyjazdy na targi branżowe i jedno wspólne spotkanie z Baltic Freight Partners dotyczące przetargów, które prowadzimy razem. Dorota zbiera wszystkie szczegóły w jednym dokumencie, więc plan będzie aktualny przez cały okres. Szczegółowe godziny spotkań i sale zostały już zarezerwowane. Wyjazdy na targi zaplanowaliśmy w dniach, w których nie ma ważnych terminów operacyjnych, a pobyt w Rotterdamie połączyliśmy z wizytą u agenta celnego, żeby ograniczyć liczbę podróży do minimum.\n\nTen opis nie wymaga od Ciebie żadnych działań, przekazuję go, żebyś znał terminy zarządu z wyprzedzeniem.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0164",
+      "subject": "Posiedzenie rady - decyzja zarządu",
+      "body": "Cześć Zbigniew,\n\nzarząd zakończył przegląd materiałów na posiedzenie rady nadzorczej. Wyniki za czwarty kwartał są zgodne z prognozą, a projekt budżetu przeszedł kontrolę finansową bez uwag. Największym otwartym tematem pozostaje decyzja o zakupie nowych naczep chłodniczych, bo od niej zależy część nakładów inwestycyjnych na kolejny rok.\n\nDecyzję zarządu w sprawie posiedzenia rady, razem z uzasadnieniem i krótką oceną ryzyka, przekażę Ci do środy. Wcześniej chcę jeszcze porozmawiać z Haliną o możliwościach serwisu floty, ponieważ jej opinia wpłynie na końcowy kształt rekomendacji dla rady.\n\nMateriały dla członków rady trafią do nich w terminie wynikającym ze statutu. Pakiet obejmie także aktualne zestawienie ryzyk, o którym rozmawialiśmy przy poprzednim posiedzeniu. Wszystkie dokumenty będą w jednym pakiecie, w tym samym formacie co przy poprzednim posiedzeniu, aby ich lektura była możliwie prosta. Zarząd traktuje przygotowanie tego posiedzenia priorytetowo, bo od jego wyniku zależy plan inwestycji floty oraz warunki umów z dwoma największymi klientami w kolejnym roku.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0165",
+      "subject": "Re: Umowy i cenniki sprzedazy",
+      "body": "Cześć Piotr,\n\ndzięki za przesłane warianty rabatów w cenniku. Powiedz mi do 11 lutego, który wariant rabatu najlepiej pasuje do naszych klientów hurtowych, bo od tego zależy ostateczna wersja umów ramowych. Streszczenie zmian w cenniku wyślę Ci do 1 lutego.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nPiotr Lewandrowski napisał:\n> Wiktor, mamy trzy warianty rabatów ilościowych. Jeden jest najtańszy, ale klienci hurtowi mogą go odebrać jako cofnięcie dotychczasowych warunków! Piotr"
+    },
+    {
+      "id": "s-0166",
+      "subject": "Re: System magazynowy i awarie ERP",
+      "body": "Cześć Halina, cześć Rafał,\n\nzamykamy temat poniedziałkowej awarii systemu magazynowego. Producent potwierdził, że przyczyną była aktualizacja modułu synchronizacji z ERP, a nie sprzęt w naszej serwerowni. Dane z dwóch godzin przestoju zostały odtworzone i dział magazynu uzupełnił je ręcznie. Karin jest w kopii, bo awaria opóźniła potwierdzenie jednej z dostaw dla Nordic Foods Trade, więc chcemy, żeby znała przyczynę.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nHalina Strzemecka napisała:\n> Wiktor, awaria WMS trwała około dwóch godzin, magazyn w Gdańsku pracował na papierze. Dane odtwarzamy z kopii."
+    },
+    {
+      "id": "s-0167",
+      "subject": "Faktury i płatności - styczeń",
+      "body": "Hi Magdalena,\n\nplease confirm the January figures for the fuel invoices. Ewelina's statement and our ledger differ by two lines.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0168",
+      "subject": "Umowy i cenniki - cennik na luty",
+      "body": "Szanowni Państwo,\n\ninformuję, że cennik transportu na luty został zatwierdzony przez zarząd bez zmian stawek podstawowych."
+    },
+    {
+      "id": "s-0170",
+      "subject": "Przetarg sieci Zielona Hurtownia - stan prac",
+      "body": "Szanowna Pani Genowefo,\n\ninformuję, że nasz zespół zakończył wewnętrzną weryfikację dokumentów przetargowych sieci Zielona Hurtownia. Stawki transportu chłodniczego zostały przeliczone, a warunki dostaw są zgodne z wymaganiami z Pani ostatniej wiadomości. Zarząd jest zadowolony z przygotowanej oferty i nie widzi w niej istotnych ryzyk.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0171",
+      "subject": "Eksport i odprawy celne - Gothenburg",
+      "body": "Dear Karin,\n\nfor your information, the customs clearance for the last Nordic Foods Trade shipment was completed without remarks from the port authority. All certificates were in order, and the pallets reached the terminal in Gothenburg on the planned day. Halina is on copy because her operations team coordinated the loading on our side.\n\nBest regards\nWiktor Szalewski"
+    },
+    {
+      "id": "s-0172",
+      "subject": "Terminy dostaw i okna rozładunku",
+      "body": "Cześć Halina,\n\nprzejrzałem nowy grafik okien rozładunku w Gdańsku i zebrałem kilka uwag. Podział na dwa bloki poranne działa lepiej, niż zakładałem: średni czas oczekiwania ciężarówki przy bramie spadł poniżej czterdziestu minut, a kolejki po południu zniknęły. Dobrze, że rozdzieliłaś dostawy spożywcze od mebli, bo to ograniczyło zamieszanie przy rampach.\n\nWidzę natomiast, że czwartkowe okno Nordic Foods Trade jest nadal najbardziej obciążone w całym tygodniu. Dane z ostatnich dwóch tygodni pokazują, że trzy z pięciu opóźnień wystąpiły właśnie wtedy. Na razie nie planuję zmian, bo przyczyną były dwie jednorazowe awarie na trasie, a nie sam grafik. Informuję Cię o tym, żebyś wiedziała, że obserwuję ten punkt.\n\nZarząd zna te liczby i uznaje je za dobry wynik pierwszego miesiąca. Najważniejsze jest to, że kierowcy nie zgłaszają już problemów z wjazdem na teren terminala, a zespół rampy ma jasne zasady kolejności. Dziękuję Tobie i zespołowi za szybkie wdrożenie zmian, bo przygotowanie nowego grafiku zajęło tylko kilka dni.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0173",
+      "subject": "Umowa ramowa z Nordic - wybór wariantu",
+      "body": "Hi Oliver,\n\nI read the three delivery models in your note about the Nordic framework agreement: weekly fixed slots, flexible slots with a notice period, or a mixed model. Which option fits the Nordic account best in your view? Tell me what you would pick and why, even in two lines. You know their warehouse better than I do.\n\nWiktor"
+    },
+    {
+      "id": "s-0174",
+      "subject": "Posiedzenie rady - materiały",
+      "body": "Szanowni Państwo,\n\nprzekazuję krótką informację organizacyjną. Posiedzenie rady nadzorczej odbędzie się w pierwotnym terminie, a materiały dla członków rady przygotowuje zarząd razem z działem finansów. Tomasz Brzeziński otrzymuje tę wiadomość, ponieważ umowa z Meblodrew jest jednym z punktów dotyczących przychodów, a Genowefa Jastrzębska została dopisana w kopii, bo dotyczy to także jej sieci."
+    },
+    {
+      "id": "s-0175",
+      "subject": "Terminy dostaw - okna rozładunku",
+      "body": "Szanowny Panie Tomaszu,\n\ninformuję, że okno rozładunku dla Meblodrew w naszym terminalu w Gdańsku pozostaje w środę, w drugim bloku porannym. Zmiana grafiku, o której Pan słyszał, dotyczy wyłącznie dostaw spożywczych i nie wpływa na Państwa dostawy. Pierwszy tydzień po zmianie przebiegł bez opóźnień.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0177",
+      "subject": "Karty paliwowe - otwarte punkty",
+      "body": "Dear Ewelina,\n\nwe are close to a decision on the renewal of our fuel card contract, and I want to make sure that nothing important is hidden in the details. Please list the open points on your side regarding the fuel cards and the new prices, by 29 January. I mean everything that is not final yet: the surcharge for the export trucks, the card limits for the new trailers and the rules for lost cards.\n\nOur accounting team will compare your list with our own notes from the last meeting. If both lists match, we can sign the extension without another round of negotiations. If they differ, we will have to discuss the difference with your management before the end of the month. The earlier I know about open items, the better we can prepare, so please include also those that you consider minor. For us it is more useful to see a long list on the table than to find a surprise after the signature. Your colleagues in the billing team know the history of the card limits well, and their input can only make the list more complete.\n\nBest regards\nWiktor Szalewski"
+    },
+    {
+      "id": "s-0178",
+      "subject": "Re: Kalendarz zarzadu i podroze sluzbowe",
+      "body": "Szanowny Panie Przewodniczący,\n\nproszę o odesłanie podpisanego dokumentu kalendarza posiedzeń rady, który przesłała asystentka.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0179",
+      "subject": "Reklamacje - uszkodzone dostawy",
+      "body": "Szanowna Pani Genowefo,\n\nreklamację z ostatniego tygodnia mamy już w pełnej dokumentacji. Oddzwonię w sprawie reklamacji do końca tygodnia.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0180",
+      "subject": "Terminy dostaw i okna rozładunku - współpraca",
+      "body": "Dear Karin, dear Daniel,\n\nI am writing to both of you because the new unloading schedule touches our work with Nordic Foods Trade and the joint tenders with Baltic Freight Partners. The Gdańsk terminal now works with two morning blocks, and the Nordic pallets keep their Tuesday and Thursday slots. Daniel's trucks for the joint tenders use the Friday slot, which stays free.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0182",
+      "subject": "Kalendarz zarządu i podróże służbowe - stan",
+      "body": "Szanowny Panie Przewodniczący,\n\nprzesyłam zwięzły opis kalendarza zarządu i podróży służbowych na najbliższe tygodnie. W lutym zarząd odwiedza terminal w Gdańsku i jedzie do Rotterdamu na spotkania z agentem celnym oraz przedstawicielami portu. Ostatni tydzień miesiąca zajmą przygotowania do posiedzenia rady, więc w tym czasie nie planujemy żadnych wyjazdów.\n\nOliver Pemberton jest w kopii, ponieważ uczestniczy w części spotkań w Rotterdamie i przygotowuje dokumenty eksportowe. Jego udział nie zmienia terminów podróży zarządu, a koszty wyjazdu mieszczą się w budżecie działu eksportu. Asystentka zarządu prowadzi wspólny kalendarz i wpisuje do niego każdą zmianę wraz z godziną i salą.\n\nPosiedzenie rady pozostaje w dotychczasowym terminie. Materiały trafią do członków rady zgodnie z zasadami określonymi w statucie, a harmonogram prac zarządu nad nimi jest zgodny z planem. Zarząd zadbał także o to, aby wszystkie załączniki, w tym zestawienie kosztów podróży i plan wykorzystania sal, były dostępne w jednym katalogu materiałów rady, co ułatwi przygotowanie się do dyskusji.\n\nZ poważaniem\nWiktor Szalewski"
+    }
+  ]
+}

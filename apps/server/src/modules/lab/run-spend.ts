@@ -15,15 +15,26 @@ export interface RunSpend {
   unpricedCalls: number;
 }
 
+// The `llm.call` rows of the run organization in the run window: from the start of the plan to a day after the tail end
+// (the run writes nothing later, so the bound never hides a call of the run).
+async function runCallRows(db: Db, orgId: string, run: LabRun) {
+  const start = localToInstant(run.plan.startDate, "00:00", "Europe/Warsaw");
+  const end = new Date(new Date(run.plan.tailEndsAt).getTime() + DAY_MS);
+  return listLlmCallRows(db, { orgId }, { range: { start, end }, mailboxId: null });
+}
+
+// The distinct model ids of those rows, sorted (the report header).
+export async function runModels(db: Db, orgId: string, run: LabRun): Promise<string[]> {
+  const models = (await runCallRows(db, orgId, run)).flatMap((row) => (row.model === null ? [] : [row.model]));
+  return [...new Set(models)].sort();
+}
+
 // What the run cost so far: the `llm.call` rows of the run organization from the start of the plan, priced with the
 // price table of the cost metric. A row with no model or no price is never counted as $0: it makes the result
 // `unpriced`, so the serve loop stops the run (`error:unpriced`) and `start` refuses a stack with an unpriced model.
 // A null token count (a failed call) is 0, as in the cost metric.
 export async function runSpend(db: Db, orgId: string, run: LabRun): Promise<RunSpend> {
-  const start = localToInstant(run.plan.startDate, "00:00", "Europe/Warsaw");
-  // A day after the tail end: the run writes nothing later, so the bound never hides a call of the run.
-  const end = new Date(new Date(run.plan.tailEndsAt).getTime() + DAY_MS);
-  const rows = await listLlmCallRows(db, { orgId }, { range: { start, end }, mailboxId: null });
+  const rows = await runCallRows(db, orgId, run);
   let usd = 0;
   let unpricedCalls = 0;
   for (const row of rows) {

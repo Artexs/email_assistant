@@ -27,7 +27,7 @@ import type { LabState, LoggedLabEvent } from "./state";
 //
 // The first tick of a run reads nothing: it stores the newest message id as the seen id (old cards of a reused chat are never read). The serve loop must call
 // a tick before the injector sends its first mail.
-const SEEN_PART = "tg";
+export const SEEN_PART = "tg";
 
 export interface ExecutiveDeps {
   state: LabState;

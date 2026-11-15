@@ -10,10 +10,13 @@ import {
   labAddresses,
   LAB_MAILBOXES,
   loadLabCorpus,
+  LabScoreError,
   LabSeedError,
   type LabCorpus,
+  type LabModel,
   type LabOrg,
   type RunSpend,
+  type ServeStatus,
   type SeedResult,
   type SeedTarget,
 } from "../modules/lab";
@@ -33,6 +36,8 @@ beforeAll(async () => {
   corpus = await loadLabCorpus(ROOT, "lab-01");
 });
 
+const LUNA: LabModel = { model: "gpt-6-luna", endpoint: "standard" };
+
 const simEnv = (): Record<string, string | undefined> => ({
   LAB_STACK: "ea-sim",
   MAIL_ALLOW_LOCAL_HOSTS: "true",
@@ -51,12 +56,16 @@ describe("lab command", () => {
   let hasMail = false;
   let spend: RunSpend = { kind: "ok", usd: 0, calls: 0, unpricedCalls: 0 };
   let hexes: string[] = [];
-  let models: string[] = ["gpt-6-luna"];
+  let models: LabModel[] = [LUNA];
   let env = simEnv();
   let seedCalls: SeedTarget[] = [];
   let seedResult: SeedResult | Error;
   let stored: string[] = [];
   let storeError: Error | undefined;
+  let serveCalls = 0;
+  let serveStatus: ServeStatus | undefined;
+  let scoreCalls: [string, string | undefined][] = [];
+  let scoreResult: { markdown: string; json: string; partial: boolean } | Error;
 
   beforeEach(() => {
     seedCalls = [];
@@ -67,13 +76,17 @@ describe("lab command", () => {
     };
     stored = [];
     storeError = undefined;
+    serveCalls = 0;
+    serveStatus = undefined;
+    scoreCalls = [];
+    scoreResult = { markdown: "/out/r.md", json: "/out/r.json", partial: false };
     dir = mkdtempSync(join(tmpdir(), "f113-s05-lab-"));
     printed = [];
     failed = [];
     hasMail = false;
     spend = { kind: "ok", usd: 0, calls: 0, unpricedCalls: 0 };
     hexes = ["aaaa", "bbbb", "cccc", "dddd"];
-    models = ["gpt-6-luna"];
+    models = [LUNA];
     env = simEnv();
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -101,6 +114,16 @@ describe("lab command", () => {
       stored.push(`${org.orgId} ${plan.runId} ${plan.deadlines.length}`);
     },
     spendOf: async () => spend,
+    score: async (runId, out) => {
+      scoreCalls.push([runId, out]);
+      if (scoreResult instanceof Error) throw scoreResult;
+      return scoreResult;
+    },
+    serveStatus: () => serveStatus,
+    serve: async () => {
+      serveCalls += 1;
+      return 0;
+    },
     now: () => NOW,
     hex4: () => hexes.shift() ?? "ffff",
     cli,
@@ -137,7 +160,13 @@ describe("lab command", () => {
 
   test("2b: every command but demo-import checks the env first", async () => {
     env = { LAB_STACK: "ea-prod" };
-    for (const argv of [["status"], ["serve"], ["stop", "--run", "day-20261123-aaaa"], ["seed"]]) {
+    for (const argv of [
+      ["status"],
+      ["serve"],
+      ["stop", "--run", "day-20261123-aaaa"],
+      ["seed"],
+      ["score", "--run", "day-20261123-aaaa"],
+    ]) {
       failed = [];
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not_sim_stack");
@@ -150,14 +179,65 @@ describe("lab command", () => {
   test("commands of later stages exit 1 with not built", async () => {
     for (const argv of [
       ["reset", "--org", "lab", "--yes"],
-      ["serve"],
-      ["score", "--run", "day-20261123-aaaa"],
       ["demo-reset", "--yes"],
     ]) {
       failed = [];
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not built");
     }
+  });
+
+  test("score: an unknown run is refused; a known run prints the paths and passes --out on", async () => {
+    seedOrgs();
+    expect(await run(["score", "--run", "day-20261123-aaaa"])).toBe(1);
+    expect(failed).toEqual(["refused: no_such_run"]);
+    expect(scoreCalls).toEqual([]);
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    printed = [];
+    expect(await run(["score", "--run", "day-20261123-aaaa", "--out", "/tmp/x"])).toBe(0);
+    expect(scoreCalls).toEqual([["day-20261123-aaaa", "/tmp/x"]]);
+    expect(printed).toEqual(["score: day-20261123-aaaa report /out/r.md json /out/r.json"]);
+    scoreResult = { markdown: "/out/r.md", json: "/out/r.json", partial: true };
+    printed = [];
+    expect(await run(["score", "--run", "day-20261123-aaaa"])).toBe(0);
+    expect(printed[0]).toContain("day-20261123-aaaa partial report");
+  });
+
+  test("score: a LabScoreError exits 1 with its code; another error is not caught", async () => {
+    seedOrgs();
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    scoreResult = new LabScoreError("org_gone");
+    failed = [];
+    expect(await run(["score", "--run", "day-20261123-aaaa"])).toBe(1);
+    expect(failed).toEqual(["refused: org_gone"]);
+    scoreResult = new Error("boom");
+    await expect(run(["score", "--run", "day-20261123-aaaa"])).rejects.toThrow("boom");
+  });
+
+  test("serve: a bad env exits 1 before the loop starts; a good env hands over to the serve loop", async () => {
+    env = { ...simEnv(), SEND_SCOPE: "all" };
+    expect(await run(["serve"])).toBe(1);
+    expect(failed.join("\n")).toContain("refused: env is not the sim stack");
+    expect(serveCalls).toBe(0);
+    env = simEnv();
+    expect(await run(["serve"])).toBe(0);
+    expect(serveCalls).toBe(1);
+  });
+
+  test("status shows the serve heartbeat of an active run, not of a stopped one", async () => {
+    seedOrgs();
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    serveStatus = {
+      tickAt: "2026-11-23T09:00:30.000Z",
+      runs: { "day-20261123-aaaa": { injector: 2, bots_failed: 1 } },
+    };
+    printed = [];
+    expect(await run(["status"])).toBe(0);
+    expect(printed.join("\n")).toContain("serve tick 2026-11-23T09:00:30.000Z · fails injector 2 bots_failed 1");
+    state().stopRun("day-20261123-aaaa", "operator");
+    printed = [];
+    expect(await run(["status"])).toBe(0);
+    expect(printed.join("\n")).not.toContain("serve tick");
   });
 
   test("seed prints the ids and counts of the org and picks the target of the flag", async () => {
@@ -283,10 +363,26 @@ describe("lab command", () => {
 
   test("N8: a configured model with no price is refused as model_unpriced; no run folder", async () => {
     seedOrgs();
-    models = ["gpt-6-luna", "x-unknown"];
+    models = [LUNA, { model: "x-unknown", endpoint: "standard" }];
     expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(1);
     expect(failed.join("\n")).toContain("model_unpriced (x-unknown)");
     expect(runFolders()).toEqual([]);
+  });
+
+  test("N3: the price check uses the endpoint kind of the role: own never refused, eu needs an eu row", async () => {
+    seedOrgs();
+    // An own server costs 0 and has no price row: not refused.
+    models = [LUNA, { model: "x-own-model", endpoint: "own" }];
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    state().stopRun("day-20261123-aaaa", "operator");
+    // A model with a standard row only, on an eu endpoint, would count $0 toward the cap: refused.
+    models = [LUNA, { model: "gemini-3.5-flash-lite", endpoint: "eu" }];
+    printed = [];
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(1);
+    expect(failed.join("\n")).toContain("model_unpriced (gemini-3.5-flash-lite)");
+    // The eu row of gpt-6-luna exists: not refused.
+    models = [{ model: "gpt-6-luna", endpoint: "eu" }];
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-24"])).toBe(0);
   });
 
   test("8: stop writes stopped: operator and one ledger line, also when it runs twice", async () => {

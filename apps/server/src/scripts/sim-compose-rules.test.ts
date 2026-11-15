@@ -18,7 +18,7 @@ function change(service: string, from: string, to: string): string {
 
 const GUARDED_COMMANDS: [string, string][] = [
   ["server", "bun run lab:env-check && exec bun apps/server/src/main.ts"],
-  ["lab", "bun run lab:env-check && exec bun run lab serve"],
+  ["lab", "bun run lab:env-check && exec bun apps/server/src/scripts/lab.ts serve"],
   ["fake-telegram", "bun run lab:env-check && exec bun tools/fake-telegram/src/cli.ts serve --port 8090"],
 ];
 
