@@ -6,7 +6,8 @@ import { z } from "zod";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { HardError, SoftError } from "../../platform/errors";
+import { errorFields, HardError, SoftError } from "../../platform/errors";
+import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { insertDefaultSettings } from "../config";
 import { getOrgPlan, isFeatureOn } from "../tenancy";
@@ -37,6 +38,28 @@ import {
   updateCredentials,
   type MailboxStatus,
 } from "./repo";
+
+const log = createLog("mail");
+
+/**
+ * Called once for a new mailbox, after its commit (the composition root queues the history check of the trust ladder). It also runs for the OAuth
+ * connect, never for a Reconnect. A caller that passes a transaction as `db` owns the commit: the hook must then use that transaction.
+ */
+export type OnConnected = (ctx: TenantContext, mailboxId: string) => Promise<void>;
+
+/** Runs the hook. A failure logs one warning (the error name and code, no address and no text) and never fails the connect. */
+export async function runOnConnected(
+  hook: OnConnected | undefined,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<void> {
+  if (hook === undefined) return;
+  try {
+    await hook(ctx, mailboxId);
+  } catch (error) {
+    log.with({ org_id: ctx.orgId, mailbox_id: mailboxId }).warn("connect_hook_failed", errorFields(error));
+  }
+}
 
 const SPECIAL_USE_KEYS: Record<string, string> = {
   "\\Drafts": "drafts",
@@ -78,6 +101,8 @@ export interface ConnectDeps {
   verifySmtp(opts: SmtpConnectOptions): Promise<void>;
   /** The web sets it: the socket timeout of each login and the deadline of the whole check. The CLI sets none. */
   timeouts?: { socketMs: number; deadlineMs: number };
+  /** After the commit of a new mailbox; see `OnConnected`. */
+  onConnected?: OnConnected;
 }
 
 export interface ConnectMeta {
@@ -210,6 +235,7 @@ export async function connectMailbox(
     if (isMailboxAddressViolation(error)) throw new MailboxExistsError({ cause: error });
     throw error;
   }
+  await runOnConnected(deps.onConnected, ctx, mailboxId);
   return { mailboxId, info, sentSync };
 }
 

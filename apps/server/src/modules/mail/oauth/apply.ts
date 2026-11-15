@@ -9,7 +9,7 @@ import { createLog } from "../../../platform/log";
 import { auditEvents, recordAudit } from "../../audit";
 import { insertDefaultSettings } from "../../config";
 import { getOrgPlan, isFeatureOn } from "../../tenancy";
-import { buildFolderMap, withDeadline } from "../connect";
+import { buildFolderMap, runOnConnected, withDeadline, type OnConnected } from "../connect";
 import type { ImapConnectOptions } from "../imap/client";
 import type { SmtpConnectOptions } from "../imap/smtp";
 import {
@@ -70,6 +70,8 @@ export interface ApplyGrantDeps {
   now(): Date;
   /** The web sets it: the socket timeout of each login and the deadline of the whole check. */
   timeouts?: { socketMs: number; deadlineMs: number };
+  /** After the commit of a new mailbox (Connect only, never Reconnect); see `OnConnected`. */
+  onConnected?: OnConnected;
 }
 
 const refuse = (grant: OAuthGrant, code: OAuthRefusalCode): ApplyResult => {
@@ -257,6 +259,7 @@ async function connect(
     throw error;
   }
   log.info("oauth_mailbox_connected", { provider: grant.provider, mailbox_id: mailboxId });
+  await runOnConnected(deps.onConnected, ctx, mailboxId);
   return { ok: true, code: "connected", mailboxId };
 }
 

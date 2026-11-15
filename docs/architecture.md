@@ -364,7 +364,7 @@ Tenancy:
 - **Backfill (S1b, one-off):** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-180]` reads INBOX mail of the last days.
   It stores the missing mail with `emails.backfilled_at` set and never moves the cursor. It changes nothing in the mailbox.
   It refuses a window of more than 180 days. Then it re-queues real mail of the window that the worker
-  skipped as `too_old` (`skipped → pending`, one `email.requeued` audit row for each mail).
+  skipped as `too_old`, or that the history check stored as `history_check` (`skipped → pending`, one `email.requeued` audit row for each mail).
   The re-queue sets `backfilled_at` = now, so re-queued mail skips the 7-day rule.
   Pilot exception (user, 2026-11-06): a window above 30 days keeps mail bodies longer than the 30-day retention (§7).
   The retention cleanup clears them when it exists.

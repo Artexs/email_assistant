@@ -78,6 +78,29 @@ describe("ci.yml job docs", () => {
     expect(list.some((command) => command?.includes("--strict"))).toBe(false);
   });
 
+  test("it installs Chromium and runs the browser check after the build, and keeps the results on failure", () => {
+    const list = steps(docs);
+    const commands = list.map((step) => step.run);
+    const build = commands.indexOf("bun run docs:build");
+    const install = commands.indexOf("bunx playwright install --with-deps chromium");
+    const check = commands.indexOf("bun run docs:test");
+    expect(install).toBeGreaterThan(build);
+    expect(check).toBeGreaterThan(install);
+    for (const index of [install, check]) {
+      expect(list[index]).not.toHaveProperty("continue-on-error");
+      expect(list[index]).not.toHaveProperty("if");
+    }
+    const upload = list[check + 1];
+    expect(upload?.uses).toBe("actions/upload-artifact@v4");
+    expect(upload?.if).toBe("failure()");
+    expect(upload?.with).toEqual({
+      name: "docs-playwright-results",
+      path: "apps/docs/e2e/test-results/",
+      "retention-days": 7,
+    });
+    expect(list).toHaveLength(check + 2);
+  });
+
   test("it runs on every push and pull request of the file's triggers", () => {
     expect(docs?.if).toBeUndefined();
   });

@@ -48,6 +48,8 @@ evals/.runs/
 apps/web/e2e/.seed.json
 apps/web/e2e/test-results/
 apps/web/e2e/playwright-report/
+apps/docs/e2e/test-results/
+apps/docs/e2e/playwright-report/
 /.limen/
 
 # docs app build output and generated types
