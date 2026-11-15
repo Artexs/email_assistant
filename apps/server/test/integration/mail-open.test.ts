@@ -48,7 +48,12 @@ describe("openMailboxProvider", () => {
       expect(provider).toBe(fake);
       expect(mailbox.id).toBe(mailboxId);
       expect(seen).toEqual([
-        { host: mailbox.imap_host, port: mailbox.imap_port, user: address, password: "s3cret-pw" },
+        {
+          host: mailbox.imap_host,
+          port: mailbox.imap_port,
+          user: address,
+          auth: { kind: "password", password: "s3cret-pw" },
+        },
       ]);
     });
   });
@@ -85,7 +90,13 @@ describe("openMailboxProvider", () => {
       const { sender, mailbox } = await openMailboxProvider(deps, ctx, mailboxId, { withSender: true });
       expect(sender).toBe(fakeSender);
       expect(seen).toEqual([
-        { host: mailbox.smtp_host, port: mailbox.smtp_port, security: "tls", user: address, password: "s3cret-pw" },
+        {
+          host: mailbox.smtp_host,
+          port: mailbox.smtp_port,
+          security: "tls",
+          user: address,
+          auth: { kind: "password", password: "s3cret-pw" },
+        },
       ]);
 
       // The stored mode reaches the sender: a STARTTLS mailbox opens its sender with `starttls`.

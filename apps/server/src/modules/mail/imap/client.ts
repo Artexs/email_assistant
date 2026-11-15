@@ -11,8 +11,10 @@ import { createLog } from "../../../platform/log";
 import { resolveMailHost, type MailTarget } from "../host-guard";
 import {
   INBOX,
+  assertAuthMaterial,
   MailAuthError,
   MailFolderMissingError,
+  type AuthMaterial,
   type FlagsOfMessage,
   type FolderMessageMeta,
   type FolderStatus,
@@ -63,7 +65,8 @@ export interface ImapConnectOptions {
   host: string;
   port: number;
   user: string;
-  password: string;
+  /** A password, or an OAuth access token (XOAUTH2). */
+  auth: AuthMaterial;
   secure?: boolean;
   bodyLimitBytes?: number;
   connectionTimeoutMs?: number;
@@ -84,12 +87,16 @@ export function imapFlowOptions(opts: ImapConnectOptions, target: MailTarget): I
   if (!secure && !isLoopbackHost(opts.host)) {
     throw new HardError("plain IMAP is allowed only to a loopback host");
   }
+  assertAuthMaterial(opts.auth);
   return {
     host: target.host,
     ...(target.servername === undefined ? {} : { servername: target.servername }),
     port: opts.port,
     secure,
-    auth: { user: opts.user, pass: opts.password },
+    auth:
+      opts.auth.kind === "password"
+        ? { user: opts.user, pass: opts.auth.password }
+        : { user: opts.user, accessToken: opts.auth.accessToken },
     logger: false,
     disableAutoIdle: true,
     connectionTimeout: opts.connectionTimeoutMs ?? DEFAULT_CONNECTION_TIMEOUT_MS,
@@ -100,7 +107,7 @@ export function imapFlowOptions(opts: ImapConnectOptions, target: MailTarget): I
   };
 }
 
-/** Maps an imapflow or socket error to a typed error. The message never holds the password; the original is the `cause`. */
+/** Maps an imapflow or socket error to a typed error. The message never holds the password or the token; the original is the `cause`. */
 export function toMailError(error: unknown, action: string): Error {
   if (error instanceof SoftError || error instanceof HardError) return error;
   const fields = (typeof error === "object" && error !== null ? error : {}) as {

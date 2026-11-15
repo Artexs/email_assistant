@@ -41,13 +41,24 @@ test("a composed message reaches the recipient with the action id and the messag
   });
   const raw = await composeMessage(message);
 
-  const smtp = await openSmtpSender({ host, port: smtpPort, user: sender, password: "greenmail-test", secure: false });
+  const smtp = await openSmtpSender({
+    host,
+    port: smtpPort,
+    user: sender,
+    auth: { kind: "password", password: "greenmail-test" },
+    secure: false,
+  });
   const result = await smtp.send({ envelope: { from: sender, to: [recipient] }, raw });
   await smtp.close();
   expect(result.response.startsWith("250")).toBe(true);
   expect(result.accepted).toEqual([recipient]);
 
-  const inbox = await openImapProvider({ host, port: imapPort, user: recipient, password: "greenmail-test" });
+  const inbox = await openImapProvider({
+    host,
+    port: imapPort,
+    user: recipient,
+    auth: { kind: "password", password: "greenmail-test" },
+  });
   try {
     const found = (await inbox.fetchAbove(INBOX, 0)).filter((meta) => meta.messageId === message.messageId);
     expect(found).toHaveLength(1);
