@@ -37,6 +37,9 @@ const shown = (search: string) => {
   return banner;
 };
 
+// The server escapes the apostrophe of "Google's".
+const escaped = (text: string) => text.replaceAll("'", "&#x27;");
+
 const buttons = (html: string) => [...html.matchAll(/<button[^>]*>.*?<\/button>/g)].map((match) => match[0]);
 
 // The dialog is rendered as the server renders it: no effects run, so `initialOauthProviders` stands for a finished options read.
@@ -100,7 +103,7 @@ describe("sign-in buttons (rule 1)", () => {
     expect(buttons(html)).toHaveLength(1);
     expect(html).toContain("Sign in with Microsoft");
     expect(html).not.toContain("Sign in with Google");
-    expect(html).not.toContain(en.oauth_google_hint);
+    expect(html).not.toContain(escaped(en.oauth_google_hint));
     expect(html).toContain("Or connect with a password");
   });
 
@@ -114,7 +117,7 @@ describe("sign-in buttons (rule 1)", () => {
     const google = found.find((button) => button.includes("Sign in with Google")) ?? "";
     expect(google).toContain('aria-describedby="connect-oauth-google-hint"');
     expect(html).toContain('<p id="connect-oauth-google-hint"');
-    expect(html).toContain(en.oauth_google_hint.replace("'", "&#x27;"));
+    expect(html).toContain(escaped(en.oauth_google_hint));
     expect(found.find((button) => button.includes("Microsoft"))).not.toContain("aria-describedby");
   });
 
@@ -156,6 +159,7 @@ describe("sign-in buttons (rule 1)", () => {
     );
     for (const html of [withMicrosoft, render([])]) {
       expect(html).toContain('id="connect-provider"');
+      expect(html).toContain(t("provider_label"));
       expect(html).toContain(t("preset_interia"));
       expect(html).toContain('id="connect-password"');
     }
