@@ -13,7 +13,8 @@ Part of [`../plan.md`](../plan.md). Decisions D5, D9, D17. The only migration of
 - `triage_results.suspicious_reasons text[] NOT NULL DEFAULT '{}'`, with `CHECK (suspicious_reasons <@ ARRAY['auth_fail','lookalike_domain','display_name_spoof','reply_to_mismatch','link_mismatch','risky_attachment']::text[])`. Old rows get `{}`. Codes only, so retention does not clear it.
 - `mailbox_settings.urgency_profile jsonb NULL`, with `CHECK (urgency_profile IS NULL OR jsonb_typeof(urgency_profile) = 'object')`. Null means "no profile". The shape check is Zod in stage 07, not SQL.
 - `outbox` kind list: add `not_triaged`. Copy the current list from the newest migration that sets `outbox_kind_check` at HEAD (it may hold more kinds than `20261114140001_weekly_report_kind.sql`). Down: delete only `not_triaged` rows, then restore the old list.
-- Down also drops the two columns.
+- Index `emails_mailbox_sender_idx ON emails (mailbox_id, from_address, received_at)` for the sender queries of stages 03 and 10 (no sender index exists at the plan base). If `from_address` is not stored in lower case at HEAD, index `lower(from_address)` and say so in the final message: stages 03 and 10 must then query with `lower(...)`.
+- Down also drops the two columns and the index.
 
 **Decisions.**
 
@@ -29,6 +30,7 @@ Part of [`../plan.md`](../plan.md). Decisions D5, D9, D17. The only migration of
 4. Insert an outbox row of kind `not_triaged` → ok; kind `xyz` → error.
 5. Migrate down, then up again on the job DB: no error (run once by hand; write the commands in the final message).
 6. The equality test of the code list and the SQL list.
+7. `EXPLAIN` of a count by `mailbox_id` and `from_address` over 90 days uses the new index (assert the plan text names it).
 
 **Check.** `bun run db:migrate` on the job DB, the new tests, the export-map test, then the Proof.
 
