@@ -226,6 +226,11 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
     expect(callOf(main, "webDeps")).toContain("gate,");
   });
 
+  test("the image copies the gate files to the path the reader defaults to", () => {
+    const dockerfile = readFileSync(join(import.meta.dir, "../../../deploy/Dockerfile"), "utf8");
+    expect(dockerfile).toContain("COPY evals/results/gate evals/results/gate\n");
+  });
+
   test("the web passes the gate to the one settings deps builder", () => {
     expect(callOf(read("web.ts"), "settingsDeps")).toContain("gate");
   });

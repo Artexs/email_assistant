@@ -90,6 +90,17 @@ describe("loadGateEvidence and globalEvidenceFor", () => {
     put("classifier-b.json", { provisional: false });
     put("classifier-a.json", { provisional: false });
     expect(files(KEY)).toEqual(["classifier-a.json"]);
+    // The result does not depend on the order of the index either.
+    const index = loadGateEvidence(dir);
+    const reversed = { files: [...index.files].reverse() };
+    expect(globalEvidenceFor(reversed, KEY).info.file).toBe("classifier-a.json");
+  });
+
+  test("4b: a file that is not named classifier-*.json is not read, even with a good body", () => {
+    put("other.json");
+    put("classifier-a.txt");
+    expect(loadGateEvidence(dir).files).toEqual([]);
+    expect(warnLines()).toEqual([]);
   });
 
   test("5: another prompt version or reasoning effort does not match", () => {
