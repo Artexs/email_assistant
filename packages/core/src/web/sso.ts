@@ -1,3 +1,5 @@
+import { z } from "./zod";
+
 // Why the sign-in with a company identity provider (SSO) refuses a person (F119, `SsoResolution` in `platform/auth-sso.ts`).
 // The code goes to the redirect URL (`/login?sso=failed&error=<code>`) and to the audit row `sso.refused`; it holds no person data.
 export const ssoRefusals = [
@@ -26,3 +28,8 @@ export interface SsoIdentity {
 export type SsoResolution =
   | { kind: "link"; userId: string; orgId: string; firstLink: boolean }
   | { kind: "reject"; code: SsoRefusal; orgId: string | null };
+
+// GET /api/sign-in-options (F119 D14, Q6): public, before the session guard. One bit for every caller: it holds no
+// organization id, domain or count, and it never depends on an address.
+export const signInOptionsSchema = z.strictObject({ sso: z.boolean() });
+export type SignInOptions = z.infer<typeof signInOptionsSchema>;

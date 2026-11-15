@@ -319,7 +319,9 @@ describe("a route before the session guard", () => {
     } satisfies WebDeps;
     const app = createApp({ checkDb: async () => true, web });
     const served = await (await app.request("/api/openapi.json")).json();
-    expect(Object.keys((served as Spec).paths ?? {})).toEqual(["/api/one"]);
+    // createApp itself mounts one public route (F119 stage 11): it is in the file with `security: []`.
+    expect(Object.keys((served as Spec).paths ?? {}).sort()).toEqual(["/api/one", "/api/sign-in-options"]);
+    expect((served as Spec).paths?.["/api/sign-in-options"]?.get?.security).toEqual([]);
     expect(served).toEqual(JSON.parse(JSON.stringify(await openApiSpec(app))));
   });
 });
