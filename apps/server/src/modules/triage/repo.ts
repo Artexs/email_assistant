@@ -2,10 +2,12 @@ import {
   categorySchema,
   feedbackSources,
   feedbackVerdicts,
+  readSenderRule,
   type Category,
   type FeedbackSource,
   type FeedbackVerdict,
   type LlmEndpointKind,
+  type SenderRuleKind,
   toEndpointKind,
 } from "@ea/core";
 import { sql, type NotNull, type Transaction } from "kysely";
@@ -74,6 +76,8 @@ export interface TriagedItemRow {
   reason_code: string;
   reason: string | null;
   model_category: Category | null;
+  // The sender rule that shaped the result (`fields.rule`, F110 stage 16); null on an old row.
+  rule: SenderRuleKind | null;
   triaged_at: Date;
   received_at: Date;
   from_address: string | null;
@@ -440,6 +444,7 @@ export async function listTriagedBetween(
     reason_code: string;
     reason: string | null;
     model_category: string | null;
+    rule: string | null;
     created_at: Date;
     received_at: Date;
     from_address: string | null;
@@ -450,7 +455,7 @@ export async function listTriagedBetween(
   }>`
     WITH latest AS (${latestInWindow(ctx.orgId, range)})
     SELECT latest.email_id, latest.category, latest.confidence, latest.reason_code, latest.reason,
-           latest.fields->>'model_category' AS model_category, latest.created_at,
+           latest.fields->>'model_category' AS model_category, latest.fields->>'rule' AS rule, latest.created_at,
            e.mailbox_id, e.received_at, e.from_address, e.subject, e.message_id_header,
            e.folder, e.source_folder
     FROM latest JOIN emails e ON e.id = latest.email_id AND e.org_id = ${ctx.orgId}
@@ -464,6 +469,7 @@ export async function listTriagedBetween(
     ...row,
     category: categorySchema.parse(row.category),
     model_category: readModelCategory(row.model_category),
+    rule: readSenderRule(row.rule),
     triaged_at: created_at,
   }));
 }
@@ -509,6 +515,7 @@ export interface ActivityRow {
   reason_code: string;
   reason: string | null;
   model_category: Category | null;
+  rule: SenderRuleKind | null;
 }
 
 // The activity page: the latest result of each mail received since `since`, newest mail first.
@@ -542,17 +549,18 @@ export async function listActivityRows(db: DbOrTrx, ctx: TenantContext, q: Activ
     reason_code: string;
     reason: string | null;
     model_category: string | null;
+    rule: string | null;
   }>`
     WITH latest AS (
       SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.category, tr.confidence, tr.reason_code, tr.reason,
-             tr.fields->>'model_category' AS model_category, tr.created_at
+             tr.fields->>'model_category' AS model_category, tr.fields->>'rule' AS rule, tr.created_at
       FROM triage_results tr
       JOIN emails e ON e.id = tr.email_id AND e.org_id = ${orgId}
       WHERE tr.org_id = ${orgId} AND e.received_at >= ${q.since} ${mailboxFilter}
       ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
     )
     SELECT latest.email_id, latest.category, latest.confidence, latest.reason_code, latest.reason,
-           latest.model_category, latest.created_at,
+           latest.model_category, latest.rule, latest.created_at,
            e.mailbox_id, e.received_at,
            to_char(e.received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS received_at_key,
            e.from_address, e.subject, e.folder
@@ -565,6 +573,7 @@ export async function listActivityRows(db: DbOrTrx, ctx: TenantContext, q: Activ
     ...row,
     category: categorySchema.parse(row.category),
     model_category: readModelCategory(row.model_category),
+    rule: readSenderRule(row.rule),
     triaged_at: created_at,
   }));
 }

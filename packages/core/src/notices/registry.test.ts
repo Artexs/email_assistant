@@ -12,6 +12,7 @@ import { MESSAGE_MAX_CHARS, type OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderAutonomyPausedNotice,
   renderHostBlockedNotice,
   renderLoopConsentNotice,
   renderNotTriagedNotice,
@@ -19,6 +20,7 @@ import {
   renderSentMissingNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
+  renderTrustReportReadyNotice,
   renderUrgentNotice,
 } from "../digest/notices";
 import { renderWeeklyReport } from "../digest/weekly";
@@ -286,6 +288,31 @@ const cases: Case[] = [
     kind: "loop_consent",
     view: { about: "approval" },
     direct: (texts) => renderLoopConsentNotice({ about: "approval" }, texts),
+  },
+  {
+    kind: "trust_report_ready",
+    view: {
+      mailboxId: id2,
+      recommended: ["info", "spam"],
+      blocked: 1,
+      checked: 212,
+      reportUrl: "https://app.example.test/report?mailbox=22222222-2222-4222-8222-222222222222",
+    },
+    direct: (texts) =>
+      renderTrustReportReadyNotice(
+        {
+          checked: 212,
+          recommended: ["info", "spam"],
+          reportUrl: "https://app.example.test/report?mailbox=22222222-2222-4222-8222-222222222222",
+        },
+        texts
+      ),
+  },
+  {
+    kind: "autonomy_paused",
+    view: { mailboxId: id2, category: "info", reason: "corrections", corrections: 2, settingsUrl: null },
+    direct: (texts) =>
+      renderAutonomyPausedNotice({ category: "info", reason: "corrections", corrections: 2, settingsUrl: null }, texts),
   },
   {
     kind: "approval_edit",
@@ -582,6 +609,18 @@ describe("renderNotice", () => {
     expect(
       noticeViewSchemas.urgent.safeParse({ ...encoded, attachments: { count: 1, attachments: [], extra: 1 } }).success
     ).toBe(false);
+  });
+
+  test("an urgent view with the why keys prints the mark; a bad key is refused", () => {
+    const view: NoticeView<"urgent"> = { ...urgentView, confidence: 0.87, rule: null };
+    const rendered = renderNotice("urgent", encodeNoticeView("urgent", view), opts);
+    expect(rendered.ok && rendered.message.text).toContain(" · 85%");
+    const ruled = renderNotice("urgent", encodeNoticeView("urgent", { ...view, rule: "vip" }), opts);
+    expect(ruled.ok && ruled.message.text).toContain(" · rule: VIP sender");
+    const encoded = encodeNoticeView("urgent", view);
+    for (const bad of [{ confidence: 1.5 }, { confidence: "high" }, { rule: "boss@firma.test" }]) {
+      expect(noticeViewSchemas.urgent.safeParse({ ...encoded, ...bad }).success).toBe(false);
+    }
   });
 
   test("a renderer that throws gives ok: false", () => {

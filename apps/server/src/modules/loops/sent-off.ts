@@ -1,6 +1,7 @@
 import type { Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../platform/db";
+import { clearLoopSentCopies } from "../actions";
 
 import { expireFollowUpSends } from "./follow-up-expiry";
 import { closeLoop } from "./repo";
@@ -10,7 +11,10 @@ import { clearedTexts } from "./retention";
 // the mailbox as `sent_off` and clears its texts at once. A closed loop stays as it is (retention clears it later). One
 // audit row per closed loop. Returns the number closed.
 // A follow-up of the mailbox that waits for a tap, or is approved and not yet claimed, ends `expired` / `loop_closed`
-// (`expireFollowUpSends`).
+// (`expireFollowUpSends`). Then the copies of the Sent mail in the follow-up rows of every loop of the mailbox go too: the
+// keys `quote`, `to`, `cc` and `subject` of `actions.payload` (`clearLoopSentCopies`). The cards of the follow-ups
+// (`outbox.view`, `outbox.text`) are cleared by `clearLoopCards` of `channels`, which `composition.ts` runs after this hook,
+// in the same transaction. The texts of a loop that was already closed stay until retention (the rule of `clearLoopTexts`).
 export async function onSentOff(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -39,5 +43,6 @@ export async function onSentOff(
       .execute();
   }
   await expireFollowUpSends(trx, ctx, { mailboxId }, at);
+  await clearLoopSentCopies(trx, ctx, { mailboxId });
   return closed.length;
 }

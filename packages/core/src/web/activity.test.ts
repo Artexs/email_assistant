@@ -81,6 +81,7 @@ describe("activityItemSchema", () => {
     feedback: { verdict: "right", trueCategory: "notification", source: "web", at: "2026-11-11T09:05:00.000Z" },
     delegation: { delegateName: "Ola", status: "drafted", dueAt: "2026-11-13T09:00:00.000Z" },
     suspicious: ["link_mismatch"],
+    rule: null,
   };
 
   test("parses a full item", () => {

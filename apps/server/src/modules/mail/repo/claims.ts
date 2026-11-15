@@ -162,7 +162,8 @@ export async function finishEmail(
   return result.numUpdatedRows === 1n;
 }
 // Backfill keeps today's SQL: it re-queues every mail without a synthetic Message-ID, also from a test sender (NO_TEST_SENDERS; sync.md rule 15).
-// Gives stored real INBOX mail of the window that the worker skipped as `too_old` a new triage run. No audit: the caller writes it.
+// Gives stored real INBOX mail of the window that the worker skipped as `too_old`, or that the history check stored as `history_check`, a new
+// triage run: the operator asked to triage the window. No audit: the caller writes it.
 export async function requeueTooOld(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -176,7 +177,7 @@ export async function requeueTooOld(
     .where("mailbox_id", "=", mailboxId)
     .where("folder", "=", "INBOX")
     .where("status", "=", "skipped")
-    .where("skip_reason", "=", "too_old")
+    .where("skip_reason", "in", ["too_old", "history_check"])
     .where("received_at", ">=", opts.since)
     .where("body_text", "is not", null)
     .where(mailKindFilter("real", NO_TEST_SENDERS))

@@ -34,3 +34,7 @@ Part of [`../plan.md`](../plan.md). Docs only; no code. Needs stages 01–24 lan
 ## Out of scope
 
 `docs/product/stage-2/*` and `spec/build.md` (the coordinator edits them; plan final message lists the edits).
+
+## Carry-over from stage 05 review
+
+- N3/N4: account-data.md line 83 and sync.md rule 19 must name the automatic history check at connect (mail with no tombstone); retention counts from created_at, onboarding text must not suggest a 30-day age limit (review-5.md).
