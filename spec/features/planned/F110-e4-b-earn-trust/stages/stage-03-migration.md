@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Risk: migration, tenant isolation, data dele
 - **Files:** one new file in `db/migrations/` (timestamp after the newest at `HEAD`); `platform/db/schema.ts`.
 - **Decisions:**
   - Every new table has `org_id` with the composite FK and tenant policy pattern of the newest F106 or F102 migration (read it; copy its RLS and grant lines).
-  - `history_checks.status` and `no_result_reason`, `autonomy_trips.reason` (`corrections`, `important_hidden`, `model_switch`) and `memberships.report_channel` get check constraints. `quiet_start` and `quiet_end` check `^([01][0-9]|2[0-3]):[0-5][0-9]$`; both null or both set.
+  - `history_checks.status`, `reason` (`connect`, `cli`, `web`, `model_switch`) and `no_result_reason`, `autonomy_trips.reason` (`corrections`, `important_hidden`, `model_switch`) and `memberships.report_channel` get check constraints. `quiet_start` and `quiet_end` check `^([01][0-9]|2[0-3]):[0-5][0-9]$`; both null or both set.
   - `emails.skip_reason` has no check constraint at base (`20261103100001_mail.sql`); if one exists at `HEAD`, add `history_check` to it.
   - The partial unique index on `history_checks (mailbox_id) WHERE status NOT IN ('done','no_result')` is the dedup of D13: a second queue call is a no-op.
   - `history_check_items.email_id` cascades on email delete; `history_checks.mailbox_id` and `autonomy_trips.mailbox_id` cascade on mailbox delete; `report_mailbox_id` sets null.
