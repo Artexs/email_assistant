@@ -35,8 +35,8 @@ export function senderLabel(from: string | null, texts: CoreTexts): string {
 // the HTML entities `&#27;` and `&#x1b;`), full-width brackets, digits and letters, and invisible characters between the parts.
 // The final letter is one that a control sequence ends with (m, K, J, H, A-G, S, T, f, h, l, s, u): "[1a]" stays.
 // An operating-system command (ESC ] ... BEL or ST, or U+009D ... U+009C) goes with its text, at most 200 characters of it.
-// eslint-disable-next-line no-misleading-character-class -- combining and variation characters are the point
 const INVISIBLE_IN_CODE =
+  // eslint-disable-next-line no-misleading-character-class -- combining and variation characters are the point
   /[\u00ad\u034f\u061c\u115f\u1160\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2069\u3164\ufe00-\ufe0f\ufeff\uffa0]|[\u{e0000}-\u{e007f}]/gu;
 const ESCAPE_PREFIX = String.raw`(?:\u001b|\\[xX]1[bB]|\\[uU]001[bB]|\\0?33|\\e|\^\[|%1[bB]|=1[bB]|&#0*27;|&#[xX]0*1[bB];)`;
 const OPENER = String.raw`(?:${ESCAPE_PREFIX}?[\[\uff3b]|\u009b)`;
