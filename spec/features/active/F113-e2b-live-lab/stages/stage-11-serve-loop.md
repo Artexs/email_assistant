@@ -60,3 +60,7 @@ Scoring (stages 12–13) and demo reset (stage 14).
 ## Carry-over from the stage 03 review (N6)
 
 `deploy/compose.sim.yaml` runs the `lab` service as `bun run lab:env-check && exec bun run lab serve`. `bun run` stays PID 1 and the lab is its child, so a stop signal may not reach the lab. When this stage builds the lab script, change that command to `exec bun apps/server/src/scripts/<lab script>.ts serve`. `apps/server/src/scripts/sim-compose-rules.ts` and its test hold the old command text: change them together.
+
+## Carry-over from the F111 stage 03 review
+
+Pass the endpoint kind to the lab start check (`lab/start.ts`, unpriced-model check): an own endpoint with an unpriced model is wrongly refused; an eu endpoint with only a standard row passes and counts $0 toward the cap. See F111 `review-3.md` N3.
