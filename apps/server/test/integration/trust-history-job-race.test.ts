@@ -194,6 +194,34 @@ for (const [role, conn] of [
       });
     });
 
+    test("a check that is not due is not claimed, and a check that ended by another path is not changed by a step", async () => {
+      await withHistoryBox(appDb, { mails: 0 }, async (box) => {
+        const id = await queue(box);
+        await appDb
+          .updateTable("history_checks")
+          .set({ next_attempt_at: later(box, 60_000) })
+          .where("id", "=", id)
+          .execute();
+        expect(await claimNextCheck(conn, box, box.clock.now)).toEqual({ kind: "none" });
+        await appDb
+          .updateTable("history_checks")
+          .set({ next_attempt_at: box.clock.now })
+          .where("id", "=", id)
+          .execute();
+        const claim = await claimed(conn, box);
+        // Another path ends the check (an operator) but leaves the lock: the step may not write over the end.
+        await appDb
+          .updateTable("history_checks")
+          .set({ status: "done", finished_at: box.clock.now })
+          .where("id", "=", id)
+          .execute();
+        expect(await releaseCheck(conn, box, claim, { at: box.clock.now, status: "classifying" })).toBe(false);
+        expect(await markStatus(conn, box, claim, "backfilling")).toBe(false);
+        expect(await failStep(conn, box, claim, box.clock.now)).toBeNull();
+        expect(await theCheck(appDb, box)).toMatchObject({ status: "done", attempts: 0 });
+      });
+    });
+
     test("a failed step and a take-back at once: exactly one applies and the row counts one attempt", async () => {
       await withHistoryBox(appDb, { mails: 0 }, async (box) => {
         await queue(box);
