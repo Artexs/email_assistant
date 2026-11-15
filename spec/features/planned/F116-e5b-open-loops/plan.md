@@ -64,7 +64,7 @@ Owner: "You can go with defaults." (PD-115–PD-129). Job: "Owner order: owner s
 mkdir -p /tmp/f116-sNN && bun run lint > /tmp/f116-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f116-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f116-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f116-sNN/int.log 2>&1 && echo PROOF_OK
 ```
 
-Web stages 21 and 22 add `bun run test:e2e` under `flock /tmp/email-assistant-shared-tests.lock` (their stage files).
+Web stages 21 and 22 add before `echo PROOF_OK` the F102 web tail (`web:build`, the `csp checked in` grep, `test:e2e` under `flock /tmp/email-assistant-shared-tests.lock`; F102 `plan.md` § Proof), with `/tmp/f116-sNN`.
 
 ## Gate, checkpoints, owner steps
 
