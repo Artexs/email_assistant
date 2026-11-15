@@ -27,23 +27,28 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 
 15. **Settings API and CLI.** The settings view has the field `sentSync` (`getSentSyncView(db, ctx, mailboxId, now)`, `mail/sent-view.ts`): `null` while the flag is off and the switch is off (or no state row); else `flagOn`, `enabled`, `folder` (`folder_map.sent`), `firstPassDone`, `lastSentAt` (the newest user mail of the current path), `storedCount` (user mail of the last 30 days) and `errorCode`. With the flag off and the switch on, `flagOn` is false: the switch can only go off. The owner route `PATCH /api/settings/:mailboxId/sent-sync` (body `{ enabled }`) calls `setSentSync` and answers the settings change (`changed`, `settings`). **Flag off hides the field; the route answers 404** for `flag_off` and `not_found` alike (a hidden feature looks absent); a non-UUID or a mailbox of another organization is 404 too, a member gets 403, a bad body 400. `bun run mailbox:settings sent-sync --org-id <uuid> --mailbox-id <uuid> --value on|off` calls `setSentSync` with actor `cli` (turn it on only on the owner's instruction): it prints `sent sync on|off` (and `deleted <n> sent mails` for off), `no change`, or exits 1 for `flag_off` (the error names the flag and `bun run org:flag`) and `not_found`. `mailbox:settings show` adds one `sent:` line (`describeSentSync`): `sent: off (flag)` for `null`, else the switch, folder, stored count, last time, first pass and error code, plus `paused (flag off)`. `mailbox:connect` prints the off command after `sent mail: tracked, read only`.
 
+16. **The panel.** The settings page shows the card "Sent mail" (`data-card="sent"`) after the sync folders card while `settings.sentSync` is not `null`. It holds one switch "Track my sent mail" that calls `PATCH …/sent-sync`, the fixed line `sent_line`, the Sent folder path, one status line (`sentStatusLine`: first match wins: paused, no folder, folder gone, failed, first read pending, no mail in 30 days, else the time of the last mail) and the off note. The switch is disabled for a member, while a request runs, and when the flag is off and the switch is off (paused: it can only go off). The connect dialog shows `sent_line` as one muted line while `/api/me` `features` holds `sent_sync`. The texts are `sent_*` in `apps/web/src/i18n`.
+
 ## Entry points
 
-| Kind     | Name                                                                       | Where                                               |
-| -------- | -------------------------------------------------------------------------- | --------------------------------------------------- |
-| job      | `mail.sync` (runs the Sent pass last)                                      | `apps/server/src/modules/mail/jobs.ts`              |
-| function | `syncSentFolder`, `syncSentHeaders`                                        | `apps/server/src/modules/mail/sent-sync.ts`         |
-| function | `fetchSentTexts`                                                           | `apps/server/src/modules/mail/sent-texts.ts`        |
-| function | `toNewSentEmail`, `sentModeOf`, `sentTextWindowMs`                         | `apps/server/src/modules/mail/sent-rules.ts`        |
-| function | `insertSentEmails`, `writeSentText`, `expireSentTexts`, `deleteSentEmails` | `apps/server/src/modules/mail/repo/sent-emails.ts`  |
-| function | `getSentSyncState`, `lockSentSyncState`, `writeSentSwitch`, `markSentPass` | `apps/server/src/modules/mail/repo/sent-state.ts`   |
-| function | `listUserAnswers`, `getSentSummary`, `listSentHealth`                      | `apps/server/src/modules/mail/repo/sent-readers.ts` |
-| function | `clearSentBodies`, `clearSentHeaders`                                      | `apps/server/src/modules/mail/repo/retention.ts`    |
-| function | `setSentSync`                                                              | `apps/server/src/modules/mail/sent-switch.ts`       |
-| function | `getSentSyncView`                                                          | `apps/server/src/modules/mail/sent-view.ts`         |
-| route    | `PATCH /api/settings/:mailboxId/sent-sync` (owner)                         | `apps/server/src/modules/config/routes.ts`          |
-| CLI      | `bun run mailbox:settings sent-sync`, `show`                               | `apps/server/src/scripts/mailbox-settings.ts`       |
-| function | `sentOriginOf`                                                             | `apps/server/src/modules/actions/repo/planned.ts`   |
+| Kind     | Name                                                                       | Where                                                 |
+| -------- | -------------------------------------------------------------------------- | ----------------------------------------------------- |
+| job      | `mail.sync` (runs the Sent pass last)                                      | `apps/server/src/modules/mail/jobs.ts`                |
+| function | `syncSentFolder`, `syncSentHeaders`                                        | `apps/server/src/modules/mail/sent-sync.ts`           |
+| function | `fetchSentTexts`                                                           | `apps/server/src/modules/mail/sent-texts.ts`          |
+| function | `toNewSentEmail`, `sentModeOf`, `sentTextWindowMs`                         | `apps/server/src/modules/mail/sent-rules.ts`          |
+| function | `insertSentEmails`, `writeSentText`, `expireSentTexts`, `deleteSentEmails` | `apps/server/src/modules/mail/repo/sent-emails.ts`    |
+| function | `getSentSyncState`, `lockSentSyncState`, `writeSentSwitch`, `markSentPass` | `apps/server/src/modules/mail/repo/sent-state.ts`     |
+| function | `listUserAnswers`, `getSentSummary`, `listSentHealth`                      | `apps/server/src/modules/mail/repo/sent-readers.ts`   |
+| function | `clearSentBodies`, `clearSentHeaders`                                      | `apps/server/src/modules/mail/repo/retention.ts`      |
+| function | `setSentSync`                                                              | `apps/server/src/modules/mail/sent-switch.ts`         |
+| function | `getSentSyncView`                                                          | `apps/server/src/modules/mail/sent-view.ts`           |
+| route    | `PATCH /api/settings/:mailboxId/sent-sync` (owner)                         | `apps/server/src/modules/config/routes.ts`            |
+| panel    | `SentMailCard` (the settings card)                                         | `apps/web/src/components/settings/SentMailCard.tsx`   |
+| panel    | `SentSyncLine` (the connect line)                                          | `apps/web/src/components/mailboxes/ConnectDialog.tsx` |
+| function | `sentStatusLine`                                                           | `apps/web/src/lib/sent-text.ts`                       |
+| CLI      | `bun run mailbox:settings sent-sync`, `show`                               | `apps/server/src/scripts/mailbox-settings.ts`         |
+| function | `sentOriginOf`                                                             | `apps/server/src/modules/actions/repo/planned.ts`     |
 
 ## Data
 
@@ -57,7 +62,7 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - One mail that makes `fetchContent` fail on every run (a server `BAD` on one UID) holds the text step: the order is oldest first and the error ends the step. It clears when the row leaves the text window, after up to 14 days. The pass logs `sent_sync_failed` each run.
 - Worst case of one run: 100 text fetches of up to 5 MB each, one after another, on the connection of the mailbox. It adds to the run time of `mail.sync`.
 - Mail moved into Sent by hand after it is older than 30 days is not stored (`tooOld`).
-- The switch is set by `setSentSync`, at connect, by the route and by the CLI (rule 15); the panel card comes in F104 stage 10. No "no sent mail seen" notice (stage 11), no DSR erase of sent mail (stage 12).
+- The switch is set by `setSentSync`, at connect, by the route and by the CLI (rule 15). No "no sent mail seen" notice (stage 11), no DSR erase of sent mail (stage 12).
 - No analysis of sent mail by the LLM: E5b. No pass before a system send: E6a (F115).
 - `listUserAnswers` reads a direct reply only (the parent id): a later reply elsewhere in the thread does not mark older mails; a reader that wants the thread rule builds it from `thread_key`. No caller yet: E3a, E4-B, E11a, E6 (reply drafts) and E5b (open loops) use it. F116 (open loops) note: Sent text goes after `data_retention_days` and the recipients after 90 days, so a loop that stays open longer than `data_retention_days` needs its own copy of what it needs.
 
