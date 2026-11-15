@@ -28,6 +28,21 @@ export default defineConfig({
       // Each content stage adds its section here, before "Operate".
       sidebar: [
         { label: "Start", items: [{ slug: "start" }] },
+        {
+          label: "How-to",
+          items: [
+            { slug: "how-to/approve-a-send" },
+            { slug: "how-to/delegate-and-follow-up" },
+            { slug: "how-to/undo-a-move" },
+            { slug: "how-to/correct-a-category" },
+            { slug: "how-to/sender-rules" },
+            { slug: "how-to/digest-times" },
+            { slug: "how-to/pause" },
+            { slug: "how-to/mode-and-switches" },
+            { slug: "how-to/two-factor" },
+            { slug: "how-to/language" },
+          ],
+        },
         { label: "FAQ", items: [{ slug: "faq" }] },
         { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.filter(inOperate).map((page) => ({ slug: page.id })) },
         ...IN_PLACE_PAGES.filter((page) => !inOperate(page)).map((page) => ({ slug: page.id })),
