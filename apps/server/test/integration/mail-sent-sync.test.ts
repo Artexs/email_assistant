@@ -368,10 +368,21 @@ describe("syncSentHeaders", () => {
     }
   });
 
+  const restoreState = (trx: Transaction<DB>, org: Org) =>
+    sql`update mailbox_sent_sync set path = 'Sent', uidvalidity = 1, last_uid = 0 where mailbox_id = ${org.mailboxId}::uuid`.execute(
+      trx
+    );
+
   test("12b: a cursor, numbering or path that another run changes during the pass stops the write", async () => {
     const moves: Record<string, (trx: Transaction<DB>, org: Org) => Promise<unknown>> = {
       lastUid: (trx, org) => updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 1, lastUid: 99 }),
       uidValidity: (trx, org) => updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 77, lastUid: 0 }),
+      // The switch ends and starts again, and the state returns to the place that the pass read: only `enabled_at` differs.
+      enabledAt: async (trx, org) => {
+        await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: false });
+        await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: true, at: new Date(NOW.getTime() + 1000) });
+        await restoreState(trx, org);
+      },
       path: (trx, org) =>
         sql`update mailbox_sent_sync set path = 'Other' where mailbox_id = ${org.mailboxId}::uuid`.execute(trx),
     };
