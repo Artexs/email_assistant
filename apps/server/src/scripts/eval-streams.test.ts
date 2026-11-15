@@ -130,6 +130,7 @@ async function sim(opts: SimRun = {}): Promise<number> {
     runs,
     evalStateFileName({
       model: MODEL,
+      endpoint: "standard",
       reasoningEffort: table.roles.classifier.reasoningEffort,
       promptVersion: prompts.classifier.version,
       set: `sim-mini-v1-${part}`,

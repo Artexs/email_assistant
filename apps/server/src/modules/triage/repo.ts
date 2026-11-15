@@ -5,6 +5,8 @@ import {
   type Category,
   type FeedbackSource,
   type FeedbackVerdict,
+  type LlmEndpointKind,
+  toEndpointKind,
 } from "@ea/core";
 import { sql, type NotNull, type Transaction } from "kysely";
 import { z } from "zod";
@@ -83,6 +85,8 @@ export interface TriagedItemRow {
 
 export interface UsageRow {
   model: string;
+  /** Where the call ran, from the `llm.call` row of the same mail. `standard` when no row says otherwise. */
+  endpoint: LlmEndpointKind;
   tokens_in: number | null;
   tokens_out: number | null;
   latency_ms: number | null;
@@ -367,7 +371,7 @@ export async function listUsageSince(
   since: Date,
   opts: { mail: MailKind; testMail: TestMailRule }
 ): Promise<UsageRow[]> {
-  return db
+  const rows = await db
     .selectFrom("triage_results")
     .innerJoin("emails", (join) =>
       join.onRef("emails.id", "=", "triage_results.email_id").onRef("emails.org_id", "=", "triage_results.org_id")
@@ -378,6 +382,14 @@ export async function listUsageSince(
       "triage_results.tokens_out",
       "triage_results.latency_ms",
       "triage_results.created_at",
+      // `triage_results` has no endpoint column: the nearest `ok` `llm.call` row of the same mail names it.
+      sql<string | null>`(
+        SELECT a.data->>'endpoint' FROM audit_log a
+        WHERE a.org_id = triage_results.org_id AND a.email_id = triage_results.email_id
+          AND a.event = 'llm.call' AND a.reason_code = 'ok'
+        ORDER BY abs(extract(epoch FROM a.created_at - triage_results.created_at)), a.id DESC
+        LIMIT 1
+      )`.as("endpoint_key"),
     ])
     .where("triage_results.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
@@ -389,6 +401,7 @@ export async function listUsageSince(
     .orderBy("triage_results.id")
     .$narrowType<{ model: NotNull }>()
     .execute();
+  return rows.map(({ endpoint_key, ...row }) => ({ ...row, endpoint: toEndpointKind(endpoint_key) }));
 }
 
 // The latest result per email, created in the window `after < created_at <= until` (index triage_results_org_created_idx).

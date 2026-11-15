@@ -1,4 +1,4 @@
-import type { LlmRole } from "@ea/core";
+import { type LlmEndpointKind, type LlmRole, toEndpointKind } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -179,6 +179,8 @@ export interface LlmCallRecord {
   role: LlmRole;
   promptVersion: string;
   model: string;
+  /** Where the call ran. A success takes it from `LlmUsage.endpoint`, an error from `LlmClient.endpointOf(role)`. */
+  endpoint: LlmEndpointKind;
   /** `ok` or the LLM error code. */
   outcome: string;
   tokensIn: number | null;
@@ -198,6 +200,7 @@ export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCa
       mailbox_id: call.mailboxId,
       role: call.role,
       model: call.model,
+      endpoint: call.endpoint,
       prompt_version: call.promptVersion,
       tokens_in: call.tokensIn,
       tokens_out: call.tokensOut,
@@ -212,12 +215,15 @@ export async function sumLlmCallsByModelSince(
   db: DbOrTrx,
   ctx: TenantContext,
   since: Date
-): Promise<{ model: string; calls: number; tokensIn: number; tokensOut: number }[]> {
+): Promise<{ model: string; endpoint: LlmEndpointKind; calls: number; tokensIn: number; tokensOut: number }[]> {
   const model = sql<string>`coalesce(data->>'model', 'unknown')`;
+  // A row written before F111 has no `endpoint` key: it ran on the standard endpoint.
+  const endpoint = sql<string>`coalesce(data->>'endpoint', 'standard')`;
   const rows = await db
     .selectFrom("audit_log")
     .select([
       model.as("model"),
+      endpoint.as("endpoint"),
       sql<string>`count(*)`.as("calls"),
       sql<string>`coalesce(sum((data->>'tokens_in')::bigint), 0)`.as("tokens_in"),
       sql<string>`coalesce(sum((data->>'tokens_out')::bigint), 0)`.as("tokens_out"),
@@ -225,11 +231,13 @@ export async function sumLlmCallsByModelSince(
     .where("org_id", "=", ctx.orgId)
     .where("event", "=", auditEvents.llmCall)
     .where("created_at", ">=", since)
-    .groupBy(model)
+    .groupBy([model, endpoint])
     .orderBy(model)
+    .orderBy(endpoint)
     .execute();
   return rows.map((row) => ({
     model: row.model,
+    endpoint: toEndpointKind(row.endpoint),
     calls: Number(row.calls),
     tokensIn: Number(row.tokens_in),
     tokensOut: Number(row.tokens_out),

@@ -10,7 +10,7 @@ export function judgeSetupError(table: LlmRoleTable, at: Date): string | null {
   if (judge.provider === table.roles.classifier.provider) return JUDGE_SAME_PROVIDER;
   const keys = table.providers[judge.provider];
   if (keys.apiKey === undefined) return `${keys.apiKeyName} is missing`;
-  if (firstEstimateUsd(judge.model, at) === null) {
+  if (firstEstimateUsd(judge.model, at, keys.endpoint) === null) {
     return `no price for model ${judge.model}: add it to llmPrices before a judged sim run`;
   }
   return null;

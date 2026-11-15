@@ -5,6 +5,7 @@ import {
   confidenceHistogram,
   confusionMatrix,
   goNoGo,
+  type LlmEndpointKind,
   ruleSummary,
   thresholdSweep,
 } from "@ea/core";
@@ -101,6 +102,8 @@ function report(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     errorCodes: {},
     model: "gpt-6-luna",
     provider: "openai",
+    endpoint: "standard",
+    host: "api.openai.com",
     reasoningEffort: "none",
     promptVersion: "classifier-v2",
     promptParts: null,
@@ -218,6 +221,7 @@ describe("buildGateFile", () => {
 describe("gateFileName", () => {
   const base = {
     role: "classifier" as const,
+    endpoint: "standard" as LlmEndpointKind,
     promptVersion: "classifier-v2",
     model: "gpt-6-luna",
     reasoningEffort: "none" as string | null,

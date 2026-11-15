@@ -38,7 +38,7 @@ export async function llmToday(db: Db, ctx: TenantContext, now: Date): Promise<O
   const today = { since: since.toISOString(), calls: 0, costUsd: 0, unpricedCalls: 0 };
   for (const row of rows) {
     today.calls += row.calls;
-    const cost = costPerMail(row.model, row.tokensIn, row.tokensOut, now);
+    const cost = costPerMail(row.model, row.tokensIn, row.tokensOut, now, row.endpoint);
     if (cost === null) today.unpricedCalls += row.calls;
     else today.costUsd += cost;
   }

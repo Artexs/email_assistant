@@ -26,6 +26,7 @@ async function call(trx: Transaction<DB>, a: { orgId: string; mailboxId: string 
       role: "classifier",
       promptVersion: "test",
       model: "test-model",
+      endpoint: "standard",
       outcome,
       tokensIn: null,
       tokensOut: null,

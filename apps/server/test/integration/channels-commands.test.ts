@@ -339,6 +339,7 @@ describe("statusMessage", () => {
             role: "classifier",
             promptVersion: "test",
             model: "gemini-3.5-flash-lite",
+            endpoint: "standard",
             outcome,
             tokensIn: null,
             tokensOut: null,
