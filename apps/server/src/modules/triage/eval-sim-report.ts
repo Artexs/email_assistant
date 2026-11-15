@@ -244,8 +244,35 @@ export const gateFileSchema = z.object({
 
 export type GateFile = z.infer<typeof gateFileSchema>;
 
+// What a gate file proves. A cascade run (`--escalate`) proves the escalation row: the gate file is named and filled as
+// role `escalation` with the escalation model and prompt, so it never replaces the file of the classifier alone.
+export function gateIdentityOf(report: CasesEvalReport): {
+  role: LlmRole;
+  provider: string;
+  endpoint: LlmEndpointKind;
+  host: string | null;
+  model: string;
+  reasoningEffort: string | null;
+  promptVersion: string;
+  promptParts: CasesEvalReport["promptParts"];
+} {
+  const esc = report.escalation;
+  if (esc === null) return { ...report };
+  return {
+    role: "escalation",
+    provider: esc.provider,
+    endpoint: esc.endpoint,
+    host: esc.host,
+    model: esc.model,
+    reasoningEffort: esc.reasoningEffort,
+    promptVersion: esc.promptVersion,
+    promptParts: null,
+  };
+}
+
 export function buildGateFile(input: SimReportInput & { now: Date }): GateFile {
   const { report, meta, corpus } = input;
+  const identity = gateIdentityOf(report);
   const gate = simGoNoGo(report.predictions, { bar: report.bar, minKept: report.minKept });
   // The final predictions, no threshold: the measure the gap check compares.
   const metrics = computeMetrics(report.predictions);
@@ -270,14 +297,14 @@ export function buildGateFile(input: SimReportInput & { now: Date }): GateFile {
     provisional: corpus.audit !== "done",
     part: corpus.part,
     date: input.now.toISOString().slice(0, 10),
-    role: report.role,
-    provider: report.provider,
-    endpoint: report.endpoint,
-    host: report.host,
-    model: report.model,
-    reasoningEffort: report.reasoningEffort,
-    promptVersion: report.promptVersion,
-    ...(report.promptParts === null ? {} : { promptParts: report.promptParts }),
+    role: identity.role,
+    provider: identity.provider,
+    endpoint: identity.endpoint,
+    host: identity.host,
+    model: identity.model,
+    reasoningEffort: identity.reasoningEffort,
+    promptVersion: identity.promptVersion,
+    ...(identity.promptParts === null ? {} : { promptParts: identity.promptParts }),
     bar: report.bar,
     minKept: report.minKept,
     categories: categoriesOut,

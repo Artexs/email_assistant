@@ -36,6 +36,7 @@ export const evalUsage = [
   "                    [--prompt-version classifier-v2|classifier-v3 (default: the production prompt)]",
   "                    [--prompt-parts urgency,history,list|none (only with classifier-v3; none = attachments only; default: the production parts when v3 is in production, else none)]",
   "                    (the history part gives the model the sim's generated received count and corrections: the persona group's ideal mix, not the model's own past labels)",
+  "                    [--escalate [--escalation-model <id>] [--escalation-reasoning-effort <value>] (a second call by the escalation role for person mail answered info, notification, spam or unsure; the report shows the cascade)]",
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
   "       bun run eval --sim <scenario> --part dev|holdout|week --suspicious [--out <file.md>]   (suspicious-mail rules, no LLM)",
 ].join("\n");
@@ -74,6 +75,9 @@ const optionsSchema = z.object({
   suspicious: z.boolean().default(false),
   "prompt-version": z.enum(classifierVersionIds as [ClassifierVersion, ...ClassifierVersion[]]).optional(),
   "prompt-parts": z.string().min(1).optional(),
+  escalate: z.boolean().default(false),
+  "escalation-model": z.string().min(1).optional(),
+  "escalation-reasoning-effort": z.enum(openAiReasoningEfforts).optional(),
   judge: z.boolean().default(false),
   "judge-provider": z.enum(llmProviderIds).optional(),
   "judge-model": z.string().min(1).optional(),
@@ -118,6 +122,9 @@ const simOnly = [
   "judge-rpm",
   "prompt-version",
   "prompt-parts",
+  "escalate",
+  "escalation-model",
+  "escalation-reasoning-effort",
 ] as const;
 
 // `none` is attachments only. Undefined means a usage error: an empty or unknown name, or `none` with a name.
@@ -176,6 +183,9 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "spend-ledger": { type: "string" },
         "fresh-lock": { type: "boolean" },
         suspicious: { type: "boolean" },
+        escalate: { type: "boolean" },
+        "escalation-model": { type: "string" },
+        "escalation-reasoning-effort": { type: "string" },
         judge: { type: "boolean" },
         "judge-provider": { type: "string" },
         "judge-model": { type: "string" },
@@ -209,6 +219,13 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       if (
         !data.judge &&
         (data["judge-provider"] !== undefined || data["judge-model"] !== undefined || data["judge-rpm"] !== undefined)
+      ) {
+        return undefined;
+      }
+      // The escalation overrides mean nothing without the escalation.
+      if (
+        !data.escalate &&
+        (data["escalation-model"] !== undefined || data["escalation-reasoning-effort"] !== undefined)
       ) {
         return undefined;
       }
