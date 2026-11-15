@@ -67,7 +67,8 @@ export async function lookupCard(
         ? await getSetSend(db, ctx, card.setId)
         : undefined;
   if (send !== undefined) {
-    const messageId = send.email.message_id_header;
+    // A follow-up has no incoming mail: the lab scores cards of mail only.
+    const messageId = send.email?.message_id_header ?? null;
     if (messageId === null) return null;
     const payload = sendPayloadSchema.safeParse(send.payload);
     if (!payload.success) return { messageId };

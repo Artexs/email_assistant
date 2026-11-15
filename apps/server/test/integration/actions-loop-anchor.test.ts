@@ -15,14 +15,18 @@ import {
   getAnySend,
   getDraft,
   getSend,
+  getSetSend,
   listActionsForEmails,
   listApprovalSends,
   listExpiredApprovals,
+  listFailedFollowUps,
   listFailedUnnotified,
+  listFollowUpLimitHolds,
   listRecentSends,
   listSendLimitHolds,
   listSendResultsToNotify,
   listSendsToNotify,
+  listSetSends,
   listSetsToNotify,
   lockAnySend,
   lockDraft,
@@ -40,8 +44,9 @@ import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 
 // Stage 9 of the open loops feature (spec/features/active/F116-e5b-open-loops/stages/stage-09-action-anchor.md): an
-// action that hangs on a loop has no mail. Stage 10 opens the claim, the draft lookups and the send limits for it; the
-// readers of cards, lists and notices stay mail-only until stage 11, and this file keeps proving that.
+// action that hangs on a loop has no mail. Stage 10 opened the claim, the draft lookups and the send limits for it; stage 11
+// opened the readers of cards, lists, notices and the expiry. The approval set readers stay mail-only on purpose (a follow-up
+// is one card), and the failure notice of a mail action stays mail-only (a follow-up has its own, see `listFailedFollowUps`).
 // Each test puts a loop pair and a mail pair in organization A and a mail pair in organization B, on one connection
 // without a tenant scope: a missing `org_id` filter would show the rows of the other organization.
 const db = testDb();
@@ -73,7 +78,7 @@ async function side(trx: Trx): Promise<Side> {
   return { ...o, ctx: { orgId: o.orgId } };
 }
 
-describe("a loop-anchored pair is invisible to the readers of mail", () => {
+describe("a loop-anchored pair and the readers of cards, lists and notices", () => {
   test("claim (stage 10): the draft and the approved send of a loop are claimed, with the mailbox of the loop", async () => {
     await withRollback(db, async (trx) => {
       const a = await side(trx);
@@ -161,41 +166,69 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
     });
   });
 
-  test("approvals: the list, the nav count and the /status count leave the loop send out", async () => {
+  test("approvals (stage 11): the list, the nav count and the /status count include the loop send", async () => {
     await withRollback(db, async (trx) => {
       const a = await side(trx);
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
-      await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(HOUR) });
+      const loopSend = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(HOUR) });
       const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(2 * HOUR) });
       const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { createdAt: ago(HOUR) });
 
       const list = await listApprovalSends(trx, a.ctx, { staleBefore: STALE_BEFORE, limit: 100 });
-      expect(list.map((send) => send.id)).toEqual([mine.sendId]);
+      // Newest first: the loop send (1 h old) before the mail send (2 h old).
+      expect(list.map((send) => send.id)).toEqual([loopSend.sendId, mine.sendId]);
+      expect(list[0]).toMatchObject({ email_id: null, email: null, loop_id: loopId, mailbox_id: a.mailboxId });
+      expect(list[1]).toMatchObject({ loop_id: null, mailbox_id: a.mailboxId });
       expect((await listApprovalSends(trx, b.ctx, { staleBefore: STALE_BEFORE, limit: 100 })).map((s) => s.id)).toEqual(
         [theirs.sendId]
       );
-      expect(await countWaitingApprovals(trx, a.ctx)).toBe(1);
+      expect(await countWaitingApprovals(trx, a.ctx)).toBe(2);
       expect(await countWaitingApprovals(trx, b.ctx)).toBe(1);
       const status = await countApprovals(trx, a.ctx, { send: { kind: "all" } });
-      expect(status.waiting).toBe(1);
+      expect(status.waiting).toBe(2);
       const byMailbox = await countApprovals(trx, a.ctx, { send: { kind: "all" }, mailboxId: a.mailboxId });
-      expect(byMailbox.waiting).toBe(1);
+      expect(byMailbox.waiting).toBe(2);
+      // The mailbox filter follows the loop: another mailbox of the organization has none.
+      const sibling = randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: sibling,
+        address: `sibling-${sibling}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: { drafts: "Drafts" },
+      });
+      expect((await countApprovals(trx, a.ctx, { send: { kind: "all" }, mailboxId: sibling })).waiting).toBe(0);
     });
   });
 
-  test("cards: the send, set and result detectors leave the loop send out", async () => {
+  test("cards (stage 11): the send and result readers list a loop send; the set readers never do", async () => {
     await withRollback(db, async (trx) => {
       const a = await side(trx);
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
       const setId = "11111111-1111-4111-8111-111111111111";
-      await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(HOUR) });
-      await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", setId, createdAt: ago(HOUR) });
-      await insertLoopActionPair(trx, a, loopId, {
+      const single = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(3 * HOUR) });
+      // A forged `set_id` on a follow-up: it is still one card and never part of a set.
+      const forged = await insertLoopActionPair(trx, a, loopId, {
+        draftStatus: "applied",
+        setId,
+        createdAt: ago(2 * HOUR),
+      });
+      const ended = await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
         sendStatus: "expired",
         createdAt: ago(HOUR),
+      });
+      // A failed follow-up is told by the fixed failure notice (`listFailedFollowUps`), never by a result line.
+      const failedLoop = await insertLoopActionPair(trx, a, loopId, {
+        draftStatus: "applied",
+        sendStatus: "failed",
+        createdAt: ago(HOUR),
+        send: { status_reason: "outcome_unknown" },
       });
       const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR) });
       const mineSet = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
@@ -205,24 +238,30 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
       const done = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { sendStatus: "expired", createdAt: ago(HOUR) });
       const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { createdAt: ago(HOUR) });
 
-      const single = await listSendsToNotify(trx, a.ctx, { limit: 50 });
-      expect(single.map((send) => send.id)).toEqual([mine.sendId]);
+      const cards = await listSendsToNotify(trx, a.ctx, { limit: 50 });
+      expect(cards.map((send) => send.id).sort()).toEqual([single.sendId, forged.sendId, mine.sendId].sort());
       expect((await listSendsToNotify(trx, b.ctx, { limit: 50 })).map((send) => send.id)).toEqual([theirs.sendId]);
 
       const sets = await listSetsToNotify(trx, a.ctx, { limit: 50 });
       expect([...sets.keys()]).toEqual(["22222222-2222-4222-8222-222222222222"]);
       expect(sets.get("22222222-2222-4222-8222-222222222222")?.map((send) => send.id)).toEqual([mineSet.sendId]);
+      expect(await listSetSends(trx, a.ctx, setId)).toEqual([]);
+      expect(await getSetSend(trx, a.ctx, setId)).toBeUndefined();
 
       const results = await listSendResultsToNotify(trx, a.ctx, {
         limit: 50,
         now: NOW,
         pendingCopyMaxAgeMs: HOUR,
       });
-      expect(results.map((send) => send.id)).toEqual([done.sendId]);
+      expect(results.map((send) => send.id).sort()).toEqual([ended.sendId, done.sendId].sort());
+      expect(await listFailedFollowUps(trx, a.ctx, { limit: 50 })).toEqual([
+        { id: failedLoop.sendId, loopId, unknown: true },
+      ]);
+      expect(await listFailedFollowUps(trx, b.ctx, { limit: 50 })).toEqual([]);
     });
   });
 
-  test("a failed reverse draft of a loop gets no failure notice; a send held by a limit is not counted", async () => {
+  test("a failed reverse draft of a loop gets no mail failure notice; a held loop send is in its own list", async () => {
     await withRollback(db, async (trx) => {
       const a = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
@@ -261,9 +300,13 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
         .execute();
 
       expect(await listFailedUnnotified(trx, a.ctx, { limit: 50 })).toEqual([]);
+      // The mail hold and the follow-up hold are two lists: each has its own notice.
       const holds = await listSendLimitHolds(trx, a.ctx, NOW);
       expect(holds).toHaveLength(1);
       expect(holds[0]?.waiting).toBe(1);
+      const followUpHolds = await listFollowUpLimitHolds(trx, a.ctx, NOW);
+      expect(followUpHolds).toHaveLength(1);
+      expect(followUpHolds[0]).toMatchObject({ mailboxId: a.mailboxId, waiting: 1, lastError: "send_limit:hourly" });
     });
   });
 
@@ -312,16 +355,22 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
     });
   });
 
-  test("by id (stage 10): a loop draft is found by its id; a send of a loop only by the two loop-aware lookups", async () => {
+  test("by id (stage 11): a loop draft and a loop send are found by their ids, with their mailbox", async () => {
     await withRollback(db, async (trx) => {
       const a = await side(trx);
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
       const loop = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied" });
       const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {});
-      // The mail-only lookups feed the cards, lists and approve taps: a loop send is "not found" there until stage 11.
-      expect(await getSend(trx, a.ctx, loop.sendId)).toBeUndefined();
-      expect(await lockSend(trx, a.ctx, loop.sendId)).toBeUndefined();
+      expect(await getSend(trx, a.ctx, loop.sendId)).toMatchObject({
+        email_id: null,
+        email: null,
+        loop_id: loopId,
+        mailbox_id: a.mailboxId,
+      });
+      expect(await lockSend(trx, a.ctx, loop.sendId)).toMatchObject({ email: null, loop_id: loopId });
+      expect(await getSend(trx, b.ctx, loop.sendId)).toBeUndefined();
+      expect(await lockSend(trx, b.ctx, loop.sendId)).toBeUndefined();
       expect(await getDraft(trx, a.ctx, loop.draftId)).toMatchObject({ email_id: null, loop_id: loopId });
       expect(await lockDraft(trx, a.ctx, loop.draftId)).toMatchObject({ email_id: null, loop_id: loopId });
       expect(await getAnySend(trx, a.ctx, loop.sendId)).toMatchObject({
@@ -359,18 +408,18 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
   });
 });
 
-describe("a loop-anchored pair is not expired by the 48 hour job", () => {
+describe("a loop-anchored pair and the 48 hour job", () => {
   const request = { delegationId: "33333333-3333-4333-8333-333333333333", draftProviderResult: APPLIED };
 
-  test("the lists: only the mail pair is due", async () => {
+  test("the lists: the loop pair is due like the mail pair, in the mailbox of its loop", async () => {
     await withRollback(db, async (trx) => {
       const a = await side(trx);
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
-      // Old and never notified: due for `not_notified` when it hangs on a mail.
-      await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(8 * DAY) });
-      // Notified long ago, the request unseen: due for `not_seen` when it hangs on a mail.
-      await insertLoopActionPair(trx, a, loopId, {
+      // Old and never notified: due for `not_notified`.
+      const oldLoop = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(8 * DAY) });
+      // Notified long ago, the request unseen: due for `not_seen`.
+      const unseenLoop = await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
         createdAt: ago(5 * DAY),
         notifiedAt: ago(3 * DAY),
@@ -388,11 +437,30 @@ describe("a loop-anchored pair is not expired by the 48 hour job", () => {
         limit: 100,
         staleBefore: STALE_BEFORE,
       });
-      expect(due.map((row) => row.id).sort()).toEqual([mine.sendId, unseen.sendId].sort());
+      expect(due.map((row) => [row.id, row.reason]).sort()).toEqual(
+        [
+          [mine.sendId, "not_notified"],
+          [unseen.sendId, "not_seen"],
+          [oldLoop.sendId, "not_notified"],
+          [unseenLoop.sendId, "not_seen"],
+        ].sort()
+      );
       const unseenList = await listUnseenApprovalSends(trx, a.ctx, { before: ago(HOUR) });
-      expect(unseenList.map((row) => row.id)).toEqual([unseen.sendId]);
+      expect(unseenList.map((row) => [row.id, row.mailboxId]).sort()).toEqual(
+        [
+          [unseen.sendId, a.mailboxId],
+          [unseenLoop.sendId, a.mailboxId],
+        ].sort()
+      );
       const awaiting = await listAwaitingSendIds(trx, a.ctx, a.mailboxId);
-      expect(awaiting.map((row) => row.id).sort()).toEqual([mine.sendId, unseen.sendId].sort());
+      expect(awaiting.map((row) => row.id).sort()).toEqual(
+        [mine.sendId, unseen.sendId, oldLoop.sendId, unseenLoop.sendId].sort()
+      );
+      // A follow-up has no mail: the narrow-by-mail filter never matches it.
+      expect(
+        (await listAwaitingSendIds(trx, a.ctx, a.mailboxId, { emailId: mine.emailId })).map((row) => row.id)
+      ).toEqual([mine.sendId]);
+      expect(awaiting.find((row) => row.id === oldLoop.sendId)?.emailId).toBeNull();
       const forB = await listExpiredApprovals(trx, b.ctx, b.mailboxId, {
         now: NOW,
         limit: 100,
@@ -402,7 +470,7 @@ describe("a loop-anchored pair is not expired by the 48 hour job", () => {
     });
   });
 
-  test("the job closes the mail send and leaves the loop send awaiting approval", async () => {
+  test("the job closes the mail send and the loop send", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
       const a = await side(trx);
@@ -424,7 +492,19 @@ describe("a loop-anchored pair is not expired by the 48 hour job", () => {
         .execute();
       const statusOf = (id: string) => states.find((row) => row.id === id)?.status;
       expect(statusOf(mine.sendId)).toBe("expired");
-      expect(statusOf(loop.sendId)).toBe("awaiting_approval");
+      expect(statusOf(loop.sendId)).toBe("expired");
+      const audit = await trx
+        .selectFrom("audit_log")
+        .select(["event", "reason_code", "data"])
+        .where("action_id", "=", loop.sendId)
+        .execute();
+      expect(audit).toEqual([
+        {
+          event: "action.expired",
+          reason_code: "not_notified",
+          data: { action_type: "send", reason: "not_notified", loop_id: loopId },
+        },
+      ]);
     });
   });
 });

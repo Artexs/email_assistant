@@ -8,9 +8,9 @@ import {
   parseToolSwitches,
   sendPayloadSchema,
 } from "@ea/core";
-import { sql } from "kysely";
+import { sql, type Transaction } from "kysely";
 
-import type { TenantContext } from "../../platform/db";
+import type { DB, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { ValidationError } from "../../platform/http";
 import { auditEvents, recordAudit } from "../audit";
@@ -18,11 +18,14 @@ import { getMailboxSettings, lockSettingsForShare } from "../config";
 import { getMailbox } from "../mail";
 import { getOrganization, listMemberships } from "../tenancy";
 
+import { anchorOfRow } from "./anchor";
 import { inTransaction } from "./apply-shared";
-import { decidedBy, type ApprovalDeps, type ApprovalInput } from "./approvals";
+import { decidedBy, loopData, type ApprovalDeps, type ApprovalInput } from "./approvals";
 import { STALE_AFTER_MS } from "./constants";
 import { closeDraftOfSend } from "./expiry";
-import { getSend, insertEditedPair, lockDraft, lockSend, newestVersionOf, setExpired } from "./repo";
+import { noLoopHooks } from "./hooks";
+import { loopOriginal, mailOriginal } from "./original";
+import { getSend, insertEditedPair, lockDraft, lockSend, newestVersionOf, setExpired, type SendRow } from "./repo";
 
 export interface EditInput extends ApprovalInput {
   subject: string;
@@ -42,6 +45,15 @@ function textError(path: "subject" | "body", message: string): ValidationError {
 }
 
 const SAVEPOINT = "approval_edit";
+
+// The original that the text of the send is built from: the mail of a mail send, the loop of a follow-up (`undefined`: the loop
+// is gone, so the edit cannot be built).
+async function originalOfSend(deps: ApprovalDeps, trx: Transaction<DB>, ctx: TenantContext, send: SendRow) {
+  if (send.email !== null) return mailOriginal(send.email);
+  if (send.loop_id === null) return undefined;
+  const anchor = await (deps.loopHooks ?? noLoopHooks).anchorOf(trx, ctx, send.loop_id);
+  return anchor === undefined ? undefined : loopOriginal(anchor);
+}
 
 // An edit (F102 ticket, supersede) replaces a waiting send by a new version in one transaction, with no call to the outside.
 // Lock order: the mailbox settings row (share, the first statement, as the chaser and `saveTriage` do it), the old send,
@@ -64,7 +76,7 @@ export async function editApproval(
   // An unlocked read finds the mailbox that the settings lock needs; the locked read below decides.
   const probe = await getSend(deps.db, ctx, sendId);
   if (probe === undefined) return { kind: "not_found" };
-  const mailboxId = probe.email.mailbox_id;
+  const mailboxId = probe.mailbox_id;
 
   return inTransaction(deps.db, async (trx): Promise<EditResult> => {
     if ((await lockSettingsForShare(trx, ctx, mailboxId)) === undefined) return { kind: "drafts_off" };
@@ -73,12 +85,16 @@ export async function editApproval(
     const switches = settings && parseToolSwitches(settings.tool_switches);
     if (!settings || !switches || settings.mode !== "assist" || !switches.create_draft) return { kind: "drafts_off" };
 
+    // Lock order for a follow-up: its loop first, then the send. A closed loop refuses the edit (after the checks below, so
+    // an old version still answers `changed` and a closed send still names its state).
+    const loopOpen = probe.loop_id === null || (await (deps.loopHooks ?? noLoopHooks).isOpen(trx, ctx, probe.loop_id));
     const send = await lockSend(trx, ctx, sendId);
     if (send === undefined) return { kind: "not_found" };
     if (send.status === "expired" && send.status_reason === "superseded") {
       return { kind: "changed", currentId: await newestVersionOf(trx, ctx, sendId) };
     }
     if (send.status !== "awaiting_approval") return { kind: "closed", state: send.status };
+    if (!loopOpen) return { kind: "closed", state: "loop_closed" };
     const sendPayload = sendPayloadSchema.safeParse(send.payload);
     if (!sendPayload.success) return { kind: "closed", state: "payload_gone" };
     const kind = sendPayload.data.kind;
@@ -104,7 +120,8 @@ export async function editApproval(
       const organization = await getOrganization(trx, ctx);
       if (mailbox === undefined || organization === undefined) throw new HardError("mailbox or organization not found");
       const owner = (await listMemberships(trx, ctx)).find((member) => member.role === "owner");
-      const { email } = send;
+      const original = await originalOfSend(deps, trx, ctx, send);
+      if (original === undefined) return { kind: "closed", state: "loop_closed" };
       const current = buildOutgoingMessage({
         draft: draft.data,
         draftActionId: oldDraft.id,
@@ -112,15 +129,7 @@ export async function editApproval(
         mailbox: { address: mailbox.address },
         owner: { displayName: owner?.display_name ?? mailbox.address },
         organization: { styleText: organization.style_text, timezone: organization.timezone },
-        original: {
-          fromAddress: email.from_address,
-          subject: email.subject,
-          receivedAt: email.received_at,
-          messageId: email.message_id_header,
-          inReplyTo: email.in_reply_to,
-          references: email.references_header?.split(/\s+/).filter((id) => id !== "") ?? [],
-          bodyText: email.body_text,
-        },
+        original,
       });
       if (
         subject === cleanUserText(current.subject, { oneLine: true }) &&
@@ -150,7 +159,7 @@ export async function editApproval(
     // The delegation hook answers false when the delegation is not `drafted`: the savepoint undoes the writes below.
     await sql`savepoint ${sql.id(SAVEPOINT)}`.execute(trx);
     const created = await insertEditedPair(trx, ctx, {
-      emailId: send.email_id,
+      anchor: anchorOfRow(send),
       oldDraftId: oldDraft.id,
       oldSendId: send.id,
       draftPayload: newDraftPayload,
@@ -171,7 +180,7 @@ export async function editApproval(
       actor: input.userId,
       event: auditEvents.actionExpired,
       reasonCode: "superseded",
-      data: { action_type: "send", reason: "superseded" },
+      data: { action_type: "send", reason: "superseded", ...loopData(send) },
       at: input.now,
     });
     // `ready` -> expired; `applied` + UIDPLUS -> a reverse row that deletes the copy; `applying` -> the APPEND path closes it;
@@ -207,7 +216,13 @@ export async function editApproval(
       actionId: created.sendId,
       actor: input.userId,
       event: auditEvents.actionEdited,
-      data: { previous_action_id: send.id, version, delegate_changed: delegate !== undefined, via: input.via },
+      data: {
+        previous_action_id: send.id,
+        version,
+        delegate_changed: delegate !== undefined,
+        via: input.via,
+        ...loopData(send),
+      },
       at: input.now,
     });
     return { kind: "edited", sendId: created.sendId, version };

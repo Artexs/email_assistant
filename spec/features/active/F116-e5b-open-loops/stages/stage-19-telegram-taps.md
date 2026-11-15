@@ -48,6 +48,10 @@ Routes and panel (20–22).
 
 - N5: the keyboard builder drops the loop buttons when loopConsent is false (use the stage 11 choke point) (review-17.md).
 
+## Carry-over from stage 11 (worker, 2026-11-15)
+
+- Use `loopConsentOf` (`channels/consent.ts`) for the keyboard builder. A tap on a follow-up card (`ap:` / `ar:`) is the existing approval tap; there is no set tap and no "Send again" for a follow-up.
+
 ## Carry-over from the stage 16 re-review (PASS 5f2f26ab)
 
 - When `delegateMail` gets a caller transaction it writes the send before a key-conflict throw and leaves the rollback to the caller: do not catch that error and commit (stages 19 and 22).

@@ -811,7 +811,15 @@ describe("organizations", () => {
       await run(trx);
       expect(await rows(trx, b.orgId, "urgent")).toHaveLength(2);
       expect(await rows(trx, a.orgId)).toHaveLength(0);
-      expect(errorLines).toEqual([`[channels] notices_org_failed org_id=${a.orgId} error=TypeError`]);
+      // One detector fails and logs by name and organization; the later detectors of the organization still run (a per-detector
+      // catch, F116 stage 11): the organization no longer fails as a whole.
+      expect(errorLines.length).toBeGreaterThan(0);
+      for (const line of errorLines) {
+        expect(line).toMatch(
+          new RegExp(`^\\[channels\\] notice_detector_failed kind=[a-z-]+ org_id=${a.orgId} error=TypeError$`)
+        );
+      }
+      expect(errorLines.some((line) => line.includes("notices_org_failed"))).toBe(false);
     });
   });
 });

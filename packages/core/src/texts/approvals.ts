@@ -13,6 +13,27 @@ export interface ApprovalTexts {
     clarification: (address: string) => string;
     reminder: (to: string) => string;
   };
+  // The card, the result lines and the closing lines of a follow-up (open loops). A follow-up goes to other people, so the card
+  // spells out every address; no text here names the loop or its ask.
+  followUp: {
+    title: string;
+    to: string; // "To:"
+    cc: string; // "Cc:"
+    number: (n: number) => string; // "Follow-up 1 of 2"
+    sent: (to: string) => string;
+    rejected: (byName: string | null) => string;
+    expired: Record<
+      | "timeout"
+      | "draft_missing"
+      | "not_notified"
+      | "not_seen"
+      | "held_timeout"
+      | "delegation_closed"
+      | "policy_changed"
+      | "loop_closed",
+      string
+    >;
+  };
   inactive: string; // "(inactive)"
   externalSender: string; // "⚠️ external sender"
   due: string; // "Due"
@@ -73,6 +94,7 @@ export interface ApprovalTexts {
       held_timeout: (subject: string) => string;
       delegation_closed: (subject: string) => string;
       policy_changed: (subject: string) => string;
+      loop_closed: (subject: string) => string;
     };
     rejected: (byName: string | null, subject: string) => string;
   };
@@ -120,6 +142,24 @@ export const approvalTexts = {
       delegation: (to) => `📤 Send? Delegation to ${to}`,
       clarification: (address) => `📤 Send? Question to the sender ${address}`,
       reminder: (to) => `📤 Send? Reminder to ${to}`,
+    },
+    followUp: {
+      title: "📝 Follow-up",
+      to: "To:",
+      cc: "Cc:",
+      number: (n) => `Follow-up ${n} of 2`,
+      sent: (to) => `✅ Follow-up sent to ${to}`,
+      rejected: (byName) => `✖️ Follow-up rejected${byName === null ? "" : ` (${byName})`}`,
+      expired: {
+        timeout: "⌛ Follow-up not sent: the approval expired (48 h).",
+        draft_missing: "❌ Follow-up not sent: the draft could not be created.",
+        not_notified: "⌛ Follow-up not sent: no approval request could be sent within 7 days.",
+        not_seen: "⌛ Follow-up not sent: the approval request did not reach you.",
+        held_timeout: "⌛ Follow-up not sent: it waited 48 h after your approval and did not go out.",
+        delegation_closed: "⌛ Follow-up not sent: the delegation was closed.",
+        policy_changed: "⌛ Follow-up not sent: the setting was changed.",
+        loop_closed: "⌛ Follow-up not sent: the open loop was closed.",
+      },
     },
     inactive: "(inactive)",
     externalSender: "⚠️ external sender",
@@ -191,6 +231,7 @@ export const approvalTexts = {
           `⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE, the send limit or the mailbox state) · ${subject}`,
         delegation_closed: (subject) => `⌛ Not sent: the delegation was closed · ${subject}`,
         policy_changed: (subject) => `⌛ Not sent: the setting was changed · ${subject}`,
+        loop_closed: (subject) => `⌛ Not sent: the open loop was closed · ${subject}`,
       },
       rejected: (byName, subject) => `✖️ Rejected${byName === null ? "" : ` by ${byName}`} · ${subject}`,
     },
@@ -233,6 +274,25 @@ export const approvalTexts = {
       delegation: (to) => `📤 Wysłać? Zlecenie: ${to}`,
       clarification: (address) => `📤 Wysłać? Pytanie do nadawcy: ${address}`,
       reminder: (to) => `📤 Wysłać? Przypomnienie: ${to}`,
+    },
+    followUp: {
+      title: "📝 Przypomnienie o odpowiedzi",
+      to: "Do:",
+      cc: "DW:",
+      number: (n) => `Przypomnienie ${n} z 2`,
+      sent: (to) => `✅ Przypomnienie o odpowiedzi wysłane do ${to}`,
+      rejected: (byName) => `✖️ Przypomnienie o odpowiedzi odrzucone${byName === null ? "" : ` (${byName})`}`,
+      expired: {
+        timeout: "⌛ Nie wysłano przypomnienia o odpowiedzi: zatwierdzenie wygasło (48 h).",
+        draft_missing: "❌ Nie wysłano przypomnienia o odpowiedzi: nie udało się utworzyć szkicu.",
+        not_notified:
+          "⌛ Nie wysłano przypomnienia o odpowiedzi: w ciągu 7 dni nie udało się wysłać prośby o zatwierdzenie.",
+        not_seen: "⌛ Nie wysłano przypomnienia o odpowiedzi: prośba o zatwierdzenie do Ciebie nie dotarła.",
+        held_timeout: "⌛ Nie wysłano przypomnienia o odpowiedzi: czekało 48 h po zatwierdzeniu i nie wyszło.",
+        delegation_closed: "⌛ Nie wysłano przypomnienia o odpowiedzi: zlecenie zostało zamknięte.",
+        policy_changed: "⌛ Nie wysłano przypomnienia o odpowiedzi: ustawienie zostało zmienione.",
+        loop_closed: "⌛ Nie wysłano przypomnienia o odpowiedzi: sprawa została zamknięta.",
+      },
     },
     inactive: "(nieaktywny wykonawca)",
     externalSender: "⚠️ nadawca zewnętrzny",
@@ -305,6 +365,7 @@ export const approvalTexts = {
           `⌛ Nie wysłano: wiadomość czekała 48 h po zatwierdzeniu i nie wyszła (wstrzymana przez SEND_SCOPE, limit wysyłki albo stan skrzynki) · ${subject}`,
         delegation_closed: (subject) => `⌛ Nie wysłano: zlecenie zostało zamknięte · ${subject}`,
         policy_changed: (subject) => `⌛ Nie wysłano: ustawienie zostało zmienione · ${subject}`,
+        loop_closed: (subject) => `⌛ Nie wysłano: sprawa została zamknięta · ${subject}`,
       },
       rejected: (byName, subject) => `✖️ Odrzucono${byName === null ? "" : ` (${byName})`} · ${subject}`,
     },

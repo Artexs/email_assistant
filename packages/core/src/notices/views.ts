@@ -59,6 +59,7 @@ const sendResultKindSchema = z.discriminatedUnion("kind", [
       "held_timeout",
       "delegation_closed",
       "policy_changed",
+      "loop_closed",
     ]),
     draftRemoved: z.boolean(),
   }),
@@ -138,7 +139,7 @@ const syncOkView = z.strictObject({
   timeZone,
 });
 
-const actionFailedView = z.strictObject({
+const mailActionFailedView = z.strictObject({
   actionType: z.enum(["move", "flag", "mark_read", "create_draft"]),
   reverse: z.boolean(),
   reason: z.enum(["mail_not_found", "bad_payload", "other"]),
@@ -150,6 +151,13 @@ const actionFailedView = z.strictObject({
   synthetic: z.boolean(),
   attempts: z.number().int().min(0),
 });
+
+// A follow-up that did not go out (open loops): a code and the panel link, no recipient and no text. `unknown`: the connection
+// broke after the text went out, so the mail may have been sent. A union: a row queued before this kind of view still parses.
+const followUpFailedView = z.strictObject({
+  followUp: z.strictObject({ cause: z.enum(["failed", "unknown"]), panelUrl: panelUrlSchema.optional() }),
+});
+const actionFailedView = z.union([mailActionFailedView, followUpFailedView]);
 
 const approvalNoticeView = z.strictObject({
   actionId: id,
@@ -209,6 +217,9 @@ const sendHeldView = z.strictObject({
   nextAt: isoDate,
   now: isoDate,
   timeZone,
+  // Open loops: the held sends are follow-ups. The renderer says so in a fixed line; the panel link is the way to the details.
+  followUps: z.boolean().optional(),
+  panelUrl: panelUrlSchema.optional(),
 });
 
 // The numbers of one week (all mailboxes) and the count of replied mails that wait for a check (D23).
@@ -257,6 +268,13 @@ const sentMissingView = z.strictObject({
   timeZone,
 });
 
+// One line for an owner whose consent does not cover open-loop data (F116 stage 11): it replaces a follow-up card
+// (`approval`) or a follow-up result (`result`). No recipient, no text, no id of a loop.
+const loopConsentView = z.strictObject({
+  about: z.enum(["approval", "result"]),
+  panelUrl: panelUrlSchema.optional(),
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -275,6 +293,7 @@ export const noticeViewSchemas = {
   approval_edit: approvalEditView,
   not_triaged: notTriagedView,
   sent_missing: sentMissingView,
+  loop_consent: loopConsentView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;

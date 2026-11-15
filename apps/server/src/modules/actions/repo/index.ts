@@ -53,13 +53,16 @@ export {
   setExpired,
   setRejected,
   type AnySendRow,
+  type SendMail,
   type SendRow,
 } from "./sends";
 export { insertEditedPair } from "./edit";
 export { countWaitingApprovals, listApprovalSends } from "./approval-reads";
 export { draftHasReverse, expireReadyDraft, getDraft, listSendsOfDraft, lockDraft, type DraftRow } from "./drafts";
 export {
+  listFailedFollowUps,
   listFailedUnnotified,
+  listFollowUpLimitHolds,
   listSendLimitHolds,
   listSendResultsToNotify,
   listSendsToNotify,

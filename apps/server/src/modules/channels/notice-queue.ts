@@ -19,6 +19,7 @@ export interface QueueNoticeInput<K extends NoticeKind> {
   view: NoticeView<K>;
   dedupKey: string;
   emailId?: string;
+  loopId?: string;
   mailboxId?: string;
   digestId?: string;
   editOfOutboxId?: string;
@@ -43,6 +44,7 @@ export async function queueNotice<K extends NoticeKind>(
     kind: input.kind,
     dedupKey: input.dedupKey,
     emailId: input.emailId,
+    ...(input.loopId === undefined ? {} : { loopId: input.loopId }),
     mailboxId: input.mailboxId,
     digestId: input.digestId,
     editOfOutboxId: input.editOfOutboxId,

@@ -35,3 +35,8 @@ T1–T11 pass; `docs/capabilities/delegation.md` § Entry points names the new j
 ## Out of scope
 
 Brief lines (18), routes (20).
+
+## Carry-over from stage 11 (worker, 2026-11-15)
+
+- One card per follow-up: a follow-up never joins an approval set (the set readers are mail-only and the send payload refuses `set_id`). The chaser queues no set for loops.
+- Cards go only to owners whose consent covers loop data (`loopConsentOf`); an uncovered owner gets one `loop_consent` line per day. Details: `notes/2026-11-15-f116-stage-11-follow-up-cards.md`.

@@ -50,14 +50,14 @@ export async function queueCardEdits(
   let queued = 0;
   for (const card of await listCardsOfSend(trx, ctx, input.sendId)) {
     if (card.userId === input.exceptUserId) continue;
-    const { text, externalMessageId, emailId } = card;
+    const { text, externalMessageId, emailId, loopId } = card;
     // A card whose text retention removed has nothing to show: the edit would copy the marker.
     if (
       card.status !== "sent" ||
       !text ||
       text === OUTBOX_REMOVED_TEXT ||
       externalMessageId === null ||
-      emailId === null
+      (emailId === null && loopId === null)
     ) {
       continue;
     }
@@ -72,7 +72,8 @@ export async function queueCardEdits(
       locale: card.locale,
       kind: "approval_edit",
       dedupKey: `approval_edit:${card.id}:${input.outcome}`,
-      emailId,
+      ...(emailId === null ? {} : { emailId }),
+      ...(loopId === null ? {} : { loopId }),
       editOfOutboxId: card.id,
       view: {
         original: text,

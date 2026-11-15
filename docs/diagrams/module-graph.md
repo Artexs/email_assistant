@@ -41,6 +41,7 @@ flowchart BT
   channels --> audit
   channels --> config
   channels --> delegation
+  channels --> loops
   channels --> mail
   channels --> reports
   channels --> tenancy

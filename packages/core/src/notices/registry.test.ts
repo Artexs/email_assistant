@@ -13,6 +13,7 @@ import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
   renderHostBlockedNotice,
+  renderLoopConsentNotice,
   renderNotTriagedNotice,
   renderSendHeldNotice,
   renderSentMissingNotice,
@@ -280,6 +281,11 @@ const cases: Case[] = [
     view: { address: "box@example.test", since: receivedAt, now, timeZone },
     direct: (texts) =>
       renderSentMissingNotice({ address: "box@example.test", since: receivedAt, now, timeZone }, texts),
+  },
+  {
+    kind: "loop_consent",
+    view: { about: "approval" },
+    direct: (texts) => renderLoopConsentNotice({ about: "approval" }, texts),
   },
   {
     kind: "approval_edit",

@@ -18,6 +18,7 @@ import { authErrorOutcome, inTransaction, loopHooksOf, type ApplyDeps, type Appl
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import type { LoopAnchor } from "./hooks";
+import { loopOriginal, mailOriginal } from "./original";
 import {
   finishAction,
   listSendsOfDraft,
@@ -44,26 +45,9 @@ export function buildDraftMessage(deps: ApplyDeps, action: ClaimedAction, anchor
   let original: OriginalMail;
   if (draft.kind === "follow_up") {
     if (anchor === undefined || action.loop_id !== draft.loop_id) throw new HardError("follow-up has no loop");
-    original = {
-      fromAddress: null,
-      subject: anchor.subject,
-      receivedAt: anchor.sentAt,
-      messageId: anchor.messageId,
-      inReplyTo: null,
-      references: anchor.referencesIds,
-      bodyText: null,
-    };
+    original = loopOriginal(anchor);
   } else {
-    const email = mailOf(action);
-    original = {
-      fromAddress: email.from_address,
-      subject: email.subject,
-      receivedAt: email.received_at,
-      messageId: email.message_id_header,
-      inReplyTo: email.in_reply_to,
-      references: email.references_header?.split(/\s+/).filter((id) => id !== "") ?? [],
-      bodyText: email.body_text,
-    };
+    original = mailOriginal(mailOf(action));
   }
   return buildOutgoingMessage({
     draft,

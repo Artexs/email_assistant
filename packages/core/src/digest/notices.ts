@@ -140,17 +140,29 @@ export function renderSendHeldNotice(
     nextAt: Date;
     now: Date;
     timeZone: string;
+    followUps?: boolean | undefined;
+    panelUrl?: string | undefined;
   },
   texts: CoreTexts
 ): OutMessage {
   const held = texts.notices.sendHeld;
-  return {
-    text: [
-      held.first(cutText(input.address, 60), held.limit[input.limit]),
-      held.waiting(input.waiting, formatClock(input.nextAt, input.timeZone, input.now, texts.locale)),
-    ].join("\n"),
-    buttons: [],
-  };
+  const waiting = held.waiting(input.waiting, formatClock(input.nextAt, input.timeZone, input.now, texts.locale));
+  if (input.followUps === true) {
+    const lines = [texts.notices.followUp.held(held.limit[input.limit]), waiting];
+    if (input.panelUrl !== undefined) lines.push(texts.approvals.panelLine(input.panelUrl));
+    return { text: lines.join("\n"), buttons: [] };
+  }
+  return { text: [held.first(cutText(input.address, 60), held.limit[input.limit]), waiting].join("\n"), buttons: [] };
+}
+
+// The one line for an owner whose consent does not cover open-loop data: no recipient, no text, no id.
+export function renderLoopConsentNotice(
+  input: { about: "approval" | "result"; panelUrl?: string | undefined },
+  texts: CoreTexts
+): OutMessage {
+  const lines = [texts.notices.loopConsent[input.about]];
+  if (input.panelUrl !== undefined) lines.push(texts.approvals.panelLine(input.panelUrl));
+  return { text: lines.join("\n"), buttons: [] };
 }
 
 export function renderSyncStaleNotice(
@@ -190,21 +202,27 @@ export function renderSyncOkNotice(
 }
 
 // Plain text, no buttons. The action's mail stays where it was (an original) or where the system put it (a reverse).
-export function renderActionFailedNotice(
-  input: {
-    actionType: "move" | "flag" | "mark_read" | "create_draft";
-    reverse: boolean;
-    reason: "mail_not_found" | "bad_payload" | "other";
-    folderName: string | null;
-    sourceFolder: string;
-    currentFolder: string;
-    from: string | null;
-    subject: string | null;
-    synthetic: boolean;
-    attempts: number;
-  },
-  texts: CoreTexts
-): OutMessage {
+export type ActionFailedInput =
+  | {
+      actionType: "move" | "flag" | "mark_read" | "create_draft";
+      reverse: boolean;
+      reason: "mail_not_found" | "bad_payload" | "other";
+      folderName: string | null;
+      sourceFolder: string;
+      currentFolder: string;
+      from: string | null;
+      subject: string | null;
+      synthetic: boolean;
+      attempts: number;
+    }
+  | { followUp: { cause: "failed" | "unknown"; panelUrl?: string | undefined } };
+
+export function renderActionFailedNotice(input: ActionFailedInput, texts: CoreTexts): OutMessage {
+  if ("followUp" in input) {
+    const lines = [texts.notices.followUp[input.followUp.cause]];
+    if (input.followUp.panelUrl !== undefined) lines.push(texts.approvals.panelLine(input.followUp.panelUrl));
+    return { text: lines.join("\n"), buttons: [] };
+  }
   const failed = texts.notices.actionFailed;
   const folder = input.folderName === null ? null : cutText(input.folderName, 60);
   let first = `⚠️ ${failed.first[input.actionType][input.reverse ? "reverse" : "original"]}`;

@@ -28,3 +28,7 @@ Part of [`../plan.md`](../plan.md). Web stage (Proof with the web part). Polish 
 ## Out of scope
 
 The report page (stage 14). Changes to the gate logic (stage 04).
+
+## Carry-over from stage 04 review
+
+- N3/N4: the settings view and CLI show print the stored auto; a refused 409 can show the gate passed text next to blocks: the new card must show the blocks (review-4.md).

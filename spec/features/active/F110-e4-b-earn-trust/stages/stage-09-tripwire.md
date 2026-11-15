@@ -38,3 +38,7 @@ Part of [`../plan.md`](../plan.md). Risk: exactly-once notice, user signals that
 ## Out of scope
 
 The card and report texts (stages 13, 14). A rate trigger from M4 handled-share.
+
+## Carry-over from stage 04 review
+
+- N1: a trip can race with a grant: insert the trip under the settings lock or ignore trips whose granted_at is not the current grant.at; N7: CategoryGrant.at is any string (review-4.md).
