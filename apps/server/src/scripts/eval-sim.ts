@@ -20,10 +20,11 @@ import {
   simMetaOf,
 } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
-import { type Config, ConfigError, llmRoleTable, loadConfig } from "../platform/config";
+import { type Config, ConfigError, llmRoleTable } from "../platform/config";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
+import { loadEvalConfig } from "./eval-config";
 import { classifierExtrasOfCase } from "./eval-extras";
 import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import {
@@ -75,7 +76,8 @@ export interface SimDeps {
 export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<number> {
   const scenario = options.sim as string;
   const part = options.part as NonNullable<EvalOptions["part"]>;
-  const config = deps.config ?? loadConfig();
+  const config = deps.config ?? loadEvalConfig();
+  if (config === null) return 1;
   const root = deps.root ?? simRoot;
   const runs = deps.runsDir ?? runsDir;
   let table: LlmRoleTable;

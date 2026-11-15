@@ -41,7 +41,7 @@ describe("parseLlmBaseUrl", () => {
       ["http://127.0.0.1:11434/v1", "127.0.0.1"],
       ["http://127.1.2.3:11434/v1", "127.1.2.3"],
       ["http://localhost:11434/v1", "localhost"],
-      ["http://[::1]:11434/v1", "[::1]"],
+      ["http://[::1]:11434/v1", "::1"],
       ["http://ollama:11434/v1", "ollama"],
     ] as const) {
       const parsed = ok(raw);

@@ -164,7 +164,8 @@ export function createOpenAiGenerate(opts: {
 
 export const openaiProvider: LlmProvider = {
   label: "OpenAI",
-  configHint: "check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER and the OpenAI project (billing, budget, model access)",
+  configHint:
+    "check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER, OPENAI_BASE_URL and the OpenAI project (billing, budget, model access)",
   // A null base URL only comes from a hand-made table: it takes the default, never the env of the SDK.
   createGenerate: (opts) => createOpenAiGenerate({ ...opts, baseUrl: opts.baseUrl ?? DEFAULT_OPENAI_BASE_URL }),
   classifyError: classifyOpenAiError,

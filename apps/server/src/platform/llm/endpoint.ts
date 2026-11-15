@@ -3,7 +3,7 @@ import type { LlmEndpointKind } from "@ea/core";
 /** The default endpoint of the `openai` provider. */
 export const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 
-/** A parsed and accepted endpoint. `url` has no trailing `/`; `host` is the lower-case hostname only. */
+/** A parsed and accepted endpoint. `url` has no trailing `/`; `host` is the lower-case hostname only (no port, no brackets). */
 export interface LlmEndpoint {
   url: string;
   host: string;
@@ -45,6 +45,7 @@ export function parseLlmBaseUrl(raw: string, ownKind = false): LlmEndpoint | { e
   // `URL` lower-cases the host; one trailing dot (the absolute form) goes.
   const host = parsed.hostname.endsWith(".") ? parsed.hostname.slice(0, -1) : parsed.hostname;
   if (host === "") return { error: "has no host" };
+  const plainHost = host.replace(/^\[|\]$/g, "");
   const port = parsed.port === "" ? "" : `:${parsed.port}`;
   const url = `${parsed.protocol}//${host}${port}${parsed.pathname}`.replace(/\/+$/, "");
   const isHttps = parsed.protocol === "https:";
@@ -53,8 +54,8 @@ export function parseLlmBaseUrl(raw: string, ownKind = false): LlmEndpoint | { e
   if (isOpenAiHost(host)) {
     if (ownKind) return { error: "OPENAI_ENDPOINT_KIND=own cannot relabel an OpenAI host" };
     if (!isHttps) return { error: "an OpenAI host needs https" };
-    if (host === STANDARD_HOST) return { url, host, endpoint: "standard" };
-    if (host === EU_HOST) return { url, host, endpoint: "eu" };
+    if (host === STANDARD_HOST) return { url, host: plainHost, endpoint: "standard" };
+    if (host === EU_HOST) return { url, host: plainHost, endpoint: "eu" };
     return { error: "this OpenAI host has no price rows; use api.openai.com or eu.api.openai.com" };
   }
   if (!isHttps && !local) {
@@ -65,5 +66,5 @@ export function parseLlmBaseUrl(raw: string, ownKind = false): LlmEndpoint | { e
       error: "hosted OpenAI-compatible API not supported; set OPENAI_ENDPOINT_KIND=own only for a server you run",
     };
   }
-  return { url, host, endpoint: "own" };
+  return { url, host: plainHost, endpoint: "own" };
 }
