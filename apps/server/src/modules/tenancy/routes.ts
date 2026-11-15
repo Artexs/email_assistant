@@ -22,6 +22,7 @@ import type { Db, TenantContext } from "../../platform/db";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { auditEvents, recordAudit } from "../audit";
 
+import { tenancyDocs } from "./api-docs";
 import { featureStates, isFeatureOn } from "./features";
 import {
   getMembership,
@@ -54,7 +55,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
   // The own TOTP state. A read, so a suspended organization works. The body holds a count, never a code.
-  app.get("/me/two-factor", async (c) => {
+  app.get("/me/two-factor", tenancyDocs.getTwoFactor, async (c) => {
     const ctx = c.get("ctx");
     const { userId, twoFactorEnabled } = c.get("session");
     const member = await getMembership(deps.db, ctx, userId);
@@ -69,7 +70,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     return c.json(body);
   });
 
-  app.get("/me", async (c) => {
+  app.get("/me", tenancyDocs.getMe, async (c) => {
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
     const organization = await getOrganization(deps.db, ctx);
@@ -105,7 +106,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     return c.json(me);
   });
 
-  app.get("/organization", async (c) => {
+  app.get("/organization", tenancyDocs.getOrganization, async (c) => {
     const row = await getOrganization(deps.db, c.get("ctx"));
     if (!row) return c.json({ error: "not_found" }, 404);
     const settings: OrganizationSettings = { ...organizationView(row), timezones: Intl.supportedValuesOf("timeZone") };
@@ -113,13 +114,13 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   });
 
   // Owner only first, then the flag: an assistant gets 403 whatever the flag says (plan D26).
-  app.get("/security-log", requireOwner, async (c) => {
+  app.get("/security-log", requireOwner, tenancyDocs.getSecurityLog, async (c) => {
     const ctx = c.get("ctx");
     if (!(await isFeatureOn(deps.db, ctx, "security_log"))) return c.json({ error: "not_found" }, 404);
     return c.json((await listSecurityLog(deps.db, ctx, deps.now())) satisfies SecurityLog);
   });
 
-  app.patch("/organization", requireOwner, async (c) => {
+  app.patch("/organization", requireOwner, tenancyDocs.patchOrganization, async (c) => {
     const patch = await parseBody(c, organizationPatchSchema);
     const result = await updateOrganizationSettings(deps.db, c.get("ctx"), patch, {
       actor: c.get("session").userId,
@@ -133,7 +134,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   });
 
   // No audit row: the CLI writes none either.
-  app.patch("/me/digest-times", async (c) => {
+  app.patch("/me/digest-times", tenancyDocs.patchDigestTimes, async (c) => {
     const body = await parseBody(c, digestTimesBodySchema);
     const times = parseDigestTimes(body.times);
     if (!(await setDigestTimes(deps.db, c.get("ctx"), c.get("session").userId, times))) {
@@ -143,7 +144,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   });
 
   // The language of the panel, Telegram and the account e-mails. Any member, own user only; no audit row (a display setting).
-  app.patch("/me/locale", async (c) => {
+  app.patch("/me/locale", tenancyDocs.patchLocale, async (c) => {
     const body = await parseBody(c, localeBodySchema);
     if (!(await setUserLocale(deps.db, c.get("session").userId, body.locale)))
       return c.json({ error: "not_found" }, 404);
@@ -152,7 +153,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
 
   // L17: any member accepts the current terms; an old version answers 409 so the dialog reloads.
   // A repeat call answers 204 and writes nothing.
-  app.post("/me/terms", async (c) => {
+  app.post("/me/terms", tenancyDocs.postTerms, async (c) => {
     const body = await parseBody(c, termsAcceptBodySchema);
     if (body.version !== TERMS_VERSION) return c.json({ error: "terms_outdated" }, 409);
     const ctx = c.get("ctx");
@@ -171,7 +172,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   });
 
   // L21: the member's own live sessions, newest first, never the token.
-  app.get("/me/sessions", async (c) => {
+  app.get("/me/sessions", tenancyDocs.getSessions, async (c) => {
     const { userId, sessionId } = c.get("session");
     const now = deps.now();
     const rows = (await deps.sessions(userId))
@@ -191,7 +192,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   });
 
   // D15: keep shadow mode once; a second call writes nothing and answers 204 too.
-  app.post("/onboarding/keep-mode", requireOwner, async (c) => {
+  app.post("/onboarding/keep-mode", requireOwner, tenancyDocs.postKeepMode, async (c) => {
     await deps.keepMode(c.get("ctx"), c.get("session").userId, deps.now());
     return c.body(null, 204);
   });

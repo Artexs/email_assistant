@@ -7,7 +7,13 @@ import { renderSeedMessage } from "../seed";
 import { connectImapClient, type ImapConnectOptions } from "./client";
 import { withCleanupNotes } from "./probe";
 import { describeFailure } from "./probe-move";
-import { createSmtpMarks, smtpConnectOptions, type SmtpConnectionLike, type SmtpConnectOptions } from "./smtp";
+import {
+  createSmtpMarks,
+  smtpConnectOptions,
+  smtpLoginAuth,
+  type SmtpConnectionLike,
+  type SmtpConnectOptions,
+} from "./smtp";
 
 const INBOX_PATH = "INBOX";
 const DAY_MS = 86_400_000;
@@ -288,7 +294,7 @@ async function runSend(
   makeConnection: (options: object) => SmtpConnectionLike
 ): Promise<void> {
   const { report, raw } = ctx;
-  const { auth, ...transport } = await smtpConnectOptions(smtp);
+  const { auth: _transportAuth, ...transport } = await smtpConnectOptions(smtp);
   const hook = createSendHook();
   const connection = makeConnection({
     ...transport,
@@ -323,9 +329,7 @@ async function runSend(
   ctx.step = "smtp send";
   try {
     await run<undefined>("connect", (done) => connection.connect((error) => done(error)));
-    await run<undefined>("login", (done) =>
-      connection.login({ user: auth?.user ?? smtp.user, pass: auth?.pass ?? smtp.password }, (error) => done(error))
-    );
+    await run<undefined>("login", (done) => connection.login(smtpLoginAuth(smtp), (error) => done(error)));
     const info = await run<{ response: string }>("send", (done) =>
       connection.send({ from: ctx.address, to: [ctx.to] }, Buffer.from(raw), (error, result) => done(error, result))
     );

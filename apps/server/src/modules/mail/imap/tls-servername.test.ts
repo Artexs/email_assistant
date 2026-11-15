@@ -83,7 +83,7 @@ describe("TLS to a DNS host checks the certificate against the host name", () =>
   test("IMAP accepts the certificate of the host name", async () => {
     const port = await startTlsServer("* OK [CAPABILITY IMAP4rev1 AUTH=PLAIN] ready\r\n", imapReply);
     const options = imapFlowOptions(
-      { host: NAME, port, user: "u", password: "p" },
+      { host: NAME, port, user: "u", auth: { kind: "password", password: "p" } },
       { host: "127.0.0.1", servername: NAME }
     );
     const client = new ImapFlow({ ...options, tls: { ca: cert } });
@@ -94,7 +94,7 @@ describe("TLS to a DNS host checks the certificate against the host name", () =>
   test("IMAP refuses a certificate for another name", async () => {
     const port = await startTlsServer("* OK [CAPABILITY IMAP4rev1 AUTH=PLAIN] ready\r\n", imapReply);
     const options = imapFlowOptions(
-      { host: OTHER, port, user: "u", password: "p" },
+      { host: OTHER, port, user: "u", auth: { kind: "password", password: "p" } },
       { host: "127.0.0.1", servername: OTHER }
     );
     const client = new ImapFlow({ ...options, tls: { ca: cert } });
@@ -106,7 +106,7 @@ describe("TLS to a DNS host checks the certificate against the host name", () =>
   test("SMTP accepts the certificate of the host name", async () => {
     const port = await startTlsServer("220 fake ESMTP\r\n", smtpReply);
     const options = buildSmtpTransportOptions(
-      { host: NAME, port, user: "u", password: "p", security: "tls", ca: cert },
+      { host: NAME, port, user: "u", auth: { kind: "password", password: "p" }, security: "tls", ca: cert },
       { host: "127.0.0.1", servername: NAME }
     );
     expect(await createTransport(options).verify()).toBe(true);
@@ -115,7 +115,7 @@ describe("TLS to a DNS host checks the certificate against the host name", () =>
   test("SMTP refuses a certificate for another name", async () => {
     const port = await startTlsServer("220 fake ESMTP\r\n", smtpReply);
     const options = buildSmtpTransportOptions(
-      { host: OTHER, port, user: "u", password: "p", security: "tls", ca: cert },
+      { host: OTHER, port, user: "u", auth: { kind: "password", password: "p" }, security: "tls", ca: cert },
       { host: "127.0.0.1", servername: OTHER }
     );
     const error = await createTransport(options)

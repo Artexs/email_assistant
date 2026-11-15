@@ -28,13 +28,18 @@ export interface E2eMailbox {
   secrets: SecretBox;
 }
 
+function imapPassword(imap: ImapConnectOptions): string {
+  if (imap.auth.kind !== "password") throw new Error("the test mailbox uses a password");
+  return imap.auth.password;
+}
+
 // Local GreenMail (bun run dev:up). Auth is off: the first login with a new user creates the mailbox.
 function greenmailUser(): ImapConnectOptions {
   return {
     host: process.env.TEST_IMAP_HOST ?? "127.0.0.1",
     port: Number(process.env.TEST_IMAP_PORT ?? "3143"),
     user: `u-${randomUUID()}@localhost`,
-    password: "greenmail-test",
+    auth: { kind: "password", password: "greenmail-test" },
   };
 }
 
@@ -75,7 +80,7 @@ export async function createGreenmailMailbox(trx: Transaction<DB>): Promise<E2eM
     .where("id", "=", mailboxId)
     .execute();
   const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
-  const secret = secrets.encrypt(imap.password, `mailbox:${mailboxId}`);
+  const secret = secrets.encrypt(imapPassword(imap), `mailbox:${mailboxId}`);
   await insertCredentials(trx, ctx, {
     mailboxId,
     encryptedSecret: secret.ciphertext,

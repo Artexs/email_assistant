@@ -3,6 +3,7 @@ import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices, wilsonInte
 import type { CasesEvalReport, EvalReport } from "./eval";
 import { num, pct, table, usd } from "./eval-format";
 import { type SimReportInput, renderSimSections, simHeaderLines } from "./eval-sim-report";
+import { promptLabel } from "./prompts";
 
 const MAX_ERROR_SHARE = 0.1;
 const MIN_REAL_LABELS = 100;
@@ -23,7 +24,7 @@ function header(report: EvalReport): string[] {
         `- model: ${report.model}`,
         `- provider: ${report.provider}`,
         ...(report.reasoningEffort === null ? [] : [`- reasoning effort: ${report.reasoningEffort}`]),
-        `- prompt version: ${report.promptVersion}`,
+        `- prompt version: ${promptLabel({ version: report.promptVersion, parts: report.promptParts ?? [] })}`,
         `- cases: ${counts(report.cases, "synthetic")} synthetic, ${counts(report.cases, "injection")} injection`,
         `- ${report.doneCount} of ${report.totalCount} cases done${report.complete ? "" : " (run not complete)"}`,
         ...(report.stoppedReason === null ? [] : [`- stopped: ${report.stoppedReason}`]),

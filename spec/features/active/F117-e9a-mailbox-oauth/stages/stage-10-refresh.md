@@ -55,3 +55,10 @@ Part of [`../plan.md`](../plan.md). `[risky]` (data integrity, auth). Needs stag
 ## Carry-over from stage 03 review
 
 - The CHECK `auth_reason IS NULL OR (status = auth_error AND oauth_provider IS NOT NULL)` makes every status writer that moves a mailbox away from `auth_error` fail unless it clears `auth_reason` in the same statement. List every mailbox-status writer (re-auth success, pause, host_blocked, remove) and clear the reason in each; add a test per writer.
+
+## Carry-over from stage 04 review
+
+- Map both IMAP (`Unsupported authentication mechanism`, now a `HardError`) and SMTP (a 504 to AUTH XOAUTH2 when only PLAIN is offered, a `MailAuthError`) to the same reason `protocol_disabled`.
+- An SMTP 421 to AUTH becomes `MailAuthError` (nodemailer raises EAUTH for any non-2xx reply to AUTH). Do not turn a temporary 421 into `protocol_disabled` or `oauth_revoked`: check the reply code before you set a reason.
+- nodemailer sends a second AUTH with the same token after a 334 challenge, so one refused login counts as two failures at the provider. Refresh the token before you open the sender.
+- imapflow prefers OAUTHBEARER over XOAUTH2 when the server offers both.
