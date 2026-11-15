@@ -39,3 +39,7 @@ T1–T10 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s18`).
 ## Out of scope
 
 Buttons on these lines (19).
+
+## Carry-over from stage 12 review
+
+- The loop text (ask, subject) can hold markdown and the remains of an escape sequence: escape it in the brief and in the Telegram cards (review-12.md N6).
