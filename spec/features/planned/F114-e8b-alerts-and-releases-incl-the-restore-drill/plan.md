@@ -106,7 +106,7 @@ Order: 01 → 02 → 03 → 04; 05 → 06; 07 any time. 04, 05, 07 touch Compose
 
 ## Cold review
 
-Not run yet.
+Model `claude-opus-5-5`, thinking high: stages 01 and 08 are `[risky]` (migration, deploy, VPS).
 
 ## Log
 
