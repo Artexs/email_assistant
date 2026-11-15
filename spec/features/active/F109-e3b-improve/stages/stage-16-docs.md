@@ -43,3 +43,7 @@ Also read `notes/2026-11-13-measured-core-facts.md` again: if the F100 pilot pro
 
 - Copy the accepted limits of stage 03 into the capability page: a forged own address or org domain counts as known (only `auth_fail` catches it); CEO names that are not members, delegates or VIPs are not protected; old rows read as `{}`; the error path stores `{}`. Source: `notes/2026-11-15-f109-s03-suspicious-triage.md`.
 - With the flag off, reasons are stored and the plan is unchanged; each batch loads the context (up to 4 queries) and each mail reads its header row (1 query). Say so (the stage text, not "no extra query").
+
+## Carry-over from stage 04 review
+
+- Clarify the consent rule in `docs/code-patterns.md` (§ The consent version, "a new field of a notice"): bump `TELEGRAM_CONSENT_VERSION` when a new kind of mail-derived data reaches Telegram (addresses, names, domains, subject, body, attachment names or types, link hosts). Fixed phrases that our own code picks from our own codes (the suspicious warning line, category tags, would-do phrases) do not bump. Source: `review-4.md` N2.

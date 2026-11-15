@@ -31,8 +31,8 @@ Part of [`../plan.md`](../plan.md). Decisions P1, D5, D6. Needs stage 03.
 
 4. Render an urgent view with `["lookalike_domain","risky_attachment"]`, en → the line `⚠ Suspicious: look-alike domain, risky attachment`; pl → the Polish line.
 5. An old view without `suspicious` → the output of today, byte for byte.
-6. Integration: flag on, a flagged urgent mail → the queued urgent view holds the codes; flag off → `[]`.
-7. Digest with a flagged `delegation` item → the `no draft` line, no draft line.
+6. Integration: flag on, a flagged urgent mail → the queued urgent view holds the codes; flag off → no `suspicious` key in the view (review N1: a view with the field breaks the strict schema of the code before F109 after a rollback; only a flagged mail with the flag on gets the field).
+7. Digest with a flagged `delegation` item → the `no draft` line, no draft line. A flagged `delegation` item that has a `create_draft` action (drafted before the flag went on) keeps its would-do line (review N6).
 
 ## Step 3 — Activity API field
 

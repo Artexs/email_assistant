@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { textTables } from "@ea/core";
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { noDelegationHooks, type DelegationHooks, type SendScope } from "../../src/modules/actions";
@@ -483,6 +484,30 @@ describe("approval taps", () => {
       }
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     });
+  });
+
+  test("(3b) a tap logs tap_received with the kind, the user id and the id of its variant; a refused role logs nothing", async () => {
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    try {
+      await withRollback(db, async (trx) => {
+        const s = await approvalSetup(trx);
+        const [actionId, setId, delegationId] = [randomUUID(), randomUUID(), randomUUID()];
+
+        await handleCallback(s.deps, s.owner1, `ap:${actionId}`);
+        await handleCallback(s.deps, s.owner1, `as:${setId}`);
+        await handleCallback(s.deps, s.assistantLink, `dd:${delegationId}`);
+        await handleCallback(s.deps, s.assistantLink, `ap:${actionId}`);
+
+        expect(lines).toEqual([
+          `[channels] tap_received kind=approve user_id=${s.o1} action_id=${actionId}`,
+          `[channels] tap_received kind=approve_set user_id=${s.o1} approval_set_id=${setId}`,
+          `[channels] tap_received kind=delegation_done user_id=${s.assistantLink.userId} delegation_id=${delegationId}`,
+        ]);
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   test("(4) another organization's send and an unknown id give the not-found text", async () => {

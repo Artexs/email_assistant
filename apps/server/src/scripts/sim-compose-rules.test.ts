@@ -72,6 +72,31 @@ describe("checkSimCompose", () => {
     ).toEqual(["fake-telegram: network_mode_not_fake_telegram"]);
   });
 
+  test("greenmail must share the network of fake-telegram (the lab mailbox host is 127.0.0.1) and publish no port", () => {
+    expect(
+      checkSimCompose(Bun.YAML.parse(change("greenmail", "    network_mode: service:fake-telegram\n", "")))
+    ).toEqual(["greenmail: network_mode_not_fake_telegram"]);
+    expect(
+      checkSimCompose(
+        Bun.YAML.parse(
+          change(
+            "greenmail",
+            "    mem_limit: 384m\n",
+            '    mem_limit: 384m\n    ports:\n      - "127.0.0.1:3143:3143"\n'
+          )
+        )
+      )
+    ).toEqual(["greenmail: greenmail_port_published"]);
+    // Both loopback and public: still refused.
+    expect(
+      checkSimCompose(
+        Bun.YAML.parse(
+          change("greenmail", "    mem_limit: 384m\n", '    mem_limit: 384m\n    ports:\n      - "3143:3143"\n')
+        )
+      )
+    ).toEqual(["greenmail: port_not_loopback", "greenmail: greenmail_port_published"]);
+  });
+
   // The false passes of the stage 03 review (T2): forms of Compose that the first rules did not see.
   test("v3 an image under any tag of the production image is refused", () => {
     for (const image of ["ea-server:latest", "ea-server", "docker.io/library/ea-server:1"]) {

@@ -108,9 +108,12 @@ export function checkSimCompose(doc: unknown): string[] {
     }
     if (envFiles(service.env_file).join() !== "sim.env") add(name, "env_file_not_sim_env");
   }
-  for (const name of ["server", "lab"] as const) {
+  // The server opens plain mail only to a loopback host, so GreenMail must share the namespace of the server (127.0.0.1).
+  for (const name of ["server", "lab", "greenmail"] as const) {
     if (asDoc(services[name]).network_mode !== "service:fake-telegram") add(name, "network_mode_not_fake_telegram");
   }
+  // GreenMail has no auth: no port of it may leave the stack.
+  if (asDoc(services.greenmail).ports !== undefined) add("greenmail", "greenmail_port_published");
   const owner = asDoc(services["fake-telegram"]);
   if (owner.network_mode !== undefined) add("fake-telegram", "network_mode_not_fake_telegram");
   return [...new Set(issues)];

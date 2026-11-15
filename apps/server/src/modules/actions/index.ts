@@ -8,6 +8,7 @@ export {
   type ResolvableFolderKey,
 } from "./apply";
 export { applyDraft, buildDraftMessage } from "./drafts";
+export { editApproval, type EditInput, type EditResult } from "./edit";
 export { type SendLimitHit } from "./send-limit";
 export {
   applySend,
@@ -78,6 +79,7 @@ export {
   listRecentSends,
   listSendsOfDraft,
   listSendsToNotify,
+  newestVersionOf,
   listSetSends,
   listSetsToNotify,
   listSummaries,
@@ -130,6 +132,6 @@ export {
   type ExpiryDeps,
   type SendCloseReason,
 } from "./expiry";
-export { noDelegationHooks, type DelegationHooks } from "./hooks";
+export { noApprovalHooks, noDelegationHooks, type ApprovalHooks, type DelegationHooks } from "./hooks";
 export { undo, type UndoResult } from "./undo";
 export { actionRoutes, type ActionRouteDeps } from "./routes";

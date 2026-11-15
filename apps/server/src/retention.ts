@@ -7,6 +7,8 @@ import {
   clearCapturedHeaders,
   clearMailBodies,
   clearMailHeaders,
+  clearSentBodies,
+  clearSentHeaders,
   deleteOldOAuthStates,
   PENDING_BODY_DAYS,
 } from "./modules/mail";
@@ -33,6 +35,8 @@ export const VERIFICATION_GRACE_MS = 24 * HOUR_MS;
 export interface RetentionCounts {
   body: number;
   headers: number;
+  sentBody: number;
+  sentHeaders: number;
   capturedHeaders: number;
   triage: number;
   payloads: number;
@@ -45,6 +49,8 @@ export interface RetentionCounts {
 export interface Clearers {
   clearMailBodies: typeof clearMailBodies;
   clearMailHeaders: typeof clearMailHeaders;
+  clearSentBodies: typeof clearSentBodies;
+  clearSentHeaders: typeof clearSentHeaders;
   clearCapturedHeaders: typeof clearCapturedHeaders;
   clearTriageTexts: typeof clearTriageTexts;
   clearActionPayloads: typeof clearActionPayloads;
@@ -78,6 +84,8 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
   const clearers: Clearers = {
     clearMailBodies,
     clearMailHeaders,
+    clearSentBodies,
+    clearSentHeaders,
     clearCapturedHeaders,
     clearTriageTexts,
     clearActionPayloads,
@@ -99,6 +107,9 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
       pendingBefore: new Date(now.getTime() - PENDING_BODY_DAYS * DAY_MS),
     });
     const headers = await clearers.clearMailHeaders(db, ctx, { before: textsBefore });
+    // The Sent text goes after the organization's period, the Sent subject and addresses after 90 days: both from the Sent INTERNALDATE.
+    const sentBody = await clearers.clearSentBodies(db, ctx, { before: bodyBefore });
+    const sentHeaders = await clearers.clearSentHeaders(db, ctx, { before: textsBefore });
     // The captured header texts go with the mail body, after the organization's period.
     const capturedHeaders = await clearers.clearCapturedHeaders(db, ctx, { before: bodyBefore });
     const triage = await clearers.clearTriageTexts(db, ctx, { before: textsBefore });
@@ -110,10 +121,22 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     const tokens =
       (await clearers.deleteOldLinkTokens(db, ctx, { before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS) })) +
       (await clearers.deleteOldOAuthStates(db, ctx, { before: new Date(now.getTime() - OAUTH_STATE_GRACE_MS) }));
-    const counts = { body, headers, capturedHeaders, triage, payloads, errors, tasks, outbox, tokens };
+    const counts = {
+      body,
+      headers,
+      sentBody,
+      sentHeaders,
+      capturedHeaders,
+      triage,
+      payloads,
+      errors,
+      tasks,
+      outbox,
+      tokens,
+    };
     if (sumOf(counts) > 0) {
       log.info(
-        `retention org ${org.id}: body ${body}, headers ${headers}, captured ${capturedHeaders}, triage ${triage}, payloads ${payloads}, errors ${errors}, tasks ${tasks}, outbox ${outbox}, tokens ${tokens}`
+        `retention org ${org.id}: body ${body}, headers ${headers}, sent body ${sentBody}, sent headers ${sentHeaders}, captured ${capturedHeaders}, triage ${triage}, payloads ${payloads}, errors ${errors}, tasks ${tasks}, outbox ${outbox}, tokens ${tokens}`
       );
     }
     return counts;

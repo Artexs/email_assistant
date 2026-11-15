@@ -31,6 +31,7 @@ import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
 import { activityRoutes, statsRoutes } from "./modules/reports";
 import {
+  anySsoUsable,
   getUserAuthProfile,
   isBreakGlassOwner,
   isOrgSuspended,
@@ -452,6 +453,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     ),
     operatorUserIds: operators,
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
+    anySsoUsable: () => anySsoUsable(db),
     resetRequestOpen: mailTasks !== null,
     close: async () => {
       if (mailTasks !== null) {

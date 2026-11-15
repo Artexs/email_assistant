@@ -21,7 +21,7 @@ import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames } from "../delegation";
 import { countWaiting, INBOX, isSyntheticMessageId, listMailboxes, type TestMailRule } from "../mail";
 import { getOrganization, isFeatureOn } from "../tenancy";
-import { countTriagedBetween, listHandledRows, listTriagedBetween } from "../triage";
+import { countTriagedBetween, listHandledRows, listTriagedBetween, suspiciousReasonsToShow } from "../triage";
 
 import { llmPauseToShow } from "./llm-pause";
 import { lastSentDigestEnd } from "./repo";
@@ -106,6 +106,11 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     rows.filter((row) => row.category === "delegation").map((row) => row.email_id)
   );
   const delegations = await countOpenDelegations(db, ctx);
+  const suspicious = await suspiciousReasonsToShow(
+    db,
+    ctx,
+    rows.map((row) => row.email_id)
+  );
 
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
@@ -129,6 +134,8 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     ),
     wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, texts),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
+    suspicious: suspicious.get(row.email_id) ?? [],
+    hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
   }));
 
   const skippedTooOld = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range, { reasonCode: "too_old" });

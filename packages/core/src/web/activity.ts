@@ -1,6 +1,7 @@
 import { undoAnswerKinds } from "../digest/answers";
 import { labelCategories } from "../digest/callback";
 import { categories, feedbackSources, feedbackVerdicts } from "../triage/categories";
+import { suspiciousReasons } from "../triage/suspicious";
 
 import { z } from "./zod";
 
@@ -90,6 +91,8 @@ export const activityItemSchema = z.object({
   undoPending: z.boolean(),
   feedback: activityFeedbackSchema.nullable(),
   delegation: activityDelegationSchema.nullable(),
+  // The codes of the suspicious-mail rules; always `[]` while the flag `suspicious_mail` is off (F109).
+  suspicious: z.array(z.enum(suspiciousReasons)),
 });
 export type ActivityItem = z.infer<typeof activityItemSchema>;
 
