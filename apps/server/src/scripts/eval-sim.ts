@@ -39,8 +39,8 @@ import { corpusDir, readScenario } from "../platform/sim-files";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
 import { loadEvalConfig } from "./eval-config";
-import { evalFailureLine } from "./eval-failure-line";
 import { classifierExtrasOfCase } from "./eval-extras";
+import { evalFailureLine } from "./eval-failure-line";
 import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
 
