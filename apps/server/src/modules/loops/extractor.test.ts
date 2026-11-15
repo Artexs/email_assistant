@@ -124,6 +124,16 @@ describe("extractSent", () => {
 });
 
 describe("extractor-v1 prompt", () => {
+  test("each request has its own random marker id", async () => {
+    const { llm, requests } = fake(answer);
+    await extractSent(llm, mail, { timeZone: "Europe/Warsaw" });
+    await extractSent(llm, mail, { timeZone: "Europe/Warsaw" });
+    const ids = requests.map((request) => /<<<EMAIL_DATA ([0-9a-f]{32})>>>/.exec(request.prompt)?.[1]);
+    expect(ids[0]).toBeDefined();
+    expect(ids[1]).toBeDefined();
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+
   test("the registry has the entry at extractor-v1", () => {
     expect(prompts.extractor.role).toBe("extractor");
     expect(prompts.extractor.version).toBe("extractor-v1");
