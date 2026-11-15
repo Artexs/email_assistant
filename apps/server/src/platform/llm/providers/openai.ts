@@ -107,14 +107,31 @@ export function toOpenAiResult(response: OpenAiResponseLike): GenerateResult {
  * - `logLevel`: without it the SDK reads `OPENAI_LOG`; at `debug` it prints request bodies, which hold mail text.
  * - `organization` and `project`: for an own server they are null, so `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`
  *   never go to a host that is not OpenAI.
+ * - `adminAPIKey` and `webhookSecret`: null for every endpoint, so `OPENAI_ADMIN_KEY` and `OPENAI_WEBHOOK_SECRET`
+ *   stay out of the client (the Responses call uses the bearer key only).
+ * - `defaultHeaders`: the SDK adds the lines of `OPENAI_CUSTOM_HEADERS` to every request, also when the option is
+ *   `{}` (checked, SDK 7.53.0). A `null` value removes a header, so each name from that variable is set to null.
  */
 export const openAiClientOptions = (apiKey: string, baseUrl: string, endpoint: LlmEndpointKind = "standard") => ({
   apiKey,
   baseURL: baseUrl,
   maxRetries: 0,
   logLevel: "off" as const,
+  adminAPIKey: null,
+  webhookSecret: null,
+  defaultHeaders: envHeaderNulls(),
   ...(endpoint === "own" ? { organization: null, project: null } : {}),
 });
+
+// The header names that the SDK would read from `OPENAI_CUSTOM_HEADERS` (lines `name: value`), each set to null.
+function envHeaderNulls(): Record<string, null> {
+  const nulls: Record<string, null> = {};
+  for (const line of (process.env.OPENAI_CUSTOM_HEADERS ?? "").split("\n")) {
+    const colon = line.indexOf(":");
+    if (colon > 0) nulls[line.slice(0, colon).trim()] = null;
+  }
+  return nulls;
+}
 
 /** The part of the SDK client that the adapter calls (the tests pass a fake). */
 export interface OpenAiLike {

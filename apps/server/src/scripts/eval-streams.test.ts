@@ -236,7 +236,7 @@ describe("eval --sim streams", () => {
     const code = await sim();
     expect(code).toBe(0);
     expectStream("corpus mini v1 part dev", "stdout");
-    expectStream("provider=openai model=gpt-6-luna", "stdout");
+    expectStream("provider=openai endpoint=standard host=api.openai.com model=gpt-6-luna", "stdout");
     expectStream("earlier results", "stdout");
     expectStream("no gate file: part is not holdout", "stdout");
     expect(stderr).toEqual([]);
@@ -290,7 +290,7 @@ describe("eval (case sets) streams", () => {
 
   test("a run that stops (soft errors): the run line and the state line on stdout, `run not complete` on stderr", async () => {
     await classify([]);
-    expectStream("provider=openai model=", "stdout");
+    expectStream("provider=openai endpoint=standard host=api.openai.com model=", "stdout");
     expectStream(`state ${join(tmp, "state.jsonl")}: 0 earlier results`, "stdout");
     expectStream("resume with the same command", "stderr");
   });
