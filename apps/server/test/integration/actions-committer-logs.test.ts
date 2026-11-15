@@ -472,8 +472,9 @@ describe("expiry log events", () => {
       const box = await addBox(trx);
       await waiting(trx, box);
 
-      const { entries } = await captured(() => expiryFor(trx).run());
+      const { entries: all } = await captured(() => expiryFor(trx).run());
 
+      const entries = all.filter((entry) => entry.fields.mailbox_id === box.mailboxId);
       expect(entries).toEqual([
         {
           level: "info",
@@ -498,8 +499,10 @@ describe("expiry log events", () => {
       const box = await addBox(trx);
       await waiting(trx, box);
 
+      // The job walks every mailbox of the database: only the mailbox of this test fails.
       const { entries } = await captured(() =>
-        expiryFor(trx, () => {
+        expiryFor(trx, (dbOrTrx, ctx, mailboxId, opts) => {
+          if (mailboxId !== box.mailboxId) return listExpiredApprovals(dbOrTrx, ctx, mailboxId, opts);
           throw Object.assign(new Error(CANARY.error), { code: "E_TEST" });
         }).run()
       );
@@ -519,8 +522,11 @@ describe("expiry log events", () => {
       const box = await addBox(trx);
       const pair = await waiting(trx, box, { draftProviderResult: { uid: 7 } });
 
-      const { entries } = await captured(() => expiryFor(trx).run());
+      const { entries: all } = await captured(() => expiryFor(trx).run());
 
+      const entries = all.filter(
+        (entry) => entry.fields.mailbox_id === box.mailboxId || entry.fields.action_id === pair.draftId
+      );
       expect(entries[0]).toEqual({
         level: "warn",
         event: "draft_reverse_missing",
