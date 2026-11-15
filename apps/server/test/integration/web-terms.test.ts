@@ -7,7 +7,7 @@ import { sql } from "kysely";
 import { createOrganizationWithOwner, isOrgSuspended, tenancyRoutes } from "../../src/modules/tenancy";
 import { createAuth, type AuthHandle } from "../../src/platform/auth";
 import { setLogLevel } from "../../src/platform/log";
-import { auditWebEvent, countMailboxes, onboardingDeps, termsAcceptedHandler } from "../../src/web";
+import { auditWebEvent, approvalsWaiting, countMailboxes, onboardingDeps, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
 import { as, noBackupCodes, resetBody, webOrg, webTestApp, type WebOrg } from "./web-helpers";
@@ -246,6 +246,7 @@ describe("terms in the panel", () => {
             now: () => new Date(),
             scopes: { triage: off, actions: off, send: off },
             countMailboxes: countMailboxes(db),
+            approvalsWaiting: approvalsWaiting(db),
             operatorContact: null,
             sessions: async () => [],
             backupCodesLeft: noBackupCodes,

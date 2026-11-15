@@ -1,3 +1,5 @@
+import { format } from "node:util";
+
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -1086,7 +1088,7 @@ async function withDebugLines(fn: () => Promise<void>): Promise<string[]> {
   setLogLevel("debug");
   try {
     await fn();
-    return [...out.mock.calls, ...err.mock.calls].map((call) => call.join(" "));
+    return [...out.mock.calls, ...err.mock.calls].map((call) => format(...call));
   } finally {
     setLogLevel("info");
     out.mockRestore();
@@ -1146,7 +1148,14 @@ describe("syncMailbox: returned mail below the cursor", () => {
       const before = await cursorOf(trx, s.mailboxId);
       const copyMeta = await s.fake.fetchMetaIn("INBOX", uid);
 
-      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      let result: MailboxSyncResult | undefined;
+      const debugLines = await withDebugLines(async () => {
+        result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      });
+      expect(debugLines.filter((line) => line.includes("sync_below_cursor_copy "))).toEqual([
+        `[mail] sync_below_cursor_copy org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} email_id=${moved?.id}`,
+      ]);
+      if (result === undefined) throw new Error("no result");
       expect(result.copiesBelowCursor).toBe(1);
       expect(result.copiesStored).toBe(1);
       expect(result.stored).toBe(1);
@@ -1180,7 +1189,13 @@ describe("syncMailbox: returned mail below the cursor", () => {
         expect(again.stored).toBe(0);
         expect(again.returnedBelowCursor).toBe(0);
       });
-      expect(info.some((line) => line.includes("returned below cursor: checked 1, returned 0, copies 0"))).toBe(true);
+      expect(
+        info.some((line) =>
+          line.endsWith(
+            `sync_below_cursor_done org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=inbox checked=1 returned=0 copies=0`
+          )
+        )
+      ).toBe(true);
       expect(info.some((line) => line.includes("sync_below_cursor_copies_stored"))).toBe(false);
       expect(await copyRowsOf(trx, s.mailboxId)).toHaveLength(2);
     });
@@ -1646,7 +1661,9 @@ describe("syncMailbox: returned mail below the cursor", () => {
         const result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
         expect(result.copiesStored).toBe(0);
         expect(result.stored).toBe(0);
-        expect(warn.mock.calls.some((call) => call.join(" ").includes("cursor moved"))).toBe(true);
+        expect(warn.mock.calls.map((call) => format(...call))).toContain(
+          `[mail] sync_below_cursor_moved org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=inbox`
+        );
       } finally {
         warn.mockRestore();
       }
@@ -1743,8 +1760,13 @@ describe("syncMailbox: returned mail below the cursor", () => {
       try {
         await syncMailbox(deps(trx, spy.provider), s.ctx, s.mailboxId);
         expect(spy.folderCalls.filter((call) => call.method === "fetchByUidsIn")).toHaveLength(5);
-        const lines = warn.mock.calls.map((call) => call.join(" "));
-        expect(lines.some((line) => line.includes(`list hit the limit ${RETURN_CHECK_LIMIT}`))).toBe(true);
+        const lines = warn.mock.calls.map((call) => format(...call));
+        expect(
+          lines.some(
+            (line) =>
+              line.includes(`sync_below_cursor_limit`) && line.endsWith(`folder_key=inbox limit=${RETURN_CHECK_LIMIT}`)
+          )
+        ).toBe(true);
       } finally {
         warn.mockRestore();
       }
@@ -1774,7 +1796,9 @@ describe("syncMailbox: returned mail below the cursor", () => {
       try {
         const result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
         expect(result.returnedBelowCursor).toBe(0);
-        expect(warn.mock.calls.some((call) => call.join(" ").includes("cursor moved"))).toBe(true);
+        expect(warn.mock.calls.map((call) => format(...call))).toContain(
+          `[mail] sync_below_cursor_moved org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=inbox`
+        );
       } finally {
         warn.mockRestore();
       }
@@ -1865,10 +1889,10 @@ describe("syncMailbox: sync folders", () => {
     try {
       await fn({
         get warn() {
-          return warn.mock.calls.map((call) => call.join(" "));
+          return warn.mock.calls.map((call) => format(...call));
         },
         get info() {
-          return info.mock.calls.map((call) => call.join(" "));
+          return info.mock.calls.map((call) => format(...call));
         },
       });
     } finally {
@@ -1890,7 +1914,12 @@ describe("syncMailbox: sync folders", () => {
         expect(result.mode).toBe("incremental");
         expect(of(result, "offers")?.mode).toBe("initial");
         expect(result.failed).toEqual([]);
-        expect(lines.info.some((line) => line.includes(`sync ${s.mailboxId}: added sync folders offers`))).toBe(true);
+        expect(lines.info).toContain(
+          `[mail] sync_folders_added org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} count=1`
+        );
+        expect(lines.info).toContain(
+          `[mail] sync_folder_added org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=offers`
+        );
       });
       const rows = await storedRows(trx, s.mailboxId);
       expect(rows.map((row) => row.subject)).toEqual(["Mail 1", "Mail 2"]);
@@ -1933,9 +1962,12 @@ describe("syncMailbox: sync folders", () => {
         const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
         expect(result.added).toEqual(["offers", "social", "bills", "junk"]);
         expect(result.failed).toEqual([]);
+        expect(lines.info).toContain(
+          `[mail] sync_folders_added org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} count=4`
+        );
         expect(
-          lines.info.some((line) => line.includes(`sync ${s.mailboxId}: added sync folders offers,social,bills,junk`))
-        ).toBe(true);
+          lines.info.filter((line) => line.includes("sync_folder_added")).map((line) => line.split(" ").pop())
+        ).toEqual(["folder_key=offers", "folder_key=social", "folder_key=bills", "folder_key=junk"]);
         expect(result.folders.map((item) => item.folder)).toEqual(["inbox", "offers", "social", "bills", "junk"]);
         expect(of(result, "inbox")?.mode).toBe("incremental");
         expect(of(result, "offers")?.mode).toBe("initial");
@@ -2015,7 +2047,9 @@ describe("syncMailbox: sync folders", () => {
         expect(result.skipped).toEqual(["bills"]);
         expect(result.failed).toEqual([]);
         expect(result.stored).toBe(1);
-        expect(lines.warn.filter((line) => line.includes("not on the server"))).toHaveLength(1);
+        expect(lines.warn).toEqual([
+          `[mail] sync_folder_missing org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=bills`,
+        ]);
       });
     });
   });
@@ -2032,7 +2066,7 @@ describe("syncMailbox: sync folders", () => {
       const provider: MailProvider = {
         ...s.fake,
         fetchAbove: async (folder, lastUid) => {
-          if (broken && folder === OFFERS) throw new SoftError("lost connection");
+          if (broken && folder === OFFERS) throw new SoftError("lost connection for MARKER-ADDR@x.test");
           return s.fake.fetchAbove(folder, lastUid);
         },
       };
@@ -2042,9 +2076,10 @@ describe("syncMailbox: sync folders", () => {
         expect(result.stored).toBe(1);
         expect(result.failed).toEqual(["offers"]);
         expect(of(result, "junk")?.stored).toBe(1);
-        expect(lines.warn.some((line) => line.includes("folder offers: SoftError; the next tick tries again"))).toBe(
-          true
+        expect(lines.warn).toContain(
+          `[mail] sync_folder_soft_error org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=offers error=SoftError`
         );
+        expect([...lines.warn, ...lines.info].join("\n")).not.toContain("MARKER");
       });
       expect((await folderRow(trx, s.mailboxId, "offers"))?.lastUid).toBe(0);
 
@@ -2119,7 +2154,9 @@ describe("syncMailbox: sync folders", () => {
         const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
         expect(result.failed).toEqual(["offers"]);
         expect(of(result, "junk")?.stored).toBe(1);
-        expect(lines.warn.some((line) => line.includes("folder offers: CursorMovedError"))).toBe(true);
+        expect(lines.warn).toContain(
+          `[mail] sync_folder_soft_error org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=offers error=CursorMovedError`
+        );
       });
       expect((await storedRows(trx, s.mailboxId)).map((row) => row.folder)).toEqual([JUNK]);
     });
@@ -2197,12 +2234,19 @@ describe("syncMailbox: sync folders", () => {
       await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
       s.fake.deliver(OFFERS, seed(1), ago(1));
 
-      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
-      expect(result.failed).toEqual([]);
-      expect(of(result, "offers")?.stored).toBe(0);
-      expect(of(result, "offers")?.crossCopies).toBe(1);
+      let result: MailboxSyncResult | undefined;
+      const lines = await withDebugLines(async () => {
+        result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      });
+      expect(result?.failed).toEqual([]);
+      expect(of(result as MailboxSyncResult, "offers")?.stored).toBe(0);
+      expect(of(result as MailboxSyncResult, "offers")?.crossCopies).toBe(1);
       const rows = await crossRows(trx, s.mailboxId);
       expect(rows.map((row) => row.folder)).toEqual(["INBOX"]);
+      const [row] = await trx.selectFrom("emails").select("id").where("mailbox_id", "=", s.mailboxId).execute();
+      expect(lines.filter((line) => line.includes("sync_cross_copy"))).toEqual([
+        `[mail] sync_cross_copy org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=offers email_id=${row?.id}`,
+      ]);
     });
   });
 
@@ -2356,9 +2400,15 @@ describe("syncMailbox: sync folders", () => {
       s.fake.deliver(OFFERS, seed(1), ago(1));
       const callsBefore = s.fake.folderCalls.length;
 
-      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
-      expect(of(result, "inbox")?.moveInFlight).toBe(1);
-      expect(of(result, "offers")?.moveInFlight).toBe(1);
+      let result: MailboxSyncResult | undefined;
+      const lines = await withDebugLines(async () => {
+        result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      });
+      expect(of(result as MailboxSyncResult, "inbox")?.moveInFlight).toBe(1);
+      expect(of(result as MailboxSyncResult, "offers")?.moveInFlight).toBe(1);
+      const [row] = await trx.selectFrom("emails").select("id").where("mailbox_id", "=", s.mailboxId).execute();
+      const target = `[mail] sync_move_target_copy org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} email_id=${row?.id}`;
+      expect(lines.filter((line) => line.includes("sync_move_target_copy"))).toEqual([target, target]);
       expect(await crossRows(trx, s.mailboxId)).toHaveLength(1);
       const methods = s.fake.folderCalls.slice(callsBefore).map((call) => call.method);
       expect(methods).not.toContain("fetchMetaIn");
@@ -2456,14 +2506,17 @@ describe("syncMailbox: sync folders", () => {
       await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
       s.fake.deliver("INBOX", seed(1), ago(1));
       s.fake.deliver(OFFERS, seed(2), ago(1));
-      s.fake.failOn("listFolders", new HardError("list failed"));
+      s.fake.failOn("listFolders", new HardError("list failed for MARKER-ADDR@x.test"));
 
       await withLogs(async (lines) => {
         const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
         expect(result.stored).toBe(1);
         expect(of(result, "offers")?.stored).toBe(1);
         expect(result.added).toEqual([]);
-        expect(lines.warn.filter((line) => line.includes("folder discovery failed: HardError"))).toHaveLength(1);
+        expect(lines.warn).toEqual([
+          `[mail] sync_folder_discovery_failed org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} error=HardError`,
+        ]);
+        expect(lines.info.join("\n")).not.toContain("MARKER");
       });
     });
   });
@@ -2543,16 +2596,55 @@ describe("syncMailbox: sync folders", () => {
         const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
         expect(of(result, "offers")?.returnedBelowCursor).toBe(1);
         expect(of(result, "inbox")?.returnedBelowCursor).toBe(0);
-        expect(
-          lines.info.some((line) =>
-            line.includes(`sync ${s.mailboxId} folder offers returned below cursor: checked 1, returned 1, copies 0`)
-          )
-        ).toBe(true);
+        expect(lines.info).toContain(
+          `[mail] sync_below_cursor_done org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=offers checked=1 returned=1 copies=0`
+        );
       });
       const row = await rowById(trx, rowId);
       expect(row).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid: inFolder, inbox_uid: inFolder });
       expect(row.returned_at).toEqual(FOLDER_NOW);
       expect(await storedRows(trx, s.mailboxId)).toHaveLength(2);
+    });
+  });
+
+  test("8.1b a cursor of Oferty that moves during the check writes sync_below_cursor_moved with the key offers", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
+      const inFolder = s.fake.deliver("AI/Info", seed(1), ago(2));
+      s.fake.remove(OFFERS, uid);
+      await trx.updateTable("emails").set({ uid: inFolder }).where("id", "=", rowId).execute();
+      await trx
+        .updateTable("mailbox_folders")
+        .set({ last_uid: inFolder + 10 })
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("key", "=", "offers")
+        .execute();
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      s.fake.userMove("AI/Info", inFolder, OFFERS);
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchByUidsIn: async (folder, uids) => {
+          const metas = await s.fake.fetchByUidsIn(folder, uids);
+          if (folder === OFFERS) {
+            await trx
+              .updateTable("mailbox_folders")
+              .set({ last_uid: inFolder + 99 })
+              .where("mailbox_id", "=", s.mailboxId)
+              .where("key", "=", "offers")
+              .execute();
+          }
+          return metas;
+        },
+      };
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+        expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
+        expect(lines.warn).toContain(
+          `[mail] sync_below_cursor_moved org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=offers`
+        );
+      });
     });
   });
 
@@ -2792,6 +2884,181 @@ describe("syncMailbox: sync folders", () => {
         .where("dedup_key", "=", `${moved.dedup_key}#3`)
         .executeTakeFirstOrThrow();
       expect(copy).toEqual({ folder: OFFERS, source_folder: OFFERS });
+    });
+  });
+});
+
+// F103: the sync lines are events with ids, folder keys and counts only.
+describe("syncMailbox: log lines", () => {
+  const OFFERS = "Oferty";
+  const FOLDER_NOW = new Date("2026-11-08T12:00:00Z");
+  const MARKER_SUBJECT = "MARKER-SUBJECT canary-3d9f";
+  const ago = (hours: number): { internalDate: Date } => ({
+    internalDate: new Date(FOLDER_NOW.getTime() - hours * 3_600_000),
+  });
+  const folderDeps = (trx: Db | Transaction<DB>, provider: MailProvider) =>
+    deps(trx, provider, { now: () => FOLDER_NOW });
+  const ids = async (trx: Transaction<DB>, mailboxId: string) =>
+    (await trx.selectFrom("emails").select("id").where("mailbox_id", "=", mailboxId).orderBy("uid").execute()).map(
+      (row) => row.id
+    );
+
+  async function offersRow(trx: Transaction<DB>, s: Setup): Promise<void> {
+    await trx
+      .insertInto("mailbox_folders")
+      .values({
+        org_id: s.ctx.orgId,
+        mailbox_id: s.mailboxId,
+        key: "offers",
+        path: OFFERS,
+        role: "sort",
+        enabled: true,
+        uidvalidity: 1,
+        last_uid: 0,
+      })
+      .execute();
+  }
+
+  function globalUidFake(keepUidOnUserMove: boolean): FakeMailProvider {
+    return createFakeMailProvider({
+      uidValidity: UID_VALIDITY,
+      globalUids: true,
+      keepUidOnUserMove,
+      uidNextValue: 1,
+      capabilities: { move: false },
+    });
+  }
+
+  test("each folder writes sync_folder_done with its key, its mode and the nine counts, never a subject", async () => {
+    await withRollback(db, async (trx) => {
+      const s = { ...(await setup(trx)), fake: globalUidFake(true) };
+      await offersRow(trx, s);
+      await s.fake.ensureFolder(OFFERS);
+      s.fake.deliver("INBOX", seed(1, { subject: MARKER_SUBJECT }), ago(1));
+      const lines = await withDebugLines(async () => {
+        await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      });
+
+      const mine = `[mail] sync_folder_done org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId}`;
+      const zero = "relocated=0 cross_copies=0 move_in_flight=0 skipped_own=0 ignored_below_cursor=0";
+      expect(lines.filter((line) => line.includes("sync_folder_done"))).toEqual([
+        `${mine} folder_key=inbox sync_mode=incremental fetched=1 stored=1 uid_updated=0 returned=0 ${zero}`,
+        `${mine} folder_key=offers sync_mode=incremental fetched=0 stored=0 uid_updated=0 returned=0 ${zero}`,
+      ]);
+      expect(lines.join("\n")).not.toContain("MARKER");
+    });
+  });
+
+  test("an update of a UID that changes no row writes sync_uid_update_no_row with the mail id", async () => {
+    await withRollback(db, async (trx) => {
+      const s = { ...(await setup(trx)), fake: globalUidFake(true) };
+      s.fake.deliver("INBOX", seed(1), ago(2));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      const [first] = await ids(trx, s.mailboxId);
+      expect(await forceRescan(trx, s.ctx, s.mailboxId)).toBe(true);
+      const second = s.fake.deliver("INBOX", seed(2, { subject: MARKER_SUBJECT }), ago(1));
+      // The first mail is planned as an update. While the second mail's body is read, the first row leaves INBOX.
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchContent: async (folder, uid) => {
+          if (uid === second) {
+            await trx
+              .updateTable("emails")
+              .set({ folder: "Elsewhere" })
+              .where("id", "=", first as string)
+              .execute();
+          }
+          return s.fake.fetchContent(folder, uid);
+        },
+      };
+
+      const lines = await withDebugLines(async () => {
+        const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+        expect(result.mode).toBe("rescan");
+        expect(result.uidUpdated).toBe(0);
+        expect(result.stored).toBe(1);
+      });
+
+      expect(lines.filter((line) => line.includes("_no_row"))).toEqual([
+        `[mail] sync_uid_update_no_row org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} email_id=${first}`,
+      ]);
+      expect(lines.join("\n")).not.toContain("MARKER");
+    });
+  });
+
+  test("a return that changes no row writes sync_return_no_row with the mail id", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const uid = s.fake.deliver("INBOX", seed(1));
+      await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      const [first] = await ids(trx, s.mailboxId);
+      await trx.updateTable("emails").set({ folder: "AI/Info" }).where("mailbox_id", "=", s.mailboxId).execute();
+      const archived = s.fake.userMove("INBOX", uid, "AI/Info");
+      s.fake.userMove("AI/Info", archived, "INBOX");
+      const second = s.fake.deliver("INBOX", seed(2, { subject: MARKER_SUBJECT }));
+      // The first mail is planned as returned. While the second mail's body is read, the row is back in its source folder.
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchContent: async (folder, readUid) => {
+          if (readUid === second) {
+            await trx
+              .updateTable("emails")
+              .set({ folder: "INBOX" })
+              .where("id", "=", first as string)
+              .execute();
+          }
+          return s.fake.fetchContent(folder, readUid);
+        },
+      };
+
+      const lines = await withDebugLines(async () => {
+        const result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
+        expect(result.returned).toBe(0);
+        expect(result.stored).toBe(1);
+      });
+
+      expect(lines.filter((line) => line.includes("_no_row"))).toEqual([
+        `[mail] sync_return_no_row org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} email_id=${first}`,
+      ]);
+      expect(lines.join("\n")).not.toContain("MARKER");
+    });
+  });
+
+  test("a move between folders that changes no row writes sync_move_no_row with the mail id", async () => {
+    await withRollback(db, async (trx) => {
+      const s = { ...(await setup(trx)), fake: globalUidFake(false) };
+      await offersRow(trx, s);
+      await s.fake.ensureFolder(OFFERS);
+      const uid = s.fake.deliver("INBOX", seed(1), ago(2));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      const [first] = await ids(trx, s.mailboxId);
+      s.fake.userMove("INBOX", uid, OFFERS);
+      const second = s.fake.deliver(OFFERS, seed(2, { subject: MARKER_SUBJECT }), ago(1));
+      // The first mail is planned as relocated. While the second mail's body is read, the row leaves INBOX.
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchContent: async (folder, readUid) => {
+          if (readUid === second) {
+            await trx
+              .updateTable("emails")
+              .set({ folder: "Elsewhere" })
+              .where("id", "=", first as string)
+              .execute();
+          }
+          return s.fake.fetchContent(folder, readUid);
+        },
+      };
+
+      const lines = await withDebugLines(async () => {
+        const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+        expect(result.failed).toEqual([]);
+        expect(result.folders.find((item) => item.folder === "offers")?.relocated).toBe(0);
+      });
+
+      expect(lines.filter((line) => line.includes("_no_row"))).toEqual([
+        `[mail] sync_move_no_row org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} email_id=${first}`,
+      ]);
+      expect(lines.join("\n")).not.toContain("MARKER");
     });
   });
 });

@@ -3,7 +3,14 @@ import { describeSettings, MAILBOX_ACTION_TYPES, type SettingsSnapshot, type Urg
 import { settingsDeps } from "../composition";
 import { countReadyOriginals, expireReady } from "../modules/actions";
 import { getSettingsView, setMode, setToolSwitch, setUrgencyProfile, type SettingsChange } from "../modules/config";
-import { configureMailHosts, listSyncFolders, setSyncFolderEnabled, type TestMailRule } from "../modules/mail";
+import {
+  configureMailHosts,
+  getSentSyncView,
+  listSyncFolders,
+  setSentSync,
+  setSyncFolderEnabled,
+  type TestMailRule,
+} from "../modules/mail";
 import { setCategoryAutoWithGate } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal, testMailRule } from "../platform/config";
@@ -11,6 +18,7 @@ import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 
 import {
+  describeSentSync,
   describeSyncFolder,
   describeUrgency,
   parseSettingsArgs,
@@ -60,6 +68,29 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
       for (const row of await listSyncFolders(db, ctx, mailboxId, { enabledOnly: false })) {
         out.print(describeSyncFolder(row));
       }
+      out.print(describeSentSync(await getSentSyncView(db, ctx, mailboxId, now)));
+      return 0;
+    }
+    case "sent-sync": {
+      const { result, deleted } = await setSentSync(db, ctx, mailboxId, {
+        enabled: command.value,
+        actor: ACTOR,
+        at: now,
+      });
+      if (result === "flag_off") {
+        out.fail("sent sync: the organization flag sent_sync is off (turn it on with: bun run org:flag)");
+        return 1;
+      }
+      if (result === "not_found") {
+        out.fail("sent sync: no such mailbox in this organization");
+        return 1;
+      }
+      if (result === "same") {
+        out.print("no change");
+        return 0;
+      }
+      out.print(`sent sync ${command.value ? "on" : "off"}`);
+      if (!command.value) out.print(`deleted ${deleted} sent mails`);
       return 0;
     }
     case "urgency": {

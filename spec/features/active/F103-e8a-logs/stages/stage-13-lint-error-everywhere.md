@@ -70,3 +70,8 @@ export interface Log {
 - Other dodges that pass today: an alias of the logger (`const logger = log`), `log["error"](...)`, `log.with({}).error(...)`, a destructured `error`, and `{ error: err.message }` as a field value (only the runtime value rule stops a long text; a one-word description or a bare token passes it).
 - `console.error(err)` is only a `no-console` warning: stage 14 must make it an error in the scoped folders.
 - Do not set `DEBUG` (grammy debug output) on the VPS; say so in the deploy docs (stage 19).
+
+## Carry-over from stage 10 review (`review-10.md`)
+
+- **N1** `modules/mail/tools.ts` (`deliver_done`) calls `log.with({ ... }).info(...)`: a call on a chain escapes the `logCall` selector, so a template-literal first argument passes eslint. Add a chain selector, or change the call to use a named child. Prove it with a lint fixture.
+- **N2** 12 sites pass `errorFields(error)` as the whole second argument (`jobs.ts` 8, `remove.ts` 1, `routes.ts` 2, `sync.ts` 1). The lint does not check the second argument; the runtime filter applies. Decide whether the selector checks the second argument.

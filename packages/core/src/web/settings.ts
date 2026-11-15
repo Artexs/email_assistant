@@ -40,6 +40,24 @@ export const syncFolderViewSchema = z.object({
   enabled: z.boolean(),
 });
 
+export const sentSyncErrorCodes = ["no_folder", "folder_missing", "failed"] as const;
+
+// "Track my sent mail" of one mailbox. The whole field is null while the organization flag is off and the switch is off.
+export const sentSyncViewSchema = z.object({
+  // false: paused. The switch can only go off.
+  flagOn: z.boolean(),
+  enabled: z.boolean(),
+  // folder_map.sent: null when no Sent folder is known.
+  folder: z.string().nullable(),
+  firstPassDone: z.boolean(),
+  // The newest user mail in the current Sent folder.
+  lastSentAt: z.iso.datetime().nullable(),
+  // User mail of the last 30 days.
+  storedCount: z.number().int().min(0),
+  errorCode: z.enum(sentSyncErrorCodes).nullable(),
+});
+export type SentSyncView = z.infer<typeof sentSyncViewSchema>;
+
 const toolSwitchesViewSchema = z.strictObject(
   Object.fromEntries(toolSwitchNames.map((name) => [name, z.boolean()])) as Record<
     (typeof toolSwitchNames)[number],
@@ -56,6 +74,7 @@ export const settingsViewSchema = z.object({
   syncFolders: z.array(syncFolderViewSchema),
   // null: no profile set. An empty profile is stored as null.
   urgencyProfile: urgencyProfileSchema.nullable(),
+  sentSync: sentSyncViewSchema.nullable(),
   bar: z.number(),
   minKept: z.number().int(),
 });
@@ -75,4 +94,5 @@ export const autoBodySchema = z.object({ auto: z.boolean(), force: z.boolean().o
 // `null` clears the profile. An empty profile clears it too.
 export const urgencyBodySchema = z.object({ profile: urgencyProfileSchema.nullable() });
 export const syncFolderBodySchema = z.object({ enabled: z.boolean() });
+export const sentSyncBodySchema = z.object({ enabled: z.boolean() });
 export const noGoBodySchema = z.object({ error: z.literal("no_go"), gate: gateViewSchema });

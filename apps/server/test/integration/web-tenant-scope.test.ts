@@ -29,6 +29,7 @@ const testConfig = loadConfig({
 const extras = {
   secrets: createSecretBox(key, 1),
   actionsScope: { kind: "off" } as const,
+  sendScope: { kind: "off" } as const,
   botUsername: null,
 };
 

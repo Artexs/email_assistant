@@ -5,7 +5,7 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { tenancyRoutes } from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
-import { countMailboxes, onboardingDeps } from "../../src/web";
+import { approvalsWaiting, countMailboxes, onboardingDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
@@ -48,6 +48,7 @@ async function setup() {
           now: () => new Date(),
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          approvalsWaiting: approvalsWaiting(db),
           operatorContact: null,
           sessions: async () => [],
           backupCodesLeft: noBackupCodes,

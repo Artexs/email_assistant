@@ -59,32 +59,32 @@ The committer is the only component that changes a mailbox. The job `actions.com
 
 ## Entry points
 
-| Kind     | Name                                                                                                                              | Where                                                |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| job      | `actions.committer` (`*/15 * * * * *`)                                                                                            | `apps/server/src/modules/actions/committer.ts`       |
-| job      | `triage.returned` (`*/15 * * * * *`, always on)                                                                                   | `apps/server/src/modules/triage/returned.ts`         |
-| CLI      | `bun run mailbox:settings` (`show`, `mode`, `auto`, `switch`, `sync-folder`, `expire-ready`)                                      | `apps/server/src/scripts/mailbox-settings.ts`        |
-| CLI      | `bun run mailbox:probe-move` (a test mailbox only)                                                                                | `apps/server/src/scripts/mailbox-probe-move.ts`      |
-| route    | `POST /api/actions/undo`                                                                                                          | `apps/server/src/modules/triage/routes.ts`           |
-| route    | `GET /api/settings/:mailboxId`, `PATCH /api/settings/:mailboxId/mode`, `/switches/:name`, `/auto/:category`, `/sync-folders/:key` | `apps/server/src/modules/config/routes.ts`           |
-| Telegram | callback `fu:<emailId>` (the ↩️ button)                                                                                           | `apps/server/src/modules/channels/callbacks.ts`      |
-| page     | web activity list (↩️ Undo button)                                                                                                | `apps/web/src/components/activity/ActionButtons.tsx` |
-| page     | web settings page (mode, switches, `auto`)                                                                                        | `apps/web/src/islands/SettingsPage.tsx`              |
-| function | `createCommitterJob`, `createFolderResolver`                                                                                      | `apps/server/src/modules/actions/committer.ts`       |
-| function | `applyAction`                                                                                                                     | `apps/server/src/modules/actions/apply.ts`           |
-| function | `ensureMoved`                                                                                                                     | `apps/server/src/modules/actions/move.ts`            |
-| function | `undo`                                                                                                                            | `apps/server/src/modules/actions/undo.ts`            |
-| function | `expireReady`                                                                                                                     | `apps/server/src/modules/actions/expire.ts`          |
-| function | `claimFilterFor`, `scopeAdmits`                                                                                                   | `apps/server/src/modules/actions/scope.ts`           |
-| function | `claimActions`                                                                                                                    | `apps/server/src/modules/actions/repo/claims.ts`     |
-| function | `expireStaleReady`, `expireReadyOriginals`                                                                                        | `apps/server/src/modules/actions/repo/expiry.ts`     |
-| function | `insertReverse`, `lockActionsForUndo`, `lockLatestOriginalMove`, `markUndone`                                                     | `apps/server/src/modules/actions/repo/undo.ts`       |
-| function | `undoWithFeedback`                                                                                                                | `apps/server/src/modules/triage/undo.ts`             |
-| function | `processReturned`, `createReturnedJob`                                                                                            | `apps/server/src/modules/triage/returned.ts`         |
-| function | `setMode`, `setCategoryAuto`, `setToolSwitch`, `closedBy`                                                                         | `apps/server/src/modules/config/service.ts`          |
-| function | `buildSettingsView`                                                                                                               | `apps/server/src/modules/config/view.ts`             |
-| function | `decidePolicy`                                                                                                                    | `packages/core/src/triage/policy.ts`                 |
-| function | `isUndoable`                                                                                                                      | `packages/core/src/digest/undo.ts`                   |
+| Kind     | Name                                                                                                                                            | Where                                                |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| job      | `actions.committer` (`*/15 * * * * *`)                                                                                                          | `apps/server/src/modules/actions/committer.ts`       |
+| job      | `triage.returned` (`*/15 * * * * *`, always on)                                                                                                 | `apps/server/src/modules/triage/returned.ts`         |
+| CLI      | `bun run mailbox:settings` (`show`, `mode`, `auto`, `switch`, `sync-folder`, `sent-sync`, `urgency`, `expire-ready`)                            | `apps/server/src/scripts/mailbox-settings.ts`        |
+| CLI      | `bun run mailbox:probe-move` (a test mailbox only)                                                                                              | `apps/server/src/scripts/mailbox-probe-move.ts`      |
+| route    | `POST /api/actions/undo`                                                                                                                        | `apps/server/src/modules/triage/routes.ts`           |
+| route    | `GET /api/settings/:mailboxId`, `PATCH /api/settings/:mailboxId/mode`, `/switches/:name`, `/auto/:category`, `/sync-folders/:key`, `/sent-sync` | `apps/server/src/modules/config/routes.ts`           |
+| Telegram | callback `fu:<emailId>` (the ↩️ button)                                                                                                         | `apps/server/src/modules/channels/callbacks.ts`      |
+| page     | web activity list (↩️ Undo button)                                                                                                              | `apps/web/src/components/activity/ActionButtons.tsx` |
+| page     | web settings page (mode, switches, `auto`)                                                                                                      | `apps/web/src/islands/SettingsPage.tsx`              |
+| function | `createCommitterJob`, `createFolderResolver`                                                                                                    | `apps/server/src/modules/actions/committer.ts`       |
+| function | `applyAction`                                                                                                                                   | `apps/server/src/modules/actions/apply.ts`           |
+| function | `ensureMoved`                                                                                                                                   | `apps/server/src/modules/actions/move.ts`            |
+| function | `undo`                                                                                                                                          | `apps/server/src/modules/actions/undo.ts`            |
+| function | `expireReady`                                                                                                                                   | `apps/server/src/modules/actions/expire.ts`          |
+| function | `claimFilterFor`, `scopeAdmits`                                                                                                                 | `apps/server/src/modules/actions/scope.ts`           |
+| function | `claimActions`                                                                                                                                  | `apps/server/src/modules/actions/repo/claims.ts`     |
+| function | `expireStaleReady`, `expireReadyOriginals`                                                                                                      | `apps/server/src/modules/actions/repo/expiry.ts`     |
+| function | `insertReverse`, `lockActionsForUndo`, `lockLatestOriginalMove`, `markUndone`                                                                   | `apps/server/src/modules/actions/repo/undo.ts`       |
+| function | `undoWithFeedback`                                                                                                                              | `apps/server/src/modules/triage/undo.ts`             |
+| function | `processReturned`, `createReturnedJob`                                                                                                          | `apps/server/src/modules/triage/returned.ts`         |
+| function | `setMode`, `setCategoryAuto`, `setToolSwitch`, `closedBy`                                                                                       | `apps/server/src/modules/config/service.ts`          |
+| function | `buildSettingsView`                                                                                                                             | `apps/server/src/modules/config/view.ts`             |
+| function | `decidePolicy`                                                                                                                                  | `packages/core/src/triage/policy.ts`                 |
+| function | `isUndoable`                                                                                                                                    | `packages/core/src/digest/undo.ts`                   |
 
 ## Data
 

@@ -2,8 +2,8 @@ import { pickSyncFolders, type SyncFolderKey } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError, HardError, SoftError } from "../../platform/errors";
-import { createLog } from "../../platform/log";
+import { errorFields, HardError, SoftError } from "../../platform/errors";
+import { createLog, type Log } from "../../platform/log";
 
 import { storeCapture } from "./capture-store";
 import { ensureSyncFolders } from "./folders";
@@ -180,9 +180,9 @@ function newRow(
 }
 
 // D7: one mail in two synced folders is stored once. It sets no `matched` entry (a rescan would turn the row's own pass into a cross copy).
-function countCrossCopy(mailboxId: string, result: SyncResult, emailId: string): void {
+function countCrossCopy(mailboxLog: Log, result: SyncResult, emailId: string): void {
   result.crossCopies += 1;
-  log.debug(`sync ${mailboxId} folder ${result.folder}: copy of mail ${emailId} is a cross copy, not stored`);
+  mailboxLog.debug("sync_cross_copy", { folder_key: result.folder, email_id: emailId });
 }
 
 // The free copies outside S, in copy order: the first one that is gone is the mail the user moved into S.
@@ -254,6 +254,7 @@ async function planChunk(
   state: RunState,
   result: SyncResult
 ): Promise<Write[]> {
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   const writes: Write[] = [];
   for (const meta of chunk) {
     if (meta.actionId !== null && (await deps.isOwnActionId(ctx, mailboxId, meta.actionId))) {
@@ -272,9 +273,7 @@ async function planChunk(
     let dedupKey: string | null = null;
     if (decision.kind === "move_in_flight") {
       result.moveInFlight += 1;
-      log.debug(
-        `sync ${mailboxId}: copy of mail ${decision.emailId} in a synced folder is the target of a move, not stored`
-      );
+      mailboxLog.debug("sync_move_target_copy", { email_id: decision.emailId });
     } else if (decision.kind === "update_uid") {
       state.matched.set(decision.emailId, folder);
       writes.push({
@@ -285,11 +284,11 @@ async function planChunk(
         isSource: decision.isSource,
       });
     } else if (decision.kind === "cross_copy") {
-      countCrossCopy(mailboxId, result, decision.emailId);
+      countCrossCopy(mailboxLog, result, decision.emailId);
     } else if (decision.kind === "check_folder") {
       const { check, copy } = await checkFolders(deps, decision, copies, messageId, baseKey);
       if (check.kind === "cross_copy") {
-        countCrossCopy(mailboxId, result, check.emailId);
+        countCrossCopy(mailboxLog, result, check.emailId);
       } else {
         state.matched.set(copy.id, folder);
         if (check.kind === "returned") {
@@ -329,6 +328,7 @@ async function applyChunk(
   next: Cursor | null,
   result: SyncResult
 ): Promise<void> {
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   const run = async (trx: Transaction<DB>) => {
     const folder = await lockSyncFolder(trx, ctx, folderId);
     if (folder?.uidvalidity !== expected.uidValidity || folder.last_uid !== expected.lastUid) {
@@ -352,20 +352,20 @@ async function applyChunk(
         ) {
           uidUpdated += 1;
         } else {
-          log.debug(`sync ${mailboxId}: uid update of mail ${write.emailId} changed no row`);
+          mailboxLog.debug("sync_uid_update_no_row", { email_id: write.emailId });
         }
       } else if (write.kind === "returned") {
         if (await markEmailReturned(trx, ctx, write.emailId, write.uid, deps.now(), { folder: write.folder })) {
           returned += 1;
         } else {
-          log.debug(`sync ${mailboxId}: return of mail ${write.emailId} changed no row`);
+          mailboxLog.debug("sync_return_no_row", { email_id: write.emailId });
         }
       } else if (
         await markEmailRelocated(trx, ctx, write.emailId, { from: write.from, to: write.to, uid: write.uid })
       ) {
         relocated += 1;
       } else {
-        log.debug(`sync ${mailboxId}: move of mail ${write.emailId} between folders changed no row`);
+        mailboxLog.debug("sync_move_no_row", { email_id: write.emailId });
       }
     }
     if (next !== null && !(await updateFolderCursor(trx, ctx, folderId, expected, next))) {
@@ -412,8 +412,8 @@ interface PlannedCopy {
   capture: CapturedHeaders | null;
 }
 
-function logCopySkipped(mailboxId: string, rowId: string, kind: string): void {
-  log.debug("sync_below_cursor_copy_skipped", { mailbox_id: mailboxId, email_id: rowId, kind });
+function logCopySkipped(mailboxLog: Log, rowId: string, kind: string): void {
+  mailboxLog.debug("sync_below_cursor_copy_skipped", { email_id: rowId, kind });
 }
 
 // D4: a mail that the user puts back into its source folder can keep its UID (Interia) and then sits below that folder's cursor.
@@ -427,6 +427,7 @@ async function checkReturnedBelowCursor(
   result: SyncResult,
   state: RunState
 ): Promise<void> {
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   const now = deps.now();
   const rows = await listRecentlyMoved(deps.db, ctx, mailboxId, {
     sourceFolder: folder.path,
@@ -435,7 +436,7 @@ async function checkReturnedBelowCursor(
   });
   if (rows.length === 0) return;
   if (rows.length === RETURN_CHECK_LIMIT) {
-    log.warn(`sync ${mailboxId} folder ${folder.key} returned below cursor: list hit the limit ${rows.length}`);
+    mailboxLog.warn("sync_below_cursor_limit", { folder_key: folder.key, limit: rows.length });
   }
 
   for (let offset = 0; offset < rows.length; offset += RETURN_CHECK_CHUNK) {
@@ -461,7 +462,7 @@ async function checkReturnedBelowCursor(
         returns.push(hit);
         continue;
       }
-      log.debug(`sync ${mailboxId} copy below cursor: email ${row.id}`);
+      mailboxLog.debug("sync_below_cursor_copy", { email_id: row.id });
       result.copiesBelowCursor += 1;
       const copy = await planCopy(deps, ctx, mailboxId, folder, row, meta, foundUid, planned, state);
       if (copy !== null) planned.push(copy);
@@ -493,12 +494,12 @@ async function checkReturnedBelowCursor(
           now,
         });
         if (decision.kind !== "store" || decision.dedupKey !== copy.dedupKey) {
-          logCopySkipped(mailboxId, copy.rowId, decision.kind === "store" ? "not_inserted" : decision.kind);
+          logCopySkipped(mailboxLog, copy.rowId, decision.kind === "store" ? "not_inserted" : decision.kind);
           continue;
         }
         const row = newRow(mailboxId, folder.path, copy.meta, copy.messageId, copy.hash, copy.dedupKey, copy.body);
         if (!(await insertEmail(trx, ctx, row))) {
-          logCopySkipped(mailboxId, copy.rowId, "not_inserted");
+          logCopySkipped(mailboxLog, copy.rowId, "not_inserted");
           continue;
         }
         stored.push(copy);
@@ -524,18 +525,18 @@ async function checkReturnedBelowCursor(
       }
     } catch (error) {
       if (!(error instanceof CursorMovedError)) throw error;
-      log.warn(
-        `sync ${mailboxId} folder ${folder.key} returned below cursor: cursor moved, check repeats at the next sync`
-      );
+      mailboxLog.warn("sync_below_cursor_moved", { folder_key: folder.key });
       break;
     }
   }
-  log.info(
-    `sync ${mailboxId} folder ${folder.key} returned below cursor: checked ${rows.length}, returned ${result.returnedBelowCursor}, copies ${result.copiesBelowCursor}`
-  );
+  mailboxLog.info("sync_below_cursor_done", {
+    folder_key: folder.key,
+    checked: rows.length,
+    returned: result.returnedBelowCursor,
+    copies: result.copiesBelowCursor,
+  });
   if (result.copiesStored > 0) {
-    log.info("sync_below_cursor_copies_stored", {
-      mailbox_id: mailboxId,
+    mailboxLog.info("sync_below_cursor_copies_stored", {
       folder_key: folder.key,
       count: result.copiesStored,
     });
@@ -554,9 +555,10 @@ async function planCopy(
   planned: readonly PlannedCopy[],
   state: RunState
 ): Promise<PlannedCopy | null> {
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   // Found only at another UID: it can be an untracked twin while the row's mail came back (D11).
   if (foundUid !== row.uid) {
-    logCopySkipped(mailboxId, row.id, "uncertain");
+    logCopySkipped(mailboxLog, row.id, "uncertain");
     return null;
   }
   const messageId = normalizeMessageId(meta.messageId);
@@ -577,7 +579,7 @@ async function planCopy(
     now: deps.now(),
   });
   if (decision.kind !== "store") {
-    logCopySkipped(mailboxId, row.id, decision.kind);
+    logCopySkipped(mailboxLog, row.id, decision.kind);
     return null;
   }
   const content = await deps.provider.fetchContent(folder.path, meta.uid);
@@ -645,6 +647,7 @@ async function syncFolder(
   row: SyncFolderRow,
   state: RunState
 ): Promise<SyncResult> {
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   const status = await deps.provider.folderStatus(row.path);
   const mode = selectMode(row, status);
   const result = emptyResult(row.key, mode);
@@ -685,11 +688,21 @@ async function syncFolder(
     await checkReturnedBelowCursor(deps, ctx, mailboxId, row, cursor, result, state);
   }
 
-  log.info(
-    `sync ${mailboxId} folder ${row.key}: ${result.mode}, fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, relocated ${result.relocated}, cross copies ${result.crossCopies}, move in flight ${result.moveInFlight}, skipped own ${result.skippedOwn}, ignored below cursor ${result.ignoredBelowCursor}`
-  );
+  mailboxLog.info("sync_folder_done", {
+    folder_key: row.key,
+    sync_mode: result.mode,
+    fetched: result.fetched,
+    stored: result.stored,
+    uid_updated: result.uidUpdated,
+    returned: result.returned,
+    relocated: result.relocated,
+    cross_copies: result.crossCopies,
+    move_in_flight: result.moveInFlight,
+    skipped_own: result.skippedOwn,
+    ignored_below_cursor: result.ignoredBelowCursor,
+  });
   if (result.captureMissing > 0) {
-    log.warn("capture_missing", { mailbox_id: mailboxId, count: result.captureMissing });
+    mailboxLog.warn("capture_missing", { count: result.captureMissing });
   }
   return result;
 }
@@ -703,6 +716,7 @@ async function discoverFolders(
   mailboxId: string,
   folderMap: Record<string, string>
 ): Promise<{ listed: Set<string> | null; added: SyncFolderKey[] }> {
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   try {
     const listed = await deps.provider.listFolders();
     const reservedPaths = Object.entries(folderMap)
@@ -710,11 +724,14 @@ async function discoverFolders(
       .map(([, path]) => path);
     const picks = pickSyncFolders({ listed, reservedPaths });
     const added = await ensureSyncFolders(deps.db, ctx, mailboxId, picks, deps.now());
-    if (added.length > 0) log.info(`sync ${mailboxId}: added sync folders ${added.join(",")}`);
+    if (added.length > 0) {
+      mailboxLog.info("sync_folders_added", { count: added.length });
+      for (const key of added) mailboxLog.info("sync_folder_added", { folder_key: key });
+    }
     return { listed: new Set(listed.map((folder) => folder.path)), added };
   } catch (error) {
     if (error instanceof MailAuthError) throw error;
-    log.warn(`sync ${mailboxId}: folder discovery failed: ${describeError(error)}`);
+    mailboxLog.warn("sync_folder_discovery_failed", errorFields(error));
     return { listed: null, added: [] };
   }
 }
@@ -722,6 +739,7 @@ async function discoverFolders(
 export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId: string): Promise<MailboxSyncResult> {
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   const { listed, added } = await discoverFolders(deps, ctx, mailboxId, mailbox.folder_map);
 
   const rows = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: true });
@@ -733,7 +751,7 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
   const skipped: SyncFolderKey[] = [];
   for (const row of rows) {
     if (row.key !== "inbox" && listed !== null && !listed.has(row.path)) {
-      log.warn(`sync ${mailboxId} folder ${row.key}: not on the server, skipped`);
+      mailboxLog.warn("sync_folder_missing", { folder_key: row.key });
       skipped.push(row.key);
       continue;
     }
@@ -744,7 +762,7 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
     } catch (error) {
       if (error instanceof MailAuthError || row.key === "inbox") throw error;
       state = before;
-      log.warn(`sync ${mailboxId} folder ${row.key}: ${describeError(error)}; the next tick tries again`);
+      mailboxLog.warn("sync_folder_soft_error", { folder_key: row.key, ...errorFields(error) });
       failed.push(row.key);
     }
   }
@@ -768,6 +786,7 @@ export async function backfillInbox(
   }
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   const folder = await readInboxFolder(deps, ctx, mailboxId);
   if (folder.uidvalidity === null) throw new HardError("mailbox was never synced: run the sync first");
 
@@ -793,11 +812,15 @@ export async function backfillInbox(
     await applyChunk(deps, ctx, mailboxId, folder.id, writes, start, null, result);
   }
 
-  log.info(
-    `backfill ${mailboxId}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, skipped own ${result.skippedOwn}`
-  );
+  mailboxLog.info("backfill_done", {
+    fetched: result.fetched,
+    stored: result.stored,
+    uid_updated: result.uidUpdated,
+    returned: result.returned,
+    skipped_own: result.skippedOwn,
+  });
   if (result.captureMissing > 0) {
-    log.warn("capture_missing", { mailbox_id: mailboxId, count: result.captureMissing });
+    mailboxLog.warn("capture_missing", { count: result.captureMissing });
   }
   return result;
 }
