@@ -1,0 +1,16 @@
+# F119 company sign-in: facts found while writing the docs (stage 14)
+
+Docs written at `6871bb53`: `docs/capabilities/web-panel.md` (rules 3, 4, 6, 8, 9, Data, Limits), `docs/capabilities/tenancy-and-plans.md` (rule 7: `org:sso`, `org:member`), `docs/capabilities/account-data.md` (rule 3), `docs/decisions/0026-identity-tier-1-oidc-totp.md` (amendment F119), `docs/architecture.md` §5 and §7, `docs/code-patterns.md` § Data access, `deploy/README.md` § Company sign-in, `docs/known-alerts.md`.
+
+Where the carry-over text of the stage files did not match the code at `HEAD`, the docs follow the code:
+
+- **Callback lock (stage 10 review, N3).** The carry-over says the SSO callback takes no lock on the provider row. Our code takes none, but the plugin does: `lockSSOProviderForAccountLink` (`node_modules/@better-auth/sso/dist/index.mjs`, `@better-auth/sso` 1.7.18) runs an `UPDATE sso_providers SET provider_id = provider_id` inside the transaction that makes the link and the session, before `resolveUser`. The operator writes (`setSsoProvider`, `removeSsoProvider`, `verifySsoDomain`, `attestSsoDomain`, `setSsoRequired`, `unlinkSso`) lock the same row `FOR UPDATE`, so they wait for a callback in flight. The comment in `modules/tenancy/members.ts` is right. Test coverage: `sso-provider-service.test.ts` TG4 holds the row with the same `UPDATE`; no test runs a real callback against a waiting writer. A plugin upgrade must keep that lock (runbook step 10).
+- **Axe (stage 12 and 13 reviews, U1).** The carry-over says only `stats.spec.ts` uses `apps/web/e2e/a11y.ts`. Ten specs use it, among them `/login` (`auth.spec.ts`) and `/settings` (`account.spec.ts`). The e2e seed makes no provider, so `/api/sign-in-options` answers `{ "sso": false }` there. The company sign-in block, the Account card of a member with no password and the `/operator` page (no e2e spec opens it) have no axe check. `web-panel.md` Limits says that.
+- **Suspended organization (stage 11 review, N6).** The review says the callback refuses a member of a suspended organization. No code reads the plan in `resolveSsoMember`, `anySsoUsable` or the callback: the member signs in, and the panel then refuses writes (`403 org_suspended`). The coordinator note of stage 04 agrees ("not checked at SSO sign-in, same as password sign-in"). `web-panel.md` rules 4 and 6 say that.
+- **SSO member and password reset (stage 10 review).** Better Auth `resetCredentialPassword` creates a credential account when none exists. The reset mail (`request-password-reset`, open only with the auth-mail sender) and a `web:invite --user-id` link therefore give an SSO member a password. Nothing refuses it. In an organization without "SSO required" that password signs in. Documented as a default that the owner can still change; no code change.
+- **Flag registry count.** `tenancy-and-plans.md` said "ten flags". The registry has more (`org_delete`, `sso_sign_in`, `suspicious_mail`, `attachment_line`, the two `mail_oauth_*`). The page now points to `packages/core/src/features.ts` and holds no count.
+
+Still open (not docs):
+
+- The start-up wiring test of `main.ts` for `sso_flag_killed_with_sso_required` (stage 15 carry-over): not written in stage 14.
+- Stage 16: the real Microsoft Entra check. The Entra facts in the runbook come from the Microsoft documentation of 2026-11-14.

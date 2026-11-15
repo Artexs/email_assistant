@@ -132,15 +132,18 @@ async function guard<T>(action: string, fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/** The line of a connection error: the system code only, never the server text (a reply can hold an address). */
+export function logConnectionError(error: Error): void {
+  const { code } = error as { code?: unknown };
+  log.warn("imap_connection_error", { code: typeof code === "string" ? code : "unknown" });
+}
+
 /** Connects and logs in. Used by the provider and by `tools.ts`. */
 export async function connectImapClient(opts: ImapConnectOptions): Promise<ImapFlow> {
   const target = await resolveMailHost(opts.host);
   const client = new ImapFlow(imapFlowOptions(opts, target));
   // Without a listener, an "error" event would end the process.
-  client.on("error", (error: Error) => {
-    const { code } = error as { code?: unknown };
-    log.warn("IMAP connection error", typeof code === "string" ? code : "unknown");
-  });
+  client.on("error", logConnectionError);
   try {
     await client.connect();
   } catch (error) {

@@ -187,6 +187,7 @@ function realApp() {
       {
         secrets: createSecretBox(Buffer.alloc(32, 1).toString("base64"), 1),
         actionsScope: { kind: "off" },
+        sendScope: { kind: "off" },
         botUsername: null,
       },
       () => new Date("2026-11-20T10:00:00Z"),

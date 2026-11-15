@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { auditEvents } from "../../src/modules/audit";
@@ -148,6 +149,31 @@ describe("switchMailboxStatus", () => {
       });
       expect(unknown).toEqual({ kind: "not_found" });
       expect(await auditRows(trx, b.orgId, auditEvents.mailboxPaused)).toEqual([]);
+    });
+  });
+});
+
+describe("switchMailboxStatus log lines", () => {
+  test("a pause and a resume write one event each with the organization, the mailbox and the actor; no change writes none", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId, userId: a.userId };
+      const lines: string[] = [];
+      const spy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+      try {
+        const input = { actor: a.userId, via: "web" as const };
+        await switchMailboxStatus(trx, ctx, a.mailboxId, { ...input, to: "paused", now: T1 });
+        await switchMailboxStatus(trx, ctx, a.mailboxId, { ...input, to: "paused", now: T2 });
+        await switchMailboxStatus(trx, ctx, a.mailboxId, { ...input, to: "active", now: T2 });
+        await switchMailboxStatus(trx, ctx, a.mailboxId, { actor: "cli", via: "telegram", to: "active", now: T2 });
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(lines).toEqual([
+        `[mail] mailbox_paused org_id=${a.orgId} mailbox_id=${a.mailboxId} actor=${a.userId}`,
+        `[mail] mailbox_resumed org_id=${a.orgId} mailbox_id=${a.mailboxId} actor=${a.userId}`,
+      ]);
     });
   });
 });

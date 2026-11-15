@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration, privacy maps). The onl
 - **Decisions:**
   - `reply_requests` and `mailbox_profiles` as `interfaces.md`. CHECKs: `trigger IN ('auto','tap','redraft','sample')`; the status list; `char_length(instruction) <= 300`; profile lengths. Composite FKs `(email_id, org_id)` and `(mailbox_id, org_id)` → cascade; `previous_send_id` and `send_action_id` → `actions (id, org_id)` `ON DELETE SET NULL` (a data-request erase may delete actions). RLS as every org table (copy the policy shape of the newest table).
   - `INSERT INTO mailbox_profiles (mailbox_id, org_id, signature) SELECT m.id, m.org_id, NULLIF(o.style_text, '') FROM mailboxes m JOIN organizations o …` (expand step, D13). `organizations.style_text` stays (E6b drops it).
-  - Index `emails (mailbox_id, thread_key, received_at)` (F5); `CREATE INDEX` in the migration, as earlier index migrations do.
+  - Index `emails (mailbox_id, thread_key, received_at)` (F5); `CREATE INDEX IF NOT EXISTS emails_thread_received_idx` in the migration (F116 stage 07 creates the same index; the second migration to land must not fail or make a twin).
   - Outbox kinds `replies_ready`, `reply_prompt`, `reply_result` in `outbox_kind_check` (drop and add, as `20261115130001_approval_edit.sql`); the `down` part deletes their rows first. `replies_ready` needs no `email_id`; `reply_prompt` and `reply_result` need `email_id`.
 - **Test (integration):**
   1. Migrate up on a DB with an org whose `style_text` is `"Jan"` and one with `''`: profiles have signature `"Jan"` and null.

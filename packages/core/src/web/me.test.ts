@@ -20,6 +20,7 @@ const me = {
   scopes: { triage: scope, actions: scopeInfoOf("actions", "synthetic"), send: scopeInfoOf("send", "self") },
   mailboxCount: 1,
   mailboxesInAuthError: 0,
+  approvalsWaiting: 0,
   digestTimes: ["08:00"],
   terms: { accepted: false, current: "2026-11-12" },
   operator: false,
@@ -67,6 +68,13 @@ describe("meSchema", () => {
     expect(meSchema.safeParse({ ...me, hasPassword: undefined }).success).toBe(false);
     expect(meSchema.safeParse({ ...me, signInMethod: "sso", hasPassword: false }).success).toBe(true);
     expect(meSchema.safeParse({ ...me, operator: true, features: ["future_flag"] }).success).toBe(true);
+  });
+
+  test("refuses an object without approvalsWaiting or with a negative or fractional count", () => {
+    expect(meSchema.safeParse({ ...me, approvalsWaiting: undefined }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, approvalsWaiting: -1 }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, approvalsWaiting: 1.5 }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, approvalsWaiting: 3 }).success).toBe(true);
   });
 
   test("refuses an object without digestTimes", () => {

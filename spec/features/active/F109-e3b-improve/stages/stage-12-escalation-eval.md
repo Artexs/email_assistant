@@ -2,6 +2,9 @@
 
 Part of [`../plan.md`](../plan.md). Decisions P5, D15. Needs stage 11 (its ship decision fixes the base prompt). No real LLM run (a fake LLM in tests).
 
+
+> **Decision of stage 11 (2026-11-15): no ship.** `classifier-v3[list]` failed ship rule 4 (whitelist 314 of 315: one `bad_output` counts as not correct); rules 1, 2, 3 and 5 passed. `classifier-v2` stays in production. This stage builds on `classifier-v2`: the "production pointer" is `classifier-v2`, `--prompt-parts` is NOT passed (it counts only for v3), and the base of the escalation prompt is `classifier-v2`. Detail: end of `evals/results/2026-11-15-f109-v3-dev-summary.md`. If the coordinator overrides the decision and ships v3 first, this note no longer applies.
+
 ## Step 1 — Trigger and combine (core, pure)
 
 **Interfaces (stage 14 uses them; keep them).** In `packages/core/src/triage/escalation.ts`:

@@ -20,6 +20,62 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `sso_refused` (fields `org_id`, `code`; the matching success line is `sso_sign_in`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso.ts` (`reportSsoEvent`, level `warn`). One audit row `sso.refused` (`provider_id`, `code`) goes with it. The line holds the organization id and the code only: never the IdP e-mail.
+- **Cause:** A person came back from the company IdP and our resolver refused the sign-in. No user, link or session was made. The code says why: `not_a_member` (no user with this address, or the user belongs to another organization first), `domain_mismatch` (the address is off the provider domain, a subdomain, or for Google the `hd` claim is wrong), `email_unverified` (the IdP said `email_verified: false`), `identity_mismatch` (the user is already linked to another IdP account of this provider), `sso_off` (the flag `sso_sign_in` is off for the organization). A `no_provider` refusal writes no line and no row.
+- **Fix:** No action for one line. For a real person: `not_a_member` → the operator adds them (`bun run org:member --org-id <id> --add …`) or they used the wrong IdP account; `identity_mismatch` → `bun run org:member --org-id <id> --user-id <id> --unlink-sso`, then they sign in again; `sso_off` → `bun run org:flag --org-id <id> --flag sso_sign_in --on`. Many lines in a short time from a stranger mean someone probes the sign-in: the start of `/api/auth/sign-in/sso` allows 10 calls per 60 s per client address.
+- **Status:** won't fix (expected behaviour)
+
+### `sso_audit_failed` (fields `kind`, `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso.ts` (`reportSsoEvent`, level `error`). `kind` is `login` or `refused`.
+- **Cause:** The audit row of an SSO sign-in or refusal (`sso.login`, `sso.refused`) could not be written, usually a database error. The sign-in or the refusal went on as before: a failed audit write never stops it.
+- **Fix:** Check the database (`/health`, the `error_code`). The lost row is not replayed (one lost `sso.login` row is accepted, ADR 0026 amendment). If it repeats, read the `app` role rights on `audit_log` and the foreign key to `organizations`.
+- **Status:** investigating
+
+### `operator_sso_session_refused` (field `user_id`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/http.ts` (`requireOperator` and the `/operator` page guard). Level `warn`. The line holds the event name and the user id only.
+- **Cause:** An operator opened the console or called `/api/operator/*` with a company (SSO) session. The IdP owns the second factor of such a session, so the console needs a password session with TOTP. The API answers `403 { error: "password_sign_in_required" }`; the page answers the 404 page.
+- **Fix:** The operator signs out and signs in with the password and the TOTP code, then opens the console again. The line stops.
+- **Status:** won't fix (a refusal is the expected answer)
+
+### `password_sign_in_refused_sso`, `reset_request_refused_sso` and `password_session_refused_sso` (field `user_id`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso-required.ts` (the first two) and the session hook in `apps/server/src/platform/auth.ts` (the third). Level `info`. The line holds the user id only.
+- **Cause:** The organization of the user has "SSO required", and the user is not its break-glass owner with TOTP on. The password sign-in got the answer of a wrong password (`401 INVALID_EMAIL_OR_PASSWORD`), the reset request got the generic answer and no mail, or a password session was refused at its creation (a sign-in or a code step that passed the first check just before the operator's switch). No lockout count, no lock mail and no audit row follow.
+- **Fix:** No action for one line. A real member signs in with the company account. If the IdP is down, the operator runs `bun run org:sso --org-id <id> --require off`. The break-glass owner is never refused.
+- **Status:** won't fix (a refusal is the expected answer)
+
+### `sign_in_options_failed` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/http.ts` (`GET /api/sign-in-options`, level `warn`).
+- **Cause:** The small read that tells the login page whether company sign-in exists failed, usually a database error. The route answered `{ "sso": false }`, so the login page shows the password form only.
+- **Fix:** Check the database (`/health`). The line stops when the read works again. Members with a company account see no company sign-in button until then.
+- **Status:** investigating
+
+### `sso_flag_killed_with_sso_required` (field `count`) and `sso_flag_check_failed` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/main.ts` at the start (level `warn`; `countSsoRequiredWhileKilled` in `modules/tenancy/sso-require.ts`).
+- **Cause:** `FEATURES_OFF` holds `sso_sign_in`, and `count` organizations require SSO. Company sign-in is closed for them, and the passwords of their members are refused, so only the break-glass owner of each organization can sign in. The second line means that the check itself failed (a database error); the start went on.
+- **Fix:** Remove `sso_sign_in` from `FEATURES_OFF` and restart, or run `bun run org:sso --org-id <id> --require off` for each organization. A failed check: read the `error_code` and check the database.
+- **Status:** won't fix (a warning of a deliberate kill switch)
+
+### `sso_discovery_failed` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
+- **Source:** `apps/server/src/platform/auth-sso.ts` (`discoverProviderConfig`, level `warn`), in the CLI `bun run org:sso --set`.
+- **Cause:** The discovery of the issuer failed with an error that is not one of the known discovery codes. The CLI printed `error discovery_failed discovery_unexpected_error` and stored nothing.
+- **Fix:** Check the issuer URL and that the server reaches the IdP. Run the command again. A known failure prints its own code (`discovery_private_host`, `discovery_dns_failed`, `issuer_mismatch`).
+- **Status:** investigating
+
 ### `action_no_provider` and `send_no_sender` (fields `action_id`, `action_type` for the first; before F103: `action <id>: no provider for <type>` and `action <id>: no sender for send`)
 
 - **First seen:** 2026-11-15 (F103 stage 09)
@@ -95,12 +151,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none for a single line. Many lines for one user id mean someone probes the operator routes: check the user. If the user is the operator, add the id to `OPERATOR_USER_IDS` and restart.
 - **Status:** won't fix (a refusal is the expected answer)
 
-### `mailbox_host_blocked` (`reason=sync|committer`), `mailbox_host_check_failed`, `mailbox_host_block_failed`, `mailbox_host_recheck_failed` (before F085: `sync <id> failed: host not allowed`) and `sync <id>: mail host lookup failed (<code>); the next tick tries again`
+### `mailbox_host_blocked` (`reason=sync|committer`), `mailbox_host_check_failed`, `mailbox_host_block_failed`, `mailbox_host_recheck_failed` (before F085: `sync <id> failed: host not allowed`) and `sync_soft_error` with `error=MailHostLookupError error_code=<code>` (before F103: `sync <id>: mail host lookup failed (<code>); the next tick tries again`)
 
 - **First seen:** 2026-11-13 (S6b, F082 stage 8 and 9; not seen live)
-- **Source:** `apps/server/src/modules/mail/host-guard.ts` (`resolveMailHost`), through `modules/mail/port.ts` (`HostNotAllowedError`, a hard error). `mail/host-status.ts`, `mail/jobs.ts` and `actions/committer.ts` write the lines: `mailbox_host_blocked` (warn; the guard refused a host and the mailbox became `host_blocked`), `mailbox_host_check_failed` (warn; a lookup failed in the re-check), `mailbox_host_block_failed` (error; the DB write of the status failed), `mailbox_host_recheck_failed` (error; the re-check list failed, the sync run goes on). The sync job logs a failed lookup (a soft error) at level `warn`. The connect form and the send path raise the same errors.
-- **Cause:** `host not allowed`: the mail host is, or resolves to, a local, private, multicast, reserved, NAT64 or 6to4 address, and `MAIL_ALLOW_LOCAL_HOSTS` is not true. `mail host lookup failed (<code>)`: the DNS lookup failed (`<code>` is the system code, `ENODATA` for an empty answer, `UNKNOWN` for none).
-- **Fix:** `mailbox_host_blocked`: run `bun run mailbox:check --org-id … --mailbox-id …` (it prints which side is refused and does not connect), then check the DNS answer of the provider host from the server container. A real provider host is public, so a refusal means a wrong host or a DNS change. The mailbox returns by itself when the name resolves to a public address. Do not set `MAIL_ALLOW_LOCAL_HOSTS` on the VPS. `mailbox_host_block_failed`: the DB failed; the next run tries again. `lookup failed`: check DNS from the server container.
+- **Source:** `apps/server/src/modules/mail/host-guard.ts` (`resolveMailHost`), through `modules/mail/port.ts` (`HostNotAllowedError`, a hard error). `mail/host-status.ts`, `mail/jobs.ts` and `actions/committer.ts` write the lines: `mailbox_host_blocked` (warn; the guard refused a host and the mailbox became `host_blocked`), `mailbox_host_check_failed` (warn; a lookup failed in the re-check), `mailbox_host_block_failed` (error; the DB write of the status failed), `mailbox_host_recheck_failed` (error; the re-check list failed, the sync run goes on). The sync job logs a failed lookup (a soft error, `MailHostLookupError`) as `sync_soft_error` at level `warn`. The connect form and the send path raise the same errors.
+- **Cause:** `host not allowed`: the mail host is, or resolves to, a local, private, multicast, reserved, NAT64 or 6to4 address, and `MAIL_ALLOW_LOCAL_HOSTS` is not true. `MailHostLookupError`: the DNS lookup failed (`error_code` is the system code, `ENODATA` for an empty answer, `UNKNOWN` for none; the error message holds no host name).
+- **Fix:** `mailbox_host_blocked`: run `bun run mailbox:check --org-id … --mailbox-id …` (it prints which side is refused and does not connect), then check the DNS answer of the provider host from the server container. A real provider host is public, so a refusal means a wrong host or a DNS change. The mailbox returns by itself when the name resolves to a public address. Do not set `MAIL_ALLOW_LOCAL_HOSTS` on the VPS. `mailbox_host_block_failed`: the DB failed; the next run tries again. `MailHostLookupError`: check DNS from the server container.
 - **Status:** fixed for the silent failure (the owner gets a status and a notice); investigating (per case) for a real refusal
 
 ### `pwned_check_unavailable` (`status=`, `reason=no_range_lines`, `error=`; before F089: `pwned check unavailable: <status|name|no range lines in the answer>`)
@@ -151,11 +207,11 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** delete rules that are not needed (Rules page). Change `SENDER_RULE_LIMIT` only with a reason.
 - **Status:** won't fix (expected)
 
-### `web: mailbox connect failed: <label>` and `web: mailbox password check failed: <label>`
+### `mailbox_connect_failed` and `mailbox_password_check_failed` (fields `request_id`, `error`, `error_code`; before F103: `web: mailbox connect failed: <label>` and `web: mailbox password check failed: <label>`)
 
 - **First seen:** 2026-11-11 (S5b)
 - **Source:** `apps/server/src/modules/mail/routes.ts`, `POST /api/mailboxes` and `POST /api/mailboxes/:id/password`. Level `info`, one line per 422 or 502 answer.
-- **Cause:** a user typo (wrong password, wrong host) or a provider outage or timeout. The label comes from `describeError`; it never holds the password.
+- **Cause:** a user typo (wrong password, wrong host) or a provider outage or timeout. `error` is the error name and `error_code` its code, when it has one; the line never holds the password, the address or the server text.
 - **Fix:** none needed for one line. Many lines in a row for one provider mean an outage or a changed server setting: check the preset hosts in `packages/core/src/mail/providers.ts`. WP and o2 user-name formats are not verified (`notes/2026-11-11-web-mailboxes-facts.md`).
 - **Status:** won't fix (expected)
 
@@ -183,18 +239,18 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** the key must be empty or `false` on the VPS. If this line shows on the VPS, remove `MAIL_ALLOW_LOCAL_HOSTS` and `WEB_MAIL_ALLOW_LOCAL` from `.env` and restart.
 - **Status:** workaround (dev and e2e only)
 
-### `mailbox <id> removed by user <id>`
+### `mailbox_removed` (fields `org_id`, `mailbox_id`, `user_id`; before F103: `mailbox <id> removed by user <id>`)
 
 - **First seen:** 2026-11-11 (S5b)
-- **Source:** `apps/server/src/modules/mail/remove.ts`. Level `info`.
+- **Source:** `apps/server/src/modules/mail/remove.ts`. Level `info`. A failed status restore after a failed delete is `mailbox_status_restore_failed` (error, fields `org_id`, `mailbox_id`, `error`, `error_code`).
 - **Cause:** an owner removed a mailbox in the panel. `delete_mailbox` deleted every row of it. Linked owners get the `mailbox_removed` notice.
 - **Fix:** none. It is a record, not an error.
 - **Status:** won't fix (expected)
 
-### `sync <mailbox id> failed: … violates foreign key constraint …` right after a removal
+### `sync_failed` with `error_code=23503` right after a removal (before F103: `sync <mailbox id> failed: … violates foreign key constraint …`)
 
 - **First seen:** 2026-11-11 (S5b)
-- **Source:** `apps/server/src/modules/mail/jobs.ts`, the per-mailbox `catch` of the sync job. Error line, one per run that held the mailbox at that second.
+- **Source:** `apps/server/src/modules/mail/jobs.ts`, the per-mailbox `catch` of the sync job. Error line `sync_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`; the database text is not in the line), one per run that held the mailbox at that second.
 - **Cause:** a sync run inserted a mail into a mailbox that `removeMailbox` deleted at the same time. The triage save is not affected: `saveTriage` returns `lost` and writes nothing (fact 11).
 - **Fix:** none. The next tick has no mailbox and is clean. Investigate only when the line repeats with no removal.
 - **Status:** won't fix (expected)
@@ -208,15 +264,15 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none. One repeated period is accepted. Investigate only when the line shows with no removal. Check the outbox row and the other lines with the same `outbox_id`.
 - **Status:** won't fix (expected)
 
-### `sync <mailbox id> folder <key>: failed 3 runs in a row`
+### `sync_folder_failing` (fields `org_id`, `mailbox_id`, `folder_key`, `failed_runs`=3; before F103: `sync <mailbox id> folder <key>: failed 3 runs in a row`)
 
 - **First seen:** 2026-11-09
 - **Source:** `apps/server/src/modules/mail/jobs.ts`, `[mail]` sync job. Error line, once per streak of 3 failed runs of one synced folder (D5).
 - **Cause:** the folder read fails in each of 3 runs (IMAP error, a rejected folder, a DB error). The other folders sync as normal. The line names the key, never the path.
-- **Fix:** read the warn or error lines before it: `$C logs --since 1h server | grep -E 'failed|tries again|not on the server'`. Switch the folder off if it stays broken: `mailbox:settings sync-folder … --key <key> --value off`. The line comes again only after the folder syncs once.
+- **Fix:** read the warn or error lines before it: `$C logs --since 1h server | grep -E 'sync_folder_soft_error|sync_folder_missing|sync_failed'`. Switch the folder off if it stays broken: `mailbox:settings sync-folder … --key <key> --value off`. The line comes again only after the folder syncs once.
 - **Status:** investigating (per case)
 
-### `sync <mailbox id> folder <key>: not on the server, skipped`
+### `sync_folder_missing` (fields `org_id`, `mailbox_id`, `folder_key`; before F103: `sync <mailbox id> folder <key>: not on the server, skipped`)
 
 - **First seen:** 2026-11-09
 - **Source:** `apps/server/src/modules/mail/sync.ts`. Warning, one per run.
@@ -224,7 +280,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none needed while the folder is gone: the sync skips that folder and runs the others. Restore the folder name, or switch the row off with `mailbox:settings sync-folder`.
 - **Status:** workaround
 
-### `sync <mailbox id>: folder discovery failed: <error>`
+### `sync_folder_discovery_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`; before F103: `sync <mailbox id>: folder discovery failed: <error>`)
 
 - **First seen:** 2026-11-09
 - **Source:** `apps/server/src/modules/mail/sync.ts`, discovery of the sort folders. Warning.
@@ -237,7 +293,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-09
 - **Source:** `apps/server/src/modules/mail/imap/client.ts`, `folderStatus()`. A `HardError`, so the folder counts as failed in that run.
 - **Cause:** the folder reports mail (`exists` > 0), but `FETCH *` returned nothing. The folder changed during the read, or the server answered wrong.
-- **Fix:** the next tick tries again. After 3 runs in a row, the alert `failed 3 runs in a row` follows. Check the folder in the webmail.
+- **Fix:** the next tick tries again. After 3 runs in a row, the alert `sync_folder_failing` follows. Check the folder in the webmail.
 - **Status:** investigating (per case)
 
 ### `web is off (WEB_BASE_URL is empty)`
@@ -575,7 +631,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action. Run `expire-ready` before you set `ACTIONS_SCOPE=all`, so that old `ready` rows do not apply. The next line shows how many `ready` mailbox actions are left.
 - **Status:** won't fix (expected behaviour)
 
-### `sync <mailboxId> returned below cursor: list hit the limit <n>`
+### `sync_below_cursor_limit` (fields `org_id`, `mailbox_id`, `folder_key`, `limit`; before F103: `sync <mailboxId> returned below cursor: list hit the limit <n>`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/mail/sync.ts` (`[mail]`, level `warn`).
@@ -583,11 +639,11 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check how many mails the system moved in 7 days. If the number is real, raise the limit in a task. No data is lost: the check only misses returns of the oldest rows.
 - **Status:** investigating
 
-### `sync <mailboxId> returned below cursor: checked <n>, returned <m>, copies <c>`
+### `sync_below_cursor_done` (fields `org_id`, `mailbox_id`, `folder_key`, `checked`, `returned`, `copies`; before F103: `sync <mailboxId> returned below cursor: checked <n>, returned <m>, copies <c>`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/mail/sync.ts` (`[mail]`, level `info`; one line per sync that has moved mails).
-- **Cause:** <n> mails moved in the last 7 days were looked up in INBOX below the UID cursor, <m> of them came back (Interia keeps the UID). `copies` > 0 means a copy of a moved mail sits below the cursor while the original is still in its folder. A stored copy holds its UID, so the next sync counts it no more (`copies 0`). A copy that sync does not store counts again on every sync for 7 days. The debug line `sync <mailboxId> copy below cursor: email <id>` names the row. When sync stores copies, the info line `sync_below_cursor_copies_stored` (`mailbox_id`, `folder_key`, `count`) follows. For each copy that sync does not store, the debug line `sync_below_cursor_copy_skipped` gives `email_id` (the moved row) and `kind`: `move_in_flight`, `held`, `cross_copy`, `uncertain` or `not_inserted`.
+- **Cause:** <n> mails moved in the last 7 days were looked up in INBOX below the UID cursor, <m> of them came back (Interia keeps the UID). `copies` > 0 means a copy of a moved mail sits below the cursor while the original is still in its folder. A stored copy holds its UID, so the next sync counts it no more (`copies=0`). A copy that sync does not store counts again on every sync for 7 days. The debug line `sync_below_cursor_copy` (`email_id`; before F103: `sync <mailboxId> copy below cursor: email <id>`) names the row. When the cursor of the folder moves during the check, the warning `sync_below_cursor_moved` (`folder_key`) ends it and the next sync repeats it. When sync stores copies, the info line `sync_below_cursor_copies_stored` (`mailbox_id`, `folder_key`, `count`) follows. For each copy that sync does not store, the debug line `sync_below_cursor_copy_skipped` gives `email_id` (the moved row) and `kind`: `move_in_flight`, `held`, `cross_copy`, `uncertain` or `not_inserted`.
 - **Fix:** `returned` > 0 is normal after a user move back. `copies` > 0: no loss. Sync stores and triages the copy unless a `sync_below_cursor_copy_skipped` line gives the reason (switch the log level to debug to see it). A copy that stays counted for days with `kind=held` or `uncertain` needs a look at the rows of that mail.
 - **Status:** investigating
 
@@ -856,7 +912,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** `rclone copyto --no-check-dest` in `deploy/backup.sh`. Cron `PATH` starts with `/home/serwer/bin` (`notes/2026-11-03-pilot-vps.md`).
 - **Status:** fixed
 
-### `sync <mailbox id> failed: invalid input syntax for type bigint: "NaN"`
+### `sync_failed` with `error_code=22P02` (before F103: `sync <mailbox id> failed: invalid input syntax for type bigint: "NaN"`)
 
 - **First seen:** 2026-11-03
 - **Source:** `[mail]` sync job, first sync of the Interia mailbox.

@@ -18,7 +18,7 @@ Docs: `docs/capabilities/web-panel.md` rules 3, 4, 8, 9; `docs/architecture.md` 
 
 ## For later tickets
 
-- Identity B (F119): a session made by an SSO callback skips the plugin's code step. For a user with TOTP on, F119 must ask for the code after the callback, or mark SSO sessions and make `requireOperator` and the break-glass rule read that mark. The operator rule reads `users.two_factor_enabled` (not the proof of a code).
+- Identity B (F119): done. A session made by an SSO callback skips the plugin's code step, and F119 chose the second option: `auth_sessions.sign_in_method` marks SSO sessions (`sso`, with `sso_started_at`), and `requireOperator` and the `/operator` page guard read the mark (`403 password_sign_in_required`; the operator needs a password session with TOTP). An SSO sign-in asks no code (the IdP owns the second factor). The operator rule still reads `users.two_factor_enabled` for a password session. Details: `docs/capabilities/web-panel.md` rules 4 and 8, `docs/decisions/0026-identity-tier-1-oidc-totp.md` (amendment F119).
 - Break-glass reads (`isBreakGlassOwner`, `listBreakGlassOrgIdsOfUser`) run only with no tenant scope: RLS limits them to one organization inside an `/api` request.
 - Polish texts of the panel (`tf_*`, `sec_kind_*` in `apps/web/src/i18n/pl.ts`) use the informal "ty". Five texts were reworded at stage 11 (`tf_on_text`, `tf_required_operator`, `tf_required_break_glass`, `tf_scan_step_app`, `tf_codes_help`); the stage 11 file table holds the final wording. No capability page lists these texts.
 - The VPS rollout (stage 15) ships stages 01–14 in one deploy: an operator without TOTP is refused by the console until the owner turns TOTP on (owner step U1).

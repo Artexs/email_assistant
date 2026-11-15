@@ -5,9 +5,10 @@ import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
 import { orgPlanHooks, settingsDeps } from "./composition";
-import { actionRoutes, type ActionsScope } from "./modules/actions";
+import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
+  approvalRoutes,
   channelRoutes,
   getChatLinkForUser,
   listUrgentNoticeTimes,
@@ -36,6 +37,7 @@ import {
   anySsoUsable,
   getUserAuthProfile,
   isBreakGlassOwner,
+  isFeatureOn,
   isOrgSuspended,
   isPasswordSignInRefused,
   listMembershipsOfUser,
@@ -193,6 +195,11 @@ export function countMailboxes(db: Db): TenancyRouteDeps["countMailboxes"] {
   };
 }
 
+// F102 ticket: the badge of the nav. 0 while the flag `approvals_page` is off; `tenancy` gets it as a function (it must not import `actions`).
+export function approvalsWaiting(db: Db): TenancyRouteDeps["approvalsWaiting"] {
+  return async (ctx) => ((await isFeatureOn(db, ctx, "approvals_page")) ? countWaitingApprovals(db, ctx) : 0);
+}
+
 // D15: the Telegram item is per user, the others per organization.
 export function onboardingDeps(
   db: Db,
@@ -282,6 +289,7 @@ export function peerAddress(c: Context): string | undefined {
 export interface WebExtras {
   secrets: SecretBox;
   actionsScope: ActionsScope;
+  sendScope: SendScope;
   botUsername: (() => Promise<string>) | null; // null: Telegram is off
   /** Default: the clients of the config (`createMailOAuthClients`). A test passes clients that point at the fake token server. */
   mailOAuthClients?: MailOAuthClients;
@@ -307,6 +315,7 @@ export function apiRouters(
         now,
         scopes,
         countMailboxes: countMailboxes(db),
+        approvalsWaiting: approvalsWaiting(db),
         operatorContact: config.OPERATOR_CONTACT ?? null,
         sessions,
         backupCodesLeft: backupCodes,
@@ -350,6 +359,7 @@ export function apiRouters(
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
+    api.route("/", approvalRoutes({ db, now, sendScope: extras.sendScope }));
   };
 }
 

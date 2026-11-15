@@ -2,7 +2,7 @@ import { sameAddress } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
@@ -35,6 +35,7 @@ export async function removeMailbox(
 ): Promise<RemoveResult> {
   const { db } = deps;
   const { now } = input;
+  const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
   const mailbox = await getMailbox(db, ctx, mailboxId);
   if (!mailbox) return { kind: "not_found" };
   if (!sameAddress(input.confirmAddress, mailbox.address)) return { kind: "confirm_mismatch" };
@@ -65,11 +66,11 @@ export async function removeMailbox(
       try {
         await changeMailboxStatus(db, ctx, mailboxId, { from: "paused", to: "active", at: now });
       } catch (restoreError) {
-        log.error(`mailbox ${mailboxId} status restore failed: ${describeError(restoreError)}`);
+        mailboxLog.error("mailbox_status_restore_failed", errorFields(restoreError));
       }
     }
     throw error;
   }
-  log.info(`mailbox ${mailboxId} removed by user ${input.userId}`);
+  mailboxLog.info("mailbox_removed", { user_id: input.userId });
   return { kind: "removed" };
 }

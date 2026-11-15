@@ -36,3 +36,8 @@ Two steps in `apps/web`.
 ## Done when (stage)
 
 - Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s13`).
+
+## Carry-over from stage 10 review
+
+- Show state `held` with `heldBy` null as "approved, sending soon", not as a block.
+- The detail schema has `kind`, `version`, `expiresAt` and `view` nullable (payload cleared by retention; `expiresAt` only for `waiting` and `held`). Type the page with the nullable forms.

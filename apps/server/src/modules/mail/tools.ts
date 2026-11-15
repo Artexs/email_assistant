@@ -364,9 +364,13 @@ export async function deliverTestMail(
     const results = input.checkOnly ? plan : await runPlan(provider, paths, plan);
 
     const count = (result: CaseDelivery["result"]) => results.filter((item) => item.result === result).length;
-    log.info(
-      `deliver ${mailboxId}: moved ${count("moved")}, in inbox ${count("in_inbox")}, duplicates removed ${count("duplicate_removed")}, synced ${count("synced")}, not found ${count("not_found")}`
-    );
+    log.with({ org_id: ctx.orgId, mailbox_id: mailboxId }).info("deliver_done", {
+      moved: count("moved"),
+      in_inbox: count("in_inbox"),
+      duplicates_removed: count("duplicate_removed"),
+      synced: count("synced"),
+      not_found: count("not_found"),
+    });
     return results;
   } finally {
     await provider.close();

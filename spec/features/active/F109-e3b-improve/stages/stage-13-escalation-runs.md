@@ -2,6 +2,9 @@
 
 Part of [`../plan.md`](../plan.md). Decisions P5, P10, D16. Needs stage 12. LLM spend: **cap $2.50 for the stage**: 2 dev runs (`--budget-usd 0.50` each) and at most 1 holdout run (`--budget-usd 1.50`; above the $1 default run cap, Q7). Review before the land.
 
+
+> **Decision of stage 11 (2026-11-15): no ship.** `classifier-v3[list]` failed ship rule 4 (whitelist 314 of 315: one `bad_output` counts as not correct); rules 1, 2, 3 and 5 passed. `classifier-v2` stays in production. This stage builds on `classifier-v2`: the "production pointer" is `classifier-v2`, `--prompt-parts` is NOT passed (it counts only for v3), and the base of the escalation prompt is `classifier-v2`. Detail: end of `evals/results/2026-11-15-f109-v3-dev-summary.md`. If the coordinator overrides the decision and ships v3 first, this note no longer applies.
+
 ## Step 1 — Dev runs
 
 **Run (twice).** `bun run eval --sim lab-01 --part dev --provider openai --model gpt-6-luna --reasoning-effort none --prompt-version <production pointer> [--prompt-parts <CLASSIFIER_V3_PARTS, or none>] --escalate --escalation-model gpt-6.1-terra --escalation-reasoning-effort none --budget-usd 0.50` (review N5: both prompt flags pinned to production; `--prompt-parts` only for v3). A run starts only when the spend so far plus its budget stays within the stage cap. Read the month ledger before each run.

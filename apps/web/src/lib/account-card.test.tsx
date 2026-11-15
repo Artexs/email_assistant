@@ -8,7 +8,7 @@ import { MeContext } from "../components/shell/MeProvider";
 import { setLocaleForTest, t } from "../i18n";
 
 // The `me` that `/api/me` answers; only `role`, `features` and `organization` matter to the Account card.
-const baseMe = {
+const baseMe: Me = {
   user: { id: "0190f5a0-0000-7000-8000-000000000001", email: "a@x.test", displayName: "Ann", locale: null },
   organization: {
     id: "0190f5a0-0000-7000-8000-000000000002",
@@ -35,7 +35,8 @@ const baseMe = {
   features: [],
   signInMethod: "password",
   hasPassword: true,
-} as unknown as Me;
+  approvalsWaiting: 0,
+};
 
 function render(me: Me | null): string {
   const value = { me, error: null, loading: me === null, reload: () => undefined };
