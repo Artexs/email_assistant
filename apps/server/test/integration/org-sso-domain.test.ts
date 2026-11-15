@@ -599,6 +599,82 @@ describe("--require on|off", () => {
   });
 });
 
+describe("--require on|off across organizations (a break-glass owner that another organization refuses)", () => {
+  // The user is a member of one more organization; no password is needed (the membership is a row).
+  async function addMembership(org: Org, userId: string, breakGlass: boolean): Promise<void> {
+    await db
+      .insertInto("memberships")
+      .values({
+        org_id: org.orgId,
+        user_id: userId,
+        role: "owner",
+        break_glass: breakGlass,
+        created_at: new Date(Date.UTC(2026, 1, 1)),
+      })
+      .execute();
+  }
+
+  // A proved provider, the flag on and a break-glass owner with TOTP: every prerequisite except the cross-organization ones.
+  async function readyOrg(): Promise<{ org: Org; breakGlass: Person }> {
+    const org = await makeOrg();
+    await addProvider(org);
+    expect((await cli(org, ["--attest", "--confirm", org.domain])).out).toEqual(["attested"]);
+    await flagOn(org);
+    const breakGlass = await makeMember(org, `olaf@${org.domain}`, { breakGlass: true });
+    await enrol(breakGlass.email);
+    return { org, breakGlass };
+  }
+
+  const setRequiredOf = (org: Org, required: boolean) =>
+    setSsoRequired(db, { orgId: org.orgId }, { required, actor: "cli", now: NOW });
+
+  test("13: the break-glass owner is a plain member of an organization that requires SSO: refused no_break_glass; free again: changed", async () => {
+    const { org: a, breakGlass: olaf } = await readyOrg();
+    const b = await makeOrg();
+    await addMembership(b, olaf.id, false);
+    await db.updateTable("organizations").set({ sso_required: true }).where("id", "=", b.orgId).execute();
+    expect(await isPasswordSignInRefused(db, olaf.id)).toBe(true);
+
+    expect(await setRequiredOf(a, true)).toEqual({ kind: "refused", reasons: ["no_break_glass"], userIds: [] });
+    const flag = await db
+      .selectFrom("organizations")
+      .select("sso_required")
+      .where("id", "=", a.orgId)
+      .executeTakeFirstOrThrow();
+    expect(flag.sso_required).toBe(false);
+    expect(await auditRows(a.orgId, auditEvents.ssoRequiredChanged)).toEqual([]);
+
+    await db.updateTable("organizations").set({ sso_required: false }).where("id", "=", b.orgId).execute();
+    expect(await setRequiredOf(a, true)).toEqual({ kind: "changed" });
+    expect(await isPasswordSignInRefused(db, olaf.id)).toBe(false);
+  });
+
+  test("14: the other direction: this switch would refuse the break-glass owner of another organization that requires SSO", async () => {
+    const { org: a, breakGlass: olaf } = await readyOrg();
+    expect(await setRequiredOf(a, true)).toEqual({ kind: "changed" });
+    const { org: b } = await readyOrg();
+    await addMembership(b, olaf.id, false);
+
+    const refused = await setRequiredOf(b, true);
+    expect(refused.kind).toBe("refused");
+    if (refused.kind !== "refused") return;
+    expect(refused.reasons).toContain("no_break_glass");
+    expect(await isPasswordSignInRefused(db, olaf.id)).toBe(false); // organization A keeps its password path
+
+    // Olaf leaves B: the switch goes on (he is also off-domain there, so he is gone before the check).
+    await db.deleteFrom("memberships").where("org_id", "=", b.orgId).where("user_id", "=", olaf.id).execute();
+    expect(await setRequiredOf(b, true)).toEqual({ kind: "changed" });
+    expect(await isPasswordSignInRefused(db, olaf.id)).toBe(false);
+  });
+
+  test("14b: a plain member of another organization that does not require SSO changes nothing: changed", async () => {
+    const { org: a, breakGlass: olaf } = await readyOrg();
+    const b = await makeOrg();
+    await addMembership(b, olaf.id, false);
+    expect(await setRequiredOf(a, true)).toEqual({ kind: "changed" });
+  });
+});
+
 describe("the pending two-factor challenge (carry-over of the stage 06 review)", () => {
   test("12: Pia (not break-glass, TOTP on) starts a password sign-in, the switch goes on: verify-totp gives no session", async () => {
     const org = await makeOrg();

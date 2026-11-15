@@ -7,13 +7,14 @@ import { auditEvents, recordAudit } from "../audit";
 
 import { isFeatureOn } from "./features";
 import {
-  hasBreakGlassWithTotp,
+  hasUsableBreakGlass,
   isPasswordSignInRefused,
   listMemberships,
   lockOrganization,
   lockSsoProvider,
   readSsoRequired,
   setSsoRequiredFlag,
+  strandsOtherBreakGlass,
 } from "./repo";
 
 const log = createLog("tenancy");
@@ -55,7 +56,11 @@ export async function setSsoRequired(
       else if (provider.domainProof === null) reasons.push("unproved");
       // A `FEATURES_OFF` kill counts as off (`isFeatureOn`).
       if (!(await isFeatureOn(trx, ctx, "sso_sign_in"))) reasons.push("flag_off");
-      if (!(await hasBreakGlassWithTotp(trx, ctx))) reasons.push("no_break_glass");
+      // No break-glass owner with TOTP, or one whom another organization's rule refuses, or this switch would refuse the
+      // break-glass owner of another organization: in each case an organization loses its last password path.
+      if (!(await hasUsableBreakGlass(trx, ctx)) || (await strandsOtherBreakGlass(trx, ctx))) {
+        reasons.push("no_break_glass");
+      }
       if (provider) {
         // The break-glass owner signs in with a password and may use any address.
         offDomain = (await listMemberships(trx, ctx))
