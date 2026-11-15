@@ -62,6 +62,10 @@ describe("alerts repository", () => {
     await inRollback(async (trx) => {
       const row = await openAlert(trx, { kind: "slo_llm_errors", at: T0, facts: { failures: 5 } });
       await markAlertSent(trx, row.id, "open", T0, { failures: 5 });
+      const afterOpen = await getActiveAlert(trx, "slo_llm_errors");
+      expect(afterOpen?.noticeCount).toBe(1);
+      expect(afterOpen?.openSentAt?.getTime()).toBe(T0.getTime());
+      expect(afterOpen?.lastSentAt?.getTime()).toBe(T0.getTime());
       await markAlertSent(trx, row.id, "repeat", T1, { failures: 7 });
       const after = await getActiveAlert(trx, "slo_llm_errors");
       expect(after?.noticeCount).toBe(2);
@@ -99,6 +103,19 @@ describe("alerts repository", () => {
       expect(active?.id).toBe(row.id);
       expect(active?.resolvedAt?.getTime()).toBe(T1.getTime());
       expect(active?.resolvedSentAt).toBeNull();
+    });
+  });
+
+  test("3d. resolveAlert on a closed (history) row changes nothing", async () => {
+    await inRollback(async (trx) => {
+      const row = await openAlert(trx, { kind: "slo_disk", at: T0, facts: { free_gb: 2 } });
+      await resolveAlert(trx, row.id, T0, { free_gb: 30 }, { silent: true });
+      await resolveAlert(trx, row.id, T1, { free_gb: 99 }, { silent: true });
+      const { rows } = await sql<{ resolved_at: Date; resolved_sent_at: Date; facts: Record<string, number> }>`
+        select resolved_at, resolved_sent_at, facts from ops_alerts where id = ${row.id}`.execute(trx);
+      expect(rows[0]?.resolved_at.getTime()).toBe(T0.getTime());
+      expect(rows[0]?.resolved_sent_at.getTime()).toBe(T0.getTime());
+      expect(rows[0]?.facts).toEqual({ free_gb: 30 });
     });
   });
 
