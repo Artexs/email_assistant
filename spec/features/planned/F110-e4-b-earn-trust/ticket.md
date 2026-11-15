@@ -28,7 +28,7 @@ A new user earns automatic moves per category without labelling mail. At connect
 - After a model or endpoint switch, no mail moves under the old grant.
 - Two corrections of applied moves in 7 days turn `auto` off for the category and queue one notice.
 - A mail-only member finds the digest in INBOX, and sync does not triage it.
-- The full list: `plan.md` § Done when (6 checks).
+- Each stage's Proof prints `PROOF_OK`.
 
 ## Slices
 
