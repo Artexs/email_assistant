@@ -32,3 +32,7 @@ T1–T10 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s20`).
 ## Out of scope
 
 The panel (21, 22).
+
+## Carry-over from stage 08 review
+
+- `listLoops` takes `now` and a decoded `before: LoopCursor`; `due` is `due_at <= now`: pass the end-of-local-day instant as `now`. `briefLoopsOf` uses `< dayEnd`; the two differ at exactly midnight (review-8.md N3).

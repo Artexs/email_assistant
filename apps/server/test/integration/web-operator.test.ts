@@ -135,6 +135,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     expect(rowsOf(body, org.orgId)).toEqual([
       { orgId: org.orgId, flag: "stats_page", enabled: true },
       { orgId: org.orgId, flag: "approvals_page", enabled: false },
+      { orgId: org.orgId, flag: "delegation_pages", enabled: false },
       { orgId: org.orgId, flag: "sent_sync", enabled: false },
       { orgId: org.orgId, flag: "security_log", enabled: false },
       { orgId: org.orgId, flag: "review_command", enabled: false },

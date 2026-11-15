@@ -7,9 +7,13 @@ export {
   detectReply,
   markAnswered,
   setDelegateState,
+  updateDelegate,
   type AddDelegateResult,
   type CloseResult,
+  type DelegateVia,
+  type UpdateDelegateResult,
 } from "./service";
+export { delegateRoutes, type DelegateRouteDeps } from "./routes";
 export {
   bumpReminder,
   clearDelegationTasks,
