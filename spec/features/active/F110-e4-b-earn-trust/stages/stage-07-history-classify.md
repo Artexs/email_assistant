@@ -44,3 +44,7 @@ Part of [`../plan.md`](../plan.md). Risk: LLM spend, LLM use on real mail, exact
 ## Out of scope
 
 Sent signals (E5a: `historyActedOn` is the seam). Pausing a granted category on `fail` (stage 09). The report page (stage 14).
+
+## Carry-over from stage 03 review
+
+- no done or no_result check keeps finished_at NULL (write both together; review-3.md).
