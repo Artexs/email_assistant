@@ -341,20 +341,30 @@ describe("the answer map", () => {
     expect(await failureOf(sender.send(simple(["b@x.test"])))).toMatchObject({ stage: "connect", soft: true });
   });
 
-  test("7f. a redirect is not followed: the token goes to no other host", async () => {
-    const other = await startFakeGraph();
+  test("7f. a redirect is not followed: no request, with or without the token, reaches another host", async () => {
+    // A plain counting server: it counts every request, also a malformed one that the fake Graph would refuse.
+    const hits: string[] = [];
+    const other = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      fetch: (request) => {
+        hits.push(request.url);
+        return new Response(null, { status: 202 });
+      },
+    });
     const redirector = Bun.serve({
       hostname: "127.0.0.1",
       port: 0,
-      fetch: () => new Response(null, { status: 307, headers: { location: `${other.baseUrl}/v1.0/me/sendMail` } }),
+      fetch: () =>
+        new Response(null, { status: 307, headers: { location: `http://127.0.0.1:${other.port}/v1.0/me/sendMail` } }),
     });
     try {
       const sender = await open({ baseUrl: `http://127.0.0.1:${redirector.port}` });
       expect(await failureOf(sender.send(simple(["b@x.test"])))).toMatchObject({ stage: "unknown" });
-      expect(other.calls).toHaveLength(0);
+      expect(hits).toEqual([]);
     } finally {
       await redirector.stop(true);
-      await other.stop();
+      await other.stop(true);
     }
   });
 
@@ -398,6 +408,15 @@ describe("12. canary: the token and the mail stay out of logs and errors", () =>
           seen.push(inspect(error, { depth: 8 }));
         }
       }
+      // The paths with no HTTP status: no answer in time, and a closed port.
+      graph.hangNext();
+      const impatient = await open({ timeoutMs: 100 });
+      seen.push(inspect(await failureOf(impatient.send(input)), { depth: 8 }));
+      const dead = await startFakeGraph();
+      const baseUrl = dead.baseUrl;
+      await dead.stop();
+      const unreachable = await open({ baseUrl });
+      seen.push(inspect(await failureOf(unreachable.send(input)), { depth: 8 }));
     } finally {
       for (const spy of spies) spy.mockRestore();
       setLogFormat(logFormatFromEnv(process.env));
