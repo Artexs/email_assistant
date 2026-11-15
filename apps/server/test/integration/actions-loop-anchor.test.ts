@@ -104,7 +104,7 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
     });
   });
 
-  test("claim (stage 10): a loop of another mailbox of the same organization is not claimed", async () => {
+  test("claim (stage 10): the actions of another mailbox of the same organization are not claimed", async () => {
     await withRollback(db, async (trx) => {
       const a = await side(trx);
       const siblingId = randomUUID();
@@ -122,11 +122,15 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
       const siblingLoop = await insertLoopRow(trx, a, siblingId);
       const mine = await insertLoopActionPair(trx, a, mineLoop, { createdAt: ago(HOUR) });
       const sibling = await insertLoopActionPair(trx, a, siblingLoop, { createdAt: ago(HOUR) });
+      const mailOfSibling = await insertDraftAndSend(trx, a.ctx, siblingId, {
+        draftStatus: "ready",
+        createdAt: ago(HOUR),
+      });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, { ...CLAIM, limit: 50 });
       expect(claimed.map((row) => row.id)).toEqual([mine.draftId]);
-      expect((await countClaimable(trx, a.ctx, siblingId, CLAIM)).total).toBe(1);
+      expect((await countClaimable(trx, a.ctx, siblingId, CLAIM)).total).toBe(2);
       const forSibling = await claimActions(trx, a.ctx, siblingId, { ...CLAIM, limit: 50 });
-      expect(forSibling.map((row) => row.id)).toEqual([sibling.draftId]);
+      expect(forSibling.map((row) => row.id).sort()).toEqual([sibling.draftId, mailOfSibling.draftId].sort());
     });
   });
 

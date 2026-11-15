@@ -636,32 +636,56 @@ describe("the recipients come from the loop only, and the scope covers the Cc", 
     });
   });
 
-  test("a send whose recipients differ from its draft ends bad_payload before any SMTP call", async () => {
+  test("a send that names an address of the loop that its draft does not name ends bad_payload before any SMTP call", async () => {
     await withRollback(db, async (trx) => {
       const s = await prepare(trx);
-      const p = await followUp(trx, s, {
-        draftStatus: "applied",
-        sendStatus: "approved",
-        sendTo: [MARKERS.anna, MARKERS.ewa],
-      });
+      // The loop holds anna (To) and jan (Cc). The draft names anna only; the send names both.
+      const p = await followUp(trx, s, { draftStatus: "applied", sendStatus: "approved" });
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ ...p.draftPayload, cc: [] }) })
+        .where("id", "=", p.draftId)
+        .execute();
       await committerOf(trx, s, { now: NOW }).run();
       expect(s.sender.sent).toHaveLength(0);
       expect(await row(trx, p.sendId)).toMatchObject({ status: "failed", status_reason: "bad_payload" });
     });
   });
 
-  test("a send of another kind for a follow-up draft ends bad_payload before any SMTP call", async () => {
+  test("a mail-kind draft and send on a loop ends bad_payload at the send, with no SMTP call", async () => {
     await withRollback(db, async (trx) => {
       const s = await prepare(trx);
       const p = await followUp(trx, s, { draftStatus: "applied", sendStatus: "approved" });
+      const draft = { kind: "clarification", to: [MARKERS.anna], question: "q", language: "en" };
       await trx
         .updateTable("actions")
-        .set({ payload: JSON.stringify({ kind: "delegation", to: [MARKERS.anna] }) })
+        .set({ payload: JSON.stringify(draft) })
+        .where("id", "=", p.draftId)
+        .execute();
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ kind: "clarification", to: [MARKERS.anna] }) })
         .where("id", "=", p.sendId)
         .execute();
       await committerOf(trx, s, { now: NOW }).run();
       expect(s.sender.sent).toHaveLength(0);
       expect(await row(trx, p.sendId)).toMatchObject({ status: "failed", status_reason: "bad_payload" });
+    });
+  });
+
+  test("a send that waits for its tap is never claimed, even with an approval stamp on the row", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await prepare(trx);
+      const p = await followUp(trx, s, { draftStatus: "applied", sendStatus: "awaiting_approval" });
+      await trx
+        .updateTable("actions")
+        .set({ approved_at: at(-1), approved_by: s.userId, approved_via: "telegram" })
+        .where("id", "=", p.sendId)
+        .execute();
+      await committerOf(trx, s, { now: NOW }).run();
+      await committerOf(trx, s, { now: at(5) }).run();
+      expect(s.sender.sent).toHaveLength(0);
+      expect((await row(trx, p.sendId)).status).toBe("awaiting_approval");
     });
   });
 

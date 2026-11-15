@@ -7,14 +7,14 @@ import { auditEvents, recordAudit } from "../audit";
 
 import { lockLoop, SYSTEM } from "./repo";
 
-// A follow-up never leaves the next one due before this many working days (D9, review N8): the next Draft is not `too_soon`.
+// A follow-up never leaves the next one due before this many working days: the next Draft is not `too_soon`.
 export const FOLLOW_UP_MIN_WAIT_DAYS = 3;
 const MAX_REFERENCES = 20;
 // `follow_ups_sent` is limited to 0–2 by the table. A third send cannot happen (stage 14 refuses it), but the mail has gone
 // out when this runs: the count must never raise a CHECK error and roll the commit of a sent mail back.
 const MAX_FOLLOW_UPS = 2;
 
-// The `LoopHooks` that `actions` calls (D4, D15). Every function runs in the caller's transaction and filters `org_id`.
+// The `LoopHooks` that `actions` calls Every function runs in the caller's transaction and filters `org_id`.
 export function loopHooks(): LoopHooks {
   return {
     async anchorOf(db: Db | Transaction<DB>, ctx: TenantContext, loopId: string): Promise<LoopAnchor | undefined> {
@@ -35,7 +35,7 @@ export function loopHooks(): LoopHooks {
         .where("id", "=", loopId)
         .executeTakeFirst();
       if (loop === undefined) return undefined;
-      // The quote is the own text of the opening mail while it is stored (D5); the Sent row may be gone or cleared.
+      // The quote is the own text of the opening mail while it is stored; the Sent row may be gone or cleared.
       const sent =
         loop.sent_email_id === null
           ? undefined
@@ -78,7 +78,7 @@ export function loopHooks(): LoopHooks {
           .execute();
         return;
       }
-      // The wait starts again (D9): at least 3 working days on, in the time zone of the organization.
+      // The wait starts again: at least 3 working days on, in the time zone of the organization.
       const [settings, organization] = await Promise.all([
         trx
           .selectFrom("mailbox_settings")

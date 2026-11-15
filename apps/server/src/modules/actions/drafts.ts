@@ -88,7 +88,7 @@ export async function loopAnchorOf(
   return anchor;
 }
 
-// D12: "recipients come from the loop row only". A follow-up whose To or Cc holds an address that the loop does not hold is
+// The recipients come from the loop row only. A follow-up whose To or Cc holds an address that the loop does not hold is
 // never built or sent (a payload that was written wrong, or changed). Compared in lower case.
 export function recipientsFromLoop(
   payload: { to: readonly string[]; cc?: readonly string[] },
@@ -239,7 +239,7 @@ export async function applyDraft(
 ): Promise<ApplyOutcome> {
   if (action.status === "ready") {
     const started = await inTransaction(deps.db, async (trx) => {
-      // A follow-up is made only while its loop is open. `isOpen` takes the loop lock first (D15).
+      // A follow-up is made only while its loop is open. `isOpen` takes the loop lock first.
       if (action.loop_id !== null && !(await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id))) {
         await closeDraftOfClosedLoop(deps, trx, ctx, action);
         return "loop_closed" as const;

@@ -140,7 +140,7 @@ async function failSend(
 
 // The payloads, the draft and the message. The draft's id and `created_at` give the draft APPEND's Message-ID and Date (D9).
 // A follow-up is also checked against its loop: the send and the draft name the same loop, the send goes to nobody that the
-// draft does not name, and nobody that the loop does not hold (D12). `null`: the payload is bad.
+// draft does not name, and nobody that the loop does not hold. `null`: the payload is bad.
 async function prepare(
   deps: ApplyDeps,
   ctx: TenantContext,
@@ -197,7 +197,7 @@ async function finishApplied(
   const { draft, payload, message } = prepared;
   const now = deps.now();
   return inTransaction(deps.db, async (trx) => {
-    // A follow-up: the loop lock first, then the send row (D15). The result of `isOpen` does not matter here: the mail
+    // A follow-up: the loop lock first, then the send row. The result of `isOpen` does not matter here: the mail
     // went out. The counters of the loop change either way.
     if (payload.kind === "follow_up" && action.loop_id !== null) {
       await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id);
@@ -520,7 +520,7 @@ export async function applySend(
   const { payload, message } = prepared;
 
   // (2) Own commit, before any SMTP call. The limit check and `markApplying` share one transaction under the mailbox lock (PD-044).
-  // A follow-up goes only while its loop is open: `isOpen` takes the loop lock first (D15), then the limit check and
+  // A follow-up goes only while its loop is open: `isOpen` takes the loop lock first, then the limit check and
   // `markApplying` run under it. A closed loop ends the claimed send here: no SMTP call.
   const start = await inTransaction(deps.db, async (trx): Promise<SendStart | { kind: "loop_closed" }> => {
     if (action.loop_id !== null && !(await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id))) {

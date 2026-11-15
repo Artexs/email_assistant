@@ -168,7 +168,7 @@ function toAnySendRow(
   if (row.mailbox_id === null) throw new ActionAnchorError("invalid_anchor");
   return { ...row, mailbox_id: row.mailbox_id, payload: row.payload as Record<string, unknown> };
 }
-// FOR UPDATE of the action row only. Lock order: the loop first (a loop send), then the send (D15).
+// FOR UPDATE of the action row only. Lock order: the loop first (a loop send), then the send.
 export async function lockAnySend(
   trx: Transaction<DB>,
   ctx: TenantContext,

@@ -81,7 +81,7 @@ export const noApprovalHooks: ApprovalHooks = { onDecided: () => Promise.resolve
 
 // Open loops (F116): `actions` must not import `loops` (layer rule). A follow-up hangs on a loop; the committer reads the
 // loop and writes its counters through these callbacks. `main.ts` and `job:run` wire `loopHooks()` from the `loops` index.
-// Lock order (D15): the loop first, then its sends. `isOpen` takes the loop lock, so a caller that must hold it calls it first.
+// Lock order: the loop first, then its sends. `isOpen` takes the loop lock, so a caller that must hold it calls it first.
 export interface LoopAnchor {
   mailboxId: string;
   // The Message-ID of the own mail that the loop waits on (the last one that restarted the wait): the In-Reply-To.
@@ -102,7 +102,7 @@ export interface LoopHooks {
   anchorOf(db: Db | Transaction<DB>, ctx: TenantContext, loopId: string): Promise<LoopAnchor | undefined>;
   // Locks the loop row (FOR UPDATE) and says whether it is still open. A closed or missing loop: false.
   isOpen(trx: Transaction<DB>, ctx: TenantContext, loopId: string): Promise<boolean>;
-  // A follow-up went out. Adds one to `follow_ups_sent`, sets `last_follow_up_at` and restarts the wait (D9). Runs in the
+  // A follow-up went out. Adds one to `follow_ups_sent`, sets `last_follow_up_at` and restarts the wait. Runs in the
   // transaction of the send, after `isOpen` took the lock.
   onFollowUpSent(
     trx: Transaction<DB>,

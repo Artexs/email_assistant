@@ -41,7 +41,7 @@ export async function onSentOff(
   return closed.length;
 }
 
-// Every follow-up send of the mailbox that has not started. The loops are locked before (D15). A send that the committer
+// Every follow-up send of the mailbox that has not started. The loops are locked before. A send that the committer
 // holds (`applying`, or `approved` with a fresh claim) finishes: `expireSend` refuses it.
 async function expireWaitingFollowUps(
   trx: Transaction<DB>,
