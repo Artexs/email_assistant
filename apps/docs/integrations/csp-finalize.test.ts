@@ -111,6 +111,14 @@ describe("content scripts", () => {
     writeFileSync(outside, "ok\n[x](javascript:alert(1))\n");
     expect(() => assertNoContentScript(root, content(), [outside])).toThrow(new Error("content_script README.md:2"));
   });
+  test("code is skipped: a fence, an inline code span; a line after a span or a fence is scanned", () => {
+    const ok = "Use `<script>` here and ``onclick=x`` there.\n```html\n<script>x</script>\n<a onclick=x>\n```\n";
+    expect(contentScriptProblem(ok, "f.md")).toBeNull();
+    expect(contentScriptProblem(`${ok}<script>x</script>\n`, "f.md")).toBe("content_script f.md:6");
+    expect(contentScriptProblem("`ok` and <a onclick=x>\n", "f.md")).toBe("content_script f.md:1");
+    expect(contentScriptProblem("an unclosed ` <script>x</script>\n", "f.md")).toBe("content_script f.md:1");
+    expect(contentScriptProblem("```\nnever closed\n<script>x</script>\n", "f.md")).toBeNull();
+  });
   test.each([
     ["<script>x</script>", true],
     ["<SCRIPT src=x>", true],

@@ -16,6 +16,7 @@ import {
   STYLE_DIRECTIVE,
 } from "@ea/core/web";
 import type { AstroIntegration } from "astro";
+import { stepFence, stripCodeSpans } from "../src/markdown-code";
 
 const CSP_META_TAG = /<meta\b[^>]*\bhttp-equiv="content-security-policy"[^>]*>/i;
 const META_CONTENT = /\bcontent="[^"]*"/i;
@@ -77,10 +78,16 @@ export function finalizeDist(dir: string): { checked: number; hashed: number } {
 const CONTENT_SCRIPT_RULES = [/<script/i, /javascript:/i, /\son[a-z]+\s*=/i];
 
 // The first line of a content source that holds a script, as `content_script <file>:<line>`, or null.
+// Code fences and inline code spans are skipped: the renderer escapes them (an unclosed backtick is scanned).
 export function contentScriptProblem(text: string, file: string): string | null {
   const lines = text.split("\n");
+  let fence: string | null = null;
   for (let i = 0; i < lines.length; i += 1) {
-    if (CONTENT_SCRIPT_RULES.some((rule) => rule.test(lines[i] ?? ""))) return `content_script ${file}:${i + 1}`;
+    const step = stepFence(fence, lines[i] ?? "");
+    fence = step.fence;
+    if (step.code) continue;
+    const outsideCode = stripCodeSpans(lines[i] ?? "");
+    if (CONTENT_SCRIPT_RULES.some((rule) => rule.test(outsideCode))) return `content_script ${file}:${i + 1}`;
   }
   return null;
 }

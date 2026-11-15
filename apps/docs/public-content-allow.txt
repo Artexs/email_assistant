@@ -18,3 +18,8 @@ nicolas@theologique.ch | Pagefind UI translator credit in the Starlight search b
 nirtamir2@gmail.com | Pagefind UI translator credit in the Starlight search bundle
 ptphon@gmail.com | Pagefind UI translator credit in the Starlight search bundle
 vladdnepr1989@gmail.com | Pagefind UI translator credit in the Starlight search bundle
+# Operator docs read in place (deploy/README.md): examples and a fixed address, not private data.
+p@x.test.vcf | Attachment file name that deploy/README.md uses as an example of an address the mail filter does not match
+a@b.com.pl | Example address that deploy/README.md uses to show that the mail filter keeps it apart from a@b.com
+a@b.com | Example address in the address-pattern rules of deploy/README.md
+100.100.100.100 | Tailscale's fixed DNS address, the same in every tailnet (deploy/README.md, resolver check)
