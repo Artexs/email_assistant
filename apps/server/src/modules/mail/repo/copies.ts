@@ -183,7 +183,7 @@ export async function listFolderRowsAtUids(
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("folder", "=", folder)
-    .where("uid", "in", [...uids])
+    .where("uid", "in", uids.map(String))
     .execute();
   return rows.map((row) => ({ ...row, uid: Number(row.uid) }));
 }
