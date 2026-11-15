@@ -169,6 +169,7 @@ export {
   type SentPassStatus,
   type SentSyncDeps,
 } from "./sent-sync";
+export { setSentSync, type SentSwitchInput, type SentSwitchResult } from "./sent-switch";
 export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
 export {
   isSyntheticMessageId,

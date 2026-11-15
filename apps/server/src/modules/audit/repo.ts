@@ -44,6 +44,7 @@ export const auditEvents = {
   mailboxModeChanged: "mailbox.mode_changed",
   mailboxPolicyChanged: "mailbox.policy_changed",
   mailboxSwitchChanged: "mailbox.switch_changed",
+  mailboxSentSyncChanged: "mailbox.sent_sync_changed", // data: mailbox_id, enabled, count (sent rows deleted)
   settingsUrgencySet: "settings.urgency_set", // data: mailbox_id, topics, deadlines (counts), via
   mailboxSyncFolderAdded: "mailbox.sync_folder_added", // data: mailbox_id, folder_key, role
   mailboxSyncFolderChanged: "mailbox.sync_folder_changed", // data: mailbox_id, folder_key, enabled
