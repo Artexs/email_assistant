@@ -64,6 +64,18 @@ describe("loadGateEvidence and globalEvidenceFor", () => {
     expect(warnLines()).toEqual([]);
   });
 
+  test("the info line is written unless the caller is quiet (a CLI)", () => {
+    put("classifier-a.json", { endpoint: undefined, host: undefined });
+    const infoLines = (): string[] =>
+      infoSpy.mock.calls
+        .map((call: unknown[]) => call.map(String).join(" "))
+        .filter((line: string) => line.includes("gate_evidence_loaded"));
+    loadGateEvidence(dir, { quiet: true });
+    expect(infoLines()).toEqual([]);
+    loadGateEvidence(dir);
+    expect(infoLines()).toHaveLength(1);
+  });
+
   test("2: the same file for the endpoint eu gives none for every category", () => {
     put("classifier-a.json", { endpoint: undefined, host: undefined });
     const evidence = globalEvidenceFor(loadGateEvidence(dir), { ...KEY, endpoint: "eu" });

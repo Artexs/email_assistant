@@ -198,7 +198,7 @@ let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
 // The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
-const gate = gateEvidenceOf(config, llmTable);
+const gate = gateEvidenceOf(config, { table: llmTable });
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
   log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });

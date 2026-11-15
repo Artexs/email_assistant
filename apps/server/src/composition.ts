@@ -189,9 +189,12 @@ export function gateEvidenceDir(config: Config): string {
 }
 
 // The global evidence of the running classifier: the gate files read once, and the key of the role table (ADR 0028).
-// The server, the CLI and the lab all build it here, so none of them is stricter than another.
-export function gateEvidenceOf(config: Config, table: LlmRoleTable = llmRoleTable(config)): GateEvidenceDeps {
-  return { index: loadGateEvidence(gateEvidenceDir(config)), runningKey: runningEvidenceKey(table) };
+// The server, the CLI and the lab all build it here, so none of them is stricter than another. `quiet` is for a CLI.
+export function gateEvidenceOf(config: Config, opts: { table?: LlmRoleTable; quiet?: boolean } = {}): GateEvidenceDeps {
+  return {
+    index: loadGateEvidence(gateEvidenceDir(config), { quiet: opts.quiet === true }),
+    runningKey: runningEvidenceKey(opts.table ?? llmRoleTable(config)),
+  };
 }
 
 export type AutoSetResult =

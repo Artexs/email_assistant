@@ -212,7 +212,7 @@ async function main(): Promise<number> {
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    return await run(command, db, new Date(), testMailRule(config), gateEvidenceOf(config));
+    return await run(command, db, new Date(), testMailRule(config), gateEvidenceOf(config, { quiet: true }));
   } catch (error) {
     out.fail(`failed: ${describeError(error)}`);
     return 1;

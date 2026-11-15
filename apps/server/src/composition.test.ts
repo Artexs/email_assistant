@@ -222,7 +222,7 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
 
   test("main.ts reads the gate files once and hands the result to the web settings deps and the triage job", () => {
     expect(main.match(/gateEvidenceOf\(/g)).toHaveLength(1);
-    expect(main).toContain("gateEvidenceOf(config, llmTable)");
+    expect(main).toContain("gateEvidenceOf(config, { table: llmTable })");
     expect(callOf(main, "webDeps")).toContain("gate,");
     expect(callOf(main, "createTriageJob")).toContain("runningKey: gate.runningKey");
   });
@@ -231,7 +231,7 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
     expect(read("composition.ts").match(/loadGateEvidence\(/g)).toHaveLength(1);
     for (const script of ["scripts/mailbox-settings.ts", "scripts/lab.ts"]) {
       const text = read(script);
-      expect(text).toContain("gateEvidenceOf(config");
+      expect(text).toContain("gateEvidenceOf(config, { quiet: true })");
       expect(text).not.toContain("loadGateEvidence(");
     }
   });

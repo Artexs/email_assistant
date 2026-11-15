@@ -118,7 +118,7 @@ async function main(): Promise<number> {
               openProvider: openImapProvider,
               verifySmtp: verifySmtpLogin,
             },
-            settings: settingsDeps(db, () => new Date(), gateEvidenceOf(config)),
+            settings: settingsDeps(db, () => new Date(), gateEvidenceOf(config, { quiet: true })),
             state,
             tg: createFakeTgClient(config.TELEGRAM_API_ROOT),
             now: () => new Date(),
@@ -162,7 +162,7 @@ async function main(): Promise<number> {
           corpus,
           mail: createServeMailClient(corpus),
           tg: createFakeTgClient(config.TELEGRAM_API_ROOT),
-          settings: settingsDeps(db, () => new Date(), gateEvidenceOf(config)),
+          settings: settingsDeps(db, () => new Date(), gateEvidenceOf(config, { quiet: true })),
           now: () => new Date(),
         });
         // SIGTERM and SIGINT end the tick after the part that runs, release the lock and exit 0.
