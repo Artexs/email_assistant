@@ -586,10 +586,13 @@ describe("card sync: decisions call the hook once, with the right input", () => 
       await sender.run(new Date(t2.getTime() + 1000));
       const rows = await editRows(w);
       expect(rows.filter((row) => row.status === "failed")).toEqual([]);
-      expect(sender.channel.edited.slice(2).map((edit) => edit.message.text)).toEqual([
-        `CARD-ONE\n\n${edits.rejected(CLOCK)}`,
-        `CARD-TWO\n\n${edits.rejected(CLOCK)}`,
-      ]);
+      // Both cards end with the rejection (the two rows have the same time, so their order is not fixed).
+      expect(
+        sender.channel.edited
+          .slice(2)
+          .map((edit) => edit.message.text)
+          .sort()
+      ).toEqual([`CARD-ONE\n\n${edits.rejected(CLOCK)}`, `CARD-TWO\n\n${edits.rejected(CLOCK)}`]);
     });
   });
 
