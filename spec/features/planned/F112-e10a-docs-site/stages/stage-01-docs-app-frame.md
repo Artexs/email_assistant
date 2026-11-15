@@ -21,7 +21,7 @@ Part of [`../plan.md`](../plan.md). Read D1, D2, D13, § Rules and [`../probes/f
 - **Goal:** a Starlight site that builds from the workspace.
 - **Files:** `apps/docs/` (new: `package.json`, `astro.config.mjs`, `tsconfig.json`, `src/content.config.ts`, `src/content/docs/index.mdx`, `src/content/docs/pl/index.mdx`), root `package.json` (scripts), `bun.lock`, `.gitignore` (`apps/docs/dist`, `apps/docs/.astro`), `eslint.config.js` ignores if the build output needs them.
 - **Decisions:**
-  - D1 versions, exact. Add `@astrojs/markdown-remark` only if Bun does not resolve the Starlight peer (N5); say which.
+  - D1 versions, exact. Also the workspace dependencies `@ea/core` and `@ea/web` (`workspace:*`), used from stages 02 and 04, so that no later stage except 06 changes `bun.lock`. Add `@astrojs/markdown-remark` only if Bun does not resolve the Starlight peer (N5); say which.
   - Config: `site: DOCS_ORIGIN`, `base: DOCS_BASE`, `title: PRODUCT_NAME`, `defaultLocale: "root"`, locales `root` (`en`) and `pl`. No `editLink`, no `lastUpdated`, no `credits`, one social link to the GitHub repo. Starlight's built-in Pagefind search stays on. `markdown: { syntaxHighlight: false }` is not set: Starlight uses Expressive Code.
   - `security.csp` stays off in this stage; stage 02 turns it on together with its check.
   - The landing page (en and pl): two sentences on what the site holds, links to the sections that later stages add. F121 replaces it with the home page.
