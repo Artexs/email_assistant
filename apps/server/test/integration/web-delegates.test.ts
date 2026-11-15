@@ -1,7 +1,8 @@
 import { delegateListSchema, delegateSchema, DELEGATE_LIST_MAX } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
-import { delegateRoutes } from "../../src/modules/delegation";
+import { delegateRoutes, updateDelegate } from "../../src/modules/delegation";
+import { lockDelegate } from "../../src/modules/delegation/repo";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 
@@ -266,5 +267,39 @@ describe("the delegate routes", () => {
     await send(s, "owner", "PATCH", `/${id}`, { active: false });
     const list = delegateListSchema.parse(await (await send(s, "owner", "GET", "")).json());
     expect(list.items).toMatchObject([{ id, active: false }]);
+  });
+});
+
+describe("the row lock of a delegate change", () => {
+  test("two simultaneous PATCH active:false on one delegate give one audit row per loop", async () => {
+    const s = await setup();
+    for (let loop = 0; loop < 25; loop += 1) {
+      const id = await db.transaction().execute((trx) => insertDelegate(trx, s.ctx, { name: `Race${loop}` }));
+      const answers = await Promise.all([
+        send(s, "owner", "PATCH", `/${id}`, { active: false }),
+        send(s, "owner", "PATCH", `/${id}`, { active: false }),
+      ]);
+      expect(answers.map((res) => res.status)).toEqual([200, 200]);
+      const rows = (await auditOf(s.org.orgId, "delegate.changed")).filter((row) => row.data?.["delegate_id"] === id);
+      expect(rows).toHaveLength(1);
+    }
+  });
+
+  test("a held row lock blocks updateDelegate until the holder commits", async () => {
+    const s = await setup();
+    const id = await db.transaction().execute((trx) => insertDelegate(trx, s.ctx, { name: "Held" }));
+    let settled = false;
+    let pending: ReturnType<typeof updateDelegate> | undefined;
+    await db.transaction().execute(async (trx) => {
+      expect(await lockDelegate(trx, s.ctx, id)).toMatchObject({ id });
+      pending = updateDelegate(db, s.ctx, { id, active: false, actor: "user-1", via: "web", now: NOW });
+      void pending.then(() => {
+        settled = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      expect(settled).toBe(false);
+    });
+    expect(await pending).toEqual({ kind: "changed" });
+    expect(settled).toBe(true);
   });
 });
