@@ -171,15 +171,21 @@ describe("deploy/compose.yaml profile ops (the log store)", () => {
     expect(agent?.mem_limit).toBe("67108864");
     expect(agent?.ports).toBeUndefined();
     // Only the container logs (read-only) and its own volume: no Docker socket, no other host path.
-    expect(agent?.volumes).toEqual([
+    // Compare only these fields: Compose versions differ in default bind/volume options.
+    const volumes = (agent?.volumes ?? []).map(({ type, source, target, read_only }) => ({
+      type,
+      source,
+      target,
+      read_only: read_only ?? false,
+    }));
+    expect(volumes).toEqual([
       {
         type: "bind",
         source: "/var/lib/docker/containers",
         target: "/var/lib/docker/containers",
         read_only: true,
-        bind: {},
       },
-      { type: "volume", source: "vlagent-data", target: "/vlagent", volume: {} },
+      { type: "volume", source: "vlagent-data", target: "/vlagent", read_only: false },
     ]);
     expect(agent?.command).toContain("-fileCollector.glob=/var/lib/docker/containers/*/*-json.log");
     expect(agent?.logging?.driver).toBe("local");
