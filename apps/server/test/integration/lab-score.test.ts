@@ -21,6 +21,7 @@ import {
   type LabScore,
 } from "../../src/modules/lab";
 import { insertSentEmails } from "../../src/modules/mail";
+import { listLatestTriageByEmailIds } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail, insertTriaged } from "./fixtures";
@@ -168,6 +169,17 @@ describe("joinRun (stage 12 tests 6 to 8)", () => {
         .execute();
       const [row] = await joinRun(trx, { orgId: org.orgId }, runOf([a.id]), [done(a.id)], corpus, org.mailboxId);
       expect(row).toMatchObject({ emailId: higher, predicted: "spam" });
+    });
+  });
+
+  test("9: the triage result of a mail of another org is not read with this org context", async () => {
+    await withRollback(db, async (trx) => {
+      const orgA = await createOrgWithMailbox(trx);
+      const orgB = await createOrgWithMailbox(trx);
+      const [a] = inbound as [Slot];
+      const emailId = await mailOf(trx, orgA, a.id, "urgent", T0);
+      expect(await listLatestTriageByEmailIds(trx, { orgId: orgB.orgId }, [emailId])).toEqual([]);
+      expect(await listLatestTriageByEmailIds(trx, { orgId: orgA.orgId }, [emailId])).toHaveLength(1);
     });
   });
 
