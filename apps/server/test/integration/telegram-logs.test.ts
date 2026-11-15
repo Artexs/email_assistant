@@ -235,7 +235,7 @@ describe("telegram logs", () => {
       expect(events).toContain("chat_linked");
       expect(events).toContain("telegram_polling_started");
       // No free-text line and no dropped field: every value passed the logger.
-      expect(events).not.toContain("legacy_text");
+      expect(events).not.toContain("log_call_invalid");
       expect(telegram.some((line) => "dropped_fields" in line)).toBe(false);
       for (const marker of [
         MARKERS.token,

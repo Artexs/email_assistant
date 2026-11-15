@@ -205,14 +205,25 @@ const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { pa
 
 // Log lines are events (ADR 0024, docs/code-patterns.md § Logs). This is the only no-restricted-syntax rule for
 // server files: flat config replaces the options of a rule, so a second block with this rule would drop these selectors.
-const logCall =
-  'CallExpression[callee.type="MemberExpression"][callee.object.name=/^(log|[a-z][A-Za-z0-9]*Log)$/][callee.property.name=/^(debug|info|warn|error)$/]';
+// A log call is `log.info(...)`, `mailboxLog.info(...)` or a call on a chain: `log.with({ ... }).info(...)`.
+const logLevels = "(debug|info|warn|error)";
+const logCall = `:matches(CallExpression[callee.type="MemberExpression"][callee.object.name=/^(log|[a-z][A-Za-z0-9]*Log)$/][callee.property.name=/^${logLevels}$/], CallExpression[callee.type="MemberExpression"][callee.object.type="CallExpression"][callee.object.callee.property.name="with"][callee.property.name=/^${logLevels}$/])`;
 const logEventMessage =
   'Log lines are events: log.<level>("event_code", { allow-listed fields }) (ADR 0024, docs/code-patterns.md § Logs).';
 const logEventSelectors = [
   { selector: `${logCall} > :first-child:not(Literal[value=/^[a-z][a-z0-9_]{0,63}$/])`, message: logEventMessage },
   { selector: `${logCall}[arguments.length>2]`, message: `${logEventMessage} At most two arguments.` },
   { selector: `${logCall}[arguments.length=0]`, message: `${logEventMessage} The event code is missing.` },
+  {
+    // The second argument is an object literal or a call of errorFields / telegramErrorFields. A variable or any other
+    // expression hides its fields from the lint (the runtime filter still applies).
+    selector: `${logCall}[arguments.length=2] > :nth-child(2):not(ObjectExpression, CallExpression[callee.name=/^(errorFields|telegramErrorFields)$/])`,
+    message: `${logEventMessage} The fields are an object literal or ...errorFields(error).`,
+  },
+  {
+    selector: `${logCall} > ObjectExpression MemberExpression[property.name="message"]`,
+    message: `${logEventMessage} Never error.message: use ...errorFields(error).`,
+  },
 ];
 
 export default tseslint.config(
@@ -239,29 +250,10 @@ export default tseslint.config(
     rules: { "import/no-restricted-paths": ["error", { basePath: __dirname, zones: borderZones() }] },
   },
   {
-    // The modules convert in E8a; then each converted folder moves to the error block (D18).
-    // Tests call the old form on purpose (platform/log.test.ts).
+    // Log lines are events (ADR 0024, docs/code-patterns.md § Logs). Tests call invalid forms on purpose (platform/log.test.ts).
     files: ["apps/server/src/**/*.ts"],
     ignores: ["**/*.test.ts"],
-    rules: { "no-restricted-syntax": ["warn", ...logEventSelectors] },
-  },
-  {
-    // Converted to events: an old-form log line here fails the lint. Each F103 conversion stage adds its folders.
-    files: [
-      "apps/server/src/platform/**/*.ts",
-      "apps/server/src/main.ts",
-      "apps/server/src/*.ts",
-      "apps/server/src/scripts/**/*.ts",
-      "apps/server/src/modules/actions/**/*.ts",
-      "apps/server/src/modules/channels/**/*.ts",
-      "apps/server/src/modules/delegation/**/*.ts",
-      "apps/server/src/modules/mail/**/*.ts",
-      "apps/server/src/modules/tenancy/**/*.ts",
-      "apps/server/src/modules/triage/**/*.ts",
-      "apps/server/src/modules/testmail/**/*.ts",
-    ],
-    ignores: ["**/*.test.ts"],
-    rules: { "no-restricted-syntax": ["error", ...logEventSelectors] },
+    rules: { "no-restricted-syntax": ["error", ...logEventSelectors], "no-console": "error" },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],

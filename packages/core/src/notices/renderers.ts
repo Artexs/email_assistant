@@ -14,6 +14,7 @@ import {
   renderAuthErrorNotice,
   renderHostBlockedNotice,
   renderNotTriagedNotice,
+  renderSentMissingNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
@@ -147,5 +148,9 @@ export const noticeRenderers = {
   not_triaged: defineRenderer({
     schema: noticeViewSchemas.not_triaged,
     telegram: { full: (view, opts) => renderNotTriagedNotice(view, textsFor(opts.locale)) },
+  }),
+  sent_missing: defineRenderer({
+    schema: noticeViewSchemas.sent_missing,
+    telegram: { full: (view, opts) => renderSentMissingNotice(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;

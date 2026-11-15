@@ -239,6 +239,15 @@ const notTriagedView = z.strictObject({
   sender: text,
 });
 
+// The mailbox has shown no sent mail for a long time (F104). The view holds the mailbox address and the start of the
+// quiet period only: no subject, no recipient.
+const sentMissingView = z.strictObject({
+  address: text,
+  since: isoDate,
+  now: isoDate,
+  timeZone,
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -256,6 +265,7 @@ export const noticeViewSchemas = {
   host_blocked: hostBlockedView,
   approval_edit: approvalEditView,
   not_triaged: notTriagedView,
+  sent_missing: sentMissingView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;

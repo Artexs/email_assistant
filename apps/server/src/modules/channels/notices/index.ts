@@ -16,6 +16,7 @@ import { notTriagedDetector } from "./not-triaged";
 import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
 import { sendHeldDetector } from "./send-held";
 import { sendResultDetector } from "./send-result";
+import { sentMissingDetector } from "./sent-missing";
 import { SYNC_LATE_MS, syncDetector } from "./sync";
 import { urgentDetector } from "./urgent";
 import { weeklyReportDetector } from "./weekly-report";
@@ -31,6 +32,7 @@ export const detectors: readonly Detector[] = [
   actionFailedDetector,
   authErrorDetector,
   hostBlockedDetector,
+  sentMissingDetector,
   syncDetector,
   approvalDetector,
   approvalSetDetector,

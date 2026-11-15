@@ -494,7 +494,7 @@ export async function cancelPendingOutbox(
   db: DbOrTrx,
   ctx: TenantContext,
   filter: {
-    kind: "auth_error" | "sync_stale" | "send_held" | "host_blocked";
+    kind: "auth_error" | "sync_stale" | "send_held" | "host_blocked" | "sent_missing";
     mailboxId: string;
     exceptDedupKey?: string;
   }

@@ -581,6 +581,17 @@ describe("applySend", () => {
     });
   });
 
+  test("(8b) an auth error with a reason carries the reason in the outcome", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const p = await pair(trx, s);
+      s.sender.failNext(new MailAuthError("login", { reason: "protocol_disabled" }));
+
+      expect(await applyOnce(trx, s, p.sendId)).toEqual({ kind: "auth_error", reason: "protocol_disabled" });
+      expect(await row(trx, p.sendId)).toMatchObject({ status: "approved", locked_at: null });
+    });
+  });
+
   test("(8) an auth error gives the row back as approved and unlocked", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -729,6 +740,10 @@ describe("applySend", () => {
 
   test("(12) sendOutcomeOf maps every error", () => {
     expect(sendOutcomeOf(new MailAuthError("x"), 0)).toEqual({ kind: "auth_error" });
+    expect(sendOutcomeOf(new MailAuthError("x", { reason: "oauth_revoked" }), 0)).toEqual({
+      kind: "auth_error",
+      reason: "oauth_revoked",
+    });
     expect(sendOutcomeOf(smtp("connect", "ECONNECTION", null, false, true), 0)).toEqual({
       kind: "retry",
       soft: true,
