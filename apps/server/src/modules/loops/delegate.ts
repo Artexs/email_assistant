@@ -26,7 +26,7 @@ import {
 import { auditEvents, recordAudit } from "../audit";
 import { getMailboxSettings, lockSettingsForShare } from "../config";
 import { countDelegationsOfEmail, createDelegation, findOpenDelegationOfEmail, lockDelegate } from "../delegation";
-import { getEmailMeta, listMailboxes, type EmailMeta } from "../mail";
+import { getEmailMeta, listMailboxes, lockEmail, type EmailMeta } from "../mail";
 import { getMembership, getOrganization, isFeatureOn } from "../tenancy";
 import { latestTriageResult, suspiciousReasonsOf } from "../triage";
 
@@ -101,6 +101,9 @@ export async function delegateMail(
 
   const run = async (trx: Transaction<DB>): Promise<DelegateMailResult> => {
     const hasSettings = (await lockSettingsForShare(trx, ctx, email.mailbox_id)) !== undefined;
+    // The mail row next, as `saveTriage` does: two picks of one mail, with the same or other delegates, run one after the
+    // other. The second finds the open delegation of the first (`exists`). The delegate lock alone serializes one delegate.
+    if (!(await lockEmail(trx, ctx, email.id))) return { kind: "not_found" };
     const checked = await checkMail(trx, ctx, email, input.delegateId);
     if (checked.kind === "stop") return checked.result;
     // The settings row is share-locked: the mode and the switches cannot change before the commit. No row: no drafts.
