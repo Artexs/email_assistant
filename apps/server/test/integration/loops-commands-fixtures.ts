@@ -54,7 +54,7 @@ export async function commandLoop(
   // A delegated loop names its delegate (a table check).
   const delegateId =
     over.kind === "delegated" && over.delegate_id === undefined
-      ? await insertDelegate(trx, org.ctx, { name: "Anna", email: ANNA })
+      ? await insertDelegate(trx, org.ctx, { name: "Anna", email: `delegate-${randomUUID()}@x.test` })
       : over.delegate_id;
   const id = await insertLoopRow(trx, org.ctx, org.mailboxId, {
     sent_email_id: sentId,
