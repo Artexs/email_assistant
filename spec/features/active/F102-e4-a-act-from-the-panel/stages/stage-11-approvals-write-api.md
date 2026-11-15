@@ -46,3 +46,7 @@ Part of [`../plan.md`](../plan.md). Read P2, P6, D2, D3, D15, F4 and [`../comman
 ## Carry-over from stage 09 review
 
 - A panel approve of a send that timed out (`approve` answers `expired` with `byThisTap` true) expires the send but queues no card edit: every Telegram card stays live (a tap on it answers `expired`). The route must map that answer, and the stage must accept this gap in writing (Q18: the hourly expiry job edits no card; stage 15 owns that work).
+
+## Carry-over from stage 10 review
+
+- A send in `approved` with no fresh lock reads as `held` with `heldBy` null when nothing holds it (the committer takes it next). Keep the answers `approved` and `approved_held` apart, and name closed states as `stateOf` in `channels/approvals-read.ts` does.

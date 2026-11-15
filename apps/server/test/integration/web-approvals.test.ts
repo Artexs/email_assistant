@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { approvalDetailSchema, approvalListSchema, meSchema, type ApprovalDetail } from "@ea/core";
+import { APPROVAL_QUOTE_MAX, approvalDetailSchema, approvalListSchema, meSchema, type ApprovalDetail } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { editApproval, getSend, noApprovalHooks, type SendScope } from "../../src/modules/actions";
@@ -242,6 +242,15 @@ describe("GET /api/approvals and GET /api/approvals/:id", () => {
     expect(got.quote).not.toContain("[…]");
     // The page link is the card's link only: the detail has no panelUrl.
     expect(got.view?.panelUrl).toBeUndefined();
+  });
+
+  test("a mail over 8000 characters gives a quote cut at the 8000 limit, inside the schema bound", async () => {
+    const s = await setup();
+    const id = await addSend(s.org.orgId, s.mailboxId, { bodyText: "x".repeat(9000), from: "boss@x.test" });
+    const got = await detail(s, id);
+    expect(got.quote).toContain(`> ${"x".repeat(8000)} […]`);
+    expect(got.quote).not.toContain("x".repeat(8001));
+    expect(got.quote?.length ?? 0).toBeLessThan(APPROVAL_QUOTE_MAX);
   });
 
   test("T6. after a stage 08 edit of A the detail of A is superseded with currentId; the list holds the new send", async () => {
