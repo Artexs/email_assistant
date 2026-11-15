@@ -21,7 +21,7 @@ import {
   runEval,
 } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
-import { ConfigError, llmRoleTable, loadConfig, testMailRule } from "../platform/config";
+import { type Config, ConfigError, llmRoleTable, loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
 
@@ -102,8 +102,19 @@ async function main(): Promise<number> {
   if (options.gap) return runGap(options);
   if (options.sim !== undefined) return runSim(options);
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
+  return runClassifier(options);
+}
 
-  const config = loadConfig();
+// What a test replaces: the CLI passes none of them.
+export interface ClassifierDeps {
+  config?: Config;
+  createLlmClient?: typeof createLlmClient;
+  runsDir?: string;
+}
+
+// The old case sets through the classifier: no DB, a key for the provider.
+export async function runClassifier(options: EvalOptions, deps: ClassifierDeps = {}): Promise<number> {
+  const config = deps.config ?? loadConfig();
   let table: LlmRoleTable;
   try {
     table = llmRoleTable(config, {
@@ -127,7 +138,7 @@ async function main(): Promise<number> {
   const model = row.model;
   const effort = row.reasoningEffort;
   cli.print(`provider=${row.provider} model=${model} effort=${effort ?? "-"}`);
-  const llm = createLlmClient({ table });
+  const llm = (deps.createLlmClient ?? createLlmClient)({ table });
 
   const selected = selectCases(
     [
@@ -143,7 +154,7 @@ async function main(): Promise<number> {
   const stateFile =
     options.state ??
     resolve(
-      runsDir,
+      deps.runsDir ?? runsDir,
       evalStateFileName({
         model,
         reasoningEffort: effort,
@@ -191,9 +202,12 @@ async function main(): Promise<number> {
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    cli.fail(`failed: ${error instanceof Error ? error.name : "unknown error"}`);
-    process.exit(1);
-  });
+// A test imports `runClassifier` without running the CLI.
+if (import.meta.main) {
+  main()
+    .then((code) => process.exit(code))
+    .catch((error) => {
+      cli.fail(`failed: ${error instanceof Error ? error.name : "unknown error"}`);
+      process.exit(1);
+    });
+}

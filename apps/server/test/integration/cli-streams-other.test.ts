@@ -14,7 +14,8 @@ import { testDb } from "./helpers";
 
 // F103 stage 04: the scripts print through createCliOutput: `print` to stdout, `fail` to stderr. Each test pins the
 // stream of a line that no other CLI test pins by stream (db-worktree, org-status, telegram-unlink, telegram-check,
-// triage-cost, triage-label, eval). Test addresses end in `@x.test`; temp files live in one folder under the OS temp dir.
+// triage-cost, triage-label, eval). The case-set runs of `eval` are in `scripts/eval-streams.test.ts`.
+// Test addresses end in `@x.test`; temp files live in one folder under the OS temp dir.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const scriptsDir = resolve(import.meta.dir, "../../src/scripts");
@@ -250,6 +251,19 @@ describe("org-status streams", () => {
     expectOnlyStderr(result, "org-status", "organization not found");
   });
 
+  test("a database with no organization: `no organizations` on stdout, exit 0", async () => {
+    // A fresh migrated database (the script migrates it for real): the shared dev database is never empty.
+    const name = `f103s04-${randomBytes(4).toString("hex")}`;
+    databases.push(`email_assistant_${name.replaceAll("-", "_")}`);
+    const created = await run("db-worktree", [name]);
+    expect(created.code).toBe(0);
+    const url = /^DATABASE_URL=(.+)$/m.exec(created.stdout)?.[1] ?? "";
+    expect(url).not.toBe("");
+    const result = await run("org-status", [], { env: { DATABASE_URL: url } });
+    expect(result.code).toBe(0);
+    expectOnlyStdout(result, "org-status", "no organizations");
+  });
+
   test("a database that is down: `failed:` on stderr, exit 1", async () => {
     const result = await run("org-status", [], { env: { DATABASE_URL: deadDb } });
     expect(result.code).toBe(1);
@@ -373,14 +387,16 @@ describe("triage-cost streams", () => {
 
 describe("triage-label streams", () => {
   async function seed(): Promise<{ orgId: string; mailboxId: string; emailId: string }> {
-    const { orgId, mailboxId } = await createOrgWithMailbox(db);
-    const emailId = await insertTriaged(db, { orgId }, mailboxId, {
-      category: "info",
-      createdAt: new Date("2026-11-20T10:00:00Z"),
-      from: "sender@x.test",
-      subject: "Stream test",
+    return db.transaction().execute(async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      const emailId = await insertTriaged(trx, { orgId }, mailboxId, {
+        category: "info",
+        createdAt: new Date("2026-11-20T10:00:00Z"),
+        from: "sender@x.test",
+        subject: "Stream test",
+      });
+      return { orgId, mailboxId, emailId };
     });
-    return { orgId, mailboxId, emailId };
   }
 
   test("a bad option: the usage on stderr, exit 1", async () => {
@@ -412,7 +428,7 @@ describe("triage-label streams", () => {
   });
 
   test("a mailbox with no mail: the count line on stdout, exit 0", async () => {
-    const { orgId, mailboxId } = await createOrgWithMailbox(db);
+    const { orgId, mailboxId } = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
     const result = await run("triage-label", ["--org-id", orgId, "--mailbox-id", mailboxId]);
     expect(result.code).toBe(0);
     expectOnlyStdout(result, "triage-label", "labeled 0, skipped 0");
@@ -469,24 +485,93 @@ describe("eval streams", () => {
     expectOnlyStderr(result, "eval", "GEMINI_API_KEY is missing");
   });
 
-  test("the run header and the state line go to stdout; the report ends the run", async () => {
-    const result = await run(
-      "eval",
-      ["--provider", "gemini", "--limit", "1", "--state", join(tmp, "eval-state.jsonl")],
-      {
-        env: { GEMINI_API_KEY: "stream-test-key", GEMINI_BASE_URL: "http://127.0.0.1:1" },
-      }
-    );
-    // The first case calls the provider at a closed port: the run stops, the script reports on its streams.
-    expect(result.stdout).toMatch(/^\[eval\] provider=gemini model=\S+ effort=\S+$/m);
-    expect(result.stdout).toContain(`[eval] state ${join(tmp, "eval-state.jsonl")}: 0 earlier results\n`);
-    expect(result.stderr).not.toContain("provider=gemini");
-    expect(result.stderr).not.toContain("earlier results");
-  });
-
   test("a missing config key (the error comes out of main): `failed:` on stderr, exit 1", async () => {
     const result = await run("eval", ["--provider", "gemini"], { env: { CREDENTIALS_KEY: "" } });
     expect(result.code).toBe(1);
     expectOnlyStderr(result, "eval", "failed: ConfigError");
+  });
+});
+
+// The scripts that read the config outside their try block: a missing DATABASE_URL ends in the final `.catch` of the
+// file; a database that is down ends in the `catch` of `main`. Both print `failed:` on stderr.
+describe("failed lines of the database scripts", () => {
+  const scripts: { script: string; args: () => string[] }[] = [
+    {
+      script: "org-create",
+      args: () => ["--org-name", "Stream Org", "--email", "stream@x.test", "--display-name", "Owner"],
+    },
+    { script: "org-flag", args: () => ["--org-id", randomUUID()] },
+    { script: "org-plan", args: () => ["--org-id", randomUUID(), "--plan", "active"] },
+    { script: "rules", args: () => ["list", "--org-id", randomUUID()] },
+  ];
+
+  for (const { script, args } of scripts) {
+    test(`${script}: a database that is down gives \`failed:\` on stderr`, async () => {
+      const result = await run(script, args(), { env: { DATABASE_URL: deadDb } });
+      expect(result.code).toBe(1);
+      expectOnlyStderr(result, script, "failed: ");
+    });
+
+    test(`${script}: a missing DATABASE_URL gives \`failed:\` on stderr`, async () => {
+      const result = await run(script, args(), { env: { DATABASE_URL: "" } });
+      expect(result.code).toBe(1);
+      expectOnlyStderr(result, script, "failed: ");
+    });
+  }
+});
+
+describe("org-plan streams", () => {
+  test("no argument: the usage on stderr, exit 1", async () => {
+    const result = await run("org-plan", []);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "org-plan", "usage: bun run org:plan");
+  });
+
+  test("the plan the org has: `no change` on stdout, exit 0", async () => {
+    const { orgId } = await createOrganizationWithOwner(db, {
+      orgName: `Stream Org ${randomUUID()}`,
+      timezone: "Europe/Warsaw",
+      email: `stream-${randomUUID()}@x.test`,
+      displayName: "Owner",
+      plan: { kind: "active" },
+    });
+    const result = await run("org-plan", ["--org-id", orgId, "--plan", "active"]);
+    expect(result.code).toBe(0);
+    expectOnlyStdout(result, "org-plan", `org ${orgId}: no change (plan active, max_mailboxes `);
+  });
+
+  test("trial days for a plan that is not a trial: the reason and the usage on stderr, exit 1", async () => {
+    const { orgId } = await createOrg();
+    const result = await run("org-plan", ["--org-id", orgId, "--plan", "active", "--trial-days", "5"]);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "org-plan", "bad input: trial_days_without_trial");
+    expect(result.stderr).toContain("[org-plan] usage: bun run org:plan");
+  });
+});
+
+describe("rules streams", () => {
+  test("the rule limit: the refusal on stderr, exit 1", async () => {
+    const { orgId } = await createOrg();
+    await db
+      .insertInto("sender_rules")
+      .values(
+        Array.from({ length: 1000 }, (_, index) => ({
+          org_id: orgId,
+          mailbox_id: null,
+          pattern: `limit-${index}@x.test`,
+          kind: "whitelist" as const,
+        }))
+      )
+      .execute();
+    let result: Result;
+    try {
+      result = await run("rules", ["add", "--org-id", orgId, "--pattern", "one-more@x.test", "--kind", "whitelist"]);
+    } finally {
+      // The org stays in the dev database like every org of the CLI tests; its 1000 rules do not.
+      await db.deleteFrom("sender_rules").where("org_id", "=", orgId).execute();
+    }
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe("");
+    expectOnlyStderr(result, "rules", "refused: rule limit reached (1000)");
   });
 });
