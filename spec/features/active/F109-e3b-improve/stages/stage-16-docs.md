@@ -52,3 +52,7 @@ Also read `notes/2026-11-13-measured-core-facts.md` again: if the F100 pilot pro
 
 - `docs/capabilities/retention.md` must say that the cut attachment names in `outbox.view` and `outbox.text` can stay up to `RETENTION_TEXT_DAYS` (90 days), longer than `email_headers.attachments` (the org's `data_retention_days`, default 30, minimum 1). Up to 3 names per urgent view. Subjects in the view live as long. Source: `review-6.md` N3.
 - `docs/capabilities/digest-and-notices.md` (attachment line rule): the line shows the MIME type when the name is empty, so the consent text says "names (or file types)". After retention the count includes inline and calendar parts (N5). Source: `review-6.md` N2, N5.
+
+## Carry-over from stage 15 review
+
+Read `review-15.md`. In the docs: D17 and the capability page say "at most 5 mails per mailbox, one row per member per mail" (N4); state N2 (every linked member, no `linkedAt` check), N3 (stale `since` when the released mail is deleted) and N5 (held row may be out of date at 07:00).
