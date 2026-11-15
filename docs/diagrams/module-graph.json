@@ -80,6 +80,10 @@
     ["triage", "config"],
     ["triage", "delegation"],
     ["triage", "mail"],
-    ["triage", "tenancy"]
+    ["triage", "tenancy"],
+    ["trust", "config"],
+    ["trust", "mail"],
+    ["trust", "tenancy"],
+    ["trust", "triage"]
   ]
 }

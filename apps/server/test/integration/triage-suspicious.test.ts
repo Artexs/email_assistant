@@ -10,7 +10,7 @@ import { ensureSyncFolders, insertEmailHeaders, NO_TEST_SENDERS } from "../../sr
 import { contentFromSource } from "../../src/modules/mail/imap/capture";
 import { configureFeatures, setOrgFeature } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
-import { createLlmPause, createTriageJob, insertTriageResult } from "../../src/modules/triage";
+import { createLlmPause, createTriageJob, insertTriageResult, noGateEvidence } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 import type { LlmClient } from "../../src/platform/llm";
 
@@ -172,6 +172,7 @@ async function runJob(
   opts: { trustedAuthservIds?: string[]; mode?: "shadow" | "assist" } = {}
 ): Promise<void> {
   await createTriageJob({
+    runningKey: noGateEvidence.runningKey,
     db: trx,
     llm,
     pause: createLlmPause(),

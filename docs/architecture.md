@@ -68,6 +68,7 @@ apps/
     src/platform/      db, llm client, crypto, logger, env config, scheduler, http, auth
                        (`auth.ts`: Better Auth on our Postgres, ADR 0016)
   web/                 Astro static build with React islands; served by the server; talks only to `/api` (ADR 0016).
+  docs/                Starlight site (`@ea/docs`): the public docs, built in CI and published on GitHub Pages; no server, no database (ADR 0030).
 packages/
   core/                Pure TypeScript: domain types, Zod schemas, categories, rules, policy, planners, digest. No I/O.
 db/migrations/         SQL migrations (source of truth)
@@ -363,7 +364,7 @@ Tenancy:
 - **Backfill (S1b, one-off):** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-180]` reads INBOX mail of the last days.
   It stores the missing mail with `emails.backfilled_at` set and never moves the cursor. It changes nothing in the mailbox.
   It refuses a window of more than 180 days. Then it re-queues real mail of the window that the worker
-  skipped as `too_old` (`skipped → pending`, one `email.requeued` audit row for each mail).
+  skipped as `too_old`, or that the history check stored as `history_check` (`skipped → pending`, one `email.requeued` audit row for each mail).
   The re-queue sets `backfilled_at` = now, so re-queued mail skips the 7-day rule.
   Pilot exception (user, 2026-11-06): a window above 30 days keeps mail bodies longer than the 30-day retention (§7).
   The retention cleanup clears them when it exists.
@@ -623,6 +624,7 @@ Tenancy:
     Tailscale on the host (`tailscale serve --bg 8080`) gives HTTPS at `https://<machine>.<tailnet>.ts.net` to tailnet members only (ADR 0017). `WEB_BASE_URL`, `WEB_AUTH_SECRET` and `WEB_TRUSTED_PROXIES` are the env keys of the web.
     The steps (Tailscale, turn on, first password, access checks, roll back) are in `deploy/README.md`, section Web panel.
 - **Sim stack (F113, ADR 0021):** a second Compose project `ea-sim` (`deploy/compose.sim.yaml`) on the same host, with its own database, GreenMail, a fake Telegram, the server and the lab. It plays made-up mail only and sends nothing outside the stack; its panel is on `127.0.0.1:8180`, behind Tailscale Serve port 8443. Detail: `docs/capabilities/live-lab.md`; runbook: `deploy/README.md` § Sim stack.
+- **Docs site (E10a, ADR 0030):** a static Starlight build of `apps/docs` on GitHub Pages. It is outside the VPS and the tailnet and holds no user data. CI builds it on every push and pull request (job `docs` in `.github/workflows/ci.yml`). The workflow `.github/workflows/docs-deploy.yml` publishes it when a `v<x.y.z>` tag is the newest release, or when the owner runs it by hand (also on an old tag, as a rollback); the gate is `apps/docs/scripts/deploy-gate.ts`. The server image does not hold the docs app. Rules for pages: `docs/code-patterns.md` § Docs site.
 - **Production (E7-T5, F108):** the home VPS (PD-001). A hosted EU VPS with the same Compose files is the path if outside users come later (availability, physical security, GDPR duties of a processor).
 - **azyl dev server:** demos with test data only. Its home folder is shared with other projects (skill `vps-ssh`).
 - **Config:** env only; `.env.example` lists every key; the server checks env with Zod at start.

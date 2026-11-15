@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import type { GateEvidenceDeps, SendLimits } from "@ea/core";
+import type { GateEvidenceDeps, GateView, SendLimits } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import {
@@ -16,9 +16,10 @@ import {
   clearLoopCards,
   SENDER_STALE_MS,
 } from "./modules/channels";
-import type { SettingsDeps } from "./modules/config";
+import type { SettingsChange, SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
 import { type AnalysisScope, loopHooks, onSentOff } from "./modules/loops";
+import type { TestMailRule } from "./modules/mail";
 import {
   composeMessage,
   createMailOAuthClients,
@@ -33,10 +34,18 @@ import {
   type SentSwitchHooks,
 } from "./modules/mail";
 import type { SetOrgPlanHooks } from "./modules/tenancy";
-import { noGateEvidence } from "./modules/triage";
-import { sendTestAddresses, testMailRule, type Config } from "./platform/config";
+import { isFeatureOn } from "./modules/tenancy";
+import { loadGateEvidence, noGateEvidence, runningEvidenceKey, setCategoryAutoWithGate } from "./modules/triage";
+import {
+  clearTrips,
+  setCategoryAutoWithEvidence,
+  type CategoryEvidence,
+  type EvidenceGateInput,
+} from "./modules/trust";
+import { llmRoleTable, sendTestAddresses, testMailRule, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { DB, Db, TenantContext } from "./platform/db";
+import type { LlmRoleTable } from "./platform/llm";
 import { createLog } from "./platform/log";
 
 // The parts that `main.ts` and `scripts/job-run.ts` build the same way.
@@ -143,6 +152,7 @@ export function settingsDeps(db: Db, now: () => Date, gate: GateEvidenceDeps = n
     db,
     now,
     gate,
+    clearTrips,
     expireReady: async (trx, trxCtx, filter, opts) =>
       expireReady(trx, trxCtx, filter, {
         ...opts,
@@ -181,4 +191,34 @@ export function orgPlanHooks(db: Db): SetOrgPlanHooks {
 // root, where the eval scripts write it (the Dockerfile copies it to the same place).
 export function gateEvidenceDir(config: Config): string {
   return config.GATE_EVIDENCE_DIR ?? resolve(import.meta.dir, "../../../evals/results/gate");
+}
+
+// The global evidence of the running classifier: the gate files read once, and the key of the role table (ADR 0028).
+// The server, the CLI and the lab all build it here, so none of them is stricter than another. `quiet` is for a CLI.
+export function gateEvidenceOf(config: Config, opts: { table?: LlmRoleTable; quiet?: boolean } = {}): GateEvidenceDeps {
+  return {
+    index: loadGateEvidence(gateEvidenceDir(config), { quiet: opts.quiet === true }),
+    runningKey: runningEvidenceKey(opts.table ?? llmRoleTable(config)),
+  };
+}
+
+export type AutoSetResult =
+  | { kind: "changed"; change: SettingsChange; gate: GateView | null; evidence: CategoryEvidence | null }
+  | { kind: "refused"; gate: GateView; evidence: CategoryEvidence | null };
+
+// The one setter of `auto` for the web and the CLI: the evidence gate when `trust_ladder` is on for the organization,
+// else the gate of the real labels. Both write the grant and clear the trips (ADR 0028).
+export function autoSetter(
+  settings: SettingsDeps,
+  testMail: TestMailRule
+): (ctx: TenantContext, mailboxId: string, input: EvidenceGateInput) => Promise<AutoSetResult> {
+  return async (ctx, mailboxId, input) => {
+    if (await isFeatureOn(settings.db, ctx, "trust_ladder")) {
+      return setCategoryAutoWithEvidence({ settings, testMail }, ctx, mailboxId, input);
+    }
+    const result = await setCategoryAutoWithGate(settings, ctx, mailboxId, input, testMail);
+    return result.kind === "refused"
+      ? { kind: "refused", gate: result.gate, evidence: null }
+      : { kind: "changed", change: result.change, gate: result.gate, evidence: null };
+  };
 }

@@ -15,13 +15,15 @@ export interface GlobalEvidence {
   file: string | null;
 }
 
-export type EvidenceBlock =
-  | "no_global"
-  | "global_no_go"
-  | "global_provisional"
-  | "history_fail"
-  | "tripped"
-  | "real_labels_no_go";
+export const evidenceBlocks = [
+  "no_global",
+  "global_no_go",
+  "global_provisional",
+  "history_fail",
+  "tripped",
+  "real_labels_no_go",
+] as const;
+export type EvidenceBlock = (typeof evidenceBlocks)[number];
 
 export interface AutoEvidenceInput {
   category: string;
@@ -42,7 +44,8 @@ export function autoEvidence(input: AutoEvidenceInput): AutoEvidenceResult {
   const { global, history, trip, realLabels } = input;
   const blocks: EvidenceBlock[] = [];
   if (global.decision === "none") blocks.push("no_global");
-  if (global.decision === "no-go") blocks.push("global_no_go");
+  // A holdout with too few cases is no proof: it blocks like a no-go (ADR 0028: eligible = a final global `go`).
+  if (global.decision === "no-go" || global.decision === "too-few") blocks.push("global_no_go");
   if (global.provisional) blocks.push("global_provisional");
   if (history?.outcome === "fail") blocks.push("history_fail");
   if (trip.tripped) blocks.push("tripped");

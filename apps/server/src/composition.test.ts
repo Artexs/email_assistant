@@ -49,6 +49,15 @@ describe("the token store is wired into every composition root", () => {
     expect(callOf(read("scripts/job-run.ts"), "committerDeps")).toContain("oauthTokens:");
   });
 
+  test("the history check is queued at every connect path: web form, OAuth callback and mailbox:connect", () => {
+    const hook = "onConnected: queueHistoryCheckOnConnect(db)";
+    const web = read("web.ts");
+    expect(web.split(hook)).toHaveLength(3);
+    expect(callOf(web, "mailRoutes")).toContain(hook);
+    expect(callOf(web, "mailOAuthCallbackRoutes")).toContain(hook);
+    expect(callOf(read("scripts/mailbox-connect.ts"), "connectMailbox")).toContain(hook);
+  });
+
   test("no other file builds a sync job or committer deps without being listed here", () => {
     const files = new Bun.Glob("**/*.ts").scan({ cwd: import.meta.dir });
     return (async () => {
@@ -64,6 +73,8 @@ describe("the token store is wired into every composition root", () => {
         "modules/actions/committer.ts",
         "modules/mail/jobs.ts",
         "modules/mail/open.ts",
+        // `backfillMailbox` with the purpose `history`: its caller (the history job) passes `oauthTokens` from its composition root.
+        "modules/mail/tools.ts",
         "scripts/job-run.ts",
       ]);
     })();
@@ -223,10 +234,20 @@ describe("gateEvidenceDir", () => {
 describe("the gate evidence is built once at start (F110 stage 02)", () => {
   const main = read("main.ts");
 
-  test("main.ts reads the gate files once and hands the result to the web settings deps", () => {
-    expect(main.match(/loadGateEvidence\(/g)).toHaveLength(1);
-    expect(main).toContain("loadGateEvidence(gateEvidenceDir(config))");
+  test("main.ts reads the gate files once and hands the result to the web settings deps and the triage job", () => {
+    expect(main.match(/gateEvidenceOf\(/g)).toHaveLength(1);
+    expect(main).toContain("gateEvidenceOf(config, { table: llmTable })");
     expect(callOf(main, "webDeps")).toContain("gate,");
+    expect(callOf(main, "createTriageJob")).toContain("runningKey: gate.runningKey");
+  });
+
+  test("only the composition builder reads the gate files; the CLI scripts use it too (no stricter than the API)", () => {
+    expect(read("composition.ts").match(/loadGateEvidence\(/g)).toHaveLength(1);
+    for (const script of ["scripts/mailbox-settings.ts", "scripts/lab.ts"]) {
+      const text = read(script);
+      expect(text).toContain("gateEvidenceOf(config, { quiet: true })");
+      expect(text).not.toContain("loadGateEvidence(");
+    }
   });
 
   test("the image copies the gate files to the path the reader defaults to", () => {

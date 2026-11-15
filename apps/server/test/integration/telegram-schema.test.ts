@@ -409,11 +409,10 @@ describe("outbox view columns (F088)", () => {
     );
     const values = (name: string) =>
       [...(result.rows.find((r) => r.conname === name)?.def.matchAll(/'([a-z_]+)'/g) ?? [])].map((m) => m[1]).sort();
-    // The migration `trust_ladder` (F110 stage 03) widens both lists before core knows the new values: stage 10 adds
-    // the two kinds to `noticeKinds` and stage 19 adds `mail` to `noticeChannels`; each then deletes its line here.
-    const pendingKinds = ["autonomy_paused", "trust_report_ready"];
+    // The migration `trust_ladder` (F110 stage 03) widens the channel list before core knows `mail`: stage 19 adds it to
+    // `noticeChannels` and deletes its line here.
     const pendingChannels = ["mail"];
-    expect(values("outbox_kind_check")).toEqual([...noticeKinds, ...pendingKinds].sort());
+    expect(values("outbox_kind_check")).toEqual([...noticeKinds].sort());
     expect(values("outbox_channel_check")).toEqual([...noticeChannels, ...pendingChannels].sort());
     expect(values("outbox_locale_check")).toEqual([...userLocales].sort());
     expect(values("outbox_detail_check")).toEqual([...noticeDetails].sort());

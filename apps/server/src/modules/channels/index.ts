@@ -61,7 +61,15 @@ export {
 export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
 export { queueNotice, type QueueNoticeInput } from "./notice-queue";
 export { cardEditHooks, queueCardEdits, type CardEdit, type CardEditOutcome, type CardEditResult } from "./card-edits";
-export { detectNotices, queueMailboxRemovedNotices, type NoticeDeps } from "./notices";
+export {
+  detectNotices,
+  queueMailboxRemovedNotices,
+  queueTrustNotice,
+  trustReportUrlOf,
+  trustSettingsUrlOf,
+  type NoticeDeps,
+  type TrustNoticeInput,
+} from "./notices";
 export { scheduleDigests, type DigestJobDeps } from "./digest-job";
 export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";
 export {

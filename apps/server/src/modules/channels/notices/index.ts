@@ -23,6 +23,7 @@ import { urgentDetector } from "./urgent";
 import { weeklyReportDetector } from "./weekly-report";
 
 export { queueMailboxRemovedNotices } from "./mailbox-removed";
+export { queueTrustNotice, trustReportUrlOf, trustSettingsUrlOf, type TrustNoticeInput } from "./trust";
 export { SYNC_LATE_MS };
 export type { NoticeDeps };
 
@@ -52,6 +53,9 @@ export const queuedBy = {
   approval_edit: "channels/card-edits.ts",
   // The one line for an owner whose consent does not cover open-loop data: queued by the approval and send-result detectors.
   loop_consent: "channels/notices/loop-consent.ts",
+  // F110: the trust module calls `queueTrustNotice` inside its own transaction (history check end, re-gate, tripwire).
+  trust_report_ready: "trust (through channels/notices/trust.ts)",
+  autonomy_paused: "trust (through channels/notices/trust.ts)",
 } as const satisfies Partial<Record<NoticeKind, string>>;
 
 async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat[], now: Date): Promise<void> {

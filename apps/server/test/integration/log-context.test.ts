@@ -3,7 +3,7 @@ import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { tenancyRoutes } from "../../src/modules/tenancy";
-import { createLlmPause, createTriageJob } from "../../src/modules/triage";
+import { createLlmPause, createTriageJob, noGateEvidence } from "../../src/modules/triage";
 import type { GenerateFn } from "../../src/platform/llm";
 import { createFixedLlmClient } from "../../src/platform/llm/testing";
 import { setLogFormat, setLogLevel } from "../../src/platform/log";
@@ -80,6 +80,7 @@ describe("log context", () => {
         const generate: GenerateFn = () =>
           Promise.resolve({ text: classifierAnswer, tokensIn: 10, tokensOut: 5, blocked: false });
         const triage = createTriageJob({
+          runningKey: noGateEvidence.runningKey,
           db: trx,
           llm: createFixedLlmClient(generate, {
             model: "fake-model",

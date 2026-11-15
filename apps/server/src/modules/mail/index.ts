@@ -13,6 +13,7 @@ export {
   type ConnectDeps,
   type ConnectInput,
   type ConnectMeta,
+  type OnConnected,
 } from "./connect";
 export { connectMailboxRequest } from "./connect-request";
 export { isLocalAddress, isLocalMailHost } from "./host-check";
@@ -225,7 +226,11 @@ export {
 export {
   backfillInbox,
   CursorMovedError,
+  HISTORY_SKIP_REASON,
   syncMailbox,
+  type BackfillPurpose,
+  type BackfillRefusal,
+  type HistoryBackfillOutcome,
   type MailboxSyncResult,
   type SyncDeps,
   type SyncResult,
@@ -234,6 +239,7 @@ export {
   auditMailbox,
   backfillMailbox,
   deliverTestMail,
+  type BackfillDeps,
   seedMailbox,
   signalsOfMailbox,
   SIGNALS_CONTENT_LIMIT,
