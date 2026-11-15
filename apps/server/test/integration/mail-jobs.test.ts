@@ -24,6 +24,7 @@ import {
   setMailboxStatus,
   writeSentSwitch,
 } from "../../src/modules/mail/repo";
+import { CursorMovedError } from "../../src/modules/mail/sync";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
@@ -689,7 +690,7 @@ describe("the Sent pass in the sync job", () => {
       const box = await addBox(trx);
       await enableSent(trx, box);
       const o = openers();
-      await fakeWithMail(box, o, true);
+      const fake = await fakeWithMail(box, o, true);
 
       const capture = captureConsole();
       try {
@@ -698,6 +699,10 @@ describe("the Sent pass in the sync job", () => {
         capture.restore();
       }
 
+      // The Sent pass runs after the INBOX sync, never before it.
+      const folders = fake.folderCalls.map((call) => call.folder);
+      expect(folders.indexOf("INBOX")).toBeGreaterThanOrEqual(0);
+      expect(folders.indexOf("Sent")).toBeGreaterThan(folders.lastIndexOf("INBOX"));
       expect(await emailCount(trx, box.mailboxId)).toBe(1);
       expect(await sentRows(trx, box.mailboxId)).toEqual([
         { uid: expect.anything(), content: "stored", body_text: "Sent body canary-77aa" },
@@ -741,6 +746,29 @@ describe("the Sent pass in the sync job", () => {
         expect(capture.lines.filter((line) => line.includes("sent_"))).toEqual([]);
       });
     }
+  });
+
+  test("2b: when the INBOX sync fails, the Sent pass does not run", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      await enableSent(trx, box);
+      const o = openers();
+      const fake = await fakeWithMail(box, o, true);
+      fake.failOn("folderStatus", new CursorMovedError("cursor moved"));
+
+      const capture = captureConsole();
+      try {
+        await jobFor(trx, o).run();
+      } finally {
+        capture.restore();
+      }
+
+      expect((await mailboxRow(trx, box.mailboxId)).last_synced_at).toBeNull();
+      expect(fake.folderCalls.filter((call) => call.folder === "Sent")).toEqual([]);
+      expect(await sentRows(trx, box.mailboxId)).toEqual([]);
+      expect(capture.lines.filter((line) => line.includes("sent_"))).toEqual([]);
+    });
   });
 
   test("3: a Sent pass that throws is caught; the INBOX mail is stored, the error is marked and logged with fields only", async () => {
@@ -919,6 +947,10 @@ describe("the Sent pass in the sync job", () => {
         fetchContent: async (folder, uid) => {
           await sentOnly(folder);
           return real.fetchContent(folder, uid);
+        },
+        fetchByUidsIn: async (folder, uids) => {
+          await sentOnly(folder);
+          return real.fetchByUidsIn(folder, uids);
         },
       };
       o.fakes.set(created.address, probing);

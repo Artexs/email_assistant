@@ -1,6 +1,6 @@
 # Sent mail
 
-> Checked against the code at `d497f8a7`, 2026-11-15.
+> Checked against the code at `189c4b66`, 2026-11-15.
 
 ## What it does now
 
@@ -17,7 +17,7 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 7. **Origin.** `sentOriginOf` (in `actions`, injected into `mail`) answers `system` when the send of the action went out: the row is `origin = system`, `headers_only`, with the action id. `draft` means the user sent a system draft by hand: a user row that keeps the action id. No action id, or an id of another mailbox, gives a user row.
 8. **Text step.** After a `done` header step, `fetchSentTexts` reads the text of `pending` rows of the current path and UIDVALIDITY, oldest first, at most 100 per run, one mail after another. Each row has its own guarded write (no transaction, no lock across a mail server call). A row that waited past the text window becomes `headers_only`. A mail whose UID is gone, or whose source does not parse, becomes `gone`.
 9. **Job and error rule.** The job calls `syncSentFolder` with a plain `Db` after `markSynced` and the flag refresh. `flag_off` and `off` log nothing. Any error is caught: one `sent_sync_failed` warning, then `mailbox_sent_sync.last_error_code = failed`. When that write fails too, one `sent_sync_mark_failed` warning. A login error in the pass is only logged; the next INBOX sync sets `auth_error`.
-10. **Log lines.** Fields come from the allow list (`platform/log-fields.ts`): `sent_sync_done` (`mailbox_id`, `status`, `kind` = the mode, `count` = new rows), `sent_texts_done` (`mailbox_id`, `count` = rows that got text), `sent_texts_gone` (`mailbox_id`, `count` = rows marked `gone`), `sent_sync_failed` and `sent_sync_mark_failed` (`mailbox_id`, `error`, `error_code`). No line holds a subject, address, path, text or the message of an error. The count `system` of the pass result is not logged: it counts the system rows of each written chunk, so a rescan reports it with `stored 0`.
+10. **Log lines.** Fields come from the allow list (`platform/log-fields.ts`): `sent_sync_done` (`mailbox_id`, `status`, `kind` = the mode, `count` = new rows), `sent_texts_done` (`mailbox_id`, `count` = rows that the text step processed, also rows whose text is null: too big, or no text), `sent_texts_gone` (`mailbox_id`, `count` = rows marked `gone`), `sent_sync_failed` and `sent_sync_mark_failed` (`mailbox_id`, `error`, `error_code`). No line holds a subject, address, path, text or the message of an error. The count `system` of the pass result is not logged: it counts the system rows of each written chunk, so a rescan reports it with `stored 0`.
 
 ## Entry points
 
