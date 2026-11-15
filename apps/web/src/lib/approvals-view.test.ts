@@ -72,6 +72,14 @@ describe("the text maps", () => {
     expect(Object.keys(STATE_LABELS).sort()).toEqual([...approvalDetailStates].sort());
   });
 
+  test("every state has its own label; a send in flight is not labelled Sent", () => {
+    const labels = approvalDetailStates.map((state) => STATE_LABELS[state]);
+    expect(new Set(labels).size).toBe(approvalDetailStates.length);
+    expect(STATE_LABELS.sending).toBe("appr_state_sending");
+    expect(STATE_LABELS.sent).toBe("appr_state_sent");
+    for (const state of approvalDetailStates) expect(STATE_LABELS[state]).toBe(`appr_state_${state}`);
+  });
+
   test("a held send with no cause is approved and sending soon, not a block", () => {
     expect(stateLabelKey("held", null)).toBe("appr_state_held_soon");
     expect(stateLabelKey("held", "scope")).toBe("appr_state_held");
@@ -86,6 +94,8 @@ describe("the text maps", () => {
   });
 
   test("fixed Polish and English values", () => {
+    expect(pl.appr_dur_day).toBe("{n} dni");
+    expect(pl.appr_preparing).toBe("Trwa przygotowywanie szkicu…");
     expect(pl.appr_empty).toBe("Nic nie czeka na Twoje zatwierdzenie.");
     expect(en.appr_empty).toBe("Nothing waits for your approval.");
     expect(pl.appr_done_sending).toBe("Zatwierdzono, trwa wysyłanie.");

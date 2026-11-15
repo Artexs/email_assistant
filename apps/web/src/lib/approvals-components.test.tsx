@@ -3,7 +3,7 @@ import type { ApprovalDetail, ApprovalItem } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ApprovalActions } from "../components/approvals/ApprovalActions";
+import { ApprovalActions, reasonChoice } from "../components/approvals/ApprovalActions";
 import { ApprovalDetailPanel } from "../components/approvals/ApprovalDetailPanel";
 import { ApprovalList } from "../components/approvals/ApprovalList";
 import { ApprovalSummary } from "../components/approvals/ApprovalSummary";
@@ -150,6 +150,23 @@ describe("ApprovalDetailPanel", () => {
     expect(cleared).toContain("Sent");
     expect(cleared).not.toContain("Line one");
     expect(render({ state: "sent", expiresAt: null })).not.toContain("The system sends it after your approval");
+  });
+
+  test("a closed send with no deadline shows no expiry line", () => {
+    for (const state of ["sent", "rejected"] as const) {
+      const html = render({ state, expiresAt: null });
+      expect(html).not.toContain("Expires in");
+      expect(html).not.toContain("NaN");
+    }
+  });
+});
+
+describe("RejectReason", () => {
+  test("Skip saves no reason; a reason is passed on; an unknown value does nothing", () => {
+    expect(reasonChoice("skip")).toBeNull();
+    expect(reasonChoice("wrong_person")).toBe("wrong_person");
+    expect(reasonChoice("not_needed")).toBe("not_needed");
+    expect(reasonChoice("other")).toBeUndefined();
   });
 });
 

@@ -38,6 +38,12 @@ export function ApprovalActions({ decisions, draftReady, busy, ownerOnly, onAppr
   );
 }
 
+// The value of the select: a reason, `null` for "Skip" (the page saves nothing), `undefined` for an unknown value.
+export function reasonChoice(value: string): RejectReasonBody["reason"] | null | undefined {
+  if (value === SKIP) return null;
+  return REJECT_REASONS.find((candidate) => candidate === value);
+}
+
 export interface RejectReasonProps {
   // The select is off while the reason is saved. The page hides it after a choice or "Skip" (`null`).
   disabled: boolean;
@@ -47,12 +53,8 @@ export interface RejectReasonProps {
 // After a reject while `mistake_capture` is on: an optional reason. "Skip" closes it without a request.
 export function RejectReason({ disabled, onPick }: RejectReasonProps) {
   const onChange = (value: string) => {
-    if (value === SKIP) {
-      onPick(null);
-      return;
-    }
-    const reason = REJECT_REASONS.find((candidate) => candidate === value);
-    if (reason !== undefined) onPick(reason);
+    const choice = reasonChoice(value);
+    if (choice !== undefined) onPick(choice);
   };
   return (
     <div className="flex max-w-xs flex-col gap-1.5">
