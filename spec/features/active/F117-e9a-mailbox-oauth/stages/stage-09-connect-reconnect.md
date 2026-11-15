@@ -67,3 +67,7 @@ AAD `mailbox:<id>`, the current key version (D3, D14). Stage 10 uses the same lo
 **Done when.** The tests pass; the Proof prints `PROOF_OK`.
 
 **Out of scope.** Refresh in later jobs (stage 10), reason texts (stage 11), the panel (16, 18).
+
+## Carry-over from the stage 08 review (F104)
+
+A mailbox created by the OAuth callback gets no Sent state row today (= off, the safe side). Set the Sent switch like `connectMailbox` does (the flag `sent_sync` decides): see F104 review-8.md N6.
