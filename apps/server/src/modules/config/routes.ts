@@ -21,6 +21,7 @@ import { z } from "zod";
 import type { Db, TenantContext } from "../../platform/db";
 import { parseBody, parseQuery, requireOwner, type ApiEnv } from "../../platform/http";
 
+import { rulesDocs, settingsDocs } from "./api-docs";
 import { getMailboxSettings, listSenderRuleRows, type SenderRuleRow } from "./repo";
 import { addSenderRule, removeSenderRule } from "./rules";
 import { setMode, setToolSwitch, SettingsNotFoundError, type SettingsChange } from "./service";
@@ -82,13 +83,13 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
     return c.json(body);
   };
 
-  app.get("/settings/:mailboxId", async (c) => {
+  app.get("/settings/:mailboxId", settingsDocs.getSettings, async (c) => {
     const id = mailboxIdOf(c);
     if (!id || !(await ensureSettings(c, id))) return notFound(c);
     return guarded(c, async () => c.json(await buildSettingsView(deps, c.get("ctx"), id)));
   });
 
-  app.patch("/settings/:mailboxId/mode", requireOwner, async (c) => {
+  app.patch("/settings/:mailboxId/mode", requireOwner, settingsDocs.patchSettingsMode, async (c) => {
     const id = mailboxIdOf(c);
     if (!id || !(await ensureSettings(c, id))) return notFound(c);
     const body = await parseBody(c, modeBodySchema);
@@ -102,7 +103,7 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
     });
   });
 
-  app.patch("/settings/:mailboxId/switches/:name", requireOwner, async (c) => {
+  app.patch("/settings/:mailboxId/switches/:name", requireOwner, settingsDocs.patchSettingsSwitch, async (c) => {
     const id = mailboxIdOf(c);
     const name = member(toolSwitchNames, c.req.param("name"));
     if (!id || !name || !(await ensureSettings(c, id))) return notFound(c);
@@ -117,7 +118,7 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
     });
   });
 
-  app.patch("/settings/:mailboxId/auto/:category", requireOwner, async (c) => {
+  app.patch("/settings/:mailboxId/auto/:category", requireOwner, settingsDocs.patchSettingsAuto, async (c) => {
     const id = mailboxIdOf(c);
     const category = member(barCategories, c.req.param("category"));
     if (!id || !category || !(await ensureSettings(c, id))) return notFound(c);
@@ -134,7 +135,7 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
     });
   });
 
-  app.patch("/settings/:mailboxId/sync-folders/:key", requireOwner, async (c) => {
+  app.patch("/settings/:mailboxId/sync-folders/:key", requireOwner, settingsDocs.patchSettingsSyncFolder, async (c) => {
     const id = mailboxIdOf(c);
     const key = member(switchableSyncFolderKeys, c.req.param("key"));
     if (!id || !key || !(await ensureSettings(c, id))) return notFound(c);
@@ -173,13 +174,13 @@ export function rulesRoutes(deps: RulesRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
   // A foreign or unknown mailboxId matches no mailbox rule: the answer holds the org-wide rules only.
-  app.get("/rules", async (c) => {
+  app.get("/rules", rulesDocs.getRules, async (c) => {
     const query = parseQuery(c, rulesQuerySchema);
     const rows = await listSenderRuleRows(deps.db, c.get("ctx"), { mailboxId: query.mailboxId });
     return c.json(rows.map(ruleView));
   });
 
-  app.post("/rules", requireOwner, async (c) => {
+  app.post("/rules", requireOwner, rulesDocs.postRule, async (c) => {
     const body = await parseBody(c, ruleBodySchema);
     const result = await addSenderRule(deps.db, c.get("ctx"), {
       mailboxId: body.mailboxId ?? null,
@@ -200,7 +201,7 @@ export function rulesRoutes(deps: RulesRouteDeps): Hono<ApiEnv> {
     }
   });
 
-  app.delete("/rules/:id", requireOwner, async (c) => {
+  app.delete("/rules/:id", requireOwner, rulesDocs.deleteRule, async (c) => {
     const id = z.uuid().safeParse(c.req.param("id"));
     if (!id.success) return c.json({ error: "not_found" }, 404);
     const result = await removeSenderRule(deps.db, c.get("ctx"), id.data, {

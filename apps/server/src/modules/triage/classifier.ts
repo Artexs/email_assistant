@@ -4,7 +4,7 @@ import { buildTriageAnalysisSchema, type Category, markUntrustedText, type Triag
 
 import { type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
 
-import { prompts } from "./prompts";
+import { classifierVersions, type ClassifierPromptChoice, productionClassifierChoice } from "./prompts";
 import type { ClassifierDelegate } from "./prompts/classifier-v2";
 
 export interface ClassifierEmail {
@@ -23,6 +23,31 @@ export interface SenderContext {
   noreply: boolean;
 }
 
+// What the user's own data adds to one mail (F109 stage 08, decision D10). `classifier-v2` ignores it. Counts and
+// names only: no text of another mail leaves the readers (P4). Absent extras mean all empty or null.
+export interface ClassifierExtras {
+  // Non-inline attachments, at most 10. Names are untrusted mail data.
+  attachments: { name: string | null; type: string; size: number | null }[];
+  // The mail has a List-Id or a List-Unsubscribe header.
+  isList: boolean;
+  // Counts of earlier mail of this sender. No model labels (review N2). Null for a flagged mail: a forged
+  // address must not inherit a good history.
+  senderHistory: {
+    days: number;
+    received: number;
+    // The `true_category` of the user's "wrong" feedback.
+    corrections: Partial<Record<Category, number>>;
+  } | null;
+  // The user's urgency profile. `today` is a local date (YYYY-MM-DD); deadlines are due within today−1 … today+30.
+  urgency: {
+    today: string;
+    topics: { label: string; keywords: string[] }[];
+    deadlines: { label: string; due: string }[];
+  } | null;
+}
+
+export const EMPTY_EXTRAS: ClassifierExtras = { attachments: [], isList: false, senderHistory: null, urgency: null };
+
 function markedOrNull(text: string | null): string | null {
   const marked = text === null ? "" : markUntrustedText(text).trim();
   return marked === "" ? null : marked;
@@ -37,18 +62,31 @@ export async function classifyEmail(
     allowed: readonly Category[];
     delegates: readonly ClassifierDelegate[];
     model?: string;
+    // Absent: all empty or null.
+    extras?: ClassifierExtras;
+    // Absent: the production prompt. The eval picks another version and part list.
+    prompt?: ClassifierPromptChoice;
   }
 ): Promise<{ analysis: TriageAnalysis; usage: LlmUsage; promptVersion: string }> {
   const nonce = randomBytes(16).toString("hex");
+  const choice = input.prompt ?? productionClassifierChoice();
+  const prompt = classifierVersions[choice.version];
   const { data, usage } = await llm.generate({
-    role: prompts.classifier.role,
-    promptVersion: prompts.classifier.version,
+    role: prompt.role,
+    promptVersion: prompt.version,
     schema: buildTriageAnalysisSchema(
       input.allowed,
       input.delegates.map((d) => d.id)
     ),
-    system: prompts.classifier.buildSystem(input.allowed),
-    prompt: prompts.classifier.buildUser(input.email, input.sender, input.delegates, nonce),
+    system: prompt.buildSystem(input.allowed, choice.parts),
+    prompt: prompt.buildUser(
+      input.email,
+      input.sender,
+      input.delegates,
+      nonce,
+      input.extras ?? EMPTY_EXTRAS,
+      choice.parts
+    ),
     model: input.model,
   });
   if (!input.allowed.includes(data.category)) throw new LlmOutputError(input.model ?? llm.modelOf("classifier"));
@@ -62,5 +100,5 @@ export async function classifyEmail(
     clarification: markedOrNull(data.fields.clarification),
   };
   const analysis: TriageAnalysis = { ...data, reason: markUntrustedText(data.reason), summary, fields };
-  return { analysis, usage, promptVersion: prompts.classifier.version };
+  return { analysis, usage, promptVersion: prompt.version };
 }

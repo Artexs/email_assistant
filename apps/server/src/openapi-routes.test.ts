@@ -1,3 +1,4 @@
+import { connectMailboxBodySchema } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
@@ -28,42 +29,20 @@ const HIDDEN_ROUTES: Record<string, string> = {
 // Routes that have no `apiDoc` yet. A new route never goes on this list: it gets an `apiDoc`.
 const NOT_DESCRIBED_YET: readonly string[] = [
   "DELETE /api/channels/telegram/link",
-  "DELETE /api/mailboxes/:id",
-  "DELETE /api/organization",
-  "DELETE /api/rules/:id",
   "GET /api/activity",
   "GET /api/channels/telegram",
-  "GET /api/mailboxes",
-  "GET /api/me",
-  "GET /api/me/sessions",
-  "GET /api/me/two-factor",
-  "GET /api/organization",
-  "GET /api/rules",
-  "GET /api/security-log",
-  "GET /api/settings/:mailboxId",
   "GET /api/stats",
-  "PATCH /api/me/digest-times",
-  "PATCH /api/me/locale",
-  "PATCH /api/organization",
-  "PATCH /api/settings/:mailboxId/auto/:category",
-  "PATCH /api/settings/:mailboxId/mode",
-  "PATCH /api/settings/:mailboxId/switches/:name",
-  "PATCH /api/settings/:mailboxId/sync-folders/:key",
   "POST /api/actions/:id/mistake",
   "POST /api/actions/:id/reject-reason",
   "POST /api/actions/undo",
   "POST /api/channels/telegram/link",
   "POST /api/feedback",
-  "POST /api/mailboxes",
-  "POST /api/mailboxes/:id/password",
-  "POST /api/mailboxes/:id/pause",
-  "POST /api/mailboxes/:id/resume",
-  "POST /api/me/terms",
-  "POST /api/onboarding/keep-mode",
-  "POST /api/rules",
 ];
 
 type Spec = Awaited<ReturnType<typeof openApiSpec>>;
+interface RequestBodyJson {
+  content?: Record<string, { schema?: unknown } | undefined>;
+}
 interface ResponseJson {
   content?: Record<string, { schema?: unknown } | undefined>;
 }
@@ -122,8 +101,10 @@ export function specProblems(spec: Spec, hidden: Record<string, string>): string
       else if (ids.has(op.operationId))
         problems.push(`operationId ${op.operationId}: ${ids.get(op.operationId)}, ${key}`);
       else ids.set(op.operationId, key);
+      // 204 is an empty answer: it has no body to describe.
       const ok = Object.entries(op.responses ?? {}).some(
-        ([status, response]) => /^2\d\d$/.test(status) && response?.content?.["application/json"]?.schema !== undefined
+        ([status, response]) =>
+          status === "204" || (/^2\d\d$/.test(status) && response?.content?.["application/json"]?.schema !== undefined)
       );
       if (!ok) problems.push(`no 2xx JSON schema: ${key}`);
     }
@@ -257,6 +238,34 @@ describe("the real app", () => {
       stale: [],
     });
     expect(specProblems(spec, HIDDEN_ROUTES)).toEqual([]);
+  });
+
+  test("POST /api/mailboxes has the connect body: its required list is that of the connect body schema", async () => {
+    const spec = await openApiSpec(realApp());
+    const body = spec.paths?.["/api/mailboxes"]?.post?.requestBody as RequestBodyJson | undefined;
+    const schema = body?.content?.["application/json"]?.schema as { required?: string[] } | undefined;
+    const expected = z.toJSONSchema(connectMailboxBodySchema, { io: "input", unrepresentable: "any" }) as {
+      required?: string[];
+    };
+    expect(expected.required).toEqual(["address", "password", "secretKind"]);
+    expect(schema?.required).toEqual(expected.required);
+  });
+
+  test("PATCH /api/settings/{mailboxId}/mode has the path parameter mailboxId and a request body", async () => {
+    const operation = (await openApiSpec(realApp())).paths?.["/api/settings/{mailboxId}/mode"]?.patch;
+    // One entry, typed as a UUID (hono-openapi alone would list a plain string).
+    expect(operation?.parameters).toMatchObject([
+      { name: "mailboxId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+    ]);
+    expect(operation?.requestBody).toBeDefined();
+  });
+
+  test("an empty answer is described as 204 with no body, and the shared guard codes are listed", async () => {
+    const operation = (await openApiSpec(realApp())).paths?.["/api/me/locale"]?.patch as {
+      responses?: Record<string, { description?: string } | undefined>;
+    };
+    expect(Object.keys(operation.responses ?? {}).sort()).toEqual(["204", "400", "401", "403", "404", "413"]);
+    expect(operation.responses?.["403"]?.description).toBe("Error codes: no_organization, org_suspended, bad_origin");
   });
 
   test("NOT_DESCRIBED_YET is sorted and has no key twice", () => {

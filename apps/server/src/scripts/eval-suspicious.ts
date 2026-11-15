@@ -44,7 +44,7 @@ const MIME_OF_EXTENSION: Readonly<Record<string, string>> = {
   ics: "text/calendar",
 };
 
-function typeOfName(name: string): string {
+export function typeOfName(name: string): string {
   const dot = name.lastIndexOf(".");
   const extension = dot < 0 ? "" : name.slice(dot + 1).toLowerCase();
   return MIME_OF_EXTENSION[extension] ?? "application/octet-stream";

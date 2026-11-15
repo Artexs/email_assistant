@@ -13,6 +13,7 @@ import { HardError, SoftError, describeError } from "../../platform/errors";
 import { parseBody, requireOwner, type ApiEnv } from "../../platform/http";
 import { createLog } from "../../platform/log";
 
+import { mailDocs } from "./api-docs";
 import { updateMailboxPassword, type ConnectDeps } from "./connect";
 import { connectMailboxRequest } from "./connect-request";
 import {
@@ -62,7 +63,7 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
   const { db, scopeEnv } = deps;
   const app = new Hono<ApiEnv>();
 
-  app.get("/mailboxes", async (c) => c.json(await listMailboxViews(db, c.get("ctx"), scopeEnv)));
+  app.get("/mailboxes", mailDocs.getMailboxes, async (c) => c.json(await listMailboxViews(db, c.get("ctx"), scopeEnv)));
 
   const switchRoute = (to: "paused" | "active") => async (c: Context<ApiEnv>) => {
     const id = mailboxIdOf(c);
@@ -79,7 +80,7 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
     const view = await getMailboxView(db, ctx, id, scopeEnv);
     return view ? c.json(view) : c.json({ error: "not_found" }, 404);
   };
-  app.post("/mailboxes", requireOwner, async (c) => {
+  app.post("/mailboxes", requireOwner, mailDocs.postMailbox, async (c) => {
     const body = await parseBody(c, connectMailboxBodySchema);
     try {
       const { mailboxId, info } = await connectMailboxRequest(
@@ -100,7 +101,7 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
     }
   });
 
-  app.post("/mailboxes/:id/password", requireOwner, async (c) => {
+  app.post("/mailboxes/:id/password", requireOwner, mailDocs.postMailboxPassword, async (c) => {
     const id = mailboxIdOf(c);
     if (id === null) return c.json({ error: "not_found" }, 404);
     const { password, secretKind } = await parseBody(c, mailboxPasswordBodySchema);
@@ -123,10 +124,10 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
     return view ? c.json(view) : c.json({ error: "not_found" }, 404);
   });
 
-  app.post("/mailboxes/:id/pause", requireOwner, switchRoute("paused"));
-  app.post("/mailboxes/:id/resume", requireOwner, switchRoute("active"));
+  app.post("/mailboxes/:id/pause", requireOwner, mailDocs.postMailboxPause, switchRoute("paused"));
+  app.post("/mailboxes/:id/resume", requireOwner, mailDocs.postMailboxResume, switchRoute("active"));
 
-  app.delete("/mailboxes/:id", requireOwner, async (c) => {
+  app.delete("/mailboxes/:id", requireOwner, mailDocs.deleteMailbox, async (c) => {
     const id = mailboxIdOf(c);
     if (id === null) return c.json({ error: "not_found" }, 404);
     const { confirmAddress } = await parseBody(c, removeMailboxBodySchema);
