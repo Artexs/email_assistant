@@ -68,7 +68,9 @@ Triage turns a stored mail with status `pending` into a category, a short reason
     - **A hosted OpenAI-compatible API is not supported** (Azure OpenAI, OpenRouter and the like): its cost and its sub-processor are unknown. Without `OPENAI_ENDPOINT_KIND=own` the start refuses it.
     - **An own server gets no `reasoning` field.** Every `openai` role row has no effort there, whatever `OPENAI_REASONING_EFFORT` or `LLM_<ROLE>_REASONING` says. `store: false` stays.
     - **Logs show the kind and the host only.** `llm_settings` has `endpoint` and `host` (the hostname: no path, no port, no user info, no key); `bun run llm:check` prints `endpoint=<kind> host=<host>`. `LlmUsage.endpoint` and `LlmClient.endpointOf(role)` carry the kind of every call; the audit row and the prices follow in the next stage of F111.
-    - The API key of the EU endpoint must belong to the OpenAI project of that region. An own server needs a non-empty `OPENAI_API_KEY` (any text) while `TRIAGE_LLM_SCOPE` is not `off`.
+    - The API key of the EU endpoint must belong to the OpenAI project of that region.
+    - **An own server never gets an OpenAI credential.** Its row holds `OPENAI_OWN_API_KEY` (optional, secret) or the fixed text `own`; the start needs no `OPENAI_API_KEY` for it. The client sets `organization` and `project` to null for `own`, so `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` of the process env never reach the server. A remote own server therefore never sees the key of OpenAI.
+    - **Other SDK env variables are fixed in code too.** The OpenAI client sets `baseURL` and `logLevel: "off"` (so `OPENAI_LOG=debug` cannot print mail text); the Gemini client sets `httpOptions.baseUrl` and `vertexai: false` (so `GOOGLE_GEMINI_BASE_URL`, `GOOGLE_VERTEX_BASE_URL` and `GOOGLE_GENAI_USE_VERTEXAI` change nothing). Gemini has one fixed endpoint.
 
 ## Entry points
 

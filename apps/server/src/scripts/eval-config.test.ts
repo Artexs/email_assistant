@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { resolve } from "node:path";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
@@ -77,6 +79,40 @@ describe("eval CLI with a bad OPENAI_BASE_URL (every other key valid)", () => {
     expect(run.stderr).not.toContain("config error");
     expect(run.code).toBe(0);
     expect(run.stdout).toContain("phishing recall");
+  });
+
+  test("T2: --gap reads no config: a real gap report is made with a bad OPENAI_BASE_URL", () => {
+    const dir = mkdtempSync(join(tmpdir(), "f111-gap-"));
+    try {
+      const zero = { tp: 0, fp: 0, fn: 0, support: 0 };
+      const real = join(dir, "real.json");
+      writeFileSync(
+        real,
+        JSON.stringify({
+          date: "2026-11-14",
+          labeled: 100,
+          categories: {
+            urgent: zero,
+            delegation: zero,
+            unsure: zero,
+            needs_reply: zero,
+            info: zero,
+            notification: { tp: 28, fp: 2, fn: 1, support: 29 },
+            spam: { tp: 40, fp: 1, fn: 2, support: 42 },
+          },
+        })
+      );
+      const gate = resolve(
+        import.meta.dir,
+        "../../../../evals/results/gate/classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json"
+      );
+      const run = runCli(["--gap", "--sim-json", gate, "--real-json", real], env);
+      expect(run.stderr).not.toContain("config error");
+      expect(run.code).toBe(0);
+      expect(run.stdout).toContain("| notification");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test("12: with a good URL the same --sim run passes the config check", () => {

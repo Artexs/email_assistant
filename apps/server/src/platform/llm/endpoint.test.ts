@@ -98,4 +98,37 @@ describe("parseLlmBaseUrl", () => {
     }
     expect(texts[4]).toBe("not a valid URL");
   });
+
+  // The URL parser of the runtime reads these forms; the class of each is pinned here, so that a later change of the
+  // host rules cannot move one silently.
+  test("T1: numeric and IPv6 loopback forms are own, with the normalized host", () => {
+    for (const [raw, host] of [
+      ["http://127.1:11434/v1", "127.0.0.1"],
+      ["http://0x7f.1/v1", "127.0.0.1"],
+      ["http://2130706433/v1", "127.0.0.1"],
+      ["http://0177.0.0.1/v1", "127.0.0.1"],
+      ["http://[0:0:0:0:0:0:0:1]/v1", "::1"],
+      ["http://localhost./v1", "localhost"],
+      ["http://ollama./v1", "ollama"],
+    ] as const) {
+      expect(ok(raw)).toMatchObject({ endpoint: "own", host });
+    }
+  });
+
+  test("T1: other IPv6, wildcard and link-local addresses over http are refused", () => {
+    for (const raw of ["http://[fe80::1]/v1", "http://[::]/v1", "http://0.0.0.0/v1", "http://169.254.169.254/latest"]) {
+      expect(bad(raw)).toContain("http is allowed only");
+      expect(bad(raw, true)).toContain("http is allowed only");
+    }
+  });
+
+  test("T1: look-alike hosts of OpenAI are not OpenAI hosts", () => {
+    expect(bad("https://api.openai.com.evil.test/v1")).toContain("hosted OpenAI-compatible API not supported");
+    expect(bad("https://api-openai.com/v1")).toContain("hosted OpenAI-compatible API not supported");
+    // An internationalized sub-domain of openai.com is an OpenAI host with no price rows.
+    expect(bad("https://xn--pi-7kc.openai.com/v1")).toContain("no price rows");
+    expect(bad("https://xn--pi-7kc.openai.com/v1", true)).toContain("cannot relabel");
+    // With the kind, the operator says "a server I run": a look-alike host is own, never standard.
+    expect(ok("https://api.openai.com.evil.test/v1", true).endpoint).toBe("own");
+  });
 });

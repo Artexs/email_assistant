@@ -1,9 +1,17 @@
+import { GoogleGenAI } from "@google/genai";
 import { describe, expect, test } from "bun:test";
 
 import { HardError, SoftError } from "../../errors";
 import { LlmConfigError, llmErrorCode, LlmHardError, LlmSoftError } from "../errors";
 
-import { classifyGeminiError, toGeminiResult, toGenerateParams } from "./gemini";
+import {
+  classifyGeminiError,
+  GEMINI_BASE_URL,
+  geminiClientOptions,
+  geminiProvider,
+  toGeminiResult,
+  toGenerateParams,
+} from "./gemini";
 
 const MODEL = "test-model";
 
@@ -18,6 +26,62 @@ const keyBody = JSON.stringify({
     status: "INVALID_ARGUMENT",
     details: [{ "@type": "type.googleapis.com/google.rpc.ErrorInfo", reason: "API_KEY_INVALID" }],
   },
+});
+
+describe("geminiClientOptions", () => {
+  test("N2: the endpoint is explicit: a stray Gemini or Vertex variable in the env changes nothing", () => {
+    const saved = { ...process.env };
+    process.env.GOOGLE_GEMINI_BASE_URL = "http://127.0.0.1:1/never";
+    process.env.GOOGLE_VERTEX_BASE_URL = "http://127.0.0.1:1/never-vertex";
+    process.env.GOOGLE_GENAI_USE_VERTEXAI = "true";
+    try {
+      const options = geminiClientOptions("k");
+      expect(options).toEqual({ apiKey: "k", vertexai: false, httpOptions: { baseUrl: GEMINI_BASE_URL } });
+      const client = new GoogleGenAI(options) as unknown as { apiClient: { getBaseUrl(): string } };
+      expect(client.apiClient.getBaseUrl()).toBe("https://generativelanguage.googleapis.com/");
+    } finally {
+      for (const key of Object.keys(process.env)) if (!(key in saved)) Reflect.deleteProperty(process.env, key);
+      Object.assign(process.env, saved);
+    }
+  });
+});
+
+describe("geminiProvider.createGenerate", () => {
+  test("N2: a real call goes to the default Gemini URL, whatever the env says", async () => {
+    const saved = { ...process.env };
+    process.env.GOOGLE_GEMINI_BASE_URL = "http://127.0.0.1:1/never";
+    process.env.GOOGLE_GENAI_USE_VERTEXAI = "true";
+    const urls: string[] = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = Object.assign(
+      async (input: Request | string | URL) => {
+        urls.push(input instanceof Request ? input.url : String(input));
+        throw new Error("no network in this test");
+      },
+      { preconnect: originalFetch.preconnect }
+    );
+    try {
+      const generate = geminiProvider.createGenerate({
+        apiKey: "k",
+        reasoningEffort: null,
+        baseUrl: null,
+        endpoint: "standard",
+      });
+      await generate({
+        model: "m",
+        system: "s",
+        prompt: "p",
+        jsonSchema: {},
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => undefined);
+    } finally {
+      globalThis.fetch = originalFetch;
+      for (const key of Object.keys(process.env)) if (!(key in saved)) Reflect.deleteProperty(process.env, key);
+      Object.assign(process.env, saved);
+    }
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.every((url) => url.startsWith(GEMINI_BASE_URL))).toBe(true);
+  });
 });
 
 describe("toGenerateParams", () => {

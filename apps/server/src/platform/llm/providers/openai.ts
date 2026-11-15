@@ -102,9 +102,19 @@ export function toOpenAiResult(response: OpenAiResponseLike): GenerateResult {
 
 /**
  * Used only by `createOpenAiGenerate`; the options are fixed because our pause logic retries.
- * `baseURL` is always set: without it the SDK reads `OPENAI_BASE_URL` from the env and skips the config check.
+ * Every option the SDK would read from the env is set here, so a stray variable changes nothing:
+ * - `baseURL`: without it the SDK reads `OPENAI_BASE_URL` and skips the config check.
+ * - `logLevel`: without it the SDK reads `OPENAI_LOG`; at `debug` it prints request bodies, which hold mail text.
+ * - `organization` and `project`: for an own server they are null, so `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`
+ *   never go to a host that is not OpenAI.
  */
-export const openAiClientOptions = (apiKey: string, baseUrl: string) => ({ apiKey, baseURL: baseUrl, maxRetries: 0 });
+export const openAiClientOptions = (apiKey: string, baseUrl: string, endpoint: LlmEndpointKind = "standard") => ({
+  apiKey,
+  baseURL: baseUrl,
+  maxRetries: 0,
+  logLevel: "off" as const,
+  ...(endpoint === "own" ? { organization: null, project: null } : {}),
+});
 
 /** The part of the SDK client that the adapter calls (the tests pass a fake). */
 export interface OpenAiLike {
@@ -155,7 +165,7 @@ export function createOpenAiGenerate(opts: {
   endpoint?: LlmEndpointKind;
   client?: OpenAiLike;
 }): GenerateFn {
-  const client: OpenAiLike = opts.client ?? new OpenAI(openAiClientOptions(opts.apiKey, opts.baseUrl));
+  const client: OpenAiLike = opts.client ?? new OpenAI(openAiClientOptions(opts.apiKey, opts.baseUrl, opts.endpoint));
   // An own server gets no `reasoning` field, also when a caller passes an effort.
   const effort = opts.endpoint === "own" ? null : opts.reasoningEffort;
   return async (req) =>

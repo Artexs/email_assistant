@@ -117,6 +117,9 @@ const baseSchema = z.object({
   GEMINI_RPM: z.coerce.number().int().positive().default(defaultGeminiRpm),
   // Secret: never print or log it.
   OPENAI_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // The key an own server gets, when it needs one. Secret: never print or log it. Empty = the fixed dummy key.
+  // An own endpoint never gets OPENAI_API_KEY: that key belongs to OpenAI.
+  OPENAI_OWN_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
   OPENAI_MODEL_CLASSIFIER: z.preprocess(emptyAsUndefined, z.string().default("gpt-6-luna")),
   OPENAI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   OPENAI_RPM: z.coerce.number().int().positive().default(60),
@@ -202,6 +205,15 @@ interface ProviderBlock {
   endpoint: () => LlmEndpoint | null;
 }
 
+/** The key an own server gets when `OPENAI_OWN_API_KEY` is not set. The SDK needs some key; Ollama ignores it. */
+const OWN_DUMMY_API_KEY = "own";
+
+/** True for an own endpoint. A bad value is no endpoint: `configSchema` reports it. */
+function openAiIsOwn(c: BaseConfig): boolean {
+  const parsed = parseLlmBaseUrl(c.OPENAI_BASE_URL, c.OPENAI_ENDPOINT_KIND === "own");
+  return !("error" in parsed) && parsed.endpoint === "own";
+}
+
 /** The endpoint of the openai provider. `configSchema` has checked the value, so an error here is a bug. */
 function openAiEndpoint(c: BaseConfig): LlmEndpoint {
   const parsed = parseLlmBaseUrl(c.OPENAI_BASE_URL, c.OPENAI_ENDPOINT_KIND === "own");
@@ -220,9 +232,11 @@ const providerBlocks: Record<LlmProviderId, (config: BaseConfig) => ProviderBloc
     reasoningEffort: null,
     endpoint: () => null,
   }),
+  // An own endpoint never gets the OpenAI key: the row holds the own key or the dummy, so the start needs no
+  // OPENAI_API_KEY and the key can reach no other host.
   openai: (c) => ({
-    apiKeyName: "OPENAI_API_KEY",
-    apiKey: c.OPENAI_API_KEY,
+    apiKeyName: openAiIsOwn(c) ? "OPENAI_OWN_API_KEY" : "OPENAI_API_KEY",
+    apiKey: openAiIsOwn(c) ? (c.OPENAI_OWN_API_KEY ?? OWN_DUMMY_API_KEY) : c.OPENAI_API_KEY,
     classifierModel: c.OPENAI_MODEL_CLASSIFIER,
     timeoutMs: c.OPENAI_TIMEOUT_MS,
     rpm: c.OPENAI_RPM,
