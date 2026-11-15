@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-15
 ---
 
 # F094 · The server image, CI and local checks run one current Bun (1.4.x)

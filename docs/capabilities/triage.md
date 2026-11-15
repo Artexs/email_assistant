@@ -120,6 +120,7 @@ emails.status:   pending → processing → triaged → done                (don
 ## Limits
 
 - No phishing flag, no attachments in the prompt, no urgency context: E3b (F109).
+- The first sim-vs-real gap report (`evals/results/2026-11-15-sim-vs-real-gap-lab-01.md`, holdout reports and gate file in `evals/results/`) says `no gap` for `notification` and `spam`: the sim precision intervals overlap the real ones (138 real labels, 2026-11-15). Real labels never unlock `auto` (ADR 0028).
 - The gate on real labels (precision at least 98% on at least 30 labels) stays until ADR 0028 (proposed) changes it; E3 sets the numbers.
 - A junk-folder wave can use the shared daily cap: `F063-junk-llm-cap`.
 - Only the `classifier` role has a prompt. The roles `judge` (E2a), `drafter` (E6a), `extractor` (E5b) and `escalation` (E3b) have none yet.

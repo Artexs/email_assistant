@@ -85,6 +85,15 @@ function borderZones() {
     from: [`${serverSrc}/modules/**`, ...roots],
     message: "platform imports no module and no composition root.",
   });
+  // CLI output (platform/cli.ts) is for scripts only. One zone per target: a `from` list that mixes globs and plain paths is an error of the rule.
+  for (const target of [`${serverSrc}/modules`, `${serverSrc}/platform`, `${serverSrc}/*.ts`]) {
+    zones.push({
+      target,
+      from: `${serverSrc}/platform/cli.ts`,
+      message:
+        "Only scripts print CLI output (platform/cli.ts); other server code logs events (docs/code-patterns.md § Logs).",
+    });
+  }
   zones.push({ target: "packages", from: "apps", message: "packages never import apps." });
   return zones;
 }

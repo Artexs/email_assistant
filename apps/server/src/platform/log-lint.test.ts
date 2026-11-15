@@ -10,7 +10,7 @@ const headerFor = (importPath: string) =>
   `import { createLog } from "${importPath}";\n\nconst log = createLog("mail");\nconst mailboxLog = log.with({});\ndeclare const id: string, e: unknown, a: unknown, b: unknown, y: string;\n`;
 
 const TIMEOUT = 30_000;
-const fixtureFile = "apps/server/src/modules/mail/__log-fixture.ts";
+const fixtureFile = "apps/server/src/lint-fixture/__log-fixture.ts";
 
 /** Severities of the log-event messages for `line` in a virtual file. */
 async function logEventSeverities(file: string, line: string, importPath = "../../platform/log"): Promise<number[]> {
@@ -118,7 +118,7 @@ describe("log lint: event form passes", () => {
     "test files are ignored",
     async () => {
       expect(
-        await logEventSeverities("apps/server/src/modules/mail/__log-fixture.test.ts", "log.info(`sync ${id} done`);")
+        await logEventSeverities("apps/server/src/lint-fixture/__log-fixture.test.ts", "log.info(`sync ${id} done`);")
       ).toEqual([]);
     },
     TIMEOUT
@@ -174,6 +174,55 @@ describe("log lint: converted files fail", () => {
     "web.ts (not converted yet) stays at warn",
     async () => {
       expect(await logEventSeverities("apps/server/src/web.ts", "log.info(`x ${y}`);", "./platform/log")).toEqual([1]);
+    },
+    TIMEOUT
+  );
+});
+
+describe("CLI output border", () => {
+  const cliCall = 'createCliOutput("x").print("y");\n';
+
+  /** Messages of `import/no-restricted-paths` for a virtual file that imports `platform/cli`. */
+  async function borderMessages(file: string, importPath: string): Promise<string[]> {
+    const [result] = await eslint.lintText(`import { createCliOutput } from "${importPath}";\n${cliCall}`, {
+      filePath: path.join(repoRoot, file),
+    });
+    expect(result?.messages.filter((message) => message.fatal)).toEqual([]);
+    return (result?.messages ?? [])
+      .filter((message) => message.ruleId === "import/no-restricted-paths")
+      .map((message) => message.message);
+  }
+
+  test(
+    "a module may not import it",
+    async () => {
+      const messages = await borderMessages("apps/server/src/modules/mail/__cli-fixture.ts", "../../platform/cli");
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toContain("Only scripts print CLI output (platform/cli.ts)");
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a platform file may not import it",
+    async () => {
+      expect(await borderMessages("apps/server/src/platform/__cli-fixture.ts", "./cli")).toHaveLength(1);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a composition root may not import it",
+    async () => {
+      expect(await borderMessages("apps/server/src/__cli-fixture.ts", "./platform/cli")).toHaveLength(1);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a script may import it",
+    async () => {
+      expect(await borderMessages("apps/server/src/scripts/__cli-fixture.ts", "../platform/cli")).toEqual([]);
     },
     TIMEOUT
   );

@@ -15,6 +15,14 @@ Follow `/home/artek/.pi/agent/skills/plan-task/SKILL.md` and its `references/pla
 - **§5 `limen ticket new`:** the ticket exists. Do not create another one.
 - **§6:** commit the ticket folder with explicit paths after each finished stage file. Never `git add -A`.
 - **Thinking (owner, 2026-11-15):** this job runs at `--thinking medium`. Do not change it. The cold review below runs at `high`: it checks your decisions.
+- **Scouts first (owner, 2026-11-15; not in a refresh job):** before you read code, write 2–4 questions whose answers your decisions need (one subject each, for example "Which tables hold sender addresses, and where does a delete reach them?"). Start one scout per question, all at once, then wait for each:
+  ```
+  limen spawn --role scout --detached --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking medium \
+    --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 20m \
+    --label "scout <n> · FNNN" '<the question>. Context: spec/features/<lane>/FNNN-slug/ticket.md. Answer for the code at HEAD.'
+  limen wait <id>; limen jobs <id>
+  ```
+  Copy each packet whole into `scouts.md` in the ticket folder (question, job id, packet). Then read the capability pages, the epic page and the packets. A packet is a lead, not a fact: read the code yourself before a decision depends on a finding marked `guessed`, or on a packet with `Verified: none`. A scout that fails costs nothing more: read that part yourself. Write the scout count in `plan.md` § Planning progress.
 - **§7 cold review:** you run it yourself, as a separate job, before you finish. Commit the complete plan first. Then start one review job on your own branch (`git branch --show-current`) and wait for it. Review model (`spec/build.md` TRACK, standing models): `claude-opus-5-5` when the plan has a `[risky]` stage or touches a risk area of that line; else `claude-sonnet-5-5`. Write the choice and its reason in `plan.md` § Cold review. Add this line to the review text: "The plan follows `.agents/limen/planner.md` § Plan size. Missing code detail (line numbers, edit text, lists of touched files) is not a finding; a missing decision, edge case, test or interface is."
   ```
   limen spawn --review --detached --branch <your branch> --engine pi --provider claude-bridge --model <review model> --thinking high \
@@ -22,7 +30,7 @@ Follow `/home/artek/.pi/agent/skills/plan-task/SKILL.md` and its `references/pla
     --label "plan review · FNNN" '<the §7 pre-mortem text, with this ticket folder>'
   limen wait <id>; limen jobs <id>
   ```
-  File its final message whole as `plan-review-1.md` in the ticket folder. Fix each finding in the plan, or write why you reject it. Commit. One review round only; this is the only job you may start. If the review job fails, say so in the final message; do not skip it in silence.
+  File its final message whole as `plan-review-1.md` in the ticket folder. Fix each finding in the plan, or write why you reject it. Commit. One review round only. Your scouts and this review are the only jobs you may start. If the review job fails, say so in the final message; do not skip it in silence.
 - **§8 end summary:** it is your final message (see below).
 - Add a `## Sequenced` section to `ticket.md` with two lines: `Plan after:` (tickets whose plan this plan needs) and `Build after:` (tickets that must be in `done/` first), plus the gate. Take it from `docs/product/stage-2/07-foundation-plan.md` or `05-execution-plan.md` § 2.
 - Do not edit `spec/build.md`, `docs/product/stage-2/*` or any other ticket. If one of them must change, write the exact change in the final message.
@@ -43,6 +51,8 @@ A harness study (Nov 12–14) found: plans cost 3–10 times their build, and ab
 ## Refresh job
 
 The instruction says `Refresh FNNN` when the plan exists but other tickets changed the code after it was written. You do not plan again. You make the existing plan true for the code at `HEAD`, before its first stage builds.
+
+A refresh job starts no scouts: the drift script gives the facts.
 
 1. Find the plan base: the `Plan base:` line of `plan.md`, else the `Refresh:` line in the `## Sequenced` section of `ticket.md`. Run `scripts/plan-drift.sh <ticket folder> <base>`. It lists the named paths that changed or are gone, and the commits that changed them.
 2. Read each changed file at `HEAD` and each commit message. Also read the stages of the tickets those commits belong to, and the interfaces this plan uses from tickets that landed since the base (see `Plan after:`).
