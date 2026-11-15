@@ -20,6 +20,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### Log store: vlagent reads no lines
+
+- **First seen:** 2026-11-15 (the store is new, F103 stage 18)
+- **Source:** the log store UI (`/select/vmui/`) shows no `server` lines, or `$C --profile ops logs vlagent` shows no file read. The store itself is healthy.
+- **Cause:** `vlagent` reads `/var/lib/docker/containers/*/*-json.log` and nothing else. It finds no file when the Docker root directory is not `/var/lib/docker`, or when the `server` container does not use the `json-file` driver (a `local` log has another path and format).
+- **Fix:** check `docker info --format '{{.DockerRootDir}}'` and `docker inspect --format '{{.HostConfig.LogConfig.Type}}' $($C ps -q server)`. The root must be `/var/lib/docker` and the type `json-file`; if not, fix the driver (`bash deploy/check-logging.sh`, then `$C up -d --force-recreate --wait server`) or change the `vlagent` mount and glob in `deploy/compose.yaml`. Then run `$C --profile ops up -d --force-recreate vlagent`.
+- **Status:** workaround
+
 ### `slo_sync_lag` (operator alert text `ALERT slo_sync_lag`; also `STILL OPEN`, `RESOLVED`, `TEST`)
 
 - **First seen:** 2026-11-15 (F114 stage 03; not seen live)

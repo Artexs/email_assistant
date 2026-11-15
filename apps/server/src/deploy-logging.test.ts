@@ -103,16 +103,15 @@ describe("deploy/check-logging.sh", () => {
   });
 });
 
-describe("deploy/compose.yaml drivers and the cli service", () => {
-  // Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
+// Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
+const composeConfig = (profile: string | null) => {
   const result = Bun.spawnSync(
     [
       "docker",
       "compose",
       "-f",
       "deploy/compose.yaml",
-      "--profile",
-      "cli",
+      ...(profile === null ? [] : ["--profile", profile]),
       "config",
       "--no-env-resolution",
       "--format",
@@ -120,6 +119,61 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     ],
     { cwd: repoRoot, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
   );
+  return result;
+};
+
+interface OpsService {
+  command?: string[];
+  mem_limit?: string;
+  ports?: { host_ip?: string; target?: number; published?: string }[];
+  volumes?: { type: string; source: string; target: string; read_only?: boolean }[];
+  logging?: { driver: string };
+  profiles?: string[];
+}
+
+describe("deploy/compose.yaml profile ops (the log store)", () => {
+  const withOps = composeConfig("ops");
+  const services = (JSON.parse(withOps.stdout.toString()) as { services: Record<string, OpsService> }).services;
+  const store = services.victorialogs;
+  const agent = services.vlagent;
+
+  test("victorialogs keeps 30 days and 1 GiB, 256 MB, and listens on loopback only", () => {
+    expect(withOps.exitCode).toBe(0);
+    expect(store?.command).toContain("-retentionPeriod=30d");
+    expect(store?.command).toContain("-retention.maxDiskSpaceUsageBytes=1GiB");
+    expect(store?.mem_limit).toBe("268435456");
+    expect(store?.ports).toHaveLength(1);
+    expect(store?.ports?.[0]?.host_ip).toBe("127.0.0.1");
+    expect(store?.ports?.[0]?.target).toBe(9428);
+    expect(store?.logging?.driver).toBe("local");
+  });
+
+  test("vlagent reads the Docker logs read-only, has no ports and 64 MB", () => {
+    expect(agent?.mem_limit).toBe("67108864");
+    expect(agent?.ports).toBeUndefined();
+    const containers = agent?.volumes?.find((v) => v.target === "/var/lib/docker/containers");
+    expect(containers?.read_only).toBe(true);
+    expect(agent?.command).toContain("-fileCollector.glob=/var/lib/docker/containers/*/*-json.log");
+    expect(agent?.logging?.driver).toBe("local");
+  });
+
+  test("both services are behind the profile", () => {
+    expect(store?.profiles).toEqual(["ops"]);
+    expect(agent?.profiles).toEqual(["ops"]);
+  });
+
+  test("without the profile the config lists neither service", () => {
+    const plain = composeConfig(null);
+    expect(plain.exitCode).toBe(0);
+    const names = Object.keys((JSON.parse(plain.stdout.toString()) as { services: object }).services);
+    expect(names).not.toContain("victorialogs");
+    expect(names).not.toContain("vlagent");
+    expect(names).toContain("server");
+  });
+});
+
+describe("deploy/compose.yaml drivers and the cli service", () => {
+  const result = composeConfig("cli");
   interface Service {
     logging?: { driver: string; options: Record<string, string> };
     environment?: Record<string, string>;

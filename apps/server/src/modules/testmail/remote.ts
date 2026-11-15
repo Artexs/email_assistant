@@ -35,7 +35,7 @@ export function remoteCommand(
     throw new HardError("--min-kept must be an integer from 1 to 10000");
   }
 
-  let line = `cd ${t.remoteDir} && docker compose ${t.composeArgs} run --rm -T -v ${b}:${b}:ro server bun ${b} ${command} --org-id ${t.orgId} --mailbox-id ${t.mailboxId}`;
+  let line = `cd ${t.remoteDir} && docker compose ${t.composeArgs} run --rm -T -v ${b}:${b}:ro cli bun ${b} ${command} --org-id ${t.orgId} --mailbox-id ${t.mailboxId}`;
   if (opts.checkOnly === true) line += " --check-only";
   if (opts.bar !== undefined) line += ` --bar ${String(opts.bar)}`;
   if (opts.minKept !== undefined) line += ` --min-kept ${String(opts.minKept)}`;
