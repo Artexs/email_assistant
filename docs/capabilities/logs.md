@@ -36,7 +36,8 @@ None. Lines go to stdout and stderr of the process; Docker keeps them (`deploy/c
 
 ## Limits
 
-- The log store, the Docker log drivers, the `cli` Compose service and the canary test come with F103 stages 15–19. Today `docker compose logs` is the only reader.
+- The log store, the Docker log drivers and the `cli` Compose service come with F103 stages 17–19. Today `docker compose logs` is the only reader.
+- The canary test (`apps/server/test/integration/log-canary.test.ts`) plants a fake sender, subject, body, summary, reason, task, IMAP, SMTP, Telegram and LLM error text through sync, triage, committer, send, notices, digest, the console guard and two web requests. It asserts that no captured line holds a planted value (the `console_output` lines of the guard carry `dropped_fields` by design and are checked for planted values only). It covers the paths that the test runs: a new log path needs its own step.
 - Bun's own output before `main.ts` runs (a syntax or an import error at start) prints as today. A library that prints in text format (dev) is not guarded.
 - The lint rules read the code shape only. They do not catch a logger under another name (an alias, a destructured method, `log['info']`, a logger variable without the `Log` suffix), `.message` reached through a variable, or `console` through an alias or `globalThis`. A review catches these; the runtime turns a free-text event into `log_call_invalid`.
 - The value rule does not stop a secret that looks like a code. Never log a token, a password or a key.
