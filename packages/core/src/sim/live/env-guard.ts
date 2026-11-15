@@ -43,10 +43,9 @@ export function checkSimEnv(env: Env, allowedAddresses: readonly string[]): SimE
   const check = (issue: SimEnvIssue, fails: boolean) => {
     if (fails) issues.push(issue);
   };
-  const telegramRoot = env.TELEGRAM_API_ROOT ?? "";
   check("not_sim_stack", env.LAB_STACK !== SIM_STACK_NAME);
   check("local_hosts_off", env.MAIL_ALLOW_LOCAL_HOSTS !== "true");
-  check("telegram_root_not_loopback", telegramRoot === "" || !isLoopbackApiRoot(telegramRoot));
+  check("telegram_root_not_loopback", !isLoopbackApiRoot(env.TELEGRAM_API_ROOT ?? ""));
   check("telegram_token_not_fake", env.TELEGRAM_BOT_TOKEN !== LAB_FAKE_TELEGRAM_TOKEN);
   check("send_scope_not_self", env.SEND_SCOPE !== "self");
   check("send_address_not_scenario", !sendAddressesAllowed(env.SEND_TEST_ADDRESSES, allowedAddresses));
