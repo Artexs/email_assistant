@@ -36,3 +36,19 @@ T1–T10 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s10`).
 ## Out of scope
 
 Planning (14, 15), cards (11).
+
+## Carry-over from stage 09 (worker, 2026-11-15)
+
+Stage 09 hides loop-anchored rows from every reader of mail with `email_id IS NOT NULL` (comment `loop rows: open loops stage 10/11`). Stage 10 opens the paths and must change each place on this list, and must remove its filter in the same change:
+
+- `actions/repo/sends.ts` `sendBase` (used by `getSend`, `lockSend`, `listSetSends`, `getSetSend`, `listApprovalSends`, `listSendsToNotify`, `listSetsToNotify`, `listSendResultsToNotify`): inner join `emails` and the filter. `SendRow.email` and `toSendRow` use `emailIdOf`, which throws `loop_anchor` for a loop row. The loop send needs its own row shape (the loop copy gives mailbox, subject, message ids), not a null `email`.
+- `actions/repo/drafts.ts` `draftQuery` (`getDraft`, `lockDraft`): filter and `emailIdOf` in `toDraftRow`.
+- `actions/repo/claims.ts` `claimableWhere`, `countClaimable`, `countHeldSends`, `claimActions`: the claim joins `emails` for the mailbox and `ClaimedAction.email`; a loop row has no mail, the mailbox comes from `open_loops.mailbox_id`.
+- `actions/repo/sends.ts` `listRecentSends` (the send limits count by it): a loop send must count in the limits of its mailbox and recipients. Today it is left out: without this change a follow-up would bypass the limits. This is a safety item, not a feature.
+- `actions/repo/approvals.ts` `listExpiredApprovals`, `listUnseenApprovalSends`, `listAwaitingSendIds`, `countApprovals`; `actions/repo/approval-reads.ts` `countWaitingApprovals`; `actions/repo/notify.ts` `listFailedUnnotified`, `listSendLimitHolds`: the expiry (48 h and 7 days), the unseen resume path, the `/status` counts, the nav badge, the failure notice and the limit-hold notice.
+- `actions/repo/planned.ts` `isOwnActionId` and `sentOriginOf` still inner-join `emails` (review G1 above: the Sent copy of a follow-up must be `system`).
+- `actions/repo/reads.ts` (`listActionsForEmails`, `listDraftTasks`, `listSummaries`) and `expiry.ts` mailbox changes use `emailIdOf` for the activity of a mail; they stay mail-only.
+- `privacy/dsr-match.ts` `findOpenActions` now keeps a loop-anchored action in its payload branch (`coalesce`), so an open follow-up that names the person stops the erase (test in `actions-loop-anchor.test.ts`). `findChains` and the export/erase of `actions` by `email_id` do not reach a loop row: the follow-up's draft payload goes with the payload retention (closed rows) and with `clearLoopTextsOfPerson` only for the loop copy. Check the closed loop-anchored `create_draft`/`send` payloads (they hold the recipients and the quote) against the erase of one person before the pilot.
+- `metrics.ts` readers (`actions/repo/metrics.ts`) join `emails`: loop rows do not count in M2 until stage 23.
+- Tests for these live in `apps/server/test/integration/actions-loop-anchor.test.ts` (loop pair fixture `insertLoopActionPair` in `loops-fixtures.ts`); each filter you remove changes a test there: turn it into the positive test.
+- The 7-day mail-age limit of the claim does not apply to drafts and sends (F8 in `facts.md`); a loop row has no mail age at all.
