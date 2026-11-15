@@ -14,6 +14,7 @@ Follow `/home/artek/.pi/agent/skills/plan-task/SKILL.md` and its `references/pla
 - **Plan after:** if this plan needs another ticket's interfaces and that ticket has no `stages/` yet, treat it as a blocking question.
 - **§5 `limen ticket new`:** the ticket exists. Do not create another one.
 - **§6:** commit the ticket folder with explicit paths after each finished stage file. Never `git add -A`.
+- **Thinking (owner, 2026-11-15):** this job runs at `--thinking medium`. Do not change it. The cold review below runs at `high`: it checks your decisions.
 - **§7 cold review:** you run it yourself, as a separate job, before you finish. Commit the complete plan first. Then start one review job on your own branch (`git branch --show-current`) and wait for it. Review model (`spec/build.md` TRACK, standing models): `claude-opus-5-5` when the plan has a `[risky]` stage or touches a risk area of that line; else `claude-sonnet-5-5`. Write the choice and its reason in `plan.md` § Cold review. Add this line to the review text: "The plan follows `.agents/limen/planner.md` § Plan size. Missing code detail (line numbers, edit text, lists of touched files) is not a finding; a missing decision, edge case, test or interface is."
   ```
   limen spawn --review --detached --branch <your branch> --engine pi --provider claude-bridge --model <review model> --thinking high \

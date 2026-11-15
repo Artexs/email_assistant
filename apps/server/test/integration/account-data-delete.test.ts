@@ -128,6 +128,7 @@ const DELETE_SEEDS: Record<string, Seed> = {
   emails: base,
   mailbox_credentials: base,
   mailbox_folders: base,
+  mailbox_sent_sync: base,
   mailbox_settings: base,
   mailboxes: base,
   memberships: base,
@@ -136,6 +137,7 @@ const DELETE_SEEDS: Record<string, Seed> = {
   },
   outbox: base,
   sender_rules: base,
+  sent_emails: base,
   sso_providers: (trx, org) =>
     execute(
       trx,

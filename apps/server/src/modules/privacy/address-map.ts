@@ -21,6 +21,14 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     subject: "text",
     body_text: "text",
   },
+  // Mail that the user sent: no incoming mail, so no mail filter in the find (the erase of sent mail comes later).
+  sent_emails: {
+    from_address: "equal",
+    to_addresses: "recipients",
+    cc_addresses: "recipients",
+    subject: "text",
+    body_text: "text",
+  },
   email_headers: {
     // The display name can be an address (`"p@x.test" <r@x.test>`), so a kept mail can hold the person's address here.
     from_name: "text",
@@ -101,6 +109,20 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     "a Message-ID: random part and the host of the sender's system, no address of a person"
   ),
   ...reasons(["emails.thread_key"], "a Message-ID or a mailbox key, no address of a person"),
+  ...reasons(
+    [
+      "sent_emails.dedup_key",
+      "sent_emails.message_id",
+      "sent_emails.parent_message_id",
+      "sent_emails.references_ids",
+      "sent_emails.thread_key",
+    ],
+    "a Message-ID: random part and the host of the sender's system, no address of a person"
+  ),
+  ...reasons(["sent_emails.path"], "IMAP folder name"),
+  ...reasons(["sent_emails.origin", "sent_emails.content"], "closed list of codes (CHECK constraint)"),
+  ...reasons(["sent_emails.auto_submitted", "sent_emails.precedence"], "one header token, no address"),
+  ...reasons(["sent_emails.list_id"], "the name of a mailing list, set by the list sender"),
   ...reasons(["emails.content_hash"], "a hash"),
   ...reasons(["emails.folder", "emails.source_folder"], "IMAP folder name"),
   ...reasons(["emails.status", "emails.skip_reason"], "closed list of codes"),
@@ -162,6 +184,7 @@ export const NO_PERSONAL_TABLES: Readonly<Record<string, string>> = {
   email_flags: "a check code",
   mailbox_credentials: "an encrypted secret and its kind",
   mailbox_folders: "folder key, path and role of our own mailbox",
+  mailbox_sent_sync: "folder path, a cursor and codes of the sent-mail sync",
   memberships: "role and digest times of a member",
   org_features: "a flag name and a code",
   triage_feedback: "source, verdict and category codes",
