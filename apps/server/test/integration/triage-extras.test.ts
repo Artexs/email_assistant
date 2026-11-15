@@ -267,6 +267,8 @@ describe("loadClassifierExtras in triage", () => {
         trueCategory: null,
         at: new Date(now.getTime() - DAY),
       });
+      // A "right" verdict is no correction, also when it names a category.
+      await feedback(trx, s, ids[2] as string, { verdict: "right", trueCategory: "info", at: now });
       const email = await pending(trx, s);
       expect(await history(trx, s, email)).toEqual({ days: 90, received: 4, corrections: { needs_reply: 1 } });
       expect(await history(trx, s, email, { suspicious: ["lookalike_domain"] })).toBeNull();
@@ -429,6 +431,24 @@ describe("loadClassifierExtras in triage", () => {
       expect((await triageOne({ ...deps(watched), prompt: V3_ALL }, s.ctx, mailboxOf(s), v3)).kind).toBe("triaged");
       expect(sawHistory(queries)).toHaveLength(1);
       expect(headerReads(queries)).toHaveLength(2);
+    });
+  });
+
+  test("7b. a part list without `history` or `urgency` reads neither, also when the data exists", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await earlier(trx, s);
+      const email = await pending(trx, s);
+      const extras = await loadClassifierExtras(trx, s.ctx, {
+        mailbox: { id: s.mailboxId, urgencyProfile: { topics: [], deadlines: [{ label: "x", due: "2026-11-16" }] } },
+        email,
+        parts: ["list"],
+        timezone: "Europe/Warsaw",
+        testMail: NO_TEST_SENDERS,
+        suspicious: [],
+      });
+      expect(extras.senderHistory).toBeNull();
+      expect(extras.urgency).toBeNull();
     });
   });
 
