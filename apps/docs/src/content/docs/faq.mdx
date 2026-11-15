@@ -1,0 +1,102 @@
+---
+title: FAQ
+description: Short answers to the questions that new users ask in the first week.
+capabilities:
+  - triage
+  - actions-and-undo
+  - drafts-and-send
+  - digest-and-notices
+  - sync
+---
+
+import UiText from "../../components/UiText.astro";
+
+Each answer is short. The link at the end of an answer goes to the page with the detail.
+
+## Which mail services work?
+
+The assistant reads a mailbox through IMAP with a password. It sends through SMTP. It tests both logins when you connect a mailbox.
+The panel has presets for Interia, Gmail, Onet, WP, o2 and iCloud. Gmail and iCloud need an app password.
+For another provider, choose **<UiText k="preset_other" />** and type the IMAP and SMTP servers.
+IMAP must use SSL/TLS. SMTP uses SSL/TLS or STARTTLS. The system always checks the server certificate.
+The system connects only to public mail servers. A server name that points to a local or private network address is refused.
+Details: [Start](../start/).
+
+## Does it ever send a mail without me?
+
+No. The system sends a mail only after an owner taps `📤 Send` under the approval request in Telegram.
+Without a tap nothing is sent. The request ends after 48 hours.
+This holds for delegations, questions to a sender and reminders.
+Details: [Start](../start/).
+
+## What does Telegram receive?
+
+The digest and the notices show the sender, the subject and a short line from the AI. They hold no mail body.
+An approval request holds the draft and a short quote of the original mail.
+Before you link Telegram, the panel shows the full text under **<UiText k="tg_consent_title" />**. You link only after you tick the box.
+You can unlink Telegram at any time. Digests, notices and approvals then stop.
+Details: [Start](../start/).
+
+## What happens in shadow mode?
+
+The system reads and sorts your mail and reports what it would do. It changes nothing in your mailbox and sends nothing.
+A new mailbox starts in shadow mode. An owner switches a mailbox to assist mode in **<UiText k="nav_settings" />**.
+In assist mode the system moves, marks and flags mail by your switches. Nothing is sent without your approval.
+Details: [Start](../start/).
+
+## How do I undo a move?
+
+Tap `↩️ n` under the line of the mail in the digest. Or press **<UiText k="act_btn_undo" />** on the page **<UiText k="nav_activity" />**.
+You can undo for 7 days. The system moves the mail back and records the Undo as feedback on the category.
+You can also move the mail back by hand. The system sees this too.
+Details: [Start](../start/).
+
+## Why is a mail marked Unsure?
+
+The AI was not sure enough about the category. The start limit is 0.7 for each category.
+A mail is also unsure when the AI service fails three times for it.
+An unsure mail stays in INBOX. It is listed under `NEEDS ACTION` in the digest.
+Tap `✏️ n` and choose the right category.
+Details: [Start](../start/).
+
+## When do I get messages in Telegram?
+
+You get a digest at your digest times. By default these are 08:00 and 16:00 in the time zone of your organization.
+You can change the times in **<UiText k="nav_settings" />**. You can set up to 6 times.
+Send `/digest` to get a digest at once.
+An urgent mail gets its own notice. Notices wait between 22:00 and 07:00 and come at 07:00. Digests are not held.
+Details: [Start](../start/).
+
+## Can I use it in Polish?
+
+Yes. Set the language in **<UiText k="nav_settings" />**, in the Account card. The setting is for the panel, Telegram and the account e-mails.
+This site has a Polish home page. The Polish tutorial and FAQ come with a later release of this site.
+Details: [Start](../start/).
+
+## How do I stop the assistant for a while?
+
+An owner presses **<UiText k="mb_pause" />** on the page **<UiText k="nav_mailboxes" />**. An owner can also send `/pause` to the bot.
+The command pauses every mailbox of the organization. The system then does not read or sort the mail, and it sends no urgent notice. Digests still come.
+Press **<UiText k="mb_resume" />** or send `/resume` to start again. The system then reads the mail that came during the pause. It does not sort mail that is older than 7 days.
+Details: [Start](../start/).
+
+## What happens when the account is paused?
+
+Your operator can pause the whole account. The system then reads no mail, sorts no mail and sends no digests or notices.
+Telegram answers `⏸ This account is paused.` to each command except `/help`.
+The panel shows a banner. It shows your data and refuses changes. The banner says:
+
+> <UiText k="paused_banner_no_contact" />
+
+After the operator resumes the account, the system skips mail that came more than 24 hours before the resume.
+The digest counts that mail on the line `📭 Not processed (from the account pause)`.
+Details: [Start](../start/).
+
+## Why does a mailbox show Server not allowed or Login error?
+
+**<UiText k="status_host_blocked" />** means that the name of the mail server points to a private or local network address.
+The system checks again at each sync and starts the mailbox by itself when the name is right.
+**<UiText k="status_auth_error" />** means that the mail server refused the login. The panel says:
+
+> <UiText k="mb_auth_error_hint" />
+> Details: [Start](../start/).
