@@ -68,6 +68,7 @@ export {
   countWaitingApprovals,
   countReadyOriginals,
   createPlanned,
+  createPlannedForLoop,
   draftHasReverse,
   expireReadyOriginals,
   expireStaleReady,

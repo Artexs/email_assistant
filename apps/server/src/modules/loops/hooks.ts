@@ -65,7 +65,7 @@ export function loopHooks(): LoopHooks {
       if (loop?.status !== "open") return false;
       if (loop.kind === "promised") return true;
       // A reply that came since the last run of `loops.match` also stops the follow-up. The job closes the loop later.
-      const decision = await readReplyDecision(trx, ctx, loop, await ownAddressesOf(trx, ctx));
+      const decision = await readReplyDecision(trx, ctx, loop, await ownAddressesOf(trx, ctx, loop.mailbox_id));
       return decision.first === null;
     },
 

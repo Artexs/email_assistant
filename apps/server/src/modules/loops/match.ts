@@ -1,3 +1,5 @@
+import { sql } from "kysely";
+
 import type { TenantContext } from "../../platform/db";
 import { createLog } from "../../platform/log";
 import { listMailboxes } from "../mail";
@@ -40,9 +42,28 @@ export const emptyMatchResult = (): MatchResult => ({
   autoMarked: 0,
 });
 
-// The own addresses of the organization: every mailbox, lower case.
-export async function ownAddressesOf(db: DbOrTrx, ctx: TenantContext): Promise<string[]> {
-  return (await listMailboxes(db, ctx)).map((mailbox) => mailbox.address.toLowerCase());
+// The aliases that one mailbox read at most. A user has a few; the newest come first.
+const MAX_ALIASES = 100;
+
+// Every From address seen in the Sent rows of the mailbox, lower case: the user wrote from it, so a mail from it is not a
+// reply (an alias that is not a mailbox address). A wrong entry can only hide a reply, never close a loop.
+async function sentFromAddressesOf(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<string[]> {
+  const { rows } = await sql<{ address: string }>`
+    SELECT lower(from_address) AS address
+    FROM sent_emails
+    WHERE org_id = ${ctx.orgId} AND mailbox_id = ${mailboxId} AND from_address IS NOT NULL AND from_address <> ''
+    GROUP BY lower(from_address)
+    ORDER BY max(sent_at) DESC, lower(from_address)
+    LIMIT ${MAX_ALIASES}
+  `.execute(db);
+  return rows.map((row) => row.address.trim());
+}
+
+// The own addresses for the reply rules of one mailbox: every mailbox address of the organization, and every From address
+// of the Sent rows of this mailbox. Lower case, each once.
+export async function ownAddressesOf(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<string[]> {
+  const mailboxes = (await listMailboxes(db, ctx)).map((mailbox) => mailbox.address.toLowerCase());
+  return [...new Set([...mailboxes, ...(await sentFromAddressesOf(db, ctx, mailboxId))])];
 }
 
 async function openWaitingLoops(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<LoopRow[]> {
@@ -106,7 +127,7 @@ export async function matchReplies(
   const result = emptyMatchResult();
   const loops = await openWaitingLoops(deps.db, ctx, mailboxId);
   if (loops.length === 0) return result;
-  const own = await ownAddressesOf(deps.db, ctx);
+  const own = await ownAddressesOf(deps.db, ctx, mailboxId);
   for (const loop of loops) {
     result.checked += 1;
     // The cheap read first, without a lock: most loops have no mail to act on.
