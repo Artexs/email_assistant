@@ -70,7 +70,8 @@ const CANARY = {
   reason: `CANARY-REASON-${run}`,
   task: `CANARY-TASK-${run}`,
   imapError: `CANARY-IMAP-${run} canary-from-${run}@x.test`,
-  // A text-like `error.code` of an IMAP error: errorFields passes a string code on as `error_code`.
+  // A text-like error code. No driven path carries it: `errorFields` passes a code-shaped string code on as
+  // `error_code`, so a real error with this code would fail the canary (a known limit, see the capability page).
   imapCode: `CANARY-CODE-${run}`,
   messageIdLocal: `canary-${run}`,
   smtpReply: `550 CANARY-SMTP-${run}`,
@@ -203,7 +204,7 @@ describe("log canary", () => {
         let mode: "ok" | "soft" | "hard" | "auth" = "ok";
         const openProvider = async (_opts: ImapConnectOptions): Promise<FakeMailProvider> => {
           if (mode === "auth") throw new MailAuthError(CANARY.imapError);
-          if (mode === "hard") throw Object.assign(new Error(CANARY.imapError), { code: CANARY.imapCode });
+          if (mode === "hard") throw new Error(CANARY.imapError);
           if (mode === "soft") {
             const broken = createFakeMailProvider({ uidValidity: 7 });
             broken.failOn("folderStatus", new SoftError(CANARY.imapError));

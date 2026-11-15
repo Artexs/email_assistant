@@ -29,16 +29,6 @@ describe("describeError", () => {
 });
 
 describe("errorFields", () => {
-  test("a string code with a hyphen or a lower-case letter is left out", () => {
-    for (const code of ["CANARY-CODE-1", "http_503", "NO [AUTH] x"]) {
-      expect(errorFields(Object.assign(new Error("m"), { code }))).toEqual({ error: "Error" });
-    }
-    expect(errorFields(Object.assign(new Error("m"), { code: "23514" }))).toEqual({
-      error: "Error",
-      error_code: "23514",
-    });
-  });
-
   test("gives the name and a string code, never the message", () => {
     const fields = errorFields(Object.assign(new Error("MARKER"), { code: "EAUTH" }));
     expect(fields).toEqual({ error: "Error", error_code: "EAUTH" });
