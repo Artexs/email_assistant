@@ -622,6 +622,7 @@ describe("pins: money, percentages, rates, postal codes, years", () => {
   });
 
   test("a percentage: decimals, a range, spaces, standing alone", () => {
+    expect(free("100,5%", 4)).toEqual([]);
     expect(free("9,8%", 13)).toEqual([]);
     expect(free("10–23%", 7)).toEqual([]);
     expect(free("10 - 23%", 7)).toEqual([]);
@@ -747,11 +748,15 @@ describe("pins: the views of the body", () => {
 });
 
 describe("pins: the IBAN scan", () => {
+  test("the lengths of the three countries without a registry example", () => {
+    expect([IBAN_LENGTHS.BI, IBAN_LENGTHS.DJ, IBAN_LENGTHS.NI]).toEqual([27, 27, 28]);
+  });
+
   test("every country of the table: a valid IBAN with few digits is found", () => {
     expect(Object.keys(IBAN_LENGTHS)).toHaveLength(87);
     for (const country of Object.keys(IBAN_LENGTHS)) {
       const iban = letterIban(country);
-      expect({ country, length: iban.length }).toEqual({ country, length: IBAN_LENGTHS[country] });
+      expect({ country, length: iban.length }).toEqual({ country, length: IBAN_LENGTHS[country] as number });
       expect({ country, found: ibansOf(iban) }).toEqual({ country, found: [iban] });
       expect({ country, failures: failuresOf(say(iban)) }).toEqual({ country, failures: ["account_number"] });
     }

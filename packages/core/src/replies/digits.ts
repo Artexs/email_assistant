@@ -31,7 +31,7 @@ const DATE_YMD = /(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)/g;
 const TIME = /(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)/g;
 const MONTHS =
   "stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|wrzesnia|pazdziernika|listopada|grudnia|january|february|march|april|may|june|july|august|september|october|november|december";
-const DATE_WORDS = new RegExp(`(?<!\\d)(\\d{1,2})\\s(?:${MONTHS})\\s(\\d{4})(?!\\d)`, "giu");
+const DATE_WORDS = new RegExp(`(\\d{1,2})\\s(?:${MONTHS})\\s(\\d{4})(?!\\d)`, "giu");
 const PERIOD = /(?<![\p{L}\d])[QH][1-4]\s(\d{4})(?!\d)/giu;
 
 // A number that is no account: it stands alone (no letter or digit glued to it) and has the form of money (two
@@ -48,11 +48,11 @@ const PERCENT = new RegExp(
 const RATE = new RegExp(`${ALONE_BEFORE}\\d{1,2}[,.]\\d{1,4}${ALONE_AFTER}`, "gu");
 const POSTAL = /(?<![\p{L}\d-])\d{2}-\d{3}(?![\p{L}\d-])/gu;
 // A year of 4 digits (1900–2199) is part of the dates, order numbers and invoice numbers of business text.
-const YEAR = /(?<![\p{L}\d])(?:19|20|21)\d{2}(?!\d)/gu;
+const YEAR = /(?<!\p{L})(?:19|20|21)\d{2}/gu;
 const CURRENCY = String.raw`(?:zł|zl|pln|eur|usd|gbp|chf|czk|euro|euros|dolar\p{L}*|złot\p{L}*|[€$£])`;
 const AMOUNT = String.raw`((?:\d{1,3}(?:[ .,]\d{3})+|\d+))(?:[,.]\d{1,2})?`;
-const AMOUNT_AFTER = new RegExp(`(?<![\\p{L}\\d]|\\d[ .,])${AMOUNT}\\s?${CURRENCY}(?![\\p{L}\\d])`, "giu");
-const AMOUNT_BEFORE = new RegExp(`(?<![\\p{L}\\d])${CURRENCY}\\s?${AMOUNT}(?![\\p{L}\\d]|[ .,]\\d)`, "giu");
+const AMOUNT_AFTER = new RegExp(`(?<!\\p{L}|\\d[ .,])${AMOUNT}\\s?${CURRENCY}(?![\\p{L}\\d])`, "giu");
+const AMOUNT_BEFORE = new RegExp(`(?<![\\p{L}\\d])${CURRENCY}\\s?${AMOUNT}(?!\\p{L})`, "giu");
 /** The most integer digits of an amount that are free. */
 export const AMOUNT_FREE_DIGITS = 9;
 /** The most digits of all such numbers of a body that are free: a list of rates is free, a number cut into pieces is not. */
@@ -245,9 +245,9 @@ export function ibansOf(text: string): string[] {
   for (const view of viewsOf(text)) {
     // Once as it is and once without markup tags ("<b>GI74</b>"): the letters of a tag are no part of the number.
     for (const stream of [alnumStream(view), alnumStream(view.replace(MARKUP_TAG, " "))]) {
-      for (let start = 0; start + 4 <= stream.length; start += 1) {
-        const length = IBAN_LENGTHS[stream.slice(start, start + 2)];
-        if (length === undefined || !/^\d{2}$/.test(stream.slice(start + 2, start + 4))) continue;
+      for (let start = 0; start < stream.length; start += 1) {
+        const length = IBAN_LENGTHS[stream.slice(start, start + 2)] ?? 0;
+        if (!/^\d{2}$/.test(stream.slice(start + 2, start + 4))) continue;
         const candidate = stream.slice(start, start + length);
         if (candidate.length === length && /^[A-Z0-9]+$/.test(candidate) && mod97(candidate) === 1)
           found.add(candidate);
