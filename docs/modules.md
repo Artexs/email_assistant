@@ -346,6 +346,7 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 | `PATCH /settings/:mailboxId/switches/:name`                           | owner    | `config`   | S5c   |
 | `PATCH /settings/:mailboxId/auto/:category`                           | owner    | `config`   | S5c   |
 | `PATCH /settings/:mailboxId/sync-folders/:key`                        | owner    | `config`   | S5c   |
+| `PATCH /settings/:mailboxId/sent-sync`                                | owner    | `config`   | F104  |
 | `GET /rules`                                                          | member   | `config`   | S5c   |
 | `POST /rules`                                                         | owner    | `config`   | S5c   |
 | `DELETE /rules/:id`                                                   | owner    | `config`   | S5c   |
