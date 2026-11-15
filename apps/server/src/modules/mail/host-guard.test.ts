@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { SoftError } from "../../platform/errors";
+import { errorFields, SoftError } from "../../platform/errors";
 
 import {
   configureMailHosts,
   DEFAULT_MAIL_HOST_POLICY,
+  MailHostLookupError,
   mailHostPolicy,
   resolveMailHost,
   type LookupAll,
@@ -78,9 +79,32 @@ describe("resolveMailHost", () => {
     expect((error as Error).message).not.toContain("x.test");
   });
 
+  test("a failed lookup is a MailHostLookupError with the system code, UNKNOWN without one", async () => {
+    const failing = (cause: unknown): MailHostPolicy => ({
+      allowLocal: false,
+      lookup: async () => {
+        throw cause;
+      },
+    });
+    const notFound = await resolveMailHost("imap.x.test", failing({ code: "ENOTFOUND" })).catch((e: unknown) => e);
+    expect(notFound).toBeInstanceOf(MailHostLookupError);
+    expect(notFound).toBeInstanceOf(SoftError);
+    expect((notFound as MailHostLookupError).code).toBe("ENOTFOUND");
+    expect((notFound as MailHostLookupError).name).toBe("MailHostLookupError");
+    expect(errorFields(notFound)).toEqual({ error: "MailHostLookupError", error_code: "ENOTFOUND" });
+
+    const unknown = await resolveMailHost("imap.x.test", failing(new Error("no code"))).catch((e: unknown) => e);
+    expect(unknown).toBeInstanceOf(MailHostLookupError);
+    expect((unknown as MailHostLookupError).code).toBe("UNKNOWN");
+    expect((unknown as Error).message).toBe("mail host lookup failed (UNKNOWN)");
+  });
+
   test("no address is a SoftError", async () => {
     const { policy } = fake([]);
     await expect(resolveMailHost("imap.x.test", policy)).rejects.toThrow("mail host lookup failed (ENODATA)");
+    const error = await resolveMailHost("imap.x.test", policy).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(MailHostLookupError);
+    expect((error as MailHostLookupError).code).toBe("ENODATA");
   });
 
   test("allowLocal skips every check", async () => {

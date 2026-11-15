@@ -52,7 +52,9 @@ export async function switchMailboxStatus(
   };
   const result = await (db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run));
   if (result.kind === "changed") {
-    log.info(`mailbox ${mailboxId} ${to === "paused" ? "paused" : "resumed"} by user ${actor}`);
+    const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
+    if (to === "paused") mailboxLog.info("mailbox_paused", { actor });
+    else mailboxLog.info("mailbox_resumed", { actor });
   }
   return result;
 }

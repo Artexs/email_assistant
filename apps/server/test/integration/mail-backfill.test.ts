@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
+import { format } from "node:util";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { isOwnActionId } from "../../src/modules/actions";
@@ -150,6 +151,23 @@ describe("backfillInbox", () => {
 
       const readOnly = ["listFolders", "folderStatus", "fetchContent", "fetchMetaIn", "searchSinceIn", "fetchByUidsIn"];
       for (const call of s.fake.calls) expect(readOnly).toContain(call);
+    });
+  });
+
+  test("a run writes backfill_done with the organization, the mailbox and the five counts, never a subject", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      const lines: string[] = [];
+      const spy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+      try {
+        await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: SINCE });
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(lines).toEqual([
+        `[mail] backfill_done org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} fetched=4 stored=3 uid_updated=1 returned=0 skipped_own=0`,
+      ]);
     });
   });
 

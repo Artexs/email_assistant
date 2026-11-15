@@ -250,6 +250,7 @@ export default tseslint.config(
       "apps/server/src/modules/actions/expiry.ts",
       "apps/server/src/modules/channels/**/*.ts",
       "apps/server/src/modules/delegation/**/*.ts",
+      "apps/server/src/modules/mail/**/*.ts",
       "apps/server/src/modules/tenancy/**/*.ts",
     ],
     ignores: ["**/*.test.ts"],

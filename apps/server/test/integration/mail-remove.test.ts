@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { textTables } from "@ea/core";
-import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { claimDueOutbox, insertOutbox, queueMailboxRemovedNotices } from "../../src/modules/channels";
@@ -472,5 +473,74 @@ describe("removeMailbox", () => {
     });
     expect(claimed.some((row) => renderedOf(row).text === "[removed]")).toBe(false);
     expect(claimed.some((row) => renderedOf(row).text === "Digest pending")).toBe(false);
+  });
+});
+
+// F103: the log lines of a removal hold ids and codes only.
+describe("removeMailbox log lines", () => {
+  const MARKER = "MARKER-ADDR@x.test";
+
+  function captureLines(): { lines: string[]; restore(): void } {
+    const lines: string[] = [];
+    const spies = (["log", "warn", "error"] as const).map((name) =>
+      spyOn(console, name).mockImplementation((...args: unknown[]) => void lines.push(format(...args)))
+    );
+    return { lines, restore: () => spies.forEach((spy) => spy.mockRestore()) };
+  }
+
+  test("a removal writes mailbox_removed with the organization, the mailbox and the user, never the address", async () => {
+    const s = await setup();
+    const address = await addressOf(s.mailboxId);
+    const capture = captureLines();
+    try {
+      await removeMailbox(deps, s.ctx, s.mailboxId, { userId: s.userId, confirmAddress: address, now });
+    } finally {
+      capture.restore();
+    }
+
+    expect(capture.lines).toEqual([
+      `[mail] mailbox_removed org_id=${s.orgId} mailbox_id=${s.mailboxId} user_id=${s.userId}`,
+    ]);
+    expect(capture.lines.join("\n")).not.toContain(address);
+  });
+
+  test("a failed status restore writes mailbox_status_restore_failed with the error name and code only", async () => {
+    const s = await setup();
+    const address = await addressOf(s.mailboxId);
+    let updates = 0;
+    // The pause goes through; the restore after the failed delete does not.
+    const flaky = new Proxy(db, {
+      get(target, prop) {
+        if (prop === "updateTable") {
+          return (table: string) => {
+            updates += 1;
+            if (updates > 1)
+              throw Object.assign(new Error(`restore failed ${MARKER}`), { code: "57P01", detail: MARKER });
+            return (target.updateTable as (name: string) => unknown)(table);
+          };
+        }
+        const value: unknown = Reflect.get(target, prop, target);
+        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      },
+    }) as typeof db;
+    const failing: RemoveDeps = {
+      db: flaky,
+      onRemoved: async () => {
+        throw new Error(`delete failed ${MARKER}`);
+      },
+    };
+    const capture = captureLines();
+    try {
+      await expect(
+        removeMailbox(failing, s.ctx, s.mailboxId, { userId: s.userId, confirmAddress: address, now })
+      ).rejects.toThrow("delete failed");
+    } finally {
+      capture.restore();
+    }
+
+    expect(capture.lines).toEqual([
+      `[mail] mailbox_status_restore_failed org_id=${s.orgId} mailbox_id=${s.mailboxId} error=Error error_code=57P01`,
+    ]);
+    expect(await statusOf(s.mailboxId)).toBe("paused");
   });
 });

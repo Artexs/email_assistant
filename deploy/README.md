@@ -73,7 +73,7 @@ Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/
 
 Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. A CLI prints the text form with `$C exec -e LOG_FORMAT=text server bun run <script> …`.
 
-A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync log line has the form `synced <mailbox id>: folders <n>, fetched <n>, …`; a failure is `sync <mailbox id> failed: …` (`mail/jobs.ts`).
+A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync run writes `sync_done` with `mailbox_id` and the counts; a failure is `sync_failed` or `sync_soft_error` with `error` and `error_code` (`mail/jobs.ts`).
 
 ## Login error (`auth_error`)
 
@@ -679,7 +679,7 @@ Start time `T0`. Use the test mailbox only.
    Move the mail back to INBOX. After the next sync, the row has `returned_at` set and no new row exists.
 3. Forced rescan at about hour 24:
    `$C run --rm -T server bun run mailbox:rescan --org-id <org> --mailbox-id <id>`
-   The next sync log line has `sync <mailbox id> rescan:`.
+   The next sync writes `sync_folder_done sync_mode=rescan`.
 4. At the end (48 hours or more), right after a sync:
    `$C run --rm -T server bun run mailbox:audit --org-id <org> --mailbox-id <id> --since <T0 ISO time>`
    The output must be `missing=0 duplicates=0` with exit code 0.

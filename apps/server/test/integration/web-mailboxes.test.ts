@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { connectResultSchema, mailboxListSchema, mailboxViewSchema, type ScopeEnv } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
@@ -538,14 +539,23 @@ describe("mailbox routes", () => {
         `/api/mailboxes/${ok.m2}/password`,
         as("owner", { method: "POST", body: { password, secretKind: "password" } })
       );
-      lines = [...logSpy.mock.calls, ...errorSpy.mock.calls].map((call) => call.join(" "));
+      lines = [...logSpy.mock.calls, ...errorSpy.mock.calls].map((call) => format(...call));
     } finally {
       logSpy.mockRestore();
       errorSpy.mockRestore();
       setLogLevel("info");
     }
-    expect(lines.some((line) => line.includes("web: mailbox connect failed: MailAuthError"))).toBe(true);
-    expect(lines.some((line) => line.includes("web: mailbox password check failed: MailAuthError"))).toBe(true);
+    const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+    expect(
+      lines.filter((line) =>
+        new RegExp(`^\\[mail\\] mailbox_connect_failed request_id=${uuid} error=MailAuthError$`).test(line)
+      )
+    ).toHaveLength(1);
+    expect(
+      lines.filter((line) =>
+        new RegExp(`^\\[mail\\] mailbox_password_check_failed request_id=${uuid} error=MailAuthError$`).test(line)
+      )
+    ).toHaveLength(1);
     for (const line of lines) {
       for (const value of [password, address, "imap.gmail.com", "smtp.gmail.com"]) {
         expect(line).not.toContain(value);

@@ -35,6 +35,16 @@ export function mailHostPolicy(): MailHostPolicy {
   return current;
 }
 
+/** A DNS lookup of a mail host failed. `code` is the system code (`ENOTFOUND`, `ENODATA`) or `UNKNOWN`; the message holds no host name. */
+export class MailHostLookupError extends SoftError {
+  readonly code: string;
+  constructor(code: string, options?: { cause?: unknown }) {
+    super(`mail host lookup failed (${code})`, options);
+    this.name = "MailHostLookupError";
+    this.code = code;
+  }
+}
+
 /**
  * Turns a mail host name into one checked address. A host that is, or resolves to, a local, private, Tailscale or
  * benchmark address throws `HostNotAllowedError`. The caller connects to the returned address, so a second
@@ -53,13 +63,13 @@ export async function resolveMailHost(host: string, policy: MailHostPolicy = mai
     addresses = await policy.lookup(name);
   } catch (error) {
     const code = (error as { code?: unknown } | null)?.code;
-    throw new SoftError(`mail host lookup failed (${typeof code === "string" ? code : "UNKNOWN"})`, { cause: error });
+    throw new MailHostLookupError(typeof code === "string" ? code : "UNKNOWN", { cause: error });
   }
-  if (addresses.length === 0) throw new SoftError("mail host lookup failed (ENODATA)");
+  if (addresses.length === 0) throw new MailHostLookupError("ENODATA");
   if (addresses.some((entry) => isLocalAddress(entry.address))) throw new HostNotAllowedError();
 
   const chosen = addresses.find((entry) => isIP(entry.address) === 4) ?? addresses[0];
   // Unreachable at run time (the list is not empty); `noUncheckedIndexedAccess` needs the narrowing.
-  if (chosen === undefined) throw new SoftError("mail host lookup failed (ENODATA)");
+  if (chosen === undefined) throw new MailHostLookupError("ENODATA");
   return { host: chosen.address, servername: name };
 }
