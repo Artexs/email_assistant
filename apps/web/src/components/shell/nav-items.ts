@@ -7,6 +7,7 @@ import {
   ListFilter,
   Settings,
   ShieldCheck,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,12 +31,15 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-// The order of the panel (F102 stage 12): Activity, Approvals, Mailboxes, Settings, Rules, Stats. The delegations page of
-// stage 18 goes after Approvals. An item with a `flag` shows only while the organization has that feature on
-// (`/api/me` field `features`). The desktop sidebar shows all of them.
+// The order of the panel (F102 stages 12 and 18): Activity, Approvals, Delegations, Mailboxes, Settings, Rules, Stats.
+// An item with a `flag` shows only while the organization has that feature on (`/api/me` field `features`). The desktop sidebar shows all of them.
 const ORDER: { item: NavItem; flag: string | null }[] = [
   { item: { key: "activity", href: "/activity", label: "nav_activity", icon: Activity }, flag: null },
   { item: { key: "approvals", href: "/approvals", label: "nav_approvals", icon: FileCheck }, flag: "approvals_page" },
+  {
+    item: { key: "delegations", href: "/delegations", label: "nav_delegations", icon: Users },
+    flag: "delegation_pages",
+  },
   { item: { key: "mailboxes", href: "/mailboxes", label: "nav_mailboxes", icon: Inbox }, flag: null },
   { item: { key: "settings", href: "/settings", label: "nav_settings", icon: Settings }, flag: null },
   { item: { key: "rules", href: "/rules", label: "nav_rules", icon: ListFilter }, flag: null },

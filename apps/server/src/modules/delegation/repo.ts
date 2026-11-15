@@ -1,3 +1,4 @@
+import { DELEGATION_REMINDER_LIMIT } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -13,7 +14,7 @@ export type DelegationStatus = z.infer<typeof delegationStatusSchema>;
 export const USER_CANCELLED = "user_cancelled";
 
 // The chaser sends at most this many reminders for one delegation (D23).
-export const MAX_REMINDER_SENDS = 2;
+export const MAX_REMINDER_SENDS = DELEGATION_REMINDER_LIMIT;
 
 // A delegation is open while the chaser can still act on it: the draft waits, the task is out, or it is overdue with a
 // reminder left. Retention keeps the task text and the applied draft payload of an open delegation (A23, F083).
