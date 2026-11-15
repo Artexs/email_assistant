@@ -432,6 +432,10 @@ describe("the closes (c) and (d)", () => {
       const a = await dueLoop(trx, o, { kind: "promised", due_at: due });
       const at = new Date("2026-11-20T16:01:00Z");
       expect(await chase(trx, o, new Date(due.getTime() + 7 * DAY_MS - 1))).toMatchObject({ expired: 0 });
+      // Exactly 7 days after the due date counts (a boundary is inclusive, as for the 14 and 30 days of the stale rule).
+      const exact = await dueLoop(trx, o, { kind: "promised", due_at: new Date(NOW.getTime() - 7 * DAY_MS) });
+      expect(await chase(trx, o, NOW, { force: true })).toMatchObject({ expired: 1 });
+      expect(await statusOf(trx, exact.id)).toEqual(["closed", "expired"]);
       expect(await statusOf(trx, a.id)).toEqual(["open", null]);
       expect(await chase(trx, o, at, { force: true })).toMatchObject({ expired: 1 });
       expect(await statusOf(trx, a.id)).toEqual(["closed", "expired"]);
