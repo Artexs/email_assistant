@@ -1,14 +1,14 @@
 import { featureKeys } from "@ea/core";
 
 import { configureFeatures, featureStates, getOrganization, setOrgFeature } from "../modules/tenancy";
+import { createCliOutput } from "../platform/cli";
 import { featuresOff, loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { parseOrgFlagArgs, usage } from "./org-flag-args";
 
-const log = createLog("org-flag");
+const out = createCliOutput("org-flag");
 
 const state = (enabled: boolean): string => (enabled ? "on" : "off");
 
@@ -16,7 +16,7 @@ const state = (enabled: boolean): string => (enabled ? "on" : "off");
 async function main(): Promise<number> {
   const args = parseOrgFlagArgs(process.argv.slice(2));
   if (!args) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -30,11 +30,11 @@ async function main(): Promise<number> {
 
     if (args.mode === "list") {
       if (!(await getOrganization(db, ctx))) {
-        log.error("organization not found");
+        out.fail("organization not found");
         return 1;
       }
       for (const { flag, enabled, source } of await featureStates(db, ctx)) {
-        log.info(`org ${args.orgId}: ${flag} ${state(enabled)} (${source})`);
+        out.print(`org ${args.orgId}: ${flag} ${state(enabled)} (${source})`);
       }
       return 0;
     }
@@ -47,26 +47,26 @@ async function main(): Promise<number> {
     });
     switch (result.kind) {
       case "changed":
-        log.info(
+        out.print(
           `org ${args.orgId}: flag ${result.flag} ${result.before === null ? "unset" : state(result.before)} → ${state(result.enabled)}`
         );
         break;
       case "unchanged":
-        log.info(`org ${args.orgId}: flag ${result.flag} already ${state(result.enabled)}, no change`);
+        out.print(`org ${args.orgId}: flag ${result.flag} already ${state(result.enabled)}, no change`);
         break;
       case "unknown_flag":
-        log.error(`unknown flag; known flags: ${featureKeys.join(", ")}`);
+        out.fail(`unknown flag; known flags: ${featureKeys.join(", ")}`);
         return 1;
       case "not_found":
-        log.error("organization not found");
+        out.fail("organization not found");
         return 1;
     }
     if (killed.some((key) => key === result.flag)) {
-      log.info(`(FEATURES_OFF holds ${result.flag}: it reads off everywhere)`);
+      out.print(`(FEATURES_OFF holds ${result.flag}: it reads off everywhere)`);
     }
     return 0;
   } catch (error) {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -76,6 +76,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

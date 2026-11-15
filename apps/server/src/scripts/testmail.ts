@@ -34,11 +34,11 @@ import {
   runSend,
   testmailPaths,
 } from "../modules/testmail";
+import { createCliOutput } from "../platform/cli";
 import { ConfigError, loadTestmailConfig } from "../platform/config";
 import { describeError, HardError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
-const log = createLog("testmail");
+const cli = createCliOutput("testmail");
 
 const usage = [
   "usage: bun run testmail:setup",
@@ -144,7 +144,7 @@ async function runSetup(): Promise<number> {
     inbox = await client.getInbox(address);
   }
   if (inbox.email !== address) {
-    log.error("inbox address differs from the persona file");
+    cli.fail("inbox address differs from the persona file");
     return 1;
   }
   out(`inbox ${inbox.email} status ${inbox.status ?? "active"} status_until ${inbox.statusUntil ?? "-"}`);
@@ -291,7 +291,7 @@ async function runSendCommand(options: SendOptions): Promise<number> {
       inbox = await client.getInbox(address);
     } catch (error) {
       if (error instanceof AgentMailError && error.status === 404) {
-        log.error("inbox not found: run bun run testmail:setup");
+        cli.fail("inbox not found: run bun run testmail:setup");
         return 1;
       }
       throw error;
@@ -360,20 +360,20 @@ function runStatus(options: z.infer<(typeof optionSchemas)["status"]>): number {
 async function main(): Promise<number> {
   const [command, ...rest] = process.argv.slice(2);
   if (command === undefined || !Object.hasOwn(optionSchemas, command)) {
-    log.error(usage);
+    cli.fail(usage);
     return 1;
   }
   let values;
   try {
     ({ values } = parseArgs({ args: rest, options: parseOptionTypes, strict: true, allowPositionals: false }));
   } catch {
-    log.error(usage);
+    cli.fail(usage);
     return 1;
   }
   const parsed = optionSchemas[command as Command].safeParse(values);
   if (!parsed.success) {
-    log.error(issueLines(parsed.error).join("\n"));
-    log.error(usage);
+    cli.fail(issueLines(parsed.error).join("\n"));
+    cli.fail(usage);
     return 1;
   }
   switch (command as Command) {
@@ -395,7 +395,7 @@ main()
   .catch((error) => {
     // AgentMailError.message is log-safe: op, status, name and code only.
     if (error instanceof HardError || error instanceof ConfigError || error instanceof AgentMailError) {
-      log.error(error.message);
-    } else log.error("failed:", describeError(error));
+      cli.fail(error.message);
+    } else cli.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

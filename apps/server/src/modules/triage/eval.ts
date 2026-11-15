@@ -42,7 +42,7 @@ import {
 } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 
-import { type ClassifierEmail, classifyEmail } from "./classifier";
+import { type ClassifierEmail, type ClassifierExtras, classifyEmail } from "./classifier";
 import {
   type CaseJudge,
   judgeCaseDraft,
@@ -52,7 +52,13 @@ import {
   summarizeJudge,
 } from "./eval-judge";
 import { type AttemptHooks, type EvalBudget, RETRY_WAITS_MS, runPool } from "./eval-pool";
-import { prompts } from "./prompts";
+import {
+  type ClassifierPromptChoice,
+  type ClassifierV3Part,
+  classifierVersions,
+  optionalParts,
+  productionClassifierChoice,
+} from "./prompts";
 import { type ClassifierDelegate, EXCERPT_CHARS } from "./prompts/classifier-v2";
 import type { MailKind } from "./repo";
 
@@ -125,6 +131,8 @@ export interface CasesEvalReport extends EvalReportBase {
   provider: LlmProviderId;
   reasoningEffort: string | null;
   promptVersion: string;
+  // The optional parts of a `classifier-v3` run in the type's order; null for another version (stage 08).
+  promptParts: ClassifierV3Part[] | null;
   cases: CaseResult[];
   // Spend of the earlier results and the new ones, by the run's price table. Zero without a budget.
   cost: { spentUsd: number; capUsd: number | null; stoppedByBudget: boolean };
@@ -162,13 +170,15 @@ export type EvalReport = CasesEvalReport | RealEvalReport;
 export function evalStateFileName(opts: {
   model: string;
   reasoningEffort: string | null;
+  // A `promptLabel` (`classifier-v3[history,urgency]`) keeps two variants apart; its brackets and commas become `_`.
   promptVersion: string;
   set: string;
   perCategory?: number;
 }): string {
   const effort = opts.reasoningEffort === null ? "" : `-${opts.reasoningEffort}`;
   const perCategory = opts.perCategory === undefined ? "" : `-pc${opts.perCategory}`;
-  return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${opts.promptVersion}-${opts.set}${perCategory}.jsonl`;
+  const version = opts.promptVersion.replace(/[^\w.-]/g, "_");
+  return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${version}-${opts.set}${perCategory}.jsonl`;
 }
 
 export function toClassifierInput(c: EvalCase): ClassifierEmail {
@@ -345,6 +355,16 @@ export function toPrediction(r: CaseResult): Prediction | null {
   };
 }
 
+// What one case run reads from the eval input.
+interface RunInput {
+  model: string;
+  retries: number;
+  // Absent: the production prompt.
+  prompt?: ClassifierPromptChoice;
+  // The extras of a case (stage 08); absent: none.
+  extrasOf?: (c: EvalCase) => ClassifierExtras;
+}
+
 type Classified =
   | { kind: "ok"; result: Awaited<ReturnType<typeof classifyEmail>> }
   | { kind: "blocked" }
@@ -356,7 +376,7 @@ async function classifyWithRetry(
   c: EvalCase,
   allowed: Category[],
   sender: { whitelisted: boolean; vip: boolean; noreply: boolean },
-  input: { model: string; retries: number },
+  input: RunInput,
   attempts?: AttemptHooks
 ): Promise<Classified> {
   for (let attempt = 0; ; attempt += 1) {
@@ -367,6 +387,8 @@ async function classifyWithRetry(
         allowed,
         delegates: toClassifierDelegates(c),
         model: input.model,
+        ...(input.prompt === undefined ? {} : { prompt: input.prompt }),
+        ...(input.extrasOf === undefined ? {} : { extras: input.extrasOf(c) }),
       });
       return { kind: "ok", result };
     } catch (error) {
@@ -416,7 +438,7 @@ function isRuleSpam(c: EvalCase): boolean {
 async function runCase(
   deps: Deps,
   c: EvalCase,
-  input: { model: string; retries: number; judge?: JudgeSetup },
+  input: RunInput & { judge?: JudgeSetup },
   attempts?: AttemptHooks
 ): Promise<CaseResult> {
   const expected = c.expected.category;
@@ -505,6 +527,10 @@ async function runCase(
 // `done`: results from an earlier run. A result without an error (also a blocked one) is not run again.
 // After STOP_AFTER_ERRORS LLM cases in a row end in an error, the run stops: a spent quota fails every call.
 // `concurrency` calls run at once; with a `budget` the run also stops when the next call could pass the cap.
+function promptPartsOf(choice: ClassifierPromptChoice): ClassifierV3Part[] | null {
+  return choice.version === classifierVersions["classifier-v3"].version ? optionalParts(choice.parts) : null;
+}
+
 export async function runEval(
   deps: Deps,
   input: {
@@ -520,6 +546,9 @@ export async function runEval(
     budget?: EvalBudget;
     // With a judge, every planned delegation or clarification draft is judged (stage 16 of the lab ticket).
     judge?: JudgeSetup;
+    // The classifier prompt version and parts; absent: the production prompt (stage 08).
+    prompt?: ClassifierPromptChoice;
+    extrasOf?: (c: EvalCase) => ClassifierExtras;
   }
 ): Promise<CasesEvalReport> {
   const startedAt = deps.now();
@@ -604,7 +633,8 @@ export async function runEval(
     model: input.model,
     provider: input.provider,
     reasoningEffort: input.reasoningEffort ?? null,
-    promptVersion: prompts.classifier.version,
+    promptVersion: (input.prompt ?? productionClassifierChoice()).version,
+    promptParts: promptPartsOf(input.prompt ?? productionClassifierChoice()),
     cases,
     cost: { spentUsd: pool.spentUsd, capUsd: input.budget?.capUsd ?? null, stoppedByBudget: pool.stoppedByBudget },
     complete: stoppedReason === null,

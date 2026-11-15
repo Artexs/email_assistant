@@ -15,6 +15,7 @@ import { z } from "zod";
 
 import type { CaseResult, CasesEvalReport } from "./eval";
 import { num, pct, table } from "./eval-format";
+import { classifierV3Parts } from "./prompts";
 
 // The gate file only ever carries this bar and this minimum support (D27): a looser run writes none.
 export const GATE_BAR = 0.98;
@@ -61,12 +62,17 @@ export function simMetaOf(cases: readonly EvalCase[]): Map<string, SimMeta> {
   return meta;
 }
 
+// Review N2: a gain of the `history` part on the sim may not carry to real mail.
+export const HISTORY_PART_NOTE =
+  "- history part: the sim history (received, corrections) comes from the persona group's ideal mix, not from the model's own past labels. Real history holds only the received count and the user's corrections, so a gain here may not carry to real mail.";
+
 export function simHeaderLines({ report, corpus }: SimReportInput): string[] {
   const sha = corpus.manifestSha === null ? "none" : corpus.manifestSha.slice(0, 12);
   const cap = report.cost.capUsd === null ? "none" : `$${report.cost.capUsd.toFixed(2)}`;
   return [
     `- corpus: ${corpus.scenario} v${corpus.version} (${corpus.part}), manifest ${sha}, owner audit: ${corpus.audit}`,
     `- cost: $${report.cost.spentUsd.toFixed(4)} of cap ${cap}`,
+    ...(report.promptParts?.includes("history") ? [HISTORY_PART_NOTE] : []),
   ];
 }
 
@@ -216,6 +222,8 @@ export const gateFileSchema = z.object({
   model: z.string(),
   reasoningEffort: z.string().nullable(),
   promptVersion: z.string(),
+  // The optional parts of a `classifier-v3` run, sorted. Absent in a file of an older prompt version (N10).
+  promptParts: z.array(z.enum(classifierV3Parts)).optional(),
   bar: z.number(),
   minKept: z.number(),
   categories: z.object({
@@ -262,6 +270,7 @@ export function buildGateFile(input: SimReportInput & { now: Date }): GateFile {
     model: report.model,
     reasoningEffort: report.reasoningEffort,
     promptVersion: report.promptVersion,
+    ...(report.promptParts === null ? {} : { promptParts: report.promptParts }),
     bar: report.bar,
     minKept: report.minKept,
     categories: categoriesOut,

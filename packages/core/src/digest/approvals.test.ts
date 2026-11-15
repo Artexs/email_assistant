@@ -196,6 +196,17 @@ function item(n: number, overrides: Partial<Parameters<typeof renderApprovalSetR
   };
 }
 
+describe("renderApprovalRequest with an edited body", () => {
+  test("T10 a 3000-character body and an 8000-character quote fit in one message", () => {
+    const body = `${"x".repeat(99)}\n`.repeat(30).slice(0, 3000);
+    expect(body.length).toBe(3000);
+    const message = request(view({ body, quote: { text: "q".repeat(8000), cut: false } }));
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    expect(message.text).toContain("x".repeat(90));
+    expect(message.text).toContain("Quoted original:");
+  });
+});
+
 describe("renderApprovalRequest in Polish", () => {
   const pl = textTables.pl;
   const plRequest = (v: ApprovalView) => renderApprovalRequest({ actionId: ID, view: v, now: NOW, timeZone: TZ }, pl);
