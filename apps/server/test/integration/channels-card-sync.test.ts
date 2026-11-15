@@ -536,7 +536,7 @@ describe("card sync: decisions call the hook once, with the right input", () => 
         .set({ notified_at: new Date(NOW.getTime() - 49 * 3_600_000) })
         .where("id", "=", w.sendId)
         .execute();
-      const calls: { decision: string; exceptUserId?: string }[] = [];
+      const calls: { decision: string; sendId: string; exceptUserId?: string; at: Date }[] = [];
       const spy: ApprovalHooks = {
         onDecided: async (_trx, _ctx, input) => {
           calls.push(input);
