@@ -1661,7 +1661,9 @@ describe("syncMailbox: returned mail below the cursor", () => {
         const result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
         expect(result.copiesStored).toBe(0);
         expect(result.stored).toBe(0);
-        expect(warn.mock.calls.some((call) => format(...call).includes("sync_below_cursor_moved"))).toBe(true);
+        expect(warn.mock.calls.map((call) => format(...call))).toContain(
+          `[mail] sync_below_cursor_moved org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=inbox`
+        );
       } finally {
         warn.mockRestore();
       }
@@ -1794,7 +1796,9 @@ describe("syncMailbox: returned mail below the cursor", () => {
       try {
         const result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
         expect(result.returnedBelowCursor).toBe(0);
-        expect(warn.mock.calls.some((call) => format(...call).includes("sync_below_cursor_moved"))).toBe(true);
+        expect(warn.mock.calls.map((call) => format(...call))).toContain(
+          `[mail] sync_below_cursor_moved org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=inbox`
+        );
       } finally {
         warn.mockRestore();
       }
