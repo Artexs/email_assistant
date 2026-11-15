@@ -342,6 +342,29 @@ test("T11: a delegate that is gone at the save closes the dialog, says so, and p
   expect(errors).toEqual([]);
 });
 
+test("T12: a delegate that is gone at a switch change (no dialog) leaves the page and the focus is on the result line", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  await page.goto("/delegates");
+  // "No Tags" goes off with the question first (the real server), so that the next change is a turn on: it has no dialog.
+  await switchOf(page, "No Tags").click();
+  await offDialog(page, "No Tags").getByRole("button", { name: en.dlg_off_confirm }).click();
+  await expect(rowOf(page, "No Tags").getByText(en.dlg_state_off, { exact: true })).toBeVisible();
+
+  await page.route("**/api/delegates/*", (route) =>
+    route.request().method() === "PATCH"
+      ? route.fulfill({ status: 404, json: { error: "not_found" } })
+      : route.continue()
+  );
+  await switchOf(page, "No Tags").click();
+  await expect(page.getByRole("alert").filter({ hasText: en.dlg_gone })).toBeVisible();
+  // The focused switch left the page with its row: the focus is on the line of the result, not on the page start.
+  await expect(page.getByRole("status")).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
 test("T8: with the flag off, /delegates shows the flag-off text and no tabs", async ({ browser }) => {
   // The main organization has no `delegation_pages` flag. Its own browser context and address.
   const context = await browser.newContext({

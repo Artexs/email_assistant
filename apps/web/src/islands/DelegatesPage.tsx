@@ -54,16 +54,8 @@ function Delegates() {
   const statusRef = useRef<HTMLDivElement>(null);
   const focusTarget = useRef<FocusTarget>("row");
   const [statusTick, setStatusTick] = useState(0);
-  // The list reloads after a change and the row may move (active first, then by name). Moving a node drops its focus, so the page
-  // gives the focus back to the control once the new list is there.
-  const refocus = useRef<string | null>(null);
-  const loaded = list.data;
-  useEffect(() => {
-    if (refocus.current === null) return;
-    document.getElementById(refocus.current)?.focus();
-    refocus.current = null;
-  }, [loaded]);
-  // The effect runs after the commit that removed the row or the dialog, so nothing takes the focus back.
+  // A change with no dialog (the switch) can find the row gone: the row and its switch leave the page, so the focus goes to the status
+  // line. The effect runs after the commit that removed them, so nothing takes the focus back.
   useEffect(() => {
     if (statusTick > 0) statusRef.current?.focus();
   }, [statusTick]);
@@ -103,7 +95,6 @@ function Delegates() {
 
   const onSaved = (delegate: Delegate) => {
     focusTarget.current = "row";
-    refocus.current = editButtonId(delegate.id);
     setEditing(null);
     setNotice({ tone: "info", key: "dlg_saved", name: delegate.name });
     list.reload();
@@ -115,7 +106,6 @@ function Delegates() {
       try {
         const saved = await patchDelegate(delegate.id, { active });
         focusTarget.current = "row";
-        refocus.current = switchId(saved.id);
         setConfirmOff(null);
         setNotice({ tone: "info", key: saved.active ? "dlg_turned_on" : "dlg_turned_off", name: saved.name });
         list.reload();
