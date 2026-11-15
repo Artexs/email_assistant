@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
 import { pl } from "../../src/i18n/pl";
+import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
 import { cspErrors, nextAddress, signIn } from "../helpers";
 import { readSeed } from "../seed";
@@ -97,6 +98,8 @@ test("the setup link works once", async ({ page }) => {
 
   await page.goto(assistant.setupUrl);
   await expect(page).toHaveURL(/\/setup\?token=/);
+  await expect(page.getByLabel(en.email_label)).toBeVisible();
+  await expectNoA11yViolations(page);
 
   const email = page.getByLabel(en.email_label);
   const password = page.getByLabel(en.new_password_label, { exact: true });
@@ -148,6 +151,7 @@ test("the pages keep the CSP and show the 404 page", async ({ page }) => {
 
   await page.goto("/login");
   await expect(page.getByRole("heading", { level: 1, name: en.login_title })).toBeVisible();
+  await expectNoA11yViolations(page);
   await signIn(page, owner.email, owner.password);
   await expect(page).toHaveURL(/\/onboarding$/);
 
@@ -162,6 +166,7 @@ test("the pages keep the CSP and show the 404 page", async ({ page }) => {
   const response = await page.goto("/nope");
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { level: 1, name: pl.not_found_title })).toBeVisible();
+  await expectNoA11yViolations(page);
 });
 
 test("the login rate limit counts per address", async ({ browser, page }) => {

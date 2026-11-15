@@ -54,7 +54,8 @@ test("the paused owner sees the banner and a read-only panel", async ({ page }) 
   await page.goto("/mailboxes");
   await expect(page.getByText("e2e-paused-box@x.test")).toBeVisible();
   await expect(page.getByRole("button", { name: en.mb_connect })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: en.mb_pause })).toHaveCount(0);
+  // Exact: the account menu button is named after the user's address, and this address has "pause" in it.
+  await expect(page.getByRole("button", { name: en.mb_pause, exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: en.mb_change_password })).toHaveCount(0);
   await expect(page.getByRole("button", { name: en.mb_remove })).toHaveCount(0);
   await expect(page.getByRole("button", { name: en.mb_more })).toHaveCount(0);
