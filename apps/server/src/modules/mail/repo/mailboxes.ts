@@ -3,24 +3,49 @@ import { sql, type Selectable, type Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, TenantContext } from "../../../platform/db";
-import type { MailCapabilities } from "../port";
+import type { AuthErrorReason, MailCapabilities } from "../port";
 
 import type { DbOrTrx } from "./shared";
 
 export type MailboxRow = Omit<
   Selectable<DB["mailboxes"]>,
-  "uidvalidity" | "last_uid" | "capabilities" | "folder_map" | "smtp_security"
+  | "uidvalidity"
+  | "last_uid"
+  | "capabilities"
+  | "folder_map"
+  | "smtp_security"
+  | "send_via"
+  | "oauth_provider"
+  | "auth_reason"
 > & {
   smtp_security: SmtpSecurity;
+  /** `smtp` sends through the SMTP adapter, `graph` through Microsoft Graph (F117 D5). */
+  send_via: "smtp" | "graph";
+  /** Null for a password mailbox. */
+  oauth_provider: "microsoft" | "google" | null;
+  /** Why the OAuth login was refused; null for a password mailbox and for a mailbox that is not in `auth_error`. */
+  auth_reason: AuthErrorReason | null;
   uidvalidity: number | null;
   last_uid: number | null;
   capabilities: MailCapabilities | Record<string, never>;
   folder_map: Record<string, string>;
 };
+const AUTH_REASONS: readonly AuthErrorReason[] = [
+  "oauth_expired",
+  "oauth_revoked",
+  "admin_consent_required",
+  "protocol_disabled",
+];
+function toAuthReason(value: string | null): AuthErrorReason | null {
+  return AUTH_REASONS.find((reason) => reason === value) ?? null;
+}
 function toMailboxRow(row: Selectable<DB["mailboxes"]>): MailboxRow {
   return {
     ...row,
     smtp_security: row.smtp_security === "starttls" ? "starttls" : "tls",
+    send_via: row.send_via === "graph" ? "graph" : "smtp",
+    oauth_provider: row.oauth_provider === "microsoft" || row.oauth_provider === "google" ? row.oauth_provider : null,
+    auth_reason: toAuthReason(row.auth_reason),
     uidvalidity: row.uidvalidity === null ? null : Number(row.uidvalidity),
     last_uid: row.last_uid === null ? null : Number(row.last_uid),
     capabilities: row.capabilities as MailCapabilities | Record<string, never>,

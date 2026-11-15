@@ -56,6 +56,10 @@ export const E2E_TRIAL_ORG_NAME = "E2E Trial";
 export const E2E_TRIAL_OWNER_EMAIL = "e2e-trial-owner@x.test";
 export const E2E_PAUSED_ORG_NAME = "E2E Paused";
 export const E2E_PAUSED_OWNER_EMAIL = "e2e-paused-owner@x.test";
+// F102 stage 07: an organization with the flag `stats_page` on, for the Stats page. The main organization stays without the flag
+// (auth.spec counts its 4 phone tabs). The page reads only; no spec changes this organization.
+export const E2E_STATS_ORG_NAME = "E2E Stats";
+export const E2E_STATS_OWNER_EMAIL = "e2e-stats-owner@x.test";
 
 export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-activity-mobile@x.test",
@@ -93,6 +97,7 @@ export interface SeedFile {
   >;
   trialOwner: { userId: string; email: string; password: string; orgId: string; trialEndsAt: string };
   pausedOwner: { userId: string; email: string; password: string; orgId: string; mailboxId: string };
+  statsOwner: { userId: string; email: string; password: string; orgId: string };
 }
 
 // Reads the name the way `pg` does, so the guard and the connection agree. No connection is opened.

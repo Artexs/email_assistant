@@ -1,8 +1,28 @@
 import { describe, expect, test } from "bun:test";
 
-import { SmtpSendError } from "../port";
+import { runMailSenderContract } from "../../../../test/contract/mail-sender";
+import { MailAuthError, SmtpSendError } from "../port";
 
-import { createFakeMailSender } from "./sender";
+import { createFakeMailSender, type FakeMailSender } from "./sender";
+
+runMailSenderContract("fake", async () => {
+  let sender: FakeMailSender | undefined;
+  return {
+    async open() {
+      sender = createFakeMailSender();
+      return sender;
+    },
+    async received(messageId) {
+      return sender?.sent.find((mail) => mail.raw.includes(messageId))?.raw ?? null;
+    },
+    // The fake refuses at the first send.
+    async openRefused() {
+      const refused = createFakeMailSender();
+      refused.failNext(new MailAuthError("SMTP login failed"));
+      return refused;
+    },
+  };
+});
 
 const input = { envelope: { from: "me@x.test", to: ["a@x.test", "b@x.test"] }, raw: Buffer.from("raw") };
 
@@ -35,5 +55,16 @@ describe("createFakeMailSender", () => {
     const sender = createFakeMailSender();
     await sender.close();
     expect(sender.closed).toBe(true);
+  });
+
+  test("a sender that is closed refuses a send with stage connect and sends nothing", async () => {
+    const sender = createFakeMailSender();
+    await sender.close();
+    await expect(sender.send(input)).rejects.toMatchObject({
+      name: "SmtpSendError",
+      stage: "connect",
+      code: "ECLOSED",
+    });
+    expect(sender.sent).toHaveLength(0);
   });
 });
