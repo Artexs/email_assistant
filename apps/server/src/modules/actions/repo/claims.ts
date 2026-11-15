@@ -3,6 +3,7 @@ import { sql, type Expression, type ExpressionBuilder, type SqlBool } from "kyse
 
 import type { DB, TenantContext } from "../../../platform/db";
 import { mailKindFilter } from "../../mail";
+import { emailIdOf } from "../anchor";
 import { APPROVAL_TTL_MS } from "../constants";
 
 import { mailboxFilterExpr, sendFilterExpr, sqlTrue, type ClaimFilter, type SendClaimFilter } from "./filters";
@@ -117,6 +118,8 @@ function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts
   ]);
   return eb.and([
     eb("actions.org_id", "=", ctx.orgId),
+    // loop rows: open loops stage 10/11
+    eb("actions.email_id", "is not", null),
     eb("emails.org_id", "=", ctx.orgId),
     eb("emails.mailbox_id", "=", mailboxId),
     eb.or([eb("actions.next_attempt_at", "is", null), eb("actions.next_attempt_at", "<=", opts.now)]),
@@ -160,6 +163,8 @@ export async function countHeldSends(
     )
     .select(sql<string>`count(*)`.as("count"))
     .where("actions.org_id", "=", ctx.orgId)
+    // loop rows: open loops stage 10/11
+    .where("actions.email_id", "is not", null)
     .where("emails.org_id", "=", ctx.orgId)
     .where("emails.mailbox_id", "=", mailboxId)
     .where("actions.type", "=", "send")
@@ -205,6 +210,7 @@ export async function claimActions(
     .returning([
       "actions.id",
       "actions.email_id",
+      "actions.loop_id",
       "actions.type",
       "actions.status",
       "actions.payload",
@@ -239,7 +245,7 @@ export async function claimActions(
     .map(
       (row): ClaimedAction => ({
         id: row.id,
-        email_id: row.email_id,
+        email_id: emailIdOf(row),
         type: actionTypeSchema.parse(row.type),
         status: row.status as ClaimedAction["status"],
         payload: row.payload as Record<string, unknown>,
@@ -253,7 +259,7 @@ export async function claimActions(
         approved_at: row.approved_at,
         provider_result: row.provider_result as Record<string, unknown> | null,
         email: {
-          id: row.email_id,
+          id: emailIdOf(row),
           mailbox_id: row.mailbox_id,
           folder: row.folder,
           uid: Number(row.uid),

@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import { z } from "zod";
 
 import type { TenantContext } from "../../../platform/db";
+import { emailIdOf } from "../anchor";
 
 import { actionTypeSchema, type DbOrTrx } from "./shared";
 
@@ -30,13 +31,13 @@ export async function listSummaries(db: DbOrTrx, ctx: TenantContext, emailIds: s
   }
   const rows = await db
     .selectFrom("actions")
-    .select(["email_id", sql<string>`payload->>'summary'`.as("summary")])
+    .select(["email_id", "loop_id", sql<string>`payload->>'summary'`.as("summary")])
     .where("org_id", "=", ctx.orgId)
     .where("type", "=", "save_summary")
     .where("email_id", "in", emailIds)
     .where(sql<string>`payload->>'summary'`, "is not", null)
     .execute();
-  return new Map(rows.map((row) => [row.email_id, row.summary]));
+  return new Map(rows.map((row) => [emailIdOf(row), row.summary]));
 }
 const moveTargetSchema = z.enum(moveTargets);
 const sendKindSchema = z.enum(draftKinds);
@@ -56,6 +57,7 @@ export async function listActionsForEmails(
     .select([
       "id",
       "email_id",
+      "loop_id",
       "type",
       "status",
       "reverses_action_id",
@@ -98,7 +100,8 @@ export async function listActionsForEmails(
     ) {
       view.waiting = "send_limit";
     }
-    result.set(row.email_id, [...(result.get(row.email_id) ?? []), view]);
+    const emailId = emailIdOf(row);
+    result.set(emailId, [...(result.get(emailId) ?? []), view]);
   }
   return result;
 }
@@ -113,7 +116,7 @@ export async function listDraftTasks(
   }
   const rows = await db
     .selectFrom("actions")
-    .select(["email_id", sql<string | null>`payload->>'task'`.as("task")])
+    .select(["email_id", "loop_id", sql<string | null>`payload->>'task'`.as("task")])
     .where("org_id", "=", ctx.orgId)
     .where("email_id", "in", [...emailIds])
     .where("type", "=", "create_draft")
@@ -124,8 +127,9 @@ export async function listDraftTasks(
     .execute();
   const tasks = new Map<string, string>();
   for (const row of rows) {
-    if (row.task !== null && !tasks.has(row.email_id)) {
-      tasks.set(row.email_id, row.task);
+    const emailId = emailIdOf(row);
+    if (row.task !== null && !tasks.has(emailId)) {
+      tasks.set(emailId, row.task);
     }
   }
   return tasks;
