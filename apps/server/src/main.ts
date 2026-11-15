@@ -1,5 +1,5 @@
 import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition";
-import { createCommitterJob, createExpiryJob, isOwnActionId } from "./modules/actions";
+import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
@@ -95,6 +95,7 @@ const mailSync = createMailSyncJob({
   secrets,
   openProvider: openImapProvider,
   isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
+  sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(db, ctx, mailboxId, actionId),
   now: () => new Date(),
 });
 const heartbeat = createHeartbeat({ url: config.HEARTBEAT_URL, checkDb: () => checkDb(db) });

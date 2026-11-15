@@ -13,6 +13,16 @@ import {
 import { afterEach, describe, expect, test } from "bun:test";
 
 import {
+  createMiniCorpus,
+  fixtureText,
+  miniPlanSpec,
+  runSimCli,
+  completeCorpus,
+  runSimInProcess,
+  type MiniCorpus,
+} from "../scripts/sim-fixtures.test-helper";
+
+import {
   corpusDir,
   readLabels,
   readManifest,
@@ -23,15 +33,6 @@ import {
   writeJson,
   writeSlots,
 } from "./sim-files";
-import {
-  createMiniCorpus,
-  fixtureText,
-  miniPlanSpec,
-  runSimCli,
-  completeCorpus,
-  runSimInProcess,
-  type MiniCorpus,
-} from "./sim-fixtures.test-helper";
 
 let corpus: MiniCorpus | undefined;
 afterEach(() => {

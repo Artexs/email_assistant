@@ -4,9 +4,10 @@ import { join, resolve } from "node:path";
 import { evalCaseSchema, miniScenario, type EvalCase } from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
+import { readSlots, writeJson } from "../platform/sim-files";
+
 import { parseEvalArgs } from "./eval-args";
 import { renderSuspiciousReport, runSuspicious, suspiciousInputOfCase, suspiciousRows } from "./eval-suspicious";
-import { readSlots, writeJson } from "./sim-files";
 import { createMiniCorpus, fixtureText, type MiniCorpus } from "./sim-fixtures.test-helper";
 
 function makeCase(id: string, patch: Partial<EvalCase> & { hardCases?: string[]; headers?: Record<string, string> }) {
