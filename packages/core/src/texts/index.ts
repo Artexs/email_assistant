@@ -6,6 +6,7 @@ import { answerTexts, type AnswerTexts } from "./answers";
 import { approvalTexts, type ApprovalTexts } from "./approvals";
 import { attachmentTexts, type AttachmentTexts } from "./attachments";
 import { botTexts, type BotCommandName, type BotTexts } from "./bot";
+import { briefTexts, type BriefTexts } from "./brief";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
@@ -26,6 +27,7 @@ export type {
   AttachmentTexts,
   BotCommandName,
   BotTexts,
+  BriefTexts,
   CategoryTexts,
   ClockTexts,
   CommonTexts,
@@ -51,6 +53,7 @@ export interface CoreTexts {
   approvals: ApprovalTexts;
   review: ReviewTexts;
   digest: DigestTexts;
+  brief: BriefTexts;
   followUp: FollowUpTexts;
   suspicious: SuspiciousTexts;
   why: WhyTexts;
@@ -71,6 +74,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.en,
     review: reviewTexts.en,
     digest: digestTexts.en,
+    brief: briefTexts.en,
     followUp: followUpTexts.en,
     suspicious: suspiciousTexts.en,
     why: whyTexts.en,
@@ -89,6 +93,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
     digest: digestTexts.pl,
+    brief: briefTexts.pl,
     followUp: followUpTexts.pl,
     suspicious: suspiciousTexts.pl,
     why: whyTexts.pl,

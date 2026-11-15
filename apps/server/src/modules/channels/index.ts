@@ -70,7 +70,7 @@ export {
   type NoticeDeps,
   type TrustNoticeInput,
 } from "./notices";
-export { scheduleDigests, type DigestJobDeps } from "./digest-job";
+export { isFirstDigestOfDay, queueDigest, scheduleDigests, type DigestJobDeps } from "./digest-job";
 export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";
 export {
   createUpdateHandlers,

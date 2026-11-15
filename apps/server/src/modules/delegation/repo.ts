@@ -567,6 +567,57 @@ export async function countOpenDelegations(
   return { open: count("sent"), overdue: count("overdue") };
 }
 
+export interface BriefDelegationRow {
+  id: string;
+  delegate_name: string;
+  subject: string | null;
+  sent_at: Date;
+  due_at: Date;
+}
+
+// The open delegations (`sent`, `overdue`) with a due date before `dueBefore`, oldest due first: the ⏳ lines of the brief (F116 stage 18).
+// `total` counts all of them, `rows` holds at most `limit`. Only the organization of `ctx` and the given mailboxes.
+export async function listDelegationsDueBy(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxIds: readonly string[],
+  opts: { dueBefore: Date; limit: number }
+): Promise<{ rows: BriefDelegationRow[]; total: number }> {
+  if (mailboxIds.length === 0) return { rows: [], total: 0 };
+  const scope = () =>
+    db
+      .selectFrom("delegations as d")
+      .innerJoin("delegates as g", (join) =>
+        join.onRef("g.id", "=", "d.delegate_id").onRef("g.org_id", "=", "d.org_id")
+      )
+      .where("d.org_id", "=", ctx.orgId)
+      .where("d.mailbox_id", "in", [...mailboxIds])
+      .where("d.status", "in", ["sent", "overdue"])
+      .where("d.due_at", "<", opts.dueBefore);
+  const [rows, count] = await Promise.all([
+    scope()
+      .leftJoin("emails as e", (join) => join.onRef("e.id", "=", "d.email_id").onRef("e.org_id", "=", "d.org_id"))
+      .select(["d.id", "g.name as delegate_name", "e.subject", "d.sent_at", "d.created_at", "d.due_at"])
+      .orderBy("d.due_at")
+      .orderBy("d.id")
+      .limit(opts.limit)
+      .execute(),
+    scope()
+      .select((eb) => eb.fn.countAll<string>().as("n"))
+      .executeTakeFirstOrThrow(),
+  ]);
+  return {
+    rows: rows.map((row) => ({
+      id: row.id,
+      delegate_name: row.delegate_name,
+      subject: row.subject,
+      sent_at: row.sent_at ?? row.created_at,
+      due_at: row.due_at as Date,
+    })),
+    total: Number(count.n),
+  };
+}
+
 type WithNames = DelegationRow & { delegate_name: string; subject: string | null };
 
 function namedQuery(db: DbOrTrx, ctx: TenantContext) {

@@ -6,12 +6,15 @@ export {
   type ActivityQuery,
 } from "./activity";
 export {
+  buildDigest,
   buildDigestMessage,
   DIGEST_ITEM_LIMIT,
   DIGEST_MAX_PERIOD_MS,
   digestPeriodStart,
   FIRST_DIGEST_LOOKBACK_MS,
   WAITING_WINDOW_MS,
+  type DigestBuilt,
+  type DigestLoops,
   type DigestRequest,
 } from "./digest";
 export { llmPauseToShow } from "./llm-pause";

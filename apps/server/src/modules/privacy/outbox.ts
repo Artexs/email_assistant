@@ -96,3 +96,25 @@ async function drop(trx: Transaction<DB>, orgId: string, since: Date): Promise<{
   );
   return { outbox_dropped: Number(result.numAffectedRows ?? 0n) };
 }
+
+// A loop that an erase cleared (its ask and subject) may be named in the brief lines of stored digests: `view.loopIds` holds
+// the ids of the loops that a digest named (F116 stage 18). Such a digest loses its text and view, whatever else it listed: the
+// address scrub of the erase would leave the ask and the subject in the line. A `sent` or `failed` row is blanked as `blank` does;
+// a `pending` or `sending` digest is deleted (the next slot covers the period, as `drop` does). A delivered message stays in the
+// chat: nothing here can recall it. Returns the rows blanked and the rows deleted.
+export async function blankDigestsNamingLoops(
+  trx: Transaction<DB>,
+  orgId: string,
+  loopIds: readonly string[]
+): Promise<{ blanked: number; dropped: number }> {
+  if (loopIds.length === 0) return { blanked: 0, dropped: 0 };
+  const names = sql`jsonb_typeof(view->'loopIds') = 'array' and exists (
+    select 1 from unnest(${[...loopIds]}::text[]) as l(id) where jsonb_exists(view->'loopIds', l.id))`;
+  const blanked = await sql`
+    update outbox set text = ${REMOVED}, view = '{}'::jsonb
+    where org_id = ${orgId}::uuid and kind = 'digest' and status in ('sent', 'failed') and ${names}`.execute(trx);
+  const dropped = await sql`
+    delete from outbox
+    where org_id = ${orgId}::uuid and kind = 'digest' and status in ('pending', 'sending') and ${names}`.execute(trx);
+  return { blanked: Number(blanked.numAffectedRows ?? 0n), dropped: Number(dropped.numAffectedRows ?? 0n) };
+}
