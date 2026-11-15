@@ -82,6 +82,38 @@ describe("committerDeps", () => {
     });
     expect(deps.oauthTokens).toBe(oauthTokens);
   });
+
+  test("opens the Graph sender with the registry's Graph origin; the mail goes to no other URL", async () => {
+    const oauthTokens: OAuthTokens = { accessToken: async () => "token", drop: () => undefined };
+    const deps = committerDeps({
+      db: {} as Db,
+      secrets: {} as SecretBox,
+      oauthTokens,
+      scope: { kind: "off" },
+      sendScope: { kind: "off" },
+      sendLimits: { mailboxHour: 1, mailboxDay: 1, recipientDay: 1 },
+    });
+    // No network: `fetch` is a spy that answers 202.
+    const urls: string[] = [];
+    const spy = spyOn(globalThis, "fetch").mockImplementation(async (input: string | URL | Request) => {
+      urls.push(String(input));
+      return new Response(null, { status: 202 });
+    });
+    try {
+      const sender = await deps.openGraphSender?.({
+        accessToken: "token",
+        from: "a@x.test",
+        freshToken: async () => "fresh",
+      });
+      await sender?.send({
+        envelope: { from: "a@x.test", to: ["b@x.test"] },
+        raw: Buffer.from("From: a@x.test\r\nTo: b@x.test\r\nSubject: s\r\n\r\nx\r\n"),
+      });
+    } finally {
+      spy.mockRestore();
+    }
+    expect(urls).toEqual(["https://graph.microsoft.com/v1.0/me/sendMail"]);
+  });
 });
 
 /** Every console line while `run` runs; the writer has already dropped a bad field, so `dropped_fields` must stay absent. */

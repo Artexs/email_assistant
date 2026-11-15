@@ -40,7 +40,13 @@ export interface ApplyDeps {
   now(): Date;
   mailboxId: string;
   folders: FolderResolver;
-  mailbox: { address: string; capabilities: { uidplus: boolean }; folderMap: Record<string, string> };
+  mailbox: {
+    address: string;
+    capabilities: { uidplus: boolean };
+    folderMap: Record<string, string>;
+    /** Which sender the mailbox uses. `graph`: the provider saves the Sent copy, so the send never APPENDs one. Absent: `smtp`. */
+    sendVia?: "smtp" | "graph";
+  };
   owner: { displayName: string };
   organization: { styleText: string | null; timezone: string };
   compose(message: OutgoingMessage): Promise<Buffer>;
@@ -54,6 +60,8 @@ export interface ApplyDeps {
   beforeSend?: () => void | Promise<void>;
   afterSend?: () => void | Promise<void>;
   beforeSentCopy?: () => void | Promise<void>;
+  /** Waits between the looks for the provider's Sent copy (`graph` sends). Absent: a real wait. Tests pass a fake. */
+  sleep?: (ms: number) => Promise<void>;
   /** PD-044: the send limits. Absent: `DEFAULT_SEND_LIMITS`. */
   sendLimits?: SendLimits;
   /** Called after the commit of a held send; never awaited, a throw is logged (D10). Absent: no callback. */
