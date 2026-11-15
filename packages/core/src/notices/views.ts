@@ -37,6 +37,12 @@ const approvalViewSchema = z.strictObject({
   body: text,
   quote: z.strictObject({ text, cut: z.boolean() }).nullable(),
   synthetic: z.boolean(),
+  version: z.number().int().min(1).optional(),
+  panelUrl: z
+    .string()
+    .max(300)
+    .regex(/^https?:\/\/\S+$/)
+    .optional(),
 });
 
 const sendResultKindSchema = z.discriminatedUnion("kind", [
