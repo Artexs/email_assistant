@@ -16,7 +16,8 @@ export const auditEvents = {
   emailRequeued: "email.requeued",
   chatLinked: "chat.linked",
   chatUnlinked: "chat.unlinked",
-  mailboxConnected: "mailbox.connected",
+  mailboxConnected: "mailbox.connected", // data: mailbox_id, via, sent_sync; OAuth (F117): method, provider
+  mailboxReconnected: "mailbox.reconnected", // data: mailbox_id, via, provider, reactivated (F117)
   mailboxPaused: "mailbox.paused",
   mailboxResumed: "mailbox.resumed",
   mailboxPasswordChanged: "mailbox.password_changed",

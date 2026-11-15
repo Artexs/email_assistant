@@ -8,7 +8,7 @@ import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { currentTenantScope, withTenantScope } from "../../src/platform/db";
-import { apiRouters } from "../../src/web";
+import { apiPublicRouters, apiRouters } from "../../src/web";
 
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
@@ -37,7 +37,7 @@ const UNSCOPED_PREFIXES = ["/api/operator/"];
 
 // The routes before the session guard (`createApp` mounts them): no session, so no organization and no scope. They are
 // not walked; a test below checks that they run outside any scope.
-const PUBLIC_ROUTES = ["GET /api/sign-in-options"];
+const PUBLIC_ROUTES = ["GET /api/sign-in-options", "GET /api/mailboxes/oauth/:provider/callback"];
 
 let org: WebOrg;
 let mailboxA: { id: string; address: string };
@@ -76,11 +76,14 @@ const realRouters = apiRouters(
   noPrivacy
 );
 
+const realPublicRouters = apiPublicRouters(testConfig, db, extras, () => new Date());
+
 const walkApp = () =>
   webTestApp({
     db,
     sessions: { owner: org.ownerId },
     operatorUserIds: new Set([org.ownerId]),
+    publicRouters: realPublicRouters,
     routers: (api) => {
       api.use("*", async (c, next) => {
         seen.push({ method: c.req.method, path: c.req.path, scope: currentTenantScope() });

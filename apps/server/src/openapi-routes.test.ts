@@ -9,7 +9,7 @@ import { createSecretBox } from "./platform/crypto";
 import type { Db } from "./platform/db";
 import { buildTrustedProxies, createApp, type WebDeps } from "./platform/http";
 import { apiDoc, openApiSpec } from "./platform/openapi";
-import { apiRouters } from "./web";
+import { apiPublicRouters, apiRouters } from "./web";
 
 // Every `/api` route has an `apiDoc` (ADR 0023), or a hidden key with a reason. This test fails for a route that has
 // neither, and for a hidden key that no longer holds. A new route is described: there is no list of gaps. The real app is built with fakes: no DB is read.
@@ -18,6 +18,8 @@ const HIDDEN_ROUTES: Record<string, string> = {
   "GET /api/auth/*": "Better Auth",
   "POST /api/auth/*": "Better Auth",
   "GET /api/openapi.json": "the OpenAPI file itself",
+  "GET /api/mailboxes/oauth/:provider/callback":
+    "the redirect target of the provider sign-in: it always answers 303, never JSON",
   "GET /api/operator/flags": "operator only, not public (E10)",
   "GET /api/operator/notices": "operator only, not public (E10)",
   "GET /api/operator/orgs": "operator only, not public (E10)",
@@ -171,6 +173,11 @@ function realApp() {
     WEB_AUTH_SECRET: "x".repeat(32),
   });
   const origin = config.WEB_BASE_URL as string;
+  const extras = {
+    secrets: createSecretBox(Buffer.alloc(32, 1).toString("base64"), 1),
+    actionsScope: { kind: "off" },
+    botUsername: null,
+  } as const;
   const web = {
     auth: { handler: async () => new Response(null), getSession: async () => null },
     db: {} as Db,
@@ -181,14 +188,11 @@ function realApp() {
     trustedProxies: buildTrustedProxies([]),
     connInfo: () => undefined,
     listMembershipsOfUser: async () => [],
+    publicRouters: apiPublicRouters(config, {} as Db, extras, () => new Date("2026-11-20T10:00:00Z")),
     routers: apiRouters(
       config,
       {} as Db,
-      {
-        secrets: createSecretBox(Buffer.alloc(32, 1).toString("base64"), 1),
-        actionsScope: { kind: "off" },
-        botUsername: null,
-      },
+      extras,
       () => new Date("2026-11-20T10:00:00Z"),
       async () => [],
       async () => null,

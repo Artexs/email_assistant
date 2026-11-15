@@ -18,10 +18,12 @@ import {
   createMailOAuthClients,
   listMailboxes,
   listSyncFolders,
+  mailOAuthCallbackRoutes,
   mailOAuthRoutes,
   mailRoutes,
   openImapProvider,
   setSyncFolderEnabled,
+  type ApplyGrantDeps,
   type MailOAuthClients,
   type TestMailRule,
   verifySmtpLogin,
@@ -280,6 +282,8 @@ export interface WebExtras {
   botUsername: (() => Promise<string>) | null; // null: Telegram is off
   /** Default: the clients of the config (`createMailOAuthClients`). A test passes clients that point at the fake token server. */
   mailOAuthClients?: MailOAuthClients;
+  /** Default: the IMAP and SMTP adapters. A test passes a login that refuses (the callback tests). `oauthTokens` is the cache the Reconnect drops. */
+  mailOAuthLogin?: Partial<Pick<ApplyGrantDeps, "openProvider" | "verifySmtp" | "oauthTokens">>;
   onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
 }
 
@@ -345,6 +349,31 @@ export function apiRouters(
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
+  };
+}
+
+// The routes before the session guard (`WebDeps.publicRouters`): the provider redirect of the mailbox OAuth flow answers 303 to
+// `/login` without a session, so it cannot sit behind `requireSession`. The route reads the session and enters the tenant scope itself.
+export function apiPublicRouters(
+  config: Config,
+  db: Db,
+  extras: WebExtras,
+  now: () => Date
+): NonNullable<WebDeps["publicRouters"]> {
+  return (api) => {
+    api.route(
+      "/",
+      mailOAuthCallbackRoutes({
+        db,
+        now,
+        secrets: extras.secrets,
+        clients: extras.mailOAuthClients ?? createMailOAuthClients(config),
+        openProvider: openImapProvider,
+        verifySmtp: verifySmtpLogin,
+        timeouts: WEB_MAIL_TIMEOUTS,
+        ...extras.mailOAuthLogin,
+      })
+    );
   };
 }
 
@@ -436,6 +465,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     homePath: homePathOf(db, extras.botUsername),
+    publicRouters: apiPublicRouters(config, db, extras, now),
     routers: apiRouters(
       config,
       db,
