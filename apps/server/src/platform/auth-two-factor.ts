@@ -121,15 +121,37 @@ function isWrongCode(error: unknown): boolean {
   return isAPIError(error) && error.statusCode === 401 && WRONG_CODE_ERRORS.has(String(error.body?.code));
 }
 
-async function countWrongCode(ctx: AuditContext, row: TwoFactorRow, input: SecondFactorInput): Promise<void> {
-  const counted = await ctx.context.adapter.incrementOne<{ failedVerificationCount?: number | null }>({
+// The try is counted before the code is checked, in one guarded atomic step: parallel requests cannot pass the limit
+// together (a count after the check let 14 of 15 parallel wrong codes through). Returns the new count, or null when
+// the limit is already used up (the lock is on or about to be written).
+async function reserveTry(ctx: AuditContext, row: TwoFactorRow): Promise<number | null> {
+  const reserved = await ctx.context.adapter.incrementOne<{ failedVerificationCount?: number | null }>({
     model: "twoFactor",
-    where: [{ field: "id", value: row.id }],
+    where: [
+      { field: "id", value: row.id },
+      { field: "failedVerificationCount", operator: "lt", value: TWO_FACTOR_LOCK.maxFailedAttempts },
+    ],
     increment: { failedVerificationCount: 1 },
   });
-  if ((counted?.failedVerificationCount ?? 0) < TWO_FACTOR_LOCK.maxFailedAttempts) return;
+  return reserved ? (reserved.failedVerificationCount ?? null) : null;
+}
+
+// A failure that is not a wrong code (a 500, a missing row) gives the try back.
+async function releaseTry(ctx: AuditContext, row: TwoFactorRow): Promise<void> {
+  await ctx.context.adapter.incrementOne({
+    model: "twoFactor",
+    where: [
+      { field: "id", value: row.id },
+      { field: "failedVerificationCount", operator: "gt", value: 0 },
+    ],
+    increment: { failedVerificationCount: -1 },
+  });
+}
+
+// The wrong code that used the last try writes the lock, and the lock row once.
+async function lockAfterLastTry(ctx: AuditContext, row: TwoFactorRow, input: SecondFactorInput): Promise<void> {
   const lockedUntil = new Date(input.now().getTime() + TWO_FACTOR_LOCK.durationSeconds * 1000);
-  const locked = await ctx.context.adapter.incrementOne({
+  await ctx.context.adapter.incrementOne({
     model: "twoFactor",
     where: [
       { field: "id", value: row.id },
@@ -138,9 +160,7 @@ async function countWrongCode(ctx: AuditContext, row: TwoFactorRow, input: Secon
     increment: {},
     set: { lockedUntil },
   });
-  if (locked && counted?.failedVerificationCount === TWO_FACTOR_LOCK.maxFailedAttempts) {
-    await input.report("two_factor_locked", input.userId, { locked_until: lockedUntil.toISOString() });
-  }
+  await input.report("two_factor_locked", input.userId, { locked_until: lockedUntil.toISOString() });
 }
 
 async function clearCount(ctx: AuditContext, row: TwoFactorRow): Promise<void> {
@@ -181,17 +201,27 @@ export async function requireSecondFactorCode(ctx: AuditContext, input: SecondFa
   }
   // Fail closed: no API or no headers is an error, never a pass.
   if (!input.api || !ctx.headers) throw new Error("The second-factor check has no verify API.");
+  let attempt: number | null = null;
+  if (row) {
+    attempt = await reserveTry(ctx, row);
+    if (attempt === null) {
+      await refuse("locked");
+      throw APIError.from("TOO_MANY_REQUESTS", TWO_FACTOR_ERROR_CODES.ACCOUNT_TEMPORARILY_LOCKED);
+    }
+  }
   const verify = { body: { code }, headers: ctx.headers };
   try {
     await (DIGITS.test(code) ? input.api.verifyTOTP(verify) : input.api.verifyBackupCode(verify));
   } catch (error) {
-    if (isWrongCode(error)) {
-      if (row) await countWrongCode(ctx, row, input);
-      await refuse("wrong");
+    if (!isWrongCode(error)) {
+      if (row) await releaseTry(ctx, row);
+      throw error;
     }
+    if (row && attempt === TWO_FACTOR_LOCK.maxFailedAttempts) await lockAfterLastTry(ctx, row, input);
+    await refuse("wrong");
     throw error;
   }
-  if (row && (row.failedVerificationCount ?? 0) > 0) await clearCount(ctx, row);
+  if (row) await clearCount(ctx, row);
 }
 
 const WRONG_CODE_ERRORS: ReadonlySet<string> = new Set(["INVALID_CODE", "INVALID_BACKUP_CODE"]);

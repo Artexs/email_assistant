@@ -14,6 +14,7 @@ import {
   cleanTotpCode,
   type AccountTwoFactorError,
 } from "../../lib/two-factor-errors";
+import { disableWithCode, newCodesWithCode } from "../../lib/two-factor-confirm";
 import { useResource } from "../../lib/use-resource";
 import { Alert } from "../ui/alert";
 import { Button } from "../ui/button";
@@ -118,9 +119,9 @@ export function TwoFactorSection() {
       setPending(true);
       const typed = password;
       // F128: turning it off and new codes need a code too (one field: the app code or a backup code).
-      // The client types know only `password`; the code goes in `fetchOptions.body`, which Better Auth merges into the body.
-      const confirmed = purpose === "enable" ? null : cleanConfirmCode(code);
-      if (purpose !== "enable" && confirmed === null) {
+      // `enable` has no code: the empty string stands for "not used".
+      const confirmed = purpose === "enable" ? "" : cleanConfirmCode(code);
+      if (confirmed === null) {
         setPending(false);
         return setFieldError({
           field: "code",
@@ -139,9 +140,9 @@ export function TwoFactorSection() {
           setSetup({ uri, codes: data.backupCodes });
           setView("scan");
         } else if (purpose === "codes") {
-          const { data, error: authError } = await authClient.twoFactor.generateBackupCodes({
+          const { data, error: authError } = await newCodesWithCode(authClient.twoFactor, {
             password: typed,
-            fetchOptions: { body: { code: confirmed } },
+            code: confirmed,
           });
           const failure = accountTwoFactorError(authError);
           if (failure !== null) return show(failure);
@@ -150,9 +151,9 @@ export function TwoFactorSection() {
           setCodes(data.backupCodes);
           setView("codes");
         } else {
-          const { error: authError } = await authClient.twoFactor.disable({
+          const { error: authError } = await disableWithCode(authClient.twoFactor, {
             password: typed,
-            fetchOptions: { body: { code: confirmed } },
+            code: confirmed,
           });
           const failure = accountTwoFactorError(authError);
           if (failure !== null) return show(failure);

@@ -992,6 +992,33 @@ describe("F128: a code for turn off and new codes", () => {
     expect(await twoFactorFlag(user.userId)).toBe(false);
   });
 
+  test("14: 15 parallel wrong codes: at most 10 are counted, the rest meet the lock, one lock row", async () => {
+    const user = await createEnrolled();
+    secrets.push("000000");
+    const answers = await Promise.all(
+      Array.from({ length: 15 }, () => disable(user, { password: PASSWORD, code: "000000" }))
+    );
+    const wrong = answers.filter((answer) => answer.status === 401);
+    const locked = answers.filter((answer) => answer.status === 429);
+    expect(wrong.length).toBeLessThanOrEqual(10);
+    expect(wrong.length + locked.length).toBe(15);
+    for (const answer of wrong) expect(answer.json?.code).toBe("INVALID_CODE");
+    for (const answer of locked) expect(answer.json?.code).toBe("ACCOUNT_TEMPORARILY_LOCKED");
+    expect((await twoFactorRow(user.userId))?.failed_verification_count).toBe(10);
+    expect(await auditRows(user.orgId, "web.two_factor_locked")).toHaveLength(1);
+    expect(await twoFactorFlag(user.userId)).toBe(true);
+  });
+
+  test("15: a failure that is not a wrong code gives the try back", async () => {
+    const user = await createEnrolled();
+    await sql`UPDATE auth_two_factors SET backup_codes = 'not-readable' WHERE user_id = ${user.userId}`.execute(db);
+    const answer = await disable(user, { password: PASSWORD, code: "abcde-12345" });
+    expect(answer.status).toBeGreaterThanOrEqual(500);
+    expect((await twoFactorRow(user.userId))?.failed_verification_count).toBe(0);
+    expect(await twoFactorFlag(user.userId)).toBe(true);
+    expect(await refusals(user)).toEqual([]);
+  });
+
   test("10: a right code clears the count of wrong codes", async () => {
     const user = await createEnrolled();
     const code = wrongCode(user.secret);
