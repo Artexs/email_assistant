@@ -589,6 +589,12 @@ describe("sentSync in the view and PATCH sent-sync", () => {
     );
     expect(bad.status).toBe(400);
     expect((await patchSent(app, m2, true)).status).toBe(404);
+    // A foreign id with a bad body is 404, not 400.
+    const foreignBad = await app.request(
+      `/api/settings/${m2}/sent-sync`,
+      as("owner", { method: "PATCH", body: { enabled: "yes" } })
+    );
+    expect(foreignBad.status).toBe(404);
     expect((await patchSent(app, "not-a-uuid", true)).status).toBe(404);
     expect(await getSentSyncState(db, { orgId: org.orgId }, m1)).toBeUndefined();
   });
