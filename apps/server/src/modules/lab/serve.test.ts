@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { LabMailError } from "./mail-client";
 import {
   finishRun,
-  MAX_PART_FAILURES,
   runModeStep,
   runServe,
   serveTick,
@@ -223,17 +222,17 @@ describe("serveTick (spec tests 1 to 5)", () => {
     const labState = start("week-20261123-aaaa");
     const errors = new Map<string, number>();
     await serveTick(deps(labState), errors); // the baseline tick
-    throwIn.injector = MAX_PART_FAILURES - 1;
-    for (let i = 0; i < MAX_PART_FAILURES - 1; i += 1) await serveTick(deps(labState), errors);
+    throwIn.injector = 9;
+    for (let i = 0; i < 9; i += 1) await serveTick(deps(labState), errors);
     expect(stoppedEvents(labState, "week-20261123-aaaa")).toHaveLength(0);
-    expect(errors.get("week-20261123-aaaa:injector")).toBe(MAX_PART_FAILURES - 1);
+    expect(errors.get("week-20261123-aaaa:injector")).toBe(9);
     // The other parts kept running while the injector failed.
-    expect(calls.filter((call) => call.startsWith("bots:")).length).toBeGreaterThan(MAX_PART_FAILURES - 1);
+    expect(calls.filter((call) => call.startsWith("bots:")).length).toBeGreaterThan(9);
     // One good tick resets the count: 9 more failures do not stop the run.
     await serveTick(deps(labState), errors);
     expect(errors.has("week-20261123-aaaa:injector")).toBe(false);
-    throwIn.injector = MAX_PART_FAILURES - 1;
-    for (let i = 0; i < MAX_PART_FAILURES - 1; i += 1) await serveTick(deps(labState), errors);
+    throwIn.injector = 9;
+    for (let i = 0; i < 9; i += 1) await serveTick(deps(labState), errors);
     expect(stoppedEvents(labState, "week-20261123-aaaa")).toHaveLength(0);
     throwIn.injector = 1;
     await serveTick(deps(labState), errors);
