@@ -485,10 +485,10 @@ describe("eval streams", () => {
     expectOnlyStderr(result, "eval", "GEMINI_API_KEY is missing");
   });
 
-  test("a missing config key (the error comes out of main): `failed:` on stderr, exit 1", async () => {
+  test("a missing config key: `config error: <key>` on stderr, exit 1", async () => {
     const result = await run("eval", ["--provider", "gemini"], { env: { CREDENTIALS_KEY: "" } });
     expect(result.code).toBe(1);
-    expectOnlyStderr(result, "eval", "failed: ConfigError");
+    expectOnlyStderr(result, "eval", "config error: CREDENTIALS_KEY");
   });
 });
 
