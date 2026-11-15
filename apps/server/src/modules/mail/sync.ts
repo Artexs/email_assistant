@@ -12,6 +12,7 @@ import {
   INBOX,
   MailAuthError,
   type CapturedHeaders,
+  type FolderMessageMeta,
   type FolderStatus,
   type MailProvider,
   type MessageMeta,
@@ -21,6 +22,7 @@ import {
   getMailbox,
   getSyncFolder,
   insertEmail,
+  listFolderRowsAtUids,
   listFolderUids,
   listRecentlyMoved,
   listSyncFolders,
@@ -37,7 +39,9 @@ import {
 import {
   baseDedupKey,
   contentHash,
+  decideBelowCursorCopy,
   decideIncoming,
+  dropHeldMetas,
   filterAboveCursor,
   matchReturned,
   normalizeMessageId,
@@ -87,6 +91,8 @@ export interface SyncResult {
   moveInFlight: number;
   returnedBelowCursor: number;
   copiesBelowCursor: number;
+  /** Copies below the cursor that the end-of-run check stored (they are also in `stored`). */
+  copiesStored: number;
   skippedOwn: number;
   ignoredBelowCursor: number;
 }
@@ -117,6 +123,7 @@ function emptyResult(folder: SyncFolderKey, mode: SyncResult["mode"]): SyncResul
     moveInFlight: 0,
     returnedBelowCursor: 0,
     copiesBelowCursor: 0,
+    copiesStored: 0,
     skippedOwn: 0,
     ignoredBelowCursor: 0,
   };
@@ -215,6 +222,28 @@ async function checkFolders(
   return first;
 }
 
+// The rows of one identity: the DB rows plus the rows that this run stored, which enter as `run:` copies (deduplicated by dedup key).
+function withRunCopies(
+  fromDb: KnownCopy[],
+  runStored: readonly { dedupKey: string; folder: string; uid: number }[],
+  meta: MessageMeta,
+  hash: string
+): KnownCopy[] {
+  const runKeys = runStored.map((stored) => stored.dedupKey);
+  const runCopies: KnownCopy[] = runStored.map((stored) => ({
+    id: `run:${stored.dedupKey}`,
+    dedupKey: stored.dedupKey,
+    folder: stored.folder,
+    sourceFolder: stored.folder,
+    uid: stored.uid,
+    contentHash: hash,
+    from: meta.from,
+    receivedAt: meta.internalDate,
+    movePendingAt: null,
+  }));
+  return [...fromDb.filter((copy) => !runKeys.includes(copy.dedupKey)), ...runCopies];
+}
+
 // Phase 1: provider calls and DB reads only.
 async function planChunk(
   deps: SyncDeps,
@@ -236,20 +265,8 @@ async function planChunk(
     const baseKey = baseDedupKey(messageId, hash);
     // Rows that this run stores are copies too, but no other mail of this run can match them.
     const runStored = state.newKeys.get(baseKey) ?? [];
-    const runKeys = runStored.map((stored) => stored.dedupKey);
-    const runCopies: KnownCopy[] = runStored.map((stored) => ({
-      id: `run:${stored.dedupKey}`,
-      dedupKey: stored.dedupKey,
-      folder: stored.folder,
-      sourceFolder: stored.folder,
-      uid: stored.uid,
-      contentHash: hash,
-      from: meta.from,
-      receivedAt: meta.internalDate,
-      movePendingAt: null,
-    }));
     const fromDb = await findCopies(deps.db, ctx, mailboxId, { messageId, contentHash: hash });
-    const copies = [...fromDb.filter((copy) => !runKeys.includes(copy.dedupKey)), ...runCopies];
+    const copies = withRunCopies(fromDb, runStored, meta, hash);
 
     const decision = decideIncoming({ folder, baseKey, copies, matched: state.matched, now: deps.now() });
     let dedupKey: string | null = null;
@@ -384,14 +401,31 @@ async function setCursor(
   await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
 }
 
+interface PlannedCopy {
+  rowId: string;
+  baseKey: string;
+  dedupKey: string;
+  meta: FolderMessageMeta;
+  messageId: string | null;
+  hash: string;
+  body: string | null;
+  capture: CapturedHeaders | null;
+}
+
+function logCopySkipped(mailboxId: string, rowId: string, kind: string): void {
+  log.debug("sync_below_cursor_copy_skipped", { mailbox_id: mailboxId, email_id: rowId, kind });
+}
+
 // D4: a mail that the user puts back into its source folder can keep its UID (Interia) and then sits below that folder's cursor.
+// A copy of a mail that is still in its system folder is stored like a new mail (D2-D5, D11).
 async function checkReturnedBelowCursor(
   deps: SyncDeps,
   ctx: TenantContext,
   mailboxId: string,
   folder: SyncFolderRow,
   cursor: Cursor,
-  result: SyncResult
+  result: SyncResult,
+  state: RunState
 ): Promise<void> {
   const now = deps.now();
   const rows = await listRecentlyMoved(deps.db, ctx, mailboxId, {
@@ -408,41 +442,86 @@ async function checkReturnedBelowCursor(
     const chunk = rows.slice(offset, offset + RETURN_CHECK_CHUNK);
     const uids = [...new Set(chunk.flatMap((row) => (row.inbox_uid === null ? [row.uid] : [row.inbox_uid, row.uid])))];
     const metas = await deps.provider.fetchByUidsIn(folder.path, uids);
+    // A meta at a UID that a row of its identity holds in the folder is that row's mail (a stored copy), not a return (D6).
+    const held = await listFolderRowsAtUids(
+      deps.db,
+      ctx,
+      mailboxId,
+      folder.path,
+      metas.map((meta) => meta.uid)
+    );
     const returns: { emailId: string; uid: number }[] = [];
-    for (const hit of matchReturned(metas, chunk)) {
+    const planned: PlannedCopy[] = [];
+    for (const hit of matchReturned(dropHeldMetas(metas, held), chunk)) {
       const row = chunk.find((candidate) => candidate.id === hit.emailId);
-      if (row === undefined) throw new HardError("matched row is missing");
-      // Another row of the mailbox already holds this UID in the source folder (an identical copy that stayed): not a return.
-      const sourceUids = await listFolderUids(deps.db, ctx, mailboxId, folder.path, {
-        exceptEmailId: row.id,
-        messageId: row.message_id_header,
-        contentHash: row.content_hash,
-      });
-      if (sourceUids.has(hit.uid)) continue;
-      if (await isStillInFolder(deps, ctx, mailboxId, row)) {
-        log.debug(`sync ${mailboxId} copy below cursor: email ${row.id}`);
-        result.copiesBelowCursor += 1;
-      } else {
+      const meta = metas.find((candidate) => candidate.uid === hit.uid);
+      if (row === undefined || meta === undefined) throw new HardError("matched row is missing");
+      const foundUid = await findInFolder(deps, ctx, mailboxId, row);
+      if (foundUid === null) {
         returns.push(hit);
+        continue;
       }
+      log.debug(`sync ${mailboxId} copy below cursor: email ${row.id}`);
+      result.copiesBelowCursor += 1;
+      const copy = await planCopy(deps, ctx, mailboxId, folder, row, meta, foundUid, planned, state);
+      if (copy !== null) planned.push(copy);
     }
-    if (returns.length === 0) continue;
+    if (returns.length === 0 && planned.length === 0) continue;
 
-    const run = async (trx: Transaction<DB>): Promise<number> => {
+    const run = async (trx: Transaction<DB>) => {
       const locked = await lockSyncFolder(trx, ctx, folder.id);
       if (locked?.uidvalidity !== cursor.uidValidity || locked.last_uid !== cursor.lastUid) {
         throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
       }
-      let changed = 0;
+      let returned = 0;
       for (const hit of returns) {
-        if (await markEmailReturned(trx, ctx, hit.emailId, hit.uid, now, { folder: folder.path })) changed += 1;
+        if (await markEmailReturned(trx, ctx, hit.emailId, hit.uid, now, { folder: folder.path })) returned += 1;
       }
-      return changed;
+      const stored: PlannedCopy[] = [];
+      let missing = 0;
+      for (const copy of planned) {
+        // The folder lock does not serialize the reads of the plan: decide again with the rows that are committed now (D4).
+        const runStored = state.newKeys.get(copy.baseKey) ?? [];
+        const fromDb = await findCopies(trx, ctx, mailboxId, { messageId: copy.messageId, contentHash: copy.hash });
+        const decision = decideBelowCursorCopy({
+          folder: folder.path,
+          uid: copy.meta.uid,
+          rowId: copy.rowId,
+          baseKey: copy.baseKey,
+          copies: withRunCopies(fromDb, runStored, copy.meta, copy.hash),
+          matched: state.matched,
+          now,
+        });
+        if (decision.kind !== "store" || decision.dedupKey !== copy.dedupKey) {
+          logCopySkipped(mailboxId, copy.rowId, decision.kind === "store" ? "not_inserted" : decision.kind);
+          continue;
+        }
+        const row = newRow(mailboxId, folder.path, copy.meta, copy.messageId, copy.hash, copy.dedupKey, copy.body);
+        if (!(await insertEmail(trx, ctx, row))) {
+          logCopySkipped(mailboxId, copy.rowId, "not_inserted");
+          continue;
+        }
+        stored.push(copy);
+        const mail = { mailboxId, dedupKey: copy.dedupKey };
+        if (copy.capture === null || !(await storeCapture(trx, ctx, mail, copy.capture, now))) missing += 1;
+      }
+      return { returned, stored, missing };
     };
     try {
-      result.returnedBelowCursor += await (deps.db.isTransaction
-        ? run(deps.db as Transaction<DB>)
-        : deps.db.transaction().execute(run));
+      const done = await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
+      result.returnedBelowCursor += done.returned;
+      result.stored += done.stored.length;
+      result.copiesStored += done.stored.length;
+      result.captureMissing += done.missing;
+      // The run state changes after the commit only (D5).
+      for (const copy of done.stored) {
+        const entries = state.newKeys.get(copy.baseKey) ?? [];
+        state.newKeys.set(copy.baseKey, [
+          ...entries,
+          { dedupKey: copy.dedupKey, folder: folder.path, uid: copy.meta.uid },
+        ]);
+        state.matched.set(`run:${copy.dedupKey}`, folder.path);
+      }
     } catch (error) {
       if (!(error instanceof CursorMovedError)) throw error;
       log.warn(
@@ -454,17 +533,80 @@ async function checkReturnedBelowCursor(
   log.info(
     `sync ${mailboxId} folder ${folder.key} returned below cursor: checked ${rows.length}, returned ${result.returnedBelowCursor}, copies ${result.copiesBelowCursor}`
   );
+  if (result.copiesStored > 0) {
+    log.info("sync_below_cursor_copies_stored", {
+      mailbox_id: mailboxId,
+      folder_key: folder.key,
+      count: result.copiesStored,
+    });
+  }
 }
 
-// Folder check of a hit (M4): the mail is still in the folder it was moved to, so its source folder holds a copy.
-async function isStillInFolder(deps: SyncDeps, ctx: TenantContext, mailboxId: string, row: MovedRow): Promise<boolean> {
+// One copy hit: the rule of D2 on the rows of its identity, then the body fetch for a copy to store. Null: nothing to store.
+async function planCopy(
+  deps: SyncDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  folder: SyncFolderRow,
+  row: MovedRow,
+  meta: FolderMessageMeta,
+  foundUid: number,
+  planned: readonly PlannedCopy[],
+  state: RunState
+): Promise<PlannedCopy | null> {
+  // Found only at another UID: it can be an untracked twin while the row's mail came back (D11).
+  if (foundUid !== row.uid) {
+    logCopySkipped(mailboxId, row.id, "uncertain");
+    return null;
+  }
+  const messageId = normalizeMessageId(meta.messageId);
+  const hash = contentHash(meta);
+  const baseKey = baseDedupKey(messageId, hash);
+  const fromDb = await findCopies(deps.db, ctx, mailboxId, { messageId, contentHash: hash });
+  const earlier = planned
+    .filter((copy) => copy.baseKey === baseKey)
+    .map((copy) => ({ dedupKey: copy.dedupKey, folder: folder.path, uid: copy.meta.uid }));
+  const runStored = [...(state.newKeys.get(baseKey) ?? []), ...earlier];
+  const decision = decideBelowCursorCopy({
+    folder: folder.path,
+    uid: meta.uid,
+    rowId: row.id,
+    baseKey,
+    copies: withRunCopies(fromDb, runStored, meta, hash),
+    matched: state.matched,
+    now: deps.now(),
+  });
+  if (decision.kind !== "store") {
+    logCopySkipped(mailboxId, row.id, decision.kind);
+    return null;
+  }
+  const content = await deps.provider.fetchContent(folder.path, meta.uid);
+  return {
+    rowId: row.id,
+    baseKey,
+    dedupKey: decision.dedupKey,
+    meta,
+    messageId,
+    hash,
+    body: content.text,
+    capture: content.capture,
+  };
+}
+
+// Folder check of a hit (M4): the UID where the mail is still in the folder it was moved to (its source folder holds a copy), else null.
+async function findInFolder(
+  deps: SyncDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  row: MovedRow
+): Promise<number | null> {
   const excludeUids = await listFolderUids(deps.db, ctx, mailboxId, row.folder, {
     exceptEmailId: row.id,
     messageId: row.message_id_header,
     contentHash: row.content_hash,
   });
   const found = await locateMessage(deps.provider, row.folder, locateKeyOf(row, row.uid), { excludeUids });
-  return found !== null;
+  return found === null ? null : found.uid;
 }
 
 async function readInboxFolder(deps: SyncDeps, ctx: TenantContext, mailboxId: string): Promise<SyncFolderRow> {
@@ -536,7 +678,7 @@ async function syncFolder(
     const lastUid = Math.max(status.uidNext - 1, highest);
     await setCursor(deps, ctx, mailboxId, row.id, start, { uidValidity: status.uidValidity, lastUid });
   } else {
-    await checkReturnedBelowCursor(deps, ctx, mailboxId, row, cursor, result);
+    await checkReturnedBelowCursor(deps, ctx, mailboxId, row, cursor, result, state);
   }
 
   log.info(
