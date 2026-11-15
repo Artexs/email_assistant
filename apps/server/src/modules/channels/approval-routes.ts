@@ -1,20 +1,24 @@
 import {
+  approvalClosedStates,
   approvalDecisionBodySchema,
   approvalEditBodySchema,
+  approvalEditClosedCodes,
   z,
   type ApprovalApproveAnswer,
+  type ApprovalClosedState,
   type ApprovalEditAnswer,
   type ApprovalRejectAnswer,
 } from "@ea/core";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 
 import type { Db, TenantContext } from "../../platform/db";
+import { HardError } from "../../platform/errors";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
-import { approve, editApproval, reject, type DelegationHooks, type SendScope } from "../actions";
+import { approve, editApproval, getSend, reject, type DelegationHooks, type SendScope } from "../actions";
 import { isFeatureOn } from "../tenancy";
 
 import { approvalDocs } from "./approval-api-docs";
-import { getApprovalDetail, listApprovals } from "./approvals-read";
+import { getApprovalDetail, listApprovals, stateOf } from "./approvals-read";
 import { cardEditHooks } from "./card-edits";
 import { heldReason } from "./held-reason";
 
@@ -28,6 +32,22 @@ export interface ApprovalRouteDeps {
 }
 
 const idSchema = z.uuid();
+
+// The name of a closed send for the page: the one that `stateOf` gives the detail route, so one send has one name in approve,
+// reject, edit and the detail (`applied` is `sent`, `applying` is `sending`, `approved` is `held` or `sending` by the lock). The services
+// answer with the raw status; the read names it. A send that cannot be read or is not closed is a bug: HardError, never a made-up name.
+async function closedStateOf(
+  deps: ApprovalRouteDeps,
+  ctx: TenantContext,
+  sendId: string
+): Promise<ApprovalClosedState> {
+  const send = await getSend(deps.db, ctx, sendId);
+  const state = send === undefined ? undefined : stateOf(send, deps.now());
+  if (state === undefined || !approvalClosedStates.includes(state as ApprovalClosedState)) {
+    throw new HardError("a closed send has no closed state");
+  }
+  return state as ApprovalClosedState;
+}
 
 function idOf(raw: string): string {
   const parsed = idSchema.safeParse(raw);
@@ -55,6 +75,12 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
     return c.json(detail);
   });
 
+  // The flag comes before the role: with the flag off every route is a 404, also for a member (the routes do not exist yet).
+  const flagFirst: MiddlewareHandler<ApiEnv> = async (c, next) => {
+    if (!(await isFeatureOn(deps.db, c.get("ctx"), "approvals_page"))) return c.json({ error: "not_found" }, 404);
+    await next();
+  };
+
   // The hook is the real one for every write. `approve` and `reject` read the owner check from `requireOwner`.
   const decisionDeps = () => ({
     db: deps.db,
@@ -63,9 +89,8 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
     uidplus: deps.uidplus,
   });
 
-  app.post("/approvals/:id/approve", requireOwner, approvalDocs.approveApproval, async (c) => {
+  app.post("/approvals/:id/approve", flagFirst, requireOwner, approvalDocs.approveApproval, async (c) => {
     const ctx = c.get("ctx");
-    if (!(await isFeatureOn(deps.db, ctx, "approvals_page"))) return c.json({ error: "not_found" }, 404);
     const id = idOf(c.req.param("id"));
     await parseBody(c, approvalDecisionBodySchema);
     const result = await approve(decisionDeps(), ctx, id, {
@@ -101,9 +126,8 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
     }
   });
 
-  app.post("/approvals/:id/reject", requireOwner, approvalDocs.rejectApproval, async (c) => {
+  app.post("/approvals/:id/reject", flagFirst, requireOwner, approvalDocs.rejectApproval, async (c) => {
     const ctx = c.get("ctx");
-    if (!(await isFeatureOn(deps.db, ctx, "approvals_page"))) return c.json({ error: "not_found" }, 404);
     const id = idOf(c.req.param("id"));
     await parseBody(c, approvalDecisionBodySchema);
     const result = await reject(decisionDeps(), ctx, id, {
@@ -117,15 +141,14 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
       case "superseded":
         return c.json({ error: "changed", currentId: result.currentId }, 409);
       case "already":
-        return c.json({ error: "closed", state: result.status }, 409);
+        return c.json({ error: "closed", state: await closedStateOf(deps, ctx, id) }, 409);
       case "not_found":
         return c.json({ error: "not_found" }, 404);
     }
   });
 
-  app.post("/approvals/:id/edit", requireOwner, approvalDocs.editApproval, async (c) => {
+  app.post("/approvals/:id/edit", flagFirst, requireOwner, approvalDocs.editApproval, async (c) => {
     const ctx = c.get("ctx");
-    if (!(await isFeatureOn(deps.db, ctx, "approvals_page"))) return c.json({ error: "not_found" }, 404);
     const id = idOf(c.req.param("id"));
     const body = await parseBody(c, approvalEditBodySchema);
     const result = await editApproval(decisionDeps(), ctx, id, {
@@ -141,8 +164,11 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
         return c.json<ApprovalEditAnswer>({ id: result.sendId, version: result.version });
       case "changed":
         return c.json({ error: "changed", currentId: result.currentId }, 409);
-      case "closed":
-        return c.json({ error: "closed", state: result.state }, 409);
+      case "closed": {
+        // Its own codes stay; a raw status gets the name that `stateOf` gives (the edit read it under the lock, the name needs the lock time).
+        const own = approvalEditClosedCodes.find((code) => code === result.state);
+        return c.json({ error: "closed", state: own ?? (await closedStateOf(deps, ctx, id)) }, 409);
+      }
       case "drafts_off":
         return c.json({ error: "drafts_off" }, 409);
       case "not_editable":

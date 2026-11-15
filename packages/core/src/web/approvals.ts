@@ -110,10 +110,22 @@ export const approvalEditAnswerSchema = z.strictObject({ id: z.uuid(), version: 
 export type ApprovalEditAnswer = z.infer<typeof approvalEditAnswerSchema>;
 
 // The 409 body of the write routes: `changed` names the newest version, `closed` names the state of the send.
+// `state` of a `closed` answer is one of the names of `approvalDetailStates` (the detail route names the same send the same way), plus
+// the three codes that only the edit has. A closed send is never `waiting` (it can be decided) or `superseded` (that is `changed`).
+export const approvalClosedStates = ["held", "sending", "sent", "rejected", "expired", "failed"] as const;
+export type ApprovalClosedState = (typeof approvalClosedStates)[number];
+export const approvalEditClosedCodes = ["payload_gone", "draft_gone", "delegation_closed"] as const;
+const closedStatesAreDetailStates: [(typeof approvalClosedStates)[number]] extends [
+  (typeof approvalDetailStates)[number],
+]
+  ? true
+  : false = true;
+void closedStatesAreDetailStates;
+
 export const approvalConflictCodes = ["changed", "closed", "draft_not_ready", "drafts_off"] as const;
 export const approvalConflictSchema = z.strictObject({
   error: z.enum(approvalConflictCodes),
   currentId: z.uuid().optional(),
-  state: z.string().optional(),
+  state: z.enum([...approvalClosedStates, ...approvalEditClosedCodes]).optional(),
 });
 export type ApprovalConflict = z.infer<typeof approvalConflictSchema>;

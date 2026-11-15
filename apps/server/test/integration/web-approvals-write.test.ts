@@ -5,180 +5,25 @@ import {
   approvalConflictSchema,
   approvalEditAnswerSchema,
   approvalRejectAnswerSchema,
-  encodeCallback,
 } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
-import type { Transaction } from "kysely";
 
-import type { SendScope } from "../../src/modules/actions";
-import { approvalRoutes } from "../../src/modules/channels";
-import { insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
-import { delegationHooks } from "../../src/modules/delegation";
-import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
-import { isOrgSuspended, setOrgFeature } from "../../src/modules/tenancy";
-import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
-import type { DB } from "../../src/platform/db";
+import { updateMailboxSettings } from "../../src/modules/config";
 
-import {
-  insertDelegate,
-  insertDelegation,
-  insertDraftAndSend,
-  linkChat,
-  randomChatId,
-  testCapabilities,
-} from "./fixtures";
+import { insertDelegation } from "./fixtures";
 import { testDb } from "./helpers";
-import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { approvalKit, bodyOf, HOUR, NOW, post, ROUTES } from "./web-approvals-kit";
+import { TEST_ORIGIN } from "./web-helpers";
 
 // F102 ticket, approvals write API: approve, reject and edit from the panel. Owner only; the rules of the service (stage 08); the Telegram cards follow.
 const db = testDb();
-const NOW = new Date("2026-11-20T12:00:00Z");
-const HOUR = 3_600_000;
-const SWITCHES = { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: false };
+const { cleanup, inTrx, setup, addSend, insertDelegateNow, send, auditOf, editRows, sendCount } = approvalKit(db);
 
-const inTrx = <T>(run: (trx: Transaction<DB>) => Promise<T>): Promise<T> => db.transaction().execute(run);
-
-const orgs: WebOrg[] = [];
-const extraUsers: string[] = [];
-
-afterEach(async () => {
-  for (const org of orgs) await org.cleanup();
-  orgs.length = 0;
-  if (extraUsers.length > 0) await db.deleteFrom("users").where("id", "in", extraUsers).execute();
-  extraUsers.length = 0;
-});
+afterEach(cleanup);
 
 afterAll(async () => {
   await db.destroy();
 });
-
-async function addMailbox(orgId: string): Promise<string> {
-  const ctx = { orgId };
-  const id = randomUUID();
-  await insertMailbox(db, ctx, {
-    id,
-    address: `approvals-write-${id}@x.test`,
-    imapHost: "imap.x.test",
-    imapPort: 993,
-    smtpHost: "smtp.x.test",
-    smtpPort: 465,
-    capabilities: { ...testCapabilities, uidplus: true },
-    folderMap: { drafts: "Drafts" },
-  });
-  await insertInboxFolder(db, ctx, id);
-  await inTrx((trx) => insertDefaultSettings(trx, ctx, id));
-  await inTrx((trx) => updateMailboxSettings(trx, ctx, id, { mode: "assist", toolSwitches: SWITCHES }));
-  return id;
-}
-
-async function setup(opts: { flag?: boolean; sendScope?: SendScope } = {}) {
-  const org = await webOrg(db);
-  orgs.push(org);
-  const ctx = { orgId: org.orgId };
-  const mailboxId = await addMailbox(org.orgId);
-  const theirMailboxId = await addMailbox(org.otherOrgId);
-  if (opts.flag !== false) {
-    for (const orgId of [org.orgId, org.otherOrgId]) {
-      await setOrgFeature(db, { orgId }, { flag: "approvals_page", enabled: true, actor: "cli", now: NOW });
-    }
-  }
-  // A second owner with a Telegram chat: U1 and U2 both hold a sent card of the send.
-  const u2 = (await insertUser(db, { email: `owner2-${randomUUID()}@x.test`, displayName: "Owner 2" })).id;
-  extraUsers.push(u2);
-  await insertMembership(db, ctx, { userId: u2, role: "owner" });
-  await inTrx((trx) => linkChat(trx, ctx, org.ownerId, randomChatId(), NOW));
-  await inTrx((trx) => linkChat(trx, ctx, u2, randomChatId(), NOW));
-  const sendScope = opts.sendScope ?? ({ kind: "all" } as const);
-  const app = webTestApp({
-    db,
-    sessions: { owner: org.ownerId, member: org.assistantId, other: org.otherOwnerId },
-    isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
-    routers: (api) => {
-      api.route(
-        "/",
-        approvalRoutes({ db, now: () => NOW, sendScope, hooks: delegationHooks({ db }), uidplus: async () => true })
-      );
-    },
-  });
-  return { org, ctx, mailboxId, theirMailboxId, u2, app };
-}
-
-type Seed = Awaited<ReturnType<typeof setup>>;
-type SendOpts = Parameters<typeof insertDraftAndSend>[3];
-
-// A send S1 with its draft, and a sent Telegram card for U1 and U2 (as the notifier leaves them).
-async function addSend(s: Seed, opts: SendOpts = {}, orgId = s.org.orgId, mailboxId = s.mailboxId) {
-  const created = await db
-    .transaction()
-    .execute((trx) => insertDraftAndSend(trx, { orgId }, mailboxId, { createdAt: NOW, notifiedAt: NOW, ...opts }));
-  if (orgId === s.org.orgId) {
-    for (const [index, userId] of [s.org.ownerId, s.u2].entries()) {
-      await db
-        .insertInto("outbox")
-        .values({
-          org_id: orgId,
-          user_id: userId,
-          kind: "approval",
-          dedup_key: `approval:${created.sendId}`,
-          email_id: created.emailId,
-          text: `CARD-${index}`,
-          buttons: JSON.stringify([
-            [{ text: "Send", data: encodeCallback({ kind: "approve", actionId: created.sendId }) }],
-          ]),
-          status: "sent",
-          next_attempt_at: NOW,
-          created_at: NOW,
-          sent_at: NOW,
-          external_message_id: 700 + index,
-        })
-        .execute();
-    }
-  }
-  return created.sendId;
-}
-
-const post = (who: string, path: string, body: unknown = {}, init: { origin?: string } = {}) => {
-  const base = as(who, { method: "POST", body });
-  if (init.origin === undefined) return base;
-  return { ...base, headers: { ...(base.headers as Record<string, string>), origin: init.origin } };
-};
-
-const ROUTES = ["approve", "reject", "edit"] as const;
-const bodyOf = (route: (typeof ROUTES)[number]) => (route === "edit" ? { subject: "Budget", body: "Text" } : {});
-
-const insertDelegateNow = (s: Seed, opts: Parameters<typeof insertDelegate>[2]) =>
-  db.transaction().execute((trx) => insertDelegate(trx, s.ctx, opts));
-
-async function send(id: string) {
-  return db
-    .selectFrom("actions")
-    .select(["status", "status_reason", "approved_by", "approved_via", "payload"])
-    .where("id", "=", id)
-    .executeTakeFirstOrThrow();
-}
-
-async function auditOf(id: string) {
-  return db.selectFrom("audit_log").select(["event", "actor", "data"]).where("action_id", "=", id).execute();
-}
-
-async function editRows(orgId: string) {
-  return db
-    .selectFrom("outbox")
-    .select(["user_id", "dedup_key", "status"])
-    .where("org_id", "=", orgId)
-    .where("kind", "=", "approval_edit")
-    .execute();
-}
-
-async function sendCount(orgId: string): Promise<number> {
-  const rows = await db
-    .selectFrom("actions")
-    .select("id")
-    .where("org_id", "=", orgId)
-    .where("type", "=", "send")
-    .execute();
-  return rows.length;
-}
 
 describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
   test("T1. a member gets 403 owner_only on all three routes; the send is unchanged", async () => {
@@ -262,7 +107,7 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     }
     const res = await s.app.request(`/api/approvals/${sent}/reject`, post("owner", "reject"));
     expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ error: "closed", state: "applied" });
+    expect(await res.json()).toEqual({ error: "closed", state: "sent" });
   });
 
   test("T7. the owner rejects; the delegation is cancelled; the cards say rejected", async () => {
@@ -479,6 +324,12 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
         expect(res.status).toBe(404);
         expect(await res.json()).toEqual({ error: "not_found" });
       }
+    }
+    // The flag comes before the role: a member gets 404 too, not 403.
+    for (const route of ROUTES) {
+      const res = await s.app.request(`/api/approvals/${id}/${route}`, post("member", route, bodyOf(route)));
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "not_found" });
     }
     expect(await send(id)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     expect(await editRows(s.org.orgId)).toEqual([]);

@@ -6,7 +6,7 @@ import { HardError } from "../../platform/errors";
 import { auditEvents, recordAudit } from "../audit";
 
 import { inTransaction } from "./apply-shared";
-import { APPROVAL_TTL_MS, DELEGATION_DUE_AFTER_MS, STALE_AFTER_MS } from "./constants";
+import { APPROVAL_TTL_MS, DELEGATION_DUE_AFTER_MS, STALE_AFTER_MS, UNNOTIFIED_TTL_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import type { ApprovalHooks, DelegationHooks } from "./hooks";
 import {
@@ -101,6 +101,18 @@ async function approveRow(
       if (send.notified_at !== null && send.notified_at.getTime() + APPROVAL_TTL_MS < input.now.getTime()) {
         await expireSend(trx, ctx, send.id, {
           reason: "timeout",
+          now: input.now,
+          actor: input.userId,
+          hooks: deps.hooks,
+          uidplus: await deps.uidplus(ctx, send.email.mailbox_id),
+        });
+        return { kind: "expired", byThisTap: true };
+      }
+      // A send that no owner was told about (`notified_at` null: no linked Telegram chat) has the 7-day limit of the expiry job; the panel
+      // can approve it, so the check runs here too, for the same reason: the hourly job is late by up to an hour.
+      if (send.notified_at === null && send.created_at.getTime() + UNNOTIFIED_TTL_MS < input.now.getTime()) {
+        await expireSend(trx, ctx, send.id, {
+          reason: "not_notified",
           now: input.now,
           actor: input.userId,
           hooks: deps.hooks,
