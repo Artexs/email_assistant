@@ -120,6 +120,26 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     "closed list of codes, or the name of a prompt version"
   ),
   ...reasons(["delegations.status", "delegations.status_reason"], "closed list of codes"),
+  ...reasons(
+    [
+      "history_checks.status",
+      "history_checks.reason",
+      "history_checks.no_result_reason",
+      "history_check_items.category",
+      "history_check_items.reason_code",
+      "history_check_items.source",
+      "autonomy_trips.category",
+      "autonomy_trips.reason",
+      "memberships.report_channel",
+    ],
+    "closed list of codes (CHECK constraint), or a reason code of our own classifier"
+  ),
+  ...reasons(
+    ["history_checks.key"],
+    "the evidence key of a check: provider, model, prompt version and the host of an own endpoint; no address of a person"
+  ),
+  ...reasons(["history_checks.result", "autonomy_trips.counts"], "counts and shares per category; no text"),
+  ...reasons(["memberships.quiet_start", "memberships.quiet_end"], "a time of day (HH:MM, CHECK constraint)"),
   ...reasons(["delegations.sent_message_id"], "the Message-ID of our own send, no address of a person"),
   ...reasons(
     ["email_headers.list_unsubscribe"],

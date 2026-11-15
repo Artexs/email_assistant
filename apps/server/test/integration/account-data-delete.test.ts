@@ -74,6 +74,8 @@ const DELETE_SEEDS: Record<string, Seed> = {
       trx,
       sql`insert into auth_two_factors (user_id, secret, backup_codes) values (${org.userId}::uuid, 's', 'b')`
     ),
+  // Rows of the trust tables come from `fillMailbox` (one check, one item, one trip per mailbox).
+  autonomy_trips: base,
   chat_link_tokens: async (trx, org) => {
     await insertLinkToken(
       trx,
@@ -126,6 +128,8 @@ const DELETE_SEEDS: Record<string, Seed> = {
       .execute();
   },
   emails: base,
+  history_check_items: base,
+  history_checks: base,
   mailbox_credentials: base,
   mailbox_folders: base,
   mailbox_oauth_states: base,

@@ -10,6 +10,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 
 import { insertDelegate, insertDelegation, insertDraftAndSend, insertTriagedWithActions } from "./fixtures";
 import { insertAnalysisRow, insertLoopRow } from "./loops-fixtures";
+import { insertCheckItemRow, insertCheckRow, insertTripRow } from "./trust-fixtures";
 
 export interface MailboxIds {
   mailboxId: string;
@@ -122,6 +123,11 @@ export async function fillMailbox(
   await insertLoopRow(trx, ctx, mailboxId, { sent_email_id: sent.id });
   await insertAnalysisRow(trx, ctx, mailboxId, sent.id, { status: "pending" });
 
+  // One history check with one item (the item goes with the mail and with the check) and one trip (F110): all go with the mailbox.
+  const checkId = await insertCheckRow(trx, ctx, mailboxId, { status: "done", finished_at: now });
+  await insertCheckItemRow(trx, ctx, checkId, triaged.emailId);
+  await insertTripRow(trx, ctx, mailboxId);
+
   // A Reconnect state row; the repository of the sign-in state comes with the OAuth flow.
   await trx
     .insertInto("mailbox_oauth_states")
@@ -210,6 +216,21 @@ export async function countMailboxRows(
       .executeTakeFirstOrThrow();
     return Number(row.n);
   };
+  const trust = async (table: "history_checks" | "autonomy_trips") => {
+    const row = await trx
+      .selectFrom(table)
+      .select((eb) => eb.fn.countAll<string>().as("n"))
+      .where("org_id", "=", orgId)
+      .where("mailbox_id", "=", mailboxId)
+      .executeTakeFirstOrThrow();
+    return Number(row.n);
+  };
+  const items = await trx
+    .selectFrom("history_check_items")
+    .select((eb) => eb.fn.countAll<string>().as("n"))
+    .where("org_id", "=", orgId)
+    .where("email_id", "in", emailIds)
+    .executeTakeFirstOrThrow();
   const actions = await trx
     .selectFrom("actions")
     .select((eb) => eb.fn.countAll<string>().as("n"))
@@ -231,6 +252,9 @@ export async function countMailboxRows(
     sent_emails: await single("sent_emails"),
     open_loops: await single("open_loops"),
     sent_analyses: await single("sent_analyses"),
+    history_checks: await trust("history_checks"),
+    history_check_items: Number(items.n),
+    autonomy_trips: await trust("autonomy_trips"),
     mailbox_sent_sync: await byMailbox("mailbox_sent_sync"),
     mailbox_oauth_states: await byMailbox("mailbox_oauth_states"),
     audit_log_by_email: await audit("email_id"),
