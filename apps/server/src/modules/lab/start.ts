@@ -12,7 +12,7 @@ import { appendLedgerLine, ledgerLine, readLedger } from "../../platform/eval-le
 
 import type { LabCorpus } from "./corpus";
 import { labAddresses } from "./corpus";
-import type { LabOrgKey, LabRun, LabState } from "./state";
+import type { LabOrg, LabOrgKey, LabRun, LabState } from "./state";
 
 const ZONE = "Europe/Warsaw";
 
@@ -44,6 +44,8 @@ export interface StartDeps {
   // The models the stack is configured to call. The caller names the roles the lab uses.
   models: readonly string[];
   orgHasMail(orgId: string): Promise<boolean>;
+  // Stores the urgency profile of the run on the org mailbox (`storeRunUrgencyProfile`).
+  storeUrgency(org: LabOrg, plan: LabRun["plan"]): Promise<unknown>;
   now(): Date;
   hex4(): string;
 }
@@ -101,6 +103,13 @@ export async function startLabRun(input: StartInput, deps: StartDeps): Promise<S
 
   const run: LabRun = { plan, org: input.org, capUsd };
   if (state.startRun(run) === "run_active") return refuse("run_active");
+  // After the lock: a refused start never changes the profile of an active run. A failed store ends the run at once.
+  try {
+    await deps.storeUrgency(org, plan);
+  } catch (error) {
+    state.stopRun(plan.runId, "error:urgency_profile");
+    throw error;
+  }
   return { kind: "started", run };
 }
 
