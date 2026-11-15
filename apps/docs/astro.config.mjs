@@ -3,6 +3,7 @@ import starlight from "@astrojs/starlight";
 import { DOCS_BASE, DOCS_ORIGIN, PRODUCT_NAME } from "@ea/core";
 import { defineConfig } from "astro/config";
 import cspFinalize from "./integrations/csp-finalize";
+import publicContent from "./integrations/public-content";
 
 // The public docs site (ADR 0030). Starlight's own Expressive Code highlights code, so `markdown.syntaxHighlight` stays on.
 export default defineConfig({
@@ -21,6 +22,8 @@ export default defineConfig({
     }),
     // After Starlight: it hashes Starlight's inline scripts and checks every page's CSP (plan D3).
     cspFinalize(),
+    // Last: it reads the finished files (plan D4).
+    publicContent(),
   ],
   // Astro hashes its own scripts and styles. `cspFinalize` hashes the rest and relaxes `style-src`.
   // No `frame-ancestors`: a meta CSP ignores it (plan Q6). No `'unsafe-eval'` or `'wasm-unsafe-eval'`: Pagefind needs neither.
