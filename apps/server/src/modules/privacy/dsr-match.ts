@@ -38,6 +38,8 @@ const ROW_SHAPE: Readonly<Record<string, { id: string; emailId: string | null }>
   outbox: { id: "id", emailId: "email_id" },
   delegations: { id: "id", emailId: "email_id" },
   sent_emails: { id: "id", emailId: null },
+  // An open loop has no incoming mail either. Its id is never in `goesSent`, so every loop that names the person is a mention.
+  open_loops: { id: "id", emailId: null },
 };
 
 // Tables of the `list` rule and the field of `DsrMatch.listed` that each fills.
