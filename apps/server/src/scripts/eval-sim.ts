@@ -19,9 +19,9 @@ import {
   runEval,
   simMetaOf,
 } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { type Config, ConfigError, llmRoleTable, loadConfig } from "../platform/config";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
-import { createLog } from "../platform/log";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
 import { classifierExtrasOfCase } from "./eval-extras";
@@ -40,7 +40,7 @@ import {
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
 import { corpusDir, readScenario } from "./sim-files";
 
-const log = createLog("eval");
+const cli = createCliOutput("eval");
 
 const simRoot = resolve(import.meta.dir, "../../../../evals/sim");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
@@ -90,13 +90,13 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     });
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
-    log.error(evalUsage);
+    cli.fail(evalUsage);
     return 1;
   }
   const row = table.roles.classifier;
   const keys = table.providers[row.provider];
   if (keys.apiKey === undefined) {
-    log.error(`${keys.apiKeyName} is missing`);
+    cli.fail(`${keys.apiKeyName} is missing`);
     return 1;
   }
   const model = row.model;
@@ -107,14 +107,14 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   const startedAt = (deps.now ?? (() => new Date()))();
   const estimateUsd = firstEstimateUsd(model, startedAt);
   if (estimateUsd === null) {
-    log.error(`no price for model ${model}: add it to llmPrices before a sim run`);
+    cli.fail(`no price for model ${model}: add it to llmPrices before a sim run`);
     return 1;
   }
 
   if (options.judge) {
     const problem = judgeSetupError(table, startedAt);
     if (problem !== null) {
-      log.error(problem);
+      cli.fail(problem);
       return 1;
     }
   }
@@ -123,7 +123,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   try {
     loaded = await loadSimCases({ root, scenario, part, requireManifest: part === "holdout" });
   } catch (error) {
-    log.error(
+    cli.fail(
       error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE
         ? HOLDOUT_NEEDS_FREEZE
         : `corpus load failed: ${error instanceof Error ? error.name : "unknown error"}`
@@ -131,7 +131,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     return 1;
   }
   const cases = options.limit === undefined ? loaded.cases : loaded.cases.slice(0, options.limit);
-  log.info(
+  cli.print(
     `corpus ${scenario} v${loaded.version} part ${part}: ${cases.length} cases, skipped dropped ${loaded.skipped.dropped} unwritten ${loaded.skipped.unwritten} sent ${loaded.skipped.sent}`
   );
 
@@ -144,7 +144,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       options["spend-ledger"] ??
       defaultLedgerPath({ XDG_STATE_HOME: process.env.XDG_STATE_HOME, HOME: process.env.HOME });
   } catch (error) {
-    log.error(error instanceof Error ? error.message : "no ledger path");
+    cli.fail(error instanceof Error ? error.message : "no ledger path");
     return 1;
   }
   const cap = runCap({
@@ -153,10 +153,10 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     monthCap: MONTH_CAP_USD,
   });
   if (cap <= 0) {
-    log.error("month budget used");
+    cli.fail("month budget used");
     return 1;
   }
-  log.info(
+  cli.print(
     `provider=${row.provider} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=$${cap}`
   );
 
@@ -184,7 +184,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   try {
     release = acquireStateLock(stateFile, startedAt, { fresh: options["fresh-lock"] });
   } catch (error) {
-    log.error(error instanceof Error ? error.message : "state lock failed");
+    cli.fail(error instanceof Error ? error.message : "state lock failed");
     return 1;
   }
 
@@ -194,7 +194,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   try {
     if (options.fresh) rmSync(stateFile, { force: true });
     const done = existsSync(stateFile) ? parseCaseResults(readFileSync(stateFile, "utf8")) : [];
-    log.info(`state ${stateFile}: ${done.length} earlier results`);
+    cli.print(`state ${stateFile}: ${done.length} earlier results`);
     const report = await runEval(
       {
         llm,
@@ -243,7 +243,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     // The gate file of a full holdout run at the default bar (D27); an older file of the same name is replaced.
     const refusal = gateFileRefusal(options, report);
     if (refusal !== null) {
-      log.info(refusal);
+      cli.print(refusal);
     } else {
       const dir = deps.gateDir ?? gateDir;
       const name = gateFileName({
@@ -256,13 +256,13 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       });
       mkdirSync(dir, { recursive: true });
       writeFileSync(resolve(dir, name), `${JSON.stringify(buildGateFile({ ...sim, now: new Date() }), null, 2)}\n`);
-      log.info(`gate file: evals/results/gate/${name}`);
+      cli.print(`gate file: evals/results/gate/${name}`);
     }
-    if (!report.complete) log.warn(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
+    if (!report.complete) cli.fail(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
     return evalExitCode(report);
   } catch (error) {
     if (error instanceof LlmConfigError) {
-      log.error(`LLM config error ${error.code}`);
+      cli.fail(`LLM config error ${error.code}`);
       return 1;
     }
     throw error;

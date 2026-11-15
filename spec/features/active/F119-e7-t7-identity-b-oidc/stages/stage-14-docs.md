@@ -30,3 +30,7 @@ mkdir -p /tmp/f119-s14 && bunx prettier --check <files> > /tmp/f119-s14/prettier
 **Done when.** Each file above says what the code at `HEAD` does (the worker checks each claim against the code, not against this plan); `PROOF_OK`. A claim of this list that the code does not hold is a question in the final message.
 
 **Out of scope.** Product code; the VPS.
+
+## Carry-over from stage 08 review (N3)
+
+- `bun run` echoes the full argv to stderr, so a wrong `--client-secret <v>` call prints the secret once more. The docs must show a pattern that keeps the secret out of history and out of argv: `read -rs S; printf "%s\n" "$S" | bun run --silent org:sso ... --client-secret-stdin`. On a terminal, stdin echoes and needs Ctrl-D: say so.

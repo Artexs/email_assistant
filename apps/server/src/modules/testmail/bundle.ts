@@ -18,9 +18,27 @@ const ENTRY = "apps/server/src/scripts/testmail-target.ts";
 const log = createLog("testmail");
 const SHA = /^[0-9a-f]{40}$/;
 
+// The optional validator libraries of `@standard-community/standard-json` (through `hono-openapi`). It loads each one with
+// a dynamic import that falls back when the package is missing; none is installed, and the CLI serves no HTTP.
+const OPTIONAL_VALIDATORS = [
+  "@valibot/to-json-schema",
+  "arktype",
+  "effect",
+  "sury",
+  "typebox",
+  "valibot",
+  "zod-openapi",
+  "zod-to-json-schema",
+];
+
 /** Bundles the CLI with no `define` and no env inlining, so no env value can enter the file. */
 export async function buildBundleFrom(rootDir: string, outDir: string): Promise<{ path: string; text: string }> {
-  const result = await Bun.build({ entrypoints: [join(rootDir, ENTRY)], outdir: outDir, target: "bun" });
+  const result = await Bun.build({
+    entrypoints: [join(rootDir, ENTRY)],
+    outdir: outDir,
+    target: "bun",
+    external: OPTIONAL_VALIDATORS,
+  });
   const output = result.outputs[0];
   if (!result.success || output === undefined) {
     const reasons = result.logs.map((entry) => entry.message).join("; ");

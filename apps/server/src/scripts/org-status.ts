@@ -2,14 +2,14 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { orgStatusLines } from "./org-status-lines";
 
-const log = createLog("org-status");
+const out = createCliOutput("org-status");
 
 const usage = "usage: bun run org:status [--org-id <uuid>]";
 
@@ -31,7 +31,7 @@ function readOptions(): { orgId?: string } | undefined {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -41,17 +41,17 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     const lines = await orgStatusLines(db, { ...options, now: new Date() });
     if (lines === null) {
-      log.error("organization not found");
+      out.fail("organization not found");
       return 1;
     }
     if (lines.length === 0) {
-      log.info("no organizations");
+      out.print("no organizations");
       return 0;
     }
     process.stdout.write(`${lines.join("\n")}\n`);
     return 0;
   } catch (error) {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -61,6 +61,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });
