@@ -4,6 +4,7 @@ import type { Transaction } from "kysely";
 import { createPlanned } from "../../src/modules/actions";
 import { auditEvents, recordAudit, recordLlmCall } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
+import { listDelegateTags } from "../../src/modules/delegation";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import {
@@ -14,7 +15,6 @@ import {
   lastSentDigestEnd,
   markDigestSent,
 } from "../../src/modules/reports";
-import { listDelegateTags } from "../../src/modules/delegation";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
