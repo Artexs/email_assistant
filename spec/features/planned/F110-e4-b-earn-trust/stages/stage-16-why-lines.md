@@ -25,7 +25,7 @@ Part of [`../plan.md`](../plan.md). Flag `why_lines`. Polish text: review by `cl
   4. A view without the keys → today's text exactly (snapshot).
   5. Delegation with tags `["finance", "legal", "hr", "it"]` → ` (fits: finance, legal, hr)`.
   6. pl text for cases 1, 3 and 5.
-  7. A 15-item digest with all suffixes ≤ 4096 characters.
+  7. A 15-item digest with all suffixes and an F109 attachment line (`📎`, between subject and `💬`) on each item ≤ 4096 characters.
 
 ## Step 3 — Activity
 

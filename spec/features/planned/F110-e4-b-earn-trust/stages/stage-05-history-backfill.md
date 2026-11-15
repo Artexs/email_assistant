@@ -25,11 +25,13 @@ Part of [`../plan.md`](../plan.md). Risk: sync and dedup, stored mail data (Q8).
 - **Goal:** a new mailbox gets a history check without a user step (P1).
 - **Files:** `mail/connect.ts` path (web and CLI share `connectMailbox`): after the mailbox commit, call an injected `onConnected(ctx, mailboxId)` hook; the composition roots wire it to `trust.queueHistoryCheck(..., "connect")` when `trust_ladder` is on for the org. New CLI `bun run trust:history-check --org-id <uuid> --mailbox-id <uuid>` (reason `cli`; prints the check id and status).
 - **Decisions:** the hook runs after the commit; a failure of the hook logs one `warn` (no address) and never fails the connect. Queue only for an org that is not `suspended`.
+  - The OAuth connect (`mail/oauth/apply.ts`, `applyOAuthGrant`, F117) inserts a mailbox without `connectMailbox`: it calls the same hook after its commit for a new mailbox. A reconnect queues nothing (refresh 1).
 - **Test:**
   1. Web connect with the flag on → one `history_checks` row `queued`, reason `connect`.
   2. Flag off → no row.
   3. A thrown hook → the connect still answers 201 and the mailbox exists.
   4. CLI twice → one open row (stage 03 index).
+  5. OAuth connect of a new mailbox with the flag on → one row `queued`, reason `connect`; an OAuth reconnect → no new row.
 
 ## Check
 

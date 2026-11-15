@@ -12,8 +12,9 @@ Part of [`../plan.md`](../plan.md). Risk: migration, tenant isolation, data dele
   - `emails.skip_reason` has no check constraint at base (`20261103100001_mail.sql`); if one exists at `HEAD`, add `history_check` to it.
   - The partial unique index on `history_checks (mailbox_id) WHERE status NOT IN ('done','no_result')` is the dedup of D13: a second queue call is a no-op.
   - `history_check_items.email_id` cascades on email delete; `history_checks.mailbox_id` and `autonomy_trips.mailbox_id` cascade on mailbox delete. `report_mailbox_id` uses the composite FK with `ON DELETE SET NULL (report_mailbox_id)` (PostgreSQL 15+ column list), so `org_id` never becomes null.
-  - Outbox (review 1 B2, B3): `outbox_kind_check` gains `trust_report_ready` and `autonomy_paused` (copy the list of the newest migration that changed it, `20261115130001_approval_edit.sql` at base); `outbox_channel_check` becomes `('telegram', 'mail')`.
+  - Outbox (review 1 B2, B3): `outbox_kind_check` gains `trust_report_ready` and `autonomy_paused` (copy the list of the newest migration that changed it, `20261115150001_outbox_sent_missing.sql` at `17b2a369`); `outbox_channel_check` becomes `('telegram', 'mail')`.
   - Down migration: drop in reverse order.
+  - Contract check: `bun run db:check-migrations` passes. New-column CHECKs go inline in `ADD COLUMN`. The `memberships` composite FK and quiet pair check are `ADD CONSTRAINT` on an old table: add `-- contract: v<release running on the VPS>` with a reason comment (as `20261115170001_action_loop_anchor.sql`); the review checks the outbox lists only widen (Q17).
 - **Test:** the migration test pattern of the repo (up, down, up on an empty DB); an outbox insert of each new kind and of `channel = 'mail'` passes; `kind = 'x'` still fails.
 
 ## Step 2 — F106 registration

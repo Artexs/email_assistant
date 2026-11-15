@@ -31,7 +31,7 @@ Part of [`../plan.md`](../plan.md). Risk: mail moves without the user under a mo
 
 ## Done when
 
-- `regateAll` logs one `info` line with the three counts; no address.
+- `regateAll` logs one `info` event `trust_regate_done` with the count fields `stamped`, `regranted`, `paused` (`platform/log-fields.ts`); stage 26 reads it.
 - The guard check of `spec/build.md` TRACK is in the final message.
 - Proof (`s08`) prints `PROOF_OK`.
 
