@@ -44,6 +44,14 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
     "bez szkicu: podejrzana wiadomość",
   ],
   attachment_line: ["📎"],
+  why_lines: [
+    "rule: VIP sender",
+    "rule: whitelisted sender",
+    "rule: blocked sender",
+    "reguła: nadawca VIP",
+    "reguła: nadawca z listy dozwolonych",
+    "reguła: nadawca z listy blokowanych",
+  ],
   degraded_notice: [
     "is not triaged yet: the AI service is paused",
     "nie jest jeszcze posortowana: usługa AI ma przerwę",
