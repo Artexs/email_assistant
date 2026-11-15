@@ -101,7 +101,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
       await createTriageJob({
         db: trx,
         llm: urgentLlm(),
-        pause: createLlmPause({ configHint: "test" }),
+        pause: createLlmPause(),
         scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
         batchSize: 5,
         testMail: NO_TEST_SENDERS,

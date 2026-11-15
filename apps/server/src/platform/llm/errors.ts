@@ -92,7 +92,7 @@ export class LlmHardError extends HardError {
 
 /**
  * Empty text without a block, bad JSON or a Zod failure. `issues` holds one `path:code` entry per Zod issue (for
- * example `fields.task:too_big`): never the model text and never a value, so a log line may carry it.
+ * example `fields.task:too_big`): never the model text and never a value, so the eval report or CLI may print it. A comma list is not a log value (D7).
  */
 export class LlmOutputError extends HardError {
   readonly code = "bad_output";
