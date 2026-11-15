@@ -318,10 +318,13 @@ describe("restore.sh drill", () => {
     expect(result.stdout).not.toContain("restore ok");
   });
 
-  test("a table count that is not a number fails the run (exit 1) before pg_restore", () => {
+  test("a table count that is empty or not a number fails the run (exit 1) before pg_restore", () => {
     writeDrillEnv();
-    setSwitch("tables", "ERROR\n");
-    expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code).toBe(1);
+    // An empty count is the dangerous one: in `(( ))` it reads as 0 and the restore would run over unknown data.
+    for (const value of ["\n", "ERROR\n"]) {
+      setSwitch("tables", value);
+      expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code, JSON.stringify(value)).toBe(1);
+    }
     expect(dockerCalls().some((line) => line.includes("pg_restore"))).toBe(false);
   });
 
