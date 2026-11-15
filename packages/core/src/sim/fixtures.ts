@@ -25,6 +25,8 @@ export const miniScenario: Scenario = {
     address: "szef@mini.test",
     lang: "pl",
     timeZone: "Europe/Warsaw",
+    voice: "Short and direct, first names, no small talk.",
+    signature: "Pozdrawiam, Szef",
   },
   personas: [
     persona("prezes", "boss", "pl", "mini.test"),
@@ -163,3 +165,36 @@ export const miniSentPlanSpec: SentPlanSpec = {
   threadShare: 0.35,
   ccShare: 0.25,
 };
+
+// A text that passes `checkSentCase` for a slot: right language, length, signature, quoted blocks and planted string.
+const sentences: Record<SentSlot["lang"], string> = {
+  pl: "Dzień dobry, to jest bardzo ważne, ale nie mam czasu, więc proszę o pomoc i dziękuję za wszystko.",
+  en: "Hello, this is the note that we send to you, and we can write it for the team, please let me know when you are ready, thanks.",
+};
+const WORDS = { short: 20, medium: 100, long: 220 } as const;
+
+function filler(lang: SentSlot["lang"], words: number): string {
+  const all = Array.from({ length: Math.ceil(words / 10) }, () => sentences[lang]).join(" ");
+  return all.split(/\s+/).slice(0, words).join(" ");
+}
+
+export const sentPlantedFixture = "PL00-TEST-4821";
+
+export function sentFixtureText(slot: SentSlot, scenario: Scenario = miniScenario): SentText {
+  const injection = slot.hardCases.includes("injection_quote");
+  const lines = [filler(slot.lang, WORDS[slot.style.length])];
+  if (slot.style.signature && scenario.executive.signature !== "") lines.push(scenario.executive.signature);
+  // One quoted block per thread mail, newest first; the injection text sits in the first block.
+  if (slot.quoted) {
+    slot.thread.forEach((item, i) => {
+      lines.push(
+        "",
+        `On day ${i}, ${item.from} wrote:`,
+        `> ${injection && i === 0 ? sentPlantedFixture : filler(slot.lang, 8)}`
+      );
+    });
+  }
+  const text: SentText = { id: slot.id, subject: `Temat ${slot.id}`, body: lines.join("\n") };
+  if (injection) text.planted = [sentPlantedFixture];
+  return text;
+}

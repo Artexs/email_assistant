@@ -9,7 +9,9 @@
     "displayName": "Wiktor Szalewski",
     "address": "wiktor.szalewski@kordelan.test",
     "lang": "pl",
-    "timeZone": "Europe/Warsaw"
+    "timeZone": "Europe/Warsaw",
+    "voice": "Prezes zarzadu dystrybutora. Pisze krotko i konkretnie, zwraca sie do osob po imieniu, prosi o odpowiedz z terminem albo obiecuje cos wprost. Ton rzeczowy, uprzejmy, bez ozdobnikow. Po angielsku pisze rownie krotko.",
+    "signature": "Pozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
   },
   "personas": [
     {
