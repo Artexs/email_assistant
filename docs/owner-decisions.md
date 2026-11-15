@@ -307,3 +307,39 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a refresh-token rotation cannot be reused per job; a connected mailbox must keep working with a flag off; the panel is tailnet-only by design.
 - Undo: Q1, Q2, Q4, Q6, Q8 of the questions file give the other option and its change.
 - Source: `spec/features/planned/F117-e9a-mailbox-oauth/questions.md` Q1, Q2, Q4, Q6, Q8.
+
+### 2026-11-15 · Review findings are sorted into three groups; workers run a guard-removal check (harness) · money/quota · new
+- Choice: every stage review task ends with the sort line (BLOCKING, TEST GAP, NOTE). A NOTE is filed as `review-<n>.md` and landed with no repair job. A TEST GAP is one `claude-sonnet-5-5 --thinking medium` continue with no re-review. A BLOCKING finding gets a repair as before. Workers of reviewed stages run the guard-removal check.
+- Why: about 80 % of reviewed stages needed a continue; most findings are test gaps or notes.
+- Undo: remove the "Review findings" line from `spec/build.md` TRACK.
+- Source: `notes/2026-11-15-harness-review.md` section 8, commit 4f6d7536.
+
+### 2026-11-15 · Planners start 2–4 Sonnet scouts (harness) · money/quota · new
+- Choice: planner jobs start 2–4 Sonnet scouts (`--role scout`, `--thinking medium`) and file the packets in `scouts.md`. Refresh jobs start none.
+- Why: fewer cache reads per plan job; the measured cost was about $12–25 per plan.
+- Undo: remove the scout rule from `.agents/limen/planner.md`.
+- Source: `notes/2026-11-15-harness-review.md` section 8.
+
+### 2026-11-15 · Panel approvals and delegations: reminder drafts not editable, any member marks Done, cancel is final, five phone tabs, flags on for pilot (F102) · user-visible · new
+- Choice: reminder drafts can only be approved or rejected in the panel (Q2). A Telegram decision also edits the other owners' cards (Q3). No panel "send all" button (Q4). The panel can approve with no linked Telegram (Q5). Any member can mark a delegation Done; remind, cancel and approvals are owner only (Q7). The phone tab bar keeps five tabs and Rules and Stats move to the user menu (Q8). Stage 20 turns `approvals_page` and `delegation_pages` on for the pilot organization (Q10). A panel cancel sets `user_cancelled` and cannot be undone (Q12). A rollback of stage 20 expires waiting sends of edited drafts (Q17).
+- Why: smallest design that keeps owner-only control and avoids sending a template text instead of an approved edit.
+- Undo: the questions file gives each other option and its change.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q2, Q3, Q4, Q5, Q7, Q8, Q10, Q12, Q17.
+
+### 2026-11-15 · Docs site: no text for flagged features, API and evidence reference later, tag deploy rule, inline styles (F112) · scope · new
+- Choice: the user docs describe nothing that a default-off flag gates, and a test enforces it (Q1). The API reference and the autonomy-evidence reference move to F121, because F102 and F110 have no code yet (Q2). A tag deploys the docs only when it is the newest plain `v<x.y.z>` tag and `CHANGELOG.md` holds that release; a manual run deploys any branch or tag and is the rollback; the first deploy is a manual run on `master` (Q4). The docs site allows `'unsafe-inline'` for styles because Starlight sets `style` attributes, and it has no `frame-ancestors` because a meta tag cannot set it and Pages sets no headers (Q6).
+- Why: docs must not promise what is off; the plan-after rule; a safe, reversible publish path; a limit of the Pages host.
+- Undo: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6 give the other option and its change.
+- Source: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6.
+
+### 2026-11-15 · Operator console gets no axe check in F102 (F102) · scope · new
+- Choice: F102 stage 07 runs the axe accessibility check on every customer page and not on the operator console (Q20). The e2e server reads `OPERATOR_USER_IDS` at boot, before the seed makes user ids.
+- Why: an operator e2e user needs a separate stage; the console is for the owner only.
+- Undo: add a stage that gives the e2e run an operator user, then add the console to the axe spec.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q20.
+
+### 2026-11-15 · Improve: gate on defaults, spend caps, ship rules, escalation cost limit (F109) · money · new
+- Choice: the second pass after the first holdout report is taken on defaults. The holdout shows urgent false negatives at 14.1% and needs_reply at 6.2% against the target of under 2%, so the escalation experiment is built, and production escalation follows only on a "ship" decision (Q1). Real LLM spend caps: stage 09 $2.00, stage 11 $0.60, stage 13 $2.50, total at most $5.10; the escalation holdout run is capped at $1.50, above the $1 default run cap (Q7). v3 ships only when it beats v2 on one holdout run by max(4, 2 × run noise) key misses with no proven precision loss; the full 98% gate is not the rule (Q5, Q6). Escalation ships only when hidden important mail is at most half and classifier plus escalation cost at most $3 per mailbox per month (Q8). Phishing flags need recall at least 90% on the holdout, 0 flags on whitelisted mail and at most 2% on other mail, else the flag stays off (Q4). A flagged delegation mail plans nothing (Q9). v3 rolls back after 14 days on the pilot if the gap report says gap or key misses go up (Q18).
+- Why: the numbers show a real gap, but production change needs a measured win.
+- Undo: `spec/features/planned/F109-e3b-improve/questions.md` Q1, Q4–Q9, Q18 give the other option and its change.
+- Source: `spec/features/planned/F109-e3b-improve/questions.md`.

@@ -1,14 +1,14 @@
 import { Client } from "pg";
 
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { seedActivityRows } from "./e2e-activity-rows";
 import { seedTargetOk } from "./e2e-seed-args";
 
-const log = createLog("e2e-activity");
+const out = createCliOutput("e2e-activity");
 
 function mailboxIdArg(argv: string[]): string | null {
   const index = argv.indexOf("--mailbox-id");
@@ -26,7 +26,7 @@ async function main(): Promise<number> {
   const migratorUrl = process.env.MIGRATOR_DATABASE_URL ?? "";
   const target = seedTargetOk(config.DATABASE_URL, migratorUrl);
   if (!target.ok) {
-    log.error(`refusing: ${target.reason}`);
+    out.fail(`refusing: ${target.reason}`);
     return 1;
   }
 
@@ -41,7 +41,7 @@ async function main(): Promise<number> {
     await client.end();
   }
   if (orgId === undefined) {
-    log.error("mailbox not found");
+    out.fail("mailbox not found");
     return 1;
   }
 
@@ -49,7 +49,7 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const result = await seedActivityRows(db, { orgId }, mailboxId, new Date());
-    log.info(`seeded ${result.total} activity rows for mailbox ${mailboxId}`);
+    out.print(`seeded ${result.total} activity rows for mailbox ${mailboxId}`);
     return 0;
   } finally {
     await db.destroy();
@@ -59,6 +59,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

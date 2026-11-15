@@ -3,14 +3,14 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { checkBot, createLinkToken, telegramErrorLabel } from "../modules/channels";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { HardError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { pickMemberId } from "./pick-member";
 
-const log = createLog("telegram-link");
+const out = createCliOutput("telegram-link");
 
 const usage = "usage: bun run telegram:link --org-id <uuid> [--user-id <uuid>]";
 
@@ -42,21 +42,21 @@ function describeFailure(error: unknown): string {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
   const config = loadConfig();
   const token = config.TELEGRAM_BOT_TOKEN;
   if (token === undefined) {
-    log.error("TELEGRAM_BOT_TOKEN is not set");
+    out.fail("TELEGRAM_BOT_TOKEN is not set");
     return 1;
   }
 
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    const userId = await pickMemberId(db, options.orgId, options.userId, log);
+    const userId = await pickMemberId(db, options.orgId, options.userId, out);
     if (userId === undefined) return 1;
 
     // The bot check comes first: a bad token must not leave a token row.
@@ -71,10 +71,10 @@ async function main(): Promise<number> {
         "",
       ].join("\n")
     );
-    log.info(`link token made for user ${userId}, valid until ${link.expiresAt.toISOString()}`);
+    out.print(`link token made for user ${userId}, valid until ${link.expiresAt.toISOString()}`);
     return 0;
   } catch (error) {
-    log.error(describeFailure(error));
+    out.fail(describeFailure(error));
     return 1;
   } finally {
     await db.destroy();
@@ -84,6 +84,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(describeFailure(error));
+    out.fail(describeFailure(error));
     process.exit(1);
   });
