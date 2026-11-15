@@ -116,7 +116,7 @@ describe("GET /api/sign-in-options", () => {
       });
     }
     // No session: the same guard as for any unknown path under /api.
-    expect((await app(read).request("/api/sign-in-options", { method: "POST" })).status).not.toBe(200);
+    expect((await app(read).request("/api/sign-in-options", { method: "POST" })).status).toBe(401);
     expect(reads).toBe(0);
   });
 
@@ -147,7 +147,15 @@ describe("GET /api/sign-in-options", () => {
     const known = await ask(undefined, undefined, `/api/sign-in-options?email=web-owner-${randomUUID()}@x.test`);
     const unknown = await ask(undefined, undefined, `/api/sign-in-options?email=nobody-${randomUUID()}@x.test`);
     const withSession = await ask(undefined, as("owner"));
-    for (const answer of [known, unknown, withSession]) {
+    // Host, forwarding and Origin headers never change the answer (an attacker controls them).
+    const headerSets: Record<string, string>[] = [
+      { host: "other.test" },
+      { "x-forwarded-host": "other.test" },
+      { "x-forwarded-for": "203.0.113.9" },
+      { origin: "https://evil.test" },
+    ];
+    const withHeaders = await Promise.all(headerSets.map((headers) => ask(undefined, { headers })));
+    for (const answer of [known, unknown, withSession, ...withHeaders]) {
       expect(answer.res.status).toBe(200);
       expect(answer.text).toBe(JSON.stringify({ sso: true }));
       expect(answer.res.headers.get("cache-control")).toBe("no-store");

@@ -396,8 +396,8 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   });
 
   // Public, before the session guard (F119 D14, Q6). It takes no input and answers one bit that is the same for every
-  // caller, so it cannot tell an address or an organization apart; one indexed read, whatever the data is. Only GET:
-  // every other method falls through to the session guard like an unknown path.
+  // caller, so it cannot tell an address or an organization apart. The read is small: sso_providers (a seq scan at this
+  // size) joined to org_features by key, the same for any data. Only GET: every other method falls through to the session guard like an unknown path.
   app.get("/api/sign-in-options", signInOptionsDoc, async (c) => {
     c.header("Cache-Control", "no-store");
     let sso = false;
