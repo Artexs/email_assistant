@@ -124,9 +124,9 @@ describe("sync lag", () => {
   test("4. never synced: created 09:50 is clear, created 09:40 is firing", async () => {
     await inRollback(async (trx) => {
       const org = await orgWithMailbox(trx);
-      await setMailbox(trx, org.mailboxId, { created_at: at("09:50"), status_changed_at: at("09:50") });
+      await setMailbox(trx, org.mailboxId, { created_at: at("09:50") });
       expect((await checkSyncLag(trx, NOW, cfg, STARTED)).check.state).toBe("clear");
-      await setMailbox(trx, org.mailboxId, { created_at: at("09:40"), status_changed_at: at("09:40") });
+      await setMailbox(trx, org.mailboxId, { created_at: at("09:40") });
       const reading = await checkSyncLag(trx, NOW, cfg, STARTED);
       expect(reading.check.state).toBe("firing");
       expect(reading.check.facts.max_lag_min).toBe(20);
@@ -144,17 +144,18 @@ describe("sync lag", () => {
     });
   });
 
-  test("shows at most 5 mailbox ids, sorted", async () => {
+  test("shows at most 5 mailbox ids, sorted (the oldest lag belongs to the largest id)", async () => {
     await inRollback(async (trx) => {
       const mailboxIds: string[] = [];
-      for (let i = 0; i < 7; i += 1) {
-        const org = await orgWithMailbox(trx);
-        await setMailbox(trx, org.mailboxId, { last_synced_at: at("09:00") });
-        mailboxIds.push(org.mailboxId);
+      for (let i = 0; i < 7; i += 1) mailboxIds.push((await orgWithMailbox(trx)).mailboxId);
+      mailboxIds.sort();
+      // The query orders by lag, oldest first: that is the reverse of the id order here.
+      for (const [index, mailboxId] of mailboxIds.entries()) {
+        await setMailbox(trx, mailboxId, { last_synced_at: new Date(at("09:00").getTime() - index * 60_000) });
       }
       const reading = await checkSyncLag(trx, NOW, cfg, STARTED);
       expect(reading.check.facts.mailboxes).toBe(7);
-      expect(reading.ids).toEqual([...mailboxIds].sort().slice(0, 5));
+      expect(reading.ids).toEqual(mailboxIds.slice(0, 5));
     });
   });
 });
@@ -184,21 +185,27 @@ async function urgentMail(
   return emailId;
 }
 
-async function sentNotice(trx: Trx, org: { orgId: string; userId: string }, emailId: string, sentAt: Date) {
+async function sentNotice(
+  trx: Trx,
+  org: { orgId: string; userId: string },
+  emailId: string,
+  sentAt: Date,
+  opts: { kind?: string; status?: string } = {}
+) {
   await trx
     .insertInto("outbox")
     .values({
       org_id: org.orgId,
       user_id: org.userId,
-      kind: "urgent",
-      dedup_key: `urgent:${emailId}`,
+      kind: opts.kind ?? "urgent",
+      dedup_key: `${opts.kind ?? "urgent"}:${emailId}`,
       email_id: emailId,
       text: "Urgent",
       buttons: "[]",
-      status: "sent",
+      status: opts.status ?? "sent",
       created_at: sentAt,
       next_attempt_at: sentAt,
-      sent_at: sentAt,
+      sent_at: (opts.status ?? "sent") === "sent" ? sentAt : null,
     })
     .execute();
 }
@@ -296,6 +303,18 @@ describe("urgent latency", () => {
       await trx.deleteFrom("outbox").where("email_id", "=", mail).execute();
       await sentNotice(trx, org, mail, at("08:59"));
       expect((await urgent(trx)).check.state).toBe("clear");
+    });
+  });
+
+  test("8c. a notice that is not sent, or not an urgent notice, is no notice", async () => {
+    await inRollback(async (trx) => {
+      const org = await urgentOrg(trx);
+      const mail = await urgentMail(trx, org, { receivedAt: at("09:30") });
+      await sentNotice(trx, org, mail, at("09:31"), { status: "pending" });
+      await sentNotice(trx, org, mail, at("09:32"), { kind: "approval" });
+      const reading = await urgent(trx);
+      expect(reading.check.state).toBe("firing");
+      expect(reading.check.facts).toEqual({ mails: 1, max_wait_min: 30 });
     });
   });
 
