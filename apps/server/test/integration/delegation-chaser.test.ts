@@ -11,9 +11,9 @@ import {
   lockMailboxSettings,
   updateMailboxSettings,
 } from "../../src/modules/config";
-import { CHASER_SET_LIMIT, getDelegation, reminderDecision, runChaserForMailbox } from "../../src/modules/delegation";
-import { createLoopChaserJob } from "../../src/modules/loops";
-import type { DB, TenantContext } from "../../src/platform/db";
+import { CHASER_SET_LIMIT, getDelegation, reminderDecision } from "../../src/modules/delegation";
+import { createLoopChaserJob, runLoopChaser } from "../../src/modules/loops";
+import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { setLogLevel } from "../../src/platform/log";
 
 import { openDelegation } from "./delegation-chaser-fixtures";
@@ -91,8 +91,24 @@ async function auditRows(trx: Transaction<DB>, ctx: TenantContext, event: string
     .execute();
 }
 
+// The delegation cases run through the one chaser (`runLoopChaser`, the job body of `loops.chaser`); the result keeps the
+// three delegation fields that these cases compare.
+function viaJob(
+  conn: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: Date,
+  opts?: { force?: boolean }
+) {
+  return runLoopChaser({ db: conn, now: () => now }, ctx, mailboxId, { now, ...opts }).then((r) => ({
+    overdue: r.overdue,
+    reminders: r.reminders,
+    skipped: r.skipped,
+  }));
+}
+
 async function run(s: Setup, now: Date, opts?: { force?: boolean }) {
-  return runChaserForMailbox({ ...s.deps, now: () => now }, s.ctx, s.mailbox, now, opts);
+  return viaJob(s.deps.db, s.ctx, s.mailboxId, now, opts);
 }
 
 describe("reminderDecision", () => {
@@ -113,7 +129,7 @@ describe("reminderDecision", () => {
   });
 });
 
-describe("runChaserForMailbox", () => {
+describe("the delegation part of the one chaser", () => {
   test("(1) before 07:30 local: gate, nothing changes", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -571,14 +587,14 @@ describe("two connections", () => {
   test("(16) an open setter holds the settings lock: the chaser waits, sees the new version, writes nothing", async () => {
     const s = await committedSetup();
     try {
-      let chaser: ReturnType<typeof runChaserForMailbox> | undefined;
+      let chaser: ReturnType<typeof viaJob> | undefined;
       let done = false;
       await db.transaction().execute(async (trx) => {
         await lockMailboxSettings(trx, s.ctx, s.created.mailboxId);
         await updateMailboxSettings(trx, s.ctx, s.created.mailboxId, {
           toolSwitches: { ...parseToolSwitches({}), create_draft: false },
         });
-        chaser = runChaserForMailbox({ db, now: () => at0730 }, s.ctx, s.mailbox, at0730);
+        chaser = viaJob(db, s.ctx, s.mailbox.id, at0730);
         void chaser.then(() => {
           done = true;
         });
@@ -612,10 +628,10 @@ describe("two connections", () => {
   test("(6b) the delegate deactivated after the listing: overdue, no reminder", async () => {
     const s = await committedSetup();
     try {
-      let chaser: ReturnType<typeof runChaserForMailbox> | undefined;
+      let chaser: ReturnType<typeof viaJob> | undefined;
       await db.transaction().execute(async (trx) => {
         await trx.selectFrom("delegations").select("id").where("id", "=", s.created.delegationId).forUpdate().execute();
-        chaser = runChaserForMailbox({ db, now: () => at0730 }, s.ctx, s.mailbox, at0730);
+        chaser = viaJob(db, s.ctx, s.mailbox.id, at0730);
         await sleep(200);
         await trx.updateTable("delegates").set({ active: false }).where("org_id", "=", s.ctx.orgId).execute();
       });
@@ -638,10 +654,10 @@ describe("two connections", () => {
   test("(7b) a reply triaged before the lock: the row is skipped, no pair", async () => {
     const s = await committedSetup();
     try {
-      let chaser: ReturnType<typeof runChaserForMailbox> | undefined;
+      let chaser: ReturnType<typeof viaJob> | undefined;
       await db.transaction().execute(async (trx) => {
         await trx.selectFrom("delegations").select("id").where("id", "=", s.created.delegationId).forUpdate().execute();
-        chaser = runChaserForMailbox({ db, now: () => at0730 }, s.ctx, s.mailbox, at0730);
+        chaser = viaJob(db, s.ctx, s.mailbox.id, at0730);
         await sleep(200);
         await trx
           .updateTable("delegations")

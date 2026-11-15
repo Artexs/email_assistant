@@ -14,6 +14,7 @@ import { getMailboxSettings } from "../../src/modules/config";
 import { runChaserForMailbox } from "../../src/modules/delegation";
 import { doneLoop, draftFollowUp } from "../../src/modules/loops";
 import { setSentSync } from "../../src/modules/mail";
+import { setOrgFeature } from "../../src/modules/tenancy";
 import { createDb, type Db, type DB } from "../../src/platform/db";
 
 import { openDelegation } from "./delegation-chaser-fixtures";
@@ -260,4 +261,42 @@ describe.each(pairs)("two runs of the delegation wrapper at once (%s)", (_name, 
       expect(reminders).toHaveLength(2);
     }
   }, 60_000);
+});
+
+// F116 stage 15 review (TG6): the flag is read again under the lock; another organization's loops stay out of the run.
+describe.each(pairs)("the flag turned off while the run waits for the settings lock (%s)", (_name, connA, connB) => {
+  test("the delegation part runs, the loop part writes nothing and no loop marker", async () => {
+    const org = await newOrg();
+    const stale = await delegated(org, { due_at: new Date(NOW.getTime() - 31 * DAY_MS) });
+    const due = await delegated(org);
+    await app.transaction().execute((trx) => openDelegation(trx, org, { dueAt: DUE_YESTERDAY }));
+    let run: ReturnType<typeof chase> | undefined;
+    await connB.transaction().execute(async (trx) => {
+      // The setter holds the settings row and turns the flag off; it changes no setting, so the version stays.
+      await lockMailboxSettings(trx, org.ctx, org.mailboxId);
+      await setOrgFeature(trx, org.ctx, { flag: "open_loops", enabled: false, actor: "test", now: NOW });
+      run = chase(connA, org);
+      await sleep(250);
+    });
+    expect(await run).toMatchObject({ skipped: null, reminders: 1, followUps: 0, stale: 0 });
+    expect((await loopOf(app, stale.id)).status).toBe("open");
+    expect(await actionsOfLoop(app, due.id)).toEqual([]);
+    expect(await markers(app, org.ctx.orgId, "loops.chaser_run")).toEqual([]);
+    expect(await markers(app, org.ctx.orgId, "delegation.chaser_run")).toHaveLength(1);
+  }, 20_000);
+});
+
+describe("a second organization on the table owner", () => {
+  test("the run of one organization touches no loop and no marker of the other", async () => {
+    const mine = await newOrg();
+    const theirs = await newOrg();
+    const own = await delegated(mine);
+    const foreignStale = await delegated(theirs, { due_at: new Date(NOW.getTime() - 40 * DAY_MS) });
+    const foreignDue = await delegated(theirs);
+    await chase(owner, mine);
+    expect((await actionsOfLoop(app, own.id)).length).toBe(2);
+    expect((await loopOf(app, foreignStale.id)).status).toBe("open");
+    expect(await actionsOfLoop(app, foreignDue.id)).toEqual([]);
+    expect(await markers(app, theirs.ctx.orgId, "loops.chaser_run")).toEqual([]);
+  });
 });

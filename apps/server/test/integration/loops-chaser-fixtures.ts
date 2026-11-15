@@ -92,3 +92,11 @@ export const loopSends = (conn: Conn, orgId: string) =>
 
 export const markers = (conn: Conn, orgId: string, event: string) =>
   conn.selectFrom("audit_log").selectAll().where("org_id", "=", orgId).where("event", "=", event).execute();
+
+// The same switch with any JSON value (the rule is "only a JSON true counts").
+export async function setAutoFollowUpRaw(conn: Conn, org: { ctx: TenantContext; mailboxId: string }, value: unknown) {
+  await sql`update mailbox_settings
+    set tool_switches = tool_switches || jsonb_build_object('auto_follow_up', ${JSON.stringify(value)}::jsonb),
+      updated_at = clock_timestamp()
+    where org_id = ${org.ctx.orgId} and mailbox_id = ${org.mailboxId}`.execute(conn);
+}

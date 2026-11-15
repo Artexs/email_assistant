@@ -6,7 +6,7 @@ import type { DB } from "../../src/platform/db";
 import { captureLogs, eventLines } from "../log-capture";
 
 import { openDelegation } from "./delegation-chaser-fixtures";
-import { insertTriaged, pauseOtherMailboxes } from "./fixtures";
+import { insertTriaged, pauseOtherMailboxes, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import {
   BEFORE_GATE,
@@ -20,8 +20,10 @@ import {
   NOW,
   priorFollowUp,
   setAutoFollowUp,
+  setAutoFollowUpRaw,
 } from "./loops-chaser-fixtures";
-import { actionsOfLoop, auditOf, commandOrg, loopOf } from "./loops-commands-fixtures";
+import { actionsOfLoop, auditOf, commandLoop, commandOrg, loopOf } from "./loops-commands-fixtures";
+import { siblingMailbox } from "./mail-sent-fixtures";
 
 // F116 stage 15: the one chaser, the loop part. The delegation cases of the old job are in `delegation-chaser.test.ts` (the
 // job `createLoopChaserJob` runs them); the races are in `loops-chaser-race.test.ts`.
@@ -507,6 +509,83 @@ describe("a loop that the planner refuses", () => {
       });
       const result = await chase(trx, o, NOW);
       expect(result).toMatchObject({ reminders: 1, followUps: 0 });
+    });
+  });
+});
+
+// F116 stage 15 review: the gaps that the reviewer proved with mutations.
+describe("review gaps", () => {
+  test("TG1 two mailboxes in one org: the run of mailbox A touches no loop of mailbox B", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await org(trx);
+      const sibling = await siblingMailbox(trx, o);
+      const other = { ...o, mailboxId: sibling.mailboxId };
+      const due = await commandLoop(trx, other, { due_at: DUE_YESTERDAY, kind: "promised" });
+      const stale = await commandLoop(trx, other, { due_at: new Date(NOW.getTime() - 40 * DAY_MS) });
+      const expired = await commandLoop(trx, other, { kind: "promised", due_at: new Date(NOW.getTime() - 8 * DAY_MS) });
+      await setAutoFollowUp(trx, o, true);
+      const waitingB = await commandLoop(trx, other, { due_at: DUE_YESTERDAY });
+      const mine = await delegatedLoop(trx, o);
+      expect(await chase(trx, o, NOW)).toMatchObject({ followUps: 1, stale: 0, expired: 0 });
+      expect((await actionsOfLoop(trx, mine.id)).length).toBe(2);
+      for (const loop of [due, stale, expired, waitingB]) {
+        expect(await actionsOfLoop(trx, loop.id)).toEqual([]);
+        expect((await loopOf(trx, loop.id)).status).toBe("open");
+      }
+    });
+  });
+
+  test("TG2 exactly one follow-up sent 20 days ago and due 20 days ago: not stale; follow-up number 2 is planned", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await org(trx);
+      const at = new Date(NOW.getTime() - 20 * DAY_MS);
+      const loop = await delegatedLoop(trx, o, { follow_ups_sent: 1, last_follow_up_at: at, due_at: at });
+      expect(await chase(trx, o, NOW)).toMatchObject({ stale: 0, followUps: 1 });
+      expect(await statusOf(trx, loop.id)).toEqual(["open", null]);
+      const draft = (await actionsOfLoop(trx, loop.id)).find((row) => row.type === "create_draft");
+      expect(payloadOf(draft ?? { payload: null }).n).toBe(2);
+    });
+  });
+
+  test("TG4 only a JSON true counts for auto_follow_up", async () => {
+    const BAD: unknown[] = ["true", 1, "yes", { on: true }, [true], "on", 0, null];
+    for (const value of BAD) {
+      await withRollback(db, async (trx) => {
+        const o = await org(trx);
+        await setAutoFollowUpRaw(trx, o, value);
+        const loop = await dueLoop(trx, o);
+        expect((await chase(trx, o, NOW)).followUps, JSON.stringify(value)).toBe(0);
+        expect(await actionsOfLoop(trx, loop.id)).toEqual([]);
+      });
+    }
+    await withRollback(db, async (trx) => {
+      const o = await org(trx);
+      await setAutoFollowUpRaw(trx, o, true);
+      await dueLoop(trx, o);
+      expect((await chase(trx, o, NOW)).followUps).toBe(1);
+    });
+  });
+
+  test("TG6 a loop due exactly now is a follow-up candidate (the due boundary is inclusive)", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await org(trx);
+      const loop = await delegatedLoop(trx, o, { due_at: NOW });
+      const later = await delegatedLoop(trx, o, { due_at: new Date(NOW.getTime() + 1) });
+      expect((await chase(trx, o, NOW)).followUps).toBe(1);
+      expect((await actionsOfLoop(trx, loop.id)).length).toBe(2);
+      expect(await actionsOfLoop(trx, later.id)).toEqual([]);
+    });
+  });
+
+  test("TG6 a suspended organization: the run writes nothing and no marker", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await org(trx);
+      const loop = await delegatedLoop(trx, o);
+      await suspendOrg(trx, o.ctx.orgId);
+      expect((await chase(trx, o, NOW)).skipped).toBe("suspended");
+      expect(await actionsOfLoop(trx, loop.id)).toEqual([]);
+      expect(await markers(trx, o.ctx.orgId, "loops.chaser_run")).toEqual([]);
+      expect(await markers(trx, o.ctx.orgId, "delegation.chaser_run")).toEqual([]);
     });
   });
 });

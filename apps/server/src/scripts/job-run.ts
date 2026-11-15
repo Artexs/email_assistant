@@ -48,13 +48,14 @@ async function main(): Promise<number> {
       if (args.name === "actions.expiry") {
         await createExpiryJob({ db, now, hooks, uidplus }).run();
       } else if (args.name === "loops.chaser" || args.name === "delegation.chaser") {
-        if (args.name === "delegation.chaser")
-          out.print("delegation.chaser is an alias of loops.chaser: the one chaser ran");
         const run = await createLoopChaserJob({ db, now }).run({ force: args.force });
         // Counts only: no id, no address, no text.
         out.print(
           `${args.name}: ran once (mailboxes ${run.mailboxes}, delegations due ${run.due}, overdue ${run.overdue}, reminders ${run.reminders}, follow-ups ${run.followUps}, stale ${run.stale}, expired ${run.expired}, mailbox errors ${run.mailboxErrors})`
         );
+        // After the run: a run that throws must not leave this line behind.
+        if (args.name === "delegation.chaser")
+          out.print("delegation.chaser is an alias of loops.chaser: the one chaser ran");
         return run.mailboxErrors > 0 ? 1 : 0;
       } else if (args.name === "actions.committer") {
         out.fail("do not run the committer here while the server runs on the same database: the log lines double");
