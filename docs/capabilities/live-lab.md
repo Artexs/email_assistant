@@ -1,6 +1,6 @@
 # Live lab
 
-> Checked against the code at `1f53da2b` (master) and the stage 08 branch, 2026-11-15.
+> Checked against the code at `540ca1c3`, 2026-11-15.
 
 ## What it does now
 
