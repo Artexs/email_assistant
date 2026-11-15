@@ -80,7 +80,7 @@ async function world(s: Seed, opts: { orgId?: string; mailboxId?: string; delega
     const id = await db.transaction().execute((trx) =>
       insertDelegation(trx, ctx, {
         mailboxId,
-        emailId: row.email_id,
+        emailId: row.email_id as string,
         delegateId,
         draftActionId: draftId,
         sendActionId: sendId,
@@ -95,7 +95,7 @@ async function world(s: Seed, opts: { orgId?: string; mailboxId?: string; delega
       await db.updateTable("delegations").set({ status_reason: "rejected" }).where("id", "=", id).execute();
     }
     await setDelegationId(db, ctx, [draftId, sendId], id);
-    return { id, sendId, draftId, emailId: row.email_id };
+    return { id, sendId, draftId, emailId: row.email_id as string };
   }
 
   // A reminder send of the delegation (its own mail, draft and cards).
