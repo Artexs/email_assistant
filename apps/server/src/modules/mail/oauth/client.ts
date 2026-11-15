@@ -75,12 +75,18 @@ export interface MailOAuthClientOptions {
   timeoutMs?: number;
 }
 
-// Microsoft error codes (AADSTS) by reason. UNVERIFIED: the numbers are the plan's list (D17) from memory of the Microsoft Entra
-// "authentication and authorization error codes" reference; nobody read that page in this job. The spike rows M1, M13 and M14
-// (stage 01) and stage 14 check them. AADSTS 65001 has one reason only (review N4): it is `admin_consent_required`, also
-// for a refresh, because no consent exists for the app in either case.
+// Microsoft error codes (AADSTS) by reason. The nine numbers of the three reason sets below were checked on 2026-11-15 by the
+// Opus review of stage 06 against the Microsoft Entra authentication and authorization error-code reference: 70008 and 700082
+// (refresh token expired from inactivity), 700084 (SPA refresh token expired), 70043 (sign-in frequency), 50173 (grant revoked,
+// for example after a password change), 65001 (the user or an administrator has not consented), 65004 (the user declined consent),
+// 90094 and 90095 (admin consent required). 65001 has one reason only (review N4): `admin_consent_required`, also for a refresh.
+// It does not always mean an administrator: a personal account, or a user who withdrew consent, gives it too. The texts of
+// stages 11 and 18 must not say only "administrator". 50000 and 90033 are from the plan review (N3); the reference page was not
+// read for them: they name a fault of the Microsoft service (TokenIssuanceError, MSODS unavailable).
 const EXPIRED_AADSTS: ReadonlySet<number> = new Set([70008, 700082, 700084, 70043]);
 const REVOKED_AADSTS: ReadonlySet<number> = new Set([50173, 65004]);
+// A fault of the Microsoft service, not of the grant: the mailbox must stay connected (review N3).
+const SERVICE_FAULT_AADSTS: ReadonlySet<number> = new Set([50000, 90033]);
 const CONSENT_AADSTS: ReadonlySet<number> = new Set([65001, 90094, 90095]);
 const CLIENT_INVALID_CODES: ReadonlySet<string> = new Set([
   "invalid_client",
@@ -111,11 +117,50 @@ export function classifyTokenError(
   if (providerCode === "consent_required") return { grant: "admin_consent_required" };
   if (CLIENT_INVALID_CODES.has(providerCode)) return { soft: "client_invalid" };
   if (SERVER_CODES.has(providerCode)) return { soft: "server" };
+  // Before the invalid_grant fallback: Microsoft may send these numbers with `invalid_grant`.
+  if (aadsts !== null && SERVICE_FAULT_AADSTS.has(aadsts)) return { soft: "server" };
   if (aadsts !== null && REVOKED_AADSTS.has(aadsts)) return { grant: "oauth_revoked" };
   if (aadsts !== null && EXPIRED_AADSTS.has(aadsts)) return { grant: "oauth_expired" };
   // Any other invalid_grant (Google gives no detail: Q10) and interaction_required: sign in again.
   if (providerCode === "invalid_grant" || providerCode === "interaction_required") return { grant: "oauth_expired" };
   return { soft: "server" };
+}
+
+/** The largest token answer the client reads (review N1). A real answer is a few KiB. */
+export const OAUTH_MAX_BODY_BYTES = 64 * 1024;
+
+/** The body as text, or null when it is over the cap (the stream is cancelled at once). */
+async function readCapped(response: Response): Promise<string | null> {
+  if (response.body === null) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > OAUTH_MAX_BODY_BYTES) {
+      await reader.cancel().catch(() => undefined);
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+const LOOPBACK_HOSTS: ReadonlySet<string> = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+/** A token or revoke URL must be https, or http on a loopback host (the fake token server of the tests). The message holds no URL. */
+function assertSecureEndpoint(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new HardError("oauth endpoint is not a URL");
+  }
+  if (parsed.protocol === "https:") return;
+  if (parsed.protocol === "http:" && LOOPBACK_HOSTS.has(parsed.hostname)) return;
+  throw new HardError("oauth endpoint must be https");
 }
 
 interface Answer {
@@ -128,36 +173,48 @@ export function createMailOAuthClient(
   app: MailOAuthClientApp,
   opts: MailOAuthClientOptions = {}
 ): MailOAuthClient {
+  for (const url of [spec.tokenUrl, spec.revokeUrl]) {
+    if (url !== null) assertSecureEndpoint(url);
+  }
   const fetchFn = opts.fetchFn ?? fetch;
   const timeoutMs = opts.timeoutMs ?? OAUTH_TIMEOUT_MS;
   // Microsoft gives one resource per token and picks it by `scope`; the Google token endpoint takes no scope at a code redeem.
   const scopedByResource = spec.resourceScopes.graph !== null;
 
   async function post(url: string, form: URLSearchParams): Promise<Answer> {
+    let status: number;
+    let text: string | null;
     try {
+      // `redirect: "error"`: a redirect would send the form again (client secret, refresh token) to another URL.
       const response = await fetchFn(url, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
         body: form,
+        redirect: "error",
         signal: AbortSignal.timeout(timeoutMs),
       });
-      const text = await response.text();
-      let body: Record<string, unknown> = {};
-      try {
-        const parsed: unknown = text === "" ? {} : JSON.parse(text);
-        if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
-          body = parsed as Record<string, unknown>;
-        }
-      } catch {
-        // A body that is not JSON (an HTML error page): the status decides.
-      }
-      return { status: response.status, body };
+      status = response.status;
+      text = await readCapped(response);
     } catch (error) {
       // The thrown value is dropped on purpose: it may name the URL or echo the request.
       const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
       log.warn("oauth_token_failed", { kind: timedOut ? "timeout" : "server" });
       throw new OAuthSoftError(timedOut ? "timeout" : "server");
     }
+    if (text === null) {
+      log.warn("oauth_token_failed", { kind: "server", status });
+      throw new OAuthSoftError("server");
+    }
+    let body: Record<string, unknown> = {};
+    try {
+      const parsed: unknown = text === "" ? {} : JSON.parse(text);
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        body = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // A body that is not JSON (an HTML error page): the status decides.
+    }
+    return { status, body };
   }
 
   function fail(answer: Answer): never {

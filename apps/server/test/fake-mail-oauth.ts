@@ -216,6 +216,8 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
       if (req.method !== "POST" || provider === null || (action !== "token" && action !== "revoke")) {
         return new Response("not found", { status: 404 });
       }
+      // A real endpoint takes the secret in the body only; a query on a token request is a client bug (review T1).
+      if (url.search !== "") return Response.json({ error: "invalid_request" }, { status: 400 });
       const form = new URLSearchParams(await req.text());
       const failure = failures.shift();
       if (failure === "timeout") {

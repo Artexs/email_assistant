@@ -8,7 +8,7 @@ import { HardError, SoftError } from "../../../platform/errors";
 import type { AuthErrorReason } from "../port";
 
 import { createMailOAuthClient, OAuthGrantError, OAuthSoftError, type MailOAuthClient } from "./client";
-import type { MailOAuthProvider, MailOAuthProviderSpec } from "./providers";
+import { mailOAuthProviders, type MailOAuthProvider, type MailOAuthProviderSpec } from "./providers";
 
 // Stage 06: the token client against the fake token server (a test double: no production code reads its URLs).
 const REDIRECT = "https://ea.x.test/api/mailboxes/oauth/microsoft/callback";
@@ -169,6 +169,13 @@ describe("error map (D17)", () => {
     ["429", { status: 429, error: "too_many_requests" }, "server"],
     ["temporarily_unavailable", { status: 400, error: "temporarily_unavailable" }, "server"],
     ["an unknown error code", { status: 400, error: "something_new" }, "server"],
+    ["AADSTS 50000 with invalid_grant (N3)", { status: 400, error: "invalid_grant", aadsts: 50000 }, "server"],
+    ["AADSTS 90033 with invalid_grant (N3)", { status: 400, error: "invalid_grant", aadsts: 90033 }, "server"],
+    [
+      "AADSTS 50000 with interaction_required (N3)",
+      { status: 400, error: "interaction_required", aadsts: 50000 },
+      "server",
+    ],
     ["timeout", "timeout", "timeout"],
   ];
   for (const [name, failure, kind] of softCases) {
@@ -371,18 +378,154 @@ describe("secrets stay out of errors and logs", () => {
     assertClean(error, logLines);
   });
 
-  test("the client secret leaves the process only in the token request body", async () => {
-    captureLogs();
-    const seen: string[] = [];
+  test("the client secret leaves the process only in the token request body, never in the URL (T1)", async () => {
+    const seen: { url: string; body: URLSearchParams }[] = [];
     const spy = ((url: string, init: RequestInit) => {
-      seen.push(`${url} ${String(init.body)}`);
+      seen.push({ url, body: new URLSearchParams(String(init.body)) });
       return Promise.resolve(Response.json({ error: "invalid_grant" }, { status: 400 }));
     }) as unknown as typeof fetch;
     const client = clientOf("google", { fetchFn: spy });
     expect(client.authorizeUrl({ state: "s", codeChallenge: "c" })).not.toContain(fake.clientSecret);
     const error = await caught(() => client.redeemCode("code-1", verifier()));
-    expect(seen[0]).toContain(`client_secret=${fake.clientSecret}`);
-    expect(seen[0]).not.toContain(`${fake.clientSecret}?`);
+    await caught(() => client.refresh(RT_CANARY, "mail"));
+    await client.revoke(RT_CANARY).catch(() => undefined);
+    expect(seen).toHaveLength(3);
+    for (const call of seen.slice(0, 2)) {
+      expect(new URL(call.url).search).toBe("");
+      expect(call.body.get("client_secret")).toBe(fake.clientSecret);
+    }
+    // Revoke sends the token in the body, no secret, and no query either.
+    expect(new URL(seen[2]?.url ?? "").search).toBe("");
+    expect(seen[2]?.body.has("client_secret")).toBe(false);
     assertClean(error, logLines);
+  });
+
+  test("the fake token server refuses a token request that has a query", async () => {
+    const response = await fetch(`${specs.google.tokenUrl}?client_secret=${fake.clientSecret}`, {
+      method: "POST",
+      body: new URLSearchParams({ grant_type: "refresh_token" }),
+    });
+    expect(response.status).toBe(400);
+  });
+});
+
+describe("hardening of the HTTP call", () => {
+  test("a redirect is an error: the second server sees no request, the secret is not forwarded (T2)", async () => {
+    const seenByTarget: string[] = [];
+    const target = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      fetch: async (req) => {
+        seenByTarget.push(await req.text());
+        return Response.json({ access_token: "at", expires_in: 3600 });
+      },
+    });
+    const redirector = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      fetch: () => new Response(null, { status: 307, headers: { location: `http://127.0.0.1:${target.port}/token` } }),
+    });
+    try {
+      const spec = { ...specs.google, tokenUrl: `http://127.0.0.1:${redirector.port}/token` };
+      const client = createMailOAuthClient(
+        spec,
+        { clientId: fake.clientId, clientSecret: fake.clientSecret, redirectUri: REDIRECT },
+        { timeoutMs: 2000 }
+      );
+      const error = await caught(() => client.refresh(RT_CANARY, "mail"));
+      expect(error).toBeInstanceOf(OAuthSoftError);
+      expect((error as OAuthSoftError).kind).toBe("server");
+      expect(seenByTarget).toEqual([]);
+      for (const text of [String(error), inspect(error, { depth: 6 }), ...logLines]) {
+        expect(text).not.toContain(fake.clientSecret);
+        expect(text).not.toContain(RT_CANARY);
+      }
+    } finally {
+      await redirector.stop(true);
+      await target.stop(true);
+    }
+  });
+
+  const overCap = (): Response => Response.json({ access_token: "x".repeat(70 * 1024), expires_in: 3600 });
+
+  test("an answer over 64 KiB is a soft server error (N1)", async () => {
+    const huge = (() => Promise.resolve(overCap())) as unknown as typeof fetch;
+    const error = await caught(() => clientOf("google", { fetchFn: huge }).refresh(RT_CANARY, "mail"));
+    expect((error as OAuthSoftError).kind).toBe("server");
+  });
+
+  test("a body that never ends is cut at the cap, before the timeout (N1)", async () => {
+    let cancelled = false;
+    const endless = (() => {
+      const stream = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          await Bun.sleep(1);
+          controller.enqueue(new Uint8Array(16 * 1024).fill(32));
+        },
+        cancel() {
+          cancelled = true;
+        },
+      });
+      return Promise.resolve(new Response(stream, { status: 200 }));
+    }) as unknown as typeof fetch;
+    const error = await caught(() =>
+      clientOf("google", { fetchFn: endless, timeoutMs: 5000 }).refresh(RT_CANARY, "mail")
+    );
+    expect((error as OAuthSoftError).kind).toBe("server");
+    expect(cancelled).toBe(true);
+  });
+
+  test("an answer just under the cap is read", async () => {
+    const big = (() =>
+      Promise.resolve(
+        Response.json({ access_token: "at", expires_in: 3600, id_token: "y".repeat(60 * 1024) })
+      )) as unknown as typeof fetch;
+    const answer = await clientOf("google", { fetchFn: big }).refresh(RT_CANARY, "mail");
+    expect(answer.idToken).toHaveLength(60 * 1024);
+  });
+
+  const cases: [string, string | null][] = [
+    ["http://login.x.test/token", "must be https"],
+    ["http://127.0.0.2/token", "must be https"],
+    ["ftp://127.0.0.1/token", "must be https"],
+    ["not a url", "is not a URL"],
+  ];
+  for (const [url, message] of cases) {
+    test(`a token URL that is not https and not loopback is refused: ${url} (T3)`, () => {
+      const spec = { ...specs.google, tokenUrl: url };
+      let thrown: unknown;
+      try {
+        createMailOAuthClient(spec, { clientId: "c", clientSecret: "s", redirectUri: REDIRECT });
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).toBeInstanceOf(HardError);
+      expect((thrown as Error).message).toContain(message ?? "");
+      expect((thrown as Error).message).not.toContain("x.test");
+    });
+  }
+
+  test("a revoke URL that is plain http on a remote host is refused too (T3)", () => {
+    const spec = { ...specs.google, revokeUrl: "http://revoke.x.test/revoke" };
+    expect(() => createMailOAuthClient(spec, { clientId: "c", clientSecret: "s", redirectUri: REDIRECT })).toThrow(
+      HardError
+    );
+  });
+
+  test("https URLs and loopback http URLs are accepted", () => {
+    for (const tokenUrl of [
+      "https://oauth.x.test/token",
+      "http://localhost:1/token",
+      "http://[::1]:1/token",
+      "http://127.0.0.1:1/t",
+    ]) {
+      const spec = { ...specs.google, tokenUrl };
+      expect(() =>
+        createMailOAuthClient(spec, { clientId: "c", clientSecret: "s", redirectUri: REDIRECT })
+      ).not.toThrow();
+    }
+    expect(() =>
+      createMailOAuthClient(mailOAuthProviders.microsoft, { clientId: "c", clientSecret: "s", redirectUri: REDIRECT })
+    ).not.toThrow();
   });
 });
