@@ -71,3 +71,15 @@ commits after the base that touch the named paths:
 ## Not verified
 
 - `backfillMailbox` and the history job on an OAuth (XOAUTH2) mailbox: stage 06 tests a password mailbox only. The stage 05 worker checks the session path at `HEAD`.
+
+## Review fixes (review 2, `plan-review-2.md`: FAIL, 1 blocking, 8 notes; all fixed, none rejected)
+
+- **B1** · Stage 05: the `history` path opens through `openMailboxProvider` with `oauthTokens` from the composition root, not `loadImapOptions`; an auth refusal is the typed result `auth_refused`; test 7 (OAuth mailbox, `auth.kind` is `oauth`, rows stored). Stage 06: `refreshFlags` uses the same opener; an auth refusal ends the check at once as `no_result` / `auth_refused` (no retries); test 4a. `interfaces.md`: `no_result_reason` gains `auth_refused` (stage 03 check list and stage 14 text read it from there).
+- **N1** · Stage 04 flag-off grant is `by: "real_labels"` (`interfaces.md` `CategoryGrant.by` gains it). Stage 08 evidence check: only a newer `no-go` file for the key (D8), only for `evidence`, `recommended`, `regate`; test 8a.
+- **N2** · Stage 16 test 7 asserts all 15 items stay listed.
+- **N3** · Stage 16: no `💬` line → the suffix gets its own `💬 <suffix>` line; `unsure` shows one percent only; test 8.
+- **N4** · Stage 18: SLO uses the user of the sent row that gave `noticeAt`; no sent row → the smallest `lateMin` over pending rows' users; test 6 extended.
+- **N5** · Stage 08 adds code field `run` (`start` | `job`) to `trust_regate_done`; stage 26 check 3 reads the `run=start` line.
+- **N6** · Stage 26 Before 3: the checklist contract-mark rule does not apply to the expand-only stage 03 mark; no stop.
+- **N7** · Stage 20 out of scope: OAuth report mailboxes are in scope (XOAUTH2 through `openMailboxProvider`).
+- **N8** · `plan.md` facts heading names `17b2a369`.

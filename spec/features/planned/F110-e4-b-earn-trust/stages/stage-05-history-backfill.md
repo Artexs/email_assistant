@@ -11,6 +11,8 @@ Part of [`../plan.md`](../plan.md). Risk: sync and dedup, stored mail data (Q8).
   - A mail that already exists (any status) is not changed (dedup key, `ON CONFLICT DO NOTHING`).
   - `backfill` (the operator CLI) re-queues real `history_check` mail of its window as it re-queues `too_old` mail: the operator asked to triage that window (review 1 N8).
   - The same refusals as today (never synced, UIDVALIDITY change, suspended org, window > 180 days) come back as a typed result, not a throw, so stage 06 can map them to `no_result_reason`.
+  - Opener (review 2 B1): the `history` path opens the mailbox through `openMailboxProvider` (`mail/open.ts`) with `oauthTokens` wired by the composition root, not through `loadImapOptions` (password only). OAuth mailboxes (F117, XOAUTH2) then work. Stage 06 `refreshFlags` uses the same opener.
+  - An auth refusal (`MailAuthError`, `protocolDisabled`) comes back as the typed result `auth_refused`, not a step error.
   - Every place that counts `skipped` mail by reason (digest footers, `/status`, M-metrics) must ignore `history_check`. Grep the uses of `skip_reason` and `too_old`; list them in the final message.
 - **Test** (extend `mailbox-backfill-cli.test.ts` or a new `mail-history-backfill.test.ts`, GreenMail):
   1. INBOX with 3 mails of the last 30 days, 1 already stored and `triaged` → `history` stores 2 as `skipped`/`history_check`, the triaged one is unchanged, all 3 have header rows.
@@ -19,6 +21,7 @@ Part of [`../plan.md`](../plan.md). Risk: sync and dedup, stored mail data (Q8).
   4. The digest for that day shows no "skipped" footer line for them.
   5. `purpose` omitted → today's behaviour (an existing test passes unchanged).
   6. After test 1, `purpose: "backfill"` over the same window → the 2 history mails are `pending`.
+  7. OAuth mailbox (fake `oauthTokens`, fake `openProvider` that records `auth.kind`) → `auth.kind` is `"oauth"` and the history rows are stored.
 
 ## Step 2 — Queue a check at connect and from the CLI
 

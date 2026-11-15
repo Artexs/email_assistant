@@ -11,14 +11,14 @@ Part of [`../plan.md`](../plan.md). Web stage. Flags `user_quiet_hours` and `rep
   - The digest kind is never held (as today); `approval_edit` stays exempt (F102 D4).
   - The org time zone stays the clock (no per-user time zone).
   - Flag off → the default for everyone.
-  - The F114 alert `slo_urgent_latency` (`operator/slo-checks.ts`, `checkUrgentLatency`) passes the hours of the user of the mail's first urgent outbox row to `lateMin`: `UrgentCandidate` gains `quiet: QuietHours | null` (null → default; flag off → null). M5 keeps the default (Q18).
+  - The F114 alert `slo_urgent_latency` (`operator/slo-checks.ts`, `checkUrgentLatency`) passes to `lateMin` the hours of the user of the sent row that gave `noticeAt` (`MIN(sent_at)`). No sent row: compute `lateMin` per pending urgent row's user and take the smallest (review 2 N4). `UrgentCandidate` carries the quiet hours (null → default; flag off → null). M5 keeps the default (Q18).
 - **Test** (`local-time.test.ts`, sender integration test):
   1. Hours 23:00–06:00, `Europe/Warsaw`, now 22:30 local → not quiet; 23:30 → quiet; `quietEnd` → 06:00 next day.
   2. Hours 09:00–17:00 (day quiet) → 12:00 quiet, 18:00 not.
   3. Start = end → never quiet.
   4. DST: 2026-03-29 (spring forward) with 22:00–07:00 → `quietEnd` from 01:30 local is 07:00 local, 4 h 30 min of real time later; 2026-10-25 (fall back) from 01:30 (first pass) → 6 h 30 min later.
   5. Two members, one with 23:00–06:00, at 22:30 → one urgent row goes, the other waits to 07:00.
-  6. SLO: flag on, member hours 21:00–08:00, urgent mail at 21:30 local, notice sent 08:00 → `lateMin` 0, the check stays `clear`; flag off → 90 min (firing at the default threshold).
+  6. SLO: flag on, member hours 21:00–08:00, urgent mail at 21:30 local, notice sent 08:00 → `lateMin` 0, the check stays `clear`; flag off → 90 min (firing at the default threshold). Two pending rows, users 21:00–08:00 and default, no sent row, now 07:30 → the smaller value.
 
 ## Step 2 — The settings route and card
 

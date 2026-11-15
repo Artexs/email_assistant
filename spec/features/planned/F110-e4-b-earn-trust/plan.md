@@ -38,7 +38,7 @@ Owner (PD-030, 2026-11-13): "we can't rely on users to confirm any values there 
 - **D16** `trust_report_ready` after a mailbox's first `done` or `no_result` check. `trust` sits in layer 5; `reports` gets trust data by injection.
 - **D17** One-click needs both RFC 8058 headers, `https` and a trusted `dkim=pass` for the From domain. POST: public pinned address, no redirects, 10 s. Intent row first; audit holds the domain.
 
-## Facts checked (2026-11-15, 9341d9f0)
+## Facts checked (2026-11-15, 17b2a369)
 
 - **F1** Running classifier v2 has one provisional gate file: `info` go at 0.95. The Dockerfile copies `evals/cases` only.
 - **F2** Only the CLI calls `backfillMailbox`; backfilled mail is `pending`. **F3** `outbox.channel` exists; `isOwnActionId` matches drafts and sends only.
@@ -46,9 +46,9 @@ Owner (PD-030, 2026-11-13): "we can't rely on users to confirm any values there 
 
 ## Not verified
 
-- **N1** `refreshFlags` covers `skipped` history mail: stage 06 tests it.
-- **N2** Interia sets `\Answered`: stage 07 logs counts.
-- **N3** Bun `node:https` honours a custom `lookup`: stage 24 probes first.
+- **N1** `refreshFlags` covers `skipped` history mail (stage 06 test).
+- **N2** Interia sets `\Answered` (stage 07 logs counts).
+- **N3** Bun `node:https` honours a custom `lookup` (stage 24 probe).
 
 ## Done when
 
@@ -113,20 +113,20 @@ Web stages (13, 14, 15, 18, 21, 23) add before `echo`: `&& bun run web:build > /
 
 ## How to run (coordinator)
 
-- Worker `claude-sonnet-5-5` with the prepare script; ticket in `active/` first. Workers read `CLAUDE.md`, the styleguide, `interfaces.md`, their stage.
+- Worker `claude-sonnet-5-5` with the prepare script; ticket in `active/` first. Workers read `CLAUDE.md`, styleguide, `interfaces.md`, stage.
 - Lanes after 01: {02}, {03→10→05→06→07}, {16→17}, {21}; then by "Needs". Never build 03 or 22 next to another migration.
 - `spec/build.md` land check; drop job DBs. Stage 26: coordinator. 22–24 are cuttable.
 
 ## Planning progress
 
 - Scouts: 4 ([scouts.md](scouts.md)); refresh 1: none.
-- [x] Stages 01–26 [written]; review 1 fixes applied.
+- `wc -w` after refresh 1: plan 1499; stages 04 682, 05 644, 06 697, 08 698, 16 583, 18 580, 20 500, 26 684.
+- [x] Stages 01–26 written; reviews 1 and 2 fixed.
 
 ## Cold review
 
-`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 5 blocking, 10 test gaps, 16 notes; all fixed, none rejected. Stage 19 split into 19 and 20 (N16).
+`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 5 blocking, 26 notes; all fixed. Review 2 ([plan-review-2.md](plan-review-2.md)): FAIL, 1 blocking, 8 notes; all fixed.
 
 ## Log
 
-- 2026-11-15: planned; review 1 fixed.
-- 2026-11-15: refresh 1 (→ 17b2a369): stages 03, 08, 16, 18, 26.
+- 2026-11-15: planned; refresh 1 (→ 17b2a369, [plan-refresh-1.md](plan-refresh-1.md)).

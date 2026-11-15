@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 01–25 landed and the `master`
 
 1. The release tag is the first that holds F110 stage 25. `git log --oneline <current release tag>..<new tag>`: another ticket's VPS step in the range goes first, by its runbook.
 2. Release checklist steps 1–7: CI green on the tagged commit; `CHANGELOG.md` `[Unreleased]` has one product line per F110 user-visible change (trust report, recommended categories, pause notices, report by mail, quiet hours, why lines, spam line, urgency card, newsletters); `bun run db:check-migrations` passes; `release:prepare`, tag, push.
-3. Two F110 migrations (stages 03, 22): new tables, nullable columns, checks. The code of the current release works with them (the contract rule; Q17).
+3. Two F110 migrations (stages 03, 22): new tables, nullable columns, checks. The code of the current release works with them (the contract rule; Q17). The stage 03 file has an expand-only `-- contract:` mark: the checklist rule "that release must be the rollback target" does not apply to it and is no stop (review 2 N6).
 4. **Do not change the LLM model, provider, reasoning effort or `OPENAI_BASE_URL` in this release.** The first re-gate run stamps every existing `auto` with the running key (`legacy`, D7); a switch in the same release would stamp the new key without evidence.
 
 ## Runbook
@@ -22,7 +22,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 01–25 landed and the `master`
 
 1. `/health` → 200; a server line has `"release":"v<x.y.z>"`.
 2. `$C exec server ls evals/results/gate` → the committed gate files (D1).
-3. `bash deploy/logs.sh --since 15m --event trust_regate_done` → one line with `stamped` ≥ 0, `paused` 0. A `paused` > 0 means a key mismatch at deploy: roll back and report.
+3. `bash deploy/logs.sh --since 15m --event trust_regate_done` → the line with `run=start` (later `run=job` lines also count 0 paused) has `stamped` ≥ 0, `paused` 0. A `paused` > 0 means a key mismatch at deploy: roll back and report.
 4. `psql`: `SELECT count(*) FROM mailbox_settings s, jsonb_each(s.category_policy) e WHERE (e.value->>'auto')::boolean AND NOT (e.value ? 'grant')` → `0` (every `auto` category stamped; review 1 N15).
 5. Watch 30 minutes (checklist step 9): sync lines for the pilot mailbox; no `error` event in the log store or `deploy/logs.sh --level error`; `bun run ops:alerts` (in `cli`) shows no open alert.
 6. Owner checkpoint U2 (not a stop; plan default): `org:flag --flag trust_ladder --on` for the pilot org; `bun run trust:history-check --org-id … --mailbox-id …` (both in `cli`); after ≤ 60 min the check is `done` or `no_result` (`psql` on `history_checks`), `cost_usd` ≤ 0.25, and the report page loads through Tailscale.
