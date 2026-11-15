@@ -96,18 +96,26 @@ async function nullability(trx: Transaction<DB>): Promise<Record<string, boolean
   );
 }
 
-// A loop that names the person (the counterpart or a recipient) loses its ask or promise text whole, not only the
-// address: the text says what was asked of that person. Runs before the scrub, while the rows still name the address.
+// A loop that names the person (the counterpart or a recipient) loses its ask or promise text and its subject whole,
+// not only the address: the text says what was asked of that person, and the subject can be the copy of the subject of
+// a sent mail that this erase deletes (health, money). Runs before the scrub, while the rows still name the address.
 // `texts_cleared_at` marks the row as cleared, as the retention clear does. A loop without recipients left is closed by
-// the match job of the loop module.
-async function clearLoopTextsOfPerson(trx: Transaction<DB>, orgId: string, patterns: AddressPatterns): Promise<number> {
+// the match job of the loop module. The `thread_key` and `message_id` of the loop stay: they are opaque Message-IDs
+// kept for matching, no address and no text. Exported for its own test with a connection that bypasses row-level
+// security; `index.ts` does not export it.
+export async function clearLoopTextsOfPerson(
+  trx: Transaction<DB>,
+  orgId: string,
+  patterns: AddressPatterns
+): Promise<number> {
   const named = Object.entries(DSR_ADDRESS_MAP.open_loops ?? {})
     .filter(([, rule]) => rule === "equal" || rule === "recipients")
     .flatMap(([column, rule]) => rowCondition(rule, column, patterns) ?? []);
   if (named.length === 0) return 0;
   const result = await sql`
-    update open_loops as t set text = null, texts_cleared_at = now(), updated_at = now()
-    where t.org_id = ${orgId}::uuid and t.text is not null and (${sql.join(named, sql` or `)})`.execute(trx);
+    update open_loops as t set text = null, subject = null, texts_cleared_at = now(), updated_at = now()
+    where t.org_id = ${orgId}::uuid and (t.text is not null or t.subject is not null)
+      and (${sql.join(named, sql` or `)})`.execute(trx);
   return Number(result.numAffectedRows ?? 0n);
 }
 

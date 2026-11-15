@@ -6,11 +6,15 @@ import { join } from "node:path";
 
 import { Decrypter, generateX25519Identity, identityToRecipient } from "age-encryption";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { sql } from "kysely";
 
 import { eraseSubjectData, exportOrganization, matchSubject } from "../../src/modules/privacy";
+import { addressPatterns } from "../../src/modules/privacy/dsr-match";
+import { clearLoopTextsOfPerson } from "../../src/modules/privacy/erase";
+import { createDb } from "../../src/platform/db";
 
 import { createOrgWithMailbox } from "./fixtures";
-import { testDb } from "./helpers";
+import { testDb, withRollback } from "./helpers";
 import { insertAnalysisRow, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
 // F116 stage 07: the open loops are in the data request and the organization export. A loop copies recipients and
@@ -113,7 +117,7 @@ describe("open loops in a data request", () => {
     expect(Object.values(found.mentions).flat()).not.toContain(unrelated);
   });
 
-  test("2: the erase clears the three address columns and the text, and keeps the other recipients", async () => {
+  test("2: the erase clears the three address columns, the subject and the text, and keeps the other recipients", async () => {
     const w = await seedWorld();
     const loop = await seedLoop(w, {
       counterpart: w.person,
@@ -134,7 +138,7 @@ describe("open loops in a data request", () => {
     expect(row.counterpart).toBeNull();
     expect(row.to_addresses).toEqual([w.other]);
     expect(row.cc_addresses).toEqual([w.third]);
-    expect(row.subject).not.toContain(w.person);
+    expect(row.subject).toBeNull();
     expect(row.text).toBeNull();
     expect(row.texts_cleared_at).not.toBeNull();
     expect(JSON.stringify(row)).not.toContain(w.person);
@@ -143,7 +147,7 @@ describe("open loops in a data request", () => {
     expect((await match(w.orgId, w.person)).mentions).toEqual({});
   });
 
-  test("2c: the text goes also when the person is only a To or only a Cc recipient", async () => {
+  test("2c: the text and the subject go also when the person is only a To or only a Cc recipient", async () => {
     const w = await seedWorld();
     const onlyTo = await seedLoop(w, {
       counterpart: w.other,
@@ -161,6 +165,7 @@ describe("open loops in a data request", () => {
     for (const id of [onlyTo, onlyCc]) {
       const row = await loopRow(id);
       expect(row.text).toBeNull();
+      expect(row.subject).toBeNull();
       expect(row.counterpart).toBe(w.other);
       expect(row.to_addresses).toEqual([w.other]);
       expect(row.cc_addresses).toEqual([]);
@@ -172,7 +177,8 @@ describe("open loops in a data request", () => {
     const person = "a@b.co";
     const subject = `${"x".repeat(293)} ${person}`;
     expect(subject).toHaveLength(300);
-    const loop = await seedLoop(w, { counterpart: person, to_addresses: [person], subject });
+    // The person is only in the subject, not a recipient: the loop keeps its subject, scrubbed.
+    const loop = await seedLoop(w, { counterpart: w.other, to_addresses: [w.other], subject });
     const result = await erase(w, person);
     expect(result.kind).toBe("erased");
     const row = await loopRow(loop);
@@ -203,6 +209,7 @@ describe("open loops in a data request", () => {
       last_sent_email_id: null,
       counterpart: null,
       text: null,
+      subject: null,
       to_addresses: [],
     });
     const analyses = await db
@@ -211,6 +218,29 @@ describe("open loops in a data request", () => {
       .where("org_id", "=", w.orgId)
       .execute();
     expect(analyses).toEqual([]);
+  });
+
+  test("3b: the subject of a sent mail that the erase deletes does not stay in the loop or the analysis rows", async () => {
+    const w = await seedWorld();
+    const subject = "Your test results and the treatment plan";
+    const sentId = await db
+      .transaction()
+      .execute((trx) => insertSentRow(trx, { orgId: w.orgId }, w.mailboxId, { toAddresses: [w.person], subject }));
+    await db.updateTable("sent_emails").set({ from_address: w.boss }).where("id", "=", sentId).execute();
+    await seedLoop(w, { sent_email_id: sentId, counterpart: w.person, to_addresses: [w.person], subject });
+    await db.transaction().execute((trx) => insertAnalysisRow(trx, { orgId: w.orgId }, w.mailboxId, sentId));
+
+    const result = await erase(w);
+    expect(result.kind).toBe("erased");
+    expect(await db.selectFrom("sent_emails").select("id").where("id", "=", sentId).execute()).toEqual([]);
+    // Every column of every loop and analysis row of the organization, as text.
+    const rows = await sql<{ j: string }>`
+      select row_to_json(t)::text as j from open_loops t where org_id = ${w.orgId}::uuid
+      union all
+      select row_to_json(t)::text as j from sent_analyses t where org_id = ${w.orgId}::uuid`.execute(db);
+    const dump = rows.rows.map((row) => row.j).join("\n");
+    expect(dump).not.toContain(subject);
+    expect(dump.toLowerCase()).not.toContain(w.person);
   });
 
   test("4: the loops of another organization with the same person stay whole", async () => {
@@ -229,6 +259,39 @@ describe("open loops in a data request", () => {
     expect(result.kind).toBe("erased");
     expect(await loopRow(loopB)).toEqual(before);
     expect((await match(b.orgId, b.person)).mentions["open_loops.counterpart"]).toEqual([loopB]);
+  });
+});
+
+describe("the organization filter of the loop text clear", () => {
+  // The erase runs under row-level security, which hides other organizations by itself. The owner role bypasses the
+  // policy, so only the `org_id` filter of the statement keeps organization B out here.
+  test("6: a connection without row-level security still clears only the loops of the given organization", async () => {
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role bypasses row-level security");
+    const owner = createDb(url);
+    try {
+      await withRollback(owner, async (trx) => {
+        const a = await createOrgWithMailbox(trx);
+        const b = await createOrgWithMailbox(trx);
+        const person = `p-${randomUUID().slice(0, 8)}@x.test`;
+        const loopOf = (o: { orgId: string; mailboxId: string }) =>
+          insertLoopRow(trx, o, o.mailboxId, { counterpart: person, to_addresses: [person], text: "send the plan" });
+        const loopA = await loopOf(a);
+        const loopB = await loopOf(b);
+        const cleared = await clearLoopTextsOfPerson(trx, a.orgId, addressPatterns(person));
+        expect(cleared).toBe(1);
+        const read = (id: string) =>
+          trx.selectFrom("open_loops").selectAll().where("id", "=", id).executeTakeFirstOrThrow();
+        expect(await read(loopA)).toMatchObject({ text: null, subject: null });
+        expect(await read(loopB)).toMatchObject({
+          text: "send the plan",
+          subject: "Confidential reorganisation of the audit team",
+          texts_cleared_at: null,
+        });
+      });
+    } finally {
+      await owner.destroy();
+    }
   });
 });
 
