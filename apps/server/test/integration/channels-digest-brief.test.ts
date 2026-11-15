@@ -1,10 +1,14 @@
 // F116 stage 18: the brief in the first digest of the member's local day, the count line in later ones (T6–T10 and the rules
 // around them). Rows are inside one transaction that rolls back; the races are in channels-digest-brief-race.test.ts.
-import { afterAll, describe, expect, test } from "bun:test";
+import { randomUUID } from "node:crypto";
+import { format } from "node:util";
+
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { markBriefShown } from "../../src/modules/loops";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
-import { buildDigestMessage } from "../../src/modules/reports";
+import { buildDigest, buildDigestMessage } from "../../src/modules/reports";
 import { setDigestTimes, setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
@@ -120,6 +124,38 @@ describe("the first digest of the day (T6, T7)", () => {
       const texts = await digestTexts(trx, org.ctx.orgId);
       expect(texts).toHaveLength(2);
       expect(texts.every((text) => text.includes("📌 NEEDS YOU TODAY"))).toBe(true);
+    });
+  });
+
+  test("a notice of another kind, an earlier digest of the day before and a digest of the same day that comes later do not count", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      await waitingLoop(trx, org);
+      // An urgent notice and a sync notice of the same day, queued before the digest.
+      for (const [kind, dedup] of [
+        ["sync_stale", "notice:1"],
+        ["auth_error", "notice:2"],
+      ] as const) {
+        await trx
+          .insertInto("outbox")
+          .values({
+            org_id: org.ctx.orgId,
+            user_id: org.userId,
+            kind,
+            dedup_key: dedup,
+            mailbox_id: org.mailboxId,
+            view: JSON.stringify({ text: "x" }),
+            buttons: "[]",
+            status: "sent",
+            sent_at: new Date("2026-11-20T05:00:00Z"),
+            created_at: new Date("2026-11-20T05:00:00Z"),
+            next_attempt_at: new Date("2026-11-20T05:00:00Z"),
+          })
+          .execute();
+      }
+      await runDigests(trx, EIGHT);
+      const [text = ""] = await digestTexts(trx, org.ctx.orgId);
+      expect(text).toContain("📌 NEEDS YOU TODAY");
     });
   });
 
@@ -362,6 +398,43 @@ describe("the sections from the database", () => {
         .where("id", "=", sentId)
         .execute();
       void open;
+      // A mail of the user in another thread, a mail of the user before the urgent mail arrived, and a mail that the system sent
+      // in the same thread are no answer.
+      const openThread = (
+        await trx.selectFrom("emails").select("thread_key").where("id", "=", open).executeTakeFirstOrThrow()
+      ).thread_key;
+      const later = await insertSentRow(trx, org.ctx, org.mailboxId, { subject: "Other thread" });
+      const earlier = await insertSentRow(trx, org.ctx, org.mailboxId, { threadKey: openThread, subject: "Before" });
+      await trx
+        .updateTable("sent_emails")
+        .set({ sent_at: new Date("2026-11-20T06:30:00Z") })
+        .where("id", "=", later)
+        .execute();
+      await trx
+        .updateTable("sent_emails")
+        .set({ sent_at: new Date("2026-11-20T04:00:00Z") })
+        .where("id", "=", earlier)
+        .execute();
+      const system = await insertDraftAndSend(trx, org.ctx, org.mailboxId, {});
+      await trx
+        .insertInto("sent_emails")
+        .values({
+          org_id: org.ctx.orgId,
+          mailbox_id: org.mailboxId,
+          dedup_key: `mid:<system-${randomUUID()}@x.test>:h1`,
+          path: "Sent",
+          uidvalidity: "7",
+          uid: "99",
+          message_id: `<system-${randomUUID()}@x.test>`,
+          thread_key: openThread,
+          to_addresses: ["a@x.test"],
+          origin: "system",
+          content: "headers_only",
+          action_id: system.sendId,
+          sent_at: new Date("2026-11-20T06:40:00Z"),
+          internal_date: new Date("2026-11-20T06:40:00Z"),
+        })
+        .execute();
 
       await runDigests(trx, EIGHT);
       const [text = ""] = await digestTexts(trx, org.ctx.orgId);
@@ -630,5 +703,106 @@ describe("language, shadow, links", () => {
       const [text = ""] = await digestTexts(trx, org.ctx.orgId);
       expect(text).toContain("+2 more in the panel: https://panel.example.test/delegations?tab=waiting");
     });
+  });
+});
+
+describe("the guards under the brief", () => {
+  const request = (over: object = {}) => ({
+    kind: "scheduled" as const,
+    periodStart: new Date("2026-11-19T00:00:00Z"),
+    periodEnd: new Date(EIGHT),
+    slot: { date: "2026-11-20", time: "08:00", late: false },
+    now: new Date(EIGHT),
+    locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
+    ...over,
+  });
+
+  test("the builder decides on the flag itself: a caller that asks for the brief of an organization with the flag off gets today's digest", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx, { loopsFlag: false });
+      await waitingLoop(trx, org);
+      const built = await buildDigest(trx, org.ctx, request({ loops: { firstOfDay: true, loopConsent: true } }));
+      expect(built.message.text).not.toContain("NEEDS YOU TODAY");
+      expect(built.message.text).not.toContain("anna@example.test");
+      expect(built.shown).toEqual({ surfaced: [], stale: [] });
+      const on = await ready(trx);
+      await waitingLoop(trx, on);
+      const shown = await buildDigest(trx, on.ctx, request({ loops: { firstOfDay: true, loopConsent: true } }));
+      expect(shown.message.text).toContain("NEEDS YOU TODAY");
+      // The digest on demand has no loop part: no brief even with the flag on.
+      expect((await buildDigest(trx, on.ctx, request({ kind: "on_demand", slot: null }))).message.text).not.toContain(
+        "NEEDS YOU TODAY"
+      );
+    });
+  });
+
+  test("markBriefShown keeps the first time of each mark and marks a stale line only on a closed loop", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const open = await waitingLoop(trx, org);
+      const stale = await insertLoopRow(trx, org.ctx, org.mailboxId, {
+        status: "closed",
+        close_reason: "stale",
+        closed_at: new Date("2026-11-19T10:00:00Z"),
+      });
+      const first = new Date("2026-11-20T07:00:00Z");
+      const second = new Date("2026-11-20T15:00:00Z");
+      await markBriefShown(trx, org.ctx, { surfaced: [open], stale: [stale], at: first });
+      await markBriefShown(trx, org.ctx, { surfaced: [open], stale: [stale], at: second });
+      expect((await loopRow(trx, open)).surfaced_at?.toISOString()).toBe(first.toISOString());
+      expect((await loopRow(trx, stale)).stale_notified_at?.toISOString()).toBe(first.toISOString());
+      // An open loop is never marked as a stale line, and another organization's loop is never marked.
+      const other = await briefOrg(trx);
+      const foreign = await waitingLoop(trx, other);
+      await markBriefShown(trx, org.ctx, { surfaced: [foreign], stale: [open, foreign], at: second });
+      expect((await loopRow(trx, open)).stale_notified_at).toBeNull();
+      expect((await loopRow(trx, foreign)).surfaced_at).toBeNull();
+      expect((await loopRow(trx, foreign)).stale_notified_at).toBeNull();
+    });
+  });
+});
+
+describe("logs and audit rows", () => {
+  test("the digest job logs ids and codes only: no address, subject or ask of a loop, in a log line or an audit row", async () => {
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      lines.push(format(...args));
+    });
+    const errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      lines.push(format(...args));
+    });
+    try {
+      await withRollback(db, async (trx) => {
+        const org = await ready(trx);
+        const marks = ["LOGMARK-ADDRESS@example.test", "LOGMARK-SUBJECT", "LOGMARK-ASK"];
+        await waitingLoop(trx, org, {
+          counterpart: marks[0],
+          to_addresses: [marks[0] ?? ""],
+          subject: marks[1],
+          text: marks[2],
+        });
+        await insertLoopRow(trx, org.ctx, org.mailboxId, {
+          status: "closed",
+          close_reason: "stale",
+          closed_at: new Date("2026-11-19T10:00:00Z"),
+          subject: "LOGMARK-STALE",
+        });
+        await runDigests(trx, EIGHT);
+        const [text = ""] = await digestTexts(trx, org.ctx.orgId);
+        expect(text).toContain("LOGMARK-ASK");
+        expect(lines.some((line) => line.includes("digest_queued"))).toBe(true);
+        for (const mark of [...marks, "LOGMARK-STALE"]) expect(lines.join("\n")).not.toContain(mark);
+        const audit = await trx
+          .selectFrom("audit_log")
+          .select(["event", "data"])
+          .where("org_id", "=", org.ctx.orgId)
+          .execute();
+        expect(JSON.stringify(audit)).not.toContain("LOGMARK");
+      });
+    } finally {
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
   });
 });

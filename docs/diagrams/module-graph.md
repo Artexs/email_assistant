@@ -86,6 +86,7 @@ flowchart BT
   reports --> audit
   reports --> config
   reports --> delegation
+  reports --> loops
   reports --> mail
   reports --> tenancy
   reports --> triage
