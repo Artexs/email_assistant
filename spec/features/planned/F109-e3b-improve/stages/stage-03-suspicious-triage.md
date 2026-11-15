@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 
 ## Step 1 — Known-sender context
 
-**Goal.** One reader gives the context of `assessSuspicious` for one mailbox, read once per mailbox batch (not per mail).
+**Goal.** One reader gives the `assessSuspicious` context of one mailbox, once per mailbox batch.
 
 **Files.** New `apps/server/src/modules/triage/suspicious-context.ts`; a free-mail list in core next to `suspicious.ts`; config key `MAIL_TRUSTED_AUTHSERV_IDS` (comma list, empty default, lower case) in `platform/config.ts` and `.env.example`.
 
@@ -17,7 +17,6 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 - `knownDomains`: the registrable domains of all known addresses and domain rules.
 - `protectedNames`: delegate names, and the newest `email_headers.from_name` of each exact `vip` address from the last 90 days.
 - `trustedAuthservIds`: the registrable domain of the mailbox IMAP host, plus `MAIL_TRUSTED_AUTHSERV_IDS` (D2).
-- Test mail (synthetic Message-ID or a test sender) uses the same reader; nothing special.
 
 ## Step 2 — Reasons on every triage result
 
@@ -25,7 +24,7 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 
 **Decisions.**
 
-- Read the mail's `email_headers` row in the same place the service reads the mail. No row (mail older than F100, or a failed capture) → `fromName` null, empty lists, `authResults` null: only `lookalike_domain` can fire. Cleared texts (retention) behave the same.
+- Read the mail's `email_headers` row with the mail. No row (old mail, failed capture) or cleared texts → `fromName` null, empty lists, `authResults` null: only `lookalike_domain` can fire.
 - `isList` = `list_id` or `list_unsubscribe` set. Attachments: all captured entries (inline too).
 - Skipped mail (`too_old`, `suspended_backlog`, `body_expired`) gets no row and no reasons, as today.
 - The `email.triaged` audit row adds `suspicious` = the code list. A log line may carry the count, never a host, name or address.
@@ -39,7 +38,7 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 **Decisions (D6).**
 
 - Flag on and reasons not empty and final category `delegation` → no delegation input, an empty plan, no `delegations` row. The category stays `delegation`; the mail stays in INBOX.
-- Other categories keep their plan. A flagged `urgent` mail still gets its flag and its notice (warning text: stage 04).
+- Other categories keep their plan (a flagged `urgent` mail keeps its notice; warning: stage 04).
 - Flag off → reasons are stored, the plan is unchanged.
 - Whitelist and VIP: the allowed categories do not change (rules of stage 01 give such senders only `auth_fail` or `risky_attachment`).
 
@@ -53,10 +52,10 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 6. Sender with 3 earlier `info` mails in 90 days and a `Reply-To` mismatch → `{}` (known). With 3 earlier `spam` mails → `{reply_to_mismatch}`.
 7. Mailbox IMAP host `imap.corp.test`, header `mx.corp.test; dmarc=fail` → `{auth_fail}`; header `evil.test; dmarc=fail` → `{}`; with `MAIL_TRUSTED_AUTHSERV_IDS=evil.test` → `{auth_fail}`.
 8. Sender `x@gmai1.com` with known `a@gmail.com` → `{lookalike_domain}`; sender `new@gmail.com` → not known, `{}`.
-9. Org B rules and delegates never reach the context of org A (two organizations).
+9. Org B rules and delegates never reach org A's context.
 
-**Check.** The new and the changed triage tests, then the Proof.
+**Check.** The changed triage tests, then the Proof.
 
 **Done when.** Tests 1–9 pass; for each guard (flag check, `org_id` scope, the known-sender check) the worker removes it, sees its test fail, restores it, and lists it; Proof `PROOF_OK`.
 
-**Out of scope.** Notice texts (stage 04), the sim (stage 05), reply and follow-up drafts (E6a, E5b read `suspiciousReasonsOf` from stage 04).
+**Out of scope.** Notice texts (stage 04), the sim (stage 05), reply and follow-up drafts (E6a, E5b).

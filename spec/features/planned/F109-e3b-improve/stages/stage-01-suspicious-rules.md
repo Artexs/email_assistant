@@ -4,9 +4,9 @@ Part of [`../plan.md`](../plan.md). Decisions P1, D1, D2, D3.
 
 ## Step 1 — `assessSuspicious` and its helpers
 
-**Goal.** One pure function decides the suspicious reasons of one mail. Stages 03 (triage) and 05 (sim) call it with the same input shape.
+**Goal.** One pure function gives the suspicious reasons of one mail, for triage (stage 03) and the sim (stage 05).
 
-**Files.** New `packages/core/src/triage/suspicious.ts` and its test. Export it from the core index the way `rules.ts` is exported.
+**Files.** New `packages/core/src/triage/suspicious.ts` and its test.
 
 **Interfaces (used by stages 03, 04, 05; keep the names).**
 
@@ -30,10 +30,10 @@ export function registrableDomain(host: string): string;
 
 **Decisions (rules).**
 
-- Input text is folded first: lower case, NFKC, `xn--` labels decoded (a small RFC 3492 decoder in the same module; no Node import, core stays pure), trailing dot removed.
+- Fold input first: lower case, NFKC, `xn--` labels decoded (a small RFC 3492 decoder in the module; no Node import), no trailing dot.
 - `registrableDomain`: the last two labels; the last three when the last two are in a built-in list of two-level public suffixes (at least: `com.pl net.pl org.pl edu.pl gov.pl info.pl biz.pl waw.pl co.uk org.uk ac.uk com.au co.jp com.br com.tr co.nz co.za`). A host with one label returns itself.
 - `auth_fail` (any sender): `authResults` is set and its `authserv-id` (the first token before `;`, folded) equals a `trustedAuthservIds` entry or ends with `.` + an entry; and the header says `dmarc=fail`, or both `spf=fail` and `dkim=fail`. Anything else (missing, untrusted, `softfail`, `none`, a parse problem) gives no reason.
-- `risky_attachment` (any sender): an attachment whose last extension is in `exe scr bat cmd com pif js jse vbs vbe wsf hta ps1 msi jar lnk iso img docm xlsm pptm dotm xlam`, or whose type is one of `application/x-msdownload application/x-msdos-program application/x-sh application/java-archive application/vnd.ms-excel.sheet.macroenabled.12 application/vnd.ms-word.document.macroenabled.12`. A password-protected archive cannot be seen from name and type: no rule for it (noted in stage 16).
+- `risky_attachment` (any sender): an attachment whose last extension is in `exe scr bat cmd com pif js jse vbs vbe wsf hta ps1 msi jar lnk iso img docm xlsm pptm dotm xlam`, or whose type is one of `application/x-msdownload application/x-msdos-program application/x-sh application/java-archive application/vnd.ms-excel.sheet.macroenabled.12 application/vnd.ms-word.document.macroenabled.12`. A password-protected archive is not visible from name and type: no rule (stage 16 notes it).
 - The next four rules need `senderKnown = false`:
   - `lookalike_domain`: the sender's registrable domain is not in `knownDomains`, and for one known domain either the skeletons are equal or the labels left of the suffix have Damerau–Levenshtein distance 1 and both are at least 5 characters. Skeleton: map Cyrillic and Greek letters that look Latin to Latin, `0→o`, `1→l`, `i→l`, `rn→m`, `vv→w`, and drop `-`. Rejected: the full UTS #39 table (size; the library's license and upkeep are not checked).
   - `display_name_spoof`: `fromName` holds an address (`x@y.z`) that differs from `fromAddress`; or the folded name (diacritics removed, single spaces) equals a folded `protectedNames` entry with at least two words.
@@ -58,4 +58,4 @@ export function registrableDomain(host: string): string;
 
 **Done when.** Tests 1–11 pass; the Proof of `plan.md` prints `PROOF_OK`.
 
-**Out of scope.** Reading the DB, the known-sender list (stage 03), any effect.
+**Out of scope.** DB reads, the known-sender list (stage 03), effects.
