@@ -46,5 +46,5 @@ Rule: back up first, tag `ea-server:pre-<ticket>`, deploy a CI-checked pinned co
 ### Open for the main coordinator (hand-over from the release session, 2026-11-16)
 1. Watch end: at or after 23:14Z repeat the counts above since 22:44:12Z (0 `error`, `sync_done` still rising, `ops:alerts` none). On trouble: `deploy/rollback.sh`.
 2. F104 stage 13a (time budget of the Sent pass): job `2026-11-15-f104-s13a-sent-budget-risky-sync-8890e7df` runs. When done: Opus 5.5 review (risky: sync of the pilot mailbox) with the TRACK sort line, land check, land.
-3. Then release v0.2.1 (`docs/release-checklist.md`), then F104 stage 13 steps 10–12 and its checks: owner order "you can enable flag" = `sent_sync` on for the pilot org only (check N5 first). Owner step U1 there (switch "Track my sent mail" in Settings).
+3. Then release v0.2.1 (`docs/release-checklist.md`). Do NOT turn on `sent_sync` yet: the owner wants to decide it in a later session (owner, 2026-11-16; `notes/owner-later.md` item 4). On the owner's word: F104 stage 13 steps 10–12 and its checks, pilot org only (check N5 first).
 4. After v0.2.1 is checked: no extra image to remove (the release script prunes).

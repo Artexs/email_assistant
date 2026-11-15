@@ -30,3 +30,15 @@ Plain list for the owner. Each item says what to do, why, and what waits for it.
   3. Make a Telegram group "EA operator" with the VPS bot. Put its chat id as `OPERATOR_TELEGRAM_CHAT_ID` in the VPS `.env`.
 - **What waits:** only the drill. Alerts go nowhere until step 3 is done.
 - **Added:** 2026-11-15.
+
+## 4. Turn on reading of your Sent mail (F104 stage 13, flag `sent_sync`)
+
+- **Why:** the assistant then sees which mail you answered. Open loops and the "no sent mail seen for 7 days" notice need it. The code is on the VPS since v0.2.0; the flag is off.
+- **Before it:** the coordinator adds a time limit to the Sent read (stage 13a, so a slow Sent folder cannot delay the inbox sync) and ships it in release v0.2.1. It does not turn the flag on without your word.
+- **What to do (about 2 minutes):**
+  1. Tell the coordinator: "turn on sent_sync for the pilot". It turns the flag on for your organization only.
+  2. In the panel: Settings → your mailbox → "Sent mail" → turn on "Track my sent mail". The card says "The first read of Sent runs at the next sync."
+  3. Tell the coordinator "done". It checks the first read and writes the counts (no subjects, no addresses) in a note.
+- **Undo:** turn the switch off in the panel (this deletes the stored sent mail), or tell the coordinator to turn the flag off.
+- **What waits:** only F104 (the last stage). F116 open loops work without it, but see less.
+- **Added:** 2026-11-16.

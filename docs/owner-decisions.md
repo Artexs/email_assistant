@@ -509,7 +509,7 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: `notes/2026-11-15-vps-deploy-queue.md` § batch 4.
 
 ### 2026-11-15 · Pilot flag `sent_sync` waits for a time budget of the Sent pass (F104) · production · new
-- Choice: the coordinator did not turn on `sent_sync` for the pilot org yet. It added stage 13a (a 60 s budget per Sent pass, and `duration_ms` in the log) and started a worker job. The flag goes on after stage 13a is reviewed, landed and released.
+- Choice: the coordinator did not turn on `sent_sync` for the pilot org yet. It added stage 13a (a 60 s budget per Sent pass, and `duration_ms` in the log) and started a worker job. After stage 13a is released, the flag waits for the owner's word (owner, 2026-11-16: decide in a later session; `notes/owner-later.md` item 4).
 - Why: the stage 13 runbook asks for this budget before the pilot switch. Without it, a slow Sent folder can hold the INBOX sync of the pilot for minutes (5-minute socket timeout, up to 100 text fetches per pass).
 - Undo: tell the coordinator to turn the flag on now (`org:flag --org-id <pilot org> --flag sent_sync --on`).
 - Source: `spec/features/active/F104-e5a-read-sent/stages/stage-13a-sent-time-budget.md`; job `2026-11-15-f104-s13a-sent-budget-risky-sync-8890e7df`.
