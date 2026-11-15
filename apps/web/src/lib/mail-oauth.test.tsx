@@ -1,10 +1,10 @@
 /// <reference types="bun" />
 import { ApiError } from "./api";
 import { mailOAuthResultCodes } from "@ea/core/web";
-import { afterEach, beforeAll, describe, expect, mock, test } from "bun:test";
-import type { ComponentType, ReactNode } from "react";
+import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { ConnectForm } from "../components/mailboxes/ConnectDialog";
 import { OAuthResultBanner } from "../components/mailboxes/OAuthBanner";
 import { OAuthSignIn } from "../components/mailboxes/OAuthSignIn";
 import { setLocaleForTest, t, type TextKey } from "../i18n";
@@ -19,6 +19,7 @@ import {
   startOAuth,
   startErrorText,
   takeOAuthBanner,
+  watchPageRestore,
   withoutOAuthQuery,
 } from "./mail-oauth";
 
@@ -41,30 +42,6 @@ const shown = (search: string) => {
 const escaped = (text: string) => text.replaceAll("'", "&#x27;");
 
 const buttons = (html: string) => [...html.matchAll(/<button[^>]*>.*?<\/button>/g)].map((match) => match[0]);
-
-// The dialog is rendered as the server renders it: no effects run, so `initialOauthProviders` stands for a finished options read.
-// Radix puts the dialog content in a portal that the server never renders, so the test swaps the dialog parts for plain wrappers.
-let ConnectDialog: ComponentType<{
-  open: boolean;
-  onOpenChange(open: boolean): void;
-  onConnected(): void;
-  sentSyncLine: boolean;
-  initialOauthProviders?: ("microsoft" | "google")[];
-}>;
-
-beforeAll(async () => {
-  const real = await import("../components/ui/dialog");
-  const pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
-  mock.module("../components/ui/dialog", () => ({
-    ...real,
-    Dialog: pass,
-    DialogContent: pass,
-    DialogHeader: pass,
-    DialogFooter: pass,
-    DialogTitle: pass,
-  }));
-  ConnectDialog = (await import("../components/mailboxes/ConnectDialog")).ConnectDialog;
-});
 
 describe("sign-in buttons (rule 1)", () => {
   test("only a provider with connect: true gets a button", () => {
@@ -137,13 +114,14 @@ describe("sign-in buttons (rule 1)", () => {
     expect(html).toContain(en.oauth_err_unavailable);
   });
 
-  test("the dialog shows the buttons above the password presets, which stay", () => {
+  test("the dialog form shows the buttons above the password presets, which stay", () => {
     const render = (initialOauthProviders: ("microsoft" | "google")[]) =>
       renderToStaticMarkup(
-        <ConnectDialog
-          open
-          onOpenChange={() => undefined}
+        <ConnectForm
+          pending={false}
+          setPending={() => undefined}
           onConnected={() => undefined}
+          onClose={() => undefined}
           sentSyncLine={false}
           initialOauthProviders={initialOauthProviders}
         />
@@ -169,7 +147,7 @@ describe("sign-in buttons (rule 1)", () => {
 });
 
 describe("a tap on a button (rule 2)", () => {
-  test("POSTs start with no body and assigns the returned URL", async () => {
+  test("POSTs start with the body {} and assigns the returned URL", async () => {
     const calls: { path: string; method?: string; body?: unknown }[] = [];
     const assigned: string[] = [];
     const api = (async (path: string, _schema: unknown, init: { method?: string; body?: unknown } = {}) => {
@@ -178,7 +156,7 @@ describe("a tap on a button (rule 2)", () => {
     }) as never;
     const result = await startOAuth("microsoft", { api, assign: (url) => assigned.push(url) });
     expect(result).toEqual({ ok: true });
-    expect(calls).toEqual([{ path: "/api/mailboxes/oauth/microsoft/start", method: "POST", body: undefined }]);
+    expect(calls).toEqual([{ path: "/api/mailboxes/oauth/microsoft/start", method: "POST", body: {} }]);
     expect(assigned).toEqual(["https://login.example.test/authorize?state=x"]);
     await startOAuth("google", { api, assign: () => undefined });
     expect(calls[1]?.path).toBe("/api/mailboxes/oauth/google/start");
@@ -202,9 +180,15 @@ describe("a tap on a button (rule 2)", () => {
     expect(assigned).toEqual([]);
   });
 
-  test("an address that is not http or https is never followed", async () => {
+  test("an address that is not https is never followed", async () => {
     const assigned: string[] = [];
-    for (const url of ["javascript:alert(1)", "data:text/html,x", "not a url", ""]) {
+    for (const url of [
+      "http://login.example.test/authorize",
+      "javascript:alert(1)",
+      "data:text/html,x",
+      "not a url",
+      "",
+    ]) {
       const result = await startOAuth("microsoft", {
         api: (async () => ({ url })) as never,
         assign: (value) => assigned.push(value),
@@ -300,6 +284,36 @@ describe("the query is removed after the banner shows (rule 4)", () => {
     const none = page("?x=1");
     expect(takeOAuthBanner(none.page)).toBeNull();
     expect(none.urls).toEqual([]);
+  });
+});
+
+describe("a page restored from the bfcache (N6)", () => {
+  const fakeWindow = () => {
+    const listeners = new Set<(event: Event) => void>();
+    return {
+      listeners,
+      target: {
+        addEventListener: (_type: "pageshow", listener: (event: Event) => void) => listeners.add(listener),
+        removeEventListener: (_type: "pageshow", listener: (event: Event) => void) => listeners.delete(listener),
+      },
+      fire: (persisted: boolean) => {
+        for (const listener of listeners) listener(Object.assign(new Event("pageshow"), { persisted }));
+      },
+    };
+  };
+
+  test("only a persisted pageshow calls back; the cleanup removes the listener", () => {
+    const page = fakeWindow();
+    let calls = 0;
+    const stop = watchPageRestore(page.target, () => (calls += 1));
+    page.fire(false);
+    expect(calls).toBe(0);
+    page.fire(true);
+    expect(calls).toBe(1);
+    stop();
+    expect(page.listeners.size).toBe(0);
+    page.fire(true);
+    expect(calls).toBe(1);
   });
 });
 

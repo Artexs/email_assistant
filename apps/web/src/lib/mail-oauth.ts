@@ -45,11 +45,11 @@ export function startErrorText(error: unknown): TextKey {
   return errorText(error);
 }
 
-// The browser follows only an `http:` or `https:` address: `javascript:` and `data:` never pass.
+// The browser follows only an `https:` address: `http:`, `javascript:` and `data:` never pass. The host is the server's choice.
 function isBrowsableUrl(raw: string): boolean {
   try {
     const { protocol } = new URL(raw);
-    return protocol === "https:" || protocol === "http:";
+    return protocol === "https:";
   } catch {
     return false;
   }
@@ -65,7 +65,7 @@ export interface StartDeps {
 
 const browserDeps = (): StartDeps => ({ api: realApi, assign: (url) => location.assign(url) });
 
-// A tap on a sign-in button: `POST /api/mailboxes/oauth/:provider/start` with no body, then the browser goes to the
+// A tap on a sign-in button: `POST /api/mailboxes/oauth/:provider/start` with the body `{}`, then the browser goes to the
 // `{ url }` of the answer. On `{ ok: true }` the page is leaving. On a failure nothing was assigned.
 export async function startOAuth(
   provider: MailOAuthProviderKey,
@@ -74,6 +74,8 @@ export async function startOAuth(
   try {
     const { url } = await deps.api(`/api/mailboxes/oauth/${provider}/start`, mailOAuthStartResultSchema, {
       method: "POST",
+      // The route parses JSON: an empty body is a 400 `invalid_json`.
+      body: {},
     });
     if (!isBrowsableUrl(url)) return { ok: false, key: "error_generic" };
     deps.assign(url);
@@ -139,4 +141,19 @@ export function takeOAuthBanner(page: BannerPage): OAuthBanner | null {
   if (banner === null) return null;
   page.history.replaceState(null, "", `${pathname}${withoutOAuthQuery(search)}${hash}`);
   return banner;
+}
+
+interface PageEvents {
+  addEventListener(type: "pageshow", listener: (event: Event) => void): void;
+  removeEventListener(type: "pageshow", listener: (event: Event) => void): void;
+}
+
+// Back from the provider, a browser may restore this page from its back/forward cache with the old state: a tap that already left
+// for the provider still shows as pending. `pageshow` with `persisted` says the page came back from the cache. Returns the cleanup.
+export function watchPageRestore(target: PageEvents, onRestore: () => void): () => void {
+  const listener = (event: Event) => {
+    if ((event as Event & { persisted?: boolean }).persisted === true) onRestore();
+  };
+  target.addEventListener("pageshow", listener);
+  return () => target.removeEventListener("pageshow", listener);
 }
