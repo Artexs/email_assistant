@@ -5,8 +5,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { sql } from "kysely";
 
 import { createOrganizationWithOwner, setOrgFeature, setSsoProvider } from "../../src/modules/tenancy";
-import { createDb, type Db } from "../../src/platform/db";
 import { buildOidcConfig, discoverProviderConfig } from "../../src/platform/auth-sso";
+import { createDb, type Db } from "../../src/platform/db";
 import type { LookupAll } from "../../src/platform/net-address";
 import { runOrgSso, type OrgSsoDeps } from "../../src/scripts/org-sso";
 import { startFakeOidc, type FakeOidc } from "../fake-oidc";
