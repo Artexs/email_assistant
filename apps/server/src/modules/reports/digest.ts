@@ -19,7 +19,14 @@ import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions"
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames } from "../delegation";
-import { countWaiting, INBOX, isSyntheticMessageId, listMailboxes, type TestMailRule } from "../mail";
+import {
+  attachmentFactsToShow,
+  countWaiting,
+  INBOX,
+  isSyntheticMessageId,
+  listMailboxes,
+  type TestMailRule,
+} from "../mail";
 import { getOrganization, isFeatureOn } from "../tenancy";
 import { countTriagedBetween, listHandledRows, listTriagedBetween, suspiciousReasonsToShow } from "../triage";
 
@@ -112,6 +119,12 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     rows.map((row) => row.email_id)
   );
 
+  const attachmentFacts = await attachmentFactsToShow(
+    db,
+    ctx,
+    rows.map((row) => row.email_id)
+  );
+
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
     category: row.category,
@@ -135,6 +148,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, texts),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
     suspicious: suspicious.get(row.email_id) ?? [],
+    ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
     hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
   }));
 
