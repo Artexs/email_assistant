@@ -10,7 +10,7 @@ import {
 } from "@ea/core";
 
 import { type TenantContext } from "../../../platform/db";
-import { getDraft, listSendsToNotify, markNotified, type SendRow } from "../../actions";
+import { getDraft, listSendsToNotify, markNotified, type DraftRow, type SendRow } from "../../actions";
 import { listSenderRules } from "../../config";
 import { getDelegate, listDelegateAddresses } from "../../delegation";
 import { getMailbox, isSyntheticMessageId, listMailboxes } from "../../mail";
@@ -29,14 +29,16 @@ export function panelUrlOf(base: string | undefined, sendId: string): string | u
 
 // D19: the text the owner sees is the text the committer sends (same builder, same inputs).
 // `panelBase`: the base URL of the panel when the link goes on the card (the caller checks the flag `approvals_page`).
+// `draftRow`: the draft of the send when the caller has read it. `quote` is the whole quote that the committer sends
+// (up to 8000 characters); the view holds the quote cut for a card.
 export async function approvalViewFor(
   db: DbOrTrx,
   ctx: TenantContext,
   send: SendRow,
-  options: { panelBase?: string } = {}
-): Promise<{ view: ApprovalView; subject: string }> {
+  options: { panelBase?: string; draftRow?: DraftRow } = {}
+): Promise<{ view: ApprovalView; subject: string; quote: string | null }> {
   if (send.depends_on_action_id === null) throw new Error("send has no draft");
-  const draftRow = await getDraft(db, ctx, send.depends_on_action_id);
+  const draftRow = options.draftRow ?? (await getDraft(db, ctx, send.depends_on_action_id));
   if (draftRow === undefined) throw new Error("draft not found");
   const draft = draftPayloadSchema.parse(draftRow.payload);
   const mailbox = await getMailbox(db, ctx, send.email.mailbox_id);
@@ -85,7 +87,7 @@ export async function approvalViewFor(
   view.version = draftVersion(draft);
   const panelUrl = panelUrlOf(options.panelBase, send.id);
   if (panelUrl !== undefined) view.panelUrl = panelUrl;
-  return { view, subject: message.subject };
+  return { view, subject: message.subject, quote: message.parts.quote };
 }
 
 // D19: one request per owner for each send that waits, after its draft is applied. No owner: nothing is queued or marked.

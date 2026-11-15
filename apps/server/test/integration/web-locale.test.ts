@@ -2,7 +2,7 @@ import { meSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { getUserAuthProfile, isOrgSuspended, tenancyRoutes } from "../../src/modules/tenancy";
-import { countMailboxes, onboardingDeps } from "../../src/web";
+import { approvalsWaiting, countMailboxes, onboardingDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 import { as, noBackupCodes, webOrg, webTestApp, type WebOrg } from "./web-helpers";
@@ -35,6 +35,7 @@ async function setup() {
           now: () => new Date(),
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          approvalsWaiting: approvalsWaiting(db),
           operatorContact: null,
           sessions: async () => [],
           backupCodesLeft: noBackupCodes,

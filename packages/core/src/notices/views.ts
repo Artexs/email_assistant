@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CHASER_SET_LIMIT, type SendResultKind } from "../digest/approvals";
 import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
+import { approvalViewSchema, panelUrlSchema } from "../outgoing/view-schema";
 import { sendLimitKinds } from "../send-limits";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
@@ -26,26 +27,6 @@ const wouldDoActionSchema = z.strictObject({
   reverse: z.boolean(),
   kind: draftKind.nullable(),
   delegateId: nullableText,
-});
-
-// The link to the panel page of a send: a text line on the approval card. One line, http or https, no space.
-export const panelUrlSchema = z
-  .string()
-  .max(300)
-  .regex(/^https?:\/\/\S+$/);
-
-const approvalViewSchema = z.strictObject({
-  kind: draftKind,
-  recipient: z.strictObject({ name: nullableText, address: text }),
-  sender: z.strictObject({ label: text, external: z.boolean() }).nullable(),
-  recipientInactive: z.boolean(),
-  subject: text,
-  dueDate: nullableText,
-  body: text,
-  quote: z.strictObject({ text, cut: z.boolean() }).nullable(),
-  synthetic: z.boolean(),
-  version: z.number().int().min(1).optional(),
-  panelUrl: panelUrlSchema.optional(),
 });
 
 const sendResultKindSchema = z.discriminatedUnion("kind", [
@@ -81,6 +62,8 @@ const sendResultKindSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({ kind: z.literal("rejected"), byName: nullableText, draftRemoved: z.boolean() }),
 ]);
+
+export { panelUrlSchema };
 
 // A later change of the TypeScript type breaks the build until the schema follows.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;

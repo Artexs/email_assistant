@@ -25,6 +25,7 @@ const testConfig = loadConfig({
 const extras = {
   secrets: createSecretBox(key, 1),
   actionsScope: { kind: "off" } as const,
+  sendScope: { kind: "off" } as const,
   botUsername: null,
 };
 const NOW = new Date("2026-11-20T10:00:00Z");
