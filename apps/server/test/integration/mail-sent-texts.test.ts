@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import { MailFolderMissingError, type SentFolderReader } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
@@ -402,6 +402,11 @@ describe("fetchSentTexts and syncSentFolder", () => {
       put(org, 2, ago(2 * DAY));
       put(org, 3, ago(3 * DAY));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
+      // The partial index on pending rows returns the date order by itself; a table scan returns the order of the inserts (the UID order).
+      // Without the ORDER BY of the query, this transaction would read the UID order.
+      await sql`SET LOCAL enable_indexscan = off`.execute(trx);
+      await sql`SET LOCAL enable_bitmapscan = off`.execute(trx);
+      await sql`SET LOCAL enable_indexonlyscan = off`.execute(trx);
       const input = await inputOf(trx, org, { limit: 2 });
       expect(await fetchSentTexts(depsOf(trx, org), org.ctx, org.mailboxId, input)).toMatchObject({ stored: 2 });
       const byUid = (await rowsOf(trx, org)).map((row) => [row.subject, row.content]);
@@ -447,6 +452,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
           throw new SoftError("timeout");
         },
       };
+      /* eslint-disable no-console -- the test replaces the console to capture it */
       const lines: string[] = [];
       const methods = ["log", "info", "warn", "error", "debug"] as const;
       const saved = methods.map((method) => console[method]);
@@ -464,6 +470,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
         process.stdout.write = stdout;
         process.stderr.write = stderr;
       }
+      /* eslint-enable no-console */
       const text = lines.join("\n");
       expect(text).not.toContain("Sent");
       expect(text).not.toContain("Subject 1");
