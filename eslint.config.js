@@ -257,6 +257,7 @@ export default tseslint.config(
       "apps/server/src/modules/delegation/**/*.ts",
       "apps/server/src/modules/mail/**/*.ts",
       "apps/server/src/modules/tenancy/**/*.ts",
+      "apps/server/src/modules/triage/**/*.ts",
       "apps/server/src/modules/testmail/**/*.ts",
     ],
     ignores: ["**/*.test.ts"],

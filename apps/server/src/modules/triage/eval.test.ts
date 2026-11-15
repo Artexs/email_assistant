@@ -10,7 +10,7 @@ import {
   type LlmRole,
   selectCases,
 } from "@ea/core";
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { z } from "zod";
 
 import {
@@ -23,7 +23,7 @@ import {
 } from "../../platform/llm";
 
 import { type CaseResult, evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
-import { firstEstimateUsd } from "./eval-pool";
+import { BUDGET_STOP_REASON, firstEstimateUsd } from "./eval-pool";
 import { evalExitCode } from "./eval-report";
 import { type ClassifierV3Part, promptLabel } from "./prompts";
 import { PROMPT_VERSION } from "./prompts/classifier-v2";
@@ -829,6 +829,66 @@ describe("runEval worker pool", () => {
       expect(firstEstimateUsd("no-such-model", at)).toBeNull();
       expect(firstEstimateUsd("toString", at)).toBeNull();
     });
+  });
+});
+
+describe("eval log lines", () => {
+  let lines: string[] = [];
+  let spies: ReturnType<typeof spyOn>[] = [];
+
+  beforeEach(() => {
+    lines = [];
+    spies = (["log", "error"] as const).map((name) =>
+      spyOn(console, name).mockImplementation((...args: unknown[]) => {
+        lines.push(args.map(String).join(" "));
+      })
+    );
+  });
+
+  afterEach(() => {
+    for (const spy of spies) spy.mockRestore();
+  });
+
+  test("a soft error then success writes eval_case_retry and eval_case_done", async () => {
+    const { llm } = fakeLlm([soft(), soft(), answer("info")]);
+    await runEval(harness().deps(llm), { ...opts, cases: [makeCase({ id: "inv-001" })] });
+    expect(lines).toEqual([
+      "[eval] eval_case_retry case_id=inv-001 attempts=1 wait_ms=10000",
+      "[eval] eval_case_retry case_id=inv-001 attempts=2 wait_ms=20000",
+      "[eval] eval_case_done case_id=inv-001 category=info",
+    ]);
+  });
+
+  test("a case that ends in an error writes eval_case_failed and eval_case_done with the code", async () => {
+    const { llm } = fakeLlm([soft()]);
+    await runEval(harness().deps(llm), { ...opts, retries: 0, cases: [makeCase({ id: "inv-002" })] });
+    expect(lines).toEqual([
+      "[eval] eval_case_failed case_id=inv-002 code=http_503",
+      "[eval] eval_case_done case_id=inv-002 error_code=http_503",
+    ]);
+  });
+
+  test("a run stopped by soft errors writes eval_stopped reason=error_streak, not the reason text", async () => {
+    const cases = ["a", "b", "c", "d", "e"].map((id) => makeCase({ id }));
+    const { llm } = fakeLlm([soft()]);
+    const report = await runEval(harness().deps(llm), { ...opts, retries: 0, cases });
+    expect(report.stoppedReason).toContain("soft errors in a row");
+    expect(lines.filter((line) => line.includes("eval_stopped"))).toEqual(["[eval] eval_stopped reason=error_streak"]);
+    expect(lines.join("\n")).not.toContain("soft errors in a row");
+  });
+
+  test("a run stopped by the budget cap writes eval_stopped reason=budget_cap, not the reason text", async () => {
+    const { llm } = delayedLlm((id) => ({ ms: id === "c00" ? 5 : 30, step: answer("info") }));
+    const report = await runEval(harness().deps(llm), {
+      ...opts,
+      cases: idCases(8),
+      concurrency: 2,
+      budget: { ...fixedCost(0.0003), capUsd: 0.001 },
+    });
+    expect(report.stoppedReason).toBe(BUDGET_STOP_REASON);
+    expect(lines.filter((line) => line.includes("eval_stopped"))).toEqual(["[eval] eval_stopped reason=budget_cap"]);
+    expect(lines.join("\n")).not.toContain(BUDGET_STOP_REASON);
+    expect(lines.join("\n")).not.toContain("budget cap reached");
   });
 });
 

@@ -429,3 +429,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: E5 §4.1 wording was the owner's; a consent text must be true.
 - Undo: restore the old sentence in `apps/web/src/i18n/en.ts` and `pl.ts` (`sent_line`).
 - Source: `.limen/jobs/2026-11-15-f104-review-s10-opus-sent-switch-422e67bb/result` (N1, N2), `spec/features/active/F104-e5a-read-sent/review-10.md`.
+
+### 2026-11-15 · F109 escalation cascade: no ship by the cost rule (F109) · quality · new
+- Choice: the second-call cascade (stronger model on about 24% of mails) is NOT shipped. Dev rule 5 failed: $3.96 per mailbox per month against the $3.00 limit. Rules 1–4 pass (spam false positives 10.0 → 9.5, K 23.5 → 22.5), the gain is small. Spend $0.52 of the lab cap; no holdout run; stage 14 (escalation in triage) is skipped.
+- Why: the rule was fixed before the run; the gain does not pay for the cost.
+- Undo: a cheaper trigger (smaller share than 24%) or a cheaper second model needs a new trigger version and a new decision (about 1 stage plus a $0.50 dev run). Raise the $3.00 limit only if you accept the cost.
+- Source: `evals/results/2026-11-15-f109-escalation-summary.md`.

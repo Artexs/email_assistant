@@ -45,3 +45,9 @@ Tests pass; the report renders all sections; `live-lab.md` lists them; `PROOF_OK
 ## Out of scope
 
 A judge of draft text (Q8). Charts.
+
+## Carry-over from stage 12 (coordinator, 2026-11-15)
+
+- The stage 11 carry-over "the scorer counts expired approvals" lands here: the executive table counts "approvals expired without a tap" (a fake restart can lose cards, so these are not errors).
+- Bot `send_failed` skips (Auto-Submitted skips, `bot_error` cap 5) are counted in the delegates table here, not in stage 12. Injector skips are already in `triage.missing` (stage 12).
+- Add sections under `LabScore.sections` and one renderer each in `SECTION_RENDERERS` (stage 12 interface). The report holds ids, counts and rates only, never mail text.

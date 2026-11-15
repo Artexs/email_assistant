@@ -114,7 +114,7 @@ export async function judgeCaseDraft(
       if (!(error instanceof LlmBlockedError) && error instanceof SoftError && attempt < input.retries) {
         if (attempts?.mayRetry() ?? true) {
           const wait = RETRY_WAITS_MS[Math.min(attempt, RETRY_WAITS_MS.length - 1)] as number;
-          log.warn(`soft error on judge of case ${c.id}, retry ${attempt + 1} after ${wait} ms`);
+          log.warn("eval_judge_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
           await deps.sleep(wait);
           continue;
         }

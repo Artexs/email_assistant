@@ -257,8 +257,8 @@ describe("createTriageJob", () => {
       await triage.run();
       await triage.run();
 
-      const lines = errorSpy.mock.calls.filter((call: unknown[]) =>
-        String(call[1]).includes(`triage ${bare.mailboxId}: no mailbox_settings row, mailbox skipped`)
+      const lines = errorSpy.mock.calls.filter(
+        (call: unknown[]) => String(call[1]) === `triage_no_settings org_id=${bare.orgId} mailbox_id=${bare.mailboxId}`
       );
       expect(lines).toHaveLength(1);
       expect(llm.prompts).toHaveLength(1);
@@ -400,12 +400,12 @@ describe("createTriageJob: pause and errors", () => {
           locked_at: null,
         });
       }
-      expect(logLines("LLM soft error")).toHaveLength(1);
+      expect(logLines("llm_paused ")).toHaveLength(1);
 
       clock.at = minutesFromNow(1);
       await triage.run();
       expect(llm.prompts).toHaveLength(1);
-      expect(logLines("LLM soft error")).toHaveLength(1);
+      expect(logLines("llm_paused ")).toHaveLength(1);
       for (const id of [first, second, third]) {
         const row = await fullRow(trx, id);
         expect(row.status).toBe("pending");
@@ -415,9 +415,9 @@ describe("createTriageJob: pause and errors", () => {
       clock.at = minutesFromNow(6);
       await triage.run();
       expect(llm.prompts).toHaveLength(2);
-      const warns = logLines("LLM soft error");
+      const warns = logLines("llm_paused ");
       expect(warns).toHaveLength(2);
-      expect(warns[1]).toContain("paused for 10 min");
+      expect(warns[1]).toContain(" wait_ms=600000 ");
 
       state.failWith = null;
       clock.at = minutesFromNow(17);
@@ -429,7 +429,7 @@ describe("createTriageJob: pause and errors", () => {
       clock.at = minutesFromNow(18);
       await triage.run();
       expect((await emailRow(trx, later)).status).toBe("pending");
-      expect(logLines("LLM soft error")[2]).toContain("paused for 5 min");
+      expect(logLines("llm_paused ")[2]).toContain(" wait_ms=300000 ");
     });
   });
 
@@ -450,7 +450,7 @@ describe("createTriageJob: pause and errors", () => {
         next_attempt_at: minutesFromNow(5),
         locked_at: null,
       });
-      expect(logLines("LLM soft error network")).toHaveLength(1);
+      expect(logLines("llm_paused code=network ")).toHaveLength(1);
     });
   });
 
@@ -465,8 +465,12 @@ describe("createTriageJob: pause and errors", () => {
       await clockJob(trx, llm, { at: now }).run();
 
       expect(llm.prompts).toHaveLength(1);
-      expect(logLines("LLM config error")).toHaveLength(1);
-      expect(logLines("failed:")).toHaveLength(0);
+      const configLines = logLines("llm_config_paused ");
+      expect(configLines).toHaveLength(1);
+      expect(configLines[0]).toMatch(/^llm_config_paused code=http_403 wait_ms=300000 until=\S+$/);
+      for (const hint of ["API_KEY", "MODEL_CLASSIFIER", "project", "billing"])
+        expect(configLines[0]).not.toContain(hint);
+      expect(logLines("_failed")).toHaveLength(0);
       for (const id of ids) expect(await emailRow(trx, id)).toEqual({ status: "pending", attempts: 0 });
     });
   });
@@ -513,9 +517,10 @@ describe("createTriageJob: pause and errors", () => {
       const llm = fakeLlm();
       await clockJob(trx, llm, { at: now }).run();
 
-      const lines = logLines(`triage ${broken.mailboxId} failed:`);
-      expect(lines).toHaveLength(1);
-      expect(lines[0]).toBe(`triage ${broken.mailboxId} failed: ZodError`);
+      const lines = logLines("triage_mailbox_failed");
+      expect(lines).toEqual([
+        `triage_mailbox_failed org_id=${broken.orgId} mailbox_id=${broken.mailboxId} error=ZodError`,
+      ]);
       expect(await emailRow(trx, brokenMail)).toEqual({ status: "pending", attempts: 0 });
       expect((await emailRow(trx, readyMail)).status).toBe("triaged");
     });
@@ -557,9 +562,9 @@ describe("createTriageJob: pause and errors", () => {
           locked_at: null,
         });
       }
-      const lines = logLines("failed:");
+      const lines = logLines("triage_mailbox_failed");
       expect(lines).toHaveLength(1);
-      expect(lines[0]).toContain("Error");
+      expect(lines[0]).toContain(" error=Error");
       expect(errorSpy.mock.calls.flat().join(" ")).not.toContain("MARKER-ERR");
     });
   });
@@ -703,7 +708,7 @@ describe("createTriageJob: pause and errors", () => {
         next_attempt_at: minutesFromNow(5),
         locked_at: null,
       });
-      expect(logLines("triage_error save failed")).toHaveLength(1);
+      expect(logLines("triage_error_save_failed")).toHaveLength(1);
       expect(errorSpy.mock.calls.flat().join(" ")).not.toContain("MARKER-");
     });
   });
@@ -757,8 +762,8 @@ describe("createTriageJob: pause and errors", () => {
       expect(row.attempts).toBe(2);
       const results = await trx.selectFrom("triage_results").select("id").where("email_id", "=", mail).execute();
       expect(results).toHaveLength(0);
-      expect(logLines("triage_error save failed")).toHaveLength(0);
-      expect(logLines("failed:")).toHaveLength(1);
+      expect(logLines("triage_error_save_failed")).toHaveLength(0);
+      expect(logLines("triage_mailbox_failed")).toHaveLength(1);
       expect(errorSpy.mock.calls.flat().join(" ")).not.toContain("MARKER-");
     });
   });
@@ -793,7 +798,7 @@ describe("createTriageJob: daily cap", () => {
   function capLines(): string[] {
     return errorSpy.mock.calls
       .map((call: unknown[]) => String(call[1]))
-      .filter((line: string) => line.includes("daily LLM cap reached for mailbox"));
+      .filter((line: string) => line.startsWith("llm_daily_cap_reached"));
   }
 
   test("at the cap two runs log one warn line; a blocklist mail in the batch is triaged", async () => {
@@ -854,7 +859,7 @@ describe("createTriageJob: daily cap", () => {
       const lines = capLines();
       expect(lines).toHaveLength(1);
       expect(lines[0]).toBe(
-        `daily LLM cap reached for mailbox ${mailboxId}: 2 calls since ${dayStart.toISOString()} (America/Los_Angeles day); mail waits until 2026-11-06T08:00:00.000Z`
+        `llm_daily_cap_reached org_id=${ctx.orgId} mailbox_id=${mailboxId} count=2 day_start=${dayStart.toISOString()} until=2026-11-06T08:00:00.000Z`
       );
     });
   });
