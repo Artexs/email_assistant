@@ -143,6 +143,19 @@ describe("open loops in a data request", () => {
     expect((await match(w.orgId, w.person)).mentions).toEqual({});
   });
 
+  test("2b: a short address makes the scrubbed subject longer: it is cut to the 300 characters of the CHECK", async () => {
+    const w = await seedWorld();
+    const person = "a@b.co";
+    const subject = `${"x".repeat(293)} ${person}`;
+    expect(subject).toHaveLength(300);
+    const loop = await seedLoop(w, { counterpart: person, to_addresses: [person], subject });
+    const result = await erase(w, person);
+    expect(result.kind).toBe("erased");
+    const row = await loopRow(loop);
+    expect(row.subject).not.toContain(person);
+    expect(row.subject?.length).toBe(300);
+  });
+
   test("3: a loop outlives the sent mail that the erase deletes, with no address of the person", async () => {
     const w = await seedWorld();
     const sentId = await db
