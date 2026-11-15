@@ -782,6 +782,7 @@ export const pl: Record<TextKey, string> = {
   appr_title_delegation: "Zlecenie: {to}",
   appr_title_clarification: "Pytanie do nadawcy: {to}",
   appr_title_reminder: "Przypomnienie: {to}",
+  appr_title_follow_up: "Przypomnienie o odpowiedzi: {to}",
   appr_inactive: "(nieaktywny wykonawca)",
   appr_test_mail: "Wiadomość testowa",
   appr_from: "Od",

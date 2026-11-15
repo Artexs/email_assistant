@@ -85,6 +85,8 @@ export function renderApprovalRequest(
   const address = cutText(view.recipient.address, FIELD_MAX_CHARS);
   const name = view.recipient.name === null ? "" : cutText(view.recipient.name, FIELD_MAX_CHARS);
   const nameText = name === "" ? "" : `${name}${view.recipientInactive ? ` ${t.inactive}` : ""} `;
+  // The card of a follow-up comes with open loops stage 11. Until then it does not render: no wrong title goes out.
+  if (view.kind === "follow_up") throw new RangeError("the approval card of a follow-up is not built yet");
   let title = t.title.delegation(`${nameText}${address}`);
   if (view.kind === "clarification") title = t.title.clarification(address);
   if (view.kind === "reminder") title = t.title.reminder(`${nameText}${address}`);
@@ -273,7 +275,7 @@ export function renderSendResult(
   const t = texts.approvals;
   const to = recipientLabel(recipient);
   const subject = cleanSubject(input.subject, texts);
-  const closing = sendKind === "clarification" ? "" : t.closings[sendKind];
+  const closing = sendKind === "clarification" || sendKind === "follow_up" ? "" : t.closings[sendKind];
   const sendAgain: OutMessage["buttons"] = [
     [{ text: t.buttons.sendAgain, data: encodeCallback({ kind: "send_again", actionId }) }],
   ];

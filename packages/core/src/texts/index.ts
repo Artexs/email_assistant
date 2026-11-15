@@ -10,6 +10,7 @@ import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
 import { digestTexts, type DigestTexts } from "./digest";
+import { followUpTexts, type FollowUpTexts } from "./follow-up";
 import { noticeTexts, type NoticeTexts } from "./notices";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { suspiciousTexts, type SuspiciousTexts } from "./suspicious";
@@ -28,6 +29,7 @@ export type {
   ClockTexts,
   CommonTexts,
   DigestTexts,
+  FollowUpTexts,
   NoticeTexts,
   ReviewTexts,
   SuspiciousTexts,
@@ -47,6 +49,7 @@ export interface CoreTexts {
   approvals: ApprovalTexts;
   review: ReviewTexts;
   digest: DigestTexts;
+  followUp: FollowUpTexts;
   suspicious: SuspiciousTexts;
   bot: BotTexts;
 }
@@ -65,6 +68,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.en,
     review: reviewTexts.en,
     digest: digestTexts.en,
+    followUp: followUpTexts.en,
     suspicious: suspiciousTexts.en,
     bot: botTexts.en,
   },
@@ -81,6 +85,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
     digest: digestTexts.pl,
+    followUp: followUpTexts.pl,
     suspicious: suspiciousTexts.pl,
     bot: botTexts.pl,
   },

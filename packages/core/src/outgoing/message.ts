@@ -2,7 +2,7 @@ import { cutText } from "../digest/text";
 import type { DraftPayload } from "../triage/payloads";
 import { markUntrustedText } from "../triage/untrusted-text";
 
-import { cleanFromAddress, formatDateLabel, quoteOriginal } from "./quote";
+import { cleanFromAddress, formatDateLabel, formatSentDate, quoteOriginal, quoteSent } from "./quote";
 import { renderTemplate } from "./templates";
 
 export interface OutgoingAddress {
@@ -15,6 +15,7 @@ export interface OutgoingMessage {
   date: Date;
   from: OutgoingAddress;
   to: OutgoingAddress[];
+  cc: OutgoingAddress[];
   subject: string;
   text: string; // parts.body + "\n\n" + parts.quote (when a quote exists)
   inReplyTo: string | null;
@@ -55,7 +56,7 @@ export function outgoingSubject(kind: DraftPayload["kind"], originalSubject: str
   if (kind === "delegation") {
     return lower.startsWith("fwd:") || lower.startsWith("fw:") ? subject : `Fwd: ${subject}`;
   }
-  if (kind === "clarification") {
+  if (kind === "clarification" || kind === "follow_up") {
     return lower.startsWith("re:") || lower.startsWith("odp:") ? subject : `Re: ${subject}`;
   }
   return `Re: ${outgoingSubject("delegation", originalSubject)}`;
@@ -67,35 +68,49 @@ function oneLine(text: string): string {
   return cutText(markUntrustedText(cutText(text, Infinity)), Infinity);
 }
 
+// The References of a follow-up: the thread of the own mail, then its Message-ID, at most the last 20 ids.
+export const FOLLOW_UP_REFERENCES_MAX = 20;
+
 function uniqueIds(ids: (string | null)[]): string[] {
   return [...new Set(ids.filter((id): id is string => id !== null && id !== ""))];
 }
 
 export function buildOutgoingMessage(input: BuildInput): OutgoingMessage {
   const { draft, draftActionId, createdAt, mailbox, owner, organization, original } = input;
-  const recipient = draft.to[0];
-  if (recipient === undefined) throw new Error("draft has no recipient");
+  const recipients = draft.to;
+  if (recipients[0] === undefined) throw new Error("draft has no recipient");
   const styleText = organization.styleText?.trim() ?? "";
   const signature = styleText === "" ? owner.displayName : styleText;
   const dueDate = "due_date" in draft && draft.due_date !== "" ? draft.due_date : null;
   const editedBody = "body_text" in draft ? draft.body_text : undefined;
   const editedSubject = "subject_text" in draft ? draft.subject_text : undefined;
+  const followUp = draft.kind === "follow_up" ? draft : null;
   const body =
     editedBody ??
     renderTemplate(draft.kind, draft.language, {
       task: "task" in draft ? oneLine(draft.task) : undefined,
       question: "question" in draft ? oneLine(draft.question) : undefined,
       dueDate,
+      ...(followUp === null ? {} : { subject: cutText(followUp.subject, 200), followUpNumber: followUp.n }),
       senderLabel: cleanFromAddress(original.fromAddress),
-      dateLabel: formatDateLabel(original.receivedAt, organization.timezone, draft.language),
+      dateLabel:
+        followUp === null
+          ? formatDateLabel(original.receivedAt, organization.timezone, draft.language)
+          : formatSentDate(new Date(followUp.sent_at), organization.timezone, draft.language),
       signature,
     });
-  const quote = draft.kind === "reminder" ? null : quoteOriginal(original, draft.language, organization.timezone);
+  let quote: string | null;
+  if (followUp !== null) {
+    quote = quoteSent(followUp.quote, new Date(followUp.sent_at), draft.language, organization.timezone);
+  } else {
+    quote = draft.kind === "reminder" ? null : quoteOriginal(original, draft.language, organization.timezone);
+  }
 
   const chain = uniqueIds([...original.references, original.messageId]);
   let inReplyTo: string | null = null;
   let references = chain;
-  if (draft.kind === "clarification") inReplyTo = original.messageId;
+  if (draft.kind === "clarification" || draft.kind === "follow_up") inReplyTo = original.messageId;
+  if (draft.kind === "follow_up") references = chain.slice(-FOLLOW_UP_REFERENCES_MAX);
   if (draft.kind === "reminder") {
     inReplyTo = draft.thread.in_reply_to;
     references = draft.thread.references;
@@ -105,8 +120,9 @@ export function buildOutgoingMessage(input: BuildInput): OutgoingMessage {
     messageId: outgoingMessageId(draftActionId, mailbox.address),
     date: createdAt,
     from: { name: owner.displayName, address: mailbox.address },
-    to: [{ name: "delegate_name" in draft ? draft.delegate_name : null, address: recipient }],
-    subject: editedSubject ?? outgoingSubject(draft.kind, original.subject),
+    to: recipients.map((address) => ({ name: "delegate_name" in draft ? draft.delegate_name : null, address })),
+    cc: "cc" in draft ? draft.cc.map((address) => ({ name: null, address })) : [],
+    subject: editedSubject ?? outgoingSubject(draft.kind, followUp === null ? original.subject : followUp.subject),
     text: quote === null ? body : `${body}\n\n${quote}`,
     inReplyTo,
     references,

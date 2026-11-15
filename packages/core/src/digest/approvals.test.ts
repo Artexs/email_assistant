@@ -413,6 +413,7 @@ const closings: Record<SendKind, string> = {
   delegation: "The delegation was cancelled.",
   clarification: "",
   reminder: "The delegation stays open.",
+  follow_up: "",
 };
 const recipient = { name: "Anna Nowak", address: "anna@example.com" };
 

@@ -1,5 +1,6 @@
 import { formatDay, localDateTime } from "../digest/local-time";
 import { cutText } from "../digest/text";
+import { textTables } from "../texts";
 
 import type { OriginalMail } from "./message";
 
@@ -59,4 +60,28 @@ export function quoteCut(quote: string, max: number = QUOTE_PREVIEW_CHARS): { te
   const head = points.slice(0, max).join("");
   const lineEnd = head.lastIndexOf("\n");
   return { text: lineEnd > 0 ? head.slice(0, lineEnd) : head, cut: true };
+}
+
+const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+// The day of an own mail in a follow-up: pl `10.11.2026`, en `10 Nov 2026`, in the time zone of the organization.
+// A fixed table gives the month: the ICU short name of September differs between versions.
+export function formatSentDate(at: Date, timezone: string, language: "pl" | "en"): string {
+  const { date } = localDateTime(at, timezone);
+  const [year = "", month = "", day = ""] = date.split("-");
+  if (language === "pl") return `${day}.${month}.${year}`;
+  return `${Number(day)} ${EN_MONTHS[Number(month) - 1] ?? ""} ${year}`;
+}
+
+// The quote block of a follow-up: the own sent mail, cut as the other quotes are. null (no text left) gives no block.
+export function quoteSent(quote: string | null, sentAt: Date, language: "pl" | "en", timezone: string): string | null {
+  if (quote === null) return null;
+  const normalized = quote.replace(/\r\n?/g, "\n");
+  const points = Array.from(normalized);
+  const body = points.length > QUOTE_MAX_CHARS ? `${points.slice(0, QUOTE_MAX_CHARS).join("")} […]` : normalized;
+  const quoted = body
+    .split("\n")
+    .map((line) => `> ${line}`)
+    .join("\n");
+  return `${textTables[language].followUp.quoteHeader(formatSentDate(sentAt, timezone, language))}\n${quoted}`;
 }
