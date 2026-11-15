@@ -1,4 +1,4 @@
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { DB, Db } from "../../../platform/db";
 
@@ -76,6 +76,27 @@ export async function isPasswordSignInRefused(db: Db | Transaction<DB>, userId: 
     .where((eb) =>
       eb.not(eb.and([eb("memberships.break_glass", "=", true), eb("users.two_factor_enabled", "=", true)]))
     )
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
+// True when one provider has a proved domain and its organization has the flag on: the row of `org_features` wins over
+// `defaultOn`. No TenantContext and no tenant scope: the public sign-in page asks, with no session (RLS shows every row,
+// like `isBreakGlassOwner`). One query whatever the data is. The caller applies the kill list first.
+export async function existsProvedSsoProviderWithFlagOn(
+  db: Db | Transaction<DB>,
+  flag: string,
+  defaultOn: boolean
+): Promise<boolean> {
+  const row = await db
+    .selectFrom("sso_providers")
+    .leftJoin("org_features", (join) =>
+      join.onRef("org_features.org_id", "=", "sso_providers.org_id").on("org_features.flag", "=", flag)
+    )
+    .select("sso_providers.id")
+    .where("sso_providers.domain_verified", "=", true)
+    .where(sql<boolean>`coalesce(org_features.enabled, ${defaultOn})`)
     .limit(1)
     .executeTakeFirst();
   return row !== undefined;

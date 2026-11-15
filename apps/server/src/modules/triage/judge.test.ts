@@ -87,11 +87,20 @@ describe("judgeDraft", () => {
     const calls: { role: string; promptVersion: string; model?: string }[] = [];
     const llm = {
       modelOf: () => "m",
+      endpointOf: () => "standard",
       async generate(call: { role: string; promptVersion: string; model?: string }) {
         calls.push(call);
         return {
           data: delegationAnswer,
-          usage: { role: "judge", promptVersion: "judge-v1", model: "m", tokensIn: 1, tokensOut: 1, latencyMs: 1 },
+          usage: {
+            role: "judge",
+            promptVersion: "judge-v1",
+            model: "m",
+            tokensIn: 1,
+            tokensOut: 1,
+            latencyMs: 1,
+            endpoint: "standard",
+          },
         };
       },
     };

@@ -204,6 +204,7 @@ describe("operator detail and notices (F099 stage 08)", () => {
     const body = operatorOrgDetailSchema.parse(await res.json());
     expect(body.mailboxes).toEqual([]);
     expect(body.lastRuns).toEqual({ sync: null, triage: null, digest: null, send: null, notice: null });
+    expect(body.sso).toBeNull();
   });
 
   test("6. an id that is not a UUID and an unknown UUID answer 404 not_found", async () => {
@@ -263,6 +264,82 @@ describe("operator detail and notices (F099 stage 08)", () => {
       for (const forbidden of ["Web org", "Web other org", "@x.test", "Owner", "Assistant"]) {
         expect({ path, forbidden, found: text.includes(forbidden) }).toEqual({ path, forbidden, found: false });
       }
+    }
+  });
+
+  test("9. F119: org A with a proved provider shows the sso object, org B without a provider shows null; no issuer, client id or secret", async () => {
+    await db
+      .insertInto("sso_providers")
+      .values({
+        provider_id: org.orgId,
+        org_id: org.orgId,
+        issuer: "https://login.idp-issuer.test/tenant-guid",
+        domain: "x.test",
+        domain_verified: true,
+        domain_proof: "dns",
+        oidc_config: JSON.stringify({ clientId: "client-id-canary", clientSecret: "client-secret-canary" }),
+      })
+      .execute();
+    // One linked member (Ann: the assistant) and a break-glass owner with TOTP on (Olaf: the owner).
+    await db
+      .insertInto("auth_accounts")
+      .values({ account_id: "idp-subject-ann", provider_id: org.orgId, user_id: org.assistantId })
+      .execute();
+    await db
+      .updateTable("memberships")
+      .set({ break_glass: true })
+      .where("org_id", "=", org.orgId)
+      .where("user_id", "=", org.ownerId)
+      .execute();
+    await db.updateTable("users").set({ two_factor_enabled: true }).where("id", "=", org.ownerId).execute();
+    try {
+      const resA = await app().request(`/api/operator/orgs/${org.orgId}`, as("assistant"));
+      const textA = await resA.text();
+      const a = operatorOrgDetailSchema.parse(JSON.parse(textA));
+      expect(a.sso).toEqual({
+        domain: "x.test",
+        proof: "dns",
+        required: false,
+        linkedMembers: 1,
+        breakGlassReady: true,
+      });
+      for (const forbidden of [
+        "issuer",
+        "clientId",
+        "clientSecret",
+        "client-id-canary",
+        "client-secret-canary",
+        "idp-issuer",
+        "idp-subject-ann",
+        org.ownerId,
+        org.assistantId,
+      ]) {
+        expect({ forbidden, found: textA.includes(forbidden) }).toEqual({ forbidden, found: false });
+      }
+
+      const resB = await app().request(`/api/operator/orgs/${org.otherOrgId}`, as("assistant"));
+      expect(operatorOrgDetailSchema.parse(await resB.json()).sso).toBeNull();
+
+      // The state follows the rows: required on, attested proof, TOTP off.
+      await db.updateTable("organizations").set({ sso_required: true }).where("id", "=", org.orgId).execute();
+      await db.updateTable("sso_providers").set({ domain_proof: "attested" }).where("org_id", "=", org.orgId).execute();
+      await db.updateTable("users").set({ two_factor_enabled: false }).where("id", "=", org.ownerId).execute();
+      const again = operatorOrgDetailSchema.parse(
+        await (await app().request(`/api/operator/orgs/${org.orgId}`, as("assistant"))).json()
+      );
+      expect(again.sso).toEqual({
+        domain: "x.test",
+        proof: "attested",
+        required: true,
+        linkedMembers: 1,
+        breakGlassReady: false,
+      });
+    } finally {
+      await db.deleteFrom("auth_accounts").where("provider_id", "=", org.orgId).execute();
+      await db.deleteFrom("sso_providers").where("org_id", "=", org.orgId).execute();
+      await db.updateTable("organizations").set({ sso_required: false }).where("id", "=", org.orgId).execute();
+      await db.updateTable("memberships").set({ break_glass: false }).where("org_id", "=", org.orgId).execute();
+      await db.updateTable("users").set({ two_factor_enabled: false }).where("id", "=", org.ownerId).execute();
     }
   });
 });

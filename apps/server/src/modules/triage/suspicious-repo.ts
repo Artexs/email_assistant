@@ -1,3 +1,4 @@
+import type { SuspiciousReason } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -63,4 +64,56 @@ export async function listNewestFromNames(
     ORDER BY e.from_address_lower, e.received_at DESC, e.id DESC
   `.execute(db);
   return rows.map((row) => row.from_name);
+}
+
+// The reasons of the newest `triage_results` row of each mail (F109 D5). A mail with no row, or a row with no reason, is absent.
+// It ignores the flag `suspicious_mail`: a caller that blocks a draft blocks it with the flag off too (PD-063 is a safety rule).
+// Readers for follow-ups, reply drafts and unsubscribe call this before they draft or act. The organization comes from `ctx`.
+export async function suspiciousReasonsOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, SuspiciousReason[]>> {
+  const found = new Map<string, SuspiciousReason[]>();
+  if (emailIds.length === 0) return found;
+  const { rows } = await sql<{ email_id: string; suspicious_reasons: SuspiciousReason[] }>`
+    SELECT latest.email_id, latest.suspicious_reasons
+    FROM (
+      SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.suspicious_reasons
+      FROM triage_results tr
+      WHERE tr.org_id = ${ctx.orgId}
+        AND tr.email_id = ANY(${emailIds as string[]}::uuid[])
+      ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
+    ) latest
+    WHERE cardinality(latest.suspicious_reasons) > 0
+  `.execute(db);
+  for (const row of rows) found.set(row.email_id, row.suspicious_reasons);
+  return found;
+}
+
+// The thread keys (of `threadKeys`, in this mailbox) with at least one incoming mail whose newest result has reasons.
+// The rule of a follow-up is per thread (PD-128): one flagged mail blocks the thread, an older flagged row under a clean newest row does not.
+export async function suspiciousThreadKeysOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  threadKeys: readonly string[]
+): Promise<Set<string>> {
+  if (threadKeys.length === 0) return new Set();
+  const { rows } = await sql<{ thread_key: string }>`
+    SELECT DISTINCT e.thread_key
+    FROM emails e
+    JOIN LATERAL (
+      SELECT tr.suspicious_reasons
+      FROM triage_results tr
+      WHERE tr.org_id = e.org_id AND tr.email_id = e.id
+      ORDER BY tr.created_at DESC, tr.id DESC
+      LIMIT 1
+    ) latest ON true
+    WHERE e.org_id = ${ctx.orgId}
+      AND e.mailbox_id = ${mailboxId}
+      AND e.thread_key = ANY(${threadKeys as string[]}::text[])
+      AND cardinality(latest.suspicious_reasons) > 0
+  `.execute(db);
+  return new Set(rows.map((row) => row.thread_key));
 }

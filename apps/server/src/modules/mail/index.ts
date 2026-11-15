@@ -28,6 +28,20 @@ export { checkMailboxHosts, markHostBlocked, type HostCheck } from "./host-statu
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { FLAGS_CHUNK, FLAGS_REFRESH_EVERY_MS, FLAGS_RUN_LIMIT, FLAGS_WINDOW_MS, refreshFlags } from "./flags";
 export { MOVE_CHECK_CHUNK, findUserMoves, type UserMovesDeps, type UserMovesResult } from "./moves";
+export {
+  createMailOAuthClient,
+  createMailOAuthClients,
+  mailOAuthProviders,
+  missingResourceScopes,
+  OAuthGrantError,
+  OAuthSoftError,
+  requiredResourceScopes,
+  type MailOAuthClient,
+  type MailOAuthClients,
+  type MailOAuthProvider,
+  type MailOAuthProviderSpec,
+  type TokenAnswer,
+} from "./oauth";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe-move";
 export { isAllowedRecipient, probeSend, type ProbeSendReport } from "./imap/probe-send";
@@ -79,6 +93,7 @@ export {
   deleteOldOAuthStates,
   clearReturned,
   clearCapturedHeaders,
+  countOrgEmails,
   countSyncTargets,
   countWaiting,
   finishEmail,

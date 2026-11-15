@@ -1,5 +1,8 @@
+import { format } from "node:util";
+
 import { TELEGRAM_CONSENT_VERSION, telegramLinkSchema, telegramStateSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
+import { GrammyError, HttpError } from "grammy";
 import { Hono } from "hono";
 
 import { channelRoutes, consumeLinkToken } from "../../src/modules/channels";
@@ -40,6 +43,7 @@ async function setup(botUsername: (() => Promise<string>) | null = async () => "
   return { org, app };
 }
 
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const VALID = { consentVersion: TELEGRAM_CONSENT_VERSION };
 
 const tokenRows = (orgId: string) =>
@@ -163,6 +167,46 @@ describe("telegram routes", () => {
     });
   });
 
+  test("a failed getMe logs telegram_get_me_failed with the error name, code and method, never the token", async () => {
+    const token = "123456:MARKER-BOT-TOKEN";
+    const failures: [unknown, string][] = [
+      [
+        new GrammyError(
+          `Call to 'getMe' failed! (401: Unauthorized ${token})`,
+          { ok: false, error_code: 401, description: `Unauthorized ${token}` },
+          "getMe",
+          { text: token }
+        ),
+        "error=GrammyError error_code=401 method=getMe",
+      ],
+      [
+        new HttpError(
+          `Network request for 'getMe' failed!`,
+          new Error(`fetch failed: https://api.telegram.org/bot${token}/getMe`)
+        ),
+        "error=HttpError method=getMe",
+      ],
+      [new Error(`down ${token}`), "error=Error"],
+    ];
+    for (const [failure, fields] of failures) {
+      const { app } = await setup(async () => {
+        throw failure;
+      });
+      const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+      let lines: string[] = [];
+      try {
+        const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST", body: VALID }));
+        expect(res.status).toBe(502);
+        lines = errorSpy.mock.calls.map((call) => format(...call));
+      } finally {
+        errorSpy.mockRestore();
+      }
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toMatch(new RegExp(`^\\[channels\\] telegram_get_me_failed request_id=${UUID} ${fields}$`));
+      expect(lines.join("\n")).not.toContain("MARKER");
+    }
+  });
+
   test("the owner of another organization cannot unlink this organization's chat", async () => {
     const { app, org } = await setup();
     const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST", body: VALID }));
@@ -176,7 +220,8 @@ describe("telegram routes", () => {
   });
 
   test("the link flow logs neither the token nor the start parameter", async () => {
-    const { app } = await setup();
+    const { app, org } = await setup();
+    const orgOwnerId = org.ownerId;
     const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     setLogLevel("debug");
@@ -187,13 +232,16 @@ describe("telegram routes", () => {
       token = new URL(telegramLinkSchema.parse(await res.json()).url).searchParams.get("start") ?? "";
       await app.request("/api/channels/telegram", as("owner"));
       await app.request("/api/channels/telegram/link", as("owner", { method: "DELETE" }));
-      lines = [...logSpy.mock.calls, ...errorSpy.mock.calls].map((call) => call.join(" "));
+      lines = [...logSpy.mock.calls, ...errorSpy.mock.calls].map((call) => format(...call));
     } finally {
       logSpy.mockRestore();
       errorSpy.mockRestore();
     }
     expect(token).toHaveLength(43);
-    expect(lines.some((line) => line.includes("web: telegram link made for user"))).toBe(true);
+    expect(lines.filter((line) => line.includes("telegram_link_made"))).toHaveLength(1);
+    expect(lines.find((line) => line.includes("telegram_link_made"))).toMatch(
+      new RegExp(`^\\[channels\\] telegram_link_made request_id=${UUID} user_id=${orgOwnerId}$`)
+    );
     for (const line of lines) {
       expect(line).not.toContain(token);
       expect(line).not.toContain("start=");

@@ -30,7 +30,13 @@ export function createFixedLlmClient(
         rpm: null,
         reasoningEffort: opts.reasoningEffort ?? null,
       },
-      { apiKeyName: "TEST_API_KEY", apiKey: opts.apiKey ?? "MARKER-KEY", rpm: opts.rpm ?? 60_000 }
+      {
+        apiKeyName: "TEST_API_KEY",
+        apiKey: opts.apiKey ?? "MARKER-KEY",
+        rpm: opts.rpm ?? 60_000,
+        baseUrl: null,
+        endpoint: "standard",
+      }
     ),
     providers: { [provider]: { createGenerate: () => generate, classifyError: llmProviders[provider].classifyError } },
     now: opts.now,

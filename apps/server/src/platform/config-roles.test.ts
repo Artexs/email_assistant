@@ -28,7 +28,13 @@ describe("llmRoleTable", () => {
       {
         env: openaiEnv,
         row: { provider: "openai", model: "gpt-6-luna", timeoutMs: 30000, rpm: null, reasoningEffort: "none" },
-        provider: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 },
+        provider: {
+          apiKeyName: "OPENAI_API_KEY",
+          apiKey: "o-key",
+          rpm: 60,
+          baseUrl: "https://api.openai.com/v1",
+          endpoint: "standard",
+        },
       },
       {
         env: {
@@ -39,7 +45,13 @@ describe("llmRoleTable", () => {
           OPENAI_MODEL_CLASSIFIER: "m-1",
         },
         row: { provider: "openai", model: "m-1", timeoutMs: 20000, rpm: null, reasoningEffort: "low" },
-        provider: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 30 },
+        provider: {
+          apiKeyName: "OPENAI_API_KEY",
+          apiKey: "o-key",
+          rpm: 30,
+          baseUrl: "https://api.openai.com/v1",
+          endpoint: "standard",
+        },
       },
       {
         env: {
@@ -50,7 +62,7 @@ describe("llmRoleTable", () => {
           GEMINI_RPM: "7",
         },
         row: { provider: "gemini", model: "g-1", timeoutMs: 30000, rpm: null, reasoningEffort: null },
-        provider: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 7 },
+        provider: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 7, baseUrl: null, endpoint: "standard" },
       },
     ];
     for (const { env, row, provider } of cases) {

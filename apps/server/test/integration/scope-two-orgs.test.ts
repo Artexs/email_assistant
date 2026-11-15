@@ -81,6 +81,7 @@ function fakeLlm(): FakeLlm {
   const prompts: string[] = [];
   return {
     modelOf: () => "fake-model",
+    endpointOf: () => "standard",
     prompts,
     async generate(req) {
       prompts.push(req.prompt);
@@ -93,6 +94,7 @@ function fakeLlm(): FakeLlm {
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 300,
+          endpoint: "standard",
         },
       };
     },

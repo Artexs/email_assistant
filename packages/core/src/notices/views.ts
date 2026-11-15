@@ -6,6 +6,7 @@ import type { ApprovalView } from "../outgoing/sender";
 import { sendLimitKinds } from "../send-limits";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
+import { suspiciousReasons } from "../triage/suspicious";
 import { weekStatsSchema } from "../web/stats";
 
 import type { NoticeKind } from "./kinds";
@@ -102,6 +103,8 @@ const urgentView = z.strictObject({
   actions: z.array(wouldDoActionSchema),
   delegateNames: z.record(z.string(), z.string()),
   stayFolder: text,
+  // Optional on read: a view queued before F109 has no field.
+  suspicious: z.array(z.enum(suspiciousReasons)).optional(),
   now: isoDate,
   timeZone,
 });
