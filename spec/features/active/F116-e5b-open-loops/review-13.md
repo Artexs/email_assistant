@@ -8,3 +8,7 @@ Carry-over (not done here):
 - N2 (a false close, owner question): a reply from an alias of the user (not a mailbox address) closes the loop. The plan defines own addresses as the org's mailbox addresses only. Idea without a new table: count as own every From address seen in the mailbox's own Sent rows. Decide in stage 14 or ask the owner.
 - N6: a reply that arrives during the SMTP call falls before the new `wait_from_at` and is not counted (very small window).
 - Stage 11/14: the card edit on expiry.
+
+## Update from stage 14 (worker)
+
+N2 is done in stage 14: own addresses are the mailbox addresses of the organization and every From address of the Sent rows of the mailbox (`ownAddressesOf(db, ctx, mailboxId)` in `loops/match.ts`; tests `loops-match-aliases.test.ts`). It fits the stage: no new table, one read per run, and a wrong entry only hides a reply. N6 (the SMTP window) stays open.

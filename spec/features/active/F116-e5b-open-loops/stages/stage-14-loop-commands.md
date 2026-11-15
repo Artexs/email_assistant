@@ -54,3 +54,29 @@ The chaser (15), Telegram and routes (19, 20).
 - A follow-up that is `failed` has no "Send again" and no "It went out"; the failure notice is fixed text (`action_failed` with the panel link). A new follow-up is drafted from the loop: decide in `draftFollowUp` whether a `failed` follow-up counts as "waiting" (it does not: only `awaiting_approval` and `approved` sends do).
 - The writer sets draft and send payloads with `to` and `cc` from the loop only, no `set_id` (`sendPayloadSchema` refuses it), and a subject without CR/LF. A panel edit keeps `to`, `cc`, `quote` and `n`.
 - Full list: `notes/2026-11-15-f116-stage-11-follow-up-cards.md`.
+
+## Built in stage 14 (worker, 2026-11-15)
+
+Full note, with the obligation list and the evidence: `notes/2026-11-15-f116-stage-14-loop-commands.md`.
+
+- `apps/server/src/modules/loops/follow-up-draft.ts` (`draftFollowUp`) and `loop-commands.ts` (`laterLoop`, `doneLoop`, `dropLoop`, `reopenLoop`, `untrackLoop`). The repo functions are now `setLoopLater` and `reopenLoopRow` (stage 08 carry-over: the commands own the plain names).
+- The writer rules of the stage 10 carry-over are met in `draftFollowUp`: the subject has one line (`oneLineSubject`), a `delegated` loop writes to the counterpart only, no `set_id`.
+- `createPlannedForLoop` (module `actions`) plans the pair with `loop_id` and no `email_id`.
+- New audit event `loop.would_draft`; the audit rows of the commands carry `via`. New log fields `loop_id` (UUID) and `via` (code).
+- Stage 13 review N2 (an alias of the user closes a loop): done. `ownAddressesOf(db, ctx, mailboxId)` adds every From address of the Sent rows of the mailbox (newest 100, lower case, trimmed) to the mailbox addresses; `matchReplies` and `isOpen` use it. A wrong alias can only hide a reply (the safe direction).
+
+### Decisions taken (defaults, no owner input)
+
+- `reopenLoop` sets `wait_from_at` to now. Without it, a reply that closed the loop (`replied`) closes it again at the next `loops.match` run, so Reopen would do nothing. The due date, `later_count` and `follow_ups_sent` stay (as stage 08 says).
+- `reopenLoop` answers `not_allowed` while "Track my sent mail" is off: nothing would close or restart an open loop. It also refuses `close_reason = sent_off` on its own, not only through `texts_cleared_at`.
+- With the flag `open_loops` off, `doneLoop`, `dropLoop`, `untrackLoop` and `reopenLoop` answer `not_found` (the type of `interfaces.md` has no `feature_off` for them); `draftFollowUp` and `laterLoop` answer `feature_off`.
+- A loop whose recipients the draft schema refuses (none left after a DSR erase, a hidden character, a display name) gives `not_allowed` from `draftFollowUp`, with no row. The match job closes an empty-recipient loop `dropped` within 2 minutes.
+- A `failed` follow-up does not count as waiting (carry-over of stage 11), also when its outcome is unknown; the user sees a new card and decides.
+- `k` of the keys counts every follow-up send of the loop with the same `n`, not only the `rejected`, `expired` and `failed` ones (a superset; at that point none waits).
+
+### Carry-over for later stages
+
+- Stage 15 (chaser): `draftFollowUp` needs an owner user and writes `action.planned` rows with that user as actor. The chaser has no user: it needs its own caller of the same planning code (`judge`, `draftOf`, `createPlannedForLoop` in `follow-up-draft.ts`; actor `system`), or a `system` variant of the command. Decide there; the keys and the rules of this stage stay the same.
+- Stage 19 and 20: the commands answer with the kinds of `interfaces.md`; `laterLoop` has `closed` and `feature_off` too. `reopenLoop` can answer `not_allowed` for a loop that the list still shows as closed (`sent_off`, tracking off): the card or route needs one text for it.
+- Stage 21: the Reopen button should be hidden for `sent_off` loops and while Sent tracking is off.
+- Docs (stage 24): `docs/capabilities/sent-mail.md` rule 21 describes the commands; rule 20 now names the alias rule.
