@@ -26,10 +26,11 @@ import {
   type SentMode,
   type SentOrigin,
 } from "./sent-rules";
+import { fetchSentTexts, type SentTextResult } from "./sent-texts";
 import { fetchSince } from "./sync";
 import { filterAboveCursor } from "./sync-rules";
 
-// The header pass of the Sent read. It takes a `SentFolderReader`: the type has no write method, so the pass cannot change the folder.
+// The Sent read: the header pass, then the text step (`sent-texts.ts`). It takes a `SentFolderReader`: the type has no write method, so the pass cannot change the folder.
 // It writes no log line, and an error text holds no path, subject or address.
 
 export interface SentSyncDeps {
@@ -189,4 +190,33 @@ export async function syncSentHeaders(
     throw error;
   }
   return finish("done", null);
+}
+
+export interface SentPassResult extends SentHeaderResult {
+  texts: SentTextResult;
+}
+
+// The header step, then (when it ended `done`) the text step for the folder and numbering that the header step left in the state row.
+// The header step has released its locks before the first mail server call of the text step.
+export async function syncSentFolder(
+  deps: SentSyncDeps,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<SentPassResult> {
+  const header = await syncSentHeaders(deps, ctx, mailboxId);
+  const texts: SentTextResult = { stored: 0, gone: 0, expired: 0 };
+  if (header.status !== "done") return { ...header, texts };
+
+  const state = await getSentSyncState(deps.db, ctx, mailboxId);
+  if (state === undefined || !state.enabled || state.path === null || state.uidValidity === null) {
+    return { ...header, texts };
+  }
+  const organization = await getOrganization(deps.db, ctx);
+  if (organization === undefined) throw new HardError("organization not found");
+  const done = await fetchSentTexts(deps, ctx, mailboxId, {
+    path: state.path,
+    uidValidity: state.uidValidity,
+    textWindowMs: sentTextWindowMs(organization.data_retention_days),
+  });
+  return { ...header, texts: done };
 }

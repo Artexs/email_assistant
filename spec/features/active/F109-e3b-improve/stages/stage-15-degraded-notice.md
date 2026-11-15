@@ -6,7 +6,7 @@ Part of [`../plan.md`](../plan.md). Decisions P6, P8, D17. Needs stage 02 (outbo
 
 **Goal.** While the LLM is paused, each linked member learns that mail from a VIP or whitelisted sender waits, with the sender address only.
 
-**Files.** New `apps/server/src/modules/channels/notices/not-triaged.ts` (a detector in the notice registry, like `weekly-report.ts`); the view and renderer in core next to the other notice renderers; flag `degraded_notice` in `packages/core/src/features.ts` (default off, epic `E3b`, remove-by `2027-03-01`, description "During an AI pause, mail from VIP and whitelisted senders gets a 'not triaged yet' notice.").
+**Files.** Add `not_triaged` to core `noticeKinds` in the same commit as the writer, and remove `KINDS_BEFORE_THEIR_RENDERER` from `telegram-schema.test.ts` (stage 02 exception). Else `claimDueOutbox` (`noticeKindSchema.parse`) throws and poisons the batch (review N2). New `apps/server/src/modules/channels/notices/not-triaged.ts` (a detector in the notice registry, like `weekly-report.ts`); the view and renderer in core next to the other notice renderers; flag `degraded_notice` in `packages/core/src/features.ts` (default off, epic `E3b`, remove-by `2027-03-01`, description "During an AI pause, mail from VIP and whitelisted senders gets a 'not triaged yet' notice.").
 
 **Decisions (D17).**
 
@@ -17,8 +17,8 @@ Part of [`../plan.md`](../plan.md). Decisions P6, P8, D17. Needs stage 02 (outbo
 - Recipients: the members who get urgent notices for that mailbox (same rule as `urgent.ts`).
 - View: `{ emailId, mailboxId, sender }`, `sender` = the `from_address`. No subject, display name, body or summary (P6).
 - Texts: en `📭 Mail from <sender> is not triaged yet: the AI service is paused. It is triaged when the service is back.`; pl `📭 Wiadomość od <sender> nie jest jeszcze posortowana: usługa AI ma przerwę. Zostanie posortowana, gdy usługa wróci.` The sender goes through the chat-safe text helper.
-- After the pause the mail is triaged as today; an `urgent` result sends its urgent notice as today. No "back" message.
-- Log: one `info` line per run with the count of queued rows; no address.
+- After the pause the mail is triaged and notified as today. No "back" message.
+- Log: one `info` line per run, count only.
 
 **Test (integration, fixed clock 2027-01-15 10:00 `Europe/Warsaw`).**
 

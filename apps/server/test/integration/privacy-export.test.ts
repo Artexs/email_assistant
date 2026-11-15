@@ -243,6 +243,18 @@ describe("exportOrganization", () => {
     const a = await seedOrg(shared.id);
     const b = await seedOrg(shared.id);
     const path = outPath();
+    // F109 stage 02: the urgency profile and the stored reason codes go out with their rows.
+    const profile = { topics: [{ label: "audit", keywords: ["tax"] }], deadlines: [] };
+    await db
+      .updateTable("mailbox_settings")
+      .set({ urgency_profile: JSON.stringify(profile) })
+      .where("org_id", "=", a.orgId)
+      .execute();
+    await db
+      .updateTable("triage_results")
+      .set({ suspicious_reasons: ["auth_fail"] })
+      .where("org_id", "=", a.orgId)
+      .execute();
     const expected: Record<string, number> = {};
     for (const name of exportedNames) expected[name] = await dbCount(name, a.orgId);
     // Every table that the seed fills has a row in B too, so a filter that lets B in shows as extra rows.
@@ -274,6 +286,12 @@ describe("exportOrganization", () => {
       expect({ name, orgs: [...orgs] }).toEqual({ name, orgs: [a.orgId] });
     }
     expect((tables.organizations ?? []).map((row) => row.id)).toEqual([a.orgId]);
+    expect((tables.mailbox_settings ?? []).map((row) => row.urgency_profile)).toEqual(
+      (tables.mailbox_settings ?? []).map(() => profile)
+    );
+    expect(tables.triage_results?.map((row) => row.suspicious_reasons)).toEqual(
+      (tables.triage_results ?? []).map(() => ["auth_fail"])
+    );
     // Users: the two members of A and the shared user; the shared user only through the membership row of A.
     expect(tables.users?.map((row) => row.id).sort()).toEqual([a.ownerId, a.memberId, shared.id].sort());
     expect(tables.memberships).toHaveLength(3);
