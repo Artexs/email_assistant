@@ -477,6 +477,8 @@ async function main(): Promise<number> {
           waitingSendId: ids.waitingSendId,
           heldSendId: ids.heldSendId,
           editSendId: ids.editSendId,
+          closedSendId: ids.closedSendId,
+          raceSendId: ids.raceSendId,
           reminderSendId: ids.reminderSendId,
         };
       }

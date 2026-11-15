@@ -844,7 +844,7 @@ export const pl: Record<TextKey, string> = {
   appr_edit_subject_error: "Temat musi mieć od 1 do {max} znaków.",
   appr_edit_body_error: "Treść musi mieć od 1 do {max} znaków.",
   appr_closed_payload_gone: "Tekst tego szkicu został usunięty. Nie można go edytować.",
-  appr_closed_draft_gone: "Szkic w skrzynce już nie istnieje. Nie można go edytować.",
+  appr_closed_draft_gone: "Treść tego szkicu nie jest już zapisana. Nie można go edytować.",
   appr_closed_delegation_closed: "Zlecenie jest zamknięte. Nie można edytować szkicu.",
   // page titles
   title_onboarding: "Start",

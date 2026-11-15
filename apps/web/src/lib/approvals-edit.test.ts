@@ -213,6 +213,8 @@ describe("the answer map of an edit (T2)", () => {
       expect(pl[key], key).not.toBe("");
       if (key.startsWith("appr_edit") && key !== "appr_edit_count") expect(pl[key], key).not.toBe(en[key]);
     }
+    expect(en.appr_closed_draft_gone).toBe("The text of this draft is no longer stored. It cannot be edited.");
+    expect(pl.appr_closed_draft_gone).toBe("Treść tego szkicu nie jest już zapisana. Nie można go edytować.");
     expect(pl.appr_edit_discard_title).toBe("Porzucić zmiany?");
     expect(pl.appr_edit_keep).toBe("Wróć do edycji");
   });

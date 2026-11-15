@@ -12,6 +12,8 @@ export interface ApprovalsSeedResult {
   waitingSendId: string;
   heldSendId: string;
   editSendId: string;
+  closedSendId: string;
+  raceSendId: string;
   reminderSendId: string;
 }
 
@@ -135,7 +137,9 @@ export async function seedApprovalsRows(
       waitingSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.waiting, 0, now, null, delegates),
       heldSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.held, 1, now, { userId: ownerId }, delegates),
       editSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.edit, 2, now, null, delegates),
-      reminderSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.reminder, 3, now, null, delegates, "reminder"),
+      closedSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.closed, 3, now, null, delegates),
+      raceSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.race, 4, now, null, delegates),
+      reminderSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.reminder, 5, now, null, delegates, "reminder"),
     };
   });
 }

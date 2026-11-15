@@ -192,7 +192,10 @@ test("T7: Reject on the held send asks for a reason; Wrong person is saved; the 
   expect(errors).toEqual([]);
 });
 
-test("S13-T6: a reminder has no Edit button, only Approve and Reject", async ({ context, page }) => {
+test("S13-T6: a reminder has no Edit button; Reject and Skip put the focus on the result line", async ({
+  context,
+  page,
+}) => {
   const errors = await startSession(context, page, org().owner);
   await page.goto(`/approvals?id=${org().reminderSendId}`);
   const detail = detailOf(page);
@@ -205,6 +208,13 @@ test("S13-T6: a reminder has no Edit button, only Approve and Reject", async ({ 
   await expect(detail.getByRole("button", { name: en.appr_approve })).toBeVisible();
   await expect(detail.getByRole("button", { name: en.appr_reject })).toBeVisible();
   await expect(detail.getByRole("button", { name: en.appr_edit })).toHaveCount(0);
+  // Reject it and choose Skip: the select is gone, the focus is on the line of the result.
+  await detail.getByRole("button", { name: en.appr_reject }).click();
+  await expect(statusOf(page, en.appr_done_rejected)).toBeFocused();
+  await detail.getByRole("combobox", { name: en.appr_reason_label }).click();
+  await page.getByRole("option", { name: en.appr_reason_skip }).click();
+  await expect(detail.getByRole("combobox", { name: en.appr_reason_label })).toHaveCount(0);
+  await expect(statusOf(page, en.appr_done_rejected)).toBeFocused();
   expect(errors).toEqual([]);
 });
 
@@ -264,6 +274,8 @@ test("S13-T4: a second browser that edits an old version gets the changed text a
     await expect(editDialog(second.page)).toHaveCount(0);
     await expect(detailOf(second.page)).toContainText(en.appr_version.replace("{n}", "2"));
     await expect(detailOf(second.page)).toContainText("Budget first");
+    // The new version is open and the focus is on the line of the result (not on the Edit button of the old item).
+    await expect(statusOf(second.page, en.appr_changed)).toBeFocused();
     expect(errors).toEqual([]);
   } finally {
     await second.context.close();
@@ -393,6 +405,71 @@ test("S13-T7: the keyboard alone opens a draft, edits it, saves and approves it"
   await expect(result).toBeFocused();
   await expectNoA11yViolations(page);
   expect(errors).toEqual([]);
+});
+
+test("S13-N1: the draft poll does not close an open dialog when another browser replaces the version", async ({
+  browser,
+  context,
+  page,
+}) => {
+  test.skip(project() === "mobile", "the race runs on the desktop project");
+  test.setTimeout(90_000);
+  const errors = await startSession(context, page, org().owner);
+  const second = await secondClient(browser);
+  try {
+    await openEditor(page, org().raceSendId);
+    await subjectBox(page).fill("Race v2");
+    await saveButton(page).click();
+    await expect(page.getByText(savedText(2))).toBeVisible();
+    const version2 = new URL(page.url()).searchParams.get("id") ?? "";
+
+    // Version 2 has no mailbox copy yet, so the page polls it. The second browser opens it and types.
+    await second.page.goto(`/approvals?id=${version2}`);
+    await detailOf(second.page).getByRole("button", { name: en.appr_edit }).click();
+    await subjectBox(second.page).fill("Typed in the second browser");
+
+    // The first browser replaces version 2 by version 3.
+    await detailOf(page).getByRole("button", { name: en.appr_edit }).click();
+    await subjectBox(page).fill("Race v3");
+    await saveButton(page).click();
+    await expect(page.getByText(savedText(3))).toBeVisible();
+
+    // Longer than one poll step (5 s): the dialog stays open with the typed text, and the save answers `changed`.
+    await second.page.waitForTimeout(7_000);
+    await expect(editDialog(second.page)).toHaveCount(1);
+    await expect(subjectBox(second.page)).toHaveValue("Typed in the second browser");
+    await saveButton(second.page).click();
+    await expect(editDialog(second.page).getByText(en.appr_edit_changed)).toBeVisible();
+    await expect(subjectBox(second.page)).toHaveValue("Typed in the second browser");
+    expect(errors).toEqual([]);
+  } finally {
+    await second.context.close();
+  }
+});
+
+test("S13-TG2: a send closed while the dialog is open closes it and the focus is on the result line", async ({
+  browser,
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  const second = await secondClient(browser);
+  try {
+    await openEditor(page, org().closedSendId);
+    await subjectBox(page).fill("Closed case typed");
+    // The second browser rejects the send.
+    await second.page.goto(`/approvals?id=${org().closedSendId}`);
+    await detailOf(second.page).getByRole("button", { name: en.appr_reject }).click();
+    await expect(statusOf(second.page, en.appr_done_rejected)).toBeVisible();
+
+    await saveButton(page).click();
+    await expect(editDialog(page)).toHaveCount(0);
+    await expect(statusOf(page, en.appr_closed_rejected)).toBeVisible();
+    await expect(statusOf(page, en.appr_closed_rejected)).toBeFocused();
+    expect(errors).toEqual([]);
+  } finally {
+    await second.context.close();
+  }
 });
 
 test("S13-T3: edit the subject and the body, see version 2, approve it and see it sent", async ({ context, page }) => {

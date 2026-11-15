@@ -91,15 +91,17 @@ function Approvals() {
   // The list reloads every 30 s while the tab is visible. An item is loaded once per choice and after each action.
   const list = useResource(fetchApprovals);
   // A new version (after an edit) has no copy in the mailbox yet: the detail reloads every 5 s until the draft is ready, so Approve turns on.
+  // The poll stops while the edit dialog is open: a reload must not replace the item under the typed text (a newer version then
+  // answers 409 `changed` on save, and the dialog keeps the text).
   const [preparing, setPreparing] = useState(false);
-  const detail = useResource(() => loadDetail(id), { pollMs: preparing ? PREPARING_POLL_MS : 0 });
+  // The id of the send whose edit dialog is open.
+  const [editing, setEditing] = useState<string | null>(null);
+  const detail = useResource(() => loadDetail(id), { pollMs: preparing && editing === null ? PREPARING_POLL_MS : 0 });
   useReloadOn(id, detail.reload);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
   const [reasonFor, setReasonFor] = useState<{ id: string; saved: boolean } | null>(null);
   const [flight] = useState(singleFlight);
-  // The id of the send whose edit dialog is open.
-  const [editing, setEditing] = useState<string | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const [focusTick, setFocusTick] = useState(0);
@@ -117,10 +119,11 @@ function Approvals() {
 
   // A replaced version shows the newest one in its place (the URL is replaced, so back does not return to the old one).
   useEffect(() => {
-    if (open === null || open.state !== "superseded" || open.currentId === null) return;
+    // While the edit dialog is open the page stays on the item (the typed text is kept; the save answers 409 `changed`).
+    if (editing !== null || open === null || open.state !== "superseded" || open.currentId === null) return;
     setNotice({ tone: "info", key: "appr_superseded" });
     select(open.currentId, "replace");
-  }, [open, select]);
+  }, [open, select, editing]);
 
   // A dialog belongs to one send: another choice closes it.
   useEffect(() => {

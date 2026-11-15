@@ -829,7 +829,7 @@ export const en = {
   appr_edit_subject_error: "The subject needs 1 to {max} characters.",
   appr_edit_body_error: "The body needs 1 to {max} characters.",
   appr_closed_payload_gone: "The text of this draft was removed. It cannot be edited.",
-  appr_closed_draft_gone: "The draft in your mailbox is gone. It cannot be edited.",
+  appr_closed_draft_gone: "The text of this draft is no longer stored. It cannot be edited.",
   appr_closed_delegation_closed: "The delegation is closed. The draft cannot be edited.",
   // page titles
   title_onboarding: "Onboarding",

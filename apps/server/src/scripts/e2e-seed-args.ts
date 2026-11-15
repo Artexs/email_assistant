@@ -103,6 +103,24 @@ export const E2E_APPROVALS = {
     body: "E2E original request: please send the weekly report.",
     task: "Send the weekly report",
   },
+  // A third waiting send for the closed-send test: another browser rejects it while the dialog is open.
+  closed: {
+    delegateName: "Anna Nowak",
+    delegateEmail: E2E_SEND_TEST_ADDRESS,
+    subject: "E2E closed case",
+    from: "boss@example.net",
+    body: "E2E original request: please answer the closed case.",
+    task: "Answer the closed case",
+  },
+  // A fourth waiting send for the poll test: another browser replaces its version while a dialog is open.
+  race: {
+    delegateName: "Anna Nowak",
+    delegateEmail: E2E_SEND_TEST_ADDRESS,
+    subject: "E2E race case",
+    from: "boss@example.net",
+    body: "E2E original request: please answer the race case.",
+    task: "Answer the race case",
+  },
   // A waiting reminder (no Edit button, Q2).
   reminder: {
     delegateName: "Anna Nowak",
@@ -113,10 +131,10 @@ export const E2E_APPROVALS = {
     task: "Finish the open task",
   },
 } as const;
-// The number of sends in the list of an approvals organization at the start: waiting, held, edit and reminder.
-export const E2E_APPROVALS_COUNT = 4;
+// The number of sends in the list of an approvals organization at the start: waiting, held, edit, closed, race and reminder.
+export const E2E_APPROVALS_COUNT = 6;
 // How many of them wait for an approval (the nav badge): all but the held one.
-export const E2E_APPROVALS_WAITING = 3;
+export const E2E_APPROVALS_WAITING = 5;
 
 export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-activity-mobile@x.test",
@@ -164,6 +182,8 @@ export interface SeedFile {
       waitingSendId: string;
       heldSendId: string;
       editSendId: string;
+      closedSendId: string;
+      raceSendId: string;
       reminderSendId: string;
     }
   >;
