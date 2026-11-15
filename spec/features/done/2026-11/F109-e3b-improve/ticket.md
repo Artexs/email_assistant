@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-15
 ---
 
 # F109 · E3b Improve
