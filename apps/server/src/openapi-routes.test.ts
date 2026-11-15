@@ -309,6 +309,38 @@ describe("the real app", () => {
     }
   });
 
+  test("T13. the three delegate routes are described: operation ids, owner only on the writes, the codes of the answers", async () => {
+    const paths = (await openApiSpec(realApp())).paths;
+    type Operation = {
+      operationId?: string;
+      tags?: string[];
+      requestBody?: unknown;
+      responses?: Record<string, { description?: string } | undefined>;
+    };
+    const list = paths?.["/api/delegates"]?.get as Operation;
+    const add = paths?.["/api/delegates"]?.post as Operation;
+    const patch = paths?.["/api/delegates/{id}"]?.patch as Operation;
+    expect([list.operationId, add.operationId, patch.operationId]).toEqual([
+      "listDelegates",
+      "addDelegate",
+      "updateDelegate",
+    ]);
+    for (const operation of [list, add, patch]) {
+      expect(operation.tags).toEqual(["delegates"]);
+      expect(operation.responses?.["404"]?.description).toContain("not_found");
+    }
+    expect(list.requestBody).toBeUndefined();
+    expect(list.responses?.["403"]?.description).not.toContain("owner_only");
+    for (const operation of [add, patch]) {
+      expect(operation.requestBody).toBeDefined();
+      expect(operation.responses?.["403"]?.description).toContain("owner_only");
+    }
+    expect(add.responses?.["201"]).toBeDefined();
+    expect(add.responses?.["409"]?.description).toContain("exists");
+    expect(add.responses?.["400"]?.description).toContain("mailbox_address");
+    expect(patch.responses?.["200"]).toBeDefined();
+  });
+
   test("the middleware entries are no route keys", () => {
     const app = realApp();
     // The app has middleware entries under /api (the guards, the 404 catch-all); none of them is a key.

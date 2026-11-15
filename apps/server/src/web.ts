@@ -15,7 +15,7 @@ import {
   queueMailboxRemovedNotices,
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
-import { delegationHooks } from "./modules/delegation";
+import { delegateRoutes, delegationHooks } from "./modules/delegation";
 import {
   createMailOAuthClients,
   getSentSyncView,
@@ -373,6 +373,7 @@ export function apiRouters(
       "/",
       approvalRoutes({ db, now, sendScope: extras.sendScope, hooks: delegationHooks({ db }), uidplus: uidplusOf(db) })
     );
+    api.route("/", delegateRoutes({ db, now }));
   };
 }
 

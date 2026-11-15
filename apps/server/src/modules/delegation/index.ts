@@ -13,6 +13,7 @@ export {
   type DelegateVia,
   type UpdateDelegateResult,
 } from "./service";
+export { delegateRoutes, type DelegateRouteDeps } from "./routes";
 export {
   bumpReminder,
   clearDelegationTasks,
