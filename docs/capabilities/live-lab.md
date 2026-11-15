@@ -1,6 +1,6 @@
 # Live lab
 
-> Checked against the code at `8a6d2c17`, 2026-11-15.
+> Checked against the code at `b3b827a2`, 2026-11-15.
 
 ## What it does now
 
