@@ -98,6 +98,28 @@ describe("the follow-up card (T1, T2, T3)", () => {
     expect(card(followUp({ version: 3 })).text.split("\n")[1]).toBe("✏️ Version 3, edited in the panel.");
   });
 
+  test("the remains of an escape sequence in the subject and the quote do not show; the body stays the exact mail (review 12, N6)", () => {
+    const body = followUp().body;
+    const message = card(
+      followUp({
+        subject: "Re: [31mOffer Q1[0m",
+        quote: { text: "My message of 10 Nov 2026:\n> [1;31mCan you confirm[0m the date?", cut: false },
+      })
+    );
+    expect(message.text).toContain("Subject: Re: Offer Q1");
+    expect(message.text).toContain("> Can you confirm the date?");
+    expect(message.text).not.toMatch(/\[\d+(;\d+)*m/);
+    expect(message.text).not.toContain("(links hidden");
+    // The same text in the body of a mail that goes out is not changed: the card shows what the committer sends.
+    expect(card(followUp({ body: "Hello [31mred[0m" })).text).toContain("Hello [31mred[0m");
+    expect(body).toContain("Hello");
+    // A delegation card keeps its subject as it was: only the follow-up path changed.
+    const delegation = card(
+      followUp({ kind: "delegation", subject: "[31mraw[0m", to: undefined, cc: undefined, followUpNumber: undefined })
+    );
+    expect(delegation.text).toContain("[31mraw[0m");
+  });
+
   test("the buttons are the single-send callbacks: no set callback", () => {
     const [send, reject] = card(followUp()).buttons[0] ?? [];
     expect(parseCallback(send?.data ?? "")).toEqual({ kind: "approve", actionId: ID });

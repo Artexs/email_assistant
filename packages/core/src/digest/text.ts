@@ -27,3 +27,14 @@ export function senderLabel(from: string | null, texts: CoreTexts): string {
   const clean = from === null ? "" : cutText(from, 40);
   return clean === "" ? texts.common.unknownSender : clean;
 }
+
+// The remains of a terminal color code ("[31m", "[0;1K") that an escape-stripping step left in stored text. Telegram shows plain
+// text, so they cannot format a message, but they look like damage: the loop lines and cards of open loops drop them (F116 review 12, N6).
+// eslint-disable-next-line no-control-regex -- the point is to remove them
+const ESCAPE_REMAINS = /\u001b?\[\d{1,3}(?:;\d{1,3})*[A-Za-z]/g;
+// eslint-disable-next-line no-control-regex -- the point is to remove them
+const OSC_SEQUENCE = /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?/g;
+
+export function withoutEscapeRemains(text: string): string {
+  return text.replace(OSC_SEQUENCE, "").replace(ESCAPE_REMAINS, "");
+}
