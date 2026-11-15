@@ -73,6 +73,8 @@ describe("shiftDatesInText style and edges", () => {
     expect(shift("wersja 1.2.3")).toEqual({ text: "wersja 1.2.3", shifted: 0 });
     expect(shift("192.168.10.20")).toEqual({ text: "192.168.10.20", shifted: 0 });
     expect(shift("godz. 10.30")).toEqual({ text: "godz. 10.30", shifted: 0 });
+    // A two-digit year is not a form of this function; the day and month must not move alone.
+    expect(shift("29.01.27")).toEqual({ text: "29.01.27", shifted: 0 });
   });
 
   test("a date at the end of a sentence moves", () => {
