@@ -364,20 +364,23 @@ describe("committer log events", () => {
       const refused = await captured(() =>
         committerFor(trx, box, { openSender: refusing.openSender, sendScope: { kind: "all" } }).run()
       );
-      expect(refused.entries.map((entry) => entry.event)).toEqual(["action_reversed", "send_failed", "committer_done"]);
-      expect(refused.entries[1]).toEqual({
+      // The reverse row of the first send and the refused send run in one batch; their order is not fixed.
+      expect(refused.entries.map((entry) => entry.event).sort()).toEqual([
+        "action_reversed",
+        "committer_done",
+        "send_failed",
+      ]);
+      expect(refused.entries.find((entry) => entry.event === "send_failed")).toEqual({
         level: "warn",
         event: "send_failed",
         fields: { action_id: second.sendId, reason: "smtp_rejected", send_stage: "envelope", code: 550 },
       });
-      expect(refused.entries.slice(2)).toEqual([
-        {
-          level: "info",
-          event: "committer_done",
-          // `applied` 1: the reverse row that the first send left for its draft.
-          fields: { ...ids, applied: 1, failed: 1, retry: 0, closed: 0, sent: 0 },
-        },
-      ]);
+      expect(refused.entries.at(-1)).toEqual({
+        level: "info",
+        event: "committer_done",
+        // `applied` 1: the reverse row that the first send left for its draft.
+        fields: { ...ids, applied: 1, failed: 1, retry: 0, closed: 0, sent: 0 },
+      });
       const row = await trx
         .selectFrom("actions")
         .select("status")
