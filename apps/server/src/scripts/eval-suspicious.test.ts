@@ -145,6 +145,19 @@ describe("suspicious sim measurement", () => {
   });
 });
 
+describe("eval --suspicious command", () => {
+  test("the real script runs the rules on lab-01 dev with no key and prints the report", () => {
+    const script = resolve(import.meta.dir, "eval.ts");
+    const result = Bun.spawnSync(["bun", script, "--sim", "lab-01", "--part", "dev", "--suspicious"], {
+      env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "" },
+    });
+    expect(result.exitCode).toBe(0);
+    const out = result.stdout.toString();
+    expect(out).toContain("# Suspicious-mail rules: sim lab-01 dev");
+    expect(out).toContain("| phishing recall | >= 90% |");
+  });
+});
+
 describe("holdout report", () => {
   let mini: MiniCorpus | undefined;
   afterEach(() => {
