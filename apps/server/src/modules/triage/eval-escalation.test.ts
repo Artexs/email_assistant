@@ -12,10 +12,11 @@ import {
   LlmSoftError,
 } from "../../platform/llm";
 
+import { EMPTY_EXTRAS } from "./classifier";
 import { parseCaseResults, runEval } from "./eval";
 import { escalationSignalsOfCase, missesOf } from "./eval-escalation";
 import { renderEvalReport } from "./eval-report";
-import { prompts } from "./prompts";
+import { type ClassifierPrompt, classifierVersions, prompts } from "./prompts";
 
 const CLASSIFIER_MODEL = "gpt-6-luna";
 const ESCALATION_MODEL = "gpt-6.1-terra";
@@ -429,20 +430,12 @@ describe("escalation-v1 prompt (stage 12 test 3)", () => {
     };
     const sender = { whitelisted: false, vip: false, noreply: false };
     const allowed = ["urgent", "needs_reply", "info", "notification", "spam", "unsure"] as const;
-    const base = prompts.escalation.base;
-    expect(base).toBe(prompts.classifier.version);
-    expect(sha(prompts.escalation.buildSystem(allowed))).toBe(sha(prompts.classifier.buildSystem(allowed, [])));
+    // The registry names the base; a move of the classifier pointer needs `escalation-v2`.
+    expect(prompts.escalation.base).toBe(prompts.classifier.version);
+    const base: ClassifierPrompt = classifierVersions[prompts.escalation.base];
+    expect(sha(prompts.escalation.buildSystem(allowed))).toBe(sha(base.buildSystem(allowed, [])));
     expect(sha(prompts.escalation.buildUser(email, sender, [], "n".repeat(32)))).toBe(
-      sha(
-        prompts.classifier.buildUser(
-          email,
-          sender,
-          [],
-          "n".repeat(32),
-          { attachments: [], isList: false, senderHistory: null, urgency: null },
-          []
-        )
-      )
+      sha(base.buildUser(email, sender, [], "n".repeat(32), EMPTY_EXTRAS, []))
     );
   });
 });
