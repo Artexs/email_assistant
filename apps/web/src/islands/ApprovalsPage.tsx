@@ -33,6 +33,8 @@ interface Notice {
   n?: number;
 }
 
+const PREPARING_POLL_MS = 5_000;
+
 async function loadDetail(id: string | null) {
   return { id, detail: id === null ? null : await fetchApproval(id) };
 }
@@ -88,7 +90,9 @@ function Approvals() {
   const [id, select] = useSelectedId();
   // The list reloads every 30 s while the tab is visible. An item is loaded once per choice and after each action.
   const list = useResource(fetchApprovals);
-  const detail = useResource(() => loadDetail(id), { pollMs: 0 });
+  // A new version (after an edit) has no copy in the mailbox yet: the detail reloads every 5 s until the draft is ready, so Approve turns on.
+  const [preparing, setPreparing] = useState(false);
+  const detail = useResource(() => loadDetail(id), { pollMs: preparing ? PREPARING_POLL_MS : 0 });
   useReloadOn(id, detail.reload);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
@@ -97,6 +101,7 @@ function Approvals() {
   // The id of the send whose edit dialog is open.
   const [editing, setEditing] = useState<string | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
   const [focusTick, setFocusTick] = useState(0);
   // The effect runs after the commit that removed the pressed button or the dialog, so nothing takes the focus back.
   useEffect(() => {
@@ -107,6 +112,8 @@ function Approvals() {
   // The loaded item counts only for the id that is chosen now.
   const current = detail.data !== null && detail.data.id === id ? detail.data : null;
   const open = current?.detail ?? null;
+  const waitsForDraft = open !== null && open.state === "waiting" && !open.draftReady;
+  useEffect(() => setPreparing(waitsForDraft), [waitsForDraft]);
 
   // A replaced version shows the newest one in its place (the URL is replaced, so back does not return to the old one).
   useEffect(() => {
@@ -308,6 +315,7 @@ function Approvals() {
             busy={busy}
             ownerOnly={me !== null && !owner && (open.state === "waiting" || open.state === "held")}
             canEdit={canEdit(open, { owner, canWrite: canWrite(me) }) && editStart(open) !== null}
+            editRef={editButtonRef}
             onApprove={() => decide(open.id, "approve")}
             onReject={() => decide(open.id, "reject")}
             onEdit={() => setEditing(open.id)}
@@ -316,6 +324,7 @@ function Approvals() {
             <ApprovalEditDialog
               detail={open}
               onClose={() => setEditing(null)}
+              onReturnFocus={() => editButtonRef.current?.focus()}
               onSaved={onEdited}
               onOpenVersion={onOpenVersion}
               onClosedSend={onClosedSend}

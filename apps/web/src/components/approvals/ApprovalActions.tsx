@@ -1,4 +1,5 @@
 import type { RejectReasonBody } from "@ea/core/web";
+import type { Ref } from "react";
 
 import { t } from "../../i18n";
 import { REASON_TEXTS, REJECT_REASONS, type Decisions } from "../../lib/approvals-view";
@@ -17,6 +18,8 @@ export interface ApprovalActionsProps {
   ownerOnly: boolean;
   // An owner may edit a waiting delegation or clarification (`canEdit`).
   canEdit: boolean;
+  // The Edit button, so the page can give the focus back to it when the dialog closes with no change.
+  editRef?: Ref<HTMLButtonElement>;
   onApprove(): void;
   onReject(): void;
   onEdit(): void;
@@ -28,6 +31,7 @@ export function ApprovalActions({
   busy,
   ownerOnly,
   canEdit,
+  editRef,
   onApprove,
   onReject,
   onEdit,
@@ -47,7 +51,7 @@ export function ApprovalActions({
         </Button>
       )}
       {canEdit && (
-        <Button type="button" variant="outline" disabled={busy} onClick={onEdit}>
+        <Button ref={editRef} type="button" variant="outline" disabled={busy} onClick={onEdit}>
           {t("appr_edit")}
         </Button>
       )}

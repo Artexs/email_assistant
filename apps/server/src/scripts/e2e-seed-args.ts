@@ -87,14 +87,36 @@ export const E2E_APPROVALS = {
     task: "Review the budget plan",
   },
   held: {
-    delegateName: "Piotr Kowalski",
+    delegateName: "Piotr Lis",
     delegateEmail: "piotr@example.com",
     subject: "E2E vendor contract",
     from: "vendor@example.net",
     body: "E2E original request: please check the vendor contract.",
     task: "Check the vendor contract",
   },
+  // F102 stage 13: a second waiting send to the first delegate, for the edit that is approved (T3 of the approvals spec).
+  edit: {
+    delegateName: "Anna Nowak",
+    delegateEmail: E2E_SEND_TEST_ADDRESS,
+    subject: "E2E weekly report",
+    from: "boss@example.net",
+    body: "E2E original request: please send the weekly report.",
+    task: "Send the weekly report",
+  },
+  // A waiting reminder (no Edit button, Q2).
+  reminder: {
+    delegateName: "Anna Nowak",
+    delegateEmail: E2E_SEND_TEST_ADDRESS,
+    subject: "E2E open task",
+    from: "boss@example.net",
+    body: "E2E original request: please finish the open task.",
+    task: "Finish the open task",
+  },
 } as const;
+// The number of sends in the list of an approvals organization at the start: waiting, held, edit and reminder.
+export const E2E_APPROVALS_COUNT = 4;
+// How many of them wait for an approval (the nav badge): all but the held one.
+export const E2E_APPROVALS_WAITING = 3;
 
 export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-activity-mobile@x.test",
@@ -141,6 +163,8 @@ export interface SeedFile {
       member: { userId: string; email: string; password: string };
       waitingSendId: string;
       heldSendId: string;
+      editSendId: string;
+      reminderSendId: string;
     }
   >;
 }

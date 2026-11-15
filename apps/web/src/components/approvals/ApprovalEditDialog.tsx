@@ -28,6 +28,8 @@ export interface ApprovalEditDialogProps {
   detail: ApprovalDetail;
   // The dialog closes with no change (cancel, discard).
   onClose(): void;
+  // After a close with no change: the focus goes back to the Edit button (the modal dialog has no trigger of its own to return to).
+  onReturnFocus(): void;
   // The edit made a new version: the page opens it.
   onSaved(answer: ApprovalEditAnswer): void;
   // The newest version of the send: the page opens it (the typed text is gone).
@@ -47,7 +49,14 @@ const IDS = {
 
 // The edit of a waiting draft (F102 P2, D2, D3): subject, body and, for a delegation, the delegate. The form checks the limits of the
 // service; the server check is the real one. The send id is the one that the dialog opened with: a newer version answers 409 `changed`.
-export function ApprovalEditDialog({ detail, onClose, onSaved, onOpenVersion, onClosedSend }: ApprovalEditDialogProps) {
+export function ApprovalEditDialog({
+  detail,
+  onClose,
+  onReturnFocus,
+  onSaved,
+  onOpenVersion,
+  onClosedSend,
+}: ApprovalEditDialogProps) {
   const [start] = useState(() => editStart(detail));
   const [values, setValues] = useState<EditValues>(() => start ?? { subject: "", body: "", delegateId: null });
   const [pending, setPending] = useState(false);
@@ -121,9 +130,10 @@ export function ApprovalEditDialog({ detail, onClose, onSaved, onOpenVersion, on
           event.preventDefault();
           subjectRef.current?.focus();
         }}
-        // After a save or a closed send the page chooses the focus; after a cancel Radix returns it to the Edit button.
+        // After a save or a closed send the page chooses the focus; after a cancel the Edit button gets it back.
         onCloseAutoFocus={(event) => {
-          if (saved.current) event.preventDefault();
+          event.preventDefault();
+          if (!saved.current) onReturnFocus();
         }}
       >
         {confirming ? (
