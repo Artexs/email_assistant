@@ -156,6 +156,14 @@ describe("deploy/backup.sh status file and ping", () => {
     expect(curlCalls()).toEqual([]);
   });
 
+  test("4b. a BACKUP_PING_URL with a trailing slash pings the same URL and <url>/fail with one slash", () => {
+    writeEnv(`BACKUP_PING_URL=${PING_URL}/`);
+    expect(run().code).toBe(0);
+    expect(run({ STUB_RCLONE_FAIL: "1" }).code).not.toBe(0);
+    const urls = curlCalls().map((call) => call.split(" ").at(-1));
+    expect(urls).toEqual([`${PING_URL}/`, `${PING_URL}/fail`]);
+  });
+
   test("5. the file has mode 644 and no .tmp file stays", () => {
     run();
     run({ STUB_RCLONE_FAIL: "1" });
