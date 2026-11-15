@@ -3,9 +3,9 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { getLocale, setLocale, t, useLocale, type TextKey } from "../../i18n";
+import { accountSections } from "../../lib/account-sections";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
-import { canDeleteOrganization } from "../../lib/delete-organization";
 import { errorText } from "../../lib/errors";
 import { saveLocale } from "../../lib/locale-api";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
@@ -32,7 +32,7 @@ function dateFormat(): Intl.DateTimeFormat {
 }
 
 // L21: the member's own live sessions, with a mark on this device. No button ends one session (B3).
-function SessionsList() {
+function SessionsList({ ssoSession }: { ssoSession: boolean }) {
   const { data, error, loading, reload } = useResource(() => api("/api/me/sessions", sessionsSchema));
   return (
     <section data-section="sessions" className="flex flex-col gap-3">
@@ -71,6 +71,7 @@ function SessionsList() {
           ))}
         </ul>
       )}
+      {ssoSession ? <p className="text-muted-foreground text-sm">{t("acct_sso_session")}</p> : null}
     </section>
   );
 }
@@ -115,6 +116,7 @@ function LanguageSelect() {
 
 export function AccountCard() {
   const { me } = useMe();
+  const sections = accountSections(me);
   const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -189,85 +191,96 @@ export function AccountCard() {
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <LanguageSelect />
-        <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="acct-current">{t("acct_current_label")}</Label>
-            <Input
-              id="acct-current"
-              name="current-password"
-              type="password"
-              autoComplete="current-password"
-              value={current}
-              onChange={(event) => setCurrent(event.target.value)}
-              aria-invalid={fieldErrors.current !== undefined}
-              aria-describedby={fieldErrors.current === undefined ? undefined : "acct-current-error"}
-            />
-            {fieldErrors.current === undefined ? null : (
-              <p id="acct-current-error" role="alert" className="text-destructive text-sm">
-                {t(fieldErrors.current)}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="acct-new">{t("new_password_label")}</Label>
-            <Input
-              id="acct-new"
-              name="new-password"
-              type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              aria-invalid={fieldErrors.password !== undefined}
-              aria-describedby={fieldErrors.password === undefined ? "acct-new-help" : "acct-new-help acct-new-error"}
-            />
-            <p id="acct-new-help" className="text-muted-foreground text-sm">
-              {t("password_help")}
-            </p>
-            {fieldErrors.password === undefined ? null : (
-              <p id="acct-new-error" role="alert" className="text-destructive text-sm">
-                {t(fieldErrors.password)}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="acct-repeat">{t("repeat_password_label")}</Label>
-            <Input
-              id="acct-repeat"
-              name="repeat-password"
-              type="password"
-              autoComplete="new-password"
-              value={repeat}
-              onChange={(event) => setRepeat(event.target.value)}
-              aria-invalid={fieldErrors.repeat !== undefined}
-              aria-describedby={fieldErrors.repeat === undefined ? undefined : "acct-repeat-error"}
-            />
-            {fieldErrors.repeat === undefined ? null : (
-              <p id="acct-repeat-error" role="alert" className="text-destructive text-sm">
-                {t(fieldErrors.repeat)}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch id="acct-revoke" checked={revokeOthers} onCheckedChange={setRevokeOthers} disabled={pending} />
-            <Label htmlFor="acct-revoke">{t("acct_revoke_others")}</Label>
-          </div>
-          <div>
-            <Button type="submit" disabled={pending}>
-              {pending ? t("acct_changing") : t("acct_change")}
-            </Button>
-          </div>
-          {error === null ? null : (
-            <p role="alert" className="text-destructive text-sm">
-              {t(error)}
-            </p>
-          )}
-        </form>
-        <div className="border-t pt-4">
-          <TwoFactorSection />
-        </div>
+        {sections.ssoOnlyHint ? (
+          <p data-hint="sso-only" className="text-muted-foreground text-sm">
+            {t("acct_sso_only")}
+          </p>
+        ) : null}
+        {sections.passwordControls ? (
+          <>
+            <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="acct-current">{t("acct_current_label")}</Label>
+                <Input
+                  id="acct-current"
+                  name="current-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={current}
+                  onChange={(event) => setCurrent(event.target.value)}
+                  aria-invalid={fieldErrors.current !== undefined}
+                  aria-describedby={fieldErrors.current === undefined ? undefined : "acct-current-error"}
+                />
+                {fieldErrors.current === undefined ? null : (
+                  <p id="acct-current-error" role="alert" className="text-destructive text-sm">
+                    {t(fieldErrors.current)}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="acct-new">{t("new_password_label")}</Label>
+                <Input
+                  id="acct-new"
+                  name="new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  aria-invalid={fieldErrors.password !== undefined}
+                  aria-describedby={
+                    fieldErrors.password === undefined ? "acct-new-help" : "acct-new-help acct-new-error"
+                  }
+                />
+                <p id="acct-new-help" className="text-muted-foreground text-sm">
+                  {t("password_help")}
+                </p>
+                {fieldErrors.password === undefined ? null : (
+                  <p id="acct-new-error" role="alert" className="text-destructive text-sm">
+                    {t(fieldErrors.password)}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="acct-repeat">{t("repeat_password_label")}</Label>
+                <Input
+                  id="acct-repeat"
+                  name="repeat-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={repeat}
+                  onChange={(event) => setRepeat(event.target.value)}
+                  aria-invalid={fieldErrors.repeat !== undefined}
+                  aria-describedby={fieldErrors.repeat === undefined ? undefined : "acct-repeat-error"}
+                />
+                {fieldErrors.repeat === undefined ? null : (
+                  <p id="acct-repeat-error" role="alert" className="text-destructive text-sm">
+                    {t(fieldErrors.repeat)}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch id="acct-revoke" checked={revokeOthers} onCheckedChange={setRevokeOthers} disabled={pending} />
+                <Label htmlFor="acct-revoke">{t("acct_revoke_others")}</Label>
+              </div>
+              <div>
+                <Button type="submit" disabled={pending}>
+                  {pending ? t("acct_changing") : t("acct_change")}
+                </Button>
+              </div>
+              {error === null ? null : (
+                <p role="alert" className="text-destructive text-sm">
+                  {t(error)}
+                </p>
+              )}
+            </form>
+            <div className="border-t pt-4">
+              <TwoFactorSection />
+            </div>
+          </>
+        ) : null}
         <div className="flex flex-col items-start gap-2 border-t pt-4">
           <div className="w-full">
-            <SessionsList />
+            <SessionsList ssoSession={sections.ssoSession} />
           </div>
           <Button
             type="button"
@@ -290,7 +303,7 @@ export function AccountCard() {
             <SecurityLog timeZone={me.organization.timezone} />
           </div>
         ) : null}
-        {me !== null && canDeleteOrganization(me) ? (
+        {sections.deleteBlock ? (
           <div className="border-t pt-4">
             <DeleteOrganization />
           </div>
