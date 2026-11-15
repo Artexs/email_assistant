@@ -1,6 +1,6 @@
 # Sent mail
 
-> Checked against the code at `f64c7256`, 2026-11-15.
+> Checked against the code at `00b43f90`, 2026-11-15.
 
 ## What it does now
 
@@ -52,6 +52,8 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 | CLI      | `bun run mailbox:settings sent-sync`, `show`                               | `apps/server/src/scripts/mailbox-settings.ts`         |
 | function | `sentOriginOf`                                                             | `apps/server/src/modules/actions/repo/planned.ts`     |
 
+18. **Data requests.** `org:dsr` (F106, `docs/capabilities/account-data.md`) treats sent mail like incoming mail. A sent row goes when the person is the sender or in To or Cc and every other address of the three is an own mailbox of the organization: the erase deletes it and writes a tombstone for its dedup key, so a later pass (also after the switch goes off and on) does not store it again. Other sent rows lose the address in `from_address`, `to_addresses`, `cc_addresses`, `subject` and `body_text`; a row with `content = pending` becomes `headers_only`. A row that retention cleared (`stored`, `body_text` null) is scrubbed by its addresses and subject; the export and the erase handle the null text. The erase locks the `mailbox_sent_sync` rows of the organization after the folder rows, the lock of rule 6, so a chunk planned before the erase waits and then meets the tombstone. The find report holds the sent mails that go (`sent_mails`), and the counts and audit rows hold `sent_mails`, never an address.
+
 ## Data
 
 - `mailbox_sent_sync`: one row per mailbox: `enabled`, `enabled_at`, `path`, `uidvalidity`, `last_uid` (the cursor), `first_pass_at`, `last_pass_at`, `last_error_code` (`no_folder`, `folder_missing`, `failed`). No row means off.
@@ -64,7 +66,7 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - One mail that makes `fetchContent` fail on every run (a server `BAD` on one UID) holds the text step: the order is oldest first and the error ends the step. It clears when the row leaves the text window, after up to 14 days. The pass logs `sent_sync_failed` each run.
 - Worst case of one run: 100 text fetches of up to 5 MB each, one after another, on the connection of the mailbox. It adds to the run time of `mail.sync`.
 - Mail moved into Sent by hand after it is older than 30 days is not stored (`tooOld`).
-- The switch is set by `setSentSync`, at connect, by the route and by the CLI (rule 15). No DSR erase of sent mail (stage 12).
+- The switch is set by `setSentSync`, at connect, by the route and by the CLI (rule 15). Run `org:dsr --erase` again after a new first pass and after its text step (rule 18).
 - The notice (rule 17) never fires for a period that the pass did not observe, and it names no error: the panel card shows an error code.
 - No analysis of sent mail by the LLM: E5b. No pass before a system send: E6a (F115).
 - `listUserAnswers` reads a direct reply only (the parent id): a later reply elsewhere in the thread does not mark older mails; a reader that wants the thread rule builds it from `thread_key`. No caller yet: E3a, E4-B, E11a, E6 (reply drafts) and E5b (open loops) use it. F116 (open loops) note: Sent text goes after `data_retention_days` and the recipients after 90 days, so a loop that stays open longer than `data_retention_days` needs its own copy of what it needs.
@@ -88,6 +90,7 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - `apps/server/test/integration/mail-sent-repo.test.ts`
 - `apps/server/test/integration/mail-sent-readers.test.ts`
 - `apps/server/test/integration/retention-clear.test.ts`
+- `apps/server/test/integration/privacy-dsr-sent.test.ts`
 - `apps/server/test/integration/retention-clear-sent-concurrent.test.ts`
 - `apps/server/test/integration/retention-job.test.ts`
 - `apps/server/test/integration/actions-sent-origin.test.ts`
