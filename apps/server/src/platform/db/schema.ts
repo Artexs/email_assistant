@@ -367,6 +367,18 @@ export interface Memberships {
   user_id: string;
 }
 
+export interface OpsAlerts {
+  facts: Generated<Json>;
+  id: Generated<Int8>;
+  kind: string;
+  last_sent_at: Timestamp | null;
+  notice_count: Generated<number>;
+  open_sent_at: Timestamp | null;
+  opened_at: Timestamp;
+  resolved_at: Timestamp | null;
+  resolved_sent_at: Timestamp | null;
+}
+
 export interface Organizations {
   created_at: Generated<Timestamp>;
   data_retention_days: Generated<number>;
@@ -538,6 +550,7 @@ export interface DB {
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
   memberships: Memberships;
+  ops_alerts: OpsAlerts;
   org_features: OrgFeatures;
   organizations: Organizations;
   outbox: Outbox;

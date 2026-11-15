@@ -157,6 +157,9 @@ async function realColumns(): Promise<Set<string>> {
   return new Set(result.rows.map((row) => row.name));
 }
 
+// Tables with no `org_id` (host-wide state: numbers and codes only) that NO_PERSONAL_TABLES names on purpose.
+const HOST_WIDE_TABLES = ["ops_alerts"];
+
 describe("DSR address map", () => {
   test("1. each candidate column is in exactly one of the map and NOT_PERSONAL; each entry is a real column", async () => {
     const mapped = Object.entries(DSR_ADDRESS_MAP).flatMap(([table, columns]) =>
@@ -178,10 +181,17 @@ describe("DSR address map", () => {
         )
         .map((column) => column.name)
     ).toEqual([]);
-    // A table cannot be both exempt and mapped, and each exempt table is a real tenant table with a reason.
+    // A table cannot be both exempt and mapped, and each exempt table is a real tenant table with a reason. A host-wide
+    // table (no `org_id`) is exempt only when it is named in HOST_WIDE_TABLES and exists.
     const tenantTables = new Set(tenant.map((column) => column.table));
+    const existing = await realColumns();
     for (const [table, reason] of Object.entries(NO_PERSONAL_TABLES)) {
-      expect(tenantTables.has(table)).toBe(true);
+      if (HOST_WIDE_TABLES.includes(table)) {
+        expect(tenantTables.has(table)).toBe(false);
+        expect([...existing].some((name) => name.startsWith(`${table}.`))).toBe(true);
+      } else {
+        expect(tenantTables.has(table)).toBe(true);
+      }
       expect(Object.keys(DSR_ADDRESS_MAP)).not.toContain(table);
       expect(reason.length).toBeGreaterThan(5);
     }
