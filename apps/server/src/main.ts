@@ -1,9 +1,19 @@
+import { readFile, statfs } from "node:fs/promises";
+
 import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
-import { checkLlmErrors, checkSyncLag, checkUrgentLatency, runSloTick, type SloCheckEntry } from "./modules/operator";
+import {
+  checkBackupAge,
+  checkDisk,
+  checkLlmErrors,
+  checkSyncLag,
+  checkUrgentLatency,
+  runSloTick,
+  type SloCheckEntry,
+} from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
 import {
@@ -160,6 +170,9 @@ const sloChecks: SloCheckEntry[] = [
     run: (now) => checkUrgentLatency(db, now, slo, startedAt, testMailRule(config)),
   },
   { kind: "slo_llm_errors", run: (now) => checkLlmErrors(db, now, slo) },
+  { kind: "slo_disk", run: () => checkDisk(statfs, slo) },
+  // null when BACKUP_STATUS_FILE is empty: the check is off and an open alert of this kind stays as it is.
+  { kind: "slo_backup_age", run: (now) => checkBackupAge((path) => readFile(path, "utf8"), now, slo) },
 ];
 let sloRun: Promise<void> = Promise.resolve();
 scheduler.add("ops.slo", "30 */5 * * * *", () => {

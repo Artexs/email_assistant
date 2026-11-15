@@ -183,7 +183,7 @@ const baseSchema = z.object({
   ),
   // The language of the operator alert texts (F114): `en` or `pl`. Empty = `en`.
   OPERATOR_LOCALE: z.preprocess(emptyAsUndefined, z.enum(["en", "pl"]).default("en")),
-  // F114 service levels of the operator alerts. Integers; empty = the default. Disk and backup keys: stage 04.
+  // F114 service levels of the operator alerts. Empty = the default. Whole numbers, except SLO_DISK_FREE_GB (decimals).
   // Minutes since the last sync before a mailbox counts as late.
   SLO_SYNC_LAG_MIN: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(5).max(1440).default(15)),
   // Minutes (outside quiet hours) that an urgent mail may wait for its notice.
@@ -195,6 +195,14 @@ const baseSchema = z.object({
   SLO_LLM_CLEAR_PCT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(0).max(99).default(10)),
   // Hours between two notices of one open alert.
   SLO_REPEAT_H: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(168).default(6)),
+  // Disk check: the volume to read (the path inside the container), the free percent and the free gigabytes that open the alert.
+  SLO_DISK_PATH: z.preprocess(emptyAsUndefined, z.string().startsWith("/", "must be an absolute path").default("/")),
+  SLO_DISK_FREE_PCT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(90).default(15)),
+  SLO_DISK_FREE_GB: z.preprocess(emptyAsUndefined, z.coerce.number().min(0.5).max(100).default(2)),
+  // Hours since the last good backup before the alert opens.
+  SLO_BACKUP_MAX_AGE_H: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(720).default(26)),
+  // The status file that deploy/backup.sh writes (mounted read-only). Empty = the backup check is off.
+  BACKUP_STATUS_FILE: z.preprocess(emptyAsUndefined, z.string().startsWith("/", "must be an absolute path").optional()),
   // Comma list of flag keys (packages/core/src/features.ts) that read off for every organization. Empty = none.
   FEATURES_OFF: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Comma list of user ids (users.id, UUID) who may use /api/operator/*. Empty = no operator. Never log the ids.
@@ -565,6 +573,11 @@ export function sloThresholds(config: Config): SloThresholds {
     llmFailPct: config.SLO_LLM_FAIL_PCT,
     llmClearPct: config.SLO_LLM_CLEAR_PCT,
     repeatH: config.SLO_REPEAT_H,
+    diskPath: config.SLO_DISK_PATH,
+    diskFreePct: config.SLO_DISK_FREE_PCT,
+    diskFreeGb: config.SLO_DISK_FREE_GB,
+    backupMaxAgeH: config.SLO_BACKUP_MAX_AGE_H,
+    backupStatusFile: config.BACKUP_STATUS_FILE ?? null,
   };
 }
 
