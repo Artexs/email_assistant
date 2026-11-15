@@ -1,13 +1,20 @@
 import {
   aiTextFor,
+  briefSectionKeys,
   describeActions,
   handledShare,
   isUndoable,
+  loopSections,
   mailboxModes,
-  renderDigest,
+  renderDigestWithBrief,
   textsFor,
+  type BriefInput,
+  type BriefRenderOptions,
+  type DigestBrief,
   type DigestItem,
   type DigestMailbox,
+  type DigestShown,
+  type MailboxMode,
   type OutMessage,
   type UserLocale,
 } from "@ea/core";
@@ -18,7 +25,8 @@ import { HardError } from "../../platform/errors";
 import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
-import { countOpenDelegations, listDelegateNames } from "../delegation";
+import { countOpenDelegations, listDelegateNames, listDelegationsDueBy } from "../delegation";
+import { endOfLocalDay, loadLoopBrief } from "../loops";
 import {
   attachmentFactsToShow,
   countWaiting,
@@ -28,7 +36,14 @@ import {
   type TestMailRule,
 } from "../mail";
 import { getOrganization, isFeatureOn } from "../tenancy";
-import { countTriagedBetween, listHandledRows, listTriagedBetween, suspiciousReasonsToShow } from "../triage";
+import {
+  answeredEmailIds,
+  countTriagedBetween,
+  listHandledRows,
+  listTriagedBetween,
+  listWaitingOnYou,
+  suspiciousReasonsToShow,
+} from "../triage";
 
 import { llmPauseToShow } from "./llm-pause";
 import { lastSentDigestEnd } from "./repo";
@@ -41,6 +56,16 @@ const HANDLED_WINDOW_MS = 7 * 24 * 3_600_000;
 
 const modeSchema = z.enum(mailboxModes);
 
+// The open-loops part of a scheduled digest (F116 stage 18). Absent: no brief, no count line (the digest on demand).
+export interface DigestLoops {
+  // The first digest of the member's local day: the brief. Later digests of the day get a count line.
+  firstOfDay: boolean;
+  // `loopConsentOf` of the member: false hides every loop line (D17). The channels job reads it; `reports` may not import `channels`.
+  loopConsent: boolean;
+  // The base URL of the panel: the "+n more in the panel" lines link to it.
+  panelBase?: string;
+}
+
 export interface DigestRequest {
   kind: "scheduled" | "on_demand";
   periodStart: Date;
@@ -49,6 +74,13 @@ export interface DigestRequest {
   now: Date;
   locale: UserLocale;
   testMail: TestMailRule;
+  loops?: DigestLoops;
+}
+
+// What the digest named of the loops: the queue transaction marks these (`markBriefShown`).
+export interface DigestBuilt {
+  message: OutMessage;
+  shown: DigestShown;
 }
 
 // A digest that failed (never sent) does not move the start, so the next sent digest covers its mail.
@@ -66,6 +98,110 @@ export async function digestPeriodStart(
 
 // The digest is the same for every member of the organization; only the period depends on the member.
 export async function buildDigestMessage(db: Db, ctx: TenantContext, request: DigestRequest): Promise<OutMessage> {
+  return (await buildDigest(db, ctx, request)).message;
+}
+
+const BRIEF_REPLY_LINES = 5;
+const BRIEF_DELEGATION_LINES = 5;
+
+function panelLinks(base: string | undefined): BriefRenderOptions["links"] {
+  if (base === undefined) return undefined;
+  const root = base.replace(/\/+$/, "");
+  const links: Partial<Record<(typeof briefSectionKeys)[number], string>> = {
+    urgent: `${root}/activity`,
+    reply: `${root}/activity`,
+    waiting: `${root}/delegations?tab=waiting`,
+    promised: `${root}/delegations?tab=promised`,
+    stale: `${root}/delegations?tab=waiting`,
+  };
+  return links;
+}
+
+// The "needs you today" part of the digest. Flag `open_loops` off: nothing (today's digest). Reads only; the caller marks `shown`.
+// A digest with loop lines locks the loops it names, so the caller must be in a transaction.
+async function loadBrief(
+  db: Db,
+  ctx: TenantContext,
+  request: DigestRequest & { loops: DigestLoops },
+  parts: {
+    timeZone: string;
+    mailboxes: readonly DigestMailbox[];
+    items: readonly DigestItem[];
+  }
+): Promise<DigestBrief | null> {
+  if (!(await isFeatureOn(db, ctx, "open_loops"))) return null;
+  const { loops } = request;
+  const { timeZone, mailboxes, items } = parts;
+  const mailboxIds = mailboxes.map((mailbox) => mailbox.id);
+  const modes = new Map<string, MailboxMode | "none">(mailboxes.map((mailbox) => [mailbox.id, mailbox.mode]));
+  const dayEnd = endOfLocalDay(request.now, timeZone);
+  // The lines that this digest shows name loops: it locks them until its transaction ends (`briefLoopsOf`).
+  const lock = loops.firstOfDay && loops.loopConsent;
+  const [loopBrief, delegations] = await Promise.all([
+    loadLoopBrief(db, ctx, mailboxIds, { now: request.now, timeZone, modes, lock }),
+    listDelegationsDueBy(db, ctx, mailboxIds, { dueBefore: dayEnd, limit: BRIEF_DELEGATION_LINES }),
+  ]);
+  if (!loops.firstOfDay) {
+    return {
+      sections: null,
+      urgentEmailIds: [],
+      openLoops: { waiting: loopBrief.waiting.total + delegations.total, promised: loopBrief.promised.total },
+    };
+  }
+  const urgentRows = items.filter((item) => item.category === "urgent");
+  const answered = await answeredEmailIds(
+    db,
+    ctx,
+    urgentRows.map((item) => item.emailId)
+  );
+  const urgent = urgentRows.filter((item) => !answered.has(item.emailId));
+  const reply = await listWaitingOnYou(db, ctx, mailboxIds, { now: request.now, limit: BRIEF_REPLY_LINES });
+  const input: BriefInput = {
+    now: request.now,
+    timeZone,
+    consent: loops.loopConsent,
+    urgent: {
+      rows: urgent.map((item) => ({
+        emailId: item.emailId,
+        from: item.from,
+        subject: item.subject,
+        receivedAt: item.receivedAt,
+      })),
+      total: urgent.length,
+    },
+    reply: {
+      rows: reply.rows.map((row) => ({
+        emailId: row.email_id,
+        from: row.from_address,
+        subject: row.subject,
+        receivedAt: row.received_at,
+      })),
+      total: reply.total,
+    },
+    waitingLoops: loopBrief.waiting,
+    waitingDelegations: {
+      rows: delegations.rows.map((row) => ({
+        id: row.id,
+        delegateName: row.delegate_name,
+        subject: row.subject,
+        sentAt: row.sent_at,
+        dueAt: row.due_at,
+      })),
+      total: delegations.total,
+    },
+    promised: loopBrief.promised,
+    stale: loopBrief.stale,
+  };
+  const links = panelLinks(loops.panelBase);
+  return {
+    sections: loopSections(input),
+    urgentEmailIds: urgent.map((item) => item.emailId),
+    openLoops: null,
+    ...(links === undefined ? {} : { links }),
+  };
+}
+
+export async function buildDigest(db: Db, ctx: TenantContext, request: DigestRequest): Promise<DigestBuilt> {
   const organization = await getOrganization(db, ctx);
   if (organization === undefined) throw new HardError("organization not found");
 
@@ -169,7 +305,21 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       )
     : null;
 
-  return renderDigest(
+  const brief =
+    request.loops === undefined
+      ? null
+      : await loadBrief(
+          db,
+          ctx,
+          { ...request, loops: request.loops },
+          {
+            timeZone: organization.timezone,
+            mailboxes,
+            items,
+          }
+        );
+
+  return renderDigestWithBrief(
     {
       kind: request.kind,
       now: request.now,
@@ -187,6 +337,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       ...(handled === null
         ? {}
         : { handled: { ...handled, shadowOnly: mailboxes.every((mailbox) => mailbox.mode === "shadow") } }),
+      ...(brief === null ? {} : { brief }),
     },
     texts
   );

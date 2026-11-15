@@ -21,9 +21,10 @@ describe("the consent gate of open-loop data", () => {
     expect(usersOf(/\bOPEN_LOOPS_CONSENT_SINCE\b/)).toEqual(["modules/channels/consent.ts"]);
   });
 
-  test("only the gate of the notices (and the gate itself) calls loopConsentOf; the raw version reader has no other caller", () => {
+  test("only the gate of the notices, the digest job (and the gate itself) calls loopConsentOf; the raw version reader has no other caller", () => {
     expect(usersOf(/\bloopConsentOf\(/)).toEqual([
       "modules/channels/consent.ts",
+      "modules/channels/digest-job.ts", // the brief of the first digest of the day (F116 stage 18, review 11 N8)
       "modules/channels/notices/loop-consent.ts",
     ]);
     expect(usersOf(/\bconsentVersionsOf\(/)).toEqual(["modules/channels/consent.ts"]);
@@ -46,5 +47,17 @@ describe("the consent gate of open-loop data", () => {
     for (const file of ["modules/channels/notices/approval.ts", "modules/channels/notices/send-result.ts"]) {
       expect(sources.find((s) => s.file === file)?.text, relative(SRC, file)).toContain("splitByLoopConsent(");
     }
+  });
+
+  test("the brief is built only where the member's consent is read: a caller that sets the loop part of a digest calls the gate", () => {
+    // `firstOfDay` is the field that switches the brief on (`DigestLoops`): every file that sets it reads the gate and passes `loopConsent`.
+    const setters = usersOf(/\bfirstOfDay\b/).filter((file) => file !== "modules/reports/digest.ts");
+    expect(setters).toEqual(["modules/channels/digest-job.ts"]);
+    const job = sources.find((s) => s.file === "modules/channels/digest-job.ts")?.text ?? "";
+    expect(job).toMatch(/loopConsent\s*=\s*\(await loopConsentOf\(/);
+    expect(job).toMatch(/loops = \{ firstOfDay, loopConsent/);
+    // The digest on demand has no loop part: no brief, no count line.
+    const commands = sources.find((s) => s.file === "modules/channels/commands.ts")?.text ?? "";
+    expect(commands).not.toMatch(/\bloops:/);
   });
 });

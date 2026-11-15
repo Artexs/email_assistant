@@ -98,48 +98,86 @@ export interface BriefLoops {
 
 const BRIEF_ROWS = 20;
 
+// The first instant of the next local day: "by the end of the local day" means before it.
+export function endOfLocalDay(now: Date, timeZone: string): Date {
+  return localToInstant(nextLocalDate(localDateTime(now, timeZone).date), "00:00", timeZone);
+}
+
 // The loops for the brief of the given mailboxes, oldest due first. Only the org of `ctx`. "By the end of the
 // local day": before the next local midnight, so an overdue loop is in the brief until it closes.
 export async function briefLoopsOf(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxIds: readonly string[],
-  opts: { now: Date; timeZone: string }
+  // `lock`: every row that the brief may name is read with `FOR UPDATE`, in the order waiting, promised, stale (the caller is in
+  // the queue transaction of a digest, which marks the rows and stores the text). Two effects: a second digest that runs at
+  // the same time waits for the first and then sees `stale_notified_at` set, so a ⌛ line is named once; a command that closes a
+  // loop (Sent tracking off, a tap) waits until the text is stored, so it finds the stored copy and can clear it (F116 stage 18).
+  opts: { now: Date; timeZone: string; lock?: boolean }
 ): Promise<BriefLoops> {
   if (mailboxIds.length === 0) {
     const empty: BriefLoopSection = { rows: [], total: 0 };
     return { waiting: empty, promised: empty, stale: empty };
   }
   const ids = [...mailboxIds];
-  const dayEnd = localToInstant(nextLocalDate(localDateTime(opts.now, opts.timeZone).date), "00:00", opts.timeZone);
+  const dayEnd = endOfLocalDay(opts.now, opts.timeZone);
   const base = () => db.selectFrom("open_loops").where("org_id", "=", ctx.orgId).where("mailbox_id", "in", ids);
   const section = async (
     scope: (qb: ReturnType<typeof base>) => ReturnType<typeof base>,
-    order: "due_at" | "closed_at"
+    order: "due_at" | "closed_at",
+    lock = false
   ): Promise<BriefLoopSection> => {
-    const [rows, count] = await Promise.all([
-      scope(base()).selectAll().orderBy(order).orderBy("id").limit(BRIEF_ROWS).execute(),
+    const rowsOf = () => {
+      const query = scope(base()).selectAll().orderBy(order).orderBy("id").limit(BRIEF_ROWS);
+      return (lock ? query.forUpdate() : query).execute();
+    };
+    const countOf = () =>
       scope(base())
         .select((eb) => eb.fn.countAll<string>().as("n"))
-        .executeTakeFirstOrThrow(),
-    ]);
+        .executeTakeFirstOrThrow();
+    // A locked read comes first, so the count that follows sees what a concurrent digest committed.
+    if (lock) {
+      const rows = await rowsOf();
+      const count = await countOf();
+      return { rows: rows.map(toLoopRow), total: Number(count.n) };
+    }
+    const [rows, count] = await Promise.all([rowsOf(), countOf()]);
     return { rows: rows.map(toLoopRow), total: Number(count.n) };
   };
-  const [waiting, promised, stale] = await Promise.all([
-    section(
-      (qb) =>
-        qb.where("status", "=", "open").where("kind", "in", ["waiting", "delegated"]).where("due_at", "<", dayEnd),
-      "due_at"
-    ),
-    section(
-      (qb) => qb.where("status", "=", "open").where("kind", "=", "promised").where("due_at", "<", dayEnd),
-      "due_at"
-    ),
-    section(
-      (qb) =>
-        qb.where("status", "=", "closed").where("close_reason", "=", "stale").where("stale_notified_at", "is", null),
-      "closed_at"
-    ),
-  ]);
-  return { waiting, promised, stale };
+  const lock = opts.lock === true;
+  const sections = [
+    () =>
+      section(
+        (qb) =>
+          qb.where("status", "=", "open").where("kind", "in", ["waiting", "delegated"]).where("due_at", "<", dayEnd),
+        "due_at",
+        lock
+      ),
+    () =>
+      section(
+        (qb) => qb.where("status", "=", "open").where("kind", "=", "promised").where("due_at", "<", dayEnd),
+        "due_at",
+        lock
+      ),
+    () =>
+      section(
+        (qb) =>
+          qb.where("status", "=", "closed").where("close_reason", "=", "stale").where("stale_notified_at", "is", null),
+        "closed_at",
+        lock
+      ),
+  ] as const;
+  // A locked read runs one section after the other: the lock order is the same in every digest.
+  if (lock) {
+    const waiting = await sections[0]();
+    const promised = await sections[1]();
+    const stale = await sections[2]();
+    return { waiting, promised, stale };
+  }
+  const [waiting, promised, stale] = await Promise.all(sections.map((read) => read()));
+  return {
+    waiting: waiting as BriefLoopSection,
+    promised: promised as BriefLoopSection,
+    stale: stale as BriefLoopSection,
+  };
 }

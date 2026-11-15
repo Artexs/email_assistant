@@ -77,9 +77,14 @@ const sendResultMatches: Same<z.output<typeof sendResultKindSchema>, SendResultK
 void approvalViewMatches;
 void sendResultMatches;
 
+const loopIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 const digestView = z.strictObject({
   text: z.string().min(1).max(MESSAGE_MAX_CHARS),
   buttons: outButtonsSchema,
+  // The loops that the brief lines of this digest name (F116 stage 18): ids only. They let the switch-off of Sent tracking and the
+  // erase of a person find the stored copy of a loop line. Absent: no loop line.
+  loopIds: z.array(z.string().regex(loopIdPattern)).max(40).optional(),
 });
 
 const attachmentFactSchema = z.strictObject({

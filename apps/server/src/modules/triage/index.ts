@@ -9,6 +9,8 @@ export type { AnsweredResult } from "./answered-check";
 export { listReviewSample, REVIEW_PAGE_SIZE, REVIEW_WINDOW_DAYS } from "./review-repo";
 export type { LabelItem, RecordFeedbackInput, WebFeedbackResult } from "./feedback";
 export { undoWithFeedback } from "./undo";
+export { answeredEmailIds, listWaitingOnYou, WAITING_ON_YOU_DAYS } from "./waiting-on-you";
+export type { WaitingOnYouRow } from "./waiting-on-you";
 export { triageRoutes } from "./routes";
 export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";
