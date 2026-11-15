@@ -176,7 +176,7 @@ describe("scoreExtractor", () => {
 });
 
 describe("runExtractorCase errors", () => {
-  test("a soft error is tried again with a wait; a hard code is not", async () => {
+  test("a soft error is tried again with a wait; a schema failure is not", async () => {
     const waits: number[] = [];
     let soft = 0;
     const generate: GenerateFn = async () => {

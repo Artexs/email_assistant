@@ -60,6 +60,13 @@ test("a failed gate file is no evidence", () => {
   });
 });
 
+test("a file with every number at its bar but passed false is no evidence", () => {
+  withTemp((dir) => {
+    write(dir, name(), { ...buildExtractorGateFile(scoresAtBars(), identity), passed: false });
+    expect(extractorGateEvidence(dir, prompts.extractor.version)).toEqual([]);
+  });
+});
+
 test("a file with passed true but a number under its bar is no evidence", () => {
   withTemp((dir) => {
     const file = buildExtractorGateFile(scoresAtBars(), identity);
