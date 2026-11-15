@@ -28,7 +28,7 @@ import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender, type FakeMailSender } from "../../src/modules/mail/fake/sender";
 import { claimEmails, insertCredentials } from "../../src/modules/mail/repo";
-import { triageOne, type TriageMailbox } from "../../src/modules/triage";
+import { triageOne, type TriageMailbox, noGateEvidence } from "../../src/modules/triage";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
@@ -1053,6 +1053,7 @@ describe("send end to end", () => {
         settingsVersion: settings.version,
         mode: "assist",
         toolSwitches: { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: true },
+        runningKey: noGateEvidence.runningKey,
         policy: { info: { auto: true } },
         rules: [],
         movesSupported: true,

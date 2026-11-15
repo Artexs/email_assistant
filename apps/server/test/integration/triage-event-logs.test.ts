@@ -3,7 +3,13 @@ import type { Transaction } from "kysely";
 
 import { insertDefaultSettings } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
-import { createLlmPause, createReturnedJob, createTriageJob, triageOne } from "../../src/modules/triage";
+import {
+  createLlmPause,
+  createReturnedJob,
+  createTriageJob,
+  triageOne,
+  noGateEvidence,
+} from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 import type { GenerateFn } from "../../src/platform/llm";
 import { createFixedLlmClient } from "../../src/platform/llm/testing";
@@ -88,6 +94,7 @@ function jobOver(
   extra: Partial<Parameters<typeof createTriageJob>[0]> = {}
 ): ReturnType<typeof createTriageJob> {
   return createTriageJob({
+    runningKey: noGateEvidence.runningKey,
     db: trx as Transaction<DB>,
     llm: llm(),
     pause: createLlmPause(),

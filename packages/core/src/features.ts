@@ -127,6 +127,12 @@ export const featureFlags = {
     epic: "E5b",
     removeBy: "2027-06-01",
   },
+  trust_ladder: {
+    default: false,
+    description: "Automatic moves follow the evidence of the model setup: global holdout, history check, tripwire.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

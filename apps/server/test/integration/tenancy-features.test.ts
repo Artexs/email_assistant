@@ -186,6 +186,7 @@ describe("org_features", () => {
         { flag: "mail_oauth_google", enabled: false, source: "default" },
         { flag: "open_loops", enabled: false, source: "default" },
         { flag: "delegate_button", enabled: false, source: "default" },
+        { flag: "trust_ladder", enabled: false, source: "default" },
       ]);
     });
   });

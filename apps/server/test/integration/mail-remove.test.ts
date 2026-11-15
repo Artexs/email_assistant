@@ -10,7 +10,7 @@ import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/con
 import { claimEmails, listSyncTargets, removeMailbox, type RemoveDeps } from "../../src/modules/mail";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { insertDigest } from "../../src/modules/reports";
-import { saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
+import { saveTriage, type TriageDecision, type TriageMailbox, noGateEvidence } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 
 import {
@@ -297,6 +297,7 @@ describe("removeMailbox", () => {
       settingsVersion: settings.version,
       mode: "assist",
       toolSwitches: { move: true, mark_read: true, flag: true, create_draft: false, move_unsure: true },
+      runningKey: noGateEvidence.runningKey,
       policy: { info: { auto: true } },
       rules: [],
       movesSupported: true,

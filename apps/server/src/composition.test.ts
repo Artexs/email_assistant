@@ -220,10 +220,20 @@ describe("gateEvidenceDir", () => {
 describe("the gate evidence is built once at start (F110 stage 02)", () => {
   const main = read("main.ts");
 
-  test("main.ts reads the gate files once and hands the result to the web settings deps", () => {
-    expect(main.match(/loadGateEvidence\(/g)).toHaveLength(1);
-    expect(main).toContain("loadGateEvidence(gateEvidenceDir(config))");
+  test("main.ts reads the gate files once and hands the result to the web settings deps and the triage job", () => {
+    expect(main.match(/gateEvidenceOf\(/g)).toHaveLength(1);
+    expect(main).toContain("gateEvidenceOf(config, { table: llmTable })");
     expect(callOf(main, "webDeps")).toContain("gate,");
+    expect(callOf(main, "createTriageJob")).toContain("runningKey: gate.runningKey");
+  });
+
+  test("only the composition builder reads the gate files; the CLI scripts use it too (no stricter than the API)", () => {
+    expect(read("composition.ts").match(/loadGateEvidence\(/g)).toHaveLength(1);
+    for (const script of ["scripts/mailbox-settings.ts", "scripts/lab.ts"]) {
+      const text = read(script);
+      expect(text).toContain("gateEvidenceOf(config, { quiet: true })");
+      expect(text).not.toContain("loadGateEvidence(");
+    }
   });
 
   test("the image copies the gate files to the path the reader defaults to", () => {

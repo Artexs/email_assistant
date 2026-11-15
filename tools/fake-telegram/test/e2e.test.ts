@@ -13,7 +13,7 @@ import {
   openImapProvider,
   openSmtpSender,
 } from "../../../apps/server/src/modules/mail";
-import { createLlmPause, createTriageJob } from "../../../apps/server/src/modules/triage";
+import { createLlmPause, createTriageJob, noGateEvidence } from "../../../apps/server/src/modules/triage";
 import { testDb, withRollback } from "../../../apps/server/test/integration/helpers";
 import { createFakeTelegramClient, DEFAULT_CHAT_ID, FAKE_TOKEN, startFakeTelegram } from "../src";
 
@@ -99,6 +99,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
         now,
       }).run();
       await createTriageJob({
+        runningKey: noGateEvidence.runningKey,
         db: trx,
         llm: urgentLlm(),
         pause: createLlmPause(),

@@ -96,4 +96,7 @@ flowchart BT
   triage --> delegation
   triage --> mail
   triage --> tenancy
+  trust --> config
+  trust --> mail
+  trust --> triage
 ```

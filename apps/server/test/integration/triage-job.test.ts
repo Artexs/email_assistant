@@ -9,7 +9,7 @@ import { insertDefaultSettings } from "../../src/modules/config";
 import { ensureSyncFolders } from "../../src/modules/mail";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
-import { createLlmPause, createTriageJob, triageOne, type TriageScope } from "../../src/modules/triage";
+import { createLlmPause, createTriageJob, triageOne, type TriageScope, noGateEvidence } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { LlmConfigError, LlmSoftError, type LlmClient } from "../../src/platform/llm";
 
@@ -90,6 +90,7 @@ function fakeLlm(): FakeLlm {
 
 function job(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope, at: Date = now) {
   return createTriageJob({
+    runningKey: noGateEvidence.runningKey,
     db: trx,
     llm,
     pause: createLlmPause(),
@@ -337,6 +338,7 @@ describe("createTriageJob: pause and errors", () => {
 
   function clockJob(trx: Transaction<DB>, llm: LlmClient, clock: { at: Date }, overrides?: object) {
     return createTriageJob({
+      runningKey: noGateEvidence.runningKey,
       db: trx,
       llm,
       pause: createLlmPause(),
@@ -833,6 +835,7 @@ describe("createTriageJob: daily cap", () => {
       });
       const llm = fakeLlm();
       const capped = createTriageJob({
+        runningKey: noGateEvidence.runningKey,
         db: trx,
         llm,
         pause: createLlmPause(),
@@ -873,6 +876,7 @@ describe("createTriageJob: daily cap", () => {
       const llm = fakeLlm();
       const calls: { ctx: TenantContext; mailboxId: string; dayStart: Date }[] = [];
       await createTriageJob({
+        runningKey: noGateEvidence.runningKey,
         db: trx,
         llm,
         pause: createLlmPause(),
@@ -912,6 +916,7 @@ describe("createTriageJob: daily cap", () => {
       const llm = fakeLlm();
       let hookCalls = 0;
       await createTriageJob({
+        runningKey: noGateEvidence.runningKey,
         db: trx,
         llm,
         pause: createLlmPause(),

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { type EvidenceKey, evidenceKeySchema, sameKey } from "../trust/key";
+
 import type { Category, MailboxMode } from "./categories";
 import { barCategories } from "./metrics";
 
@@ -18,12 +20,25 @@ export function parseToolSwitches(json: unknown): ToolSwitches {
   return toolSwitchesSchema.parse(json);
 }
 
+// Who turned `auto` on, and under which model setup (ADR 0028). `at` is an ISO instant: it is the `granted_at` of a trip.
+export const categoryGrantBy = ["evidence", "forced", "recommended", "regate", "legacy", "real_labels"] as const;
+export type CategoryGrantBy = (typeof categoryGrantBy)[number];
+
+export const categoryGrantSchema = z.object({
+  key: evidenceKeySchema,
+  by: z.enum(categoryGrantBy),
+  at: z.string(),
+});
+export type CategoryGrant = z.infer<typeof categoryGrantSchema>;
+
 export const categoryPolicySchema = z.record(
   z.string(),
   z
     .object({
       auto: z.boolean().default(false),
       threshold: z.number().min(0).max(1).default(DEFAULT_THRESHOLD),
+      // Absent: `auto` was set before the evidence ladder (counts as matching until the re-gate stamps it).
+      grant: categoryGrantSchema,
     })
     .partial()
 );
@@ -39,6 +54,16 @@ export function thresholdFor(policy: CategoryPolicy, category: Category): number
 
 export function autoFor(policy: CategoryPolicy, category: Category): boolean {
   return policy[category]?.auto ?? false;
+}
+
+/**
+ * `auto` that triage may use now: `auto` is on and its grant (when there is one) was made under the running key.
+ * A key mismatch is `auto` off at once, with no job in between (ADR 0028). No grant: before the evidence ladder, counts as matching.
+ */
+export function effectiveAutoFor(policy: CategoryPolicy, category: Category, runningKey: EvidenceKey): boolean {
+  const entry = policy[category];
+  if (entry?.auto !== true) return false;
+  return entry.grant === undefined || sameKey(entry.grant.key, runningKey);
 }
 
 export const toolSwitchNames = [

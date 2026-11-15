@@ -3,6 +3,7 @@ import { mailboxModes } from "../triage/categories";
 import { barCategories } from "../triage/metrics";
 import { toolSwitchNames } from "../triage/settings";
 import { urgencyProfileSchema } from "../triage/urgency-profile";
+import { evidenceBlocks } from "../trust/evidence";
 
 import { z } from "./zod";
 
@@ -95,4 +96,9 @@ export const autoBodySchema = z.object({ auto: z.boolean(), force: z.boolean().o
 export const urgencyBodySchema = z.object({ profile: urgencyProfileSchema.nullable() });
 export const syncFolderBodySchema = z.object({ enabled: z.boolean() });
 export const sentSyncBodySchema = z.object({ enabled: z.boolean() });
-export const noGoBodySchema = z.object({ error: z.literal("no_go"), gate: gateViewSchema });
+// `blocks`: only with the flag `trust_ladder` on. Each code says one reason the evidence gate refused
+export const noGoBodySchema = z.object({
+  error: z.literal("no_go"),
+  gate: gateViewSchema,
+  blocks: z.array(z.enum(evidenceBlocks)).optional(),
+});
