@@ -42,3 +42,4 @@ export {
   type SsoProviderFull,
   type SsoStateRow,
 } from "./sso-provider";
+export { hasBreakGlassWithTotp, readSsoRequired, setDomainProof, setSsoRequiredFlag } from "./sso-require";

@@ -26,3 +26,26 @@ export async function endSsoLinksAndSessions(
   const removed = await trx.deleteFrom("auth_accounts").where("provider_id", "=", providerId).executeTakeFirst();
   return { linksRemoved: Number(removed.numDeletedRows), sessionsEnded };
 }
+
+// Ends every password session of the users and every open verification row whose value is the user id (F119 stage 09):
+// "SSO required" went on for them. A pending two-factor challenge lives 600 s: its cookie plus `/two-factor/verify-totp`
+// would still make a password session after the switch. Better Auth stores the identifiers hashed, so the user id in
+// `value` is the only link to the challenge (like `resetTwoFactorRows`). The same rows hold the trusted devices and the open
+// reset links of the user: a refused member needs none of them. The counter row of a challenge (value: a count) has no
+// user id; it ends by its own 600 s expiry and cannot open a session. An SSO session stays.
+export async function endPasswordSessionsAndChallenges(
+  trx: Transaction<DB>,
+  userIds: readonly string[]
+): Promise<{ sessionsEnded: number; challengesEnded: number }> {
+  if (userIds.length === 0) return { sessionsEnded: 0, challengesEnded: 0 };
+  const sessions = await trx
+    .deleteFrom("auth_sessions")
+    .where("user_id", "in", [...userIds])
+    .where("sign_in_method", "=", "password")
+    .executeTakeFirst();
+  const verifications = await trx
+    .deleteFrom("auth_verifications")
+    .where("value", "in", [...userIds])
+    .executeTakeFirst();
+  return { sessionsEnded: Number(sessions.numDeletedRows), challengesEnded: Number(verifications.numDeletedRows) };
+}
