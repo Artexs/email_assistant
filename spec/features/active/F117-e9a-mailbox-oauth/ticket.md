@@ -1,6 +1,5 @@
 ---
 opened: 2026-11-13
-landed: 2026-11-15
 ---
 
 # F117 · E9a Mailbox OAuth
