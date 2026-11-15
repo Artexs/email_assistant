@@ -19,6 +19,10 @@ describe("cleanUserText", () => {
     expect(cleanUserText("Zażółć gęślą jaźń", { oneLine: false })).toBe("Zażółć gęślą jaźń");
   });
 
+  test("the end of every line is trimmed, not only the end of the text", () => {
+    expect(cleanUserText("a  \n \nb \t\nc", { oneLine: false })).toBe("a\n\nb\nc");
+  });
+
   test("a lone CR is a line break, C1 and DEL go, tab stays in a body", () => {
     expect(cleanUserText("a\rb\u0085c\u007fd\te", { oneLine: false })).toBe("a\nbcd\te");
   });
