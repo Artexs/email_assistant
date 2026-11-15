@@ -205,9 +205,10 @@ const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { pa
 
 // Log lines are events (ADR 0024, docs/code-patterns.md § Logs). This is the only no-restricted-syntax rule for
 // server files: flat config replaces the options of a rule, so a second block with this rule would drop these selectors.
-// A log call is `log.info(...)`, `mailboxLog.info(...)` or a call on a chain: `log.with({ ... }).info(...)`.
+// A log call is `log.info(...)`, `mailboxLog.info(...)`, a member logger (`this.log.info(...)`, `deps.mailboxLog.info(...)`)
+// or a call on a chain: `log.with({ ... }).info(...)`. The lint reads names only: a logger under another name passes.
 const logLevels = "(debug|info|warn|error)";
-const logCall = `:matches(CallExpression[callee.type="MemberExpression"][callee.object.name=/^(log|[a-z][A-Za-z0-9]*Log)$/][callee.property.name=/^${logLevels}$/], CallExpression[callee.type="MemberExpression"][callee.object.type="CallExpression"][callee.object.callee.property.name="with"][callee.property.name=/^${logLevels}$/])`;
+const logCall = `:matches(CallExpression[callee.type="MemberExpression"][callee.object.name=/^(log|[a-z][A-Za-z0-9]*Log)$/][callee.property.name=/^${logLevels}$/], CallExpression[callee.type="MemberExpression"][callee.object.type="CallExpression"][callee.object.callee.property.name="with"][callee.property.name=/^${logLevels}$/], CallExpression[callee.type="MemberExpression"][callee.object.type="MemberExpression"][callee.object.property.name=/^(log|[a-z][A-Za-z0-9]*Log)$/][callee.property.name=/^${logLevels}$/])`;
 const logEventMessage =
   'Log lines are events: log.<level>("event_code", { allow-listed fields }) (ADR 0024, docs/code-patterns.md § Logs).';
 const logEventSelectors = [
