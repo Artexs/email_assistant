@@ -45,4 +45,4 @@ Suspicious mail gets a warning and no delegation draft, attachments show in the 
 ## Notes
 
 - First holdout report: `evals/results/2026-11-15-sim-lab-01-holdout-gpt-6-luna-classifier-v2.md`; gap report `evals/results/2026-11-15-sim-vs-real-gap-lab-01.md`.
-- Interfaces for later tickets: `suspiciousReasonsOf` (E5b, E6a), the urgency command (E4-B), `escalation` role (E11b reads the gate files).
+- Interfaces for later tickets: `suspiciousReasonsOf` and `suspiciousThreadKeysOf` (reply drafts E6a, follow-ups E5b, unsubscribe E4-B) and the urgency command (the E4-B editor).
