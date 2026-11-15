@@ -31,13 +31,14 @@ Mail that needs a reply gets a checked draft in its thread, in the mailbox's sty
 
 ## Slices
 
-One worker job per stage, in order 01 → 18 (`plan.md` § Stages and § How to run). Stage 03 is the only migration. Gate G1 (second pass) after stage 02. Owner checkpoints C1 (after 09) and C2 (after 15) and owner step O1 (stage 18) do not stop the build.
+One worker job per stage, in order 01 → 03 → 03b → 04 … 18 (`plan.md` § Stages and § How to run). Stage 03 is the only migration. Gate G1 (second pass) after stage 02. Owner checkpoints C1 (after 09) and C2 (after 15) and owner step O1 (stage 18) do not stop the build.
 
 ## Sequenced
 
-- Plan after: F102 (panel approvals: supersede, API, page), F104 (Sent readers and switch), F109 (the suspicious-mail reader), F103 (event log lines), F111 (endpoint in LLM call rows), F106 (data-request address map). Each has `stages/`.
+- Plan after: F102 (panel approvals: supersede, API, page), F104 (Sent readers and switch), F109 (the suspicious-mail reader), F103 (event log lines), F111 (endpoint in LLM call rows), F106 (data-request address map), F116 (thread index, `sendRecipients`, consent route; refresh 1). Each has `stages/`.
 - Build after: F097 (offline lab), F100 (measure), F102, F104, F099 (flags, send limits) in `spec/features/done/`; F109 stage 04 landed. Stages 01–02 need only F097 in `done/`; they may build earlier.
 - Gate: G1, the second pass after stage 02 (PD-071, PD-072 model, PD-083), before stage 03.
+- Refresh: plan base 17b2a369 (refresh 1, 2026-11-15, from 9341d9f0): `plan-refresh-1.md`.
 
 ## Notes
 

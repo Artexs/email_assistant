@@ -1,6 +1,6 @@
 # F115 stage 06 — Eligibility facts
 
-Part of [`../plan.md`](../plan.md). Needs 03. May build next to 04–05.
+Part of [`../plan.md`](../plan.md). Needs 03b. May build next to 04–05.
 
 Builds the pure rule `replyEligibility` and the readers that fill `ReplyFacts` (`interfaces.md`), including the three-state suspicion reader that F109 review-4 N3 asks for.
 

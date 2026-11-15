@@ -1,6 +1,6 @@
-# F115 stage 03 — Migration and repositories
+# F115 stage 03 — Migration, notice kinds and privacy maps
 
-Part of [`../plan.md`](../plan.md). `[risky]` (migration, privacy maps). The only migration of F115; no other migration may build next to it. Builds after gate G1.
+Part of [`../plan.md`](../plan.md). `[risky]` (migration, privacy maps). The only migration of F115; no other migration may build next to it. Builds after gate G1. Refresh 1 moved the repositories, retention, flag and switch to stage 03b (review finding 9); this stage keeps what must land in the commit of the migration, because the schema tests compare the DB with the code registries.
 
 ## Step 1 — Migration
 
@@ -8,36 +8,31 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration, privacy maps). The onl
 - **Decisions:**
   - `reply_requests` and `mailbox_profiles` as `interfaces.md`. CHECKs: `trigger IN ('auto','tap','redraft','sample')`; the status list; `char_length(instruction) <= 300`; profile lengths. Composite FKs `(email_id, org_id)` and `(mailbox_id, org_id)` → cascade; `previous_send_id` and `send_action_id` → `actions (id, org_id)` `ON DELETE SET NULL` (a data-request erase may delete actions). RLS as every org table (copy the policy shape of the newest table).
   - `INSERT INTO mailbox_profiles (mailbox_id, org_id, signature) SELECT m.id, m.org_id, NULLIF(o.style_text, '') FROM mailboxes m JOIN organizations o …` (expand step, D13). `organizations.style_text` stays (E6b drops it).
-  - Index `emails (mailbox_id, thread_key, received_at)` (F5); `CREATE INDEX IF NOT EXISTS emails_thread_received_idx` in the migration (F116 stage 07 creates the same index; the second migration to land must not fail or make a twin).
-  - Outbox kinds `replies_ready`, `reply_prompt`, `reply_result` in `outbox_kind_check` (drop and add, as `20261115130001_approval_edit.sql`); the `down` part deletes their rows first. `replies_ready` needs no `email_id`; `reply_prompt` and `reply_result` need `email_id`.
+  - No index: `emails_thread_received_idx` on `emails (mailbox_id, thread_key, received_at)` exists (F116 migration `20261115160001_open_loops.sql`). This migration creates none and its Down drops none (F116 review-7 N3).
+  - Outbox kinds `replies_ready`, `reply_prompt`, `reply_result` in `outbox_kind_check`: drop and add, with the list of the newest migration that replaced it at `HEAD` plus the three kinds (today `20261115150001_outbox_sent_missing.sql`). `reply_prompt` and `reply_result` need `email_id`, `replies_ready` none: extend `outbox_email_kind_check` the same way (today's shape: `20261115170001_action_loop_anchor.sql`, mail or loop anchor). The `down` part deletes their rows first.
+  - `bun run db:check-migrations` passes with no `-- contract:` line: both CHECK replaces only widen, the tables are new (`docs/code-patterns.md` § Migrations).
 - **Test (integration):**
   1. Migrate up on a DB with an org whose `style_text` is `"Jan"` and one with `''`: profiles have signature `"Jan"` and null.
   2. A second `auto` request for the same mail → unique violation; a second `tap` request → allowed.
   3. Org B cannot read org A's `reply_requests` row under the tenant role (RLS).
-  4. Down, then up again: no error.
+  4. Down, then up again: no error; `emails_thread_received_idx` still exists after the Down.
+  5. `bun run db:check-migrations` passes (no finding).
 
-## Step 2 — Repositories
+## Step 2 — Notice kinds in core (same commit as the CHECK change)
 
-- **Goal:** in module `replies`, `repo/requests.ts` (insert, claim batch with `FOR UPDATE SKIP LOCKED` and `locked_at` as the triage claim, finish, release with `next_attempt_at`, list by email, count redrafts of a mail); in module `mail`, `mailboxProfileOf(db, ctx, mailboxId)` and `upsertMailboxProfile(trx, ctx, mailboxId, fields, userId)`.
-- **Decisions:** a claim takes `pending` rows with `next_attempt_at <= now` and stale `drafting` rows (`locked_at` older than 5 min, one attempt counted). Every query filters by `org_id`.
-- **Test (integration):**
-  1. Two parallel claims of 4 pending rows → each row claimed once.
-  2. A `drafting` row locked 6 min ago is claimed again with `attempts + 1`.
-  3. `countRedrafts` counts only `redraft` rows of that mail.
+- **Goal:** the three kinds exist in the code wherever the DB list is compared, so the Proof passes at this stage.
+- **Decisions (review B1):**
+  - `noticeKinds` (`packages/core/src/notices/kinds.ts`) gains `replies_ready`, `reply_prompt`, `reply_result`, in the order of the CHECK list.
+  - `noticeViewSchemas` and `noticeRenderers` (`packages/core/src/notices/`) get a minimal view and renderer per kind: `replies_ready` `{ count, now, timeZone }`; `reply_prompt` `{ emailId }`; `reply_result` `{ emailId, reason }` (a `ReplyBlockReason` or a request status). Each renders one fixed en and pl line, no button. Stages 12–13 replace the views and texts; they keep the kind names.
+  - `queuedBy` (`apps/server/src/modules/channels/notices/index.ts`) names the producer of each: `replies_ready` → `replies/notices.ts`, `reply_prompt` and `reply_result` → `replies/telegram.ts` (stages 12–13 create the files; the entry is a name only).
+- **Tests that must pass unchanged:** `apps/server/test/integration/telegram-schema.test.ts` (the DB CHECK list equals `noticeKinds`), `packages/core/src/notices/registry.test.ts` (a renderer, a view schema and a fixture per kind: add the three fixtures) and `apps/server/src/modules/channels/notices/registry.test.ts` (a detector or a `queuedBy` entry per kind).
+- **Rollback note (no code here):** a release without these kinds fails the whole claim batch of the outbox for all orgs on one such row (`claimDueOutbox` parses `row.kind`, `channels/repo.ts`). Stages 17 and 18 hold the SQL for that case.
 
-## Step 3 — Privacy maps, retention and the registries
+## Step 3 — Privacy maps
 
-- **Goal:** the F106 address map (`privacy/address-map.ts`) and export map gain the new text columns: `reply_requests.instruction` (text rule), `reply_requests.sample_body` (text rule), `mailbox_profiles.display_name`, `signature`, `writing_style` (text rule; exported). The completeness test passes. Retention: `reply_requests.instruction` and `sample_body` clear with the action payloads (`data_retention_days`), and the retention log line adds one count (`reply text`).
-- **Also:** the flag `reply_drafts` in `featureFlags` (epic `E6a`, remove-by `2027-06-01`, default off); the switch `reply_drafts` in the tool switch schema (default false) and the settings form list.
+- **Goal:** the F106 address map (`privacy/address-map.ts`) and export map gain the new text columns: `reply_requests.instruction` (text rule), `reply_requests.sample_body` (text rule), `mailbox_profiles.display_name`, `signature`, `writing_style` (text rule; exported). They land with the migration: the completeness tests read the DB columns.
 - **Test:**
-  1. The F106 completeness test passes; with the `instruction` entry removed it fails.
+  1. The F106 completeness tests pass; with the `instruction` entry removed they fail.
   2. A data-request find for `jan@firma.pl` finds a request whose instruction holds it.
-  3. Retention clears an instruction of a request older than the window, and keeps a newer one.
-  4. `/api/me` flags list holds `reply_drafts: false` by default.
-- **Check:** `bun test` on the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`. After the land: the coordinator runs `bun run db:migrate` on the shared dev DB.
-- **Out of scope:** any reader of the profile in mail building (stage 04), the payload kind.
-
-## Carry-over from F116 stage 07 review
-
-F116 stage 07 (landing first) owns `emails_thread_received_idx`. This migration must create no index and drop none: remove the `CREATE INDEX IF NOT EXISTS` line (or keep it as a no-op that checks the columns) and make sure its Down does not drop the index. `IF NOT EXISTS` checks only the name: a same-name index with other columns is skipped without a warning. See `spec/features/active/F116-e5b-open-loops/review-7.md` (N3).
+- **Out of scope:** repositories, retention, flag and switch (03b); any reader of the profile (04); the payload kind.
