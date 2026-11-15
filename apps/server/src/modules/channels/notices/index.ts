@@ -1,6 +1,6 @@
 import { type NoticeKind } from "@ea/core";
 
-import { describeError } from "../../../platform/errors";
+import { errorFields } from "../../../platform/errors";
 import { listMailboxes } from "../../mail";
 import { getOrganization } from "../../tenancy";
 import { type LinkedChat } from "../port";
@@ -78,10 +78,10 @@ export async function detectNotices(deps: NoticeDeps): Promise<void> {
       try {
         await detectForOrg(deps, orgId, members, now);
       } catch (error) {
-        log.error(`notices for org ${orgId} failed: ${describeError(error)}`);
+        log.error("notices_org_failed", { org_id: orgId, ...errorFields(error) });
       }
     }
   } catch (error) {
-    log.error(`notices failed: ${describeError(error)}`);
+    log.error("notices_failed", { ...errorFields(error) });
   }
 }

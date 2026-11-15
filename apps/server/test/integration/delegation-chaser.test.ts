@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { parseToolSwitches } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
@@ -527,22 +528,73 @@ describe("createChaserJob with a suspended organization", () => {
 });
 
 describe("createChaserJob log", () => {
-  test("(8b) the gate skip logs one line per mailbox over two runs", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+  // Runs `body` with the console spies; returns every printed line (format() shows an object with its fields).
+  async function captured(body: () => Promise<void>): Promise<string[]> {
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    const errorSpy = spyOn(console, "error").mockImplementation(
+      (...args: unknown[]) => void lines.push(format(...args))
+    );
     setLogLevel("info");
     try {
-      await withRollback(db, async (trx) => {
-        const s = await setup(trx);
-        await openDelegation(trx, s);
-        const job = createChaserJob({ db: trx, now: () => at0729 });
-        await job.run();
-        await job.run();
-        const output = logSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" ")).join("\n");
-        expect(output.split(`chaser ${s.mailboxId}: skipped gate`)).toHaveLength(2);
-      });
+      await body();
     } finally {
       logSpy.mockRestore();
+      errorSpy.mockRestore();
     }
+    return lines;
+  }
+
+  test("(8b) the gate skip logs one line per mailbox over two runs", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await openDelegation(trx, s);
+      const job = createChaserJob({ db: trx, now: () => at0729 });
+      const lines = await captured(async () => {
+        await job.run();
+        await job.run();
+      });
+      expect(lines).toEqual([`[delegation] chaser_skipped org_id=${s.orgId} mailbox_id=${s.mailboxId} reason=gate`]);
+    });
+  });
+
+  test("(8c) a shadow mailbox logs chaser_skipped_settings once over two runs", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx, { mode: "shadow" });
+      await openDelegation(trx, s);
+      const job = createChaserJob({ db: trx, now: () => at0730 });
+      const lines = await captured(async () => {
+        await job.run();
+        await job.run();
+      });
+      expect(lines).toEqual([`[delegation] chaser_skipped_settings org_id=${s.orgId} mailbox_id=${s.mailboxId}`]);
+    });
+  });
+
+  test("(8d) force logs chaser_forced, then the counts of the reminders it planned", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await openDelegation(trx, s);
+      const lines = await captured(() => createChaserJob({ db: trx, now: () => at0729 }).run({ force: true }));
+      expect(lines).toEqual([
+        `[delegation] chaser_forced org_id=${s.orgId} mailbox_id=${s.mailboxId}`,
+        `[delegation] chaser_done mailbox_id=${s.mailboxId} due=1 overdue=1 reminders=1`,
+      ]);
+    });
+  });
+
+  test("(8e) a mailbox that fails logs chaser_failed with the error name only; the next one still runs", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await openDelegation(trx, s);
+      // The time zone text reaches the Intl error message: the token must not reach the log.
+      await trx.updateTable("organizations").set({ timezone: "123456:MARKER-TZ" }).where("id", "=", s.orgId).execute();
+      const lines = await captured(() => createChaserJob({ db: trx, now: () => at0730 }).run());
+      expect(lines).toEqual([
+        `[delegation] chaser_failed org_id=${s.orgId} mailbox_id=${s.mailboxId} error=RangeError`,
+      ]);
+      expect(lines.join("\n")).not.toContain("MARKER");
+    });
   });
 });
 

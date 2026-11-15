@@ -2,7 +2,7 @@ import { dueDigestSlot, isLateSlot, localKey, parseDigestTimes } from "@ea/core"
 import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import type { TestMailRule } from "../mail";
 import { buildDigestMessage, digestPeriodStart, insertDigest, lastDigestSlotKey } from "../reports";
@@ -73,7 +73,7 @@ async function scheduleForLink(
   };
   const outboxId = await (db.isTransaction ? queue(db as Transaction<DB>) : db.transaction().execute(queue));
   if (outboxId === null) return;
-  log.info(`digest ${slot.key} queued for user ${userId}: outbox ${outboxId}`);
+  log.info("digest_queued", { slot: slot.key, user_id: userId, outbox_id: outboxId });
 }
 
 // Never throws. One member that fails does not stop the next one.
@@ -84,10 +84,10 @@ export async function scheduleDigests(deps: DigestJobDeps): Promise<void> {
       try {
         await scheduleForLink(deps.db, link, now, deps.testMail);
       } catch (error) {
-        log.error(`digest for org ${link.orgId} user ${link.userId} failed: ${describeError(error)}`);
+        log.error("digest_member_failed", { org_id: link.orgId, user_id: link.userId, ...errorFields(error) });
       }
     }
   } catch (error) {
-    log.error(`digests failed: ${describeError(error)}`);
+    log.error("digests_failed", { ...errorFields(error) });
   }
 }

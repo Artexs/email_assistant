@@ -108,7 +108,7 @@ export async function updateOrganizationSettings(
         data: { from: current.timezone, to: patch.timezone },
         at: input.now,
       });
-      log.info(`organization ${ctx.orgId} timezone changed by ${input.actor}`);
+      log.info("org_timezone_changed", { org_id: ctx.orgId, actor: input.actor });
     }
     if (patch.styleText !== undefined && patch.styleText !== current.style_text) {
       changes.styleText = patch.styleText;
@@ -118,7 +118,7 @@ export async function updateOrganizationSettings(
         data: { set: patch.styleText !== null },
         at: input.now,
       });
-      log.info(`organization ${ctx.orgId} signature changed by ${input.actor}`);
+      log.info("org_signature_changed", { org_id: ctx.orgId, actor: input.actor });
     }
     if (Object.keys(changes).length === 0) return { kind: "updated", organization: current };
 
@@ -222,7 +222,12 @@ export async function setOrgPlan(
       },
       at: input.now,
     });
-    log.info(`organization ${ctx.orgId} plan ${before.plan} -> ${after.plan} by ${input.actor}`);
+    log.info("org_plan_changed", {
+      org_id: ctx.orgId,
+      from_plan: before.plan,
+      to_plan: after.plan,
+      actor: input.actor,
+    });
 
     const cancelledMessages =
       before.plan !== "suspended" && after.plan === "suspended" ? ((await hooks.onSuspended?.(trx, ctx)) ?? 0) : 0;
@@ -271,7 +276,7 @@ export async function setOrgFeature(
       data: { flag, enabled },
       at: input.now,
     });
-    log.info(`organization ${ctx.orgId} flag ${flag} ${enabled ? "on" : "off"} by ${input.actor}`);
+    log.info("org_flag_changed", { org_id: ctx.orgId, flag, enabled, actor: input.actor });
     return { kind: "changed", flag, before: row ?? null, enabled };
   };
 
