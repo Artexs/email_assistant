@@ -124,7 +124,7 @@ const repoRoot = resolve(import.meta.dir, "../../../..");
 const script = resolve(import.meta.dir, "../../src/scripts/job-run.ts");
 
 async function runJob(args: string[], env: Record<string, string | undefined>) {
-  const proc = Bun.spawn(["bun", script, ...args], {
+  const proc = Bun.spawn(["bun", "--no-env-file", script, ...args], {
     cwd: repoRoot,
     env: { ...process.env, ...env },
     stdout: "pipe",
