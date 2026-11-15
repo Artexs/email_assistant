@@ -15,7 +15,7 @@ function onMobile(): boolean {
 }
 
 // Every test gets a fresh context and its own client address: the login rate limit (3 per 10 s per address) never crosses tests.
-// The two projects run in different worker processes, so each gets its own block of the 198.51.100.0/24 range.
+// The two projects run in different worker processes, so each gets its own block of the `nextAddress` range (see helpers.ts).
 function addressBase(): number {
   return onMobile() ? 10 : 110;
 }
