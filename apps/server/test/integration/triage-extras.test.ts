@@ -12,6 +12,7 @@ import {
   loadClassifierExtras,
   triageOne,
   type TriageMailbox,
+  noGateEvidence,
 } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 import type { LlmClient } from "../../src/platform/llm";
@@ -160,6 +161,7 @@ function mailboxOf(s: Scene, urgencyProfile: UrgencyProfile | null = null): Tria
     settingsVersion: s.settingsVersion,
     mode: "shadow",
     toolSwitches: { move: false, mark_read: false, flag: false, create_draft: false, move_unsure: false },
+    runningKey: noGateEvidence.runningKey,
     policy: {},
     rules: [],
     movesSupported: false,

@@ -11,6 +11,7 @@ import {
   toolSwitchNames,
   urgencyBodySchema,
   type BarCategory,
+  type EvidenceBlock,
   type GateView,
   type RuleView,
   type SettingsWebChange,
@@ -29,7 +30,10 @@ import { addSenderRule, removeSenderRule } from "./rules";
 import { setMode, setToolSwitch, setUrgencyProfile, SettingsNotFoundError, type SettingsChange } from "./service";
 import { buildSettingsView, type SettingsViewDeps } from "./view";
 
-export type AutoGateOutcome = { kind: "changed"; change: SettingsChange } | { kind: "refused"; gate: GateView };
+// `blocks`: why the evidence gate refused (flag `trust_ladder` on); absent when the real-label gate refused.
+export type AutoGateOutcome =
+  | { kind: "changed"; change: SettingsChange }
+  | { kind: "refused"; gate: GateView; blocks?: EvidenceBlock[] };
 
 export interface SettingsRouteDeps extends SettingsViewDeps {
   db: Db;
@@ -137,7 +141,12 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
         force: body.force ?? false,
         actor: c.get("session").userId,
       });
-      if (result.kind === "refused") return c.json({ error: "no_go", gate: result.gate }, 409);
+      if (result.kind === "refused") {
+        return c.json(
+          { error: "no_go" as const, gate: result.gate, ...(result.blocks ? { blocks: result.blocks } : {}) },
+          409
+        );
+      }
       return respond(c, id, result.change);
     });
   });

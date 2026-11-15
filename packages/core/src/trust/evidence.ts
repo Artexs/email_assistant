@@ -15,13 +15,15 @@ export interface GlobalEvidence {
   file: string | null;
 }
 
-export type EvidenceBlock =
-  | "no_global"
-  | "global_no_go"
-  | "global_provisional"
-  | "history_fail"
-  | "tripped"
-  | "real_labels_no_go";
+export const evidenceBlocks = [
+  "no_global",
+  "global_no_go",
+  "global_provisional",
+  "history_fail",
+  "tripped",
+  "real_labels_no_go",
+] as const;
+export type EvidenceBlock = (typeof evidenceBlocks)[number];
 
 export interface AutoEvidenceInput {
   category: string;

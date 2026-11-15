@@ -14,6 +14,7 @@ import {
   type LlmPause,
   type TriageDecision,
   type TriageMailbox,
+  noGateEvidence,
 } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 import {
@@ -62,6 +63,7 @@ async function setup(trx: Transaction<DB>) {
     settingsVersion: settings.version,
     mode: "shadow",
     toolSwitches: { move: true, mark_read: true, flag: true, create_draft: false, move_unsure: true },
+    runningKey: noGateEvidence.runningKey,
     policy: { info: { auto: true } },
     rules: [],
     movesSupported: true,
@@ -1503,6 +1505,7 @@ describe("triageOne: the plan by the source folder (D11)", () => {
         create_draft: opts.createDraft ?? false,
         move_unsure: false,
       },
+      runningKey: noGateEvidence.runningKey,
       policy: Object.fromEntries((opts.auto ?? []).map((category) => [category, { auto: true }])),
       delegates: [{ id: delegateId, name: "Anna", email: "anna@firma.test", tags: ["offers"] }],
       junkFolder: opts.junkRow === false ? null : await getJunkFolderPath(trx, base.ctx, base.mailbox.id),

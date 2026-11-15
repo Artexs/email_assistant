@@ -22,7 +22,7 @@ import { createMailSyncJob } from "../../src/modules/mail/jobs";
 import { insertCredentials, markSynced } from "../../src/modules/mail/repo";
 import { activityRoutes } from "../../src/modules/reports";
 import { setDigestTimes, tenancyRoutes } from "../../src/modules/tenancy";
-import { createLlmPause, createTriageJob } from "../../src/modules/triage";
+import { createLlmPause, createTriageJob, noGateEvidence } from "../../src/modules/triage";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
@@ -267,6 +267,7 @@ describe("log canary", () => {
           return step();
         };
         const triage = createTriageJob({
+          runningKey: noGateEvidence.runningKey,
           db: trx,
           llm: createFixedLlmClient(generate, {
             model: "fake-model",

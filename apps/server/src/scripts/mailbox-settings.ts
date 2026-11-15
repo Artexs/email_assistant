@@ -1,6 +1,12 @@
-import { describeSettings, MAILBOX_ACTION_TYPES, type SettingsSnapshot, type UrgencyProfile } from "@ea/core";
+import {
+  describeSettings,
+  type GateEvidenceDeps,
+  MAILBOX_ACTION_TYPES,
+  type SettingsSnapshot,
+  type UrgencyProfile,
+} from "@ea/core";
 
-import { sentSwitchHooks, settingsDeps } from "../composition";
+import { autoSetter, gateEvidenceOf, sentSwitchHooks, settingsDeps } from "../composition";
 import { countReadyOriginals, expireReady } from "../modules/actions";
 import { getSettingsView, setMode, setToolSwitch, setUrgencyProfile, type SettingsChange } from "../modules/config";
 import {
@@ -11,7 +17,6 @@ import {
   setSyncFolderEnabled,
   type TestMailRule,
 } from "../modules/mail";
-import { setCategoryAutoWithGate } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal, testMailRule } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
@@ -56,8 +61,15 @@ function printChange(result: SettingsChange): void {
   }
 }
 
-async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMailRule): Promise<number> {
-  const deps = settingsDeps(db, () => now);
+async function run(
+  command: SettingsCommand,
+  db: Db,
+  now: Date,
+  testMail: TestMailRule,
+  gate: GateEvidenceDeps
+): Promise<number> {
+  // The same gate files and running key as the server, so the CLI is not stricter than the API (ADR 0028).
+  const deps = settingsDeps(db, () => now, gate);
   const ctx = { orgId: command.orgId };
   const { mailboxId } = command;
   switch (command.kind) {
@@ -151,19 +163,13 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
       return 0;
     }
     case "auto": {
-      const result = await setCategoryAutoWithGate(
-        deps,
-        ctx,
-        mailboxId,
-        {
-          category: command.category,
-          auto: command.value,
-          force: command.force,
-          ...(command.threshold === undefined ? {} : { threshold: command.threshold }),
-          actor: ACTOR,
-        },
-        testMail
-      );
+      const result = await autoSetter(deps, testMail)(ctx, mailboxId, {
+        category: command.category,
+        auto: command.value,
+        force: command.force,
+        ...(command.threshold === undefined ? {} : { threshold: command.threshold }),
+        actor: ACTOR,
+      });
       if (result.gate) {
         const { gate } = result;
         out.print(
@@ -171,7 +177,10 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
         );
       }
       if (result.kind === "refused") {
-        out.fail(`refused: ${command.category} did not pass go/no-go (use --force to set auto on anyway)`);
+        const blocks = result.evidence?.blocks ?? [];
+        out.fail(
+          `refused: ${command.category} did not pass go/no-go${blocks.length > 0 ? ` (${blocks.join(", ")})` : ""} (use --force to set auto on anyway)`
+        );
         return 2;
       }
       printChange(result.change);
@@ -203,7 +212,7 @@ async function main(): Promise<number> {
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    return await run(command, db, new Date(), testMailRule(config));
+    return await run(command, db, new Date(), testMailRule(config), gateEvidenceOf(config));
   } catch (error) {
     out.fail(`failed: ${describeError(error)}`);
     return 1;

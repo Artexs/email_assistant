@@ -68,6 +68,8 @@ export type AutoGateResult =
   | { kind: "refused"; gate: GateView };
 
 // The gate reads outside the settings lock: a label that arrives meanwhile shows in the next read.
+// Flag `trust_ladder` off (see ADR 0028): `auto` on also stores the grant (`real_labels` on a real-label `go`, `forced`
+// with force) under the running key and clears the active trips of the category in the same transaction.
 export async function setCategoryAutoWithGate(
   deps: SettingsDeps,
   ctx: TenantContext,
@@ -81,6 +83,7 @@ export async function setCategoryAutoWithGate(
       auto: false,
       ...(input.threshold === undefined ? {} : { threshold: input.threshold }),
       gate: { decision: "skipped", precision: null, kept: 0, forced: false },
+      grantBy: "real_labels",
       actor: input.actor,
     });
     return { kind: "changed", change, gate: null };
@@ -90,15 +93,15 @@ export async function setCategoryAutoWithGate(
     return { kind: "refused", gate };
   }
   const threshold = input.threshold ?? (gate.decision === "go" ? (gate.threshold ?? undefined) : undefined);
+  const forced = input.force && gate.decision !== "go";
   const change = await setCategoryAuto(deps, ctx, mailboxId, {
     category: input.category,
     auto: true,
     ...(threshold === undefined ? {} : { threshold }),
-    gate: {
-      decision: gate.decision,
-      precision: gate.precision,
-      kept: gate.kept,
-      forced: input.force && gate.decision !== "go",
+    gate: { decision: gate.decision, precision: gate.precision, kept: gate.kept, forced },
+    grantBy: forced ? "forced" : "real_labels",
+    inTransaction: async (trx) => {
+      await deps.clearTrips(trx, ctx, mailboxId, input.category, deps.now());
     },
     actor: input.actor,
   });
