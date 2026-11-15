@@ -16,7 +16,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (LLM eval, real money). Needs stag
 
 ## Step 2 — Gate evidence test
 
-- **Goal:** a test in `triage/gate-evidence.test.ts` (or a sibling) that a passing standard gate file exists for `prompts.extractor.version`, like the classifier check. Stage 11 does not start analysis without it.
+- **Goal:** a test in `triage/gate-evidence.test.ts` (or a sibling) that a passing standard gate file exists for `prompts.extractor.version`, like the classifier check. Stage 12 does not start analysis without it (this CI test is the guard; there is no runtime check).
 - **Test:** T6 the check fails on an empty temp folder and passes with a fixture file.
 
 ## Step 3 — The runs
@@ -27,7 +27,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (LLM eval, real money). Needs stag
   - At most one rerun of each part (questions.md 7: ≤ $4 in total).
   - The report ends with a "Second pass input" section: the PD-123 numbers against their bars, the `promise` recall, the cost per sent mail, and the share of `expects_reply` true (it predicts the brief volume for G1).
 - **Not run when:** no API key for the extractor provider in the worker env. Then stop after steps 1–2, say so; the coordinator runs step 3.
-- **Gate fail:** C1. The coordinator may continue stages 07–10 (no LLM use) and starts a dev-only tuning job with `extractor-v2`.
+- **Gate fail:** C1. The coordinator may continue stages 07–11 (no LLM use) and starts a dev-only tuning job with `extractor-v2`.
 
 ## Check
 

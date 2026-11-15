@@ -9,7 +9,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration, privacy registries). N
 - **Decisions:**
   - Every FK is composite with `org_id` (the existing pattern). `sent_emails` gets `UNIQUE (id, org_id)` when it has none.
   - `open_loops` CHECKs: `delegate_id` not null exactly when `kind = 'delegated'`; `status = 'closed'` ⇔ `closed_at` and `close_reason` not null; `later_count` 0–3; `follow_ups_sent` 0–2; `cardinality(to_addresses) + cardinality(cc_addresses) <= 10`; `char_length(text) <= 80`; `char_length(subject) <= 300`; `due_at` not null.
-  - The thread index uses `CREATE INDEX IF NOT EXISTS` with the shared name (F115 stage 03 plans the same index; the second to land is a no-op).
+  - The thread index uses `CREATE INDEX IF NOT EXISTS` with the name of `interfaces.md`. If F115 stage 03 landed first with another name, use its index and create none (say so in the final message).
   - RLS on both tables (the policy of `20261114100002_rls_tenant_policies.sql`).
   - No outbox kind and no action type changes here.
 - **Test (integration):** T1 migrate up, down, up on the job DB; T2 an `open_loops` row of kind `waiting` with a `delegate_id` → CHECK error; T3 a closed row without `close_reason` → error; T4 delete a `sent_emails` row → the loop stays with `sent_email_id` null; T5 delete the mailbox → loops and analyses are gone; T6 a second row with the same `(org_id, sent_email_id, kind)` → unique error; T7 a row of org B read in a transaction of org A → not visible (RLS).

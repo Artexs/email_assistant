@@ -6,7 +6,7 @@ opened: 2026-11-13
 
 ## Outcome
 
-Nothing the executive waits for slips. The system tracks the replies they wait for, the dated promises they made, and the work they delegated by hand, and it chases each one with a follow-up draft that waits for one tap. The first digest of the day becomes a "needs you today" brief. Source: row 22 of `docs/product/stage-2/05-execution-plan.md` §2.1 and the epic page `docs/product/stage-2/epics/E05-open-loops.md` (owner decisions PD-115–PD-129).
+Nothing the executive waits for slips. It tracks the replies they wait for, the dated promises they made and the work they delegated by hand, and chases each one with a follow-up draft that waits for one tap. The first digest of the day becomes a "needs you today" brief. Source: row 22 of `docs/product/stage-2/05-execution-plan.md` §2.1 and the epic page `docs/product/stage-2/epics/E05-open-loops.md` (PD-115–PD-129).
 
 ## Scope
 
@@ -23,7 +23,7 @@ Nothing the executive waits for slips. The system tracks the replies they wait f
 
 ## Acceptance
 
-- On the frozen sent-mail holdout, `expects_reply` recall ≥ 90% and precision ≥ 80%, promise precision ≥ 90%, due date exact ≥ 90% (gate file under `evals/results/gate/`).
+- On the frozen sent-mail holdout, the Wilson 95% lower bounds of `expects_reply` recall ≥ 90% and precision ≥ 80% and of promise precision ≥ 90%, and due date exact ≥ 90% (PD-123; gate file under `evals/results/gate/`).
 - A sent mail that asks a question and gets no answer shows as a Waiting line in the morning brief on its due day; a reply from any original recipient closes it; an auto-reply does not.
 - "Draft follow-up" makes an approval card with the original To and Cc, in the thread; nothing goes out without the second tap.
 - A Delegate tap on a digest row makes a delegation draft to the chosen delegate.
@@ -39,4 +39,4 @@ Nothing the executive waits for slips. The system tracks the replies they wait f
 ## Notes
 
 - Design input: `docs/product/stage-2/06-architecture-review.md` §5 and §8 decision 3 (one `loops` module, one chaser).
-- Absorbs the planned "delegation reply from another address" ticket (F040) for Waiting loops (PD-121).
+- Absorbs the "delegation reply from another address" ticket (F040) for Waiting loops (PD-121).

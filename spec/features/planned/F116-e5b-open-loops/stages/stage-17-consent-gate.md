@@ -22,7 +22,7 @@ Owner rule (2026-11-15): a new kind of mail-derived data in Telegram needs a con
 - **Goal:** `TELEGRAM_CONSENT_VERSION` = the land date of this stage; the consent text (en, pl; `packages/core/src/texts/` and the panel copy of the link step) adds one sentence. One commit with the version and both texts (`docs/code-patterns.md` § The consent version).
 - **Text:** en "If you turn on open loops: who you wait for (addresses from your sent mail), a short line of what you asked or promised, and follow-up drafts with their recipients." pl "Jeśli włączysz otwarte sprawy: na kogo czekasz (adresy z wysłanej poczty), krótką linię o tym, o co prosisz lub co obiecujesz, oraz szkice przypomnień z ich adresatami."
 - **Decisions:** a new link request with an older version → 409 `telegram_consent_outdated` (the existing check). The panel button "Confirm the new Telegram terms" is stage 22 (unless F115 stage 15 built it).
-- **Test (unit):** T6 the pl and en consent texts hold the new sentence (fixed Polish value); T7 the version constant equals `OPEN_LOOPS_CONSENT_SINCE`.
+- **Test (unit):** T6 the pl and en consent texts hold the new sentence (fixed Polish value); T7 `TELEGRAM_CONSENT_VERSION >= OPEN_LOOPS_CONSENT_SINCE` (a later bump, for example by F115, keeps it true; review N5). Two bumps on one day give one version: the second stage on that day adds its sentence to the same text and keeps the version.
 
 ## Check
 

@@ -9,7 +9,7 @@ Part of [`../plan.md`](../plan.md). Content stage, **run as several jobs**: step
 - **Rules** (the README "Sent bank" section of stage 02):
   1. Read only that README section and `evals/sim/lab-01/<part>/blind/batch-NNN.json`. Never open `slots/`, `texts/`, `labels/`, the plan specs or the scenario, and never run `sim brief`, `sim reconcile` or `sim status`. The coordinator greps the job's tool log for those paths and commands before the land and discards the job if one is there (the F097 blind rule).
   2. `bun run sim stale lab-01 --part <part> --batches NNN-NNN` lists the ids to label.
-  3. Per case: `expectsReply` (does the sender expect an answer from a recipient?), `promise` (does the sender make a firm promise of their own, with a date or a time word?), `due` and `promiseDue` (the date as YYYY-MM-DD, resolved from the mail's sent date; null when none or when it is a conditional promise). Write `/tmp/f116-s04/labels-NNN.json`.
+  3. Per case: `expectsReply` (does the sender expect an answer from a recipient?), `promise` (does the sender make a firm promise of their own, with a date or a time word?), `due` and `promiseDue` (the date as YYYY-MM-DD, resolved from the mail's sent date with the README time-word rules; null when none or when it is a conditional promise). Write `/tmp/f116-s04/labels-NNN.json`.
   4. `bun run sim label-import lab-01 --part <part> --batch NNN --checker <model id> --file /tmp/f116-s04/labels-NNN.json`.
   5. `bun run sim check lab-01 --part <part> --batches NNN-NNN`; commit `labels/batch-NNN.json` (`F116 s04: <part> batch NNN labels`).
 - **Done when:** `sim stale` prints nothing for the range and the check prints `ok`.

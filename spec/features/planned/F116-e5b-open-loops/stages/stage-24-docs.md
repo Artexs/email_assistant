@@ -11,7 +11,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 01–23. Docs only; no code cha
 
 - **Goal:** the pages say what the code does at the land commit (the `docs/capabilities/README.md` form: what it does, rules, entry points, data, limits, decisions, tests).
 - **Files:**
-  - New `docs/capabilities/open-loops.md`: kinds, analysis (filters, extractor, dates), close rules, taps and commands, the chaser, follow-ups, the brief, the consent gate, switch-off, retention, flags, log lines, tests.
+  - New `docs/capabilities/open-loops.md`: kinds, analysis (filters, extractor, dates), close rules, taps and commands, the chaser, follow-ups, the brief, the consent gate, switch-off, retention, flags, log lines, tests. Limits: a new ask or promise in a later own mail in an open loop's thread is not extracted (D9, review N13); an ignored loop ends `stale` 30 days after due.
   - `delegation.md`: the chaser moved (D3), `delegations.source`, the Delegate command, hand forwards as `delegated` loops; drop the E5b limits that are now built.
   - `digest-and-notices.md`: the brief sections, the count line, the Delegate button and picker, the loop buttons.
   - `drafts-and-send.md`: kind `follow_up`, the loop anchor, `to ∪ cc` in the envelope and the limits.

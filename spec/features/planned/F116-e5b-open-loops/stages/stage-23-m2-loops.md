@@ -1,6 +1,6 @@
 # F116 stage 23 — M2 counts loops
 
-Part of [`../plan.md`](../plan.md). Needs stage 13. No migration.
+Part of [`../plan.md`](../plan.md). Needs stages 10 and 13. No migration.
 
 M2 today counts delegations only (`packages/core/src/metrics/m2.ts`, F4). PD-127: two numbers, surfaced on time and closed on time, now over all three loop kinds and delegations.
 

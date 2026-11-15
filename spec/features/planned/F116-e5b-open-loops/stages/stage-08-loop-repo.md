@@ -25,7 +25,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 07. No migration.
 
 - **Goal:** turning "Track my sent mail" off ends what Sent mail started (D18).
 - **Interfaces (new):** `SentSwitchHooks { onDisabled(trx, ctx, { mailboxId, at }) }` in module `mail` with a no-op default, passed to `setSentSync` by every caller (the composition root, the routes and CLI of F104). `onSentOff(trx, ctx, { mailboxId, at })` in `loops` is the real hook. It runs in the `setSentSync` transaction before the `sent_emails` delete.
-- **Decisions:** `onSentOff` closes every open loop of the mailbox as `sent_off`, clears its texts at once, and expires each waiting follow-up send through the existing expiry path with reason `loop_closed` (the send rows exist from stage 10; until then the expiry finds none). `sent_analyses` rows go by cascade.
+- **Decisions:** `onSentOff` closes every open loop of the mailbox as `sent_off` and clears its texts at once; `sent_analyses` rows go by cascade. The expiry of waiting follow-ups is added in stage 10 (review G8). Org flag `open_loops` or `sent_sync` off: the jobs skip the org and the brief, routes and page hide loops; rows and texts stay until the retention rules (review N10).
 - **Test (integration):** T7 two open loops and one closed loop → the open ones `sent_off` with null texts, the closed one unchanged; T8 a loop of another mailbox stays open; T9 the composition root passes `onSentOff` (a test on the wired deps, the `sentOriginOf` pattern).
 
 ## Check

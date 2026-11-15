@@ -18,3 +18,6 @@ Part of [plan.md](plan.md). Each item is a default the planner took (the owner s
 14. **[minor] M2-surfaced for loops** = `surfaced_at` ≤ due + 1 working day, the same rule as delegations at `HEAD`. Default: stage 23.
 15. **[minor] Extractor input** = the body cut to 8,000 characters. Default: D6.
 16. **[minor] Job name.** `delegation.chaser` stays an alias of `loops.chaser` for `job:run` until the docs stage of the next release. Default: D3.
+17. **[important: user-visible] An ignored loop ends.** A Waiting or Delegated loop with no answer and no follow-up closes `stale` 30 days after its due, in every mode (review G5). Default: D13, stage 15. Option: keep it open until a tap (it shows in every brief and keeps its addresses).
+18. **[important: user-visible] Gate bars use the Wilson 95% lower bound** (PD-123 text in the discovery notes). With about 125 positive holdout cases this needs about 95% measured recall; the extractor can reach the plain 90% and still fail C1 (review N3). Default: the bound, as PD-123 says; the ticket says so.
+19. **[minor] A promise closes on any later own mail to the counterpart, in any thread** (PD-122 as written; the plan first had "same thread", review G11). The panel shows `later_reply` with Reopen. Default: stage 12.

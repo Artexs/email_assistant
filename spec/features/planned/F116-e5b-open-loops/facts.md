@@ -18,3 +18,4 @@ Part of [plan.md](plan.md). Read at plan base 9531f16a; scout leads in [scouts.m
 
 - **N1** Interia threads an APPENDed follow-up and keeps the To/Cc (stage 25).
 - **N2** `extractor-v1` meets the gate (stage 06).
+- **N3** Telegram shows at most 8 inline buttons per keyboard row (a common client limit; not in the Bot API text). Stage 19 keeps rows at ≤ 8 and checks the render in the live chat at stage 25 (review N11).

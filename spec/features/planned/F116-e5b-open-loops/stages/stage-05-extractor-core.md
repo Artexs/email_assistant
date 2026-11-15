@@ -13,7 +13,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (LLM prompt, untrusted text). Need
 - **Goal:** `packages/core/src/loops/extractor.ts`: `extractorOutputSchema` and `sentSkipReason` (`interfaces.md`).
 - **Decisions:**
   - Schema: strict object; `ask` and `promise` 1–80 characters after `cleanUserText({ oneLine: true })`, else null; a `due` without `expects_reply` is dropped; a `promise_due` without `promise` is dropped; `language` `other` keeps the result but the product shows English texts.
-  - `sentSkipReason(facts)` order (first hit wins): `system_draft` (`action_id` set), `no_text`, `too_old` (> 14 days before `now`), `own_only` (every To and Cc is an own mailbox address of the org), `too_many` (> 10 To + Cc), `list` (`list_id`), `auto` (`auto_submitted` set and not `no`), `calendar` (`has_calendar`). Addresses compare lower case.
+  - `sentSkipReason(facts)` order (first hit wins): `system_draft` (`action_id` set), `no_text` (`content` is `headers_only` or `gone`, or the body is empty; a `pending` row is never passed in: it waits, stage 12), `too_old` (> 14 days before `now`), `own_only` (every To and Cc is an own mailbox address of the org), `too_many` (> 10 To + Cc), `list` (`list_id`), `auto` (`auto_submitted` set and not `no`), `calendar` (`has_calendar`). Addresses compare lower case.
   - The model input: subject, sent date (org local, ISO), the To/Cc count (no addresses), the body cut to 8,000 characters (D6). No address goes to the model.
 - **Test (unit):** T3 each skip reason with one fixture, and the order (`system_draft` before `own_only`); T4 schema: `ask` of 81 characters → null; `due` with `expects_reply` false → dropped; an extra key → refused; T5 the model input of a fixture holds no `@`.
 
@@ -36,4 +36,4 @@ T1–T9 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s05`).
 
 ## Out of scope
 
-The eval runner (06), the job (11), any DB write.
+The eval runner (06), the job (12), any DB write.

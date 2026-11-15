@@ -14,15 +14,15 @@ The service functions of `interfaces.md` § Commands, in module `loops`. Telegra
   4. `follow_ups_sent = 2` → `limit_reached`; the second one before `last_follow_up_at` + 3 working days → `too_soon`.
   5. `thread_key` in `suspiciousThreadKeysOf` → `suspicious` (PD-128; any reason, whatever the `suspicious_mail` flag).
   6. Mode `shadow` → `would_draft` (one `loop.would_draft` audit row, no action); `assist` with `create_draft` off → `drafts_off`.
-  7. Plan the pair with `createPlanned`: `create_draft` `ready`, `send` `awaiting_approval`, both with `loop_id`; keys `<loop id>:follow_up:<n>` (a repeated tap after a crash finds the pair: answer `waiting`).
-- **Payload:** `n` = `follow_ups_sent + 1`; `waiting` → To and Cc of the loop; `delegated` → To = the delegate's address only, no Cc (the reminder rule of today); `quote` = `body_text` of `last_sent_email_id` (else `sent_email_id`) while it is stored, else null; `subject`, `sent_at` (of that mail) and `language` from the loop.
-- **Test (integration):** T1 a waiting loop in `assist` → a pair with `loop_id`, payload To/Cc equal to the loop; T2 the same tap again → `waiting`, no second pair; T3 shadow → `would_draft`, no action row; T4 a suspicious thread → `suspicious`; T5 `follow_ups_sent` 1 and the last one 2 working days ago → `too_soon`, 3 days → planned with `n` 2; T6 a member → `not_allowed`; T7 a delegated loop → To is the delegate only; T8 sent text cleared by retention → `quote` null.
+  7. Plan the pair with `createPlanned`: `create_draft` `ready`, `send` `awaiting_approval`, both with `loop_id`; keys `<loop id>:follow_up:<n>:<k>`, `k` = 1 + the count of this loop's closed (`rejected`, `expired`, `failed`) follow-up sends with the same `n` (review G2). A repeated tap after a crash finds the open pair (step 3: `waiting`); a tap after a reject gets a new `k`.
+- **Payload:** `n` = `follow_ups_sent + 1`; `waiting` → To and Cc of the loop; `delegated` → To = the loop's `counterpart` only, no Cc (the address the mail went to, review N9); `quote` = `body_text` of `sent_email_id` (the mail that opened the loop, review G4) while stored, else null; `subject`, `sent_at` (of that mail) and `language` from the loop.
+- **Test (integration):** T1 a waiting loop in `assist` → a pair with `loop_id`, payload To/Cc equal to the loop; T2 the same tap again → `waiting`, no second pair; T3 shadow → `would_draft`, no action row; T4 a suspicious thread → `suspicious`; T5 `follow_ups_sent` 1 and the last one 2 working days ago → `too_soon`, 3 days → planned with `n` 2; T6 a member → `not_allowed`; T7 a delegated loop → To is the counterpart only; T8 sent text cleared by retention → `quote` null; T8b a rejected follow-up, then a new tap → a new pair (`k` 2), the loop unchanged; T8c a restart by a later own mail → the quote is still the opening mail.
 
 ## Step 2 — Later, Done, Drop, Reopen, Untrack
 
 - **Goal:** the other commands of `interfaces.md`, each under the loop lock, each with one audit row (`via`, ids).
 - **Decisions (D11):**
-  - `laterLoop`: open `waiting` or `delegated`; `later_count < 3` → `due_at = addWorkingDays(max(due_at, now), 3)` at 17:00 local, `later_count + 1`; at 3 → `limit_reached`; `promised` → `not_allowed`. Any linked member.
+  - `laterLoop`: open `waiting` or `delegated`; `later_count < 3` → `due_at = addWorkingDays(max(due_at, now), 3)` at 17:00 local, `later_count + 1`, answer `{ kind: "ok", dueAt }` (review G15); at 3 → `limit_reached`; `promised` → `not_allowed`. Any linked member.
   - `doneLoop`: any open loop → `closed` / `done` with `closed_by_user_id`; closed → `already`. Any member.
   - `dropLoop`: owner; open → `dropped`. `untrackLoop`: owner; only `delegated` → `untracked`.
   - `reopenLoop`: owner; a closed loop with texts (not `sent_off`, not cleared) → open, the old due (stage 08).

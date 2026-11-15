@@ -1,6 +1,6 @@
 # F116 stage 20 — Loop routes and settings
 
-Part of [`../plan.md`](../plan.md). Needs stages 14 and 16. Every route gets `apiDoc` in the same commit; schemas in `packages/core/src/web/loops.ts`.
+Part of [`../plan.md`](../plan.md). Needs stages 15 and 16. Every route gets `apiDoc` in the same commit; schemas in `packages/core/src/web/loops.ts`.
 
 ## Step 1 — Loop routes
 
@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 14 and 16. Every route gets `ap
 - **Decisions:**
   - Flag `open_loops` off → every `/loops*` route answers 404 `not_found` (the F102 rule); `POST /emails/:id/delegate` follows `delegate_button`.
   - `GET /loops`: member; `kind` required; `filter` `open` (default), `due` (open with `due_at` ≤ the end of the local day), `closed`; `limit` 1–100 (default 50), `before` = the `next` cursor. `LoopItem.reason` codes: `asked_no_answer`, `promised`, `forwarded_to_delegate`; `matchedBySubject` = `close_reason = replied_subject`; `autoReplyOnly` = `auto_reply_at` set and still open; `laterLeft` = 3 − `later_count`. Texts null after retention.
-  - Command routes: roles of D11 (`requireOwner` where the command is owner-only, so a member gets 403 before any query); every command kind other than `planned`/`ok` maps to 409 with that code; `not_found` → 404.
+  - Command routes: roles of D11 (`requireOwner` where the command is owner-only, so a member gets 403 before any query); 200 bodies carry `status` = the command kind plus its fields (the F102 form: `{ status: "planned", sendId }`, `{ status: "ok", dueAt }`); every other kind maps to 409 with that code; `not_found` → 404.
   - A suspended org: write routes answer the existing suspended code.
 - **Test (integration):** T1 `GET /loops?kind=waiting` lists two open loops by due, then the cursor page; a loop of org B is never listed; T2 the flag off → 404; T3 `POST /loops/:id/follow-up` as owner → 200 `{ status: "planned", sendId }`; again → 409 `waiting`; T4 as member → 403; T5 `POST /loops/:id/later` as member → 200; the fourth time → 409 `limit_reached`; T6 `POST /emails/:id/delegate` → 200 with ids; again → 409 `exists`; T7 the OpenAPI test lists every new route with its schemas.
 

@@ -35,7 +35,7 @@ The writer and checker jobs of stages 03–04 work only through the `sim` comman
 
 ## Done when
 
-T1–T10 pass; the README of `evals/sim` has a short "Sent bank" section (writer and checker steps for the sent parts); the Proof prints `PROOF_OK` (`/tmp/f116-s02`).
+T1–T10 pass; the README of `evals/sim` has a "Sent bank" section: the writer and checker steps, the label meanings, the time-word rules of stage 01 with two examples, and the rule that a date resolves from the mail's sent date in the scenario time zone (`Europe/Warsaw`) — the stage 04 checker reads only this section (review G17); the Proof prints `PROOF_OK` (`/tmp/f116-s02`).
 
 ## Out of scope
 

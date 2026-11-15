@@ -4,15 +4,15 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 
 After this stage a loop-anchored follow-up behaves like every other draft: a card in Telegram, a row in `/approvals`, the 48 h expiry and the send-result notice. The stage 09 filters `email_id IS NOT NULL` go away in these places.
 
-## Step 1 — Card and approval set
+## Step 1 — Card and notices
 
-- **Goal:** `renderApprovalRequest` and `renderApprovalSetRequest` (`core/digest/approvals.ts`) handle kind `follow_up`; the approval detector and the set path queue them.
+- **Goal:** `renderApprovalRequest` (`core/digest/approvals.ts`) handles kind `follow_up`; the approval detector queues it. A follow-up never joins an approval set (review G6): one card per follow-up, so the owner sees the rendered mail (PD-120) and a set tap can never approve one.
 - **Decisions:**
   - Card: title "📝 Follow-up" / "📝 Przypomnienie o odpowiedzi"; `To:` and `Cc:` spelled out (addresses; the recipients are the M3 risk, epic risk table); the subject; the exact body of the message of stage 10 (template, signature, quote); "Follow-up {n} of 2"; buttons 📤 Send and ✖️ Reject (the existing `ap:`/`ar:`). The quote shrinks first under the 4096 cut, then the body is cut with "…", never the recipients.
-  - Set item (chaser sets of stage 15): recipient, subject, the loop `text` (cut as the reminder items are).
+  - `action_failed` and `send_held` of a follow-up (review G13): "A follow-up could not be sent" / "A follow-up waits: send limit" with the panel link; no address, no text, so no consent check; to the linked owners, as for other kinds.
   - Consent (D17): a card or set item of kind `follow_up` goes only to a user whose consent covers loop data (`consentCovers`, stage 17). Others get one `loop_consent` line per day: "A follow-up waits for your approval in the panel." with the panel link, no recipient, no text.
   - Roles: owners only (the existing approval rule).
-- **Test (unit):** T1 pl and en card of a follow-up with To 1 and Cc 2 → both lines present, Send and Reject; T2 a body of 5,000 characters → the card fits 4096, recipients intact; T3 a set of 3 items with one follow-up renders.
+- **Test (unit):** T1 pl and en card of a follow-up with To 1 and Cc 2 → both lines present, Send and Reject; T2 a body of 5,000 characters → the card fits 4096, recipients intact; T3 the set renderer refuses a `follow_up` item (a test); T3b a follow-up that fails at SMTP → one `action_failed` row with `loop_id` and the fixed text.
 - **Test (integration):** T4 a follow-up send `awaiting_approval` with an applied draft → one card per linked owner with a current consent, the `loop_consent` line for an owner with an old consent, none for a member.
 
 ## Step 2 — Lists, read model and expiry
