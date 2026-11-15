@@ -99,7 +99,8 @@ async function main(): Promise<number> {
       reset: {
         lookupOrg: createOrgLookup(db),
         mail: createServeMailClient(corpus),
-        deleteOrg: ({ orgId, confirmName }) => deleteOrganization(db, { orgId, confirmName, via: "cli" }),
+        deleteOrg: ({ orgId, confirmName, expect }) =>
+          deleteOrganization(db, { orgId, confirmName, expect, via: "cli" }),
       },
       seed: (target) => {
         // The env guard has run before: a loopback root is set.

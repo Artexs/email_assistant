@@ -81,8 +81,8 @@ describe("lab command", () => {
       added: { mailbox: 1, delegates: 3, rules: 2, flags: 11, linked: true, relinked: false },
     };
     orgRows = {
-      "o-lab": { name: "Kordelan lab", mailboxes: [LAB_MAILBOXES.lab] },
-      "o-demo": { name: "Kordelan demo", mailboxes: [LAB_MAILBOXES.demo] },
+      "o-lab": { name: "Kordelan lab", mailboxes: [LAB_MAILBOXES.lab], members: [LAB_MAILBOXES.lab] },
+      "o-demo": { name: "Kordelan demo", mailboxes: [LAB_MAILBOXES.demo], members: [LAB_MAILBOXES.demo] },
     };
     deleted = [];
     emptied = [];
@@ -262,7 +262,7 @@ describe("lab command", () => {
   test("reset: an org whose name is not the lab name is org_mismatch; nothing is deleted, emptied or stopped", async () => {
     seedOrgs();
     expect(await run(["start", "--mode", "day", "--date", "2026-11-23", "--org", "demo"])).toBe(0);
-    orgRows["o-demo"] = { name: "Kordelan lab", mailboxes: [LAB_MAILBOXES.demo] };
+    orgRows["o-demo"] = { name: "Kordelan lab", mailboxes: [LAB_MAILBOXES.demo], members: [LAB_MAILBOXES.demo] };
     failed = [];
     expect(await run(["demo-reset", "--yes"])).toBe(1);
     expect(failed).toEqual(["refused: org_mismatch"]);

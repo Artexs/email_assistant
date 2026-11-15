@@ -40,7 +40,7 @@ export const LAB_TARGETS: Record<LabOrgKey, SeedTarget> = {
 };
 
 // Every key of `packages/core/src/features.ts` is in exactly one list. `mistake_capture` is on: the executive needs the
-// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab never deletes its org, has no SSO and no OAuth mailbox (its mailbox is a GreenMail password login).
+// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login).
 export const LAB_FLAGS_OFF = [
   "org_delete",
   "sso_sign_in",
