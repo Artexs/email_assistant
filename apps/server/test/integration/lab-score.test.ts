@@ -336,6 +336,22 @@ describe("scoreLabRun", () => {
       expect(score.triage.missing).toEqual({ notSynced: 0, notTriaged: 0, skipped: { smtp_failed: 1 } });
       expect(score.sections.coverage).toEqual(coverageOf(run, state.events(RUN)));
       expect(score.sections.sentCopies).toEqual({ appended: 1, seen: 0 });
+      // Stage 13: the second half of the report is scored from the same state and DB.
+      expect(Object.keys(score.sections)).toEqual([
+        "coverage",
+        "sentCopies",
+        "metrics",
+        "delegates",
+        "executive",
+        "limits",
+        "phishing",
+        "mails",
+      ]);
+      expect(score.sections.limits).toEqual({
+        hits: { mailbox_hour: 0, mailbox_day: 0, recipient_day: 0 },
+        total: 0,
+        heldAtEnd: 0,
+      });
 
       const written = writeLabReport(score, join(dir, "out"));
       expect(written.markdown).toBe(join(dir, "out", `sim-2026-11-25-lab-01-${RUN}.md`));
@@ -343,6 +359,16 @@ describe("scoreLabRun", () => {
       const markdown = readFileSync(written.markdown, "utf8");
       const json = readFileSync(written.json, "utf8");
       expect(markdown).toContain("(partial)");
+      for (const heading of [
+        "## Metrics M2 to M5, M7",
+        "## Delegates",
+        "## Executive",
+        "## Send limits",
+        "## Phishing",
+      ]) {
+        expect(markdown).toContain(heading);
+      }
+      expect(markdown).toContain("no send limit reached");
       expect((JSON.parse(json) as LabScore).header.runId).toBe(RUN);
       for (const slot of [a, b, c]) {
         const text = corpus.texts.get(slot.id);
