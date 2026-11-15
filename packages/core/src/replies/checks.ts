@@ -39,18 +39,20 @@ function hasControlChars(body: string): boolean {
   return CONTROL.test(body.replace(/[\r\n\t]/g, ""));
 }
 
-// A blank line holds only white space and characters that show nothing: zero width and format characters (U+FEFF is white space in JavaScript), the Braille
-// blank, the Hangul fillers, the combining grapheme joiner, variation selectors, the Khmer inherent vowels and the
-// object replacement character. 50 lines of U+2800 look like a gap of white paper (CVE-2026-55145).
+// A blank line holds only white space and characters that show nothing: every default-ignorable code point (zero
+// width and format characters, the Hangul fillers, the combining grapheme joiner, variation selectors, the soft hyphen,
+// the Khmer inherent vowels, tags), the Braille blank, the object replacement character, the musical null notehead
+// and the Khitan filler. 50 lines of U+2800 look
+// like a gap of white paper (CVE-2026-55145).
 const INVISIBLE = [
-  String.raw`[\u200b-\u200f]`,
-  String.raw`[\u2060-\u206f]`,
-  String.raw`[\u180b-\u180f]`,
-  String.raw`[\ufe00-\ufe0f]`,
-  ...["00ad", "2800", "3164", "ffa0", "115f", "1160", "034f", "17b4", "17b5", "fffc"].map((code) => `\\u${code}`),
+  String.raw`\p{Default_Ignorable_Code_Point}`,
+  String.raw`\u2800`,
+  String.raw`\ufffc`,
+  String.raw`\u{1d159}`,
+  String.raw`\u{16fe4}`,
 ];
 const BLANK = `(?:[^\\S\\n]|${INVISIBLE.join("|")})*`;
-const BLANK_RUN = new RegExp(String.raw`\n${BLANK}(?:\n${BLANK}){${MAX_BLANK_LINES + 1},}`);
+const BLANK_RUN = new RegExp(String.raw`\n${BLANK}(?:\n${BLANK}){${MAX_BLANK_LINES + 1},}`, "u");
 
 function hasLongBlankRun(body: string): boolean {
   return BLANK_RUN.test(`\n${body.replace(/\r\n?|\u2028|\u2029|\u0085/g, "\n")}`);
@@ -76,7 +78,17 @@ function entityFailures(body: string, allowed: readonly string[]): Set<EntityCod
   const permitted = allowedKeys(allowed);
   const failures = new Set<EntityCode>();
   for (const entity of findEntities(body)) {
-    if (!permitted.has(`${entity.code}:${entity.key}`)) failures.add(entity.code);
+    if (permitted.has(`${entity.code}:${entity.key}`)) continue;
+    // The account view joins a number with the group that follows it ("PL61 …, 15 zł"): a key that starts with a typed
+    // account number is that number.
+    if (
+      entity.code === "account_number" &&
+      [...permitted].some(
+        (key) => key.startsWith("account_number:") && entity.key.startsWith(key.slice("account_number:".length))
+      )
+    )
+      continue;
+    failures.add(entity.code);
   }
   return failures;
 }

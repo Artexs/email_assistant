@@ -46,19 +46,13 @@ const NAMED_ENTITIES: Record<string, string> = {
   sol: "/",
   lt: "<",
   gt: ">",
-  quot: '"',
-  apos: "'",
   lpar: "(",
   rpar: ")",
   lsqb: "[",
   rsqb: "]",
   lbrack: "[",
   rbrack: "]",
-  num: "#",
   hyphen: "-",
-  plus: "+",
-  excl: "!",
-  semi: ";",
   comma: ",",
 };
 
@@ -95,9 +89,9 @@ function decodeOnce(text: string): string {
     .replace(/\\x([0-9a-f]{2})/gi, (m, hex: string) => fromCode(Number.parseInt(hex, 16), m));
 }
 
+// A code that is a control character or out of range stays as the entity text.
 function fromCode(code: number, fallback: string): string {
-  if (!Number.isInteger(code) || code < 0x20 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return fallback;
-  return String.fromCodePoint(code);
+  return code < 0x20 || code > 0x10ffff ? fallback : String.fromCodePoint(code);
 }
 
 // "(at)", "[at]", "{dot}", "<dot>" and "[.]" with the Polish words "małpa" and "kropka"; also "jan at firma dot pl" and "h t t p s://".

@@ -212,13 +212,14 @@ describe("checkReplyBody: quoted, encoded and lookalike forms", () => {
 
   test("an IBAN with few digits is an account number; a word run with a code is not", () => {
     expect(failuresOf("Tak, GB00 ABCD 1234 5678 90")).toEqual(["account_number"]);
-    expect(failuresOf("Hello, MA12 reply tomorrow please", "en")).toEqual([]);
+    expect(failuresOf("Hello, ME12 reply tomorrow please", "en")).toEqual([]);
   });
 
   test("a number next to a date, a time or a currency is cut out before the digits are counted", () => {
     expect(failuresOf("Tak, 18.11.2026 600 osób")).toEqual([]);
-    expect(failuresOf("Tak, 18.11.2026 12 345 osób")).toEqual([]);
-    expect(failuresOf("Tak, 2026-11-18 12345 osób")).toEqual([]);
+    // A date and a number that is no date make a run of 13 digits: it is not exempt.
+    expect(failuresOf("Tak, 18.11.2026 12 345 osób")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 2026-11-18 1234 osób")).toEqual([]);
     expect(failuresOf("Tak, 10:00 12345 678 osób")).toEqual([]);
     expect(failuresOf("Tak, 1 250 000.00 zł")).toEqual([]);
     expect(failuresOf("Tak, 123 456 789 PLN")).toEqual([]);
@@ -372,12 +373,14 @@ describe("account numbers next to a currency (B1): the amount cut never hides an
 describe("pins of the number rules", () => {
   test("a short IBAN (15 characters) is an account number", () => {
     expect(failuresOf("Tak, NO93 8601 1117 947")).toEqual(["account_number"]);
-    expect(failuresOf("Hello, XX12 ABC12345678 please", "en")).toEqual(["account_number"]);
+    expect(failuresOf("Hello, NL12 ABC12345678 please", "en")).toEqual(["account_number"]);
   });
 
-  test("an IBAN with a short tail is found when no word follows; a token over 34 characters is no IBAN", () => {
-    expect(failuresOf("Hello, XX12 ABC12345678.", "en")).toEqual(["account_number"]);
+  test("an IBAN with a short tail is found when no word follows; a token over 34 characters is cut at 34", () => {
+    expect(failuresOf("Hello, NL12 ABC12345678.", "en")).toEqual(["account_number"]);
     expect(failuresOf("Tak, NO93 8601 1117 947.")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, NL12AB12CD34EF56GH78IJ90KL12MN34OP56QR78ST")).toEqual(["account_number"]);
+    // A code that is no country code is no IBAN.
     expect(failuresOf("Tak, XX12AB12CD34EF56GH78IJ90KL12MN34OP56QR78ST")).toEqual([]);
   });
 
@@ -392,9 +395,9 @@ describe("pins of the number rules", () => {
   });
 
   test("an IBAN needs 10 digits: 7 digits in a word run pass, 10 digits fail", () => {
-    expect(failuresOf("Hello, AB12 reply 12345 tomorrow please", "en")).toEqual([]);
-    expect(failuresOf("Hello, XX12 ABC12345678 please", "en")).toEqual(["account_number"]);
-    expect(failuresOf("Hello, MA12 reply tomorrow please", "en")).toEqual([]);
+    expect(failuresOf("Hello, ME12 reply 12345 tomorrow please", "en")).toEqual([]);
+    expect(failuresOf("Hello, NL12 ABC12345678 please", "en")).toEqual(["account_number"]);
+    expect(failuresOf("Hello, ME12 reply tomorrow please", "en")).toEqual([]);
   });
 
   test("an IBAN does not start inside a word", () => {
@@ -525,8 +528,9 @@ describe("invisible blank lines", () => {
 
 describe("more pins", () => {
   test("a cut leaves a break: digits on both sides of a date or a time never join into one run", () => {
-    expect(failuresOf("Tak, 123456 18.11.2026 1234567")).toEqual([]);
-    expect(failuresOf("Tak, 123456 10:00 1234567")).toEqual([]);
+    expect(failuresOf("Tak, 123 10:00 4567")).toEqual([]);
+    expect(failuresOf("Tak, 123 1.1.2026 456")).toEqual([]);
+    expect(failuresOf("Tak, 123 1,50 zł 4567")).toEqual([]);
   });
 
   test("every dash lookalike separates the digits of a phone number", () => {
@@ -560,5 +564,190 @@ describe("more pins", () => {
     expect(failuresOf("Tak, \u2028")).toEqual(["control_chars"]);
     expect(failuresOf("Tak, \u2029")).toEqual(["control_chars"]);
     expect(failuresOf("Tak,\r\nnie")).toEqual([]);
+  });
+});
+
+describe("pins of the second re-review", () => {
+  test("a date form is cut for the phone count: each separator of DMY and YMD", () => {
+    for (const date of ["1.1.2026", "1/1/2026", "1-1-2026", "2026.1.1", "2026/1/1", "2026-1-1"]) {
+      expect({ date, failures: failuresOf(`Tak, ${date} 12345`) }).toEqual({ date, failures: [] });
+    }
+  });
+
+  test("a date is no date inside a longer number: the lookarounds of DMY and YMD", () => {
+    expect(failuresOf("Tak, 1.1.20261 2345")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 1231.1.2026 123")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 12026-1-1 123")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 2026-1-100 123")).toEqual(["phone"]);
+  });
+
+  test("a time is cut for the phone count", () => {
+    expect(failuresOf("Tak, 10:00 12345 678")).toEqual([]);
+    expect(failuresOf("Tak, 18.11.2026 10:00:30 20.11.2026")).toEqual([]);
+  });
+
+  const tlds =
+    "com net org pl eu io info biz co de uk ru cn xyz top app dev online site ly me tv cc ai example test gov edu fr nl cz sk ua us tk ml ga cf gq link click shop store cloud page live work tech".split(
+      " "
+    );
+  test("each top-level domain of the list makes a bare domain a link", () => {
+    expect(tlds).toHaveLength(48);
+    for (const tld of tlds) {
+      expect({ tld, failures: failuresOf(`Tak, patrz evil.${tld}`) }).toEqual({ tld, failures: ["link"] });
+    }
+    expect(failuresOf("Tak, patrz evil.com/a/b")).toEqual(["link"]);
+    expect(failuresOf("Tak, patrz evil.zzzz")).toEqual([]);
+    expect(failuresOf("Tak, patrz evilcom")).toEqual([]);
+  });
+
+  test("each currency word and sign cuts an amount of 9 to 12 digits, before or after", () => {
+    const currencies = [
+      "zł",
+      "zl",
+      "pln",
+      "PLN",
+      "eur",
+      "EUR",
+      "usd",
+      "USD",
+      "gbp",
+      "GBP",
+      "chf",
+      "CHF",
+      "czk",
+      "CZK",
+      "euro",
+      "euros",
+      "dolarów",
+      "dolary",
+      "złotych",
+      "złoty",
+      "€",
+      "$",
+      "£",
+    ];
+    for (const currency of currencies) {
+      for (const amount of [
+        "123 456 789",
+        "123456789",
+        "123 456 789 012",
+        "123.456.789",
+        "123 456 789,50",
+        "123 456 789,5",
+      ]) {
+        const after = `Tak, ${amount} ${currency} dziękuję`;
+        expect({ after, failures: failuresOf(after) }).toEqual({ after, failures: [] });
+        const before = `Tak, ${currency} ${amount} dziękuję`;
+        expect({ before, failures: failuresOf(before) }).toEqual({ before, failures: [] });
+      }
+    }
+  });
+
+  test("a currency inside a word is no currency; the number stays a phone", () => {
+    expect(failuresOf("Tak, ABCEUR 123 456 789")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 123 456 789 EURX")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 123 456 789 zły")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 123 456 789 EUR2")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 123 456 789,50")).toEqual([]);
+    expect(failuresOf("Tak, 123 456 789,5")).toEqual(["phone"]);
+  });
+
+  test("an address ends at a delimiter: the key is the same address", () => {
+    for (const delimiter of ["<", ">", "(", ")", "[", "]", ",", ";", ":", '"', "'", "`"]) {
+      for (const body of [
+        `Tak, ${delimiter}jan@firma.pl${delimiter}.`,
+        `Tak, ${delimiter}jan@firma.pl`,
+        `Tak, jan@firma.pl${delimiter}`,
+      ]) {
+        expect({ body, failures: failuresOf(body, "pl", ["jan@firma.pl"]) }).toEqual({ body, failures: [] });
+      }
+    }
+    expect(failuresOf("Tak, jan@firma.pl.", "pl", ["jan@firma.pl"])).toEqual([]);
+    expect(failuresOf("Tak, jan@firma.pl?!", "pl", ["jan@firma.pl"])).toEqual([]);
+    expect(failuresOf("Tak, jan@firma.pl", "pl", ["ewa@firma.pl"])).toEqual(["address"]);
+  });
+
+  test("a scheme of up to 20 characters is a link", () => {
+    expect(failuresOf("Tak, abcdefghij://x")).toEqual(["link"]);
+    expect(failuresOf("Tak, abcdefghijklmnopqrst://x")).toEqual(["link"]);
+  });
+
+  test("each named entity is read", () => {
+    const cases: [string, ReplyCheckCode][] = [
+      ["jan&commat;firma.pl", "address"],
+      ["jan@firma&period;pl", "address"],
+      ["jan&amp;commat;firma.pl", "address"],
+      ["https&colon;//x.zzzz", "link"],
+      ["https:&sol;&sol;x.zzzz", "link"],
+      ["jan&lsqb;at&rsqb;firma&lsqb;dot&rsqb;pl", "address"],
+      ["jan&lbrack;at&rbrack;firma&lbrack;dot&rbrack;pl", "address"],
+      ["jan&lpar;at&rpar;firma&lpar;dot&rpar;pl", "address"],
+      ["jan&lt;at&gt;firma&lt;dot&gt;pl", "address"],
+      ["600&hyphen;100&hyphen;200", "phone"],
+      ["4111&comma;1111&comma;1111&comma;1111", "account_number"],
+      ["JAN&COMMAT;firma.pl", "address"],
+    ];
+    for (const [body, code] of cases)
+      expect({ body, failures: failuresOf(`Tak, ${body}`) }).toEqual({ body, failures: [code] });
+  });
+
+  test("a code that is a control character or out of range stays as text", () => {
+    expect(failuresOf("Tak, 600%20100%20200")).toContain("phone");
+    expect(failuresOf("Tak, 600&#32;100&#x20;200")).toEqual(["phone"]);
+    expect(failuresOf("Tak.%0ABcc: x")).toEqual([]);
+    expect(failuresOf("Tak, &#9999999; &#x110000; &#1114112; &#1114111; &#x10ffff; \\ud800 \\u0007")).toEqual([]);
+  });
+
+  test("a letter of another script that looks like a Latin letter is read as that letter", () => {
+    const cases: [string, string][] = [
+      ["а", "evil.аi"],
+      ["е", "evil.еu"],
+      ["о", "evil.cоm"],
+      ["р", "evil.рl"],
+      ["с", "evil.сom"],
+      ["х", "evil.хyz"],
+      ["у", "evil.xуz"],
+      ["і", "evil.іo"],
+      ["ѕ", "evil.ѕite"],
+      ["һ", "evil.sһop"],
+      ["ԁ", "evil.ԁe"],
+      ["ɡ", "evil.ɡov"],
+      ["ο", "evil.cοm"],
+      ["α", "evil.αi"],
+      ["ε", "evil.εu"],
+      ["ν", "evil.liνe"],
+      ["τ", "evil.τech"],
+      ["ρ", "evil.ρl"],
+      ["ι", "evil.ιo"],
+      ["κ", "evil.linκ"],
+      ["ѵ", "evil.liѵe"],
+      ["capital Cyrillic О", "evil.CОM"],
+    ];
+    for (const [name, host] of cases)
+      expect({ name, failures: failuresOf(`Tak, patrz ${host}`) }).toEqual({ name, failures: ["link"] });
+    expect(failuresOf("Tak.\nSubјect: x")).toEqual(["header_line"]);
+    expect(failuresOf("Tak.\nFrоm: x")).toEqual(["header_line"]);
+  });
+
+  test("the plain view is scanned too: a form that decoding destroys", () => {
+    expect(failuresOf("Tak, 4111%411111%411111%41111")).toContain("account_number");
+  });
+
+  test("a thin space, a no-break space and an ideographic space between digits are separators", () => {
+    expect(failuresOf("Tak, NL91 ABNA 0417 1643 00")).toEqual(["account_number"]);
+    expect(failuresOf("Tak, 600 100 200")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 600　100　200")).toEqual(["phone"]);
+  });
+
+  test("more invisible blank lines: variation selectors supplement, fillers, tags and the null notehead", () => {
+    for (const code of [
+      0xe0100, 0xe01ef, 0x16fe4, 0x1d159, 0x1d173, 0x1bca0, 0xe0020, 0xe0001, 0x2800, 0xfffc, 0x3164, 0xffa0,
+    ]) {
+      const char = String.fromCodePoint(code);
+      const body = `Dzień dobry,\n${`${char}\n`.repeat(50)}Tak, wtorek.`;
+      expect({ code: code.toString(16), failures: failuresOf(body) }).toMatchObject({
+        failures: expect.arrayContaining(["blank_lines"]),
+      });
+    }
   });
 });

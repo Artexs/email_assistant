@@ -15,14 +15,26 @@ export interface DraftCopy {
   attachments: readonly { name: string | null; type: string; size: number }[];
 }
 
+// A set: lower case, trimmed, no duplicate, sorted.
 function addressKey(addresses: readonly string[]): string[] {
-  return addresses.map((address) => address.trim().toLowerCase()).sort();
+  return [...new Set(addresses.map((address) => address.trim().toLowerCase()))].sort();
+}
+
+// A text with its length in front: `a|b` and `c` never give the same string as `a` and `b|c`.
+function lengthPrefixed(text: string): string {
+  return `${text.length}:${text}`;
+}
+
+// `name|type|size` with the name and the type length-prefixed. No name is `-`: it differs from the empty name `0:`.
+function attachmentKey(part: { name: string | null; type: string; size: number }): string {
+  const name = part.name === null ? "-" : lengthPrefixed(part.name);
+  return `${name}|${lengthPrefixed(part.type.toLowerCase())}|${part.size}`;
 }
 
 /**
  * A canonical JSON string. The text goes through `normalizeDraftText` (line ends, trailing spaces and blank lines);
- * the Subject has its white space collapsed; the addresses are lower case and sorted; each attachment is
- * `name|type|size`, with the type in lower case.
+ * the Subject has its white space collapsed; To and Cc are sets (lower case, no duplicate, sorted); each attachment is
+ * `name|type|size` with the name and the type length-prefixed and the type in lower case; no name is `-`.
  */
 export function draftCopyKey(copy: DraftCopy): string {
   return JSON.stringify({
@@ -31,6 +43,6 @@ export function draftCopyKey(copy: DraftCopy): string {
     to: addressKey(copy.to),
     cc: addressKey(copy.cc),
     attachmentCount: copy.attachmentCount,
-    attachments: copy.attachments.map((part) => `${part.name ?? ""}|${part.type.toLowerCase()}|${part.size}`),
+    attachments: copy.attachments.map(attachmentKey),
   });
 }
