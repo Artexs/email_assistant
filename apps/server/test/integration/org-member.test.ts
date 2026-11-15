@@ -30,6 +30,8 @@ import { testDb } from "./helpers";
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const flagScript = resolve(import.meta.dir, "../../src/scripts/org-flag.ts");
+// An address domain off every provider domain; unique per run, so a failed run leaves no clash.
+const OFF = `y${randomUUID().slice(0, 8)}.test`;
 const NOW = new Date("2026-11-15T10:00:00.000Z");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -83,6 +85,9 @@ afterEach(async () => {
   configureFeatures({ off: [] });
   for (const orgId of orgIds) await db.deleteFrom("organizations").where("id", "=", orgId).execute();
   if (userIds.length > 0) await db.deleteFrom("users").where("id", "in", userIds).execute();
+  // A test that fails before it tracks the new user would leave the address behind.
+  const addresses = canaries.filter((value) => value.includes("@")).map((value) => value.toLowerCase());
+  if (addresses.length > 0) await db.deleteFrom("users").where("email", "in", addresses).execute();
   orgIds.length = 0;
   userIds.length = 0;
 });
@@ -307,7 +312,7 @@ describe("org:member (F119 stage 10)", () => {
     const b = await ssoOrg();
     const before = await membershipRows(a.orgId);
     const auditBefore = (await allAuditRows(a.orgId)).length;
-    const off = await cli("--org-id", a.orgId, "--add", "--email", canary("fay@y.test"), "--display-name", "Fay");
+    const off = await cli("--org-id", a.orgId, "--add", "--email", canary(`fay@${OFF}`), "--display-name", "Fay");
     expect(off).toEqual({ code: 1, out: [], err: ["error off_domain"] });
     // A subdomain is off the domain too (one domain per provider).
     const sub = await cli(
@@ -320,7 +325,7 @@ describe("org:member (F119 stage 10)", () => {
       "Gus"
     );
     expect(sub.err).toEqual(["error off_domain"]);
-    expect(await userRows("fay@y.test")).toEqual([]);
+    expect(await userRows(`fay@${OFF}`)).toEqual([]);
     expect(await userRows(`gus@mail.${a.domain}`)).toEqual([]);
     expect(await membershipRows(a.orgId)).toEqual(before);
     expect((await allAuditRows(a.orgId)).length).toBe(auditBefore);
@@ -328,9 +333,9 @@ describe("org:member (F119 stage 10)", () => {
     // On the domain it works; an organization without the rule takes any address.
     await addEve(a, "hal");
     expect(
-      (await cli("--org-id", b.orgId, "--add", "--email", canary("ivy@y.test"), "--display-name", "Ivy")).code
+      (await cli("--org-id", b.orgId, "--add", "--email", canary(`ivy@${OFF}`), "--display-name", "Ivy")).code
     ).toBe(0);
-    userIds.push((await userRows("ivy@y.test"))[0]?.id ?? "");
+    userIds.push((await userRows(`ivy@${OFF}`))[0]?.id ?? "");
   });
 
   test("3. Eve signs in through the fake IdP: linked by e-mail, one SSO session, sso.login with first_link", async () => {
@@ -443,7 +448,7 @@ describe("org:member (F119 stage 10)", () => {
   test("8. stdout, stderr, the log capture and the audit rows hold no address and no name", async () => {
     const a = await ssoOrg({ required: true });
     const eve = await addEve(a);
-    await cli("--org-id", a.orgId, "--add", "--email", canary("zoe@y.test"), "--display-name", canary("Zoe Canary"));
+    await cli("--org-id", a.orgId, "--add", "--email", canary(`zoe@${OFF}`), "--display-name", canary("Zoe Canary"));
     await signIn(a, eve.email);
     await cli("--org-id", a.orgId, "--user-id", eve.userId, "--end-sessions");
     await cli("--org-id", a.orgId, "--user-id", eve.userId, "--unlink-sso");
@@ -492,7 +497,7 @@ describe("org:member locks (two connections)", () => {
       await trx.updateTable("organizations").set({ sso_required: true }).where("id", "=", a.orgId).execute();
     });
     await lockedPromise;
-    const email = canary(`lee@y.test`);
+    const email = canary(`lee@${OFF}`);
     const add = addMember(
       db,
       { orgId: a.orgId },
