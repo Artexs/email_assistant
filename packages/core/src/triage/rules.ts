@@ -92,3 +92,16 @@ export function applyHardRules(
   if (opts.delegation) allowed.push(DELEGATION_CATEGORY);
   return { kind: "classify", allowed, vip, whitelisted, noreply: isNoreplyAddress(fromAddress) };
 }
+
+// The sender rule that shaped a result (F110 stage 16): `triage_results.fields.rule`. The pattern is never stored: it can be an
+// address. A VIP is also whitelisted, so `vip` wins over `whitelist`.
+export function senderRuleOf(result: HardRuleResult): SenderRuleKind | null {
+  if (result.kind === "spam") return "blocklist";
+  if (result.vip) return "vip";
+  return result.whitelisted ? "whitelist" : null;
+}
+
+// Reads the `rule` key of a stored `fields` value. An old row, or any other value, reads null.
+export function readSenderRule(value: unknown): SenderRuleKind | null {
+  return senderRuleKinds.find((kind) => kind === value) ?? null;
+}

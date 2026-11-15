@@ -79,6 +79,17 @@ describe("featureFlags registry", () => {
     }
   });
 
+  test("docs_links defaults off, epic E10a, remove by 2027-06-01", () => {
+    expect(featureFlags.docs_links).toEqual({
+      default: false,
+      description: "The Help link and the What is new card in the panel.",
+      epic: "E10a",
+      removeBy: "2027-06-01",
+    });
+    expect(featureEpicPattern.test(featureFlags.docs_links.epic)).toBe(true);
+    expect(isFeatureKey("docs_links")).toBe(true);
+  });
+
   test("answered_check defaults off and has the epic E3a", () => {
     expect(featureFlags.answered_check.default).toBe(false);
     expect(featureFlags.answered_check.epic).toBe("E3a");

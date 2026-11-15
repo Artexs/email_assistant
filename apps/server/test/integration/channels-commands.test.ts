@@ -151,6 +151,36 @@ describe("statusMessage", () => {
     });
   });
 
+  test("the quiet hours line shows the own hours of the member (flag user_quiet_hours), the default otherwise (F110 s18)", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctx, link } = await setup(trx);
+      const own = (start: string | null, end: string | null) =>
+        trx
+          .updateTable("memberships")
+          .set({ quiet_start: start, quiet_end: end })
+          .where("org_id", "=", a.orgId)
+          .where("user_id", "=", a.userId)
+          .execute();
+      await own("23:00", "06:00");
+      // Flag off: the default for everyone.
+      expect((await statusMessage(depsAt(trx, T), link)).text).toContain(
+        "Quiet hours: 22:00–07:00 (notices wait until 07:00)"
+      );
+      await setOrgFeature(trx, ctx, { flag: "user_quiet_hours", enabled: true, actor: "cli", now: T });
+      expect((await statusMessage(depsAt(trx, T), link)).text).toContain(
+        "Quiet hours: 23:00–06:00 (notices wait until 06:00)"
+      );
+      const pl = (await statusMessage(depsAt(trx, T), { ...link, locale: "pl" })).text;
+      expect(pl).toContain("Godziny ciszy: 23:00–06:00 (komunikaty czekają do 06:00)");
+      await own("10:00", "10:00");
+      expect((await statusMessage(depsAt(trx, T), link)).text).toContain("Quiet hours: none");
+      await own(null, null);
+      expect((await statusMessage(depsAt(trx, T), link)).text).toContain(
+        "Quiet hours: 22:00–07:00 (notices wait until 07:00)"
+      );
+    });
+  });
+
   test("the actions line shows the scope and the counts of the last 24 h", async () => {
     await withRollback(db, async (trx) => {
       const { ctx, link, a } = await setup(trx);

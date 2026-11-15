@@ -7,6 +7,7 @@ export * from "./delegation";
 export * from "./errors";
 export * from "./mail-oauth";
 export * from "./mailboxes";
+export * from "./notify";
 export * from "./me";
 export * from "./next-path";
 export * from "./onboarding";

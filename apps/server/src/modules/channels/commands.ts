@@ -8,7 +8,7 @@ import {
   localToInstant,
   nextDigestTime,
   parseDigestTimes,
-  QUIET_HOURS,
+  quietHoursOf,
   QUOTA_TIMEZONE,
   quotaDayStart,
   renderReviewPage,
@@ -35,7 +35,7 @@ import { getMailboxSettings } from "../config";
 import { countOpenDelegations } from "../delegation";
 import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary, type TestMailRule } from "../mail";
 import { buildDigestMessage, digestPeriodStart, llmPauseToShow, WAITING_WINDOW_MS } from "../reports";
-import { getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
+import { getMemberNotify, getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
 import { ANSWERED_CHECK_WINDOW_MS, listAnsweredCandidates, listForReview } from "../triage";
 
 import { handleCallback } from "./callbacks";
@@ -120,9 +120,14 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   const member = await getMembership(db, ctx, link.userId);
   const times = parseDigestTimes(member?.digest_times ?? []);
   const next = nextDigestTime({ now, timeZone, times });
+  // The own quiet hours of the member (F110 stage 18); the default while the flag is off or the member set none.
+  const own = (await isFeatureOn(db, ctx, "user_quiet_hours"))
+    ? await getMemberNotify(db, ctx, link.userId)
+    : undefined;
+  const quiet = quietHoursOf(own?.quiet_start ?? null, own?.quiet_end ?? null);
   lines.push(
     next === null ? t.noDigestTimes : t.nextDigest(clock(localToInstant(next.date, next.time, timeZone))),
-    t.quietHours(QUIET_HOURS.start, QUIET_HOURS.end)
+    quiet.start === quiet.end ? t.noQuietHours : t.quietHours(quiet.start, quiet.end)
   );
   return { text: lines.join("\n"), buttons: [] };
 }

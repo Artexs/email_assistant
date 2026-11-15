@@ -10,6 +10,7 @@ import {
   localToInstant,
   QUIET_HOURS,
   quietEnd,
+  quietHoursOf,
 } from "./local-time";
 
 const TZ = "Europe/Warsaw";
@@ -159,5 +160,164 @@ describe("lateMin", () => {
     expect(lateMin(new Date("2026-10-24T18:00:00Z"), new Date("2026-10-25T07:00:00Z"), TZ)).toBe(180);
     // A range that crosses the repeated local hour (02:00 to 03:00 happens twice) lies inside the night: all quiet.
     expect(lateMin(new Date("2026-10-25T00:30:00Z"), new Date("2026-10-25T02:30:00Z"), TZ)).toBe(0);
+  });
+});
+
+// F110 stage 18: the quiet hours of one member (tests 1 to 4 of the stage).
+describe("own quiet hours", () => {
+  const night = { start: "23:00", end: "06:00" };
+  // 2026-11-06 is CET (UTC+1): local HH:MM = UTC HH:MM + 1 h.
+  const at = (utc: string): Date => new Date(`2026-11-06T${utc}:00Z`);
+
+  test("1. hours 23:00–06:00: 22:30 is not quiet, 23:30 is, and the end is 06:00 the next day", () => {
+    expect(isQuietTime(at("21:30"), TZ, night)).toBe(false); // 22:30
+    expect(isQuietTime(at("22:30"), TZ, night)).toBe(true); // 23:30
+    expect(iso(quietEnd(at("22:30"), TZ, night))).toBe("2026-11-07T05:00:00.000Z"); // 06:00 on the 7th
+    // The default holds the 22:30 notice that the own hours let through.
+    expect(isQuietTime(at("21:30"), TZ)).toBe(true);
+  });
+
+  test("2. hours 09:00–17:00 (day quiet): 12:00 is quiet, 18:00 is not", () => {
+    const day = { start: "09:00", end: "17:00" };
+    expect(isQuietTime(at("11:00"), TZ, day)).toBe(true); // 12:00
+    expect(isQuietTime(at("17:00"), TZ, day)).toBe(false); // 18:00
+    expect(iso(quietEnd(at("11:00"), TZ, day))).toBe("2026-11-06T16:00:00.000Z"); // 17:00 the same day
+  });
+
+  test("3. start equal to end is never quiet", () => {
+    const none = { start: "10:00", end: "10:00" };
+    for (const utc of ["00:00", "09:00", "12:00", "23:59"]) expect(isQuietTime(at(utc), TZ, none)).toBe(false);
+    expect(lateMin(at("00:00"), at("12:00"), TZ, none)).toBe(720);
+  });
+
+  test("4. DST: the end of the default hours from 01:30 local is 07:00 local on the day of each change", () => {
+    // 2026-03-29 spring forward: 01:30 CET (00:30Z) to 07:00 CEST (05:00Z) is 4 h 30 min of real time.
+    const spring = new Date("2026-03-29T00:30:00Z");
+    expect(localDateTime(spring, TZ).time).toBe("01:30");
+    expect(iso(quietEnd(spring, TZ))).toBe("2026-03-29T05:00:00.000Z");
+    expect(quietEnd(spring, TZ).getTime() - spring.getTime()).toBe(270 * 60_000);
+    // 2026-10-25 fall back: the first 01:30 is CEST (23:30Z the day before); 07:00 CET is 06:00Z: 6 h 30 min.
+    const autumn = new Date("2026-10-24T23:30:00Z");
+    expect(localDateTime(autumn, TZ).time).toBe("01:30");
+    expect(iso(quietEnd(autumn, TZ))).toBe("2026-10-25T06:00:00.000Z");
+    expect(quietEnd(autumn, TZ).getTime() - autumn.getTime()).toBe(390 * 60_000);
+  });
+
+  test("lateMin takes the own hours: the same wait is late for 22:00–07:00 and not for 21:00–08:00", () => {
+    // Mail at 21:30 local (20:30Z), notice at 08:00 local (07:00Z).
+    const from = at("20:30");
+    const to = new Date("2026-11-07T07:00:00Z");
+    expect(lateMin(from, to, TZ, { start: "21:00", end: "08:00" })).toBe(0);
+    expect(lateMin(from, to, TZ)).toBe(30 + 60);
+  });
+
+  test("quietHoursOf: both null is the default; a pair is taken as it is", () => {
+    expect(quietHoursOf(null, null)).toBe(QUIET_HOURS);
+    expect(quietHoursOf("23:00", "06:00")).toEqual(night);
+    expect(quietHoursOf("10:00", "10:00")).toEqual({ start: "10:00", end: "10:00" });
+    // The table has a check that both columns are null or both set; a half pair would be a bug, never a half range.
+    expect(quietHoursOf("23:00", null)).toBe(QUIET_HOURS);
+    expect(quietHoursOf(null, "06:00")).toBe(QUIET_HOURS);
+  });
+});
+
+// F110 stage 18 review: the end time of the own hours can fall in a spring gap or in the autumn hour that repeats, also in
+// zones west of UTC. `quietEnd` is always after `now`, never early and never past the end by more than the gap.
+describe("quietEnd on a daylight-saving day", () => {
+  const NY = "America/New_York";
+
+  test("localToInstant: a gap time gives the instant after the change in a zone west of UTC, as in one east of it", () => {
+    // 2026-03-08 02:30 does not exist in New York: the clock goes from 02:00 EST (07:00Z) to 03:00 EDT.
+    expect(iso(localToInstant("2026-03-08", "02:30", NY))).toBe("2026-03-08T07:30:00.000Z");
+    expect(iso(localToInstant("2026-03-29", "02:30", TZ))).toBe("2026-03-29T01:30:00.000Z");
+  });
+
+  test("localToInstant: an ambiguous time gives the later instant in a zone west of UTC", () => {
+    // 2026-11-01 01:30 shows twice in New York: 05:30Z (EDT) and 06:30Z (EST).
+    expect(iso(localToInstant("2026-11-01", "01:30", NY))).toBe("2026-11-01T06:30:00.000Z");
+  });
+
+  test("an end time in the New York gap: the hold ends at the change, not in the past (reviewer case)", () => {
+    // Hours 00:00–02:00, 01:05 EST: the end 02:00 is the change itself, 07:00Z.
+    expect(iso(quietEnd(new Date("2026-03-08T06:05:00Z"), NY, { start: "00:00", end: "02:00" }))).toBe(
+      "2026-03-08T07:00:00.000Z"
+    );
+    // End 02:30 does not exist: the wall clock jumps from 01:59 to 03:00, so the quiet hours end at 03:00 EDT (07:00Z).
+    expect(iso(quietEnd(new Date("2026-03-08T06:05:00Z"), NY, { start: "00:00", end: "02:30" }))).toBe(
+      "2026-03-08T07:00:00.000Z"
+    );
+  });
+
+  test("an end time in the Warsaw gap ends at the change too", () => {
+    // 2026-03-29: 02:00 CET (01:00Z) becomes 03:00 CEST.
+    expect(iso(quietEnd(new Date("2026-03-29T00:10:00Z"), TZ, { start: "00:00", end: "02:30" }))).toBe(
+      "2026-03-29T01:00:00.000Z"
+    );
+  });
+
+  test("an end time in the autumn hour: the first pass ends at the first time, the second pass at the second", () => {
+    const quiet = { start: "22:00", end: "01:30" };
+    // 2026-11-01 New York: 05:10Z is 01:10 EDT, 06:10Z is 01:10 EST.
+    expect(iso(quietEnd(new Date("2026-11-01T05:10:00Z"), NY, quiet))).toBe("2026-11-01T05:30:00.000Z");
+    expect(iso(quietEnd(new Date("2026-11-01T06:10:00Z"), NY, quiet))).toBe("2026-11-01T06:30:00.000Z");
+    // The same in Warsaw, 2026-10-25: 00:10Z is 02:10 CEST, 01:10Z is 02:10 CET.
+    const warsaw = { start: "22:00", end: "02:30" };
+    expect(iso(quietEnd(new Date("2026-10-25T00:10:00Z"), TZ, warsaw))).toBe("2026-10-25T00:30:00.000Z");
+    expect(iso(quietEnd(new Date("2026-10-25T01:10:00Z"), TZ, warsaw))).toBe("2026-10-25T01:30:00.000Z");
+  });
+
+  test("the 44 bad cases of the review: New York 2026-03-08 with the end 02:00 or 02:30 are all after now", () => {
+    const starts = ["00:00", "01:00", "01:30", "02:00", "02:30", "03:00", "22:00", "23:00", "09:00"];
+    let quiet = 0;
+    for (const start of starts) {
+      for (const end of ["02:00", "02:30"]) {
+        for (let t = Date.parse("2026-03-07T12:00:00Z"); t < Date.parse("2026-03-09T12:00:00Z"); t += 15 * 60_000) {
+          const now = new Date(t);
+          if (!isQuietTime(now, NY, { start, end })) continue;
+          quiet += 1;
+          expect(quietEnd(now, NY, { start, end }).getTime()).toBeGreaterThan(t);
+        }
+      }
+    }
+    expect(quiet).toBeGreaterThan(44);
+  });
+
+  // The zones and the days of 2026 with a change (Lord Howe moves by 30 minutes).
+  const changeDays: [string, string[]][] = [
+    ["America/New_York", ["2026-03-08", "2026-11-01"]],
+    ["Europe/Warsaw", ["2026-03-29", "2026-10-25"]],
+    ["Australia/Sydney", ["2026-04-05", "2026-10-04"]],
+    ["Australia/Lord_Howe", ["2026-04-05", "2026-10-04"]],
+  ];
+
+  test("every zone and change day: after now, not early, never past the end by more than the change, at most window + 1 h", () => {
+    let checked = 0;
+    for (const [zone, days] of changeDays) {
+      for (const day of days) {
+        const from = Date.parse(`${day}T00:00:00Z`) - 18 * 3_600_000;
+        for (const start of ["20:00", "22:00", "00:00", "01:00"]) {
+          for (const end of ["00:00", "00:30", "01:00", "01:30", "02:00", "02:30", "03:00", "03:30", "06:00"]) {
+            if (start === end) continue;
+            const quiet = { start, end };
+            const [sh, sm] = start.split(":").map(Number) as [number, number];
+            const [eh, em] = end.split(":").map(Number) as [number, number];
+            const spanMin = (eh * 60 + em - sh * 60 - sm + 1440) % 1440;
+            for (let t = from; t < from + 48 * 3_600_000; t += 30 * 60_000) {
+              const now = new Date(t);
+              if (!isQuietTime(now, zone, quiet)) continue;
+              checked += 1;
+              const end2 = quietEnd(now, zone, quiet);
+              const hold = end2.getTime() - t;
+              expect(hold).toBeGreaterThan(0);
+              expect(hold).toBeLessThanOrEqual((spanMin + 60) * 60_000);
+              // At the end the wall clock is out of the quiet hours, and one minute before it is quiet (or the change itself).
+              expect(isQuietTime(end2, zone, quiet)).toBe(false);
+              expect(isQuietTime(new Date(end2.getTime() - 60_000), zone, quiet)).toBe(true);
+            }
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(1000);
   });
 });

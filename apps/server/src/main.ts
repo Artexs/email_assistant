@@ -17,6 +17,7 @@ import {
 } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
+import { createHistoryJob } from "./modules/trust";
 import {
   ConfigError,
   featuresOff,
@@ -192,6 +193,7 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
 let loopsAnalyzeRun: Promise<void> = Promise.resolve();
+let historyRun: Promise<void> = Promise.resolve();
 let loopsMatchRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
@@ -222,6 +224,21 @@ if (scope !== null) {
     triageRun = triage.run();
     return triageRun;
   });
+  // The history check of the trust ladder (F110): it reads mail and writes the checks; it makes no model call in this job step.
+  const history = createHistoryJob({
+    db,
+    secrets,
+    openProvider: openImapProvider,
+    oauthTokens: mailOAuth.tokens,
+    isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
+    runningKey: gate.runningKey,
+    now: () => new Date(),
+  });
+  scheduler.add("trust.history", "*/15 * * * * *", () => {
+    historyRun = history.run();
+    return historyRun;
+  });
+  log.info("job_scheduled", { job: "trust.history" });
   // The Sent analysis of the open loops uses the same model client and the same scope: with the scope off, no mail goes out.
   const loopJobs = createLoopJobs({ db, llm, dailyCap: config.LLM_DAILY_CAP, scope, now: () => new Date() });
   scheduler.add("loops.analyze", "35 * * * * *", () => {
@@ -373,6 +390,7 @@ async function shutdown(): Promise<void> {
     Promise.allSettled([
       triageRun,
       loopsAnalyzeRun,
+      historyRun,
       loopsMatchRun,
       committerRun,
       returnedRun,

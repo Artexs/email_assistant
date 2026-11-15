@@ -14,6 +14,7 @@ import { followUpTexts, type FollowUpTexts } from "./follow-up";
 import { noticeTexts, type NoticeTexts } from "./notices";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { suspiciousTexts, type SuspiciousTexts } from "./suspicious";
+import { whyTexts, type WhyTexts } from "./why";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
 
 export { botCommandNames } from "./bot";
@@ -33,6 +34,7 @@ export type {
   NoticeTexts,
   ReviewTexts,
   SuspiciousTexts,
+  WhyTexts,
   WouldDoTexts,
 };
 
@@ -51,6 +53,7 @@ export interface CoreTexts {
   digest: DigestTexts;
   followUp: FollowUpTexts;
   suspicious: SuspiciousTexts;
+  why: WhyTexts;
   bot: BotTexts;
 }
 
@@ -70,6 +73,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     digest: digestTexts.en,
     followUp: followUpTexts.en,
     suspicious: suspiciousTexts.en,
+    why: whyTexts.en,
     bot: botTexts.en,
   },
   pl: {
@@ -87,6 +91,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     digest: digestTexts.pl,
     followUp: followUpTexts.pl,
     suspicious: suspiciousTexts.pl,
+    why: whyTexts.pl,
     bot: botTexts.pl,
   },
 };

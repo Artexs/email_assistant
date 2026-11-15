@@ -84,6 +84,5 @@ describe("changelogPage", () => {
     expect(page).toContain("## 0.1.0 - ");
     expect(page).not.toContain("Offline quality lab");
     expect(page).not.toContain("Unreleased");
-    expect(page).not.toContain("docs site");
   });
 });

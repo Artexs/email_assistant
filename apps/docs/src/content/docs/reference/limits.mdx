@@ -1,0 +1,64 @@
+---
+title: Limits
+description: Look up the numbers that you meet in Telegram and in the panel.
+capabilities:
+  - digest-and-notices
+  - drafts-and-send
+  - actions-and-undo
+  - triage
+  - delegation
+  - web-panel
+  - sync
+  - tenancy-and-plans
+---
+
+This page lists the numbers that you can meet in Telegram and in the panel.
+
+## Telegram
+
+| Limit                         | Value          | What it means                                                                                         |
+| ----------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- |
+| Mails in one digest           | 15             | A digest lists at most 15 mails. The footer says how many more there are.                             |
+| Characters in one digest      | 4096           | A digest is one Telegram message. The system leaves out the last mails when the text is too long.     |
+| Digest times for each member  | 6              | You can set up to 6 times for your digest.                                                            |
+| Late digest                   | 6 hours        | A digest that was missed is still sent when the server is back within 6 hours.                        |
+| Messages for you in one round | 3              | The bot sends at most 3 messages to you every 15 seconds. The others wait for the next round.         |
+| Life of a message             | 24 hours       | The system does not send a message that waited longer than 24 hours.                                  |
+| Quiet hours                   | 22:00 to 07:00 | Notices wait until 07:00. Digests come at their times. The time zone is the one of your organization. |
+| Late sync                     | 30 minutes     | The system sends a notice when the last good sync of a mailbox is older than 30 minutes.              |
+| Link to Telegram              | 15 minutes     | The one-time link that connects your chat works for 15 minutes.                                       |
+
+## Approval and sending
+
+| Limit                              | Value           | What it means                                                                                                       |
+| ---------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Time to approve a send             | 48 hours        | A draft that nobody approves in 48 hours is not sent. An approved send that cannot go out also ends after 48 hours. |
+| Sends for one mailbox in one hour  | 20              | More sends wait until the hour has passed.                                                                          |
+| Sends for one mailbox in 24 hours  | 100             | More sends wait for the next window.                                                                                |
+| Sends to one recipient in 24 hours | 5               | More sends to the same address wait.                                                                                |
+| Quote in an approval request       | 1500 characters | The request shows at most 1500 characters of the original mail. The draft in your mailbox holds more.               |
+| Reminders in one set               | 10              | One message approves at most 10 reminders.                                                                          |
+| Reminders for one delegation       | 2               | The system plans at most 2 reminders for each delegation.                                                           |
+
+## Sorting and changes in the mailbox
+
+| Limit                             | Value                  | What it means                                                                                   |
+| --------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
+| Age of mail that the system sorts | 7 days                 | The system does not sort mail that is older than 7 days. The digest counts it as not processed. |
+| Life of a planned change          | 24 hours               | The system drops a move, a flag or a mark as read that it could not make within 24 hours.       |
+| Undo window                       | 7 days                 | You can undo a change of the system for 7 days.                                                 |
+| Start limit of confidence         | 0.7                    | The system sets `unsure` when the confidence of the AI for a category is below this value.      |
+| Tries before `unsure`             | 3                      | After 3 failed tries to sort a mail, the mail gets the category `unsure`.                       |
+| Go/no-go bar for auto             | 98 % on 30 rated mails | A category passes when its precision is at least 98 % on at least 30 mails that you rated.      |
+| Sender rules                      | 1000                   | One organization can have at most 1000 VIP, whitelist and blocklist rules.                      |
+| Mailboxes                         | 2                      | One organization can connect 2 mailboxes. Your operator can change the number.                  |
+
+## Sign-in
+
+| Limit           | Value                  | What it means                                                                       |
+| --------------- | ---------------------- | ----------------------------------------------------------------------------------- |
+| Session         | 30 days                | A session lasts 30 days. The panel renews it after a day of use.                    |
+| Lockout         | 10 tries in 15 minutes | After 10 wrong sign-ins in 15 minutes, the system locks the account for 15 minutes. |
+| Password length | 12 to 128 characters   | A new password needs 12 to 128 characters.                                          |
+
+For the reasons behind these numbers, read [Shadow mode and assist mode](../../explanation/shadow-and-assist/) and [The assistant never sends alone](../../explanation/never-sends-alone/).

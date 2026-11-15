@@ -18,6 +18,7 @@ import { HardError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
 import { compareFolderWithDb, type AuditCounts } from "./audit";
+import { refreshFlags, type FlagsRefreshResult } from "./flags";
 import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { assertTestAddress } from "./imap/probe-move";
 import { appendRaw } from "./imap/tools";
@@ -316,6 +317,33 @@ export async function backfillMailbox(
     );
   } finally {
     await provider.close();
+  }
+}
+
+/**
+ * One flag refresh of a mailbox on its own connection (the history check does not wait for the 10-minute sync cadence). The mailbox
+ * opens through `openMailboxProvider`, so an OAuth mailbox logs in with its access token. A refused login throws `MailAuthError`.
+ */
+export async function refreshFlagsOfMailbox(
+  deps: BackfillDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: () => Date
+): Promise<FlagsRefreshResult> {
+  const { provider } = await openMailboxProvider(
+    {
+      db: deps.db,
+      secrets: deps.secrets,
+      openProvider: deps.openProvider ?? openImapProvider,
+      ...(deps.oauthTokens === undefined ? {} : { oauthTokens: deps.oauthTokens }),
+    },
+    ctx,
+    mailboxId
+  );
+  try {
+    return await refreshFlags({ db: deps.db, provider, now }, ctx, mailboxId);
+  } finally {
+    await provider.close().catch(() => undefined);
   }
 }
 
