@@ -12,12 +12,12 @@ Two steps in `apps/web`.
   - An Edit button for an owner on a `waiting` item of kind `delegation` or `clarification`. A reminder shows no Edit button (Q2); a `held` item neither.
   - The dialog: Subject (one line), Body (a text area, the full body that the detail shows, prefilled), and for kind `delegation` a Delegate select (the detail's `delegates`, the current one first). The quote shows below, read only, with "The quoted mail is added below your text."
   - Limits in the form (Q9): subject 1–200, body 1–3000 characters; a counter under the body; Save is disabled outside the limits or with no change. The server check is the real one (stage 11).
-  - Save sends `POST /api/approvals/<id>/edit` with the id that the dialog opened (D2). Answers: 200 → close, select the new id (`replace` the URL), show "Saved as version {n}. Approve it to send." (Q11: the new version is a new request); 409 `changed` → keep the typed text in the dialog, show "Someone changed this draft. Copy your text, then open the new version." with a button that loads `currentId`; 409 `closed` → close and reload; 400 `unchanged` → "Nothing changed."; 400 `delegate_inactive` → "This delegate is no longer active."; 400 `validation` → the field error.
-  - The text "Edit here, not in your mail client." stays visible in the dialog.
+  - Save sends `POST /api/approvals/<id>/edit` with the id that the dialog opened (D2). Answers: 200 → close, select the new id (`replace` the URL), show "Saved as version {n}. Approve it to send." (Q11: the new version is a new request); 409 `changed` → keep the typed text in the dialog, show "Someone changed this draft. Copy your text, then open the new version." with a button that loads `currentId`; 409 `closed` → close and reload; 409 `drafts_off` → "Edits need assist mode with drafts on."; 400 `unchanged` → "Nothing changed."; 400 `delegate_inactive` → "This delegate is no longer active."; 400 `validation` → the field error.
+  - The text "Edit here, not in your mail client." stays visible in the dialog. With `draftRemovable` false the dialog adds "Your mail server cannot remove the old draft. Delete it in your mail client after you save."
   - Closing the dialog with typed changes asks "Discard your changes?" (no loss by a stray click).
 - **Test** (unit):
   - T1: the form state helper: Save disabled for subject `""`, for a body of 3001 characters, and when subject, body and delegate equal the start values; enabled after one change.
-  - T2: the answer map gives the texts above for 200, 409 `changed`, 409 `closed`, 400 `unchanged`, 400 `delegate_inactive`.
+  - T2: the answer map gives the texts above for 200, 409 `changed`, 409 `closed`, 409 `drafts_off`, 400 `unchanged`, 400 `delegate_inactive`.
 - **Done when:** T1, T2 pass; the typecheck passes.
 
 ## Step 2 — e2e and the keyboard path

@@ -32,7 +32,7 @@ Part of [`../plan.md`](../plan.md). Read D2, D4, D5, D12. Needs stage 04 landed.
   - T8: the phrase for a `send` with status `expired` and reason `superseded` is the new phrase in en and pl; reason `timeout` keeps the old phrase.
   - T9: `packages/core/src/texts/locale.test.ts` and `index.test.ts` pass (every key in both languages).
 - **Done when:** T6–T9 pass.
-- **Out of scope:** the `approval_edit` notice kind and its registry entry (stage 09: it needs the stage 06 CHECK); where the server sets `panelUrl` (stage 09).
+- **Out of scope:** the `approval_edit` notice kind (stage 06, with its CHECK); where the server sets `panelUrl` (stage 09).
 
 ## Done when (stage)
 

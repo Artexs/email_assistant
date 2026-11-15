@@ -13,9 +13,9 @@ Part of [`../plan.md`](../plan.md). Read P2, P6, D2, D3, D15, F4 and [`../comman
   - P6: owner only (`403 owner_only` for a member, from `requireOwner`). The shared guards stay: Origin, suspended organization, body limit.
   - Flag `approvals_page` off → 404 `not_found`.
   - `via: "web"` for every call (D15). The hooks are `cardEditHooks` (stage 09), so the Telegram cards follow.
-  - Approve answer map: `approved` → 200 `approved`, or `approved_held` with `heldBy` when the shared held check names a cause; `already_approved` → 200 `approved` (a double click is not an error); `superseded` → 409 `changed` + `currentId`; `draft_not_ready` → 409; `sending`, `sent`, `rejected`, `expired`, `failed` → 409 `closed` + `state`; `not_found` → 404.
+  - Approve answer map: `approved` → 200 `approved`, or `approved_held` with `heldBy` when `heldReason` (stage 09) names a cause, read after the commit; `already_approved` → 200 `approved` (a double click is not an error); `superseded` → 409 `changed` + `currentId`; `draft_not_ready` → 409; `sending`, `sent`, `rejected`, `expired`, `failed` → 409 `closed` + `state`; `not_found` → 404.
   - Reject answer map: `rejected` → 200; `superseded` → 409 `changed`; `already` → 409 `closed` + `state`; `not_found` → 404. The optional reason is the existing `POST /api/actions/:id/reject-reason` (P5): no new route.
-  - Edit: body schema `{ subject: string, body: string, delegateId?: uuid }` with the raw limits (subject up to 400, body up to 6000 characters before cleaning; the service enforces D3 after cleaning). Answers: `edited` → 200 `{ id, version }`; `changed` → 409 + `currentId`; `closed` → 409 + `state`; `not_editable`, `unchanged`, `delegate_inactive` → 400 with that code; `not_found` → 404.
+  - Edit: body schema `{ subject: string, body: string, delegateId?: uuid }` with the raw limits (subject up to 400, body up to 6000 characters before cleaning; the service enforces D3 after cleaning). Answers: `edited` → 200 `{ id, version }`; `changed` → 409 + `currentId`; `closed` → 409 + `state`; `drafts_off` → 409; `not_editable`, `unchanged`, `delegate_inactive` → 400 with that code; `not_found` → 404.
   - The id in the path is the version the page showed (D2). The route never looks for a newer version on its own.
   - Error texts and logs hold codes and ids only.
 - **Test** (integration; O1 with owner U1, member M1, delegate Anna; send S1 `awaiting_approval` with draft `applied`; U1 and U2 hold sent Telegram cards of S1):
@@ -27,7 +27,7 @@ Part of [`../plan.md`](../plan.md). Read P2, P6, D2, D3, D15, F4 and [`../comman
   - T6: S1 with `notified_at` 49 h ago → 409 `closed`, `state` `expired`; S1 `expired` / `timeout`.
   - T7: U1 rejects S1 → 200; S1 `rejected`; the delegation `cancelled` / `rejected`; the edit rows carry `rejected`.
   - T8: U1 edits S1 with subject `Budget 2027` and body `Hello Anna,\r\nplease send the report.\n\nAdam` → 200 `{ id: <S2>, version: 2 }`; then approve S1 → 409 `changed`, `currentId` S2.
-  - T9: an edit with a 3001-character body after cleaning → 400 `validation`; a reminder → 400 `not_editable`.
+  - T9: an edit with a 3001-character body after cleaning → 400 `validation`; a reminder → 400 `not_editable`; mode `shadow` → 409 `drafts_off`.
   - T10: S1 of organization O2 → 404 on all three; a malformed id → 400 `validation`.
   - T11: flag off → 404 on all three.
   - T12: a write with a foreign `Origin` → 403 `bad_origin`; in a `suspended` organization → 403 `org_suspended`.

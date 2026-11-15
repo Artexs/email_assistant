@@ -25,8 +25,8 @@ An owner approves, rejects and edits waiting drafts in the web panel, and manage
 
 - `GET /api/openapi.json` lists every non-hidden `/api` route; a unit test fails for an undescribed route.
 - A panel edit makes a new version; the old version cannot be approved from the panel or from Telegram.
-- After a panel approval, the Telegram card of each owner shows the result line and no buttons.
-- The delegates and delegations pages work with the flag on and answer 404 with it off.
+- After a panel approval, each owner's sent Telegram card shows the result line and no buttons (not a reminder-set card; a card in sending at that moment keeps its buttons, and a tap answers by the current state).
+- With the flag on, an owner manages delegates and reminds, cancels or closes delegations; with it off, their API routes answer 404 and the pages show the flag-off text.
 - Every e2e spec has zero axe violations; the approvals keyboard test passes.
 - The VPS runs the change with both flags on for the pilot: [plan.md](plan.md) § Done when (5 items).
 

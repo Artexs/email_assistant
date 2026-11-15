@@ -1,6 +1,6 @@
 # F102 stage 10 — Approvals read API
 
-Part of [`../plan.md`](../plan.md). Read P4, P6, D8, D11, Q5, Q13 and [`../commands.md`](../commands.md) § Routes and § Shapes. Needs stages 01 and 08 landed.
+Part of [`../plan.md`](../plan.md). Read P4, P6, D8, D11, Q5, Q13 and [`../commands.md`](../commands.md) § Routes and § Shapes. Needs stages 01 and 09 landed.
 
 Two steps. Read only: no write route, no state change.
 
@@ -11,12 +11,12 @@ Two steps. Read only: no write route, no state change.
 - **Interfaces:** `approvalListSchema`, `approvalDetailSchema`, `approvalItemSchema` (shapes in `commands.md`); `approvalRoutes(deps)`; both routes with `apiDoc` (tag `approvals`, `operationId` `listApprovals`, `getApproval`).
 - **Decisions:**
   - D8: the router lives in `channels` (it needs `delegation` and `config`; `docs/code-patterns.md` § Layers). The `view` comes from `approvalViewFor` (one builder with the committer and the card); the detail adds the full quote (`buildOutgoingMessage` `parts.quote`, up to 8000 characters) and, for kind `delegation`, the active delegates for the picker.
-  - List: sends of the organization in `awaiting_approval` (state `waiting`), and `approved` sends that are not in flight (state `held`, with `heldBy` from the same check as the Telegram toast; move that check to one shared function in `channels`). Newest first by `created_at`, at most 100. `draftReady` = the draft is `applied`.
+  - List: sends of the organization in `awaiting_approval` (state `waiting`), and `approved` sends that are not in flight (state `held`, `heldBy` from `heldReason` of stage 09). Newest first by `created_at`, at most 100. `draftReady` = the draft is `applied`.
   - Detail: any send of the organization. State map: `awaiting_approval` → `waiting`; `approved` → `held` or `sending`; `applying` → `sending`; `applied` → `sent`; `rejected`; `expired` with reason `superseded` → `superseded` (with `currentId`, the newest version); other `expired` → `expired`; `failed`. A `create_draft` id or any other action type → 404.
-  - `expiresAt` = `notified_at` + 48 h; with no `notified_at`, `created_at` + 7 days (Q5).
+  - `expiresAt` as `commands.md` (Q5): `waiting` from `notified_at` (else `created_at` + 7 days), `held` from `approved_at` + 48 h. `draftRemovable` = the mailbox has UIDPLUS.
   - Flag `approvals_page` off → 404 `not_found` for both. Any member reads (P6).
   - A send whose payload retention cleared (`sendPayloadSchema` fails) is left out of the list and answers detail with state only and a null `view` (make `view` nullable in the detail schema only).
-  - The answer passes its strict schema before it leaves (no payload field leaks).
+  - The answer passes its strict schema before it leaves.
 - **Test** (integration; O1 with owner U1 and member M1; flag on unless named):
   - T1: flag off → 404 on `GET /api/approvals` and `GET /api/approvals/<id>`.
   - T2: sends made in this order: A (`awaiting_approval`, draft `applied`), B (`awaiting_approval`, draft `ready`), C (`approved`, held by `SEND_SCOPE` `off`), D (`applied`) → items C, B, A; B `draftReady` false; C `state` `held`, `heldBy` `scope`; D absent.
@@ -24,7 +24,7 @@ Two steps. Read only: no write route, no state change.
   - T4: a send id of O2 → 404; a malformed id → 400 `validation`.
   - T5: the detail of A has `view.body` equal to the body of the card view of the same send, and `quote` with 5000 characters for a 5000-character original body (the card's quote is cut at 1500).
   - T6: after a stage 08 edit of A → the detail of A has `state` `superseded` and `currentId` = the new send; the list holds the new send, not A.
-  - T7: `expiresAt` of A with `notified_at` `2026-11-20T10:00:00Z` = `2026-11-22T10:00:00Z`; of B with no `notified_at` and `created_at` `2026-11-20T09:00:00Z` = `2026-11-27T09:00:00Z`.
+  - T7: `expiresAt` of A with `notified_at` `2026-11-20T10:00:00Z` = `2026-11-22T10:00:00Z`; of B with no `notified_at` and `created_at` `2026-11-20T09:00:00Z` = `2026-11-27T09:00:00Z`; of C with `approved_at` `2026-11-20T11:00:00Z` = `2026-11-22T11:00:00Z`. `draftRemovable` false for a mailbox without UIDPLUS.
   - T8: the detail of a delegation send lists active delegates only; of a clarification, `delegates` = `[]`.
 - **Done when:** T1–T8 pass; the route test of stage 01 passes.
 

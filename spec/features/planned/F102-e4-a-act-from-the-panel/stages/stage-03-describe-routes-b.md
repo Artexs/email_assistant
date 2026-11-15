@@ -21,6 +21,7 @@ Two steps, no behaviour change. At the end `NOT_DESCRIBED_YET` is empty, and the
 - **Files:** any router that landed after the plan base (for example the SSO or two-factor routes of F119 or F105); the route test.
 - **Decisions:**
   - Describe every key still on the list, with the same rules. A route of another active ticket that lands during this stage: describe it too and name it in the final message.
+  - Budget: if more than 15 keys remain after Step 1, stop after Step 1 and report them; the coordinator adds a stage.
   - Then delete `NOT_DESCRIBED_YET` and the `notDescribedYet` input of `routeGaps`, so a new route can only be described or hidden with a reason.
 - **Test:**
   - T4: the route test has no `NOT_DESCRIBED_YET` name (this check must find nothing: `grep -c NOT_DESCRIBED_YET apps/server/src/openapi-routes.test.ts` prints `0`).

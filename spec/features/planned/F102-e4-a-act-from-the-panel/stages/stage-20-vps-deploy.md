@@ -2,12 +2,12 @@
 
 Part of [`../plan.md`](../plan.md). Read P4, D4, D14, Q10, U1. Needs stages 01–19 landed and the `master` CI run of the last land green.
 
-`[risky]`: the real system with the pilot's mail and Telegram. **The coordinator runs this stage itself** (`spec/build.md`: VPS steps are pre-approved; backup first, name the rollback target, verify after). No worker job. No other VPS deploy at the same time.
+`[risky]`: the real system. **The coordinator runs this stage itself** (`spec/build.md`: VPS steps are pre-approved; backup first, name the rollback target, verify after). No worker job; no other VPS deploy at the same time.
 
 ## Before
 
-1. `git log --oneline <VPS commit>..origin/master`: if another ticket in the range has its own VPS step, do it first by its runbook.
-2. The range brings one F102 migration (stage 06): two nullable columns, an index, a wider kind CHECK and a pair CHECK. Old code works with it (rollback below).
+1. `git log --oneline <VPS commit>..origin/master`: another ticket's VPS step in the range goes first, by its runbook.
+2. One F102 migration (stage 06): nullable columns, an index, wider and new CHECKs. Old code works with it.
 
 ## Runbook
 
@@ -39,13 +39,16 @@ On the VPS, in the repo root, `C="docker compose -f deploy/compose.yaml --env-fi
 
 When step 8 fails, or check 1, 2, 3 or 7 fails:
 
-0. `$C exec db psql … -c "UPDATE outbox SET status = 'failed', error_code = 'outdated' WHERE kind = 'approval_edit' AND status = 'pending'"` (the old code has no renderer for the kind).
+0. In one `psql` session, before the old image starts (the old code parses views strictly and drops unknown payload keys):
+   - `UPDATE outbox SET status = 'failed', error_code = 'outdated' WHERE kind = 'approval_edit' AND status = 'pending'` (no renderer in the old code);
+   - `UPDATE outbox SET view = view #- '{view,version}' #- '{view,panelUrl}' WHERE kind = 'approval' AND status = 'pending'` (else `bad_view`, and the card never comes);
+   - Q17: expire every send in `awaiting_approval` or `approved` whose draft payload has `body_text` (`status = 'expired'`, `status_reason = 'policy_changed'`): the old code would send the template text, not the approved edit. Write the count into the report; the owner reads those drafts in Drafts.
 1. `git checkout <commit of runbook 1>`; `docker tag ea-server:pre-f102 ea-server`; `$C up -d --no-build --wait`.
-2. Never `db:rollback`: the old code ignores the new columns. A send superseded before the rollback stays `expired`; its newest version waits as a normal send.
+2. Never `db:rollback`: the old code ignores the new columns. A superseded send stays `expired`.
 3. Report the failing check to the owner; the coordinator decides on reverts on `master`.
 
 ## After
 
-- When the checks hold for 24 h (`$C logs --since 24h server | grep -E "error|failed" | wc -l` against the day before): `docker image rm ea-server:pre-f102`.
+- After 24 h of good checks (`$C logs --since 24h server | grep -E "error|failed" | wc -l` against the day before): `docker image rm ea-server:pre-f102`.
 - Write the result into `plan.md` § Log (date, commit, the outputs of checks 1–6, no ids) and close the ticket with `limen ticket done`.
 - Owner step U1 (not a stop): tell the owner in one line: "On the phone (Tailscale on), approve one draft in the panel at `/approvals` and one in Telegram; check that the other card shows the result." Record the answer in § Log when it comes.
