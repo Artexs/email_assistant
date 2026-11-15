@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -27,8 +29,9 @@ async function newOrg(trx: Trx) {
   return { ctx: { orgId: created.orgId }, mailboxId: created.mailboxId };
 }
 
-function closedLoop(trx: Trx, org: Awaited<ReturnType<typeof newOrg>>, closedAt: Date) {
+function closedLoop(trx: Trx, org: Awaited<ReturnType<typeof newOrg>>, closedAt: Date, id?: string) {
   return insertLoopRow(trx, org.ctx, org.mailboxId, {
+    ...(id === undefined ? {} : { id }),
     status: "closed",
     close_reason: "replied",
     closed_at: closedAt,
@@ -130,6 +133,23 @@ describe("clearLoopTexts", () => {
       expect((await textsOf(trx, mine)).texts_cleared_at).not.toBeNull();
       expect((await textsOf(trx, theirs)).texts_cleared_at).toBeNull();
       expect((await textsOf(trx, theirs)).subject).not.toBeNull();
+    });
+  });
+
+  // The inner select picks the batch by id. Without its own org filter, a row of another organization with a lower id
+  // takes the one slot of the batch; the outer filter then drops it and the run clears nothing.
+  test("a batch is filled only with rows of the own organization, whatever the ids of other organizations", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const b = await newOrg(trx);
+      const [lowId, highId] = [randomUUID(), randomUUID()].sort() as [string, string];
+      const theirs = await closedLoop(trx, b, ago(100), lowId);
+      const mine = await closedLoop(trx, a, ago(100), highId);
+
+      expect(await clearLoopTexts(trx, a.ctx, { before: BEFORE, batch: 1, now: NOW })).toBe(1);
+
+      expect((await textsOf(trx, mine)).texts_cleared_at).not.toBeNull();
+      expect((await textsOf(trx, theirs)).texts_cleared_at).toBeNull();
     });
   });
 });

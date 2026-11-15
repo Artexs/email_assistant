@@ -397,6 +397,27 @@ describe("restartLoop", () => {
     });
   });
 
+  test("keeps surfaced_at: the loop was shown, a restart does not hide that", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const sent = await insertSentRow(trx, org.ctx, org.mailboxId);
+      const surfaced = new Date("2026-11-18T08:00:00Z");
+      const id = await insertLoopRow(trx, org.ctx, org.mailboxId, { surfaced_at: surfaced });
+
+      const ok = await restartLoop(trx, org.ctx, {
+        loopId: id,
+        sentEmailId: sent,
+        messageId: "<new@x.test>",
+        referencesIds: [],
+        waitFrom: AT,
+        dueAt: new Date("2026-11-24T16:00:00Z"),
+      });
+
+      expect(ok).toBe(true);
+      expect((await row(trx, id)).surfaced_at?.getTime()).toBe(surfaced.getTime());
+    });
+  });
+
   test("a closed loop and a loop of another organization do not restart", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await twoOrgs(trx);
