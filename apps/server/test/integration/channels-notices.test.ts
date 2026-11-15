@@ -7,6 +7,7 @@ import { sql, type Transaction } from "kysely";
 import { listSendLimitHolds, SENT_COPY_PENDING_MAX_AGE_MS } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices } from "../../src/modules/channels";
+import * as noticeQueue from "../../src/modules/channels/notice-queue";
 import { insertSenderRule } from "../../src/modules/config";
 import { ensureSyncFolders, insertSentEmails, NO_TEST_SENDERS, type NewSentEmail } from "../../src/modules/mail";
 import { insertMailbox, markSynced, writeSentSwitch, type MailboxStatus } from "../../src/modules/mail/repo";
@@ -2318,31 +2319,75 @@ describe("sent_missing notices", () => {
     });
   });
 
-  test("two mailboxes of one organization each get their own rows", async () => {
+  async function secondMailbox(trx: Transaction<DB>, o: Org, firstPass: Date): Promise<string> {
+    const id = randomUUID();
+    await insertMailbox(trx, o.ctx, {
+      id,
+      address: `second-${id}@x.test`,
+      imapHost: "imap.x.test",
+      imapPort: 993,
+      smtpHost: "smtp.x.test",
+      smtpPort: 465,
+      capabilities: testCapabilities,
+      folderMap: {},
+    });
+    await writeSentSwitch(trx, o.ctx, id, { enabled: true, at: at(-30 * DAY) });
+    await trx
+      .updateTable("mailbox_sent_sync")
+      .set({ path: "Sent", first_pass_at: firstPass, last_pass_at: at(-MINUTE) })
+      .where("mailbox_id", "=", id)
+      .execute();
+    return id;
+  }
+
+  test("two mailboxes of one organization: each key and since come from its own health row", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await sentOrg(trx);
-      const id = randomUUID();
-      await insertMailbox(trx, o.ctx, {
-        id,
-        address: `second-${id}@x.test`,
-        imapHost: "imap.x.test",
-        imapPort: 993,
-        smtpHost: "smtp.x.test",
-        smtpPort: 465,
-        capabilities: testCapabilities,
-        folderMap: {},
-      });
-      await writeSentSwitch(trx, o.ctx, id, { enabled: true, at: at(-30 * DAY) });
-      await trx
-        .updateTable("mailbox_sent_sync")
-        .set({ path: "Sent", first_pass_at: at(-9 * DAY), last_pass_at: at(-MINUTE) })
-        .where("mailbox_id", "=", id)
-        .execute();
+      const quiet = await secondMailbox(trx, o, at(-9 * DAY));
+      const recent = await secondMailbox(trx, o, at(-20 * DAY));
+      await sentMail(trx, { ...o, mailboxId: recent }, at(-2 * DAY));
+
       await run(trx);
-      expect((await missing(trx, o)).map((row) => row.mailbox_id).sort()).toEqual(
-        [o.mailboxId, o.mailboxId, id, id].sort()
-      );
+
+      const found = await missing(trx, o);
+      expect(found).toHaveLength(4);
+      expect(found.some((row) => row.mailbox_id === recent)).toBe(false);
+      for (const [mailboxId, days] of [
+        [o.mailboxId, 8],
+        [quiet, 9],
+      ] as const) {
+        const own = found.filter((row) => row.mailbox_id === mailboxId);
+        expect(own).toHaveLength(2);
+        for (const row of own) {
+          expect(row.dedup_key).toBe(`sent_missing:${mailboxId}:${at(-days * DAY).getTime()}`);
+          expect((row.view as { since: string }).since).toBe(at(-days * DAY).toISOString());
+        }
+      }
+    });
+  });
+
+  test("a queue that fails for one mailbox logs one skip warning and the other mailbox still gets its notice", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx);
+      const broken = await secondMailbox(trx, o, at(-9 * DAY));
+      const original = noticeQueue.queueNotice;
+      const spy = spyOn(noticeQueue, "queueNotice").mockImplementation(async (...args) => {
+        if (args[2].mailboxId === broken) throw new Error("test failure");
+        return original(...args);
+      });
+      try {
+        await run(trx);
+        await run(trx);
+      } finally {
+        spy.mockRestore();
+      }
+
+      const found = await missing(trx, o);
+      expect(found.map((row) => row.mailbox_id)).toEqual([o.mailboxId, o.mailboxId]);
+      const warns = errorLines.filter((line) => line.includes("notice_skipped kind=sent_missing"));
+      expect(warns).toEqual([`[channels] notice_skipped kind=sent_missing item_id=${broken} error=Error`]);
     });
   });
 });
