@@ -160,6 +160,22 @@ test("R4: a keyword error marks the keywords field invalid and sends nothing", a
   expect(errors).toEqual([]);
 });
 
+test("R5: a member session cannot PUT the profile; the markup of a label shows as text", async ({ context, page }) => {
+  const errors = await startSession(context, page, org().member);
+  const response = await page.request.put(`/api/settings/${org().empty.id}/urgency`, {
+    headers: { origin: E2E_BASE_URL, "content-type": "application/json" },
+    data: { profile: null },
+  });
+  expect(response.status()).toBe(403);
+  expect(await storedProfile(page, org().empty.id)).not.toBeNull();
+  await openCard(page, "empty");
+  await expect(card(page).getByText("<img src=x onerror=window.__pwned=1> **bold**")).toBeVisible();
+  await expect(card(page).locator("img")).toHaveCount(0);
+  expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined();
+  expect(errors).toEqual([]);
+});
+
+// Last: it clears the profile of the `empty` mailbox that R4 saved and R5 reads.
 test("R6: after Clear all the focus is not on the page body; Cancel gives it back to Clear all", async ({
   context,
   page,
@@ -179,20 +195,5 @@ test("R6: after Clear all the focus is not on the page body; Cancel gives it bac
   await expect(form.getByRole("button", { name: en.urg_clear })).toHaveCount(0);
   await expect(form.getByRole("button", { name: en.urg_topic_add })).toBeFocused();
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
-  expect(errors).toEqual([]);
-});
-
-test("R5: a member session cannot PUT the profile; the markup of a label shows as text", async ({ context, page }) => {
-  const errors = await startSession(context, page, org().member);
-  const response = await page.request.put(`/api/settings/${org().empty.id}/urgency`, {
-    headers: { origin: E2E_BASE_URL, "content-type": "application/json" },
-    data: { profile: null },
-  });
-  expect(response.status()).toBe(403);
-  expect(await storedProfile(page, org().empty.id)).not.toBeNull();
-  await openCard(page, "empty");
-  await expect(card(page).getByText("<img src=x onerror=window.__pwned=1> **bold**")).toBeVisible();
-  await expect(card(page).locator("img")).toHaveCount(0);
-  expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined();
   expect(errors).toEqual([]);
 });

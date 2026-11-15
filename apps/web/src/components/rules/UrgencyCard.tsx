@@ -44,7 +44,7 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
   const [error, setError] = useState<UrgencyError | null>(null);
   const [pending, setPending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  // After "Clear all" the Clear button unmounts: the focus goes to the Add button, which stays.
+  // After "Clear all" the Clear button unmounts: the focus goes to the Add button, which stays. After Cancel it goes back to Clear.
   const focusAddAfterClose = useRef(false);
   // The id of the element that takes the focus after the next render (a new row, or the add button after a removal).
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -272,7 +272,13 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
           {t("save")}
         </Button>
         {settings.urgencyProfile !== null && (
-          <Button type="button" variant="outline" disabled={pending} onClick={() => setConfirmOpen(true)}>
+          <Button
+            id="urg-clear"
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => setConfirmOpen(true)}
+          >
             {t("urg_clear")}
           </Button>
         )}
@@ -281,10 +287,11 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
       <Dialog open={confirmOpen} onOpenChange={(open) => !pending && setConfirmOpen(open)}>
         <DialogContent
           onCloseAutoFocus={(event) => {
-            if (!focusAddAfterClose.current) return;
+            // The dialog has no trigger element, so the default would leave the focus on the page body.
+            const cleared = focusAddAfterClose.current;
             focusAddAfterClose.current = false;
             event.preventDefault();
-            document.getElementById("urg-topic-add")?.focus();
+            document.getElementById(cleared ? "urg-topic-add" : "urg-clear")?.focus();
           }}
         >
           <DialogHeader>
