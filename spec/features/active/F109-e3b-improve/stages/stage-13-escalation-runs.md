@@ -40,3 +40,9 @@ No rewrite and no second holdout run in this stage: a "no ship" ends the escalat
 **Done when.** The summary with its `Decision:` line and the spend (≤ $2.50) is committed; the final message gives the decision and the five dev values; Proof `PROOF_OK`.
 
 **Out of scope.** Triage wiring (stage 14), prompt changes.
+
+## Carry-over from the stage 12 review (coordinator, 2026-11-15)
+
+- Check that `--escalate` with `--prompt-version classifier-v3` (or `--prompt-parts`) is refused or named in the report: the second call always uses the `classifier-v2` text. Stage 11 decided no ship, so production is v2; a v3 cascade run has no meaning.
+- Both calls are reported for a resumed case: an escalation error re-runs the whole case, including the first call (stage 12 note). Do not count the first call twice in the budget.
+- The `escalation-v1.ts` comment about the registry test points to the wrong test: fix it.
