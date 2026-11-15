@@ -26,6 +26,7 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    - `CREDENTIALS_KEY`: `openssl rand -base64 32`. Keep a copy in a password manager. If you lose the key, you lose all stored mailbox passwords.
    - `CREDENTIALS_KEY_VERSION=1`
    - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (only for the `testmail` and probe tools), `LOG_LEVEL=info`. Leave `LOG_FORMAT` unset: Compose pins `json`.
+   - `OPENAI_BASE_URL` (optional): the endpoint of the `openai` provider. Empty = `https://api.openai.com/v1`. EU: `https://eu.api.openai.com/v1` with a key of the EU project. Own server: `OPENAI_ENDPOINT_KIND=own` is needed only for a remote https host. A bad value stops the start; the log names the key, not the value. See `docs/capabilities/triage.md` rule 16.
    - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
    - `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE` and `SEND_SCOPE` stay `off` until you decide. `all` acts on every active mailbox of the server: read "Customers (S6a)" first.
    - `OPERATOR_CONTACT` and `OPERATOR_TELEGRAM_CHAT_ID` (optional, see "Customers (S6a)").
