@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { barCategories, noGoBodySchema, settingsViewSchema } from "./settings";
+import { barCategories, noGoBodySchema, settingsViewSchema, urgencyBodySchema } from "./settings";
 
 const gate = { decision: "go", precision: 0.99, kept: 40, atConfidence: 0.8, threshold: 0.8 } as const;
 
@@ -15,6 +15,7 @@ function fixture() {
       { key: "inbox", role: "inbox", path: "INBOX", enabled: true },
       { key: "junk", role: "junk", path: "Junk", enabled: false },
     ],
+    urgencyProfile: null,
     bar: 0.98,
     minKept: 30,
   };
@@ -29,6 +30,30 @@ describe("settingsViewSchema", () => {
     const toolSwitches: Partial<ReturnType<typeof fixture>["toolSwitches"]> = { ...fixture().toolSwitches };
     delete toolSwitches.create_draft;
     expect(settingsViewSchema.safeParse({ ...fixture(), toolSwitches }).success).toBe(false);
+  });
+
+  test("refuses a fixture without urgencyProfile; takes a profile", () => {
+    const rest: Partial<ReturnType<typeof fixture>> = fixture();
+    delete rest.urgencyProfile;
+    expect(settingsViewSchema.safeParse(rest).success).toBe(false);
+    const profile = { topics: [{ label: "a", keywords: [] }], deadlines: [] };
+    expect(settingsViewSchema.safeParse({ ...fixture(), urgencyProfile: profile }).success).toBe(true);
+  });
+});
+
+describe("urgencyBodySchema", () => {
+  test("takes a profile, null and an empty profile (defaults fill the lists)", () => {
+    expect(urgencyBodySchema.parse({ profile: null })).toEqual({ profile: null });
+    expect(urgencyBodySchema.parse({ profile: {} })).toEqual({ profile: { topics: [], deadlines: [] } });
+    expect(urgencyBodySchema.safeParse({ profile: { topics: [{ label: "a" }], deadlines: [] } }).success).toBe(true);
+  });
+
+  test("refuses 21 topics, a bad date and a missing profile", () => {
+    const topics = Array.from({ length: 21 }, () => ({ label: "a", keywords: [] }));
+    expect(urgencyBodySchema.safeParse({ profile: { topics, deadlines: [] } }).success).toBe(false);
+    const deadlines = [{ label: "a", due: "soon" }];
+    expect(urgencyBodySchema.safeParse({ profile: { topics: [], deadlines } }).success).toBe(false);
+    expect(urgencyBodySchema.safeParse({}).success).toBe(false);
   });
 });
 

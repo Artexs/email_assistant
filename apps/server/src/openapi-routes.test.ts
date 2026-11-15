@@ -245,6 +245,20 @@ describe("the real app", () => {
     expect(operation?.requestBody).toBeDefined();
   });
 
+  test("PUT /api/settings/{mailboxId}/urgency is described: uuid path parameter, body, settings view answer, owner_only", async () => {
+    const operation = (await openApiSpec(realApp())).paths?.["/api/settings/{mailboxId}/urgency"]?.put as {
+      parameters?: unknown;
+      requestBody?: unknown;
+      responses?: Record<string, { description?: string } | undefined>;
+    };
+    expect(operation?.parameters).toMatchObject([
+      { name: "mailboxId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+    ]);
+    expect(operation.requestBody).toBeDefined();
+    expect(operation.responses?.["200"]).toBeDefined();
+    expect(operation.responses?.["403"]?.description).toContain("owner_only");
+  });
+
   test("an empty answer is described as 204 with no body, and the shared guard codes are listed", async () => {
     const operation = (await openApiSpec(realApp())).paths?.["/api/me/locale"]?.patch as {
       responses?: Record<string, { description?: string } | undefined>;

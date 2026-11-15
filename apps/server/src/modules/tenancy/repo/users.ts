@@ -19,6 +19,21 @@ export async function insertUser(
     .executeTakeFirstOrThrow();
 }
 
+// A user with no password and a verified address, for an SSO member (F119 stage 10). `ON CONFLICT` on the unique index
+// `lower(email)`: two operators who add the same address in two organizations at once get one row and one `undefined`
+// (one user, one organization). The caller lower-cases the address.
+export async function insertSsoUserOnce(
+  trx: Transaction<DB>,
+  input: { email: string; displayName: string; locale: UserLocale }
+): Promise<{ id: string } | undefined> {
+  return trx
+    .insertInto("users")
+    .values({ email: input.email, display_name: input.displayName, locale: input.locale, email_verified: true })
+    .onConflict((oc) => oc.expression(sql`lower(email)`).doNothing())
+    .returning("id")
+    .executeTakeFirst();
+}
+
 export interface UserAuthProfile {
   locale: UserLocale | null;
   termsVersion: string | null;

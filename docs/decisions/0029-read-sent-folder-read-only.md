@@ -1,6 +1,6 @@
 # 0029 — The sync reads the Sent folder, read-only
 
-- Status: proposed (E5 discovery, 2026-11-13; owner accepted the defaults, PD-115–PD-129; amended for E6 by PD-077 and PD-080). The ticket that lands E5a sets "accepted". Amends 0014 and the rule "never reads Sent" in `docs/architecture.md` §4.1 rule 1 and §5 (synced folders).
+- Status: accepted (F104 stage 06, 2026-11-15; E5 discovery 2026-11-13; owner accepted the defaults, PD-115–PD-129; amended for E6 by PD-077 and PD-080). Amends 0014 and the rule "never reads Sent" in `docs/architecture.md` §4.1 rule 1 and §5 (synced folders).
 - Date: 2026-11-13
 
 ## Context
@@ -33,3 +33,11 @@ Market products (Superhuman, Inbox Zero, Gmail nudges) all read sent mail for fo
 - New personal data of third parties (recipients of the user's mail): the records of processing and the DPIA (E7-T4) name it; retention (F027) and DSR erase cover it.
 - `docs/architecture.md` §4.1 rule 1 and §5 change when E5a lands: "reads Sent read-only (ADR 0029), never changes it".
 - E9's Graph and Gmail adapters must offer the same Sent pass behind the `MailProvider` port.
+
+## Amendments at acceptance (F104)
+
+1. **Answered mark.** The mark is the reader `listUserAnswers` (a direct parent only, user mail only), not a column on `emails`. The earliest user reply that names the incoming mail as its parent (`In-Reply-To`, else the last `References` id) gives the time.
+2. **Pass before a system send.** E6a wires the pass before a system send through `syncSentHeaders`. The sync job runs the whole pass (`syncSentFolder`: header step, then text step) after the INBOX sync, on the same connection.
+3. **Off deletes.** Turning "Track my sent mail" off deletes the stored sent mail of the mailbox (rows, text, recipients). The switch is the consent; off withdraws it.
+4. **Windows and retention.** The windows and the retention count from INTERNALDATE in the Sent folder. The text window is 14 days and never exceeds the retention of the organization.
+5. **System send.** A system send is a Sent mail whose `X-EA-Action-Id` names a draft whose send went out. The user's own send of a system draft is user mail, with the action id kept as a link.

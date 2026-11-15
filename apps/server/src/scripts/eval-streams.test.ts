@@ -8,13 +8,13 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { evalStateFileName, prompts } from "../modules/triage";
 import { type Config, llmRoleTable, loadConfig } from "../platform/config";
+import { ledgerLine } from "../platform/eval-ledger";
 import { type LlmCall, type LlmClient, LlmConfigError, LlmSoftError } from "../platform/llm";
+import { readSlots, writeJson } from "../platform/sim-files";
 
 import { type ClassifierDeps, runClassifier } from "./eval";
 import { parseEvalArgs } from "./eval-args";
-import { ledgerLine } from "./eval-ledger";
 import { runSim, type SimDeps } from "./eval-sim";
-import { readSlots, writeJson } from "./sim-files";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
 // `bun run eval` and `eval --sim` print through createCliOutput: `print` to stdout, `fail` to stderr. Each test reads

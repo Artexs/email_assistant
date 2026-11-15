@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseSettingsArgs } from "./mailbox-settings-args";
+import { describeUrgency, parseSettingsArgs, parseUrgencyFile, usage } from "./mailbox-settings-args";
 
 const org = "11111111-1111-4111-8111-111111111111";
 const mailbox = "22222222-2222-4222-8222-222222222222";
@@ -99,5 +99,51 @@ describe("parseSettingsArgs", () => {
     expect(
       parseSettingsArgs(["sync-folder", ...ids, "--key", "junk", "--value", "off", "--name", "move"])
     ).toBeUndefined();
+  });
+});
+
+describe("urgency", () => {
+  test("takes --file or --clear, not none and not both", () => {
+    expect(parseSettingsArgs(["urgency", ...ids, "--file", "p.json"])).toEqual({
+      kind: "urgency",
+      orgId: org,
+      mailboxId: mailbox,
+      source: { file: "p.json" },
+    });
+    expect(parseSettingsArgs(["urgency", ...ids, "--clear"])).toEqual({
+      kind: "urgency",
+      orgId: org,
+      mailboxId: mailbox,
+      source: { clear: true },
+    });
+    expect(parseSettingsArgs(["urgency", ...ids])).toBeUndefined();
+    expect(parseSettingsArgs(["urgency", ...ids, "--file", "p.json", "--clear"])).toBeUndefined();
+    expect(parseSettingsArgs(["urgency", ...ids, "--file", ""])).toBeUndefined();
+    expect(parseSettingsArgs(["urgency", ...ids, "--clear", "--value", "on"])).toBeUndefined();
+    expect(parseSettingsArgs(["show", ...ids, "--clear"])).toBeUndefined();
+  });
+
+  test("the usage names the command", () => {
+    expect(usage).toContain("mailbox:settings urgency");
+  });
+
+  test("parseUrgencyFile: a profile; not JSON; schema errors as paths without values", () => {
+    const ok = parseUrgencyFile(JSON.stringify({ topics: [{ label: "a" }] }));
+    expect(ok).toEqual({ ok: true, profile: { topics: [{ label: "a", keywords: [] }], deadlines: [] } });
+    expect(parseUrgencyFile("{ nope")).toEqual({ ok: false, reason: "not_json", paths: [] });
+    const bad = parseUrgencyFile(JSON.stringify({ deadlines: [{ label: "SECRET", due: "SECRET" }], topics: "SECRET" }));
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) {
+      expect(bad.paths.sort()).toEqual(["deadlines.0.due", "topics"]);
+      expect(JSON.stringify(bad)).not.toContain("SECRET");
+    }
+    expect(parseUrgencyFile("[]")).toMatchObject({ ok: false, reason: "schema" });
+  });
+
+  test("describeUrgency prints counts", () => {
+    expect(describeUrgency(null)).toBe("urgency none");
+    expect(
+      describeUrgency({ topics: [{ label: "SECRET", keywords: [] }], deadlines: [{ label: "x", due: "2026-12-01" }] })
+    ).toBe("urgency topics=1 deadlines=1");
   });
 });

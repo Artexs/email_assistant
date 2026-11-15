@@ -113,6 +113,8 @@ export const operatorFlagResultSchema = z.strictObject({
   result: z.enum(["changed", "unchanged"]),
   flag: z.string(),
   enabled: z.boolean(),
+  // F119 N12: the flag `sso_sign_in` went off in an organization that requires SSO; only its break-glass owner can sign in.
+  warning: z.literal("sso_required_on").optional(),
 });
 
 export type OperatorPlanBody = z.infer<typeof operatorPlanBodySchema>;
