@@ -172,6 +172,31 @@ for (const [role, conn] of [
       });
     });
 
+    test("a mail that an operator backfill stores between the plan and the apply of a history run keeps its status", async () => {
+      await withCommittedMailbox(conn, async (box, newFake) => {
+        const history = newFake();
+        let first = true;
+        const racing = Object.assign(Object.create(history) as typeof history, {
+          fetchContent: async (folder: string, uid: number) => {
+            const content = await history.fetchContent(folder, uid);
+            if (first) {
+              first = false;
+              // The operator run stores every mail of the window as `pending` while the history run holds its plan of the first chunk.
+              await backfillInbox(depsOf(conn, newFake(), 50), box, box.mailboxId, { since });
+            }
+            return content;
+          },
+        });
+        const outcome = await backfillInbox(depsOf(conn, racing, 1), box, box.mailboxId, { since, purpose: "history" });
+        expect(outcome.kind).toBe("done");
+        const after = await counts(conn, box.mailboxId);
+        expect(after.emails).toHaveLength(MAILS + 1);
+        expect(after.distinct).toBe(MAILS + 1);
+        expect(after.emails.filter((row) => row.skip_reason === "history_check")).toHaveLength(0);
+        expect(after.emails.filter((row) => row.status === "pending")).toHaveLength(MAILS + 1);
+      });
+    });
+
     test("eight writers of one dedup key store one row", async () => {
       await withCommittedMailbox(conn, async (box) => {
         const row: NewEmail & { status: "skipped" } = {
