@@ -11,7 +11,7 @@ Part of [`../plan.md`](../plan.md). Build this stage only when `notes/2026-11-15
 **Interfaces.**
 - Config key `OPENAI_API_STYLE`: `responses` (default) or `chat`. The start fails when `chat` is set and the endpoint kind is not `own` (OpenAI's own endpoints stay on the tested Responses path).
 - `LlmProviderSettings.apiStyle: "responses" | "chat"`; it reaches `createGenerate` like `baseUrl`.
-- `toChatParams(req, endpoint)`: `messages` = system then user; `response_format: { type: "json_schema", json_schema: { name: "result", strict: true, schema: toStrictJsonSchema(...) } }`; no `reasoning_effort` for `own`; `store` not sent.
+- `toChatParams(req)`: `messages` = system then user; `response_format: { type: "json_schema", json_schema: { name: "result", strict: true, schema: toStrictJsonSchema(...) } }`; no `reasoning_effort` (the `own` row has effort `null`, D4); `store` not sent.
 - `toChatResult(response)`: text from `choices[0].message.content`; `refusal` set → `blocked: true`; `finish_reason` `content_filter` → `blocked: true`; `length` → text `undefined`, not blocked; tokens from `usage.prompt_tokens` and `usage.completion_tokens` (missing → 0).
 
 **Decisions.** D4, D9. Errors: the same `classifyOpenAiError` (the SDK error classes are the same).

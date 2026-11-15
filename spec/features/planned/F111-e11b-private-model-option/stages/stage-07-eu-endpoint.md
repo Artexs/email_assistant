@@ -1,6 +1,6 @@
-# F111 stage 06 — The EU endpoint is verified, or the fallback is recorded
+# F111 stage 07 — The EU endpoint is verified, or the fallback is recorded
 
-Part of [`../plan.md`](../plan.md). `[risky]`: privacy claim and a real paid endpoint. Gate: owner step O1 (PD-111, the EU project request) is answered and O3 (the PD-110 second pass) is done. The coordinator writes the owner's answer and its date into the spawn text: "branch A" (approved) or "branch B" (refused). Without an answer this stage does not start (P6). Needs stages 02 and 03.
+Part of [`../plan.md`](../plan.md). `[risky]`: privacy claim and a real paid endpoint. Gate: owner step O1 (PD-111, the EU project request) is answered and O3 (the PD-110 second pass) is done. The coordinator writes the owner's answer and its date into the spawn text: "branch A" (approved) or "branch B" (refused). Without an answer this stage does not start (P6). Needs stages 02, 03 and 06.
 
 Release-note rule for both branches: this stage changes no VPS env and no deploy (P1, P5).
 
@@ -21,9 +21,9 @@ Release-note rule for both branches: this stage changes no VPS env and no deploy
 
 **Goal.** EU evidence for the production model (PD-110: every new endpoint passes the gate; D8).
 
-**Command** (file loaded, as in A1): `bun run eval --sim lab-01 --part holdout --out evals/results/<date>-sim-lab-01-holdout-gpt-6-luna-eu-classifier-v2.md` (defaults: concurrency 8, rpm 240, cap $1; expected about $0.30). Long run: `nohup`, poll, resume with the same command.
+**Command** (file loaded, as in A1): `bun run eval --sim lab-01 --part holdout --provider openai --model gpt-6-luna --reasoning-effort none --out evals/results/<date>-sim-lab-01-holdout-gpt-6-luna-eu-classifier-v2.md` (defaults: concurrency 8, rpm 240, cap $1; expected about $0.30). Long run: `nohup`, poll, resume with the same command.
 
-**Price.** Read OpenAI's pricing page for regional processing. Replace the D7 EU row of `gpt-6-luna` with the page's numbers, the page URL as `source` and today as `checked`. If the page shows no regional price, keep the 1.10× row and say so. Update the cost tests of stage 03 to the new numbers.
+**Price.** Read OpenAI's pricing page for regional processing. Replace the D7 EU row of `gpt-6-luna` with the page's numbers, the page URL as `source` and today as `checked`. If the page shows no regional price, keep the 1.10× row and say so. Update the cost tests of stage 03 to the new numbers. If the run line does not print `endpoint=eu`, stop: the env file did not load.
 
 **Test.**
 1. Gate file `classifier-classifier-v2-gpt-6-luna-none-lab-01-v1-eu.json` exists, parses, `endpoint` `eu`.
@@ -34,7 +34,7 @@ Release-note rule for both branches: this stage changes no VPS env and no deploy
 
 ### Step A3 — Docs
 
-**Files.** ADR 0035 (decision 6 resolved: "OpenAI approved on <date>; EU endpoint verified, gate file <name>"; status accepted); `docs/capabilities/triage.md` and `measurement.md` (EU rows); `docs/architecture.md` §6.3 (EU processing is an endpoint option, verified; this install still runs the US API for the owner's pilot, PD-101); `.env.example` (EU line, "needs a key of the EU project"); `docs/own-model.md` (link). If `packages/core/src/legal/subprocessors.ts` exists (F107 landed): the `openai` row's location says the region follows `OPENAI_BASE_URL` (D12).
+**Files.** ADR 0035 (decision 6 resolved: "OpenAI approved on <date>; EU endpoint verified, gate file <name>"; status accepted for all decisions; decision 1 keeps the stage 06 wording, P1); `docs/capabilities/triage.md` and `measurement.md` (EU rows); `docs/architecture.md` §6.3 (EU processing is an endpoint option, verified; this install still runs the US API for the owner's pilot, PD-101); `.env.example` (EU line, "needs a key of the EU project"); `docs/own-model.md` (link). If `packages/core/src/legal/subprocessors.ts` exists (F107 landed): the `openai` row's location says the region follows `OPENAI_BASE_URL` (D14).
 
 **Done when.** No page says "EU endpoint planned" any more; no page says this install processes in the EU.
 
@@ -50,8 +50,8 @@ Release-note rule for both branches: this stage changes no VPS env and no deploy
 
 ## Proof
 
-Branch A: the Proof of `plan.md` with `NN` = `06` (the price row changes code). Branch B (docs only):
+Branch A: the Proof of `plan.md` with `NN` = `07` (the price row changes code). Branch B (docs only):
 
 ```
-mkdir -p /tmp/f111-s06 && bun run lint > /tmp/f111-s06/lint.log 2>&1 && echo PROOF_OK
+mkdir -p /tmp/f111-s07 && bun run lint > /tmp/f111-s07/lint.log 2>&1 && echo PROOF_OK
 ```

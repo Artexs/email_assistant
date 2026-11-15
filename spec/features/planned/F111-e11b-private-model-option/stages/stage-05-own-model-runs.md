@@ -1,6 +1,6 @@
-# F111 stage 05 — Holdout numbers for two own models, and the install guide
+# F111 stage 05 — Holdout numbers for two own models
 
-Part of [`../plan.md`](../plan.md). Review before the land (published LLM numbers). Owner step O2 comes first: `ollama-rocm` is installed on this PC (P3), or the owner said "rent a GPU". Needs stages 02, 03 and, if built, 04.
+Part of [`../plan.md`](../plan.md). Review before the land (published LLM numbers). Owner step O2 comes first (plan § Owner steps): `ollama-rocm` is installed on this PC (P3), or the owner said "rent a GPU". Needs stages 02, 03 and, if built, 04. A long job: if the job time runs short after model one, commit its files and report; the coordinator continues the job for model two.
 
 ## Step 1 — Serve the models
 
@@ -12,7 +12,7 @@ Part of [`../plan.md`](../plan.md). Review before the land (published LLM number
 - Models: Bielik 11B v3.1 at Q4_K_M — first the Ollama library name, else `hf.co/<SpeakLeash GGUF repo>:Q4_K_M`; if neither has v3.1, take the newest Bielik 11B and write the gap in the final message. Second: `gemma3:12b`. Disk need about 16 GB (`df` first).
 - Long commands: `nohup`, poll the log, tool calls under 120 s. Stop the server by its PID at the end.
 
-**Decisions.** P3, P4, D10.
+**Decisions.** P3, P4, D10. Start the server with `OLLAMA_CONTEXT_LENGTH=8192` (D10).
 
 **Done when.** `curl -s http://127.0.0.1:11500/api/tags` lists both models (record the exact tags).
 
@@ -29,31 +29,28 @@ OPENAI_BASE_URL=http://127.0.0.1:11500/v1 OPENAI_API_KEY=ollama OPENAI_TIMEOUT_M
 ```
 
 - If stage 04 was built: add `OPENAI_API_STYLE=chat`.
-- A stop (timeouts, soft errors) resumes with the same command; report every resume and the total time.
+- A stop (timeouts, soft errors) resumes with the same command (the state file name holds the endpoint, D8); report every resume and the total time.
 - Never `--judge`, never `--limit` (no gate file with it), never another part. Nothing reads DB mail.
 - Record per model: total time, mean seconds per case, failed cases, the GPU name, the Ollama version, the tags.
 
 **Decisions.** D8, D10; PD-025 bar unchanged (the gate decides, no threshold change).
 
 **Test.**
-1. Two gate files exist with names ending `-own.json`; each parses with `gateFileSchema` and has `endpoint` `own`.
+1. Two gate files exist with names ending `-own.json`; each parses with `gateFileSchema`, has `endpoint` `own` and `host` `127.0.0.1`.
 2. Each report has the line `endpoint=own host=127.0.0.1`.
 3. `grep -cE '\b[bhw]-[a-z]{2,4}-[0-9]{2,4}\b' <report>` prints 0 for both reports (no case id leaks).
 
 **Done when.** Both runs are complete, or a run that cannot complete is reported with its count and cause (then the gap is a question, not a retry loop).
 
-## Step 3 — Install guide and docs
+## Step 3 — Run record for stage 06
 
-**Goal.** An operator can run the product on an own model and knows what it costs in quality and hardware (ADR 0035 Consequences).
+**Goal.** Stage 06 writes the guide from facts, not memory.
 
-**Files.**
-- `docs/own-model.md` (new, English): what an own endpoint changes (D3, D4, D12: no LLM sub-processor); hardware (the VPS cannot host a model; measured GPU, memory and seconds per mail from step 2; 200 mails a day ≈ 600k prompt tokens a day); Ollama setup with the env lines (`OPENAI_BASE_URL`, `OPENAI_API_KEY` placeholder, `OPENAI_TIMEOUT_MS`, and `OPENAI_API_STYLE` if built); the http rule (D2); the gate rule: a model without a passing gate file unlocks no `auto` category (ADR 0028); the results table (per category: go or no-go, precision, recall; links to both reports and to the OpenAI baseline report of F097 stage 21).
-- `docs/decisions/0035-llm-endpoint-eu-and-own-model.md`: status "accepted 2026-MM-DD for decisions 1–5; decision 6 waits for the EU answer"; a dated line with the two results.
-- `docs/capabilities/triage.md`: link to the guide; `docs/architecture.md` §6.3: "own model: no LLM sub-processor".
+**Files.** `evals/results/<date>-own-model-runs.md` (new): per model the tag, the Ollama version, the GPU, `OLLAMA_CONTEXT_LENGTH`, the total time, seconds per case, resumes, failed cases, the largest `tokensIn` of a case, and the go/no-go per category next to the F097 stage 21 baseline (`gpt-6-luna`, standard). No case id, no mail text.
 
-**Decisions.** D13.
+**Test.** The largest `tokensIn` stays below 8192 − 1024; else stop and report it (Ollama would cut the prompt, D10, and the numbers would be false).
 
-**Done when.** The guide's numbers match the two reports; every link resolves.
+**Done when.** The record exists and its numbers match the two reports.
 
 ## Proof
 
@@ -61,4 +58,4 @@ OPENAI_BASE_URL=http://127.0.0.1:11500/v1 OPENAI_API_KEY=ollama OPENAI_TIMEOUT_M
 mkdir -p /tmp/f111-s05 && bun run lint > /tmp/f111-s05/lint.log 2>&1 && bun run typecheck > /tmp/f111-s05/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f111-s05/unit.log 2>&1 && echo PROOF_OK
 ```
 
-No code changes here except result files and docs, so `test:int:ci` is not part of this proof. The final message lists the run times, the go/no-go per category for both models, and the server PID that was stopped.
+No code changes here except result files and docs, so `test:int:ci` is not part of this proof. The final message lists the run times, the go/no-go per category for both models, and the stopped server PID.

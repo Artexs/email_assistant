@@ -6,11 +6,11 @@ Part of [`../plan.md`](../plan.md). `[risky]`: the first contact with a real own
 
 **Goal.** Know whether the current OpenAI adapter request works on Ollama's `/v1/responses` (ADR 0035 Consequences, last line; plan D9).
 
-**Files.** Probe: `.tmp-f111-s01/` in the worktree (delete it before the commit). Result: `notes/2026-11-15-ollama-responses-path.md` (new; append if it exists). Use the date of the run in the name if it differs.
+**Files.** Probe: `.tmp-f111-s01/` in the worktree (delete it before the commit). Result: `notes/2026-11-15-ollama-responses-path.md` (new; this fixed name also when the run is on a later day; stage 04 reads it).
 
 **Setup.**
-- Ollama 0.40.7 is installed on this PC (plan F5); the service is off. Start your own server: `OLLAMA_HOST=127.0.0.1:11500 OLLAMA_MODELS=${XDG_CACHE_HOME:-$HOME/.cache}/email-assistant/ollama nohup ollama serve > /tmp/f111-s01/ollama.log 2>&1 &`, save `$!` and stop only that PID at the end (`kill <pid>`; never `pkill`). CPU is enough for this stage.
-- Pull one small model: `qwen3:0.6b` (about 0.5 GB). If it is not in the library, take `gemma3:1b` and say so.
+- Ollama 0.40.7 is installed on this PC (plan F5); the service is off. Start your own server: `OLLAMA_HOST=127.0.0.1:11500 OLLAMA_CONTEXT_LENGTH=8192 OLLAMA_MODELS=${XDG_CACHE_HOME:-$HOME/.cache}/email-assistant/ollama nohup ollama serve > /tmp/f111-s01/ollama.log 2>&1 &`, save `$!` and stop only that PID at the end (`kill <pid>`; never `pkill`). CPU is enough for this stage.
+- Pull one small model without a thinking mode: `gemma3:1b` (about 0.8 GB), the family of stage 05's `gemma3:12b`. If it is not in the library, take `llama3.2:1b` and say so.
 - Tool calls stay under 120 s: start long commands with `nohup` and poll the log.
 
 **Probe.** A Bun script that imports the repo code (link the job's `node_modules`) and sends, through the real SDK client with `baseURL: "http://127.0.0.1:11500/v1"` and `apiKey: "ollama"`, the exact params of `toResponseParams` for:
@@ -22,9 +22,9 @@ Part of [`../plan.md`](../plan.md). `[risky]`: the first contact with a real own
 
 **Record for each case** (in the note, a table): HTTP status, the error class that `classifyOpenAiError` gives, whether `output_text` parses with the classifier's Zod schema, `usage.input_tokens` and `usage.output_tokens` (present or 0), the wall time, and whether `strict: true`, `instructions` and `store: false` were accepted or ignored. Never paste a response body that holds the prompt; field names and short values only.
 
-**Decision rule (plan D9).** The Responses path passes when S1 or S2 returns a text that parses with the Zod schema, with token counts, and S4 and S5 map to a config error and a soft error. Then write "Stage 04: skip" at the top of the note. Else write "Stage 04: build", with the failing case and the error.
+**Decision rule (plan D9), path only.** The Responses path passes when S2 returns a text that parses with the Zod schema, with token counts, in 3 of 3 tries. Then write "Stage 04: skip" at the top of the note. Else write "Stage 04: build", with the failing case and the error. S4 and S5 do not decide the path: if they map to another class than a config error (S4) and a soft error (S5), write it as a gap in the final message (stage 02 adds the case).
 
-**Also record:** whether S3 fails where S2 passes (then D4 is needed, not only safe), and the Ollama version that `ollama --version` prints for the server.
+**Also record:** whether S3 fails where S2 passes (D4 is then needed, not only safe), the server's Ollama version, and `usage.input_tokens` of S1 next to the context length 8192 (stage 05 checks that no case comes near it).
 
 **Decisions.** D4, D9, D10.
 
