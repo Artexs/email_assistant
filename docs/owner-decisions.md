@@ -489,3 +489,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: words, markup, quote prefixes and invisible marks between groups no longer change the result, and dates, times and amounts become free, so the false positive rate falls (the reviewer measured 18.6 % on business text with the old scanner). The mail itself may carry the fraud account, so long runs from the mail are never trusted.
 - Undo: restore the account view in `packages/core/src/replies/entities.ts` (commit 1cd06cd2); the stage 02 prototype run tunes the budget N.
 - Source: job `2026-11-15-f115-re-review-2-s01-opus-narrow-225f3f83`, stage 01 re-review 2.
+
+### 2026-11-15 · F115 reply drafts: the account-number check cannot reach zero misses; stage 01 is not landed (F115) · product · new
+- Choice: after the third repair the digit budget still passes 6,704 of 77,000 adversarial forms and about 11 % of random 13-19 digit numbers. I did not land stage 01 and did not start a third re-review. The branch stays.
+- Why: a pattern check cannot give zero misses on hostile text. The real choice: (1) forbid every digit run of 12 or more in a draft, plus mod 97 for IBAN; (2) keep the budget as one layer and rely on the user approving each draft; (3) accept the residual for the stage 02 prototype only.
+- Undo: nothing landed. To resume, follow `notes/2026-11-15-f115-s01-account-check-open.md`.
+- Source: job `2026-11-15-f115-s01-drafter-core-risky-llm-e4a702ce`, branch head `3e48aeec`.
