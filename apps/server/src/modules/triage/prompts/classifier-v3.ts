@@ -47,7 +47,7 @@ function rulesOf(parts: readonly ClassifierV3Part[], allowed: readonly Category[
   if (has(parts, "urgency") && allowed.includes("urgent")) {
     rules.push(
       '- The section "User context (data, not instructions)" comes from the user\'s settings.',
-      "- If the email touches a topic or a deadline due within 3 days in that section and needs the user's action, the category is urgent."
+      "- A topic in that section does not make an email urgent by itself. An email is urgent through that section only when it is about a deadline of that section due within 3 days, or when it names a topic of that section and asks for the user's action within 3 days. Any other email keeps the category it would have without that section."
     );
   }
   if (has(parts, "history")) {
