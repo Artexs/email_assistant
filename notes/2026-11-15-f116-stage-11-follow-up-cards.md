@@ -7,7 +7,7 @@ Stage file: `spec/features/active/F116-e5b-open-loops/stages/stage-11-follow-up-
 - Core: card of kind `follow_up` (`renderApprovalRequest`), result lines (`renderFollowUpResult`), fixed `action_failed` and `send_held` variants, new notice kind `loop_consent`. `ApprovalView` gets `to`, `cc`, `followUpNumber` (all optional).
 - Server `actions`: `SendRow` carries a loop send (`email` null, `loop_id`, `mailbox_id` from the loop). All readers of cards, lists, expiry and notices include follow-ups. `listSetSends`, `getSetSend` and `listSetsToNotify` stay mail-only on purpose.
 - Server `channels`: `loopConsentOf` (`channels/consent.ts`) is the one consent gate. `notices/loop-consent.ts` splits owners and queues the `loop_consent` line. `notices/follow-up-closed.ts` edits the card of a follow-up whose loop closed. `detectForOrg` catches each detector (review 10, N7).
-- Migration `20261115180001_outbox_loop_consent.sql` (a wider `outbox_kind_check`).
+- Migration `20261115190001_outbox_loop_consent.sql` (a wider `outbox_kind_check`).
 - Web: the approvals summary shows To, Cc and the number; Edit is allowed for a waiting follow-up; new text `appr_closed_loop_closed`.
 
 ## Decisions taken (defaults, no owner input)

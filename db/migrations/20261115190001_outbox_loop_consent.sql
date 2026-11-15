@@ -6,7 +6,7 @@ ALTER TABLE outbox DROP CONSTRAINT outbox_kind_check;
 ALTER TABLE outbox ADD CONSTRAINT outbox_kind_check CHECK (kind IN (
   'digest', 'urgent', 'auth_error', 'sync_stale', 'sync_ok', 'action_failed',
   'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed', 'send_held', 'weekly_report',
-  'host_blocked', 'not_triaged', 'approval_edit', 'sent_missing', 'loop_consent'));
+  'host_blocked', 'not_triaged', 'approval_edit', 'sent_missing', 'trust_report_ready', 'autonomy_paused', 'loop_consent'));
 
 -- migrate:down
 -- The old list refuses the kind: drop its notices, then the check and the value.
@@ -15,4 +15,4 @@ ALTER TABLE outbox DROP CONSTRAINT outbox_kind_check;
 ALTER TABLE outbox ADD CONSTRAINT outbox_kind_check CHECK (kind IN (
   'digest', 'urgent', 'auth_error', 'sync_stale', 'sync_ok', 'action_failed',
   'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed', 'send_held', 'weekly_report',
-  'host_blocked', 'not_triaged', 'approval_edit', 'sent_missing'));
+  'host_blocked', 'not_triaged', 'approval_edit', 'sent_missing', 'trust_report_ready', 'autonomy_paused'));

@@ -11,7 +11,7 @@ import { createDb, type DB } from "../../src/platform/db";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F116 stage 11: the notice kind `loop_consent` (migration `20261115180001_outbox_loop_consent.sql`).
+// F116 stage 11: the notice kind `loop_consent` (migration `20261115190001_outbox_loop_consent.sql`).
 const db = testDb();
 afterAll(async () => {
   await db.destroy();
@@ -19,7 +19,7 @@ afterAll(async () => {
 
 const now = new Date("2026-11-20T13:00:00Z");
 const file = readFileSync(
-  join(import.meta.dir, "../../../../db/migrations/20261115180001_outbox_loop_consent.sql"),
+  join(import.meta.dir, "../../../../db/migrations/20261115190001_outbox_loop_consent.sql"),
   "utf8"
 );
 const [upPart = "", downPart = ""] = file.split("-- migrate:down");
