@@ -105,6 +105,12 @@ export const codeFieldNames = [
   // actions: the action type (a closed set of six) and the stage of a failed send (`connect`, `login`, `envelope`, `content`, `compose`, `payload`, `unknown`)
   "action_type",
   "send_stage",
+  // triage: a corpus case id such as inv-001 (a value with a space is dropped), the category of a mail, the feedback flag of a return, and ISO times (`toISOString()`) of a pause or a quota day
+  "case_id",
+  "category",
+  "feedback",
+  "until",
+  "day_start",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

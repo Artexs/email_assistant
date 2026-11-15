@@ -53,7 +53,7 @@ import {
   type JudgeSetup,
   summarizeJudge,
 } from "./eval-judge";
-import { type AttemptHooks, type EvalBudget, RETRY_WAITS_MS, runPool } from "./eval-pool";
+import { type AttemptHooks, BUDGET_STOP_REASON, type EvalBudget, RETRY_WAITS_MS, runPool } from "./eval-pool";
 import {
   type ClassifierPromptChoice,
   type ClassifierV3Part,
@@ -406,7 +406,7 @@ async function classifyWithRetry(
       if (error instanceof LlmBlockedError) return { kind: "blocked" };
       if (error instanceof SoftError && attempt < input.retries && (attempts?.mayRetry() ?? true)) {
         const wait = RETRY_WAITS_MS[Math.min(attempt, RETRY_WAITS_MS.length - 1)] as number;
-        log.warn(`soft error on case ${c.id}, retry ${attempt + 1} after ${wait} ms`);
+        log.warn("eval_case_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
         await deps.sleep(wait);
         continue;
       }
@@ -482,7 +482,7 @@ async function runCase(
     attempts
   );
   if (classified.kind === "error") {
-    log.warn(`case ${c.id} failed: ${classified.code}`);
+    log.warn("eval_case_failed", { case_id: c.id, code: classified.code });
     return {
       ...base,
       modelCategory: null,
@@ -579,10 +579,18 @@ export async function runEval(
     run: (c, attempts) => runCase(deps, c, input, attempts),
     onResult: async (result) => {
       await deps.onResult?.(result);
-      log.info(`case ${result.id}: ${result.finalCategory ?? `error ${result.errorCode}`}`);
+      log.info(
+        "eval_case_done",
+        result.finalCategory === null
+          ? { case_id: result.id, error_code: result.errorCode }
+          : { case_id: result.id, category: result.finalCategory }
+      );
     },
   });
-  if (pool.stoppedReason !== null) log.warn(`stop: ${pool.stoppedReason}`);
+  // The reason text is a sentence: the line carries one of its two names.
+  if (pool.stoppedReason !== null) {
+    log.warn("eval_stopped", { reason: pool.stoppedReason === BUDGET_STOP_REASON ? "budget_cap" : "error_streak" });
+  }
 
   // The report follows the input order, never the finish order.
   const cases: CaseResult[] = [];

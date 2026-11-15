@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { undo } from "../../src/modules/actions";
@@ -6,6 +6,7 @@ import { syncMailbox } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createReturnedJob, processReturned, recordFeedback } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
+import { setLogLevel } from "../../src/platform/log";
 
 import {
   createOrgWithMailbox,
@@ -428,6 +429,64 @@ describe("createReturnedJob", () => {
 
       expect(await returnedAt(trx, mailB.emailId)).not.toBeNull();
       expect(await feedbackRows(trx, mailB.emailId)).toHaveLength(0);
+    });
+  });
+});
+
+describe("returned log lines", () => {
+  let lines: string[] = [];
+  let spies: ReturnType<typeof spyOn>[] = [];
+
+  beforeEach(() => {
+    lines = [];
+    setLogLevel("debug");
+    spies = (["log", "error"] as const).map((name) =>
+      spyOn(console, name).mockImplementation((...args: unknown[]) => {
+        lines.push(args.map(String).join(" "));
+      })
+    );
+  });
+
+  afterEach(() => {
+    for (const spy of spies) spy.mockRestore();
+    setLogLevel("info");
+  });
+
+  const returnedLines = (): string[] => lines.filter((line) => line.startsWith("[triage] returned_"));
+
+  test("a feedback row writes returned_feedback, a run writes returned_done with the count; ids and counts only", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const t = await tenant(trx);
+      const first = await returnedMail(trx, t);
+      const second = await returnedMail(trx, t);
+
+      await createReturnedJob({ db: trx, now: () => NOW }).run();
+
+      const mine = returnedLines().filter((line) => line.includes(t.mailboxId) || line.includes("email_id="));
+      expect(mine.filter((line) => line.startsWith("[triage] returned_feedback")).sort()).toEqual(
+        [first, second].map((m) => `[triage] returned_feedback email_id=${m.emailId} feedback=true`).sort()
+      );
+      expect(mine).toContain(`[triage] returned_done mailbox_id=${t.mailboxId} count=2`);
+      expect(lines.join("\n")).not.toContain(t.address);
+    });
+  });
+
+  test("a row that throws writes returned_failed with the error name, not its message", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const t = await tenant(trx);
+      const mail = await returnedMail(trx, t);
+
+      await createReturnedJob({
+        db: trx,
+        now: () => {
+          throw new Error("MARKER-CLOCK-MESSAGE");
+        },
+      }).run();
+
+      expect(returnedLines()).toEqual([`[triage] returned_failed email_id=${mail.emailId} error=Error`]);
+      expect(lines.join("\n")).not.toContain("MARKER");
     });
   });
 });
