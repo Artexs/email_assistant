@@ -1,0 +1,65 @@
+# Sent mail
+
+> Checked against the code at `d497f8a7`, 2026-11-15.
+
+## What it does now
+
+The assistant reads the Sent folder of a mailbox, never changes it, and keeps that mail in its own table `sent_emails`, apart from `emails`. The read is off by default. It runs only when the organization flag `sent_sync` is on and the mailbox switch "Track my sent mail" (`mailbox_sent_sync.enabled`) is on. The `mail.sync` job runs one pass per mailbox after the INBOX sync, on the same connection. The pass stores the headers of the last 30 days and the text of the last 14 days, then reads new mail incrementally. A mail that the system sent is linked to its action and gets no text. Sent mail never enters triage, the digest, moves, Undo or `auto`. An error in the pass never fails the INBOX sync.
+
+## Rules
+
+1. **Gate.** `syncSentHeaders` checks, in this order: the flag `sent_sync` (else status `flag_off`), the switch (no row or `enabled = false` gives `off`), then `mailboxes.folder_map.sent` (empty gives `no_folder`). A path that differs from the stored one resets the cursor. The pass records its end in `last_pass_at`; `no_folder` and `folder_missing` also set `last_error_code`.
+2. **Read only.** Sent code takes a `SentFolderReader`: five read methods (`folderStatus`, `fetchAbove`, `fetchContent`, `searchSinceIn`, `fetchByUidsIn`). A write method is a type error. The IMAP adapter fetches bodies with `BODY.PEEK`, so no flag changes. The GreenMail test checks that flags, UIDs, UIDVALIDITY and UIDNEXT stay the same.
+3. **Mode.** No cursor: `initial`. Same UIDVALIDITY: `incremental` (UIDs above the cursor). Other UIDVALIDITY: `rescan`. `initial` and `rescan` read the mail with INTERNALDATE in the last 30 days.
+4. **Windows.** The header window is 30 days from INTERNALDATE. Older mail that arrives above the cursor is skipped (`tooOld`) and the cursor passes it. The text window is 14 days, or `data_retention_days` of the organization when that is shorter.
+5. **Dedup.** The key is the one of incoming mail (`Message-ID` and the content hash). One mail seen twice gives one row. A row with a tombstone is not stored again (the trigger of F106). The upsert never moves a mail except its location.
+6. **Chunks and guard.** Headers are written in chunks of 50. Each write transaction locks the `mailbox_sent_sync` row and compares it with the state that the pass read (switch, period, path, UIDVALIDITY, last UID). A mismatch writes nothing and ends the pass with `cursor_moved`.
+7. **Origin.** `sentOriginOf` (in `actions`, injected into `mail`) answers `system` when the send of the action went out: the row is `origin = system`, `headers_only`, with the action id. `draft` means the user sent a system draft by hand: a user row that keeps the action id. No action id, or an id of another mailbox, gives a user row.
+8. **Text step.** After a `done` header step, `fetchSentTexts` reads the text of `pending` rows of the current path and UIDVALIDITY, oldest first, at most 100 per run, one mail after another. Each row has its own guarded write (no transaction, no lock across a mail server call). A row that waited past the text window becomes `headers_only`. A mail whose UID is gone, or whose source does not parse, becomes `gone`.
+9. **Job and error rule.** The job calls `syncSentFolder` with a plain `Db` after `markSynced` and the flag refresh. `flag_off` and `off` log nothing. Any error is caught: one `sent_sync_failed` warning, then `mailbox_sent_sync.last_error_code = failed`. When that write fails too, one `sent_sync_mark_failed` warning. A login error in the pass is only logged; the next INBOX sync sets `auth_error`.
+10. **Log lines.** Fields come from the allow list (`platform/log-fields.ts`): `sent_sync_done` (`mailbox_id`, `status`, `kind` = the mode, `count` = new rows), `sent_texts_done` (`mailbox_id`, `count` = rows that got text), `sent_texts_gone` (`mailbox_id`, `count` = rows marked `gone`), `sent_sync_failed` and `sent_sync_mark_failed` (`mailbox_id`, `error`, `error_code`). No line holds a subject, address, path, text or the message of an error. The count `system` of the pass result is not logged: it counts the system rows of each written chunk, so a rescan reports it with `stored 0`.
+
+## Entry points
+
+| Kind     | Name                                                                       | Where                                              |
+| -------- | -------------------------------------------------------------------------- | -------------------------------------------------- |
+| job      | `mail.sync` (runs the Sent pass last)                                      | `apps/server/src/modules/mail/jobs.ts`             |
+| function | `syncSentFolder`, `syncSentHeaders`                                        | `apps/server/src/modules/mail/sent-sync.ts`        |
+| function | `fetchSentTexts`                                                           | `apps/server/src/modules/mail/sent-texts.ts`       |
+| function | `toNewSentEmail`, `sentModeOf`, `sentTextWindowMs`                         | `apps/server/src/modules/mail/sent-rules.ts`       |
+| function | `insertSentEmails`, `writeSentText`, `expireSentTexts`, `deleteSentEmails` | `apps/server/src/modules/mail/repo/sent-emails.ts` |
+| function | `getSentSyncState`, `lockSentSyncState`, `writeSentSwitch`, `markSentPass` | `apps/server/src/modules/mail/repo/sent-state.ts`  |
+| function | `sentOriginOf`                                                             | `apps/server/src/modules/actions/repo/planned.ts`  |
+
+## Data
+
+- `mailbox_sent_sync`: one row per mailbox: `enabled`, `enabled_at`, `path`, `uidvalidity`, `last_uid` (the cursor), `first_pass_at`, `last_pass_at`, `last_error_code` (`no_folder`, `folder_missing`, `failed`). No row means off.
+- `sent_emails`: one row per mail: location (`path`, `uidvalidity`, `uid`), `message_id`, `parent_message_id`, `references_ids`, `thread_key`, addresses (`to`, `cc`; never Bcc), `subject`, `sent_at`, `internal_date`, `origin`, `action_id`, `content`, `body_text` (at most 100 000 characters) and the markers `auto_submitted`, `precedence`, `list_id`, `has_calendar`. `content` flow: `pending` → `stored` | `headers_only` | `gone`.
+- Both tables have RLS on `org_id` and cascade with the mailbox. They are in the registries of the account export and the DSR address map (F106). The organization delete removes them by cascade.
+
+## Limits
+
+- Only a known Sent folder is read (`folder_map.sent`); the pass never guesses a folder by name (F104 plan, Q4).
+- One mail that makes `fetchContent` fail on every run (a server `BAD` on one UID) holds the text step: the order is oldest first and the error ends the step. It clears when the row leaves the text window, after up to 14 days. The pass logs `sent_sync_failed` each run.
+- Worst case of one run: 100 text fetches of up to 5 MB each, one after another, on the connection of the mailbox. It adds to the run time of `mail.sync`.
+- Mail moved into Sent by hand after it is older than 30 days is not stored (`tooOld`).
+- No switch in the panel, the CLI or the connect flow yet, so the switch is not settable by the product: F104 stages 08 to 10. No retention clear of `sent_emails` yet (stage 07), no "no sent mail seen" notice (stage 11), no DSR erase of sent mail (stage 12).
+- No analysis of sent mail by the LLM: E5b. No pass before a system send: E6a (F115).
+- The answered mark (`listUserAnswers`) is not built yet (stage 07).
+
+## Decisions
+
+- ADR 0029 (the sync reads the Sent folder, read-only), ADR 0014 (cursors), ADR 0024 (log lines), ADR 0027 (flags).
+- PD-115 to PD-117 and the plan `spec/features/active/F104-e5a-read-sent`.
+
+## Tests
+
+- `apps/server/test/integration/imap-sent-greenmail.test.ts`
+- `apps/server/test/integration/mail-jobs.test.ts`
+- `apps/server/test/integration/mail-sent-sync.test.ts`
+- `apps/server/test/integration/mail-sent-sync-concurrent.test.ts`
+- `apps/server/test/integration/mail-sent-texts.test.ts`
+- `apps/server/test/integration/mail-sent-repo.test.ts`
+- `apps/server/test/integration/actions-sent-origin.test.ts`
+- `apps/server/src/modules/mail/sent-rules.test.ts`
+- `apps/server/src/modules/mail/sent-reader.test.ts`
