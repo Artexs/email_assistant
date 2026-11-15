@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { analyzeSent } from "../../src/modules/loops";
+import { analyzeSent, writeExtraction } from "../../src/modules/loops";
 import { writeSentSwitch } from "../../src/modules/mail/repo";
 import type { DB } from "../../src/platform/db";
 
@@ -294,6 +294,52 @@ describe("the write", () => {
       const rows = await trx.selectFrom("sent_analyses").selectAll().where("org_id", "=", org.ctx.orgId).execute();
       expect(rows).toHaveLength(1);
       expect(rows[0]?.status).toBe("done");
+    });
+  });
+
+  test("a finished analysis row is not overwritten by a later write", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const id = await sentMail(trx, org);
+      await run(trx, org, { ...ASK, expects_reply: false, ask: null });
+      expect(await analysisOf(trx, id)).toMatchObject({ status: "done", expects_reply: false });
+      // A second writer (another process) with another answer: the first result stays.
+      const row = await trx.selectFrom("sent_emails").selectAll().where("id", "=", id).executeTakeFirstOrThrow();
+      const outcome = await writeExtraction(
+        trx,
+        org.ctx,
+        {
+          mailboxId: org.mailboxId,
+          ownAddresses: [],
+          timeZone: "Europe/Warsaw",
+          waitDays: 3,
+          delegates: [],
+          now: RUN_AT,
+        },
+        {
+          id,
+          threadKey: row.thread_key,
+          messageId: row.message_id,
+          referencesIds: [],
+          fromAddress: null,
+          to: row.to_addresses,
+          cc: [],
+          subject: row.subject,
+          bodyText: row.body_text,
+          content: "stored",
+          sentAt: row.sent_at,
+          listId: null,
+          autoSubmitted: null,
+          hasCalendar: false,
+          actionId: null,
+          attempts: 0,
+        },
+        { expectsReply: true, ask: "x", due: null, promise: null, promiseDue: null, language: "en" },
+        "extractor-v1"
+      );
+      expect(outcome).toEqual({ kind: "exists" });
+      expect(await analysisOf(trx, id)).toMatchObject({ status: "done", expects_reply: false });
+      expect(await loopsOf(trx, org)).toHaveLength(0);
     });
   });
 

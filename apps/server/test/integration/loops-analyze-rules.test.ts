@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -177,6 +179,22 @@ describe("the candidates", () => {
     });
   });
 
+  test("a system row (a follow-up that the product sent) is not a candidate", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const id = await sentMail(trx, org, { content: "headers_only" });
+      await trx
+        .updateTable("sent_emails")
+        .set({ origin: "system", action_id: randomUUID() })
+        .where("id", "=", id)
+        .execute();
+      const fake = fakeExtractor();
+      const out = await run(trx, org, fake);
+      expect(out.analysed).toBe(0);
+      expect(await analysisOf(trx, id)).toBeUndefined();
+    });
+  });
+
   test("a run takes the 20 oldest rows first", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
@@ -309,6 +327,21 @@ describe("the thread rule", () => {
       expect(fake.requests).toHaveLength(1);
       expect((await analysisOf(trx, row))?.status).toBe("done");
       expect(await loopRow(trx, loop)).toEqual(before);
+    });
+  });
+
+  test("the thread rule runs before the skip filters: a headers_only mail still restarts the wait", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const thread = "<thread-headers@x.test>";
+      const loop = await insertLoopRow(trx, org.ctx, org.mailboxId, {
+        thread_key: thread,
+        wait_from_at: new Date("2026-11-16T10:00:00Z"),
+      });
+      const row = await sentMail(trx, org, { threadKey: thread, to: ["counterpart@x.test"], content: "headers_only" });
+      await run(trx, org);
+      expect((await analysisOf(trx, row))?.skip_reason).toBe("thread_restart");
+      expect((await loopRow(trx, loop)).last_sent_email_id).toBe(row);
     });
   });
 
