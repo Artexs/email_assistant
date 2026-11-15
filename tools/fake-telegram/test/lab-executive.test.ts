@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { labMessageId, planLiveRun } from "@ea/core";
+import { labMessageId, planLiveRun, type LiveRunPlan } from "@ea/core";
 import { afterAll, afterEach, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -49,14 +49,15 @@ const WAIT_MS = 10_000;
 const DOMAIN = "kordelan.test";
 
 const corpus: LabCorpus = await loadLabCorpus(SIM_ROOT, "lab-01");
-const plan = planLiveRun({
+const planned = planLiveRun({
   scenario: corpus.scenario,
   slots: [...corpus.slots.values()],
   mode: "day",
   startDate: "2026-11-23",
   runId: "day-20261123-abcd",
 });
-if ("refused" in plan) throw new Error(plan.refused);
+if ("refused" in planned) throw new Error(planned.refused);
+const plan: LiveRunPlan = planned;
 const { runId } = plan;
 afterAll(async () => {
   await db.destroy();
