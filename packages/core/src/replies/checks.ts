@@ -39,7 +39,7 @@ function hasControlChars(body: string): boolean {
   return CONTROL.test(body.replace(/[\r\n\t]/g, ""));
 }
 
-// A blank line holds only white space and characters that show nothing: zero width and format characters, the Braille
+// A blank line holds only white space and characters that show nothing: zero width and format characters (U+FEFF is white space in JavaScript), the Braille
 // blank, the Hangul fillers, the combining grapheme joiner, variation selectors, the Khmer inherent vowels and the
 // object replacement character. 50 lines of U+2800 look like a gap of white paper (CVE-2026-55145).
 const INVISIBLE = [
@@ -47,9 +47,7 @@ const INVISIBLE = [
   String.raw`[\u2060-\u206f]`,
   String.raw`[\u180b-\u180f]`,
   String.raw`[\ufe00-\ufe0f]`,
-  ...["feff", "00ad", "2800", "3164", "ffa0", "115f", "1160", "034f", "17b4", "17b5", "fffc"].map(
-    (code) => `\\u${code}`
-  ),
+  ...["00ad", "2800", "3164", "ffa0", "115f", "1160", "034f", "17b4", "17b5", "fffc"].map((code) => `\\u${code}`),
 ];
 const BLANK = `(?:[^\\S\\n]|${INVISIBLE.join("|")})*`;
 const BLANK_RUN = new RegExp(String.raw`\n${BLANK}(?:\n${BLANK}){${MAX_BLANK_LINES + 1},}`);
