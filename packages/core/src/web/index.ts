@@ -1,5 +1,6 @@
 // The browser imports only this file (`@ea/core/web`): no module here may pull a Node module.
 export * from "./actions";
+export * from "./approvals";
 export * from "./activity";
 export * from "./errors";
 export * from "./mail-oauth";

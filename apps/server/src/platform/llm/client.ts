@@ -38,7 +38,12 @@ function parseOutput<T>(result: GenerateResult, schema: z.ZodType<T>, model: str
     throw new LlmOutputError(model);
   }
   const parsed = schema.safeParse(json);
-  if (!parsed.success) throw new LlmOutputError(model);
+  if (!parsed.success) {
+    throw new LlmOutputError(
+      model,
+      parsed.error.issues.map((issue) => `${issue.path.map(String).join(".")}:${issue.code}`)
+    );
+  }
   return parsed.data;
 }
 

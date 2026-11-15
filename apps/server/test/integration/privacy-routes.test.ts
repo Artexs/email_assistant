@@ -62,7 +62,7 @@ beforeAll(() => {
       WEB_DIST: "/nonexistent/dist",
     }),
     db,
-    { secrets: createSecretBox(key, 1), actionsScope: { kind: "off" }, botUsername: null }
+    { secrets: createSecretBox(key, 1), actionsScope: { kind: "off" }, sendScope: { kind: "off" }, botUsername: null }
   );
   if (opened === null) throw new Error("webDeps returned null");
   web = opened;

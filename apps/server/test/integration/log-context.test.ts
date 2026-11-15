@@ -8,7 +8,7 @@ import type { GenerateFn } from "../../src/platform/llm";
 import { createFixedLlmClient } from "../../src/platform/llm/testing";
 import { setLogFormat, setLogLevel } from "../../src/platform/log";
 import { runJobTick } from "../../src/platform/scheduler";
-import { countMailboxes, onboardingDeps } from "../../src/web";
+import { approvalsWaiting, countMailboxes, onboardingDeps } from "../../src/web";
 
 import { createOrgWithMailbox, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -56,6 +56,7 @@ describe("log context", () => {
             now: () => new Date(),
             scopes: { triage: off, actions: off, send: off },
             countMailboxes: countMailboxes(db),
+            approvalsWaiting: approvalsWaiting(db),
             operatorContact: null,
             sessions: async () => [],
             backupCodesLeft: noBackupCodes,

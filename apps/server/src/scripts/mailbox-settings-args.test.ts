@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { describeUrgency, parseSettingsArgs, parseUrgencyFile, usage } from "./mailbox-settings-args";
+import { describeSentSync, describeUrgency, parseSettingsArgs, parseUrgencyFile, usage } from "./mailbox-settings-args";
 
 const org = "11111111-1111-4111-8111-111111111111";
 const mailbox = "22222222-2222-4222-8222-222222222222";
@@ -145,5 +145,48 @@ describe("urgency", () => {
     expect(
       describeUrgency({ topics: [{ label: "SECRET", keywords: [] }], deadlines: [{ label: "x", due: "2026-12-01" }] })
     ).toBe("urgency topics=1 deadlines=1");
+  });
+
+  test("sent-sync: the command with on and off; without --value or with --key: undefined", () => {
+    expect(parseSettingsArgs(["sent-sync", ...ids, "--value", "on"])).toEqual({
+      kind: "sent-sync",
+      orgId: org,
+      mailboxId: mailbox,
+      value: true,
+    });
+    expect(parseSettingsArgs(["sent-sync", ...ids, "--value", "off"])).toMatchObject({ value: false });
+    expect(parseSettingsArgs(["sent-sync", ...ids])).toBeUndefined();
+    expect(parseSettingsArgs(["sent-sync", ...ids, "--value", "maybe"])).toBeUndefined();
+    expect(parseSettingsArgs(["sent-sync", ...ids, "--value", "on", "--key", "junk"])).toBeUndefined();
+    expect(usage).toContain("mailbox:settings sent-sync");
+    expect(usage).toContain("only on the owner's instruction");
+  });
+
+  test("describeSentSync: null and a full view give the exact lines", () => {
+    expect(describeSentSync(null)).toBe("sent: off (flag)");
+    const view = {
+      flagOn: true,
+      enabled: true,
+      folder: "Sent",
+      firstPassDone: true,
+      lastSentAt: "2026-11-20T10:00:00.000Z",
+      storedCount: 12,
+      errorCode: null,
+    };
+    expect(describeSentSync(view)).toBe(
+      "sent: on, folder Sent, stored 12, last 2026-11-20T10:00:00.000Z, first pass done, error none"
+    );
+    expect(
+      describeSentSync({
+        flagOn: false,
+        enabled: true,
+        folder: null,
+        firstPassDone: false,
+        lastSentAt: null,
+        storedCount: 0,
+        errorCode: "no_folder",
+      })
+    ).toBe("sent: on, folder none, stored 0, last none, first pass pending, error no_folder, paused (flag off)");
+    expect(describeSentSync({ ...view, enabled: false })).toContain("sent: off, folder Sent");
   });
 });

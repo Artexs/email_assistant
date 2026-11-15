@@ -15,6 +15,13 @@ export {
   type StopReason,
 } from "./state";
 export { createFakeTgClient, FakeTgError, type FakeButton, type FakeMessage, type FakeTgClient } from "./fake-tg";
+export {
+  lookupCard,
+  runExecutiveTick,
+  type CardLookup,
+  type ExecutiveDeps,
+  type ExecutiveTickResult,
+} from "./executive";
 export { orgHasMail } from "./org-mail";
 export {
   LAB_FLAGS_OFF,

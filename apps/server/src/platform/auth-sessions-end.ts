@@ -51,7 +51,9 @@ export async function endPasswordSessionsAndChallenges(
 }
 
 // Ends the sessions of one user: all of them, or only the SSO ones (F119 stage 10). Returns the count. The caller has checked
-// that the user belongs to the organization of the operator's request.
+// that the user belongs to the organization of the operator's request. Sessions belong to the user, not to the organization:
+// a user with a membership in two organizations loses the sessions in both, and `onlySso` ends the SSO sessions of every
+// provider of the user.
 export async function endUserSessions(trx: Transaction<DB>, userId: string, onlySso: boolean): Promise<number> {
   let query = trx.deleteFrom("auth_sessions").where("user_id", "=", userId);
   if (onlySso) query = query.where("sign_in_method", "=", "sso");

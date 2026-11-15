@@ -176,6 +176,7 @@ function realApp() {
   const extras = {
     secrets: createSecretBox(Buffer.alloc(32, 1).toString("base64"), 1),
     actionsScope: { kind: "off" },
+    sendScope: { kind: "off" },
     botUsername: null,
   } as const;
   const web = {

@@ -73,6 +73,7 @@ const dropped: string[] = [];
 const extrasOf = (over: Partial<WebExtras> = {}): WebExtras => ({
   secrets,
   actionsScope: { kind: "off" },
+  sendScope: { kind: "off" },
   botUsername: null,
   mailOAuthClients: clients,
   mailOAuthLogin: {

@@ -160,6 +160,7 @@ describe("GET /api/me/sessions", () => {
             now: () => NOW,
             scopes: { triage: off, actions: off, send: off },
             countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
+            approvalsWaiting: async () => 0,
             operatorContact: null,
             sessions,
             backupCodesLeft: noBackupCodes,

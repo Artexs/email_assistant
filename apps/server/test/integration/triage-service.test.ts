@@ -70,6 +70,7 @@ async function setup(trx: Transaction<DB>) {
     junkFolder: null,
     resumedAt: null,
     suspicious: noSuspiciousContext,
+    urgencyProfile: null,
   };
   return { ctx, emailId, email, mailbox };
 }
@@ -1504,6 +1505,7 @@ describe("triageOne: the plan by the source folder (D11)", () => {
       junkFolder: opts.junkRow === false ? null : await getJunkFolderPath(trx, base.ctx, base.mailbox.id),
       resumedAt: null,
       suspicious: noSuspiciousContext,
+      urgencyProfile: null,
     };
     return { ...base, mailbox, delegateId };
   }

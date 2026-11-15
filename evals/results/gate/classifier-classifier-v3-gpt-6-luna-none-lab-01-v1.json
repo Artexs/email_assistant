@@ -1,0 +1,121 @@
+{
+  "scenario": "lab-01",
+  "version": "1",
+  "manifestSha": "bc4fc25c86d33e3e8c87d2fd12cc93e6e2cd1eb9699d744d46d0877891e71a19",
+  "audit": "pending",
+  "provisional": true,
+  "part": "holdout",
+  "date": "2026-11-15",
+  "role": "classifier",
+  "provider": "openai",
+  "endpoint": "standard",
+  "host": "api.openai.com",
+  "model": "gpt-6-luna",
+  "reasoningEffort": "none",
+  "promptVersion": "classifier-v3",
+  "promptParts": [
+    "list"
+  ],
+  "bar": 0.98,
+  "minKept": 30,
+  "categories": {
+    "urgent": {
+      "support": 220,
+      "threshold": null,
+      "kept": 197,
+      "tp": 188,
+      "precision": 0.9543147208121827,
+      "wilsonLower": 0.9154688167446366,
+      "recall": 0.8545454545454545,
+      "decision": "no-go",
+      "metrics": {
+        "tp": 188,
+        "fp": 9,
+        "fn": 32,
+        "support": 220
+      }
+    },
+    "needs_reply": {
+      "support": 259,
+      "threshold": null,
+      "kept": 271,
+      "tp": 241,
+      "precision": 0.8892988929889298,
+      "wilsonLower": 0.8463664388538168,
+      "recall": 0.9305019305019305,
+      "decision": "no-go",
+      "metrics": {
+        "tp": 241,
+        "fp": 30,
+        "fn": 18,
+        "support": 259
+      }
+    },
+    "info": {
+      "support": 243,
+      "threshold": null,
+      "kept": 239,
+      "tp": 238,
+      "precision": 0.99581589958159,
+      "wilsonLower": 0.9766843592273953,
+      "recall": 0.9794238683127572,
+      "decision": "no-go",
+      "metrics": {
+        "tp": 238,
+        "fp": 1,
+        "fn": 5,
+        "support": 243
+      }
+    },
+    "notification": {
+      "support": 234,
+      "threshold": 0.5,
+      "kept": 231,
+      "tp": 231,
+      "precision": 1,
+      "wilsonLower": 0.9836423308746445,
+      "recall": 0.9871794871794872,
+      "decision": "go",
+      "metrics": {
+        "tp": 231,
+        "fp": 0,
+        "fn": 3,
+        "support": 234
+      }
+    },
+    "spam": {
+      "support": 234,
+      "threshold": 0.9,
+      "kept": 230,
+      "tp": 230,
+      "precision": 1,
+      "wilsonLower": 0.9835723789114484,
+      "recall": 0.9829059829059829,
+      "decision": "go",
+      "metrics": {
+        "tp": 233,
+        "fp": 1,
+        "fn": 1,
+        "support": 234
+      }
+    }
+  },
+  "urgentRecallBySource": {
+    "text": {
+      "n": 113,
+      "recall": 0.9203539823008849
+    },
+    "vip": {
+      "n": 54,
+      "recall": 0.8333333333333334
+    },
+    "context": {
+      "n": 53,
+      "recall": 0.7358490566037735
+    }
+  },
+  "injection": {
+    "passed": 29,
+    "total": 30
+  }
+}

@@ -43,6 +43,7 @@ export {
   type ConsumeResult,
 } from "./linking";
 export { channelRoutes, type ChannelRouteDeps } from "./routes";
+export { approvalRoutes, type ApprovalRouteDeps } from "./approval-routes";
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";
 export { checkBot } from "./telegram/check";
 export { createTelegramBot, type BotDeps } from "./telegram/bot";

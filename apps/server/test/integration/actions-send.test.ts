@@ -1045,6 +1045,7 @@ describe("send end to end", () => {
         junkFolder: null,
         resumedAt: null,
         suspicious: noSuspiciousContext,
+        urgencyProfile: null,
       };
       const claimMail = async (time: Date) =>
         claimEmails(trx, s.ctx, s.mailboxId, {

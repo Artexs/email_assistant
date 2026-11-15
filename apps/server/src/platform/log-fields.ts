@@ -50,6 +50,26 @@ export const numberFieldNames = [
   "due",
   "overdue",
   "reminders",
+  // mail sync, below-cursor check and delivery
+  "fetched",
+  "stored",
+  "uid_updated",
+  "returned",
+  "relocated",
+  "cross_copies",
+  "move_in_flight",
+  "skipped_own",
+  "ignored_below_cursor",
+  "folder_count",
+  "checked",
+  "copies",
+  "limit",
+  "moved",
+  "in_inbox",
+  "duplicates_removed",
+  "synced",
+  "not_found",
+  "failed_runs",
 ] as const;
 /** Code fields: the F089 D7 rule (D1, D2). Values come from closed sets, never from mail, users or outside text. */
 export const codeFieldNames = [
@@ -80,6 +100,8 @@ export const codeFieldNames = [
   "to_plan",
   "enabled",
   "actor",
+  // the sync mode of one folder run: initial, incremental or rescan
+  "sync_mode",
   // actions: the action type (a closed set of six) and the stage of a failed send (`connect`, `login`, `envelope`, `content`, `compose`, `payload`, `unknown`)
   "action_type",
   "send_stage",

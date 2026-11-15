@@ -106,6 +106,8 @@ describe("generate output", () => {
     const error = await caught(client(answer({ text: '{"category":1}' })).generate(request));
     expect(error).toBeInstanceOf(LlmOutputError);
     expect(llmErrorCode(error)).toBe("bad_output");
+    // The issues name the path and the code of the Zod failure, never the model text.
+    expect((error as LlmOutputError).issues).toEqual(["category:invalid_type", "confidence:invalid_type"]);
   });
 
   test("text that is not JSON is bad_output", async () => {

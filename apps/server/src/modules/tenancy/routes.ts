@@ -41,6 +41,7 @@ export interface TenancyRouteDeps {
   now(): Date;
   scopes: { triage: ScopeInfo; actions: ScopeInfo; send: ScopeInfo };
   countMailboxes: (ctx: TenantContext) => Promise<{ total: number; inAuthError: number }>; // web.ts implements it with the mail index
+  approvalsWaiting: (ctx: TenantContext) => Promise<number>; // web.ts implements it with `actions` and the flag `approvals_page` (F102 ticket, nav badge)
   onboarding: (ctx: TenantContext, userId: string) => Promise<Onboarding>;
   telegram: (
     ctx: TenantContext,
@@ -98,6 +99,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       scopes: deps.scopes,
       mailboxCount: mailboxes.total,
       mailboxesInAuthError: mailboxes.inAuthError,
+      approvalsWaiting: await deps.approvalsWaiting(ctx),
       digestTimes: parseDigestTimes(member.digest_times),
       terms: { accepted: profile?.termsVersion === TERMS_VERSION, current: TERMS_VERSION },
       // The same set that requireOperator reads (plan D23). The body never lists the operator ids.
