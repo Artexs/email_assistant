@@ -406,7 +406,9 @@ describe("erase of one person's data", () => {
       const loopOfB = await insertLoopRow(trx, b, b.mailboxId);
       await insertLoopActionPair(trx, b, loopOfB, { payloadMarker: "person-x@x.test" });
 
-      const found = await findOpenActions(trx, a.orgId, "person-x@x\\.test", [], []);
+      // The erase names a mail that goes: `email_id = any (goes)` is then NULL for a loop row, not false.
+      const goes = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { sendStatus: "expired", draftStatus: "expired" });
+      const found = await findOpenActions(trx, a.orgId, "person-x@x\\.test", [goes.emailId], []);
       expect(found.sort()).toEqual([open.draftId, open.sendId].sort());
     });
   });
