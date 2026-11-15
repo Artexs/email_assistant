@@ -41,6 +41,8 @@ export interface FakeMailOAuth {
     emailVerified?: boolean;
     tid?: string;
     codeChallenge?: string;
+    /** Claims that replace or add to the ID token payload; a key with `undefined` is left out (stage 08 tests). */
+    claims?: Record<string, unknown>;
   }): string;
   /** The next token or revoke request gets this answer. "timeout": no answer until `stop()`. */
   failNext(answer: FakeFailure): void;
@@ -61,6 +63,7 @@ interface IssuedCode {
   emailVerified: boolean;
   tid: string;
   challenge: string | null;
+  claims: Record<string, unknown>;
 }
 
 interface IssuedRefresh {
@@ -108,7 +111,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
 
   function idToken(
     provider: MailOAuthProvider,
-    entry: { address: string; tid: string; emailVerified: boolean }
+    entry: { address: string; tid: string; emailVerified: boolean; claims: Record<string, unknown> }
   ): string {
     const now = Math.floor(Date.now() / 1000);
     const claims: Record<string, unknown> = {
@@ -121,6 +124,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
       ...(provider === "google"
         ? { email_verified: entry.emailVerified }
         : { tid: entry.tid, preferred_username: entry.address }),
+      ...entry.claims,
     };
     return `${base64url(JSON.stringify({ alg: "none", typ: "JWT" }))}.${base64url(JSON.stringify(claims))}.`;
   }
@@ -264,6 +268,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
         emailVerified: input.emailVerified ?? true,
         tid: input.tid ?? GUID,
         challenge: input.codeChallenge ?? null,
+        claims: input.claims ?? {},
       });
       return code;
     },

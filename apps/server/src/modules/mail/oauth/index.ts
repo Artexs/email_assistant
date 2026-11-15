@@ -11,6 +11,15 @@ export {
   type MailOAuthClients,
   type TokenAnswer,
 } from "./client";
+export {
+  finishOAuthCallback,
+  type CallbackDeps,
+  type CallbackInput,
+  type CallbackResult,
+  type OAuthGrant,
+  type OAuthRefusalCode,
+} from "./callback";
+export { parseIdTokenClaims, type IdTokenClaims } from "./id-token";
 export { createMailOAuthClients, type MailOAuthClientsDeps } from "./clients";
 export {
   mailOAuthProviders,
