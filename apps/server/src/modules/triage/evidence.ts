@@ -17,7 +17,7 @@ import { llmEndpointFields, type LlmRoleTable } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 
 import { type GateFile, gateFileSchema } from "./eval-sim-report";
-import { type ClassifierPromptChoice, productionClassifierChoice } from "./prompts";
+import { type ClassifierPromptChoice, optionalParts, productionClassifierChoice } from "./prompts";
 
 const log = createLog("triage");
 
@@ -122,8 +122,8 @@ export function runningEvidenceKey(
     model,
     reasoningEffort: effortOf(endpoint, row.reasoningEffort),
     promptVersion: prompt.version,
-    // `productionClassifierChoice` gives no parts for v2.
-    promptParts: prompt.version === "classifier-v3" ? [...prompt.parts].sort() : null,
+    // The parts count only for v3 (`productionClassifierChoice` gives none for v2); `attachments` is always on.
+    promptParts: optionalParts(prompt.parts).length > 0 ? optionalParts(prompt.parts) : null,
     endpoint,
     host,
   };
@@ -143,13 +143,14 @@ export function globalEvidenceFor(index: GateIndex, key: EvidenceKey): Record<Ba
 }
 
 /** For tests and tools with no classifier: no file, so every category has no evidence (a closed gate). */
+const NO_CLASSIFIER = "none";
 export const noGateEvidence: GateEvidenceDeps = {
   index: { files: [] },
   runningKey: {
-    provider: "none",
-    model: "none",
+    provider: NO_CLASSIFIER,
+    model: NO_CLASSIFIER,
     reasoningEffort: null,
-    promptVersion: "none",
+    promptVersion: NO_CLASSIFIER,
     promptParts: null,
     endpoint: "standard",
     host: null,
