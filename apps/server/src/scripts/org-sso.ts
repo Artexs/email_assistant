@@ -1,11 +1,18 @@
+import { resolveTxt } from "node:dns/promises";
+
 import {
+  attestSsoDomain,
+  configureFeatures,
   getOrganization,
   getSsoState,
   isFeatureOn,
   normalizeMailDomain,
   removeSsoProvider,
   setSsoProvider,
-  configureFeatures,
+  setSsoRequired,
+  ssoDomainKey,
+  ssoDomainRecord,
+  verifySsoDomain,
 } from "../modules/tenancy";
 import { buildOidcConfig, discoverProviderConfig } from "../platform/auth-sso";
 import { createCliOutput } from "../platform/cli";
@@ -30,6 +37,10 @@ export interface OrgSsoDeps {
   allowOrigins: readonly string[];
   lookup: LookupAll;
   now: () => Date;
+  // The TXT read of the domain proof (`node:dns/promises` `resolveTxt` in the entry, a fake in tests).
+  resolveTxt: (name: string) => Promise<string[][]>;
+  // `ssoDomainKey(CREDENTIALS_KEY)`: the key of the proof token.
+  domainKey: Buffer;
   // `WEB_BASE_URL`; undefined = the web is off.
   webBaseUrl: string | undefined;
 }
@@ -77,6 +88,11 @@ export async function runOrgSso(argv: string[], deps: OrgSsoDeps): Promise<numbe
         deps.out(`provider ${state.providerId}`);
         deps.out(`issuer ${issuerHost(state.issuer)}`);
         deps.out(`domain ${state.domain} ${state.proof === null ? "unproved" : "proof"}`);
+        if (state.proof === null) {
+          // The token is a keyed hash for a public DNS record, not a secret.
+          const record = ssoDomainRecord(deps.domainKey, ctx.orgId, state.domain);
+          deps.out(`txt ${record.name} ${record.value}`);
+        }
         deps.out(`required ${yesNo(state.required)}`);
         deps.out(`flag sso_sign_in ${on ? "on" : "off"}`);
         deps.out(`break-glass ${state.breakGlassReady ? "ready" : "missing"}`);
@@ -135,6 +151,61 @@ export async function runOrgSso(argv: string[], deps: OrgSsoDeps): Promise<numbe
         return 0;
       }
 
+      case "verify": {
+        if (!(await getOrganization(deps.db, ctx))) {
+          deps.err("error organization_not_found");
+          return 1;
+        }
+        const result = await verifySsoDomain(deps.db, ctx, {
+          resolveTxt: deps.resolveTxt,
+          key: deps.domainKey,
+          actor: ACTOR,
+          now: deps.now(),
+        });
+        if (result.kind === "not_found_in_dns") {
+          deps.err("error not_found_in_dns");
+          return 1;
+        }
+        deps.out(result.kind);
+        return 0;
+      }
+
+      case "attest": {
+        if (!(await getOrganization(deps.db, ctx))) {
+          deps.err("error organization_not_found");
+          return 1;
+        }
+        const result = await attestSsoDomain(deps.db, ctx, {
+          confirmDomain: command.confirm,
+          actor: ACTOR,
+          now: deps.now(),
+        });
+        if (result.kind === "confirm_mismatch") {
+          deps.err("error confirm_mismatch");
+          return 1;
+        }
+        deps.out(result.kind);
+        return 0;
+      }
+
+      case "require": {
+        if (!(await getOrganization(deps.db, ctx))) {
+          deps.err("error organization_not_found");
+          return 1;
+        }
+        const result = await setSsoRequired(deps.db, ctx, {
+          required: command.required,
+          actor: ACTOR,
+          now: deps.now(),
+        });
+        if (result.kind === "refused") {
+          for (const reason of result.reasons) deps.err(`refused ${reason}`);
+          for (const userId of result.userIds) deps.err(`member ${userId}`);
+          return 1;
+        }
+        deps.out(`required ${yesNo(command.required)}`);
+        return 0;
+      }
       case "remove": {
         if (!(await getOrganization(deps.db, ctx))) {
           deps.err("error organization_not_found");
@@ -187,6 +258,8 @@ async function main(): Promise<number> {
       allowOrigins: [],
       lookup: dnsLookupAll,
       now: () => new Date(),
+      resolveTxt,
+      domainKey: ssoDomainKey(config.CREDENTIALS_KEY),
       webBaseUrl: config.WEB_BASE_URL,
     });
   } catch (error) {

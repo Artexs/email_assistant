@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { ACTIVITY_SUBJECTS } from "../../../server/src/scripts/e2e-seed-args";
 import { en } from "../../src/i18n/en";
 import { t } from "../../src/i18n";
+import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
 import {
   cleanUpOrg,
@@ -63,6 +64,7 @@ test("rows, panel, filters and load more", async ({ page }) => {
   const rows = page.locator("li[data-email-id]");
   await expect(rows).toHaveCount(50);
   await expect(page.getByText(/^Updated /)).toBeVisible();
+  await expectNoA11yViolations(page);
 
   const moved = rowOf(page, ACTIVITY_SUBJECTS.moved);
   const reply = rowOf(page, ACTIVITY_SUBJECTS.reply);
@@ -83,6 +85,7 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await expect(panel).toContainText("Automated shipping update.");
   await expect(panel).toContainText("done: move to AI/Notifications");
   await expect(panel).toContainText("done: mark read");
+  await expectNoA11yViolations(page);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
 

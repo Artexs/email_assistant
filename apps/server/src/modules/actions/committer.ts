@@ -23,6 +23,7 @@ import {
   type MailCapabilities,
   type MailProvider,
   type MailSender,
+  type OpenDeps,
   type SmtpConnectOptions,
 } from "../mail";
 import { getOrganization, isOrgSuspended, listMemberships } from "../tenancy";
@@ -53,6 +54,9 @@ export interface CommitterDeps {
   // S4: `off` when missing (the tests of S3). `main.ts` wires the SMTP opener and the scope (stage 18).
   sendScope?: SendScope;
   openSender?(opts: SmtpConnectOptions): Promise<MailSender>;
+  // F117: the Graph sender and the token store; `openMailboxProvider` reads them (stages 10 and 13 wire them in `main.ts`).
+  openGraphSender?: OpenDeps["openGraphSender"];
+  oauthTokens?: OpenDeps["oauthTokens"];
   now(): Date;
   batchSize?: number;
   // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).

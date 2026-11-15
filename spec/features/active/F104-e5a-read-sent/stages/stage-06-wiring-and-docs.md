@@ -64,3 +64,10 @@ Steps 1–3 done; `docs/architecture.md` no longer says the sync never reads Sen
 - Pass `Db` (not a `Transaction`) to `syncSentHeaders`: with a caller transaction the reset's lock stays held during the IMAP calls.
 - Do not log `error.detail` or `error.message` of a database error: the Postgres detail of a failed CHECK holds the row (addresses, subject).
 - Decide what `result.system` counts before logging it: it counts system rows planned per written chunk, not new system rows (a rescan reports `system 1` with `stored 0`).
+
+## Carry-over from stage 05 review
+
+- `gone` includes a mail that does not parse (contentFromSource returns null): decide what stage 06 counts or logs for it (a counter, no mail data).
+- A mail that makes `fetchContent` throw on every run (a server BAD on one UID) blocks the text step each run until the row leaves the 14-day window, because order is oldest first and any error is rethrown (stage 05 spec). Map it to `sent_sync_failed`; say in the capability page that one bad mail can hold the text step for up to 14 days.
+- Worst case per run is 100 mails of up to 5 MB, fetched one after another: note it for the job run time.
+- `syncSentFolder` rereads the organization for the text window: fine; pass a plain `Db`.

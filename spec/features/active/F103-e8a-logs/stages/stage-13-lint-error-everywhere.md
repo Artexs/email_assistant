@@ -63,3 +63,10 @@ export interface Log {
 **Done when.** `capability-map.test.ts` and `prettier --check` pass; the Proof (`/tmp/f103-s13`) prints `PROOF_OK`; `lint.log` holds 0 `no-restricted-syntax` messages.
 
 **Out of scope.** The guards (stage 14); the canary (15, 16); the store docs (18).
+
+## Carry-over from stage 06 review (proven by a run)
+
+- The lint selectors miss `log.error("x_failed", grammyError)`: a literal first argument and a second argument that is not an object literal passes the lint, and the deprecated `(...args: unknown[])` overload accepts it. At runtime `isEventForm` rejects the non-plain object and the legacy path prints the whole error (description, payload, stack; in text format every field). Close this: a selector for a second argument that is not an ObjectExpression, or remove the deprecated overload; add a lint test case.
+- Other dodges that pass today: an alias of the logger (`const logger = log`), `log["error"](...)`, `log.with({}).error(...)`, a destructured `error`, and `{ error: err.message }` as a field value (only the runtime value rule stops a long text; a one-word description or a bare token passes it).
+- `console.error(err)` is only a `no-console` warning: stage 14 must make it an error in the scoped folders.
+- Do not set `DEBUG` (grammy debug output) on the VPS; say so in the deploy docs (stage 19).

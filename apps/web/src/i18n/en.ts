@@ -14,6 +14,7 @@ export const en = {
   menu_open: "Open menu",
   menu_title: "Menu",
   user_menu: "Account menu",
+  user_menu_named: "Account menu: {email}",
   log_out: "Log out",
   // shell states
   auth_error_banner_link: "Open Mailboxes",
