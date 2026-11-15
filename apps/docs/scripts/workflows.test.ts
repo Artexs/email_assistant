@@ -11,6 +11,7 @@ interface Step {
   id?: string;
   name?: string;
   if?: string;
+  "continue-on-error"?: boolean;
   uses?: string;
   run?: string;
   shell?: string;
@@ -24,13 +25,13 @@ interface Job {
   services?: unknown;
   permissions?: Record<string, string>;
   environment?: { name?: string; url?: string };
+  concurrency?: { group?: string; "cancel-in-progress"?: boolean };
   outputs?: Record<string, string>;
   steps?: Step[];
 }
 interface Workflow {
   on: { push?: { tags?: string[]; branches?: string[] }; workflow_dispatch?: unknown };
   permissions?: Record<string, string>;
-  concurrency?: { group?: string; "cancel-in-progress"?: boolean };
   jobs: Record<string, Job>;
 }
 
@@ -111,8 +112,23 @@ describe("docs-deploy.yml", () => {
     expect(build?.environment).toBeUndefined();
   });
 
-  test("runs never cancel each other in the pages group", () => {
-    expect(deploy.concurrency).toEqual({ group: "pages", "cancel-in-progress": false });
+  test("only the deploy job is in the pages group, and a run never cancels another", () => {
+    expect(job?.concurrency).toEqual({ group: "pages", "cancel-in-progress": false });
+    expect(build?.concurrency).toBeUndefined();
+    expect((deploy as unknown as Record<string, unknown>).concurrency).toBeUndefined();
+  });
+
+  test("the gate step has no continue-on-error and no if", () => {
+    expect(gate).toBeDefined();
+    expect(gate).not.toHaveProperty("continue-on-error");
+    expect(gate).not.toHaveProperty("if");
+    for (const j of Object.values(deploy.jobs)) expect(j).not.toHaveProperty("continue-on-error");
+  });
+
+  test("the header comment says a pushed release tag starts it and the deploy fails red until O1", () => {
+    expect(DEPLOY_TEXT).toContain("# A pushed release tag starts this workflow.");
+    expect(DEPLOY_TEXT).toContain("the deploy job fails red");
+    expect(DEPLOY_TEXT).not.toContain("does not run until the owner starts it");
   });
 
   test("the build job fetches the full history and sets up Bun and Node as ci.yml", () => {

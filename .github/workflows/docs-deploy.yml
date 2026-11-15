@@ -3,7 +3,7 @@ name: Docs deploy
 # Publishes the docs site to GitHub Pages (ADR 0030 point 2).
 # - A pushed tag `v<x.y.z>` deploys only when it is the newest release tag (apps/docs/scripts/deploy-gate.ts).
 # - A manual run deploys the ref chosen in the GitHub UI, also an old tag (rollback).
-# The first deploy is an owner step: this workflow does not run until the owner starts it.
+# A pushed release tag starts this workflow. Until the owner has done the Pages setup (owner step O1), the deploy job fails red.
 on:
   push:
     tags: ["v*"]
@@ -12,11 +12,6 @@ on:
 # Least privilege: the workflow reads the repository. Only the `deploy` job gets the Pages permissions.
 permissions:
   contents: read
-
-# GitHub drops an older pending run when a newer one waits: accepted, the newer run is the one to keep.
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   build:
@@ -66,6 +61,11 @@ jobs:
     if: needs.build.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Only a run that deploys enters the group: a run with deploy=false never cancels a pending newer deploy.
+    # GitHub still drops an older pending run when a newer one waits: accepted, the newer run is the one to keep.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       contents: read
       pages: write
