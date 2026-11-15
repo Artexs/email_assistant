@@ -346,6 +346,11 @@ export function apiRouters(
         onRemoved: async (trx, ctx, input) => {
           await queueMailboxRemovedNotices(trx, ctx, input);
         },
+        oauth: {
+          secrets: extras.secrets,
+          clients: extras.mailOAuthClients ?? createMailOAuthClients(config),
+          ...(extras.mailOAuthLogin?.oauthTokens === undefined ? {} : { tokens: extras.mailOAuthLogin.oauthTokens }),
+        },
       })
     );
     api.route(

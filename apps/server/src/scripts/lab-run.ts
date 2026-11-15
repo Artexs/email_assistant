@@ -2,6 +2,7 @@ import type { LiveRunPlan } from "@ea/core";
 
 import {
   labEnvIssues,
+  LabResetError,
   LabScoreError,
   LabSeedError,
   LAB_TARGETS,
@@ -10,10 +11,16 @@ import {
   type LabModel,
   type LabOrg,
   type LabState,
+  previewReset,
+  resetDemo,
+  resetOrg,
+  type ResetDeps,
   type RunSpend,
   type ServeStatus,
   type SeedResult,
   type SeedTarget,
+  type StartDeps,
+  LabMailError,
   startLabRun,
   stopLabRun,
 } from "../modules/lab";
@@ -29,6 +36,8 @@ export interface LabDeps {
   // The models the stack is configured to call (roles the lab uses), each with the endpoint kind of its provider.
   models: readonly LabModel[];
   orgHasMail(orgId: string): Promise<boolean>;
+  // What the reset needs from the database, the privacy delete and GreenMail; the rest of its deps come from this object.
+  reset: Pick<ResetDeps, "lookupOrg" | "mail" | "deleteOrg">;
   // Makes or repairs the lab organization of the target.
   seed(target: SeedTarget): Promise<SeedResult>;
   // Stores the urgency profile of a started run on the org mailbox.
@@ -46,7 +55,7 @@ export interface LabDeps {
 }
 
 // A later stage fills each of these; until then the command exits 1.
-const NOT_BUILT: readonly LabCommand["kind"][] = ["reset", "demo-reset", "demo-export", "demo-import"];
+const NOT_BUILT: readonly LabCommand["kind"][] = ["demo-export", "demo-import"];
 
 const usdText = (spend: RunSpend): string =>
   spend.kind === "unpriced"
@@ -80,6 +89,67 @@ async function statusLine(deps: LabDeps, runId: string): Promise<string> {
       ? []
       : [`serve tick ${serve.tickAt}${counts === "" ? "" : ` · fails ${counts}`}`]),
   ].join(" · ");
+}
+
+const startDepsOf = (deps: LabDeps): StartDeps => ({
+  state: deps.state,
+  corpus: deps.corpus,
+  models: deps.models,
+  orgHasMail: deps.orgHasMail,
+  storeUrgency: deps.storeUrgency,
+  now: deps.now,
+  hex4: deps.hex4,
+});
+
+const resetDepsOf = (deps: LabDeps): ResetDeps => ({
+  ...deps.reset,
+  targets: LAB_TARGETS,
+  state: deps.state,
+  seed: deps.seed,
+  spendOf: deps.spendOf,
+  start: (input) => startLabRun(input, startDepsOf(deps)),
+  now: deps.now,
+});
+
+// `reset` and `demo-reset` delete data: without `--yes` they print what they would delete and exit 1.
+async function runReset(
+  command: Extract<LabCommand, { kind: "reset" | "demo-reset" }>,
+  deps: LabDeps
+): Promise<number> {
+  const { cli } = deps;
+  const key = command.kind === "reset" ? command.org : "demo";
+  const resetDeps = resetDepsOf(deps);
+  try {
+    if (!command.yes) {
+      const preview = await previewReset(resetDeps, key);
+      cli.print(
+        `reset ${key}: would delete org ${preview.orgId ?? "none"} and ${preview.messages} mails of ${preview.mailbox}`
+      );
+      cli.fail("refused: confirm_needed");
+      return 1;
+    }
+    if (command.kind === "reset") {
+      const { orgId, deleted } = await resetOrg(resetDeps, command.org);
+      cli.print(`reset: ${command.org} org ${orgId} ${deleted ? "rebuilt" : "created"}`);
+    } else {
+      const { orgId, runId } = await resetDemo(
+        resetDeps,
+        command.date === undefined ? {} : { startDate: command.date }
+      );
+      cli.print(`demo-reset: org ${orgId} run ${runId}`);
+    }
+    return 0;
+  } catch (error) {
+    if (error instanceof LabResetError) {
+      cli.fail(`refused: ${error.code}${error.detail === undefined ? "" : ` (${error.detail})`}`);
+      return 1;
+    }
+    if (error instanceof LabSeedError || error instanceof LabMailError) {
+      cli.fail(`refused: ${error.code}`);
+      return 1;
+    }
+    throw error;
+  }
 }
 
 // Returns the exit code: 0 ok, 1 refusal or failure. It prints ids, codes and counts only.
@@ -128,15 +198,7 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
           ...(command.date === undefined ? {} : { date: command.date }),
           ...(command.capUsd === undefined ? {} : { capUsd: command.capUsd }),
         },
-        {
-          state,
-          corpus: deps.corpus,
-          models: deps.models,
-          orgHasMail: deps.orgHasMail,
-          storeUrgency: deps.storeUrgency,
-          now: deps.now,
-          hex4: deps.hex4,
-        }
+        startDepsOf(deps)
       );
       if (result.kind === "refused") {
         cli.fail(`refused: ${result.code}${result.detail === undefined ? "" : ` (${result.detail})`}`);
@@ -187,6 +249,9 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
         throw error;
       }
     }
+    case "reset":
+    case "demo-reset":
+      return runReset(command, deps);
     case "serve":
       return deps.serve();
     default:

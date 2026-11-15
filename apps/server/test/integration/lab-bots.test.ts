@@ -704,6 +704,37 @@ describe("delegate bots", () => {
     expect([...subject]).toHaveLength(200);
   });
 
+  test("review 8 note 9: a UID that now holds another mail (after a mailbox reset) ends the reply with received_changed, no send", async () => {
+    await startBots(world);
+    const received = "<srv-uid@localhost>";
+    await world.sendToDelegate({ id: received, references: [world.labId("w-1-001")], date: MON_10 });
+    await tick(world);
+    const [planned] = plannedOf(world.events());
+    expect(planned?.key).toBe(`${received}:done`);
+    // The same UID, another Message-ID: what a changed UIDVALIDITY can do.
+    const swapped: LabMailClient = {
+      ...world.mail,
+      fetchSince: async (mailbox, folder, afterUid) =>
+        (await world.mail.fetchSince(mailbox, folder, afterUid)).map((message) => ({
+          ...message,
+          raw: message.raw.replace(`Message-ID: ${received}`, "Message-ID: <srv-other@localhost>"),
+        })),
+    };
+    world.clock.now = FAR;
+    expect(await runDelegateBotsTick({ ...world.deps, mail: swapped }, world.runId)).toMatchObject({
+      sent: 0,
+      failed: 0,
+    });
+    expect(world.events().filter((event) => event.t === "skip")).toEqual([
+      expect.objectContaining({ code: "received_changed", ref: planned?.key }),
+    ]);
+    expect(world.events().some((event) => event.t === "bot_intent" || event.t === "bot_done")).toBe(false);
+    expect(await runMailboxMessages(world)).toHaveLength(0);
+    // The item is ended: the next tick sends nothing, with the real client too.
+    expect(await tick(world)).toMatchObject({ sent: 0 });
+    expect(await runMailboxMessages(world)).toHaveLength(0);
+  });
+
   test("a failed read of one delegate inbox does not stop the others", async () => {
     await startBots(world);
     await world.sendToDelegate({ id: "<srv-f@localhost>", references: [world.labId("w-1-001")], date: MON_10 });

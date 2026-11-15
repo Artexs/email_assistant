@@ -56,6 +56,7 @@ flowchart BT
   lab --> config
   lab --> delegation
   lab --> mail
+  lab --> privacy
   lab --> reports
   lab --> tenancy
   lab --> triage

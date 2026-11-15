@@ -1,4 +1,4 @@
-import { buildTriageAnalysisSchema, classifierCategories, reasonCodes } from "@ea/core";
+import { buildTriageAnalysisSchema, classifierCategories, extractorOutputSchema, reasonCodes } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -100,6 +100,40 @@ describe("toStrictJsonSchema", () => {
       additionalProperties: false,
       required: ["a"],
       properties: { a: { type: "array", items: { type: "object", properties: { b: { type: "string" } } } } },
+    };
+    expect(() => toStrictJsonSchema(loose, MODEL)).toThrow(LlmConfigError);
+  });
+
+  test("a discriminated union (oneOf) becomes anyOf: strict mode refuses oneOf", () => {
+    const union = z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("a"), x: z.string() }).strict(),
+      z.object({ kind: z.literal("b"), y: z.number() }).strict(),
+    ]);
+    const input = z.toJSONSchema(z.object({ pick: union.nullable() }).strict());
+    expect(JSON.stringify(input)).toContain('"oneOf"');
+    const copy = toStrictJsonSchema(input, MODEL);
+    expect(JSON.stringify(copy)).not.toContain("oneOf");
+    const anyOf = (
+      (copy.properties as Record<string, { anyOf: { anyOf?: unknown[] }[] }>).pick as { anyOf: { anyOf?: unknown[] }[] }
+    ).anyOf;
+    // The nullable wrapper holds the union as one branch; the union keeps both of its branches.
+    expect(anyOf[0]?.anyOf).toHaveLength(2);
+    expectStrict(copy);
+  });
+
+  test("the extractor answer schema has no oneOf in the strict form", () => {
+    const copy = toStrictJsonSchema(z.toJSONSchema(extractorOutputSchema), MODEL);
+    expect(JSON.stringify(copy)).not.toContain("oneOf");
+    expect(JSON.stringify(copy)).toContain("end_of_week");
+    expectStrict(copy);
+  });
+
+  test("a loose object inside oneOf throws", () => {
+    const loose = {
+      type: "object",
+      additionalProperties: false,
+      required: ["a"],
+      properties: { a: { oneOf: [{ type: "null" }, { type: "object", properties: { b: { type: "string" } } }] } },
     };
     expect(() => toStrictJsonSchema(loose, MODEL)).toThrow(LlmConfigError);
   });

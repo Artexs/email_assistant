@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { sendPayloadFor, type DraftPayload } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -9,6 +11,10 @@ import { E2E_APPROVALS } from "./e2e-seed-args";
 export interface ApprovalsSeedResult {
   waitingSendId: string;
   heldSendId: string;
+  editSendId: string;
+  closedSendId: string;
+  raceSendId: string;
+  reminderSendId: string;
 }
 
 const MINUTE = 60_000;
@@ -25,7 +31,10 @@ async function seedSend(
   plan: Plan,
   index: number,
   now: Date,
-  approved: { userId: string } | null
+  approved: { userId: string } | null,
+  // Sends of one delegate share its row (the address is unique in an organization).
+  delegates: Map<string, string>,
+  kind: "delegation" | "reminder" = "delegation"
 ): Promise<string> {
   const at = new Date(now.getTime() - (index + 1) * MINUTE);
   const [emailId] = await insertMails(trx, ctx, mailboxId, [
@@ -42,26 +51,41 @@ async function seedSend(
     },
   ]);
   if (emailId === undefined) throw new Error("no mail was inserted");
-  const delegate = await trx
-    .insertInto("delegates")
-    .values({
-      org_id: ctx.orgId,
-      name: plan.delegateName,
-      email: plan.delegateEmail,
-      competence_tags: [],
-      active: true,
-    })
-    .returning("id")
-    .executeTakeFirstOrThrow();
-  const draft: DraftPayload = {
-    kind: "delegation",
-    delegate_id: delegate.id,
+  let delegateId = delegates.get(plan.delegateEmail);
+  if (delegateId === undefined) {
+    const delegate = await trx
+      .insertInto("delegates")
+      .values({
+        org_id: ctx.orgId,
+        name: plan.delegateName,
+        email: plan.delegateEmail,
+        competence_tags: [],
+        active: true,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    delegateId = delegate.id;
+    delegates.set(plan.delegateEmail, delegateId);
+  }
+  const common = {
+    delegate_id: delegateId,
     delegate_name: plan.delegateName,
     to: [plan.delegateEmail],
     task: plan.task,
     due_date: "",
-    language: "en",
+    language: "en" as const,
   };
+  // The reminder points at a delegation that the seed does not create: the page reads only the payload.
+  const draft: DraftPayload =
+    kind === "reminder"
+      ? {
+          kind,
+          ...common,
+          delegation_id: randomUUID(),
+          reminder: 1,
+          thread: { in_reply_to: null, references: [] },
+        }
+      : { kind, ...common };
   const draftId = await insertAction(trx, ctx, {
     emailId,
     type: "create_draft",
@@ -80,13 +104,14 @@ async function seedSend(
     notifiedAt: now,
     ...(approved === null ? {} : { approved: { userId: approved.userId, at: now, via: "web" as const } }),
   });
+  if (kind === "reminder") return sendId;
   await trx
     .insertInto("delegations")
     .values({
       org_id: ctx.orgId,
       mailbox_id: mailboxId,
       email_id: emailId,
-      delegate_id: delegate.id,
+      delegate_id: delegateId,
       draft_action_id: draftId,
       send_action_id: sendId,
       status: "drafted",
@@ -97,7 +122,8 @@ async function seedSend(
   return sendId;
 }
 
-// The waiting send (to the delegate that SEND_SCOPE=self admits) and the send that the owner approved and the scope holds.
+// The waiting send (to the delegate that SEND_SCOPE=self admits), the send that the owner approved and the scope holds, a second
+// waiting send for the edit that is approved, and a waiting reminder.
 export async function seedApprovalsRows(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
@@ -105,8 +131,15 @@ export async function seedApprovalsRows(
   ownerId: string,
   now: Date
 ): Promise<ApprovalsSeedResult> {
-  return inTransaction(db, async (trx) => ({
-    waitingSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.waiting, 0, now, null),
-    heldSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.held, 1, now, { userId: ownerId }),
-  }));
+  return inTransaction(db, async (trx) => {
+    const delegates = new Map<string, string>();
+    return {
+      waitingSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.waiting, 0, now, null, delegates),
+      heldSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.held, 1, now, { userId: ownerId }, delegates),
+      editSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.edit, 2, now, null, delegates),
+      closedSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.closed, 3, now, null, delegates),
+      raceSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.race, 4, now, null, delegates),
+      reminderSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.reminder, 5, now, null, delegates, "reminder"),
+    };
+  });
 }

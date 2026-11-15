@@ -1,7 +1,7 @@
 import { presetKeys, smtpSecurities, type PresetKey, type SmtpSecurity } from "../mail/providers";
 import { mailboxModes } from "../triage/categories";
 
-import { authErrorReasons, mailOAuthProviderKeys } from "./mail-oauth";
+import { authErrorReasons, mailOAuthProviderKeys, removeAccessPages } from "./mail-oauth";
 import { z } from "./zod";
 
 const secretKindSchema = z.enum(["password", "app_password"]);
@@ -62,6 +62,18 @@ export const mailboxPasswordBodySchema = z.object({
 export const removeMailboxBodySchema = z.object({
   confirmAddress: z.string().min(1).max(254),
 });
+
+/**
+ * The answer of a mailbox Remove. `revoked`: true or false only for a Google mailbox (the revoke call went through, or
+ * not); null when no call was made. `accessPage`: where the owner withdraws the app's access; null for a password mailbox.
+ */
+export const removeMailboxResultSchema = z.object({
+  authMethod: z.enum(["password", "oauth"]),
+  oauthProvider: z.enum(mailOAuthProviderKeys).nullable(),
+  revoked: z.boolean().nullable(),
+  accessPage: z.enum(removeAccessPages).nullable(),
+});
+export type RemoveMailboxResult = z.infer<typeof removeMailboxResultSchema>;
 
 export const mailboxStatuses = ["active", "paused", "auth_error", "host_blocked"] as const;
 export type MailboxStatus = (typeof mailboxStatuses)[number];

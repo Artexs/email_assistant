@@ -6,7 +6,9 @@ describe("parseLabArgs (stage 05 test 9)", () => {
   const good: [string[], unknown][] = [
     [["seed"], { kind: "seed", org: "lab" }],
     [["seed", "--org", "demo"], { kind: "seed", org: "demo" }],
-    [["reset", "--org", "lab", "--yes"], { kind: "reset", org: "lab" }],
+    [["reset", "--org", "lab", "--yes"], { kind: "reset", org: "lab", yes: true }],
+    // Without --yes the command prints what it would delete and exits 1 (`confirm_needed`).
+    [["reset", "--org", "demo"], { kind: "reset", org: "demo", yes: false }],
     [["start", "--mode", "day"], { kind: "start", mode: "day", org: "lab", reuse: false }],
     [
       ["start", "--mode", "week", "--date", "2026-11-23", "--org", "demo", "--cap-usd", "3.5", "--reuse"],
@@ -20,7 +22,9 @@ describe("parseLabArgs (stage 05 test 9)", () => {
       ["score", "--run", "week-20261123-ab12", "--out", "/tmp/x"],
       { kind: "score", runId: "week-20261123-ab12", out: "/tmp/x" },
     ],
-    [["demo-reset", "--yes"], { kind: "demo-reset" }],
+    [["demo-reset", "--yes"], { kind: "demo-reset", yes: true }],
+    [["demo-reset"], { kind: "demo-reset", yes: false }],
+    [["demo-reset", "--date", "2026-11-23", "--yes"], { kind: "demo-reset", yes: true, date: "2026-11-23" }],
     [["demo-export", "--day", "4", "--out", "/tmp/demo.json"], { kind: "demo-export", day: 4, out: "/tmp/demo.json" }],
     [
       ["demo-import", "--file", "/tmp/demo.json", "--email", "Anna@Dev.test", "--replace"],
@@ -39,8 +43,10 @@ describe("parseLabArgs (stage 05 test 9)", () => {
     ["seed", "--bogus"],
     ["seed", "--yes"],
     ["serve", "--org", "lab"],
-    ["reset", "--org", "lab"],
     ["reset", "--yes"],
+    ["reset"],
+    ["reset", "--org", "prod", "--yes"],
+    ["reset", "--org", "lab", "--date", "2026-11-23"],
     ["start"],
     ["start", "--mode", "month"],
     ["start", "--mode", "day", "--date", "23-11-2026"],
@@ -51,7 +57,8 @@ describe("parseLabArgs (stage 05 test 9)", () => {
     ["stop"],
     ["stop", "--run", "../evil"],
     ["score"],
-    ["demo-reset"],
+    ["demo-reset", "--date", "23-11-2026"],
+    ["demo-reset", "--org", "lab"],
     ["demo-export", "--day", "9", "--out", "x"],
     ["demo-export", "--day", "4"],
     ["demo-import", "--file", "x", "--email", "nope"],

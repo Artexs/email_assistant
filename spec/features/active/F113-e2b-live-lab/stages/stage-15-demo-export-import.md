@@ -52,3 +52,7 @@ Tests pass; `live-lab.md` has export and import rules; the Proof prints `PROOF_O
 ## Out of scope
 
 Committing a seed file (C6). Screenshots.
+
+## Carry-over from stage 14 review
+
+Read `review-14.md`. Hardening of the reset (same module): N2 check guard 3 (the mailbox rows) inside the delete transaction (an expected-mailboxes option on `deleteOrganization`, or the guard again on `trx`), with a test like the reviewer's A6 (a mailbox row added after the first guard check must refuse the delete); N1 require that every member email of the org equals `target.mailbox`, with a test like A7; N5 fix the stale comment in `seed.ts`; N3 say in `live-lab.md` that no audit row of a reset stays and where the trace is.

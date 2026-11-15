@@ -20,6 +20,8 @@ import {
   createMailOAuthClients,
   createOAuthTokens,
   mailboxHasUidplus,
+  mailOAuthProviders,
+  openGraphSender,
   openImapProvider,
   openSmtpSender,
   type MailOAuthClients,
@@ -85,12 +87,18 @@ export function committerDeps(input: {
   sendScope: SendScope;
   sendLimits: SendLimits;
   onSendLimited?: CommitterDeps["onSendLimited"];
+  /** The Graph origin. Absent: the provider registry's. A test passes the fake Graph server. */
+  graphBaseUrl?: string;
 }): CommitterDeps {
+  // Every Microsoft mailbox sends through Graph: the registry's origin is bound here, so the opener of the mailbox names no URL.
+  const baseUrl = input.graphBaseUrl ?? mailOAuthProviders.microsoft.graphBaseUrl;
+  if (baseUrl === null) throw new Error("the Microsoft provider has no Graph URL");
   return {
     db: input.db,
     secrets: input.secrets,
     openProvider: openImapProvider,
     openSender: openSmtpSender,
+    openGraphSender: (opts) => openGraphSender({ ...opts, baseUrl }),
     oauthTokens: input.oauthTokens,
     compose: composeMessage,
     hooks: delegationHooks({ db: input.db }),

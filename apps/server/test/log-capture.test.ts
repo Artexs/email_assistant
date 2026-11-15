@@ -25,6 +25,27 @@ describe("log capture helper", () => {
     expect(problems[0]).not.toContain("X-1");
   });
 
+  test("a planted value in lower case, in base64, base64url or hex, or as a text-like error code, gives one problem", () => {
+    const value = "CANARY-SUBJECT-2afb2742 Ok?";
+    const line = (kind: string, field = "kind") =>
+      `{"time":"t","level":"info","module":"m","event":"a","msg":"a","${field}":"${kind}"}`;
+    const bytes = Buffer.from(value);
+    for (const leaked of [
+      value.toLowerCase(),
+      bytes.toString("base64"),
+      bytes.toString("base64").replace(/=+$/, ""),
+      bytes.toString("base64url"),
+      bytes.toString("hex"),
+    ]) {
+      const problems = logProblems([line(leaked)], [value]);
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).not.toContain(leaked);
+    }
+    // A text-like code passes the logger as `error_code`: the planted code is found there.
+    expect(logProblems([line("CANARY-CODE-2afb2742", "error_code")], ["CANARY-CODE-2afb2742"])).toHaveLength(1);
+    expect(logProblems([line("ECONNRESET", "error_code")], [value, "CANARY-CODE-2afb2742"])).toEqual([]);
+  });
+
   test("each rule gives one problem", () => {
     expect(logProblems(["not json"], [])).toHaveLength(1);
     expect(logProblems([`[1,2]`], [])).toHaveLength(1);
