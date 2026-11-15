@@ -681,7 +681,6 @@ test("TG2: an as: press on a reminder set card approves the set; an ag: press on
       messageId: labId("w-1-017"),
       sendStatus: "failed",
       createdAt: new Date(),
-      lastError: "smtp",
     });
     await w.trx
       .updateTable("actions")
