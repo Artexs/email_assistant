@@ -7,7 +7,12 @@ import { MailFolderMissingError, type SentFolderReader } from "../../src/modules
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { setFolderMapEntry, writeSentSwitch } from "../../src/modules/mail/repo";
 import { SENT_TEXT_WINDOW_MS } from "../../src/modules/mail/sent-rules";
-import { syncSentFolder, syncSentHeaders, type SentSyncDeps } from "../../src/modules/mail/sent-sync";
+import {
+  syncSentFolder,
+  syncSentHeaders,
+  type SentPassStatus,
+  type SentSyncDeps,
+} from "../../src/modules/mail/sent-sync";
 import { fetchSentTexts, SENT_BODY_TEXT_LIMIT } from "../../src/modules/mail/sent-texts";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
@@ -211,7 +216,10 @@ describe("fetchSentTexts and syncSentFolder", () => {
   });
 
   test("9: a header status other than done makes no fetchContent call and gives zero texts", async () => {
-    const cases: { status: string; stop: (trx: Transaction<DB>, org: Org) => Promise<Partial<SentSyncDeps>> }[] = [
+    const cases: {
+      status: SentPassStatus;
+      stop: (trx: Transaction<DB>, org: Org) => Promise<Partial<SentSyncDeps>>;
+    }[] = [
       {
         status: "flag_off",
         stop: async (trx, org) => {

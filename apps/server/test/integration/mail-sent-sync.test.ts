@@ -14,7 +14,7 @@ import { SoftError } from "../../src/platform/errors";
 
 import { insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { ago, DAY, depsOf, HOUR, mail, newOrg, NOW, put, rowOf, rowsOf, stateOf } from "./mail-sent-fixtures";
+import { ago, DAY, depsOf, HOUR, mail, newOrg, NOW, put, rowOf, rowsOf, stateOf, type Org } from "./mail-sent-fixtures";
 
 const db = testDb();
 
