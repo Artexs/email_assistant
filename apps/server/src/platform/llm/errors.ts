@@ -90,11 +90,17 @@ export class LlmHardError extends HardError {
   }
 }
 
-/** Empty text without a block, bad JSON or a Zod failure. */
+/**
+ * Empty text without a block, bad JSON or a Zod failure. `issues` holds one `path:code` entry per Zod issue (for
+ * example `fields.task:too_big`): never the model text and never a value, so a log line may carry it.
+ */
 export class LlmOutputError extends HardError {
   readonly code = "bad_output";
 
-  constructor(readonly model: string) {
+  constructor(
+    readonly model: string,
+    readonly issues: readonly string[] = []
+  ) {
     super(errorMessage("bad_output", model));
     this.name = "LlmOutputError";
   }

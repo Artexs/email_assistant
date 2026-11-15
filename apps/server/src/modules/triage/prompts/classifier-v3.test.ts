@@ -136,6 +136,12 @@ describe("classifier-v3 prompt", () => {
     expect(buildSystemPrompt(classifierCategories, []).startsWith(v2System)).toBe(true);
   });
 
+  test("the v3 system text with the chosen part list is pinned (D11: a change of the text is classifier-v4)", () => {
+    expect(sha(buildSystemPrompt(classifierCategories, ["list"]))).toBe(
+      "fef4a66081be61e92187f2c4e31a47a9ffe77bb76edfee16dd5889d7c6b8f4e9"
+    );
+  });
+
   test("the production pointer is classifier-v2 with no parts (stage 11 moves it)", () => {
     expect(productionClassifierChoice()).toEqual({ version: "classifier-v2", parts: [] });
   });
