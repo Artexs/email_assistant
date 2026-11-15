@@ -8,6 +8,7 @@ import { canWrite } from "../../lib/can-write";
 import { isDirty } from "../../lib/draft";
 import { errorText } from "../../lib/errors";
 import { useDraft } from "../../lib/use-draft";
+import { useResource } from "../../lib/use-resource";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -47,7 +48,11 @@ export function QuietHoursCard({ view, onSaved, timeZone }: CardProps & { timeZo
     const parsed = notifyPatchSchema.safeParse(body);
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message;
-      setError(message === "time_invalid" || message === "quiet_pair" ? message : "error_generic");
+      setError(
+        message === "time_invalid" || message === "quiet_pair" || message === "quiet_too_long"
+          ? message
+          : "error_generic"
+      );
       return;
     }
     setPending(true);
@@ -219,4 +224,24 @@ export function ReportChannelCard({ view, onSaved }: CardProps) {
       </CardContent>
     </Card>
   );
+}
+
+// The cards load their data here, and only here: `NotifyCards` is the one place that makes a request.
+export function NotifyCards({ timeZone, quiet, channel }: { timeZone: string; quiet: boolean; channel: boolean }) {
+  const { data, mutate } = useResource(() => api("/api/me/notify", notifyViewSchema));
+  if (data === null) return null;
+  return (
+    <>
+      {quiet && <QuietHoursCard view={data} timeZone={timeZone} onSaved={mutate} />}
+      {channel && <ReportChannelCard view={data} onSaved={mutate} />}
+    </>
+  );
+}
+
+// A card shows only with its flag (`me.features`). With both flags off nothing is mounted, so no request goes out. A function
+// of its inputs (no hook), so a test can call it.
+export function NotifySection({ features, timeZone }: { features: readonly string[]; timeZone: string }) {
+  const quiet = features.includes("user_quiet_hours");
+  const channel = features.includes("report_mail");
+  return quiet || channel ? <NotifyCards timeZone={timeZone} quiet={quiet} channel={channel} /> : null;
 }

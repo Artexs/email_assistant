@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { notifyPatchSchema } from "./notify";
+import { notifyPatchSchema, QUIET_MAX_SPAN_MIN, quietSpanMin } from "./notify";
 
 const id = "5f1f1f1f-1f1f-4f1f-8f1f-1f1f1f1f1f1f";
 
@@ -45,5 +45,26 @@ describe("notifyPatchSchema", () => {
     expect(message({})).toBe("notify_one_group");
     expect(message({ quietStart: "23:00", quietEnd: "06:00", reportChannel: "mail" })).toBe("notify_one_group");
     expect(notifyPatchSchema.safeParse({ reportChannel: "mail", userId: id }).success).toBe(false);
+  });
+});
+
+describe("the longest quiet window", () => {
+  test("quietSpanMin counts over midnight; equal times are 0", () => {
+    expect(quietSpanMin("22:00", "07:00")).toBe(9 * 60);
+    expect(quietSpanMin("09:00", "17:00")).toBe(8 * 60);
+    expect(quietSpanMin("10:00", "10:00")).toBe(0);
+    expect(quietSpanMin("00:00", "23:59")).toBe(23 * 60 + 59);
+  });
+
+  test("18 hours are allowed, one minute more is quiet_too_long", () => {
+    expect(QUIET_MAX_SPAN_MIN).toBe(18 * 60);
+    expect(notifyPatchSchema.safeParse({ quietStart: "06:00", quietEnd: "00:00" }).success).toBe(true);
+    expect(message({ quietStart: "05:59", quietEnd: "00:00" })).toBe("quiet_too_long");
+    expect(message({ quietStart: "00:00", quietEnd: "23:59" })).toBe("quiet_too_long");
+  });
+
+  test("equal times and the reset stay allowed", () => {
+    expect(notifyPatchSchema.safeParse({ quietStart: "10:00", quietEnd: "10:00" }).success).toBe(true);
+    expect(notifyPatchSchema.safeParse({ quietStart: null, quietEnd: null }).success).toBe(true);
   });
 });

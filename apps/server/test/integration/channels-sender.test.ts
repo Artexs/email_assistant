@@ -883,4 +883,125 @@ describe("outbox sender: own quiet hours", () => {
       expect(reads).toBe(1);
     });
   });
+
+  // Review fix: a hold never ends in the past.
+  test("an end time in the New York spring gap: the row waits until the change (07:00Z), not a past time; each tick keeps it", async () => {
+    await withRollback(db, async (trx) => {
+      const { t } = await twoMembers(trx);
+      await trx
+        .updateTable("organizations")
+        .set({ timezone: "America/New_York" })
+        .where("id", "=", t.ctx.orgId)
+        .execute();
+      await flagOn(trx, t);
+      await setHours(trx, t, t.userId, "00:00", "02:00");
+      const first = new Date("2026-03-08T06:05:00Z"); // 01:05 EST
+      const row = await addRow(trx, t, {
+        userId: t.userId,
+        createdAt: new Date(first.getTime() - HOUR),
+        nextAttemptAt: new Date(first.getTime() - HOUR),
+      });
+      const s = senderFor(trx);
+      for (const minutes of [0, 1, 2]) {
+        await s.run(new Date(first.getTime() + minutes * MINUTE));
+        const held = await rowState(trx, row);
+        expect(held.status).toBe("pending");
+        expect(held.next_attempt_at.toISOString()).toBe("2026-03-08T07:00:00.000Z");
+      }
+      expect(s.channel.sent).toHaveLength(0);
+    });
+  });
+
+  test("a row is never put back with a time less than one minute ahead", async () => {
+    await withRollback(db, async (trx) => {
+      const { t } = await twoMembers(trx);
+      await flagOn(trx, t);
+      // Own hours 23:00–06:00; now is 05:59:30 local (04:59:30Z): the hours end in 30 seconds.
+      const now = new Date("2026-11-07T04:59:30Z");
+      const row = await addRow(trx, t, {
+        userId: t.userId,
+        createdAt: new Date(now.getTime() - HOUR),
+        nextAttemptAt: new Date(now.getTime() - HOUR),
+      });
+      await senderFor(trx).run(now);
+      const held = await rowState(trx, row);
+      expect(held.status).toBe("pending");
+      expect(held.next_attempt_at.toISOString()).toBe("2026-11-07T05:00:30.000Z");
+    });
+  });
+
+  // A flag must never leak from one organization to another (the cache is per organization).
+  test.each([true, false])(
+    "two organizations in one batch, the flag on in the %s one first: each keeps its own flag",
+    async (onFirst) => {
+      await withRollback(db, async (trx) => {
+        await isolateChannels(trx);
+        const first = await tenant(trx);
+        const second = await tenant(trx);
+        for (const [t, on] of [
+          [first, onFirst],
+          [second, !onFirst],
+        ] as const) {
+          await setHours(trx, t, t.userId, "23:00", "06:00");
+          await flagOn(trx, t, on);
+        }
+        const rowFirst = await addRow(trx, first, {
+          createdAt: new Date(LOCAL_2230.getTime() - 3 * SECOND),
+          nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR),
+        });
+        const rowSecond = await addRow(trx, second, {
+          createdAt: new Date(LOCAL_2230.getTime() - 2 * SECOND),
+          nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR),
+        });
+        await senderFor(trx).run(LOCAL_2230);
+        // 22:30 local: own hours 23:00–06:00 let the row go; the default hours hold it.
+        expect((await rowState(trx, rowFirst)).status).toBe(onFirst ? "sent" : "pending");
+        expect((await rowState(trx, rowSecond)).status).toBe(onFirst ? "pending" : "sent");
+      });
+    }
+  );
+
+  test("a user in two organizations has the hours of the organization of the row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await tenant(trx);
+      const b = await tenant(trx);
+      // The user of `a` is a member of `b` too, with other hours; both organizations have the flag on.
+      await trx
+        .insertInto("memberships")
+        .values({ org_id: b.ctx.orgId, user_id: a.userId, role: "assistant" })
+        .execute();
+      await trx
+        .insertInto("chat_links")
+        .values({
+          org_id: b.ctx.orgId,
+          user_id: a.userId,
+          channel: "telegram",
+          external_chat_id: randomChatId(),
+          linked_at: T,
+        })
+        .execute();
+      await flagOn(trx, a);
+      await flagOn(trx, b);
+      await setHours(trx, a, a.userId, "23:00", "06:00");
+      await setHours(trx, b, a.userId, "08:00", "09:00");
+      const rowA = await addRow(trx, a, {
+        userId: a.userId,
+        createdAt: new Date(LOCAL_2230.getTime() - HOUR),
+        nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR),
+      });
+      await senderFor(trx).run(LOCAL_2230);
+      // Hours of `a` (23:00–06:00) at 22:30: not quiet. The hours of `b` (08:00–09:00) would not hold it either, so use 23:30.
+      expect((await rowState(trx, rowA)).status).toBe("sent");
+      const later = new Date("2026-11-06T22:30:00Z"); // 23:30 local
+      const rowA2 = await addRow(trx, a, {
+        userId: a.userId,
+        createdAt: new Date(later.getTime() - HOUR),
+        nextAttemptAt: new Date(later.getTime() - HOUR),
+      });
+      await senderFor(trx).run(later);
+      // Inside the hours of `a`: held, whatever the hours of `b` say.
+      expect((await rowState(trx, rowA2)).status).toBe("pending");
+    });
+  });
 });

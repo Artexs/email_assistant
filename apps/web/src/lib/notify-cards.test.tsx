@@ -3,7 +3,7 @@ import type { Me, NotifyView } from "@ea/core/web";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { QuietHoursCard, ReportChannelCard } from "../components/settings/NotifyCards";
+import { NotifyCards, NotifySection, QuietHoursCard, ReportChannelCard } from "../components/settings/NotifyCards";
 import { MeContext } from "../components/shell/MeProvider";
 import { setLocaleForTest, t } from "../i18n";
 
@@ -97,5 +97,24 @@ describe("ReportChannelCard", () => {
     );
     expect(none).toContain(t("notify_no_mailbox"));
     expect(none).not.toContain('id="report-mailbox"');
+  });
+});
+
+// Only `NotifyCards` loads `/api/me/notify`. The section mounts it only for a flag that is on, so with both flags off the Settings page
+// makes no request (the GET answers 200 whatever the flags say).
+describe("NotifySection", () => {
+  test("both flags off: nothing is mounted, so no request goes out", () => {
+    expect(NotifySection({ features: [], timeZone: "UTC" })).toBeNull();
+    expect(NotifySection({ features: ["stats_page", "trust_ladder"], timeZone: "UTC" })).toBeNull();
+  });
+
+  test.each([
+    { features: ["user_quiet_hours"], quiet: true, channel: false },
+    { features: ["report_mail"], quiet: false, channel: true },
+    { features: ["report_mail", "user_quiet_hours"], quiet: true, channel: true },
+  ])("the flags $features mount the loader with the matching cards", ({ features, quiet, channel }) => {
+    const node = NotifySection({ features, timeZone: "UTC" });
+    expect(node?.type).toBe(NotifyCards);
+    expect(node?.props).toEqual({ timeZone: "UTC", quiet, channel });
   });
 });

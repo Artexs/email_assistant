@@ -1,6 +1,5 @@
 import {
   mailboxListSchema,
-  notifyViewSchema,
   organizationSettingsSchema,
   settingsViewSchema,
   type MailboxView,
@@ -18,7 +17,7 @@ import { MailboxSelector } from "../components/settings/MailboxSelector";
 import { AccountCard } from "../components/settings/AccountCard";
 import { CategoriesCard } from "../components/settings/CategoriesCard";
 import { DigestTimesCard } from "../components/settings/DigestTimesCard";
-import { QuietHoursCard, ReportChannelCard } from "../components/settings/NotifyCards";
+import { NotifySection } from "../components/settings/NotifyCards";
 import { ModeCard } from "../components/settings/ModeCard";
 import { SentMailCard } from "../components/settings/SentMailCard";
 import { SignatureCard } from "../components/settings/SignatureCard";
@@ -95,27 +94,6 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
   );
 }
 
-// F110 stage 18: the own quiet hours and report channel; a card shows only with its flag. A failed load shows no card: the
-// two settings are optional and the rest of the page does not wait for them.
-function NotifyCards({ timeZone, quiet, channel }: { timeZone: string; quiet: boolean; channel: boolean }) {
-  const { data, mutate } = useResource(() => api("/api/me/notify", notifyViewSchema));
-  if (data === null) return null;
-  return (
-    <>
-      {quiet && <QuietHoursCard view={data} timeZone={timeZone} onSaved={mutate} />}
-      {channel && <ReportChannelCard view={data} onSaved={mutate} />}
-    </>
-  );
-}
-
-function NotifySection({ timeZone }: { timeZone: string }) {
-  const { me } = useMe();
-  const quiet = me?.features.includes("user_quiet_hours") === true;
-  const channel = me?.features.includes("report_mail") === true;
-  // No request while both flags are off.
-  return quiet || channel ? <NotifyCards timeZone={timeZone} quiet={quiet} channel={channel} /> : null;
-}
-
 function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRole: boolean }) {
   const { me, reload: reloadMe } = useMe();
   const { data, error, loading, reload, mutate } = useResource(() =>
@@ -155,7 +133,7 @@ function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRol
       <h2 className="text-lg font-semibold">{t("set_section_general")}</h2>
       {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
       {me !== null && <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />}
-      {me !== null && <NotifySection timeZone={me.organization.timezone} />}
+      {me !== null && <NotifySection features={me.features} timeZone={me.organization.timezone} />}
       {organizationCards}
       <AccountCard />
     </section>

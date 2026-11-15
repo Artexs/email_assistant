@@ -107,17 +107,19 @@ export interface MemberNotify {
   report_mailbox_id: string | null;
 }
 
+// `lock`: the row stays locked until the end of the transaction, so a second change waits and reads the new values.
 export async function getMemberNotify(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
-  userId: string
+  userId: string,
+  opts: { lock?: boolean } = {}
 ): Promise<MemberNotify | undefined> {
-  const row = await db
+  const query = db
     .selectFrom("memberships")
     .select(["quiet_start", "quiet_end", "report_channel", "report_mailbox_id"])
     .where("org_id", "=", ctx.orgId)
-    .where("user_id", "=", userId)
-    .executeTakeFirst();
+    .where("user_id", "=", userId);
+  const row = await (opts.lock === true ? query.forUpdate() : query).executeTakeFirst();
   return row && { ...row, report_channel: reportChannelSchema.parse(row.report_channel) };
 }
 

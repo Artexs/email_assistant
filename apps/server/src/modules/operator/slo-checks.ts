@@ -77,7 +77,8 @@ export async function checkUrgentLatency(
   const badZoneOrgs = new Set<string>();
   const ownHours = new Map<string, boolean>();
   // F110 stage 18 (Q18): with `user_quiet_hours` on, the wait leaves out the quiet hours of the user of the notice. With
-  // several pending rows (no notice yet) the smallest wait counts: one user may already have got the notice.
+  // several pending rows (no notice yet) the largest wait counts: nobody got the notice, each value already leaves out the
+  // own quiet hours of its user, so a user in quiet hours cannot hide a user who really waits.
   const hoursOf = async (mail: (typeof candidates)[number]): Promise<QuietHours[]> => {
     let on = ownHours.get(mail.orgId);
     if (on === undefined) {
@@ -89,10 +90,12 @@ export async function checkUrgentLatency(
   for (const mail of candidates) {
     if (badZoneOrgs.has(mail.orgId)) continue;
     if (mail.noticeAt !== null && mail.noticeAt.getTime() < now.getTime() - SLO_URGENT_LATE_MEMORY_MS) continue;
+    // Read outside the `try`: a database error must fail the reading, not count as a bad time zone.
+    const hours = await hoursOf(mail);
     let waitMin: number;
     try {
       const end = mail.noticeAt ?? now;
-      waitMin = Math.min(...(await hoursOf(mail)).map((hours) => lateMin(mail.startAt, end, mail.timeZone, hours)));
+      waitMin = Math.max(...hours.map((quiet) => lateMin(mail.startAt, end, mail.timeZone, quiet)));
     } catch {
       // `Intl` throws a RangeError for a time zone it does not know. One organization must not fail the whole reading.
       badZoneOrgs.add(mail.orgId);

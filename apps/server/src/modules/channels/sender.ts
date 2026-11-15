@@ -28,6 +28,7 @@ export const SOFT_BACKOFF_MAX_MS = 15 * 60_000;
 export const CONFIG_PAUSE_MS = 10 * 60_000;
 export const MAX_OTHER_ERRORS = 5;
 
+const MIN_HOLD_MS = 60_000;
 const DEFAULT_BATCH_SIZE = 20;
 const DEFAULT_PER_USER_LIMIT = 3;
 
@@ -168,7 +169,9 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         if (row.kind !== "digest" && !isEdit) {
           const quiet = await quietOf(row);
           if (isQuietTime(now, timezone, quiet)) {
-            await release(row, quietEnd(now, timezone, quiet), false);
+            // At least one minute ahead: a row never goes back to the queue with a time that has passed.
+            const end = quietEnd(now, timezone, quiet);
+            await release(row, new Date(Math.max(end.getTime(), now.getTime() + MIN_HOLD_MS)), false);
             continue;
           }
         }
