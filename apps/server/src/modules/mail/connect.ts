@@ -95,7 +95,7 @@ export function buildFolderMap(folders: MailFolder[]): Record<string, string> {
 }
 
 // Ends a check that hangs: the late result of `promise` is dropped.
-async function withDeadline<T>(promise: Promise<T>, ms: number | undefined): Promise<T> {
+export async function withDeadline<T>(promise: Promise<T>, ms: number | undefined): Promise<T> {
   if (ms === undefined) return promise;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_, reject) => {
