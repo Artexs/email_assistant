@@ -6,6 +6,8 @@ import type { Db } from "../../platform/db";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { isFeatureOn } from "../tenancy";
 
+import { actionDocs } from "./api-docs";
+
 import { markSentMistake, recordRejectReason } from "./feedback";
 
 export interface ActionRouteDeps {
@@ -19,7 +21,7 @@ const idSchema = z.uuid();
 export function actionRoutes(deps: ActionRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
-  app.post("/actions/:id/reject-reason", requireOwner, async (c) => {
+  app.post("/actions/:id/reject-reason", requireOwner, actionDocs.postActionRejectReason, async (c) => {
     const ctx = c.get("ctx");
     if (!(await isFeatureOn(deps.db, ctx, "mistake_capture"))) return c.json({ error: "not_found" }, 404);
     const id = actionIdOf(c.req.param("id"));
@@ -37,7 +39,7 @@ export function actionRoutes(deps: ActionRouteDeps): Hono<ApiEnv> {
     return c.json<ActionFeedbackAnswer>({ status: "saved" });
   });
 
-  app.post("/actions/:id/mistake", requireOwner, async (c) => {
+  app.post("/actions/:id/mistake", requireOwner, actionDocs.postActionMistake, async (c) => {
     const ctx = c.get("ctx");
     if (!(await isFeatureOn(deps.db, ctx, "mistake_capture"))) return c.json({ error: "not_found" }, 404);
     const id = actionIdOf(c.req.param("id"));

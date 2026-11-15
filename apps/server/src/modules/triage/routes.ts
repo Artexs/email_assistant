@@ -6,6 +6,7 @@ import { parseBody, type ApiEnv } from "../../platform/http";
 import { createLog } from "../../platform/log";
 import type { ActionsScope } from "../actions";
 
+import { triageDocs } from "./api-docs";
 import { recordWebFeedback } from "./feedback";
 import { undoWithFeedback } from "./undo";
 
@@ -20,7 +21,7 @@ export interface TriageRouteDeps {
 export function triageRoutes(deps: TriageRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
-  app.post("/feedback", async (c) => {
+  app.post("/feedback", triageDocs.postFeedback, async (c) => {
     const body = await parseBody(c, feedbackBodySchema);
     const result = await recordWebFeedback(deps.db, c.get("ctx"), {
       emailId: body.emailId,
@@ -34,7 +35,7 @@ export function triageRoutes(deps: TriageRouteDeps): Hono<ApiEnv> {
     return c.json(answer);
   });
 
-  app.post("/actions/undo", async (c) => {
+  app.post("/actions/undo", triageDocs.postActionsUndo, async (c) => {
     const body = await parseBody(c, undoBodySchema);
     const userId = c.get("session").userId;
     const result = await undoWithFeedback(deps.db, c.get("ctx"), body.emailId, {
