@@ -25,4 +25,9 @@ describe("uiText", () => {
     expect(uiText("brand", "en")).toBe(en.brand);
     expect(uiText("close", "pl")).toBe(pl.close);
   });
+  test("a placeholder in only one language throws; a lone brace is not a placeholder", () => {
+    expect(() => uiText("k", "en", { en: { k: "Hi {name}" }, pl: { k: "Cześć" } })).toThrow("ui_text_has_vars k");
+    expect(() => uiText("k", "pl", { en: { k: "Hi" }, pl: { k: "Cześć {name}" } })).toThrow("ui_text_has_vars k");
+    expect(uiText("k", "pl", { en: { k: "Hi {" }, pl: { k: "Cześć" } })).toBe("Cześć");
+  });
 });

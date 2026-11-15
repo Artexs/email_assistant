@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -55,6 +56,19 @@ describe("bodyHash", () => {
     const base = bodyHash("---\nt: a\n---\nHi");
     expect(bodyHash('---\nt: a\n---\nHi\nsee <Shot page="x" /> here')).not.toBe(base);
     expect(bodyHash('---\nt: a\n---\nHi\n<Shot page="x" /> after')).not.toBe(base);
+  });
+  test("a Shot tag that follows text on its line, or has text after it, is not a Shot line", () => {
+    const head = (body: string) => bodyHash(`---\nt: a\n---\n${body}`);
+    const after = head('A\n<Shot page="x" /> B');
+    for (const removed of ["A\n B", "A\nB", "A\n"]) expect(after).not.toBe(head(removed));
+    const before = head('A <Shot page="x" />\nB');
+    for (const removed of ["A \nB", "AB", "A\nB", "A\n"]) expect(before).not.toBe(head(removed));
+  });
+  test("a body line break of \\r\\n equals \\n inside the text", () => {
+    expect(bodyHash("---\nt: a\n---\nA\r\nB")).toBe(bodyHash("---\nt: a\n---\nA\nB"));
+  });
+  test("the hash is the first 16 hex of the sha256 of the trimmed body", () => {
+    expect(bodyHash("---\nt: a\n---\nHi\n")).toBe(createHash("sha256").update("Hi").digest("hex").slice(0, 16));
   });
   test("a Shot tag over several lines does not count", () => {
     expect(bodyHash('---\nt: a\n---\nHi\n<Shot\n  page="x"\n/>\n')).toBe(bodyHash("---\nt: a\n---\nHi"));
@@ -138,18 +152,25 @@ describe("docs:stale", () => {
     put("pl/a.mdx", "---\ntitle: A\n---\nx\n");
     put("pl/b.mdx", "---\ntitle: B\nsource: start\n---\nx\n");
     put("pl/c.mdx", polish("0123456789abcdef", "gone"));
+    put("pl/d.mdx", '---\ntitle: D\nsourceHash: "0123456789abcdef"\n---\nx\n');
     const result = checkStale({ contentDir: dir, polishSet: [] });
     expect(result.exitCode).toBe(1);
     expect(result.errors).toEqual([
       "pl/a has no source or sourceHash",
       "pl/b has no source or sourceHash",
       "pl/c source gone not found",
+      "pl/d has no source or sourceHash",
     ]);
   });
   test("a wrong sourceHash is stale", () => {
     put("start.md", "---\ntitle: S\n---\nHello\n");
     put("pl/start.mdx", polish("0000000000000000"));
     expect(checkStale({ contentDir: dir, polishSet: [] }).stale).toEqual(["stale pl/start (source start)"]);
+  });
+  test("a Polish page can be a .md file, in a folder", () => {
+    put("how-to/x.md", "---\ntitle: S\n---\nNew\n");
+    put("pl/how-to/x.md", polish("0000000000000000", "how-to/x"));
+    expect(checkStale({ contentDir: dir, polishSet: [] }).stale).toEqual(["stale pl/how-to/x (source how-to/x)"]);
   });
   test("a source can be an .mdx page", () => {
     put("start.mdx", "---\ntitle: S\n---\nHello\n");

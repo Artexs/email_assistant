@@ -35,7 +35,9 @@ describe("front matter capabilities", () => {
     expect(names.has("README")).toBe(false);
   });
   test("T2 a user page without capabilities fails, in every user section and under pl/", () => {
-    for (const section of USER_SECTIONS) {
+    // A literal list: a section dropped from USER_SECTIONS must fail here.
+    expect([...USER_SECTIONS]).toEqual(["start", "how-to", "reference", "explanation", "faq"]);
+    for (const section of ["start", "how-to", "reference", "explanation", "faq"]) {
       expect(frontMatterProblem(`${section}/x`, {}, known)).toBe(`front_matter capabilities ${section}/x`);
       expect(frontMatterProblem(`pl/${section}/x`, { capabilities: [] }, known)).toBe(
         `front_matter capabilities pl/${section}/x`
@@ -53,6 +55,19 @@ describe("front matter capabilities", () => {
     expect(frontMatterProblem("operate/x", { capabilities: ["nope"] }, known)).toBe(
       "front_matter capabilities operate/x"
     );
+  });
+  test("capabilityNames reads the .md files of a folder, not other files or the README", () => {
+    const root = mkdtempSync(join(tmpdir(), "docs-caps-"));
+    try {
+      mkdirSync(join(root, "docs/capabilities"), { recursive: true });
+      for (const name of ["sync.md", "README.md", "notes.txt", "rules.md"]) {
+        writeFileSync(join(root, "docs/capabilities", name), "x");
+      }
+      expect([...capabilityNames(root)].sort()).toEqual(["rules", "sync"]);
+      expect(capabilityNames(join(root, "none")).size).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
   test("page id helpers", () => {
     expect(englishId("pl/how-to/x")).toBe("how-to/x");
