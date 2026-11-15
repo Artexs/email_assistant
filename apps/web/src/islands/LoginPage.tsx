@@ -1,7 +1,8 @@
-import { fieldErrors as toFieldErrors, loginFormSchema, safeNextPath } from "@ea/core/web";
+import { fieldErrors as toFieldErrors, loginFormSchema, safeNextPath, type SignInOptions } from "@ea/core/web";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
+import { SsoSignIn } from "../components/login/SsoSignIn";
 import { Alert } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -10,6 +11,8 @@ import { Switch } from "../components/ui/switch";
 import { t, type TextKey, useLocale } from "../i18n";
 import { authClient } from "../lib/auth-client";
 import { takeDeletedNotice, type DeletedNotice } from "../lib/delete-organization";
+import { ssoReturnError } from "../lib/sso-errors";
+import { loginSections, readSignInOptions } from "../lib/sso-sign-in";
 import { cleanBackupCode, cleanTotpCode, codeStepError } from "../lib/two-factor-errors";
 
 type FieldErrors = Partial<Record<"email" | "password", TextKey>>;
@@ -34,9 +37,13 @@ export default function LoginPage() {
   const codeInput = useRef<HTMLInputElement>(null);
   const [restartNotice, setRestartNotice] = useState<TextKey | null>(null);
   const [deletedNotice, setDeletedNotice] = useState<DeletedNotice | null>(null);
+  // `null` until the read ends; a failed read is `{ sso: false }` (the password form stays).
+  const [signInOptions, setSignInOptions] = useState<SignInOptions | null>(null);
+  const [ssoReturn, setSsoReturn] = useState<TextKey | null>(null);
 
   useEffect(() => {
     setSetupDone(new URLSearchParams(location.search).get("setup") === "done");
+    setSsoReturn(ssoReturnError(location.search));
     // The read removes the key; the first notice stays (the effect may run twice in development).
     let store: Storage | undefined;
     try {
@@ -47,6 +54,9 @@ export default function LoginPage() {
     const deleted = takeDeletedNotice(location.search, store, Date.now());
     if (deleted !== null) setDeletedNotice((current) => current ?? deleted);
     let active = true;
+    void readSignInOptions().then((options) => {
+      if (active) setSignInOptions(options);
+    });
     void authClient
       .getSession()
       .then(({ data }) => {
@@ -225,6 +235,11 @@ export default function LoginPage() {
           {t(restartNotice)}
         </p>
       )}
+      {ssoReturn === null ? null : (
+        <p role="alert" className="text-destructive text-sm">
+          {t(ssoReturn)}
+        </p>
+      )}
       <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t("email_label")}</Label>
@@ -274,6 +289,7 @@ export default function LoginPage() {
           </p>
         )}
       </form>
+      {loginSections(signInOptions).sso ? <SsoSignIn next={nextTarget()} /> : null}
       <a href="/forgot" className="text-sm underline">
         {t("login_forgot_link")}
       </a>
