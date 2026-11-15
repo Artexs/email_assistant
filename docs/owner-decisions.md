@@ -465,3 +465,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: `vlagent` has no filter by container; filtering would need a second log driver on the astro container or a change of the agent's input. Its lines may hold visitor IP addresses.
 - Undo: stop the store (`$C --profile ops stop victorialogs vlagent`), or set `logging: driver: local` on `astro-app-container` in its own Compose file and recreate it.
 - Source: `notes/2026-11-15-vps-deploy-queue.md` (batch 3), F103 stage 19 step 6.
+
+### 2026-11-15 · F116 loops: Sent tracking off also clears follow-up copies (F116) · privacy · new
+- Choice: when "Track my sent mail" goes off, the copies of the Sent mail in loop-anchored follow-up actions (`actions.payload` quote, To and Cc) and in their outbox cards (`outbox.view`, `outbox.text`) are cleared with the loop texts.
+- Why: switching tracking off withdraws consent for the Sent mail copy; the review of stage 14 found the opening mail body left in an expired draft payload until the payload retention.
+- Undo: remove the clear step in `onSentOff` (loops module); the copies then follow the normal payload retention.
+- Source: job `2026-11-15-f116-review-s14-opus-sending-to-83298456`, stage 14 review N1.
+
+### 2026-11-15 · F116 loops: the loop's own recipients never count as the user's own addresses (F116) · product · new
+- Choice: the own-address set built from the mailbox's Sent rows excludes the loop's counterpart and recipients, so their real reply closes the loop.
+- Why: a person who also sends as the user (send-as or delegate access) would otherwise never close the loop, and the chaser would ask the user to chase someone who already answered.
+- Undo: use the plain Sent-row address set again in `sentFromAddressesOf`.
+- Source: job `2026-11-15-f116-review-s14-opus-sending-to-83298456`, stage 14 review N2.
