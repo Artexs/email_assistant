@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { toLabMessage, type CaseText, type LiveRunPlan, type Slot } from "@ea/core";
-import { ImapFlow } from "imapflow";
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { ImapFlow } from "imapflow";
 
 import {
   createGreenMailClient,
