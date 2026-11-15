@@ -96,7 +96,7 @@ describe("POST /api/delegations/:id/remind", () => {
     expect(await send(body.sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     const [row] = await reminderSends(s.org.orgId);
     expect(row?.id).toBe(body.sendId);
-    expect(row?.payload.set_id).toBeUndefined();
+    expect("set_id" in (row?.payload as object)).toBe(false);
     const audit = await remindAudit(s.org.orgId);
     expect(audit).toHaveLength(1);
     expect(audit[0]).toMatchObject({

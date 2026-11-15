@@ -165,12 +165,12 @@ describe("remindNow", () => {
       expect(send).toMatchObject({ type: "send", status: "awaiting_approval", depends_on_action_id: draft?.id });
       expect(result).toEqual({ kind: "planned", sendId: send?.id as string });
       expect(send?.payload).toMatchObject({ delegation_id: d.id, reminder: 1, to: [d.delegateEmail] });
-      expect(send?.payload.set_id).toBeUndefined();
+      expect("set_id" in (send?.payload as object)).toBe(false);
       expect(send?.approved_by).toBeNull();
       expect(draft?.idempotency_key).toMatch(new RegExp(`^${d.emailId}:create_draft:reminder:manual:[0-9a-f-]{36}$`));
       expect(send?.idempotency_key).toMatch(new RegExp(`^${d.emailId}:send:reminder:manual:[0-9a-f-]{36}$`));
       // The thread of the delegation mail: the references, the original id and the id of the sent mail.
-      expect((draft?.payload.thread as { references: string[] }).references).toEqual([
+      expect((draft?.payload as { thread: { references: string[] } }).thread.references).toEqual([
         "<root@x.test>",
         "<orig@x.test>",
         (await getDelegation(trx, s.ctx, d.id))?.sent_message_id as string,
