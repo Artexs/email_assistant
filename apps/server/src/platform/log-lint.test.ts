@@ -74,6 +74,41 @@ describe("log lint: old forms fail", () => {
   );
 
   test(
+    "a member logger fails (this.log, o.mailboxLog), also on a chain",
+    async () => {
+      expect(
+        await logEventSeverities(
+          fixtureFile,
+          "declare const o: { log: typeof log; mailboxLog: typeof log };\no.log.info(`x ${y}`);"
+        )
+      ).toEqual([2]);
+      expect(
+        await logEventSeverities(
+          fixtureFile,
+          "declare const o: { log: typeof log; mailboxLog: typeof log };\no.mailboxLog.warn(`x ${y}`);"
+        )
+      ).toEqual([2]);
+      expect(
+        await logEventSeverities(fixtureFile, "declare const o: { log: typeof log };\no.log.with({}).error(`x ${y}`);")
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a member logger with an event code passes",
+    async () => {
+      expect(
+        await logEventSeverities(
+          fixtureFile,
+          'declare const o: { log: typeof log };\no.log.info("sync_done", { count: 1 });'
+        )
+      ).toEqual([]);
+    },
+    TIMEOUT
+  );
+
+  test(
     "a call with no argument fails",
     async () => {
       expect(await logEventSeverities(fixtureFile, "log.info();")).toEqual([2]);

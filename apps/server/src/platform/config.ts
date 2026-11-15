@@ -181,6 +181,8 @@ const baseSchema = z.object({
       .regex(/^-?\d{1,15}$/)
       .optional()
   ),
+  // The language of the operator alert texts (F114): `en` or `pl`. Empty = `en`.
+  OPERATOR_LOCALE: z.preprocess(emptyAsUndefined, z.enum(["en", "pl"]).default("en")),
   // F114 service levels of the operator alerts. Integers; empty = the default. Disk and backup keys: stage 04.
   // Minutes since the last sync before a mailbox counts as late.
   SLO_SYNC_LAG_MIN: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(5).max(1440).default(15)),

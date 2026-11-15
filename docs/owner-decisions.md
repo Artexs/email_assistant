@@ -447,3 +447,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the plan lists the body in the model input; masking addresses would change the prompt and could cost recall.
 - Undo: a new prompt version `extractor-v2` that masks addresses in the body, plus one eval run (stage 06 shape).
 - Source: `spec/features/active/F116-e5b-open-loops/review-5.md`, job `2026-11-15-f116-review-s05-opus-loops-modul-6bcb0bc3`.
+
+### 2026-11-15 · F109 send limits: the per-recipient day limit holds lab delegation sends (F109) · ops · new
+- Choice: none yet. The send-limit re-check (stage 16) found that the lab week would send 10 mails per day to one delegate (`asystentka`) against `SEND_LIMIT_RECIPIENT_DAY` = 5. Result: those sends go back to `approved` with `send_limit:recipient_day` and the owner gets `send_held`. The hourly (3 against 20) and daily mailbox (13 against 100) limits fit.
+- Why: the lab persona delegates more per day than a normal executive. For a real user 5 per recipient per day may be right.
+- Undo: leave the limit as is (the lab shows `send_held`); or raise `SEND_LIMIT_RECIPIENT_DAY` for the lab org only.
+- Source: `notes/2026-11-15-e3b-improve-results.md` (send-limit re-check), job `2026-11-15-f109-s16-capability-pages-result-4a208d30`.
