@@ -8,7 +8,7 @@ A follow-up answers the user's own sent mail, so it has no incoming mail to hang
 
 - **Goal:** `db/migrations/<stamp>_action_loop_anchor.sql` with its down part.
 - **Decisions:**
-  - `actions.email_id` drops NOT NULL; new `actions.loop_id uuid`, FK `(loop_id, org_id)` → `open_loops (id, org_id)` without cascade (a loop row is never deleted, except with its mailbox, and the mailbox delete already removes the actions through the mail cascade: check this; when a mailbox delete would be blocked by the new FK, use `ON DELETE CASCADE` and say so in the final message).
+  - `actions.email_id` drops NOT NULL; new `actions.loop_id uuid`, FK `(loop_id, org_id)` → `open_loops (id, org_id)` `ON DELETE CASCADE` (a loop row goes only with its mailbox or organization; then its actions go too, like the mail cascade of `email_id`).
   - CHECK `(email_id IS NULL) <> (loop_id IS NULL)`; CHECK `loop_id IS NULL OR type IN ('create_draft', 'send')`.
   - Partial index `(org_id, loop_id) WHERE loop_id IS NOT NULL`.
   - The down part fails when a loop row exists (no silent delete).
