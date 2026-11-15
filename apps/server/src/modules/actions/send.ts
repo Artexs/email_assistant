@@ -220,7 +220,31 @@ async function finishApplied(
   });
 }
 
+// Graph saves the Sent copy itself, maybe some seconds after the 202. The send looks for it at 0, 5 and 15 s and never APPENDs one:
+// a copy that arrives late would make two.
+export const GRAPH_COPY_WAITS_MS: readonly number[] = [0, 5_000, 10_000];
+
+async function waitForProviderCopy(
+  deps: ApplyDeps,
+  provider: MailProvider,
+  folder: string,
+  draft: DraftRow
+): Promise<boolean> {
+  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  for (const wait of GRAPH_COPY_WAITS_MS) {
+    if (wait > 0) await sleep(wait);
+    const found = await locateByActionId(provider, folder, {
+      actionId: draft.id,
+      hintUid: null,
+      since: draft.created_at,
+    });
+    if (found !== null) return true;
+  }
+  return false;
+}
+
 // Step 5: the Sent copy. Any error leaves the row `applied` with `sent_copy` `failed` (done-when).
+// `provider`: a Graph send whose copy is not in Sent yet; the provider owns it (the result notice shows it as found).
 async function saveSentCopy(
   deps: ApplyDeps,
   ctx: TenantContext,
@@ -230,16 +254,20 @@ async function saveSentCopy(
   raw: Buffer
 ): Promise<void> {
   const now = deps.now();
-  let copy: "found" | "appended";
+  let copy: "found" | "appended" | "provider";
   try {
     const folder = await deps.folders.resolve("sent");
-    const found = await locateByActionId(provider, folder, {
-      actionId: prepared.draft.id,
-      hintUid: null,
-      since: prepared.draft.created_at,
-    });
-    if (found === null) await provider.appendMessage(folder, raw, ["\\Seen"], now);
-    copy = found === null ? "appended" : "found";
+    if (deps.mailbox.sendVia === "graph") {
+      copy = (await waitForProviderCopy(deps, provider, folder, prepared.draft)) ? "found" : "provider";
+    } else {
+      const found = await locateByActionId(provider, folder, {
+        actionId: prepared.draft.id,
+        hintUid: null,
+        since: prepared.draft.created_at,
+      });
+      if (found === null) await provider.appendMessage(folder, raw, ["\\Seen"], now);
+      copy = found === null ? "appended" : "found";
+    }
   } catch (error) {
     const label = describeError(error);
     await inTransaction(deps.db, async (trx) => {

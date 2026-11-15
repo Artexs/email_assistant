@@ -18,6 +18,8 @@ Every night the VPS makes an encrypted copy of the whole Postgres database and s
    5. Only after the copy, the script renames the file to its final name, so a failed copy leaves no `.dump.age` file. The last line is `backup ok <name> <bytes>`.
    6. Local files older than `KEEP_DAYS` days are deleted. The script never deletes remote files.
       On any failure the script exits non-zero and removes the unfinished `.part` file.
+   7. One exit trap writes the status file `status.json` in the folder `deploy/backup-status` (the folder comes from the script path, not from `backup.env`). A good run writes `result` `ok` with `name`, `bytes` and `last_ok_at` = `at`. Any non-zero exit after the start, also a bad `backup.env`, writes `result` `failed` with `name` and `bytes` null and the old `last_ok_at` (or null). The file is written beside the target, set to mode 644 and renamed.
+   8. If `BACKUP_PING_URL` is set, the trap calls it (`curl -fsS -m 10 --retry 3`) after a good run, or `<url>/fail` after a failed one. A failed ping prints `backup ping failed` and never changes the exit code. The URL is never printed.
 3. **The remote lifecycle rule.** The bucket has a lifecycle rule that removes old files (for example after 90 days; `deploy/README.md` § Backups, Bucket). It is a setting in the Backblaze web UI, not in the repository.
 4. **The restore test.** `deploy/restore-test.sh <backup>.dump.age <age identity file>` runs on a machine that has the private key, never on the VPS. It starts a throwaway `postgres:17` container `ea-restore-test` with no network and no port, waits for Postgres, decrypts the backup into `pg_restore` through a pipe (the plain dump never touches the disk), and prints the row counts of `organizations`, `users`, `mailboxes` and `emails`. It removes the container at the end, also after an error. The owner compares the counts with the VPS at backup time and writes the date and the counts in the task log.
 5. **After a real restore.** The dump holds live `auth_sessions` tokens, password hashes and reset tokens. After a real restore, run `delete from auth_sessions;` and ask the members to sign in again.
@@ -25,13 +27,14 @@ Every night the VPS makes an encrypted copy of the whole Postgres database and s
 
 ## Entry points
 
-| Kind | Name                                                                                           | Where                       |
-| ---- | ---------------------------------------------------------------------------------------------- | --------------------------- |
-| CLI  | `deploy/backup.sh` (host cron `30 3 * * *`; by hand before a deploy)                           | `deploy/backup.sh`          |
-| CLI  | `deploy/restore-test.sh <backup> <age identity>` (on the Mac, once a month)                    | `deploy/restore-test.sh`    |
-| CLI  | settings of the backup: `BACKUP_DIR`, `AGE_RECIPIENT`, `BACKUP_REMOTE`, `KEEP_DAYS`, `COMPOSE` | `deploy/backup.env.example` |
-| job  | `platform.heartbeat` (`*/5 * * * *`; the dead-man's-switch, not a backup job)                  | `apps/server/src/main.ts`   |
-| CLI  | runbook sections Backups and Update                                                            | `deploy/README.md`          |
+| Kind | Name                                                                                                              | Where                       |
+| ---- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| CLI  | `deploy/backup.sh` (host cron `30 3 * * *`; by hand before a deploy)                                              | `deploy/backup.sh`          |
+| CLI  | `deploy/restore-test.sh <backup> <age identity>` (on the Mac, once a month)                                       | `deploy/restore-test.sh`    |
+| CLI  | settings of the backup: `BACKUP_DIR`, `AGE_RECIPIENT`, `BACKUP_REMOTE`, `KEEP_DAYS`, `COMPOSE`, `BACKUP_PING_URL` | `deploy/backup.env.example` |
+| file | `status.json` in `deploy/backup-status` (the last run; read by the `ops.slo` backup check)                        | `deploy/backup.sh`          |
+| job  | `platform.heartbeat` (`*/5 * * * *`; the dead-man's-switch, not a backup job)                                     | `apps/server/src/main.ts`   |
+| CLI  | runbook sections Backups and Update                                                                               | `deploy/README.md`          |
 
 ## Data
 
@@ -40,7 +43,8 @@ The backup holds the whole database. Files: `BACKUP_DIR/ea-<UTC time>.dump.age` 
 ## Limits
 
 - No timed restore drill on a clean VM yet: E8b (F114, PD-054; target RPO 24 h and RTO 2 h).
-- No alert when the last backup is older than 26 h or a run failed: E8b (PD-052). Today the only sign is the line in `~/ea-logs/backup.log`.
+- The alert for a late or failed backup (`slo_backup_age`, F114 stage 04) reads the status file, so it cannot see a backup that never started when the host itself is off (then the Healthchecks.io ping check, with a grace of 2 h, is the second sign) or a status file that is stale for another reason: a restore that copies back an old file would hide a failed run until the age passes 26 h.
+- The Healthchecks.io check and the value of `BACKUP_PING_URL` on the VPS are made by the owner (step U2); the repo holds no URL.
 - The backup holds the database only. The file `.env` is not in it, so a restore on a new host also needs `CREDENTIALS_KEY` (it decrypts the stored mailbox passwords) and the other secrets from the owner's own copy.
 - The restore test is manual, once a month, and its result goes to the task log only.
 
@@ -51,4 +55,8 @@ The backup holds the whole database. Files: `BACKUP_DIR/ea-<UTC time>.dump.age` 
 
 ## Tests
 
-No automated test. The restore test is `deploy/restore-test.sh`, run by hand (`deploy/README.md` § Backups).
+- `deploy/test/backup.test.ts`: `backup.sh` in a temp copy of the layout with stub `docker`, `age`, `rclone` and `curl` (status file, ping).
+- `deploy/test/compose-backup-status.test.ts`: the mount and the key in the Compose files.
+- `apps/server/src/modules/operator/slo-host-checks.test.ts`: the backup-age check.
+
+The restore test is `deploy/restore-test.sh`, run by hand (`deploy/README.md` § Backups).

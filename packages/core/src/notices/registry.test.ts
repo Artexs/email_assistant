@@ -375,6 +375,53 @@ describe("the sent_missing view", () => {
   });
 });
 
+describe("the mailbox_removed view (F117 stage 12, test 5)", () => {
+  const render = (locale: "en" | "pl", view: unknown) => renderNotice("mailbox_removed", view, { ...opts, locale });
+  const table = {
+    en: {
+      googleRevoked: "Mailbox removed. Its Google access is withdrawn.",
+      googleFailed: "Mailbox removed. Withdraw its access at myaccount.google.com/permissions now.",
+      microsoftWork: "Mailbox removed. Withdraw the app's access at myapps.microsoft.com now.",
+      microsoftPersonal: "Mailbox removed. Withdraw the app's access at account.live.com/consent/Manage now.",
+    },
+    pl: {
+      googleRevoked: "Skrzynka usunięta. Dostęp przez Google został cofnięty.",
+      googleFailed: "Skrzynka usunięta. Cofnij teraz dostęp na myaccount.google.com/permissions.",
+      microsoftWork: "Skrzynka usunięta. Cofnij teraz dostęp aplikacji na myapps.microsoft.com.",
+      microsoftPersonal: "Skrzynka usunięta. Cofnij teraz dostęp aplikacji na account.live.com/consent/Manage.",
+    },
+  } as const;
+  const views = {
+    googleRevoked: { access: { page: "google", revoked: true } },
+    googleFailed: { access: { page: "google", revoked: false } },
+    microsoftWork: { access: { page: "microsoft_work", revoked: null } },
+    microsoftPersonal: { access: { page: "microsoft_personal", revoked: null } },
+  } as const;
+
+  test.each(["en", "pl"] as const)("the four texts in %s, word for word", (locale) => {
+    for (const key of Object.keys(views) as (keyof typeof views)[]) {
+      expect(render(locale, views[key])).toEqual({ ok: true, message: { text: table[locale][key], buttons: [] } });
+    }
+  });
+
+  test("a row without the access field renders today's text, and an unknown page or an extra key is refused", () => {
+    expect(render("en", {})).toEqual({
+      ok: true,
+      message: { text: textTables.en.notices.mailboxRemoved, buttons: [] },
+    });
+    expect(render("pl", {})).toEqual({
+      ok: true,
+      message: { text: textTables.pl.notices.mailboxRemoved, buttons: [] },
+    });
+    expect(render("en", { access: { page: "yahoo", revoked: null } }).ok).toBe(false);
+    expect(render("en", { access: { page: "google", revoked: null, token: "x" } }).ok).toBe(false);
+  });
+
+  test("the encoded view keeps the access field", () => {
+    expect(encodeNoticeView("mailbox_removed", views.googleFailed as never)).toEqual(views.googleFailed);
+  });
+});
+
 describe("the approval_edit view", () => {
   const view = {
     original: "📤 Send? Contract",

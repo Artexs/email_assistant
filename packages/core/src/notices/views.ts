@@ -9,7 +9,7 @@ import { sendLimitKinds } from "../send-limits";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
 import { suspiciousReasons } from "../triage/suspicious";
-import { authErrorReasons, mailOAuthProviderKeys } from "../web/mail-oauth";
+import { authErrorReasons, mailOAuthProviderKeys, removeAccessPages } from "../web/mail-oauth";
 import { weekStatsSchema } from "../web/stats";
 
 import type { NoticeKind } from "./kinds";
@@ -195,7 +195,11 @@ const delegationAnsweredView = z.strictObject({
   synthetic: z.boolean(),
 });
 
-const mailboxRemovedView = z.strictObject({});
+// Optional on read: a row queued before F117 has no field (it renders the password text). Set at queue time: the mailbox row is gone
+// when the notice renders. `revoked`: the Google revoke call went through (true) or not (false); null when no call was made.
+const mailboxRemovedView = z.strictObject({
+  access: z.strictObject({ page: z.enum(removeAccessPages), revoked: z.boolean().nullable() }).optional(),
+});
 
 const sendHeldView = z.strictObject({
   mailboxId: id,

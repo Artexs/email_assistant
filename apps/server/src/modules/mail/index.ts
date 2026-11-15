@@ -73,6 +73,7 @@ export { composeMessage } from "./imap/compose";
 export { bodyTextFromSource } from "./imap/mapper";
 export { linkPairsOfHtml } from "./imap/capture";
 export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
+export { GRAPH_MAX_RAW_BYTES, openGraphSender, type GraphSenderOpenOptions } from "./graph/sender";
 export {
   INBOX,
   HostNotAllowedError,

@@ -19,12 +19,12 @@ const DAY = 24 * HOUR;
 const FIRST_UID = 900_001;
 
 // Runs `fn` in a transaction; inside a transaction it runs on that one.
-async function inTransaction<T>(db: Db | Transaction<DB>, fn: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
+export async function inTransaction<T>(db: Db | Transaction<DB>, fn: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
   if (db.isTransaction) return fn(db as Transaction<DB>);
   return db.transaction().execute(fn);
 }
 
-interface MailInput {
+export interface MailInput {
   uid: number;
   receivedAt: Date;
   subject: string;
@@ -34,10 +34,11 @@ interface MailInput {
   reasonCode: string;
   reason: string;
   fields?: Record<string, unknown>;
+  bodyText?: string;
 }
 
 // One `emails` row and its `triage_results` row. The ids come from the caller, so batches need no `returning`.
-async function insertMails(
+export async function insertMails(
   trx: Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
@@ -61,6 +62,7 @@ async function insertMails(
         source_folder: "INBOX",
         subject: mail.subject,
         from_address: mail.from,
+        body_text: mail.bodyText ?? null,
         message_id_header: `<e2e-activity-${mail.uid}-${randomUUID()}@ea-seed.test>`,
       }))
     )
@@ -83,18 +85,20 @@ async function insertMails(
   return ids;
 }
 
-interface ActionInput {
+export interface ActionInput {
   emailId: string;
   type: "move" | "mark_read" | "flag" | "create_draft" | "send";
-  status: "applied" | "awaiting_approval";
+  status: "applied" | "awaiting_approval" | "approved";
   payload?: Record<string, unknown>;
   createdAt: Date;
   appliedAt?: Date;
   dependsOnActionId?: string;
   notifiedAt?: Date;
+  // An `approved` send: who approved it, when, and where.
+  approved?: { userId: string; at: Date; via: "web" | "telegram" };
 }
 
-async function insertAction(trx: Transaction<DB>, ctx: TenantContext, input: ActionInput): Promise<string> {
+export async function insertAction(trx: Transaction<DB>, ctx: TenantContext, input: ActionInput): Promise<string> {
   const row = await trx
     .insertInto("actions")
     .values({
@@ -108,6 +112,9 @@ async function insertAction(trx: Transaction<DB>, ctx: TenantContext, input: Act
       created_at: input.createdAt,
       depends_on_action_id: input.dependsOnActionId ?? null,
       notified_at: input.notifiedAt ?? null,
+      approved_by: input.approved?.userId ?? null,
+      approved_at: input.approved?.at ?? null,
+      approved_via: input.approved?.via ?? null,
     })
     .returning("id")
     .executeTakeFirstOrThrow();

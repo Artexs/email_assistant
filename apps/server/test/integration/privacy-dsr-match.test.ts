@@ -540,6 +540,7 @@ describe("matchSubject", () => {
         expect(await matchSubject(trx, w.orgId, address)).toEqual({
           ownAddress: true,
           mails: [],
+          sentMails: [],
           mentions: {},
           listed: { delegates: [], senderRules: [] },
           openActions: [],
