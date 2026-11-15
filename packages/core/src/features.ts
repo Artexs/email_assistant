@@ -115,6 +115,18 @@ export const featureFlags = {
     epic: "E9a",
     removeBy: "2027-06-01",
   },
+  open_loops: {
+    default: false,
+    description: "Open loops: replies you wait for, promises and hand forwards, in the brief, Telegram and the panel.",
+    epic: "E5b",
+    removeBy: "2027-06-01",
+  },
+  delegate_button: {
+    default: false,
+    description: "A Delegate button and delegate picker on digest rows in Telegram and the panel.",
+    epic: "E5b",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

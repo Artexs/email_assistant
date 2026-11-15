@@ -151,6 +151,8 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "degraded_notice", enabled: false },
       { orgId: org.orgId, flag: "mail_oauth_microsoft", enabled: false },
       { orgId: org.orgId, flag: "mail_oauth_google", enabled: false },
+      { orgId: org.orgId, flag: "open_loops", enabled: false },
+      { orgId: org.orgId, flag: "delegate_button", enabled: false },
     ]);
     expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual(featureKeys.map(() => false));
     for (const row of [...rowsOf(body, org.orgId), ...rowsOf(body, org.otherOrgId)]) {

@@ -40,3 +40,7 @@ T1–T14 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s14`).
 ## Out of scope
 
 The chaser (15), Telegram and routes (19, 20).
+
+## Carry-over from stage 08 review
+
+- The commands `laterLoop` and `reopenLoop` share names with the repo functions exported from `loops/index.ts`: alias the repo functions or rename the commands. Repo `laterLoop` takes a computed `dueAt` and refuses no kind: the command refuses `promised` with `not_allowed` (review-8.md N1, N2).

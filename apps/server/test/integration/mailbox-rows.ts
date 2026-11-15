@@ -9,6 +9,7 @@ import { insertCredentials, insertSentEmails, writeSentSwitch } from "../../src/
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { insertDelegate, insertDelegation, insertDraftAndSend, insertTriagedWithActions } from "./fixtures";
+import { insertAnalysisRow, insertLoopRow } from "./loops-fixtures";
 
 export interface MailboxIds {
   mailboxId: string;
@@ -109,6 +110,18 @@ export async function fillMailbox(
   ]);
   await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: now });
 
+  // One open loop and one analysis for that sent row (F116): both go with the mailbox.
+  const sent = await trx
+    .selectFrom("sent_emails")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .orderBy("id")
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  await insertLoopRow(trx, ctx, mailboxId, { sent_email_id: sent.id });
+  await insertAnalysisRow(trx, ctx, mailboxId, sent.id, { status: "pending" });
+
   // A Reconnect state row; the repository of the sign-in state comes with the OAuth flow.
   await trx
     .insertInto("mailbox_oauth_states")
@@ -186,7 +199,9 @@ export async function countMailboxRows(
     ).executeTakeFirstOrThrow();
     return Number(row.n);
   };
-  const single = async (table: "emails" | "delegations" | "sender_rules" | "sent_emails") => {
+  const single = async (
+    table: "emails" | "delegations" | "sender_rules" | "sent_emails" | "open_loops" | "sent_analyses"
+  ) => {
     const row = await trx
       .selectFrom(table)
       .select((eb) => eb.fn.countAll<string>().as("n"))
@@ -214,6 +229,8 @@ export async function countMailboxRows(
     delegations: await single("delegations"),
     sender_rules: await single("sender_rules"),
     sent_emails: await single("sent_emails"),
+    open_loops: await single("open_loops"),
+    sent_analyses: await single("sent_analyses"),
     mailbox_sent_sync: await byMailbox("mailbox_sent_sync"),
     mailbox_oauth_states: await byMailbox("mailbox_oauth_states"),
     audit_log_by_email: await audit("email_id"),

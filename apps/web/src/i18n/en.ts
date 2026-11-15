@@ -266,6 +266,22 @@ export const en = {
   err_port: "Enter a port from 1 to 65535.",
   err_host: "Enter a host name without spaces.",
   connected_toast: "Mailbox connected. The first sync runs within 5 minutes.",
+  // mailbox OAuth sign-in (F117)
+  oauth_btn_microsoft: "Sign in with Microsoft",
+  oauth_btn_google: "Sign in with Google",
+  oauth_or_password: "Or connect with a password",
+  oauth_google_hint:
+    "While this app is in Google's test mode, Google asks you to sign in again every 7 days. An app password does not expire.",
+  oauth_ok_connected: "Mailbox connected. The first sync starts within a few minutes.",
+  oauth_ok_reconnected: "Mailbox reconnected. Sync starts again within a few minutes.",
+  oauth_err_cancelled: "Sign-in was cancelled. Nothing changed.",
+  oauth_err_state: "The sign-in link is no longer valid. Start again.",
+  oauth_err_failed: "The sign-in did not work. Try again.",
+  oauth_err_scope: "The mailbox needs every permission on the sign-in page. Start again and allow all of them.",
+  oauth_err_wrong_account: "You signed in with another account. Sign in with the address of this mailbox.",
+  oauth_err_admin: "Your administrator must approve this app first. Send them the link below.",
+  oauth_err_protocol: "Your administrator turned off IMAP or SMTP for this mailbox. Ask them to turn it on.",
+  oauth_err_unavailable: "Sign-in with this provider is not available here.",
   // password and remove
   password_title: "Change password",
   mb_new_password_label: "New password",
