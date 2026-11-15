@@ -50,6 +50,13 @@ function isValidMailDomain(domain: string): boolean {
   return DOMAIN_PATTERN.test(domain) && !domain.split(".").every((label) => /^[0-9]+$/.test(label));
 }
 
+// The form the provider row stores: trimmed, lower case, a valid mail domain. null for anything else. The operator CLI
+// checks with it before it calls the provider, so a bad domain costs no discovery request.
+export function normalizeMailDomain(raw: string): string | null {
+  const domain = raw.trim().toLowerCase();
+  return isValidMailDomain(domain) ? domain : null;
+}
+
 function clientIdOf(oidcConfig: string): string | null {
   try {
     const parsed: unknown = JSON.parse(oidcConfig);
@@ -84,8 +91,8 @@ export async function setSsoProvider(
   ctx: TenantContext,
   input: SetSsoProviderInput
 ): Promise<SetSsoProviderResult> {
-  const domain = input.domain.trim().toLowerCase();
-  if (!isValidMailDomain(domain)) return { kind: "domain_invalid" };
+  const domain = normalizeMailDomain(input.domain);
+  if (domain === null) return { kind: "domain_invalid" };
 
   const run = async (trx: Transaction<DB>): Promise<SetSsoProviderResult> => {
     if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };
@@ -147,19 +154,22 @@ export async function setSsoProvider(
 
 export type RemoveSsoProviderResult =
   | { kind: "removed"; linksRemoved: number; sessionsEnded: number }
-  | { kind: "none" };
+  | { kind: "none" }
+  | { kind: "confirm_mismatch" };
 
 // The same lock order as `setSsoProvider`. The links, the SSO sessions of the linked users, the provider and the
-// SSO requirement go; the audit row keeps counts only.
+// SSO requirement go; the audit row keeps counts only. The operator confirms by domain: the compare runs under the
+// organization lock, so a `setSsoProvider` that changes the domain cannot slip in between the confirm and the removal.
 export async function removeSsoProvider(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
-  input: { actor: string; now: Date }
+  input: { actor: string; now: Date; confirmDomain: string }
 ): Promise<RemoveSsoProviderResult> {
   const run = async (trx: Transaction<DB>): Promise<RemoveSsoProviderResult> => {
     if (!(await lockOrganization(trx, ctx))) return { kind: "none" };
     const current = await lockSsoProvider(trx, ctx);
     if (!current) return { kind: "none" };
+    if (current.domain !== input.confirmDomain.trim().toLowerCase()) return { kind: "confirm_mismatch" };
     const counts = await endSsoLinksAndSessions(trx, current.providerId);
     await deleteSsoProvider(trx, ctx);
     await clearSsoRequired(trx, ctx);

@@ -9,6 +9,7 @@ import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { getMembership, getOrganization, isFeatureOn } from "../tenancy";
 
+import { privacyDocs } from "./api-docs";
 import { deleteOrganization } from "./delete";
 
 const log = createLog("privacy");
@@ -33,7 +34,7 @@ export interface PrivacyRouteDeps {
 export function privacyRoutes(deps: PrivacyRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
-  app.delete("/organization", requireOwner, async (c) => {
+  app.delete("/organization", requireOwner, privacyDocs.deleteOrganization, async (c) => {
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
     if (!(await isFeatureOn(deps.db, ctx, "org_delete"))) return c.json({ error: "not_found" }, 404);

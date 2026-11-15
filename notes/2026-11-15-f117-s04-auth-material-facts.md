@@ -1,0 +1,11 @@
+# F117 stage 04: facts for stages 05, 10 and 13
+
+Read from the installed packages (imapflow 1.7.8, nodemailer 10.3.1) and proved by `apps/server/src/modules/mail/imap/auth-material.test.ts`.
+
+- **A refused login is `MailAuthError` on every path.** SMTP: `toSmtpError` and `classifySmtpError` map EAUTH. IMAP: `toMailError` maps `authenticationFailed`. `reason` exists on `MailAuthError` (`reason?: AuthErrorReason`); no code sets it yet. Stage 10 sets it. `SmtpSendError` has no reason. `stages/stage-13-graph-sender.md` line 42 says "`login`, `oauth_revoked`" for a Graph 401: follow plan decision D15 there (`MailAuthError` with a reason), not a `SmtpSendError` stage.
+- **The `cause` holds the token.** A server may echo the XOAUTH2 payload in its refusal text (the test server does). nodemailer puts it in `error.message` and `error.response`; imapflow puts it in `error.response`. Only the `cause` keeps it. No log call prints a cause (`grep -rn "\.cause" apps/server/src`). A new log call in stages 06 to 13 must log `errorFields(error)`, never a cause or an `error.message` of a nodemailer or imapflow error.
+- **imapflow with no XOAUTH2 or OAUTHBEARER capability** (and no password) throws a plain `Error("Unsupported authentication mechanism")`. It has no `authenticationFailed`, so `toMailError` gives `HardError("IMAP connect failed")`, not `MailAuthError`. Stage 10 maps this case to `protocol_disabled` if the spike shows a tenant that serves it.
+- **imapflow prefers `AUTH=OAUTHBEARER` over `AUTH=XOAUTH2`** when the server offers both (`lib/commands/authenticate.js`).
+- **nodemailer after a `334` challenge** asks its token source again (`renew = true`) and sends a second `AUTH XOAUTH2` line. With no refresh data it sends the same token again, so a refused token makes two AUTH lines. The token store of stage 10 must refresh before it opens the sender, not rely on nodemailer.
+- **Empty password or token** gives `HardError` from `assertAuthMaterial` before any connection (`mail/port.ts`). Before this stage an empty IMAP password reached the server and gave `MailAuthError`.
+- `smtpLoginAuth(opts)` (`mail/imap/smtp.ts`) builds the `SMTPConnection.login` argument for the sender and the probe; `buildSmtpTransportOptions` builds the `createTransport` option (`type: "OAuth2"`) for `verifySmtpLogin`.

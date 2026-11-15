@@ -415,7 +415,7 @@ Tenancy:
   One digest is one message of at most 4096 characters with at most 15 lines. No silent sends.
 - Two bots: the dev bot (`@Email_assistant_local_bot`) and the pilot bot (`@Email_assistant_vps_bot`). Each environment has its own token.
 - Token handling (D8): `TELEGRAM_BOT_TOKEN` comes only from env; an empty value switches Telegram off (`telegram is off`). No log line, error text or DB row holds it.
-  Telegram errors are logged only as `telegramErrorLabel(error)` (`GrammyError <method> <code>` or `HttpError <method>`), never as `error.message`, `payload` or `description`.
+  Telegram errors are logged only as `...telegramErrorFields(error)` (`error`, `error_code`, `method`) or, in an old-form line, `telegramErrorLabel(error)`, never as `error.message`, `payload` or `description`.
 - Fake Bot API (dev only): `TELEGRAM_API_ROOT` points the bot at the local fake `tools/fake-telegram`. Empty = the real Telegram.
   The config accepts only a loopback root (`127.0.0.1`, `localhost`, `[::1]`, no path, no trailing `/`); other values stop the start. The server logs one `warn` line when it is set and Telegram is on. `telegram:check`, `telegram:link` and the Telegram jobs of `job:run` use the same key. Never set it on the VPS.
 - Messages to the user are rows in the `outbox` table (§5). A row holds the facts of the notice; the sender renders its text when it sends (ADR 0032 point 5, `docs/code-patterns.md` § Notices are facts). Delivery is at least once: a duplicate is possible only when the process dies

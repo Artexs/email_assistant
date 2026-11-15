@@ -101,8 +101,8 @@ async function main(): Promise<number> {
     return 1;
   }
   const report = await probeSend(
-    { host: options.host, port: options.port, user: options.address, password },
-    { host: options.smtpHost, port: options.smtpPort, user: options.address, password },
+    { host: options.host, port: options.port, user: options.address, auth: { kind: "password", password } },
+    { host: options.smtpHost, port: options.smtpPort, user: options.address, auth: { kind: "password", password } },
     { address: options.address, to: options.to, probeId: randomUUID(), now: new Date(), log: (line) => out.print(line) }
   );
   for (const line of reportLines(report)) out.print(line);

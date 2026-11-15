@@ -22,6 +22,8 @@ export interface ApprovalTexts {
   linksHidden: string;
   quoteCut: string;
   sendLine: string;
+  versionLine: (version: number) => string; // below the title, from version 2 on
+  panelLine: (url: string) => string; // directly above `sendLine`
   buttons: {
     send: string;
     reject: string;
@@ -86,6 +88,7 @@ export interface ApprovalTexts {
     done: (time: string) => string;
     rejectedReason: (reason: string) => string; // no clock: the tap time is not the reject time
     markedMistake: (time: string) => string;
+    changed: (time: string) => string; // a panel edit replaced the draft; the new version is a new message
   };
   answered: {
     title: (name: string, subject: string) => string;
@@ -127,6 +130,8 @@ export const approvalTexts = {
     linksHidden: "(links shown as [link]; the draft has them)",
     quoteCut: "(quote cut; the draft has the full text)",
     sendLine: "The system sends it after your tap. Do not send the draft from your mail client.",
+    versionLine: (version) => `✏️ Version ${version}, edited in the panel.`,
+    panelLine: (url) => `Open in panel: ${url}`,
     buttons: {
       send: "📤 Send",
       reject: "✖️ Reject",
@@ -207,6 +212,7 @@ export const approvalTexts = {
       done: (time) => `✅ Done ${time}.`,
       rejectedReason: (reason) => `✖️ Rejected. Reason: ${reason}.`,
       markedMistake: (time) => `⚠️ Marked as a mistake ${time}.`,
+      changed: (time) => `✏️ Changed in the panel ${time}. The new version comes as a new message.`,
     },
     answered: {
       title: (name, subject) => `📩 ${name} answered · ${subject}`,
@@ -237,6 +243,8 @@ export const approvalTexts = {
     linksHidden: "(linki pokazane jako [link]; szkic je zawiera)",
     quoteCut: "(cytat skrócony; pełny tekst jest w szkicu)",
     sendLine: "System wyśle wiadomość po naciśnięciu przycisku. Nie wysyłaj szkicu z programu pocztowego.",
+    versionLine: (version) => `✏️ Wersja ${version}, zmieniona w panelu.`,
+    panelLine: (url) => `Otwórz w panelu: ${url}`,
     buttons: {
       send: "📤 Wyślij",
       reject: "✖️ Odrzuć",
@@ -318,6 +326,7 @@ export const approvalTexts = {
       done: (time) => `✅ Gotowe ${time}.`,
       rejectedReason: (reason) => `✖️ Odrzucono. Powód: ${reason}.`,
       markedMistake: (time) => `⚠️ Oznaczono jako błąd ${time}.`,
+      changed: (time) => `✏️ Zmieniono w panelu ${time}. Nowa wersja przyjdzie w osobnej wiadomości.`,
     },
     answered: {
       title: (name, subject) => `📩 Odpowiedź od: ${name} · ${subject}`,

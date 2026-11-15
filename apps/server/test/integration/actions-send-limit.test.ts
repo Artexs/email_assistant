@@ -236,7 +236,11 @@ describe("the send limit in the committer", () => {
         db: trx,
         secrets,
         openProvider: async () => s.fake,
-        openSender: async () => s.sender,
+        // A real opener returns a new open sender at each run; the fake of this test is the same object, so it opens again.
+        openSender: async () => {
+          s.sender.closed = false;
+          return s.sender;
+        },
         scope: { kind: "all" },
         sendScope: { kind: "all" },
         now: () => clock,

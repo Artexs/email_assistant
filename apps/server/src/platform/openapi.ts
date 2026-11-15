@@ -6,16 +6,18 @@ import { z, type ZodType } from "zod";
 // The OpenAPI file of the panel API (ADR 0023). Routes keep `parseBody`: the `validator` of `hono-openapi` is never
 // used, because it answers a 400 with another shape than `ValidationError`. A route describes itself through `apiDoc`.
 
-export type ApiErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 429 | 503;
+export type ApiErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 422 | 429 | 502 | 503;
 
 export interface ApiDocSpec {
   operationId: string; // unique in the file
   summary: string;
   tags: string[];
   body?: ZodType; // the JSON body the route parses with `parseBody`
+  params?: ZodType; // an object schema: each key is one path parameter
   query?: ZodType; // an object schema: each key is one query parameter
-  ok: { status: 200 | 201; schema: ZodType };
-  errors?: { status: ApiErrorStatus; codes: string[] }[]; // every body is `{ error, … }` (`apiErrorSchema`)
+  ok: { status: 200 | 201; schema: ZodType } | { status: 204 }; // 204: an empty answer, no body
+  // Every body is `{ error, … }` (`apiErrorSchema`); `schema` is a stricter shape of it, for a body with more fields.
+  errors?: readonly { status: ApiErrorStatus; codes: readonly string[]; schema?: ZodType }[];
   public?: true; // the route needs no session: `security: []`
   hide?: { reason: string }; // the route is left out of the file; the reason is for the reader of the code
 }
@@ -46,29 +48,50 @@ const EXCLUDED_PATHS: RegExp[] = [/^\/api\/operator(\/|$)/, /^\/api\/auth(\/|$)/
 
 type Parameter = Exclude<NonNullable<DescribeRouteOptions["parameters"]>[number], { $ref: string }>;
 
-function queryParameters(schema: ZodType): Parameter[] {
+function parameters(schema: ZodType, place: "query" | "path"): Parameter[] {
   const json = z.toJSONSchema(schema, { io: "input", unrepresentable: "any" }) as {
     properties?: Record<string, Parameter["schema"]>;
     required?: string[];
   };
   return Object.entries(json.properties ?? {}).map(([name, property]) => ({
     name,
-    in: "query",
-    required: json.required?.includes(name) ?? false,
+    in: place,
+    required: place === "path" || (json.required?.includes(name) ?? false),
     schema: property,
   }));
+}
+
+// The codes of the shared guards (`platform/http.ts`, `parseBody`) join the codes that the route lists; a public
+// route has no session guard.
+function errorAnswers(spec: ApiDocSpec): Map<ApiErrorStatus, { codes: string[]; schema: ZodType | undefined }> {
+  const shared: { status: ApiErrorStatus; codes: readonly string[]; schema?: ZodType }[] = [
+    ...(spec.body || spec.query ? [{ status: 400 as const, codes: ["validation"] }] : []),
+    ...(spec.public ? [] : [{ status: 401 as const, codes: ["unauthorized"] }]),
+    {
+      status: 403,
+      codes: [...(spec.public ? [] : ["no_organization", "org_suspended"]), "bad_origin"],
+    },
+    { status: 413, codes: ["too_large"] },
+  ];
+  const merged = new Map<ApiErrorStatus, { codes: string[]; schema: ZodType | undefined }>();
+  for (const { status, codes, schema } of [...(spec.errors ?? []), ...shared]) {
+    const before = merged.get(status);
+    merged.set(status, {
+      codes: [...new Set([...(before?.codes ?? []), ...codes])],
+      schema: before?.schema ?? schema,
+    });
+  }
+  return merged;
 }
 
 export function apiDoc(spec: ApiDocSpec): MiddlewareHandler {
   const json = (schema: ZodType) => ({ "application/json": { schema: resolver(schema) } });
   const responses: NonNullable<DescribeRouteOptions["responses"]> = {
-    [spec.ok.status]: { description: "OK", content: json(spec.ok.schema) },
+    [spec.ok.status]:
+      "schema" in spec.ok ? { description: "OK", content: json(spec.ok.schema) } : { description: "No content" },
   };
-  for (const error of spec.errors ?? []) {
-    responses[error.status] = {
-      description: `Error codes: ${error.codes.join(", ")}`,
-      content: json(apiErrorSchema),
-    };
+  for (const [status, { codes, schema }] of errorAnswers(spec)) {
+    responses[status] = { description: `Error codes: ${codes.join(", ")}`, content: json(schema ?? apiErrorSchema) };
   }
   return describeRoute({
     operationId: spec.operationId,
@@ -76,7 +99,14 @@ export function apiDoc(spec: ApiDocSpec): MiddlewareHandler {
     tags: spec.tags,
     responses,
     ...(spec.body ? { requestBody: { required: true, content: json(spec.body) } } : {}),
-    ...(spec.query ? { parameters: queryParameters(spec.query) } : {}),
+    ...(spec.params || spec.query
+      ? {
+          parameters: [
+            ...(spec.params ? parameters(spec.params, "path") : []),
+            ...(spec.query ? parameters(spec.query, "query") : []),
+          ],
+        }
+      : {}),
     ...(spec.public ? { security: [] } : {}),
     ...(spec.hide ? { hide: true } : {}),
   });

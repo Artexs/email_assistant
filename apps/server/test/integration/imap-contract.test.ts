@@ -13,7 +13,7 @@ function greenmailUser(): ImapConnectOptions {
     host: process.env.TEST_IMAP_HOST ?? "127.0.0.1",
     port: Number(process.env.TEST_IMAP_PORT ?? "3143"),
     user: `u-${randomUUID()}@localhost`,
-    password: "greenmail-test",
+    auth: { kind: "password", password: "greenmail-test" },
   };
 }
 

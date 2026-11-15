@@ -64,14 +64,14 @@ export async function checkMailbox(
     host: mailbox.imap_host,
     port: mailbox.imap_port,
     user: mailbox.address,
-    password,
+    auth: { kind: "password", password },
   };
   const smtp: SmtpConnectOptions = {
     host: mailbox.smtp_host,
     port: mailbox.smtp_port,
     security: mailbox.smtp_security,
     user: mailbox.address,
-    password,
+    auth: { kind: "password", password },
   };
 
   const provider = await openImapProvider(imap);
