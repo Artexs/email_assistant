@@ -120,7 +120,7 @@ Web stages 21 and 22 add the web tail of F102 `plan.md` § Proof (`test:e2e` und
 
 ## Cold review
 
-Pending.
+Model `claude-opus-5-5`: the plan has `[risky]` stages (migrations, sending to people, LLM, privacy). Result: pending.
 
 ## Log
 
