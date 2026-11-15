@@ -6,7 +6,10 @@ setLogFormat("json");
 installConsoleGuard();
 installProcessGuard(createLog("main"));
 
-if (process.argv[2] === "reject") {
+if (process.argv[2] === "console") {
+  // eslint-disable-next-line no-console
+  console.error("# SERVER_ERROR: MARKER-CRASH");
+} else if (process.argv[2] === "reject") {
   void Promise.reject(new Error("MARKER-CRASH"));
 } else if (process.argv[2] === "throw") {
   setTimeout(() => {
