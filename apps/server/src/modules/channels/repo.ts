@@ -236,6 +236,8 @@ export interface NewOutboxRow {
   kind: OutboxKind;
   dedupKey: string;
   emailId?: string;
+  // A card or notice of a follow-up carries its loop instead of a mail (the outbox CHECK takes either).
+  loopId?: string;
   mailboxId?: string;
   digestId?: string;
   // Only kind `approval_edit`: the card that the row edits (`outbox_approval_edit_check`).
@@ -256,6 +258,7 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       kind: row.kind,
       dedup_key: row.dedupKey,
       email_id: row.emailId ?? null,
+      loop_id: row.loopId ?? null,
       mailbox_id: row.mailboxId ?? null,
       digest_id: row.digestId ?? null,
       edit_of_outbox_id: row.editOfOutboxId ?? null,
@@ -497,6 +500,8 @@ export async function cancelPendingOutbox(
     kind: "auth_error" | "sync_stale" | "send_held" | "host_blocked" | "sent_missing";
     mailboxId: string;
     exceptDedupKey?: string;
+    // Only the rows whose dedup key starts with this text (the follow-up hold notice has its own key family).
+    dedupPrefix?: string;
   }
 ): Promise<number> {
   let query = db
@@ -507,6 +512,10 @@ export async function cancelPendingOutbox(
     .where("mailbox_id", "=", filter.mailboxId)
     .where("status", "=", "pending");
   if (filter.exceptDedupKey !== undefined) query = query.where("dedup_key", "<>", filter.exceptDedupKey);
+  if (filter.dedupPrefix !== undefined) {
+    const prefix = filter.dedupPrefix;
+    query = query.where(sql<boolean>`starts_with(dedup_key, ${prefix})`);
+  }
   const result = await query.executeTakeFirst();
   return Number(result.numUpdatedRows);
 }

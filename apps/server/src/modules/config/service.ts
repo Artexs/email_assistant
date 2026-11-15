@@ -40,7 +40,7 @@ export interface SettingsDeps {
     ctx: TenantContext,
     filter: ExpireFilter,
     opts: { now: Date; reason: "policy_changed" | "undo" | "manual"; actor: string }
-  ): Promise<{ id: string; emailId: string; type: ActionType }[]>;
+  ): Promise<{ id: string; emailId: string | null; type: ActionType }[]>;
 }
 
 export interface SettingsView {

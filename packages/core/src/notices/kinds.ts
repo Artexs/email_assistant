@@ -21,6 +21,7 @@ export const noticeKinds = [
   "approval_edit",
   "not_triaged",
   "sent_missing",
+  "loop_consent",
 ] as const;
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);

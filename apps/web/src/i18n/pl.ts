@@ -788,6 +788,9 @@ export const pl: Record<TextKey, string> = {
   appr_from: "Od",
   appr_unknown_sender: "(nieznany nadawca)",
   appr_external: "Nadawca zewnętrzny",
+  appr_to: "Do",
+  appr_cc: "Kopia",
+  appr_follow_up_number: "Przypomnienie {n} z 2",
   appr_subject: "Temat",
   appr_due: "Termin",
   appr_mailbox: "Skrzynka",
@@ -864,6 +867,7 @@ export const pl: Record<TextKey, string> = {
   appr_closed_payload_gone: "Tekst tego szkicu został usunięty. Nie można go edytować.",
   appr_closed_draft_gone: "Treść tego szkicu nie jest już zapisana. Nie można go edytować.",
   appr_closed_delegation_closed: "Zlecenie jest zamknięte. Nie można edytować szkicu.",
+  appr_closed_loop_closed: "Sprawa jest zamknięta. Nie można edytować przypomnienia.",
   // delegates page
   dlg_off: "Ta strona jest wyłączona w Twojej organizacji.",
   dlg_tabs_label: "Strony zleceń",

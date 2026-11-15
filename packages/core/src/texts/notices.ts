@@ -43,6 +43,14 @@ export interface NoticeTexts {
   };
   // F109 stage 15: mail of a VIP or whitelisted sender waits while the AI service is paused.
   notTriaged: (sender: string) => string;
+  // Open loops (F116 stage 11). A follow-up notice names no address and no text: the owner reads the details in the panel.
+  followUp: {
+    failed: string; // the send failed and nothing went out
+    unknown: string; // the connection broke after the text went out: the mail may have been sent
+    held: (limit: string) => string; // `limit` = an entry of `sendHeld.limit`
+  };
+  // The one line for an owner whose consent does not cover open-loop data (replaces a follow-up card or result).
+  loopConsent: { approval: string; result: string };
   sendHeld: {
     first: (address: string, limit: string) => string;
     limit: Record<SendLimitKind, string>;
@@ -178,6 +186,16 @@ export const noticeTexts = {
     },
     notTriaged: (sender) =>
       `📭 Mail from ${sender} is not triaged yet: the AI service is paused. It is triaged when the service is back.`,
+    followUp: {
+      failed: "⚠️ A follow-up could not be sent. Nothing went out.",
+      unknown:
+        "⚠️ A follow-up may have been sent: the connection broke after the text went out. Check your Sent folder before you write another.",
+      held: (limit) => `⏸ A follow-up waits: ${limit}.`,
+    },
+    loopConsent: {
+      approval: "A follow-up waits for your approval in the panel.",
+      result: "A follow-up has a new result in the panel.",
+    },
     sendHeld: {
       first: (address, limit) => `⏸ Sends from ${address} wait: ${limit}.`,
       limit: {
@@ -303,6 +321,16 @@ export const noticeTexts = {
     },
     notTriaged: (sender) =>
       `📭 Wiadomość od ${sender} nie jest jeszcze posortowana: usługa AI ma przerwę. Zostanie posortowana, gdy usługa wróci.`,
+    followUp: {
+      failed: "⚠️ Nie udało się wysłać przypomnienia o odpowiedzi. Nic nie wyszło.",
+      unknown:
+        "⚠️ Przypomnienie o odpowiedzi mogło wyjść: połączenie przerwało się po wysłaniu treści. Sprawdź folder Sent, zanim napiszesz kolejne.",
+      held: (limit) => `⏸ Przypomnienie o odpowiedzi czeka: ${limit}.`,
+    },
+    loopConsent: {
+      approval: "Przypomnienie o odpowiedzi czeka na Twoje zatwierdzenie w panelu.",
+      result: "Jest nowy wynik dotyczący przypomnienia o odpowiedzi. Zobacz go w panelu.",
+    },
     sendHeld: {
       first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka ${address}): ${limit}.`,
       limit: {

@@ -9,6 +9,7 @@ export {
 } from "./apply";
 export { ActionAnchorError, anchorOfRow, emailIdOf, type ActionAnchor, type ActionAnchorColumns } from "./anchor";
 export { applyDraft, buildDraftMessage } from "./drafts";
+export { loopOriginal, mailOriginal } from "./original";
 export { editApproval, type EditInput, type EditResult } from "./edit";
 export { type SendLimitHit } from "./send-limit";
 export {
@@ -83,8 +84,10 @@ export {
   listActionsForEmail,
   listActionsForEmails,
   listDraftTasks,
+  listFailedFollowUps,
   listFailedUnnotified,
   listExpiredApprovals,
+  listFollowUpLimitHolds,
   listSendLimitHolds,
   listSendResultsToNotify,
   listRecentSends,
@@ -123,6 +126,8 @@ export type {
   FinishNext,
   PayloadKeepRule,
   PlannedActionInput,
+  SendLimitHold,
+  SendMail,
   SendRow,
   UndoCandidate,
 } from "./repo";

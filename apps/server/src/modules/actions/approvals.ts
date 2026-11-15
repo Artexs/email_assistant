@@ -8,7 +8,7 @@ import { auditEvents, recordAudit } from "../audit";
 import { inTransaction } from "./apply-shared";
 import { APPROVAL_TTL_MS, DELEGATION_DUE_AFTER_MS, STALE_AFTER_MS, UNNOTIFIED_TTL_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
-import type { ApprovalHooks, DelegationHooks } from "./hooks";
+import type { ApprovalHooks, DelegationHooks, LoopHooks } from "./hooks";
 import {
   findSendByKey,
   getDraft,
@@ -27,6 +27,8 @@ export interface ApprovalDeps {
   // What a decision does for the cards of other channels: `approve`, `reject` and `editApproval` call `onDecided` in their
   // transaction after a change. The tap handler and the web build the real hook (`cardEditHooks`); `noApprovalHooks` does nothing.
   approvalHooks: ApprovalHooks;
+  // Open loops: the edit of a follow-up reads its loop. Absent: `noLoopHooks` (a loop is never open, so the edit is refused).
+  loopHooks?: LoopHooks;
   // Reads `mailboxes.capabilities`; a dependency so tests can set it.
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
 }
@@ -66,6 +68,11 @@ export type RejectResult =
 // must leave it alone (D4). A decision from the panel or the CLI has no such card.
 export function decidedBy(input: ApprovalInput): { exceptUserId?: string } {
   return input.via === "telegram" ? { exceptUserId: input.userId } : {};
+}
+
+// The audit data of a follow-up names its loop (a flat id); a mail send has none.
+export function loopData(send: { loop_id: string | null }): { loop_id?: string } {
+  return send.loop_id === null ? {} : { loop_id: send.loop_id };
 }
 
 // An `expired` send with the reason `superseded` is an old version: no decision applies to it.
@@ -110,7 +117,7 @@ async function approveRow(
           now: input.now,
           actor: input.userId,
           hooks: deps.hooks,
-          uidplus: await deps.uidplus(ctx, send.email.mailbox_id),
+          uidplus: await deps.uidplus(ctx, send.mailbox_id),
         });
         return { kind: "expired", byThisTap: true };
       }
@@ -122,7 +129,7 @@ async function approveRow(
           now: input.now,
           actor: input.userId,
           hooks: deps.hooks,
-          uidplus: await deps.uidplus(ctx, send.email.mailbox_id),
+          uidplus: await deps.uidplus(ctx, send.mailbox_id),
         });
         return { kind: "expired", byThisTap: true };
       }
@@ -137,7 +144,7 @@ async function approveRow(
         actionId: send.id,
         actor: input.userId,
         event: auditEvents.actionApproved,
-        data: { via: input.via },
+        data: { via: input.via, ...loopData(send) },
         at: input.now,
       });
       await deps.approvalHooks.onDecided(trx, ctx, {
@@ -186,14 +193,14 @@ async function rejectRow(
     actionId: send.id,
     actor: input.userId,
     event: auditEvents.actionRejected,
-    data: { via: input.via },
+    data: { via: input.via, ...loopData(send) },
     at: input.now,
   });
   if (send.depends_on_action_id !== null) {
     await closeDraftOfSend(trx, ctx, send.depends_on_action_id, {
       reason: "rejected",
       now: input.now,
-      uidplus: await deps.uidplus(ctx, send.email.mailbox_id),
+      uidplus: await deps.uidplus(ctx, send.mailbox_id),
     });
   }
   const delegationId = send.payload.delegation_id;
@@ -243,8 +250,9 @@ export async function reject(
 }
 
 // Only the rows that the set message showed (`notified_at` set): a row whose draft failed was left out (D21).
+// A follow-up is never in a set (belt and braces: the set readers are mail-only, and the payload schema refuses `set_id` on it).
 function inSetMessage(send: SendRow): boolean {
-  return send.status === "awaiting_approval" && send.notified_at !== null;
+  return send.status === "awaiting_approval" && send.notified_at !== null && send.loop_id === null;
 }
 
 export async function approveSet(
@@ -296,7 +304,9 @@ export async function sendAgain(
 ): Promise<SendAgainResult> {
   return inTransaction(deps.db, async (trx) => {
     const failed = await lockSend(trx, ctx, failedActionId);
-    if (failed === undefined) return { kind: "not_found" };
+    // A follow-up has no "Send again": after `outcome_unknown` the mail may have gone out to other people, and a new one is
+    // drafted from its loop (the failure notice has no such button). A forged tap on one answers like an unknown id.
+    if (failed === undefined || failed.loop_id !== null) return { kind: "not_found" };
     if (
       failed.status !== "failed" ||
       (failed.status_reason !== "outcome_unknown" && failed.status_reason !== "smtp_error")
@@ -339,7 +349,7 @@ export async function markWentOut(
 ): Promise<WentOutResult> {
   return inTransaction(deps.db, async (trx) => {
     const failed = await lockSend(trx, ctx, failedActionId);
-    if (failed === undefined) return { kind: "not_found" };
+    if (failed === undefined || failed.loop_id !== null) return { kind: "not_found" };
     const delegationId = failed.payload.delegation_id;
     if (
       failed.status !== "failed" ||

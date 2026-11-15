@@ -1,5 +1,5 @@
 import { userLocaleSchema, type UserLocale } from "@ea/core";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
@@ -12,6 +12,8 @@ export interface CardOfSend {
   text: string | null;
   externalMessageId: string | null;
   emailId: string | null;
+  // A follow-up card hangs on its loop.
+  loopId: string | null;
   locale: UserLocale;
 }
 
@@ -20,7 +22,7 @@ export interface CardOfSend {
 export async function listCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: string): Promise<CardOfSend[]> {
   const rows = await db
     .selectFrom("outbox")
-    .select(["id", "user_id", "status", "text", "external_message_id", "email_id", "locale"])
+    .select(["id", "user_id", "status", "text", "external_message_id", "email_id", "loop_id", "locale"])
     .where("org_id", "=", ctx.orgId)
     .where("kind", "=", "approval")
     .where("dedup_key", "=", `approval:${sendId}`)
@@ -34,6 +36,7 @@ export async function listCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: s
     text: row.text,
     externalMessageId: row.external_message_id,
     emailId: row.email_id,
+    loopId: row.loop_id,
     locale: userLocaleSchema.parse(row.locale),
   }));
 }
@@ -107,4 +110,39 @@ export async function newerEditSent(
     .limit(1)
     .executeTakeFirst();
   return row !== undefined;
+}
+
+// The follow-ups whose loop closed (`expired` / `loop_closed`) and whose approval card still shows the buttons: a card that no sender took
+// (`pending`) or one that went out (`sent`) with no `expired` edit queued yet. The decision hooks cannot reach these ends (the committer,
+// the switch-off and the close rules end a send without an approval hook), so a detector finds them. `endedAt` is the time of the end.
+export async function listClosedFollowUpCards(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { limit: number }
+): Promise<{ sendId: string; endedAt: Date }[]> {
+  const rows = await db
+    .selectFrom("actions")
+    .select(["actions.id", "actions.updated_at"])
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("actions.type", "=", "send")
+    .where("actions.loop_id", "is not", null)
+    .where("actions.status", "=", "expired")
+    .where("actions.status_reason", "=", "loop_closed")
+    .where(
+      sql<boolean>`exists (
+      select 1 from outbox card
+      where card.org_id = actions.org_id and card.kind = 'approval'
+        and card.dedup_key = 'approval:' || actions.id::text
+        and (card.status = 'pending'
+          or (card.status = 'sent' and not exists (
+            select 1 from outbox edit
+            where edit.org_id = card.org_id and edit.user_id = card.user_id
+              and edit.dedup_key = 'approval_edit:' || card.id::text || ':expired')))
+    )`
+    )
+    .orderBy("actions.updated_at")
+    .orderBy("actions.id")
+    .limit(opts.limit)
+    .execute();
+  return rows.map((row) => ({ sendId: row.id, endedAt: row.updated_at }));
 }

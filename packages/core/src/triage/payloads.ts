@@ -4,8 +4,11 @@ import { EDIT_BODY_MAX, EDIT_SUBJECT_MAX } from "../outgoing/user-text";
 
 import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
 
-// One strict rule for every recipient in a payload (D2): no space, comma, angle bracket, quote or line break.
-export const ADDRESS_PATTERN = /^[^\s@<>,;"'\r\n]+@[^\s@<>,;"'\r\n]+$/;
+// One strict rule for every recipient in a payload (D2): no space, comma, angle bracket, quote or line break, and no control,
+// zero-width or bidi character. The approval card spells a recipient out and the owner decides on it: the address that is shown
+// must be the address that is sent, so no character that a renderer would hide or reorder is allowed.
+const HIDDEN = "\\u0000-\\u001f\\u007f-\\u009f\\u061c\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2069\\ufeff";
+export const ADDRESS_PATTERN = new RegExp(`^[^\\s@<>,;"'\\r\\n${HIDDEN}]+@[^\\s@<>,;"'\\r\\n${HIDDEN}]+$`);
 export const addressSchema = z.string().regex(ADDRESS_PATTERN);
 export const draftLanguageSchema = z.enum(["pl", "en"]);
 
@@ -101,7 +104,9 @@ export const sendPayloadSchema = z
   })
   // Only a follow-up has more than one recipient or a Cc (the other kinds write one address).
   .refine((send) => send.kind === "follow_up" || (send.to.length === 1 && send.cc === undefined))
-  .refine((send) => send.kind !== "follow_up" || send.loop_id !== undefined);
+  .refine((send) => send.kind !== "follow_up" || send.loop_id !== undefined)
+  // A follow-up is one card: it never joins an approval set (a "Send all" tap must not approve it).
+  .refine((send) => send.kind !== "follow_up" || send.set_id === undefined);
 export type SendPayload = z.infer<typeof sendPayloadSchema>;
 
 // The send repeats the fields of its draft that name the delegation; keys with no value stay out.

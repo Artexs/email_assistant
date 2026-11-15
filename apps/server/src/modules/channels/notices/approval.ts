@@ -7,16 +7,28 @@ import {
   matchSender,
   panelUrlSchema,
   type ApprovalView,
+  type OriginalMail,
 } from "@ea/core";
 
 import { type TenantContext } from "../../../platform/db";
-import { getDraft, listSendsToNotify, markNotified, type DraftRow, type SendRow } from "../../actions";
+import {
+  getDraft,
+  listSendsToNotify,
+  loopOriginal,
+  mailOriginal,
+  markNotified,
+  type DraftRow,
+  type LoopHooks,
+  type SendRow,
+} from "../../actions";
 import { listSenderRules } from "../../config";
 import { getDelegate, listDelegateAddresses } from "../../delegation";
+import { loopHooks } from "../../loops";
 import { getMailbox, isSyntheticMessageId, listMailboxes } from "../../mail";
 import { getOrganization, isFeatureOn, listMemberships } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
+import { queueLoopConsentLines, splitByLoopConsent } from "./loop-consent";
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 // The panel page of a send (F102 ticket): `<WEB_BASE_URL>/approvals?id=<send id>`, with no double slash after a trailing `/`.
@@ -24,6 +36,13 @@ import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detect
 export function panelUrlOf(base: string | undefined, sendId: string): string | undefined {
   if (base === undefined) return undefined;
   const url = panelUrlSchema.safeParse(`${base.replace(/\/+$/, "")}/approvals?id=${sendId}`);
+  return url.success ? url.data : undefined;
+}
+
+// The list page of the panel (`<WEB_BASE_URL>/approvals`): the link of the one line that an owner without loop consent gets.
+export function panelListUrlOf(base: string | undefined): string | undefined {
+  if (base === undefined) return undefined;
+  const url = panelUrlSchema.safeParse(`${base.replace(/\/+$/, "")}/approvals`);
   return url.success ? url.data : undefined;
 }
 
@@ -35,27 +54,29 @@ export async function approvalViewFor(
   db: DbOrTrx,
   ctx: TenantContext,
   send: SendRow,
-  options: { panelBase?: string; draftRow?: DraftRow } = {}
+  options: { panelBase?: string; draftRow?: DraftRow; loopHooks?: LoopHooks } = {}
 ): Promise<{ view: ApprovalView; subject: string; quote: string | null }> {
   if (send.depends_on_action_id === null) throw new Error("send has no draft");
   const draftRow = options.draftRow ?? (await getDraft(db, ctx, send.depends_on_action_id));
   if (draftRow === undefined) throw new Error("draft not found");
   const draft = draftPayloadSchema.parse(draftRow.payload);
-  const mailbox = await getMailbox(db, ctx, send.email.mailbox_id);
+  const mailbox = await getMailbox(db, ctx, send.mailbox_id);
   if (mailbox === undefined) throw new Error("mailbox not found");
   const organization = await getOrganization(db, ctx);
   if (organization === undefined) throw new Error("organization not found");
   const owner = (await listMemberships(db, ctx)).find((member) => member.role === "owner");
+  // A follow-up is built from its loop, any other kind from its mail: the draft kind and the anchor must agree.
   const { email } = send;
-  const original = {
-    fromAddress: email.from_address,
-    subject: email.subject,
-    receivedAt: email.received_at,
-    messageId: email.message_id_header,
-    inReplyTo: email.in_reply_to,
-    references: email.references_header?.split(/\s+/).filter((id) => id !== "") ?? [],
-    bodyText: email.body_text,
-  };
+  let original: OriginalMail;
+  if (draft.kind === "follow_up") {
+    if (email !== null || send.loop_id === null || draft.loop_id !== send.loop_id) throw new Error("follow-up anchor");
+    const anchor = await (options.loopHooks ?? loopHooks()).anchorOf(db, ctx, send.loop_id);
+    if (anchor === undefined) throw new Error("loop not found");
+    original = loopOriginal(anchor);
+  } else {
+    if (email === null) throw new Error("draft kind needs a mail");
+    original = mailOriginal(email);
+  }
   const message = buildOutgoingMessage({
     draft,
     draftActionId: draftRow.id,
@@ -65,22 +86,25 @@ export async function approvalViewFor(
     organization: { styleText: organization.style_text, timezone: organization.timezone },
     original,
   });
-  const match = matchSender(email.from_address, await listSenderRules(db, ctx, mailbox.id));
-  const internalAddresses = [
-    ...(await listMailboxes(db, ctx)).map((box) => box.address),
-    ...(await listDelegateAddresses(db, ctx, { activeOnly: true })),
-  ];
-  const external = isExternalSender(email.from_address, {
-    internalAddresses,
-    whitelisted: match.whitelisted,
-    vip: match.vip,
-  });
+  let external = false;
+  if (email !== null) {
+    const match = matchSender(email.from_address, await listSenderRules(db, ctx, mailbox.id));
+    const internalAddresses = [
+      ...(await listMailboxes(db, ctx)).map((box) => box.address),
+      ...(await listDelegateAddresses(db, ctx, { activeOnly: true })),
+    ];
+    external = isExternalSender(email.from_address, {
+      internalAddresses,
+      whitelisted: match.whitelisted,
+      vip: match.vip,
+    });
+  }
   const delegate = "delegate_id" in draft ? await getDelegate(db, ctx, draft.delegate_id) : undefined;
   const view = approvalViewOf(message, {
     draft,
     original,
     external,
-    synthetic: isSyntheticMessageId(email.message_id_header),
+    synthetic: email !== null && isSyntheticMessageId(email.message_id_header),
     recipientInactive: delegate !== undefined && !delegate.active,
   });
   // The edit version of the send (from 2 on the card says so) and the link to the panel.
@@ -106,24 +130,41 @@ async function detectApprovals(
   const panelBase = webBaseUrl !== undefined && (await isFeatureOn(db, ctx, "approvals_page")) ? webBaseUrl : undefined;
   for (const row of rows) {
     try {
-      const { view } = await approvalViewFor(db, ctx, row, panelBase === undefined ? {} : { panelBase });
-      const noticeView = { actionId: row.id, view, now, timeZone };
+      // A follow-up card names recipients of the owner's own sent mail: the consent gate splits the owners (stage 11, D17).
+      const gate = row.loop_id === null ? { covered: owners, withheld: [] } : await splitByLoopConsent(db, ctx, owners);
+      const noticeView =
+        gate.covered.length === 0
+          ? undefined
+          : {
+              actionId: row.id,
+              view: (await approvalViewFor(db, ctx, row, panelBase === undefined ? {} : { panelBase })).view,
+              now,
+              timeZone,
+            };
       await inTransaction(db, async (trx) => {
-        for (const owner of owners) {
-          await queue(
-            trx,
-            ctx,
-            {
-              userId: owner.userId,
-              locale: owner.locale,
-              kind: "approval",
-              dedupKey: `approval:${row.id}`,
-              emailId: row.email_id,
-              view: noticeView,
-            },
-            now
-          );
+        if (noticeView !== undefined) {
+          for (const owner of gate.covered) {
+            await queue(
+              trx,
+              ctx,
+              {
+                userId: owner.userId,
+                locale: owner.locale,
+                kind: "approval",
+                dedupKey: `approval:${row.id}`,
+                ...(row.email_id === null ? {} : { emailId: row.email_id }),
+                ...(row.loop_id === null ? {} : { loopId: row.loop_id }),
+                view: noticeView,
+              },
+              now
+            );
+          }
         }
+        await queueLoopConsentLines(trx, ctx, gate.withheld, {
+          about: "approval",
+          panelUrl: panelBase === undefined ? undefined : panelListUrlOf(panelBase),
+          now,
+        });
         await markNotified(trx, ctx, row.id, now);
       });
     } catch (error) {

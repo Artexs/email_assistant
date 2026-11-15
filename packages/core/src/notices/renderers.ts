@@ -14,6 +14,7 @@ import {
   renderAuthErrorNotice,
   renderHostBlockedNotice,
   renderNotTriagedNotice,
+  renderLoopConsentNotice,
   renderSentMissingNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
@@ -168,5 +169,9 @@ export const noticeRenderers = {
   sent_missing: defineRenderer({
     schema: noticeViewSchemas.sent_missing,
     telegram: { full: (view, opts) => renderSentMissingNotice(view, textsFor(opts.locale)) },
+  }),
+  loop_consent: defineRenderer({
+    schema: noticeViewSchemas.loop_consent,
+    telegram: { full: (view, opts) => renderLoopConsentNotice(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;

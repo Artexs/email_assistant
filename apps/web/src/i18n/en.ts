@@ -772,6 +772,9 @@ export const en = {
   appr_from: "From",
   appr_unknown_sender: "(unknown sender)",
   appr_external: "External sender",
+  appr_to: "To",
+  appr_cc: "Cc",
+  appr_follow_up_number: "Follow-up {n} of 2",
   appr_subject: "Subject",
   appr_due: "Due",
   appr_mailbox: "Mailbox",
@@ -848,6 +851,7 @@ export const en = {
   appr_closed_payload_gone: "The text of this draft was removed. It cannot be edited.",
   appr_closed_draft_gone: "The text of this draft is no longer stored. It cannot be edited.",
   appr_closed_delegation_closed: "The delegation is closed. The draft cannot be edited.",
+  appr_closed_loop_closed: "The open loop is closed. The follow-up cannot be edited.",
   // delegates page
   dlg_off: "This page is off for your organization.",
   dlg_tabs_label: "Delegation pages",
