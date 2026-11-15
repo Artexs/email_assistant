@@ -1,10 +1,10 @@
 # Live lab
 
-> Checked against the code at `95772281`, 2026-11-15.
+> Checked against the code at the F113 stage 12 branch, 2026-11-15.
 
 ## What it does now
 
-The live lab plays the frozen week of made-up mail (`lab-01`) through the real pipeline on a separate sim stack (ADR 0021). Today the code has the guard, the run plan, the executive rules and their driver (`runExecutiveTick`), the injector and the delegate bots (one tick function each; the serve loop calls all three), the state files and the `lab` CLI: `seed`, `start`, `status`, `stop` and `serve` work; `reset`, `score` and the demo commands exit 1 with `not built` until their stages land. `seed` makes the lab organization from the scenario. A run belongs to one lab organization (`lab` or `demo`). `start` plans the run, clamps its cost cap to what is left of the month budget, and writes the run folder under `LAB_STATE_DIR`. `status` prints the counts of each run. `stop` ends a run and writes one spend line in the ledger. The lab sends no mail and no tap to a real person: every command refuses on an env that is not the sim stack.
+The live lab plays the frozen week of made-up mail (`lab-01`) through the real pipeline on a separate sim stack (ADR 0021). Today the code has the guard, the run plan, the executive rules and their driver (`runExecutiveTick`), the injector and the delegate bots (one tick function each; the serve loop calls all three), the state files and the `lab` CLI: `seed`, `start`, `status`, `stop`, `serve` and `score` (triage and M1 half) work; `reset` and the demo commands exit 1 with `not built` until their stages land. `seed` makes the lab organization from the scenario. A run belongs to one lab organization (`lab` or `demo`). `start` plans the run, clamps its cost cap to what is left of the month budget, and writes the run folder under `LAB_STATE_DIR`. `status` prints the counts of each run. `stop` ends a run and writes one spend line in the ledger. The lab sends no mail and no tap to a real person: every command refuses on an env that is not the sim stack.
 
 ## Rules
 
@@ -67,30 +67,44 @@ The live lab plays the frozen week of made-up mail (`lab-01`) through the real p
     7. **Heartbeat.** Each tick rewrites `<LAB_STATE_DIR>/serve.json`: the tick time and, per active run, the failures in a row per part and `bots_failed` (the failed items of the last bots tick). `lab status` shows them.
     8. **Restart.** A restart resumes from the events; each part is idempotent. After a restart of the fake Telegram the executive can lose cards (rule 10.2): the scorer counts the expired approvals, and nothing retries.
 
+22. **Scorer (triage and M1).** `bun run lab score --run <id> [--out <dir>]` (`scoreLabRun`, `writeLabReport`, module `lab`, folder `score/`) joins each injected slot to the stored mail and its triage result in the sim DB and writes the first half of the report. A run that is not stopped can be scored; the header says `partial`. Every read filters by the org of the run (`orgs.json`); the score of a run whose org is gone exits 1 with `org_gone`.
+    1. **Join.** `joinRun` takes the slots with `inject_done` (an inbound slot; `sent` slots are not scored for triage). The mail is the `emails` row of the run mailbox whose Message-ID header equals the id in the `inject_done` event, trimmed like the delegation finder does (`normalizeMessageId`; `listEmailsByMessageIds`). The result is the latest `triage_results` row of that mail (`created_at`, then `id`). With two mail rows of one Message-ID, the row that has a result wins, else the lowest id. `joinRun` takes the mailbox id as its last argument (the run state holds it).
+    2. **Missing.** Injected, no mail row: `not_synced`. A mail row, no result: `not_triaged`. A slot the injector skipped (no `inject_done`): its code (`smtp_failed`, `append_failed`). A slot not tried yet is no row (the coverage line counts it as "not injected yet"). Such rows stay out of precision and recall, and the report lists them as counts.
+    3. **Triage table.** The truth is the slot category; the prediction is the stored result. One row per category (the six value categories and `unsure`): support, predicted, tp, fp, fn, precision and recall with their Wilson 95 % intervals. The numbers come from core `computeMetrics` and `wilsonInterval`; the scorer has no formula of its own. `unsure` has no support and no fp (core rule): it shows how many mails were left unsure. Also the false-negative rate of `urgent` and `needs_reply` (fn over support), the urgent recall per `urgencySource` (`text`, `vip`, `context`) and the recall per hard-case tag (support and hits).
+    4. **M1.** Core `missedImportant` with one row per scored mail: the truth is the slot category, no truth source, `wrongOnly` false, the prediction is the result.
+    5. **Header.** Run id, mode, partial or stopped, start date, `offsetDays`, corpus id, version, a sha256 of the manifest, the owner audit status, the models seen in the `llm.call` rows of the run window, cap, spend (a lower bound when a model has no price), stop reason (`running` while active) and the scoring time.
+    6. **Sent copies.** `sent` slots count in one line: appended n, seen by the server n (an `emails` row or a row in the Sent store, `sent_emails`, with the lab Message-ID).
+    7. **Files.** `sim-<date>-lab-01-<runId>.md` and `.json` (the run id holds the mode). The folder is `--out`, else `evals/results/` where the repo has it, else `<LAB_STATE_DIR>/results/` (the sim image has no `evals/results`; the runbook copies the files out). The JSON holds the whole score and one row per slot (slot id, truth, prediction, code); the files hold no subject, body or address.
+    8. **Sections.** `LabScore.sections` holds one entry per section (`coverage`, `sentCopies`, `mails`) and `SECTION_RENDERERS` in `score/report.ts` one renderer per key; a key with no renderer is in the JSON only. The later scorer stage adds its sections the same way.
+
 ## Entry points
 
-| Kind     | Name                                                                                                  | Where                                        |
-| -------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| CLI      | `bun run lab seed`, `start`, `status`, `stop`, `serve` (the other commands exit 1: `not built`)       | `apps/server/src/scripts/lab.ts`             |
-| CLI      | argument parser and the 10 usage lines                                                                | `apps/server/src/scripts/lab-args.ts`        |
-| function | command dispatch with the env guard                                                                   | `apps/server/src/scripts/lab-run.ts`         |
-| function | `startLabRun`, `stopLabRun`, `writeRunLedgerLine`                                                     | `apps/server/src/modules/lab/start.ts`       |
-| function | `seedLabOrg`, `LAB_TARGETS`, `LAB_FLAGS_ON`, `LAB_FLAGS_OFF`                                          | `apps/server/src/modules/lab/seed.ts`        |
-| function | `createFakeTgClient` (HTTP client of the fake's `/_fake/*` routes)                                    | `apps/server/src/modules/lab/fake-tg.ts`     |
-| function | `storeRunUrgencyProfile`                                                                              | `apps/server/src/modules/lab/urgency.ts`     |
-| function | `orgHasMail` (the fresh-org check; counts the mail rows)                                              | `apps/server/src/modules/lab/org-mail.ts`    |
-| function | `runSpend`                                                                                            | `apps/server/src/modules/lab/run-spend.ts`   |
-| function | `runInjectorTick`                                                                                     | `apps/server/src/modules/lab/injector.ts`    |
-| function | `createLabMailClient`, `LabMailClient` (one GreenMail client of the injector, the bots and the reset) | `apps/server/src/modules/lab/mail-client.ts` |
-| function | `runDelegateBotsTick`                                                                                 | `apps/server/src/modules/lab/bots.ts`        |
-| function | `runServe`, `serveTick`, `runModeStep`, `finishRun` (the serve loop)                                  | `apps/server/src/modules/lab/serve.ts`       |
-| function | `buildServeParts`, `createServeMailClient`, `labMailOptions` (the wiring of the loop)                 | `apps/server/src/modules/lab/serve-parts.ts` |
-| function | `takeServeLock`, `writeServeStatus`, `readServeStatus` (the lock and `serve.json`)                    | `apps/server/src/modules/lab/serve-files.ts` |
-| function | run state, locks and `capFor`                                                                         | `apps/server/src/modules/lab/state.ts`       |
-| function | `checkSimEnv`, `planLiveRun`                                                                          | `packages/core/src/sim/live/env-guard.ts`    |
-| function | `executiveDecision`, `executiveTapAt`, `cardsOf`                                                      | `packages/core/src/sim/live/executive.ts`    |
-| function | `runExecutiveTick`, `lookupCard` (the executive driver)                                               | `apps/server/src/modules/lab/executive.ts`   |
-| function | `botReplyPlan`, `botReplyText`, `otherAddressOf`, `backOnText`                                        | `packages/core/src/sim/live/bot.ts`          |
+| Kind     | Name                                                                                                     | Where                                         |
+| -------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| CLI      | `bun run lab seed`, `start`, `status`, `stop`, `serve`, `score` (the other commands exit 1: `not built`) | `apps/server/src/scripts/lab.ts`              |
+| CLI      | argument parser and the 10 usage lines                                                                   | `apps/server/src/scripts/lab-args.ts`         |
+| function | command dispatch with the env guard                                                                      | `apps/server/src/scripts/lab-run.ts`          |
+| function | `startLabRun`, `stopLabRun`, `writeRunLedgerLine`                                                        | `apps/server/src/modules/lab/start.ts`        |
+| function | `seedLabOrg`, `LAB_TARGETS`, `LAB_FLAGS_ON`, `LAB_FLAGS_OFF`                                             | `apps/server/src/modules/lab/seed.ts`         |
+| function | `createFakeTgClient` (HTTP client of the fake's `/_fake/*` routes)                                       | `apps/server/src/modules/lab/fake-tg.ts`      |
+| function | `storeRunUrgencyProfile`                                                                                 | `apps/server/src/modules/lab/urgency.ts`      |
+| function | `orgHasMail` (the fresh-org check; counts the mail rows)                                                 | `apps/server/src/modules/lab/org-mail.ts`     |
+| function | `runSpend`                                                                                               | `apps/server/src/modules/lab/run-spend.ts`    |
+| function | `runInjectorTick`                                                                                        | `apps/server/src/modules/lab/injector.ts`     |
+| function | `createLabMailClient`, `LabMailClient` (one GreenMail client of the injector, the bots and the reset)    | `apps/server/src/modules/lab/mail-client.ts`  |
+| function | `runDelegateBotsTick`                                                                                    | `apps/server/src/modules/lab/bots.ts`         |
+| function | `runServe`, `serveTick`, `runModeStep`, `finishRun` (the serve loop)                                     | `apps/server/src/modules/lab/serve.ts`        |
+| function | `buildServeParts`, `createServeMailClient`, `labMailOptions` (the wiring of the loop)                    | `apps/server/src/modules/lab/serve-parts.ts`  |
+| function | `takeServeLock`, `writeServeStatus`, `readServeStatus` (the lock and `serve.json`)                       | `apps/server/src/modules/lab/serve-files.ts`  |
+| function | run state, locks and `capFor`                                                                            | `apps/server/src/modules/lab/state.ts`        |
+| function | `checkSimEnv`, `planLiveRun`                                                                             | `packages/core/src/sim/live/env-guard.ts`     |
+| function | `executiveDecision`, `executiveTapAt`, `cardsOf`                                                         | `packages/core/src/sim/live/executive.ts`     |
+| function | `runExecutiveTick`, `lookupCard` (the executive driver)                                                  | `apps/server/src/modules/lab/executive.ts`    |
+| function | `scoreLabRun`, `writeLabReport`, `coverageOf` (the scorer run)                                           | `apps/server/src/modules/lab/score/run.ts`    |
+| function | `joinRun`, `joinSentCopies` (slot to mail and result)                                                    | `apps/server/src/modules/lab/score/join.ts`   |
+| function | `scoreTriage`, `scoreM1`                                                                                 | `apps/server/src/modules/lab/score/triage.ts` |
+| function | `renderLabReport`, `reportBaseName`, `SECTION_RENDERERS`                                                 | `apps/server/src/modules/lab/score/report.ts` |
+| function | `botReplyPlan`, `botReplyText`, `otherAddressOf`, `backOnText`                                           | `packages/core/src/sim/live/bot.ts`           |
 
 ## Data
 
@@ -98,7 +112,7 @@ Files under `LAB_STATE_DIR` (an absolute path): `orgs.json`, `runs/<runId>/run.j
 
 ## Limits
 
-- Reset, scorer and the demo commands: F113 stages 12 to 15 (`bun run lab` exits 1 with `not built`).
+- Reset and the demo commands: F113 stages 14 and 15 (`bun run lab` exits 1 with `not built`). The scorer has the triage and M1 half; M2 to M5, M7, the delegate table and the send limits come with stage 13.
 - A crash between the creation of the org and the mailbox, before `orgs.json` is written, leaves an org that `orgs.json` does not name: the next `seed` fails on the owner email (`users.email` is unique). Delete that org by hand.
 - The month cap is checked at `start` only. Two `start` calls for two orgs at the same moment can both read the same state. The serve loop stops a run at its own cap.
 - The ledger is per machine: offline evals on another machine use their own file.
@@ -114,6 +128,8 @@ ADR 0021 (simulator stack). F113 decisions: caps $1 a day run, $5 a week run, $2
 - `apps/server/src/scripts/lab-args.test.ts`
 - `apps/server/src/scripts/lab-run.test.ts`
 - `apps/server/src/modules/lab/state.test.ts`
+- `apps/server/src/modules/lab/score/score.test.ts` (scoreTriage, M1, the renderer, coverage)
+- `apps/server/test/integration/lab-score.test.ts` (join, tenant, latest result, sent copies, the run score and the files)
 - `apps/server/src/modules/lab/serve.test.ts`, `serve-files.test.ts` (two processes), `serve-parts.test.ts`
 - `apps/server/test/integration/lab-serve.test.ts` (the wiring over the DB, GreenMail and a fake Telegram)
 - `apps/server/test/integration/lab-run-spend.test.ts`
