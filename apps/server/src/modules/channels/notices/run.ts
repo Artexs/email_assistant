@@ -5,6 +5,7 @@ import { type DB, type Db, type TenantContext } from "../../../platform/db";
 import { errorFields } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
 import { type MailboxSummary, type TestMailRule } from "../../mail";
+import { type LlmPause, type TriageScope } from "../../triage";
 import { queueNotice, type QueueNoticeInput } from "../notice-queue";
 import { type LinkedChat } from "../port";
 
@@ -17,6 +18,9 @@ export interface NoticeDeps {
   now(): Date;
   // The process start time (from `main.ts`).
   startedAt: Date;
+  // The LLM pause and the scope of the triage worker of this process (F109 stage 15). Absent: the worker is off, so no
+  // `not_triaged` notice.
+  degraded?: { pause: Pick<LlmPause, "isPaused" | "pausedSince">; scope: TriageScope };
   testMail: TestMailRule;
   // `WEB_BASE_URL`: the panel link on the approval card needs it (F102 D5). Unset: no link.
   webBaseUrl?: string;
@@ -65,7 +69,8 @@ export async function queue<K extends NoticeKind>(
   ctx: TenantContext,
   input: Omit<QueueNoticeInput<K>, "now">,
   now: Date
-): Promise<void> {
+): Promise<boolean> {
   const id = await queueNotice(db, ctx, { ...input, now });
   if (id !== null) log.info("notice_queued", { kind: input.kind, outbox_id: id });
+  return id !== null;
 }

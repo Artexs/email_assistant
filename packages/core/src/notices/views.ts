@@ -9,6 +9,7 @@ import { sendLimitKinds } from "../send-limits";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
 import { suspiciousReasons } from "../triage/suspicious";
+import { authErrorReasons, mailOAuthProviderKeys } from "../web/mail-oauth";
 import { weekStatsSchema } from "../web/stats";
 
 import type { NoticeKind } from "./kinds";
@@ -114,6 +115,10 @@ const urgentView = z.strictObject({
 const authErrorView = z.strictObject({
   address: text,
   mailboxId: id,
+  // Optional on read: a view queued before F117 has no field. Set for an OAuth mailbox only.
+  oauth: z
+    .strictObject({ provider: z.enum(mailOAuthProviderKeys), reason: z.enum(authErrorReasons).nullable() })
+    .optional(),
   since: isoDate,
   now: isoDate,
   timeZone,
@@ -231,6 +236,14 @@ const approvalEditView = z.strictObject({
   actionId: id.optional(),
 });
 
+// Mail of a VIP or whitelisted sender waits while the AI is paused (F109 stage 15, D17). The sender address only: no
+// subject, display name, body or summary (PD-067). The text of the notice is a fixed phrase of ours.
+const notTriagedView = z.strictObject({
+  emailId: id,
+  mailboxId: id,
+  sender: text,
+});
+
 // The mailbox has shown no sent mail for a long time (F104). The view holds the mailbox address and the start of the
 // quiet period only: no subject, no recipient.
 const sentMissingView = z.strictObject({
@@ -256,6 +269,7 @@ export const noticeViewSchemas = {
   weekly_report: weeklyReportView,
   host_blocked: hostBlockedView,
   approval_edit: approvalEditView,
+  not_triaged: notTriagedView,
   sent_missing: sentMissingView,
 } satisfies Record<NoticeKind, z.ZodType>;
 

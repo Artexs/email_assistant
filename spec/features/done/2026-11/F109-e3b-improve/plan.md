@@ -33,7 +33,7 @@ Design (detail in the stages):
 - **D12** Dev win rule (stage 09). **D13** Holdout ship rule (stage 11): v3 better than v2 by a margin, no proven loss; one holdout run per decision (stages 05, 11, 13).
 - **D14 Out of v3** (Q3): folder hint F061 (no folder in the sim case) and the cold-mail reason code (no truth label).
 - **D15 Escalation** (stages 12, 14): role `escalation`, prompt `escalation-v1`, an independent second classification that wins; trigger independent of mode (shadow is the ADR 0028 evidence path). **D16** Escalation ship rule (stage 13).
-- **D17** Degraded notice: kind `not_triaged`, flag `degraded_notice` (stage 15). **D18** PD-044 send-limit re-check: an offline count of the week part (stage 16). **D19** Logs: codes and counts only.
+- **D17** Degraded notice: kind `not_triaged`, flag `degraded_notice` (stage 15); at most 5 mails per mailbox per pause, one row per member per mail (stage 15 review N4). **D18** PD-044 send-limit re-check: an offline count of the week part (stage 16). **D19** Logs: codes and counts only.
 
 ## Facts checked (2026-11-15, at b9261659)
 

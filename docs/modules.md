@@ -55,7 +55,7 @@ flowchart LR
     A3 --> J5
 ```
 
-Small jobs (not in the picture): `actions.expiry` (hourly, S4), `platform.retention` (daily at 02:40, S6a; composed in `apps/server/src/retention.ts`), `channels.operator` (hourly at minute 13, S6a), `platform.heartbeat` (every 5 min).
+Small jobs (not in the picture): `actions.expiry` (hourly, S4), `platform.retention` (daily at 02:40, S6a; composed in `apps/server/src/retention.ts`), `channels.operator` (hourly at minute 13, S6a), `ops.slo` (every 5 min at second 30, F114; `modules/operator`, [operations.md](capabilities/operations.md)), `platform.heartbeat` (every 5 min).
 
 Why:
 
@@ -384,6 +384,12 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 - **Does:** `deleteOrganization` (one transaction, then the privileged function), `exportOrganization` (an `age`-encrypted file of one read-only snapshot), `findSubjectData` and `eraseSubjectData` (the match, tombstones, the scrub of kept rows, one audit row with the address hash). The erase runs generic SQL over the registries: the exception to "the module that owns a text column clears it" (`docs/code-patterns.md` § Data access).
 - **Reads and writes:** `audit` (`recordAudit`), `tenancy` (membership, organization, `isFeatureOn`) and `channels` (`closeWaitingApprovalSetsSince`, `SENDER_STALE_MS`, the same predicate as the resume hook).
 - **Imports:** only the `index.ts` of lower layers; no module imports `privacy`.
+
+### 3.14 `loops` — open loops of the user's own sent mail (F116, layer 3)
+
+- **Owns (built so far):** `extractSent`, the one LLM call that reads a mail that the user sent (role `extractor`, prompt `extractor-v1`) and returns the resolved ask, promise and due dates. The pure part is in `packages/core/src/loops/` (`extractorOutputSchema`, `sentSkipReason`, `extractorInputOf`, `resolveDue`). Later stages add the loop table, the analysis job, the close rules, the one chaser and the follow-up commands (`spec/features/active/F116-e5b-open-loops/`).
+- **Does:** the code filters (`sentSkipReason`) decide which mail goes to the model. The model gets the subject, the local sent date, the number of recipients and the first 8,000 characters of the text. No header address (From, To, Cc) goes to the model. The body goes as written, inside the nonce data block, so an address in a signature can reach the model (triage does the same). LLM text is untrusted: Zod checks the answer, the code empties an `ask` or `promise` that holds an address, a link or a long number, and the code resolves every date.
+- **Edges (same layer, named in `layers.json`):** `loops → actions`, `loops → delegation`, `loops → triage` (the prompt registry; later the suspicion of a thread). No module of layers 1–3 imports `loops`; `channels` and `reports` may.
 
 ## 4. `apps/web` — pages
 

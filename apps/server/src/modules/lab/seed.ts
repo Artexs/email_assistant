@@ -60,6 +60,7 @@ export const LAB_FLAGS_ON = [
   "answered_check",
   "suspicious_mail",
   "attachment_line",
+  "degraded_notice",
 ] as const satisfies readonly FeatureKey[];
 
 /** The keys that are in neither list. A new flag fails the lab test until a person puts it in a list. */

@@ -9,6 +9,7 @@ import {
   HostNotAllowedError,
   MailAuthError,
   MailboxNotFoundError,
+  MailboxOAuthError,
   updateMailboxPassword,
   type ConnectDeps,
   type MailboxStatus,
@@ -261,6 +262,49 @@ describe("updateMailboxPassword", () => {
       await updateMailboxPassword(deps(), ctx, { mailboxId, password: "pass-3", secretKind: "app_password", now });
       const stored = await storedSecret(trx, mailboxId);
       expect(stored).toEqual({ password: "pass-3", kind: "app_password" });
+    });
+  });
+});
+
+describe("updateMailboxPassword on an OAuth mailbox", () => {
+  test("refuses before any login and changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, mailboxId, deps } = await setup(trx, "auth_error");
+      await trx
+        .updateTable("mailboxes")
+        .set({ oauth_provider: "google", auth_reason: "oauth_expired" })
+        .where("id", "=", mailboxId)
+        .execute();
+      const calls: string[] = [];
+      const spy = deps({
+        openProvider: async () => {
+          calls.push("imap");
+          return createFakeMailProvider();
+        },
+        verifySmtp: async () => {
+          calls.push("smtp");
+        },
+      });
+      await expect(updateMailboxPassword(spy, ctx, { mailboxId, password: "new-pass", now })).rejects.toBeInstanceOf(
+        MailboxOAuthError
+      );
+      expect(calls).toEqual([]);
+      expect((await storedSecret(trx, mailboxId)).password).toBe("old-pass");
+      const row = await getMailbox(trx, ctx, mailboxId);
+      expect(row?.status).toBe("auth_error");
+      expect(row?.auth_reason).toBe("oauth_expired");
+      expect(await auditRows(trx, ctx.orgId)).toHaveLength(0);
+    });
+  });
+
+  test("another organization cannot reach it: the mailbox is not found", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await setup(trx, "active");
+      const b = await setup(trx, "active");
+      await trx.updateTable("mailboxes").set({ oauth_provider: "microsoft" }).where("id", "=", b.mailboxId).execute();
+      await expect(
+        updateMailboxPassword(a.deps(), a.ctx, { mailboxId: b.mailboxId, password: "new-pass", now })
+      ).rejects.toBeInstanceOf(MailboxNotFoundError);
     });
   });
 });

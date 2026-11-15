@@ -128,3 +128,28 @@ export async function listMistakeRows(db: DbOrTrx, ctx: TenantContext, q: WeekQu
     return { actionId: row.action_id, sentAt: row.sent_at };
   });
 }
+
+const expiredRowSchema = z.object({ id: z.string(), reason: z.string().nullable() });
+
+/**
+ * Sends of one mailbox, created in the range, that expired and never got a tap (`approved_at` is null): the approval
+ * waited until its time ran out, or its card never reached the user. A reminder that a closed delegation expired
+ * (`delegation_closed`) is not an approval that was missed. Ids and reason codes only.
+ */
+export async function listExpiredUnapprovedSends(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  q: { range: { start: Date; end: Date }; mailboxId: string }
+): Promise<{ id: string; reason: string | null }[]> {
+  const { rows } = await sql<unknown>`
+    SELECT a.id, a.status_reason AS reason
+    FROM actions a
+    JOIN emails ON emails.id = a.email_id AND emails.org_id = ${ctx.orgId}
+    WHERE a.org_id = ${ctx.orgId} AND a.type = 'send' AND a.status = 'expired' AND a.approved_at IS NULL
+      AND a.status_reason IS DISTINCT FROM 'delegation_closed'
+      AND a.created_at >= ${q.range.start} AND a.created_at < ${q.range.end}
+      AND emails.mailbox_id = ${q.mailboxId}
+    ORDER BY a.created_at, a.id
+  `.execute(db);
+  return rows.map((raw) => expiredRowSchema.parse(raw));
+}

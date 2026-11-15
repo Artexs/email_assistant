@@ -409,10 +409,7 @@ describe("outbox view columns (F088)", () => {
     );
     const values = (name: string) =>
       [...(result.rows.find((r) => r.conname === name)?.def.matchAll(/'([a-z_]+)'/g) ?? [])].map((m) => m[1]).sort();
-    // F109 stage 02 added `not_triaged` to the CHECK list; stage 15 adds its renderer and the core kind. Stage 15 removes
-    // this exception, so the two lists are equal again.
-    const KINDS_BEFORE_THEIR_RENDERER = ["not_triaged"];
-    expect(values("outbox_kind_check")).toEqual([...noticeKinds, ...KINDS_BEFORE_THEIR_RENDERER].sort());
+    expect(values("outbox_kind_check")).toEqual([...noticeKinds].sort());
     expect(values("outbox_channel_check")).toEqual([...noticeChannels].sort());
     expect(values("outbox_locale_check")).toEqual([...userLocales].sort());
     expect(values("outbox_detail_check")).toEqual([...noticeDetails].sort());

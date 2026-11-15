@@ -272,6 +272,27 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
   return inserted?.id ?? null;
 }
 
+// The mails of one mailbox that got a `not_triaged` notice since `since` (any member, any status): the cap of the
+// degraded notice counts mails, not rows (F109 stage 15).
+export async function listNotTriagedEmailIds(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date
+): Promise<Set<string>> {
+  const rows = await db
+    .selectFrom("outbox")
+    .select("email_id")
+    .distinct()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("kind", "=", "not_triaged")
+    .where("created_at", ">=", since)
+    .where("email_id", "is not", null)
+    .execute();
+  return new Set(rows.flatMap((row) => (row.email_id === null ? [] : [row.email_id])));
+}
+
 // The text of the message that was queued for this user; the tap handlers edit it. Tenant and user filter the row.
 export async function findOutboxByDedup(
   db: DbOrTrx,

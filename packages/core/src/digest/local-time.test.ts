@@ -152,4 +152,12 @@ describe("lateMin", () => {
     // The night starts 2027-03-27 21:00Z (22:00 CET) and ends 2027-03-28 05:00Z (07:00 CEST).
     expect(lateMin(new Date("2027-03-27T20:00:00Z"), new Date("2027-03-28T06:00:00Z"), TZ)).toBe(120);
   });
+
+  test("the autumn night is 10 h long: 18:00Z to 07:00Z leaves 2 h before 20:00Z and 1 h after 06:00Z", () => {
+    // The change back is 2026-10-25 03:00 CEST to 02:00 CET. The night starts 2026-10-24 20:00Z (22:00 CEST) and ends
+    // 2026-10-25 06:00Z (07:00 CET): 10 quiet hours by the clock. 2 h + 1 h are outside it.
+    expect(lateMin(new Date("2026-10-24T18:00:00Z"), new Date("2026-10-25T07:00:00Z"), TZ)).toBe(180);
+    // A range that crosses the repeated local hour (02:00 to 03:00 happens twice) lies inside the night: all quiet.
+    expect(lateMin(new Date("2026-10-25T00:30:00Z"), new Date("2026-10-25T02:30:00Z"), TZ)).toBe(0);
+  });
 });

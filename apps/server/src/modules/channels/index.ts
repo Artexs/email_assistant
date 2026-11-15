@@ -46,6 +46,7 @@ export { channelRoutes, type ChannelRouteDeps } from "./routes";
 export { approvalRoutes, type ApprovalRouteDeps } from "./approval-routes";
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";
 export { checkBot } from "./telegram/check";
+export { directSender } from "./telegram/direct";
 export { createTelegramBot, type BotDeps } from "./telegram/bot";
 export { BOT_COMMANDS, startPolling, type Polling, type PollingDeps } from "./telegram/polling";
 export { createTelegramRuntime, type TelegramRuntime, type TelegramRuntimeDeps } from "./telegram/runtime";

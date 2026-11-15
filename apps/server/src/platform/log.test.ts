@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import {
   createLog,
   droppedLogFields,
+  installConsoleGuard,
   logFormatFromEnv,
   setLogFormat,
   setLogLevel,
@@ -444,6 +445,80 @@ describe("context", () => {
     expect(await withLogContext({ run_id: R }, async () => 8)).toBe(8);
   });
 });
+
+/* eslint-disable no-console -- the guard test calls console on purpose. */
+describe("console guard", () => {
+  let restore: (() => void) | undefined;
+  const lines = (spy: ReturnType<typeof spyOn>): Record<string, unknown>[] =>
+    spy.mock.calls.map((call: unknown[]) => JSON.parse(String(call[0])) as Record<string, unknown>);
+
+  beforeEach(() => {
+    setLogFormat("json");
+    restore = installConsoleGuard();
+  });
+
+  afterEach(() => {
+    restore?.();
+    restore = undefined;
+  });
+
+  test("console.error from outside the logger writes one text-free event", () => {
+    console.error("# SERVER_ERROR: MARKER-1 at x.test");
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err.mock.calls[0]).toHaveLength(1);
+    const [line] = lines(err);
+    expect(line).toMatchObject({ event: "console_output", level: "warn", dropped_fields: 1 });
+    expect(JSON.stringify(err.mock.calls)).not.toContain("MARKER");
+  });
+
+  test("the logger still writes its own lines through the saved console", () => {
+    createLog("m").info("a", { count: 1 });
+    expect(out).toHaveBeenCalledTimes(1);
+    expect(lines(out)[0]).toMatchObject({ event: "a", count: 1 });
+    expect(JSON.stringify(out.mock.calls)).not.toContain("console_output");
+    expect(err).not.toHaveBeenCalled();
+  });
+
+  test("a console_output line carries the context fields", () => {
+    withLogContext({ job: "mail.sync", run_id: R }, () => console.log("MARKER-2"));
+    expect(lines(err)[0]).toMatchObject({ event: "console_output", job: "mail.sync", run_id: R });
+    expect(JSON.stringify(err.mock.calls)).not.toContain("MARKER");
+  });
+
+  test("info, debug, warn and trace each write one console_output line", () => {
+    for (const method of ["info", "debug", "warn", "trace"] as const) {
+      err.mockClear();
+      console[method]("MARKER-3");
+      expect(err).toHaveBeenCalledTimes(1);
+      expect(lines(err)[0]).toMatchObject({ event: "console_output" });
+    }
+    expect(out).not.toHaveBeenCalled();
+  });
+
+  test("a getter on an argument is never read", () => {
+    const trap = {
+      get secret(): string {
+        throw new Error("read");
+      },
+    };
+    expect(() => console.log(trap, `${"MARKER-4"}`)).not.toThrow();
+    expect(err).toHaveBeenCalledTimes(1);
+  });
+
+  test("restore puts the console back; a second install works after it and throws while on", () => {
+    expect(() => installConsoleGuard()).toThrow("console guard is on");
+    restore?.();
+    restore = undefined;
+    expect(console.log).toBe(out as unknown as typeof console.log);
+    restore = installConsoleGuard();
+    expect(console.log).not.toBe(out as unknown as typeof console.log);
+    console.log("MARKER-5");
+    expect(lines(err)[0]).toMatchObject({ event: "console_output" });
+    expect(() => installConsoleGuard()).toThrow("console guard is on");
+  });
+});
+
+/* eslint-enable no-console */
 
 // Type test: the typecheck checks names and kinds. This function is never called.
 export function typeChecks(): void {
