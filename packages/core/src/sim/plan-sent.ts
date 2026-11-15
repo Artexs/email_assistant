@@ -267,18 +267,13 @@ function buildPart(env: Env, part: SentPart, plans: readonly Plan[]): SentSlot[]
     const topics = scenario.topics.filter((t) => t.personas.includes(firstTo.key));
     const topic = rng.pick(topics.length > 0 ? topics : scenario.topics);
     const otherTopic = rng.pick(scenario.topics.filter((t) => t.key !== topic.key));
-    const label = shortLabel(topic.label, 24);
-
     const expectsReply = expects.has(index);
-    const ask = expectsReply ? cut(rng.pick(askTemplates)(label), 80) : null;
+    const askTemplate = expectsReply ? rng.pick(askTemplates) : undefined;
     let due: DueRef | null = null;
     if (dues.has(index)) due = dueRefFor(rng, rule?.labels.due === "word" ? "word" : "date", context);
-    let promise: string | null = null;
-    let promiseDue: DueRef | null = null;
-    if (promises.has(index)) {
-      promise = cut(rng.pick(promiseTemplates)(label), 80);
-      promiseDue = dueRefFor(rng, rng.int(2) === 0 ? "word" : "date", context);
-    }
+    const promiseTemplate = promises.has(index) ? rng.pick(promiseTemplates) : undefined;
+    const promiseDue =
+      promiseTemplate === undefined ? null : dueRefFor(rng, rng.int(2) === 0 ? "word" : "date", context);
 
     const thread = threaded.has(index)
       ? threadFor({ scenario, spec, pools }, rng, rule, recipients, { label: topic.label, other: otherTopic.label })
@@ -292,8 +287,13 @@ function buildPart(env: Env, part: SentPart, plans: readonly Plan[]): SentSlot[]
     if (rule?.id === "far_date") stated = ` by ${shiftDate(localDay, 61 + rng.int(60))}`;
 
     const others = recipients.to.length + recipients.cc.length - 1;
-    const briefOf = (target: string) =>
-      [
+    // The ask and the promise name the topic, so a long topic label and a long display name are given up
+    // one after the other when the brief is over the limit.
+    const render = (labelMax: number, target: string) => {
+      const label = shortLabel(topic.label, labelMax);
+      const ask = askTemplate === undefined ? null : cut(askTemplate(label), 80);
+      const promise = promiseTemplate === undefined ? null : cut(promiseTemplate(label), 80);
+      const brief = [
         `To ${target}${others > 0 ? ` and ${others} more` : ""}, about ${label}.`,
         ask === null ? "No ask." : `Ask: ${ask}${stated}.`,
         promise === null || promiseDue === null ? "" : `Firm promise: ${promise} by ${dueText(promiseDue)}.`,
@@ -302,10 +302,16 @@ function buildPart(env: Env, part: SentPart, plans: readonly Plan[]): SentSlot[]
       ]
         .filter((part) => part !== "")
         .join(" ");
-    // A long display name is the first thing to give up when the brief is over the limit.
-    let brief = briefOf(cut(firstTo.displayName, 30));
-    if (brief.length > BRIEF_MAX) brief = briefOf(firstTo.key);
-    if (brief.length > BRIEF_MAX) throw new Error(`the brief of ${plan.id} has ${brief.length} characters`);
+      return { ask, promise, brief };
+    };
+    const attempts: [number, string][] = [
+      [24, cut(firstTo.displayName, 30)],
+      [24, firstTo.key],
+      [14, firstTo.key],
+    ];
+    const fit = attempts.map(([max, target]) => render(max, target)).find((r) => r.brief.length <= BRIEF_MAX);
+    if (fit === undefined) throw new Error(`the brief of ${plan.id} is over ${BRIEF_MAX} characters`);
+    const { ask, promise, brief } = fit;
 
     return {
       id: plan.id,

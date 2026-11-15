@@ -140,9 +140,15 @@ describe("planSentBank", () => {
     for (const tag of ["question_in_forward", "injection_quote"]) {
       for (const slot of withTag(holdout, tag)) expect(slot.quoted).toBe(true);
     }
+    // The brief names the topic of the mail ("about <label>."); the thread subject starts with it, except for this tag.
+    const topicOf = (slot: SentSlot) => slot.brief.match(/, about (.+?)\. /)?.[1] as string;
     for (const slot of withTag(holdout, "other_thread_subject")) {
       expect(slot.brief).toContain("The thread is about");
+      expect(slot.thread[0]?.subject.startsWith(topicOf(slot))).toBe(false);
     }
+    const plain = holdout.filter((s) => s.thread.length > 0 && !s.hardCases.includes("other_thread_subject"));
+    expect(plain.length).toBeGreaterThan(30);
+    for (const slot of plain) expect(slot.thread[0]?.subject.startsWith(topicOf(slot))).toBe(true);
     for (const slot of withTag(holdout, "fyi_team")) expect(slot.to.length).toBeGreaterThanOrEqual(2);
   });
 
