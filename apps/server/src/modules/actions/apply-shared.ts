@@ -5,7 +5,7 @@ import type { Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import type { AuthErrorReason, MailAuthError, MailProvider, MailSender } from "../mail";
 
-import type { DelegationHooks } from "./hooks";
+import { noLoopHooks, type DelegationHooks, type LoopHooks } from "./hooks";
 import type { ClaimedAction } from "./repo";
 import type { SendLimitHit } from "./send-limit";
 
@@ -23,7 +23,8 @@ export type ApplyOutcome =
         | "outcome_unknown";
     }
   // An `applying` draft whose send ended before the APPEND (N12).
-  | { kind: "expired"; reason: "send_closed" }
+  // `loop_closed`: the loop of a follow-up closed before the APPEND (the draft) or before the SMTP call (the send).
+  | { kind: "expired"; reason: "send_closed" | "loop_closed" }
   | { kind: "retry"; soft: boolean }
   | { kind: "auth_error"; reason?: AuthErrorReason }
   | { kind: "lost" };
@@ -52,6 +53,8 @@ export interface ApplyDeps {
   compose(message: OutgoingMessage): Promise<Buffer>;
   sender: MailSender | null;
   hooks: DelegationHooks;
+  /** Open loops: reads the loop of a follow-up and writes its counters. Absent: `noLoopHooks` (a loop is never open). */
+  loopHooks?: LoopHooks;
   /** Paths of the mailbox's `sort` rows (enabled or not): a move into one of them is an APPEND transfer (Interia re-sorts a COPY, F12). */
   appendFolders: ReadonlySet<string>;
   /** Test hook: runs after the IMAP change, before the DB transaction. */
@@ -105,3 +108,6 @@ export const needsImap = (handler: ApplyHandler): handler is ImapHandler => hand
 export function authErrorOutcome(error: MailAuthError): { kind: "auth_error"; reason?: AuthErrorReason } {
   return error.reason === undefined ? { kind: "auth_error" } : { kind: "auth_error", reason: error.reason };
 }
+
+/** The loop hooks of a run: the wired ones, or `noLoopHooks`. */
+export const loopHooksOf = (deps: Pick<ApplyDeps, "loopHooks">): LoopHooks => deps.loopHooks ?? noLoopHooks;

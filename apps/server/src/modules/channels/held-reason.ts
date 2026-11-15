@@ -21,7 +21,10 @@ export async function heldReason(
   const send = await getSend(deps.db, ctx, sendId);
   const mailbox = send === undefined ? undefined : await getMailbox(deps.db, ctx, send.email.mailbox_id);
   if (send === undefined || mailbox === undefined) return "scope";
-  const to = Array.isArray(send.payload.to) ? send.payload.to.filter((item) => typeof item === "string") : [];
+  const listOf = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  // The scope filter covers To and Cc (a follow-up has a Cc).
+  const to = [...listOf(send.payload.to), ...listOf(send.payload.cc)];
   switch (mailboxStatusSchema.parse(mailbox.status)) {
     case "paused":
       return "paused";

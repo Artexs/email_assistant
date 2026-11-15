@@ -107,7 +107,8 @@ export const auditEvents = {
 } as const;
 
 export interface AuditEvent {
-  emailId?: string;
+  // null: the row of an action of a loop (a follow-up) has no mail.
+  emailId?: string | null;
   actionId?: string;
   actor: "system" | string;
   event: string;

@@ -198,6 +198,26 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     callers: ["drafts.ts"],
   },
   {
+    id: "E21",
+    from: "approved",
+    to: "expired",
+    types: ["send"],
+    writer: "finishAction",
+    // The loop of a follow-up closed after the tap and before the SMTP call: the claimed send ends here (open loops stage 10).
+    reasons: ["loop_closed"],
+    callers: ["send.ts"],
+  },
+  {
+    id: "E22",
+    from: "ready",
+    to: "expired",
+    types: ["create_draft"],
+    writer: "finishAction",
+    // The claimed draft of a follow-up whose loop closed before the APPEND.
+    reasons: ["send_closed"],
+    callers: ["drafts.ts"],
+  },
+  {
     id: "E9",
     from: "ready",
     to: "ready",
@@ -488,8 +508,8 @@ export const LATENT_EDGES: readonly LatentEdge[] = [
     writer: "finishAction",
     from: "ready",
     to: "expired",
-    types: [...MAILBOX, "save_summary", "create_draft"],
-    why: "L3/L8: `send_closed` is for an `applying` draft; an original draft is never `ready` at the end of a flow",
+    types: [...MAILBOX, "save_summary"],
+    why: "L3/L8: `send_closed` is for a draft only (E8, E22)",
   },
   {
     writer: "finishAction",
@@ -523,13 +543,6 @@ export const LATENT_EDGES: readonly LatentEdge[] = [
     writer: "finishAction",
     from: "approved",
     to: "applied",
-    types: ["send"],
-    why: "L5: the only caller with `from: [approved]` passes `failed`",
-  },
-  {
-    writer: "finishAction",
-    from: "approved",
-    to: "expired",
     types: ["send"],
     why: "L5: the only caller with `from: [approved]` passes `failed`",
   },

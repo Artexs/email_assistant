@@ -33,7 +33,7 @@ export function sendFilterFor(scope: SendScope): SendClaimFilter {
   return { kind: "all" };
 }
 
-// Pure. Does the send filter let a send to these recipients through? `self` needs every recipient in the list.
+// Pure. Does the send filter let a send to these recipients (To and Cc together) through? `self` needs every recipient in the list.
 export function sendScopeAdmits(filter: SendClaimFilter, to: readonly string[]): boolean {
   if (filter.kind === "all") return true;
   if (filter.kind === "none") return false;

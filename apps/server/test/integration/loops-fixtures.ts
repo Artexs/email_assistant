@@ -113,6 +113,8 @@ export async function insertLoopActionPair(
     notifiedAt?: Date | null;
     payloadMarker?: string;
     setId?: string;
+    // Real payloads (a follow-up that the committer builds): replace the placeholders.
+    payloads?: { draft: object; send: object };
     send?: Partial<Insertable<DB["actions"]>>;
   } = {}
 ): Promise<{ draftId: string; sendId: string }> {
@@ -131,7 +133,7 @@ export async function insertLoopActionPair(
       loop_id: loopId,
       type: "create_draft",
       status: opts.draftStatus ?? "ready",
-      payload,
+      payload: opts.payloads === undefined ? payload : JSON.stringify(opts.payloads.draft),
       idempotency_key: `test:${randomUUID()}`,
       created_at: createdAt,
       applied_at: appliedAtOf(opts.draftStatus, createdAt),
@@ -146,7 +148,7 @@ export async function insertLoopActionPair(
       loop_id: loopId,
       type: "send",
       status: opts.sendStatus ?? "awaiting_approval",
-      payload: sendPayload,
+      payload: opts.payloads === undefined ? sendPayload : JSON.stringify(opts.payloads.send),
       idempotency_key: `test:${randomUUID()}`,
       depends_on_action_id: draft.id,
       notified_at: opts.notifiedAt ?? null,

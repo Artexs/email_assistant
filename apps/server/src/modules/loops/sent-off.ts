@@ -1,8 +1,10 @@
 import type { Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../platform/db";
+import { expireSend, noDelegationHooks } from "../actions";
+import { mailboxHasUidplus } from "../mail";
 
-import { closeLoop } from "./repo";
+import { closeLoop, SYSTEM } from "./repo";
 import { clearedTexts } from "./retention";
 
 // The hook of `setSentSync` (`SentSwitchHooks.onDisabled`). Turning off "Track my sent mail" closes every open loop of
@@ -35,5 +37,40 @@ export async function onSentOff(
       .where("id", "in", closed)
       .execute();
   }
+  await expireWaitingFollowUps(trx, ctx, mailboxId, at);
   return closed.length;
+}
+
+// Every follow-up send of the mailbox that has not started. The loops are locked before (D15). A send that the committer
+// holds (`applying`, or `approved` with a fresh claim) finishes: `expireSend` refuses it.
+async function expireWaitingFollowUps(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  at: Date
+): Promise<void> {
+  const sends = await trx
+    .selectFrom("actions")
+    .innerJoin("open_loops", (join) =>
+      join.onRef("open_loops.id", "=", "actions.loop_id").onRef("open_loops.org_id", "=", "actions.org_id")
+    )
+    .select("actions.id")
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("open_loops.org_id", "=", ctx.orgId)
+    .where("open_loops.mailbox_id", "=", mailboxId)
+    .where("actions.type", "=", "send")
+    .where("actions.status", "in", ["awaiting_approval", "approved"])
+    .orderBy("actions.id")
+    .execute();
+  if (sends.length === 0) return;
+  const uidplus = await mailboxHasUidplus(trx, ctx, mailboxId);
+  for (const { id } of sends) {
+    await expireSend(trx, ctx, id, {
+      reason: "loop_closed",
+      now: at,
+      actor: SYSTEM,
+      hooks: noDelegationHooks,
+      uidplus,
+    });
+  }
 }

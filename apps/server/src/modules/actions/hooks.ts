@@ -1,6 +1,6 @@
 import type { Transaction } from "kysely";
 
-import type { DB, TenantContext } from "../../platform/db";
+import type { DB, Db, TenantContext } from "../../platform/db";
 
 // D29: the `actions` module must not import `delegation` (a cycle). The committer, the approvals and the expiry job
 // update the delegation through these callbacks; `main.ts` wires them from the `delegation` index.
@@ -78,3 +78,42 @@ export interface ApprovalHooks {
 }
 
 export const noApprovalHooks: ApprovalHooks = { onDecided: () => Promise.resolve() };
+
+// Open loops (F116): `actions` must not import `loops` (layer rule). A follow-up hangs on a loop; the committer reads the
+// loop and writes its counters through these callbacks. `main.ts` and `job:run` wire `loopHooks()` from the `loops` index.
+// Lock order (D15): the loop first, then its sends. `isOpen` takes the loop lock, so a caller that must hold it calls it first.
+export interface LoopAnchor {
+  mailboxId: string;
+  // The Message-ID of the own mail that the loop waits on (the last one that restarted the wait): the In-Reply-To.
+  messageId: string | null;
+  referencesIds: string[];
+  subject: string | null;
+  to: string[];
+  cc: string[];
+  language: "pl" | "en";
+  // The text of the opening own mail while it is stored; null after retention (the follow-up has no quote then).
+  quote: string | null;
+  // When the opening own mail was sent.
+  sentAt: Date;
+}
+
+export interface LoopHooks {
+  // undefined: no such loop in this organization.
+  anchorOf(db: Db | Transaction<DB>, ctx: TenantContext, loopId: string): Promise<LoopAnchor | undefined>;
+  // Locks the loop row (FOR UPDATE) and says whether it is still open. A closed or missing loop: false.
+  isOpen(trx: Transaction<DB>, ctx: TenantContext, loopId: string): Promise<boolean>;
+  // A follow-up went out. Adds one to `follow_ups_sent`, sets `last_follow_up_at` and restarts the wait (D9). Runs in the
+  // transaction of the send, after `isOpen` took the lock.
+  onFollowUpSent(
+    trx: Transaction<DB>,
+    ctx: TenantContext,
+    input: { loopId: string; sendId: string; messageId: string; at: Date }
+  ): Promise<void>;
+}
+
+// For the callers that never touch a loop (the tests of the older stages). A loop is never open: nothing goes out.
+export const noLoopHooks: LoopHooks = {
+  anchorOf: async () => undefined,
+  isOpen: async () => false,
+  onFollowUpSent: async () => undefined,
+};

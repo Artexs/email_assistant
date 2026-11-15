@@ -47,8 +47,9 @@ export type FinishNext =
       // S4: a send failure stores { stage, response_code, code } for the result notice (D20).
       providerResult?: ProviderResult;
     }
-  // S4: an `applying` draft whose send ended before the APPEND (N12).
-  | { status: "expired"; at: Date; reason: "send_closed" };
+  // S4: an `applying` draft whose send ended before the APPEND (N12). `loop_closed`: the claimed `approved` send of a
+  // follow-up whose loop closed before the SMTP call (open loops stage 10).
+  | { status: "expired"; at: Date; reason: "send_closed" | "loop_closed" };
 // `lockedAt` is the claim token: a stale run that lost its claim changes nothing.
 // `next.at` is the run clock: it sets `updated_at` (and `applied_at`). `from` lists the statuses that may finish.
 // `countAttempt` on a failure counts the try that failed (the third hard error leaves `attempts` = 3).

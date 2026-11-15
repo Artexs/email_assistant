@@ -14,8 +14,8 @@ import {
   insertReverse,
   listExpiredApprovals,
   listOpenReminderSends,
+  lockAnySend,
   lockDraft,
-  lockSend,
   setExpired,
 } from "./repo";
 
@@ -28,10 +28,12 @@ export type SendCloseReason =
   | "not_seen"
   | "held_timeout"
   | "policy_changed"
-  | "delegation_closed";
+  | "delegation_closed"
+  // The loop of a follow-up closed (a reply, Done, Drop, the switch off): the follow-up must not go out.
+  | "loop_closed";
 
 // An `approved` send closes only for these reasons; a tap was given, so a plain timeout of the request does not apply (D22).
-const CLOSES_APPROVED: readonly SendCloseReason[] = ["held_timeout", "delegation_closed"];
+const CLOSES_APPROVED: readonly SendCloseReason[] = ["held_timeout", "delegation_closed", "loop_closed"];
 
 // D22: the cascade for one send. The caller holds the transaction.
 // false = the row was not in a closable state (a tap, a send or another close won).
@@ -42,7 +44,7 @@ export async function expireSend(
   sendId: string,
   opts: { reason: SendCloseReason; now: Date; actor: string; hooks: DelegationHooks; uidplus: boolean }
 ): Promise<boolean> {
-  const send = await lockSend(trx, ctx, sendId);
+  const send = await lockAnySend(trx, ctx, sendId);
   if (send === undefined) return false;
   const staleBefore = new Date(opts.now.getTime() - STALE_AFTER_MS);
   if (send.status === "approved") {
@@ -119,6 +121,7 @@ export async function closeDraftOfSend(
     await insertReverse(trx, ctx, {
       id: draftId,
       emailId: draft.email_id,
+      loopId: draft.loop_id,
       type: "create_draft",
       payload: { kind, folder, uid: typeof uid === "number" ? uid : null, reason: opts.reason },
     });

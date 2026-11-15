@@ -15,7 +15,7 @@ import {
 } from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
-import { onSentOff } from "./modules/loops";
+import { loopHooks, onSentOff } from "./modules/loops";
 import {
   composeMessage,
   createMailOAuthClients,
@@ -104,6 +104,8 @@ export function committerDeps(input: {
     oauthTokens: input.oauthTokens,
     compose: composeMessage,
     hooks: delegationHooks({ db: input.db }),
+    // A follow-up reads and updates its loop through these (open loops stage 10).
+    loopHooks: loopHooks(),
     scope: input.scope,
     sendScope: input.sendScope,
     sendLimits: input.sendLimits,

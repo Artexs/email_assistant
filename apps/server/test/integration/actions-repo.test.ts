@@ -279,7 +279,7 @@ describe("claimActions", () => {
         messageId: "<real-1@example.com>",
         actions: [ready("flag"), ready("save_summary")],
       });
-      const summed = (rows: { email_id: string; type: string }[]) =>
+      const summed = (rows: { email_id: string | null; type: string }[]) =>
         rows.map((row) => `${row.email_id === synthetic.emailId ? "syn" : "real"}:${row.type}`).sort();
 
       expect(summed(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "none" })))).toEqual([
@@ -723,7 +723,7 @@ describe("listActionsForEmails (grown view)", () => {
 
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
 
-      expect(claimed.map((action) => action.email.source_folder)).toEqual(["Oferty"]);
+      expect(claimed.map((action) => action.email?.source_folder)).toEqual(["Oferty"]);
     });
   });
 
@@ -1398,7 +1398,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         references_header: "<r1@x.test> <in@x.test>",
         to_addresses: ["me@x.test", "you@x.test"],
       });
-      expect(typeof send?.email.thread_key).toBe("string");
+      expect(typeof send?.email?.thread_key).toBe("string");
     });
   });
 

@@ -31,7 +31,7 @@ import { getOrganization, isOrgSuspended, listMemberships } from "../tenancy";
 import { APPLY_HANDLERS, applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
 import type { ApplyNeeds } from "./apply-shared";
 import { STALE_AFTER_MS } from "./constants";
-import { noDelegationHooks, type DelegationHooks } from "./hooks";
+import { noDelegationHooks, noLoopHooks, type DelegationHooks, type LoopHooks } from "./hooks";
 import {
   claimActions,
   countClaimable,
@@ -63,6 +63,8 @@ export interface CommitterDeps {
   batchSize?: number;
   // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).
   hooks?: DelegationHooks;
+  // Open loops (F116): reads the loop of a follow-up and writes its counters. `main.ts` and `job:run` wire it; absent = no loop is open.
+  loopHooks?: LoopHooks;
   compose?(message: OutgoingMessage): Promise<Buffer>;
   // PD-044: absent = `DEFAULT_SEND_LIMITS` and no callback (the older tests). `main.ts` wires them (stage 04).
   sendLimits?: ApplyDeps["sendLimits"];
@@ -291,6 +293,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       compose: deps.compose ?? composeMessage,
       sender,
       hooks: deps.hooks ?? noDelegationHooks,
+      loopHooks: deps.loopHooks ?? noLoopHooks,
       appendFolders,
       ...(deps.sleep === undefined ? {} : { sleep: deps.sleep }),
       ...(deps.sendLimits === undefined ? {} : { sendLimits: deps.sendLimits }),
