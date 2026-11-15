@@ -1,0 +1,59 @@
+---
+title: Categories
+description: Look up each mail category, what it means for you and what assist mode does with it.
+capabilities:
+  - triage
+  - actions-and-undo
+---
+
+import UiText from "../../../components/UiText.astro";
+
+The system gives each mail one category. This page lists the categories in the order of the system.
+For the reasons behind them, read [How a mail is sorted](../../explanation/how-a-mail-is-sorted/).
+
+## The categories
+
+The column "Telegram" shows the name that the digest uses. The last column describes assist mode.
+In shadow mode the system changes nothing in your mailbox, whatever the category. It only reports what it would do.
+
+| Category       | Telegram     | Meaning for you                                                                                        | In assist mode                                                                                                                                                                                          |
+| -------------- | ------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `urgent`       | Urgent       | The mail needs you today.                                                                              | Flags the mail when the switch **<UiText k="switch_flag" />** is on. The mail stays in INBOX. Telegram sends an urgent notice.                                                                          |
+| `needs_reply`  | Reply        | You must answer yourself. Meeting requests also come here.                                             | Changes nothing. The mail stays in INBOX. The digest lists it under `NEEDS ACTION`.                                                                                                                     |
+| `delegation`   | Delegate     | A task that one of your delegates can do. The system uses this category only when you have a delegate. | Writes a draft to the delegate when the switch **<UiText k="switch_create_draft" />** is on. The send waits for your tap. If no delegate fits but the mail needs a question, the draft asks the sender. |
+| `info`         | Info         | Information. No action is needed.                                                                      | Saves a short summary. Moves the mail to `AI/Info` when the switch **<UiText k="switch_move" />** is on and auto is on for Info.                                                                        |
+| `notification` | Notification | Automatic mail from a system.                                                                          | Marks the mail as read and moves it to `AI/Notifications`. Each step needs its own switch and auto for Notifications.                                                                                   |
+| `spam`         | Spam         | Unwanted mail.                                                                                         | Moves the mail to `AI/Spam`. It needs the switch **<UiText k="switch_move" />** and auto for Spam.                                                                                                      |
+| `unsure`       | Unsure       | The system cannot sort the mail with enough confidence.                                                | Changes nothing. The mail stays in INBOX. The digest lists it under `NEEDS ACTION`. It moves to `AI/Manual` only when the switch **<UiText k="switch_move_unsure" />** is on.                           |
+
+## The rules that hold for all categories
+
+- A VIP sender never gets a move or a mark as read. A VIP mail can still get a flag.
+- A sender on your whitelist never gets the category `spam`.
+- A sender on your blocklist always gets the category `spam`, unless the sender is also on your whitelist.
+- A move needs a mail server that supports moves. If it does not, the system only logs the move.
+- Auto exists for five categories: Urgent, Needs reply, Info, Notifications and Spam. A category needs auto before the system moves its mail. See [Settings](../settings/).
+- Auto does not move urgent mail or mail that needs a reply out of INBOX. These categories only get a flag or stay in INBOX.
+- Delegation mail and unsure mail have no auto. The switches decide.
+- A draft for a delegation or a question never goes out by itself. Read [The assistant never sends alone](../../explanation/never-sends-alone/).
+
+## The unsure rule
+
+The system sets `unsure` in three cases:
+
+- The confidence of the AI is below the limit of the category. The start limit is 0.7 for each category.
+- The AI failed three times to sort the mail.
+- The AI refused to read the mail for a safety reason.
+
+The AI never picks `unsure` by itself. The system sets it after the AI answers.
+A digest line of an unsure mail has only the button `✏️ n`. The button `✅ n` is missing, because "right" has no meaning for `unsure`.
+
+## Mail in the junk folder
+
+The system also reads the junk folder, to find good mail that landed there by mistake.
+
+- Spam stays in the junk folder.
+- Urgent mail and mail that needs a reply move back to INBOX when auto is on for the category and the switch **<UiText k="switch_move" />** is on.
+- Delegation mail gets no draft and no approval request.
+- Info and notification mail follow the table above.
+- The system sends no urgent notice for mail from the junk folder. The digest still lists it.

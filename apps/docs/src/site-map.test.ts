@@ -36,11 +36,18 @@ function sourcePageIds(
 // Each content stage adds its ids here (stage 07: the tutorial and the FAQ).
 const EXPECTED_PAGE_IDS = [
   "changelog",
+  "explanation/how-a-mail-is-sorted",
+  "explanation/never-sends-alone",
+  "explanation/shadow-and-assist",
   "faq",
   "index",
   "operate/install-and-run",
   "operate/release-checklist",
   "pl/index",
+  "reference/categories",
+  "reference/limits",
+  "reference/settings",
+  "reference/telegram",
   "start",
 ];
 
@@ -57,7 +64,17 @@ describe("site map", () => {
     const userPages = EXPECTED_PAGE_IDS.filter(
       (id) => id !== "index" && id !== "changelog" && !id.startsWith("pl/") && !id.startsWith("operate/")
     );
-    expect(userPages).toEqual(["faq", "start"]);
+    expect(userPages).toEqual([
+      "explanation/how-a-mail-is-sorted",
+      "explanation/never-sends-alone",
+      "explanation/shadow-and-assist",
+      "faq",
+      "reference/categories",
+      "reference/limits",
+      "reference/settings",
+      "reference/telegram",
+      "start",
+    ]);
     for (const id of userPages)
       expect({ id, listed: config.includes(`{ slug: "${id}" }`) }).toEqual({ id, listed: true });
   });
