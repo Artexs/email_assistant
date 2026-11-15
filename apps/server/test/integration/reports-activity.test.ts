@@ -13,6 +13,7 @@ import {
   type ActivityCursor,
   type ActivityQuery,
 } from "../../src/modules/reports";
+import { setOrgFeature } from "../../src/modules/tenancy";
 import { insertFeedback } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -370,6 +371,8 @@ describe("listActivity", () => {
         });
       }
 
+      // The flag on is the longest path: the flag read and the reasons query.
+      await setOrgFeature(trx, ctxA, { flag: "suspicious_mail", enabled: true, actor: "cli", now: NOW });
       await addTriple(0);
       const small = countingPlugin();
       const page3 = await listActivity(
@@ -380,7 +383,7 @@ describe("listActivity", () => {
         textsFor("en")
       );
       expect(page3.items).toHaveLength(3);
-      expect(small.counter.count).toBeLessThanOrEqual(7);
+      expect(small.counter.count).toBeLessThanOrEqual(9);
 
       for (let n = 1; n < 20; n += 1) await addTriple(n);
       const large = countingPlugin();
@@ -403,6 +406,48 @@ describe("listActivity", () => {
       const page = await listActivity(trx.withPlugin(plugin), ctxA, query, NOW, textsFor("en"));
       expect(page).toEqual({ items: [], nextBefore: null });
       expect(counter.count).toBe(1);
+    });
+  });
+});
+
+describe("listActivity: suspicious", () => {
+  test("the codes of the newest result with the flag on, [] with it off, nothing of another organization", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, ctxA, ctxB } = await setup(trx);
+      const flagged = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        suspiciousReasons: ["lookalike_domain", "link_mismatch"],
+      });
+      const clean = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(2 * HOUR),
+        receivedAt: ago(2 * HOUR),
+      });
+      // B holds a flagged mail; A holds none besides its own.
+      await insertTriaged(trx, ctxB, b.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        suspiciousReasons: ["auth_fail"],
+      });
+      const byId = async (ctx: TenantContext) =>
+        new Map((await listActivity(trx, ctx, query, NOW, textsFor("en"))).items.map((i) => [i.emailId, i.suspicious]));
+
+      const off = await byId(ctxA);
+      expect(off.get(flagged)).toEqual([]);
+      expect(off.get(clean)).toEqual([]);
+
+      await setOrgFeature(trx, ctxA, { flag: "suspicious_mail", enabled: true, actor: "cli", now: NOW });
+      const on = await byId(ctxA);
+      expect(on.get(flagged)).toEqual(["lookalike_domain", "link_mismatch"]);
+      expect(on.get(clean)).toEqual([]);
+      expect(on.size).toBe(2);
+
+      // The flag is per organization: B has it off.
+      const forB = [...(await byId(ctxB)).values()];
+      expect(forB).toEqual([[]]);
+      await setOrgFeature(trx, ctxB, { flag: "suspicious_mail", enabled: true, actor: "cli", now: NOW });
+      expect([...(await byId(ctxB)).values()]).toEqual([["auth_fail"]]);
     });
   });
 });

@@ -2,7 +2,7 @@ import { type TenantContext } from "../../../platform/db";
 import { listActionsForEmails } from "../../actions";
 import { listDelegateNames } from "../../delegation";
 import { getJunkFolderPath, INBOX, isSyntheticMessageId } from "../../mail";
-import { listTriagedBetween } from "../../triage";
+import { listTriagedBetween, suspiciousReasonsToShow } from "../../triage";
 import { type LinkedChat } from "../port";
 
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
@@ -46,6 +46,11 @@ async function detectUrgent(
     rows.map((row) => row.email_id),
     now
   );
+  const suspicious = await suspiciousReasonsToShow(
+    db,
+    ctx,
+    rows.map((row) => row.email_id)
+  );
   const delegateIds = new Set<string>();
   for (const list of actions.values()) {
     for (const action of list) {
@@ -68,6 +73,7 @@ async function detectUrgent(
             delegateId,
           })
         );
+        const flagged = suspicious.get(row.email_id) ?? [];
         const delegateNames = Object.fromEntries(
           rowActions.flatMap(({ delegateId }) => {
             const name = delegateId === null ? undefined : names.get(delegateId);
@@ -94,6 +100,8 @@ async function detectUrgent(
               actions: rowActions,
               delegateNames,
               stayFolder: row.folder,
+              // Only a flagged mail gets the field: a view without it also renders in the code before F109 (rollback).
+              ...(flagged.length > 0 ? { suspicious: flagged } : {}),
               now,
               timeZone,
             },

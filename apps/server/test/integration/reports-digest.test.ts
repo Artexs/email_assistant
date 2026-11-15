@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
+import type { Transaction } from "kysely";
 
 import { createPlanned } from "../../src/modules/actions";
 import { auditEvents, recordAudit, recordLlmCall } from "../../src/modules/audit";
@@ -14,6 +15,7 @@ import {
   markDigestSent,
 } from "../../src/modules/reports";
 import { setOrgFeature } from "../../src/modules/tenancy";
+import type { DB } from "../../src/platform/db";
 
 import {
   createOrgWithMailbox,
@@ -485,6 +487,80 @@ describe("buildDigestMessage with the handled share", () => {
       await setOrgFeature(trx, orgA.ctx, { flag: "handled_share", enabled: true, actor: "cli", now: request.now });
       const on = await buildDigestMessage(trx, orgA.ctx, request);
       expect(on.text).toContain("🤖 Handled in the last 7 days:");
+    });
+  });
+});
+
+describe("buildDigestMessage: suspicious mail", () => {
+  const request = {
+    kind: "scheduled" as const,
+    periodStart: at(-15 * HOUR),
+    periodEnd: T,
+    slot: { date: "2026-11-06", time: "08:00", late: false },
+    now: T,
+    locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
+  };
+
+  async function seed(trx: Transaction<DB>) {
+    const a = await createOrgWithMailbox(trx);
+    const b = await createOrgWithMailbox(trx);
+    const ctx = { orgId: a.orgId };
+    await insertDefaultSettings(trx, ctx, a.mailboxId);
+    const draft = async (
+      orgCtx: { orgId: string },
+      mailboxId: string,
+      subject: string,
+      reasons: string[],
+      withDraft = true
+    ) => {
+      const emailId = await insertTriaged(trx, orgCtx, mailboxId, {
+        category: "delegation",
+        createdAt: at(-2 * HOUR),
+        subject,
+        suspiciousReasons: reasons,
+      });
+      if (withDraft) {
+        await createPlanned(trx, orgCtx, emailId, [
+          {
+            type: "create_draft",
+            status: "logged",
+            idempotencyKey: `draft:${emailId}`,
+            payload: { kind: "delegation" },
+          },
+        ]);
+      }
+      return emailId;
+    };
+    // A flagged mail that got no plan (stage 03), and one that was drafted before the flag went on (it keeps its would-do line).
+    await draft(ctx, a.mailboxId, "SUBJECT-A", ["link_mismatch"], false);
+    await draft(ctx, a.mailboxId, "SUBJECT-DRAFTED", ["risky_attachment"]);
+    // Organization B has a flagged mail too: it never shows in the digest of A.
+    await draft({ orgId: b.orgId }, b.mailboxId, "SUBJECT-B", ["auth_fail"]);
+    return { ctx, ctxB: { orgId: b.orgId } };
+  }
+
+  test("flag on: the warning line and the no-draft line; flag off: the digest of today", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, ctxB } = await seed(trx);
+      const off = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(off).not.toContain("Suspicious");
+      expect(off).not.toContain("no draft");
+      expect(off).toContain("SUBJECT-DRAFTED\n→ would draft a delegation");
+
+      await setOrgFeature(trx, ctx, { flag: "suspicious_mail", enabled: true, actor: "cli", now: T });
+      const on = (await buildDigestMessage(trx, ctx, request)).text;
+      expect(on).toContain("SUBJECT-A");
+      expect(on).toContain("⚠ Suspicious: link goes elsewhere\n→ no draft: suspicious mail");
+      expect(on).not.toContain("SUBJECT-B");
+      expect(on).toContain("⚠ Suspicious: risky attachment\n→ would draft a delegation");
+      expect(on.match(/no draft/g)).toHaveLength(1);
+      expect(on).not.toContain("sender check failed");
+
+      // The flag is per organization: B has it off, so its digest has no warning.
+      const forB = (await buildDigestMessage(trx, ctxB, request)).text;
+      expect(forB).toContain("SUBJECT-B");
+      expect(forB).not.toContain("Suspicious");
     });
   });
 });
