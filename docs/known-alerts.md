@@ -175,12 +175,13 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none. The next tick has no mailbox and is clean. Investigate only when the line repeats with no removal.
 - **Status:** won't fix (expected)
 
-### `outbox <id>: lost the claim after the send`
+### `outbox_claim_lost` (field `outbox_id`)
 
 - **First seen:** 2026-11-11 (S5b)
-- **Source:** `apps/server/src/modules/channels/sender.ts`. Warning.
+- **Source:** `apps/server/src/modules/channels/sender.ts`. Level `warn`, field `outbox_id` (the row id).
 - **Cause:** right after a mailbox removal, `delete_mailbox` deleted a `sending` digest row that the sender already held. The digest went out, but the sender could not mark it. The unsent `digests` row stays, so the next digest repeats that period (B7, cold review finding 26).
-- **Fix:** none. One repeated period is accepted. Investigate only when the line shows with no removal.
+- **Cause (other):** the message was sent, but the row was no longer `sending` with the same lock when the sender marked it `sent`. Another run reclaimed the row (stale claim) or the row was deleted (cascade). A duplicate message is possible (delivery is at least once).
+- **Fix:** none. One repeated period is accepted. Investigate only when the line shows with no removal. Check the outbox row and the other lines with the same `outbox_id`.
 - **Status:** won't fix (expected)
 
 ### `sync <mailbox id> folder <key>: failed 3 runs in a row`
@@ -255,10 +256,10 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/invite-delivery.ts`, `scripts/e2e-seed.ts`).
 - **Status:** investigating
 
-### `operator notice auth_mail_failed`
+### `operator_notice_unsent`, `operator_notice_send_failed` and `operator_notice_failed` (field `kind=auth_mail_failed`)
 
 - **First seen:** 2026-11-13 (S6b code; not seen live)
-- **Source:** `apps/server/src/modules/channels/operator.ts` (`authMailFailed`). The operator chat gets `Auth mail <kind> to user <id> of org <id> failed (<code>).` One notice per user, code and day. The same failure is a `warn` line `auth mail <kind> to user <id> failed: <code>` from `platform/auth-mail.ts`.
+- **Source:** `apps/server/src/modules/channels/operator.ts` (`authMailFailed`). The operator chat gets `Auth mail <kind> to user <id> of org <id> failed (<code>).` One notice per user, code and day. With no operator chat the notice is not sent: the log gets `operator_notice_unsent` (level `warn`, field `kind`; never the text) and the audit row `operator.notice` keeps the notice. A failed audit write or lookup gives `operator_notice_failed` (level `error`, fields `kind`, `error`). A failed send gives `operator_notice_send_failed` (level `error`, fields `kind`, `error`, `error_code`, `method`; never the Telegram description). The same failure is a `warn` line `auth mail <kind> to user <id> failed: <code>` from `platform/auth-mail.ts`.
 - **Cause:** The auth-mail sender could not send an invite, reset or lock mail. `<code>` is the nodemailer code (for example `EAUTH`, `ECONNECTION`), `TIMEOUT` or `UNKNOWN`.
 - **Fix:** Check the `AUTH_SMTP_*` and `AUTH_MAIL_FROM` keys and the provider (login, port 465 or 587, `AUTH_SMTP_SECURITY`). Make a new link by hand: `bun run web:invite --org-id <uuid> --user-id <uuid> --print`.
 - **Status:** open while the sender is off (the home VPS prints the links; no notice fires there)
@@ -654,15 +655,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Read the label. If it repeats, check the DB and the organization row.
 - **Status:** investigating
 
-### `outbox <id>: lost the claim after the send`
-
-- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
-- **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`).
-- **Cause:** The message was sent, but the row was no longer `sending` with the same lock when the sender marked it `sent`. Another run reclaimed the row (stale claim) or the row was deleted (cascade).
-- **Fix:** Check the outbox row `<id>` and the other log lines for the same id. A duplicate message is possible (delivery is at least once). No action if it is rare.
-- **Status:** won't fix (expected behaviour, rare)
-
-### `outbox <id>: sent again after a stale send (a duplicate is possible)`
+### `outbox_resent_after_stale` (field `outbox_id`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`).
@@ -670,15 +663,15 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action. If it repeats, look for crashes or DB errors around the first send of the row.
 - **Status:** won't fix (expected behaviour)
 
-### `outbox <id>: Telegram refused the message (<code>)`
+### `outbox_refused` (field `code`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
-- **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `error`). Code: `telegram_400`, `message_too_long` or `button_data_too_long`.
+- **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `error`, fields `outbox_id` and `code`). Code: `telegram_400`, `message_too_long` or `button_data_too_long`.
 - **Cause:** Telegram or the adapter guard refused the text or the buttons (400). The row becomes `failed` / `bad_request` and is never sent again.
 - **Fix:** Read the row (`text` length, `buttons`). A `message_too_long` or `button_data_too_long` code is a bug in the text builder: file it with the row id.
 - **Status:** investigating
 
-### `outbox <id>: the user blocked the bot (403)`
+### `outbox_bot_blocked` (field `outbox_id`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`).
@@ -686,18 +679,18 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Ask the member to unblock the bot and send `/start`. If the chat is gone, make a new link (`bun run telegram:link`).
 - **Status:** won't fix (expected behaviour)
 
-### `outbox <id>: <code>; sending paused for <s> s` (also `outbox <id>: rate limited; sending paused for <s> s`)
+### `outbox_paused` and `outbox_rate_limited` (fields `outbox_id`, `wait_ms`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
-- **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`). The text `outbox <id>: rate limited; sending paused for <s> s` is the 429 case (waits `retry_after`). The codes `telegram_network` and `telegram_500` (and other 5xx) are soft errors (backoff 30 s doubling to 15 min).
+- **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`). `outbox_rate_limited` is the 429 case (`wait_ms` is the `retry_after` wait). `outbox_paused` carries `code`: `telegram_network` and `telegram_500` (and other 5xx) are soft errors (backoff 30 s doubling to 15 min). `wait_ms` is milliseconds (the old text printed seconds).
 - **Cause:** Telegram limited the bot (429) or was not reachable (network error, HTTP 5xx). The sender pauses and tries the same rows later. After 5 other errors a row becomes `failed` / `too_many_errors`.
 - **Fix:** No action for short pauses. For a long one, check the network of the host and https://core.telegram.org reachability. Rows older than 24 hours become `failed` / `expired`.
 - **Status:** won't fix (expected behaviour)
 
-### `telegram token rejected (401): check TELEGRAM_BOT_TOKEN; sending paused for 10 min`
+### `outbox_token_rejected` (Telegram answered 401; the sender pauses for 10 min)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
-- **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `error`).
+- **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `error`, field `outbox_id`).
 - **Cause:** Telegram answered 401 to a send: the token in `.env` is wrong, revoked or from another bot. The sender pauses for 10 minutes and tries again.
 - **Fix:** Check the token with `bun run telegram:check`. Fix `TELEGRAM_BOT_TOKEN` in `.env` (the user edits it) and restart the server.
 - **Status:** fix pending (user action when it fires)

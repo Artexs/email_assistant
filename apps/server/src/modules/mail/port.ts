@@ -1,3 +1,5 @@
+// `MailProvider` has IMAP semantics (UIDs, flags, APPEND) by design. Another backend gets an adapter that maps its ids
+// to this shape, or a port v2 with its own ADR (architecture review §3.7).
 import { HardError } from "../../platform/errors";
 
 export const INBOX = "INBOX";
@@ -187,11 +189,27 @@ export type SentFolderReader = Pick<
   "folderStatus" | "fetchAbove" | "fetchContent" | "searchSinceIn" | "fetchByUidsIn"
 >;
 
-/** Login failure: the job sets the mailbox to `auth_error`. */
+/** What an adapter logs in with: a password, or an OAuth access token (XOAUTH2). The access token is never stored; only the refresh token is (ADR 0031). */
+export type AuthMaterial = { kind: "password"; password: string } | { kind: "oauth"; accessToken: string };
+
+/** Why an OAuth login was refused (ADR 0031). A password mailbox has no reason. */
+export type AuthErrorReason = "oauth_expired" | "oauth_revoked" | "admin_consent_required" | "protocol_disabled";
+
+/** Throws `HardError` (before any connection) when the password or the access token is empty. */
+export function assertAuthMaterial(auth: AuthMaterial): void {
+  const secret = auth.kind === "password" ? auth.password : auth.accessToken;
+  if (secret === "") throw new HardError(`empty ${auth.kind === "password" ? "password" : "access token"}`);
+}
+
+/** Login failure: the job sets the mailbox to `auth_error`. The message never holds a password or a token. */
 export class MailAuthError extends HardError {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options);
+  /** Why the OAuth login was refused; unset for a password mailbox. */
+  readonly reason?: AuthErrorReason;
+
+  constructor(message: string, options?: { cause?: unknown; reason?: AuthErrorReason }) {
+    super(message, options?.cause === undefined ? undefined : { cause: options.cause });
     this.name = "MailAuthError";
+    if (options?.reason !== undefined) this.reason = options.reason;
   }
 }
 

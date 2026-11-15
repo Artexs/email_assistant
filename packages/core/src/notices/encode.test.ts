@@ -62,6 +62,50 @@ describe("encodeNoticeView", () => {
     expect(() => encodeNoticeView("auth_error", { ...view, mailboxId } as never)).not.toThrow();
   });
 
+  describe("an approval view", () => {
+    const approval = (view: Record<string, unknown>) => ({
+      actionId: emailId,
+      view: {
+        kind: "delegation",
+        recipient: { name: null, address: "anna@example.test" },
+        sender: null,
+        recipientInactive: false,
+        subject: "S",
+        dueDate: null,
+        body: "B",
+        quote: null,
+        synthetic: false,
+        ...view,
+      },
+      now,
+      timeZone,
+    });
+
+    test("T5 a view without version and panelUrl encodes (rows of the last 24 h)", () => {
+      expect(() => encodeNoticeView("approval", approval({}) as never)).not.toThrow();
+    });
+
+    test("T5 version and an https or http panelUrl encode", () => {
+      const url = "https://ea.example.ts.net/approvals?id=7f1c0d1e-0000-4000-8000-000000000001";
+      expect(() => encodeNoticeView("approval", approval({ version: 2, panelUrl: url }) as never)).not.toThrow();
+      expect(() =>
+        encodeNoticeView("approval", approval({ panelUrl: "http://localhost:8081/approvals" }) as never)
+      ).not.toThrow();
+    });
+
+    test.each(["javascript:alert(1)", "ftp://example.test/x", "https://a b", `https://${"a".repeat(300)}`, ""])(
+      "T5 panelUrl %p fails the view schema",
+      (panelUrl) => {
+        expect(() => encodeNoticeView("approval", approval({ panelUrl }) as never)).toThrow(NoticeViewError);
+      }
+    );
+
+    test("T5 a version below 1 or not whole fails", () => {
+      expect(() => encodeNoticeView("approval", approval({ version: 0 }) as never)).toThrow(NoticeViewError);
+      expect(() => encodeNoticeView("approval", approval({ version: 1.5 }) as never)).toThrow(NoticeViewError);
+    });
+  });
+
   test("a view without facts encodes to an empty object", () => {
     expect(encodeNoticeView("mailbox_removed", {})).toEqual({});
   });

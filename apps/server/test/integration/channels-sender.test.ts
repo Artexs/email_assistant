@@ -4,7 +4,8 @@ import type { Transaction } from "kysely";
 import { ChannelError, createOutboxSender, insertOutbox, type OutboxKind } from "../../src/modules/channels";
 import { createFakeChannel } from "../../src/modules/channels/fake/channel";
 import { insertDigest } from "../../src/modules/reports";
-import type { DB, TenantContext } from "../../src/platform/db";
+import type { DB, Db, TenantContext } from "../../src/platform/db";
+import { setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import {
   addMember,
@@ -41,6 +42,7 @@ let logSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
 
 beforeEach(() => {
+  setLogFormat("json");
   logLines = [];
   errorLines = [];
   logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
@@ -54,10 +56,39 @@ beforeEach(() => {
 afterEach(() => {
   logSpy.mockRestore();
   errorSpy.mockRestore();
+  setLogFormat("text");
+  setLogLevel("info");
 });
 
 function allLines(): string[] {
   return [...logLines, ...errorLines];
+}
+
+const BASE_KEYS = ["time", "level", "module", "event", "msg"];
+const UUID_LOWER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+// A fake bot token: it passes the value rule of the logger, so only a correct field list keeps it out of a line.
+const CANARY = "123456:MARKER-TOKEN";
+
+interface LoggedEvent {
+  level: string;
+  fields: Record<string, unknown>;
+}
+
+// The `channels` event lines of one name: the level and the fields after the base keys. A dropped field shows as
+// `dropped_fields`, so an exact match on `fields` also proves that every value passed the logger.
+function eventsOf(event: string): LoggedEvent[] {
+  return allLines().flatMap((line) => {
+    const parsed = JSON.parse(line) as Record<string, unknown>;
+    if (parsed.module !== "channels" || parsed.event !== event) return [];
+    const fields = Object.fromEntries(Object.entries(parsed).filter(([key]) => !BASE_KEYS.includes(key)));
+    const outboxId = fields.outbox_id;
+    if (outboxId !== undefined) expect(outboxId).toMatch(UUID_LOWER);
+    return [{ level: String(parsed.level), fields }];
+  });
+}
+
+function expectEvent(event: string, level: string, fields: Record<string, unknown>): void {
+  expect(eventsOf(event)).toEqual([{ level, fields }]);
 }
 
 interface Tenant {
@@ -266,6 +297,8 @@ describe("outbox sender", () => {
         expect(row.attempts).toBe(0);
         expect(row.next_attempt_at.toISOString()).toBe(at(7 * SECOND).toISOString());
       }
+      // The fixed `now` makes the wait exact: the old text printed seconds, the event holds milliseconds.
+      expectEvent("outbox_rate_limited", "warn", { outbox_id: ids[0], wait_ms: 7000 });
       const due = await addRow(trx, t, { nextAttemptAt: at(1 * SECOND) });
       await s.run(at(1 * SECOND));
       expect(s.channel.sent).toHaveLength(0);
@@ -308,7 +341,7 @@ describe("outbox sender", () => {
       await s.run(at(5 * MINUTE));
       expect(s.channel.sent).toHaveLength(0);
       expect((await rowState(trx, due)).status).toBe("pending");
-      expect(errorLines.filter((line) => line.includes("401"))).toHaveLength(1);
+      expectEvent("outbox_token_rejected", "error", { outbox_id: id });
       expect((await rowState(trx, id)).attempts).toBe(0);
       await s.run(at(11 * MINUTE));
       expect(s.channel.sent).toHaveLength(2);
@@ -428,7 +461,7 @@ describe("outbox sender", () => {
       const s = senderFor(trx);
       await s.run(T);
       expect((await rowState(trx, id)).status).toBe("sent");
-      expect(errorLines.filter((line) => line.includes("sent again after a stale send"))).toHaveLength(1);
+      expectEvent("outbox_resent_after_stale", "warn", { outbox_id: id });
     });
   });
 
@@ -464,7 +497,7 @@ describe("outbox sender", () => {
         }
       };
       await s.run(T);
-      expect(errorLines.filter((line) => line.includes("lost the claim after the send"))).toHaveLength(1);
+      expectEvent("outbox_claim_lost", "warn", { outbox_id: first });
       expect((await rowState(trx, first)).status).toBe("sending");
       expect((await rowState(trx, second)).status).toBe("sent");
     });
@@ -501,7 +534,7 @@ describe("outbox sender, rows without text (F088)", () => {
       const row = await rowState(trx, id);
       expect(row.status).toBe("failed");
       expect(row.error_code).toBe("bad_view");
-      expect(allLines().filter((line) => line.includes("bad view (urgent)") && line.includes(id))).toHaveLength(1);
+      expectEvent("outbox_bad_view", "error", { outbox_id: id, kind: "urgent" });
     });
   });
 
@@ -537,7 +570,7 @@ describe("outbox sender, rows without text (F088)", () => {
       const s = senderFor(trx);
       await s.run(T);
       expect((await rowState(trx, id)).status).toBe("sent");
-      expect(errorLines.filter((line) => line.includes("sent again after a stale send"))).toHaveLength(1);
+      expectEvent("outbox_resent_after_stale", "warn", { outbox_id: id });
       expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text ?? null);
     });
   });
@@ -575,6 +608,149 @@ describe("outbox sender, rows without text (F088)", () => {
       expect((await rowState(trx, id)).status).toBe("sent");
       expect(s.channel.sent).toHaveLength(1);
       expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text ?? null);
+    });
+  });
+});
+
+describe("outbox sender log events", () => {
+  test("a sent row writes outbox_sent with its kind", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      await senderFor(trx).run(T);
+      expectEvent("outbox_sent", "info", { outbox_id: id, kind: "urgent" });
+    });
+  });
+
+  test("an expired row writes outbox_expired", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t, { createdAt: at(-25 * HOUR) });
+      await senderFor(trx).run(T);
+      expectEvent("outbox_expired", "warn", { outbox_id: id });
+    });
+  });
+
+  test("a member without a chat writes outbox_no_chat", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const other = await addMember(trx, t.ctx.orgId);
+      const id = await addRow(trx, t, { userId: other });
+      await senderFor(trx).run(T);
+      expectEvent("outbox_no_chat", "warn", { outbox_id: id });
+    });
+  });
+
+  test("a blocked bot writes outbox_bot_blocked", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("blocked", "telegram_403"), 1);
+      await s.run(T);
+      expectEvent("outbox_bot_blocked", "warn", { outbox_id: id });
+    });
+  });
+
+  test("a refused message writes outbox_refused with the code", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("bad_request", "telegram_400"), 1);
+      await s.run(T);
+      expectEvent("outbox_refused", "error", { outbox_id: id, code: "telegram_400" });
+    });
+  });
+
+  test("another channel error writes outbox_failed with the code", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("other", "telegram_418"), 1);
+      await s.run(T);
+      expectEvent("outbox_failed", "error", { outbox_id: id, code: "telegram_418" });
+    });
+  });
+
+  test("a soft error writes outbox_paused with the code and the wait in milliseconds", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("soft", "telegram_502"), 1);
+      await s.run(T);
+      expectEvent("outbox_paused", "warn", { outbox_id: id, code: "telegram_502", wait_ms: 30_000 });
+    });
+  });
+
+  test("a failure that is no channel error writes outbox_failed with the error name and code, never its message", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.onSend = () => Promise.reject(Object.assign(new Error(CANARY), { code: "ECONNRESET" }));
+      await s.run(T);
+      expectEvent("outbox_failed", "error", { outbox_id: id, error: "Error", error_code: "ECONNRESET" });
+      expect(allLines().some((line) => line.includes("MARKER"))).toBe(false);
+    });
+  });
+
+  test("a failure with a value-rule-safe description writes no description", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.onSend = () => Promise.reject(Object.assign(new Error("x"), { description: "MARKER-DESC" }));
+      await s.run(T);
+      expectEvent("outbox_failed", "error", { outbox_id: id, error: "Error" });
+      expect(allLines().some((line) => line.includes("MARKER"))).toBe(false);
+    });
+  });
+
+  test("a failed claim writes outbox_claim_failed with the error name only", async () => {
+    const broken = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error(CANARY);
+        },
+      }
+    ) as unknown as Db;
+    const sender = createOutboxSender({ db: broken, channel: createFakeChannel(), now: () => T });
+    await sender.run();
+    expectEvent("outbox_claim_failed", "error", { error: "Error" });
+    expect(allLines().some((line) => line.includes("MARKER"))).toBe(false);
+  });
+
+  test("a failed database call writes outbox_db_failed with the row id and the error name only", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      // The claim reads through `with`; only the later release (`updateTable`) fails.
+      const flaky = new Proxy(trx, {
+        get(target, property) {
+          if (property === "updateTable") throw new Error(CANARY);
+          const value: unknown = Reflect.get(target, property);
+          return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        },
+      });
+      const channel = createFakeChannel();
+      channel.failWith(new ChannelError("soft", "telegram_502"), 1);
+      await createOutboxSender({ db: flaky, channel, now: () => T }).run();
+      expectEvent("outbox_db_failed", "error", { outbox_id: id, error: "Error" });
+      expect(allLines().some((line) => line.includes("MARKER"))).toBe(false);
     });
   });
 });
