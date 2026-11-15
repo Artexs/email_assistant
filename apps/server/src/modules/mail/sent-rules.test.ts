@@ -84,6 +84,22 @@ describe("toNewSentEmail", () => {
     });
   });
 
+  test("maps the address, location and subject fields", () => {
+    const m = meta({ from: " Me@X.test ", to: ["A@x.test", "a@x.test"] });
+    const out = row(m);
+    expect(out).toMatchObject({
+      mailboxId: "mb",
+      path: "Sent",
+      uidValidity: 7,
+      uid: 1,
+      subject: "Hello",
+      fromAddress: "me@x.test",
+      toAddresses: ["a@x.test"],
+    });
+    expect(out?.internalDate.getTime()).toBe(m.internalDate.getTime());
+    expect(row(meta({ from: null }))?.fromAddress).toBeNull();
+  });
+
   test("the header window is 30 days from INTERNALDATE, the bound included", () => {
     expect(row(meta({ internalDate: ago(20) }))?.content).toBe("headers_only");
     expect(row(meta({ internalDate: ago(31) }))).toBeNull();

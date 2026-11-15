@@ -5,7 +5,7 @@ import { sentOriginOf } from "../../src/modules/actions";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertDraftAndSend } from "./fixtures";
+import { createOrgWithMailbox, insertAction, insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -93,6 +93,44 @@ describe("sentOriginOf", () => {
       expect(await sentOriginOf(trx, a.ctx, a.mailboxId, "not-a-uuid")).toBeNull();
       expect(await sentOriginOf(trx, a.ctx, a.mailboxId, crypto.randomUUID())).toBeNull();
       expect(await sentOriginOf(trx, a.ctx, otherMailboxId, draftId)).toBeNull();
+    });
+  });
+
+  test("an action id of a move, or a send id in another mailbox of the org, is null", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await tenant(trx);
+      const { emailId, sendId } = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applied",
+        approved: a.approved,
+      });
+      const moveId = await insertAction(trx, a.ctx, emailId, { type: "move", status: "applied" });
+      const otherMailboxId = crypto.randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: otherMailboxId,
+        address: `other-${otherMailboxId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: { idle: true, move: true, uidplus: true, condstore: false, specialUse: true, keywords: true },
+        folderMap: { drafts: "Drafts" },
+      });
+      expect(await sentOriginOf(trx, a.ctx, a.mailboxId, moveId)).toBeNull();
+      expect(await sentOriginOf(trx, a.ctx, otherMailboxId, sendId)).toBeNull();
+    });
+  });
+
+  test("an erased email leaves no own action: null for the draft and the send", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await tenant(trx);
+      const { emailId, draftId, sendId } = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applied",
+        approved: a.approved,
+      });
+      expect(await sentOriginOf(trx, a.ctx, a.mailboxId, sendId)).toBe("system");
+      await trx.deleteFrom("emails").where("id", "=", emailId).where("org_id", "=", a.ctx.orgId).execute();
+      expect(await sentOriginOf(trx, a.ctx, a.mailboxId, draftId)).toBeNull();
+      expect(await sentOriginOf(trx, a.ctx, a.mailboxId, sendId)).toBeNull();
     });
   });
 
