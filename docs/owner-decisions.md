@@ -331,3 +331,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: docs must not promise what is off; the plan-after rule; a safe, reversible publish path; a limit of the Pages host.
 - Undo: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6 give the other option and its change.
 - Source: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6.
+
+### 2026-11-15 · Operator console gets no axe check in F102 (F102) · scope · new
+- Choice: F102 stage 07 runs the axe accessibility check on every customer page and not on the operator console (Q20). The e2e server reads `OPERATOR_USER_IDS` at boot, before the seed makes user ids.
+- Why: an operator e2e user needs a separate stage; the console is for the owner only.
+- Undo: add a stage that gives the e2e run an operator user, then add the console to the axe spec.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q20.
