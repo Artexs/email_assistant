@@ -14,10 +14,14 @@ ALTER TABLE actions
     CHECK (supersedes_action_id IS NULL OR type IN ('create_draft', 'send'));
 CREATE UNIQUE INDEX actions_supersedes_key ON actions (supersedes_action_id) WHERE supersedes_action_id IS NOT NULL;
 
--- The edit of one sent card: `edit_of_outbox_id` names that card. `outbox` has no (id, org_id) key, so the FK is on `id`
--- alone; the sender checks that both rows have one org_id. The card goes, the edit goes (cascade).
+-- The edit of one sent card: `edit_of_outbox_id` names that card. The FK is composite with `org_id` (as `supersedes_action_id`):
+-- an edit row cannot name, or cascade from, a card of another organization (a FK check ignores row-level security). That
+-- needs a unique key `(id, org_id)` on `outbox`. The card goes, the edit goes (cascade).
+ALTER TABLE outbox ADD CONSTRAINT outbox_id_org_id_key UNIQUE (id, org_id);
 ALTER TABLE outbox
-  ADD COLUMN edit_of_outbox_id uuid REFERENCES outbox (id) ON DELETE CASCADE;
+  ADD COLUMN edit_of_outbox_id uuid,
+  ADD CONSTRAINT outbox_edit_of_outbox_id_org_id_fkey
+    FOREIGN KEY (edit_of_outbox_id, org_id) REFERENCES outbox (id, org_id) ON DELETE CASCADE;
 CREATE INDEX outbox_edit_of_idx ON outbox (edit_of_outbox_id) WHERE edit_of_outbox_id IS NOT NULL;
 
 ALTER TABLE outbox DROP CONSTRAINT outbox_kind_check;
@@ -43,7 +47,10 @@ ALTER TABLE outbox ADD CONSTRAINT outbox_kind_check CHECK (kind IN (
   'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed', 'send_held', 'weekly_report',
   'host_blocked', 'not_triaged'));
 DROP INDEX outbox_edit_of_idx;
-ALTER TABLE outbox DROP COLUMN edit_of_outbox_id;
+ALTER TABLE outbox
+  DROP CONSTRAINT outbox_edit_of_outbox_id_org_id_fkey,
+  DROP COLUMN edit_of_outbox_id;
+ALTER TABLE outbox DROP CONSTRAINT outbox_id_org_id_key;
 
 DROP INDEX actions_supersedes_key;
 ALTER TABLE actions

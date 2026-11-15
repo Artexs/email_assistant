@@ -9,6 +9,12 @@ import { queueNotice } from "./notice-queue";
 
 export type CardEditOutcome = "approved" | "approved_held" | "rejected" | "changed" | "expired";
 
+// `approved_held` names why the send waits (`heldBy`); no other outcome has it. The compiler refuses the held outcome
+// without it (at run time the view would not render, and the decision transaction would roll back).
+export type CardEdit =
+  | { outcome: "approved_held"; heldBy: HeldBy }
+  | { outcome: Exclude<CardEditOutcome, "approved_held">; heldBy?: never };
+
 export interface CardEditResult {
   // Rows queued now (a repeated outcome queues none: its dedup key exists).
   queued: number;
@@ -26,10 +32,8 @@ export interface CardEditResult {
 export async function queueCardEdits(
   trx: Transaction<DB>,
   ctx: TenantContext,
-  input: {
+  input: CardEdit & {
     sendId: string;
-    outcome: CardEditOutcome;
-    heldBy?: HeldBy;
     exceptUserId?: string;
     at: Date;
   }

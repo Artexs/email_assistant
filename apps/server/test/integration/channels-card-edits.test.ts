@@ -137,6 +137,28 @@ describe("queueCardEdits", () => {
     });
   });
 
+  test("TG1: the acting user's own pending card also fails as answered_elsewhere", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const c1 = await insertCard(w, w.u1, { status: "pending", text: null, messageId: null });
+      const c2 = await insertCard(w, w.u2);
+      const result = await queueCardEdits(trx, w.ctx, {
+        sendId: w.sendId,
+        outcome: "approved",
+        exceptUserId: w.u1,
+        at,
+      });
+      expect(result).toEqual({ queued: 1, cancelled: 1 });
+      expect((await edits(w)).map((row) => row.edit_of_outbox_id)).toEqual([c2]);
+      const card = await trx
+        .selectFrom("outbox")
+        .select(["status", "error_code"])
+        .where("id", "=", c1)
+        .executeTakeFirstOrThrow();
+      expect(card).toEqual({ status: "failed", error_code: "answered_elsewhere" });
+    });
+  });
+
   test("a card in flight, a set card, a card without text or message id and a foreign send get no edit", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
@@ -178,9 +200,10 @@ describe("queueCardEdits", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await insertCard(w, w.u1);
-      await expect(queueCardEdits(trx, w.ctx, { sendId: w.sendId, outcome: "approved_held", at })).rejects.toThrow(
-        "bad notice view for approval_edit"
-      );
+      // TG2: the compiler refuses the call (typecheck fails when the directive is not needed); the runtime check stays.
+      // @ts-expect-error approved_held needs heldBy
+      const call = queueCardEdits(trx, w.ctx, { sendId: w.sendId, outcome: "approved_held", at });
+      await expect(call).rejects.toThrow("bad notice view for approval_edit");
     });
   });
 
