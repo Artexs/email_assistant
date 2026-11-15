@@ -102,6 +102,16 @@ describe("attachmentFact", () => {
     expect(fact === null ? null : attachmentLine(fact, "en")).toBe(attachmentLine(raw, "en"));
   });
 
+  test("stores a clean, cut name: 40 code points, no link", () => {
+    const fact = attachmentFact({
+      attachments: [part({ name: "x".repeat(60) }), part({ name: "https://x.test/a" }), part({ name: "a\u202eb\nc" })],
+      count: 3,
+    });
+    expect(Array.from(fact?.attachments[0]?.name ?? "")).toHaveLength(40);
+    expect(fact?.attachments[1]?.name).toBe("[link]");
+    expect(fact?.attachments[2]?.name).toBe("ab c");
+  });
+
   test("is null when the line would be empty, and keeps a retained count", () => {
     expect(attachmentFact({ attachments: [part({ inline: true })], count: 1 })).toBeNull();
     expect(attachmentFact({ attachments: [], count: 0 })).toBeNull();
