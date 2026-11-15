@@ -12,7 +12,8 @@ import type { ImapConnectOptions } from "./imap/client";
 import { findUserMoves } from "./moves";
 import { openMailboxProvider } from "./open";
 import { HostNotAllowedError, MailAuthError, type MailProvider } from "./port";
-import { listSyncTargets, markSynced, setMailboxStatus } from "./repo";
+import { listSyncTargets, markSentPass, markSynced, setMailboxStatus } from "./repo";
+import { syncSentFolder, type SentSyncDeps } from "./sent-sync";
 import { CursorMovedError, syncMailbox, type SyncDeps } from "./sync";
 
 const log = createLog("mail");
@@ -22,7 +23,44 @@ export interface MailSyncJobDeps {
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
   isOwnActionId: SyncDeps["isOwnActionId"];
+  sentOriginOf: SentSyncDeps["sentOriginOf"];
   now(): Date;
+}
+
+// The Sent pass of one mailbox (ADR 0029). It reads only (the provider goes in as a `SentFolderReader`) and never fails the sync run.
+// The log lines carry ids, codes and counts only: never a subject, an address, a path or the text of a database error.
+async function runSentPass(
+  deps: MailSyncJobDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  provider: MailProvider
+): Promise<void> {
+  try {
+    // `deps.db`, never a transaction: the pass takes row locks in short writes of its own and must not hold them across IMAP calls.
+    const result = await syncSentFolder(
+      { db: deps.db, provider, sentOriginOf: deps.sentOriginOf, now: deps.now },
+      ctx,
+      mailboxId
+    );
+    if (result.status === "flag_off" || result.status === "off") return;
+    log.info("sent_sync_done", {
+      mailbox_id: mailboxId,
+      status: result.status,
+      kind: result.mode,
+      count: result.stored,
+    });
+    if (result.texts.stored > 0) log.info("sent_texts_done", { mailbox_id: mailboxId, count: result.texts.stored });
+    // A mail that does not parse is marked gone once and not read again.
+    if (result.texts.gone > 0) log.info("sent_texts_gone", { mailbox_id: mailboxId, count: result.texts.gone });
+  } catch (error) {
+    // A login error is only logged here: the next INBOX sync sets auth_error.
+    log.warn("sent_sync_failed", { mailbox_id: mailboxId, ...errorFields(error) });
+    try {
+      await markSentPass(deps.db, ctx, mailboxId, { at: deps.now(), errorCode: "failed" });
+    } catch (markError) {
+      log.warn("sent_sync_mark_failed", { mailbox_id: mailboxId, ...errorFields(markError) });
+    }
+  }
 }
 
 // The log lines carry the mailbox id only: never the address, a password or a subject.
@@ -75,6 +113,8 @@ async function syncOne(
         log.warn("flags_refresh_failed", { mailbox_id: mailboxId, ...errorFields(error) });
       }
     }
+    // The Sent pass runs last, on this connection. Its error never fails the sync.
+    await runSentPass(deps, ctx, mailboxId, provider);
   } finally {
     await provider.close().catch((error: unknown) => {
       log.warn(`close ${mailboxId} failed:`, error instanceof Error ? error.message : String(error));
