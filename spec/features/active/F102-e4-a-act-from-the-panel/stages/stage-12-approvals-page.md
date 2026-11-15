@@ -41,3 +41,10 @@ Part of [`../plan.md`](../plan.md). Read P2, P5, P6, D5, D11, D13, Q1, Q8, Q13 a
 
 - Show state `held` with `heldBy` null as "approved, sending soon", not as a block.
 - The detail schema has `kind`, `version`, `expiresAt` and `view` nullable (payload cleared by retention; `expiresAt` only for `waiting` and `held`). Type the page with the nullable forms.
+
+## Carry-over from stage 11 review
+
+- An approve answer `approved` can mean a send that is held (a second call, `already_approved`, answers `approved` with no `heldBy`). After any approve, read `state` and `heldBy` from the detail route; never show "sent soon" from the approve answer alone. `approved_held` names its cause in `heldBy`.
+- A `409 closed` answer has `state` from a fixed list (`approvalClosedStates` in `@ea/core`: `held`, `sending`, `sent`, `rejected`, `expired`, `failed`; the edit adds `payload_gone`, `draft_gone`, `delegation_closed`). It is the same name that the detail route gives; use one text per name. A `409 changed` has `currentId`: load that send.
+- A send that was never notified (`notified_at` null, no linked Telegram chat) can be approved in the panel until it is 7 days old; after that the approve answers `409 closed` with `expired`. The list already shows `expiresAt` for it.
+- All three write routes answer `404 not_found` while `approvals_page` is off, also for a member (the flag comes before the role).

@@ -131,6 +131,7 @@ export {
   mailboxStatusSchema,
   insertEmailHeaders,
   listAuthErrorMailboxesBefore,
+  listLaggingMailboxes,
   listEmailsByMessageIds,
   listFlagTargets,
   listFolderUids,

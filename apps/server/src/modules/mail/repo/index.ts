@@ -60,7 +60,13 @@ export {
   type MailKind,
   type NewEmail,
 } from "./emails";
-export { countSyncTargets, listAuthErrorMailboxesBefore, listMailboxTargets, listSyncTargets } from "./targets";
+export {
+  countSyncTargets,
+  listAuthErrorMailboxesBefore,
+  listLaggingMailboxes,
+  listMailboxTargets,
+  listSyncTargets,
+} from "./targets";
 export {
   claimEmails,
   countOrgEmails,
