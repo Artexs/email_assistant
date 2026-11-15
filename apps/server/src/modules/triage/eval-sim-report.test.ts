@@ -264,8 +264,11 @@ describe("gateFileName", () => {
 describe("gateFileSchema endpoint and host", () => {
   const committed = resolve(import.meta.dir, "../../../../../evals/results/gate");
 
+  // Only the classifier-v2 file is older than the endpoint key; later files (v3) hold it and parse as they are.
   test("3. the committed gate file (no endpoint key) reads as standard with host null", () => {
-    const names = readdirSync(committed).filter((name) => name.endsWith("-v1.json"));
+    const names = readdirSync(committed).filter(
+      (name) => name.startsWith("classifier-classifier-v2-") && name.endsWith("-v1.json")
+    );
     expect(names.length).toBeGreaterThan(0);
     for (const name of names) {
       const raw: unknown = JSON.parse(readFileSync(join(committed, name), "utf8"));
