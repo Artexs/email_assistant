@@ -20,12 +20,13 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟠 ACTIVE): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
+- `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
 - `F112-e10a-docs-site` (🟠 ACTIVE): E10a Docs site
+- `F111-e11b-private-model-option` (🟠 ACTIVE): E11b Private model option
 - `F109-e3b-improve` (🟠 ACTIVE): E3b Improve
 - `F106-e7-t3-account-data-delete-export-dsr` (🟠 ACTIVE): E7-T3 Account data (delete, export, DSR)
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
 - `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
-- `F103-e8a-logs` (🟠 ACTIVE): E8a Logs
 - `F102-e4-a-act-from-the-panel` (🟠 ACTIVE): E4-A Act from the panel
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
@@ -93,6 +94,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
+- `F103-e8a-logs` (🟢 PROVEN): E8a Logs; landed 2026-11-15
 - `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
 - `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
@@ -101,5 +103,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
 - `F100-e3a-measure` (🟢 PROVEN): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes; landed 2026-11-14
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟢 PROVEN): E7-T2 Platform controls (send limits, feature flags, operator console, security log); landed 2026-11-14
-- `F098-e7-t1-polish-ui-i18n-frame-first` (🟢 PROVEN): E7-T1 Polish UI (i18n frame first); landed 2026-11-14
-- 2026-11: 74 landed. spec/features/done/2026-11/
+- 2026-11: 75 landed. spec/features/done/2026-11/
