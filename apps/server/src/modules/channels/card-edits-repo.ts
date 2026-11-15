@@ -108,3 +108,18 @@ export async function newerEditSent(
     .executeTakeFirst();
   return row !== undefined;
 }
+
+// The newest `created_at` of an edit row of one card, in any state; null for a card with no edit row yet. Decisions on one send run
+// one after the other (each holds the send lock until it commits), so the edit rows of a card are queued in decision order.
+export async function newestEditCreatedAt(db: DbOrTrx, ctx: TenantContext, cardId: string): Promise<Date | null> {
+  const row = await db
+    .selectFrom("outbox")
+    .select("created_at")
+    .where("org_id", "=", ctx.orgId)
+    .where("kind", "=", "approval_edit")
+    .where("edit_of_outbox_id", "=", cardId)
+    .orderBy("created_at", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.created_at ?? null;
+}

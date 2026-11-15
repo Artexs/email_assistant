@@ -1,6 +1,6 @@
 # Actions and Undo
 
-> Checked against the code at `d331192b`, 2026-11-15.
+> Checked against the code at `d0e628aa`, 2026-11-15.
 
 ## What it does now
 
@@ -100,7 +100,7 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; test
                  awaiting_approval → rejected                         (the Reject tap)
                  approved → rejected                                  (the Reject tap on an approved send that no committer holds, or whose lock is stale)
                  awaiting_approval → expired                          (timeout: 48 h after notified_at, request received | draft_missing | not_notified: 7 days after creation, no owner | not_seen: request not received, at the resume of a suspended organization or 48 h after notified_at |
-                                                                       policy_changed | delegation_closed)
+                                                                       policy_changed | delegation_closed | superseded: a panel edit made a newer version; the new send starts at awaiting_approval, the new draft at ready)
                  approved → expired                                   (held_timeout: 48 h after the tap, when no committer holds it; or delegation_closed)
                  applied → undone                                     (Undo button, or the user moved the mail back: user_moved_back)
                  logged                                               (policy log_only, for example shadow mode)
@@ -118,15 +118,16 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; test
                  approved → failed                                    (send: bad_payload, or the third compose error with smtp_error, before the SMTP call)
 ```
 
-- `actions`: `type` (`move`, `mark_read`, `flag`, `save_summary`, `create_draft`, `send`), `payload`, `status`, `status_reason`, `attempts`, `next_attempt_at`, `locked_at`, `last_error` (no mail text), `provider_result`, `reverses_action_id` (a reverse row of an Undo; unique), `applied_at` (the Undo window counts from it), `notified_at` (set by the `action_failed` detector). The full column list is in `docs/architecture.md` §5.
+- `actions`: `type` (`move`, `mark_read`, `flag`, `save_summary`, `create_draft`, `send`), `payload`, `status`, `status_reason`, `attempts`, `next_attempt_at`, `locked_at`, `last_error` (no mail text), `provider_result`, `reverses_action_id` (a reverse row of an Undo; unique), `supersedes_action_id` (F102: a `create_draft` or `send` row that replaces an older row of the same organization after a panel edit; composite FK `(supersedes_action_id, org_id)`; unique where not null; the replaced send is `expired` with the reason `superseded`; [drafts-and-send.md](drafts-and-send.md) rule 12), `applied_at` (the Undo window counts from it), `notified_at` (set by the `action_failed` detector). The full column list is in `docs/architecture.md` §5.
 - An action hangs on one anchor: an incoming mail (`email_id`) or an open loop (`loop_id`, F116 stage 9). The database holds the rule: exactly one is set, and a loop row is a `create_draft` or a `send`. `anchorOfRow` and `emailIdOf` (`apps/server/src/modules/actions/anchor.ts`) read the two columns; `emailIdOf` throws `ActionAnchorError("loop_anchor")` for a loop row, so a path that exists only for incoming mail (mailbox changes, Undo, triage planning, delegation, clarification, reminder, the activity of a mail) never works on a loop row by mistake. Since F116 stage 10 the follow-up draft and send of a loop run through the committer (`drafts-and-send.md` rule 15). The claim and its counts, `getDraft` / `lockDraft`, `listRecentSends` (the send limits), `sentOriginOf` and `isOwnActionId` read both anchors; a loop action takes its mailbox from `open_loops.mailbox_id` and has `email: null` in `ClaimedAction`. `getAnySend` and `lockAnySend` find a send of either anchor (the committer side: `expireSend`, the draft failure); `getSend` and `lockSend` stay mail-only. Until stage 11, every reader of cards, lists and notices leaves a loop row out with an explicit `email_id IS NOT NULL`: the approval list and counts, the card detectors (`listSendsToNotify`, `listSetsToNotify`, `listSendResultsToNotify`), the failure notice, the expiry lists and the send-limit holds. The payload retention treats a loop row like any other row.
+- The payload of a `create_draft` row (F102) may carry `version` (an integer from 1; absent means 1), `subject_text` and `body_text` (the text of a panel edit; both cleaned with `cleanUserText`, subject 1 to 200 and text 1 to 3000 characters). A `send` payload holds the recipient and the ids, not the text (`sendPayloadFor`). The retention job clears them with the rest of the payload. `approved_via` of a send is `telegram`, `cli` or `web`.
 - `emails`: `folder`, `uid`, `source_folder`, `inbox_uid`, `moved_at` (set by a system move), `returned_at` (set by the sync when the user moves a mail back), `undo_pending_at` (a system move into a synced folder is in flight).
 - `mailbox_settings`: `mode`, `tool_switches`, `category_policy`, `urgency_profile` (jsonb or null).
 - Audit events: `action.applied`, `action.failed`, `action.expired`, `action.undo_requested`, `action.undone`, `email.returned`, `mailbox.mode_changed`, `mailbox.policy_changed`, `mailbox.switch_changed`, `settings.urgency_set`, `mailbox.folder_created`.
 
 ## Limits
 
-- No web list of actions with approve and reject; the panel has the Undo button only: E4-A (F102).
+- The panel lists only the sends that wait for a tap or are approved and held (the Approvals page, flag `approvals_page`, [drafts-and-send.md](drafts-and-send.md) rules 12 to 14) and has the Undo button of Activity. It has no list of other actions (moves, flags, mark read, drafts that wait for the committer).
 - The transition table `transitions.ts` is data only: no runtime code checks a write against it. Tests compare it with the guards of the writers; a runtime guard is `F068-actions-transitions-runtime`.
 - `emails.status = 'done'` is in the CHECK of the table but no code writes it. Check against the code: `grep` finds no write of `done` to `emails.status` in `apps/server/src` or `packages/core/src` (`docs/product/stage-2/06-architecture-review.md` §3.15).
 - The Undo window is 7 days (`UNDO_WINDOW_MS`) and a stale `ready` original expires after 24 h. No setting changes them.

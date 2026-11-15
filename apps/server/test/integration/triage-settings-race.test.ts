@@ -10,7 +10,7 @@ import {
   type SettingsDeps,
 } from "../../src/modules/config";
 import { claimEmails } from "../../src/modules/mail";
-import { saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
+import { noGateEvidence, saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
 
 import { createOrgWithMailbox, insertTestEmail, noSuspiciousContext } from "./fixtures";
 import { testDb } from "./helpers";
@@ -46,7 +46,7 @@ async function committedSetup() {
   const ctx = { orgId: created.orgId };
   try {
     await insertDefaultSettings(db, ctx, created.mailboxId);
-    await setToolSwitch({ db, now: () => now, expireReady }, ctx, created.mailboxId, {
+    await setToolSwitch({ db, now: () => now, gate: noGateEvidence, expireReady }, ctx, created.mailboxId, {
       name: "move",
       value: true,
       actor: "test",
@@ -92,7 +92,7 @@ describe("saveTriage with changed settings", () => {
   test("a setter that commits after the snapshot: no action rows, mail free, no attempt counted", async () => {
     const s = await committedSetup();
     try {
-      const deps: SettingsDeps = { db, now: () => now, expireReady };
+      const deps: SettingsDeps = { db, now: () => now, gate: noGateEvidence, expireReady };
       await setToolSwitch(deps, s.ctx, s.created.mailboxId, { name: "move", value: false, actor: "test" });
 
       expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision, now)).toEqual({ kind: "settings_changed" });
@@ -129,7 +129,7 @@ describe("saveTriage and a setter on two connections", () => {
   test("triage holds the share lock: the setter waits, then expires the move row", async () => {
     const s = await committedSetup();
     try {
-      const deps: SettingsDeps = { db, now: () => now, expireReady };
+      const deps: SettingsDeps = { db, now: () => now, gate: noGateEvidence, expireReady };
       let setter: ReturnType<typeof setToolSwitch> | undefined;
       let setterDone = false;
       await db.transaction().execute(async (trx) => {

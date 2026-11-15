@@ -23,6 +23,8 @@ export interface QueueNoticeInput<K extends NoticeKind> {
   digestId?: string;
   editOfOutboxId?: string;
   now: Date;
+  // The `created_at` of the row when it must differ from `now` (the order of the edits of one card, `queueCardEdits`).
+  createdAt?: Date;
 }
 
 // The only producer path into `outbox` (ADR 0032 point 5): the row stores the view; a view that does not render never
@@ -46,7 +48,7 @@ export async function queueNotice<K extends NoticeKind>(
     editOfOutboxId: input.editOfOutboxId,
     view,
     locale: input.locale,
-    createdAt: input.now,
+    createdAt: input.createdAt ?? input.now,
     nextAttemptAt: input.now,
   });
 }
