@@ -2,7 +2,7 @@ import { isMoveTarget, type ActionType, type MoveTarget } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../platform/db";
-import { describeError, SoftError } from "../../platform/errors";
+import { describeError, errorFields, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import {
@@ -54,7 +54,7 @@ async function applySummary(deps: ApplyDeps, ctx: TenantContext, action: Claimed
     return true;
   });
   if (!done) return { kind: "lost" };
-  log.debug(`action ${action.id}: applied ${action.type}`);
+  log.debug("action_applied", { action_id: action.id, action_type: action.type });
   return { kind: "applied" };
 }
 
@@ -70,8 +70,13 @@ async function mapProviderError(
   }
   const now = deps.now();
   const label = describeError(error);
+  const actionLog = log.with({ action_id: action.id });
   if (error instanceof SoftError) {
-    log.warn(`action ${action.id}: ${label}, try ${action.attempts + 1} of ${HARD_ERROR_TRIES}`);
+    actionLog.warn("action_retry", {
+      attempts: action.attempts + 1,
+      max_attempts: HARD_ERROR_TRIES,
+      ...errorFields(error),
+    });
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
       toStatus: "ready",
       nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
@@ -106,10 +111,14 @@ async function mapProviderError(
       return true;
     });
     if (!done) return { kind: "lost" };
-    log.warn(`action ${action.id}: failed hard_error`);
+    actionLog.warn("action_failed", { reason: "hard_error" });
     return { kind: "failed", reason: "hard_error" };
   }
-  log.warn(`action ${action.id}: ${label}, try ${action.attempts + 1} of ${HARD_ERROR_TRIES}`);
+  actionLog.warn("action_retry", {
+    attempts: action.attempts + 1,
+    max_attempts: HARD_ERROR_TRIES,
+    ...errorFields(error),
+  });
   await releaseAction(deps.db, ctx, action.id, action.locked_at, {
     toStatus: "ready",
     nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
@@ -153,7 +162,7 @@ async function failAction(
     return true;
   });
   if (!done) return { kind: "lost" };
-  log.warn(`action ${action.id}: failed ${reason}`);
+  log.warn("action_failed", { action_id: action.id, reason });
   return { kind: "failed", reason };
 }
 
@@ -225,7 +234,7 @@ async function applyFlag(
     return true;
   });
   if (!done) return { kind: "lost" };
-  log.debug(`action ${action.id}: applied ${action.type}`);
+  log.debug("action_applied", { action_id: action.id, action_type: action.type });
   return { kind: "applied" };
 }
 
@@ -323,7 +332,7 @@ async function applyMove(
   });
   // `lost`: the IMAP change stays. The next claimer locates the mail in the target.
   if (!done) return { kind: "lost" };
-  log.debug(`action ${action.id}: applied move`);
+  log.debug("action_applied", { action_id: action.id, action_type: "move" });
   return { kind: "applied" };
 }
 
@@ -358,7 +367,7 @@ export async function applyAction(
   const handler = APPLY_HANDLERS[action.type];
   if (!needsImap(handler)) return handler.run(deps, ctx, action);
   if (provider === null) {
-    log.error(`action ${action.id}: no provider for ${action.type}`);
+    log.error("action_no_provider", { action_id: action.id, action_type: action.type });
     const now = deps.now();
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
       toStatus: action.status,
