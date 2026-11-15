@@ -1,7 +1,7 @@
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { lockLatestOriginalMove, markUndone } from "../actions";
 import { auditEvents, recordAudit } from "../audit";
@@ -70,7 +70,7 @@ export async function processReturned(
       event: auditEvents.emailReturned,
       data: { mailbox_id: mail.mailboxId, feedback, move_action_id: move?.id ?? null },
     });
-    log.debug(`returned ${emailId}: feedback ${feedback}`);
+    log.debug("returned_feedback", { email_id: emailId, feedback });
     return { feedback, undone };
   };
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
@@ -91,13 +91,13 @@ export function createReturnedJob(deps: ReturnedJobDeps): { run(): Promise<void>
               await processReturned(deps.db, ctx, row.id, deps.now());
               processed += 1;
             } catch (error) {
-              log.error(`returned ${row.id}: ${describeError(error)}`);
+              log.error("returned_failed", { email_id: row.id, ...errorFields(error) });
             }
           }
         } catch (error) {
-          log.error(`returned ${mailboxId}: ${describeError(error)}`);
+          log.error("returned_mailbox_failed", { mailbox_id: mailboxId, ...errorFields(error) });
         }
-        if (processed > 0) log.info(`returned ${mailboxId}: processed ${processed}`);
+        if (processed > 0) log.info("returned_done", { mailbox_id: mailboxId, count: processed });
       }
     },
   };

@@ -46,7 +46,7 @@ export function triageRoutes(deps: TriageRouteDeps): Hono<ApiEnv> {
     if (result.kind === "not_found") {
       return c.json({ error: "not_found" }, 404);
     }
-    log.info(`web undo ${result.kind} mail ${body.emailId} by user ${userId}`);
+    log.info("web_undo", { kind: result.kind, email_id: body.emailId, user_id: userId });
     const answer: UndoWebResult =
       result.kind === "started" ? { kind: "started", created: result.created } : { kind: result.kind };
     return c.json(answer);

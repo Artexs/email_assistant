@@ -23,7 +23,7 @@ import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { errorFields } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
-import { createLlmClient, llmEndpointFields, llmProviders, type LlmProviderId } from "./platform/llm";
+import { createLlmClient, llmEndpointFields, type LlmProviderId } from "./platform/llm";
 import { createLog, setLogFormat, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
@@ -152,7 +152,6 @@ log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegra
 let triageRun: Promise<void> = Promise.resolve();
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
-const provider = llmProviders[classifierRow.provider];
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
   log.info("llm_settings", llmEndpointFields(llmTable, "classifier"));
@@ -160,7 +159,7 @@ if (scope !== null) {
   const triage = createTriageJob({
     db,
     llm,
-    pause: createLlmPause({ configHint: provider.configHint }),
+    pause: createLlmPause(),
     scope,
     testMail: testMailRule(config),
     batchSize: 5,

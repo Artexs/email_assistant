@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { type EvalCase, type LlmRole } from "@ea/core";
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import {
   LlmBlockedError,
@@ -273,6 +273,58 @@ describe("runEval --escalate", () => {
     expect(report.cases[0]?.finalCategory).toBe("needs_reply");
   });
 
+  describe("log lines", () => {
+    let lines: string[] = [];
+    let spies: { mockRestore(): void }[] = [];
+    beforeEach(() => {
+      lines = [];
+      spies = (["log", "error"] as const).map((name) =>
+        spyOn(console, name).mockImplementation((...args: unknown[]) => {
+          lines.push(args.map(String).join(" "));
+        })
+      );
+    });
+    afterEach(() => {
+      for (const spy of spies) spy.mockRestore();
+    });
+
+    test("an escalation error writes eval_escalation_failed with the case id and the code; the issue paths go to the hook", async () => {
+      const fake = fakeLlm({
+        classifier: [answer("spam")],
+        escalation: [new LlmOutputError(ESCALATION_MODEL, ["fields.task:too_big", "fields.due_date:invalid_type"])],
+      });
+      const failures: { caseId: string; code: string; issues: readonly string[]; stage: string }[] = [];
+      await runEval(
+        { ...deps(fake.llm), onCaseFailed: (failure) => void failures.push(failure) },
+        { ...base, cases: [makeCase({ id: "inv-001" })], escalation }
+      );
+      expect(lines.filter((line) => line.includes("failed"))).toEqual([
+        "[eval] eval_escalation_failed case_id=inv-001 code=bad_output",
+      ]);
+      expect(lines.join("\n")).not.toContain("too_big");
+      expect(lines.join("\n")).not.toContain("dropped_fields");
+      expect(failures).toEqual([
+        {
+          caseId: "inv-001",
+          code: "bad_output",
+          issues: ["fields.task:too_big", "fields.due_date:invalid_type"],
+          stage: "escalation",
+        },
+      ]);
+    });
+
+    test("a soft error of the second call writes eval_escalation_retry, not eval_case_retry", async () => {
+      const fake = fakeLlm({
+        classifier: [answer("spam")],
+        escalation: [new LlmSoftError("http_503", ESCALATION_MODEL), answer("needs_reply")],
+      });
+      await runEval(deps(fake.llm), { ...base, retries: 2, cases: [makeCase({ id: "inv-002" })], escalation });
+      expect(lines.filter((line) => line.includes("retry"))).toEqual([
+        "[eval] eval_escalation_retry case_id=inv-002 attempts=1 wait_ms=10000",
+      ]);
+    });
+  });
+
   test("a blocked second call ends the case as unsure and counts as blocked", async () => {
     const fake = fakeLlm({ classifier: [answer("spam")], escalation: [new LlmBlockedError(ESCALATION_MODEL)] });
     const report = await runEval(deps(fake.llm), { ...base, cases: [makeCase({ id: "p" })], escalation });
@@ -329,6 +381,50 @@ describe("runEval --escalate", () => {
     expect(report.escalation?.triggered).toBe(1);
     expect(report.escalation?.changed).toEqual({ "spam->needs_reply": 1 });
     expect(report.escalation?.cost.escalationUsd).toBeGreaterThan(0);
+  });
+
+  // Stage 13 carry-over: an escalation error stores the first call's usage and runs the whole case again on resume.
+  test("a resumed escalation error runs the whole case again and counts each call of the new result once", async () => {
+    const failing = fakeLlm({
+      classifier: [answer("spam")],
+      escalation: [new LlmOutputError(ESCALATION_MODEL, ["fields.task:too_big"])],
+    });
+    const lines: string[] = [];
+    const cases = [makeCase({ id: "p" })];
+    await runEval(
+      { ...deps(failing.llm), onResult: async (result) => void lines.push(JSON.stringify(result)) },
+      { ...base, cases, escalation }
+    );
+    const done = parseCaseResults(lines.join("\n"));
+    // The stored error holds the first call and no second call.
+    expect(done[0]).toMatchObject({ errorCode: "bad_output" });
+    expect(done[0]?.usage?.model).toBe(CLASSIFIER_MODEL);
+    expect(done[0]?.escalationUsage).toBeNull();
+
+    const fixed = fakeLlm({ classifier: [answer("spam")], escalation: [answer("needs_reply")] });
+    const report = await runEval(deps(fixed.llm), {
+      ...base,
+      cases,
+      escalation,
+      done,
+      budget: {
+        capUsd: 1,
+        callCostUsd: (usage) => (usage.model === ESCALATION_MODEL ? 0.0015 : 0.00015),
+        firstEstimateUsd: 0.00165,
+      },
+    });
+    // The case runs again from the first call: one call per role, not two first calls.
+    expect(fixed.callsOf("classifier")).toHaveLength(1);
+    expect(fixed.callsOf("escalation")).toHaveLength(1);
+    expect(report.cases).toHaveLength(1);
+    expect(report.cases[0]).toMatchObject({ finalCategory: "needs_reply", errorCode: null });
+    expect(report.cases[0]?.usage?.model).toBe(CLASSIFIER_MODEL);
+    expect(report.cases[0]?.escalationUsage?.model).toBe(ESCALATION_MODEL);
+    // The earlier error result is not an earlier spend of this report: one first call and one second call.
+    expect(report.cost.spentUsd).toBeCloseTo(0.00165, 10);
+    expect(report.escalation?.calledCases).toBe(1);
+    expect(report.escalation?.cost.classifierUsd).toBeCloseTo(0.00015, 10);
+    expect(report.escalation?.cost.escalationUsd).toBeCloseTo(0.0015, 10);
   });
 
   test("a result of an older state file (no escalation fields) parses as not escalated", () => {

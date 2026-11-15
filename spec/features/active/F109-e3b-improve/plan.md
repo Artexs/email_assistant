@@ -128,3 +128,5 @@ Model `claude-opus-5-5`, thinking high: `[risky]` stages (LLM spend, a productio
 ## Log
 
 - 2026-11-15 written; review 1 fixed.
+- 2026-11-15 stage 11: `classifier-v3[list]` not shipped (whitelist 314 of 315; owner decision 42 open). Production stays `classifier-v2`.
+- 2026-11-15 stage 13: escalation cascade not shipped (dev rule 5: $3.96 per mailbox per month against $3.00; spend $0.5171, no holdout run). **Stage 14 is skipped** (builds only on `Decision: ship`). Stage 15 and 16 go on; stage 16 documents the no-ship results.

@@ -1,9 +1,9 @@
-import { mailboxModes, parseCategoryPolicy, parseToolSwitches, QUOTA_TIMEZONE } from "@ea/core";
+import { mailboxModes, parseCategoryPolicy, parseToolSwitches } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import type { LlmClient } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { getMailboxSettings, listSenderRules, parseUrgencyProfile } from "../config";
@@ -71,6 +71,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
           // A pause that a mailbox tripped stops all later mailboxes, also when its release failed.
           if (deps.pause.isPaused(deps.now())) return;
           const ctx = { orgId };
+          const mailboxLog = log.with({ org_id: orgId, mailbox_id: mailboxId });
           let mailbox: TriageMailbox | undefined;
           let claimed: ClaimedEmail[] = [];
           // The index of the mail in work; -1 before the claim.
@@ -85,7 +86,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
             if (settings === undefined) {
               if (!warnedNoSettings.has(mailboxId)) {
                 warnedNoSettings.add(mailboxId);
-                log.warn(`triage ${mailboxId}: no mailbox_settings row, mailbox skipped`);
+                mailboxLog.warn("triage_no_settings");
               }
               continue;
             }
@@ -96,7 +97,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               if (organization === undefined) {
                 if (!warnedNoOrganization.has(mailboxId)) {
                   warnedNoOrganization.add(mailboxId);
-                  log.warn(`triage ${mailboxId}: no organization row, mailbox skipped`);
+                  mailboxLog.warn("triage_no_organization");
                 }
                 continue;
               }
@@ -143,7 +144,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               suspicious,
               urgencyProfile: parseUrgencyProfile(settings.urgency_profile),
             };
-            log.debug(`triage ${mailboxId}: delegates ${delegates.length}`);
+            mailboxLog.debug("triage_delegates", { count: delegates.length });
 
             for (const [index, email] of claimed.entries()) {
               current = index;
@@ -158,9 +159,11 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
                 const dayStart = outcome.dayStart.toISOString();
                 if (warnedCap.get(mailboxId) !== dayStart) {
                   warnedCap.set(mailboxId, dayStart);
-                  log.warn(
-                    `daily LLM cap reached for mailbox ${mailboxId}: ${deps.dailyCap} calls since ${dayStart} (${QUOTA_TIMEZONE} day); mail waits until ${outcome.until.toISOString()}`
-                  );
+                  mailboxLog.warn("llm_daily_cap_reached", {
+                    count: deps.dailyCap,
+                    day_start: dayStart,
+                    until: outcome.until.toISOString(),
+                  });
                 }
                 deps.onCapReached?.(ctx, mailboxId, outcome.dayStart);
                 continue;
@@ -181,7 +184,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
           }
         }
       } catch (error) {
-        log.error(`triage failed: ${describeError(error)}`);
+        log.error("triage_failed", errorFields(error));
       }
     },
   };
@@ -194,7 +197,11 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
           countAttempt: false,
         });
       } catch (releaseError) {
-        log.error(`triage ${email.mailbox_id}: release failed: ${describeError(releaseError)}`);
+        log.error("triage_release_failed", {
+          org_id: ctx.orgId,
+          mailbox_id: email.mailbox_id,
+          ...errorFields(releaseError),
+        });
       }
     }
   }
@@ -208,11 +215,12 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
     current: number,
     error: unknown
   ): Promise<void> {
+    const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
     const failing = current >= 0 ? claimed[current] : undefined;
     if (deps.pause.isPaused(deps.now())) {
       // The current mail tripped the pause, but its release failed. It gets no try and no triage_error.
       await releaseUntried(ctx, claimed.slice(Math.max(current, 0)));
-      log.error(`triage ${mailboxId} failed: ${describeError(error)}`);
+      mailboxLog.error("triage_mailbox_failed", errorFields(error));
       return;
     }
     if (failing !== undefined && mailbox !== undefined) {
@@ -223,14 +231,14 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
             countAttempt: true,
           });
         } catch (releaseError) {
-          log.error(`triage ${mailboxId}: release failed: ${describeError(releaseError)}`);
+          mailboxLog.error("triage_release_failed", errorFields(releaseError));
         }
       };
       if (failing.attempts + 1 >= HARD_ERROR_TRIES) {
         try {
           await finishTriageError(deps, ctx, mailbox, failing);
         } catch (finishError) {
-          log.error(`triage ${mailboxId}: triage_error save failed: ${describeError(finishError)}`);
+          mailboxLog.error("triage_error_save_failed", errorFields(finishError));
           await retryLater();
         }
       } else {
@@ -238,6 +246,6 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
       }
     }
     await releaseUntried(ctx, claimed.slice(current + 1));
-    log.error(`triage ${mailboxId} failed: ${describeError(error)}`);
+    mailboxLog.error("triage_mailbox_failed", errorFields(error));
   }
 }

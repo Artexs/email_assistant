@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { feedbackResultSchema, undoResultSchema } from "@ea/core";
-import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import type { ActionsScope } from "../../src/modules/actions";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
@@ -250,6 +250,26 @@ describe("POST /actions/undo", () => {
     expect(again.status).toBe(200);
     expect(undoResultSchema.parse(await json(again))).toEqual({ kind: "already" });
     expect(await feedbackRows(emailId)).toHaveLength(1);
+  });
+
+  test("a started Undo writes web_undo with the kind and the ids, no mail text", async () => {
+    const { org, mine } = await setup();
+    const app = appWith(org);
+    const emailId = await addMail(org.orgId, mine);
+    const logSpy = spyOn(console, "log").mockImplementation(() => undefined);
+    try {
+      const res = await app.request("/api/actions/undo", post("assistant", { emailId }));
+      expect(res.status).toBe(200);
+      const lines = logSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" "));
+      // The request id comes from the log context of the web request.
+      expect(
+        lines
+          .filter((line: string) => line.startsWith("[triage] web_undo"))
+          .map((line: string) => line.replace(/ request_id=[0-9a-f-]{36}/, ""))
+      ).toEqual([`[triage] web_undo kind=started email_id=${emailId} user_id=${org.assistantId}`]);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   test("a web label stays the latest feedback row", async () => {
