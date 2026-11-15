@@ -1,10 +1,12 @@
 import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { listSyncTargets } from "../mail";
-import { isOrgSuspended } from "../tenancy";
+import { isFeatureOn, isOrgSuspended } from "../tenancy";
 import { createLlmPause } from "../triage";
 
 import { type AnalyzeDeps, analyzeSent, DEFAULT_LIMIT, emptyResult, type AnalyzeResult } from "./analyze";
+import { emptyMatchResult, matchReplies, type MatchResult } from "./match";
+import type { DbOrTrx } from "./repo";
 
 const log = createLog("loops");
 
@@ -21,7 +23,7 @@ export interface LoopJobs {
   analyze: { run(): Promise<AnalyzeResult & { mailboxes: number; mailboxErrors: number }> };
 }
 
-// The jobs of the module `loops`. Later stages add the reply match and the chaser.
+// The jobs of the module `loops`. A later stage adds the chaser.
 export function createLoopJobs(deps: LoopJobDeps): LoopJobs {
   // The pause belongs to this job: a wrong key of the extractor role must not pause the triage worker.
   const pause = createLlmPause();
@@ -64,6 +66,45 @@ export function createLoopJobs(deps: LoopJobDeps): LoopJobs {
         }
         return total;
       },
+    },
+  };
+}
+
+export interface LoopMatchJobDeps {
+  db: DbOrTrx;
+  now(): Date;
+  // Only for tests of an error outside the match.
+  match?: typeof matchReplies;
+}
+
+export interface LoopMatchJob {
+  // `loops.match`: the close rules for the open loops, every 2 minutes. Needs no model: it runs with the scope off.
+  run(): Promise<MatchResult & { mailboxes: number; mailboxErrors: number }>;
+}
+
+export function createLoopMatchJob(deps: LoopMatchJobDeps): LoopMatchJob {
+  return {
+    async run() {
+      const total = { ...emptyMatchResult(), mailboxes: 0, mailboxErrors: 0 };
+      const targets = await listSyncTargets(deps.db);
+      for (const { orgId, mailboxId } of targets) {
+        const ctx = { orgId };
+        try {
+          if ((await isOrgSuspended(deps.db, ctx)) || !(await isFeatureOn(deps.db, ctx, "open_loops"))) continue;
+          const out = await (deps.match ?? matchReplies)(deps, ctx, mailboxId, { now: deps.now() });
+          total.mailboxes += 1;
+          total.checked += out.checked;
+          total.replied += out.replied;
+          total.repliedSubject += out.repliedSubject;
+          total.dropped += out.dropped;
+          total.autoMarked += out.autoMarked;
+        } catch (error) {
+          // The error of one mailbox does not stop the next.
+          total.mailboxErrors += 1;
+          log.with({ org_id: orgId, mailbox_id: mailboxId }).error("loops_match_mailbox_failed", errorFields(error));
+        }
+      }
+      return total;
     },
   };
 }

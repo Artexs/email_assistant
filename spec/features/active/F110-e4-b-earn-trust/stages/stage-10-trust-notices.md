@@ -37,3 +37,7 @@ Part of [`../plan.md`](../plan.md). Polish text: review by `claude-opus-5-5`.
 ## Out of scope
 
 Delivery by mail (stages 19–20). Who calls the helper (stages 07–09).
+
+## Carry-over from stage 03 review
+
+- delete the pending lists (autonomy_paused, trust_report_ready, mail) from telegram-schema.test.ts when the kinds get renderers and detectors (review-3.md).

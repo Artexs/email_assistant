@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import { onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
+import { type GateEvidenceDeps, onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
@@ -251,8 +251,13 @@ export function homePathOf(
 }
 
 // D8, D16: the web calls the same setters as the CLI, with the one `settingsDeps` builder.
-export function settingsRouteDeps(db: Db, now: () => Date, testMail: TestMailRule): SettingsRouteDeps {
-  const settings = settingsDeps(db, now);
+export function settingsRouteDeps(
+  db: Db,
+  now: () => Date,
+  testMail: TestMailRule,
+  gate?: GateEvidenceDeps
+): SettingsRouteDeps {
+  const settings = settingsDeps(db, now, gate);
   return {
     db,
     now,
@@ -301,6 +306,8 @@ export interface WebExtras {
   /** Default: the IMAP and SMTP adapters. A test passes a login that refuses (the callback tests). `oauthTokens` is the cache the Reconnect drops. */
   mailOAuthLogin?: Partial<Pick<ApplyGrantDeps, "openProvider" | "verifySmtp" | "oauthTokens">>;
   onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
+  /** The global evidence of the running classifier, built once at start. Default: none (a closed gate; tests). */
+  gate?: GateEvidenceDeps;
 }
 
 export function apiRouters(
@@ -364,7 +371,7 @@ export function apiRouters(
         clients: extras.mailOAuthClients ?? createMailOAuthClients(config),
       })
     );
-    api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config))));
+    api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes({ db, now, urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }));

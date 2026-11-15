@@ -14,6 +14,7 @@ import {
   type SettingsDeps,
 } from "../../src/modules/config";
 import { mailboxHasUidplus } from "../../src/modules/mail";
+import { noGateEvidence } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { HardError } from "../../src/platform/errors";
 
@@ -53,6 +54,7 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
   const deps: SettingsDeps = {
     db: trx,
     now: () => NOW,
+    gate: noGateEvidence,
     expireReady: async (t, c, filter, opts) =>
       expireReady(t, c, filter, {
         ...opts,

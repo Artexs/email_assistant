@@ -1,10 +1,10 @@
 import { readFile, statfs } from "node:fs/promises";
 
-import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
+import { actionsScope, committerDeps, gateEvidenceDir, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
-import { createLoopJobs } from "./modules/loops";
+import { createLoopJobs, createLoopMatchJob } from "./modules/loops";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
 import {
   checkBackupAge,
@@ -16,7 +16,15 @@ import {
   type SloCheckEntry,
 } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
-import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
+import {
+  createLlmPause,
+  createReturnedJob,
+  createTriageJob,
+  loadGateEvidence,
+  type LlmPause,
+  runningEvidenceKey,
+  type TriageScope,
+} from "./modules/triage";
 import {
   ConfigError,
   featuresOff,
@@ -192,10 +200,13 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
 let loopsAnalyzeRun: Promise<void> = Promise.resolve();
+let loopsMatchRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
+// The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
+const gate = { index: loadGateEvidence(gateEvidenceDir(config)), runningKey: runningEvidenceKey(llmTable) };
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
   log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
@@ -226,6 +237,13 @@ if (scope !== null) {
   });
   log.info("job_scheduled", { job: "loops.analyze" });
 }
+// The close rules need no model: they run with the scope off too, so a reply still closes its loop.
+const loopMatch = createLoopMatchJob({ db, now: () => new Date() });
+scheduler.add("loops.match", "50 */2 * * * *", () => {
+  loopsMatchRun = loopMatch.run().then(() => undefined);
+  return loopsMatchRun;
+});
+log.info("job_scheduled", { job: "loops.match" });
 
 // The runs of the committer, the returned job and the S4 jobs that are going now. Shutdown waits for them.
 let committerRun: Promise<void> = Promise.resolve();
@@ -333,6 +351,7 @@ const web = webDeps(config, db, {
   botUsername: telegram ? () => telegram.botUsername() : null,
   mailOAuthClients: mailOAuth.clients,
   mailOAuthLogin: { oauthTokens: mailOAuth.tokens },
+  gate,
   onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });
 const app = createApp({ checkDb: () => checkDb(db), web });
@@ -360,6 +379,7 @@ async function shutdown(): Promise<void> {
     Promise.allSettled([
       triageRun,
       loopsAnalyzeRun,
+      loopsMatchRun,
       committerRun,
       returnedRun,
       expiryRun,

@@ -2,7 +2,9 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
+
+import { globalEvidenceFor, loadGateEvidence } from "./evidence";
 
 import { gateFileSchema, prompts } from "./index";
 
@@ -65,5 +67,35 @@ test("a broken own gate file still fails the parse", () => {
     expect(() => gateEvidence(dir, prompts.classifier.version)).toThrow();
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// The runtime reader (F110 stage 02) must read the committed files as the server reads them at start. A change of
+// the gate file format that the reader cannot parse fails here, not at the start of a release.
+test("the runtime reader reads every committed classifier gate file with no warning", () => {
+  const dir = resolve(import.meta.dir, "../../../../../evals/results/gate");
+  const errorSpy = spyOn(console, "error").mockImplementation(() => undefined);
+  const logSpy = spyOn(console, "log").mockImplementation(() => undefined);
+  try {
+    const index = loadGateEvidence(dir);
+    // Both classifier files (v2 and v3); the extractor file is no classifier evidence and is skipped with no warning.
+    const classifierFiles = readdirSync(dir).filter((file) => file.startsWith("classifier-") && file.endsWith(".json"));
+    expect(index.files.map((entry) => entry.file).sort()).toEqual(classifierFiles.sort());
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    const v2 = index.files.find((entry) => entry.file === "classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json");
+    expect(v2?.key).toEqual({
+      provider: "openai",
+      model: "gpt-6-luna",
+      reasoningEffort: "none",
+      promptVersion: "classifier-v2",
+      promptParts: null,
+      endpoint: "standard",
+      host: null,
+    });
+    expect(globalEvidenceFor(index, v2?.key as NonNullable<typeof v2>["key"]).info.file).toBe(v2?.file ?? "");
+  } finally {
+    errorSpy.mockRestore();
+    logSpy.mockRestore();
   }
 });

@@ -19,6 +19,11 @@ describe("parseJobRunArgs", () => {
     expect(parseJobRunArgs(["--name", "loops.analyze", "--force"])).toBeNull();
   });
 
+  test("parses loops.match and refuses --force for it", () => {
+    expect(parseJobRunArgs(["--name", "loops.match"])).toEqual({ name: "loops.match", force: false });
+    expect(parseJobRunArgs(["--name", "loops.match", "--force"])).toBeNull();
+  });
+
   test("rejects an unknown or missing name", () => {
     expect(parseJobRunArgs(["--name", "nope"])).toBeNull();
     expect(parseJobRunArgs([])).toBeNull();

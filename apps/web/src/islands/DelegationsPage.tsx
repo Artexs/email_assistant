@@ -1,7 +1,7 @@
 import type { DelegationItem } from "@ea/core/web";
 import { useEffect, useRef, useState } from "react";
 
-import { cancelButtonId, rowId } from "../components/delegation/DelegationRow";
+import { cancelButtonId, ROW_ID_PREFIX, rowId } from "../components/delegation/DelegationRow";
 import { DelegationCancelDialog } from "../components/delegation/DelegationCancelDialog";
 import { DelegationFilterTabs } from "../components/delegation/DelegationFilterTabs";
 import { ROW_BY_KIND } from "../components/delegation/delegation-kinds";
@@ -14,6 +14,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { t, useLocale, type TextKey } from "../i18n";
 import { ApiError } from "../lib/api";
 import { canWrite } from "../lib/can-write";
+import { createFocusedRowTracker } from "../lib/focused-row";
 import { postCancel, postDone, postRemind } from "../lib/delegations-api";
 import {
   approvalLink,
@@ -78,26 +79,27 @@ function Delegations() {
     if (statusTick > 0) statusRef.current?.focus();
   }, [statusTick]);
   // A reload can remove the row whose button has the focus (the delegation moved to another tab): the browser then puts the focus on the
-  // page body. The line of the result gets it instead, with a text that says what happened. `focusedRow` is the row that holds the focus.
-  const focusedRow = useRef<string | null>(null);
+  // page body. The line of the result gets it instead, with a text that says what happened. The tracker knows the row that holds the
+  // focus; it forgets the row when the user moves the focus to nothing, so a later reload takes no focus without a user action.
+  const [focusedRow] = useState(() => createFocusedRowTracker(ROW_ID_PREFIX));
   useEffect(() => {
-    const onFocusIn = (event: FocusEvent) => {
-      const row = event.target instanceof Element ? event.target.closest("li[id^='delegation-row-']") : null;
-      focusedRow.current = row === null ? null : row.id.replace("delegation-row-", "");
+    document.addEventListener("focusin", focusedRow.onFocusIn);
+    document.addEventListener("focusout", focusedRow.onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", focusedRow.onFocusIn);
+      document.removeEventListener("focusout", focusedRow.onFocusOut);
     };
-    document.addEventListener("focusin", onFocusIn);
-    return () => document.removeEventListener("focusin", onFocusIn);
-  }, []);
+  }, [focusedRow]);
   const loaded = list.data;
   useEffect(() => {
     const id = focusedRow.current;
     if (id === null || loaded === null || loaded.items.some((item) => item.id === id)) return;
-    focusedRow.current = null;
+    focusedRow.clear();
     if (document.activeElement === null || document.activeElement === document.body) {
       setNotice({ tone: "info", key: "dgn_moved" });
       statusRef.current?.focus();
     }
-  }, [loaded]);
+  }, [loaded, focusedRow]);
   const focusStatus = () => setStatusTick((tick) => tick + 1);
 
   const changeFilter = (next: typeof filter) => {

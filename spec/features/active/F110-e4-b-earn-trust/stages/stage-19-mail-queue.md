@@ -35,3 +35,7 @@ Part of [`../plan.md`](../plan.md). Flag `report_mail`. The `outbox_channel_chec
 ## Out of scope
 
 APPEND, MIME and the own-mail check (stage 20).
+
+## Carry-over from stage 03 review
+
+- delete the pending lists (autonomy_paused, trust_report_ready, mail) from telegram-schema.test.ts when the kinds get renderers and detectors (review-3.md).
