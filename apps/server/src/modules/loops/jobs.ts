@@ -12,6 +12,8 @@ export interface LoopJobDeps extends Omit<AnalyzeDeps, "pause"> {
   now(): Date;
   // Rows per mailbox and run; default 20.
   limit?: number;
+  // Only for tests of an error outside the model call.
+  analyze?: typeof analyzeSent;
 }
 
 export interface LoopJobs {
@@ -35,7 +37,7 @@ export function createLoopJobs(deps: LoopJobDeps): LoopJobs {
           try {
             // A suspend during the run stops the next mailbox, not only the next run.
             if (await isOrgSuspended(deps.db, ctx)) continue;
-            const out = await analyzeSent(analyzeDeps, ctx, mailboxId, {
+            const out = await (deps.analyze ?? analyzeSent)(analyzeDeps, ctx, mailboxId, {
               now: deps.now(),
               limit: deps.limit ?? DEFAULT_LIMIT,
             });

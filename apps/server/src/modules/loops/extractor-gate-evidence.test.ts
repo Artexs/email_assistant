@@ -75,6 +75,16 @@ test("a file with passed true but a number under its bar is no evidence", () => 
   });
 });
 
+test("a passing file with an error case is no evidence", () => {
+  withTemp((dir) => {
+    const file = buildExtractorGateFile(scoresAtBars(), identity);
+    write(dir, name(), { ...file, errors: 1 });
+    expect(extractorGateEvidence(dir, prompts.extractor.version)).toEqual([]);
+    write(dir, name("-ok"), { ...file, errors: 0 });
+    expect(extractorGateEvidence(dir, prompts.extractor.version)).toEqual([name("-ok")]);
+  });
+});
+
 test("an own or eu file parses but is no evidence; a file of another prompt version is not read as evidence", () => {
   withTemp((dir) => {
     const file = buildExtractorGateFile(scoresAtBars(), identity);
