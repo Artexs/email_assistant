@@ -1,6 +1,6 @@
 import type { Transaction } from "kysely";
 
-import type { DB, TenantContext } from "../../../platform/db";
+import type { DB, Db, TenantContext } from "../../../platform/db";
 
 // The writes and reads of the domain proof and of the "SSO required" switch (F119 stage 09). Every call names the
 // organization: the operator CLI runs with no tenant scope. The caller holds the organization lock and runs one transaction.
@@ -79,4 +79,14 @@ export async function strandsOtherBreakGlass(trx: Transaction<DB>, ctx: TenantCo
     .where("here.break_glass", "=", false)
     .executeTakeFirst();
   return row !== undefined;
+}
+
+// The number of organizations that require SSO. No TenantContext: the start-up check counts all organizations (`listOrganizations`).
+export async function countSsoRequiredOrgs(db: Db | Transaction<DB>): Promise<number> {
+  const row = await db
+    .selectFrom("organizations")
+    .select((eb) => eb.fn.countAll<string>().as("n"))
+    .where("sso_required", "=", true)
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
 }

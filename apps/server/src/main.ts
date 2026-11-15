@@ -3,7 +3,7 @@ import { createCommitterJob, createExpiryJob, isOwnActionId } from "./modules/ac
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
-import { configureFeatures, listOrganizations } from "./modules/tenancy";
+import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
 import {
   ConfigError,
@@ -78,6 +78,15 @@ try {
   log.error("db_role_check_failed", { ...errorFields(error) });
   await db.destroy().catch(() => undefined);
   process.exit(1);
+}
+
+// F119 N12: a killed `sso_sign_in` locks out every member of an organization that requires SSO, except its break-glass owner.
+// A DB error does not stop the start.
+try {
+  const lockedOut = await countSsoRequiredWhileKilled(db);
+  if (lockedOut > 0) log.warn("sso_flag_killed_with_sso_required", { count: lockedOut });
+} catch (error) {
+  log.warn("sso_flag_check_failed", { ...errorFields(error) });
 }
 
 const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
