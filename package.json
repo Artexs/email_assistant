@@ -24,6 +24,7 @@
     "web:dev": "bun run --filter @ea/web dev",
     "web:build": "bun run --filter @ea/web build",
     "docs:build": "bun run --filter @ea/docs build",
+    "docs:test": "bunx playwright test -c apps/docs/e2e/playwright.config.ts",
     "docs:stale": "bun apps/docs/scripts/stale.ts",
     "test:e2e": "bunx playwright test -c apps/web/e2e/playwright.config.ts",
     "rules:add": "bun apps/server/src/scripts/rules.ts add",
