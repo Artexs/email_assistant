@@ -283,7 +283,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 ## Metrics
 
 - A Stage 2 metric has one definition: a pure function in `packages/core/src/metrics/` over plain rows, a field in `weekStatsSchema`, and a reader in the module that owns its table. The weekly report, the stats route, `stats:week` and the E2b week scorer call the same function. A new metric or a new source of rows (E5 loops, E6 drafts) adds to these three places; it never computes a metric in a route, a renderer or a script.
-- `apps/server/src/modules/reports/metrics.ts` (`weekStats`, `recentWeekStats`) is the only service that joins the readers. The page cells (`apps/web/src/lib/stats-view.ts`) only format numbers.
+- `apps/server/src/modules/reports/metrics.ts` (`weekStats`, `recentWeekStats`, and `rangeMetrics` for a window that is not a week, such as an E2b lab run) is the only service that joins the readers. The page cells (`apps/web/src/lib/stats-view.ts`) only format numbers.
 
 ## Capability map (PD-009)
 

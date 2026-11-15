@@ -11,6 +11,9 @@ export interface DsrMatch {
   ownAddress: boolean;
   // Mails that go with the person (the person's own mail, a contact form, or mail between the person and us only).
   mails: { id: string; dedupKey: string }[];
+  // Sent mails that go with the person: the person is a party and every other party is an own mailbox. Each has a
+  // tombstone, so a later Sent pass does not store it again.
+  sentMails: { id: string; dedupKey: string }[];
   // "table.column" → ids of the rows of kept mails (or of no mail) that name the address.
   mentions: Record<string, string[]>;
   // Rows that the operator reads and the owner decides on; never changed by an erase.
@@ -26,7 +29,7 @@ export interface DsrMatch {
 }
 
 // The key of a row (`id`) and the column that names its incoming mail (`emailId`) for each table that a mention reads.
-// A table with no incoming mail (`sent_emails`) has `emailId: null`: its rows pass no mail filter.
+// A table with no incoming mail (`sent_emails`) has `emailId: null`: its rows pass the filter of the sent mails that go.
 const ROW_SHAPE: Readonly<Record<string, { id: string; emailId: string | null }>> = {
   emails: { id: "id", emailId: "id" },
   email_headers: { id: "email_id", emailId: "email_id" },
@@ -103,11 +106,36 @@ async function findMails(db: DbOrTrx, orgId: string, address: string): Promise<{
   return result.rows.map((row) => ({ id: row.id, dedupKey: row.dedup_key }));
 }
 
+// The sent mails of the organization that go: the person is the sender or a recipient, and every other address of the
+// mail is an own mailbox (the same own list and rule as `findMails`).
+async function findSentMails(db: DbOrTrx, orgId: string, address: string): Promise<{ id: string; dedupKey: string }[]> {
+  const result = await sql<{ id: string; dedup_key: string }>`
+    with own as (
+      select coalesce(array_agg(lower(address)), '{}') as addresses from mailboxes where org_id = ${orgId}::uuid
+    )
+    select s.id::text as id, s.dedup_key
+    from sent_emails s
+    cross join own
+    where s.org_id = ${orgId}::uuid
+      and (
+        lower(s.from_address) = ${address}
+        or exists (select 1 from unnest(s.to_addresses || s.cc_addresses) as v where lower(v) = ${address})
+      )
+      and not exists (
+        select 1
+        from unnest(array_prepend(s.from_address, s.to_addresses || s.cc_addresses)) as v
+        where v is not null and lower(v) <> ${address} and lower(v) <> all (own.addresses)
+      )
+    order by s.id`.execute(db);
+  return result.rows.map((row) => ({ id: row.id, dedupKey: row.dedup_key }));
+}
+
 async function findMentions(
   db: DbOrTrx,
   orgId: string,
   patterns: AddressPatterns,
-  goes: string[]
+  goes: string[],
+  goesSent: string[]
 ): Promise<Record<string, string[]>> {
   const mentions: Record<string, string[]> = {};
   for (const [table, columns] of Object.entries(DSR_ADDRESS_MAP)) {
@@ -116,10 +144,11 @@ async function findMentions(
       if (match === null) continue;
       const shape = ROW_SHAPE[table];
       if (!shape) throw new Error(`dsr_match_no_row_shape:${table}`);
-      // A row of no incoming mail (a null column, or a table with no mail column) is never a row of a mail that goes.
+      // A row of no incoming mail (a null column) is never a row of a mail that goes. A sent mail row is a mention
+      // only when it stays.
       const mailFilter =
         shape.emailId === null
-          ? sql<boolean>`true`
+          ? sql<boolean>`not (t.id = any (${goesSent}::uuid[]))`
           : sql<boolean>`(${sql.ref(`t.${shape.emailId}`)} is null or not (${sql.ref(`t.${shape.emailId}`)} = any (${goes}::uuid[])))`;
       const result = await sql<{ id: string }>`
         select ${sql.ref(`t.${shape.id}`)}::text as id
@@ -241,6 +270,7 @@ export async function matchSubject(db: DbOrTrx, orgId: string, address: string):
     return {
       ownAddress: true,
       mails: [],
+      sentMails: [],
       mentions: {},
       listed: { delegates: [], senderRules: [] },
       openActions: [],
@@ -250,12 +280,20 @@ export async function matchSubject(db: DbOrTrx, orgId: string, address: string):
   }
   const patterns = addressPatterns(normalized);
   const mails = await findMails(db, orgId, normalized);
+  const sentMails = await findSentMails(db, orgId, normalized);
   const goes = mails.map((mail) => mail.id);
   const chains = await findChains(db, orgId, goes);
   return {
     ownAddress: false,
     mails,
-    mentions: await findMentions(db, orgId, patterns, goes),
+    sentMails,
+    mentions: await findMentions(
+      db,
+      orgId,
+      patterns,
+      goes,
+      sentMails.map((mail) => mail.id)
+    ),
     listed: await findListed(db, orgId, normalized),
     openActions: await findOpenActions(db, orgId, patterns.json, goes, chains.actions),
     chainActions: chains.actions,

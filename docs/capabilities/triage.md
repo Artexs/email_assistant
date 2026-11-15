@@ -176,7 +176,7 @@ emails.status:   pending → processing → triaged → done                (don
 - The first sim-vs-real gap report (`evals/results/2026-11-15-sim-vs-real-gap-lab-01.md`, holdout reports and gate file in `evals/results/`) says `no gap` for `notification` and `spam`: the sim precision intervals overlap the real ones (138 real labels, 2026-11-15). Real labels never unlock `auto` (ADR 0028).
 - The gate on real labels (precision at least 98% on at least 30 labels) stays until ADR 0028 (proposed) changes it; E3 sets the numbers.
 - A junk-folder wave can use the shared daily cap: `F063-junk-llm-cap`.
-- The roles `classifier`, `judge` (`judge-v1`) and `escalation` (`escalation-v1`, eval only) have a prompt. `drafter` (E6a) and `extractor` (E5b) have none (`rolesWithoutPrompt`).
+- The roles `classifier`, `judge` (`judge-v1`) and `escalation` (`escalation-v1`, eval only) and `extractor` (`extractor-v1`, called by `extractSent` in module `loops`; no job runs it yet) have a prompt. `drafter` (E6a) has none (`rolesWithoutPrompt`).
 - The LLM pause is in memory: a restart clears it. `/status` and the digest read the pause from the `llm.call` audit rows (`latestLlmPause`), so they show it after a restart too (flag `llm_pause_line`).
 
 ## Decisions

@@ -9,6 +9,7 @@ import { sendLimitKinds } from "../send-limits";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
 import { suspiciousReasons } from "../triage/suspicious";
+import { authErrorReasons, mailOAuthProviderKeys } from "../web/mail-oauth";
 import { weekStatsSchema } from "../web/stats";
 
 import type { NoticeKind } from "./kinds";
@@ -114,6 +115,10 @@ const urgentView = z.strictObject({
 const authErrorView = z.strictObject({
   address: text,
   mailboxId: id,
+  // Optional on read: a view queued before F117 has no field. Set for an OAuth mailbox only.
+  oauth: z
+    .strictObject({ provider: z.enum(mailOAuthProviderKeys), reason: z.enum(authErrorReasons).nullable() })
+    .optional(),
   since: isoDate,
   now: isoDate,
   timeZone,

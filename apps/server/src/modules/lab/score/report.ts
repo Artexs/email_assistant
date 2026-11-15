@@ -1,6 +1,14 @@
 import { categories, type Category, type MissedImportant } from "@ea/core";
 
-import type { Interval, RecallCount, TriageScore } from "./triage";
+import { renderDelegates } from "./delegates";
+import { renderExecutive } from "./executive";
+import { renderLimits } from "./limits";
+import { renderMetrics } from "./metrics";
+import { renderPhishing } from "./phishing";
+import { num, range, section, table, type SectionRenderer } from "./render-util";
+import type { RecallCount, TriageScore } from "./triage";
+
+export { section, type SectionRenderer };
 
 export interface ScoreHeader {
   runId: string;
@@ -31,10 +39,6 @@ export interface LabScore {
   sections: Record<string, unknown>;
 }
 
-// Typed section renderers: a section stage adds its entry here and its data under `LabScore.sections`.
-export type SectionRenderer = (data: unknown) => string[];
-export const section = <T>(render: (data: T) => string[]): SectionRenderer => render as SectionRenderer;
-
 export interface CoverageSection {
   planned: number;
   injected: number;
@@ -47,19 +51,6 @@ export interface CoverageSection {
 export interface SentCopiesSection {
   appended: number;
   seen: number;
-}
-
-const pct = (value: number | null): string => (value === null ? "n/a" : `${(value * 100).toFixed(1)} %`);
-const num = (value: number | null): string => (value === null ? "n/a" : value.toFixed(4));
-const range = (interval: Interval | null): string =>
-  interval === null ? "n/a" : `${pct(interval.lower)} to ${pct(interval.upper)}`;
-
-function table(head: string[], body: string[][]): string[] {
-  return [
-    `| ${head.join(" | ")} |`,
-    `| ${head.map(() => "---").join(" | ")} |`,
-    ...body.map((row) => `| ${row.join(" | ")} |`),
-  ];
 }
 
 const recallLine = (name: string, count: RecallCount): string[] => [
@@ -165,6 +156,11 @@ export const SECTION_RENDERERS: Record<string, SectionRenderer> = {
     `Sent copies: appended ${data.appended}, seen by the server ${data.seen}.`,
     "",
   ]),
+  metrics: renderMetrics,
+  delegates: renderDelegates,
+  executive: renderExecutive,
+  limits: renderLimits,
+  phishing: renderPhishing,
   // The per-slot rows are for the JSON file only.
   mails: section<unknown>(() => []),
 };

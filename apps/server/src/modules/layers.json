@@ -3,7 +3,7 @@
   "layers": [
     ["audit", "tenancy"],
     ["config", "mail"],
-    ["triage", "actions", "delegation"],
+    ["triage", "actions", "delegation", "loops"],
     ["reports", "channels", "testmail"],
     ["operator", "privacy"],
     ["lab"]
@@ -30,6 +30,9 @@
       "to": "actions",
       "why": "The chaser plans reminder actions; the service closes reminder sends."
     },
+    { "from": "loops", "to": "actions", "why": "Loops plan and close follow-up sends." },
+    { "from": "loops", "to": "delegation", "why": "Loops run the delegation chaser step and read delegates." },
+    { "from": "loops", "to": "triage", "why": "Loops read the suspicion of a thread and the prompt registry." },
     { "from": "channels", "to": "reports", "why": "The digest job and /status build the digest text from reports." }
   ],
   "rootDeepImportExceptions": [

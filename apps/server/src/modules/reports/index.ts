@@ -16,5 +16,13 @@ export {
 } from "./digest";
 export { llmPauseToShow } from "./llm-pause";
 export { insertDigest, lastDigestSentAt, lastDigestSlotKey, lastSentDigestEnd, markDigestSent } from "./repo";
-export { recentWeekStats, weekStats, type UrgentNoticeReader, type WeekStatsDeps } from "./metrics";
+export {
+  rangeMetrics,
+  recentWeekStats,
+  weekStats,
+  type RangeMetrics,
+  type RangeMetricsInput,
+  type UrgentNoticeReader,
+  type WeekStatsDeps,
+} from "./metrics";
 export { activityRoutes, statsRoutes, type ActivityRouteDeps, type StatsRouteDeps } from "./routes";
