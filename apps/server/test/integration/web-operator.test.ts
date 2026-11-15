@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import type { OperatorFlags } from "@ea/core";
+import { featureKeys, type OperatorFlags } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -125,11 +125,12 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     expect(await res.json()).toEqual({ error: "not_found" });
   });
 
-  test("4. the operator reads every organization with effective values, fourteen keys per row", async () => {
+  test("4. the operator reads every organization with effective values, one key per flag and row", async () => {
     await flagOn(org.orgId, "stats_page");
     const res = await operatorApp().request("/api/operator/flags", as("assistant"));
     expect(res.status).toBe(200);
     const body = (await res.json()) as OperatorFlags;
+    expect(rowsOf(body, org.orgId).map((row) => row.flag)).toEqual([...featureKeys]);
     expect(rowsOf(body, org.orgId)).toEqual([
       { orgId: org.orgId, flag: "stats_page", enabled: true },
       { orgId: org.orgId, flag: "approvals_page", enabled: false },
@@ -143,10 +144,11 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "answered_check", enabled: false },
       { orgId: org.orgId, flag: "org_delete", enabled: false },
       { orgId: org.orgId, flag: "sso_sign_in", enabled: false },
+      { orgId: org.orgId, flag: "suspicious_mail", enabled: false },
       { orgId: org.orgId, flag: "mail_oauth_microsoft", enabled: false },
       { orgId: org.orgId, flag: "mail_oauth_google", enabled: false },
     ]);
-    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual(Array.from({ length: 14 }, () => false));
+    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual(featureKeys.map(() => false));
     for (const row of [...rowsOf(body, org.orgId), ...rowsOf(body, org.otherOrgId)]) {
       expect(Object.keys(row).sort()).toEqual(["enabled", "flag", "orgId"]);
     }
@@ -166,7 +168,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     const res = await operatorApp().request("/api/operator/flags", as("assistant"));
     const body = (await res.json()) as OperatorFlags;
     expect(body.rows.filter((row) => (row.flag as string) === "old_flag")).toEqual([]);
-    expect(rowsOf(body, org.orgId)).toHaveLength(14);
+    expect(rowsOf(body, org.orgId)).toHaveLength(featureKeys.length);
   });
 
   test("7. path forms: the guard covers the prefix, the route is GET /flags only", async () => {

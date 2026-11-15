@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import { aiTextFor } from "../digest/ai-text";
 import {
+  approvalEdit,
   renderApprovalRequest,
   renderApprovalSetRequest,
   renderDelegationAnswered,
@@ -135,5 +136,9 @@ export const noticeRenderers = {
   host_blocked: defineRenderer({
     schema: noticeViewSchemas.host_blocked,
     telegram: { full: (view, opts) => renderHostBlockedNotice(view, textsFor(opts.locale)) },
+  }),
+  approval_edit: defineRenderer({
+    schema: noticeViewSchemas.approval_edit,
+    telegram: { full: (view, opts) => approvalEdit(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;

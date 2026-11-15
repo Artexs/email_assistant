@@ -21,6 +21,7 @@ export interface QueueNoticeInput<K extends NoticeKind> {
   emailId?: string;
   mailboxId?: string;
   digestId?: string;
+  editOfOutboxId?: string;
   now: Date;
 }
 
@@ -42,6 +43,7 @@ export async function queueNotice<K extends NoticeKind>(
     emailId: input.emailId,
     mailboxId: input.mailboxId,
     digestId: input.digestId,
+    editOfOutboxId: input.editOfOutboxId,
     view,
     locale: input.locale,
     createdAt: input.now,

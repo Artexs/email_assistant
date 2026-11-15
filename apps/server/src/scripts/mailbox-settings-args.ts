@@ -1,6 +1,14 @@
 import { parseArgs } from "node:util";
 
-import { barCategories, toolSwitchNames, type BarCategory, type MailboxMode, type ToolSwitches } from "@ea/core";
+import {
+  barCategories,
+  toolSwitchNames,
+  urgencyProfileSchema,
+  type BarCategory,
+  type MailboxMode,
+  type ToolSwitches,
+  type UrgencyProfile,
+} from "@ea/core";
 import { z } from "zod";
 
 import type { SyncFolderRow } from "../modules/mail";
@@ -12,6 +20,7 @@ export const usage = [
   "  bun run mailbox:settings auto   --org-id <uuid> --mailbox-id <uuid> --category urgent|needs_reply|info|notification|spam --value on|off [--threshold 0.nn] [--force]",
   "  bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name move|mark_read|flag|move_unsure|create_draft --value on|off",
   "  bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off",
+  "  bun run mailbox:settings urgency --org-id <uuid> --mailbox-id <uuid> (--file <path.json> | --clear)",
   "  bun run mailbox:settings expire-ready --org-id <uuid> --mailbox-id <uuid>",
   "  Exit 0: ok. Exit 1: usage error or failure. Exit 2: refused by the go/no-go gate.",
 ].join("\n");
@@ -35,7 +44,8 @@ export type SettingsCommand =
       mailboxId: string;
       key: "offers" | "social" | "bills" | "junk";
       value: boolean;
-    };
+    }
+  | { kind: "urgency"; orgId: string; mailboxId: string; source: { file: string } | { clear: true } };
 
 const onOff = z.enum(["on", "off"]).transform((value) => value === "on");
 const threshold = z
@@ -62,6 +72,8 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
         value: { type: "string" },
         threshold: { type: "string" },
         force: { type: "boolean" },
+        file: { type: "string" },
+        clear: { type: "boolean" },
       },
       allowPositionals: true,
       strict: true,
@@ -77,6 +89,7 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
       auto: ["category", "value", "threshold", "force"],
       switch: ["name", "value"],
       "sync-folder": ["key", "value"],
+      urgency: ["file", "clear"],
     };
     const own = allowed[kind ?? ""];
     if (!own) return undefined;
@@ -112,6 +125,15 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
           force: values.force ?? false,
         };
       }
+      case "urgency": {
+        const parsed = z.object(common).parse(ids);
+        // Exactly one of the two.
+        if ((values.file === undefined) === (values.clear === undefined)) return undefined;
+        if (values.file !== undefined) {
+          return { kind, ...parsed, source: { file: z.string().min(1).parse(values.file) } };
+        }
+        return { kind, ...parsed, source: { clear: true } };
+      }
       case "sync-folder": {
         const parsed = z
           .object({ ...common, key: z.enum(["offers", "social", "bills", "junk"]), value: onOff })
@@ -134,4 +156,32 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
 export function describeSyncFolder(row: SyncFolderRow): string {
   const cursor = row.uidvalidity === null || row.last_uid === null ? "none" : "set";
   return `sync folder ${row.key}: ${row.enabled ? "on" : "off"}, role ${row.role}, path ${row.path}, cursor ${cursor}`;
+}
+
+export type UrgencyFileResult =
+  | { ok: true; profile: UrgencyProfile }
+  // `paths`: the Zod issue paths, no values. Empty when the text is not JSON.
+  | { ok: false; reason: "not_json" | "schema"; paths: string[] };
+
+// The file holds the profile itself: `{ "topics": [...], "deadlines": [...] }`. The profile can name people, so the
+// result carries issue paths and never a value.
+export function parseUrgencyFile(text: string): UrgencyFileResult {
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    return { ok: false, reason: "not_json", paths: [] };
+  }
+  const parsed = urgencyProfileSchema.safeParse(json);
+  if (parsed.success) return { ok: true, profile: parsed.data };
+  return {
+    ok: false,
+    reason: "schema",
+    paths: parsed.error.issues.map((issue) => issue.path.map(String).join(".") || "(root)"),
+  };
+}
+
+// Counts only: never a label or a keyword.
+export function describeUrgency(profile: UrgencyProfile | null): string {
+  return profile ? `urgency topics=${profile.topics.length} deadlines=${profile.deadlines.length}` : "urgency none";
 }

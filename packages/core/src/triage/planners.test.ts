@@ -251,6 +251,16 @@ describe("planActions from the spam folder (D11, U10)", () => {
     expect(types).toEqual(["create_draft", "send"]);
   });
 
+  test("holdDelegation: a delegation mail plans nothing, from junk too; other categories keep their plan", () => {
+    expect(planActions("delegation", "S", delegate, { fromJunk: true, holdDelegation: true })).toEqual([]);
+    expect(planActions("delegation", "S", delegate, { fromJunk: false, holdDelegation: true })).toEqual([]);
+    expect(planActions("urgent", "S", undefined, { fromJunk: false, holdDelegation: true })).toEqual([
+      { type: "flag" },
+    ]);
+    expect(planActions("urgent", "S", undefined, { fromJunk: true, holdDelegation: true })).toEqual(toInbox);
+    expect(planActions("delegation", "S", delegate, { fromJunk: true, holdDelegation: false })).toEqual(toInbox);
+  });
+
   test.each(categories)("%s: an undefined source and fromJunk false give the plan of today", (category) => {
     const today = planActions(category, "S", category === "delegation" ? delegate : undefined);
     expect(planActions(category, "S", category === "delegation" ? delegate : undefined, { fromJunk: false })).toEqual(
