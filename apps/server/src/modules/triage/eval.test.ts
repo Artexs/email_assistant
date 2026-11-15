@@ -17,6 +17,7 @@ import {
 import { type CaseResult, evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
 import { firstEstimateUsd } from "./eval-pool";
 import { evalExitCode } from "./eval-report";
+import { type ClassifierV3Part, promptLabel } from "./prompts";
 import { PROMPT_VERSION } from "./prompts/classifier-v2";
 
 const usage: LlmUsage = {
@@ -833,6 +834,18 @@ describe("evalStateFileName", () => {
     expect(evalStateFileName({ ...base, model: "gpt-6-luna", reasoningEffort: "none" })).toBe(
       "gpt-6-luna-none-classifier-v2-all.jsonl"
     );
+  });
+
+  test("a prompt label with parts keeps two variants apart (F109 stage 08)", () => {
+    const name = (parts: readonly ClassifierV3Part[]) =>
+      evalStateFileName({
+        ...base,
+        model: "gpt-6-luna",
+        promptVersion: promptLabel({ version: "classifier-v3", parts }),
+      });
+    expect(name(["urgency", "history"])).toBe("gpt-6-luna-classifier-v3_history_urgency_-all.jsonl");
+    expect(name(["history", "urgency"])).toBe(name(["urgency", "history"]));
+    expect(new Set([name([]), name(["history"]), name(["urgency"]), name(["history", "urgency"])]).size).toBe(4);
   });
 
   test("subset suffix and unsafe characters", () => {

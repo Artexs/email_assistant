@@ -283,3 +283,61 @@ describe("testmail CLI setup", () => {
     expect(fake.requests.map((item) => item.method)).toEqual(["GET"]);
   });
 });
+
+// The CLI prints through createCliOutput: `print` to stdout, `fail` to stderr, `[testmail] text`. Each test pins the
+// stream of a failure line that no test above pins: stdout stays empty.
+describe("testmail CLI streams", () => {
+  function expectOnlyStderr(result: { stdout: string; stderr: string }, text: string): void {
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain(`[testmail] ${text}`);
+  }
+
+  test("no command: the usage on stderr", async () => {
+    const result = await cli([]);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "usage: ");
+  });
+
+  test("an unknown option: the usage on stderr", async () => {
+    const result = await cli(["setup", "--no-such-option"]);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "usage: ");
+  });
+
+  test("a missing option: the issue line and the usage on stderr", async () => {
+    const result = await cli(["send"]);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "");
+    expect(result.stderr).toContain("--batch");
+    expect(result.stderr).toContain("[testmail] usage: ");
+  });
+
+  test("send before setup: `inbox not found` on stderr", async () => {
+    writeBatch(makeBatch());
+    const result = await cli(["send", "--batch", batchId]);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "inbox not found: run bun run testmail:setup");
+    expect(fake.sent).toHaveLength(0);
+  });
+
+  test("an inbox with another address than the persona file: the refusal on stderr", async () => {
+    fake.failNext("get", {
+      status: 200,
+      body: {
+        inbox_id: "other@agentmail.to",
+        email: "other@agentmail.to",
+        display_name: "X",
+        status_until: "2026-12-07T14:40:11.000Z",
+      },
+    });
+    const result = await cli(["setup"]);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "inbox address differs from the persona file");
+  });
+
+  test("a server that is down: `failed:` with the error label on stderr", async () => {
+    const result = await cli(["setup"], { AGENTMAIL_BASE_URL: "http://127.0.0.1:1/v0" });
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "failed: SoftError");
+  });
+});
