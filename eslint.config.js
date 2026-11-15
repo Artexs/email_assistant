@@ -195,6 +195,11 @@ const ssoImports = {
   group: ["@better-auth/sso", "@better-auth/sso/*"],
   message: "Only apps/server/src/platform/auth-sso.ts imports @better-auth/sso (F119).",
 };
+const mailSdkImports = {
+  group: ["imapflow", "imapflow/*", "mailparser", "mailparser/*", "nodemailer", "nodemailer/*"],
+  message:
+    "Only apps/server/src/modules/mail/, modules/lab/ (the sim GreenMail client and bots) and platform/auth-mail.ts import imapflow, mailparser or nodemailer (docs/code-patterns.md § Ports and adapters).",
+};
 // Flat config: a later block replaces the rule options, so each file group lists all its patterns.
 const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { patterns }] });
 
@@ -265,29 +270,38 @@ export default tseslint.config(
       "apps/server/src/platform/llm/providers/openai*.ts",
       "apps/server/src/platform/auth-sso.ts",
     ],
-    rules: restrictImports([grammyImports, geminiImports, openaiImports, ssoImports]),
+    rules: restrictImports([grammyImports, geminiImports, openaiImports, ssoImports, mailSdkImports]),
   },
   {
     files: ["apps/server/src/platform/auth-sso.ts"],
-    rules: restrictImports([grammyImports, geminiImports, openaiImports]),
+    rules: restrictImports([grammyImports, geminiImports, openaiImports, mailSdkImports]),
   },
   {
     files: ["apps/server/src/modules/channels/telegram/**/*.ts"],
-    rules: restrictImports([geminiImports, openaiImports, ssoImports]),
+    rules: restrictImports([geminiImports, openaiImports, ssoImports, mailSdkImports]),
+  },
+  {
+    // The mail adapters, the sim GreenMail client and bots of the lab, and the auth mail sender use the mail SDKs.
+    files: [
+      "apps/server/src/modules/mail/**/*.ts",
+      "apps/server/src/modules/lab/**/*.ts",
+      "apps/server/src/platform/auth-mail.ts",
+    ],
+    rules: restrictImports([grammyImports, geminiImports, openaiImports, ssoImports]),
   },
   {
     files: [
       "apps/server/src/platform/llm/providers/gemini.ts",
       "apps/server/src/platform/llm/providers/gemini.test.ts",
     ],
-    rules: restrictImports([grammyImports, openaiImports, ssoImports]),
+    rules: restrictImports([grammyImports, openaiImports, ssoImports, mailSdkImports]),
   },
   {
     files: [
       "apps/server/src/platform/llm/providers/openai.ts",
       "apps/server/src/platform/llm/providers/openai.test.ts",
     ],
-    rules: restrictImports([grammyImports, geminiImports, ssoImports]),
+    rules: restrictImports([grammyImports, geminiImports, ssoImports, mailSdkImports]),
   },
   {
     // components/ui/** is excluded on purpose: the shadcn CLI writes sr-only texts there.
