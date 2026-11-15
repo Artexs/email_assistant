@@ -50,6 +50,13 @@ function isValidMailDomain(domain: string): boolean {
   return DOMAIN_PATTERN.test(domain) && !domain.split(".").every((label) => /^[0-9]+$/.test(label));
 }
 
+// The form the provider row stores: trimmed, lower case, a valid mail domain. null for anything else. The operator CLI
+// checks with it before it calls the provider, so a bad domain costs no discovery request.
+export function normalizeMailDomain(raw: string): string | null {
+  const domain = raw.trim().toLowerCase();
+  return isValidMailDomain(domain) ? domain : null;
+}
+
 function clientIdOf(oidcConfig: string): string | null {
   try {
     const parsed: unknown = JSON.parse(oidcConfig);
@@ -84,8 +91,8 @@ export async function setSsoProvider(
   ctx: TenantContext,
   input: SetSsoProviderInput
 ): Promise<SetSsoProviderResult> {
-  const domain = input.domain.trim().toLowerCase();
-  if (!isValidMailDomain(domain)) return { kind: "domain_invalid" };
+  const domain = normalizeMailDomain(input.domain);
+  if (domain === null) return { kind: "domain_invalid" };
 
   const run = async (trx: Transaction<DB>): Promise<SetSsoProviderResult> => {
     if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };

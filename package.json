@@ -56,6 +56,7 @@
     "org:dsr": "bun apps/server/src/scripts/org-dsr.ts",
     "org:plan": "bun apps/server/src/scripts/org-plan.ts",
     "org:status": "bun apps/server/src/scripts/org-status.ts",
+    "org:sso": "bun apps/server/src/scripts/org-sso.ts",
     "web:invite": "bun apps/server/src/scripts/web-invite.ts",
     "web:two-factor-reset": "bun apps/server/src/scripts/web-two-factor-reset.ts",
     "e2e:seed": "bun apps/server/src/scripts/e2e-seed.ts",
