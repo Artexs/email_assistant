@@ -17,7 +17,7 @@ import {
   type DemoTable,
   type LabRun,
 } from "../../src/modules/lab";
-import { TABLE_SPECS } from "../../src/modules/lab/demo-seed";
+import { PLACEHOLDER_SECRET, TABLE_SPECS } from "../../src/modules/lab/demo-seed";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { EXPORT_MAP } from "../../src/modules/privacy";
 import { addMember, createOrganizationWithOwner } from "../../src/modules/tenancy";
@@ -436,6 +436,22 @@ describe("exportDemo (F113 stage 15)", () => {
 
   // Each case plants one address outside `.test` in one column; the export refuses and names the table and column.
   const BAD: [string, string, string, string][] = [
+    // Review B1: forms that the first scan let through into the seed file.
+    [
+      "emails",
+      "body_text",
+      "update emails set body_text = 'write to \"john\"@gmail.com today' where id = $1",
+      "emails",
+    ],
+    ["emails", "body_text", "update emails set body_text = 'write to john@[10.0.0.1] today' where id = $1", "emails"],
+    ["emails", "body_text", "update emails set body_text = 'write to john＠gmail.com today' where id = $1", "emails"],
+    ["emails", "body_text", "update emails set body_text = 'write to john%40gmail.com today' where id = $1", "emails"],
+    [
+      "emails",
+      "body_text",
+      "update emails set body_text = 'write to john&#x40;gmail.com today' where id = $1",
+      "emails",
+    ],
     ["emails", "to_addresses", "update emails set to_addresses = array['x@gmail.com'] where id = $1", "emails"],
     [
       "emails",
@@ -547,7 +563,10 @@ describe("exportDemo (F113 stage 15)", () => {
     const text = serializeDemoSeed(await exportOf(fx));
     for (const foreign of [third, other]) {
       for (const [table, ids] of Object.entries(await idsOf(foreign.orgId))) {
-        for (const id of ids) expect(text, `${table} row of another org`).not.toContain(id);
+        // A bigint id (`audit_log`) is a short number that can sit in any text: only UUID ids are searched.
+        for (const id of ids.filter((value) => value.length > 20)) {
+          expect(text, `${table} row of another org`).not.toContain(id);
+        }
       }
       expect(text).not.toContain(foreign.address);
     }
@@ -827,6 +846,73 @@ describe("importDemo (F113 stage 15)", () => {
     expect((await rowCounts(twin.orgId)).organizations).toBe(1);
   });
 
+  // TG1: only an org that looks like an import (every mailbox paused with the placeholder secret) is replaced.
+  test("6c: replace refuses an org with the import name and no mailbox, a mailbox that is active, or a mailbox with a real secret", async () => {
+    const fx = await buildFixture();
+    const seed = elsewhere(await exportOf(fx));
+    const email = owner();
+
+    // A real org renamed to the import name: owner = the --email user, no mailbox row (reviewer case R4).
+    const { orgId: bare } = await createOrganizationWithOwner(db, {
+      orgName: IMPORT_ORG_NAME,
+      timezone: "Europe/Warsaw",
+      email,
+      displayName: "Real owner",
+      locale: "en",
+      plan: { kind: "active" },
+    });
+    orgIds.push(bare);
+    const before = await snapshot();
+    expect((await importRefusal(elsewhere(seed), { ownerEmail: email, replace: true })).code).toBe("replace_refused");
+    expect(await snapshot()).toEqual(before);
+    expect((await rowCounts(bare)).organizations).toBe(1);
+    await db.deleteFrom("organizations").where("id", "=", bare).execute();
+
+    // A real import is replaced; the same org with one changed mailbox is not.
+    const first = await importDemo(db, elsewhere(seed), {
+      ownerEmail: email,
+      replace: false,
+      sendScope: SEND_OFF,
+      now: NOW,
+    });
+    const withFirst = await snapshot();
+    await db.updateTable("mailboxes").set({ status: "active" }).where("org_id", "=", first.orgId).execute();
+    expect((await importRefusal(elsewhere(seed), { ownerEmail: email, replace: true })).code).toBe("replace_refused");
+    await db.updateTable("mailboxes").set({ status: "paused" }).where("org_id", "=", first.orgId).execute();
+    await db
+      .updateTable("mailbox_credentials")
+      .set({ encrypted_secret: "v1:real-looking-secret" })
+      .where("org_id", "=", first.orgId)
+      .execute();
+    expect((await importRefusal(elsewhere(seed), { ownerEmail: email, replace: true })).code).toBe("replace_refused");
+    await db.deleteFrom("mailbox_credentials").where("org_id", "=", first.orgId).execute();
+    expect((await importRefusal(elsewhere(seed), { ownerEmail: email, replace: true })).code).toBe("replace_refused");
+    expect(await snapshot()).toEqual(withFirst);
+    expect((await rowCounts(first.orgId)).organizations).toBe(1);
+
+    // The unchanged import is replaced.
+    await db
+      .insertInto("mailbox_credentials")
+      .values({
+        mailbox_id: (
+          await db.selectFrom("mailboxes").select("id").where("org_id", "=", first.orgId).executeTakeFirstOrThrow()
+        ).id,
+        org_id: first.orgId,
+        secret_kind: "password",
+        encrypted_secret: PLACEHOLDER_SECRET,
+        key_version: 1,
+      })
+      .execute();
+    const second = await importDemo(db, elsewhere(seed), {
+      ownerEmail: email,
+      replace: true,
+      sendScope: SEND_OFF,
+      now: NOW,
+    });
+    expect((await rowCounts(first.orgId)).organizations).toBe(0);
+    expect((await rowCounts(second.orgId)).organizations).toBe(1);
+  });
+
   test("7: SEND_SCOPE=all is refused with nothing written, also with replace", async () => {
     const fx = await buildFixture();
     const seed = elsewhere(await exportOf(fx));
@@ -935,6 +1021,19 @@ describe("importDemo (F113 stage 15)", () => {
       "non_test_address",
       ["emails", "body_text"]
     );
+    // Review B1: a crafted file can carry the forms too; the import scan refuses them.
+    for (const body of [
+      'write to "john"@gmail.com',
+      "write to john@[10.0.0.1]",
+      "john＠gmail.com",
+      "john%40gmail.com",
+    ]) {
+      await refuse(
+        (copy) => ((copy.tables.emails[0] as Record<string, unknown>).body_text = body),
+        "non_test_address",
+        ["emails", "body_text"]
+      );
+    }
     await refuse(
       (copy) => ((copy.tables.actions[0] as Record<string, unknown>).payload = { to: ["x@y.org"] }),
       "non_test_address",

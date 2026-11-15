@@ -9,7 +9,7 @@ import { insertMembership, insertUser } from "../../tenancy";
 import { checkDemoSeed } from "./format";
 import { findNonTestAddress, findRealHost } from "./scan";
 import { DEMO_TABLES, TABLE_SPECS, type DemoRow, type DemoTable } from "./tables";
-import { buildImportRows } from "./transform";
+import { buildImportRows, PLACEHOLDER_SECRET } from "./transform";
 import { DemoSeedError, IMPORT_ORG_NAME, type DemoSeed } from "./types";
 
 const BATCH_ROWS = 200;
@@ -55,13 +55,23 @@ async function insertRows(
 }
 
 // An earlier import of this seed is replaced only when it is clearly the same kind of org: exactly one org with the
-// import name, only the owner as a member, only the mailboxes of the seed. The check runs again inside the delete
+// import name, only the owner as a member, only the mailboxes of the seed, and every mailbox the way only an import
+// writes it (status `paused`, the placeholder secret). An org with no mailbox is refused when the seed has one (a real
+// org renamed to the import name would pass the other checks). The check runs again inside the delete
 // transaction (`expect`), so a late member or mailbox stops the delete.
 async function replaceEarlierImport(db: Db, seed: DemoSeed, ownerEmail: string): Promise<void> {
   const named = await sql<{ id: string }>`select id from organizations where name = ${IMPORT_ORG_NAME}`.execute(db);
   if (named.rows.length > 1) throw new DemoSeedError("replace_ambiguous");
   const old = named.rows[0];
   if (old === undefined) return;
+  const boxes = await sql<{ status: string; secret: string | null }>`
+    select m.status, c.encrypted_secret as secret from mailboxes m
+    left join mailbox_credentials c on c.mailbox_id = m.id and c.org_id = m.org_id
+    where m.org_id = ${old.id}::uuid`.execute(db);
+  const placeholderOnly = boxes.rows.every((box) => box.status === "paused" && box.secret === PLACEHOLDER_SECRET);
+  if (!placeholderOnly || (boxes.rows.length === 0 && seed.tables.mailboxes.length > 0)) {
+    throw new DemoSeedError("replace_refused");
+  }
   const result = await deleteOrganization(db, {
     orgId: old.id,
     confirmName: IMPORT_ORG_NAME,

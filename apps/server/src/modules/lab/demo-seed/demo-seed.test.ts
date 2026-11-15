@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -151,8 +151,10 @@ describe("the address and host scan", () => {
       "Write to a@x.test, b@kordelan.test.",
       "<a@demo.kordelan.test>",
       "no address here",
-      "@handle",
-      "5 @ 3",
+      "evil.com.test is a reserved host",
+      "john(at)gmail.com",
+      "a@X.TEST",
+      "mailto:a@x.test?subject=hi",
     ]) {
       expect(hasNonTestAddress(ok)).toBe(false);
     }
@@ -164,8 +166,63 @@ describe("the address and host scan", () => {
       "user@localhost",
       "a@test",
       '"a@x.org"',
+      // A bare `@` and a handle are refused too (lab text has none).
+      "@handle",
+      "5 @ 3",
+      "@gmail.com",
+      "a@x.test.evil.com",
+      "mailto:john@gmail.com",
+      "john@bücher.de",
+      "john@gmаil.com",
     ]) {
-      expect(hasNonTestAddress(bad)).toBe(true);
+      expect(hasNonTestAddress(bad), bad).toBe(true);
+    }
+  });
+
+  // Review B1: the old scan needed a plain word before the `@`.
+  test("B1: a quoted local part and an address literal are refused (the scan keys on the @, not on the word before it)", () => {
+    for (const bad of [
+      'write to "john"@gmail.com today',
+      '"john doe"@gmail.com',
+      "john@[10.0.0.1]",
+      "john@[IPv6:::1]",
+      'a@x.test, "b"@gmail.com',
+    ]) {
+      expect(hasNonTestAddress(bad), bad).toBe(true);
+    }
+    expect(findNonTestAddress([{ id: "1", body_text: 'write to "john"@gmail.com today' }])).toBe("body_text");
+    expect(hasNonTestAddress('"john"@x.test')).toBe(false);
+  });
+
+  test("B1: a full-width at sign, a zero-width space and the NFKC forms are refused", () => {
+    for (const bad of [
+      "john＠gmail.com",
+      "john@gmail.com\u200b",
+      "john@x.test\u200b.evil.com",
+      "john@ｇmail.com",
+      "john＠［10.0.0.1］",
+    ]) {
+      expect(hasNonTestAddress(bad), bad).toBe(true);
+    }
+    expect(hasNonTestAddress("john＠x.test")).toBe(false);
+  });
+
+  test("B1: the encoded forms of the at sign are decoded before the scan: %40, &#64;, &#x40;, &commat; (also encoded twice)", () => {
+    for (const bad of [
+      "john%40gmail.com",
+      "john%40GMAIL.com",
+      "john&#64;gmail.com",
+      "john&#064;gmail.com",
+      "john&#x40;gmail.com",
+      "john&#X40;gmail.com",
+      "john&commat;gmail.com",
+      "john%2540gmail.com",
+      "john&amp;#64;gmail.com",
+    ]) {
+      expect(hasNonTestAddress(bad), bad).toBe(true);
+    }
+    for (const ok of ["john%40x.test", "john&#64;x.test", "john&commat;x.test", "100%25 sure"]) {
+      expect(hasNonTestAddress(ok), ok).toBe(false);
     }
   });
 
@@ -400,6 +457,8 @@ describe("the seed files", () => {
       expect(() => writeNewSeedFile(path, "two")).toThrow(DemoSeedError);
       expect(readSeedFile(path)).toBe("one");
       expect(readSeedFile(join(dir, "missing.json"))).toBeUndefined();
+      // N8: only the owner reads or writes the file (umask can only remove more bits).
+      expect(statSync(path).mode & 0o177).toBe(0);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

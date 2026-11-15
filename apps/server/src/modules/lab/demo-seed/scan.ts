@@ -1,31 +1,57 @@
-import { normalizeDsrAddress } from "../../privacy";
-
 import type { DemoRow } from "./tables";
 
 // Which values may leave the lab (rule of F113 stage 15). Every address in a seed ends in `.test`; every mailbox host
 // is the sim GreenMail (a loopback name) or a `.test` name. The scan reads every string of every row, so an address in
 // a subject, a body, a header, a JSON payload or an audit row is found. Findings name the table and column only.
+//
+// The scan keys on each `@` and the run of domain characters after it, not on the word before it (review B1: a quoted
+// local part `"john"@gmail.com` and an address literal `john@[10.0.0.1]` have no plain word before the `@`). Every `@`
+// must be followed by a domain of letters, digits, hyphens and dots that ends in `.test`; an empty run, a `[`, a
+// non-ASCII letter or any other domain refuses. So a bare `@` in a text is refused too: lab text has none.
+// Before the scan the text is normalized (NFKC: a full-width `＠` becomes `@`; format characters such as a zero-width
+// space are removed) and the encoded forms of `@` are decoded (`%40`, `&#64;`, `&#x40;`, `&commat;`), up to three times
+// (`%2540`, `&amp;#64;`).
 
-// A word with an `@` inside. The same characters that `normalizeDsrAddress` of the privacy module refuses (white space,
-// quotes, angle brackets) end the word, so `<a@x.test>`, `"a@x.test"` and `a@x.test.` find the address inside.
-const CANDIDATE = /[^\s<>,;"'()[\]{}\\@]+@[^\s<>,;"'()[\]{}\\@]+/g;
+// The characters that end a domain run. `[` is not one of them: the check refuses an `@[` before it reads a run.
+const DOMAIN_END = /[\s<>,;"'()\]{}\\@/?#:!|]/;
+const TEST_DOMAIN = /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.test$/;
+const ENCODED = [
+  [/%25/gi, "%"],
+  [/&amp;/gi, "&"],
+  [/%40|&#0*64;|&#x0*40;|&commat;/gi, "@"],
+] as const;
 
-const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+const normalize = (text: string): string => {
+  let current = text
+    .normalize("NFKC")
+    .replace(/\p{Cf}/gu, "")
+    .toLowerCase();
+  for (let round = 0; round < 3; round += 1) {
+    const next = ENCODED.reduce((acc, [pattern, plain]) => acc.replace(pattern, plain), current);
+    if (next === current) break;
+    current = next;
+  }
+  return current;
+};
 
 export const isTestHost = (host: string): boolean => host === "test" || host.endsWith(".test");
 
-/** True when the text holds a word that looks like an address and its domain is not `.test`. */
+/** True when the text holds an `@` that is not followed by a `.test` domain. */
 export function hasNonTestAddress(text: string): boolean {
-  for (const match of text.matchAll(CANDIDATE)) {
+  const flat = normalize(text);
+  let at = flat.indexOf("@");
+  while (at !== -1) {
+    const rest = flat.slice(at + 1);
+    const end = rest.search(DOMAIN_END);
     // A full stop at the end is the end of a sentence, not of the domain.
-    const word = match[0].replace(/[.:!?]+$/, "");
-    const address = normalizeDsrAddress(word);
-    // A word that looks like an address but is not a valid one is refused too: the rule errs on the side of refusing.
-    if (address === null) return true;
-    if (!isTestHost(address.slice(address.indexOf("@") + 1))) return true;
+    const domain = (end === -1 ? rest : rest.slice(0, end)).replace(/\.+$/, "");
+    if (!TEST_DOMAIN.test(domain)) return true;
+    at = flat.indexOf("@", at + 1);
   }
   return false;
 }
+
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 function stringsOf(value: unknown, into: string[]): void {
   if (typeof value === "string") into.push(value);
