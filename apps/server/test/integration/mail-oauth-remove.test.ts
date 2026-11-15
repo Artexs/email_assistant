@@ -12,6 +12,7 @@ import {
   type MailOAuthProvider,
   type RemoveDeps,
 } from "../../src/modules/mail";
+import { OAUTH_TIMEOUT_MS } from "../../src/modules/mail/oauth/client";
 import { MICROSOFT_PERSONAL_TENANT } from "../../src/modules/mail/oauth/revoke";
 import { encodeOAuthSecret, saveOAuthSecret, withMailboxOAuthLock } from "../../src/modules/mail/oauth/secret-store";
 import { insertCredentials, insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
@@ -509,7 +510,7 @@ describe("Remove of a password mailbox and the other rules", () => {
     expect(dropped).toEqual([]);
   });
 
-  test("16. a failed delete (Google): no revoke call is made", async () => {
+  test("16. a Google mailbox of another organization is not found: no revoke call is made", async () => {
     const box = await seedMailbox();
     const deps: RemoveDeps = {
       db,
@@ -525,6 +526,59 @@ describe("Remove of a password mailbox and the other rules", () => {
     expect(result).toEqual({ kind: "not_found" });
     expect(revokeCalls).toBe(0);
     expect(fake.revoked).toEqual([]);
+  });
+
+  test("16b. a failed delete (Google) after the secret read: no revoke call, the mailbox is back to active", async () => {
+    const box = await seedMailbox();
+    // The first transaction of Remove is the secret read under the lock; the second is the delete: it fails.
+    let transactions = 0;
+    const failing = new Proxy(db, {
+      get(target, property) {
+        if (property !== "transaction") {
+          const value = Reflect.get(target, property, target) as unknown;
+          return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        }
+        return () => {
+          transactions += 1;
+          if (transactions < 2) return target.transaction();
+          return { execute: async () => Promise.reject(new Error("delete down")) };
+        };
+      },
+    });
+    const deps: RemoveDeps = {
+      db: failing,
+      onRemoved: async () => undefined,
+      oauth: { secrets, clients, tokens: { drop: (id) => void dropped.push(id) } },
+    };
+    await expect(
+      removeMailbox(deps, { orgId: org.orgId }, box.id, { userId: org.ownerId, confirmAddress: box.address, now: NOW })
+    ).rejects.toThrow("delete down");
+    expect(transactions).toBe(2);
+    expect(revokeCalls).toBe(0);
+    expect(fake.revoked).toEqual([]);
+    expect(dropped).toEqual([]);
+    const row = await db.selectFrom("mailboxes").select("status").where("id", "=", box.id).executeTakeFirstOrThrow();
+    expect(row.status).toBe("active");
+    expect(await credentialRows(box.id)).toHaveLength(1);
+  });
+
+  test("16c. the revoke in the web wiring uses the default client timeout of the shared constant (10 s)", async () => {
+    expect(OAUTH_TIMEOUT_MS).toBe(10_000);
+    const box = await seedMailbox();
+    const original = AbortSignal.timeout.bind(AbortSignal);
+    const timeouts: number[] = [];
+    const spy = spyOn(AbortSignal, "timeout").mockImplementation((ms: number) => {
+      timeouts.push(ms);
+      return original(ms);
+    });
+    try {
+      const res = await removeOver(appOf(), "owner", box.id, box.address);
+      expect((await res.json()) as unknown).toMatchObject({ revoked: true });
+    } finally {
+      spy.mockRestore();
+    }
+    // `clients` is built without `timeoutMs`; Remove passes none either: every call of the revoke carries the constant.
+    expect(timeouts).toEqual([OAUTH_TIMEOUT_MS]);
   });
 
   test("17. a Google mailbox: the notice fails after the commit: Remove still succeeds and one error line is logged", async () => {
