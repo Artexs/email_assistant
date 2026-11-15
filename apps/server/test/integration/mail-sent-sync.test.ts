@@ -3,19 +3,18 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { sentOriginOf } from "../../src/modules/actions";
-import { MailFolderMissingError, type SeedMessage } from "../../src/modules/mail";
-import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
+import { MailFolderMissingError } from "../../src/modules/mail";
 import { getSentSyncState, setFolderMapEntry, updateSentCursor, writeSentSwitch } from "../../src/modules/mail/repo";
 import { renderSeedMessage } from "../../src/modules/mail/seed";
 import { syncSentHeaders, type SentSyncDeps } from "../../src/modules/mail/sent-sync";
 import { baseDedupKey, contentHash, normalizeMessageId } from "../../src/modules/mail/sync-rules";
-import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
-import type { DB, TenantContext } from "../../src/platform/db";
+import { configureFeatures } from "../../src/modules/tenancy";
+import type { DB } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox, insertDraftAndSend } from "./fixtures";
+import { insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { ago, DAY, depsOf, HOUR, mail, newOrg, NOW, put, rowOf, rowsOf, stateOf } from "./mail-sent-fixtures";
 
 const db = testDb();
 
@@ -26,87 +25,6 @@ afterAll(async () => {
 beforeEach(() => {
   configureFeatures({ off: [] });
 });
-
-const NOW = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-
-function ago(ms: number): Date {
-  return new Date(NOW.getTime() - ms);
-}
-
-interface Org {
-  ctx: TenantContext;
-  mailboxId: string;
-  userId: string;
-  provider: FakeMailProvider;
-}
-
-// Flag on, switch on at NOW - 1 h, folder_map.sent = "Sent", a fake provider.
-async function newOrg(
-  trx: Transaction<DB>,
-  opts: { flag?: boolean; switchOn?: boolean; sentPath?: string | null } = {}
-) {
-  const created = await createOrgWithMailbox(trx);
-  const ctx: TenantContext = { orgId: created.orgId };
-  if (opts.flag !== false) {
-    await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
-  }
-  if (opts.switchOn !== false) {
-    await writeSentSwitch(trx, ctx, created.mailboxId, { enabled: true, at: ago(HOUR) });
-  }
-  if (opts.sentPath !== null) await setFolderMapEntry(trx, ctx, created.mailboxId, "sent", opts.sentPath ?? "Sent");
-  const org: Org = { ctx, mailboxId: created.mailboxId, userId: created.userId, provider: createFakeMailProvider() };
-  return org;
-}
-
-function depsOf(trx: Transaction<DB>, org: Org, extra: Partial<SentSyncDeps> = {}): SentSyncDeps {
-  return {
-    db: trx,
-    provider: org.provider,
-    sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(trx, ctx, mailboxId, actionId),
-    now: () => NOW,
-    ...extra,
-  };
-}
-
-function mail(n: number, at: Date, extra: Partial<SeedMessage> = {}): SeedMessage {
-  return {
-    messageId: `<sent${n}@x.test>`,
-    from: "me@corp.test",
-    to: [`to${n}@x.test`],
-    subject: `Subject ${n}`,
-    date: at,
-    text: `Body ${n}`,
-    ...extra,
-  };
-}
-
-function put(org: Org, n: number, at: Date, extra: Partial<SeedMessage> = {}, folder = "Sent"): number {
-  return org.provider.deliver(folder, mail(n, at, extra), { internalDate: at });
-}
-
-async function rowsOf(trx: Transaction<DB>, org: Org) {
-  return trx
-    .selectFrom("sent_emails")
-    .selectAll()
-    .where("org_id", "=", org.ctx.orgId)
-    .where("mailbox_id", "=", org.mailboxId)
-    .orderBy("uid")
-    .execute();
-}
-
-async function rowOf(trx: Transaction<DB>, org: Org, subject: string) {
-  const rows = (await rowsOf(trx, org)).filter((row) => row.subject === subject);
-  expect(rows).toHaveLength(1);
-  return rows[0] as (typeof rows)[number];
-}
-
-async function stateOf(trx: Transaction<DB>, org: Org) {
-  const state = await getSentSyncState(trx, org.ctx, org.mailboxId);
-  expect(state).toBeDefined();
-  return state as NonNullable<typeof state>;
-}
 
 describe("syncSentHeaders", () => {
   test("1: flag off gives flag_off, no provider call, no row, no pass time", async () => {
