@@ -29,9 +29,10 @@ The live lab plays the frozen week of made-up mail (`lab-01`) through the real p
    3. **Classify.** Mail that references a delegation mail this bot saw before for the same slot is a `reminder`; else a `delegation`.
    4. **Plan** (`botReplyPlan`, pure, Warsaw time). The start point is the receipt time inside Mon–Fri 08:00–18:00, else the next working day 08:00; the reply may fall after 18:00. `done`: delegation → reply at the start point plus 30–240 min; reminder → none. `late`: delegation → none; the first reminder, when no `done` was planned for the slot → `done` at the start point plus 30–120 min. `out_of_office`: every event → `auto_reply` one minute after receipt, any hour, header `Auto-Submitted: auto-replied`, back-on date = receipt day plus 7 days. `other_address`: like `done`, from `otherAddressOf(delegate)` (the same local part on `poczta-prywatna.test`). `silent`: none. The delay comes from `mulberry32` seeded by the run id and the received Message-ID.
    5. **Send.** `bot_planned` (key `<received Message-ID>:<kind>`, once per key) is written when the mail is read. A reply whose time has come gets `bot_intent`, SMTP, `bot_done`. From = the delegate address (or the alias), To = the `From` of the received mail, which must be the run mailbox. Subject `Re: <subject>`, `In-Reply-To` = the received id, `References` = its `References` plus that id, Message-ID `<r.<12 hex of sha256(key)>@<sender domain>>`. Text: fixed per persona language (pl, en, de).
-   6. **Resume.** A `bot_intent` with no `bot_done` is checked first: the reply Message-ID is searched in every folder of the run mailbox (the sim server moves mail out of the INBOX). Found → `bot_done`, no send; not found → send. A send that fails keeps the intent and counts `failed`; the next tick tries again.
-   7. **Logs.** The bots write run events only: ids, keys, codes and counts. No subject, text or address.
-   8. `other_address` replies are not matched to the delegation by the server (the reply detection needs the delegate address); the scorer reports them.
+   6. **Resume.** A `bot_intent` with no `bot_done` is checked first: the reply Message-ID is searched in every folder of the run mailbox (the sim server moves mail out of the INBOX). Found → `bot_done`, no send; not found → send.
+   7. **Failures.** A failed send or render writes `bot_error` (`key`, `code`) and counts `failed`; the next tick tries again. The fifth error of one reply writes `skip send_failed`, and the reply ends (a crash before that skip is mended by the next tick). A failed read of one delegate inbox counts `failed` and does not stop the other delegates. A subject is cut to 200 characters; a subject with a line break is `render_failed`. Mail with `Auto-Submitted` other than `no` is skipped (`skip auto_submitted`): the server sets none on a delegation or a reminder. The reply goes only `To:` the run mailbox: no `Reply-To`, `Cc` or `Bcc` is used.
+   8. **Logs.** The bots write run events only: ids, keys, codes and counts. No subject, text or address.
+   9. `other_address` replies are not matched to the delegation by the server (the reply detection needs the delegate address); the scorer reports them.
 
 ## Entry points
 
@@ -51,7 +52,7 @@ The live lab plays the frozen week of made-up mail (`lab-01`) through the real p
 
 ## Data
 
-Files under `LAB_STATE_DIR` (an absolute path): `orgs.json`, `runs/<runId>/run.json`, `runs/<runId>/events.jsonl`, `locks/<org>.lock`, `eval-spend.jsonl`. Events hold ids, codes and counts only. Bot events: `seen` (`uid:<persona key>` cursor; `mail:<slot id>:<delegation|reminder>` handled mail), `bot_planned`, `bot_intent`, `bot_done`, `skip`. The lab reads the `llm.call` rows of `audit_log` and counts the rows of `emails`; it writes no table.
+Files under `LAB_STATE_DIR` (an absolute path): `orgs.json`, `runs/<runId>/run.json`, `runs/<runId>/events.jsonl`, `locks/<org>.lock`, `eval-spend.jsonl`. Events hold ids, codes and counts only. Bot events: `seen` (`uid:<persona key>` cursor; `mail:<slot id>:<delegation|reminder>` handled mail), `bot_planned`, `bot_intent`, `bot_done`, `bot_error`, `skip`. The lab reads the `llm.call` rows of `audit_log` and counts the rows of `emails`; it writes no table.
 
 ## Limits
 

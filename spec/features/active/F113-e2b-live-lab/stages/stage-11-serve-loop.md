@@ -42,7 +42,7 @@ runServe(deps, opts: { everyMs: number; signal: AbortSignal }): Promise<void>;  
 1. One active run: a tick calls spend, mode, injector, bots, executive in that order.
 2. A run with `stopped` is skipped.
 3. Spend 5.00 of cap 5 → `finish(budget)`, no part runs, one `stopped` event and one ledger line. Spend `unpriced` → `finish("error:unpriced")`.
-3b. The injector returns `stopped: "budget"` → `finish(budget)` in the same tick; bots and executive do not run after it.
+   3b. The injector returns `stopped: "budget"` → `finish(budget)` in the same tick; bots and executive do not run after it.
 4. `now` = `tailEndsAt` → `finish(done)` once; the next tick does nothing for it.
 5. Injector throws 9 times → still active; the 10th → `finish("error:injector")`; a good tick between resets the count.
 6. Demo run with `assistFromDay` 4, week from 2026-11-23: at 2026-11-25T23:30Z (Thu 00:30 Warsaw) → mode set once; a second tick does not set it again.
@@ -60,3 +60,13 @@ Scoring (stages 12–13) and demo reset (stage 14).
 ## Carry-over from the stage 03 review (N6)
 
 `deploy/compose.sim.yaml` runs the `lab` service as `bun run lab:env-check && exec bun run lab serve`. `bun run` stays PID 1 and the lab is its child, so a stop signal may not reach the lab. When this stage builds the lab script, change that command to `exec bun apps/server/src/scripts/<lab script>.ts serve`. `apps/server/src/scripts/sim-compose-rules.ts` and its test hold the old command text: change them together.
+
+## Carry-over from the stage 08 review (notes 4, 8, 9, 11)
+
+Source: [`../review-8.md`](../review-8.md).
+
+- **Mail client options.** `createLabMailClient` has no default for the host or the password. Build it in the serve script from `LAB_MAIL_HOST` and `LAB_MAIL_PASSWORD`, read the same way as in `seed.ts` (stage 06). Also pass `allowedAddresses` = `labAddresses(corpus)`. The test default `127.0.0.1` is not a production default. (The stage 07 reconciliation decides the final factory name and options.)
+- **Order in a tick.** Run the bots tick before the first injector tick of a run. The first bots tick sets the UID cursor of each delegate inbox; no delegation mail can exist before it, because a delegation needs an executive tap.
+- **One serve process per run.** Two ticks at the same time would both send a due reply. Take a lock file per run (or per org) in the serve process and refuse to start a second one.
+- **Result counts.** `runDelegateBotsTick` returns `failed` too: a failed send of one reply, or a failed read of one delegate inbox (the tick goes on). Show it in the heartbeat and the status line. A reply ends after 5 failed sends (`bot_error` events, then `skip send_failed`); the scorer counts these skips.
+- **Message-ID compare (stage 14).** `sendOne` reads the received mail again by UID only. After a mailbox reset that changes UIDVALIDITY, a UID can point to another mail. Stage 14 (org reset) must either reset the bot cursors and plans of the run or compare the `Message-ID` of the mail with the key of the plan before a send.
