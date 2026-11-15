@@ -67,6 +67,34 @@ describe("deploy/check-logging.sh", () => {
     expect(result.err).not.toContain("KEY=val");
   });
 
+  test("fails on an entrypoint form and on a command continued after a backslash", () => {
+    const docs = write(
+      "forms.md",
+      "text\n$C run --rm --entrypoint bun server run x\n\n$C run --rm -T \\\n  server \\\n  bun run y\n"
+    );
+    const result = check([passing()], { CHECK_LOGGING_DOCS: docs });
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(`${docs}:2:`);
+    expect(result.err).toContain(`${docs}:4:`);
+  });
+
+  test("passes on a continued cli command", () => {
+    const docs = write("cont.md", "$C run --rm \\\n  cli \\\n  bun run y\n");
+    expect(check([passing()], { CHECK_LOGGING_DOCS: docs }).code).toBe(0);
+  });
+
+  test("fails when cli has no profile, or its healthcheck is on", () => {
+    const withCli = (name: string, extra: string): string =>
+      write(name, compose({ server: block("json-file"), cli: block("local") }).replace("  cli:\n", `  cli:\n${extra}`));
+    const noProfile = check([withCli("cli-a.yaml", "    healthcheck: { disable: true }\n")]);
+    expect(noProfile.code).toBe(1);
+    expect(noProfile.err).toContain("cli must have profiles [cli]");
+    const healthy = check([withCli("cli-b.yaml", "    profiles: [cli]\n")]);
+    expect(healthy.code).toBe(1);
+    expect(healthy.err).toContain("cli healthcheck must be disabled");
+    expect(check([withCli("cli-c.yaml", "    profiles: [cli]\n    healthcheck: { disable: true }\n")]).code).toBe(0);
+  });
+
   test("passes when documents use cli, or exec in server", () => {
     const docs = write("good.md", "$C run --rm cli bun run x\n$C exec server bun run x\nthe server runs a job\n");
     const result = check([passing()], { CHECK_LOGGING_DOCS: docs });
@@ -97,6 +125,7 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     environment?: Record<string, string>;
     restart?: string;
     healthcheck?: { disable?: boolean };
+    profiles?: string[];
   }
   const services = (JSON.parse(result.stdout.toString()) as { services: Record<string, Service> }).services;
 
@@ -112,5 +141,7 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     expect(services.server?.environment?.LOG_FORMAT).toBe("json");
     expect(services.cli?.restart).toBe("no");
     expect(services.cli?.healthcheck?.disable).toBe(true);
+    expect(services.cli?.profiles).toEqual(["cli"]);
+    expect(services.server?.profiles).toBeUndefined();
   });
 });

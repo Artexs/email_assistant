@@ -38,6 +38,17 @@ check_set() {
     exit 1
   fi
 
+  # The one-off service must stay behind its profile (a plain `up` would start a second server) and must have no healthcheck.
+  local cli_bad
+  cli_bad="$(printf '%s' "$config" | jq -r '
+    .services.cli // empty
+    | (if (.profiles // []) != ["cli"] then "check-logging: cli must have profiles [cli]" else empty end),
+      (if (.healthcheck.disable // false) != true then "check-logging: cli healthcheck must be disabled" else empty end)')"
+  if [ -n "$cli_bad" ]; then
+    echo "$cli_bad" >&2
+    exit 1
+  fi
+
   local others
   others="$(printf '%s' "$config" | jq -r '.services | keys | map(select(. != "server")) | join(" ")')"
   echo "logging ok: server json-file; local: $others"
@@ -62,11 +73,18 @@ check_docs() {
   for f in "${files[@]}"; do
     local path="$f"
     if [ ! -e "$path" ]; then path="$root/$f"; fi
+    # A command that continues after a backslash counts as one line; the number is the first line of it.
     while IFS= read -r n; do
       [ -n "$n" ] || continue
       echo "check-logging: $f:$n: a one-off command runs in server; use \`run --rm cli\`" >&2
       found=1
-    done < <(grep -nE '(^|[[:space:]])run[[:space:]]([^`]*[[:space:]])?server[[:space:]]+bun([[:space:]]|$)' "$path" | cut -d: -f1 || true)
+    done < <(awk '
+      { line = $0; if (start == 0) start = NR }
+      /\\[ \t]*$/ { sub(/\\[ \t]*$/, " ", line); acc = acc line; next }
+      { acc = acc line
+        if (acc ~ /(^|[ \t])run[ \t]([^`]*[ \t])?(server[ \t]+([^`]*[ \t])?bun|bun[ \t]+server)([ \t]|$)/) print start
+        acc = ""; start = 0 }
+    ' "$path")
   done
   if [ "$found" -ne 0 ]; then
     exit 1
