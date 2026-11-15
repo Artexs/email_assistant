@@ -1,4 +1,4 @@
-import { approvalDetailSchema } from "@ea/core";
+import { approvalConflictSchema, approvalDetailSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { testDb } from "./helpers";
@@ -54,6 +54,8 @@ describe("one send has one name in approve, reject, edit and the detail", () => 
       for (const route of ["approve", "reject", "edit"] as const) {
         const answer = await call(s, id, route, route === "edit" ? EDIT : {});
         expect({ name, route, ...answer }).toEqual({ name, route, status: 409, body: { error: "closed", state } });
+        // The schema of the apiDoc accepts exactly the names that the detail route uses.
+        expect(approvalConflictSchema.safeParse(answer.body).success).toBe(true);
       }
     }
   });
