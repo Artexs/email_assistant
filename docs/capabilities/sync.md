@@ -13,7 +13,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
    2. A mailbox with the same address in the organization gives `mailbox_exists` (web `409`).
    3. An organization at its mailbox limit gives `mailbox_limit` (web `409`). The check runs before any login, without a lock.
    4. The IMAP login and the SMTP login are tested (`smtpSecurity` is `tls` or `starttls`). The web route stops a check that hangs: the socket timeout is 20 s and the deadline is 25 s (`WEB_MAIL_TIMEOUTS`).
-   5. One transaction takes the limit lock, checks the limit again, then inserts the `mailboxes` row, the `INBOX` row of `mailbox_folders`, the encrypted credentials, the default settings and the audit row `mailbox.connected`.
+   5. One transaction takes the limit lock, checks the limit again, then inserts the `mailboxes` row, the `INBOX` row of `mailbox_folders`, the encrypted credentials, the default settings, the Sent switch row (`mailbox_sent_sync`: on when the flag `sent_sync` was on before the transaction, else off) and the audit row `mailbox.connected` (data: `mailbox_id`, `via`, `sent_sync`). `connectMailbox` returns `sentSync`; `mailbox:connect` prints `sent mail: tracked, read only` when it is true (`sent-mail.md`).
 
    Connect changes nothing in the mailbox: it does not create the `AI/*` folders. The committer creates them before the first move (`actions-and-undo.md`).
 

@@ -125,3 +125,7 @@ Before land, `claude-opus-5-5`: 06, 08, 09, 11, 16 (risk) and 05, 12, 13, 17, 18
 
 `claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): PASS, 17 notes, all fixed. Review 2 ([plan-review-2.md](plan-review-2.md), refresh): PASS, 9 notes; 8 fixed, N8 needs an F119 edit.
 
+
+## Log
+
+- 2026-11-15 stage 09: no consent-version bump for the panel link or the card edits. The link holds our own panel address and a send id (no mail-derived data) and shows only with the flag `approvals_page` on and `WEB_BASE_URL` set; the edit rows hold the card text that the user already got plus fixed phrases (owner decision 2026-11-15, F109). Detail: `notes/2026-11-15-f102-s09-card-sync.md`.

@@ -18,6 +18,8 @@ export interface NoticeDeps {
   // The process start time (from `main.ts`).
   startedAt: Date;
   testMail: TestMailRule;
+  // `WEB_BASE_URL`: the panel link on the approval card needs it (F102 D5). Unset: no link.
+  webBaseUrl?: string;
 }
 
 export type DbOrTrx = Db | Transaction<DB>;

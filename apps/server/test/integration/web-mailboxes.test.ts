@@ -333,7 +333,7 @@ describe("mailbox routes", () => {
     const rows = await auditOf(org.orgId, "mailbox.connected");
     expect(rows).toHaveLength(1);
     expect(rows[0]?.actor).toBe(org.ownerId);
-    expect(rows[0]?.data).toEqual({ mailbox_id: result.id, via: "web" });
+    expect(rows[0]?.data).toEqual({ mailbox_id: result.id, via: "web", sent_sync: false });
   });
 
   test("connect by the iCloud preset: SMTP on 587 with STARTTLS, stored on the row", async () => {

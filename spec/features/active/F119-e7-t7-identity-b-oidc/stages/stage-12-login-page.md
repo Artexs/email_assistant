@@ -24,12 +24,12 @@ Part of [`../plan.md`](../plan.md). Review before the land (sign-in page, Polish
 | `login_sso_submit` | Continue | Dalej |
 | `login_sso_back` | Back to password sign-in | Wróć do logowania hasłem |
 | `login_sso_error_no_provider` | Company sign-in is not set up for this address. Sign in with your password. | Logowanie kontem firmowym nie jest ustawione dla tego adresu. Zaloguj się hasłem. |
-| `login_sso_error_rate` | Too many tries. Wait a minute and try again. | Za dużo prób. Odczekaj minutę i spróbuj ponownie. |
+| `login_sso_error_rate` | Too many attempts. Wait a minute and try again. | Zbyt wiele prób. Poczekaj minutę i spróbuj ponownie. |
 | `login_sso_error_not_member` | This company account has no access. Ask the operator to add you. | To konto firmowe nie ma dostępu. Poproś operatora o dostęp. |
 | `login_sso_error_domain` | This company account uses another domain. Use your work e-mail. | To konto firmowe ma inną domenę. Użyj służbowego adresu e-mail. |
 | `login_sso_error_identity` | Your company account changed. Ask the operator to unlink the old one. | Twoje konto firmowe się zmieniło. Poproś operatora o odłączenie starego. |
-| `login_sso_error_off` | Company sign-in is off for your organization. Sign in with your password or ask the operator. | Logowanie kontem firmowym jest wyłączone w twojej organizacji. Zaloguj się hasłem albo napisz do operatora. |
-| `login_sso_error_generic` | Company sign-in failed. Try again or ask the operator. | Logowanie kontem firmowym nie udało się. Spróbuj ponownie albo napisz do operatora. |
+| `login_sso_error_off` | Company sign-in is off for your organization. Sign in with your password or ask the operator. | Logowanie kontem firmowym jest wyłączone w Twojej organizacji. Zaloguj się hasłem albo napisz do operatora. |
+| `login_sso_error_generic` | Company sign-in failed. Try again or ask the operator. | Logowanie kontem firmowym nie powiodło się. Spróbuj ponownie albo napisz do operatora. |
 
 **Test** (`apps/web/src/lib/sso-errors.test.ts`, the web unit tests that exist for the login page, `i18n.test.ts`):
 

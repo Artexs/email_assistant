@@ -3,6 +3,7 @@ import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
 import { suspiciousReasons, type SuspiciousReason } from "../triage/suspicious";
 
+import { attachmentLine, type AttachmentLineInput } from "./attachment-line";
 import { encodeCallback, isLabelCategory } from "./callback";
 import { formatClock } from "./local-time";
 import type { OutButton, OutMessage } from "./message";
@@ -39,6 +40,7 @@ export function renderUrgentNotice(
     wouldDo: string;
     // Old views have no field: they render as before.
     suspicious?: readonly SuspiciousReason[];
+    attachments?: AttachmentLineInput;
     now: Date;
     timeZone: string;
   },
@@ -49,6 +51,8 @@ export function renderUrgentNotice(
     `${texts.common.from}: ${senderLabel(input.from, texts)}`,
     `${texts.common.subject}: ${cleanSubject(input.subject, texts)}`,
   ];
+  const attachments = input.attachments === undefined ? null : attachmentLine(input.attachments, texts.locale);
+  if (attachments !== null) lines.push(attachments);
   if (input.aiText !== null) lines.push(`💬 ${cutText(input.aiText, 200)}`);
   const warning = suspiciousLine(input.suspicious, texts);
   if (warning !== null) lines.push(warning);

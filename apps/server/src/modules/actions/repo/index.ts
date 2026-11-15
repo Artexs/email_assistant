@@ -37,6 +37,7 @@ export {
   countFailedSendsSince,
   findSendByKey,
   getSend,
+  getSetSend,
   lastSendAppliedAt,
   insertSendAgain,
   listOpenReminderSends,

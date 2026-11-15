@@ -33,6 +33,7 @@ export {
   createMailOAuthClients,
   consumeOAuthState,
   createOAuthState,
+  finishOAuthCallback,
   mailOAuthProviders,
   mailOAuthRoutes,
   missingResourceScopes,
@@ -40,10 +41,14 @@ export {
   OAuthSoftError,
   OAuthStateRefusedError,
   requiredResourceScopes,
+  type CallbackDeps,
+  type CallbackResult,
   type ConsumeResult,
   type MailOAuthClient,
   type MailOAuthClients,
   type MailOAuthRouteDeps,
+  type OAuthGrant,
+  type OAuthRefusalCode,
   type OAuthStart,
   type MailOAuthProvider,
   type MailOAuthProviderSpec,
@@ -89,6 +94,7 @@ export {
   SmtpSendError,
   type MailSender,
 } from "./port";
+export { attachmentFactsToShow } from "./attachment-facts";
 export {
   changeMailboxStatus,
   claimEmails,
@@ -176,6 +182,7 @@ export {
   type SentPassStatus,
   type SentSyncDeps,
 } from "./sent-sync";
+export { setSentSync, type SentSwitchInput, type SentSwitchResult } from "./sent-switch";
 export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
 export {
   isSyntheticMessageId,

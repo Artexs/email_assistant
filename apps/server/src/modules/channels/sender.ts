@@ -7,6 +7,7 @@ import { createLog } from "../../platform/log";
 import { markDigestSent } from "../reports";
 import { getOrganization } from "../tenancy";
 
+import { checkCardEdit } from "./card-edit-check";
 import { ChannelError, type ChatChannel } from "./port";
 import {
   claimDueOutbox,
@@ -132,8 +133,20 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           }
           message = rendered.message;
         }
+        // An edit of a card that was sent (F102 card sync): it makes no sound, so quiet hours do not hold it back. It checks
+        // that its outcome is still the one of the send before it takes a place in the per-user limit.
+        const isEdit = row.kind === "approval_edit";
+        let editCheck: Awaited<ReturnType<typeof checkCardEdit>> | undefined;
+        if (isEdit) {
+          editCheck = await checkCardEdit(db, row);
+          if (!editCheck.ok) {
+            await fail(row, editCheck.code);
+            outboxLog.warn("outbox_edit_dropped", { code: editCheck.code });
+            continue;
+          }
+        }
         const timezone = await timezoneOf(ctx);
-        if (row.kind !== "digest" && isQuietTime(now, timezone)) {
+        if (row.kind !== "digest" && !isEdit && isQuietTime(now, timezone)) {
           await release(row, quietEnd(now, timezone), false);
           continue;
         }
@@ -150,7 +163,20 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           continue;
         }
 
-        const { messageId } = await channel.send(link.chatId, message);
+        let messageId: number;
+        if (editCheck?.ok) {
+          // Message ids belong to one chat: a card sent before the user linked another chat is not there.
+          const { target } = editCheck;
+          if (target.sentAt === null || link.linkedAt > target.sentAt) {
+            await fail(row, "no_target");
+            outboxLog.warn("outbox_edit_dropped", { code: "no_target" });
+            continue;
+          }
+          await channel.edit(link.chatId, target.messageId, message);
+          messageId = target.messageId;
+        } else {
+          ({ messageId } = await channel.send(link.chatId, message));
+        }
         sent = true;
         sentPerUser.set(userKey, sentCount + 1);
 
@@ -194,12 +220,13 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
               outboxLog.error("outbox_token_rejected");
               return;
             }
+            // No retry for an edit that Telegram refused (the message is too old, gone or the same): the card stays as it is.
             case "blocked":
-              await fail(row, "blocked");
+              await fail(row, row.kind === "approval_edit" ? "edit_failed" : "blocked");
               outboxLog.warn("outbox_bot_blocked");
               continue;
             case "bad_request":
-              await fail(row, "bad_request");
+              await fail(row, row.kind === "approval_edit" ? "edit_failed" : "bad_request");
               outboxLog.error("outbox_refused", { code: error.code });
               continue;
             case "other":

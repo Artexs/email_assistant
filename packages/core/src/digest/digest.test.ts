@@ -93,6 +93,28 @@ describe("suspicious warning", () => {
   });
 });
 
+describe("attachment line", () => {
+  const attachments = {
+    attachments: [{ name: "faktura.pdf", type: "application/pdf", size: 122880, inline: false }],
+    count: 1,
+  };
+
+  test("an item with attachments shows the line after the subject, before the AI line", () => {
+    const lines = renderDigest(
+      input({ counts: { urgent: 1 }, items: [item(1, "urgent", { attachments })] }),
+      textTables.en
+    ).text.split("\n");
+    const first = lines.indexOf("📎 1: faktura.pdf (120 kB)");
+    expect(first).toBeGreaterThan(0);
+    expect(lines[first + 1]).toBe("💬 AI text 1");
+  });
+
+  test("an item without the field renders as before", () => {
+    const before = renderDigest(input({ counts: { urgent: 1 }, items: [item(1, "urgent")] }), textTables.en);
+    expect(before.text).not.toContain("📎");
+  });
+});
+
 function input(extra: Partial<DigestInput> = {}): DigestInput {
   return {
     kind: "scheduled",

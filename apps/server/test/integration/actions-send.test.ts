@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
+import { format } from "node:util";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import {
@@ -32,6 +33,7 @@ import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
 import type { LlmClient } from "../../src/platform/llm";
+import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import {
   createOrgWithMailbox,
@@ -47,6 +49,11 @@ const db = testDb();
 
 afterAll(async () => {
   await db.destroy();
+});
+
+afterEach(() => {
+  setLogLevel("info");
+  setLogFormat(logFormatFromEnv(process.env));
 });
 
 const MINUTE = 60_000;
@@ -442,6 +449,36 @@ describe("applySend", () => {
       const failed = (await auditOf(trx, p.sendId)).find((entry) => entry.event === "action.failed");
       expect(failed).toMatchObject({ reason_code: "smtp_rejected", data: { stage: "envelope", response_code: 550 } });
     });
+  });
+
+  test("(5b) the log lines of a refused send and of a soft retry hold the stage and the code, never the SMTP reply", async () => {
+    const lines: string[] = [];
+    const spies = [spyOn(console, "log"), spyOn(console, "error")];
+    for (const spy of spies) spy.mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    setLogFormat("json");
+    setLogLevel("debug");
+    try {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        const reply = new Error("550 5.1.1 MARKER-SMTP rcpt-marker@x.test unknown");
+        const p = await pair(trx, s);
+        s.sender.failNext(new SmtpSendError("envelope", "EENVELOPE", 451, false, true, { cause: reply }));
+        await applyOnce(trx, s, p.sendId);
+        s.sender.failNext(new SmtpSendError("envelope", "EENVELOPE", 550, true, false, { cause: reply }));
+        await applyOnce(trx, s, p.sendId, at(6));
+      });
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+
+    const entries = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(entries.map((entry) => entry.event)).toEqual(["send_retry", "send_failed"]);
+    expect(entries[0]).toMatchObject({ send_stage: "envelope", code: 451 });
+    expect(entries[1]).toMatchObject({ reason: "smtp_rejected", send_stage: "envelope", code: 550 });
+    for (const line of lines) {
+      expect(line).not.toContain("MARKER");
+      expect(line).not.toContain("rcpt-marker");
+    }
   });
 
   test("(6) a 4xx after the content fails at once as smtp_error, no retry", async () => {
@@ -1008,6 +1045,7 @@ describe("send end to end", () => {
         junkFolder: null,
         resumedAt: null,
         suspicious: noSuspiciousContext,
+        urgencyProfile: null,
       };
       const claimMail = async (time: Date) =>
         claimEmails(trx, s.ctx, s.mailboxId, {

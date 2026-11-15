@@ -19,7 +19,7 @@ import { getMailbox } from "../mail";
 import { getOrganization, listMemberships } from "../tenancy";
 
 import { inTransaction } from "./apply-shared";
-import type { ApprovalDeps, ApprovalInput } from "./approvals";
+import { decidedBy, type ApprovalDeps, type ApprovalInput } from "./approvals";
 import { STALE_AFTER_MS } from "./constants";
 import { closeDraftOfSend } from "./expiry";
 import { getSend, insertEditedPair, lockDraft, lockSend, newestVersionOf, setExpired } from "./repo";
@@ -188,12 +188,20 @@ export async function editApproval(
         draftActionId: created.draftId,
         sendActionId: created.sendId,
         delegateId: delegate?.id ?? currentDelegateId ?? "",
+        at: input.now,
       });
       if (!moved) {
         await sql`rollback to savepoint ${sql.id(SAVEPOINT)}`.execute(trx);
         return { kind: "closed", state: "delegation_closed" };
       }
     }
+    // The cards of the old send show "changed" (the new version gets its own card from the notifier).
+    await deps.approvalHooks.onDecided(trx, ctx, {
+      sendId: send.id,
+      decision: "changed",
+      ...decidedBy(input),
+      at: input.now,
+    });
     await recordAudit(trx, ctx, {
       emailId: send.email_id,
       actionId: created.sendId,
