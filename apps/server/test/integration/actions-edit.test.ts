@@ -24,6 +24,7 @@ import { handleCallback, type CallbackDeps, type LinkedChat } from "../../src/mo
 import { insertDefaultSettings, setMode, updateMailboxSettings } from "../../src/modules/config";
 import { delegationHooks } from "../../src/modules/delegation";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
+import { createFakeMailSender, type FakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials } from "../../src/modules/mail/repo";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
@@ -59,6 +60,7 @@ interface Seed {
   anna: string;
   piotr: string;
   fake: FakeMailProvider;
+  sender: FakeMailSender;
   runCommitter(): Promise<void>;
   p: { emailId: string; draftId: string; sendId: string };
   delegationId: string | null;
@@ -91,6 +93,7 @@ async function seed(trx: Transaction<DB>, opts: { kind?: "delegation" | "clarifi
   const anna = await insertDelegate(trx, ctx, { name: "Anna", email: "anna@example.com" });
   const piotr = await insertDelegate(trx, ctx, { name: "Piotr", email: "piotr@example.com" });
   const fake = createFakeMailProvider();
+  const sender = createFakeMailSender();
   await fake.ensureFolder("Drafts");
   const secret = secrets.encrypt("pw", `mailbox:${box.mailboxId}`);
   await insertCredentials(trx, ctx, {
@@ -103,7 +106,9 @@ async function seed(trx: Transaction<DB>, opts: { kind?: "delegation" | "clarifi
     db: trx,
     secrets,
     openProvider: async () => fake,
+    openSender: async () => sender,
     scope: { kind: "all" },
+    sendScope: { kind: "all" },
     now: () => NOW,
   });
   const p = await insertDraftAndSend(trx, ctx, box.mailboxId, {
@@ -138,6 +143,7 @@ async function seed(trx: Transaction<DB>, opts: { kind?: "delegation" | "clarifi
     anna,
     piotr,
     fake,
+    sender,
     runCommitter: () => job.run(),
     p,
     delegationId,
@@ -260,6 +266,47 @@ describe("editApproval: the new version", () => {
       expect((await row(trx, d2.id)).status).toBe("applied");
       // The new send still waits for a tap: nothing sent anything.
       expect((await row(trx, s2.id)).status).toBe("awaiting_approval");
+    });
+  });
+
+  test("no send goes out with the old text: the old send ends once, only the approved new version is sent", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await seed(trx);
+      const result = await edit(trx, s, s.p.sendId);
+      if (result.kind !== "edited") throw new Error("edit failed");
+      const input = { userId: s.userId, via: "web" as const, now: NOW };
+
+      // Nothing is approved: the committer sends nothing, neither the old nor the new version.
+      await s.runCommitter();
+      await s.runCommitter();
+      expect(s.sender.sent).toEqual([]);
+      // The old version cannot be approved; the new one waits for its draft and then goes out once.
+      expect((await approve(depsOf(trx), s.ctx, s.p.sendId, input)).kind).toBe("superseded");
+      expect(await approve(depsOf(trx), s.ctx, result.sendId, input)).toEqual({ kind: "approved" });
+      await s.runCommitter();
+      await s.runCommitter();
+
+      expect(s.sender.sent).toHaveLength(1);
+      const raw = s.sender.sent[0]?.raw.toString("utf8") ?? "";
+      expect(raw).toContain(`Subject: ${NEW_SUBJECT}`);
+      expect(raw).toContain("please send the report.");
+      expect(raw).not.toContain("Fwd: Offer");
+      expect(await row(trx, result.sendId)).toMatchObject({ status: "applied" });
+      const old = await row(trx, s.p.sendId);
+      expect(old).toMatchObject({
+        status: "expired",
+        status_reason: "superseded",
+        attempts: 0,
+        outgoing_message_id: null,
+      });
+      // The old send has exactly one closing audit row and no apply or approval row.
+      const events = await trx
+        .selectFrom("audit_log")
+        .select("event")
+        .where("org_id", "=", s.ctx.orgId)
+        .where("action_id", "=", s.p.sendId)
+        .execute();
+      expect(events.map((e) => e.event)).toEqual(["action.expired"]);
     });
   });
 
