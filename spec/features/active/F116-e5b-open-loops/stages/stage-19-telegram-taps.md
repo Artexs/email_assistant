@@ -56,3 +56,7 @@ Routes and panel (20–22).
 
 - When `delegateMail` gets a caller transaction it writes the send before a key-conflict throw and leaves the rollback to the caller: do not catch that error and commit (stages 19 and 22).
 - `lockEmail` uses `FOR UPDATE`; `FOR NO KEY UPDATE` gives the same serialization without blocking FK inserts on the mail: optional, only with a test.
+
+## Carry-over from stage 18 review
+
+- N4: clear the ⌛ marks when a digest ends failed; N5: first-of-day by slot date and `localInstants` for missing midnights; N6: multi-member orgs get the ⌛ line only on the first digest to commit (design question); brief lines have no buttons yet (review-18.md).
