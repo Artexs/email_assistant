@@ -22,6 +22,11 @@ COPY tsconfig.base.json ./
 RUN bun run web:build
 ENV WEB_DIST=/app/apps/web/dist
 
+# The release name (deploy/release.sh passes the tag). The server stamps it on every JSON log line (F114 D10).
+# It comes after the build steps, so a new tag keeps their cache.
+ARG EA_RELEASE=dev
+ENV EA_RELEASE=$EA_RELEASE
+
 USER bun
 EXPOSE 8080
 CMD ["bun", "apps/server/src/main.ts"]

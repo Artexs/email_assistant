@@ -23,7 +23,7 @@ Every night the VPS makes an encrypted copy of the whole Postgres database and s
 3. **The remote lifecycle rule.** The bucket has a lifecycle rule that removes old files (for example after 90 days; `deploy/README.md` § Backups, Bucket). It is a setting in the Backblaze web UI, not in the repository.
 4. **The restore test.** `deploy/restore-test.sh <backup>.dump.age <age identity file>` runs on a machine that has the private key, never on the VPS. It starts a throwaway `postgres:17` container `ea-restore-test` with no network and no port, waits for Postgres, decrypts the backup into `pg_restore` through a pipe (the plain dump never touches the disk), and prints the row counts of `organizations`, `users`, `mailboxes` and `emails`. It removes the container at the end, also after an error. The owner compares the counts with the VPS at backup time and writes the date and the counts in the task log.
 5. **After a real restore.** The dump holds live `auth_sessions` tokens, password hashes and reset tokens. After a real restore, run `delete from auth_sessions;` and ask the members to sign in again.
-6. **A backup before each deploy.** Step 1 of `deploy/README.md` § Update is `deploy/backup.sh`; the last line must be `backup ok <name> <bytes>`. It comes before the disk check and the update.
+6. **A backup before each deploy.** `deploy/release.sh` (`deploy/README.md` § Release) runs `deploy/backup.sh` as its first step; the last stdout line must be `backup ok <name> <bytes>`. It comes before the disk check and the update.
 
 ## Entry points
 

@@ -37,6 +37,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
+      args:
+        EA_RELEASE: ${EA_RELEASE:-dev}
     image: ea-server
     logging: *logging-collected
     restart: unless-stopped
@@ -79,6 +81,53 @@ services:
     environment:
       LOG_FORMAT: text
 
+  # Log store (ADR 0024 point 5), tailnet only. Start it with `--profile ops`; without the profile nothing changes.
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.54.0
+    profiles: [ops]
+    logging: *logging-local
+    restart: unless-stopped
+    command:
+      - -storageDataPath=/vlogs
+      # 30d: without a suffix the number is months.
+      - -retentionPeriod=30d
+      - -retention.maxDiskSpaceUsageBytes=1GiB
+      - -httpListenAddr=:9428
+    volumes:
+      - vlogs-data:/vlogs
+    mem_limit: 256m
+    # Loopback only; Tailscale Serve proxies to it.
+    ports:
+      - "127.0.0.1:9428:9428"
+    healthcheck:
+      test: ["CMD", "/victoria-logs-prod", "-healthcheck", "-httpListenAddr=:9428"]
+      interval: 30s
+      retries: 3
+
+  # Reads the json-file logs of the containers (only `server` writes them) and sends them to the store.
+  # It runs as root: Docker writes those files with mode 0640.
+  vlagent:
+    image: victoriametrics/vlagent:v1.54.0
+    profiles: [ops]
+    logging: *logging-local
+    restart: unless-stopped
+    command:
+      - -remoteWrite.url=http://victorialogs:9428/internal/insert
+      - -tmpDataPath=/vlagent
+      # Caps what vlagent buffers on disk when the store is down (vlagent-data).
+      - -remoteWrite.maxDiskUsagePerURL=500MB
+      # Only json-file logs: the server's (ADR 0024 point 4).
+      - -fileCollector.glob=/var/lib/docker/containers/*/*-json.log
+      - -fileCollector.ignoreFields=hostname
+      - -httpListenAddr=:9429
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - vlagent-data:/vlagent
+    mem_limit: 64m
+    depends_on:
+      victorialogs:
+        condition: service_healthy
+
 # The subnet is pinned, so the gateway never changes after a `down` or a Docker upgrade.
 # WEB_TRUSTED_PROXIES in .env is this gateway (deploy/README.md "Web panel", ADR 0017).
 # Keep it apart from the LAN (192.168.1.0/24), the Tailscale ranges and the other Docker networks of the host.
@@ -91,3 +140,5 @@ networks:
 
 volumes:
   db-data: {}
+  vlogs-data: {}
+  vlagent-data: {}

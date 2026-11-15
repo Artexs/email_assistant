@@ -18,7 +18,7 @@ const project = (): "mobile" | "desktop" => (test.info().project.name === "mobil
 const org = () => readSeed().approvalsOrgs[project()];
 
 // Every test signs in once, from its own client address: the login rate limit counts per address. Documentation range 203.0.113.0/24,
-// a block per project, away from the 198.51.100.0/24 blocks of the other specs.
+// a block per project, away from the `nextAddress` range of the other specs.
 let signIns = 0;
 async function startSession(context: BrowserContext, page: Page, user: { email: string; password: string }) {
   signIns += 1;

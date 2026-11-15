@@ -35,6 +35,7 @@ const levelOrder: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error
 
 let currentLevel: LogLevel = "info";
 let currentFormat: LogFormat | undefined;
+let currentRelease: string | undefined;
 let droppedTotal = 0;
 
 export function setLogLevel(level: LogLevel): void {
@@ -43,6 +44,11 @@ export function setLogLevel(level: LogLevel): void {
 
 export function setLogFormat(format: LogFormat): void {
   currentFormat = format;
+}
+
+/** F114 D10: the release name (`EA_RELEASE`). After this call every JSON line carries `release`. Text lines stay as they are. `undefined` turns it off (tests). */
+export function setLogRelease(release: string | undefined): void {
+  currentRelease = release;
 }
 
 /** D11: "json" gives json; anything else, also unset, gives text (a process that never loads the config is a CLI or a test). */
@@ -58,7 +64,8 @@ export function droppedLogFields(): number {
 type Pair = readonly [string, unknown];
 type FieldSource = Record<string, unknown>;
 
-const baseKeys: ReadonlySet<string> = new Set(["time", "level", "module", "event", "msg"]);
+// `release` is reserved: only setLogRelease writes it.
+const baseKeys: ReadonlySet<string> = new Set(["time", "level", "module", "event", "msg", "release"]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null) {
@@ -159,6 +166,9 @@ function writeDropOnly(level: LogLevel, module: string, event: string): void {
     ["event", event],
     ["msg", event],
   ];
+  if (currentRelease !== undefined && resolveFormat() === "json") {
+    line.push(["release", currentRelease]);
+  }
   const dropped = addFields(line, [contextFields()]) + 1;
   line.push(["dropped_fields", dropped]);
   droppedTotal += dropped;
@@ -187,6 +197,9 @@ function write(level: LogLevel, module: string, childFields: readonly FieldSourc
     ["event", event],
     ["msg", event],
   ];
+  if (currentRelease !== undefined && asJson) {
+    pairs.push(["release", currentRelease]);
+  }
   const dropped = addFields(pairs, [contextFields(), ...childFields, callFields]);
   if (dropped > 0) {
     pairs.push(["dropped_fields", dropped]);

@@ -40,20 +40,33 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    `read -rsp 'IMAP password: ' P && printf '%s' "$P" | $C run --rm -T cli bun run mailbox:connect --org-id <uuid> --address <email>; unset P`
 8. Start the server: `$C up -d --build --wait`
 
-## Update
+## Release
 
-1. Make a backup first: `deploy/backup.sh` (`PATH=$HOME/bin:$PATH deploy/backup.sh` if rclone is in `~/bin`, see Backups). The last line is `backup ok <name> <bytes>`.
-2. Check the disk: `df -h /`. Stop if less than 3 GB is free. Run `docker builder prune -f` first, then check again.
-3. Update and start:
+Rule: every VPS deploy is a release (a patch version is fine). Do not deploy a bare commit. The steps before the deploy (CI, changelog, tag) are in `docs/release-checklist.md`. What the scripts do is in `docs/capabilities/operations.md` § Releases.
 
-```sh
-git fetch && git merge --ff-only origin/master
-$C up -d --wait db
-$C run --build --rm cli bun run db:migrate
-$C up -d --build --wait
-```
+1. Run the release: `deploy/release.sh v<x.y.z>`. The tag must exist on `origin/master` and CI must be green on it (`docs/release-checklist.md`).
+2. The script does these steps and stops at the first failure: refuse a dirty tree or a tag that is not on `origin/master`; run `deploy/backup.sh` (the last stdout line must be `backup ok ...`); check the disk (stop under 3 GB free, after `docker builder prune -f`); write the state file `deploy/release-state/state` with `pending`; keep the running image as `ea-server:<current>`; check out the tag; build the image once with `EA_RELEASE=<tag>`; run `db:migrate`; start with `up -d --no-build --wait`; check `/health` and the `EA_RELEASE` of the running server; then update the state file (`current`, `previous`) and remove old images.
+3. The last output line is `release ok <tag> previous <old>`. Any other end is a failed release. A failed release before the `pending` mark prints "nothing changed, no rollback needed". After the mark it prints "roll back with deploy/rollback.sh".
+4. Watch for 30 minutes (`docs/release-checklist.md` step 9). On trouble run `deploy/rollback.sh` (§ Roll back a release).
 
-4. Check the log rotation. The `server` line must end with `json-file 10m 5`. Every other line must end with `local 10m 5`:
+The first release on a host has no `current`: the running image becomes `ea-server:pre-<tag>`, so a rollback has a target from then on.
+
+### Roll back a release
+
+Run `deploy/rollback.sh`. It needs no rebuild. It never runs `db:rollback` and never restores the database. The target is `current` when a release is pending (it broke), else `previous`. With no target it refuses (exit 2). The last output line is `rollback ok <target>`. A failed step leaves the state file as it was. Every "Roll back" section below keeps the SQL notes of its feature: do them as that section says, around the script.
+
+### Release and rollback notes
+
+- `deploy/rollback.sh` with no `pending` mark swaps `current` and `previous`. A second run goes forward again to the release that you left.
+- A plain `$C up -d --build` stamps `EA_RELEASE=dev` into the image and the log lines. Use `release.sh` for every deploy.
+- The prune after a release removes every `ea-server:v*` and `ea-server:pre-*` tag except `current` and `previous`. A manual `ea-server:pre-<ticket>` image goes at the next release. The old manual tag rule is gone: the release script keeps the rollback image.
+- After a release or a rollback the checkout is detached at the commit of that release. Run `git checkout master` before any `git fetch && git merge --ff-only origin/master`. `release.sh` fetches tags itself.
+- A failed release (`pending` set) needs `deploy/rollback.sh` before the next `deploy/release.sh`: `release.sh` refuses while a release is pending.
+- Both scripts never run `db:rollback`. A broken migration gets a forward fix in a new patch release, or a restore from a backup (§ Backups).
+
+### Log rotation check
+
+After a release that changed a `logging:` block, check the log rotation. The `server` line must end with `json-file 10m 5`. Every other line must end with `local 10m 5`:
 
 ```sh
 docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}} {{index .HostConfig.LogConfig.Config "max-size"}} {{index .HostConfig.LogConfig.Config "max-file"}}' $($C ps -q)
@@ -61,9 +74,24 @@ docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}} {{index .HostC
 
 A line that differs: run `$C up -d --force-recreate --wait <service>` for that service, then check again. A recreated container starts a new log file. The first deploy with a changed `logging:` block recreates `db` at `up -d --wait db`: a short DB restart.
 
+Runbook for the first deploy with the changed log drivers (F103 stage 19):
+
+1. Take a backup first (§ Backups).
+2. Run `$C stop server` before the `db` recreate. The server pool has no `pool.on("error")` handler, so a running `server` can restart when `db` restarts.
+3. Run `$C up -d --wait db`. The new `logging:` block recreates `db`; the named volume `db-data` stays.
+4. Run `$C up -d --wait`.
+
+On the dev machine, the next `up` of the shared dev stack also recreates `db` and `greenmail`.
+
 ## Logs
 
-The server writes one JSON object per line (ADR 0024). Read them as text:
+The server writes one JSON object per line (ADR 0024). Read them as text, without the store, from the repo root:
+
+```sh
+bash deploy/logs.sh [--since 1h] [--run <run_id>] [--request <request_id>] [--event <code>] [--level warn] [--follow]
+```
+
+The script runs the line below and keeps the lines that match your filters. The line alone needs only `jq`:
 
 ```sh
 $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", .event, (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
@@ -71,9 +99,42 @@ $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, 
 
 Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. Only `server` writes `json-file`, the files that the log store reads. Every other service (Postgres, `cli`, the store itself) writes `local`, so its lines never reach the store. A new service in any Compose file needs the `local` block. `bash deploy/check-logging.sh` checks the drivers and fails on a one-off command that runs in `server`, and CI runs it.
 
-Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. One-off commands run in the `cli` service (`$C run --rm cli bun run <script> …`): readable text, never in the log store. `$C exec server …` prints to your terminal only.
+Follow one job run or one request: use `--run` or `--request` of `deploy/logs.sh`; the browser shows the request id in the `x-request-id` response header. One-off commands run in the `cli` service (`$C run --rm cli bun run <script> …`): readable text, never in the log store. `$C exec server …` prints to your terminal only.
 
 A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync run writes `sync_done` with `mailbox_id` and the counts; a failure is `sync_failed` or `sync_soft_error` with `error` and `error_code` (`mail/jobs.ts`).
+
+### Log store (search)
+
+The log store (VictoriaLogs, with the agent vlagent) is in the Compose profile `ops`. Without the profile nothing changes. Start it and stop it:
+
+```sh
+$C --profile ops up -d
+$C --profile ops stop victorialogs vlagent
+```
+
+The UI is `https://<machine>.<tailnet>.ts.net:9443/select/vmui/`. Tailscale Serve proxies to `127.0.0.1:9428` (set up on the VPS in F103 stage 19; the store has no basic auth). Each server line is stored as text in `_msg`, so every query unpacks it first. Three queries to paste in the UI:
+
+```
+"<run_id>" | unpack_json from _msg | sort by (_time)
+```
+
+```
+_time:1h | unpack_json from _msg | filter level:="error" | sort by (_time)
+```
+
+```
+* | unpack_json from _msg | stats by (event) count() as lines | sort by (lines desc)
+```
+
+Limits:
+
+- It keeps 30 days and at most 1 GiB; it uses at most 256 MB (store) and 64 MB (agent) of memory.
+- It holds only `server` lines: the agent reads only `json-file` logs, and only `server` writes them. Postgres, `cli`, `exec` and the store itself never reach it.
+- The agent also reads the `json-file` logs of any other Compose project on the host. Check with `docker ps -a` before the first start.
+- The agent runs as root, because Docker writes its log files with mode `0640`.
+- The agent buffers at most 500 MB on disk (`-remoteWrite.maxDiskUsagePerURL`, volume `vlagent-data`) while the store is down.
+- The read-only mount of `/var/lib/docker/containers` also lets the `vlagent` container read the `config.v2.json` of each container (its environment and secrets). `vlagent` ships only the `*-json.log` files. For this reason the agent does not use the Docker socket, and it runs only under the profile `ops`.
+- No lines? See `docs/known-alerts.md` § "Log store: vlagent reads no lines".
 
 ## Login error (`auth_error`)
 
@@ -110,7 +171,7 @@ UPDATE mailboxes SET status = 'active', status_changed_at = now() WHERE status =
 SQL
 ```
 
-Then start the old release. The old code logs the refusal at each run again. Do not run `db:rollback` on a live database.
+Then run `deploy/rollback.sh` (§ Roll back a release): it starts the old release. The old code logs the refusal at each run again. Do not run `db:rollback` on a live database.
 
 ## Telegram
 
@@ -162,7 +223,7 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
    - `WEB_AUTH_SECRET`: make it with `openssl rand -base64 32`. Never print it.
    - `WEB_TRUSTED_PROXIES`: `172.30.0.1` (the gateway from step 1).
    - Leave `WEB_TRUSTED_ORIGINS`, `MAIL_ALLOW_LOCAL_HOSTS`, `WEB_MAIL_ALLOW_LOCAL`, `WEB_DIST`, the `AUTH_SMTP_*` keys and `AUTH_MAIL_FROM` empty. Leave `AUTH_PWNED_CHECK` empty (on).
-3. Do the section Update. The migrations of S5 run there.
+3. Do the section Release. The migrations of S5 run there.
 4. Check the log for the start events `web_on` and `web_operators`: `$C logs server | grep -E 'web_|auth_mail'`
    The output must show no `web_off`, `web_cookies_not_secure` or `web_dist_missing` line. It must also show `auth_mail_off` (the CLI prints invite and reset links).
    Two lines must not show: `pwned_check_off` and `mail_local_hosts_allowed`. Search for them: `$C logs server | grep -E 'pwned_check_off|mail_local_hosts_allowed'`
@@ -331,12 +392,11 @@ Roll back the code, not the migrations. Do not run `db:rollback`: it deletes the
 
 After the migration, the old code cannot create a user with a mixed-case e-mail. `org:create` fails on the check `users_email_lower_check`. Use a lower-case e-mail.
 
-Before an Update, write down the current commit: `git rev-parse HEAD`.
+The release script keeps the previous release: no need to write down a commit.
 
-1. Go to the previous commit: `git checkout <previous commit>`
-2. Rebuild and start: `$C up -d --build --wait`
-3. Stop Serve (you, sudo): `sudo tailscale serve reset`
-4. To return later: `git checkout master`
+1. Run `deploy/rollback.sh` (§ Roll back a release). It goes back to the previous release with no rebuild.
+2. Stop Serve (you, sudo): `sudo tailscale serve reset`
+3. To return to the new code later, run `deploy/release.sh` with a newer tag.
 
 Restore the copy `.env.bak-s5e` only if the edit of `.env` broke another key.
 
@@ -386,7 +446,7 @@ The sync reads INBOX and, at Interia, `Oferty`, `Społeczności`, `Rachunki` and
 - `mailbox:rescan` forces a rescan of every synced folder. `mailbox:backfill` reads INBOX only.
 - A spam folder mail that the classifier finds valid gets a move into INBOX under the normal move gate (the category `auto` ON). With `auto` OFF, the digest says "would move to INBOX".
 - A final failure of a move by APPEND (the rescue, or an Undo into `Oferty`, `Społeczności`, `Rachunki`) can leave the mail in both folders. The `action_failed` notice tells you. Delete the extra copy by hand.
-- Roll back the code, not the migration (steps (a) and (b) are in `spec/features/done/2026-11/F058-sync-sort-folders/stages/stage-16-merge-and-vps-deploy.md`, "Rollback"): the migration `sync_folders` only adds (a table, `emails.source_folder`, an index). A `db:rollback` after live use loses the cursors of the non-INBOX folders and the source folder of non-INBOX mail. The INBOX cursor stays in `mailboxes` (dual write), so the old code runs on the new schema. After a code rollback, a `ready` move into INBOX ends as `bad_payload`, and an Undo of `Oferty` mail goes to INBOX (ADR 0014, D24 (d)).
+- Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the code, not the migration (steps (a) and (b) are in `spec/features/done/2026-11/F058-sync-sort-folders/stages/stage-16-merge-and-vps-deploy.md`, "Rollback"): the migration `sync_folders` only adds (a table, `emails.source_folder`, an index). A `db:rollback` after live use loses the cursors of the non-INBOX folders and the source folder of non-INBOX mail. The INBOX cursor stays in `mailboxes` (dual write), so the old code runs on the new schema. After a code rollback, a `ready` move into INBOX ends as `bad_payload`, and an Undo of `Oferty` mail goes to INBOX (ADR 0014, D24 (d)).
   - (a) Before you switch the checkout, switch the four folders off: `$C run --rm cli bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value off` (once for each key). Then wait until this query gives 0: `select count(*) from emails where mailbox_id = '<uuid>' and source_folder <> 'INBOX' and status in ('pending', 'processing');` (run it as `postgres` through `$C exec -T db psql -U postgres -d email_assistant -c "…"`). Else the old code triages spam folder mail as INBOX mail.
   - (b) Roll forward: before the new code starts, copy the INBOX cursor that the old code wrote: `update mailbox_folders f set uidvalidity = m.uidvalidity, last_uid = m.last_uid, updated_at = now() from mailboxes m where f.mailbox_id = m.id and f.key = 'inbox';`. A mailbox that the old code connected has no INBOX row: first `insert into mailbox_folders (org_id, mailbox_id, key, path, role, enabled, uidvalidity, last_uid) select org_id, id, 'inbox', 'INBOX', 'inbox', true, uidvalidity, last_uid from mailboxes on conflict do nothing;`. Then switch the four folders on with `sync-folder … --value on`. The cursor is cleared, so the next sync takes the last 24 hours of each folder; the dedup key stops duplicates.
 
@@ -406,7 +466,7 @@ The owners get one notice for each failed action. An action fails after 3 hard e
 
 ### Roll back
 
-Roll back the code, not the migration. A `db:rollback` of `20261107000001_assist_actions` after live use drops `actions.applied_at`. A later migrate then fails on `actions_applied_at_check` for the `applied` and `undone` rows.
+Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the code, not the migration. A `db:rollback` of `20261107000001_assist_actions` after live use drops `actions.applied_at`. A later migrate then fails on `actions_applied_at_check` for the `applied` and `undone` rows.
 
 ## Delegates
 
@@ -513,19 +573,19 @@ $C run --rm cli bun run job:run --name platform.retention
 
 ### Roll back
 
-Roll back the code, not the migration. A `db:rollback` of `20261108000001_delegation` deletes all `create_draft` and `send` rows, all delegations and all delegates.
+Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the code, not the migration. A `db:rollback` of `20261108000001_delegation` deletes all `create_draft` and `send` rows, all delegations and all delegates.
 
 ## Notices as facts (migration `outbox_view`)
 
 ### Update
 
-Run `bun run db:migrate` before you start the new code: the code writes `outbox.view`, `channel`, `locale` and `detail`. Rows queued by the old code keep their text and go out as they are.
+`deploy/release.sh` runs `db:migrate` before it starts the new code: the code writes `outbox.view`, `channel`, `locale` and `detail`. Rows queued by the old code keep their text and go out as they are.
 
 A later change of a notice view schema (a stricter field, a renamed field) needs care: the sender renders a row up to 24 h after its queue, with the code that runs at the send. Release it only if the new schema still accepts the views of the rows queued in the last 24 h. Otherwise wait until `select count(*) from outbox where status in ('pending', 'sending') and view <> '{}'::jsonb and kind = '<kind>'` is 0, then release. A waiting row that the new schema rejects becomes `failed` / `bad_view` and the user gets no notice.
 
 ### Roll back
 
-Roll back the code, not the migration. The code that comes with this migration already renders a row without text, so a rollback to any release that has this migration loses nothing. A release without this migration sends a row without text as an empty message: Telegram refuses it, and the row fails with `bad_request`, approval requests too (their sends expire after 48 h, and the owner gets the result notice). Before a rollback that far, wait until `select count(*) from outbox where text is null and status in ('pending', 'sending')` is 0 (outside the quiet hours the outbox empties within minutes). Do not run `db:rollback`: its down part fails every waiting row without text.
+Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the code, not the migration. The code that comes with this migration already renders a row without text, so a rollback to any release that has this migration loses nothing. A release without this migration sends a row without text as an empty message: Telegram refuses it, and the row fails with `bad_request`, approval requests too (their sends expire after 48 h, and the owner gets the result notice). Before a rollback that far, wait until `select count(*) from outbox where text is null and status in ('pending', 'sending')` is 0 (outside the quiet hours the outbox empties within minutes). Do not run `db:rollback`: its down part fails every waiting row without text.
 
 ## Customers (S6a)
 
