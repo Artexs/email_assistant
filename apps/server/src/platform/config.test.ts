@@ -674,3 +674,42 @@ describe("mailSyncCron", () => {
     }
   });
 });
+
+describe("mailbox OAuth keys (F117 D7)", () => {
+  const web = { ...fullEnv, WEB_BASE_URL: "https://ea.x.test", WEB_AUTH_SECRET: randomBytes(32).toString("hex") };
+
+  test("only MAIL_OAUTH_GOOGLE_CLIENT_ID set: loadConfig fails, names the missing key, not a value", () => {
+    const error = configError({ ...web, MAIL_OAUTH_GOOGLE_CLIENT_ID: "id-canary" });
+    expect(error.keys).toEqual(["MAIL_OAUTH_GOOGLE_CLIENT_SECRET"]);
+    expect(error.message).toContain("MAIL_OAUTH_GOOGLE_CLIENT_SECRET");
+    expect(error.message).not.toContain("id-canary");
+  });
+
+  test("only the secret set: loadConfig fails, names the client id, not the secret", () => {
+    const error = configError({ ...web, MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "secret-canary" });
+    expect(error.keys).toEqual(["MAIL_OAUTH_MICROSOFT_CLIENT_ID"]);
+    expect(error.message).not.toContain("secret-canary");
+  });
+
+  test("a pair without WEB_BASE_URL fails and names WEB_BASE_URL", () => {
+    const error = configError({
+      ...fullEnv,
+      MAIL_OAUTH_GOOGLE_CLIENT_ID: "id",
+      MAIL_OAUTH_GOOGLE_CLIENT_SECRET: "secret-canary",
+    });
+    expect(error.keys).toEqual(["WEB_BASE_URL"]);
+    expect(error.message).not.toContain("secret-canary");
+  });
+
+  test("a full pair with WEB_BASE_URL loads; an empty string counts as unset", () => {
+    const config = loadConfig({
+      ...web,
+      MAIL_OAUTH_GOOGLE_CLIENT_ID: "id",
+      MAIL_OAUTH_GOOGLE_CLIENT_SECRET: "secret",
+      MAIL_OAUTH_MICROSOFT_CLIENT_ID: "",
+      MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "",
+    });
+    expect(config.MAIL_OAUTH_GOOGLE_CLIENT_ID).toBe("id");
+    expect(config.MAIL_OAUTH_MICROSOFT_CLIENT_ID).toBeUndefined();
+  });
+});
