@@ -379,7 +379,7 @@ describe("committed rows", () => {
         new Response(proc.stdout).text(),
         new Response(proc.stderr).text(),
       ]);
-      return { code, out: `${stdout}${stderr}` };
+      return { code, stdout, stderr, out: `${stdout}${stderr}` };
     };
     try {
       await insertDefaultSettings(db, ctx, created.mailboxId);
@@ -388,10 +388,15 @@ describe("committed rows", () => {
       expect(refused.out).toContain("refused: info did not pass go/no-go");
       expect(refused.out).toContain("go/no-go info: no-go: too few");
       expect(refused.out).not.toContain("FORCED");
+      expect(refused.stderr).toContain("[mailbox-settings] refused: info did not pass go/no-go");
+      expect(refused.stdout).toContain("[mailbox-settings] go/no-go info: no-go: too few");
+      expect(refused.stdout).not.toContain("refused:");
       const forced = await run(["--force"]);
       expect(forced.code).toBe(0);
       expect(forced.out).toContain("go/no-go info: no-go: too few");
       expect(forced.out).toContain("FORCED");
+      expect(forced.stderr).toBe("");
+      expect(forced.stdout).toContain("[mailbox-settings] go/no-go info: no-go: too few");
       const row = await db
         .selectFrom("mailbox_settings")
         .select("category_policy")

@@ -1,14 +1,14 @@
-import { parseArgs } from "node:util";
+import { format, parseArgs } from "node:util";
 
 import { z } from "zod";
 
 import { auditExitCode, auditMailbox, configureMailHosts } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-audit");
+const out = createCliOutput("mailbox-audit");
 
 const usage = [
   "usage: bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>",
@@ -44,7 +44,7 @@ function readOptions() {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -58,20 +58,20 @@ async function main(): Promise<number> {
     const results = await auditMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, options.since);
     for (const { key, counts } of results) {
       if (counts === null) {
-        log.info(`folder=${key} not on the server`);
+        out.print(`folder=${key} not on the server`);
       } else if (key === "inbox") {
-        log.info(
+        out.print(
           `inbox=${counts.mail} stored=${counts.stored} missing=${counts.missing} duplicates=${counts.duplicates} cross=${counts.cross}`
         );
       } else {
-        log.info(
+        out.print(
           `folder=${key} mail=${counts.mail} stored=${counts.stored} missing=${counts.missing} duplicates=${counts.duplicates} cross=${counts.cross}`
         );
       }
     }
     return auditExitCode(results.find((result) => result.key === "inbox")?.counts);
   } catch (error) {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -81,6 +81,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     process.exit(1);
   });

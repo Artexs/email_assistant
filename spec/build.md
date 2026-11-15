@@ -20,13 +20,15 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟠 ACTIVE): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
+- `F112-e10a-docs-site` (🟠 ACTIVE): E10a Docs site
+- `F109-e3b-improve` (🟠 ACTIVE): E3b Improve
 - `F106-e7-t3-account-data-delete-export-dsr` (🟠 ACTIVE): E7-T3 Account data (delete, export, DSR)
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
 - `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
 - `F103-e8a-logs` (🟠 ACTIVE): E8a Logs
+- `F102-e4-a-act-from-the-panel` (🟠 ACTIVE): E4-A Act from the panel
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
-- `F032-copy-below-cursor` (🟠 ACTIVE): Store and triage a copy that lands below the UID cursor
 - `F029-sync-return-of-a-later-copy` (🟠 ACTIVE): Sync sees every user move of a known mail: a later identical copy, and a move below a folder's cursor
 
 ## NEXT
@@ -53,7 +55,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, plan landed, 12 stages): E7-T3 Account data (delete, export, DSR); stage 01 the only migration, stage 05 the only `bun.lock` change; build after F082, F098 (closed); gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, plan landed, 8 stages): E7-T4 Papers and cost; legal drafts (pl, en), internal papers, claims list, cost model v1; sequenced after F106 (build after F106 is in `done/`); gate —; stage 07 is the VPS deploy (coordinator), stage 08 the cost model.
 - `F108-e7-t5-production-on-the-vps` (🔴 PLANNED, needs plan): E7-T5 Production on the VPS; sequenced after E7-T1 … T4; the E8b drill proves its restore; gate —.
-- `F109-e3b-improve` (🔴 PLANNED, needs plan): E3b Improve; sequenced after E2a, E3a; gate Second pass after the first E2a holdout report (PD-060, PD-061).
+- `F109-e3b-improve` (🔴 PLANNED, plan landed, 16 stages, plan base b9261659, no drift): E3b Improve (suspicious-mail rules, classifier-v3, escalation experiment, degraded-mode notice); build after E2a, E3a (closed); second pass taken on defaults (Q1); stage 02 the only migration; stages 09, 11, 13 spend real LLM money (caps in plan); escalation stage 14 builds only on a 'ship' decision.
 - `F110-e4-b-earn-trust` (🔴 PLANNED, needs plan): E4-B Earn trust; sequenced after E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command; gate —.
 - `F111-e11b-private-model-option` (🔴 PLANNED, needs plan): E11b Private model option; sequenced after E2a; gate Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage.
 - `F112-e10a-docs-site` (🔴 PLANNED, plan landed, 16 stages, plan base 116efb17, no drift): public docs site on GitHub Pages; build after F095, F101 closed (F101 stages 01–03 are on master; stage 01 and 06 change `bun.lock`); gate —; stage 16 needs owner step O1 (Pages source, `v*` tags in the `github-pages` environment, first deploy on master).
@@ -73,7 +75,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F071-limen-transition` (🟠 ACTIVE): the agent workflow moves to Limen; epic none; sequenced after —; gate —.
 - `F023-gemini-billing-budget-alert` (🔴 PLANNED, plan landed): a Gemini Cloud Billing budget alert; `parked`: only if a paid Gemini project exists for the E2a judge (PD-067); epic E3.
 - `F029-sync-return-of-a-later-copy` (🟠 ACTIVE, plan landed, 5 stages, F029 + F064, no migration): sync returns a later copy when two copies are in one folder; `keep`: one sync ticket, plan together with F032 and F064 (F091 landed, so its gate on `modules/mail/` is open); epic none.
-- `F032-copy-below-cursor` (🔴 PLANNED, plan landed 2026-11-15, 3 stages, no migration; build after F029 stages 01–04 (landed); F029 stage 05 does not block): a copy that lands below the UID cursor is stored and triaged; `keep`: one sync ticket, plan together with F029 and F064 (F091 landed); epic none.
+- `F032-copy-below-cursor` (🟠 ACTIVE, plan landed 2026-11-15, stages 01–02 landed, 3 stages, no migration; build after F029 stages 01–04 (landed); F029 stage 05 does not block): a copy that lands below the UID cursor is stored and triaged; `keep`: one sync ticket, plan together with F029 and F064 (F091 landed); epic none.
 - `F037-s3-assist-week-result` (🔴 PLANNED, plan landed): the S3 one-week assist result; `folded into F095` (E1 stage 09 runs it; the coordinator closes it); epic E1.
 - `F047-s4-pilot-week` (🔴 PLANNED, plan landed): S4 pilot week with real-mail checks of drafts, approvals, delegation; `folded into F095` (E1 stage 10 runs it; the coordinator closes it); epic E1.
 - `F055-web-live-updates` (🔴 PLANNED, plan landed): live updates in the web panel; `parked`: polling is enough (`epics/E04-discovery-notes.md` §5); look again after F101 and F102; epic none.
@@ -94,10 +96,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
 - `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
+- `F032-copy-below-cursor` (🟢 PROVEN): Store and triage a copy that lands below the UID cursor; landed 2026-11-15
 - `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
 - `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
 - `F100-e3a-measure` (🟢 PROVEN): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes; landed 2026-11-14
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟢 PROVEN): E7-T2 Platform controls (send limits, feature flags, operator console, security log); landed 2026-11-14
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🟢 PROVEN): E7-T1 Polish UI (i18n frame first); landed 2026-11-14
-- `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
-- 2026-11: 73 landed. spec/features/done/2026-11/
+- 2026-11: 74 landed. spec/features/done/2026-11/

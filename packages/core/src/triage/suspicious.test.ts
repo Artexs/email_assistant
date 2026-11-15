@@ -1,0 +1,297 @@
+import { describe, expect, test } from "bun:test";
+
+import {
+  assessSuspicious,
+  freeMailDomains,
+  registrableDomain,
+  suspiciousReasons,
+  type SuspiciousInput,
+} from "./suspicious";
+
+// A quiet mail: no rule fires. Each test changes only what it needs.
+function input(overrides: Partial<SuspiciousInput> = {}): SuspiciousInput {
+  return {
+    fromAddress: "billing@shop.test",
+    fromName: null,
+    replyTo: [],
+    authResults: null,
+    trustedAuthservIds: [],
+    links: [],
+    attachments: [],
+    isList: false,
+    senderKnown: false,
+    knownDomains: [],
+    protectedNames: [],
+    ...overrides,
+  };
+}
+
+describe("assessSuspicious: quiet mail", () => {
+  test("a mail with nothing odd gives no reason", () => {
+    expect(assessSuspicious(input())).toEqual([]);
+  });
+});
+
+describe("lookalike_domain", () => {
+  const lookalike = { fromAddress: "billing@paliwa-fiota.test", knownDomains: ["paliwa-flota.test"] };
+
+  test("1: one letter changed, unknown sender", () => {
+    expect(assessSuspicious(input(lookalike))).toEqual(["lookalike_domain"]);
+  });
+
+  test("2: the same mail from a known sender gives nothing", () => {
+    expect(assessSuspicious(input({ ...lookalike, senderKnown: true }))).toEqual([]);
+  });
+
+  test("3: labels under 5 characters are not compared by distance", () => {
+    expect(assessSuspicious(input({ fromAddress: "a@abc.test", knownDomains: ["abd.test"] }))).toEqual([]);
+  });
+
+  test("4: an xn-- domain with a Cyrillic letter matches the Latin domain", () => {
+    const hostname = new URL("http://pаypal.test").hostname; // Cyrillic "а"
+    expect(hostname.startsWith("xn--")).toBe(true);
+    expect(registrableDomain(hostname)).toBe("pаypal.test");
+    expect(assessSuspicious(input({ fromAddress: `a@${hostname}`, knownDomains: ["paypal.test"] }))).toEqual([
+      "lookalike_domain",
+    ]);
+  });
+
+  test("a short label is caught by the skeleton only: Cyrillic letter, and 1 for l", () => {
+    const hostname = new URL("http://bаnk.test").hostname; // Cyrillic "а", 4-letter label
+    expect(assessSuspicious(input({ fromAddress: `a@${hostname}`, knownDomains: ["bank.test"] }))).toEqual([
+      "lookalike_domain",
+    ]);
+    expect(assessSuspicious(input({ fromAddress: "a@1ogo.test", knownDomains: ["logo.test"] }))).toEqual([
+      "lookalike_domain",
+    ]);
+  });
+
+  test("the known domain itself, and its subdomain, are not look-alikes", () => {
+    const known = { knownDomains: ["paliwa-flota.test"] };
+    expect(assessSuspicious(input({ ...known, fromAddress: "a@paliwa-flota.test" }))).toEqual([]);
+    expect(assessSuspicious(input({ ...known, fromAddress: "a@mail.paliwa-flota.test" }))).toEqual([]);
+  });
+
+  test("rn looks like m, 0 like o, 1 like l", () => {
+    expect(assessSuspicious(input({ fromAddress: "a@rnicrosoft.test", knownDomains: ["microsoft.test"] }))).toEqual([
+      "lookalike_domain",
+    ]);
+    expect(assessSuspicious(input({ fromAddress: "a@g00gle.test", knownDomains: ["google.test"] }))).toEqual([
+      "lookalike_domain",
+    ]);
+  });
+
+  test("two letters changed is not a look-alike", () => {
+    expect(assessSuspicious(input({ fromAddress: "a@kordelan.test", knownDomains: ["kordelxy.test"] }))).toEqual([]);
+  });
+
+  test("a swapped pair of letters is distance 1", () => {
+    expect(
+      assessSuspicious(input({ fromAddress: "a@paliwa-flota.test", knownDomains: ["paliwa-folta.test"] }))
+    ).toEqual(["lookalike_domain"]);
+  });
+
+  test("no known domains gives nothing", () => {
+    expect(assessSuspicious(input({ fromAddress: "a@paliwa-fiota.test" }))).toEqual([]);
+  });
+});
+
+describe("auth_fail", () => {
+  const fail = "mx.interia.pl; dmarc=fail header.from=x.test";
+
+  test("5a: a trusted authserv-id and dmarc=fail", () => {
+    expect(assessSuspicious(input({ authResults: fail, trustedAuthservIds: ["interia.pl"] }))).toEqual(["auth_fail"]);
+  });
+
+  test("5b: no trusted id gives nothing", () => {
+    expect(assessSuspicious(input({ authResults: fail, trustedAuthservIds: [] }))).toEqual([]);
+  });
+
+  test("5c: spf=fail alone gives nothing", () => {
+    const authResults = "mx.interia.pl; spf=fail smtp.mailfrom=x.test; dkim=pass header.d=x.test";
+    expect(assessSuspicious(input({ authResults, trustedAuthservIds: ["interia.pl"] }))).toEqual([]);
+  });
+
+  test("5d: spf=fail and dkim=fail", () => {
+    const authResults = "mx.interia.pl; spf=fail smtp.mailfrom=x.test; dkim=fail header.d=x.test";
+    expect(assessSuspicious(input({ authResults, trustedAuthservIds: ["interia.pl"] }))).toEqual(["auth_fail"]);
+  });
+
+  test("a header from an untrusted authserv-id is ignored", () => {
+    expect(
+      assessSuspicious(input({ authResults: "evil.test; dmarc=fail", trustedAuthservIds: ["interia.pl"] }))
+    ).toEqual([]);
+    expect(
+      assessSuspicious(input({ authResults: "notinteria.pl; dmarc=fail", trustedAuthservIds: ["interia.pl"] }))
+    ).toEqual([]);
+  });
+
+  test("the authserv-id may equal the trusted entry, in any case", () => {
+    expect(
+      assessSuspicious(input({ authResults: "Interia.PL; DMARC=FAIL", trustedAuthservIds: ["interia.pl"] }))
+    ).toEqual(["auth_fail"]);
+  });
+
+  test("dmarc=pass gives nothing; no header gives nothing", () => {
+    expect(
+      assessSuspicious(input({ authResults: "mx.interia.pl; dmarc=pass", trustedAuthservIds: ["interia.pl"] }))
+    ).toEqual([]);
+    expect(assessSuspicious(input({ authResults: null, trustedAuthservIds: ["interia.pl"] }))).toEqual([]);
+  });
+
+  test("a known sender still gets auth_fail", () => {
+    expect(
+      assessSuspicious(input({ authResults: fail, trustedAuthservIds: ["interia.pl"], senderKnown: true }))
+    ).toEqual(["auth_fail"]);
+  });
+});
+
+describe("display_name_spoof", () => {
+  test("6a: an address in the name that differs from the sender address", () => {
+    expect(assessSuspicious(input({ fromAddress: "x@evil.test", fromName: "Jan Kowalski <ceo@corp.test>" }))).toEqual([
+      "display_name_spoof",
+    ]);
+  });
+
+  test("6b: a protected name with two words", () => {
+    const protectedNames = ["Jan Kowalski"];
+    expect(assessSuspicious(input({ fromName: "Jan Kowalski", protectedNames }))).toEqual(["display_name_spoof"]);
+    expect(assessSuspicious(input({ fromName: "JAN  Kowalskí", protectedNames }))).toEqual(["display_name_spoof"]);
+  });
+
+  test("6c: a one-word protected name gives nothing", () => {
+    expect(assessSuspicious(input({ fromName: "Jan", protectedNames: ["Jan"] }))).toEqual([]);
+  });
+
+  test("the sender's own address in the name is no spoof", () => {
+    expect(assessSuspicious(input({ fromAddress: "x@shop.test", fromName: "x@shop.test" }))).toEqual([]);
+  });
+
+  test("a known sender gets no display_name_spoof", () => {
+    expect(
+      assessSuspicious(input({ fromName: "Jan Kowalski", protectedNames: ["Jan Kowalski"], senderKnown: true }))
+    ).toEqual([]);
+  });
+});
+
+describe("reply_to_mismatch", () => {
+  const mismatch = { fromAddress: "a@shop.test", replyTo: ["pay@other.test"] };
+
+  test("7a: another registrable domain", () => {
+    expect(assessSuspicious(input(mismatch))).toEqual(["reply_to_mismatch"]);
+  });
+
+  test("7b: list mail is exempt", () => {
+    expect(assessSuspicious(input({ ...mismatch, isList: true }))).toEqual([]);
+  });
+
+  test("the same registrable domain, or a named address, is no mismatch", () => {
+    expect(assessSuspicious(input({ fromAddress: "a@shop.test", replyTo: ["Pay <pay@mail.shop.test>"] }))).toEqual([]);
+    expect(assessSuspicious(input({ fromAddress: "a@shop.test", replyTo: ["Pay <pay@other.test>"] }))).toEqual([
+      "reply_to_mismatch",
+    ]);
+  });
+
+  test("a known sender gets no reply_to_mismatch", () => {
+    expect(assessSuspicious(input({ ...mismatch, senderKnown: true }))).toEqual([]);
+  });
+});
+
+describe("link_mismatch", () => {
+  test("8a: the shown host differs from the target host", () => {
+    expect(assessSuspicious(input({ links: [{ host: "evil.test", textHost: "www.bank.test" }] }))).toEqual([
+      "link_mismatch",
+    ]);
+  });
+
+  test("8b: list mail is exempt", () => {
+    expect(
+      assessSuspicious(input({ links: [{ host: "evil.test", textHost: "www.bank.test" }], isList: true }))
+    ).toEqual([]);
+  });
+
+  test("8c: same registrable domain under a two-level suffix", () => {
+    expect(assessSuspicious(input({ links: [{ host: "news.shop.co.uk", textHost: "shop.co.uk" }] }))).toEqual([]);
+  });
+
+  test("a link without shown host gives nothing", () => {
+    expect(assessSuspicious(input({ links: [{ host: "evil.test", textHost: null }] }))).toEqual([]);
+  });
+
+  test("a known sender gets no link_mismatch", () => {
+    expect(
+      assessSuspicious(input({ links: [{ host: "evil.test", textHost: "bank.test" }], senderKnown: true }))
+    ).toEqual([]);
+  });
+});
+
+describe("risky_attachment", () => {
+  test("9a: a double extension ending in .exe, also for a known sender", () => {
+    const attachments = [{ name: "faktura.pdf.exe", type: "application/octet-stream" }];
+    expect(assessSuspicious(input({ attachments }))).toEqual(["risky_attachment"]);
+    expect(assessSuspicious(input({ attachments, senderKnown: true }))).toEqual(["risky_attachment"]);
+  });
+
+  test("9b: a document gives nothing", () => {
+    const type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    expect(assessSuspicious(input({ attachments: [{ name: "umowa.docx", type }] }))).toEqual([]);
+  });
+
+  test("a risky type with a harmless name, and a macro extension", () => {
+    expect(assessSuspicious(input({ attachments: [{ name: null, type: "application/x-msdownload; x=y" }] }))).toEqual([
+      "risky_attachment",
+    ]);
+    expect(assessSuspicious(input({ attachments: [{ name: "Budget.XLSM", type: "application/zip" }] }))).toEqual([
+      "risky_attachment",
+    ]);
+  });
+
+  test("a name without extension gives nothing", () => {
+    expect(assessSuspicious(input({ attachments: [{ name: "exe", type: "text/plain" }] }))).toEqual([]);
+  });
+});
+
+describe("registrableDomain", () => {
+  test("10: the last two labels, three under a two-level suffix", () => {
+    expect(registrableDomain("a.b.example.com.pl")).toBe("example.com.pl");
+    expect(registrableDomain("mail.kordelan.test")).toBe("kordelan.test");
+    expect(registrableDomain("localhost")).toBe("localhost");
+  });
+
+  test("folds case and a trailing dot", () => {
+    expect(registrableDomain("WWW.Shop.CO.UK.")).toBe("shop.co.uk");
+  });
+});
+
+describe("assessSuspicious: all rules", () => {
+  test("11: six reasons come in list order, without duplicates", () => {
+    const reasons = assessSuspicious({
+      fromAddress: "x@paliwa-fiota.test",
+      fromName: "Jan Kowalski <ceo@corp.test>",
+      replyTo: ["pay@other.test", "pay2@other.test"],
+      authResults: "mx.interia.pl; dmarc=fail",
+      trustedAuthservIds: ["interia.pl"],
+      links: [
+        { host: "evil.test", textHost: "bank.test" },
+        { host: "evil2.test", textHost: "bank2.test" },
+      ],
+      attachments: [
+        { name: "a.exe", type: "application/octet-stream" },
+        { name: "b.scr", type: "application/octet-stream" },
+      ],
+      isList: false,
+      senderKnown: false,
+      knownDomains: ["paliwa-flota.test"],
+      protectedNames: ["Jan Kowalski"],
+    });
+    expect(reasons).toEqual([...suspiciousReasons]);
+  });
+});
+
+describe("freeMailDomains", () => {
+  test("lists the common free-mail domains", () => {
+    for (const domain of ["gmail.com", "interia.pl", "wp.pl", "web.de", "protonmail.com"]) {
+      expect(freeMailDomains).toContain(domain);
+    }
+  });
+});

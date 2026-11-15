@@ -65,6 +65,7 @@ export {
   getSend,
   insertReverse,
   isOwnActionId,
+  sentOriginOf,
   lastSendAppliedAt,
   listAwaitingSendIds,
   listActionsForEmail,

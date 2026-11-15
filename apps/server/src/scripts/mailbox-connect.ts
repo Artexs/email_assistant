@@ -1,4 +1,4 @@
-import { parseArgs } from "node:util";
+import { format, parseArgs } from "node:util";
 
 import { z } from "zod";
 
@@ -11,12 +11,12 @@ import {
   verifySmtpLogin,
   type MailCapabilities,
 } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-connect");
+const out = createCliOutput("mailbox-connect");
 
 const usage = [
   "usage: read -rs P && printf '%s' \"$P\" | bun run mailbox:connect --org-id <uuid> --address <email>",
@@ -86,7 +86,7 @@ async function main(): Promise<number> {
   const options = readOptions();
   const password = options && (await readPassword());
   if (!options || password === undefined) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -103,21 +103,21 @@ async function main(): Promise<number> {
       { orgId },
       { ...input, password }
     );
-    log.info(`connected mailbox ${mailboxId}`);
+    out.print(`connected mailbox ${mailboxId}`);
     for (const [key, label] of CAPABILITY_LABELS) {
-      log.info(`${label}=${info.capabilities[key] ? "yes" : "no"}`);
+      out.print(`${label}=${info.capabilities[key] ? "yes" : "no"}`);
     }
     return 0;
   } catch (error) {
     if (error instanceof MailboxExistsError) {
-      log.error("mailbox with this address already exists");
+      out.fail("mailbox with this address already exists");
     } else if (error instanceof MailboxLimitError) {
-      log.error(`mailbox limit reached (max ${error.max})`);
+      out.fail(`mailbox limit reached (max ${error.max})`);
     } else if (error instanceof z.ZodError) {
-      log.error(`invalid input: ${error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
-      log.error(usage);
+      out.fail(`invalid input: ${error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
+      out.fail(usage);
     } else {
-      log.error("failed:", error instanceof Error ? error.message : error);
+      out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     }
     return 1;
   } finally {
@@ -128,6 +128,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     process.exit(1);
   });

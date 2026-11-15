@@ -5,15 +5,15 @@ import { z } from "zod";
 import { isOwnActionId } from "../modules/actions";
 import { backfillMailbox, configureMailHosts, CursorMovedError } from "../modules/mail";
 import { requeueBackfillWindow } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { backfillRefusal } from "./mailbox-backfill-gate";
 
-const log = createLog("mailbox-backfill");
+const out = createCliOutput("mailbox-backfill");
 
 const usage = [
   "usage: bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 30]",
@@ -53,7 +53,7 @@ function readOptions() {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -65,7 +65,7 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     const refusal = await backfillRefusal(db, options.orgId);
     if (refusal !== undefined) {
-      log.error(refusal);
+      out.fail(refusal);
       return 1;
     }
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
@@ -79,20 +79,20 @@ async function main(): Promise<number> {
         now,
       }
     );
-    log.info(
+    out.print(
       `backfill ${options.mailboxId}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}`
     );
     const since = new Date(now.getTime() - options.days * 24 * 60 * 60 * 1000);
     const requeued = await requeueBackfillWindow(db, { orgId: options.orgId }, options.mailboxId, { since, now });
-    log.info(`re-queued ${requeued}`);
+    out.print(`re-queued ${requeued}`);
     return 0;
   } catch (error) {
     if (error instanceof CursorMovedError) {
-      log.error(
+      out.fail(
         "the regular sync moved the cursor during the backfill; run the same command again (the dedup key stops duplicates)"
       );
     } else {
-      log.error("failed:", describeError(error));
+      out.fail(`failed: ${describeError(error)}`);
     }
     return 1;
   } finally {
@@ -103,6 +103,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", describeError(error));
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

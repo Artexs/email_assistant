@@ -4,11 +4,13 @@ WORKDIR /app
 
 COPY package.json bun.lock ./
 COPY apps/server/package.json apps/server/package.json
+COPY apps/docs/package.json apps/docs/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/core/package.json packages/core/package.json
 COPY tools/fake-telegram/package.json tools/fake-telegram/package.json
-# Dev dependencies stay: dbmate and kysely-codegen are needed for db:migrate
-RUN bun install --frozen-lockfile
+# Dev dependencies stay: dbmate and kysely-codegen are needed for db:migrate.
+# The docs app stays out of the image: its Starlight tree is not needed to serve the panel (F112 D13).
+RUN bun install --frozen-lockfile --filter "!@ea/docs"
 
 COPY apps/server apps/server
 COPY apps/web apps/web

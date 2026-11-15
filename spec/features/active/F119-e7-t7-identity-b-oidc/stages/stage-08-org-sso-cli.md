@@ -33,3 +33,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stage 07; may ru
 **Done when.** The eight tests pass; `bun run org:sso` exists in `package.json`; `PROOF_OK`.
 
 **Out of scope.** Proof, attestation, require (stage 09); the console (stage 11).
+
+## Carry-over from stage 07 review (N3, N4)
+
+- The operator CLI must not print `error.message` or `error.detail` of a database error: the Postgres `detail` of a failed CHECK holds `oidc_config`, which holds the client secret. Print the error name and code only.
+- Pass `db`, not an open `Transaction`, to `setSsoProvider`: after a 23505 the transaction is aborted, so the `domain_taken` answer is not safe in a caller's transaction.
