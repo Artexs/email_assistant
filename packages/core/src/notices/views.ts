@@ -212,6 +212,20 @@ const hostBlockedView = z.strictObject({
   timeZone,
 });
 
+// The edit of a card that an owner got (F102 stage 06): the input of `renderNoticeEdit`. The sender edits the sent message
+// and sends no new one. EXCEPTION to "a view holds no phrase of ours" (docs/code-patterns.md, Notices are facts): `original`
+// is the stored text of the target card (`outbox.text`), as the edit after a tap uses it ("the edit after a tap keeps the
+// stored text"), so it holds our own phrases and mail text, up to one message. It follows the retention of `outbox.text`.
+// `heldBy` is only for `approved_held`; `actionId` (the send) gives that outcome the Reject button.
+const approvalEditView = z.strictObject({
+  original: z.string().min(1).max(MESSAGE_MAX_CHARS),
+  outcome: z.enum(["approved", "approved_held", "rejected", "changed", "expired"]),
+  at: isoDate,
+  timeZone,
+  heldBy: z.enum(["scope", "paused", "auth_error", "host_blocked"]).optional(),
+  actionId: id.optional(),
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -227,6 +241,7 @@ export const noticeViewSchemas = {
   send_held: sendHeldView,
   weekly_report: weeklyReportView,
   host_blocked: hostBlockedView,
+  approval_edit: approvalEditView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;
