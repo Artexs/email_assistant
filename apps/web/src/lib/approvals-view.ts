@@ -112,6 +112,7 @@ const CLOSED_TEXTS: Record<ApprovalClosedState | ApprovalEditClosedCode, TextKey
   payload_gone: "appr_closed_payload_gone",
   draft_gone: "appr_closed_draft_gone",
   delegation_closed: "appr_closed_delegation_closed",
+  loop_closed: "appr_closed_loop_closed",
 };
 
 // One text per closed-state name and per edit code (`payload_gone`, `draft_gone`, `delegation_closed`). A missing name gets a general text.

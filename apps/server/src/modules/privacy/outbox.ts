@@ -21,7 +21,7 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   approval_set: "many_mails", // `emailId` of its first mail only; lists the subjects of several
   urgent: "one_mail", // one queue path, `emailId` set
   action_failed: "one_mail", // one queue path, `emailId` set
-  approval: "one_mail", // one queue path, `emailId` set
+  approval: "one_mail", // `emailId` set; a follow-up card sets `loopId` instead and goes with its loop (foreign key cascade)
   send_result: "one_mail", // one queue path, `emailId` set
   delegation_answered: "one_mail", // one queue path, `emailId` set
   auth_error: "no_mail", // mailbox address
@@ -31,6 +31,7 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   send_held: "no_mail", // mailbox address, limit, counts
   host_blocked: "no_mail", // mailbox address
   sent_missing: "no_mail", // mailbox address
+  loop_consent: "no_mail", // a fixed line and the panel link: no recipient, no text
   weekly_report: "no_mail", // counts and category names only (`renderWeeklyReport`)
   approval_edit: "one_mail", // `queueCardEdits` sets `emailId` of the target card (F102); its view keeps the card text
   not_triaged: "one_mail", // the detector sets `emailId`; the view holds the sender address of that mail

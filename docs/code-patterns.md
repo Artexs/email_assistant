@@ -316,6 +316,16 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - Behaviour rules go to the capability page, not to `docs/architecture.md`. A plan that names a section of `architecture.md` that now holds a link line writes to the page it links.
 - The page template and the index: `docs/capabilities/README.md`; `apps/server/src/capability-map.test.ts` checks paths, scripts and ADR numbers.
 
+## Docs site
+
+- The public site is `apps/docs` (ADR 0030). A user page goes to `apps/docs/src/content/docs/<section>/` with the sections `start`, `how-to`, `reference`, `explanation` and `faq`; its Polish twin is `pl/<same path>`. The operator pages are the sources named in `apps/docs/src/in-place.ts`: edit the source, never a copy.
+- A user page names the capability pages it describes in front matter: `capabilities: [triage]` (file names in `docs/capabilities/` without `.md`). The build fails on an unknown name or a user page without one.
+- A UI label on a page is `<UiText k="…" />`, never typed text: it reads the panel's text for the page language, and an unknown key fails the build.
+- A Polish page holds `source` and `sourceHash`. After you change the English page, translate the change, then run `bun run docs:stale --stamp <the Polish file>`. `bun run docs:stale` lists stale pages; `--strict` (the deploy workflow) fails on a stale public page.
+- An entry of `apps/docs/public-content-allow.txt` needs a reason and an exact string. An unused entry fails the build.
+- PD-009 extension (PD-100): a landed user-visible feature updates its user page (en) in the same change. A page describes only what the code does now; a feature behind a default-off flag gets no page until its flag defaults on.
+- The CI job `docs` and the deploy workflow are only written down and read by tests (`apps/docs/scripts/workflows.test.ts`): never start the deploy workflow to test a change. A workflow gets a `permissions` block, actions pinned to a major, no secret and no `.env`.
+
 ## Tests
 
 - `bun run test:unit` and `bun run test:int` run on the local Bun. `bun run test:unit:ci` and `bun run test:int:ci` run on the Bun in `.bun-version`, the version of CI and the server image (`scripts/ci-bun.sh`). A stage proof uses the `:ci` scripts. A test that passes only on the local Bun is a failing test.

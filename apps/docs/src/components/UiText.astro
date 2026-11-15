@@ -1,0 +1,14 @@
+---
+// The text of a panel key in the page language (plan D8). An unknown key or a text with `{var}` fails the build.
+import type { TextKey } from "@ea/web/i18n/en";
+import { uiText } from "../ui-text";
+
+interface Props {
+  k: TextKey;
+}
+
+const { k } = Astro.props;
+const text = uiText(k, Astro.currentLocale);
+---
+
+<span class="ui-label">{text}</span>

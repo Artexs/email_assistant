@@ -105,7 +105,9 @@ function notifiableSends(db: DbOrTrx, ctx: TenantContext) {
       join.onRef("draft.id", "=", "actions.depends_on_action_id").onRef("draft.org_id", "=", "actions.org_id")
     )
     .innerJoin("mailboxes", (join) =>
-      join.onRef("mailboxes.id", "=", "emails.mailbox_id").onRef("mailboxes.org_id", "=", "actions.org_id")
+      join
+        .on(sql<boolean>`mailboxes.id = coalesce(emails.mailbox_id, open_loops.mailbox_id)`)
+        .onRef("mailboxes.org_id", "=", "actions.org_id")
     )
     .where("draft.org_id", "=", ctx.orgId)
     .where("mailboxes.org_id", "=", ctx.orgId)
@@ -115,8 +117,9 @@ function notifiableSends(db: DbOrTrx, ctx: TenantContext) {
     .where("actions.notified_at", "is", null);
 }
 export async function listSendsToNotify(db: DbOrTrx, ctx: TenantContext, opts: { limit: number }): Promise<SendRow[]> {
+  // A follow-up is one card, whatever its payload says about a set.
   const rows = await notifiableSends(db, ctx)
-    .where(sql<boolean>`actions.payload->>'set_id' is null`)
+    .where(sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`)
     .orderBy("actions.created_at")
     .orderBy("actions.id")
     .limit(opts.limit)
@@ -130,8 +133,11 @@ export async function listSetsToNotify(
   opts: { limit: number }
 ): Promise<Map<string, SendRow[]>> {
   const setIdOf = sql<string>`actions.payload->>'set_id'`;
+  // A follow-up never joins a set: the mail-only filter holds even for a payload with a forged `set_id`.
   const candidates = () =>
-    notifiableSends(db, ctx).where(sql<boolean>`actions.payload->>'set_id' is not null`).where(sql<boolean>`not exists (
+    notifiableSends(db, ctx)
+      .where("actions.email_id", "is not", null)
+      .where(sql<boolean>`actions.payload->>'set_id' is not null`).where(sql<boolean>`not exists (
         select 1 from actions s2
         join actions d2 on d2.id = s2.depends_on_action_id and d2.org_id = s2.org_id
         where s2.org_id = actions.org_id and s2.type = 'send'
@@ -175,7 +181,9 @@ export async function listSendResultsToNotify(
     .where("actions.result_notified_at", "is", null)
     .where((eb) =>
       eb.or([
-        eb("actions.status", "in", ["failed", "expired", "rejected"]),
+        // A failed follow-up is told by the fixed `action_failed` notice (`listFailedFollowUps`), not by a result line.
+        eb("actions.status", "in", ["expired", "rejected"]),
+        eb.and([eb("actions.status", "=", "failed"), eb("actions.loop_id", "is", null)]),
         eb.and([
           eb("actions.status", "=", "applied"),
           eb.or([
@@ -190,6 +198,34 @@ export async function listSendResultsToNotify(
     .limit(opts.limit)
     .execute();
   return rows.map(toSendRow);
+}
+// The failed sends of follow-ups that no notice told yet (open loops stage 11). One `action_failed` notice each, with a fixed text.
+// `outcome_unknown` is told apart: the mail may have gone out. The notice mark is `result_notified_at`, as for a result.
+export interface FailedFollowUp {
+  id: string;
+  loopId: string;
+  unknown: boolean;
+}
+export async function listFailedFollowUps(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { limit: number }
+): Promise<FailedFollowUp[]> {
+  const rows = await db
+    .selectFrom("actions")
+    .select(["id", "loop_id", "status_reason"])
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "=", "failed")
+    .where("loop_id", "is not", null)
+    .where("result_notified_at", "is", null)
+    .orderBy("updated_at")
+    .orderBy("id")
+    .limit(opts.limit)
+    .execute();
+  return rows.flatMap((row) =>
+    row.loop_id === null ? [] : [{ id: row.id, loopId: row.loop_id, unknown: row.status_reason === "outcome_unknown" }]
+  );
 }
 export async function markResultNotified(db: DbOrTrx, ctx: TenantContext, id: string, at: Date): Promise<boolean> {
   const result = await db
@@ -226,6 +262,33 @@ export async function listSendLimitHolds(db: DbOrTrx, ctx: TenantContext, now: D
       -- loop rows: open loops stage 10/11
       where actions.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId}
         and actions.email_id is not null
+        and actions.type = 'send' and actions.status = 'approved'
+        and actions.last_error like 'send_limit:%'
+        and actions.next_attempt_at > ${now}
+    ) a
+    order by a.mailbox_id, a.next_attempt_at, a.id
+  `.execute(db);
+  return result.rows.map((row) => ({
+    mailboxId: row.mailbox_id,
+    waiting: row.waiting,
+    nextAt: row.next_at,
+    lastError: row.last_error,
+  }));
+}
+
+// The same hold for the follow-ups of a mailbox: approved follow-up sends that a send limit holds. A separate list because the notice
+// for them is a fixed line with the panel link (open loops stage 11); the mail sends keep their notice.
+export async function listFollowUpLimitHolds(db: DbOrTrx, ctx: TenantContext, now: Date): Promise<SendLimitHold[]> {
+  const result = await sql<{ mailbox_id: string; waiting: number; next_at: Date; last_error: string }>`
+    select distinct on (a.mailbox_id) a.mailbox_id,
+      (count(*) over (partition by a.mailbox_id))::int as waiting,
+      min(a.next_attempt_at) over (partition by a.mailbox_id) as next_at,
+      a.last_error
+    from (
+      select l.mailbox_id, actions.id, actions.next_attempt_at, actions.last_error
+      from actions
+      join open_loops l on l.id = actions.loop_id and l.org_id = actions.org_id
+      where actions.org_id = ${ctx.orgId} and l.org_id = ${ctx.orgId}
         and actions.type = 'send' and actions.status = 'approved'
         and actions.last_error like 'send_limit:%'
         and actions.next_attempt_at > ${now}

@@ -42,6 +42,46 @@ const item = (patch: Partial<Parameters<typeof ApprovalSummary>[0]["item"]> = {}
 const summary = (patch: Parameters<typeof item>[0] = {}) =>
   renderToStaticMarkup(<ApprovalSummary item={item(patch)} now={NOW} />);
 
+describe("ApprovalSummary of a follow-up (F116 stage 11)", () => {
+  const followUp = (patch: Partial<View> = {}) =>
+    summary({
+      view: view({
+        kind: "follow_up",
+        recipient: { name: null, address: "anna@example.test" },
+        sender: null,
+        dueDate: null,
+        to: ["anna@example.test", "boss@example.test"],
+        cc: ["jan@example.test", "ewa@example.test"],
+        followUpNumber: 2,
+        ...patch,
+      }),
+    });
+
+  test("spells out every To and Cc address and the number, and has no From line", () => {
+    const html = followUp();
+    expect(html).toContain("To: anna@example.test, boss@example.test");
+    expect(html).toContain("Cc: jan@example.test, ewa@example.test");
+    expect(html).toContain("Follow-up 2 of 2");
+    expect(html).not.toContain("From:");
+  });
+
+  test("no Cc line without a Cc; the Polish page has its own words", () => {
+    expect(followUp({ cc: [] })).not.toContain("Cc:");
+    setLocaleForTest("pl");
+    const html = followUp();
+    expect(html).toContain("Do: anna@example.test, boss@example.test");
+    expect(html).toContain("Kopia: jan@example.test, ewa@example.test");
+    expect(html).toContain("Przypomnienie 2 z 2");
+    expect(html).not.toContain("Follow-up");
+  });
+
+  test("an address is text, never markup", () => {
+    expect(followUp({ cc: ["<img src=x onerror=alert(1)>@x.test"] })).toContain(
+      "&lt;img src=x onerror=alert(1)&gt;@x.test"
+    );
+  });
+});
+
 describe("ApprovalSummary", () => {
   test("shows the title with the recipient spelled out, the sender warning, the subject, the due date and the time left", () => {
     const html = summary();

@@ -15,6 +15,7 @@ import type { Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { approve, editApproval, getSend, reject, type DelegationHooks, type SendScope } from "../actions";
+import { loopHooks } from "../loops";
 import { isFeatureOn } from "../tenancy";
 
 import { approvalDocs } from "./approval-api-docs";
@@ -89,6 +90,8 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
     db: deps.db,
     hooks: deps.hooks,
     approvalHooks: cardEditHooks({ sendScope: deps.sendScope }),
+    // The edit of a follow-up reads its loop (open loops stage 11).
+    loopHooks: loopHooks(),
     uidplus: deps.uidplus,
   });
 

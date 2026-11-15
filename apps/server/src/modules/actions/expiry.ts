@@ -66,7 +66,7 @@ export async function expireSend(
     actor: opts.actor,
     event: auditEvents.actionExpired,
     reasonCode: opts.reason,
-    data: { action_type: "send", reason: opts.reason },
+    data: { action_type: "send", reason: opts.reason, ...(send.loop_id === null ? {} : { loop_id: send.loop_id }) },
     at: opts.now,
   });
   if (send.depends_on_action_id !== null) {

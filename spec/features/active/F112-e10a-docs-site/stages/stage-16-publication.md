@@ -30,3 +30,7 @@ The coordinator asks the owner for these steps and waits (outside publication ne
 - The panel flag `docs_links` stays off. The owner turns it on per organization when wanted (`bun run org:flag`); not part of this stage.
 - Rollback: run the workflow by hand on the last good tag `vX` (a manual run deploys any ref, stage 05 T6b), or push a fixed release tag. Only a tag that holds `docs-deploy.yml` and the docs app can be a target: `v0.1.0` (F114, before stage 05) cannot. Until the first such tag exists, the rollback is a fix on `master` and a manual run on `master`, or Pages "None". To take the site down, the owner sets Pages to "None" (Settings → Pages). Never a force push.
 - Risk to other work: none on the VPS; the deploy touches only GitHub Pages.
+
+## Carry-over from stage 05 review
+
+- N3: the O1 text says the deploy gate is not a security control; set a tag ruleset for `v*` (who may create release tags) and limit branch deploys of the `github-pages` environment to `master`; until O1 is done the deploy job fails red and publishes nothing (review-5.md).

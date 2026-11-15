@@ -533,7 +533,7 @@ describe("transitions map: entry writers", () => {
       const ctx = { orgId };
       const old = await insertDraftAndSend(trx, ctx, mailboxId, {});
       const created = await insertEditedPair(trx, ctx, {
-        emailId: old.emailId,
+        anchor: { kind: "email", emailId: old.emailId },
         oldDraftId: old.draftId,
         oldSendId: old.sendId,
         draftPayload: {},
@@ -558,7 +558,7 @@ describe("transitions map: entry writers", () => {
       // The keys make a second pair for the same rows a no-op.
       expect(
         await insertEditedPair(trx, ctx, {
-          emailId: old.emailId,
+          anchor: { kind: "email", emailId: old.emailId },
           oldDraftId: old.draftId,
           oldSendId: old.sendId,
           draftPayload: {},

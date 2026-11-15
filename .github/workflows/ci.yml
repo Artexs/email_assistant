@@ -169,3 +169,19 @@ jobs:
           docker run --rm --entrypoint test ea-server:ci ! -e /app/node_modules/pagefind
       - name: Check that the image holds the built web app
         run: docker run --rm --entrypoint test ea-server:ci -f /app/apps/web/dist/login/index.html
+  # The docs site (ADR 0030): every push and pull request builds it with all its checks. No services.
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      # The Astro 7 CLI needs Node 22.23.4 or later: pinned, not the runner image's default.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - run: bun run docs:build
+      - run: bun run docs:stale

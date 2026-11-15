@@ -15,6 +15,8 @@ import { isSyntheticMessageId } from "../../mail";
 import { isFeatureOn, listMemberships } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
+import { panelListUrlOf } from "./approval";
+import { queueLoopConsentLines, splitByLoopConsent } from "./loop-consent";
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 const SEND_KINDS: readonly DraftKind[] = draftKinds;
@@ -26,6 +28,7 @@ const EXPIRY_REASONS = [
   "held_timeout",
   "delegation_closed",
   "policy_changed",
+  "loop_closed",
 ] as const;
 
 function stringOf(value: unknown): string | null {
@@ -92,7 +95,13 @@ async function resultKindOf(
 }
 
 // D20: every end state of a send gives one notice per owner. A pending Sent copy counts as lost after 10 minutes.
-async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: LinkedChat[], now: Date): Promise<void> {
+async function detectSendResults(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  owners: LinkedChat[],
+  now: Date,
+  webBaseUrl: string | undefined
+): Promise<void> {
   if (owners.length === 0) return;
   const rows = await listSendResultsToNotify(db, ctx, {
     limit: APPROVAL_LIMIT,
@@ -102,6 +111,8 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
   if (rows.length === 0) return;
   // One flag read for the run; the button shows only on a `sent` result (plan D21).
   const mistakeButton = await isFeatureOn(db, ctx, "mistake_capture");
+  // The panel link of the consent line, as on the approval card: only when the panel page is on and the base URL is set.
+  const panelBase = webBaseUrl !== undefined && (await isFeatureOn(db, ctx, "approvals_page")) ? webBaseUrl : undefined;
   const names = new Map((await listMemberships(db, ctx)).map((member) => [member.user_id, member.display_name]));
   for (const row of rows) {
     try {
@@ -112,17 +123,22 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
       const to = Array.isArray(row.payload.to) ? stringOf(row.payload.to[0]) : null;
       const draftTo = Array.isArray(draftRow?.payload.to) ? stringOf(draftRow.payload.to[0]) : null;
       const result = await resultKindOf(db, ctx, row, draftRemoved, names);
+      // A follow-up result names its first recipient (a sent mail): the consent gate splits the owners (stage 11, D17).
+      const gate = row.loop_id === null ? { covered: owners, withheld: [] } : await splitByLoopConsent(db, ctx, owners);
       const view = {
         actionId: row.id,
         sendKind,
         result,
         recipient: { name: stringOf(draftRow?.payload.delegate_name), address: to ?? draftTo },
-        subject: outgoingSubject(sendKind, row.email.subject),
-        synthetic: isSyntheticMessageId(row.email.message_id_header),
+        subject: outgoingSubject(
+          sendKind,
+          row.email === null ? stringOf(draftRow?.payload.subject) : row.email.subject
+        ),
+        synthetic: row.email !== null && isSyntheticMessageId(row.email.message_id_header),
         ...(mistakeButton && result.kind === "sent" ? { mistakeButton: true } : {}),
       };
       await inTransaction(db, async (trx) => {
-        for (const owner of owners) {
+        for (const owner of gate.covered) {
           await queue(
             trx,
             ctx,
@@ -131,12 +147,18 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
               locale: owner.locale,
               kind: "send_result",
               dedupKey: `send_result:${row.id}`,
-              emailId: row.email_id,
+              ...(row.email_id === null ? {} : { emailId: row.email_id }),
+              ...(row.loop_id === null ? {} : { loopId: row.loop_id }),
               view,
             },
             now
           );
         }
+        await queueLoopConsentLines(trx, ctx, gate.withheld, {
+          about: "result",
+          panelUrl: panelBase === undefined ? undefined : panelListUrlOf(panelBase),
+          now,
+        });
         await markResultNotified(trx, ctx, row.id, now);
       });
     } catch (error) {
@@ -148,5 +170,5 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
 export const sendResultDetector: Detector = {
   name: "send-result",
   kinds: ["send_result"],
-  detect: (run) => detectSendResults(run.db, run.ctx, run.owners, run.now),
+  detect: (run) => detectSendResults(run.db, run.ctx, run.owners, run.now, run.deps.webBaseUrl),
 };

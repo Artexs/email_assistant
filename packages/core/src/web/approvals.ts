@@ -45,6 +45,8 @@ const itemFields = {
   createdAt: z.iso.datetime(),
   delegationId: z.uuid().nullable(),
   setId: z.uuid().nullable(),
+  // Only a follow-up has it: the open loop that the send is about (the loop page of the panel links here).
+  loopId: z.uuid().optional(),
 };
 
 export const approvalItemSchema = z.strictObject({
@@ -116,7 +118,7 @@ export type ApprovalEditAnswer = z.infer<typeof approvalEditAnswerSchema>;
 // the three codes that only the edit has. A closed send is never `waiting` (it can be decided) or `superseded` (that is `changed`).
 export const approvalClosedStates = ["held", "sending", "sent", "rejected", "expired", "failed"] as const;
 export type ApprovalClosedState = (typeof approvalClosedStates)[number];
-export const approvalEditClosedCodes = ["payload_gone", "draft_gone", "delegation_closed"] as const;
+export const approvalEditClosedCodes = ["payload_gone", "draft_gone", "delegation_closed", "loop_closed"] as const;
 export type ApprovalEditClosedCode = (typeof approvalEditClosedCodes)[number];
 const closedStatesAreDetailStates: [(typeof approvalClosedStates)[number]] extends [
   (typeof approvalDetailStates)[number],

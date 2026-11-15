@@ -20,6 +20,9 @@ async function detectApprovalSets(
     try {
       const first = sends[0];
       if (first === undefined) continue;
+      // The set readers are mail-only; a follow-up never joins a set (a test pins it).
+      const firstEmailId = first.email_id;
+      if (firstEmailId === null) throw new Error("set send has no mail");
       const items = [];
       for (const [index, send] of sends.entries()) {
         const draftRow =
@@ -32,7 +35,7 @@ async function detectApprovalSets(
           n: index + 1,
           delegateName: draft.delegate_name,
           address: draft.to[0] ?? "",
-          subject: send.email.subject,
+          subject: send.email?.subject ?? null,
           dueAt: delegation?.due_at ?? null,
           reminder: draft.reminder,
           task: draft.task,
@@ -49,7 +52,7 @@ async function detectApprovalSets(
               locale: owner.locale,
               kind: "approval_set",
               dedupKey: `approval_set:${setId}`,
-              emailId: first.email_id,
+              emailId: firstEmailId,
               view: noticeView,
             },
             now
