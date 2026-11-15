@@ -44,7 +44,8 @@ export function autoEvidence(input: AutoEvidenceInput): AutoEvidenceResult {
   const { global, history, trip, realLabels } = input;
   const blocks: EvidenceBlock[] = [];
   if (global.decision === "none") blocks.push("no_global");
-  if (global.decision === "no-go") blocks.push("global_no_go");
+  // A holdout with too few cases is no proof: it blocks like a no-go (ADR 0028: eligible = a final global `go`).
+  if (global.decision === "no-go" || global.decision === "too-few") blocks.push("global_no_go");
   if (global.provisional) blocks.push("global_provisional");
   if (history?.outcome === "fail") blocks.push("history_fail");
   if (trip.tripped) blocks.push("tripped");
