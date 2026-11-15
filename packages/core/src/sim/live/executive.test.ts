@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { localDateTime } from "../../digest/local-time";
 import { parseCallback } from "../../digest/callback";
+import { localDateTime } from "../../digest/local-time";
 
 import {
   cardsOf,
