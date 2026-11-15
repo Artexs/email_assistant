@@ -182,6 +182,7 @@ export interface Delegations {
   send_action_id: string;
   sent_at: Timestamp | null;
   sent_message_id: string | null;
+  source: Generated<string>;
   status: Generated<string>;
   status_reason: string | null;
   task_summary: string;
@@ -350,6 +351,7 @@ export interface MailboxSentSync {
 
 export interface MailboxSettings {
   category_policy: Generated<Json>;
+  loop_wait_days: Generated<number>;
   mailbox_id: string;
   mode: Generated<string>;
   org_id: string;
@@ -365,6 +367,42 @@ export interface Memberships {
   org_id: string;
   role: string;
   user_id: string;
+}
+
+export interface OpenLoops {
+  auto_reply_at: Timestamp | null;
+  cc_addresses: Generated<string[]>;
+  close_reason: string | null;
+  closed_at: Timestamp | null;
+  closed_by_email_id: string | null;
+  closed_by_user_id: string | null;
+  counterpart: string | null;
+  created_at: Generated<Timestamp>;
+  delegate_id: string | null;
+  due_at: Timestamp;
+  due_source: string;
+  follow_ups_sent: Generated<number>;
+  id: Generated<string>;
+  kind: string;
+  language: string;
+  last_follow_up_at: Timestamp | null;
+  last_sent_email_id: string | null;
+  later_count: Generated<number>;
+  mailbox_id: string;
+  message_id: string | null;
+  org_id: string;
+  references_ids: Generated<string[]>;
+  sent_email_id: string | null;
+  stale_notified_at: Timestamp | null;
+  status: Generated<string>;
+  subject: string | null;
+  surfaced_at: Timestamp | null;
+  text: string | null;
+  texts_cleared_at: Timestamp | null;
+  thread_key: string;
+  to_addresses: Generated<string[]>;
+  updated_at: Generated<Timestamp>;
+  wait_from_at: Timestamp;
 }
 
 export interface OpsAlerts {
@@ -434,6 +472,21 @@ export interface SenderRules {
   mailbox_id: string | null;
   org_id: string;
   pattern: string;
+}
+
+export interface SentAnalyses {
+  attempts: Generated<number>;
+  created_at: Generated<Timestamp>;
+  expects_reply: boolean | null;
+  has_promise: boolean | null;
+  mailbox_id: string;
+  next_attempt_at: Timestamp | null;
+  org_id: string;
+  prompt_version: string | null;
+  sent_email_id: string;
+  skip_reason: string | null;
+  status: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface SentEmails {
@@ -550,11 +603,13 @@ export interface DB {
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
   memberships: Memberships;
+  open_loops: OpenLoops;
   ops_alerts: OpsAlerts;
   org_features: OrgFeatures;
   organizations: Organizations;
   outbox: Outbox;
   sender_rules: SenderRules;
+  sent_analyses: SentAnalyses;
   sent_emails: SentEmails;
   sso_providers: SsoProviders;
   triage_feedback: TriageFeedback;
