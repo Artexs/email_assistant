@@ -104,6 +104,7 @@ test("the Sent pass keeps the flags, the UIDs and the numbering of the Sent fold
     try {
       const uids = (await provider.fetchAbove("Sent", 0)).map((meta) => meta.uid);
       expect(uids).toHaveLength(2);
+      const [first, second] = uids as [number, number];
       const before = { status: await provider.folderStatus("Sent"), flags: await provider.fetchFlagsIn("Sent", uids) };
 
       const result = await syncSentFolder(
@@ -118,8 +119,8 @@ test("the Sent pass keeps the flags, the UIDs and the numbering of the Sent fold
       const flagsOf = (list: typeof before.flags) => list.map((entry) => [entry.uid, [...entry.flags].sort()]);
       expect(flagsOf(after.flags)).toEqual(flagsOf(before.flags));
       expect(flagsOf(after.flags)).toEqual([
-        [uids[0], []],
-        [uids[1], ["\\Seen"]],
+        [first, []],
+        [second, ["\\Seen"]],
       ]);
       expect(after.status).toEqual(before.status);
 
