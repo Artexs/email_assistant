@@ -230,6 +230,16 @@ export async function listSetSends(trx: Transaction<DB>, ctx: TenantContext, set
     .execute();
   return rows.map(toSendRow);
 }
+// The oldest send of a reminder set, for a reader that needs the mail behind the set. `undefined` = no such set in this organization.
+export async function getSetSend(db: DbOrTrx, ctx: TenantContext, setId: string): Promise<SendRow | undefined> {
+  const row = await sendBase(db, ctx)
+    .where(sql<string>`actions.payload->>'set_id'`, "=", setId)
+    .orderBy("actions.created_at")
+    .orderBy("actions.id")
+    .limit(1)
+    .executeTakeFirst();
+  return row && toSendRow(row);
+}
 export async function findSendByKey(
   trx: Transaction<DB>,
   ctx: TenantContext,
