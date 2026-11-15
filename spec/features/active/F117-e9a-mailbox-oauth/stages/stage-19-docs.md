@@ -36,3 +36,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 15 and 18 (all server and web s
 
 - Add the OAuth sign-in states (`mailbox_oauth_states`) to `docs/architecture.md` section 7 (retention): the retention page already has a row, section 7 names only `chat_link_tokens` and `auth_verifications`.
 - The migration Down deletes OAuth mailboxes with a raw DELETE (dev-only path): keep it dev-only and say so in the docs.
+
+## Carry-over from stage 13 review
+
+Read `review-13.md`: the stage 13 text says "3 MB" but the code, doc and test use 3 MiB; fix the wording. Decide with the real-account smoke (rows M2 and M10) whether Graph's size limit and the Sent copy headers hold, and whether a 503 may stay `connect`/soft.
