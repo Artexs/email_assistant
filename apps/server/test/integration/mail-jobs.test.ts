@@ -1020,6 +1020,8 @@ describe("mail sync job: log lines are events without server text", () => {
     } finally {
       capture.restore();
     }
+    // The canary check reads every captured line, also a line without the ids (a free-text line next to an event).
+    expect(capture.lines.join("\n")).not.toContain("MARKER");
     const mine = `org_id=${box.orgId} mailbox_id=${box.mailboxId}`;
     return capture.lines.filter((line) => line.includes(mine));
   }
@@ -1205,7 +1207,7 @@ describe("mail sync job: log lines are events without server text", () => {
         `[mail] sync_folder_failing org_id=${box.orgId} mailbox_id=${box.mailboxId} folder_key=offers failed_runs=3`,
       ]);
       expect(mine.filter((line) => line.includes("sync_folder_soft_error"))).toHaveLength(3);
-      expect(mine.join("\n")).not.toContain("MARKER");
+      expect(capture.lines.join("\n")).not.toContain("MARKER");
     });
   });
 });

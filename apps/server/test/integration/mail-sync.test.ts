@@ -2607,6 +2607,47 @@ describe("syncMailbox: sync folders", () => {
     });
   });
 
+  test("8.1b a cursor of Oferty that moves during the check writes sync_below_cursor_moved with the key offers", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
+      const inFolder = s.fake.deliver("AI/Info", seed(1), ago(2));
+      s.fake.remove(OFFERS, uid);
+      await trx.updateTable("emails").set({ uid: inFolder }).where("id", "=", rowId).execute();
+      await trx
+        .updateTable("mailbox_folders")
+        .set({ last_uid: inFolder + 10 })
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("key", "=", "offers")
+        .execute();
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      s.fake.userMove("AI/Info", inFolder, OFFERS);
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchByUidsIn: async (folder, uids) => {
+          const metas = await s.fake.fetchByUidsIn(folder, uids);
+          if (folder === OFFERS) {
+            await trx
+              .updateTable("mailbox_folders")
+              .set({ last_uid: inFolder + 99 })
+              .where("mailbox_id", "=", s.mailboxId)
+              .where("key", "=", "offers")
+              .execute();
+          }
+          return metas;
+        },
+      };
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+        expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
+        expect(lines.warn).toContain(
+          `[mail] sync_below_cursor_moved org_id=${s.ctx.orgId} mailbox_id=${s.mailboxId} folder_key=offers`
+        );
+      });
+    });
+  });
+
   test("8.2 a mail still in AI/Info with an identical copy in Oferty at its UID is a copy, not a return", async () => {
     await withRollback(db, async (trx) => {
       const s = await folderSetup(trx);
