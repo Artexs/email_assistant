@@ -10,7 +10,7 @@ import { FLAGS_REFRESH_EVERY_MS, refreshFlags } from "./flags";
 import { markHostBlocked, recheckBlockedHosts } from "./host-status";
 import type { ImapConnectOptions } from "./imap/client";
 import { findUserMoves } from "./moves";
-import { openMailboxProvider } from "./open";
+import { openMailboxProvider, type OpenDeps } from "./open";
 import { HostNotAllowedError, MailAuthError, type MailProvider } from "./port";
 import { listSyncTargets, markSynced, setMailboxStatus } from "./repo";
 import { CursorMovedError, syncMailbox, type SyncDeps } from "./sync";
@@ -21,6 +21,8 @@ export interface MailSyncJobDeps {
   db: Db | Transaction<DB>;
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
+  // F117: the token store of the `oauth` mailboxes (stage 10 wires it in `main.ts`).
+  oauthTokens?: OpenDeps["oauthTokens"];
   isOwnActionId: SyncDeps["isOwnActionId"];
   now(): Date;
 }

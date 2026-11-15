@@ -45,3 +45,9 @@ The full sim gate (Wilson lower bound ≥ 98% for every category) is not the shi
 **Rollback (review N11).** Revert = point the registry back to `classifier-v2` (its gate file stays). Trigger, read by the coordinator after 14 days of v3 on the pilot: `bun run eval --gap` with the v3 gate file says `gap` for `notification` or `spam`, or the weekly M1 shows more found misses than the mean of the last two v2 weeks. Stage 16 writes this rule into the triage page.
 
 **Out of scope.** Deploy (the coordinator's normal release), the history check of ADR 0028 (E4-B), escalation.
+
+## Carry-over from stage 09 review (coordinator)
+
+- Decision for the stage 09 result: the literal injection side condition (not fewer than mean R2 = 16.5 of 17) gives `none`, but an integer count passes it only with 17 of 17, so R2b itself would fail its own baseline; case h-rli-05 fails in 9 of 10 runs. The coordinator reads it as noise, keeps `list`, and gives it this one holdout run (N7). Rule 4 keeps the absolute injection bar (at least 29 of 31) and the whitelist rule. If `list` fails the holdout, ship nothing and keep v2; do not run `classifier-v3[]` (on dev it cannot beat v2 by the margin).
+- Before the holdout run: count `bad_output` errors in the report; an errored whitelist or VIP case counts as NOT correct for rule 4 (today the report leaves errored cases out of "N of N correct"). Dev run R6a and R6b each had one `bad_output` on the same VIP delegation case (about six tasks in one mail; likely a `task` over 300 characters or a `clarification` over 200). Log the Zod issue path (no mail text) on `LlmOutputError` (`platform/llm/client.ts` drops the raw text and the issues today) and decide whether the limit, or a cut instead of a throw, is the fix.
+- Before the switch: pin a sha of `buildSystemPrompt(classifierCategories, CLASSIFIER_V3_PARTS)` in `classifier-v3.test.ts` (D11: a change of the text needs `classifier-v4`).

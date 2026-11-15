@@ -3,9 +3,11 @@
 import * as React from "react";
 import { cn } from "cn";
 
+// The scroll area is focusable, so a keyboard user can scroll it (axe rule scrollable-region-focusable).
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroll area must take the keyboard focus (axe rule scrollable-region-focusable)
+    <div data-slot="table-container" tabIndex={0} className="relative w-full overflow-x-auto">
       <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );

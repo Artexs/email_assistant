@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createFakeTelegramClient } from "../../../../tools/fake-telegram/src/driver";
 
 import { en, enPlurals } from "../../src/i18n/en";
+import { expectNoA11yViolations } from "../a11y";
 import { E2E_TELEGRAM_URL } from "../env";
 import { cleanUpOrg, connectGreenMail, cspErrors, nextAddress, signIn } from "../helpers";
 import { readSeed } from "../seed";
@@ -38,6 +39,7 @@ test("from open to done and back", async ({ page }, testInfo) => {
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByText(en.ob_item_open, { exact: true })).toHaveCount(modeKept ? 3 : 4);
   if (modeKept) await expect(page.getByText(en.ob_mode_done, { exact: true })).toBeVisible();
+  await expectNoA11yViolations(page);
 
   await page.getByRole("link", { name: en.mb_connect }).click();
   await expect(page).toHaveURL(/\/mailboxes/);

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
 import { t } from "../../src/i18n";
+import { expectNoA11yViolations } from "../a11y";
 import {
   cleanUpOrg,
   connectGreenMail,
@@ -62,6 +63,7 @@ test("mode, switch and auto", async ({ page }, testInfo) => {
   await expect(page.locator("[data-card=signature]")).toBeVisible();
   expect(await seenNoMailbox()).toBe(false);
   expect(logged).toEqual([]);
+  await expectNoA11yViolations(page);
 
   // The assist dialog.
   await mode.getByRole("button", { name: en.mode_to_assist }).click();
@@ -70,6 +72,7 @@ test("mode, switch and auto", async ({ page }, testInfo) => {
   await expect(dialog.getByText(en.badge_triage_off)).toBeVisible();
   await expect(dialog.getByText(en.badge_actions_synthetic)).toBeVisible();
   await expect(dialog.getByText(en.badge_send_off)).toBeVisible();
+  await expectNoA11yViolations(page);
   await dialog.getByRole("button", { name: en.assist_usual }).click();
   await expect(page.getByText(en.mode_assist_toast)).toBeVisible();
   await expect(mode.getByText(en.mode_assist, { exact: true })).toBeVisible();

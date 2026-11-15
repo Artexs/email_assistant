@@ -1,4 +1,4 @@
-import type { MailSender } from "../port";
+import { SmtpSendError, type MailSender } from "../port";
 
 export interface FakeMailSender extends MailSender {
   readonly sent: { envelope: { from: string; to: string[] }; raw: Buffer }[];
@@ -21,6 +21,8 @@ export function createFakeMailSender(): FakeMailSender {
     },
     async send(input) {
       calls.push("send");
+      // The contract of `MailSender`: a closed sender sends nothing (no mail left, so the stage is `connect`).
+      if (sender.closed) throw new SmtpSendError("connect", "ECLOSED", null, false, false);
       const failure = failures.shift();
       if (failure !== undefined) throw failure;
       sent.push({ envelope: { from: input.envelope.from, to: [...input.envelope.to] }, raw: input.raw });

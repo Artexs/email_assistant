@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
+import { expectNoA11yViolations } from "../a11y";
 import { cleanUpOrg, connectGreenMail, cspErrors, mailboxAddress, nextAddress, signIn } from "../helpers";
 import { readSeed } from "../seed";
 
@@ -27,9 +28,11 @@ test("connect, pause, resume, change the password, remove", async ({ page }, tes
   const address = mailboxAddress(testInfo.project.name);
   await page.goto("/mailboxes");
   await expect(page.getByText(en.mb_empty)).toBeVisible();
+  await expectNoA11yViolations(page);
 
   await page.getByRole("button", { name: en.mb_connect }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expectNoA11yViolations(page);
   await connectGreenMail(page, testInfo.project.name);
 
   await expect(page.getByText(address)).toBeVisible();
@@ -37,6 +40,7 @@ test("connect, pause, resume, change the password, remove", async ({ page }, tes
   await expect(page.getByText(en.badge_triage_off)).toBeVisible();
   await expect(page.getByText(en.badge_actions_synthetic)).toBeVisible();
   await expect(page.getByText(en.badge_send_off)).toBeVisible();
+  await expectNoA11yViolations(page);
 
   await page.getByRole("button", { name: en.mb_pause }).click();
   await expect(page.getByText(en.mb_paused_toast)).toBeVisible();
