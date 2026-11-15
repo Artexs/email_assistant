@@ -29,13 +29,13 @@ An operator can send the LLM calls to the OpenAI EU endpoint or to an own OpenAI
 
 ## Slices
 
-One worker job per stage, in order: 01 → 02 → 03 → 04 (only if 01 fails) → 05 → 06 → 07. Stage 01 may run next to stage 02. No migration, no `bun.lock` change. Owner stops: before 05 (O2) and before 07 (O1, O3). Detail: `plan.md` § How to run.
+One worker job per stage, in order: 01 → 02 → 03 → 04 (only if 01 fails) → 05 → 06 → 07. Stage 01 may run next to stage 02. No migration, no `bun.lock` change. Owner stops: before 05 (O2) and before 07 (O1, O3). Owner, 2026-11-15: stage 04 is skipped (stage 01 passed); stage 06 builds now, before 05, without measured results; stage 05 waits for O2, which the owner does later (`notes/owner-later.md`). Detail: `plan.md` § How to run.
 
 ## Sequenced
 
 - Plan after: none (planning may run ahead of the build).
 - Build after: F097 (E2a Offline lab, in `spec/features/done/`).
-- Gate: Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage (stage 07). Owner step O2 (`ollama-rocm` or a rented GPU) before stage 05.
+- Gate: Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage (stage 07). Owner step O2 (`ollama-rocm` or a rented GPU) before stage 05: later, by the owner (2026-11-15: "I will do it in the future, not right now").
 
 ## Notes
 

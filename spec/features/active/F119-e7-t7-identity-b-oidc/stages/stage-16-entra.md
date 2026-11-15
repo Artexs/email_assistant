@@ -1,5 +1,7 @@
 # F119 stage 16 — Real check with a Microsoft Entra test tenant
 
+**Skipped (owner, 2026-11-15):** no Entra tenant now. The ticket closes after stage 15 with the line "Entra sign-in: not proven live". Run this stage later only if the owner opens a tenant.
+
 Part of [`../plan.md`](../plan.md). `[risky]` (real system, a real identity provider). **The coordinator runs it with the owner** (owner step U1). Needs stage 15. It closes the ticket.
 
 ## Owner step U1 (the owner's hands, about 30 min)

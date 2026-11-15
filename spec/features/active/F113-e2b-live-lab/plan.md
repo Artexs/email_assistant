@@ -78,11 +78,11 @@ mkdir -p /tmp/f113-sNN && bun run lint > /tmp/f113-sNN/lint.log 2>&1 && bun run 
 
 ## Owner steps
 
-- **O1** Grow the VPS root volume (PD-055: `sudo vgs`, `sudo lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv`, `df -h /`). Before C4. Default: the code stages and C1–C3 go on; C1 deploys only with ≥ 2 GB free; C4 waits for O1.
+- **O1** Dropped 2026-11-15. Owner, 2026-11-15: "22 gigabytes ... enough ... when it has 5, 4 or 2 GB I will perform action." No step waits for the root volume. Disk rule: C1 and C4 run `df -h /` on the VPS first; under 5 GB free, stop and tell the owner (the owner grows the volume: PD-055 commands `sudo vgs`, `sudo lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv`).
 
 ## Coordinator steps (VPS pre-approved; backup first, name the rollback, verify after)
 
-Commands: stage 16 runbook. C1 after stage 16: build and start `ea-sim`, the env file (LLM key lines copied without printing), migrate, check N1, N2, tailnet port 8443. C2: seed, start a day run. C3: score it, commit the report. C4 after O1: `lab reset --org lab`, start a week run on a Monday. C5: score it, commit. C6: demo reset; after day 4, export, import on the dev DB.
+Commands: stage 16 runbook. C1 after stage 16: build and start `ea-sim`, the env file (LLM key lines copied without printing), migrate, check N1, N2, tailnet port 8443. C2: seed, start a day run. C3: score it, commit the report. C4 (disk check first): `lab reset --org lab`, start a week run on a Monday. C5: score it, commit. C6: demo reset; after day 4, export, import on the dev DB.
 
 ## Review
 

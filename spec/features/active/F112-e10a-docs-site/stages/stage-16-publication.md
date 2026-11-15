@@ -6,6 +6,14 @@ Part of [`../plan.md`](../plan.md). Read P7, D10, O1, N1, Q4 and Q6 in [`../ques
 
 ## Step 1 — Owner (O1)
 
+**Owner, 2026-11-15: "it's a job for you to do."** The coordinator does O1 with the `gh` CLI (the token has admin on the repository). State:
+- Done 2026-11-15: item 2. `github-pages` environment: custom deployment policies `master` (branch) and `v*` (tag). Check: `gh api repos/Artexs/email_assistant/environments/github-pages/deployment-branch-policies --jq '.branch_policies[] | {name,type}'`.
+- Not done on purpose: item 1 (Pages source). While Pages is off, a pushed release tag cannot publish a half-built site (stages 10–12 and 15 are not landed). Do it at this stage, after stages 01–15 land:
+  - Item 1: `gh api -X POST repos/Artexs/email_assistant/pages -f build_type=workflow` (if it exists: `gh api -X PUT repos/Artexs/email_assistant/pages -f build_type=workflow`). Check: `gh api repos/Artexs/email_assistant/pages --jq .build_type` prints `workflow`.
+  - N3 tag ruleset (only admins create, move or delete `v*` tags): `gh api -X POST repos/Artexs/email_assistant/rulesets --input -` with `{"name":"release tags","target":"tag","enforcement":"active","conditions":{"ref_name":{"include":["refs/tags/v*"],"exclude":[]}},"rules":[{"type":"creation"},{"type":"update"},{"type":"deletion"}],"bypass_actors":[{"actor_id":5,"actor_type":"RepositoryRole","bypass_mode":"always"}]}`. Check: `gh api repos/Artexs/email_assistant/rulesets --jq '.[].name'`.
+  - Item 3: `gh workflow run docs-deploy.yml --ref master`, then the checks of Step 2.
+- The old owner text below stays as the reference of what each item means.
+
 The coordinator asks the owner for these steps and waits (outside publication needs the owner's hands):
 
 1. GitHub → repository Settings → Pages → Build and deployment → Source: "GitHub Actions".
