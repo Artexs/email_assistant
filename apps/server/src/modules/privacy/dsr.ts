@@ -14,6 +14,7 @@ const MAIL_BATCH = 200;
 
 export interface DsrCounts {
   mails: number;
+  sent_mails: number;
   // "table.column" → number of rows; only keys with rows.
   mentions: Record<string, number>;
   listed: { delegates: number; sender_rules: number };
@@ -25,6 +26,7 @@ export interface DsrCounts {
 export function dsrCounts(match: DsrMatch): DsrCounts {
   return {
     mails: match.mails.length,
+    sent_mails: match.sentMails.length,
     mentions: Object.fromEntries(Object.entries(match.mentions).map(([key, ids]) => [key, ids.length])),
     listed: { delegates: match.listed.delegates.length, sender_rules: match.listed.senderRules.length },
     open_actions: match.openActions.length,
@@ -41,6 +43,7 @@ export function dsrMentionTotal(counts: DsrCounts): number {
 export function dsrIsEmpty(counts: DsrCounts): boolean {
   return (
     counts.mails === 0 &&
+    counts.sent_mails === 0 &&
     dsrMentionTotal(counts) === 0 &&
     counts.listed.delegates === 0 &&
     counts.listed.sender_rules === 0 &&
@@ -55,6 +58,7 @@ export function dsrAuditData(addressHash: string, counts: DsrCounts): AuditData 
   return {
     address_hash: addressHash,
     mails: counts.mails,
+    sent_mails: counts.sent_mails,
     mentions: dsrMentionTotal(counts),
     listed_delegates: counts.listed.delegates,
     listed_sender_rules: counts.listed.sender_rules,
@@ -89,6 +93,18 @@ async function* reportChunks(
       from emails e
       where e.org_id = ${input.orgId}::uuid and e.id = any (${batch}::uuid[])
       order by e.id`.execute(trx);
+    yield `${i > 0 ? "," : ""}${rows.map((row) => JSON.stringify(row)).join(",")}`;
+  }
+  // The access copy holds what the erase deletes: the sent mails that go, with their text.
+  yield `],"sent_mails":[`;
+  const sentIds = match.sentMails.map((mail) => mail.id);
+  for (let i = 0; i < sentIds.length; i += MAIL_BATCH) {
+    const batch = sentIds.slice(i, i + MAIL_BATCH);
+    const { rows } = await sql<Record<string, unknown>>`
+      select s.id, s.mailbox_id, s.sent_at, s.from_address, s.to_addresses, s.cc_addresses, s.subject, s.body_text
+      from sent_emails s
+      where s.org_id = ${input.orgId}::uuid and s.id = any (${batch}::uuid[])
+      order by s.id`.execute(trx);
     yield `${i > 0 ? "," : ""}${rows.map((row) => JSON.stringify(row)).join(",")}`;
   }
   const delegates = await sql<Record<string, unknown>>`

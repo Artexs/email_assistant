@@ -1,5 +1,7 @@
 // `MailProvider` has IMAP semantics (UIDs, flags, APPEND) by design. Another backend gets an adapter that maps its ids
 // to this shape, or a port v2 with its own ADR (architecture review §3.7).
+import type { AuthErrorReason as CoreAuthErrorReason } from "@ea/core";
+
 import type { TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 
@@ -194,7 +196,7 @@ export type SentFolderReader = Pick<
 export type AuthMaterial = { kind: "password"; password: string } | { kind: "oauth"; accessToken: string };
 
 /** Why an OAuth login was refused (ADR 0031). A password mailbox has no reason. */
-export type AuthErrorReason = "oauth_expired" | "oauth_revoked" | "admin_consent_required" | "protocol_disabled";
+export type AuthErrorReason = CoreAuthErrorReason;
 
 /** Which service a token is for: `mail` = IMAP and SMTP; `graph` = Microsoft Graph. */
 export type TokenResource = "mail" | "graph";
@@ -235,6 +237,14 @@ export class MailboxNotFoundError extends HardError {
   constructor(options?: { cause?: unknown }) {
     super("mailbox not found", options);
     this.name = "MailboxNotFoundError";
+  }
+}
+
+/** The mailbox signs in with OAuth: it has no password to replace. Reconnect is the fix. */
+export class MailboxOAuthError extends HardError {
+  constructor(options?: { cause?: unknown }) {
+    super("oauth mailbox: use Reconnect in the panel", options);
+    this.name = "MailboxOAuthError";
   }
 }
 

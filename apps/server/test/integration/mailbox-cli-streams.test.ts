@@ -16,12 +16,13 @@ import {
 } from "../../src/modules/mail";
 import { ensureSyncFolders } from "../../src/modules/mail/folders";
 import { connectImapClient } from "../../src/modules/mail/imap/client";
+import { insertCredentials, insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox } from "./fixtures";
+import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 
 // The mailbox CLIs print to the operator's terminal through createCliOutput: `print` to stdout, `fail` to stderr.
@@ -267,6 +268,60 @@ describe("mailbox:password", () => {
     } finally {
       await removeOrg(orgId, userId);
       await new Promise<void>((done) => server.close(() => done()));
+    }
+  }, 30_000);
+});
+
+describe("mailbox-password on an OAuth mailbox", () => {
+  test("exits 1 with `oauth mailbox: use Reconnect in the panel` on stderr; the secret stays", async () => {
+    const { orgId, userId } = await createOrg(db);
+    const other = await createOrg(db);
+    try {
+      const mailboxId = randomUUID();
+      await insertMailbox(
+        db,
+        { orgId },
+        {
+          id: mailboxId,
+          address: `oauth-${randomUUID()}@x.test`,
+          imapHost: "imap.x.test",
+          imapPort: 993,
+          smtpHost: "smtp.x.test",
+          smtpPort: 465,
+          oauthProvider: "google",
+          capabilities: testCapabilities,
+          folderMap: {},
+        }
+      );
+      await insertCredentials(
+        db,
+        { orgId },
+        { mailboxId, encryptedSecret: "kept", secretKind: "oauth", keyVersion: 1 }
+      );
+
+      const result = await run("mailbox-password", ["--org-id", orgId, "--mailbox-id", mailboxId], {
+        stdin: "new-secret-pw\n",
+      });
+      expect(result.code).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toBe("[mailbox-password] oauth mailbox: use Reconnect in the panel\n");
+      expect(result.stderr).not.toContain("new-secret-pw");
+      const stored = await db
+        .selectFrom("mailbox_credentials")
+        .select("encrypted_secret")
+        .where("mailbox_id", "=", mailboxId)
+        .executeTakeFirstOrThrow();
+      expect(stored.encrypted_secret).toBe("kept");
+
+      // Another organization cannot see the mailbox: not found, not the OAuth message.
+      const foreign = await run("mailbox-password", ["--org-id", other.orgId, "--mailbox-id", mailboxId], {
+        stdin: "new-secret-pw\n",
+      });
+      expect(foreign.code).toBe(1);
+      expect(foreign.stderr).toBe("[mailbox-password] mailbox not found\n");
+    } finally {
+      await removeOrg(orgId, userId);
+      await removeOrg(other.orgId, other.userId);
     }
   }, 30_000);
 });

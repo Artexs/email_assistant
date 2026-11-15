@@ -90,11 +90,22 @@ describe("mailboxViewSchema", () => {
     mode: null,
     movesSupported: true,
     secretKind: "password",
+    authMethod: "password",
+    oauthProvider: null,
+    authReason: null,
     scopes: { triage: badge, actions: badge, send: badge },
   };
 
   test("parses a view without sync time and mode", () => {
     expect(mailboxViewSchema.safeParse(view).success).toBe(true);
+  });
+
+  test("parses an OAuth view with a reason and refuses an unknown provider or reason", () => {
+    const oauth = { ...view, status: "auth_error", authMethod: "oauth", oauthProvider: "google" };
+    expect(mailboxViewSchema.safeParse({ ...oauth, authReason: "oauth_expired" }).success).toBe(true);
+    expect(mailboxViewSchema.safeParse({ ...oauth, authReason: "nope" }).success).toBe(false);
+    expect(mailboxViewSchema.safeParse({ ...oauth, oauthProvider: "yahoo" }).success).toBe(false);
+    expect(mailboxViewSchema.safeParse({ ...view, authMethod: "token" }).success).toBe(false);
   });
 
   test("refuses an unknown status", () => {

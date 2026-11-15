@@ -17,6 +17,7 @@ import {
   MailboxExistsError,
   MailboxLimitError,
   MailboxNotFoundError,
+  MailboxOAuthError,
   type MailFolder,
   type MailProvider,
   type MailServerInfo,
@@ -222,6 +223,8 @@ export async function updateMailboxPassword(
   const { mailboxId, password, now } = input;
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (!mailbox) throw new MailboxNotFoundError();
+  // An OAuth mailbox has no password: refuse before any login or write. A password mailbox cannot become OAuth (Reconnect keeps the kind).
+  if (mailbox.oauth_provider !== null) throw new MailboxOAuthError();
 
   const { timeouts } = deps;
   await withDeadline(

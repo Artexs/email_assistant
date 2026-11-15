@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   ClipboardList,
+  FileCheck,
   Inbox,
   ListFilter,
   Settings,
@@ -11,7 +12,15 @@ import {
 
 import type { TextKey } from "../../i18n";
 
-export type NavKey = "onboarding" | "activity" | "mailboxes" | "settings" | "rules" | "operator" | "stats";
+export type NavKey =
+  | "onboarding"
+  | "activity"
+  | "approvals"
+  | "mailboxes"
+  | "settings"
+  | "rules"
+  | "operator"
+  | "stats";
 
 export interface NavItem {
   key: NavKey;
@@ -20,21 +29,38 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-// The bottom tabs on a phone and the sidebar body on a desktop.
-export const TAB_ITEMS: NavItem[] = [
-  { key: "activity", href: "/activity", label: "nav_activity", icon: Activity },
-  { key: "mailboxes", href: "/mailboxes", label: "nav_mailboxes", icon: Inbox },
-  { key: "settings", href: "/settings", label: "nav_settings", icon: Settings },
-  { key: "rules", href: "/rules", label: "nav_rules", icon: ListFilter },
+// The order of the panel (F102 stage 12): Activity, Approvals, Mailboxes, Settings, Rules, Stats. The delegations page of
+// stage 18 goes after Approvals. An item with a `flag` shows only while the organization has that feature on
+// (`/api/me` field `features`). The desktop sidebar shows all of them.
+const ORDER: { item: NavItem; flag: string | null }[] = [
+  { item: { key: "activity", href: "/activity", label: "nav_activity", icon: Activity }, flag: null },
+  { item: { key: "approvals", href: "/approvals", label: "nav_approvals", icon: FileCheck }, flag: "approvals_page" },
+  { item: { key: "mailboxes", href: "/mailboxes", label: "nav_mailboxes", icon: Inbox }, flag: null },
+  { item: { key: "settings", href: "/settings", label: "nav_settings", icon: Settings }, flag: null },
+  { item: { key: "rules", href: "/rules", label: "nav_rules", icon: ListFilter }, flag: null },
+  { item: { key: "stats", href: "/stats", label: "nav_stats", icon: BarChart3 }, flag: "stats_page" },
 ];
 
-// Shown after "activity" while the organization has the feature `stats_page` on (`/api/me` field `features`).
-export const STATS_ITEM: NavItem = { key: "stats", href: "/stats", label: "nav_stats", icon: BarChart3 };
+// The bottom tab bar of a phone holds at most this many items (its grid has 4 or 5 columns); the rest go to the menu.
+export const PHONE_TAB_LIMIT = 5;
 
 export function navItems(features: readonly string[]): NavItem[] {
-  if (!features.includes("stats_page")) return TAB_ITEMS;
-  const [first, ...rest] = TAB_ITEMS;
-  return first === undefined ? [STATS_ITEM] : [first, STATS_ITEM, ...rest];
+  return ORDER.filter((entry) => entry.flag === null || features.includes(entry.flag)).map((entry) => entry.item);
+}
+
+export function phoneTabs(features: readonly string[]): NavItem[] {
+  return navItems(features).slice(0, PHONE_TAB_LIMIT);
+}
+
+// The items that do not fit in the tab bar: the menu sheet of a phone shows them.
+export function phoneOverflow(features: readonly string[]): NavItem[] {
+  return navItems(features).slice(PHONE_TAB_LIMIT);
+}
+
+// The badge of the approvals item: nothing for 0, the number up to 99, then "99+".
+export function approvalsBadge(count: number): string | null {
+  if (count <= 0) return null;
+  return count > 99 ? "99+" : `${count}`;
 }
 
 export const ONBOARDING_ITEM: NavItem = {

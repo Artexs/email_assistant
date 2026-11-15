@@ -1,5 +1,6 @@
 import { lateMin, type SloCheck, type SloKind, type SloThresholds } from "@ea/core";
 import type { Transaction } from "kysely";
+import { z } from "zod";
 
 import type { DB, Db } from "../../platform/db";
 import { configCodes, softCodes } from "../../platform/llm";
@@ -114,4 +115,73 @@ export async function checkLlmErrors(db: DbOrTrx, now: Date, cfg: SloThresholds)
   if ((enough && pct >= cfg.llmFailPct) || quotaOrgs.length > 0) return reading("slo_llm_errors", "firing", facts, ids);
   if (!enough || pct < cfg.llmClearPct) return reading("slo_llm_errors", "clear", facts, ids);
   return reading("slo_llm_errors", "between", facts, ids);
+}
+
+const GIB = 1024 ** 3;
+// The disk clears 5 percentage points and 0.5 GB above the open values (a hysteresis band, so a value on the line does not flap).
+const DISK_CLEAR_PCT = 5;
+const DISK_CLEAR_GB = 0.5;
+const HOUR_MS = 3_600_000;
+
+/** `statfs` of `node:fs/promises`, as much of it as the check reads. */
+export type StatFs = (path: string) => Promise<{ bavail: number; blocks: number; bsize: number }>;
+
+const oneDecimal = (value: number): number => Math.round(value * 10) / 10;
+
+/**
+ * Free space of the volume `cfg.diskPath` (`bavail` blocks are the ones an unprivileged process may use; GB means 1024^3 bytes, as
+ * `df -h` shows). Firing: free percent below `diskFreePct` or free GB below `diskFreeGb`. Clear: both at least 5 points and 0.5 GB
+ * above them. Else `between`. A volume that cannot be read throws: the job logs `slo_check_failed` and skips the kind this tick.
+ */
+export async function checkDisk(
+  statfs: StatFs,
+  cfg: Pick<SloThresholds, "diskPath" | "diskFreePct" | "diskFreeGb">
+): Promise<SloReading> {
+  const { bavail, blocks, bsize } = await statfs(cfg.diskPath);
+  if (!(blocks > 0) || !(bsize > 0) || !(bavail >= 0)) throw new RangeError("statfs gave no usable block counts");
+  const freePct = (bavail * 100) / blocks;
+  const freeGb = (bavail * bsize) / GIB;
+  const facts = { free_pct: oneDecimal(freePct), free_gb: oneDecimal(freeGb) };
+  if (freePct < cfg.diskFreePct || freeGb < cfg.diskFreeGb) return reading("slo_disk", "firing", facts, []);
+  if (freePct >= cfg.diskFreePct + DISK_CLEAR_PCT && freeGb >= cfg.diskFreeGb + DISK_CLEAR_GB) {
+    return reading("slo_disk", "clear", facts, []);
+  }
+  return reading("slo_disk", "between", facts, []);
+}
+
+// The shape that `deploy/backup.sh` writes (one JSON line; stage 04 step 1).
+const backupStatusSchema = z.object({
+  result: z.enum(["ok", "failed"]),
+  at: z.iso.datetime(),
+  name: z.string().nullable(),
+  bytes: z.number().int().nonnegative().nullable(),
+  last_ok_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * The backup check. `null` when `BACKUP_STATUS_FILE` is empty (check off). Firing: the file is missing, unreadable or has a bad
+ * shape (`missing` 1, `age_h` -1), the last run failed (`failed` 1), or the last good backup is older than `backupMaxAgeH` hours.
+ * Else clear; there is no `between` state. `age_h` is the whole hours since the last good backup, -1 when none is on record.
+ */
+export async function checkBackupAge(
+  readFile: (path: string) => Promise<string>,
+  now: Date,
+  cfg: Pick<SloThresholds, "backupMaxAgeH" | "backupStatusFile">
+): Promise<SloReading | null> {
+  if (cfg.backupStatusFile === null) return null;
+  let status: z.infer<typeof backupStatusSchema>;
+  try {
+    status = backupStatusSchema.parse(JSON.parse(await readFile(cfg.backupStatusFile)));
+  } catch {
+    return reading("slo_backup_age", "firing", { age_h: -1, failed: 0, missing: 1 }, []);
+  }
+  const lastOk = status.last_ok_at === null ? null : new Date(status.last_ok_at);
+  const ageMs = lastOk === null ? null : Math.max(0, now.getTime() - lastOk.getTime());
+  const facts = {
+    age_h: ageMs === null ? -1 : Math.floor(ageMs / HOUR_MS),
+    failed: status.result === "failed" ? 1 : 0,
+    missing: 0,
+  };
+  const stale = ageMs === null || ageMs > cfg.backupMaxAgeH * HOUR_MS;
+  return reading("slo_backup_age", status.result === "failed" || stale ? "firing" : "clear", facts, []);
 }

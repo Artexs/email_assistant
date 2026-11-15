@@ -45,3 +45,7 @@ Closing by replies (13), the chaser (15).
 ## Carry-over from stage 05 review
 
 Read `review-5.md`. `extractSent(llm, input, { timeZone })` has no db and writes no `llm.call` row: this stage writes it (success from `usage`; failure with `llm.modelOf("extractor")`, `llm.endpointOf("extractor")` and the caller's own latency) so extractor calls count in the D14 cap. Filter `pending` rows before `sentSkipReason`. A soft error is told from a hard one with `softCodes.includes(code)`. Stage 12 opens `waiting` only when `expects_reply` is true (an `ask` with `expects_reply` false is ignored).
+
+## Carry-over from stage 06 review
+
+Read `review-6.md`: check that Gemini accepts the extractor schema (`oneOf` is sent raw as `responseJsonSchema`; the anyOf rewrite is OpenAI only) before the extractor runs on a Gemini install; consider requiring `errors` = 0 in the gate evidence.

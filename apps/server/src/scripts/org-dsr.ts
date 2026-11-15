@@ -27,6 +27,7 @@ async function find(args: Extract<OrgDsrArgs, { mode: "find" }>, db: Db) {
   }
   const { counts } = result;
   line(`mails ${counts.mails}`);
+  line(`sent mails ${counts.sent_mails}`);
   for (const [key, count] of Object.entries(counts.mentions)) line(`mention ${key} ${count}`);
   line(`listed delegates ${counts.listed.delegates}`);
   line(`listed sender_rules ${counts.listed.sender_rules}`);
@@ -64,6 +65,7 @@ async function erase(args: Extract<OrgDsrArgs, { mode: "erase" }>, db: Db) {
     return 1;
   }
   line(`erased mails ${result.counts.mails}`);
+  line(`erased sent mails ${result.counts.sent_mails}`);
   line(`tombstones ${result.tombstones}`);
   line(`chain actions ${result.counts.chain_actions}`);
   line(`chain delegations ${result.counts.chain_delegations}`);

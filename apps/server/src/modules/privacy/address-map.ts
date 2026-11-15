@@ -21,7 +21,7 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     subject: "text",
     body_text: "text",
   },
-  // Mail that the user sent: no incoming mail, so no mail filter in the find (the erase of sent mail comes later).
+  // Mail that the user sent: no incoming mail, so no mail filter in the find. A sent mail whose other parties are own mailboxes goes with a tombstone (see `findSentMails`); the others lose the address.
   sent_emails: {
     from_address: "equal",
     to_addresses: "recipients",
