@@ -120,6 +120,8 @@ const allZero = {
   actions: 0,
   delegations: 0,
   sender_rules: 0,
+  sent_emails: 0,
+  mailbox_sent_sync: 0,
   audit_log_by_email: 0,
   audit_log_by_action: 0,
   audit_log_by_mailbox: 0,

@@ -25,15 +25,16 @@ export interface DsrMatch {
   chainDelegations: string[];
 }
 
-// The key of a row (`id`) and the column that names its mail (`emailId`; null in an outbox row of no mail) for each
-// table that a mention reads.
-const ROW_SHAPE: Readonly<Record<string, { id: string; emailId: string }>> = {
+// The key of a row (`id`) and the column that names its incoming mail (`emailId`) for each table that a mention reads.
+// A table with no incoming mail (`sent_emails`) has `emailId: null`: its rows pass no mail filter.
+const ROW_SHAPE: Readonly<Record<string, { id: string; emailId: string | null }>> = {
   emails: { id: "id", emailId: "id" },
   email_headers: { id: "email_id", emailId: "email_id" },
   triage_results: { id: "id", emailId: "email_id" },
   actions: { id: "id", emailId: "email_id" },
   outbox: { id: "id", emailId: "email_id" },
   delegations: { id: "id", emailId: "email_id" },
+  sent_emails: { id: "id", emailId: null },
 };
 
 // Tables of the `list` rule and the field of `DsrMatch.listed` that each fills.
@@ -115,12 +116,17 @@ async function findMentions(
       if (match === null) continue;
       const shape = ROW_SHAPE[table];
       if (!shape) throw new Error(`dsr_match_no_row_shape:${table}`);
+      // A row of no incoming mail (a null column, or a table with no mail column) is never a row of a mail that goes.
+      const mailFilter =
+        shape.emailId === null
+          ? sql<boolean>`true`
+          : sql<boolean>`(${sql.ref(`t.${shape.emailId}`)} is null or not (${sql.ref(`t.${shape.emailId}`)} = any (${goes}::uuid[])))`;
       const result = await sql<{ id: string }>`
         select ${sql.ref(`t.${shape.id}`)}::text as id
         from ${sql.table(table)} as t
         where t.org_id = ${orgId}::uuid
           and ${match}
-          and (${sql.ref(`t.${shape.emailId}`)} is null or not (${sql.ref(`t.${shape.emailId}`)} = any (${goes}::uuid[])))
+          and ${mailFilter}
         order by 1`.execute(db);
       if (result.rows.length > 0) mentions[`${table}.${column}`] = result.rows.map((row) => row.id);
     }

@@ -19,7 +19,7 @@ The assistant knows what the executive sent: it reads the Sent folder of each ma
 
 - The open-loop features built on this data (sent-mail analysis by the LLM, loops, follow-ups, the "needs you today" brief): E5b, F116.
 - The Sent pass right before a system send of a reply draft: the reply-draft ticket (E6a, F115) wires it into the committer.
-- The DSR address map and the organization-delete test of the account-data ticket (E7-T3, F106): this plan names the new columns for it.
+- F104 adds the sent columns to the F106 registries and applies the F106 erase rule to sent mail (stages 01 and 12).
 
 ## Acceptance
 
@@ -28,14 +28,15 @@ The assistant knows what the executive sent: it reads the Sent folder of each ma
 - An incoming mail that the user answered from a mail app reads as "answered by the user" with the reply time.
 - The settings page shows the switch and a status line; turning it off deletes the stored sent mail.
 - A mailbox with the switch on and no sent mail for 7 days gets one Telegram notice per owner.
+- `org:dsr --erase` deletes and tombstones a sent mail whose only other party is the person; other sent mail loses the address.
 - On the pilot mailbox, after the owner turns the switch on, `bun run mailbox:settings show` prints a stored count above 0.
 
 ## Slices
 
-One worker job per stage, 01 → 12, each after the one before has landed (`plan.md` § How to run). Stages 01 and 11 add a migration: never next to another migration in build. Stage 12 is a coordinator runbook on the VPS with owner step U1 (the owner turns the pilot switch on).
+One worker job per stage, 01 → 13, each after the one before has landed (`plan.md` § How to run). Stages 01 and 11 add a migration: never next to another migration in build. Stage 13 is a coordinator runbook on the VPS with owner step U1 (the owner turns the pilot switch on).
 
 ## Sequenced
 
 - Plan after: none (the plan uses only landed code: the `sent_sync` flag and the content capture of the measure ticket, F100 stage 02).
-- Build after: F095 (E1), F099 (E7-T2), both in `spec/features/done/`.
+- Build after: F095 (E1), F099 (E7-T2), both in `spec/features/done/`; the F106 account-data code on master (landed).
 - Gate: —

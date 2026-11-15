@@ -50,3 +50,21 @@ The owner answered the product questions of E5 (PD-115–PD-129: "You can go wit
 
 - Default: a Sent mail whose `X-EA-Action-Id` names a system draft counts as the system's send only when the system's send of that draft went out (`applied` or SMTP started). Otherwise it is the user's own send: it gets text, counts as an answer and keeps the action id as a link, so the reply-draft ticket (E6a) can see "sent by the user" (PD-076). D6, stage 03 step 3.
 - Other option: every mail with an own action id is a system send (no text, no answer mark). Change: `sentOriginOf` answers `system` for every own id.
+
+## Q11 [important: privacy] A data request erases the person's sent mail by the F106 rule (refresh 1)
+
+- Default: `org:dsr --erase` treats sent mail as F106 decision D9 treats incoming mail. A sent mail whose only party besides the organization's own mailboxes is the person goes: the row is deleted and a tombstone stops a later Sent pass from storing it again. Any other sent mail that names the person keeps its row; the address leaves `to`, `cc`, subject and text, and a row still waiting for its text never fetches it. D18, stages 01 and 12.
+- Why: F106 landed first; the E5 rule (discovery notes §4.1) gives the ticket that lands second the job of adding the sent columns. One rule for incoming and sent mail.
+- Limit (as F106): mail and text stored after the erase (a new first pass after "Track my sent mail" goes off and on) can name the person; the runbook says to run the erase again.
+- Other option: scrub only, no sent mail goes (then off → on brings a mail to the person back in full). Change: drop stage 12.
+
+## Q12 [minor] The Sent switch change is an audit row, not a security-log entry
+
+- Default: `mailbox.sent_sync_changed` is written to `audit_log` but is not added to the owner's security log (PD-048 lists sign-ins, lockouts, password and 2FA changes, sessions, export, delete and DSR). D11, stage 08.
+- Other option: a security-log kind `sent_sync_changed`. Change: one entry in `packages/core/src/security-log.ts` and its texts.
+
+## Q13 [important: privacy] The operator may turn "Track my sent mail" on by CLI, only on the owner's instruction (review 2, N9)
+
+- Default: `bun run mailbox:settings sent-sync --value on` works for the operator (audit actor `cli`), like `org:dsr`, which the operator runs on the owner's instruction (PD-038). The usage line says so. The pilot consent (U1) is the owner's own tap in the panel; the coordinator does not use the CLI for it. D11, stage 09.
+- Why: test organizations and the live lab (E2b) have no owner who taps the panel.
+- Other option: the CLI may only turn the switch off. Change: refuse `--value on` with a hint to the panel.

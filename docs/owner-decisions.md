@@ -289,3 +289,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a wrong setting shows at once, not at the first judge call weeks later.
 - Undo: a small config change.
 - Source: `spec/features/done/2026-11/F090-llm-roles/questions.md` Q2.
+
+### 2026-11-15 · Read Sent: data requests erase sent mail; the operator may turn the switch on by CLI (F104) · privacy · new
+- Choice: `org:dsr --erase` treats sent mail as the F106 rule treats incoming mail (a sent mail whose only other party is the person is deleted and tombstoned; other sent mail loses the address). The operator may turn "Track my sent mail" on with the CLI, only on the owner's instruction. Turning it on or off writes an audit row, not a security-log entry.
+- Why: F106 landed first, so F104 adds the sent columns to its registries. Test organizations have no owner who taps the panel.
+- Undo: scrub only, drop stage 12 (Q11); the CLI turns the switch off only (Q13); add a security-log kind (Q12).
+- Source: `spec/features/planned/F104-e5a-read-sent/questions.md` Q11, Q12, Q13.
+
+### 2026-11-15 · Planner and plan-refresh jobs run at thinking medium (harness) · money/quota · new
+- Choice: planner jobs and plan-refresh jobs spawn with `--thinking medium` (was high). The planner's own cold review stays at high. Jobs already running keep their level.
+- Why: the harness review of 2026-11-15 shows plan jobs are a large share of token cost; the cold review still checks the decisions.
+- Undo: set planner back to high in `spec/build.md` TRACK.
+- Source: `notes/2026-11-15-harness-review.md`, owner decision commit 0499dd1c, rule `harness-2026-11-15`.

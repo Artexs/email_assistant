@@ -424,6 +424,46 @@ describe("eraseSubjectData", () => {
     );
   });
 
+  test("13. a sent mail that names the person loses the address in cc and subject; the other organization's row stays", async () => {
+    const person = unique();
+    const a = await seedOrg(person);
+    const b = await seedOrg(person);
+    const insertSent = async (w: World) =>
+      db
+        .insertInto("sent_emails")
+        .values({
+          org_id: w.orgId,
+          mailbox_id: w.boxId,
+          dedup_key: `mid:<s-${randomUUID()}@x.test>:h1`,
+          path: "Sent",
+          uidvalidity: 7,
+          uid: 1,
+          thread_key: "<s@x.test>",
+          origin: "user",
+          content: "pending",
+          sent_at: new Date("2026-11-10T10:00:00Z"),
+          internal_date: new Date("2026-11-10T10:00:00Z"),
+          to_addresses: ["q@x.test"],
+          cc_addresses: [person, "r@x.test"],
+          subject: `about ${person}`,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+    const sentA = await insertSent(a);
+    const sentB = await insertSent(b);
+    const beforeB = await db.selectFrom("sent_emails").selectAll().where("id", "=", sentB.id).executeTakeFirstOrThrow();
+    await erased(a);
+    const rowA = await db.selectFrom("sent_emails").selectAll().where("id", "=", sentA.id).executeTakeFirstOrThrow();
+    expect(rowA.cc_addresses).toEqual(["r@x.test"]);
+    expect(rowA.to_addresses).toEqual(["q@x.test"]);
+    expect(rowA.subject).not.toContain(person);
+    const match = await db.transaction().execute((trx) => matchSubject(trx, a.orgId, person));
+    expect(match.mentions).toEqual({});
+    expect(await db.selectFrom("sent_emails").selectAll().where("id", "=", sentB.id).executeTakeFirstOrThrow()).toEqual(
+      beforeB
+    );
+  });
+
   test("5. an open send of a kept mail that names the person, or an applying chain action: refused, nothing changes", async () => {
     const w = await seedOrg(unique());
     const open = await db.transaction().execute((trx) =>

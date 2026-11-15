@@ -1,4 +1,7 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
 import type { BlockList } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { describe, expect, spyOn, test } from "bun:test";
 import { Hono } from "hono";
@@ -18,11 +21,17 @@ import {
   requireOperator,
   requireOwner,
   requireTenant,
+  signInMethodOf,
   ValidationError,
   type ApiEnv,
   type WebDeps,
 } from "./http";
 import { setLogFormat, setLogLevel } from "./log";
+
+// Logged user ids must be UUIDs (F103 D1).
+const U_MULTI = "1f2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b";
+const U_OTHER = "2a3b4c5d-6e7f-4809-9a0b-1c2d3e4f5a6b";
+const U_OP = "3b4c5d6e-7f80-4910-8b1c-2d3e4f5a6b7c";
 
 describe("GET /health", () => {
   test("returns 200 when the DB is up", async () => {
@@ -259,7 +268,12 @@ describe("requireTenant", () => {
   const appFor = (rows: Rows) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: c.req.header("x-user") ?? "u-none", sessionId: "s-test", twoFactorEnabled: true });
+      c.set("session", {
+        userId: c.req.header("x-user") ?? "u-none",
+        sessionId: "s-test",
+        twoFactorEnabled: true,
+        signInMethod: "password",
+      });
       await next();
     });
     app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
@@ -280,12 +294,14 @@ describe("requireTenant", () => {
         { org_id: "org-1", role: "assistant" },
         { org_id: "org-2", role: "owner" },
       ]);
-      const headers = { "x-user": "u-multi" };
+      const headers = { "x-user": U_MULTI };
       const first = await app.request("/who", { headers });
-      expect(await first.json()).toEqual({ ctx: { orgId: "org-1", userId: "u-multi" }, role: "assistant" });
+      expect(await first.json()).toEqual({ ctx: { orgId: "org-1", userId: U_MULTI }, role: "assistant" });
       await app.request("/who", { headers });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("tenant_multi_membership user_id=u-multi count=2"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes(`tenant_multi_membership user_id=${U_MULTI} count=2`))).toHaveLength(
+        1
+      );
     } finally {
       errorSpy.mockRestore();
     }
@@ -297,7 +313,7 @@ describe("requireTenant scope (RLS safety net, ADR 0011)", () => {
   const appFor = (rows: { org_id: string; role: "owner" }[], onHandler?: () => void) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: "u-scope", sessionId: "s-test", twoFactorEnabled: true });
+      c.set("session", { userId: "u-scope", sessionId: "s-test", twoFactorEnabled: true, signInMethod: "password" });
       await next();
     });
     app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
@@ -356,6 +372,7 @@ describe("requireOperator", () => {
         userId: c.req.header("x-user") ?? "u-none",
         sessionId: "s-test",
         twoFactorEnabled: c.req.header("x-totp") !== "off",
+        signInMethod: c.req.header("x-method") === "sso" ? "sso" : "password",
       });
       c.set("web", (operatorUserIds === undefined ? {} : { operatorUserIds }) as WebDeps);
       await next();
@@ -366,7 +383,7 @@ describe("requireOperator", () => {
   };
 
   test("lets an operator through", async () => {
-    const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op" } });
+    const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OP } });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
   });
@@ -374,11 +391,11 @@ describe("requireOperator", () => {
   test("answers 404 not_found to another user and logs the user id only", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-other" } });
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OTHER } });
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "not_found" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("operator_route_refused user_id=u-other"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes(`operator_route_refused user_id=${U_OTHER}`))).toHaveLength(1);
     } finally {
       errorSpy.mockRestore();
     }
@@ -387,20 +404,103 @@ describe("requireOperator", () => {
   test("answers 403 two_factor_required to an operator without TOTP and logs the user id only", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op", "x-totp": "off" } });
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OP, "x-totp": "off" } });
       expect(res.status).toBe(403);
       expect(await res.json()).toEqual({ error: "two_factor_required" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("operator_two_factor_required user_id=u-op"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes(`operator_two_factor_required user_id=${U_OP}`))).toHaveLength(1);
     } finally {
       errorSpy.mockRestore();
     }
   });
 
+  test("answers 403 password_sign_in_required to an operator with an SSO session and logs the user id only", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OP, "x-method": "sso" } });
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: "password_sign_in_required" });
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      expect(lines.filter((line) => line.includes(`operator_sso_session_refused user_id=${U_OP}`))).toHaveLength(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("the SSO rule comes before the TOTP rule, and the 404 for a non-operator comes first", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const app = appFor(new Set([U_OP]));
+      const noTotp = await app.request("/x", { headers: { "x-user": U_OP, "x-method": "sso", "x-totp": "off" } });
+      expect(noTotp.status).toBe(403);
+      expect(await noTotp.json()).toEqual({ error: "password_sign_in_required" });
+      const other = await app.request("/x", { headers: { "x-user": U_OTHER, "x-method": "sso" } });
+      expect(other.status).toBe(404);
+      expect(await other.json()).toEqual({ error: "not_found" });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("the /operator page: an SSO session gets the 404 page and the warn line; a password session without TOTP keeps the redirect", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    const dist = mkdtempSync(join(tmpdir(), "http-test-dist-"));
+    writeFileSync(join(dist, "404.html"), "not found page");
+    try {
+      const pageApp = (signInMethod: "password" | "sso", twoFactorEnabled: boolean) =>
+        createApp({
+          checkDb: async () => true,
+          web: {
+            auth: {
+              handler: async () => new Response(null),
+              getSession: async () => ({ userId: U_OP, sessionId: "s1", twoFactorEnabled, signInMethod }),
+            },
+            db: {} as WebDeps["db"],
+            now: () => new Date("2026-11-20T10:00:00Z"),
+            dist,
+            baseUrl: new URL("http://127.0.0.1:8080"),
+            trustedOrigins: new Set(["http://127.0.0.1:8080"]),
+            trustedProxies: buildTrustedProxies([]),
+            connInfo: () => undefined,
+            listMembershipsOfUser: async () => [],
+            operatorUserIds: new Set([U_OP]),
+            routers: () => undefined,
+          } satisfies WebDeps,
+        });
+      const sso = await pageApp("sso", true).request("/operator");
+      expect(sso.status).toBe(404);
+      expect(await sso.text()).toBe("not found page");
+      expect(sso.headers.get("cache-control")).toBe("private, no-store");
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      // The page route logs a request id between the event and the fields.
+      expect(
+        lines.filter((line) => line.endsWith(`user_id=${U_OP}`) && line.includes("operator_sso_session_refused"))
+      ).toHaveLength(1);
+      // An operator without TOTP and with an SSO session: the SSO rule comes first, so the answer is the 404 page, not the redirect.
+      const ssoNoTotp = await pageApp("sso", false).request("/operator");
+      expect(ssoNoTotp.status).toBe(404);
+      expect(await ssoNoTotp.text()).toBe("not found page");
+      expect(ssoNoTotp.headers.get("location")).toBeNull();
+      const noTotp = await pageApp("password", false).request("/operator");
+      expect(noTotp.status).toBe(302);
+      expect(noTotp.headers.get("location")).toBe("/settings?two_factor=required");
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("signInMethodOf: only the exact value password is a password session; anything else is sso (fail closed)", () => {
+    expect(signInMethodOf("password")).toBe("password");
+    expect(signInMethodOf("sso")).toBe("sso");
+    expect(signInMethodOf(undefined)).toBe("sso");
+    expect(signInMethodOf(null)).toBe("sso");
+    expect(signInMethodOf("x")).toBe("sso");
+  });
+
   test("answers 404, not 403, to a non-operator without TOTP", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-other", "x-totp": "off" } });
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OTHER, "x-totp": "off" } });
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "not_found" });
     } finally {
@@ -411,7 +511,7 @@ describe("requireOperator", () => {
   test("fails closed when the web has no operator list", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor().request("/x", { headers: { "x-user": "u-op" } });
+      const res = await appFor().request("/x", { headers: { "x-user": U_OP } });
       expect(res.status).toBe(404);
     } finally {
       errorSpy.mockRestore();
@@ -424,7 +524,12 @@ describe("requireOperator", () => {
       const web = {
         auth: {
           handler: async () => new Response(null),
-          getSession: async () => ({ userId: "u-owner", sessionId: "s1", twoFactorEnabled: true }),
+          getSession: async () => ({
+            userId: "u-owner",
+            sessionId: "s1",
+            twoFactorEnabled: true,
+            signInMethod: "password",
+          }),
         },
         db: {} as WebDeps["db"],
         now: () => new Date("2026-11-20T10:00:00Z"),
@@ -434,7 +539,7 @@ describe("requireOperator", () => {
         trustedProxies: buildTrustedProxies([]),
         connInfo: () => undefined,
         listMembershipsOfUser: async () => [{ org_id: "org-1", role: "owner" as const }],
-        operatorUserIds: new Set(["u-op"]),
+        operatorUserIds: new Set([U_OP]),
         routers: (api) => {
           api.get("/operator/x", (c) => c.json({ ok: true }));
           api.get("/me-x", (c) => c.json({ ok: true }));
@@ -455,7 +560,12 @@ describe("requireOperator", () => {
     const web = {
       auth: {
         handler: async () => new Response(null),
-        getSession: async () => ({ userId: "u-owner", sessionId: "s1", twoFactorEnabled: true }),
+        getSession: async () => ({
+          userId: "u-owner",
+          sessionId: "s1",
+          twoFactorEnabled: true,
+          signInMethod: "password",
+        }),
       },
       db: {} as WebDeps["db"],
       now: () => new Date("2026-11-20T10:00:00Z"),
@@ -465,7 +575,7 @@ describe("requireOperator", () => {
       trustedProxies: buildTrustedProxies([]),
       connInfo: () => undefined,
       listMembershipsOfUser: async () => [{ org_id: "org-1", role: "owner" as const }],
-      operatorUserIds: new Set(["u-op"]),
+      operatorUserIds: new Set([U_OP]),
       routers: (api) => {
         api.get("/operator/x", (c) => c.json({ ok: true }));
         api.post("/operator/x", (c) => c.json({ ok: true }));
@@ -522,7 +632,7 @@ describe("requireOperator", () => {
     test("a non-operator still gets 404 not_found on an operator route", async () => {
       const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
       try {
-        const res = await orderApp({ ...asOwner, operatorUserIds: new Set(["u-op"]) }).request("/api/operator/scope");
+        const res = await orderApp({ ...asOwner, operatorUserIds: new Set([U_OP]) }).request("/api/operator/scope");
         expect(res.status).toBe(404);
         expect(await res.json()).toEqual({ error: "not_found" });
       } finally {
