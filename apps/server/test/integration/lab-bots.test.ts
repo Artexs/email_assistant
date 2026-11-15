@@ -6,11 +6,13 @@ import { join } from "node:path";
 import { otherAddressOf, type LiveRunPlan, type SimPersona, type Slot } from "@ea/core";
 import { afterAll, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { ImapFlow } from "imapflow";
+import { simpleParser } from "mailparser";
 
 import {
   createLabMailClient,
   createLabState,
   LabMailError,
+  MAX_ERRORS_PER_REPLY,
   runDelegateBotsTick,
   type BotDeps,
   type BotTickResult,
@@ -55,6 +57,7 @@ interface World {
   runId: string;
   runMailbox: string;
   delegate: SimPersona;
+  other: SimPersona; // another delegate persona with its own inbox
   mail: LabMailClient;
   state: LabState;
   deps: BotDeps;
@@ -71,6 +74,10 @@ interface World {
     subject?: string;
     from?: string;
     text?: string;
+    cc?: string[];
+    headers?: Record<string, string>;
+    // The Subject header value as it goes on the wire (an encoded word that decodes to a line break).
+    rawSubject?: string;
   }): Promise<void>;
   // Waits until every mail sent with `sendToDelegate` is in the delegate inbox.
   arrived(): Promise<void>;
@@ -147,6 +154,7 @@ async function makeWorld(options: { allowRunMailbox?: boolean } = {}): Promise<W
     runId,
     runMailbox,
     delegate,
+    other,
     mail,
     state,
     clock,
@@ -164,7 +172,7 @@ async function makeWorld(options: { allowRunMailbox?: boolean } = {}): Promise<W
       );
     },
     async sendToDelegate(input) {
-      const raw = renderSeedMessage({
+      const rendered = renderSeedMessage({
         messageId: input.id,
         from: `Wiktor <${input.from ?? runMailbox}>`,
         to: [delegate.address],
@@ -173,7 +181,11 @@ async function makeWorld(options: { allowRunMailbox?: boolean } = {}): Promise<W
         text: input.text ?? BODY_CANARY,
         references: input.references,
         inReplyTo: input.references.at(-1),
+        cc: input.cc,
+        headers: input.headers,
       });
+      const raw =
+        input.rawSubject === undefined ? rendered : rendered.replace(/^Subject: .*$/m, `Subject: ${input.rawSubject}`);
       sentCount += 1;
       await feeder.smtpSend({ envelopeFrom: input.from ?? runMailbox, to: delegate.address, raw });
     },
@@ -439,6 +451,14 @@ describe("delegate bots", () => {
       from: otherAddressOf(world.delegate.address),
     });
 
+    // A mail from another delegate's own address (not the alias) is a bot mail too: no event, nothing planned.
+    await world.sendToDelegate({
+      id: "<srv-10h@localhost>",
+      references: [world.labId("w-1-001")],
+      date: MON_10,
+      from: world.other.address,
+    });
+
     const result = await tick(world);
     expect(result).toMatchObject({ planned: 0, sent: 0, unmapped: 2, unexpected: 2 });
     expect(codesOf(world.events())).toEqual([
@@ -522,5 +542,196 @@ describe("delegate bots", () => {
     for (const secret of [SUBJECT_CANARY, BODY_CANARY, "Dorota", world.delegate.address, world.runMailbox]) {
       expect(text).not.toContain(secret);
     }
+  });
+  test("P1: a delegation with Reply-To, Cc and Bcc outside gets one reply to the run mailbox only", async () => {
+    await startBots(world);
+    const suffix = randomUUID().slice(0, 8);
+    const outside = {
+      replyTo: `out-reply-${suffix}@localhost`,
+      cc: `out-cc-${suffix}@localhost`,
+      bcc: `out-bcc-${suffix}@localhost`,
+    };
+    const received = "<srv-p1@localhost>";
+    await world.sendToDelegate({
+      id: received,
+      references: [world.labId("w-1-001")],
+      date: MON_10,
+      cc: [outside.cc],
+      headers: { "Reply-To": outside.replyTo, Bcc: outside.bcc },
+    });
+    await tick(world);
+    world.clock.now = FAR;
+    // The normal case: the reply goes out, nothing is refused, nothing fails.
+    expect(await tick(world)).toMatchObject({ sent: 1, failed: 0 });
+    expect(codesOf(world.events())).toEqual([]);
+    const [reply] = await eventually(
+      () => runMailboxMessages(world),
+      (found) => found.length === 1,
+      "the reply"
+    );
+    expect(reply).toMatch(new RegExp(`^To: ${world.runMailbox}\\r?$`, "m"));
+    for (const address of Object.values(outside)) expect(reply).not.toContain(address);
+    expect(reply).not.toMatch(/^(Cc|Bcc|Reply-To):/im);
+    // No outside mailbox got a mail (a short wait: GreenMail delivers after the 250).
+    await Bun.sleep(100);
+    for (const address of Object.values(outside)) expect(await world.inbox(address)).toHaveLength(0);
+    expect(await runMailboxMessages(world)).toHaveLength(1);
+  });
+
+  test("an automatic mail (Auto-Submitted other than no) gets no reply; Auto-Submitted: no does", async () => {
+    await startBots(world);
+    world.clock.now = FAR;
+    await world.sendToDelegate({
+      id: "<srv-auto@localhost>",
+      references: [world.labId("w-1-001")],
+      date: MON_10,
+      headers: { "Auto-Submitted": "auto-generated" },
+    });
+    await world.sendToDelegate({
+      id: "<srv-no@localhost>",
+      references: [world.labId("w-1-001")],
+      date: MON_10,
+      headers: { "Auto-Submitted": "no" },
+    });
+    expect(await tick(world)).toMatchObject({ planned: 1, sent: 1 });
+    expect(codesOf(world.events())).toEqual(["auto_submitted"]);
+    expect(plannedOf(world.events()).map((event) => event.key)).toEqual(["<srv-no@localhost>:done"]);
+  });
+
+  describe("failed sends", () => {
+    const failingSmtp = (calls: { count: number }): LabMailClient => ({
+      ...world.mail,
+      smtpSend: () => {
+        calls.count += 1;
+        return Promise.reject(new LabMailError("smtp_failed"));
+      },
+    });
+
+    test("the fifth failed send ends the reply with skip send_failed; the next ticks stay quiet", async () => {
+      await startBots(world);
+      await world.sendToDelegate({ id: "<srv-e1@localhost>", references: [world.labId("w-1-001")], date: MON_10 });
+      await tick(world);
+      world.clock.now = FAR;
+      const calls = { count: 0 };
+      const failing = { ...world.deps, mail: failingSmtp(calls) };
+      for (let attempt = 1; attempt <= MAX_ERRORS_PER_REPLY; attempt += 1) {
+        expect(await runDelegateBotsTick(failing, world.runId)).toMatchObject({ sent: 0, failed: 1 });
+        expect(world.events().filter((event) => event.t === "bot_error")).toHaveLength(attempt);
+      }
+      expect(world.events().filter((event) => event.t === "bot_error")).toEqual(
+        Array.from({ length: MAX_ERRORS_PER_REPLY }, () =>
+          expect.objectContaining({ key: "<srv-e1@localhost>:done", code: "smtp_failed" })
+        )
+      );
+      expect(world.events().at(-1)).toMatchObject({ t: "skip", code: "send_failed", ref: "<srv-e1@localhost>:done" });
+      const events = world.events().length;
+      expect(await runDelegateBotsTick(failing, world.runId)).toMatchObject({ sent: 0, failed: 0 });
+      expect(world.events()).toHaveLength(events);
+      expect(calls.count).toBe(MAX_ERRORS_PER_REPLY);
+      expect(await runMailboxMessages(world)).toHaveLength(0);
+    });
+
+    test("a crash between the fifth error and its skip: the next tick writes the skip and tries nothing", async () => {
+      await startBots(world);
+      await world.sendToDelegate({ id: "<srv-e2@localhost>", references: [world.labId("w-1-001")], date: MON_10 });
+      await tick(world);
+      const key = "<srv-e2@localhost>:done";
+      for (let attempt = 0; attempt < MAX_ERRORS_PER_REPLY; attempt += 1) {
+        world.state.append(world.runId, { t: "bot_error", key, code: "smtp_failed" });
+      }
+      world.clock.now = FAR;
+      const calls = { count: 0 };
+      const result = await runDelegateBotsTick({ ...world.deps, mail: failingSmtp(calls) }, world.runId);
+      expect(result).toMatchObject({ sent: 0, failed: 0 });
+      expect(calls.count).toBe(0);
+      expect(world.events().at(-1)).toMatchObject({ t: "skip", code: "send_failed", ref: key });
+      expect(await runMailboxMessages(world)).toHaveLength(0);
+    });
+
+    test("four errors, then a restart and a good send: the reply goes out once", async () => {
+      await startBots(world);
+      await world.sendToDelegate({ id: "<srv-e3@localhost>", references: [world.labId("w-1-001")], date: MON_10 });
+      await tick(world);
+      const key = "<srv-e3@localhost>:done";
+      for (let attempt = 0; attempt < MAX_ERRORS_PER_REPLY - 1; attempt += 1) {
+        world.state.append(world.runId, { t: "bot_error", key, code: "smtp_failed" });
+      }
+      world.clock.now = FAR;
+      expect(await tick(world)).toMatchObject({ sent: 1, failed: 0 });
+      expect(codesOf(world.events())).toEqual([]);
+    });
+
+    test("a subject that decodes to a line break ends as render_failed after five tries; nothing goes out", async () => {
+      await startBots(world);
+      await world.sendToDelegate({
+        id: "<srv-e4@localhost>",
+        references: [world.labId("w-1-001")],
+        date: MON_10,
+        rawSubject: "=?utf-8?Q?x=0D=0ABcc:_evil@example.com?=",
+      });
+      await tick(world);
+      world.clock.now = FAR;
+      for (let attempt = 0; attempt < MAX_ERRORS_PER_REPLY; attempt += 1) {
+        expect(await tick(world)).toMatchObject({ sent: 0, failed: 1 });
+      }
+      const errors = world.events().filter((event) => event.t === "bot_error");
+      expect(errors).toHaveLength(MAX_ERRORS_PER_REPLY);
+      expect(errors.every((event) => event.code === "render_failed")).toBe(true);
+      expect(codesOf(world.events())).toEqual(["send_failed"]);
+      expect(world.events().some((event) => event.t === "bot_intent")).toBe(false);
+      expect(await runMailboxMessages(world)).toHaveLength(0);
+    });
+  });
+
+  test("a long subject is cut to 200 characters in the reply", async () => {
+    await startBots(world);
+    await world.sendToDelegate({
+      id: "<srv-long@localhost>",
+      references: [world.labId("w-1-001")],
+      date: MON_10,
+      subject: "Zadanie ".concat("ą".repeat(3000)),
+    });
+    await tick(world);
+    world.clock.now = FAR;
+    expect(await tick(world)).toMatchObject({ sent: 1, failed: 0 });
+    const [reply] = await eventually(
+      () => runMailboxMessages(world),
+      (found) => found.length === 1,
+      "the reply"
+    );
+    const subject = ((await simpleParser(reply as string)).subject ?? "").replace(/\s+/g, " ");
+    expect(subject.startsWith("Re: Zadanie ąąą")).toBe(true);
+    expect([...subject]).toHaveLength(200);
+  });
+
+  test("a failed read of one delegate inbox does not stop the others", async () => {
+    await startBots(world);
+    await world.sendToDelegate({ id: "<srv-f@localhost>", references: [world.labId("w-1-001")], date: MON_10 });
+    await world.arrived();
+    world.clock.now = FAR;
+    const flaky: LabMailClient = {
+      ...world.mail,
+      fetchSince: (mailbox, folder, afterUid) =>
+        mailbox === world.other.address
+          ? Promise.reject(new LabMailError("imap_failed"))
+          : world.mail.fetchSince(mailbox, folder, afterUid),
+    };
+    // The persona list puts the failing delegate after the working one, so this also covers the order the other way.
+    expect(await runDelegateBotsTick({ ...world.deps, mail: flaky }, world.runId)).toMatchObject({
+      planned: 1,
+      sent: 1,
+      failed: 1,
+    });
+    const reversed: LabMailClient = {
+      ...world.mail,
+      fetchSince: (mailbox, folder, afterUid) =>
+        mailbox === world.delegate.address
+          ? Promise.reject(new LabMailError("imap_failed"))
+          : world.mail.fetchSince(mailbox, folder, afterUid),
+    };
+    expect(await runDelegateBotsTick({ ...world.deps, mail: reversed }, world.runId)).toMatchObject({
+      planned: 0,
+      failed: 1,
+    });
   });
 });

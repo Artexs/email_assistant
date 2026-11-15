@@ -44,6 +44,8 @@ export type LabEvent =
   // reply is due, because an event never holds an address, a subject or text.
   | { t: "bot_planned"; key: string; at: string; reply: BotReplyPlan; delegate: string; uid: number }
   | { t: "bot_intent" | "bot_done"; key: string; messageId: string }
+  // One failed send or render of a bot reply. The fifth error of one key ends it with a `skip` (`send_failed`).
+  | { t: "bot_error"; key: string; code: string }
   | { t: "tap_planned"; key: string; at: string; data: string; messageId: number; then?: "p" | "n" }
   | { t: "tap_intent" | "tap_done"; key: string; data: string }
   | { t: "seen"; part: string; ref: string }

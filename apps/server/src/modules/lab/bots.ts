@@ -7,7 +7,7 @@ import { simpleParser, type ParsedMail } from "mailparser";
 import { INBOX, renderSeedMessage } from "../mail";
 
 import type { LabCorpus } from "./corpus";
-import type { LabMailClient } from "./mail-client";
+import { LabMailError, type LabMailClient } from "./mail-client";
 import type { LabEvent, LabState } from "./state";
 
 // The delegate bots. Each delegate persona has an inbox on the sim GreenMail. A tick reads the new mail there, plans
@@ -34,6 +34,10 @@ export interface BotTickResult {
 type SeenEvent = Extract<LabEvent, { t: "seen" }>;
 type PlannedEvent = Extract<LabEvent, { t: "bot_planned" }>;
 
+// After this many failed sends of one reply the bot gives up on it (`skip send_failed`), as the injector does for a slot.
+export const MAX_ERRORS_PER_REPLY = 5;
+// A subject longer than this is cut: a reply header stays far below the 998 character line limit of RFC 5322.
+const SUBJECT_LIMIT = 200;
 const UID_PART = "uid:";
 const MAIL_PART = "mail:";
 
@@ -79,6 +83,7 @@ class BotMemory {
   readonly planned = new Map<string, PlannedEvent>(); // key -> planned reply
   readonly intents = new Set<string>();
   readonly done = new Set<string>();
+  readonly errors = new Map<string, number>(); // key -> `bot_error` count
   readonly skipped = new Set<string>(); // refs of `skip` events
 
   constructor(events: readonly LabEvent[]) {
@@ -98,6 +103,9 @@ class BotMemory {
         break;
       case "bot_done":
         this.done.add(event.key);
+        break;
+      case "bot_error":
+        this.errors.set(event.key, (this.errors.get(event.key) ?? 0) + 1);
         break;
       case "skip":
         this.skipped.add(event.ref);
@@ -154,7 +162,13 @@ export async function runDelegateBotsTick(deps: BotDeps, runId: string): Promise
   const delegates = delegatesOf(corpus);
 
   for (const persona of delegates) {
-    await readInbox({ deps, runId, persona, memory, write, botAddresses, result });
+    try {
+      await readInbox({ deps, runId, persona, memory, write, botAddresses, result });
+    } catch (error) {
+      // One unreachable delegate inbox must not stop the others or the sends that are due.
+      if (!(error instanceof LabMailError)) throw error;
+      result.failed += 1;
+    }
   }
   await sendDue({ deps, memory, write, delegates, runMailbox: org.address, result });
   return result;
@@ -198,6 +212,13 @@ async function handleMail(input: ReadInput, message: { uid: number; raw: string 
   const from = senderAddressOf(parsed);
   if (from !== undefined && botAddresses.has(from)) return;
   if (memory.handledIds.has(parsed.messageId)) return;
+  // RFC 3834: no answer to an automatic mail. The server sets no `Auto-Submitted` on a delegation or a reminder, so
+  // the mail a bot must answer never carries one; an automatic mail from the run mailbox would start a loop.
+  const autoSubmitted = parsed.headers.get("auto-submitted");
+  if (typeof autoSubmitted === "string" && autoSubmitted.trim().toLowerCase() !== "no") {
+    skip("auto_submitted");
+    return;
+  }
 
   const references = referencesOf(parsed);
   const labIds = references.flatMap((id) => parseLabMessageId(id) ?? []);
@@ -252,18 +273,41 @@ interface SendInput {
 }
 
 async function sendDue(input: SendInput): Promise<void> {
-  const { deps, memory, result } = input;
+  const { deps, memory, write, result } = input;
   const now = deps.now().getTime();
   for (const planned of [...memory.planned.values()]) {
     if (memory.done.has(planned.key) || memory.skipped.has(planned.key)) continue;
+    // A crash between the last `bot_error` and its `skip` lands here: the item ends without a new try.
+    if ((memory.errors.get(planned.key) ?? 0) >= MAX_ERRORS_PER_REPLY) {
+      write({ t: "skip", code: "send_failed", ref: planned.key });
+      continue;
+    }
     if (new Date(planned.at).getTime() > now) continue;
     try {
       if (await sendOne(input, planned)) result.sent += 1;
-    } catch {
-      // The `bot_intent` stays: the next tick checks the mailbox and sends again only when the reply is not there.
+    } catch (error) {
+      // The `bot_intent` stays: the next try checks the mailbox and sends again only when the reply is not there.
+      write({
+        t: "bot_error",
+        key: planned.key,
+        code: error instanceof BotSendError ? error.code : errorCodeOf(error),
+      });
+      if ((memory.errors.get(planned.key) ?? 0) >= MAX_ERRORS_PER_REPLY) {
+        write({ t: "skip", code: "send_failed", ref: planned.key });
+      }
       result.failed += 1;
     }
   }
+}
+
+class BotSendError extends Error {
+  constructor(readonly code: "render_failed") {
+    super(`lab bots: ${code}`);
+  }
+}
+
+function errorCodeOf(error: unknown): string {
+  return error instanceof LabMailError ? error.code : "send_failed";
 }
 
 // True when this call sent the reply; false when the reply was there already or the item was skipped.
@@ -298,7 +342,12 @@ async function sendOne(input: SendInput, planned: PlannedEvent): Promise<boolean
     return false;
   }
 
-  const raw = renderReply({ planned, persona, from, to, messageId, parsed });
+  let raw: string;
+  try {
+    raw = renderReply({ planned, persona, from, to, messageId, parsed });
+  } catch {
+    throw new BotSendError("render_failed");
+  }
   if (!memory.intents.has(planned.key)) write({ t: "bot_intent", key: planned.key, messageId });
   await deps.mail.smtpSend({ envelopeFrom: from, to, raw });
   write({ t: "bot_done", key: planned.key, messageId });
@@ -321,12 +370,15 @@ function renderReply(input: ReplyInput): string {
   const kind: BotReplyPlan["kind"] = planned.reply.kind;
   const receivedAt = (parsed.date ?? new Date(planned.at)).toISOString();
   const text = botReplyText(kind, persona.lang, persona.displayName, backOnText(receivedAt, persona.lang));
-  const subject = parsed.subject === undefined || parsed.subject.trim() === "" ? text.subject : parsed.subject;
+  const received = parsed.subject === undefined || parsed.subject.trim() === "" ? text.subject : parsed.subject;
+  // A decoded subject may hold a line break: it never goes into a header, and nothing is cut around it.
+  if (/[\r\n]/.test(received)) throw new Error("subject holds a line break");
+  const subject = [...(/^re:/i.test(received) ? received : `Re: ${received}`)].slice(0, SUBJECT_LIMIT).join("");
   return renderSeedMessage({
     messageId,
     from: `${persona.displayName} <${from}>`,
     to: [to],
-    subject: /^re:/i.test(subject) ? subject : `Re: ${subject}`,
+    subject,
     date: new Date(planned.reply.at),
     text: text.body,
     inReplyTo: receivedId,
