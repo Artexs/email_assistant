@@ -8,7 +8,10 @@ function release(version: string, items = 1): ChangelogRelease {
   return {
     version,
     date: version === "Unreleased" ? null : "2026-01-01",
-    forUsers: Array.from({ length: items }, (_, index) => ({ en: `en ${version} ${index}`, pl: `pl ${version} ${index}` })),
+    forUsers: Array.from({ length: items }, (_, index) => ({
+      en: `en ${version} ${index}`,
+      pl: `pl ${version} ${index}`,
+    })),
   };
 }
 
@@ -81,7 +84,9 @@ describe("whatsNew", () => {
   });
 
   test("T8: seven newer releases show five, newest first", () => {
-    const releases = ["0.8.0", "0.7.0", "0.6.0", "0.5.0", "0.4.0", "0.3.0", "0.2.0", "0.1.0"].map((version) => release(version));
+    const releases = ["0.8.0", "0.7.0", "0.6.0", "0.5.0", "0.4.0", "0.3.0", "0.2.0", "0.1.0"].map((version) =>
+      release(version)
+    );
     const result = whatsNew(releases, "0.1.0");
     expect(WHATS_NEW_MAX).toBe(5);
     expect(versions(result.show)).toEqual(["0.8.0", "0.7.0", "0.6.0", "0.5.0", "0.4.0"]);
