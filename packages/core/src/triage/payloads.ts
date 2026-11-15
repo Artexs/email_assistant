@@ -9,6 +9,7 @@ import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
 // must be the address that is sent, so no character that a renderer would hide or reorder is allowed.
 const HIDDEN =
   "\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u034f\\u061c\\u115f-\\u1160\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2069\\u3164\\ufe00-\\ufe0f\\ufeff\\uffa0\\u{e0000}-\\u{e007f}";
+// eslint-disable-next-line no-misleading-character-class -- the class lists the invisible characters on purpose
 export const ADDRESS_PATTERN = new RegExp(`^[^\\s@<>,;"'\\r\\n${HIDDEN}]+@[^\\s@<>,;"'\\r\\n${HIDDEN}]+$`, "u");
 export const addressSchema = z.string().regex(ADDRESS_PATTERN);
 export const draftLanguageSchema = z.enum(["pl", "en"]);
