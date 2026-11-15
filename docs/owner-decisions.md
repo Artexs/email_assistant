@@ -483,3 +483,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the docs site must pass axe with no disabled rule; the hint costs nothing in function.
 - Undo: remove the CSS rule and override Starlight's `Search` component so the visible text contains the label.
 - Source: job `2026-11-15-f112-s06-browser-check-906ad293`, stage 06.
+
+### 2026-11-15 · F115 reply drafts: account numbers are checked by a digit budget, not by separator patterns (F115) · product · new
+- Choice: after two failed reviews of the separator-pattern scanner (marks between digits, a typed account followed by a fake one, a split account, a currency word glued to an IBAN), the account check of a reply draft changes design. The body is folded (NFKC, marks and default-ignorable characters removed, confusables mapped, ASCII digits). Every digit run costs its digits, unless it is a digit substring of a number the user typed (instruction, signature, style), a whole valid date or time, or an amount of at most 9 integer digits next to a currency. The draft fails when the total cost is above 12 or one run has 9 or more digits. Runs from the quoted mail count as known only up to 12 digits. Never a 13+ digit or IBAN-shaped run from the mail.
+- Why: words, markup, quote prefixes and invisible marks between groups no longer change the result, and dates, times and amounts become free, so the false positive rate falls (the reviewer measured 18.6 % on business text with the old scanner). The mail itself may carry the fraud account, so long runs from the mail are never trusted.
+- Undo: restore the account view in `packages/core/src/replies/entities.ts` (commit 1cd06cd2); the stage 02 prototype run tunes the budget N.
+- Source: job `2026-11-15-f115-re-review-2-s01-opus-narrow-225f3f83`, stage 01 re-review 2.

@@ -4,7 +4,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
 import { requeueTooOld } from "../mail";
 
-// One-off backfill step: real INBOX mail of the window that the worker skipped as `too_old` gets a new triage run.
+// One-off backfill step: real INBOX mail of the window that the worker skipped as `too_old`, or that the history check stored (`history_check`), gets a new triage run.
 // The status change and its audit rows go in one transaction.
 export async function requeueBackfillWindow(
   db: Db | Transaction<DB>,
