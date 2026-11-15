@@ -23,7 +23,7 @@ import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { protocolDisabled } from "../../src/modules/mail/oauth/login";
 import { insertCredentials, updateCursor } from "../../src/modules/mail/repo";
 import { buildDigestMessage } from "../../src/modules/reports";
-import { createLlmPause, createTriageJob } from "../../src/modules/triage";
+import { createLlmPause, createTriageJob, noGateEvidence } from "../../src/modules/triage";
 import { requeueBackfillWindow } from "../../src/modules/triage";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
@@ -246,6 +246,7 @@ describe("history purpose: backfillInbox", () => {
         },
       } as LlmClient;
       await createTriageJob({
+        runningKey: noGateEvidence.runningKey,
         db: trx,
         llm,
         pause: createLlmPause(),
@@ -458,6 +459,7 @@ describe("history purpose: only mail of before the connect", () => {
         },
       } as LlmClient;
       await createTriageJob({
+        runningKey: noGateEvidence.runningKey,
         db: trx,
         llm,
         pause: createLlmPause(),
