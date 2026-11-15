@@ -1,0 +1,136 @@
+name: ea-sim
+
+# The sim stack of the live lab (F113). It shares nothing with deploy/compose.yaml: other project name, network, volumes and ports.
+# Start it with `bun run sim:up` (deploy/sim.env, made from deploy/sim.env.example). apps/server/src/scripts/sim-compose-check.ts checks the rules below in CI.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
+# One image for server, fake-telegram and lab. EA_SERVER_IMAGE is a sim-only tag, so the production `ea-server` tag never moves.
+x-sim-build: &sim-build
+  context: ..
+  dockerfile: deploy/Dockerfile.sim
+  args:
+    EA_SERVER_IMAGE: ${EA_SERVER_IMAGE:-ea-sim-base}
+
+services:
+  db:
+    image: postgres:17
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: email_assistant
+      MIGRATOR_PASSWORD: ${MIGRATOR_PASSWORD:?}
+      APP_PASSWORD: ${APP_PASSWORD:?}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ../db/roles.sql:/db/roles.sql:ro
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "email_assistant"]
+      interval: 2s
+      retries: 15
+
+  greenmail:
+    image: greenmail/standalone:2.1.15
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      # -Xmx256m: the Java heap stays under the container limit. No port is published: the stack reaches GreenMail by its name.
+      GREENMAIL_OPTS: "-Xmx256m -Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false"
+
+  # Owns the network namespace of the stack: server and lab join it, so all three share 127.0.0.1.
+  # Only this service publishes a port (the web panel of `server`), on loopback (ADR 0017). Never publish on 0.0.0.0.
+  # Every command of fake-telegram, server and lab starts with the env guard: a wrong sim.env stops the container before it polls Telegram or sends mail.
+  fake-telegram:
+    build: *sim-build
+    image: ea-sim-server
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 128m
+    env_file: sim.env
+    command:
+      - sh
+      - -c
+      - bun run lab:env-check && exec bun tools/fake-telegram/src/cli.ts serve --port 8090
+    ports:
+      - "127.0.0.1:8180:8080"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:8090/health'); process.exit(r.ok ? 0 : 1)"]
+      interval: 5s
+      retries: 10
+
+  server:
+    build: *sim-build
+    image: ea-sim-server
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 512m
+    stop_grace_period: 45s
+    network_mode: service:fake-telegram
+    env_file: sim.env
+    environment:
+      # These override the keys of sim.env
+      DATABASE_URL: postgres://app:${APP_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
+      MIGRATOR_DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
+      PORT: "8080"
+      WEB_DIST: /app/apps/web/dist
+      LOG_FORMAT: json
+    command:
+      - sh
+      - -c
+      - bun run lab:env-check && exec bun apps/server/src/main.ts
+    depends_on:
+      db:
+        condition: service_healthy
+      greenmail:
+        condition: service_started
+      fake-telegram:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:8080/health'); process.exit(r.ok ? 0 : 1)"]
+      interval: 30s
+      retries: 3
+
+  # `bun run lab serve` is built in stage 11 of F113. Until then the command exits 1 (the script `lab` does not exist).
+  lab:
+    build: *sim-build
+    image: ea-sim-server
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 256m
+    network_mode: service:fake-telegram
+    env_file: sim.env
+    environment:
+      DATABASE_URL: postgres://app:${APP_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
+      MIGRATOR_DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
+      LAB_STATE_DIR: /var/lib/ea-lab
+      LOG_FORMAT: json
+    command:
+      - sh
+      - -c
+      - bun run lab:env-check && exec bun run lab serve
+    volumes:
+      - lab-state:/var/lib/ea-lab
+    depends_on:
+      server:
+        condition: service_healthy
+
+# The subnet is pinned, so the gateway never changes. Production uses 172.30.0.0/24.
+# WEB_TRUSTED_PROXIES in sim.env is this gateway.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+          gateway: 172.31.0.1
+
+volumes:
+  db-data: {}
+  lab-state: {}
