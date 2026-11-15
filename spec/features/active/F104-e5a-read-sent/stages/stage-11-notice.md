@@ -68,3 +68,7 @@ Rule per mailbox: flag off, mailbox not `active`, no health row, an error code, 
 ## Done when
 
 Steps 1–4 done; the Proof passes (`/tmp/f104-s11`).
+
+## Carry-over from the stage 08 review (F104)
+
+A stale pass can run `markSentPass` after an off then on and set `last_pass_at` and `last_error_code` on the new period (guard is only `enabled=true`). Keep this in mind for the 'first pass done' notice (review-8.md N3).

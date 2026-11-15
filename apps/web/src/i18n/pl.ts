@@ -44,6 +44,20 @@ export const pl: Record<TextKey, string> = {
   login_help_summary: "Nie masz jeszcze hasła?",
   login_help_text:
     "Linki do ustawienia hasła powstają na serwerze poleceniem web:invite. Link działa raz, przez 24 godziny. Jeśli Twój wygasł, poproś o nowy.",
+  // company sign-in (F119 stage 12)
+  login_sso_hint: "Twoja firma używa logowania jednokrotnego? Zaloguj się kontem firmowym.",
+  login_sso_button: "Zaloguj się kontem firmowym",
+  login_sso_email: "Służbowy adres e-mail",
+  login_sso_submit: "Dalej",
+  login_sso_back: "Wróć do logowania hasłem",
+  login_sso_error_no_provider: "Logowanie kontem firmowym nie jest ustawione dla tego adresu. Zaloguj się hasłem.",
+  login_sso_error_rate: "Zbyt wiele prób. Poczekaj minutę i spróbuj ponownie.",
+  login_sso_error_not_member: "To konto firmowe nie ma dostępu. Poproś operatora o dostęp.",
+  login_sso_error_domain: "To konto firmowe ma inną domenę. Użyj służbowego adresu e-mail.",
+  login_sso_error_identity: "Twoje konto firmowe się zmieniło. Poproś operatora o odłączenie starego.",
+  login_sso_error_off:
+    "Logowanie kontem firmowym jest wyłączone w Twojej organizacji. Zaloguj się hasłem albo napisz do operatora.",
+  login_sso_error_generic: "Logowanie kontem firmowym nie powiodło się. Spróbuj ponownie albo napisz do operatora.",
   // two-factor code step
   tf_code_title: "Logowanie dwuetapowe",
   tf_code_label: "Kod z aplikacji uwierzytelniającej",
@@ -292,7 +306,7 @@ export const pl: Record<TextKey, string> = {
   tg_unlinked_toast: "Telegram rozłączony.",
   tg_consent_title: "Co trafia do Telegrama",
   tg_consent_text:
-    "Telegram otrzymuje komunikaty tego bota: nadawcę i temat Twoich wiadomości, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na Twoje zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona i nazwiska wykonawców oraz adresy Twoich skrzynek. Telegram to usługa spoza UE, a dane mogą być przetwarzane poza Europejskim Obszarem Gospodarczym. Czaty z botem nie są szyfrowane metodą end-to-end (od nadawcy do odbiorcy). Telegram przechowuje komunikaty, dopóki nie usuniesz ich z czatu. Możesz w każdej chwili wycofać zgodę, odłączając Telegram. Komunikaty, które już są w czacie, zostają tam, dopóki ich nie usuniesz.",
+    "Telegram otrzymuje komunikaty tego bota: nadawcę i temat Twoich wiadomości, nazwy (lub typy plików) i rozmiary ich załączników, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na Twoje zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona i nazwiska wykonawców oraz adresy Twoich skrzynek. Telegram to usługa spoza UE, a dane mogą być przetwarzane poza Europejskim Obszarem Gospodarczym. Czaty z botem nie są szyfrowane metodą end-to-end (od nadawcy do odbiorcy). Telegram przechowuje komunikaty, dopóki nie usuniesz ich z czatu. Możesz w każdej chwili wycofać zgodę, odłączając Telegram. Komunikaty, które już są w czacie, zostają tam, dopóki ich nie usuniesz.",
   tg_consent_label: "Wyrażam zgodę na przekazywanie tych danych do Telegrama.",
   tg_consent_outdated: "Treść zgody się zmieniła. Odśwież stronę i przeczytaj ją ponownie.",
   // onboarding

@@ -1,3 +1,4 @@
+export { MAX_ERRORS_PER_REPLY, runDelegateBotsTick, type BotDeps, type BotTickResult } from "./bots";
 export { renderLabMessage } from "./message";
 export { LAB_MAILBOXES, labAddresses, loadLabCorpus, type LabCorpus } from "./corpus";
 export {
@@ -55,9 +56,9 @@ export {
   type InjectorTick,
 } from "./injector";
 export {
-  createGreenMailClient,
+  createLabMailClient,
   LabMailError,
-  type GreenMailOptions,
   type LabMailClient,
+  type LabMailClientOptions,
   type LabMailErrorCode,
 } from "./mail-client";

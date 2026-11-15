@@ -46,7 +46,14 @@ describe("lab state", () => {
     const id = "day-20261123-0001";
     state.append(id, { t: "inject_intent", slotId: "w-1-001", messageId: "<a>" });
     state.append(id, { t: "inject_done", slotId: "w-1-001", messageId: "<a>" });
-    state.append(id, { t: "bot_planned", key: "k", at: "2026-11-23T09:00:00.000Z", reply: {} });
+    state.append(id, {
+      t: "bot_planned",
+      key: "k",
+      at: "2026-11-23T09:00:00.000Z",
+      reply: { kind: "done", from: "self", at: "2026-11-23T09:00:00.000Z" },
+      delegate: "dorota",
+      uid: 1,
+    });
     expect(state.events(id).map((event) => event.t)).toEqual(["inject_intent", "inject_done", "bot_planned"]);
     expect(state.events(id)[2]).toMatchObject({ at: "2026-11-23T09:00:00.000Z" });
     expect(state.events(id)[0]?.loggedAt).toBe(NOW.toISOString());

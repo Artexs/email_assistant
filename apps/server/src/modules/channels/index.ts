@@ -57,7 +57,7 @@ export {
 } from "./operator";
 export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
 export { queueNotice, type QueueNoticeInput } from "./notice-queue";
-export { queueCardEdits, type CardEdit, type CardEditOutcome, type CardEditResult } from "./card-edits";
+export { cardEditHooks, queueCardEdits, type CardEdit, type CardEditOutcome, type CardEditResult } from "./card-edits";
 export { detectNotices, queueMailboxRemovedNotices, type NoticeDeps } from "./notices";
 export { scheduleDigests, type DigestJobDeps } from "./digest-job";
 export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";
@@ -73,3 +73,4 @@ export {
   type CommandDeps,
 } from "./commands";
 export { listUrgentNoticeTimes } from "./metrics-repo";
+export { heldReason, type HeldReasonDeps } from "./held-reason";
