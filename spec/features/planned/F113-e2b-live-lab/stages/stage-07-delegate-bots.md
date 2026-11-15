@@ -27,8 +27,9 @@ runDelegateBotsTick(deps: BotDeps, runId: string): Promise<{ planned: number; se
 - **Classify.** A mail from the run mailbox is a `reminder` when its `In-Reply-To` or `References` holds the Message-ID of a delegation mail this bot got before; else a `delegation`.
 - **Map.** Look for a lab Message-ID of this run in `References` (`parseLabMessageId`). Its slot gives `delegateBehaviour`. No lab id → `skip` code `unmapped`, no reply. A slot without `delegateBehaviour`, or whose `expectedDelegate` is another persona → `skip` code `unexpected_delegation`, no reply (the delegate stays silent; the scorer counts it for M3).
 - **Plan** (`botReplyPlan`, times in Warsaw):
-  - `done`: on `delegation`, `at` = the next working time (weekdays 08:00–18:00) plus 30–240 min. On `reminder`: null.
-  - `late`: on `delegation`: null. On the first `reminder` with `repliedBefore` false: `done` at the next working time plus 30–120 min.
+  - Start point = the receipt time when it lies in working hours (weekdays 08:00–18:00), else the next working start. The reply may fall after 18:00.
+  - `done`: on `delegation`, `at` = start point plus 30–240 min. On `reminder`: null.
+  - `late`: on `delegation`: null. On the first `reminder` with `repliedBefore` false: `done` at start point plus 30–120 min.
   - `out_of_office`: on each event, `auto_reply` at receipt plus 1 min, any hour.
   - `other_address`: like `done`, `from: "other"`.
   - `silent`: always null.
@@ -43,7 +44,7 @@ runDelegateBotsTick(deps: BotDeps, runId: string): Promise<{ planned: number; se
 
 Unit (`botReplyPlan`, fixed seed):
 1. `done`, delegation Mon 2026-11-23 10:00 Warsaw → `at` within [10:30, 14:00] the same day.
-2. `done`, delegation Fri 17:50 → `at` on Mon from 08:30.
+2. `done`, delegation Fri 17:50 → `at` within [18:20, 21:50] Friday; Fri 18:30 → Mon [08:30, 12:00].
 3. `late`: delegation → null; first reminder → `done`; second reminder after a reply → null.
 4. `out_of_office`: delegation at Sat 03:00 → `auto_reply` at 03:01.
 5. `silent`: both events → null.

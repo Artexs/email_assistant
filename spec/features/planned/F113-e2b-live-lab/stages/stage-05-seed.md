@@ -30,6 +30,7 @@ Stage 13 calls `seedLabOrg` with `LAB_TARGETS.demo`.
 - Delegates: one per `scenario.delegates` entry: the persona's display name and address, the tags.
 - Sender rules: one `vip` rule per `scenario.urgency.vip` persona address, on the mailbox.
 - Mode: the target mode with the default switches of that mode (as `mailbox:settings mode` without `--keep-switches`).
+- Flags: two lists `LAB_FLAGS_ON` and `LAB_FLAGS_OFF` that together hold every key of `packages/core/src/features.ts`. Off: `org_delete`, `sso_sign_in`. On: all others at your commit (the executive needs `mistake_capture` for reject reasons; the scorer reads what `weekly_report`, `handled_share` and `answered_check` produce). Seed turns on the on-list for the organization. A test fails when a registry key is in neither list, so a new flag forces a choice.
 - Urgency profile: only when a per-mailbox store exists at your commit (the E3b ticket F109 adds it). Then add `storeRunUrgencyProfile(deps, org, plan)` and call it from `start` (stage 04 command): topics as in the scenario, deadlines = `plan.deadlines` (shifted). If no store exists, add nothing and write "no urgency store" in the final message and on the capability page (Limits).
 - Telegram: make a link token with the `telegram:link` function, then send `/start <token>` as the user through the fake driver client (`createFakeTelegramClient`, chat id 5550001 for lab, 5550002 for demo). Wait up to 60 s for the server to link the chat. On timeout: exit 1 `telegram_link_timeout`; the org stays, and the next `seed` tries the link again.
 - Idempotent: when `orgs.json` names the key and the organization exists, check mailbox, delegates, rules and link, add what is missing, and print `seed: exists` plus the added counts. When `orgs.json` names an org id that is gone: exit 1 `org_gone` (the operator removes the entry by hand; no automatic re-create).
@@ -47,6 +48,7 @@ A test target uses a random address; `LAB_TARGETS` values are checked only in te
 5. Telegram link: after seed, the chat is linked to the organization (the same check `telegram:check` uses). When the link step runs no Telegram runtime, it fails with `telegram_link_timeout` after the timeout (use a short test timeout).
 6. `LAB_TARGETS.demo.mailbox` ends in `.test` and differs from the lab mailbox.
 7. Tenant: a second org made by another test is not changed by seed.
+8. After seed, each `LAB_FLAGS_ON` flag is on for the organization; `org_delete` is off. The list test of the Flags rule passes, and fails with a fake extra registry key.
 
 ## Check
 
