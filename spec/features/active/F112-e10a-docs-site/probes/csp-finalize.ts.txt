@@ -1,0 +1,11 @@
+import { createHash } from "node:crypto";
+import { Glob } from "bun";
+const dir = process.argv[2]; let n = 0;
+for (const f of new Glob("**/*.html").scanSync(dir)) {
+  const p = `${dir}/${f}`; let html = await Bun.file(p).text();
+  const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => `'sha256-${createHash("sha256").update(m[1]).digest("base64")}'`);
+  html = html.replace(/script-src ([^;"]*)/, (all, list) => `script-src ${[...new Set([...list.trim().split(/\s+/), ...hashes])].join(" ")}`)
+    .replace(/style-src [^;"]*/, "style-src 'self' 'unsafe-inline'").replace(/frame-ancestors 'none';?/, "");
+  await Bun.write(p, html); n++;
+}
+console.log("finalized", n);
