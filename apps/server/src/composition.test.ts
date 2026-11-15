@@ -95,10 +95,11 @@ describe("committerDeps", () => {
     });
     // No network: `fetch` is a spy that answers 202.
     const urls: string[] = [];
-    const spy = spyOn(globalThis, "fetch").mockImplementation(async (input: string | URL | Request) => {
+    const answer = async (input: string | URL | Request): Promise<Response> => {
       urls.push(String(input));
       return new Response(null, { status: 202 });
-    });
+    };
+    const spy = spyOn(globalThis, "fetch").mockImplementation(answer as unknown as typeof fetch);
     try {
       const sender = await deps.openGraphSender?.({
         accessToken: "token",
