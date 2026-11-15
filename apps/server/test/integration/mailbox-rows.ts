@@ -5,7 +5,7 @@ import { sql, type Transaction } from "kysely";
 import { recordAudit } from "../../src/modules/audit";
 import { insertOutbox } from "../../src/modules/channels";
 import { getMailboxSettings, insertDefaultSettings, insertSenderRule } from "../../src/modules/config";
-import { insertCredentials } from "../../src/modules/mail/repo";
+import { insertCredentials, insertSentEmails, writeSentSwitch } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { insertDelegate, insertDelegation, insertDraftAndSend, insertTriagedWithActions } from "./fixtures";
@@ -84,6 +84,31 @@ export async function fillMailbox(
   }
   await insertCredentials(trx, ctx, { mailboxId, encryptedSecret: "secret", secretKind: "password", keyVersion: 1 });
 
+  // One sent row and an enabled state row, through the repository.
+  await insertSentEmails(trx, ctx, [
+    {
+      mailboxId,
+      dedupKey: `mid:<${randomUUID()}@x.test>:h1`,
+      path: "Sent",
+      uidValidity: 7,
+      uid: 1,
+      messageId: null,
+      parentMessageId: null,
+      referencesIds: [],
+      threadKey: `<${randomUUID()}@x.test>`,
+      fromAddress: null,
+      toAddresses: [],
+      ccAddresses: [],
+      subject: null,
+      sentAt: now,
+      internalDate: now,
+      origin: "user",
+      actionId: null,
+      content: "pending",
+    },
+  ]);
+  await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: now });
+
   return { mailboxId, emailIds, actionIds };
 }
 
@@ -98,7 +123,9 @@ export async function countMailboxRows(
   const { mailboxId, emailIds, actionIds } = ids;
   const except = opts?.exceptEvents ?? [];
 
-  const byMailbox = async (table: "mailboxes" | "mailbox_credentials" | "mailbox_settings" | "mailbox_folders") => {
+  const byMailbox = async (
+    table: "mailboxes" | "mailbox_credentials" | "mailbox_settings" | "mailbox_folders" | "mailbox_sent_sync"
+  ) => {
     const column = table === "mailboxes" ? "id" : "mailbox_id";
     const row = await trx
       .selectFrom(table)
@@ -138,7 +165,7 @@ export async function countMailboxRows(
     ).executeTakeFirstOrThrow();
     return Number(row.n);
   };
-  const single = async (table: "emails" | "delegations" | "sender_rules") => {
+  const single = async (table: "emails" | "delegations" | "sender_rules" | "sent_emails") => {
     const row = await trx
       .selectFrom(table)
       .select((eb) => eb.fn.countAll<string>().as("n"))
@@ -165,6 +192,8 @@ export async function countMailboxRows(
     actions: Number(actions.n),
     delegations: await single("delegations"),
     sender_rules: await single("sender_rules"),
+    sent_emails: await single("sent_emails"),
+    mailbox_sent_sync: await byMailbox("mailbox_sent_sync"),
     audit_log_by_email: await audit("email_id"),
     audit_log_by_action: await audit("action_id"),
     audit_log_by_mailbox: await audit("mailbox"),

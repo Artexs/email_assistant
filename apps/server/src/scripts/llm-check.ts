@@ -1,14 +1,14 @@
 import { classifierCategories } from "@ea/core";
 
 import { type ClassifierDelegate, type ClassifierEmail, classifyEmail } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { llmRoleTable, loadConfig } from "../platform/config";
 import { describeError } from "../platform/errors";
 import { createLlmClient, type LlmUsage } from "../platform/llm";
-import { createLog } from "../platform/log";
 
 import { greetingCall, parseLlmCheckArgs, usage } from "./llm-check-args";
 
-const log = createLog("llm-check");
+const out = createCliOutput("llm-check");
 
 // Made-up mail: example.com addresses, no real data.
 const SAMPLE_EMAIL: ClassifierEmail = {
@@ -36,7 +36,7 @@ async function main() {
   const config = loadConfig();
   const args = parseLlmCheckArgs(process.argv.slice(2));
   if (args === null) {
-    log.error(usage);
+    out.fail(usage);
     process.exit(1);
   }
   const table = llmRoleTable(config, { [args.role]: { provider: args.provider } });
@@ -44,14 +44,14 @@ async function main() {
   const keys = table.providers[row.provider];
 
   if (keys.apiKey === undefined) {
-    log.error(`${keys.apiKeyName} is missing`);
+    out.fail(`${keys.apiKeyName} is missing`);
     process.exit(1);
   }
 
   const llm = createLlmClient({ table });
 
   const line = (check: string, used: LlmUsage, extra = "") =>
-    log.info(
+    out.print(
       `role=${used.role} provider=${row.provider} model=${used.model} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
     );
 
@@ -84,6 +84,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  log.error(`check failed: ${describeError(error)}`);
+  out.fail(`check failed: ${describeError(error)}`);
   process.exit(1);
 });

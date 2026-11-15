@@ -1,13 +1,13 @@
 import { createOrganizationWithOwner } from "../modules/tenancy";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { deliverInvite } from "./invite-delivery";
 import { orgInviteUsage, parseOrgInviteArgs } from "./org-invite-args";
 
-const log = createLog("org-invite");
+const out = createCliOutput("org-invite");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -18,13 +18,13 @@ function isUniqueViolation(error: unknown): boolean {
 async function main(): Promise<number> {
   const options = parseOrgInviteArgs(process.argv.slice(2));
   if (!options) {
-    log.error(orgInviteUsage);
+    out.fail(orgInviteUsage);
     return 1;
   }
 
   const config = loadConfig();
   if (config.WEB_BASE_URL === undefined || config.WEB_AUTH_SECRET === undefined) {
-    log.error("WEB_BASE_URL is empty: the web is off; set WEB_BASE_URL and WEB_AUTH_SECRET first");
+    out.fail("WEB_BASE_URL is empty: the web is off; set WEB_BASE_URL and WEB_AUTH_SECRET first");
     return 1;
   }
 
@@ -44,11 +44,11 @@ async function main(): Promise<number> {
       });
     } catch (error) {
       // The transaction rolled back: no organization exists.
-      log.error(isUniqueViolation(error) ? "user with this email already exists" : `failed: ${describeError(error)}`);
+      out.fail(isUniqueViolation(error) ? "user with this email already exists" : `failed: ${describeError(error)}`);
       return 1;
     }
     const { orgId, userId } = created;
-    log.info(`created org ${orgId} user ${userId} plan trial trial_ends_at ${endsAt.toISOString()}`);
+    out.print(`created org ${orgId} user ${userId} plan trial trial_ends_at ${endsAt.toISOString()}`);
     return await deliverInvite({
       config,
       db,
@@ -57,10 +57,10 @@ async function main(): Promise<number> {
       email: options.email.toLowerCase(),
       locale: options.locale,
       print: options.print,
-      log,
+      out,
     });
   } catch (error) {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -70,6 +70,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

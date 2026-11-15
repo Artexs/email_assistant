@@ -120,3 +120,10 @@ For F100 stage 19 (docs) and later web work:
 - `.nvmrc` still says 22.14.0; the Astro 7 CLI rejects it. Fix in stage 03 (docs) or a follow-up: set 24.x.
 - The web:build CSP check does not see a missing island hash; only the e2e (browser) does. A removed `markdown.syntaxHighlight: false` gives only a Shiki [WARN] (stage 02 T5 hand check).
 - C1 (coordinator): check the first master CI run on Node 24 after this land (ci and image jobs). docker build was not run by worker or reviewer (no daemon).
+
+## F097 coordinator steps C2–C4 (2026-11-15, VPS, done by coordinator)
+- C2: VPS `.env` had no TEST_SENDER_ADDRESSES (backup `.env.bak-f097-c2` on the VPS). Added `TEST_SENDER_ADDRESSES=ea-testmail-75wd@agentmail.to`, `up -d server` (healthy, 0 errors in 2 min). TRIAGE_LLM_SCOPE and ACTIONS_SCOPE were `all` (checked before). `eval --real` before: 163 labeled real mails.
+- C3: `org:flag --org-id ac6ed6a2-… --flag review_command --on` (unset → on). Now `/review` is on for the pilot org. `eval --real` after: 138 labeled real mails (25 AgentMail mails dropped out).
+- C4: counts-only JSON at `/tmp/f097-real/real.json` (138 labeled; notification support 63, spam support 73; no text, no ids, no addresses).
+- Rollback of C2: restore `.env.bak-f097-c2` on the VPS and `up -d server`; of C3: `org:flag … --flag review_command --off`.
+- s21 result (gate file provisional, owner audit pending): holdout 1413/1413, cost $0.2704; dev judge run cost $0.0944. Go: info, notification. No-go: urgent (recall 85.9%), needs_reply (precision 89.7%), spam (precision 84.4%). Injection 29/31 pass on holdout.
