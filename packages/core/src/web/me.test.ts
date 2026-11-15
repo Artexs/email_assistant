@@ -24,6 +24,8 @@ const me = {
   terms: { accepted: false, current: "2026-11-12" },
   operator: false,
   features: [] as string[],
+  signInMethod: "password" as const,
+  hasPassword: true,
 };
 
 describe("scopeInfoOf", () => {
@@ -60,6 +62,10 @@ describe("meSchema", () => {
     expect(meSchema.safeParse({ ...me, operator: undefined }).success).toBe(false);
     expect(meSchema.safeParse({ ...me, features: undefined }).success).toBe(false);
     expect(meSchema.safeParse({ ...me, operator: "yes" }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, signInMethod: undefined }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, signInMethod: "saml" }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, hasPassword: undefined }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, signInMethod: "sso", hasPassword: false }).success).toBe(true);
     expect(meSchema.safeParse({ ...me, operator: true, features: ["future_flag"] }).success).toBe(true);
   });
 

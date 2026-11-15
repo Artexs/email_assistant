@@ -88,6 +88,8 @@ export {
   clearMailBodies,
   PENDING_BODY_DAYS,
   clearMailHeaders,
+  clearSentBodies,
+  clearSentHeaders,
   deleteOldOAuthStates,
   clearReturned,
   clearCapturedHeaders,
@@ -122,7 +124,10 @@ export {
   getSentSyncState,
   insertSentEmails,
   insertSentSyncState,
+  getSentSummary,
   listPendingSentTexts,
+  listSentHealth,
+  listUserAnswers,
   lockSentSyncState,
   markSentPass,
   releaseEmail,
@@ -149,8 +154,11 @@ export type {
   NewSentEmail,
   SentContent,
   SentErrorCode,
+  SentHealthRow,
+  SentSummary,
   SentSyncState,
   SentTextWrite,
+  UserAnswer,
 } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {

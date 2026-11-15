@@ -11,6 +11,7 @@ import { commonTexts, type CommonTexts } from "./common";
 import { digestTexts, type DigestTexts } from "./digest";
 import { noticeTexts, type NoticeTexts } from "./notices";
 import { reviewTexts, type ReviewTexts } from "./review";
+import { suspiciousTexts, type SuspiciousTexts } from "./suspicious";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
 
 export { botCommandNames } from "./bot";
@@ -27,6 +28,7 @@ export type {
   DigestTexts,
   NoticeTexts,
   ReviewTexts,
+  SuspiciousTexts,
   WouldDoTexts,
 };
 
@@ -42,6 +44,7 @@ export interface CoreTexts {
   approvals: ApprovalTexts;
   review: ReviewTexts;
   digest: DigestTexts;
+  suspicious: SuspiciousTexts;
   bot: BotTexts;
 }
 
@@ -58,6 +61,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.en,
     review: reviewTexts.en,
     digest: digestTexts.en,
+    suspicious: suspiciousTexts.en,
     bot: botTexts.en,
   },
   pl: {
@@ -72,6 +76,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
     digest: digestTexts.pl,
+    suspicious: suspiciousTexts.pl,
     bot: botTexts.pl,
   },
 };

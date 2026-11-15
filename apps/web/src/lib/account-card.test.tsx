@@ -33,6 +33,8 @@ const baseMe = {
   terms: { accepted: true, current: "2026-11-12" },
   operator: false,
   features: [],
+  signInMethod: "password",
+  hasPassword: true,
 } as unknown as Me;
 
 function render(me: Me | null): string {

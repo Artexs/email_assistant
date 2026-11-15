@@ -13,7 +13,26 @@ export {
   type LoggedLabEvent,
   type StopReason,
 } from "./state";
+export { createFakeTgClient, FakeTgError, type FakeButton, type FakeMessage, type FakeTgClient } from "./fake-tg";
 export { orgHasMail } from "./org-mail";
+export {
+  LAB_FLAGS_OFF,
+  LAB_FLAGS_ON,
+  LAB_IMAP_PORT,
+  LAB_MAIL_HOST,
+  LAB_MAIL_PASSWORD,
+  LAB_SMTP_PORT,
+  LAB_TARGETS,
+  LabSeedError,
+  seedLabOrg,
+  unlistedFlags,
+  type SeedAdded,
+  type SeedDeps,
+  type SeedErrorCode,
+  type SeedResult,
+  type SeedTarget,
+} from "./seed";
+export { storeRunUrgencyProfile, type UrgencyDeps } from "./urgency";
 export { runSpend, type RunSpend } from "./run-spend";
 export {
   DEFAULT_CAP_USD,

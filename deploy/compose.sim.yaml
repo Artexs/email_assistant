@@ -36,16 +36,24 @@ services:
       interval: 2s
       retries: 15
 
+  # Joins the network namespace of fake-telegram, so the server reaches GreenMail on 127.0.0.1 (IMAP 3143, SMTP 3025).
+  # The server opens plain IMAP and SMTP only to a loopback host, so a mailbox host `greenmail` would get TLS on a plain port.
+  # No port is published and the service has no name on the network: only the services of this namespace reach it.
+  # The injector and the delegate bots of the lab (later stages) run in the `lab` container, in the same namespace.
   greenmail:
     image: greenmail/standalone:2.1.15
     logging: *logging
     restart: unless-stopped
     mem_limit: 384m
+    network_mode: service:fake-telegram
     environment:
-      # -Xmx256m: the Java heap stays under the container limit. No port is published: the stack reaches GreenMail by its name.
+      # -Xmx256m: the Java heap stays under the container limit.
       GREENMAIL_OPTS: "-Xmx256m -Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false"
+    depends_on:
+      fake-telegram:
+        condition: service_healthy
 
-  # Owns the network namespace of the stack: server and lab join it, so all three share 127.0.0.1.
+  # Owns the network namespace of the stack: server, lab and greenmail join it, so all four share 127.0.0.1.
   # Only this service publishes a port (the web panel of `server`), on loopback (ADR 0017). Never publish on 0.0.0.0.
   # Every command of fake-telegram, server and lab starts with the env guard: a wrong sim.env stops the container before it polls Telegram or sends mail.
   fake-telegram:
