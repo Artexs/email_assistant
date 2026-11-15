@@ -24,7 +24,7 @@ E6a Reply drafts: the Stage 2 ticket in row 21 of `docs/product/stage-2/05-execu
 ## Sequenced
 
 - Plan after: none (planning may run ahead of the build).
-- Build after: E2a, E3a, E4-A, E5a, E7-T2 (landed, in `spec/features/done/`).
+- Build after: E2a, E3a, E4-A, E5a, E7-T2 (landed, in `spec/features/done/`); F109 stage 04 (`suspiciousReasonsOf`).
 - Gate: Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages
 
 ## Notes
