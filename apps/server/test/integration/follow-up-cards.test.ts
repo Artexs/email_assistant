@@ -545,6 +545,36 @@ describe("the card of a follow-up whose loop closed loses its buttons", () => {
     });
   });
 
+  test("a tap on one card edits the other owner's card in place, with the loop id and no mail id", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
+      await run(trx);
+      await trx
+        .updateTable("outbox")
+        .set((eb) => ({ status: "sent", text: eb.ref("dedup_key"), external_message_id: 77, sent_at: at(MINUTE) }))
+        .where("org_id", "=", w.orgId)
+        .where("kind", "=", "approval")
+        .execute();
+      const { approve, noDelegationHooks: none } = await import("../../src/modules/actions");
+      const { cardEditHooks } = await import("../../src/modules/channels");
+      const deps = {
+        db: trx,
+        hooks: none,
+        approvalHooks: cardEditHooks({ sendScope: { kind: "all" } }),
+        uidplus: async () => true,
+      };
+      expect(
+        (await approve(deps, w.ctx, f.sendId, { userId: w.owner, via: "telegram", now: at(2 * MINUTE) })).kind
+      ).toBe("approved");
+      // The tapped card is edited by the tap answer; the other owner's card gets an `approval_edit` row of the loop.
+      const edits = await outbox(trx, w.orgId, "approval_edit");
+      expect(edits).toHaveLength(1);
+      expect(edits[0]).toMatchObject({ user_id: w.owner2, loop_id: f.loopId, email_id: null });
+      expect(edits[0]?.text).toContain("Approved");
+    });
+  });
+
   test("a closed loop whose cards were never sent: the pending cards are cancelled, no edit is queued", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
