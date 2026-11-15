@@ -47,6 +47,6 @@ Part of [plan.md](plan.md). These names are the contract between the stages and 
 - `GET /loops?kind=waiting|promised|delegated&filter=open|due|closed&before=&limit=` → `{ items: LoopItem[], next }`. `LoopItem`: `kind`, `id`, `status`, `closeReason`, `counterpart`, `delegate` (null), `text`, `subject`, `dueAt`, `dueSource`, `sentAt`, `laterLeft`, `followUpsSent`, `followUpWaiting`, `sendId`, `matchedBySubject`, `autoReplyOnly`, `reason` (a code for the reason line).
 - `POST /loops/:id/follow-up` (owner), `/later` (member), `/done` (member), `/drop` (owner), `/reopen` (owner), `/untrack` (owner). 409 codes = the command kinds.
 - `POST /emails/:id/delegate` (owner) `{ delegateId }` → 200 `{ sendId, delegationId }`; 409 `exists`, `delegate_inactive`, `drafts_off`, `not_delegable`.
-- `GET|PATCH /mailboxes/:id/settings` gain `loopWaitDays` (1–10) and `autoFollowUp` (bool).
+- `GET /settings/:mailboxId` gains `loopWaitDays` (1–10) and the switch `auto_follow_up`; new `PATCH /settings/:mailboxId/loop-wait` `{ days }` (owner); `PATCH /settings/:mailboxId/switches/auto_follow_up` (the existing switch route).
 - The Delegated tab reads `GET /delegations` (F102) and `GET /loops?kind=delegated` and shows them as two lists; `DelegationItem` does not change.
 - `POST /telegram/consent` `{ version }`: from F115 stage 12 when landed, else stage 17 adds it with the same shape.
