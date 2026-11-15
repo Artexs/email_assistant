@@ -498,7 +498,7 @@ describe("the five sections read the run window of one organization (stage 13 te
       // M5: both urgent mails arrived at 11:10 and 11:20 Warsaw and were noticed after 5 minutes.
       // The third urgent mail (11:30 Warsaw) got no notice. The first injection was late: its slot is listed.
       expect(after.metrics.m5).toMatchObject({ urgent: 3, noticed: 2, withoutNotice: 1, p90Minutes: 5 });
-      expect(after.metrics.m5Late).toEqual([world.slotIds[7]]);
+      expect(after.metrics.m5Late).toEqual([world.slotIds[7] as string]);
 
       // The other organization's own context holds its rows and none of the first org's (it has no run mail of the first).
       const otherCtx = { orgId: other.orgId };
