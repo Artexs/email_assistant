@@ -119,7 +119,7 @@ describe("deploy/compose.drill.yaml", () => {
     const text = readFileSync(join(deployDir, "compose.drill.yaml"), "utf8");
     const services = text.slice(text.search(/^services:/m)).split(/^(?=\S)/m)[0] ?? "";
     for (const name of serverImageServices()) {
-      const block = services.split(new RegExp(`^  ${name}:\\s*$`, "m"))[1]?.split(/^  \S/m)[0] ?? "";
+      const block = services.split(new RegExp(`^  ${name}:\\s*$`, "m"))[1]?.split(/^ {2}\S/m)[0] ?? "";
       expect(block, name).toMatch(/^ {4}ports: !reset \[\]\s*$/m);
     }
   });
