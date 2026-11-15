@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -233,5 +233,18 @@ describe("parseCheckMigrationsArgs", () => {
     expect(parseCheckMigrationsArgs(["--after", "123"])).toBeNull();
     expect(parseCheckMigrationsArgs(["extra"])).toBeNull();
     expect(parseCheckMigrationsArgs(["--dir", ""])).toBeNull();
+  });
+});
+
+describe("CI wiring", () => {
+  test("the ci job runs the check before db:migrate, and the package script exists", () => {
+    const repo = join(import.meta.dir, "../../../..");
+    const ci = readFileSync(join(repo, ".github/workflows/ci.yml"), "utf8");
+    const job = ci.slice(ci.indexOf("\n  ci:"), ci.indexOf("\n  e2e:"));
+    const check = job.indexOf("- run: bun run db:check-migrations");
+    expect(check).toBeGreaterThan(-1);
+    expect(check).toBeLessThan(job.indexOf("- run: bun run db:migrate"));
+    const scripts = JSON.parse(readFileSync(join(repo, "package.json"), "utf8")).scripts as Record<string, string>;
+    expect(scripts["db:check-migrations"]).toContain("check-migrations.ts");
   });
 });

@@ -20,8 +20,9 @@ afterAll(() => {
   rmSync(work, { recursive: true, force: true });
 });
 
+// A nested "version" key comes first: only the top-level one is the release version.
 const packageText = (version: string) =>
-  `{\n  "name": "x",\n  "version": "${version}",\n  "dependencies": { "version": "9.9.9" }\n}\n`;
+  `{\n  "name": "x",\n  "meta": {\n    "version": "9.9.9"\n  },\n  "version": "${version}"\n}\n`;
 
 const twoItems = `# Changelog
 
