@@ -15,6 +15,7 @@ import {
 } from "@ea/core";
 
 import { linkPairsOfHtml } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { createLog } from "../platform/log";
 
 import type { EvalOptions } from "./eval-args";
@@ -310,7 +311,8 @@ export async function runSuspicious(options: EvalOptions, deps: SuspiciousDeps =
     loaded = await loadSimCases({ root, scenario: scenarioId, part, requireManifest: part === "holdout" });
     scenario = readScenario(corpusDir(scenarioId, root));
   } catch (error) {
-    if (error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE) log.error(HOLDOUT_NEEDS_FREEZE);
+    if (error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE)
+      createCliOutput("eval").fail(HOLDOUT_NEEDS_FREEZE);
     else log.error("corpus_load_failed");
     return 1;
   }
