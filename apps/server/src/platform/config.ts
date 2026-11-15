@@ -1,6 +1,14 @@
 import { isIP } from "node:net";
 
-import { type FeatureKey, isFeatureKey, isLoopbackApiRoot, type LlmRole, llmRoles, type SendLimits } from "@ea/core";
+import {
+  type FeatureKey,
+  isFeatureKey,
+  isLoopbackApiRoot,
+  type LlmRole,
+  llmRoles,
+  type SendLimits,
+  type SloThresholds,
+} from "@ea/core";
 import { z } from "zod";
 
 import { type LlmProviderId, llmProviderIds, type LlmRoleSettings, type LlmRoleTable } from "./llm";
@@ -173,6 +181,18 @@ const baseSchema = z.object({
       .regex(/^-?\d{1,15}$/)
       .optional()
   ),
+  // F114 service levels of the operator alerts. Integers; empty = the default. Disk and backup keys: stage 04.
+  // Minutes since the last sync before a mailbox counts as late.
+  SLO_SYNC_LAG_MIN: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(5).max(1440).default(15)),
+  // Minutes (outside quiet hours) that an urgent mail may wait for its notice.
+  SLO_URGENT_LATENCY_MIN: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(240).default(10)),
+  // The window of the LLM error rate, the least calls in it, the rate that opens the alert and the rate that closes it.
+  SLO_LLM_WINDOW_MIN: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(5).max(240).default(30)),
+  SLO_LLM_MIN_CALLS: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(1000).default(5)),
+  SLO_LLM_FAIL_PCT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(100).default(20)),
+  SLO_LLM_CLEAR_PCT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(0).max(99).default(10)),
+  // Hours between two notices of one open alert.
+  SLO_REPEAT_H: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(168).default(6)),
   // Comma list of flag keys (packages/core/src/features.ts) that read off for every organization. Empty = none.
   FEATURES_OFF: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Comma list of user ids (users.id, UUID) who may use /api/operator/*. Empty = no operator. Never log the ids.
@@ -322,6 +342,11 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   }
   if (config.OPERATOR_TELEGRAM_CHAT_ID !== undefined && config.TELEGRAM_BOT_TOKEN === undefined) {
     ctx.addIssue({ code: "custom", path: ["OPERATOR_TELEGRAM_CHAT_ID"], message: "needs TELEGRAM_BOT_TOKEN" });
+  }
+  if (config.SLO_LLM_CLEAR_PCT >= config.SLO_LLM_FAIL_PCT) {
+    const message = "SLO_LLM_CLEAR_PCT must be lower than SLO_LLM_FAIL_PCT";
+    ctx.addIssue({ code: "custom", path: ["SLO_LLM_CLEAR_PCT"], message });
+    ctx.addIssue({ code: "custom", path: ["SLO_LLM_FAIL_PCT"], message });
   }
   if (config.WEB_BASE_URL !== undefined && config.WEB_AUTH_SECRET === undefined) {
     ctx.addIssue({ code: "custom", path: ["WEB_AUTH_SECRET"], message: "needed when WEB_BASE_URL is set" });
@@ -526,6 +551,19 @@ export function mailOAuthConfigured(config: Config, provider: MailOAuthProviderI
 /** The cron expression of the `mail.sync` job: every `MAIL_SYNC_EVERY_MIN` minutes. */
 export function mailSyncCron(config: Config): string {
   return `*/${config.MAIL_SYNC_EVERY_MIN} * * * *`;
+}
+
+/** The thresholds of the service-level checks (F114). */
+export function sloThresholds(config: Config): SloThresholds {
+  return {
+    syncLagMin: config.SLO_SYNC_LAG_MIN,
+    urgentLatencyMin: config.SLO_URGENT_LATENCY_MIN,
+    llmWindowMin: config.SLO_LLM_WINDOW_MIN,
+    llmMinCalls: config.SLO_LLM_MIN_CALLS,
+    llmFailPct: config.SLO_LLM_FAIL_PCT,
+    llmClearPct: config.SLO_LLM_CLEAR_PCT,
+    repeatH: config.SLO_REPEAT_H,
+  };
 }
 
 // The operator's chat id for operator notices; null = log lines only.

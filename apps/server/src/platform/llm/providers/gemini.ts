@@ -97,7 +97,6 @@ function createGenerate(opts: { apiKey: string }): GenerateFn {
 
 export const geminiProvider: LlmProvider = {
   label: "Gemini",
-  configHint: "check GEMINI_API_KEY, GEMINI_MODEL_CLASSIFIER and the Google project (billing, region)",
   createGenerate,
   classifyError: classifyGeminiError,
 };

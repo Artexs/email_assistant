@@ -63,7 +63,7 @@ import {
   type JudgeSetup,
   summarizeJudge,
 } from "./eval-judge";
-import { type AttemptHooks, type EvalBudget, RETRY_WAITS_MS, runPool } from "./eval-pool";
+import { type AttemptHooks, BUDGET_STOP_REASON, type EvalBudget, RETRY_WAITS_MS, runPool } from "./eval-pool";
 import {
   type ClassifierPromptChoice,
   type ClassifierV3Part,
@@ -312,6 +312,13 @@ interface Deps {
   now: () => Date;
   // Called once for each new result (not for results from `done`). The CLI appends it to the state file.
   onResult?: (result: CaseResult) => Promise<void>;
+  // Called for each case that ends in an error. `issues` holds `path:code` entries of a bad model output, never model text.
+  onCaseFailed?: (failure: {
+    caseId: string;
+    code: string;
+    issues: readonly string[];
+    stage: "classifier" | "escalation";
+  }) => void;
 }
 
 // One state line. It holds no case text: ids, categories, numbers and codes only.
@@ -432,7 +439,11 @@ async function withRetry(
       if (error instanceof LlmBlockedError) return { kind: "blocked" };
       if (error instanceof SoftError && attempt < input.retries && (attempts?.mayRetry() ?? true)) {
         const wait = RETRY_WAITS_MS[Math.min(attempt, RETRY_WAITS_MS.length - 1)] as number;
-        log.warn(`soft error on ${label} of case ${c.id}, retry ${attempt + 1} after ${wait} ms`);
+        if (label === "escalation") {
+          log.warn("eval_escalation_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
+        } else {
+          log.warn("eval_case_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
+        }
         await deps.sleep(wait);
         continue;
       }
@@ -549,10 +560,10 @@ async function runCase(
     attempts
   );
   if (classified.kind === "error") {
-    // Issue paths only (`fields.task:too_big`): no model text.
-    log.warn(
-      `case ${c.id} failed: ${classified.code}${classified.issues.length > 0 ? ` (${classified.issues.join(", ")})` : ""}`
-    );
+    // The log line holds the case id and the code. The issue paths (`fields.task:too_big`, no model text) go to the
+    // hook: a comma list is not a log value (D7).
+    log.warn("eval_case_failed", { case_id: c.id, code: classified.code });
+    deps.onCaseFailed?.({ caseId: c.id, code: classified.code, issues: classified.issues, stage: "classifier" });
     return {
       ...base,
       modelCategory: null,
@@ -604,9 +615,9 @@ async function runCase(
       };
       if (second.kind === "error") {
         // The escalation error ends the case like a classifier error. The first call was paid: its usage stays.
-        log.warn(
-          `case ${c.id} escalation failed: ${second.code}${second.issues.length > 0 ? ` (${second.issues.join(", ")})` : ""}`
-        );
+        // Like `eval_case_failed`: the issue paths go to the hook, not into the log.
+        log.warn("eval_escalation_failed", { case_id: c.id, code: second.code });
+        deps.onCaseFailed?.({ caseId: c.id, code: second.code, issues: second.issues, stage: "escalation" });
         return {
           ...base,
           modelCategory: null,
@@ -718,10 +729,16 @@ export async function runEval(
     run: (c, attempts) => runCase(deps, c, input, attempts),
     onResult: async (result) => {
       await deps.onResult?.(result);
-      log.info(`case ${result.id}: ${result.finalCategory ?? `error ${result.errorCode}`}`);
+      log.info("eval_case_done", {
+        case_id: result.id,
+        ...(result.finalCategory === null ? { error_code: result.errorCode } : { category: result.finalCategory }),
+      });
     },
   });
-  if (pool.stoppedReason !== null) log.warn(`stop: ${pool.stoppedReason}`);
+  // The reason text is a sentence: the line carries one of its two names.
+  if (pool.stoppedReason !== null) {
+    log.warn("eval_stopped", { reason: pool.stoppedReason === BUDGET_STOP_REASON ? "budget_cap" : "error_streak" });
+  }
 
   // The report follows the input order, never the finish order.
   const cases: CaseResult[] = [];

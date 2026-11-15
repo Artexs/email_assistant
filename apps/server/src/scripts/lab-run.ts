@@ -2,6 +2,7 @@ import type { LiveRunPlan } from "@ea/core";
 
 import {
   labEnvIssues,
+  LabScoreError,
   LabSeedError,
   LAB_TARGETS,
   type LabCorpus,
@@ -33,6 +34,8 @@ export interface LabDeps {
   // Stores the urgency profile of a started run on the org mailbox.
   storeUrgency(org: LabOrg, plan: LiveRunPlan): Promise<unknown>;
   spendOf(runId: string): Promise<RunSpend>;
+  // Scores one run and writes the report files into `out`, or into the default folder when `out` is undefined.
+  score(runId: string, out: string | undefined): Promise<{ markdown: string; json: string; partial: boolean }>;
   // The heartbeat file of the serve process, if it wrote one.
   serveStatus(): ServeStatus | undefined;
   // The serve loop: runs until a signal; returns the exit code.
@@ -43,7 +46,7 @@ export interface LabDeps {
 }
 
 // A later stage fills each of these; until then the command exits 1.
-const NOT_BUILT: readonly LabCommand["kind"][] = ["reset", "score", "demo-reset", "demo-export", "demo-import"];
+const NOT_BUILT: readonly LabCommand["kind"][] = ["reset", "demo-reset", "demo-export", "demo-import"];
 
 const usdText = (spend: RunSpend): string =>
   spend.kind === "unpriced"
@@ -164,6 +167,25 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
         `stopped: operator ${command.runId} spend ${usdText(spend)} ledger ${ledgerWritten ? "line written" : "line already there"}`
       );
       return 0;
+    }
+    case "score": {
+      if (!state.listRuns().includes(command.runId)) {
+        cli.fail("refused: no_such_run");
+        return 1;
+      }
+      try {
+        const written = await deps.score(command.runId, command.out);
+        cli.print(
+          `score: ${command.runId}${written.partial ? " partial" : ""} report ${written.markdown} json ${written.json}`
+        );
+        return 0;
+      } catch (error) {
+        if (error instanceof LabScoreError) {
+          cli.fail(`refused: ${error.code}`);
+          return 1;
+        }
+        throw error;
+      }
     }
     case "serve":
       return deps.serve();

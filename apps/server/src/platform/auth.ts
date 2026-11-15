@@ -541,8 +541,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
           reason: betterAuthLogReason(message),
           ...(args[0] instanceof Error ? errorFields(args[0]) : {}),
         };
-        if (level === "error") log.error("better_auth_log", fields);
-        else log.warn("better_auth_log", fields);
+        if (level === "error") log.error("better_auth_log", { ...fields });
+        else log.warn("better_auth_log", { ...fields });
       },
     },
   });

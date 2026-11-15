@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { format } from "node:util";
 
 import { EVENT_CODE, isLogValueOfKind, logFieldKind, type LogFields } from "./log-fields";
 
@@ -25,17 +24,9 @@ export function withLogContext<T>(context: LogContext, fn: () => T): T {
 
 export interface Log {
   debug(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  debug(...args: unknown[]): void;
   info(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  info(...args: unknown[]): void;
   warn(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  warn(...args: unknown[]): void;
   error(event: string, fields?: LogFields): void;
-  /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
-  error(...args: unknown[]): void;
   /** A child logger: every line adds `fields` after the context keys (D3, D8). */
   with(fields: LogFields): Log;
 }
@@ -128,6 +119,25 @@ function contextFields(): FieldSource {
   return ordered;
 }
 
+/** One line: JSON, or text with the event first and the fields as `key=value`. */
+function writeLine(
+  out: (...args: unknown[]) => void,
+  prefix: string,
+  event: string,
+  pairs: readonly Pair[],
+  asJson: boolean
+): void {
+  if (asJson) {
+    out(JSON.stringify(Object.fromEntries(pairs)));
+    return;
+  }
+  const rest = pairs
+    .slice(5)
+    .map(([key, value]) => ` ${key}=${String(value)}`)
+    .join("");
+  out(prefix, `${event}${rest}`);
+}
+
 function write(level: LogLevel, module: string, childFields: readonly FieldSource[], args: readonly unknown[]): void {
   if (levelOrder[level] < levelOrder[currentLevel]) {
     return;
@@ -138,24 +148,18 @@ function write(level: LogLevel, module: string, childFields: readonly FieldSourc
   const asJson = resolveFormat() === "json";
 
   if (!isEventForm(args)) {
-    if (!asJson) {
-      out(prefix, ...args);
-      return;
-    }
-    const line = {
-      time: new Date().toISOString(),
-      level,
-      module,
-      event: "legacy_text",
-      msg: format(...args),
-    };
-    const pairs: Pair[] = Object.entries(line);
-    const dropped = addFields(pairs, [contextFields()]);
-    if (dropped > 0) {
-      pairs.push(["dropped_fields", dropped]);
-      droppedTotal += dropped;
-    }
-    out(JSON.stringify(Object.fromEntries(pairs)));
+    // D9: any other call shape writes no argument. One line of context fields says that a call was invalid.
+    const line: Pair[] = [
+      ["time", new Date().toISOString()],
+      ["level", level],
+      ["module", module],
+      ["event", "log_call_invalid"],
+      ["msg", "log_call_invalid"],
+    ];
+    const dropped = addFields(line, [contextFields()]) + 1;
+    line.push(["dropped_fields", dropped]);
+    droppedTotal += dropped;
+    writeLine(out, prefix, "log_call_invalid", line, asJson);
     return;
   }
 
@@ -174,15 +178,7 @@ function write(level: LogLevel, module: string, childFields: readonly FieldSourc
     droppedTotal += dropped;
   }
 
-  if (asJson) {
-    out(JSON.stringify(Object.fromEntries(pairs)));
-    return;
-  }
-  const rest = pairs
-    .slice(5)
-    .map(([key, value]) => ` ${key}=${String(value)}`)
-    .join("");
-  out(prefix, `${event}${rest}`);
+  writeLine(out, prefix, event, pairs, asJson);
 }
 
 function makeLog(module: string, childFields: readonly FieldSource[]): Log {

@@ -472,6 +472,80 @@ describe("createCommitterJob", () => {
   });
 });
 
+// F117 stage 10: the reason of an OAuth login refusal reaches `auth_reason` in the same write as the status.
+describe("createCommitterJob: auth_error with a reason", () => {
+  const oauthTokens = { accessToken: async () => "access-token-stub", drop: () => undefined };
+
+  async function makeOauth(trx: Transaction<DB>, box: Box): Promise<void> {
+    await trx.updateTable("mailboxes").set({ oauth_provider: "google" }).where("id", "=", box.mailboxId).execute();
+    await trx
+      .updateTable("mailbox_credentials")
+      .set({ secret_kind: "oauth" })
+      .where("mailbox_id", "=", box.mailboxId)
+      .execute();
+  }
+
+  const jobWithTokens = (trx: Transaction<DB>, opener: Opener) =>
+    createCommitterJob({
+      db: trx,
+      secrets,
+      openProvider: opener.openProvider,
+      oauthTokens,
+      scope: { kind: "all" },
+      now: () => NOW,
+    });
+
+  const mailboxState = (trx: Transaction<DB>, box: Box) =>
+    trx
+      .selectFrom("mailboxes")
+      .select(["status", "auth_reason"])
+      .where("id", "=", box.mailboxId)
+      .executeTakeFirstOrThrow();
+
+  test("a refused open with a reason sets auth_error and the reason together", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      await makeOauth(trx, box);
+      await addMail(trx, box, { messageId: "<f117a@x.test>", actions: [{ type: "flag" }] });
+      const opener = openerFor([box]);
+      opener.failures.set(box.address, new MailAuthError("bad login", { reason: "oauth_revoked" }));
+
+      await jobWithTokens(trx, opener).run();
+
+      expect(await mailboxState(trx, box)).toEqual({ status: "auth_error", auth_reason: "oauth_revoked" });
+    });
+  });
+
+  test("an auth error in the middle of a batch carries its reason to the status", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      await makeOauth(trx, box);
+      await addMail(trx, box, { messageId: "<f117b@x.test>", actions: [{ type: "flag" }] });
+      box.fake.failOn("setFlags", new MailAuthError("login", { reason: "protocol_disabled" }));
+
+      await jobWithTokens(trx, openerFor([box])).run();
+
+      expect(await mailboxState(trx, box)).toEqual({ status: "auth_error", auth_reason: "protocol_disabled" });
+    });
+  });
+
+  test("a password mailbox keeps auth_reason NULL on the same paths", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      await addMail(trx, box, { messageId: "<f117c@x.test>", actions: [{ type: "flag" }] });
+      const opener = openerFor([box]);
+      opener.failures.set(box.address, new MailAuthError("bad login"));
+
+      await jobFor(trx, opener, { kind: "all" }).run();
+
+      expect(await mailboxState(trx, box)).toEqual({ status: "auth_error", auth_reason: null });
+    });
+  });
+});
+
 // S4 stage 12: sends in the committer job.
 interface SendOpener {
   calls: string[];

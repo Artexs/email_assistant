@@ -9,8 +9,6 @@ import { openaiProvider } from "./openai";
 export interface LlmProvider {
   /** Name in log texts, for example "Gemini". */
   readonly label: string;
-  /** Text of the config-error log line. */
-  readonly configHint: string;
   createGenerate(opts: {
     apiKey: string;
     reasoningEffort: string | null;

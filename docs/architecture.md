@@ -569,7 +569,7 @@ Tenancy:
   A Telegram admin notice goes out when the last good sync is older than 30 min. Every digest shows "last sync HH:MM", also when it is empty.
 - **`GET /health`:** DB reachable, last good sync per mailbox.
 - Moved to [docs/capabilities/backups.md](capabilities/backups.md) § Rules (F095).
-- **Logging (ADR 0024):** one JSON object per line (`LOG_FORMAT=json`, the VPS) with `time`, `level`, `module`, `event`, `msg` and allow-listed fields (`platform/log-fields.ts`); every line of a job tick has `job` and `run_id`, every line of an HTTP request has `request_id` (also the `x-request-id` response header); `LOG_FORMAT=text` in dev. The start lines name each job with `job_scheduled`; the schedules are in this section. Module lines move to the event form in E8a; until then they appear as `event: legacy_text` with their old text in `msg`.
+- **Logging (ADR 0024):** one JSON object per line (`LOG_FORMAT=json`, the VPS) with `time`, `level`, `module`, `event`, `msg` and allow-listed fields (`platform/log-fields.ts`); every line of a job tick has `job` and `run_id`, every line of an HTTP request has `request_id` (also the `x-request-id` response header); `LOG_FORMAT=text` in dev. The start lines name each job with `job_scheduled`; the schedules are in this section. Every server log line is an event with allow-listed fields of three kinds (uuid, number, code); the lint fails on any other form, and a call of another shape writes `log_call_invalid`. A canary test (F103 stages 15–16) is to prove that no mail string reaches a log (`docs/capabilities/logs.md`, ADR 0024).
 
 ## 9. Testing
 

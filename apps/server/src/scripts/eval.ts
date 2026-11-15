@@ -27,6 +27,7 @@ import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable }
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
 import { loadEvalConfig } from "./eval-config";
+import { evalFailureLine } from "./eval-failure-line";
 import { runSim } from "./eval-sim";
 import { runSuspicious } from "./eval-suspicious";
 
@@ -183,6 +184,7 @@ export async function runClassifier(options: EvalOptions, deps: ClassifierDeps =
         sleep: (ms) => new Promise((finish) => setTimeout(finish, ms)),
         now: () => new Date(),
         onResult: async (result) => appendFileSync(stateFile, `${JSON.stringify(result)}\n`),
+        onCaseFailed: (failure) => cli.print(evalFailureLine(failure)),
       },
       {
         cases,

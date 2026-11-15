@@ -1,4 +1,4 @@
-import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition";
+import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
@@ -23,7 +23,7 @@ import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { errorFields } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
-import { createLlmClient, llmEndpointFields, llmProviders, type LlmProviderId } from "./platform/llm";
+import { createLlmClient, llmEndpointFields, type LlmProviderId } from "./platform/llm";
 import { createLog, setLogFormat, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
@@ -91,10 +91,12 @@ try {
 }
 
 const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+const mailOAuth = mailOAuthRuntime(config, db, secrets);
 const mailSync = createMailSyncJob({
   db,
   secrets,
   openProvider: openImapProvider,
+  oauthTokens: mailOAuth.tokens,
   isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
   sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(db, ctx, mailboxId, actionId),
   now: () => new Date(),
@@ -152,15 +154,14 @@ log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegra
 let triageRun: Promise<void> = Promise.resolve();
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
-const provider = llmProviders[classifierRow.provider];
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
-  log.info("llm_settings", llmEndpointFields(llmTable, "classifier"));
+  log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
   const llm = createLlmClient({ table: llmTable });
   const triage = createTriageJob({
     db,
     llm,
-    pause: createLlmPause({ configHint: provider.configHint }),
+    pause: createLlmPause(),
     scope,
     testMail: testMailRule(config),
     batchSize: 5,
@@ -195,6 +196,7 @@ const committer = createCommitterJob(
   committerDeps({
     db,
     secrets,
+    oauthTokens: mailOAuth.tokens,
     scope: scopeOfActions,
     sendScope: scopeOfSends,
     sendLimits: limitsOfSends,
@@ -277,6 +279,8 @@ const web = webDeps(config, db, {
   actionsScope: scopeOfActions,
   sendScope: scopeOfSends,
   botUsername: telegram ? () => telegram.botUsername() : null,
+  mailOAuthClients: mailOAuth.clients,
+  mailOAuthLogin: { oauthTokens: mailOAuth.tokens },
   onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });
 const app = createApp({ checkDb: () => checkDb(db), web });

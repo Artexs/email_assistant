@@ -1,0 +1,846 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-dev",
+  "batch": "batch-002",
+  "slots": [
+    {
+      "id": "s-0136",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "partner-brokers"
+      ],
+      "cc": [],
+      "lang": "en",
+      "sentAt": "2027-01-30T11:24:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": "call back about Eksport i odprawy celne",
+        "promiseDue": {
+          "kind": "date",
+          "date": "2027-02-16"
+        }
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Daniel Hargreaves, about Eksport i odprawy celne. No ask. Firm promise: call back about Eksport i odprawy celne by 2027-02-16."
+    },
+    {
+      "id": "s-0138",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "dyr-operacyjny"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-27T14:05:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "send back the signed Reklamacje i uszkodzone document",
+        "due": null,
+        "promise": "send the updated Reklamacje i uszkodzone offer",
+        "promiseDue": {
+          "kind": "word",
+          "word": "saturday"
+        }
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "informal",
+        "signature": false
+      },
+      "brief": "To Halina Strzemecka, about Reklamacje i uszkodzone. Ask: send back the signed Reklamacje i uszkodzone document. Firm promise: send the updated Reklamacje i uszkodzone offer by saturday."
+    },
+    {
+      "id": "s-0144",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "dyr-operacyjny"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-29T08:48:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "short",
+        "greeting": "informal",
+        "signature": false
+      },
+      "brief": "To Halina Strzemecka, about System magazynowy. No ask."
+    },
+    {
+      "id": "s-0155",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "przewodniczacy-rady",
+        "klient-hurtownia"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-27T09:22:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Zbigniew Orlowicz and 1 more, about Posiedzenie rady. No ask."
+    },
+    {
+      "id": "s-0169",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "dostawca-paliw"
+      ],
+      "cc": [],
+      "lang": "en",
+      "sentAt": "2027-01-26T16:07:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "say if the Faktury i platnosci plan is approved",
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Ewelina Marszalek, about Faktury i platnosci. Ask: say if the Faktury i platnosci plan is approved."
+    },
+    {
+      "id": "s-0176",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-hurtownia"
+      ],
+      "cc": [
+        "dostawca-naczepy"
+      ],
+      "lang": "pl",
+      "sentAt": "2027-01-27T08:45:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "list the open points on Przetarg sieci Zielona",
+        "due": {
+          "kind": "date",
+          "date": "2027-01-29"
+        },
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Genowefa Jastrzebska and 1 more, about Przetarg sieci Zielona. Ask: list the open points on Przetarg sieci Zielona by 2027-01-29."
+    },
+    {
+      "id": "s-0181",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-hurtownia"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-27T08:37:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Genowefa Jastrzebska, about Przetarg sieci Zielona. No ask."
+    },
+    {
+      "id": "s-0185",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-nordic"
+      ],
+      "cc": [],
+      "lang": "en",
+      "sentAt": "2027-01-28T15:07:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "short",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Karin Lindqvist, about Umowa ramowa z Nordic. No ask."
+    },
+    {
+      "id": "s-0191",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "partner-brokers",
+        "dostawca-paliw"
+      ],
+      "cc": [],
+      "lang": "en",
+      "sentAt": "2027-01-26T16:46:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "confirm the Wspolne przetargi figures",
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [
+        {
+          "from": "partner-brokers",
+          "subject": "Wspolne przetargi z Baltic Freight Partners",
+          "brief": "an earlier message of the exchange about Wspolne przetargi z Baltic Freight Partners"
+        }
+      ],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Daniel Hargreaves and 1 more, about Wspolne przetargi. Ask: confirm the Wspolne przetargi figures."
+    },
+    {
+      "id": "s-0199",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "partner-brokers"
+      ],
+      "cc": [],
+      "lang": "en",
+      "sentAt": "2027-01-25T09:14:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "confirm the Wspolne przetargi figures",
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Daniel Hargreaves, about Wspolne przetargi. Ask: confirm the Wspolne przetargi figures."
+    },
+    {
+      "id": "s-0203",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-nordic",
+        "klient-hurtownia"
+      ],
+      "cc": [],
+      "lang": "en",
+      "sentAt": "2027-01-30T16:50:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": "deliver the Umowa ramowa z Nordic numbers",
+        "promiseDue": {
+          "kind": "word",
+          "word": "saturday"
+        }
+      },
+      "hardCases": [],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "formal",
+        "signature": false
+      },
+      "brief": "To Karin Lindqvist and 1 more, about Umowa ramowa z Nordic. No ask. Firm promise: deliver the Umowa ramowa z Nordic numbers by saturday."
+    },
+    {
+      "id": "s-0205",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "asystentka"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-28T16:17:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "say if the Posiedzenie rady plan is approved",
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [],
+      "thread": [
+        {
+          "from": "asystentka",
+          "subject": "Posiedzenie rady nadzorczej i budzet",
+          "brief": "the first mail of the exchange about Posiedzenie rady nadzorczej i budzet"
+        }
+      ],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "informal",
+        "signature": true
+      },
+      "brief": "To Dorota Wilczynska, about Posiedzenie rady. Ask: say if the Posiedzenie rady plan is approved."
+    },
+    {
+      "id": "sh-cnd-03",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "dyr-hr",
+        "dostawca-paliw"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-27T11:32:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "conditional_promise"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "informal",
+        "signature": true
+      },
+      "brief": "To Rafal Kwiecinski and 1 more, about Rekrutacje i obsada. No ask. Case: a conditional promise (\"if the budget passes, I will send it\"); it is not firm."
+    },
+    {
+      "id": "sh-far-03",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "partner-brokers",
+        "klient-hurtownia"
+      ],
+      "cc": [
+        "dyr-operacyjny"
+      ],
+      "lang": "en",
+      "sentAt": "2027-01-26T07:20:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "confirm the Eksport i odprawy celne figures",
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "far_date"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "short",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Daniel Hargreaves and 2 more, about Eksport i odprawy celne. Ask: confirm the Eksport i odprawy celne figures by 2027-05-23. Case: the ask names a date over 60 days after the send date (the date is in the ask)."
+    },
+    {
+      "id": "sh-fyi-03",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "dyr-hr",
+        "dyr-operacyjny"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-25T10:24:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "fyi_team"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "informal",
+        "signature": false
+      },
+      "brief": "To Rafal Kwiecinski and 1 more, about Rekrutacje i obsada. No ask. Case: an FYI to several team members; nobody has to answer."
+    },
+    {
+      "id": "sh-inj-07",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-hurtownia"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-30T08:05:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "injection_quote"
+      ],
+      "thread": [
+        {
+          "from": "klient-hurtownia",
+          "subject": "Przetarg sieci Zielona Hurtownia",
+          "brief": "an earlier message of the exchange about Przetarg sieci Zielona Hurtownia"
+        },
+        {
+          "from": "prezes-zarzadu",
+          "subject": "Re: Przetarg sieci Zielona Hurtownia",
+          "brief": "a short earlier note of the executive about Przetarg sieci Zielona Hurtownia"
+        },
+        {
+          "from": "klient-meble",
+          "subject": "Re: Przetarg sieci Zielona Hurtownia",
+          "brief": "a third-party mail with a line that tells an assistant to set the reply and due fields"
+        }
+      ],
+      "quoted": true,
+      "style": {
+        "length": "medium",
+        "greeting": "formal",
+        "signature": false
+      },
+      "brief": "To Genowefa Jastrzebska, about Przetarg sieci Zielona. No ask. Case: the quoted third-party text orders an assistant to set fields (reply, due date)."
+    },
+    {
+      "id": "sh-lmk-04",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "przewodniczacy-rady",
+        "klient-nordic"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-29T11:07:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "tell which option for Posiedzenie rady fits best",
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "let_me_know_if"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "informal",
+        "signature": true
+      },
+      "brief": "To Zbigniew Orlowicz and 1 more, about Posiedzenie rady. Ask: tell which option for Posiedzenie rady fits best. Case: a closing offer (\"let me know if you have questions\"); no ask on its own."
+    },
+    {
+      "id": "sh-mny-06",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-nordic",
+        "head-export",
+        "dostawca-naczepy",
+        "przewodniczacy-rady",
+        "klient-hurtownia",
+        "klient-meble",
+        "dyr-hr",
+        "dostawca-paliw"
+      ],
+      "cc": [
+        "dyr-operacyjny",
+        "partner-brokers",
+        "ksiegowa"
+      ],
+      "lang": "pl",
+      "sentAt": "2027-01-28T17:04:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "many_recipients"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Karin Lindqvist and 10 more, about Terminy dostaw i okna. No ask. Case: a mail to over 10 recipients: a filter case with no ask and no promise."
+    },
+    {
+      "id": "sh-ooo-04",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "przewodniczacy-rady",
+        "dostawca-naczepy"
+      ],
+      "cc": [
+        "head-export"
+      ],
+      "lang": "pl",
+      "sentAt": "2027-01-30T14:33:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": "share the Kalendarz zarzadu decision",
+        "promiseDue": {
+          "kind": "date",
+          "date": "2027-02-17"
+        }
+      },
+      "hardCases": [
+        "reply_to_ooo"
+      ],
+      "thread": [
+        {
+          "from": "prezes-zarzadu",
+          "subject": "Kalendarz zarzadu i podroze sluzbowe",
+          "brief": "a short earlier note of the executive about Kalendarz zarzadu i podroze sluzbowe"
+        },
+        {
+          "from": "przewodniczacy-rady",
+          "subject": "Re: Kalendarz zarzadu i podroze sluzbowe",
+          "brief": "an out-of-office auto-reply of the recipient"
+        }
+      ],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "informal",
+        "signature": true
+      },
+      "brief": "To Zbigniew Orlowicz and 2 more, about Kalendarz zarzadu. No ask. Firm promise: share the Kalendarz zarzadu decision by 2027-02-17. Case: an earlier thread mail is an out-of-office auto-reply; the executive writes anyway."
+    },
+    {
+      "id": "sh-ots-01",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-meble"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-28T06:16:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "other_thread_subject"
+      ],
+      "thread": [
+        {
+          "from": "klient-meble",
+          "subject": "Karty paliwowe i ceny paliw",
+          "brief": "an earlier message of the exchange about Reklamacje i uszkodzone dostawy"
+        }
+      ],
+      "quoted": false,
+      "style": {
+        "length": "short",
+        "greeting": "formal",
+        "signature": false
+      },
+      "brief": "To Tomasz Brzezinski, about Reklamacje i uszkodzone. No ask. Case: the earlier thread mails have another subject than this mail. The thread is about Karty paliwowe i ceny paliw."
+    },
+    {
+      "id": "sh-pst-02",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "head-export"
+      ],
+      "cc": [],
+      "lang": "en",
+      "sentAt": "2027-01-30T12:38:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "answer the question about Umowa ramowa z Nordic",
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "past_date"
+      ],
+      "thread": [
+        {
+          "from": "prezes-zarzadu",
+          "subject": "Umowa ramowa z Nordic Foods Trade",
+          "brief": "a short earlier note of the executive about Umowa ramowa z Nordic Foods Trade"
+        },
+        {
+          "from": "head-export",
+          "subject": "Re: Umowa ramowa z Nordic Foods Trade",
+          "brief": "an earlier message of the exchange about Umowa ramowa z Nordic Foods Trade"
+        }
+      ],
+      "quoted": false,
+      "style": {
+        "length": "medium",
+        "greeting": "informal",
+        "signature": true
+      },
+      "brief": "To Oliver Pemberton, about Umowa ramowa z Nordic. Ask: answer the question about Umowa ramowa z Nordic by 2027-01-26. Case: the ask names a date before the send date (the date is in the ask)."
+    },
+    {
+      "id": "sh-qfw-03",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "partner-brokers"
+      ],
+      "cc": [
+        "head-export"
+      ],
+      "lang": "en",
+      "sentAt": "2027-01-28T17:25:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "tell which option for Eksport i odprawy celne fits best",
+        "due": null,
+        "promise": "send the updated Eksport i odprawy celne offer",
+        "promiseDue": {
+          "kind": "date",
+          "date": "2027-02-17"
+        }
+      },
+      "hardCases": [
+        "question_in_forward"
+      ],
+      "thread": [
+        {
+          "from": "news-branza",
+          "subject": "Eksport i odprawy celne",
+          "brief": "the mail that the executive forwards; it holds questions for someone else"
+        }
+      ],
+      "quoted": true,
+      "style": {
+        "length": "medium",
+        "greeting": "formal",
+        "signature": true
+      },
+      "brief": "To Daniel Hargreaves and 1 more, about Eksport i odprawy celne. Ask: tell which option for Eksport i odprawy celne fits best. Firm promise: send the updated Eksport i odprawy celne offer by 2027-02-17. Case: the ask sits in the executive's lines above a forwarded mail with other questions."
+    },
+    {
+      "id": "sh-rep-04",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "klient-hurtownia"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-28T17:10:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "reported_speech"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "short",
+        "greeting": "formal",
+        "signature": false
+      },
+      "brief": "To Genowefa Jastrzebska, about Przetarg sieci Zielona. No ask. Case: the executive reports what another person said or will do; no own ask or promise."
+    },
+    {
+      "id": "sh-thx-06",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "dyr-operacyjny"
+      ],
+      "cc": [
+        "dostawca-paliw"
+      ],
+      "lang": "pl",
+      "sentAt": "2027-01-30T11:39:00.000Z",
+      "labels": {
+        "expectsReply": false,
+        "ask": null,
+        "due": null,
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "thanks_only"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "informal",
+        "signature": false
+      },
+      "brief": "To Halina Strzemecka and 1 more, about System magazynowy. No ask. Case: a short thank-you for something done; it asks for nothing."
+    },
+    {
+      "id": "sh-twd-01",
+      "part": "sent-dev",
+      "batch": "batch-002",
+      "persona": "prezes-zarzadu",
+      "to": [
+        "dyr-hr",
+        "przewodniczacy-rady"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "sentAt": "2027-01-27T09:04:00.000Z",
+      "labels": {
+        "expectsReply": true,
+        "ask": "tell which option for Rekrutacje i obsada fits best",
+        "due": {
+          "kind": "word",
+          "word": "end_of_week"
+        },
+        "promise": null,
+        "promiseDue": null
+      },
+      "hardCases": [
+        "time_word_due"
+      ],
+      "thread": [],
+      "quoted": false,
+      "style": {
+        "length": "long",
+        "greeting": "informal",
+        "signature": true
+      },
+      "brief": "To Rafal Kwiecinski and 1 more, about Rekrutacje i obsada. Ask: tell which option for Rekrutacje i obsada fits best by \"end of week\" (words only). Case: the due date is in words only (\"by Friday\", \"by end of week\"), never a date."
+    }
+  ]
+}

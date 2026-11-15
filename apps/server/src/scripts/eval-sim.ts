@@ -40,6 +40,7 @@ import { corpusDir, readScenario } from "../platform/sim-files";
 import { type EvalOptions, evalUsage } from "./eval-args";
 import { loadEvalConfig } from "./eval-config";
 import { classifierExtrasOfCase } from "./eval-extras";
+import { evalFailureLine } from "./eval-failure-line";
 import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
 
@@ -259,6 +260,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         onResult: async (result) => {
           appendFileSync(stateFile, `${JSON.stringify(result)}\n`);
         },
+        onCaseFailed: (failure) => cli.print(evalFailureLine(failure)),
       },
       {
         cases,
