@@ -1,5 +1,5 @@
 /// <reference types="bun" />
-import type { Delegate } from "@ea/core/web";
+import { DELEGATE_LIST_MAX, type Delegate } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -69,6 +69,14 @@ describe("DelegateList", () => {
     expect(list([], true)).toContain("There are no delegates yet.");
     setLocaleForTest("pl");
     expect(list([], true)).toContain("Nie ma jeszcze wykonawców.");
+  });
+
+  test("a list of DELEGATE_LIST_MAX entries says that more may be hidden; a shorter list says nothing", () => {
+    const many = (n: number) => Array.from({ length: n }, (_, i) => delegate({ id: `d${i}`, name: `Person ${i}` }));
+    expect(list(many(DELEGATE_LIST_MAX), true)).toContain("Showing the first 200 delegates.");
+    expect(list(many(DELEGATE_LIST_MAX - 1), true)).not.toContain("Showing the first");
+    setLocaleForTest("pl");
+    expect(list(many(DELEGATE_LIST_MAX), true)).toContain("Pokazano pierwszych 200 wykonawców.");
   });
 
   test("a long name and a long address wrap instead of widening the row", () => {
@@ -148,7 +156,7 @@ describe("DelegateAddForm", () => {
   test("Polish labels and button", () => {
     setLocaleForTest("pl");
     const html = renderToStaticMarkup(<DelegateAddForm onAdded={noop} />);
-    for (const label of ["Nazwa", "Adres e-mail", "Tagi"]) expect(html).toContain(`>${label}</label>`);
+    for (const label of ["Imię i nazwisko", "Adres e-mail", "Tagi"]) expect(html).toContain(`>${label}</label>`);
     expect(html).toContain(">Dodaj</button>");
   });
 });

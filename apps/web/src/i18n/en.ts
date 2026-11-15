@@ -854,6 +854,7 @@ export const en = {
   dlg_tab_delegates: "Delegates",
   dlg_list_label: "Delegates",
   dlg_empty: "There are no delegates yet.",
+  dlg_list_full: "Showing the first {n} delegates. Others are not shown.",
   dlg_load_error: "The delegates did not load.",
   dlg_owner_only: "Only the owner can change delegates.",
   dlg_state_active: "Active",

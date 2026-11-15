@@ -198,8 +198,8 @@ describe("the texts of the limits", () => {
 
   test("the Polish texts use a number form that fits the limits (10 tagów, 30 znaków, od 1 do 100 znaków)", () => {
     setLocaleForTest("pl");
-    expect(t("dlg_tags_error", FIELD_LIMITS)).toBe("Użyj najwyżej 10 tagów. Każdy tag ma najwyżej 30 znaków.");
-    expect(t("dlg_name_error", FIELD_LIMITS)).toBe("Nazwa musi mieć od 1 do 100 znaków.");
+    expect(t("dlg_tags_error", FIELD_LIMITS)).toBe("Użyj najwyżej 10 tagów. Każdy tag może mieć najwyżej 30 znaków.");
+    expect(t("dlg_name_error", FIELD_LIMITS)).toBe("Wpisz od 1 do 100 znaków.");
     setLocaleForTest("en");
     expect(t("dlg_tags_error", FIELD_LIMITS)).toBe("Use up to 10 tags. Each tag has up to 30 characters.");
     expect(t("dlg_name_error", FIELD_LIMITS)).toBe("The name needs 1 to 100 characters.");

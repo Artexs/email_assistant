@@ -1,4 +1,4 @@
-import type { Delegate } from "@ea/core/web";
+import { DELEGATE_LIST_MAX, type Delegate } from "@ea/core/web";
 
 import { t } from "../../i18n";
 import { Badge } from "../ui/badge";
@@ -76,10 +76,16 @@ export interface DelegateListProps extends Omit<DelegateRowProps, "delegate"> {
 export function DelegateList({ delegates, ...rest }: DelegateListProps) {
   if (delegates.length === 0) return <p className="text-sm text-muted-foreground">{t("dlg_empty")}</p>;
   return (
-    <ul aria-label={t("dlg_list_label")} className="flex flex-col gap-3">
-      {delegates.map((delegate) => (
-        <DelegateRow key={delegate.id} delegate={delegate} {...rest} />
-      ))}
-    </ul>
+    <>
+      <ul aria-label={t("dlg_list_label")} className="flex flex-col gap-3">
+        {delegates.map((delegate) => (
+          <DelegateRow key={delegate.id} delegate={delegate} {...rest} />
+        ))}
+      </ul>
+      {/* The API answers at most this many: a full list may hide more (there is no cursor). */}
+      {delegates.length >= DELEGATE_LIST_MAX && (
+        <p className="text-sm text-muted-foreground">{t("dlg_list_full", { n: DELEGATE_LIST_MAX })}</p>
+      )}
+    </>
   );
 }

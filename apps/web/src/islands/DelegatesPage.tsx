@@ -8,7 +8,6 @@ import { DelegateOffDialog } from "../components/delegation/DelegateOffDialog";
 import { DelegationTabs } from "../components/delegation/DelegationTabs";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
-import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
@@ -20,7 +19,8 @@ import { patchOutcome } from "../lib/delegates-form";
 import { singleFlight } from "../lib/single-flight";
 import { useResource } from "../lib/use-resource";
 
-// The line under the tabs: `info` is a result, `error` is the banner. `name` fills the text.
+// The line under the tabs, one live region that holds the text of a result (`info`) or of a failure (`error`). The focus goes to this
+// element after a gone delegate, so the text must sit inside it. `name` fills the text.
 interface Notice {
   tone: "info" | "error";
   key: TextKey;
@@ -170,13 +170,12 @@ function Delegates() {
         ref={statusRef}
         className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {notice?.tone === "info" && <p className="text-sm">{noticeText(notice)}</p>}
+        {notice !== null && (
+          <p className={notice.tone === "error" ? "rounded-md border px-4 py-3 text-sm text-destructive" : "text-sm"}>
+            {noticeText(notice)}
+          </p>
+        )}
       </div>
-      {notice?.tone === "error" && (
-        <Alert variant="destructive">
-          <AlertDescription>{noticeText(notice)}</AlertDescription>
-        </Alert>
-      )}
       {canChange && <DelegateAddForm onAdded={onAdded} />}
       {me !== null && !owner && <p className="text-sm text-muted-foreground">{t("dlg_owner_only")}</p>}
       {listContent}

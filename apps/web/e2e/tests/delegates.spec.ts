@@ -336,8 +336,11 @@ test("T11: a delegate that is gone at the save closes the dialog, says so, and p
   await editDialog(page).getByLabel(en.dlg_name).fill("Piotr Gone");
   await editDialog(page).getByRole("button", { name: en.save }).click();
   await expect(editDialog(page)).toHaveCount(0);
-  await expect(page.getByRole("alert").filter({ hasText: en.dlg_gone })).toBeVisible();
+  // The text sits in the focused element itself (one live region), and the page has no violation after the answer.
+  await expect(page.getByRole("status")).toHaveText(en.dlg_gone);
+  await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByRole("status")).toBeFocused();
+  await expectNoA11yViolations(page);
   await expect(rowOf(page, "Piotr Gone")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -359,9 +362,37 @@ test("T12: a delegate that is gone at a switch change (no dialog) leaves the pag
       : route.continue()
   );
   await switchOf(page, "No Tags").click();
-  await expect(page.getByRole("alert").filter({ hasText: en.dlg_gone })).toBeVisible();
+  // The text sits in the focused element itself (one live region), and the page has no violation after the answer.
+  await expect(page.getByRole("status")).toHaveText(en.dlg_gone);
+  await expect(page.getByRole("alert")).toHaveCount(0);
   // The focused switch left the page with its row: the focus is on the line of the result, not on the page start.
   await expect(page.getByRole("status")).toBeFocused();
+  await expectNoA11yViolations(page);
+  expect(errors).toEqual([]);
+});
+
+test("T13: a failed add keeps the focus on Add and shows the general alert (the button is never disabled)", async ({
+  context,
+  page,
+}) => {
+  test.skip(project() === "mobile", "the keyboard path runs on the desktop project");
+  const errors = await startSession(context, page, org().owner);
+  await page.goto("/delegates");
+  await expect(rowOf(page, "Piotr Lis")).toBeVisible();
+  // The server answers after 300 ms with a 500: the request is still running when the next check runs.
+  await page.route("**/api/delegates", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return route.fulfill({ status: 500, json: { error: "internal" } });
+  });
+  await nameField(page).fill("Failing Person");
+  await emailField(page).fill("failing@example.com");
+  await tabTo(page, addButton(page));
+  await page.keyboard.press("Enter");
+  await expect(addButton(page)).toBeFocused();
+  await expect(addForm(page).getByRole("alert")).toHaveText(en.error_generic);
+  await expect(addButton(page)).toBeFocused();
+  await expect(switchOf(page, "Failing Person")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
