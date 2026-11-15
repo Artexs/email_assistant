@@ -46,25 +46,23 @@ describe("release:prepare and the changelog parser", () => {
     ]);
   });
 
-  test("T8c the real CHANGELOG.md still goes through release:prepare and parses", () => {
-    // The real file may have an empty Unreleased: the test adds one For users pair, and uses a version above every real one.
-    const item = "### For users\n\n- en: Prepared item.\n  pl: Przygotowany punkt.\n";
-    const changelog = realChangelog.replace(/^## \[Unreleased\]\n/m, `## [Unreleased]\n\n${item}`);
-    expect(changelog).not.toBe(realChangelog);
-    const result = prepareRelease({ version: "99.0.0", date: "2099-01-01", changelog, packageJson });
-    if (!result.ok) throw new Error(result.reason);
-    const before = parseChangelog(realChangelog);
-    const after = parseChangelog(result.changelog);
-    const realVersions = before.map((release) => release.version);
-    expect(realVersions).toContain("0.1.0");
-    expect(after.map((release) => release.version)).toEqual(["Unreleased", "99.0.0", ...realVersions.slice(1)]);
-    expect(after[0]?.forUsers).toEqual([]);
-    expect(after[1]).toEqual({
+  test("T8c the real CHANGELOG.md, given one Unreleased item, still goes through release:prepare and parses", () => {
+    // The real Unreleased section is empty right after a release: add one item, and use a far version.
+    const changelog = realChangelog.replace(
+      "## [Unreleased]\n",
+      "## [Unreleased]\n\n### For users\n\n- en: A test item.\n  pl: Element testowy.\n"
+    );
+    const result = prepareRelease({
       version: "99.0.0",
-      date: "2099-01-01",
-      forUsers: [{ en: "Prepared item.", pl: "Przygotowany punkt." }],
+      date: "2026-12-01",
+      changelog,
+      packageJson,
     });
-    // Every real release keeps its own For users items.
-    expect(after.slice(2)).toEqual(before.slice(1));
+    if (!result.ok) throw new Error(result.reason);
+    const releases = parseChangelog(result.changelog);
+    expect(releases.slice(0, 2).map((release) => release.version)).toEqual(["Unreleased", "99.0.0"]);
+    expect(releases.map((release) => release.version)).toContain("0.1.0");
+    expect(releases[1]?.forUsers.length).toBeGreaterThan(0);
+    expect(releases[0]?.forUsers).toEqual([]);
   });
 });

@@ -495,3 +495,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a pattern check cannot give zero misses on hostile text. The real choice: (1) forbid every digit run of 12 or more in a draft, plus mod 97 for IBAN; (2) keep the budget as one layer and rely on the user approving each draft; (3) accept the residual for the stage 02 prototype only.
 - Undo: nothing landed. To resume, follow `notes/2026-11-15-f115-s01-account-check-open.md`.
 - Source: job `2026-11-15-f115-s01-drafter-core-risky-llm-e4a702ce`, branch head `3e48aeec`.
+
+### 2026-11-15 · F116 digest brief: the delegation footer stays in the first digest of the day when no delegation line is shown (F116) · product · new
+- Choice: the first digest of the day drops the delegation footer only when the ⏳ section shows a delegation line. Before the fix the footer was dropped always.
+- Why: delegations due later would appear nowhere in the morning digest, and a user without loop consent lost the "Delegations: n open, m overdue" footer they had with the flag off. Delegations are not loop data.
+- Undo: restore the unconditional drop in the digest renderer (`renderDigestWithBrief`).
+- Source: job `2026-11-15-f116-review-s18-opus-privacy-row-4a8c4b84`, finding N3.
