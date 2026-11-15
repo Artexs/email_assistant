@@ -311,3 +311,21 @@ export async function restartLoop(
   });
   return true;
 }
+
+// The caller holds the lock. The first automatic answer sets the time; a later one keeps it. `true`: this call set it.
+export async function markAutoReply(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  input: { loopId: string; at: Date }
+): Promise<boolean> {
+  const marked = await trx
+    .updateTable("open_loops")
+    .set({ auto_reply_at: input.at, updated_at: input.at })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", input.loopId)
+    .where("status", "=", "open")
+    .where("auto_reply_at", "is", null)
+    .returning("id")
+    .executeTakeFirst();
+  return marked !== undefined;
+}

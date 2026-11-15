@@ -1,0 +1,132 @@
+import type { TenantContext } from "../../platform/db";
+import { createLog } from "../../platform/log";
+import { listMailboxes } from "../mail";
+
+import { inTransaction } from "./analyze-rules";
+import { expireFollowUpSends } from "./follow-up-expiry";
+import { readReplyDecision } from "./reply-read";
+import {
+  closeLoop,
+  type DbOrTrx,
+  lockLoop,
+  markAutoReply,
+  toLoopRow,
+  type LoopCloseReason,
+  type LoopRow,
+} from "./repo";
+
+const log = createLog("loops");
+
+// Open loops read per mailbox and run; the rest waits for the next run (oldest wait first).
+const MAX_LOOPS = 500;
+
+export interface MatchDeps {
+  db: DbOrTrx;
+}
+
+export interface MatchResult {
+  checked: number;
+  replied: number;
+  repliedSubject: number;
+  dropped: number;
+  autoMarked: number;
+}
+
+export const emptyMatchResult = (): MatchResult => ({
+  checked: 0,
+  replied: 0,
+  repliedSubject: 0,
+  dropped: 0,
+  autoMarked: 0,
+});
+
+// The own addresses of the organization: every mailbox, lower case.
+export async function ownAddressesOf(db: DbOrTrx, ctx: TenantContext): Promise<string[]> {
+  return (await listMailboxes(db, ctx)).map((mailbox) => mailbox.address.toLowerCase());
+}
+
+async function openWaitingLoops(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<LoopRow[]> {
+  const rows = await db
+    .selectFrom("open_loops")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("status", "=", "open")
+    .where("kind", "in", ["waiting", "delegated"])
+    .orderBy("wait_from_at")
+    .orderBy("id")
+    .limit(MAX_LOOPS)
+    .execute();
+  return rows.map(toLoopRow);
+}
+
+interface Outcome {
+  closed: "replied" | "replied_subject" | "dropped" | null;
+  // This call set `auto_reply_at`.
+  auto: boolean;
+}
+
+const NOTHING: Outcome = { closed: null, auto: false };
+
+// One loop, in one transaction: lock it, check that it is still open, decide again on the locked row and write. A close
+// and the end of its waiting follow-up sends are one commit. Two runs at once: the second finds the loop closed. An
+// automatic answer before the first real reply sets `auto_reply_at` once; the search goes on past it.
+async function applyToLoop(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  loopId: string,
+  ownAddresses: readonly string[],
+  now: Date
+): Promise<Outcome> {
+  return inTransaction(db, async (trx): Promise<Outcome> => {
+    const loop = await lockLoop(trx, ctx, loopId);
+    if (loop === undefined || loop.status !== "open" || loop.kind === "promised") return NOTHING;
+    const close = async (reason: LoopCloseReason, emailId?: string): Promise<boolean> => {
+      if ((await closeLoop(trx, ctx, { loopId, reason, emailId, at: now })) !== "closed") return false;
+      await expireFollowUpSends(trx, ctx, { mailboxId: loop.mailbox_id, loopId }, now);
+      return true;
+    };
+    // A DSR erase emptied the recipients: nobody is left to wait for.
+    if (loop.to_addresses.length === 0) return { closed: (await close("dropped")) ? "dropped" : null, auto: false };
+    const decision = await readReplyDecision(trx, ctx, loop, ownAddresses);
+    const auto = decision.auto && loop.auto_reply_at === null && (await markAutoReply(trx, ctx, { loopId, at: now }));
+    if (decision.first === null) return { closed: null, auto };
+    const reason = decision.first.kind === "thread" ? "replied" : "replied_subject";
+    return { closed: (await close(reason, decision.first.emailId)) ? reason : null, auto };
+  });
+}
+
+// The close rules for the open `waiting` and `delegated` loops of one mailbox. `now` is the time written.
+export async function matchReplies(
+  deps: MatchDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  input: { now: Date }
+): Promise<MatchResult> {
+  const result = emptyMatchResult();
+  const loops = await openWaitingLoops(deps.db, ctx, mailboxId);
+  if (loops.length === 0) return result;
+  const own = await ownAddressesOf(deps.db, ctx);
+  for (const loop of loops) {
+    result.checked += 1;
+    // The cheap read first, without a lock: most loops have no mail to act on.
+    const decision = loop.to_addresses.length === 0 ? null : await readReplyDecision(deps.db, ctx, loop, own);
+    const worthALock = decision === null || decision.first !== null || (decision.auto && loop.auto_reply_at === null);
+    if (!worthALock) continue;
+    const outcome = await applyToLoop(deps.db, ctx, loop.id, own, input.now);
+    if (outcome.closed === "replied") result.replied += 1;
+    else if (outcome.closed === "replied_subject") result.repliedSubject += 1;
+    else if (outcome.closed === "dropped") result.dropped += 1;
+    if (outcome.auto) result.autoMarked += 1;
+  }
+  const lines: [string, number][] = [
+    ["replied", result.replied],
+    ["replied_subject", result.repliedSubject],
+    ["dropped", result.dropped],
+    ["auto", result.autoMarked],
+  ];
+  for (const [kind, count] of lines) {
+    if (count > 0) log.with({ org_id: ctx.orgId, mailbox_id: mailboxId }).info("loops_matched", { count, kind });
+  }
+  return result;
+}

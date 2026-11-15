@@ -4,7 +4,7 @@ import { actionsScope, committerDeps, loopsLlmScope, mailOAuthRuntime, sendScope
 import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
-import { createLoopJobs } from "../modules/loops";
+import { createLoopJobs, createLoopMatchJob } from "../modules/loops";
 import { configureMailHosts } from "../modules/mail";
 import { createCliOutput } from "../platform/cli";
 import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
@@ -72,6 +72,13 @@ async function main(): Promise<number> {
         // Counts only: no id, no address, no text.
         out.print(
           `${args.name}: ran once (mailboxes ${run.mailboxes}, analysed ${run.analysed}, skipped ${run.skipped}, opened ${run.opened}, restarted ${run.restarted}, promises closed ${run.promisesClosed}, waiting ${run.waiting}, failed ${run.failed}, mailbox errors ${run.mailboxErrors}${run.stopped ? ", stopped by the model" : ""})`
+        );
+        return 0;
+      } else if (args.name === "loops.match") {
+        const run = await createLoopMatchJob({ db, now }).run();
+        // Counts only: no id, no address, no text.
+        out.print(
+          `${args.name}: ran once (mailboxes ${run.mailboxes}, checked ${run.checked}, replied ${run.replied}, replied by subject ${run.repliedSubject}, dropped ${run.dropped}, automatic ${run.autoMarked}, mailbox errors ${run.mailboxErrors})`
         );
         return 0;
       } else {

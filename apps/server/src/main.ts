@@ -4,7 +4,7 @@ import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } f
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
-import { createLoopJobs } from "./modules/loops";
+import { createLoopJobs, createLoopMatchJob } from "./modules/loops";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
 import {
   checkBackupAge,
@@ -192,6 +192,7 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
 let loopsAnalyzeRun: Promise<void> = Promise.resolve();
+let loopsMatchRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
@@ -226,6 +227,13 @@ if (scope !== null) {
   });
   log.info("job_scheduled", { job: "loops.analyze" });
 }
+// The close rules need no model: they run with the scope off too, so a reply still closes its loop.
+const loopMatch = createLoopMatchJob({ db, now: () => new Date() });
+scheduler.add("loops.match", "50 */2 * * * *", () => {
+  loopsMatchRun = loopMatch.run().then(() => undefined);
+  return loopsMatchRun;
+});
+log.info("job_scheduled", { job: "loops.match" });
 
 // The runs of the committer, the returned job and the S4 jobs that are going now. Shutdown waits for them.
 let committerRun: Promise<void> = Promise.resolve();
@@ -360,6 +368,7 @@ async function shutdown(): Promise<void> {
     Promise.allSettled([
       triageRun,
       loopsAnalyzeRun,
+      loopsMatchRun,
       committerRun,
       returnedRun,
       expiryRun,
