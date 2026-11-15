@@ -44,6 +44,8 @@ const log = createLog("trust");
 
 /** The classify step starts at the latest this long after the backfill, also when some flags are still unknown. */
 export const HISTORY_FLAGS_WAIT_MS = 20 * 60_000;
+/** After this many moved-cursor retries of one check the next one counts one attempt, so a check cannot stay open for ever. */
+export const HISTORY_CURSOR_RETRIES = 20;
 /** A wait for the flags, and a retry after a moved cursor, run again after this. */
 export const HISTORY_FLAGS_POLL_MS = 60_000;
 
@@ -112,6 +114,8 @@ function endOfRefusal(refusal: BackfillRefusal, now: Date): StepEnd {
 
 async function backfillStep(deps: HistoryJobDeps, ctx: TenantContext, check: ClaimedCheck): Promise<StepEnd> {
   if (!(await markStatus(deps.db, ctx, check, "backfilling"))) return { kind: "done" };
+  // The window is the window of this read: the backfill reads the last 30 days from `readAt` and so does the flag refresh.
+  const readAt = deps.now();
   const outcome = await backfillMailbox(
     {
       db: deps.db,
@@ -122,13 +126,20 @@ async function backfillStep(deps: HistoryJobDeps, ctx: TenantContext, check: Cla
     },
     ctx,
     check.mailboxId,
-    { days: HISTORY_WINDOW_DAYS, now: deps.now(), purpose: "history" }
+    { days: HISTORY_WINDOW_DAYS, now: readAt, purpose: "history" }
   );
   if (outcome.kind === "refused") return endOfRefusal(outcome.reason, deps.now());
   if (outcome.result.fetched === 0) return { kind: "end", reason: "no_history" };
   await deps.hooks?.afterBackfill?.();
   const doneAt = deps.now();
-  if (!(await markBackfilled(deps.db, ctx, check, doneAt, deps.runningKey))) return { kind: "done" };
+  if (
+    !(await markBackfilled(deps.db, ctx, check, {
+      at: doneAt,
+      windowStart: new Date(readAt.getTime() - HISTORY_WINDOW_DAYS * 86_400_000),
+      key: deps.runningKey,
+    }))
+  )
+    return { kind: "done" };
   // The flags of the history mail do not wait for the sync cadence of 10 minutes. A fault here is not a fault of the step: the wait
   // step has its own time limit. A refused login ends the check.
   try {
@@ -157,14 +168,16 @@ async function backfillStep(deps: HistoryJobDeps, ctx: TenantContext, check: Cla
 
 async function flagsStep(deps: HistoryJobDeps, ctx: TenantContext, check: ClaimedCheck): Promise<StepEnd> {
   const doneAt = check.backfillDoneAt;
-  if (doneAt === null) throw new Error("check waits for flags without a backfill time");
+  const windowStart = check.windowStart;
+  if (doneAt === null || windowStart === null) throw new Error("check waits for flags without a backfill window");
   const now = deps.now();
   // After the limit the mail without a fresh flag row counts as not acted on.
   if (now.getTime() >= doneAt.getTime() + HISTORY_FLAGS_WAIT_MS)
     return { kind: "advance", at: now, status: "classifying" };
   const unknown = await countInboxMailWithoutFreshFlags(deps.db, ctx, check.mailboxId, {
-    since: check.windowStart,
+    since: windowStart,
     checkedSince: doneAt,
+    receivedBefore: doneAt,
   });
   if (unknown === 0) return { kind: "advance", at: now, status: "classifying" };
   return { kind: "wait", at: after(now, HISTORY_FLAGS_POLL_MS), reason: "flags_unknown" };
@@ -175,7 +188,12 @@ async function runStep(deps: HistoryJobDeps, ctx: TenantContext, check: ClaimedC
   return backfillStep(deps, ctx, check);
 }
 
-async function processCheck(deps: HistoryJobDeps, ctx: TenantContext, check: ClaimedCheck): Promise<void> {
+async function processCheck(
+  deps: HistoryJobDeps,
+  ctx: TenantContext,
+  check: ClaimedCheck,
+  cursorRetries: Map<string, number>
+): Promise<void> {
   const checkLog = log.with({ org_id: ctx.orgId, mailbox_id: check.mailboxId, check_id: check.id });
   const now = deps.now();
   try {
@@ -186,13 +204,20 @@ async function processCheck(deps: HistoryJobDeps, ctx: TenantContext, check: Cla
     else if (gate.kind === "wait") end = { kind: "wait", at: after(now, HISTORY_RETRY_MS), reason: gate.reason };
     else end = { kind: "end", reason: gate.reason };
     await finish(deps, ctx, check, end, checkLog);
+    cursorRetries.delete(check.id);
   } catch (error) {
     if (error instanceof CursorMovedError) {
       // A regular sync moved the cursor between the plan and the apply of one chunk: nothing of it is stored and the repeat is cheap.
-      // A retry that costs no attempt.
-      checkLog.info("history_step_retry", { reason: "cursor_moved" });
-      await releaseCheck(deps.db, ctx, check, { at: after(deps.now(), HISTORY_FLAGS_POLL_MS) });
-      return;
+      // A retry that costs no attempt, until the 20th: that one counts as a failed step. The count lives in this process; a restart
+      // starts it again, and the three attempts still end the check.
+      const retries = (cursorRetries.get(check.id) ?? 0) + 1;
+      if (retries < HISTORY_CURSOR_RETRIES) {
+        cursorRetries.set(check.id, retries);
+        checkLog.info("history_step_retry", { reason: "cursor_moved", count: retries });
+        await releaseCheck(deps.db, ctx, check, { at: after(deps.now(), HISTORY_FLAGS_POLL_MS) });
+        return;
+      }
+      cursorRetries.delete(check.id);
     }
     const failed = await failStep(deps.db, ctx, check, deps.now());
     checkLog.warn("history_step_failed", {
@@ -254,6 +279,8 @@ async function queueFlagOnChecks(deps: HistoryJobDeps): Promise<void> {
 }
 
 export function createHistoryJob(deps: HistoryJobDeps): { run(): Promise<void> } {
+  // Moved-cursor retries per check in this process.
+  const cursorRetries = new Map<string, number>();
   return {
     async run() {
       try {
@@ -265,7 +292,7 @@ export function createHistoryJob(deps: HistoryJobDeps): { run(): Promise<void> }
         const ctx = { orgId };
         try {
           const claim = await claimNextCheck(deps.db, ctx, deps.now());
-          if (claim.kind === "claimed") await processCheck(deps, ctx, claim.check);
+          if (claim.kind === "claimed") await processCheck(deps, ctx, claim.check, cursorRetries);
           else if (claim.kind === "stopped") {
             log
               .with({ org_id: orgId, mailbox_id: claim.mailboxId, check_id: claim.checkId })

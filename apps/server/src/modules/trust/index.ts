@@ -1,4 +1,10 @@
-export { createHistoryJob, HISTORY_FLAGS_POLL_MS, HISTORY_FLAGS_WAIT_MS, type HistoryJobDeps } from "./history-job";
+export {
+  createHistoryJob,
+  HISTORY_CURSOR_RETRIES,
+  HISTORY_FLAGS_POLL_MS,
+  HISTORY_FLAGS_WAIT_MS,
+  type HistoryJobDeps,
+} from "./history-job";
 export {
   claimNextCheck,
   endCheck,

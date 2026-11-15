@@ -17,6 +17,7 @@ import {
 import { createDb, withTenantScope, type Db } from "../../src/platform/db";
 
 import { testDb } from "./helpers";
+import { addMailbox } from "./trust-fixtures";
 import { checkRows, jobOf, RUNNING_KEY, theCheck, withHistoryBox, type HistoryBox } from "./trust-history-helpers";
 
 // The "exactly one / once / only" rules of the history job, with two or more connections and committed rows: one claim of a check,
@@ -74,7 +75,7 @@ for (const [role, conn] of [
   ["table owner", ownerDb],
 ] as const) {
   describe(`${role}: two connections, committed rows`, () => {
-    test("one due check: of 8 claims at once exactly one wins; the lock and the window are set", async () => {
+    test("one due check: of 8 claims at once exactly one wins; the lock is set and no window yet", async () => {
       await withHistoryBox(appDb, { mails: 0 }, async (box) => {
         await queue(box);
         const results = await Promise.all(
@@ -85,9 +86,32 @@ for (const [role, conn] of [
         const row = await theCheck(appDb, box);
         expect(row.locked_at?.getTime()).toBe(box.clock.now.getTime());
         expect(row.attempts).toBe(0);
-        expect(row.window_start).not.toBeNull();
+        expect(row.window_start).toBeNull();
         // The claim does not move the status: the step does.
         expect(row.status).toBe("queued");
+      });
+    });
+
+    test("TG3. two due checks in one organization: the oldest next_attempt_at is claimed first", async () => {
+      await withHistoryBox(appDb, { mails: 0 }, async (box) => {
+        const second = await appDb.transaction().execute((trx) => addMailbox(trx, box));
+        const first = await queue(box);
+        const other = await queueHistoryCheck(appDb, box, second, "connect");
+        if (other === null) throw new Error("second check not queued");
+        await appDb
+          .updateTable("history_checks")
+          .set({ next_attempt_at: later(box, -2 * 60_000) })
+          .where("id", "=", other)
+          .execute();
+        await appDb
+          .updateTable("history_checks")
+          .set({ next_attempt_at: later(box, -60_000) })
+          .where("id", "=", first)
+          .execute();
+        const one = await claimNextCheck(conn, box, box.clock.now);
+        expect(one.kind === "claimed" ? one.check.id : null).toBe(other);
+        const two = await claimNextCheck(conn, box, box.clock.now);
+        expect(two.kind === "claimed" ? two.check.id : null).toBe(first);
       });
     });
 
@@ -166,7 +190,9 @@ for (const [role, conn] of [
 
         // Every write of the first run is refused; the check is as the second run claimed it.
         expect(await markStatus(conn, box, first, "backfilling")).toBe(false);
-        expect(await markBackfilled(conn, box, first, box.clock.now, RUNNING_KEY)).toBe(false);
+        expect(
+          await markBackfilled(conn, box, first, { at: box.clock.now, windowStart: box.clock.now, key: RUNNING_KEY })
+        ).toBe(false);
         expect(await releaseCheck(conn, box, first, { at: box.clock.now, status: "classifying" })).toBe(false);
         expect(await endCheck(conn, box, first, "no_history", box.clock.now)).toBe(false);
         expect(await failStep(conn, box, first, box.clock.now)).toBeNull();

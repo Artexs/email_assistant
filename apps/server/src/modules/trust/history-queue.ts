@@ -31,7 +31,8 @@ export interface ClaimedCheck {
   status: HistoryStepStatus;
   reason: HistoryCheckReason;
   attempts: number;
-  windowStart: Date;
+  /** Null until the backfill has read the mailbox: the window is the window of that read. */
+  windowStart: Date | null;
   backfillDoneAt: Date | null;
   /** The lock value of this claim: the guard of every later write. */
   lockedAt: Date;
@@ -64,7 +65,7 @@ export async function listOrgsWithDueChecks(db: Conn, now: Date): Promise<string
 
 /**
  * Claims the oldest due check of one organization: `FOR UPDATE SKIP LOCKED` inside one short transaction, so two runs at once
- * never claim the same row. `window_start` is set at the first claim and kept on every repeat. A stale lock is taken back
+ * never claim the same row. A stale lock is taken back
  * and counts one attempt.
  */
 export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date): Promise<ClaimResult> {
@@ -94,10 +95,9 @@ export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date): Pro
         .execute();
       return { kind: "stopped", checkId: row.id, mailboxId: row.mailbox_id };
     }
-    const windowStart = row.window_start ?? new Date(now.getTime() - HISTORY_WINDOW_DAYS * 86_400_000);
     await trx
       .updateTable("history_checks")
-      .set({ attempts, locked_at: now, window_start: windowStart })
+      .set({ attempts, locked_at: now })
       .where("id", "=", row.id)
       .where("org_id", "=", ctx.orgId)
       .execute();
@@ -109,7 +109,7 @@ export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date): Pro
         status: row.status as HistoryStepStatus,
         reason: row.reason as HistoryCheckReason,
         attempts,
-        windowStart,
+        windowStart: row.window_start,
         backfillDoneAt: row.backfill_done_at,
         lockedAt: now,
       },
@@ -146,15 +146,23 @@ export function markStatus(
   return guardedUpdate(db, ctx, check, { status });
 }
 
-/** The backfill ended: the time and the evidence key of the moment are stored, the status is `waiting_flags`, the lock stays. */
+/**
+ * The backfill ended: the window of its read (`windowStart`), the end time and the evidence key of the moment are stored, the status is
+ * `waiting_flags`, the lock stays. The window is set here and not at the claim: a check that waited (a paused mailbox, a mailbox that
+ * never synced) would otherwise have a window longer than the 30 days that the backfill and the flag refresh read.
+ */
 export function markBackfilled(
   db: Conn,
   ctx: TenantContext,
   check: ClaimedCheck,
-  at: Date,
-  key: EvidenceKey
+  done: { at: Date; windowStart: Date; key: EvidenceKey }
 ): Promise<boolean> {
-  return guardedUpdate(db, ctx, check, { status: "waiting_flags", backfill_done_at: at, key: JSON.stringify(key) });
+  return guardedUpdate(db, ctx, check, {
+    status: "waiting_flags",
+    window_start: done.windowStart,
+    backfill_done_at: done.at,
+    key: JSON.stringify(done.key),
+  });
 }
 
 /** Releases the lock and sets the next run (a wait with no attempt, or the next step). */

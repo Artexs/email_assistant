@@ -47,7 +47,7 @@ export async function listFlagTargets(
 }
 
 /**
- * INBOX mail received at or after `since` whose flags are not known since `checkedSince`: no `email_flags` row, or a row last tried
+ * INBOX mail received from `since` to `receivedBefore` (the backfill time: live mail that arrives after it is the sync's) whose flags are not known since `checkedSince`: no `email_flags` row, or a row last tried
  * before that time. The history check waits for this count to reach 0 (F110 D6). `checked_at` means "last tried", so a mail that a
  * refresh could not read counts as known once it was tried.
  */
@@ -55,7 +55,7 @@ export async function countInboxMailWithoutFreshFlags(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { since: Date; checkedSince: Date }
+  opts: { since: Date; checkedSince: Date; receivedBefore: Date }
 ): Promise<number> {
   const row = await db
     .selectFrom("emails as e")
@@ -65,6 +65,7 @@ export async function countInboxMailWithoutFreshFlags(
     .where("e.mailbox_id", "=", mailboxId)
     .where("e.folder", "=", "INBOX")
     .where("e.received_at", ">=", opts.since)
+    .where("e.received_at", "<=", opts.receivedBefore)
     .where((eb) => eb.or([eb("f.checked_at", "is", null), eb("f.checked_at", "<", opts.checkedSince)]))
     .executeTakeFirstOrThrow();
   return Number(row.n);

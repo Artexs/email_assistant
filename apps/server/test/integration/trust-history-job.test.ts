@@ -1,13 +1,14 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 
-import { MailAuthError, type MailProvider, type OAuthTokens } from "../../src/modules/mail";
+import { MailAuthError, refreshFlagsOfMailbox, type MailProvider, type OAuthTokens } from "../../src/modules/mail";
 import { protocolDisabled } from "../../src/modules/mail/oauth/login";
 import { setMailboxStatus, updateCursor } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import {
+  HISTORY_CURSOR_RETRIES,
   HISTORY_FLAGS_WAIT_MS,
   HISTORY_LOCK_STALE_MS,
   HISTORY_RETRY_MS,
@@ -18,13 +19,16 @@ import { SoftError } from "../../src/platform/errors";
 
 import { insertTestEmail, suspendOrg } from "./fixtures";
 import { testDb } from "./helpers";
+import { addMailbox } from "./trust-fixtures";
 import {
   advance,
   checkRows,
   HISTORY_UID_VALIDITY,
   jobOf,
   MINUTE_MS,
+  historySecrets,
   RUNNING_KEY,
+  seedMail,
   theCheck,
   withHistoryBox,
   type HistoryBox,
@@ -341,6 +345,42 @@ describe("carry-over: the state of the mailbox", () => {
       expect(await emailsOf(box)).toHaveLength(5);
     });
   });
+
+  test("N2. the 20th moved-cursor retry counts one attempt; the 19 before it do not", async () => {
+    await withHistoryBox(db, {}, async (box) => {
+      await queue(box);
+      let armed = true;
+      let lastUid = 5;
+      const mover = Object.create(box.fake) as MailProvider;
+      mover.fetchContent = async (folder, uid) => {
+        const content = await box.fake.fetchContent(folder, uid);
+        if (armed) {
+          armed = false;
+          await updateCursor(
+            db,
+            box,
+            box.mailboxId,
+            { uidValidity: HISTORY_UID_VALIDITY, lastUid },
+            { uidValidity: HISTORY_UID_VALIDITY, lastUid: lastUid + 1 }
+          );
+          lastUid += 1;
+        }
+        return content;
+      };
+      const job = jobOf(db, box, { openProvider: async () => mover });
+      for (let run = 1; run < HISTORY_CURSOR_RETRIES; run += 1) {
+        armed = true;
+        await job.run();
+        expect((await theCheck(db, box)).attempts).toBe(0);
+        advance(box, 2 * MINUTE_MS);
+      }
+      armed = true;
+      await job.run();
+      const row = await theCheck(db, box);
+      expect(row).toMatchObject({ status: "backfilling", attempts: 1 });
+      expect(row.next_attempt_at.getTime()).toBe(box.clock.now.getTime() + HISTORY_RETRY_MS);
+    });
+  });
 });
 
 describe("step 2: the backfill step", () => {
@@ -388,16 +428,17 @@ describe("step 2: the backfill step", () => {
       const crashed = await theCheck(db, box);
       expect(crashed).toMatchObject({ status: "backfilling", attempts: 1 });
       expect(crashed.backfill_done_at).toBeNull();
+      // The window is written with the end of the backfill: a crashed read leaves none.
+      expect(crashed.window_start).toBeNull();
       expect(await emailsOf(box)).toHaveLength(5);
-      const windowStart = crashed.window_start?.getTime();
 
       hooks.afterBackfill = () => undefined;
       advance(box, HISTORY_RETRY_MS);
       await job.run();
       const row = await theCheck(db, box);
       expect(row.status).toBe("waiting_flags");
-      // The window start of the first claim is kept on the repeat.
-      expect(row.window_start?.getTime()).toBe(windowStart);
+      // The window of the repeat is the window of its own read.
+      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * 86_400_000);
       expect(await emailsOf(box)).toHaveLength(5);
       const headers = await db
         .selectFrom("email_headers")
@@ -406,6 +447,54 @@ describe("step 2: the backfill step", () => {
         .where("emails.mailbox_id", "=", box.mailboxId)
         .execute();
       expect(headers.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+  test("N1. a check that waited 10 days (paused mailbox) has the window of its read: 30 days back from the read, not from the first claim", async () => {
+    await withHistoryBox(db, {}, async (box) => {
+      // A mail that is 25 days old now is 35 days old when the mailbox resumes: outside the window of the read.
+      const oldUid = box.fake.deliver("INBOX", seedMail(6, box.clock.now), {
+        internalDate: new Date(box.clock.now.getTime() - 25 * 86_400_000),
+      });
+      await updateCursor(
+        db,
+        box,
+        box.mailboxId,
+        { uidValidity: HISTORY_UID_VALIDITY, lastUid: 5 },
+        { uidValidity: HISTORY_UID_VALIDITY, lastUid: oldUid }
+      );
+      await queue(box);
+      await setMailboxStatus(db, box, box.mailboxId, "paused");
+      const job = jobOf(db, box);
+      await job.run();
+      const waiting = await theCheck(db, box);
+      expect(waiting).toMatchObject({ status: "queued", attempts: 0 });
+      expect(waiting.window_start).toBeNull();
+
+      advance(box, 10 * 86_400_000);
+      await setMailboxStatus(db, box, box.mailboxId, "active");
+      await job.run();
+      const row = await theCheck(db, box);
+      expect(row.status).toBe("waiting_flags");
+      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * 86_400_000);
+      // The backfill and the window agree: the mail that is 35 days old is in neither.
+      const uids = (await emailsOf(box)).length;
+      expect(uids).toBe(5);
+      const stored = await db
+        .selectFrom("emails")
+        .select("uid")
+        .where("mailbox_id", "=", box.mailboxId)
+        .where("uid", "=", String(oldUid))
+        .execute();
+      expect(stored).toEqual([]);
+    });
+  });
+
+  test("N1. a mailbox that never synced has no window until the backfill reads it", async () => {
+    await withHistoryBox(db, { synced: false }, async (box) => {
+      await queue(box);
+      await jobOf(db, box).run();
+      expect((await theCheck(db, box)).window_start).toBeNull();
     });
   });
 
@@ -555,6 +644,48 @@ describe("step 3: the flags wait", () => {
     });
   });
 
+  test("N5. live mail that arrives after the backfill does not hold the flags wait", async () => {
+    await withHistoryBox(db, {}, async (box) => {
+      await queue(box);
+      const job = jobOf(db, box);
+      await job.run();
+      const doneAt = (await theCheck(db, box)).backfill_done_at;
+      expect(doneAt).not.toBeNull();
+      // A new INBOX mail after the backfill: the sync stores it and refreshes its flags later, within 10 minutes.
+      await db.transaction().execute(async (trx) => {
+        await insertTestEmail(trx, box, box.mailboxId, {
+          folder: "INBOX",
+          uid: 910,
+          received_at: new Date(box.clock.now.getTime() + MINUTE_MS),
+        });
+      });
+      advance(box, 2 * MINUTE_MS);
+      await job.run();
+      expect((await theCheck(db, box)).status).toBe("classifying");
+    });
+  });
+
+  test("TG2. the INBOX mail of another mailbox of the organization does not hold the flags wait", async () => {
+    await withHistoryBox(db, {}, async (box) => {
+      await queue(box);
+      const job = jobOf(db, box);
+      await job.run();
+      const second = await db.transaction().execute((trx) => addMailbox(trx, box));
+      // Paused: the flag_on queue makes no check for it, so the organization has the one check of the first mailbox.
+      await setMailboxStatus(db, box, second, "paused");
+      await db.transaction().execute(async (trx) => {
+        await insertTestEmail(trx, box, second, {
+          folder: "INBOX",
+          uid: 920,
+          received_at: new Date(box.clock.now.getTime() - 86_400_000),
+        });
+      });
+      advance(box, MINUTE_MS);
+      await job.run();
+      expect((await theCheck(db, box)).status).toBe("classifying");
+    });
+  });
+
   test("a suspended org waits in the flags step too: no step before the resume", async () => {
     await withHistoryBox(db, {}, async (box) => {
       await queue(box);
@@ -579,6 +710,69 @@ describe("step 3: the flags wait", () => {
       expect(await theCheck(db, box)).toMatchObject({ status: "classifying", attempts: 0 });
       expect((await theCheck(db, box)).locked_at).toBeNull();
     });
+  });
+});
+
+describe("TG4. refreshFlagsOfMailbox closes its connection", () => {
+  const depsOf = (box: HistoryBox) => ({
+    db,
+    secrets: historySecrets,
+    isOwnActionId: async () => false,
+    openProvider: async () => box.fake,
+  });
+
+  test("after a read and after a failed read", async () => {
+    await withHistoryBox(db, {}, async (box) => {
+      await jobOf(db, box).run();
+      await refreshFlagsOfMailbox(depsOf(box), box, box.mailboxId, () => box.clock.now);
+      expect(box.fake.closed).toBe(true);
+    });
+    await withHistoryBox(db, {}, async (box) => {
+      box.fake.failOn("fetchFlagsIn", new SoftError("flags lost"));
+      await db.transaction().execute(async (trx) => {
+        await insertTestEmail(trx, box, box.mailboxId, { folder: "INBOX", uid: 930, received_at: box.clock.now });
+      });
+      await expect(refreshFlagsOfMailbox(depsOf(box), box, box.mailboxId, () => box.clock.now)).rejects.toBeInstanceOf(
+        SoftError
+      );
+      expect(box.fake.closed).toBe(true);
+    });
+  });
+});
+
+describe("TG6. the job files reach no triage code and no model client, also through their imports", () => {
+  const srcRoot = resolve(import.meta.dir, "../../src");
+
+  // The files that a start file imports, found through relative imports (`from "./x"`, `from "../mail"`), with `index.ts` and `.ts` resolved.
+  function reachable(starts: string[]): Set<string> {
+    const seen = new Set<string>();
+    const queue = [...starts];
+    while (queue.length > 0) {
+      const file = queue.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(/(?:from|import)\s*\(?\s*"(\.[^"]+)"/g)) {
+        const base = resolve(file, "..", match[1] as string);
+        for (const candidate of [`${base}.ts`, resolve(base, "index.ts")]) {
+          if (existsSync(candidate)) queue.push(candidate);
+        }
+      }
+    }
+    return seen;
+  }
+
+  test("no file of the closure is in the triage module, and none calls a model or records a model call", () => {
+    const closure = reachable(
+      ["modules/trust/history-job.ts", "modules/trust/history-queue.ts"].map((file) => resolve(srcRoot, file))
+    );
+    expect(closure.size).toBeGreaterThan(20);
+    expect([...closure].filter((file) => file.includes("/modules/triage/"))).toEqual([]);
+    // The model client and the call record live in platform/llm and audit; nothing else of the closure may use them.
+    const callers = [...closure]
+      .filter((file) => !file.includes("/platform/llm/") && !file.includes("/modules/audit/"))
+      .filter((file) => /createLlmClient\(|\.generate\(\{|recordLlmCall\(/.test(readFileSync(file, "utf8")));
+    expect(callers).toEqual([]);
   });
 });
 
