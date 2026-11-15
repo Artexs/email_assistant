@@ -1,10 +1,10 @@
 # F110 · Plan
 
-> **Status 2026-11-15 — planned.** Plan base: 9341d9f0. Nothing built.
+> **Status 2026-11-15 — planned.** Plan base: 17b2a369, refreshed 2026-11-15 ([plan-refresh-1.md](plan-refresh-1.md)). Nothing built.
 
 ## Input
 
-Owner (PD-030, 2026-11-13): "we can't rely on users to confirm any values there, whether this is 30 or 10 or even 1 … system should also work properly based on the global assumptions … those 10 corrections or checks are fine but they should be optional or suggested but definitely not mandatory." Owner (E4 discovery): "The rest is fine. Use the default values." Sources: epic E04 page and discovery notes §3, ADR 0028, ADR 0022. Names: [interfaces.md](interfaces.md). Defaults: [questions.md](questions.md).
+Owner (PD-030, 2026-11-13): "we can't rely on users to confirm any values there … system should also work properly based on the global assumptions … they should be optional or suggested but definitely not mandatory." Owner (E4 discovery): "Use the default values." Sources: epic E04, ADR 0028, ADR 0022. Names: [interfaces.md](interfaces.md). Defaults: [questions.md](questions.md).
 
 ### Product (do not reopen)
 
@@ -38,17 +38,17 @@ Owner (PD-030, 2026-11-13): "we can't rely on users to confirm any values there,
 - **D16** `trust_report_ready` after a mailbox's first `done` or `no_result` check. `trust` sits in layer 5; `reports` gets trust data by injection.
 - **D17** One-click needs both RFC 8058 headers, `https` and a trusted `dkim=pass` for the From domain. POST: public pinned address, no redirects, 10 s. Intent row first; audit holds the domain.
 
-## Facts checked (2026-11-15, 9341d9f0)
+## Facts checked (2026-11-15, 17b2a369)
 
-- **F1** One gate file, provisional: `info` go at 0.95, others no-go. The Dockerfile copies `evals/cases` only.
+- **F1** Running classifier v2 has one provisional gate file: `info` go at 0.95. The Dockerfile copies `evals/cases` only.
 - **F2** Only the CLI calls `backfillMailbox`; backfilled mail is `pending`. **F3** `outbox.channel` exists; `isOwnActionId` matches drafts and sends only.
-- **F4** `categoryAuto` gates `move` and `mark_read`. **F5** The urgency command exists; no card. **F6** F111 stage 03 and F102 01–08 landed. **F7** `categoryPolicySchema` is non-strict (drops unknown keys). **F8** Setting `auto` off expires `ready` moves (`policy_changed`).
+- **F4** `categoryAuto` gates `move` and `mark_read`. **F5** The urgency command exists; no card. **F6** F111 03 and F102 01–08 landed. **F7** `categoryPolicySchema` is non-strict (drops unknown keys). **F8** Setting `auto` off expires `ready` moves (`policy_changed`).
 
 ## Not verified
 
-- **N1** `refreshFlags` covers `skipped` history mail: stage 06 tests it.
-- **N2** Interia sets `\Answered`: stage 07 logs counts.
-- **N3** Bun `node:https` honours a custom `lookup`: stage 24 probes first.
+- **N1** `refreshFlags` covers `skipped` history mail (stage 06 test).
+- **N2** Interia sets `\Answered` (stage 07 logs counts).
+- **N3** Bun `node:https` honours a custom `lookup` (stage 24 probe).
 
 ## Done when
 
@@ -56,10 +56,11 @@ The five lines of `ticket.md` § Acceptance, and each Proof prints `PROOF_OK`.
 
 ## Rules for every stage
 
-- Format only your files. Commit by explicit path after `git diff --staged`.
+- Format only your files. Commit by explicit path.
 - No mail text, subject, address, URL or token in logs, errors or test names.
 - Page keys in `en.ts`/`pl.ts`; notice texts in `packages/core/src/texts/`.
-- A new `/api` route gets `apiDoc` in the same commit. A new table or column joins the F106 maps.
+- A new `/api` route gets `apiDoc` in the same commit. A new table or column joins the F106 maps. A migration passes `bun run db:check-migrations`.
+- Logs are events; new fields go in `platform/log-fields.ts`. CLI output uses `createCliOutput`.
 - Fixed clocks; quiet-hour tests cover a DST day in `Europe/Warsaw`.
 - A gap or deviation is a question in the final message.
 
@@ -73,7 +74,7 @@ Web stages (13, 14, 15, 18, 21, 23) add before `echo`: `&& bun run web:build > /
 
 ## Owner checkpoints and steps (not a stop)
 
-- **C1** After 09: a review job over 03–09.
+- **C1** After 09: review job over 03–09.
 - **U1** After 03 and 22 land: `bun run db:migrate` on the shared dev DB.
 - **U2** After 26: `trust_ladder` on for the pilot org; 10-minute phone test.
 
@@ -112,19 +113,20 @@ Web stages (13, 14, 15, 18, 21, 23) add before `echo`: `&& bun run web:build > /
 
 ## How to run (coordinator)
 
-- Worker `claude-sonnet-5-5` with the prepare script; ticket in `active/` first. Workers read `CLAUDE.md`, the styleguide, `interfaces.md` and their stage.
+- Worker `claude-sonnet-5-5` with the prepare script; ticket in `active/` first. Workers read `CLAUDE.md`, styleguide, `interfaces.md`, stage.
 - Lanes after 01: {02}, {03→10→05→06→07}, {16→17}, {21}; then by "Needs". Never build 03 or 22 next to another migration.
-- `spec/build.md` land check; drop job DBs. Stage 26: the coordinator. 22–24 can be cut.
+- `spec/build.md` land check; drop job DBs. Stage 26: coordinator. 22–24 are cuttable.
 
 ## Planning progress
 
-- Scouts: 4 ([scouts.md](scouts.md)).
-- [x] Stages 01–26 [written]; review 1 fixes applied.
+- Scouts: 4 ([scouts.md](scouts.md)); refresh 1: none.
+- `wc -w` after refresh 1: plan 1499; stages 04 682, 05 644, 06 697, 08 698, 16 583, 18 580, 20 500, 26 684.
+- [x] Stages 01–26 written; reviews 1 and 2 fixed.
 
 ## Cold review
 
-`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 5 blocking, 10 test gaps, 16 notes; all fixed, none rejected. Stage 19 split into 19 and 20 (N16).
+`claude-opus-5-5` (`[risky]` stages). Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 5 blocking, 26 notes; all fixed. Review 2 ([plan-review-2.md](plan-review-2.md)): FAIL, 1 blocking, 8 notes; all fixed.
 
 ## Log
 
-- 2026-11-15: planned; review 1 fixed. `wc -w`: plan.md 1,494; stages 360–691; interfaces.md 757.
+- 2026-11-15: planned; refresh 1 (→ 17b2a369, [plan-refresh-1.md](plan-refresh-1.md)).

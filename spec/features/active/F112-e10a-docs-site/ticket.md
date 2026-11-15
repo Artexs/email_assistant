@@ -38,9 +38,10 @@ A stranger, a new user and the operator can read the product's docs on a public 
 
 ## Sequenced
 
-- Plan after: none (F102 and F114 interfaces are not used: plan P3, D12).
+- Plan after: none (F102 is not used: plan P3; F114's `CHANGELOG.md` and release checklist have landed: D12).
 - Build after: F095 (E1) and F101 (Astro 7) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 18).
 - Gate: —. Stage 16 waits for owner step O1.
+- Refresh: plan base 17b2a369 (refresh 1, 2026-11-15, [plan-refresh-1.md](plan-refresh-1.md)); stage 01 landed. Stage 13 uses F114's landed `CHANGELOG.md` and `docs/release-checklist.md`.
 
 ## Notes
 
