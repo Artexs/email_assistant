@@ -16,6 +16,7 @@ export {
   type DelegateVia,
   type UpdateDelegateResult,
 } from "./service";
+export { remindNow, type RemindDeps, type RemindNowResult } from "./remind";
 export { delegateRoutes, delegationRoutes, type DelegateRouteDeps, type DelegationRouteDeps } from "./routes";
 export { decodeDelegationCursor, encodeDelegationCursor, listDelegationItems } from "./list";
 export {
@@ -54,6 +55,7 @@ export type {
 } from "./repo";
 export {
   CHASER_LOCAL_TIME,
+  buildReminderDraft,
   CHASER_SET_LIMIT,
   createChaserJob,
   MAX_REMINDERS,

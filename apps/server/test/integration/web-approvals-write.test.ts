@@ -122,7 +122,7 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     const delegationId = await db.transaction().execute((trx) =>
       insertDelegation(trx, s.ctx, {
         mailboxId: s.mailboxId,
-        emailId: row.email_id,
+        emailId: row.email_id as string,
         delegateId: anna,
         draftActionId: row.depends_on_action_id as string,
         sendActionId: id,

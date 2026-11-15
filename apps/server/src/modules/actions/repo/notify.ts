@@ -2,6 +2,7 @@ import type { ActionType } from "@ea/core";
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
+import { emailIdOf } from "../anchor";
 
 import { sendBase, toSendRow, type SendRow } from "./sends";
 import { actionTypeSchema, type DbOrTrx } from "./shared";
@@ -37,6 +38,7 @@ export async function listFailedUnnotified(
     .select([
       "actions.id",
       "actions.email_id",
+      "actions.loop_id",
       "actions.type",
       "actions.reverses_action_id",
       "actions.status_reason",
@@ -52,6 +54,8 @@ export async function listFailedUnnotified(
     ])
     .where("actions.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
+    // loop rows: open loops stage 10/11
+    .where("actions.email_id", "is not", null)
     .where("actions.status", "=", "failed")
     .where("actions.notified_at", "is", null)
     .where((eb) =>
@@ -69,7 +73,7 @@ export async function listFailedUnnotified(
     .execute();
   return rows.map((row) => ({
     id: row.id,
-    email_id: row.email_id,
+    email_id: emailIdOf(row),
     type: actionTypeSchema.parse(row.type),
     reverse: row.reverses_action_id !== null,
     status_reason: row.status_reason,
@@ -219,7 +223,9 @@ export async function listSendLimitHolds(db: DbOrTrx, ctx: TenantContext, now: D
       select e.mailbox_id, actions.id, actions.next_attempt_at, actions.last_error
       from actions
       join emails e on e.id = actions.email_id and e.org_id = actions.org_id
+      -- loop rows: open loops stage 10/11
       where actions.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId}
+        and actions.email_id is not null
         and actions.type = 'send' and actions.status = 'approved'
         and actions.last_error like 'send_limit:%'
         and actions.next_attempt_at > ${now}

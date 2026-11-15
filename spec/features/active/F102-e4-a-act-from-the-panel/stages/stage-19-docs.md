@@ -47,3 +47,7 @@ mkdir -p /tmp/f102-s19 && bunx prettier --check <the nine files> > /tmp/f102-s19
 ## Carry-over from stage 14 review
 
 - Document the three `/api/delegates` routes and the `delegation_pages` flag in `docs/capabilities/delegation.md` and `tenancy-and-plans.md`. `delegate.changed` audit data holds `fields` as a comma string (flat audit data); the CLI enable/disable audit row now has `fields:"active"` and `via:"cli"` (see review-14.md).
+
+## Carry-over from stage 16 review
+
+- Add the audit event `delegation.remind_requested` to the audit lists in `docs/capabilities/delegation.md`, the `audit_log` row in `docs/architecture.md` and `docs/modules.md`; the chaser text (rule 8, "3 days apart") needs the remind-now exception: remind-now has no gap rule and sets `last_reminder_at` at planning, as the chaser does (review-16.md N4, N7).

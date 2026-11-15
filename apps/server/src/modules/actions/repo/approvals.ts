@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
+import { emailIdOf } from "../anchor";
 import { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS } from "../constants";
 
 import { sendFilterExpr, type SendClaimFilter } from "./filters";
@@ -41,7 +42,9 @@ export async function listExpiredApprovals(
       join emails e on e.id = a.email_id and e.org_id = a.org_id
       join organizations o on o.id = a.org_id
       left join actions d on d.id = a.depends_on_action_id and d.org_id = a.org_id
+      -- loop rows: open loops stage 10/11
       where a.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId} and e.mailbox_id = ${mailboxId}
+        and a.email_id is not null
         and a.type = 'send' and a.status in ('awaiting_approval', 'approved')
     ) x
     where reason is not null
@@ -63,7 +66,9 @@ export async function listUnseenApprovalSends(
     select a.id, e.mailbox_id
     from actions a
     join emails e on e.id = a.email_id and e.org_id = a.org_id
+    -- loop rows: open loops stage 10/11
     where a.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId}
+      and a.email_id is not null
       and a.type = 'send' and a.status = 'awaiting_approval'
       and a.notified_at is not null and a.notified_at < ${opts.before}
       and not exists (
@@ -86,10 +91,12 @@ export async function listAwaitingSendIds(
   const { emailId } = opts;
   const rows = await trx
     .selectFrom("actions")
-    .select(["id", "email_id"])
+    .select(["id", "email_id", "loop_id"])
     .where("org_id", "=", ctx.orgId)
     .where("type", "=", "send")
     .where("status", "=", "awaiting_approval")
+    // loop rows: open loops stage 10/11
+    .where("email_id", "is not", null)
     .where("email_id", "in", (eb) =>
       eb.selectFrom("emails").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
     )
@@ -97,7 +104,7 @@ export async function listAwaitingSendIds(
     .orderBy("created_at")
     .orderBy("id")
     .execute();
-  return rows.map((row) => ({ id: row.id, emailId: row.email_id }));
+  return rows.map((row) => ({ id: row.id, emailId: emailIdOf(row) }));
 }
 // For /status (D16): the whole organization, or one mailbox. `approvedHeld` is the approved sends that `send` does
 // not admit; `approvedSending` is the approved sends that it admits.
@@ -116,6 +123,8 @@ export async function countApprovals(
       sql<string>`count(*) filter (where actions.status = 'approved' and ${admitted})`.as("sending"),
     ])
     .where("actions.org_id", "=", ctx.orgId)
+    // loop rows: open loops stage 10/11
+    .where("actions.email_id", "is not", null)
     .where("actions.type", "=", "send");
   if (opts.mailboxId !== undefined) {
     const mailboxId = opts.mailboxId;

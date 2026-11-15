@@ -518,6 +518,13 @@ const migration = readFileSync(
 );
 const up = migration.split("-- migrate:down")[0] ?? "";
 const down = migration.split("-- migrate:down")[1] ?? "";
+// The later migration `action_loop_anchor` hangs keys on `open_loops`: it goes down first and comes up last.
+const anchorMigration = readFileSync(
+  join(import.meta.dir, "../../../../db/migrations/20261115170001_action_loop_anchor.sql"),
+  "utf8"
+);
+const anchorUp = anchorMigration.split("-- migrate:down")[0] ?? "";
+const anchorDown = anchorMigration.split("-- migrate:down")[1] ?? "";
 
 async function schemaObjects(trx: Trx): Promise<{ tables: number; columns: number; indexes: number }> {
   const { rows } = await sql<{ tables: number; columns: number; indexes: number }>`
@@ -568,11 +575,13 @@ describe("migration: Down and Up", () => {
         const before = await oldRows();
         expect(before).toEqual({ delegations: 1, emails: 1, sent_emails: 1, mailbox_settings: 1 });
 
+        await sql.raw(anchorDown).execute(trx);
         await sql.raw(down).execute(trx);
         expect(await schemaObjects(trx)).toEqual({ tables: 0, columns: 0, indexes: 0 });
         expect(await oldRows()).toEqual(before);
 
         await sql.raw(up).execute(trx);
+        await sql.raw(anchorUp).execute(trx);
         expect(await schemaObjects(trx)).toEqual({ tables: 2, columns: 2, indexes: 1 });
         expect(await oldRows()).toEqual(before);
         const settings = await trx

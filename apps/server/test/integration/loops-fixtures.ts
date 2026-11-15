@@ -93,3 +93,68 @@ export async function insertAnalysisRow(
     })
     .execute();
 }
+
+// `applied` and `undone` rows need `applied_at`.
+function appliedAtOf(status: string | undefined, createdAt: Date): Date | null {
+  return status === "applied" || status === "undone" ? createdAt : null;
+}
+
+// A hand-inserted follow-up pair anchored on a loop (`loop_id` set, `email_id` null): the `create_draft` row and the
+// `send` row that depends on it. No code makes such rows yet, so the readers that must not see them are tested with these.
+// The payloads are placeholders: no reader parses them. `send` replaces single columns of the send row. Returns both ids.
+export async function insertLoopActionPair(
+  trx: Transaction<DB>,
+  ctx: { orgId: string },
+  loopId: string,
+  opts: {
+    draftStatus?: string;
+    sendStatus?: string;
+    createdAt?: Date;
+    notifiedAt?: Date | null;
+    payloadMarker?: string;
+    setId?: string;
+    send?: Partial<Insertable<DB["actions"]>>;
+  } = {}
+): Promise<{ draftId: string; sendId: string }> {
+  const createdAt = opts.createdAt ?? new Date();
+  const payload = JSON.stringify({ kind: "follow_up", marker: opts.payloadMarker ?? "placeholder" });
+  const sendPayload = JSON.stringify({
+    kind: "follow_up",
+    marker: opts.payloadMarker ?? "placeholder",
+    ...(opts.setId === undefined ? {} : { set_id: opts.setId }),
+  });
+  const draft = await trx
+    .insertInto("actions")
+    .values({
+      org_id: ctx.orgId,
+      email_id: null,
+      loop_id: loopId,
+      type: "create_draft",
+      status: opts.draftStatus ?? "ready",
+      payload,
+      idempotency_key: `test:${randomUUID()}`,
+      created_at: createdAt,
+      applied_at: appliedAtOf(opts.draftStatus, createdAt),
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  const send = await trx
+    .insertInto("actions")
+    .values({
+      org_id: ctx.orgId,
+      email_id: null,
+      loop_id: loopId,
+      type: "send",
+      status: opts.sendStatus ?? "awaiting_approval",
+      payload: sendPayload,
+      idempotency_key: `test:${randomUUID()}`,
+      depends_on_action_id: draft.id,
+      notified_at: opts.notifiedAt ?? null,
+      created_at: createdAt,
+      applied_at: appliedAtOf(opts.sendStatus, createdAt),
+      ...opts.send,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return { draftId: draft.id, sendId: send.id };
+}

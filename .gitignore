@@ -31,6 +31,9 @@ pnpm-debug.log*
 # backup settings (VPS only)
 deploy/backup.env
 
+# restore drill settings (secrets; made by `deploy/restore.sh --target drill --init-env`)
+deploy/drill.env
+
 # status of the last backup run (written by deploy/backup.sh, read by the server check)
 deploy/backup-status/status.json
 deploy/backup-status/status.json.tmp

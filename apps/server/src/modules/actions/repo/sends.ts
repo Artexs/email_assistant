@@ -2,6 +2,7 @@ import type { RecentSend } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
+import { emailIdOf } from "../anchor";
 
 import type { DbOrTrx } from "./shared";
 
@@ -35,6 +36,7 @@ export interface SendRow {
     body_text: string | null;
   };
 }
+// loop rows: open loops stage 10/11 (no mail: the filter keeps them out of every send reader)
 export function sendBase(db: DbOrTrx, ctx: TenantContext) {
   return db
     .selectFrom("actions")
@@ -44,6 +46,7 @@ export function sendBase(db: DbOrTrx, ctx: TenantContext) {
     .select([
       "actions.id",
       "actions.email_id",
+      "actions.loop_id",
       "actions.status",
       "actions.status_reason",
       "actions.payload",
@@ -71,6 +74,7 @@ export function sendBase(db: DbOrTrx, ctx: TenantContext) {
     ])
     .where("actions.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
+    .where("actions.email_id", "is not", null)
     .where("actions.type", "=", "send");
 }
 function sendQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
@@ -90,7 +94,7 @@ export function toSendRow(row: SendQueryRow): SendRow {
   } = row;
   return {
     id: row.id,
-    email_id: row.email_id,
+    email_id: emailIdOf(row),
     status: row.status,
     status_reason: row.status_reason,
     payload: row.payload as Record<string, unknown>,
@@ -296,6 +300,7 @@ export async function lockMailboxSends(db: DbOrTrx, ctx: TenantContext, mailboxI
 }
 
 // PD-044 (D4): the sends of one mailbox that may have reached people and started after `since`.
+// loop rows: open loops stage 10/11 (a loop send must count in the send limits of its mailbox then)
 // An `approved` row with an old stamp (put back before a retry), `rejected`, `expired` and refused sends do not count.
 // `to` holds the strings of `payload.to`; retention may have cleared the payload, then `to` is [].
 export async function listRecentSends(
@@ -313,6 +318,7 @@ export async function listRecentSends(
     .where("actions.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
     .where("emails.mailbox_id", "=", mailboxId)
+    .where("actions.email_id", "is not", null)
     .where("actions.type", "=", "send")
     .where("actions.send_started_at", ">", since)
     .where((eb) =>
