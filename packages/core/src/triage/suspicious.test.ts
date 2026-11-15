@@ -56,6 +56,16 @@ describe("lookalike_domain", () => {
     ]);
   });
 
+  test("a short label is caught by the skeleton only: Cyrillic letter, and 1 for l", () => {
+    const hostname = new URL("http://bаnk.test").hostname; // Cyrillic "а", 4-letter label
+    expect(assessSuspicious(input({ fromAddress: `a@${hostname}`, knownDomains: ["bank.test"] }))).toEqual([
+      "lookalike_domain",
+    ]);
+    expect(assessSuspicious(input({ fromAddress: "a@1ogo.test", knownDomains: ["logo.test"] }))).toEqual([
+      "lookalike_domain",
+    ]);
+  });
+
   test("the known domain itself, and its subdomain, are not look-alikes", () => {
     const known = { knownDomains: ["paliwa-flota.test"] };
     expect(assessSuspicious(input({ ...known, fromAddress: "a@paliwa-flota.test" }))).toEqual([]);
