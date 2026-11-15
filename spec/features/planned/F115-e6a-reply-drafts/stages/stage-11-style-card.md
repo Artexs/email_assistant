@@ -6,7 +6,7 @@ The mailbox settings page gets the switch "Reply drafts" and a style card: displ
 
 ## Step 1 — The switch row
 
-- **Goal:** the mailbox settings card shows "Reply drafts" next to the other switches, owner editable, member read-only, with one help line: "Drafts a reply for mail that needs your answer. Nothing is sent without your tap." Hidden while the org flag `reply_drafts` is off (`/api/me` flags).
+- **Goal:** the mailbox settings card shows "Reply drafts" next to the other switches, owner editable, member read-only, with one help line: "Drafts a reply for mail that needs your answer. Nothing is sent without your tap." Hidden while the org flag `reply_drafts` is off (`/api/me` flags). For an OAuth mailbox (D19) the toggle shows disabled with "Reply drafts work only for mailboxes connected with a password for now." (en, pl); the style card stays editable.
 
 ## Step 2 — The style card
 

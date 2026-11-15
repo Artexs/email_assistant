@@ -31,7 +31,7 @@ Mail that needs a reply gets a checked draft in its thread, in the mailbox's sty
 
 ## Slices
 
-One worker job per stage, in order 01 → 18 (`plan.md` § Stages and § How to run). Stage 03 is the only migration. Gate G1 (second pass) after stage 02. Owner checkpoints C1 (after 09) and C2 (after 15) and owner step O1 (stage 18) do not stop the build.
+One worker job per stage, in order 01 → 03 → 03b → 04 … 18 (`plan.md` § Stages and § How to run). Stage 03 is the only migration. Gate G1 (second pass) after stage 02. Owner checkpoints C1 (after 09) and C2 (after 15) and owner step O1 (stage 18) do not stop the build.
 
 ## Sequenced
 

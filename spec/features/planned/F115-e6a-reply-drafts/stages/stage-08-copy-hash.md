@@ -6,8 +6,8 @@ PD-076 for the draft, send and reverse paths of `actions`. Merge `master` first 
 
 ## Step 1 — Baseline at APPEND
 
-- **Goal:** after `applyDraft` APPENDs the draft (or finds it by `locateByActionId`), it reads the copy once (`fetchMetaIn` for Subject, To, Cc; `fetchContent` for the text and the attachment capture; without UIDPLUS, locate first for the uid) and stores `provider_result.copy_hash` = `draftCopyHash(copy)` (D9, `interfaces.md`). The text is never stored or logged.
-- **Decisions:** a read error after a good APPEND keeps the draft `applied` without `copy_hash` and logs one event `draft_copy_unhashed` (`action_id`, `error_code`); the send then has "no baseline". Rejected: fail the draft (the copy exists; a retry would APPEND twice). A reply draft without a baseline does not send: `draft_missing`, the copy stays (replies always check).
+- **Goal:** after `applyDraft` APPENDs the draft (or finds it by `locateByActionId`), it reads the copy once (`fetchMetaIn` for Subject, To, Cc; `fetchContent` for the text and the attachment capture; without UIDPLUS, locate first for the uid) and stores `provider_result.copy_hash` = `draftCopyHash(copy)` (D9, `interfaces.md`). Text never stored.
+- **Decisions:** a read error after a good APPEND keeps the draft `applied` without `copy_hash`, event `draft_copy_unhashed` (`action_id`, `error_code`); the send has "no baseline". Rejected: fail the draft (a retry would APPEND twice). A reply draft without a baseline does not send: `draft_missing`, the copy stays (replies always check).
 - **Test (integration, GreenMail):**
   1. A delegation draft → `applied` with a 64-hex `copy_hash`.
   2. A crash after APPEND → the next claim locates, hashes, `applied`; one copy in Drafts.
@@ -28,6 +28,7 @@ PD-076 for the draft, send and reverse paths of `actions`. Merge `master` first 
   5. A delegation draft without `copy_hash` → sent as today. A reply without it → `draft_missing`.
   6. Flag off: a delegation with an edited copy → sent as today; a reply with an edited copy → `draft_changed`.
   7. The IMAP read times out once → the send waits, then sends on the next run.
+  8. A `follow_up` with an edited copy → `draft_changed`, zero SMTP calls, the loop row unchanged, no outbox CHECK error. A loop send has no mail: no answered check (stage 09) for it.
 
 ## Step 3 — Delete only unchanged copies
 
@@ -39,8 +40,7 @@ PD-076 for the draft, send and reverse paths of `actions`. Merge `master` first 
 
 ## Step 4 — Texts and the probe CLI
 
-- **Goal:** the approval card line "Do not send the draft from your mail client." becomes "Edit here, or edit and send in your mail client." (en, pl); the result text for `draft_changed`: "You edited this draft in your mail client. Send it from there." CLI `bun run reply:check-copy --action-id <draft id>`: locates and hashes the copy, prints `same`, `changed`, `missing` or `no_baseline`; it never writes (probe P1, stage 18).
+- **Goal:** the approval card line "Do not send the draft from your mail client." becomes "Edit here, or edit and send in your mail client." (en, pl); the result text for `draft_changed`: "You edited this draft in your mail client. Send it from there." CLI `bun run reply:check-copy --action-id <draft id>`: hashes the copy, prints `same`, `changed`, `missing` or `no_baseline`; never writes (probe P1).
 - **Test:** unit tests of both texts in pl and en; an integration test of the CLI service function on GreenMail (`same`, then `changed` after an edit).
-- **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the answered check (09).

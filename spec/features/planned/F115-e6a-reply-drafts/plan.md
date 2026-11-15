@@ -1,8 +1,8 @@
 # F115 · Reply drafts: plan
 
-> **Status 2026-11-15 — planned.** Plan base: 17b2a369, refreshed 2026-11-15. 18 stages; nothing built.
+> **Status 2026-11-15 — planned.** Plan base: 17b2a369, refreshed 2026-11-15. 19 stages (03b split in refresh 1); nothing built.
 
-Names: [interfaces.md](interfaces.md). Defaults: [questions.md](questions.md). Sources: epic E06, notes §3, ADR 0033.
+Names: [interfaces.md](interfaces.md). Defaults: [questions.md](questions.md). Sources: epic E06, ADR 0033.
 
 ## Input
 
@@ -32,21 +32,20 @@ Owner: "Okay, go with defaults." (PD-070–084). Job: "Owner order: owner steps 
 - **D16 Consent.** Stage 12 bumps `TELEGRAM_CONSENT_VERSION` and the texts (AI-written replies and other recipients' addresses are new). A user with an older consent gets counts and a panel link only, and can re-consent in the panel.
 - **D17 Logs.** F103 event lines (`reply_drafted`, `reply_draft_failed`, `reply_closed`, `reply_superseded`, `reply_send_checked`): ids, codes, counts.
 - **D18 Privacy.** New text columns and payload `cc` enter the F106 maps in the stage that adds them; retention clears instruction and sample text.
-- **D19 Mailbox kind** (default). Password IMAP mailboxes only (`oauth_provider` null) until E9; stages 10, 16 refuse others. Rejected: no guard (E9 out of scope).
+- **D19 Mailbox kind** (default). Password IMAP mailboxes only until E9 (F117); others get `oauth_mailbox` (stages 10, 11, 16). Rejected: no guard.
 
-## Facts checked (F3, F7–F11 at 17b2a369)
+## Facts checked (F3, F5, F7–F10 at 17b2a369)
 
-- **F1** `planActions` returns `[]` for `needs_reply`. `suspiciousReasonsOf` answers "absent" for untriaged and clean mail.
+- **F1** `planActions` gives `[]` for `needs_reply`; `suspiciousReasonsOf` answers "absent" for untriaged and clean mail.
 - **F2** `listUserAnswers` reads direct replies only; `syncSentHeaders` takes a read-only provider and needs `sent_sync` and the switch.
 - **F3** `fetchContent` gives `text` and the attachment capture; `fetchMetaIn` gives To, Cc, Subject. The envelope, limits and `self` filter cover `to ∪ cc` for every kind (`sendRecipients`, F116 stage 10); the send schema allows Cc only for `follow_up`.
 - **F4** `recordLlmCall` writes `endpoint` (8d230f2d). Role `drafter` exists. Judge rubric `reply` exists; `judgeCaseDraft` always grades `delegation`.
-- **F5** `emails` has `to_addresses`, `cc_addresses`, `folder`, `thread_key`; no thread index. `status_reason` is free text.
+- **F5** `emails` has `to_addresses`, `cc_addresses`, `folder`, `thread_key`; thread index `emails_thread_received_idx` (F116). `status_reason` is free text.
 - **F6** The consent text names drafts, not other recipients.
 - **F7** A `follow_up` (F116) send has `loop_id`, no `email_id`.
 - **F8** Log fields are an allow-list (`platform/log-fields.ts`); `request_id` is the HTTP context.
 - **F9** Deploy = `deploy/release.sh`; one-offs in the `cli` service; CI runs `db:check-migrations`.
-- **F10** `TELEGRAM_CONSENT_VERSION` = `2026-11-15`; the link route checks equality.
-- **F11** OAuth mailboxes exist (F117).
+- **F10** Consent version `2026-11-15`; the link route checks equality.
 
 ## Not verified
 
@@ -89,10 +88,11 @@ Web stages 11 and 15 extend it (their stage files).
 
 - 01 [Drafter core](stages/stage-01-drafter-core.md) `[risky]`
 - 02 [Prototype on the holdout](stages/stage-02-prototype-run.md) `[risky]`; G1 after
-- 03 [Migration and repositories](stages/stage-03-migration.md) `[risky]`
-- 04 [Reply kind and message](stages/stage-04-reply-kind.md); needs 03
+- 03 [Migration, notice kinds, privacy maps](stages/stage-03-migration.md) `[risky]`
+- 03b [Repositories, retention, flag, switch](stages/stage-03b-repos-retention-flags.md); needs 03
+- 04 [Reply kind and message](stages/stage-04-reply-kind.md); needs 03b
 - 05 [Lifetime and approval rules](stages/stage-05-lifetime.md); needs 04
-- 06 [Eligibility facts](stages/stage-06-eligibility.md); needs 03
+- 06 [Eligibility facts](stages/stage-06-eligibility.md); needs 03b
 - 07 [Drafter job](stages/stage-07-drafter-job.md) `[risky]`; needs 01, 05, 06
 - 08 [Copy hash for every kind](stages/stage-08-copy-hash.md) `[risky]`; needs 05; probe P1 after
 - 09 [Answered and sweep](stages/stage-09-answered-sweep.md) `[risky]`; needs 07, 08; C1 after
@@ -109,16 +109,15 @@ Web stages 11 and 15 extend it (their stage files).
 ## How to run (coordinator)
 
 - Worker `claude-sonnet-5-5`, `--prepare 'bash scripts/limen-prepare.sh'`; ticket in `active/`; drift check first.
-- Parallel after 03: {04→05→08}, {06}; else by "needs". `spec/build.md` land check; drop the job DB.
-- Advisory: F116 stages 11–25 touch `actions/` and `channels/`; merge `master` first.
+- Parallel after 03b: {04→05→08}, {06}; else by "needs". Land check; drop the job DB.
+- F116 stages 11–25 touch `actions/`, `channels/`: merge `master` first.
 
 ## Planning progress
 
-- Scouts: 4 (first planner job), all done: `scouts.md`.
-- [written] ticket, plan, interfaces, questions, stages 01–18, review fixes.
-- Refresh 1: [plan-refresh-1.md](plan-refresh-1.md); no scouts.
+- Scouts: 4 (`scouts.md`). [written] all files, review fixes.
+- Refresh 1: [plan-refresh-1.md](plan-refresh-1.md); no scouts. [plan-review-2.md](plan-review-2.md): FAIL, all fixed. Words: plan 1500; stages ≤ 700 (03 694, 03b 330).
 
 ## Cold review
 
-`claude-opus-5-5` (`[risky]` stages). [plan-review-1.md](plan-review-1.md): FAIL; all findings fixed except N1 (rejected: the pre-send check covers it) and N10.
+Opus (`[risky]` stages). [plan-review-1.md](plan-review-1.md): FAIL; fixed except N1 (rejected) and N10.
 

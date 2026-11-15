@@ -40,7 +40,7 @@ The drift script sees only the 7 named paths. The plan names most code by functi
 - plan.md "Done when" now points to ticket § Acceptance (same checks, shorter) and § Log removed, to stay at 1,500 words.
 - stage 02 step 2: `--drafter` is a run mode with its own allowed-option set, as F116's `--extractor`; one more failing parse in the test. Why: `eval-args.ts` changed (extractor and escalation modes); "valid only with `--sim`" no longer describes it.
 - stage 03 step 1: no index (F116 `20261115160001_open_loops.sql` owns `emails_thread_received_idx`; carry-over folded in, Down test checks it stays); the outbox CHECK lists come from the newest replace at `HEAD` (`20261115150001_outbox_sent_missing.sql`), and `outbox_email_kind_check` (mail or loop anchor, `20261115170001_action_loop_anchor.sql`) gets the two kinds that need `email_id`; `db:check-migrations` passes with no contract line (new test 5). Why: F116 stages 07 and 09, F114 stage 06.
-- stage 03 step 3: new item "rollback safety": `renderNotice` answers `{ ok: false }` for a kind without a renderer (today it throws: `noticeRenderers[kind].schema` is read outside the try). Why: F114 made rollback by `deploy/rollback.sh` the rule (code-patterns § Migrations: the previous release runs on the new schema), and a pending row of a new kind would throw in an older sender.
+- stage 03 step 3: a "rollback safety" item on `renderNotice` (withdrawn after review 2, B1: wrong function).
 - stage 04 step 1: reuse `sendRecipients` paths; open the send schema for `reply` (`to` 1, `cc` 0–10) and keep `follow_up` rules; the address map needs no `cc` entry (the payload is one json rule). Test 2 gains two schema cases. Why: F116 stage 10.
 - stage 05 step 3: `closeSend` also takes a loop-anchored `follow_up` send and leaves `closeSendOfClosedLoop` alone; new test 5. Why: F116 stage 09–10; stage 08 closes any kind.
 - stage 07: scan only password mailboxes (D19); log field `reply_request_id`. Why: F117; F103 allow-list.
@@ -62,8 +62,21 @@ Stage count, stage order and every earlier decision and owner default are unchan
 - F104: `syncSentHeaders(deps: SentSyncDeps{ provider: SentFolderReader, … }, ctx, mailboxId)` and `listUserAnswers(db, ctx, emailIds)` keep the shapes of F2.
 - F109: `suspiciousReasonsOf(db, ctx, emailIds) → Map` unchanged; `suspicionOf`, `replyFactsOf`, `mailboxProfileOf`, `replaceApproval`, `closeSend` do not exist yet (no landed ticket did a step of this plan).
 - F4: `judgeCaseDraft` still sends `kind: "delegation"`; gate files keep the `<role>-<prompt>-<model>-<endpoint>-<scenario>-v<n>` name.
-- `draftKinds`, `DRAFT_TEMPLATES` (no `NO_TEMPLATE` yet: stage 04 already asks), `buildOutgoingMessage` (now with `cc`), `quoteOriginal`, `startSendWithinLimits`, `locateByActionId`, `fetchMetaIn`, `fetchContent`, `fetchFlagsIn`, `removeDraft`, `applyDraft`, `applySend`, `renderApprovalRequest`, `cleanUserText`, `isNoreplyAddress`, `featureFlags`, `tool_switches`, `llmPrices`, `weekStatsSchema`, `reports/metrics.ts`, `SignatureCard`, `TRIAGE_LLM_SCOPE`, `LLM_DAILY_CAP`, `layers.json`, `graph:modules`, `job:run`, `web:build`, `test:e2e` exist.
+- `draftKinds`, `DRAFT_TEMPLATES` (no `NO_TEMPLATE` yet: stage 04 already asks), `buildOutgoingMessage` (now with `cc`), `quoteOriginal`, `startSendWithinLimits`, `locateByActionId`, `fetchMetaIn`, `fetchContent`, `fetchFlagsIn`, `removeDraft`, `applyDraft`, `applySend`, `renderApprovalRequest`, `cleanUserText`, `isNoreplyAddress`, `featureFlags`, `tool_switches`, `llmPrices`, `weekStatsSchema`, `reports/metrics.ts`, `SignatureCard`, `TRIAGE_LLM_SCOPE`, `LLM_DAILY_CAP`, `layers.json`, `graph:modules`, `web:build`, `test:e2e` exist.
 - Log fields `action_id`, `count`, `error_code`, `reason`, `status` are in the allow-list.
 - ForceReply and `reply_to_message` handling do not exist yet: stage 13 adds them, as planned.
 - The master CI lesson on Compose renderings: F115 adds no Compose file or Compose test.
 - F119 (company sign-in) and F113 (live lab) touch no name of this plan.
+
+## Review fixes (plan-review-2.md: FAIL, 1 blocking, 9 findings; coordinator decisions)
+
+- B1 → stage 03 step 2 (new): the three outbox kinds go into `noticeKinds`, `noticeViewSchemas`, `noticeRenderers` and `queuedBy` in the commit of the CHECK change, with minimal views and renderers that stages 12–13 fill; names `telegram-schema.test.ts` and both `registry.test.ts`. The `renderNotice` item is gone. The real rollback failure (`claimDueOutbox` parses `row.kind`; one unknown row fails the claim batch of all orgs) is named in stage 03 (note), stage 17 (README SQL: fail new-kind rows in `pending` and `sending`, end open `reply` actions for a release older than stage 04) and stage 18 (rollback line). questions.md 28 rewritten as `[important: production]`.
+- Finding 9 → split: stage 03 keeps the migration, the notice kinds and the privacy maps (the completeness tests read the DB columns, so the maps must land with the migration); new stage 03b holds the repositories, retention, flag and switch. Still one migration. Named `03b`, not a renumber: F116 cites F115 stages 04, 12 and 15. Stages 04 and 06 now need 03b.
+- Finding 1 → stage 12 step 3: F116 stage 17 rule (strictly greater, `.2` suffix), `REPLY_CONSENT_SINCE`, D16 "older" = `consentCovers` false; reuse F116's reader and route when on `master`; test new > previous.
+- Finding 2 → stage 07: `replies.drafter` in `jobNames` and the usage text, test in `job-run-args.test.ts`.
+- Finding 3 → plan.md F5: the thread index exists.
+- Finding 4 → stage 04: the drafted-recipient match covers `reply`; test 8 (send `cc` ≠ draft `cc` → `bad_payload`, no SMTP).
+- Finding 5 → stage 08 test 8: `follow_up` with an edited copy → `draft_changed`, no SMTP, loop row unchanged, no outbox CHECK error; no answered check for a loop send.
+- Finding 6 → `ReplyBlockReason` gains `oauth_mailbox` (interfaces.md); the guard is in `setToolSwitch` with a CLI test (stage 10); stage 16 answers that reason; stage 11 shows the toggle disabled for an OAuth mailbox. questions.md 29.
+- Finding 7 → stage 17 SQL (b) and stage 18 rollback line.
+- Finding 8 → stage 17 doc list adds `docs/code-patterns.md` § The consent version.
