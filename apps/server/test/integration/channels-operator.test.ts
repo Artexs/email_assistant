@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import type { Transaction } from "kysely";
+import { GrammyError, HttpError } from "grammy";
+import { sql, type Transaction } from "kysely";
 
 import { auditEvents, hasAuditKey, recordAudit } from "../../src/modules/audit";
 import { createOperatorNotices } from "../../src/modules/channels";
 import { setMailboxStatus } from "../../src/modules/mail/repo";
 import type { DB } from "../../src/platform/db";
+import { setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import { createOrgWithMailbox, insertDraftAndSend, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -21,14 +23,17 @@ const NOW = new Date("2026-11-12T10:00:00Z");
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-// `log.warn` and `log.error` both write to console.error: the tests match the text.
+// The log is JSON; `lines` holds every line of both console streams.
 let lines: string[] = [];
 let logSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
 
 beforeEach(() => {
+  setLogFormat("json");
   lines = [];
-  logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+  logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+    lines.push(args.join(" "));
+  });
   errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
     lines.push(args.join(" "));
   });
@@ -37,7 +42,52 @@ beforeEach(() => {
 afterEach(() => {
   logSpy.mockRestore();
   errorSpy.mockRestore();
+  setLogFormat("text");
+  setLogLevel("info");
 });
+
+const BASE_KEYS = ["time", "level", "module", "event", "msg"];
+// A fake bot token: it passes the value rule of the logger, so only a correct field list keeps it out of a line.
+const CANARY = "123456:MARKER-TOKEN";
+
+interface LoggedEvent {
+  level: string;
+  fields: Record<string, unknown>;
+}
+
+// The `channels` event lines of one name: the level and the fields after the base keys. A dropped field shows as
+// `dropped_fields`, so an exact match on `fields` also proves that every value passed the logger.
+function eventsOf(event: string): LoggedEvent[] {
+  return lines.flatMap((line) => {
+    const parsed = JSON.parse(line) as Record<string, unknown>;
+    if (parsed.module !== "channels" || parsed.event !== event) return [];
+    const fields = Object.fromEntries(Object.entries(parsed).filter(([key]) => !BASE_KEYS.includes(key)));
+    return [{ level: String(parsed.level), fields }];
+  });
+}
+
+function expectEvent(event: string, level: string, fields: Record<string, unknown>): void {
+  expect(eventsOf(event)).toEqual([{ level, fields }]);
+}
+
+function expectNoMarker(): void {
+  expect(lines.some((line) => line.includes("MARKER"))).toBe(false);
+}
+
+// A db whose `selectFrom`, `insertInto` or raw `sql` (`getExecutor`) throws an error that holds the canary in its message.
+function failingDb(trx: Transaction<DB>, method: string): Transaction<DB> {
+  return new Proxy(trx, {
+    get(target, property) {
+      if (property === method) {
+        return () => {
+          throw new Error(CANARY);
+        };
+      }
+      const value: unknown = Reflect.get(target, property);
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+    },
+  });
+}
 
 async function setTrial(trx: Transaction<DB>, orgId: string, endsAt: Date): Promise<void> {
   await trx
@@ -177,7 +227,7 @@ describe("operator notices: hourly run", () => {
       await notices.run();
       expect(mine(texts, org.orgId)).toEqual([]);
       expect(await noticeRows(trx, org.orgId)).toEqual([]);
-      expect(lines.filter((line) => line.includes("operator notice trial_ending failed: Error"))).toHaveLength(1);
+      expectEvent("operator_notice_send_failed", "error", { kind: "trial_ending", error: "Error" });
 
       await notices.run();
       expect(mine(texts, org.orgId)).toHaveLength(1);
@@ -190,9 +240,7 @@ describe("operator notices: hourly run", () => {
       const org = await createOrgWithMailbox(trx);
       await setTrial(trx, org.orgId, new Date(NOW.getTime() + DAY));
       await createOperatorNotices({ db: trx, now: () => NOW, send: null }).run();
-      expect(
-        lines.filter((line) => line.includes(`operator notice trial_ending: Trial of org ${org.orgId}`))
-      ).toHaveLength(1);
+      expectEvent("operator_notice_unsent", "warn", { kind: "trial_ending" });
       expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
     });
   });
@@ -318,9 +366,8 @@ describe("operator notices: sendLimitReached", () => {
       notices.sendLimitReached(ctx, hit);
       await notices.idle();
       expect(await noticeRows(trx, org.orgId)).toEqual([]);
-      const errorLines = lines.filter((line) => line.includes("operator notice send_limit failed"));
-      expect(errorLines).toHaveLength(1);
-      expect(errorLines[0]).not.toContain("secret");
+      expectEvent("operator_notice_send_failed", "error", { kind: "send_limit", error: "Error" });
+      expect(lines.some((line) => line.includes("secret"))).toBe(false);
 
       fail = false;
       await notices.run();
@@ -409,7 +456,7 @@ describe("operator notices: authMailFailed", () => {
       const notices = createOperatorNotices({ db: trx, now: () => NOW, send: null });
       notices.authMailFailed({ orgId: org.orgId }, userId, "invite", "EAUTH", day);
       await notices.idle();
-      expect(lines.filter((line) => line.startsWith("[channels] operator notice auth_mail_failed: "))).toHaveLength(1);
+      expectEvent("operator_notice_unsent", "warn", { kind: "auth_mail_failed" });
       expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
     });
   });
@@ -450,5 +497,155 @@ test("hasAuditKey filters by organization and key", async () => {
     expect(await hasAuditKey(trx, { orgId: a.orgId }, auditEvents.operatorNotice, "k1")).toBe(true);
     expect(await hasAuditKey(trx, { orgId: a.orgId }, auditEvents.operatorNotice, "k2")).toBe(false);
     expect(await hasAuditKey(trx, { orgId: b.orgId }, auditEvents.operatorNotice, "k1")).toBe(false);
+  });
+});
+
+describe("operator notices: log events", () => {
+  test("no operator chat: the unsent event holds the kind, never the notice text", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send: null });
+      notices.authMailFailed({ orgId: org.orgId }, randomUUID(), "reset", "MARKER-NOTICE-TEXT", NOW);
+      await notices.idle();
+      expectEvent("operator_notice_unsent", "warn", { kind: "auth_mail_failed" });
+      expectNoMarker();
+      // The audit row keeps the text of the notice: the code stays in its key.
+      expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
+    });
+  });
+
+  const telegramErrors: [string, () => unknown, Record<string, unknown>][] = [
+    [
+      "a GrammyError",
+      () =>
+        new GrammyError(
+          "Call to 'sendMessage' failed!",
+          { ok: false, error_code: 403, description: CANARY },
+          "sendMessage",
+          { text: CANARY }
+        ),
+      { error: "GrammyError", error_code: 403, method: "sendMessage" },
+    ],
+    [
+      "an HttpError",
+      () =>
+        new HttpError(
+          "Network request for 'sendMessage' failed!",
+          new Error(`https://api.telegram.org/bot${CANARY}/x`)
+        ),
+      { error: "HttpError", method: "sendMessage" },
+    ],
+    ["another error", () => new Error(CANARY), { error: "Error" }],
+  ];
+
+  for (const [name, make, expected] of telegramErrors) {
+    test(`a failed send of ${name} writes operator_notice_send_failed with fields only`, async () => {
+      await withRollback(db, async (trx) => {
+        const org = await createOrgWithMailbox(trx);
+        const send = (): Promise<void> => Promise.reject(make());
+        const notices = createOperatorNotices({ db: trx, now: () => NOW, send });
+        notices.capReached({ orgId: org.orgId }, org.mailboxId, NOW, 300);
+        await notices.idle();
+        expectEvent("operator_notice_send_failed", "error", { kind: "llm_cap", ...expected });
+        expectNoMarker();
+      });
+    });
+  }
+
+  test("a failed audit lookup writes operator_notice_failed with the error name only", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const notices = createOperatorNotices({
+        db: failingDb(trx, "selectFrom"),
+        now: () => NOW,
+        send: recorder().send,
+      });
+      notices.capReached({ orgId: org.orgId }, org.mailboxId, NOW, 300);
+      await notices.idle();
+      expectEvent("operator_notice_failed", "error", { kind: "llm_cap", error: "Error" });
+      expectNoMarker();
+    });
+  });
+
+  test("a failed audit write after the send writes operator_notice_failed with the error name only", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const { texts, send } = recorder();
+      const notices = createOperatorNotices({ db: failingDb(trx, "insertInto"), now: () => NOW, send });
+      notices.capReached({ orgId: org.orgId }, org.mailboxId, NOW, 300);
+      await notices.idle();
+      expect(texts).toHaveLength(1);
+      expectEvent("operator_notice_failed", "error", { kind: "llm_cap", error: "Error" });
+      expectNoMarker();
+    });
+  });
+
+  test("a failed hourly run writes one operator_notices_failed per failed part, error name only", async () => {
+    await withRollback(db, async (trx) => {
+      const notices = createOperatorNotices({
+        db: failingDb(trx, "selectFrom"),
+        now: () => NOW,
+        send: recorder().send,
+      });
+      await notices.run();
+      // organizations, auth errors and send limits read the database; the retries do not.
+      expect(eventsOf("operator_notices_failed")).toEqual(
+        Array.from({ length: 3 }, () => ({ level: "error", fields: { error: "Error" } }))
+      );
+      expectNoMarker();
+    });
+  });
+
+  test("a failed send limit read for one org writes operator_notice_failed for kind send_limit", async () => {
+    await withRollback(db, async (trx) => {
+      await createOrgWithMailbox(trx);
+      const notices = createOperatorNotices({
+        db: failingDb(trx, "getExecutor"),
+        now: () => NOW,
+        send: recorder().send,
+      });
+      await notices.run();
+      const events = eventsOf("operator_notice_failed");
+      expect(events.length).toBeGreaterThan(0);
+      for (const event of events)
+        expect(event).toEqual({ level: "error", fields: { kind: "send_limit", error: "Error" } });
+      expectNoMarker();
+    });
+  });
+
+  test("an invalid date makes the guarded entry points write operator_notice_failed with the error name", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const ctx = { orgId: org.orgId };
+      const invalid = new Date(Number.NaN);
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send: recorder().send });
+      notices.capReached(ctx, org.mailboxId, invalid, 300);
+      notices.authMailFailed(ctx, randomUUID(), "reset", "EAUTH", invalid);
+      notices.sendLimitReached(ctx, { mailboxId: org.mailboxId, limit: "mailbox_hour", until: NOW, at: invalid });
+      await notices.idle();
+      const kinds = eventsOf("operator_notice_failed").map((event) => {
+        expect(event.level).toBe("error");
+        expect(event.fields.error).toBe("RangeError");
+        return event.fields.kind;
+      });
+      expect(kinds.sort()).toEqual(["auth_mail_failed", "llm_cap", "send_limit"]);
+    });
+  });
+
+  test("a row the hourly run cannot read writes operator_notice_failed for its kind", async () => {
+    await withRollback(db, async (trx) => {
+      const trial = await createOrgWithMailbox(trx);
+      await sql`update organizations set plan = 'trial', trial_ends_at = 'infinity' where id = ${trial.orgId}`.execute(
+        trx
+      );
+      const auth = await createOrgWithMailbox(trx);
+      await sql`update mailboxes set status = 'auth_error', status_changed_at = '-infinity' where id = ${auth.mailboxId}`.execute(
+        trx
+      );
+      await createOperatorNotices({ db: trx, now: () => NOW, send: recorder().send }).run();
+      const kinds = eventsOf("operator_notice_failed").map((event) => event.fields.kind);
+      expect(kinds).toContain("trial_ending");
+      expect(kinds).toContain("auth_error_24h");
+    });
   });
 });
