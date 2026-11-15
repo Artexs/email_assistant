@@ -34,3 +34,9 @@ mkdir -p /tmp/f119-s14 && bunx prettier --check <files> > /tmp/f119-s14/prettier
 ## Carry-over from stage 08 review (N3)
 
 - `bun run` echoes the full argv to stderr, so a wrong `--client-secret <v>` call prints the secret once more. The docs must show a pattern that keeps the secret out of history and out of argv: `read -rs S; printf "%s\n" "$S" | bun run --silent org:sso ... --client-secret-stdin`. On a terminal, stdin echoes and needs Ctrl-D: say so.
+
+## Carry-over from stage 10 review (N1, N2, N10)
+
+- Sessions belong to the user, not to the organization: `org:member --end-sessions` checks the membership in `--org-id` and then ends every session of the user, so a user who is a member of two organizations loses the sessions in both (the audit row goes to the organization of `--org-id`). `--unlink-sso` ends every SSO session of the user too, also one from a second provider. Say so in the docs and in the `endUserSessions` comment (`platform/auth-sessions-end.ts`).
+- Every `org:member` command needs `--org-id`, including `--end-sessions` and `--unlink-sso`.
+- `docs/capabilities/tenancy-and-plans.md` § Limits still says that no CLI adds a second member.
