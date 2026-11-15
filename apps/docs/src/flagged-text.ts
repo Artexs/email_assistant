@@ -44,6 +44,14 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
     "bez szkicu: podejrzana wiadomość",
   ],
   attachment_line: ["📎"],
+  why_lines: [
+    "rule: VIP sender",
+    "rule: whitelisted sender",
+    "rule: blocked sender",
+    "reguła: nadawca VIP",
+    "reguła: nadawca z listy dozwolonych",
+    "reguła: nadawca z listy blokowanych",
+  ],
   degraded_notice: [
     "is not triaged yet: the AI service is paused",
     "nie jest jeszcze posortowana: usługa AI ma przerwę",
@@ -56,6 +64,8 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
 export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
   delegate_button:
     "only the server function `delegateMail` (modules/loops/delegate.ts) reads it: no button text exists yet",
+  docs_links:
+    "the Help link and the What is new card texts come in F112 stage 15; stage 15 must replace this reason by their strings in FLAGGED_PANEL_KEYS",
   trust_ladder: "no text: it adds `blocks` codes to the `no_go` API answer and changes the evidence gate",
 };
 

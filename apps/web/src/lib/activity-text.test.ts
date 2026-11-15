@@ -19,6 +19,8 @@ import {
   delegationText,
   feedbackStateText,
   feedbackToast,
+  ruleLine,
+  ruleName,
   senderText,
   subjectText,
   undoToast,
@@ -99,5 +101,25 @@ describe("row texts", () => {
   test("delegation text", () => {
     expect(delegationText({ delegateName: "Ola", status: "drafted", dueAt: null })).toBe("Ola · Drafted");
     expect(delegationText({ delegateName: null, status: "drafted", dueAt: null })).toBe("A delegate · Drafted");
+  });
+});
+
+describe("the rule hit (F110 stage 16)", () => {
+  const rules = ["vip", "whitelist", "blocklist"] as const;
+
+  test("en: the badge and the panel line", () => {
+    setLocaleForTest("en");
+    expect(rules.map(ruleName)).toEqual(["VIP sender", "Whitelisted sender", "Blocked sender"]);
+    expect(rules.map(ruleLine)).toEqual(["Rule: VIP sender", "Rule: whitelisted sender", "Rule: blocked sender"]);
+  });
+
+  test("pl: the badge and the panel line, with the words of the Rules page", () => {
+    setLocaleForTest("pl");
+    expect(rules.map(ruleName)).toEqual(["Nadawca VIP", "Nadawca z listy dozwolonych", "Nadawca z listy blokowanych"]);
+    expect(rules.map(ruleLine)).toEqual([
+      "Reguła: nadawca VIP",
+      "Reguła: nadawca z listy dozwolonych",
+      "Reguła: nadawca z listy blokowanych",
+    ]);
   });
 });

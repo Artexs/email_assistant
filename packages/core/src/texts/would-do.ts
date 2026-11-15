@@ -18,7 +18,8 @@ export interface WouldDoTexts {
   flag: (tense: ActionTense) => string;
   markRead: (tense: ActionTense) => string;
   move: (tense: ActionTense, folder: string | null) => string;
-  draft: (tense: ActionTense, kind: DraftKind, name: string | null) => string;
+  // `skills` (F110 stage 16, flag `why_lines`): the competence label of the delegate of a delegation draft, put next to the name.
+  draft: (tense: ActionTense, kind: DraftKind, name: string | null, skills?: string | null) => string;
   send: Record<SendPhraseStatus, string>;
   sendChanged: string; // a send that ended `expired` / `superseded`: a panel edit replaced it (F102 D12)
   sendLimitWait: string; // an approved send held by the send limit (F099 D11 a); the stage plan has no row for it
@@ -28,7 +29,10 @@ export interface WouldDoTexts {
 const isFuture = (tense: ActionTense): boolean => tense === "would" || tense === "will";
 
 // A Polish name in parentheses avoids a case ending on a name that we cannot decline.
-const plDelegate = (name: string | null): string => (name === null ? "" : ` (wykonawca ${name})`);
+const plDelegate = (name: string | null, skills: string | null): string => {
+  const parts = [...(name === null ? [] : [`wykonawca ${name}`]), ...(skills === null ? [] : [skills])];
+  return parts.length === 0 ? "" : ` (${parts.join("; ")})`;
+};
 
 export const wouldDoTexts = {
   en: {
@@ -36,9 +40,9 @@ export const wouldDoTexts = {
     flag: (_tense) => "flag",
     markRead: (_tense) => "mark read",
     move: (_tense, folder) => (folder === null ? "move" : `move to ${folder}`),
-    draft: (_tense, kind, name) => {
+    draft: (_tense, kind, name, skills = null) => {
       if (kind === "clarification") return "draft a question to the sender";
-      return `draft a ${kind === "reminder" ? "reminder" : "delegation"} to ${name ?? "a delegate"}`;
+      return `draft a ${kind === "reminder" ? "reminder" : "delegation"} to ${name ?? "a delegate"}${skills === null ? "" : ` (${skills})`}`;
     },
     send: {
       logged: "would ask you to send it",
@@ -62,10 +66,10 @@ export const wouldDoTexts = {
       const verb = isFuture(tense) ? "przenieść" : "przeniesienie";
       return folder === null ? verb : `${verb} do ${folder}`;
     },
-    draft: (tense, kind, name) => {
+    draft: (tense, kind, name, skills = null) => {
       const noun = isFuture(tense) ? "przygotować szkic" : "szkic";
       if (kind === "clarification") return `${noun} pytania do nadawcy`;
-      return `${noun} ${kind === "reminder" ? "przypomnienia" : "zlecenia"}${plDelegate(name)}`;
+      return `${noun} ${kind === "reminder" ? "przypomnienia" : "zlecenia"}${plDelegate(name, skills)}`;
     },
     send: {
       logged: "poprosiłby Cię o wysłanie",

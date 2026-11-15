@@ -268,3 +268,49 @@ describe("Polish action phrases", () => {
     expect(line.match(/:(?=\s|$)/g) ?? []).toHaveLength(0);
   });
 });
+
+describe("competence tags of a delegation draft (F110 stage 16)", () => {
+  const tagsOf = (...tags: string[]) => ({ delegateTags: new Map([[ANNA, tags]]) });
+  const line = (action: ActionView, opts: Parameters<typeof describeActions>[2], texts = EN) =>
+    describeActions([action], names, opts, texts);
+
+  test("the tags sit in parentheses next to the name, at most 3, each cut at 30 characters", () => {
+    expect(line(draft("ready"), tagsOf("finance", "legal", "hr", "it"))).toBe(
+      "will draft a delegation to Anna Nowak (skills: finance, legal, hr)"
+    );
+    expect(line(draft("ready"), tagsOf("x".repeat(40)))).toBe(
+      `will draft a delegation to Anna Nowak (skills: ${"x".repeat(29)}…)`
+    );
+  });
+
+  test("a blank tag is left out before the limit counts", () => {
+    expect(line(draft("ready"), tagsOf("   ", "legal"))).toBe("will draft a delegation to Anna Nowak (skills: legal)");
+    expect(line(draft("ready"), tagsOf("", "a", "b", "c"))).toBe(
+      "will draft a delegation to Anna Nowak (skills: a, b, c)"
+    );
+    expect(line(draft("ready"), tagsOf("  ", ""))).toBe("will draft a delegation to Anna Nowak");
+  });
+
+  test("without tags, with an empty list, or for another delegate the phrase is the one of today", () => {
+    const today = "will draft a delegation to Anna Nowak";
+    expect(line(draft("ready"), {})).toBe(today);
+    expect(line(draft("ready"), tagsOf())).toBe(today);
+    expect(line(draft("ready"), { delegateTags: new Map([["other", ["finance"]]]) })).toBe(today);
+  });
+
+  test("a reminder and a clarification draft get no tags; a reverse draft is not shown", () => {
+    expect(line(draft("ready", "reminder"), tagsOf("finance"))).toBe("will draft a reminder to Anna Nowak");
+    expect(line(draft("ready", "clarification"), tagsOf("finance"))).toBe("will draft a question to the sender");
+    expect(line(draft("applied", "delegation", true), tagsOf("finance"))).toBe("stays in INBOX");
+  });
+
+  test("the tags come before the send state, in both languages", () => {
+    const send = act("send", "awaiting_approval");
+    expect(describeActions([draft("ready"), send], names, tagsOf("finance", "legal"), EN)).toBe(
+      "will draft a delegation to Anna Nowak (skills: finance, legal); waits for your approval"
+    );
+    expect(describeActions([draft("ready"), send], names, tagsOf("finanse", "prawo"), PL)).toBe(
+      "zrobi – przygotować szkic zlecenia (wykonawca Anna Nowak; kompetencje: finanse, prawo); czeka na Twoje zatwierdzenie"
+    );
+  });
+});

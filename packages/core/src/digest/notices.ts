@@ -2,6 +2,7 @@ import type { SendLimitKind } from "../send-limits";
 import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
 import type { BarCategory } from "../triage/metrics";
+import type { SenderRuleKind } from "../triage/rules";
 import { suspiciousReasons, type SuspiciousReason } from "../triage/suspicious";
 import type { MovingCategory, TripReason } from "../trust";
 import { mailOAuthProviderNames, type AuthErrorReason, type MailOAuthProviderKey } from "../web/mail-oauth";
@@ -11,6 +12,7 @@ import { encodeCallback, isLabelCategory } from "./callback";
 import { formatClock } from "./local-time";
 import type { OutButton, OutMessage } from "./message";
 import { cleanSubject, cutText, senderLabel } from "./text";
+import { aiLine, whySuffix } from "./why-line";
 
 // ✅ (only for a category the user may pick), ✏️ and, with `undo` text, ↩️ of one mail.
 export function feedbackButtons(
@@ -44,6 +46,9 @@ export function renderUrgentNotice(
     // Old views have no field: they render as before.
     suspicious?: readonly SuspiciousReason[];
     attachments?: AttachmentLineInput;
+    // The `why_lines` keys (F110 stage 16): absent in a view queued with the flag off.
+    confidence?: number | null | undefined;
+    rule?: SenderRuleKind | null | undefined;
     now: Date;
     timeZone: string;
   },
@@ -56,7 +61,13 @@ export function renderUrgentNotice(
   ];
   const attachments = input.attachments === undefined ? null : attachmentLine(input.attachments, texts.locale);
   if (attachments !== null) lines.push(attachments);
-  if (input.aiText !== null) lines.push(`💬 ${cutText(input.aiText, 200)}`);
+  const ai = aiLine(
+    input.aiText,
+    whySuffix({ category: "urgent", confidence: input.confidence, rule: input.rule }, texts),
+    200,
+    { printEmpty: true }
+  );
+  if (ai !== null) lines.push(ai);
   const warning = suspiciousLine(input.suspicious, texts);
   if (warning !== null) lines.push(warning);
   lines.push(

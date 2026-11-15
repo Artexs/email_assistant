@@ -7,6 +7,8 @@ import {
   isValidSenderPattern,
   matchSender,
   normalizeSenderPattern,
+  readSenderRule,
+  senderRuleOf,
   type SenderRule,
 } from "./rules";
 
@@ -160,5 +162,38 @@ describe("sender pattern rule", () => {
 
   test("normalizes with trim and lower case", () => {
     expect(normalizeSenderPattern("  Boss@Firma.TEST ")).toBe("boss@firma.test");
+  });
+});
+
+describe("senderRuleOf (F110 stage 16)", () => {
+  const rule = (address: string, rules: SenderRule[]) => senderRuleOf(applyHardRules(address, rules));
+
+  test("blocklist, vip, whitelist and none", () => {
+    expect(rule("x@spam.test", [{ pattern: "spam.test", kind: "blocklist" }])).toBe("blocklist");
+    expect(rule("b@firma.test", [{ pattern: "b@firma.test", kind: "vip" }])).toBe("vip");
+    expect(rule("a@corp.test", [{ pattern: "corp.test", kind: "whitelist" }])).toBe("whitelist");
+    expect(rule("a@else.test", [{ pattern: "corp.test", kind: "whitelist" }])).toBeNull();
+    expect(rule("a@else.test", [])).toBeNull();
+  });
+
+  test("a VIP is also whitelisted, and a whitelist beats a blocklist hit", () => {
+    const vip: SenderRule[] = [
+      { pattern: "b@firma.test", kind: "vip" },
+      { pattern: "firma.test", kind: "blocklist" },
+    ];
+    expect(rule("b@firma.test", vip)).toBe("vip");
+    const white: SenderRule[] = [
+      { pattern: "x@spam.test", kind: "whitelist" },
+      { pattern: "spam.test", kind: "blocklist" },
+    ];
+    expect(rule("x@spam.test", white)).toBe("whitelist");
+  });
+
+  test("readSenderRule reads the three kinds and nothing else", () => {
+    expect(readSenderRule("vip")).toBe("vip");
+    expect(readSenderRule("whitelist")).toBe("whitelist");
+    expect(readSenderRule("blocklist")).toBe("blocklist");
+    for (const value of [null, undefined, "", "VIP", "boss@firma.test", 1, {}])
+      expect(readSenderRule(value)).toBeNull();
   });
 });

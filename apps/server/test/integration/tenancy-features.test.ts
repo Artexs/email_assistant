@@ -187,6 +187,8 @@ describe("org_features", () => {
         { flag: "open_loops", enabled: false, source: "default" },
         { flag: "delegate_button", enabled: false, source: "default" },
         { flag: "trust_ladder", enabled: false, source: "default" },
+        { flag: "why_lines", enabled: false, source: "default" },
+        { flag: "docs_links", enabled: false, source: "default" },
       ]);
     });
   });
