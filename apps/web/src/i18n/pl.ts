@@ -326,7 +326,7 @@ export const pl: Record<TextKey, string> = {
   tg_unlinked_toast: "Telegram rozłączony.",
   tg_consent_title: "Co trafia do Telegrama",
   tg_consent_text:
-    "Telegram otrzymuje komunikaty tego bota: nadawcę i temat Twoich wiadomości, nazwy (lub typy plików) i rozmiary ich załączników, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na Twoje zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona i nazwiska wykonawców oraz adresy Twoich skrzynek. Telegram to usługa spoza UE, a dane mogą być przetwarzane poza Europejskim Obszarem Gospodarczym. Czaty z botem nie są szyfrowane metodą end-to-end (od nadawcy do odbiorcy). Telegram przechowuje komunikaty, dopóki nie usuniesz ich z czatu. Możesz w każdej chwili wycofać zgodę, odłączając Telegram. Komunikaty, które już są w czacie, zostają tam, dopóki ich nie usuniesz.",
+    "Telegram otrzymuje komunikaty tego bota: nadawcę i temat Twoich wiadomości, nazwy (lub typy plików) i rozmiary ich załączników, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na Twoje zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona i nazwiska wykonawców oraz adresy Twoich skrzynek. Telegram to usługa spoza UE, a dane mogą być przetwarzane poza Europejskim Obszarem Gospodarczym. Czaty z botem nie są szyfrowane metodą end-to-end (od nadawcy do odbiorcy). Telegram przechowuje komunikaty, dopóki nie usuniesz ich z czatu. Możesz w każdej chwili wycofać zgodę, odłączając Telegram. Komunikaty, które już są w czacie, zostają tam, dopóki ich nie usuniesz. Jeśli włączysz otwarte sprawy: na kogo czekasz (adresy z wysłanej poczty), krótki opis tego, o co prosisz lub co obiecujesz, termin z Twojej wysłanej poczty, temat wiadomości oraz szkice przypomnień z ich adresatami. Linie otwartych spraw nigdy nie zawierają treści wiadomości.",
   tg_consent_label: "Wyrażam zgodę na przekazywanie tych danych do Telegrama.",
   tg_consent_outdated: "Treść zgody się zmieniła. Odśwież stronę i przeczytaj ją ponownie.",
   // onboarding
@@ -783,6 +783,7 @@ export const pl: Record<TextKey, string> = {
   appr_title_delegation: "Zlecenie: {to}",
   appr_title_clarification: "Pytanie do nadawcy: {to}",
   appr_title_reminder: "Przypomnienie: {to}",
+  appr_title_follow_up: "Przypomnienie o odpowiedzi: {to}",
   appr_inactive: "(nieaktywny wykonawca)",
   appr_test_mail: "Wiadomość testowa",
   appr_from: "Od",

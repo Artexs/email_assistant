@@ -25,7 +25,7 @@ export async function startSendWithinLimits(
   input: {
     action: ClaimedAction;
     mailboxId: string;
-    // `payload.to` of the parsed send payload.
+    // Everyone who gets the mail: `payload.to` and `payload.cc` of the parsed send payload (`sendRecipients`).
     to: readonly string[];
     // `payload.kind`, for the applying audit row.
     kind: string;

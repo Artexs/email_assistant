@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 
 export const usage = [
   "usage:",
-  "  bun run job:run --name actions.expiry|delegation.chaser|actions.committer|channels.notifier|platform.retention [--force]",
+  "  bun run job:run --name actions.expiry|delegation.chaser|actions.committer|channels.notifier|platform.retention|loops.analyze [--force]",
   "  --force: only with delegation.chaser; skips the 07:30 and once-per-day gate.",
   "  Do not run actions.committer while the server runs on the same database.",
   "  Exit 0: the job ran once. Exit 1: usage error or failure.",
@@ -14,6 +14,7 @@ export const jobNames = [
   "actions.committer",
   "channels.notifier",
   "platform.retention",
+  "loops.analyze",
 ] as const;
 export type JobName = (typeof jobNames)[number];
 

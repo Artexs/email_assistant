@@ -10,6 +10,7 @@ export async function composeMessage(message: OutgoingMessage): Promise<Buffer> 
   const composer = new MailComposer({
     from: toAddress(message.from),
     to: message.to.map(toAddress),
+    ...(message.cc.length === 0 ? {} : { cc: message.cc.map(toAddress) }),
     subject: message.subject,
     // nodemailer keeps bare LF in a quoted-printable body; the wire format needs CRLF.
     text: message.text.replace(/\r?\n/g, "\r\n"),

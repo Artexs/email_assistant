@@ -1,24 +1,33 @@
-import { buildOutgoingMessage, draftPayloadSchema, type OutgoingMessage } from "@ea/core";
+import {
+  buildOutgoingMessage,
+  draftPayloadSchema,
+  sendRecipients,
+  type OriginalMail,
+  type OutgoingMessage,
+} from "@ea/core";
+import type { Transaction } from "kysely";
 import { z } from "zod";
 
-import type { TenantContext } from "../../platform/db";
-import { describeError, errorFields, SoftError } from "../../platform/errors";
+import type { DB, TenantContext } from "../../platform/db";
+import { describeError, errorFields, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { locateByActionId, MailAuthError, type MailProvider } from "../mail";
 
-import { authErrorOutcome, inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
+import { authErrorOutcome, inTransaction, loopHooksOf, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
+import type { LoopAnchor } from "./hooks";
 import {
   finishAction,
   listSendsOfDraft,
-  lockSend,
+  lockAnySend,
+  mailOf,
   markApplying,
   markUndone,
   releaseAction,
+  type AnySendRow,
   type ClaimedAction,
-  type SendRow,
 } from "./repo";
 
 const log = createLog("actions");
@@ -28,16 +37,25 @@ const OPEN_SEND_STATUSES = ["awaiting_approval", "approved", "applying"];
 type DraftResult = Record<string, string | number | boolean | null>;
 
 // D8: the message of a draft row, from the payload, the original mail and the mailbox. Throws on a payload that does not parse.
-export function buildDraftMessage(deps: ApplyDeps, action: ClaimedAction): OutgoingMessage {
-  const { email } = action;
-  return buildOutgoingMessage({
-    draft: draftPayloadSchema.parse(action.payload),
-    draftActionId: action.id,
-    createdAt: action.created_at,
-    mailbox: { address: deps.mailbox.address },
-    owner: deps.owner,
-    organization: deps.organization,
-    original: {
+// A follow-up has no mail: the anchor (the loop, read through `LoopHooks.anchorOf`) gives the thread ids for In-Reply-To
+// and References; the subject, the date and the quote are in the payload, so an approved text never changes.
+export function buildDraftMessage(deps: ApplyDeps, action: ClaimedAction, anchor?: LoopAnchor): OutgoingMessage {
+  const draft = draftPayloadSchema.parse(action.payload);
+  let original: OriginalMail;
+  if (draft.kind === "follow_up") {
+    if (anchor === undefined || action.loop_id !== draft.loop_id) throw new HardError("follow-up has no loop");
+    original = {
+      fromAddress: null,
+      subject: anchor.subject,
+      receivedAt: anchor.sentAt,
+      messageId: anchor.messageId,
+      inReplyTo: null,
+      references: anchor.referencesIds,
+      bodyText: null,
+    };
+  } else {
+    const email = mailOf(action);
+    original = {
       fromAddress: email.from_address,
       subject: email.subject,
       receivedAt: email.received_at,
@@ -45,8 +63,48 @@ export function buildDraftMessage(deps: ApplyDeps, action: ClaimedAction): Outgo
       inReplyTo: email.in_reply_to,
       references: email.references_header?.split(/\s+/).filter((id) => id !== "") ?? [],
       bodyText: email.body_text,
-    },
+    };
+  }
+  return buildOutgoingMessage({
+    draft,
+    draftActionId: action.id,
+    createdAt: action.created_at,
+    mailbox: { address: deps.mailbox.address },
+    owner: deps.owner,
+    organization: deps.organization,
+    original,
   });
+}
+
+// The anchor of a loop action, or undefined for a mail action. A loop action whose loop is gone throws (it cannot be built).
+export async function loopAnchorOf(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  action: ClaimedAction
+): Promise<LoopAnchor | undefined> {
+  if (action.loop_id === null) return undefined;
+  const anchor = await loopHooksOf(deps).anchorOf(deps.db, ctx, action.loop_id);
+  if (anchor === undefined) throw new HardError("loop not found");
+  return anchor;
+}
+
+// The recipients come from the loop row only. A follow-up whose To or Cc holds an address that the loop does not hold is
+// never built or sent (a payload that was written wrong, or changed). Compared in lower case.
+export function recipientsFromLoop(
+  payload: { to: readonly string[]; cc?: readonly string[] },
+  anchor: LoopAnchor
+): boolean {
+  const allowed = new Set([...anchor.to, ...anchor.cc].map((address) => address.toLowerCase()));
+  return sendRecipients(payload).every((address) => allowed.has(address.toLowerCase()));
+}
+
+// `build` for a claimed draft: loads the anchor of a follow-up first.
+export async function draftMessageOf(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  action: ClaimedAction
+): Promise<OutgoingMessage> {
+  return buildDraftMessage(deps, action, await loopAnchorOf(deps, ctx, action));
 }
 
 // The draft failed for good: its open sends expire with `draft_missing`, in the same transaction (D12).
@@ -60,9 +118,9 @@ async function failDraft(
 ): Promise<ApplyOutcome> {
   const now = deps.now();
   const done = await inTransaction(deps.db, async (trx) => {
-    const locked: SendRow[] = [];
+    const locked: AnySendRow[] = [];
     for (const { id } of await listSendsOfDraft(trx, ctx, action.id)) {
-      const send = await lockSend(trx, ctx, id);
+      const send = await lockAnySend(trx, ctx, id);
       if (send !== undefined) locked.push(send);
     }
     if (
@@ -138,6 +196,40 @@ async function failedWith(
   return { kind: "retry", soft };
 }
 
+// The loop of a follow-up is closed (or gone): its waiting sends expire with `loop_closed`, and the draft ends with them.
+// The caller holds the loop lock. Lock order: the loop, then the sends, then the draft row (as `expireSend` does).
+async function closeDraftOfClosedLoop(
+  deps: ApplyDeps,
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  action: ClaimedAction
+): Promise<void> {
+  const now = deps.now();
+  for (const { id } of await listSendsOfDraft(trx, ctx, action.id)) {
+    await expireSend(trx, ctx, id, {
+      reason: "loop_closed",
+      now,
+      actor: "system",
+      hooks: deps.hooks,
+      uidplus: deps.mailbox.capabilities.uidplus,
+    });
+  }
+  // `expireSend` already ended a `ready` draft of an open send; this ends the claimed row if nothing did.
+  if (
+    await finishAction(trx, ctx, action.id, action.locked_at, { status: "expired", at: now, reason: "send_closed" })
+  ) {
+    await recordAudit(trx, ctx, {
+      emailId: action.email_id,
+      actionId: action.id,
+      actor: "system",
+      event: auditEvents.actionExpired,
+      reasonCode: "send_closed",
+      data: { action_type: "create_draft", reason: "loop_closed" },
+      at: now,
+    });
+  }
+}
+
 // D12. A ready draft ends as exactly one message in the Drafts folder, whatever happened before.
 export async function applyDraft(
   deps: ApplyDeps,
@@ -147,7 +239,12 @@ export async function applyDraft(
 ): Promise<ApplyOutcome> {
   if (action.status === "ready") {
     const started = await inTransaction(deps.db, async (trx) => {
-      if (!(await markApplying(trx, ctx, action.id, action.locked_at))) return false;
+      // A follow-up is made only while its loop is open. `isOpen` takes the loop lock first.
+      if (action.loop_id !== null && !(await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id))) {
+        await closeDraftOfClosedLoop(deps, trx, ctx, action);
+        return "loop_closed" as const;
+      }
+      if (!(await markApplying(trx, ctx, action.id, action.locked_at))) return "lost" as const;
       await recordAudit(trx, ctx, {
         emailId: action.email_id,
         actionId: action.id,
@@ -156,21 +253,40 @@ export async function applyDraft(
         data: { action_type: "create_draft", mailbox_id: deps.mailboxId },
         at: deps.now(),
       });
-      return true;
+      return "started" as const;
     });
-    if (!started) return { kind: "lost" };
+    if (started === "lost") return { kind: "lost" };
+    if (started === "loop_closed") {
+      log.info("action_closed", { action_id: action.id, action_type: "create_draft", reason: "loop_closed" });
+      return { kind: "expired", reason: "loop_closed" };
+    }
   }
 
   const payload = draftPayloadSchema.safeParse(action.payload);
   if (!payload.success) return failDraft(deps, ctx, action, "bad_payload");
   const kind = payload.data.kind;
+  // A follow-up hangs on a loop and every other kind on a mail: the other pair is a bad payload, never a draft.
+  if ((payload.data.kind === "follow_up") !== (action.loop_id !== null)) {
+    return failDraft(deps, ctx, action, "bad_payload");
+  }
+  if (payload.data.kind === "follow_up") {
+    let anchor: LoopAnchor | undefined;
+    try {
+      anchor = await loopAnchorOf(deps, ctx, action);
+    } catch (error) {
+      return failedWith(deps, ctx, action, error, "before_append");
+    }
+    if (anchor === undefined || payload.data.loop_id !== action.loop_id || !recipientsFromLoop(payload.data, anchor)) {
+      return failDraft(deps, ctx, action, "bad_payload");
+    }
+  }
 
   const hint = action.provider_result?.uid;
   let raw: Buffer;
   let folder: string;
   let found: Awaited<ReturnType<typeof locateByActionId>>;
   try {
-    raw = await deps.compose(buildDraftMessage(deps, action));
+    raw = await deps.compose(await draftMessageOf(deps, ctx, action));
     folder = await deps.folders.resolve("drafts");
     found = await locateByActionId(provider, folder, {
       actionId: action.id,

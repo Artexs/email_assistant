@@ -1,26 +1,26 @@
 import type { Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
-import { emailIdOf } from "../anchor";
+import { anchorOfRow } from "../anchor";
 
 import type { DbOrTrx } from "./shared";
 
 export interface DraftRow {
   id: string;
-  email_id: string;
+  // A draft hangs on a mail or on a loop (a follow-up): exactly one of them is set.
+  email_id: string | null;
+  loop_id: string | null;
   status: string;
   payload: Record<string, unknown>;
   provider_result: Record<string, unknown> | null;
   created_at: Date;
   locked_at: Date | null;
 }
-// loop rows: open loops stage 10/11 (the `email_id` filter keeps them out)
 function draftQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
   return db
     .selectFrom("actions")
     .select(["id", "email_id", "loop_id", "status", "payload", "provider_result", "created_at", "locked_at"])
     .where("org_id", "=", ctx.orgId)
-    .where("email_id", "is not", null)
     .where("type", "=", "create_draft")
     .where("reverses_action_id", "is", null)
     .where("id", "=", id);
@@ -28,7 +28,8 @@ function draftQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
 function toDraftRow(row: Awaited<ReturnType<ReturnType<typeof draftQuery>["executeTakeFirstOrThrow"]>>): DraftRow {
   return {
     id: row.id,
-    email_id: emailIdOf(row),
+    email_id: anchorOfRow(row).kind === "email" ? row.email_id : null,
+    loop_id: row.loop_id,
     status: row.status,
     created_at: row.created_at,
     locked_at: row.locked_at,

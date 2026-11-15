@@ -17,14 +17,19 @@ export function mailboxFilterExpr(filter: MailboxClaimFilter): Expression<SqlBoo
   if (filter.kind === "synthetic") return mailKindFilter("synthetic", filter.testMail);
   return sqlTrue;
 }
-// `payload.to` is a JSON array (D2). The CASE keeps a malformed payload from raising: it is simply not admitted.
+// `payload.to` and `payload.cc` are JSON arrays (D2). Every address of both must be listed (a follow-up has a Cc). The CASE keeps a
+// malformed payload from raising: it is simply not admitted. A missing `cc` has no address; a `cc` that is not an array is refused.
 export function sendFilterExpr(filter: SendClaimFilter): Expression<SqlBool> {
   if (filter.kind === "none") return sqlFalse;
   if (filter.kind === "all") return sqlTrue;
   const addresses = filter.addresses.map((address) => address.toLowerCase());
-  return sql<SqlBool>`(CASE WHEN jsonb_typeof(actions.payload->'to') = 'array' THEN
+  return sql<SqlBool>`(CASE WHEN jsonb_typeof(actions.payload->'to') = 'array'
+      AND (actions.payload->'cc' IS NULL OR jsonb_typeof(actions.payload->'cc') = 'array') THEN
       jsonb_array_length(actions.payload->'to') > 0 AND NOT EXISTS (
         SELECT 1 FROM jsonb_array_elements_text(actions.payload->'to') r WHERE lower(r) <> ALL(${addresses}::text[])
+      ) AND NOT EXISTS (
+        SELECT 1 FROM jsonb_array_elements_text(coalesce(actions.payload->'cc', '[]'::jsonb)) r
+        WHERE lower(r) <> ALL(${addresses}::text[])
       )
     ELSE false END)`;
 }

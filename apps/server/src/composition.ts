@@ -15,7 +15,7 @@ import {
 } from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
-import { onSentOff } from "./modules/loops";
+import { type AnalysisScope, loopHooks, onSentOff } from "./modules/loops";
 import {
   composeMessage,
   createMailOAuthClients,
@@ -49,6 +49,13 @@ export function actionsScope(config: Config): ActionsScope {
     return { kind: "synthetic", testMail: testMailRule(config) };
   }
   log.warn("actions_scope", { config_key: "ACTIONS_SCOPE", scope: "all" });
+  return { kind: "all" };
+}
+
+// The scope of the model for the Sent analysis of the open loops: the word of `TRIAGE_LLM_SCOPE`. null: the model is off.
+export function loopsLlmScope(config: Config): AnalysisScope | null {
+  if (config.TRIAGE_LLM_SCOPE === "off") return null;
+  if (config.TRIAGE_LLM_SCOPE === "synthetic") return { kind: "synthetic", testMail: testMailRule(config) };
   return { kind: "all" };
 }
 
@@ -104,6 +111,8 @@ export function committerDeps(input: {
     oauthTokens: input.oauthTokens,
     compose: composeMessage,
     hooks: delegationHooks({ db: input.db }),
+    // A follow-up reads and updates its loop through these (open loops stage 10).
+    loopHooks: loopHooks(),
     scope: input.scope,
     sendScope: input.sendScope,
     sendLimits: input.sendLimits,

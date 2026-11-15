@@ -4,6 +4,8 @@ All notable changes to the email assistant. The format follows [Keep a Changelog
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-15
+
 ### Added
 
 - Offline quality lab: one command measures per-category precision and recall of the classifier on a frozen set of made-up mails.

@@ -17,6 +17,7 @@ import {
   type MailProvider,
 } from "../mail";
 
+import { emailIdOf } from "./anchor";
 import {
   authErrorOutcome,
   inTransaction,
@@ -28,7 +29,7 @@ import {
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { applyDraft, removeDraft } from "./drafts";
 import { ensureMoved, type EnsureResult } from "./move";
-import { finishAction, markUndone, releaseAction, type ClaimedAction } from "./repo";
+import { finishAction, mailOf, markUndone, releaseAction, type ClaimedAction } from "./repo";
 import { applySend } from "./send";
 
 const log = createLog("actions");
@@ -41,7 +42,7 @@ const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\
 // D9: a reverse move or a rescue (forward target `inbox`) that ends (applied or failed) clears the in-flight flag of the mail.
 async function clearMovePending(trx: Transaction<DB>, ctx: TenantContext, action: ClaimedAction): Promise<void> {
   if (action.type === "move" && (action.reverses_action_id !== null || action.payload.folder === "inbox")) {
-    await setUndoPending(trx, ctx, action.email_id, null);
+    await setUndoPending(trx, ctx, emailIdOf(action), null);
   }
 }
 
@@ -179,7 +180,7 @@ async function applyFlag(
   action: ClaimedAction,
   provider: MailProvider
 ): Promise<ApplyOutcome> {
-  const { email } = action;
+  const email = mailOf(action);
   const flag = FLAG_OF_TYPE[action.type] as string;
   const reverseOf = action.reverses_action_id;
   const excludeUids = await listFolderUids(deps.db, ctx, deps.mailboxId, email.folder, {
@@ -253,7 +254,7 @@ async function applyMove(
   action: ClaimedAction,
   provider: MailProvider
 ): Promise<ApplyOutcome> {
-  const { email } = action;
+  const email = mailOf(action);
   const reverseOf = action.reverses_action_id;
   const folderKey = isMoveTarget(action.payload.folder) ? action.payload.folder : undefined;
   if (reverseOf === null && folderKey === undefined) {

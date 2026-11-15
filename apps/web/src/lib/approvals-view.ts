@@ -42,6 +42,7 @@ export const KIND_TITLES: Record<Kind, TextKey> = {
   delegation: "appr_title_delegation",
   clarification: "appr_title_clarification",
   reminder: "appr_title_reminder",
+  follow_up: "appr_title_follow_up",
 };
 
 // A send that is `held` with no cause is approved and waits for the next run of the committer: it is no block.

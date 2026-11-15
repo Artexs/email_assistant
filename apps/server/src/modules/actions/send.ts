@@ -2,19 +2,22 @@ import {
   DEFAULT_SEND_LIMITS,
   draftPayloadSchema,
   sendPayloadSchema,
+  sendRecipients,
   type OutgoingMessage,
   type SendPayload,
 } from "@ea/core";
+import type { Transaction } from "kysely";
 
-import type { TenantContext } from "../../platform/db";
+import type { DB, TenantContext } from "../../platform/db";
 import { describeError, errorFields, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 import { locateByActionId, MailAuthError, SmtpSendError, type AuthErrorReason, type MailProvider } from "../mail";
 
-import { authErrorOutcome, inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
+import { authErrorOutcome, inTransaction, loopHooksOf, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
 import { DELEGATION_DUE_AFTER_MS, HARD_ERROR_TRIES, RETRY_WAIT_MS, SEND_SOFT_CAP_MS } from "./constants";
-import { buildDraftMessage } from "./drafts";
+import { buildDraftMessage, loopAnchorOf, recipientsFromLoop } from "./drafts";
+import { closeDraftOfSend } from "./expiry";
 import {
   finishAction,
   getDraft,
@@ -24,7 +27,7 @@ import {
   type ClaimedAction,
   type DraftRow,
 } from "./repo";
-import { startSendWithinLimits } from "./send-limit";
+import { startSendWithinLimits, type SendStart } from "./send-limit";
 
 const log = createLog("actions");
 
@@ -136,15 +139,41 @@ async function failSend(
 }
 
 // The payloads, the draft and the message. The draft's id and `created_at` give the draft APPEND's Message-ID and Date (D9).
-function prepare(deps: ApplyDeps, action: ClaimedAction, draft: DraftRow): Prepared | null {
+// A follow-up is also checked against its loop: the send and the draft name the same loop, the send goes to nobody that the
+// draft does not name, and nobody that the loop does not hold. `null`: the payload is bad.
+async function prepare(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  action: ClaimedAction,
+  draft: DraftRow
+): Promise<Prepared | null> {
   const payload = sendPayloadSchema.safeParse(action.payload);
-  if (!payload.success || !draftPayloadSchema.safeParse(draft.payload).success) return null;
-  const message = buildDraftMessage(deps, {
-    ...action,
-    id: draft.id,
-    created_at: draft.created_at,
-    payload: draft.payload,
-  });
+  const draftPayload = draftPayloadSchema.safeParse(draft.payload);
+  if (!payload.success || !draftPayload.success) return null;
+  const followUp = draftPayload.data.kind === "follow_up" ? draftPayload.data : null;
+  if (
+    (followUp === null) !== (action.loop_id === null) ||
+    (followUp === null) !== (payload.data.kind !== "follow_up")
+  ) {
+    return null;
+  }
+  const anchor = await loopAnchorOf(deps, ctx, action);
+  if (followUp !== null) {
+    const drafted = new Set(sendRecipients(followUp).map((address) => address.toLowerCase()));
+    const same =
+      anchor !== undefined &&
+      payload.data.loop_id === followUp.loop_id &&
+      followUp.loop_id === action.loop_id &&
+      draft.loop_id === action.loop_id &&
+      sendRecipients(payload.data).every((address) => drafted.has(address.toLowerCase())) &&
+      recipientsFromLoop(payload.data, anchor);
+    if (!same) return null;
+  }
+  const message = buildDraftMessage(
+    deps,
+    { ...action, id: draft.id, created_at: draft.created_at, payload: draft.payload },
+    anchor
+  );
   return { draft, payload: payload.data, message };
 }
 
@@ -168,6 +197,11 @@ async function finishApplied(
   const { draft, payload, message } = prepared;
   const now = deps.now();
   return inTransaction(deps.db, async (trx) => {
+    // A follow-up: the loop lock first, then the send row. The result of `isOpen` does not matter here: the mail
+    // went out. The counters of the loop change either way.
+    if (payload.kind === "follow_up" && action.loop_id !== null) {
+      await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id);
+    }
     if (
       !(await finishAction(
         trx,
@@ -188,7 +222,7 @@ async function finishApplied(
       data: {
         action_type: "send",
         kind: payload.kind,
-        recipients: payload.to.length,
+        recipients: sendRecipients(payload).length,
         delegation_id: payload.delegation_id ?? null,
         reminder: payload.reminder ?? null,
       },
@@ -206,12 +240,21 @@ async function finishApplied(
         await deps.hooks.onReminderSent(trx, ctx, { delegationId: payload.delegation_id, at: now });
       }
     }
+    if (payload.kind === "follow_up" && action.loop_id !== null) {
+      await loopHooksOf(deps).onFollowUpSent(trx, ctx, {
+        loopId: action.loop_id,
+        sendId: action.id,
+        messageId: message.messageId,
+        at: now,
+      });
+    }
     const folder = draft.provider_result?.folder;
     if (deps.mailbox.capabilities.uidplus && typeof folder === "string") {
       const uid = draft.provider_result?.uid;
       await insertReverse(trx, ctx, {
         id: draft.id,
         emailId: draft.email_id,
+        loopId: draft.loop_id,
         type: "create_draft",
         payload: { kind: payload.kind, folder, uid: typeof uid === "number" ? uid : null, reason: "sent" },
       });
@@ -389,6 +432,46 @@ async function sendFailed(
   });
 }
 
+// The loop of a follow-up is closed (or gone) after the tap. The claimed `approved` send ends `expired` / `loop_closed`, and
+// the draft copy goes with it (the close path of every send). The caller holds the loop lock.
+async function closeSendOfClosedLoop(
+  deps: ApplyDeps,
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  action: ClaimedAction
+): Promise<{ kind: "loop_closed" } | { kind: "lost" }> {
+  const now = deps.now();
+  if (
+    !(await finishAction(
+      trx,
+      ctx,
+      action.id,
+      action.locked_at,
+      { status: "expired", at: now, reason: "loop_closed" },
+      { from: ["approved"] }
+    ))
+  ) {
+    return { kind: "lost" };
+  }
+  await recordAudit(trx, ctx, {
+    emailId: action.email_id,
+    actionId: action.id,
+    actor: "system",
+    event: auditEvents.actionExpired,
+    reasonCode: "loop_closed",
+    data: { action_type: "send", reason: "loop_closed" },
+    at: now,
+  });
+  if (action.depends_on_action_id !== null) {
+    await closeDraftOfSend(trx, ctx, action.depends_on_action_id, {
+      reason: "expired",
+      now,
+      uidplus: deps.mailbox.capabilities.uidplus,
+    });
+  }
+  return { kind: "loop_closed" };
+}
+
 // D11. Approved → applying → SMTP → applied. At most once: after `markApplying` nothing here sends a second time.
 export async function applySend(
   deps: ApplyDeps,
@@ -428,7 +511,7 @@ export async function applySend(
   let prepared: Prepared | null;
   let raw: Buffer | null = null;
   try {
-    prepared = prepare(deps, action, draft);
+    prepared = await prepare(deps, ctx, action, draft);
     if (prepared !== null) raw = await deps.compose(prepared.message);
   } catch (error) {
     return composeFailed(deps, ctx, action, error);
@@ -437,18 +520,27 @@ export async function applySend(
   const { payload, message } = prepared;
 
   // (2) Own commit, before any SMTP call. The limit check and `markApplying` share one transaction under the mailbox lock (PD-044).
-  const start = await inTransaction(deps.db, (trx) =>
-    startSendWithinLimits(trx, ctx, {
+  // A follow-up goes only while its loop is open: `isOpen` takes the loop lock first, then the limit check and
+  // `markApplying` run under it. A closed loop ends the claimed send here: no SMTP call.
+  const start = await inTransaction(deps.db, async (trx): Promise<SendStart | { kind: "loop_closed" }> => {
+    if (action.loop_id !== null && !(await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id))) {
+      return closeSendOfClosedLoop(deps, trx, ctx, action);
+    }
+    return startSendWithinLimits(trx, ctx, {
       action,
       mailboxId: deps.mailboxId,
-      to: payload.to,
+      to: sendRecipients(payload),
       kind: payload.kind,
       outgoingMessageId: message.messageId,
       limits: deps.sendLimits ?? DEFAULT_SEND_LIMITS,
       now,
-    })
-  );
+    });
+  });
   if (start.kind === "lost") return { kind: "lost" };
+  if (start.kind === "loop_closed") {
+    actionLog.info("send_loop_closed", { mailbox_id: deps.mailboxId });
+    return { kind: "expired", reason: "loop_closed" };
+  }
   if (start.kind === "held") {
     actionLog.info("send_limited", { mailbox_id: deps.mailboxId, kind: start.hit.limit });
     try {
@@ -463,7 +555,7 @@ export async function applySend(
   await deps.beforeSend?.();
   let result: Awaited<ReturnType<typeof sender.send>>;
   try {
-    result = await sender.send({ envelope: { from: deps.mailbox.address, to: payload.to }, raw });
+    result = await sender.send({ envelope: { from: deps.mailbox.address, to: sendRecipients(payload) }, raw });
   } catch (error) {
     return sendFailed(deps, ctx, action, error);
   }
@@ -547,7 +639,7 @@ async function recoverSend(
     const draft =
       action.depends_on_action_id === null ? undefined : await getDraft(deps.db, ctx, action.depends_on_action_id);
     if (draft === undefined) throw new HardError("draft not found");
-    const result = prepare(deps, action, draft);
+    const result = await prepare(deps, ctx, action, draft);
     if (result === null) throw new HardError("bad payload");
     prepared = result;
     const folder = await deps.folders.resolve("sent");

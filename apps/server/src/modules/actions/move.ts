@@ -21,7 +21,7 @@ interface Hints {
 
 async function ensureOnce(
   provider: MailProvider,
-  email: ClaimedAction["email"],
+  email: NonNullable<ClaimedAction["email"]>,
   from: string,
   to: string,
   hints: Hints,
@@ -62,7 +62,7 @@ async function ensureOnce(
  */
 export async function ensureMoved(
   provider: MailProvider,
-  email: ClaimedAction["email"],
+  email: NonNullable<ClaimedAction["email"]>,
   from: string,
   to: string,
   hints: Hints,

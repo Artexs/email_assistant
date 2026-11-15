@@ -316,7 +316,7 @@ export const en = {
   tg_unlinked_toast: "Telegram unlinked.",
   tg_consent_title: "What goes to Telegram",
   tg_consent_text:
-    "Telegram receives the messages of this bot: the sender and subject of your mails, the names (or file types) and sizes of their attachments, the AI's short reason or summary, the texts of drafts that wait for your approval with the quoted part of the original mail, the names of delegates and the addresses of your mailboxes. Telegram is a service outside the EU, and data can be processed outside the European Economic Area. Chats with a bot are not end-to-end encrypted (from sender to recipient only). Telegram keeps the messages until you delete them in the chat. You can withdraw your consent at any time by unlinking Telegram. Messages that are already in the chat stay there until you delete them.",
+    "Telegram receives the messages of this bot: the sender and subject of your mails, the names (or file types) and sizes of their attachments, the AI's short reason or summary, the texts of drafts that wait for your approval with the quoted part of the original mail, the names of delegates and the addresses of your mailboxes. Telegram is a service outside the EU, and data can be processed outside the European Economic Area. Chats with a bot are not end-to-end encrypted (from sender to recipient only). Telegram keeps the messages until you delete them in the chat. You can withdraw your consent at any time by unlinking Telegram. Messages that are already in the chat stay there until you delete them. If you turn on open loops: who you wait for (addresses from your sent mail), a short description of what you asked or promised, the due date taken from your sent mail, the subject of the mail, and follow-up drafts with their recipients. Open-loop lines never hold mail bodies.",
   tg_consent_label: "I consent to these data going to Telegram.",
   tg_consent_outdated: "The consent text has changed. Reload the page and read it again.",
   // onboarding
@@ -767,6 +767,7 @@ export const en = {
   appr_title_delegation: "Delegation to {to}",
   appr_title_clarification: "Question to the sender {to}",
   appr_title_reminder: "Reminder to {to}",
+  appr_title_follow_up: "Follow-up to {to}",
   appr_inactive: "(inactive)",
   appr_test_mail: "Test mail",
   appr_from: "From",

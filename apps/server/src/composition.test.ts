@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, spyOn, test } from "bun:test";
 
 import { actionsScope, committerDeps, sendScope } from "./composition";
+import { noLoopHooks } from "./modules/actions";
 import type { OAuthTokens } from "./modules/mail";
 import { loadConfig } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
@@ -101,6 +102,22 @@ describe("committerDeps", () => {
       sendLimits: { mailboxHour: 1, mailboxDay: 1, recipientDay: 1 },
     });
     expect(deps.oauthTokens).toBe(oauthTokens);
+  });
+
+  // F116 stage 10: a committer without the loop hooks would find no follow-up loop open and send nothing for it. main.ts and
+  // scripts/job-run.ts both build their deps here, so one check covers both roots.
+  test("wires the real loop hooks, not the empty ones", () => {
+    const deps = committerDeps({
+      db: {} as Db,
+      secrets: {} as SecretBox,
+      oauthTokens: { accessToken: async () => "token", drop: () => undefined },
+      scope: { kind: "off" },
+      sendScope: { kind: "off" },
+      sendLimits: { mailboxHour: 1, mailboxDay: 1, recipientDay: 1 },
+    });
+    expect(deps.loopHooks).toBeDefined();
+    expect(deps.loopHooks).not.toBe(noLoopHooks);
+    expect(typeof deps.loopHooks?.onFollowUpSent).toBe("function");
   });
 
   test("opens the Graph sender with the registry's Graph origin; the mail goes to no other URL", async () => {

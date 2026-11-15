@@ -19,7 +19,7 @@ export function isExternalSender(
 export interface ApprovalView {
   kind: DraftPayload["kind"];
   recipient: OutgoingAddress;
-  sender: { label: string; external: boolean } | null; // null for a reminder
+  sender: { label: string; external: boolean } | null; // null for a reminder and a follow-up
   recipientInactive: boolean; // the delegate row is inactive (D6)
   subject: string;
   dueDate: string | null;
@@ -49,7 +49,7 @@ export function approvalViewOf(
     recipient,
     // An unknown sender is stored as the English placeholder (plan D19); the approval renderer maps it to the row's language.
     sender:
-      draft.kind === "reminder"
+      draft.kind === "reminder" || draft.kind === "follow_up"
         ? null
         : { label: senderLabel(original.fromAddress, textTables.en), external: input.external },
     recipientInactive: input.recipientInactive,

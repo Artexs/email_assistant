@@ -18,12 +18,19 @@ export async function isOwnActionId(
   if (!z.uuid().safeParse(actionId).success) return false;
   const row = await db
     .selectFrom("actions as a")
-    .innerJoin("emails as e", (join) => join.onRef("e.id", "=", "a.email_id").onRef("e.org_id", "=", "a.org_id"))
+    .leftJoin("emails as e", (join) => join.onRef("e.id", "=", "a.email_id").onRef("e.org_id", "=", "a.org_id"))
+    .leftJoin("open_loops as l", (join) => join.onRef("l.id", "=", "a.loop_id").onRef("l.org_id", "=", "a.org_id"))
     .select("a.id")
     .where("a.org_id", "=", ctx.orgId)
     .where("a.id", "=", actionId)
     .where("a.type", "in", ["create_draft", "send"])
-    .where("e.mailbox_id", "=", mailboxId)
+    // The mailbox of the action: of its mail, or of its loop (a follow-up has no mail). Both joins check `org_id`.
+    .where((eb) =>
+      eb.or([
+        eb.and([eb("e.org_id", "=", ctx.orgId), eb("e.mailbox_id", "=", mailboxId)]),
+        eb.and([eb("l.org_id", "=", ctx.orgId), eb("l.mailbox_id", "=", mailboxId)]),
+      ])
+    )
     .executeTakeFirst();
   return row !== undefined;
 }
@@ -39,7 +46,8 @@ export async function sentOriginOf(
   if (!z.uuid().safeParse(actionId).success) return null;
   const row = await db
     .selectFrom("actions as a")
-    .innerJoin("emails as e", (join) => join.onRef("e.id", "=", "a.email_id").onRef("e.org_id", "=", "a.org_id"))
+    .leftJoin("emails as e", (join) => join.onRef("e.id", "=", "a.email_id").onRef("e.org_id", "=", "a.org_id"))
+    .leftJoin("open_loops as l", (join) => join.onRef("l.id", "=", "a.loop_id").onRef("l.org_id", "=", "a.org_id"))
     .select((eb) => [
       "a.type",
       "a.status",
@@ -59,7 +67,13 @@ export async function sentOriginOf(
     .where("a.org_id", "=", ctx.orgId)
     .where("a.id", "=", actionId)
     .where("a.type", "in", ["create_draft", "send"])
-    .where("e.mailbox_id", "=", mailboxId)
+    // The mailbox of the action: of its mail, or of its loop (a follow-up has no mail). Both joins check `org_id`.
+    .where((eb) =>
+      eb.or([
+        eb.and([eb("e.org_id", "=", ctx.orgId), eb("e.mailbox_id", "=", mailboxId)]),
+        eb.and([eb("l.org_id", "=", ctx.orgId), eb("l.mailbox_id", "=", mailboxId)]),
+      ])
+    )
     .executeTakeFirst();
   if (row === undefined) return null;
   const sent = row.type === "send" ? row.status === "applied" || row.send_started_at !== null : row.has_sent_send;

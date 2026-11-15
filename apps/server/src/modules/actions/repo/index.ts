@@ -21,6 +21,7 @@ export {
   claimActions,
   countClaimable,
   countHeldSends,
+  mailOf,
   type ClaimedAction,
 } from "./claims";
 export {
@@ -36,6 +37,7 @@ export { insertReverse, lockActionsForUndo, lockLatestOriginalMove, markUndone, 
 export {
   countFailedSendsSince,
   findSendByKey,
+  getAnySend,
   getSend,
   getSetSend,
   lastSendAppliedAt,
@@ -43,12 +45,14 @@ export {
   listOpenReminderSends,
   listRecentSends,
   listSetSends,
+  lockAnySend,
   lockMailboxSends,
   newestVersionOf,
   lockSend,
   setApproved,
   setExpired,
   setRejected,
+  type AnySendRow,
   type SendRow,
 } from "./sends";
 export { insertEditedPair } from "./edit";

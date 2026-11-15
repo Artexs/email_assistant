@@ -840,3 +840,132 @@ Check `~/ea-logs/backup.log` for one `backup ok` line each night.
 3. Compare the counts with the VPS at backup time:
    `$C exec db psql -U postgres -d email_assistant -c "select count(*) from emails"`
 4. Write the date and the counts in the task log.
+
+## VPS lost
+
+Use this section when the host is gone and you need a new one. The same restore path runs the twice-a-year drill (§ Drill). Targets: RPO 24 h (the nightly backup), RTO 2 h. Measured drill time: not measured yet (the first drill is F114 stage 09; the result goes here).
+
+What you need before you start: the age identity (`~/ea-backup-key.txt`) on your own machine, a password manager that holds the `.env` keys, and a read key for the B2 bucket on your own machine.
+
+### New host
+
+1. Install on the new Ubuntu host: Docker with the Compose plugin, git and Tailscale. Join the tailnet as in § Web panel, Tailscale (once).
+2. Clone the repo and go into it. Check out the tag that ran last (`git tag --sort=-v:refname | head -n 1`).
+3. Make `.env` as in § First install (`cp .env.example .env && chmod 600 .env`). Take these keys from the password manager. Never type a value into a chat or a ticket:
+   - `CREDENTIALS_KEY` and `CREDENTIALS_KEY_VERSION`: the old values. A new key cannot open the stored mailbox passwords.
+   - `TELEGRAM_BOT_TOKEN`, `OPERATOR_TELEGRAM_CHAT_ID`, `HEARTBEAT_URL`.
+   - The LLM keys and the web keys (`WEB_BASE_URL`, `WEB_AUTH_SECRET` and the others of § Turn it on).
+   - `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`: new values. Make each with `openssl rand -hex 24`. The restore makes the roles with them.
+4. Get the latest backup file from B2 on your own machine, with the read key (the VPS key cannot read).
+5. Restore. The plain dump goes through the pipe and never touches a disk. On your own machine:
+   `age -d -i ~/ea-backup-key.txt <file>.dump.age | ssh <host> 'cd <repo> && deploy/restore.sh --target new-host --stdin'`
+6. The script starts the database, refuses a database that has tables (exit 2), builds the image once, restores the dump, clears `auth_sessions`, migrates and then runs `bun run credentials:check`.
+   - The check prints one line, `credentials ok=<n> failed=<m>`, with counts only. With `failed` above 0, the script stops with exit 1 and the server stays down: `CREDENTIALS_KEY` or `CREDENTIALS_KEY_VERSION` in `.env` is not the one that sealed the stored secrets. Fix the key, empty the database (`$C down -v`; this is for the new host only, never for the live host), and run step 5 again.
+   - The last line is `restore ok target=new-host seconds=<n>`. Write down the seconds.
+7. Replay the deletes. A restore brings back deleted organizations and erased data. Run again each `deleted <org id>` line of `org:delete` and each `record: dsr erase` line of `org:dsr` from your own notes (§ Restore (D20) of Account data).
+8. Set up the rest, each in its own section: `deploy/backup.env` and the cron line (§ Backups, VPS setup); Tailscale Serve (§ Web panel, Turn it on, steps 5 and 6); the two Healthchecks.io checks, the heartbeat (§ Heartbeat) and the backup ping (§ Backups, Status file and ping).
+9. Run the first release so the release state exists: `deploy/release.sh <tag>` (§ Release). Ask the members to sign in again.
+
+### Drill
+
+Run it twice a year, on the VPS, in the separate project `ea-drill` (own volume, own network `172.29.0.0/24`, no host port, image `ea-drill-server`). The drill never touches the live database, the live volumes or a real mailbox. It sends nothing: no Telegram, no heartbeat, no web, no LLM call, no mail. Never use a Compose profile with the drill files. The steps are Part C of `spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/stages/stage-09-vps-release-and-drill.md` until the drill result is written below. In short:
+
+1. Write down the ids and start times of the live `db` and `server` containers, and the live row counts before and after a fresh `deploy/backup.sh`.
+2. In a fresh clone at the tag: `deploy/restore.sh --target drill --init-env <live repo>/.env`. It copies only the credentials keys from the live file and makes new database passwords.
+3. On your own machine: `age -d -i ~/ea-backup-key.txt <file>.dump.age | ssh <host> 'cd <clone> && deploy/restore.sh --target drill --stdin'`. The last line is `restore ok target=drill seconds=<n>`. The `credentials ok=<n> failed=0` line comes before it.
+4. Each drill count lies between the live count before and after the backup. The live container ids and start times did not change.
+5. Remove it: `deploy/restore.sh --target drill --down` (removes the project, its volume and its image `ea-drill-server`, never `postgres:17`), then delete the clone.
+
+## Sim stack (`ea-sim`)
+
+The sim stack is a second Compose project on the VPS: its own database, GreenMail, a fake Telegram, the server and the lab (ADR 0021, `docs/capabilities/live-lab.md`). It plays the frozen mail week `lab-01` in real time. It sends no mail and no tap to a real person. It shares nothing with the production stack: other project, network (`172.31.0.0/24`), volumes and ports.
+
+The VPS runs Docker only. These commands need no `bun` on the host. In the commands below, `S` and `L` mean:
+
+```sh
+S="docker compose -p ea-sim -f deploy/compose.sim.yaml --env-file deploy/sim.env"
+L="$S exec -T lab bun run lab"
+```
+
+`$S` is the line of `bun run sim:up`, `sim:down` and `sim:ps` (`package.json`) without the last word. Never run `$S config`: it prints the values of `deploy/sim.env`.
+
+### Rules
+
+- **Every deploy of the sim stack is a release.** The sim images are built from the checkout of a release tag, never from a bare commit or a branch. Production has the same rule (§ Release, `docs/release-checklist.md`). The release tag goes into the sim base image (`EA_RELEASE`), so a sim log line names the release.
+- **Never set `SEND_SCOPE=all` or a real bot token in `deploy/sim.env`.** The lab refuses to start (`lab:env-check`, `docs/capabilities/live-lab.md` rule 1).
+- **Never point the sim at the production `.env`.** Only the LLM key lines go from `.env` to `deploy/sim.env`, and they are never printed.
+- **Never `restart` or recreate `fake-telegram` during a run.** See "Restart order".
+
+### Runbook
+
+1. **Release.** The sim files (`deploy/compose.sim.yaml`, `deploy/Dockerfile.sim`, `deploy/sim.env.example`) and the sim code ship in a release (`docs/release-checklist.md` step 4).
+   - If a sim file or the lab code changed since the last release, make a new release first: steps 1 to 8 of `docs/release-checklist.md`, then `deploy/release.sh v<x.y.z>` (§ Release). It runs the backup (step 3), checks the disk and leaves the checkout at the tag.
+   - If nothing changed, check that the checkout is at the running release: `git describe --tags --exact-match` must print the tag in the line `current=` of `deploy/release-state/state`. If it does not, run `git checkout --detach <tag>` for that tag, or make a release.
+   - Set the tag once: `T=$(git describe --tags --exact-match)`.
+2. **Disk.** `df -h /`. A live day needs at least 2 GB free. The live week waits for owner step O1 (the VPS root volume grows first: PD-055). Check again after the build.
+3. **Backup first.** If step 1 ran `deploy/release.sh`, the backup is done (its last stdout line is `backup ok ...`). Else run `deploy/backup.sh` now. The sim stack never touches production rows, but the backup is the rollback point.
+4. **Build.** At the release tag:
+   ```sh
+   docker build -f deploy/Dockerfile --build-arg EA_RELEASE="$T" -t "ea-sim-base:$T" .
+   ```
+   The tag `ea-sim-base:<tag>` is for the sim only. Never retag `ea-server`: the release scripts own it. After the env file exists (step 5), `$S build` builds the sim image `ea-sim-server` on top of that base.
+5. **Env.** Make the file and lock it first, then fill it. Each command writes the value into the file and prints nothing:
+   ```sh
+   cp deploy/sim.env.example deploy/sim.env && chmod 600 deploy/sim.env
+   for key in CREDENTIALS_KEY WEB_AUTH_SECRET; do sed -i "s|^$key=.*|$key=$(openssl rand -base64 32)|" deploy/sim.env; done
+   for key in POSTGRES_PASSWORD MIGRATOR_PASSWORD APP_PASSWORD; do sed -i "s|^$key=.*|$key=$(openssl rand -hex 24)|" deploy/sim.env; done
+   sed -i "s|^EA_SERVER_IMAGE=.*|EA_SERVER_IMAGE=ea-sim-base:$T|" deploy/sim.env
+   sed -i "s|<host>|email-assistant.<tailnet>.ts.net|" deploy/sim.env
+   sed -i -E '/^(OPENAI_|GEMINI_|LLM_PROVIDER=)/d' deploy/sim.env
+   grep -E '^(OPENAI_|GEMINI_|LLM_PROVIDER=)' .env >> deploy/sim.env
+   ```
+   Replace `<tailnet>` with the name of your tailnet. The last two lines copy the LLM provider, key and model lines of `.env` (the sim uses the same provider and models as production, ADR 0021 point 5). Do not print `.env` or `deploy/sim.env`. Keep a copy of `CREDENTIALS_KEY` in the password manager only if you keep the sim data. Do not change `LAB_STACK`, `TELEGRAM_*`, `SEND_*`, `*_SCOPE`, `HEARTBEAT_URL`, `OPERATOR_*` or `AUTH_SMTP_*`: the guard checks them.
+6. **Start and migrate.**
+   ```sh
+   $S build
+   $S up -d --wait
+   $S exec -T server bun run db:migrate
+   $S restart server
+   ```
+   `$S up -d --wait` is `bun run sim:up` (the build step comes first because `up` builds only a missing image). Every container command starts with `bun run lab:env-check`: a wrong `deploy/sim.env` stops the container before it polls Telegram or sends mail, and `$S ps` shows it. The restart lets the server jobs start on the migrated schema. Check: `$S ps` shows `db`, `greenmail`, `fake-telegram`, `server` and `lab` running, and `$S logs --no-log-prefix --since 5m server` shows `server_listening`.
+7. **Panel.** The panel is on `127.0.0.1:8180` (ADR 0017: tailnet only):
+   ```sh
+   sudo tailscale serve --bg --https=8443 http://127.0.0.1:8180
+   tailscale serve status
+   ```
+   `WEB_BASE_URL` in `deploy/sim.env` must be `https://<machine>.<tailnet>.ts.net:8443`. The sim has no auth mail (`AUTH_SMTP_*` stays empty). A sign-in link for the owner, after step 8 made the org: `$S exec -T server bun run web:invite --org-id <org id> --print`. The link is a secret: use it once and never paste it into a ticket or a chat.
+8. **Seed.** `$L seed` makes the lab organization, its mailbox, delegates, rules, flags and the Telegram link. It prints the org id. The command is safe to run again (it adds only what is missing). `$L seed --org demo` makes the demo organization.
+9. **Checks** (record each result in the ticket log). Run them once on a new host, and after a release that changed the sim files.
+   - **N1, no outbound mail.** Send a mail from GreenMail to an outside address, then read it back from GreenMail itself:
+     ```sh
+     $S exec -T lab bun -e 'import nodemailer from "nodemailer"; import { ImapFlow } from "imapflow"; const to = `probe-${Date.now()}@example.com`; const t = nodemailer.createTransport({ host: "127.0.0.1", port: 3025, secure: false, ignoreTLS: true }); console.log((await t.sendMail({ from: "oliver.pemberton@kordelan.test", to, subject: "n1", text: "n1" })).response); const c = new ImapFlow({ host: "127.0.0.1", port: 3143, secure: false, auth: { user: to, pass: "x" }, logger: false }); await c.connect(); console.log("inbox", (await c.status("INBOX", { messages: true })).messages); await c.logout();'
+     ```
+     Expected: `250 OK` and `inbox 1`: GreenMail stored the mail for its own user. Then look at the sockets of the shared network namespace from the host: `PID=$(docker inspect -f '{{.State.Pid}}' "$($S ps -q fake-telegram)")` and `sudo nsenter -t "$PID" -n ss -tn`. Every peer must be `127.0.0.1` or the `db` address (`172.31.0.x:5432`); no peer on port 25, 465 or 587. `ss` shows live sockets only, so the stored mail is the main proof.
+   - **N2, restart of `server`.** `$S restart server`, wait for `$S ps` to show it healthy, then send `/help` as the owner and count the chat messages. The count must grow by at least 2 (your message and the answer of the server): this proves polling and the database:
+     ```sh
+     $S exec -T lab bun -e 'const u = "http://127.0.0.1:8090/_fake/"; const n = async () => { const r = await fetch(`${u}chats/5550001`); return r.ok ? (await r.json()).messages.length : 0; }; const a = await n(); await fetch(`${u}send`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chatId: 5550001, text: "/help" }) }); await Bun.sleep(8000); console.log(a, "->", await n());'
+     ```
+   - **N2, restart of `fake-telegram`.** Do this before any run, never during one. `greenmail`, `server` and `lab` share its network namespace and keep the old one: they lose the database, GreenMail and Telegram. `$S restart fake-telegram`, then `$S ps` and `$S logs --no-log-prefix --since 2m server`. If `server` and `lab` do not recover, run `$S up -d --force-recreate greenmail server lab`. GreenMail keeps its mail in memory: a recreate empties it. After it, run `$L seed` again.
+   - **N4, disk.** `df -h /` after the build (step 2).
+   - **Tailnet.** From your own device, open `https://<machine>.<tailnet>.ts.net:8443`. The sign-in page must load.
+10. **Run.**
+    - A live day (the routine smoke test, cost cap $1): `$L start --mode day`. The default date is tomorrow in Warsaw. `--date YYYY-MM-DD` picks another day.
+    - A live week (cost cap $5): `$L start --mode week --date <a Monday>`. The week needs seven days and a four-day tail.
+    - Every measured run after the first needs a fresh organization: stop the run (`$L stop --run <id>`), wait 60 s for the loop to end its tick, then `$L reset --org lab` (it prints what it would delete and exits 1), then `$L reset --org lab --yes`.
+    - Each day: `$L status`. Each line shows the counts, the spend and the stop reason. The serve loop (`lab` service) does the work: it injects the mail, plays the delegates and taps as the executive. A run stops itself at its cap or at the end of its tail.
+    - The month cap is $20 for all runs on this machine. The ledger is `eval-spend.jsonl` in the state volume.
+11. **Score.** After the tail:
+    ```sh
+    $L score --run <id> --out /var/lib/ea-lab/results
+    $S cp lab:/var/lib/ea-lab/results/. /tmp/ea-lab-results/
+    ```
+    Copy `/tmp/ea-lab-results/sim-*.md` and the `.json` files to a normal checkout of the repo (`scp`) into `evals/results/`, and commit them there with explicit paths. The VPS checkout is detached at a release tag: do not commit on it. The reports hold ids, counts and rates only (no mail text, no address).
+12. **Demo.** `$L demo-reset` shows what it would delete; `$L demo-reset --yes` rebuilds the demo organization and starts its week run (shadow on days 1 to 3, assist from day 4; cost cap $5). The run counts in the month cap.
+    - After day 1 ended, make a trial export to find a `non_test_address` refusal early: `$L demo-export --day 1 --out /var/lib/ea-lab/trial.json`. The check refuses a bare `@` in any text (it fails safe and prints no value). Delete the file afterwards: `$S exec -T lab rm /var/lib/ea-lab/trial.json`.
+    - After day 4: `$L demo-export --day 4 --out /var/lib/ea-lab/demo-day4.json`, then `$S cp lab:/var/lib/ea-lab/demo-day4.json /tmp/demo-day4.json`.
+    - Copy the file to the owner's PC. There, with the dev database: `LAB_STATE_DIR=$(mktemp -d) bun run lab demo-import --file <file> --email <owner email>`. `LAB_STATE_DIR` must be an absolute path of an empty scratch folder. `SEND_SCOPE` must not be `all`. The import makes the new organization "Kordelan demo (import)". Add `--replace` to load a newer file over an earlier import.
+13. **Restart order.** `fake-telegram` first, then `greenmail`, `server` and `lab`: they share its network namespace. A fake restart loses the chats and the cards of the executive: run `$L seed` after it, so the fake knows each linked chat again. The scorer counts the approvals that expired with no tap. A GreenMail recreate loses all mail: stop the run and reset the organization.
+14. **Stop and roll back.**
+    - Stop: `$S down` (`bun run sim:down`). The volumes stay (`ea-sim_db-data`, `ea-sim_lab-state`).
+    - Roll back the whole stack: `$S down`, then `docker volume rm ea-sim_db-data ea-sim_lab-state`. Production is not affected by either.
+    - Roll back to an earlier release: put the old tag in `EA_SERVER_IMAGE` of `deploy/sim.env`, then `$S build` and `$S up -d --force-recreate fake-telegram greenmail server lab` (the earlier base image must still exist: `docker image ls ea-sim-base`). Keep the base images of the last two releases and remove older ones with `docker rmi ea-sim-base:<tag>`. `deploy/rollback.sh` does not touch the sim stack.

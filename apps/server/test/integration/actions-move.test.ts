@@ -592,7 +592,7 @@ describe("reverse move", () => {
 
       const [again] = await claim(trx, s, new Date(NOW.getTime() + 11 * 60_000));
       expect(again?.id).toBe(mail.reverseId);
-      expect(again?.email.folder).toBe(INBOX);
+      expect(again?.email?.folder).toBe(INBOX);
       s.fake.calls.length = 0;
       expect((await applyAction(depsOf(s, trx), s.ctx, again as ClaimedAction, s.fake)).kind).toBe("applied");
 
@@ -655,7 +655,7 @@ describe("reverse move", () => {
 });
 
 describe("ensureMoved", () => {
-  const email = (uid: number, hash: string): ClaimedAction["email"] => ({
+  const email = (uid: number, hash: string): NonNullable<ClaimedAction["email"]> => ({
     id: "e1",
     mailbox_id: "m1",
     folder: INBOX,

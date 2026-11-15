@@ -22,7 +22,7 @@ Three steps.
 - **Files:** `apps/docs/scripts/stale.ts` (new) and test; root script `docs:stale`.
 - **Interfaces:** `bodyHash(markdown: string): string` = first 16 hex of sha256 of the text after the closing `---` of the front matter, with `\r\n` → `\n`, lines that hold only a `<Shot … />` tag removed (stage 11: a screenshot never stales a translation), and trailing whitespace of the whole body removed.
   - `bun run docs:stale`: for each page under `pl/`: no `source` or `sourceHash` → error; `source` page missing → error; hash differs → `stale pl/<id> (source <id>)`. For each id in `POLISH_SET` without a Polish page → error `missing pl/<id>`. Errors exit 1; stale lines alone exit 0 with the count `stale: <n>`.
-  - `--strict`: a stale page whose source is `index` or starts with `start` exits 1 (the public set of this ticket; F121 adds security and pricing). The E8b release checklist runs it.
+  - `--strict`: a stale page whose source is `index` or starts with `start` exits 1 (the public set of this ticket; F121 adds security and pricing). Stage 13 adds it to `docs/release-checklist.md` (F114).
   - `--stamp <pl file>`: writes the current `sourceHash` of its source into the file, changes nothing else.
 - **Test:**
   - T3: `bodyHash("---\ntitle: A\n---\nHi\r\n\n")` equals `bodyHash("---\ntitle: B\n---\nHi")` and `bodyHash("---\ntitle: B\n---\nHi\n<Shot page=\"rules\" />")` (front matter, line ends and `<Shot>` lines do not count).

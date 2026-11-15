@@ -63,6 +63,8 @@ export const numberFieldNames = [
   "due",
   "overdue",
   "reminders",
+  // loops: the Sent analysis (loops opened in a run)
+  "opened",
   // mail sync, below-cursor check and delivery
   "fetched",
   "stored",

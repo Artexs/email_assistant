@@ -74,4 +74,23 @@ describe("composeMessage", () => {
     const text = (await composeMessage(buildOutgoingMessage(input()))).toString("latin1");
     expect(text).toContain("To: Jan Kowalski <jan@firma.pl>");
   });
+
+  test("a follow-up writes every To and Cc address and the thread headers", async () => {
+    const followUp = {
+      kind: "follow_up",
+      loop_id: "33333333-3333-4333-8333-333333333333",
+      to: ["anna@example.test", "ewa@example.test"],
+      cc: ["jan@example.test"],
+      language: "en",
+      sent_at: "2026-11-10T09:30:00.000Z",
+      subject: "Offer",
+      quote: "Can you confirm?",
+      n: 1,
+    } satisfies DraftPayload;
+    const text = (await composeMessage(buildOutgoingMessage(input(followUp)))).toString("latin1");
+    expect(text).toContain("To: anna@example.test, ewa@example.test");
+    expect(text).toContain("Cc: jan@example.test");
+    expect(text).toContain("Subject: Re: Offer");
+    expect(text).toContain("In-Reply-To: <orig@firma.pl>");
+  });
 });

@@ -1,5 +1,5 @@
 # The sim stack image (F113, deploy/compose.sim.yaml). It adds the fake Telegram and the lab corpus to a server image.
-# EA_SERVER_IMAGE is a tag that only the sim stack uses (docker build -f deploy/Dockerfile -t ea-sim-base .).
+# EA_SERVER_IMAGE is a tag that only the sim stack uses: ea-sim-base:<release tag> (deploy/README.md § Sim stack, step 4).
 # Never pass the production tag `ea-server`: a build of the sim image must not move it (apps/server/src/scripts/sim-compose-check.ts checks the Compose file).
 ARG EA_SERVER_IMAGE
 FROM ${EA_SERVER_IMAGE}

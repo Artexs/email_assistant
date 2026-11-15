@@ -60,7 +60,12 @@ flowchart BT
   lab --> reports
   lab --> tenancy
   lab --> triage
+  loops --> actions
   loops --> audit
+  loops --> config
+  loops --> delegation
+  loops --> mail
+  loops --> tenancy
   loops --> triage
   mail --> audit
   mail --> config

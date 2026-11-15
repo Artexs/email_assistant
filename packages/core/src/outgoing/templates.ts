@@ -1,9 +1,13 @@
+import { textTables } from "../texts";
 import type { DraftKind } from "../triage/payloads";
 
 export interface TemplateFields {
   task?: string;
   question?: string;
   dueDate: string | null;
+  // The follow-up only: the subject of the own mail, the day of it and the number of this follow-up.
+  subject?: string;
+  followUpNumber?: 1 | 2;
   senderLabel: string;
   dateLabel: string;
   signature: string;
@@ -30,9 +34,15 @@ export const DRAFT_TEMPLATES: Readonly<Record<DraftKind, (pl: boolean, fields: T
       ? `Dzień dobry,\n\nprzypominam o zadaniu: ${task}\n${due}Proszę o krótką informację o stanie prac.\n\n${signature}`
       : `Hello,\n\na reminder about this task: ${task}\n${due}Please send a short status.\n\n${signature}`;
   },
+  // `dateLabel` is the day of the own mail (`formatSentDate`).
+  follow_up: (pl, { subject, dateLabel, followUpNumber, signature }) => {
+    const texts = textTables[pl ? "pl" : "en"].followUp;
+    const body = followUpNumber === 2 ? texts.second(dateLabel, subject) : texts.first(dateLabel, subject);
+    return `${body}\n\n${signature}`;
+  },
 };
 
 export function renderTemplate(kind: DraftKind, language: Language, fields: TemplateFields): string {
-  const { task = "", question = "", ...rest } = fields;
-  return DRAFT_TEMPLATES[kind](language === "pl", { ...rest, task, question });
+  const { task = "", question = "", subject = "", followUpNumber = 1, ...rest } = fields;
+  return DRAFT_TEMPLATES[kind](language === "pl", { ...rest, task, question, subject, followUpNumber });
 }

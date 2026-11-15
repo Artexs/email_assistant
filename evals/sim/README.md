@@ -189,3 +189,7 @@ Example 2: `sentAt` `2026-11-18T23:30:00.000Z` is Thursday 2026-11-19, 00:30 in 
 ### 8.7 Holdout rule
 
 `sent-holdout` is the extractor gate set (stage 06). Prompt work reads `sent-dev` only. In code, `sentEvalCasesOf(root, scenario, "sent-holdout", { holdout: true })` loads the holdout; the call without the option throws.
+
+## 9. Live lab (F113)
+
+The frozen `week` part also plays in real time on the sim stack `ea-sim` (`bun run lab`): the injector sends each slot at its time, delegate bots answer, a scripted executive taps, and a scorer writes the report to `evals/results/`. The lab reads only `scenario.json` and `week/`, never `holdout/`. Runbook: `deploy/README.md` § Sim stack. What the lab does and does not do: `docs/capabilities/live-lab.md`.

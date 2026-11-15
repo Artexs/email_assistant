@@ -97,7 +97,10 @@ export {
   lockActionsForUndo,
   lockDraft,
   lockLatestOriginalMove,
+  getAnySend,
+  lockAnySend,
   lockSend,
+  mailOf,
   markApplying,
   markResultNotified,
   markNotified,
@@ -109,6 +112,7 @@ export {
 } from "./repo";
 export type {
   ActionRow,
+  AnySendRow,
   ClaimedAction,
   ClaimFilter,
   MailboxClaimFilter,
@@ -143,6 +147,14 @@ export {
   type ExpiryDeps,
   type SendCloseReason,
 } from "./expiry";
-export { noApprovalHooks, noDelegationHooks, type ApprovalHooks, type DelegationHooks } from "./hooks";
+export {
+  noApprovalHooks,
+  noDelegationHooks,
+  noLoopHooks,
+  type ApprovalHooks,
+  type DelegationHooks,
+  type LoopAnchor,
+  type LoopHooks,
+} from "./hooks";
 export { undo, type UndoResult } from "./undo";
 export { actionRoutes, type ActionRouteDeps } from "./routes";

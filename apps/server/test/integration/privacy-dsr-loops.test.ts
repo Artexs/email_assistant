@@ -15,7 +15,7 @@ import { createDb } from "../../src/platform/db";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { insertAnalysisRow, insertLoopRow, insertSentRow } from "./loops-fixtures";
+import { insertAnalysisRow, insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
 // F116 stage 07: the open loops are in the data request and the organization export. A loop copies recipients and
 // short texts from sent mail, so an erase for a person must leave no address and no text of that person in it. The seed
@@ -241,6 +241,71 @@ describe("open loops in a data request", () => {
     const dump = rows.rows.map((row) => row.j).join("\n");
     expect(dump).not.toContain(subject);
     expect(dump.toLowerCase()).not.toContain(w.person);
+  });
+
+  test("7: the follow-up of a closed loop loses the person from its payload and its card text; an open one stops the erase", async () => {
+    const w = await seedWorld();
+    const loop = await seedLoop(w, { counterpart: w.person, to_addresses: [w.person, w.other] });
+    const payload = { kind: "follow_up", to: [w.person], cc: [w.other], quote: `hello ${w.person}` };
+    const closed = await db.transaction().execute(async (trx) => {
+      const pair = await insertLoopActionPair(trx, { orgId: w.orgId }, loop, {
+        draftStatus: "expired",
+        sendStatus: "expired",
+        payloads: { draft: payload, send: { kind: "follow_up", to: [w.person], cc: [w.other] } },
+      });
+      const member = await trx
+        .selectFrom("memberships")
+        .select("user_id")
+        .where("org_id", "=", w.orgId)
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto("outbox")
+        .values({
+          org_id: w.orgId,
+          user_id: member.user_id,
+          kind: "approval",
+          dedup_key: `approval:${pair.sendId}`,
+          loop_id: loop,
+          text: `Follow-up to ${w.person}`,
+          buttons: "[]",
+          status: "sent",
+          created_at: NOW,
+          next_attempt_at: NOW,
+          sent_at: NOW,
+        })
+        .execute();
+      return pair;
+    });
+    // A mail that goes in the same erase: the loop actions have no mail and must not break the chain query.
+    const result = await erase(w);
+    expect(result.kind).toBe("erased");
+    const rows = await db
+      .selectFrom("actions")
+      .select(["id", "payload"])
+      .where("id", "in", [closed.draftId, closed.sendId])
+      .execute();
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(JSON.stringify(row.payload)).not.toContain(w.person);
+      expect(JSON.stringify(row.payload)).toContain("[removed]");
+    }
+    const outbox = await db.selectFrom("outbox").select("text").where("loop_id", "=", loop).executeTakeFirstOrThrow();
+    expect(outbox.text).toBe("Follow-up to [removed]");
+    // The other recipient stays.
+    expect(JSON.stringify(rows.find((row) => row.id === closed.sendId)?.payload)).toContain(w.other);
+
+    const second = await seedWorld();
+    const secondLoop = await seedLoop(second, { counterpart: second.person, to_addresses: [second.person] });
+    await db.transaction().execute((trx) =>
+      insertLoopActionPair(trx, { orgId: second.orgId }, secondLoop, {
+        payloads: {
+          draft: { kind: "follow_up", to: [second.person], cc: [] },
+          send: { kind: "follow_up", to: [second.person], cc: [] },
+        },
+      })
+    );
+    const refused = await erase(second);
+    expect(refused.kind).toBe("open_actions");
   });
 
   test("4: the loops of another organization with the same person stay whole", async () => {

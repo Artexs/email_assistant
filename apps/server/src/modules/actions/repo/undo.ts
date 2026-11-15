@@ -68,13 +68,21 @@ export async function lockActionsForUndo(trx: DbOrTrx, ctx: TenantContext, email
 export async function insertReverse(
   trx: DbOrTrx,
   ctx: TenantContext,
-  original: { id: string; emailId: string; type: ActionType; payload: Record<string, string | number | null> }
+  // A follow-up draft hangs on a loop: `emailId` null and `loopId` set (exactly one, as on the original).
+  original: {
+    id: string;
+    emailId: string | null;
+    loopId?: string | null;
+    type: ActionType;
+    payload: Record<string, string | number | null>;
+  }
 ): Promise<string | null> {
   const row = await trx
     .insertInto("actions")
     .values({
       org_id: ctx.orgId,
       email_id: original.emailId,
+      loop_id: original.loopId ?? null,
       type: original.type,
       payload: JSON.stringify(original.payload),
       status: "ready",

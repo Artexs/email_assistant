@@ -2,7 +2,7 @@ import type { RecentSend } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
-import { emailIdOf } from "../anchor";
+import { ActionAnchorError, anchorOfRow, emailIdOf } from "../anchor";
 
 import type { DbOrTrx } from "./shared";
 
@@ -36,7 +36,8 @@ export interface SendRow {
     body_text: string | null;
   };
 }
-// loop rows: open loops stage 10/11 (no mail: the filter keeps them out of every send reader)
+// Mail sends only: the readers of cards, lists and notices need the mail behind the send. A loop send (a follow-up) has none;
+// those readers get it with open loops stage 11. The committer side reads both kinds with `lockAnySend` and `getAnySend`.
 export function sendBase(db: DbOrTrx, ctx: TenantContext) {
   return db
     .selectFrom("actions")
@@ -122,6 +123,63 @@ export function toSendRow(row: SendQueryRow): SendRow {
       body_text,
     },
   };
+}
+// A send of a mail or of a loop, with the few fields that the close and fail paths of the committer side need.
+// `mailbox_id` comes from the mail, or from the loop for a follow-up (`open_loops.mailbox_id`).
+export interface AnySendRow {
+  id: string;
+  email_id: string | null;
+  loop_id: string | null;
+  mailbox_id: string;
+  status: string;
+  status_reason: string | null;
+  payload: Record<string, unknown>;
+  depends_on_action_id: string | null;
+  locked_at: Date | null;
+}
+function anySendQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
+  return db
+    .selectFrom("actions")
+    .leftJoin("emails", (join) =>
+      join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+    )
+    .leftJoin("open_loops", (join) =>
+      join.onRef("open_loops.id", "=", "actions.loop_id").onRef("open_loops.org_id", "=", "actions.org_id")
+    )
+    .select([
+      "actions.id",
+      "actions.email_id",
+      "actions.loop_id",
+      "actions.status",
+      "actions.status_reason",
+      "actions.payload",
+      "actions.depends_on_action_id",
+      "actions.locked_at",
+      sql<string | null>`coalesce(emails.mailbox_id, open_loops.mailbox_id)`.as("mailbox_id"),
+    ])
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("actions.type", "=", "send")
+    .where("actions.id", "=", id);
+}
+function toAnySendRow(
+  row: Awaited<ReturnType<ReturnType<typeof anySendQuery>["executeTakeFirstOrThrow"]>>
+): AnySendRow {
+  anchorOfRow(row); // exactly one anchor (the database CHECK says so too)
+  if (row.mailbox_id === null) throw new ActionAnchorError("invalid_anchor");
+  return { ...row, mailbox_id: row.mailbox_id, payload: row.payload as Record<string, unknown> };
+}
+// FOR UPDATE of the action row only. Lock order: the loop first (a loop send), then the send.
+export async function lockAnySend(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string
+): Promise<AnySendRow | undefined> {
+  const row = await anySendQuery(trx, ctx, id).forUpdate("actions").executeTakeFirst();
+  return row && toAnySendRow(row);
+}
+export async function getAnySend(db: DbOrTrx, ctx: TenantContext, id: string): Promise<AnySendRow | undefined> {
+  const row = await anySendQuery(db, ctx, id).executeTakeFirst();
+  return row && toAnySendRow(row);
 }
 // FOR UPDATE of the action row only (the mail row stays unlocked: the lock order of S3, D6).
 export async function lockSend(trx: Transaction<DB>, ctx: TenantContext, id: string): Promise<SendRow | undefined> {
@@ -300,9 +358,10 @@ export async function lockMailboxSends(db: DbOrTrx, ctx: TenantContext, mailboxI
 }
 
 // PD-044 (D4): the sends of one mailbox that may have reached people and started after `since`.
-// loop rows: open loops stage 10/11 (a loop send must count in the send limits of its mailbox then)
+// A send of an incoming mail belongs to the mailbox of that mail; a send of a loop (a follow-up) to the mailbox of the loop.
+// The follow-up must count here: this is what holds a follow-up behind the send limits of its mailbox and recipients.
 // An `approved` row with an old stamp (put back before a retry), `rejected`, `expired` and refused sends do not count.
-// `to` holds the strings of `payload.to`; retention may have cleared the payload, then `to` is [].
+// `to` holds the strings of `payload.to` and `payload.cc`; retention may have cleared the payload, then `to` is [].
 export async function listRecentSends(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -311,14 +370,20 @@ export async function listRecentSends(
 ): Promise<RecentSend[]> {
   const rows = await db
     .selectFrom("actions")
-    .innerJoin("emails", (join) =>
+    .leftJoin("emails", (join) =>
       join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+    )
+    .leftJoin("open_loops", (join) =>
+      join.onRef("open_loops.id", "=", "actions.loop_id").onRef("open_loops.org_id", "=", "actions.org_id")
     )
     .select(["actions.id", "actions.send_started_at", "actions.payload"])
     .where("actions.org_id", "=", ctx.orgId)
-    .where("emails.org_id", "=", ctx.orgId)
-    .where("emails.mailbox_id", "=", mailboxId)
-    .where("actions.email_id", "is not", null)
+    .where((eb) =>
+      eb.or([
+        eb.and([eb("emails.org_id", "=", ctx.orgId), eb("emails.mailbox_id", "=", mailboxId)]),
+        eb.and([eb("open_loops.org_id", "=", ctx.orgId), eb("open_loops.mailbox_id", "=", mailboxId)]),
+      ])
+    )
     .where("actions.type", "=", "send")
     .where("actions.send_started_at", ">", since)
     .where((eb) =>
@@ -336,8 +401,11 @@ export async function listRecentSends(
 }
 
 function recipientsOf(payload: unknown): string[] {
-  const to = (payload as { to?: unknown } | null)?.to;
-  return Array.isArray(to) ? to.filter((entry): entry is string => typeof entry === "string") : [];
+  const read = (key: "to" | "cc"): string[] => {
+    const list = (payload as Record<string, unknown> | null)?.[key];
+    return Array.isArray(list) ? list.filter((entry): entry is string => typeof entry === "string") : [];
+  };
+  return [...read("to"), ...read("cc")];
 }
 
 // F099 D17: sends of the organization that ended `failed` after `since` (by `updated_at`).
