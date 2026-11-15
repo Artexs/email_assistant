@@ -43,3 +43,7 @@ Routes and panel (20–22).
 ## Carry-over from stage 12 review
 
 - The loop text (ask, subject) can hold markdown and the remains of an escape sequence: escape it in the brief and in the Telegram cards (review-12.md N6).
+
+## Carry-over from stage 17 review
+
+- N5: the keyboard builder drops the loop buttons when loopConsent is false (use the stage 11 choke point) (review-17.md).

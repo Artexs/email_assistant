@@ -33,3 +33,7 @@ T1–T9 pass; the Proof with the web tail prints `PROOF_OK` (`/tmp/f116-s22`); t
 ## Out of scope
 
 M2 (23), docs (24).
+
+## Carry-over from stage 17 review
+
+- N4: the re-ask of linked users (Step 3) must treat an unlink as a withdrawal; N6: stages 11 and 18 may land before this stage: open_loops stays off until it lands (review-17.md).
