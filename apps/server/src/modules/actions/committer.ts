@@ -323,7 +323,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       throw error;
     } finally {
       if (counts.applied + counts.failed + counts.retry + counts.closed > 0) {
-        mailboxLog.info("committer_done", counts);
+        mailboxLog.info("committer_done", { ...counts });
       }
     }
   }

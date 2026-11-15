@@ -275,6 +275,24 @@ export async function countLlmCallsSince(
   return Number(row.count);
 }
 
+// SLO job entry point (F114): no TenantContext. The `llm.call` rows of all organizations that are not `suspended`, written at or
+// after `since`: how many, and how many with an outcome other than `ok`. Counts only; no id, no text. The name differs from
+// `countLlmCallsSince` (one mailbox) on purpose.
+export async function countLlmCallOutcomesSince(db: DbOrTrx, since: Date): Promise<{ total: number; failed: number }> {
+  const row = await db
+    .selectFrom("audit_log")
+    .innerJoin("organizations", "organizations.id", "audit_log.org_id")
+    .select([
+      (eb) => eb.fn.countAll<string>().as("total"),
+      sql<string>`count(*) filter (where audit_log.reason_code <> 'ok')`.as("failed"),
+    ])
+    .where("audit_log.event", "=", auditEvents.llmCall)
+    .where("audit_log.created_at", ">=", since)
+    .where("organizations.plan", "<>", "suspended")
+    .executeTakeFirstOrThrow();
+  return { total: Number(row.total), failed: Number(row.failed) };
+}
+
 // Rows of one event in the window `after < created_at <= until`, optionally of one `reason_code`.
 export async function countEventsBetween(
   db: DbOrTrx,

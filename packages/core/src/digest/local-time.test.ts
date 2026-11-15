@@ -4,6 +4,7 @@ import {
   formatClock,
   formatDay,
   isQuietTime,
+  lateMin,
   localDateTime,
   localKey,
   localToInstant,
@@ -121,5 +122,34 @@ describe("quietEnd", () => {
 
   test("the spring night", () => {
     expect(iso(quietEnd(new Date("2027-03-27T22:00:00Z"), TZ))).toBe("2027-03-28T05:00:00.000Z");
+  });
+});
+
+describe("lateMin", () => {
+  test("12. minutes outside the quiet hours: 2 before 22:00 and 9 after 07:00 (Warsaw, November)", () => {
+    expect(lateMin(new Date("2026-11-19T20:58:00Z"), new Date("2026-11-20T06:09:00Z"), TZ)).toBe(11);
+  });
+
+  test("a range inside the day counts every minute", () => {
+    expect(lateMin(new Date("2026-11-20T09:45:00Z"), new Date("2026-11-20T10:00:00Z"), TZ)).toBe(15);
+  });
+
+  test("a range inside the quiet hours counts nothing, also when it starts after midnight", () => {
+    expect(lateMin(new Date("2026-11-19T22:30:00Z"), new Date("2026-11-20T05:00:00Z"), TZ)).toBe(0);
+    expect(lateMin(new Date("2026-11-20T02:00:00Z"), new Date("2026-11-20T03:00:00Z"), TZ)).toBe(0);
+  });
+
+  test("a range over two nights subtracts both", () => {
+    // 2026-11-19 08:00Z (09:00) to 2026-11-21 08:00Z: 48 h minus two nights of 9 h.
+    expect(lateMin(new Date("2026-11-19T08:00:00Z"), new Date("2026-11-21T08:00:00Z"), TZ)).toBe(30 * 60);
+  });
+
+  test("to before from is 0", () => {
+    expect(lateMin(new Date("2026-11-20T10:00:00Z"), new Date("2026-11-20T09:00:00Z"), TZ)).toBe(0);
+  });
+
+  test("the spring night is 8 h long: 20:00Z to 06:00Z leaves 1 h before 21:00Z and 1 h after 05:00Z", () => {
+    // The night starts 2027-03-27 21:00Z (22:00 CET) and ends 2027-03-28 05:00Z (07:00 CEST).
+    expect(lateMin(new Date("2027-03-27T20:00:00Z"), new Date("2027-03-28T06:00:00Z"), TZ)).toBe(120);
   });
 });

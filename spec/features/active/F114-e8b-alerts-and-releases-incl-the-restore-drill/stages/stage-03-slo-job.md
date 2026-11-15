@@ -62,3 +62,7 @@ Out of scope: disk and backup checks (04); the console list (F081); outbox rows 
 
 - `markAlertSent` (`modules/operator/alerts-repo.ts`) has no state guard: a second `resolved` mark overwrites `resolved_sent_at`. The job must follow `nextAlertStep` and call each mark once per step.
 - Note: the old-release `EXPORT_MAP` completeness test (master code with the `ops_alerts` table present) fails only in CI, not at runtime. A rollback image keeps working.
+
+## Carry-over from stage 02 review
+
+Read `review-2.md`. Do: TG1 (autumn-DST `lateMin` test), TG2 (two-member `MIN(linked_at)` and two-notice `MIN(sent_at)` tests), N-e (a bad time zone of one organization must not fail the whole urgent reading: skip and warn), N-a, N-b, N-c in the alert text or docs, and run the job in `withoutTenantScope`. Call each check with `cfg = sloThresholds(config)`; `checkUrgentLatency` has a fifth argument `testMailRule(config)`.

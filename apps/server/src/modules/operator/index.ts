@@ -9,3 +9,11 @@ export {
   type AlertPhase,
   type OpsAlertRow,
 } from "./alerts-repo";
+export {
+  checkLlmErrors,
+  checkSyncLag,
+  checkUrgentLatency,
+  MAX_IDS,
+  SLO_START_GRACE_MS,
+  type SloReading,
+} from "./slo-checks";

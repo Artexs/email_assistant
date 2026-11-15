@@ -16,3 +16,14 @@ export interface SloCheck {
   state: "firing" | "between" | "clear";
   facts: Record<string, number>;
 }
+
+// The thresholds of the checks that read the database (F114 stage 02). Set by the `SLO_*` keys of `platform/config`.
+export interface SloThresholds {
+  syncLagMin: number;
+  urgentLatencyMin: number;
+  llmWindowMin: number;
+  llmMinCalls: number;
+  llmFailPct: number;
+  llmClearPct: number;
+  repeatH: number;
+}

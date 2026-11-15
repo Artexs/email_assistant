@@ -1,0 +1,34 @@
+{
+  "scenario": "lab-01",
+  "version": "sent-v1",
+  "frozenAt": "2026-11-15",
+  "parts": {
+    "sent-dev": {
+      "cases": 50,
+      "sha256": "ad134b9aa7770fea9f25dd2458d7195f1143449cf32cc0f863797773b2588ab1"
+    },
+    "sent-holdout": {
+      "cases": 250,
+      "sha256": "b24ab996f0e41315cc3a346c41fb0e249b48c59abe660954a4afdcab99b20c25"
+    }
+  },
+  "dropped": {
+    "sent-dev": [],
+    "sent-holdout": []
+  },
+  "hardCases": {
+    "conditional_promise": 7,
+    "far_date": 7,
+    "fyi_team": 7,
+    "injection_quote": 7,
+    "let_me_know_if": 7,
+    "many_recipients": 7,
+    "reply_to_ooo": 7,
+    "other_thread_subject": 7,
+    "past_date": 7,
+    "question_in_forward": 7,
+    "reported_speech": 7,
+    "thanks_only": 7,
+    "time_word_due": 7
+  }
+}
