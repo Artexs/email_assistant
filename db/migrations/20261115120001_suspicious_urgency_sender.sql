@@ -20,12 +20,16 @@ ALTER TABLE outbox ADD CONSTRAINT outbox_kind_check CHECK (kind IN (
   'approval', 'approval_set', 'send_result', 'delegation_answered', 'mailbox_removed', 'send_held', 'weekly_report',
   'host_blocked', 'not_triaged'));
 
--- emails.from_address is stored as the server sent it (mixed case), so the index holds lower(from_address): sender
--- queries must filter with lower(emails.from_address) = $sender to use it.
-CREATE INDEX emails_mailbox_sender_idx ON emails (mailbox_id, lower(from_address), received_at);
+-- emails.from_address is stored as the server sent it (mixed case). Sender queries match a lower-case copy: a stored
+-- generated column, so `from_address_lower = lower($sender)` is a plain `=` that the app role (tenant policy) can use as
+-- an index condition. `lower(from_address)` in an expression index cannot be used then: lower() is not leakproof.
+-- ADD COLUMN ... STORED rewrites the table once (expand only: no data change, old code keeps working).
+ALTER TABLE emails ADD COLUMN from_address_lower text GENERATED ALWAYS AS (lower(from_address)) STORED;
+CREATE INDEX emails_mailbox_sender_idx ON emails (mailbox_id, from_address_lower, received_at);
 
 -- migrate:down
 DROP INDEX emails_mailbox_sender_idx;
+ALTER TABLE emails DROP COLUMN from_address_lower;
 
 -- Only the rows of the kind that the old list refuses go; every other row stays.
 DELETE FROM outbox WHERE kind = 'not_triaged';

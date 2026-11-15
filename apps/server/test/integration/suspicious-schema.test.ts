@@ -6,7 +6,7 @@ import { suspiciousReasons } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { createDb, type Db, type DB } from "../../src/platform/db";
+import { createDb, type DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -173,22 +173,21 @@ describe("F109 migration: code and SQL lists", () => {
 });
 
 describe("F109 migration: sender index", () => {
-  test("7: pg_indexes holds emails_mailbox_sender_idx on (mailbox_id, lower(from_address), received_at)", async () => {
+  test("7: pg_indexes holds emails_mailbox_sender_idx on (mailbox_id, from_address_lower, received_at)", async () => {
     const { rows } = await sql<{ indexdef: string }>`
       select indexdef from pg_indexes
       where schemaname = 'public' and tablename = 'emails' and indexname = 'emails_mailbox_sender_idx'`.execute(db);
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.indexdef).toContain("(mailbox_id, lower(from_address), received_at)");
+    expect(rows[0]?.indexdef).toContain("(mailbox_id, from_address_lower, received_at)");
   });
 
-  // Review N19: a small test table gives every index the same cost, so a seq scan or the older mailbox index wins the
-  // tie. Seeding 20,000 rows did not change that (checked by hand: the plan stayed on emails_mailbox_hash_idx). The
-  // test sets enable_seqscan = off and enable_sort = off and asks for the order the sender index gives: only a plan on
-  // emails_mailbox_sender_idx reads one sender's mail in received_at order without a Sort. The query is the shape of
-  // stages 03 and 10: lower(from_address) = $1 in one mailbox.
-  const explainSender = async (conn: Db): Promise<string> => {
-    let plan = "";
-    await withRollback(conn, async (trx) => {
+  // A small test table gives every index the same cost, so a seq scan or the older mailbox index could win the tie
+  // (review N19). The test sets enable_seqscan = off and enable_sort = off and asks for received_at order: only a plan
+  // on emails_mailbox_sender_idx reads one sender's mail in that order without a Sort. It runs as the app role, under
+  // the tenant policy: `lower(from_address) = $1` could not be an index condition there (lower() is not leakproof),
+  // and `from_address_lower = lower($1)` can. Stages 03 and 10 use this query shape.
+  test("7b: as the app role (row-level security) the sender query has the sender index as its Index Cond", async () => {
+    await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       await sql`
         insert into emails (org_id, mailbox_id, dedup_key, thread_key, content_hash, uid, received_at, status, from_address)
@@ -198,34 +197,75 @@ describe("F109 migration: sender index", () => {
       await sql`set local enable_seqscan = off`.execute(trx);
       await sql`set local enable_sort = off`.execute(trx);
       const { rows } = await sql<Record<string, string>>`
-        explain select received_at from emails
-        where mailbox_id = ${o.mailboxId}::uuid and lower(from_address) = ${"sender7@x.test"}
-        order by received_at desc limit 50`.execute(trx);
-      plan = rows.map((row) => Object.values(row)[0]).join("\n");
+        explain select id from emails
+        where mailbox_id = ${o.mailboxId}::uuid and from_address_lower = lower(${"Sender7@X.test"}::text)
+        order by received_at`.execute(trx);
+      const plan = rows.map((row) => Object.values(row)[0]).join("\n");
+      expect(plan).toMatch(/Index Scan using emails_mailbox_sender_idx/);
+      expect(plan).toMatch(/Index Cond:.*from_address_lower = /);
+      // The Filter line, if any, is the tenant policy: the sender column is not in it.
+      expect(plan).not.toMatch(/Filter:.*from_address_lower/);
+      expect(plan).not.toContain("Sort");
     });
-    return plan;
-  };
+  });
 
-  test("7b: the table owner (no row-level security) gets a plan on the sender index, with no Sort", async () => {
+  test("8: from_address_lower follows from_address: insert, update and null", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const id = await insertTestEmail(trx, o, o.mailboxId, { from_address: "Boss@X.TEST" });
+      const read = async () =>
+        (await trx.selectFrom("emails").select("from_address_lower").where("id", "=", id).executeTakeFirstOrThrow())
+          .from_address_lower;
+      expect(await read()).toBe("boss@x.test");
+      await trx.updateTable("emails").set({ from_address: "Other@Y.Test" }).where("id", "=", id).execute();
+      expect(await read()).toBe("other@y.test");
+      await trx.updateTable("emails").set({ from_address: null }).where("id", "=", id).execute();
+      expect(await read()).toBeNull();
+    });
+  });
+});
+
+// The Down section runs inside a transaction (DDL is transactional) as the table owner and is rolled back, so the
+// shared test DB keeps its schema (Opus review TG1).
+describe("F109 migration: Down", () => {
+  test("9: Down deletes the not_triaged rows, keeps the other kinds, and drops the column and the index", async () => {
     const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the plan check");
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down section");
     const owner = createDb(url);
     try {
-      const plan = await explainSender(owner);
-      expect(plan).toContain("Index Scan Backward using emails_mailbox_sender_idx");
-      expect(plan).toContain("lower(from_address) = 'sender7@x.test'::text");
-      expect(plan).not.toContain("Sort");
+      const down = migration.split("-- migrate:down")[1] ?? "";
+      expect(down).toContain("DROP COLUMN from_address_lower");
+      await withRollback(owner, async (trx) => {
+        const o = await createOrgWithMailbox(trx);
+        const insert = (kind: string) =>
+          trx
+            .insertInto("outbox")
+            .values({
+              org_id: o.orgId,
+              user_id: o.userId,
+              kind,
+              dedup_key: `test:${randomUUID()}`,
+              text: "x",
+              next_attempt_at: new Date(),
+              created_at: new Date(),
+            })
+            .execute();
+        await insert("not_triaged");
+        await insert("weekly_report");
+        await sql.raw(down).execute(trx);
+        const kinds = await trx.selectFrom("outbox").select("kind").where("org_id", "=", o.orgId).execute();
+        expect(kinds.map((row) => row.kind)).toEqual(["weekly_report"]);
+        const { rows } = await sql<{ n: number }>`
+          select (
+            (select count(*) from pg_indexes where indexname = 'emails_mailbox_sender_idx')
+            + (select count(*) from information_schema.columns
+               where table_name in ('emails', 'triage_results', 'mailbox_settings')
+                 and column_name in ('from_address_lower', 'suspicious_reasons', 'urgency_profile'))
+          )::int as n`.execute(trx);
+        expect(rows[0]?.n).toBe(0);
+      });
     } finally {
       await owner.destroy();
     }
-  });
-
-  // Known limit, found in F109 stage 02: lower() is not leakproof, so under the tenant policy (role app) Postgres does
-  // not use `lower(from_address) = $1` as an index condition. The sender index then serves the mailbox_id prefix only,
-  // and the lower() test is a Filter. If this test fails, a later change fixed the limit: update stages 03 and 10.
-  test("7c: the app role gets lower(from_address) as a Filter, not as an index condition (row-level security)", async () => {
-    const plan = await explainSender(db);
-    expect(plan).not.toContain("Index Scan Backward using emails_mailbox_sender_idx");
-    expect(plan).toMatch(/Filter:.*lower\(from_address\)/);
   });
 });

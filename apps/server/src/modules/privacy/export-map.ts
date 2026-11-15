@@ -15,6 +15,14 @@ export type ExportTable =
 // `mailbox_credentials`, which is not exported).
 const byOrg = (...columns: string[]): ExportTable => ({ export: true, via: "org_id", columns, excluded: {} });
 
+// A table with a column that the export leaves out (a value that the database derives from another column).
+const byOrgExcluding = (excluded: Record<string, string>, ...columns: string[]): ExportTable => ({
+  export: true,
+  via: "org_id",
+  columns,
+  excluded,
+});
+
 const secret = (reason: string): ExportTable => ({ export: false, reason });
 
 export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
@@ -113,7 +121,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "captured_at",
     "texts_cleared_at"
   ),
-  emails: byOrg(
+  emails: byOrgExcluding(
+    { from_address_lower: "derived: lower(from_address), the database recomputes it" },
     "id",
     "org_id",
     "mailbox_id",

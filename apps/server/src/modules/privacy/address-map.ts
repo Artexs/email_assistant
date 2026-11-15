@@ -108,6 +108,7 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     ["emails.dedup_key", "emails.message_id_header", "emails.in_reply_to", "emails.references_header"],
     "a Message-ID: random part and the host of the sender's system, no address of a person"
   ),
+  ...reasons(["emails.from_address_lower"], "generated copy of emails.from_address; goes with the row"),
   ...reasons(["emails.thread_key"], "a Message-ID or a mailbox key, no address of a person"),
   ...reasons(
     [

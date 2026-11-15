@@ -250,6 +250,7 @@ export interface Emails {
   dedup_key: string;
   folder: Generated<string>;
   from_address: string | null;
+  from_address_lower: Generated<string | null>;
   id: Generated<string>;
   in_reply_to: string | null;
   inbox_uid: Int8 | null;
