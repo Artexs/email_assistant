@@ -74,3 +74,24 @@ export {
   type FlagRead,
   type FlagTarget,
 } from "./flags";
+export {
+  deleteSentEmails,
+  expireSentTexts,
+  insertSentEmails,
+  listPendingSentTexts,
+  writeSentText,
+  type NewSentEmail,
+  type SentContent,
+  type SentTextWrite,
+} from "./sent-emails";
+export {
+  getSentSyncState,
+  insertSentSyncState,
+  lockSentSyncState,
+  markSentPass,
+  resetSentCursor,
+  updateSentCursor,
+  writeSentSwitch,
+  type SentErrorCode,
+  type SentSyncState,
+} from "./sent-state";

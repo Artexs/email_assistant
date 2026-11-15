@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-15
 ---
 
 # F097 · Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start

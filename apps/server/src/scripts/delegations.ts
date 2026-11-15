@@ -2,14 +2,14 @@ import { cleanSubject, localDateTime, textTables } from "@ea/core";
 
 import { closeDelegation, listDelegations } from "../modules/delegation";
 import { getOrganization } from "../modules/tenancy";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { parseDelegationsArgs, usage } from "./delegations-args";
 
-const log = createLog("delegations");
+const cli = createCliOutput("delegations");
 
 const ACTOR = "cli";
 
@@ -25,7 +25,7 @@ function day(date: Date | null, timeZone: string): string {
 async function main(): Promise<number> {
   const command = parseDelegationsArgs(process.argv.slice(2));
   if (!command) {
-    log.error(usage);
+    cli.fail(usage);
     return 1;
   }
 
@@ -71,7 +71,7 @@ async function main(): Promise<number> {
     else out("not found");
     return result.kind === "not_found" || result.kind === "not_closable" ? 1 : 0;
   } catch (error) {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -81,6 +81,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });
