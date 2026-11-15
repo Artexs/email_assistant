@@ -5,8 +5,8 @@
 -- contract: v0.1.0
 -- The statements that the contract check flags: the composite foreign key and the quiet pair check of `memberships`
 -- (an `ADD CONSTRAINT` on an old table that touches only the new nullable columns) and the two outbox lists (dropped
--- and added again with more values; no old value goes). No release has shipped yet: the first minor release names the
--- contract.
+-- and added again with more values; no old value goes). Release v0.1.0 runs on the VPS: the mark above names it as the
+-- release whose code must still work with this schema.
 
 -- One check of a mailbox against its own history: the last 30 days of INBOX mail, classified, compared with what the
 -- user did. Codes, counters and money only: no mail text and no address.

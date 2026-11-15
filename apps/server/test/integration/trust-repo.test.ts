@@ -263,6 +263,28 @@ describe("historyResultFor", () => {
   });
 });
 
+describe("historyResultFor order", () => {
+  test("5b: an old done check with finished_at null does not shadow a newer finished done check", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      // The old check is `done` but has no finished_at (Postgres sorts NULL first on `desc`).
+      await insertCheckRow(trx, o, o.mailboxId, {
+        status: "done",
+        created_at: T0,
+        finished_at: null,
+        result: JSON.stringify({ info: result(80, 4, "fail") }),
+      });
+      await insertCheckRow(trx, o, o.mailboxId, {
+        status: "done",
+        created_at: T1,
+        finished_at: T1,
+        result: JSON.stringify({ info: result(90, 0, "pass") }),
+      });
+      expect((await historyResultFor(trx, o, o.mailboxId)).info?.outcome).toBe("pass");
+    });
+  });
+});
+
 describe("deletes", () => {
   test("6: deleting a mailbox removes its checks, items and trips, and only its own", async () => {
     await withRollback(db, async (trx) => {

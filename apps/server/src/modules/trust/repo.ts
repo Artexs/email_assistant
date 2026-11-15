@@ -166,7 +166,7 @@ export async function historyResultFor(
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("status", "=", "done")
-    .orderBy("finished_at", "desc")
+    .orderBy(sql`finished_at desc nulls last`)
     .orderBy("created_at", "desc")
     .orderBy("id", "desc")
     .limit(1)
