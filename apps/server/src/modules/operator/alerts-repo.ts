@@ -7,7 +7,7 @@ import { HardError } from "../../platform/errors";
 // and holds codes and numbers only. These functions take no `TenantContext`; the exception is listed in
 // `docs/code-patterns.md` § Data access.
 
-export type OpsAlertRow = {
+export interface OpsAlertRow {
   id: string;
   kind: SloKind;
   openedAt: Date;
@@ -17,7 +17,7 @@ export type OpsAlertRow = {
   resolvedAt: Date | null;
   resolvedSentAt: Date | null;
   facts: Record<string, number>;
-};
+}
 
 export type AlertPhase = "open" | "repeat" | "resolved";
 
@@ -50,7 +50,7 @@ const COLUMNS = [
   "facts",
 ] as const;
 
-type RawRow = {
+interface RawRow {
   id: string;
   kind: string;
   opened_at: Date;
@@ -60,7 +60,7 @@ type RawRow = {
   resolved_at: Date | null;
   resolved_sent_at: Date | null;
   facts: unknown;
-};
+}
 
 function toRow(raw: RawRow): OpsAlertRow {
   return {

@@ -11,8 +11,8 @@ export type SloKind = (typeof SLO_KINDS)[number];
 
 // `firing`: the fire rule holds. `clear`: the clear rule holds. `between`: neither holds (hysteresis); an open alert
 // stays open. `firing` wins over `between`. `facts` holds numbers only.
-export type SloCheck = {
+export interface SloCheck {
   kind: SloKind;
   state: "firing" | "between" | "clear";
   facts: Record<string, number>;
-};
+}

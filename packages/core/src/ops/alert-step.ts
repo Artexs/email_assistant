@@ -1,12 +1,12 @@
 import type { SloCheck } from "./kinds";
 
 // The stored open state of one alert (`ops_alerts`). A row with `resolvedSentAt` set is history: callers never pass it.
-export type AlertState = {
+export interface AlertState {
   openSentAt: Date | null;
   lastSentAt: Date | null;
   resolvedAt: Date | null;
   resolvedSentAt: Date | null;
-};
+}
 
 export type AlertStep = "none" | "open" | "repeat" | "resolve" | "silent_close";
 
