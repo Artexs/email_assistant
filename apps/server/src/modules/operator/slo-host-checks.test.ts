@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { checkBackupAge, checkDisk, type StatFs } from "./slo-checks";
-import { sloAlertText } from "./slo-texts";
 import { loadConfig, sloThresholds } from "../../platform/config";
+
+import { checkBackupAge, checkDisk, type SloReading, type StatFs } from "./slo-checks";
+import { sloAlertText } from "./slo-texts";
 
 // F114 stage 04: the disk and backup-age checks. Both read the host through an injected function, so no test touches the disk.
 const cfg = sloThresholds(
@@ -147,8 +148,9 @@ describe("checkBackupAge", () => {
 });
 
 describe("the real readings fill the stage 03 texts", () => {
-  const text = (reading: { check: { kind: "slo_disk" | "slo_backup_age"; facts: Record<string, number> } }): string[] =>
-    sloAlertText({
+  const text = (reading: SloReading | null): string[] => {
+    if (reading === null) throw new Error("the check is off");
+    return sloAlertText({
       kind: reading.check.kind,
       phase: "open",
       facts: reading.check.facts,
@@ -156,18 +158,18 @@ describe("the real readings fill the stage 03 texts", () => {
       openedAt: NOW,
       now: NOW,
     }).split("\n");
+  };
 
   test("8. missing status file: line 2 says no status file", async () => {
     const reading = await checkBackupAge(() => Promise.reject(new Error("ENOENT")), NOW, cfg);
-    expect(reading).not.toBeNull();
-    expect(text(reading!)[1]).toBe("No backup status file");
+    expect(text(reading)[1]).toBe("No backup status file");
   });
 
   test("8b. the other backup states and the disk read in words from the real facts", async () => {
     const stale = await checkBackupAge(statusFile({ last_ok_at: "2026-11-19T07:59:00Z" }), NOW, cfg);
-    expect(text(stale!)[1]).toBe("Last good backup 26 h ago");
+    expect(text(stale)[1]).toBe("Last good backup 26 h ago");
     const failed = await checkBackupAge(statusFile({ result: "failed", name: null, bytes: null }), NOW, cfg);
-    expect(text(failed!)[1]).toBe("Last backup run failed; last good backup 6 h ago");
+    expect(text(failed)[1]).toBe("Last backup run failed; last good backup 6 h ago");
     expect(text(await checkDisk(volume(50, 14.9), cfg))[1]).toBe("Free 14.9 % (7.5 GB)");
   });
 });
