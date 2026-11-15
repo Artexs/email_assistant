@@ -159,7 +159,9 @@ describe("connectMailbox", () => {
       const { mailboxId, info } = await connectMailbox(deps, ctx, data);
 
       expect(fake.closed).toBe(true);
-      expect(smtpCalls).toEqual([{ host: "smtp.x.test", port: 465, security: "tls", user: data.address, password }]);
+      expect(smtpCalls).toEqual([
+        { host: "smtp.x.test", port: 465, security: "tls", user: data.address, auth: { kind: "password", password } },
+      ]);
 
       const raw = await trx
         .selectFrom("mailbox_credentials")

@@ -11,8 +11,8 @@ import { buildTrustedProxies, createApp, type WebDeps } from "./platform/http";
 import { apiDoc, openApiSpec } from "./platform/openapi";
 import { apiRouters } from "./web";
 
-// Every `/api` route has an `apiDoc` (ADR 0023). This test fails for a route that has none, and for a list entry that
-// no longer holds. The real app is built with fakes: no DB is read.
+// Every `/api` route has an `apiDoc` (ADR 0023), or a hidden key with a reason. This test fails for a route that has
+// neither, and for a hidden key that no longer holds. A new route is described: there is no list of gaps. The real app is built with fakes: no DB is read.
 
 const HIDDEN_ROUTES: Record<string, string> = {
   "GET /api/auth/*": "Better Auth",
@@ -25,19 +25,6 @@ const HIDDEN_ROUTES: Record<string, string> = {
   "POST /api/operator/orgs/:orgId/flags": "operator only, not public (E10)",
   "POST /api/operator/orgs/:orgId/plan": "operator only, not public (E10)",
 };
-
-// Routes that have no `apiDoc` yet. A new route never goes on this list: it gets an `apiDoc`.
-const NOT_DESCRIBED_YET: readonly string[] = [
-  "DELETE /api/channels/telegram/link",
-  "GET /api/activity",
-  "GET /api/channels/telegram",
-  "GET /api/stats",
-  "POST /api/actions/:id/mistake",
-  "POST /api/actions/:id/reject-reason",
-  "POST /api/actions/undo",
-  "POST /api/channels/telegram/link",
-  "POST /api/feedback",
-];
 
 type Spec = Awaited<ReturnType<typeof openApiSpec>>;
 interface RequestBodyJson {
@@ -79,11 +66,11 @@ function describedKeys(spec: Spec): Set<string> {
 export function routeGaps(
   app: RouteSource,
   spec: Spec,
-  lists: { hidden: Record<string, string>; notDescribedYet: readonly string[] }
+  hidden: Record<string, string>
 ): { undescribed: string[]; stale: string[] } {
   const keys = routeKeys(app);
   const described = describedKeys(spec);
-  const listed = new Set([...Object.keys(lists.hidden), ...lists.notDescribedYet]);
+  const listed = new Set(Object.keys(hidden));
   const undescribed = [...keys].filter((key) => !described.has(key) && !listed.has(key));
   const stale = [...listed].filter((key) => described.has(key) || !keys.has(key));
   return { undescribed: undescribed.sort(), stale: stale.sort() };
@@ -122,28 +109,21 @@ describe("routeGaps", () => {
   test("lists an undescribed route", async () => {
     const app = new Hono();
     app.get("/api/y", (c) => c.json({}));
-    const gaps = routeGaps(app, await openApiSpec(app), { hidden: {}, notDescribedYet: [] });
+    const gaps = routeGaps(app, await openApiSpec(app), {});
     expect(gaps).toEqual({ undescribed: ["GET /api/y"], stale: [] });
   });
 
-  test("lists an entry of NOT_DESCRIBED_YET whose route is described, or gone", async () => {
+  test("lists a hidden key whose route is described, or gone", async () => {
     const app = new Hono();
     app.get("/api/z", doc("z"), (c) => c.json({ ok: true }));
-    const gaps = routeGaps(app, await openApiSpec(app), {
-      hidden: {},
-      notDescribedYet: ["GET /api/z", "GET /api/gone"],
-    });
+    const gaps = routeGaps(app, await openApiSpec(app), { "GET /api/z": "r", "GET /api/gone": "r" });
     expect(gaps).toEqual({ undescribed: [], stale: ["GET /api/gone", "GET /api/z"] });
   });
 
-  test("a listed route that has no apiDoc is no gap", async () => {
+  test("a hidden route that has no apiDoc is no gap", async () => {
     const app = new Hono();
     app.get("/api/a", (c) => c.json({}));
-    app.get("/api/b", (c) => c.json({}));
-    const gaps = routeGaps(app, await openApiSpec(app), {
-      hidden: { "GET /api/a": "r" },
-      notDescribedYet: ["GET /api/b"],
-    });
+    const gaps = routeGaps(app, await openApiSpec(app), { "GET /api/a": "r" });
     expect(gaps).toEqual({ undescribed: [], stale: [] });
   });
 
@@ -230,14 +210,19 @@ function realApp() {
 }
 
 describe("the real app", () => {
-  test("every /api route is described, hidden or on the list, and no list entry is stale", async () => {
+  test("every /api route is described or hidden, and no hidden key is stale", async () => {
     const app = realApp();
     const spec = await openApiSpec(app);
-    expect(routeGaps(app, spec, { hidden: HIDDEN_ROUTES, notDescribedYet: NOT_DESCRIBED_YET })).toEqual({
-      undescribed: [],
-      stale: [],
-    });
+    expect(routeGaps(app, spec, HIDDEN_ROUTES)).toEqual({ undescribed: [], stale: [] });
     expect(specProblems(spec, HIDDEN_ROUTES)).toEqual([]);
+  });
+
+  test("the operations of the file plus the hidden keys are the route keys of the app", async () => {
+    const app = realApp();
+    const keys = routeKeys(app);
+    const operations = describedKeys(await openApiSpec(app));
+    expect(keys.size).toBe(operations.size + Object.keys(HIDDEN_ROUTES).length);
+    expect(new Set([...operations, ...Object.keys(HIDDEN_ROUTES)])).toEqual(keys);
   });
 
   test("POST /api/mailboxes has the connect body: its required list is that of the connect body schema", async () => {
@@ -268,8 +253,21 @@ describe("the real app", () => {
     expect(operation.responses?.["403"]?.description).toBe("Error codes: no_organization, org_suspended, bad_origin");
   });
 
-  test("NOT_DESCRIBED_YET is sorted and has no key twice", () => {
-    expect([...NOT_DESCRIBED_YET]).toEqual([...new Set(NOT_DESCRIBED_YET)].sort());
+  test("GET /api/activity has the query parameters before and limit", async () => {
+    const operation = (await openApiSpec(realApp())).paths?.["/api/activity"]?.get;
+    const names = (operation?.parameters as { name: string; in: string }[] | undefined)?.map(
+      (p) => `${p.in}:${p.name}`
+    );
+    expect(names).toContain("query:before");
+    expect(names).toContain("query:limit");
+  });
+
+  test("POST /api/actions/{id}/reject-reason lists the codes not_found and not_rejected", async () => {
+    const operation = (await openApiSpec(realApp())).paths?.["/api/actions/{id}/reject-reason"]?.post as {
+      responses?: Record<string, { description?: string } | undefined>;
+    };
+    expect(operation.responses?.["404"]?.description).toContain("not_found");
+    expect(operation.responses?.["409"]?.description).toContain("not_rejected");
   });
 
   test("the middleware entries are no route keys", () => {

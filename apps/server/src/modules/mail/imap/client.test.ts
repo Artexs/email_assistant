@@ -6,7 +6,7 @@ import { MailAuthError } from "../port";
 
 import { createImapMailProvider, imapFlowOptions, isLoopbackHost, matchFolder, toMailError } from "./client";
 
-const creds = { user: "me@interia.pl", password: "pw-secret-1" };
+const creds = { user: "me@interia.pl", auth: { kind: "password", password: "pw-secret-1" } } as const;
 
 describe("isLoopbackHost", () => {
   test("knows the loopback names", () => {
@@ -27,7 +27,7 @@ describe("imapFlowOptions", () => {
     expect(options).toMatchObject({
       host: "poczta.interia.pl",
       port: 993,
-      auth: { user: creds.user, pass: creds.password },
+      auth: { user: creds.user, pass: creds.auth.password },
       logger: false,
       disableAutoIdle: true,
       connectionTimeout: 30_000,
@@ -36,7 +36,7 @@ describe("imapFlowOptions", () => {
 
   test("a resolved target connects to the address and keeps the TLS name", () => {
     const options = imapFlowOptions(
-      { host: "imap.x.test", port: 993, user: "u", password: "p" },
+      { host: "imap.x.test", port: 993, user: "u", auth: { kind: "password", password: "p" } },
       { host: "93.184.216.34", servername: "imap.x.test" }
     );
     expect(options).toMatchObject({ host: "93.184.216.34", servername: "imap.x.test", secure: true });
@@ -45,7 +45,7 @@ describe("imapFlowOptions", () => {
 
   test("a loopback target has no servername", () => {
     const options = imapFlowOptions(
-      { host: "127.0.0.1", port: 3143, secure: false, user: "u", password: "p" },
+      { host: "127.0.0.1", port: 3143, secure: false, user: "u", auth: { kind: "password", password: "p" } },
       { host: "127.0.0.1" }
     );
     expect(options.host).toBe("127.0.0.1");
@@ -95,12 +95,12 @@ describe("imapFlowOptions", () => {
 
 describe("toMailError", () => {
   test("an authentication failure gives MailAuthError without the password", () => {
-    const original = Object.assign(new Error(`Authentication failed for ${creds.password}`), {
+    const original = Object.assign(new Error(`Authentication failed for ${creds.auth.password}`), {
       authenticationFailed: true,
     });
     const error = toMailError(original, "login");
     expect(error).toBeInstanceOf(MailAuthError);
-    expect(error.message).not.toContain(creds.password);
+    expect(error.message).not.toContain(creds.auth.password);
     expect(error.cause).toBe(original);
   });
 

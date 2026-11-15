@@ -1,10 +1,19 @@
 import type { SmtpSecurity } from "@ea/core";
 import { createTransport, type SMTPTransportOptions } from "nodemailer";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
+import XOAuth2 from "nodemailer/lib/xoauth2";
 
 import { HardError, SoftError } from "../../../platform/errors";
 import { resolveMailHost, type MailTarget } from "../host-guard";
-import { MailAuthError, SmtpSendError, type MailSender, type SendResult, type SmtpStage } from "../port";
+import {
+  assertAuthMaterial,
+  MailAuthError,
+  SmtpSendError,
+  type AuthMaterial,
+  type MailSender,
+  type SendResult,
+  type SmtpStage,
+} from "../port";
 
 import { isLoopbackHost } from "./client";
 
@@ -17,7 +26,8 @@ export interface SmtpConnectOptions {
   host: string;
   port: number;
   user: string;
-  password: string;
+  /** A password, or an OAuth access token (XOAUTH2). */
+  auth: AuthMaterial;
   /** `tls` (the default) = implicit TLS. `starttls` = start plain, then STARTTLS is required (port 587). */
   security?: SmtpSecurity;
   /** Only `false` to a loopback host (local test server): plain SMTP, no TLS. It must not be set with `starttls`. */
@@ -32,6 +42,8 @@ export interface SmtpConnectOptions {
  * sets `rejectUnauthorized`, so none can turn the check off. `tls.servername` keeps the check against the host name.
  */
 export function buildSmtpTransportOptions(opts: SmtpConnectOptions, target: MailTarget): SMTPTransportOptions {
+  assertAuthMaterial(opts.auth);
+  const auth = transportAuth(opts);
   const tlsOptions = {
     ...(opts.ca === undefined ? {} : { ca: opts.ca }),
     ...(target.servername === undefined ? {} : { servername: target.servername }),
@@ -45,7 +57,7 @@ export function buildSmtpTransportOptions(opts: SmtpConnectOptions, target: Mail
       port: opts.port,
       secure: false,
       requireTLS: true,
-      auth: { user: opts.user, pass: opts.password },
+      auth,
       ...timeoutOptions(opts),
       ...tlsCheck,
     };
@@ -58,11 +70,29 @@ export function buildSmtpTransportOptions(opts: SmtpConnectOptions, target: Mail
     host: target.host,
     port: opts.port,
     secure,
-    auth: { user: opts.user, pass: opts.password },
+    auth,
     ...timeoutOptions(opts),
     ...(secure ? {} : { ignoreTLS: true }),
     ...tlsCheck,
   };
+}
+
+/**
+ * The argument of `SMTPConnection.login`. An access token has no refresh data: nodemailer sends it as it is and cannot
+ * renew it (the token store of the OAuth module does).
+ */
+export function smtpLoginAuth(
+  opts: SmtpConnectOptions
+): { user: string; pass: string } | { user: string; oauth2: XOAuth2 } {
+  return opts.auth.kind === "password"
+    ? { user: opts.user, pass: opts.auth.password }
+    : { user: opts.user, oauth2: new XOAuth2({ user: opts.user, accessToken: opts.auth.accessToken }) };
+}
+
+function transportAuth(opts: SmtpConnectOptions): NonNullable<SMTPTransportOptions["auth"]> {
+  return opts.auth.kind === "password"
+    ? { user: opts.user, pass: opts.auth.password }
+    : { type: "OAuth2", user: opts.user, accessToken: opts.auth.accessToken };
 }
 
 /** Resolves the host once through the guard, then builds the options for that address. Throws `HostNotAllowedError`. */
@@ -76,7 +106,7 @@ function timeoutOptions(opts: SmtpConnectOptions): SMTPTransportOptions {
     : { connectionTimeout: opts.timeoutMs, greetingTimeout: opts.timeoutMs, socketTimeout: opts.timeoutMs };
 }
 
-/** Maps a nodemailer error to a typed error. The message never holds the password; the original is the `cause`. */
+/** Maps a nodemailer error to a typed error. The message never holds the password or the token; the original is the `cause`. */
 export function toSmtpError(error: unknown, action = "verify"): Error {
   if (error instanceof SoftError || error instanceof HardError) return error;
   const fields = (typeof error === "object" && error !== null ? error : {}) as {
@@ -216,7 +246,10 @@ export function classifySmtpError(
 /** The part of `SMTPConnection` that the sender uses; tests may pass another connection. */
 export interface SmtpConnectionLike {
   connect(callback: (error?: Error) => void): void;
-  login(auth: { user: string; pass: string }, callback: (error: Error | null) => void): void;
+  login(
+    auth: { user: string; pass: string } | { user: string; oauth2: XOAuth2 },
+    callback: (error: Error | null) => void
+  ): void;
   send(
     envelope: { from: string; to: string[] },
     message: Buffer,
@@ -261,9 +294,9 @@ export async function openSmtpSender(
   opts: SmtpConnectOptions,
   deps: { connection?: (options: object) => SmtpConnectionLike } = {}
 ): Promise<MailSender> {
-  const { auth, ...transport } = await smtpConnectOptions(opts);
+  const { auth: _transportAuth, ...transport } = await smtpConnectOptions(opts);
   const makeConnection = deps.connection ?? defaultConnection;
-  const credentials = { user: auth?.user ?? opts.user, pass: auth?.pass ?? opts.password };
+  const credentials = smtpLoginAuth(opts);
   return {
     async send(input): Promise<SendResult> {
       const { marks, logger } = createSmtpMarks();

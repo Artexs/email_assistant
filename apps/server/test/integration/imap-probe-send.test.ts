@@ -16,8 +16,18 @@ function greenmailUser(): { imap: ImapConnectOptions; smtp: SmtpConnectOptions; 
   const address = `u-${randomUUID()}@localhost`;
   return {
     address,
-    imap: { host, port: Number(process.env.TEST_IMAP_PORT ?? "3143"), user: address, password: "greenmail-test" },
-    smtp: { host, port: Number(process.env.TEST_SMTP_PORT ?? "3025"), user: address, password: "greenmail-test" },
+    imap: {
+      host,
+      port: Number(process.env.TEST_IMAP_PORT ?? "3143"),
+      user: address,
+      auth: { kind: "password", password: "greenmail-test" },
+    },
+    smtp: {
+      host,
+      port: Number(process.env.TEST_SMTP_PORT ?? "3025"),
+      user: address,
+      auth: { kind: "password", password: "greenmail-test" },
+    },
   };
 }
 
