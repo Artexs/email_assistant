@@ -1,4 +1,5 @@
 import { createServer, type Server, type Socket } from "node:net";
+import { format } from "node:util";
 
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test, type Mock } from "bun:test";
 
@@ -39,7 +40,7 @@ function captureLogs(): void {
   logLines = [];
   for (const method of ["log", "error", "warn", "info", "debug"] as const) {
     const spy = spyOn(console, method).mockImplementation((...args: unknown[]) => {
-      logLines.push(args.map((arg) => String(arg)).join(" "));
+      logLines.push(format(...args));
     });
     logSpies.push(spy as unknown as Mock<(...args: unknown[]) => void>);
   }
