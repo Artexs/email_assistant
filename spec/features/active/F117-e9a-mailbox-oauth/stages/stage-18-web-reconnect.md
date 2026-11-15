@@ -47,3 +47,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 11, 12 and 17; review (Polish t
 ## Carry-over from the stage 06 review (2026-11-15)
 
 `mb_reason_admin_consent_required` and the admin block: AADSTS 65001 means "the user or an administrator has not consented" (a personal account or a withdrawn consent gives it too). The card text must not say only "administrator".
+
+## Carry-over from stage 12 review
+
+Read `review-12.md`: N2 (queue the `mailbox_removed` notice inside the delete transaction with `revoked: false`, update the pending view to `revoked: true` after a successful revoke), N3 (personal Microsoft account with an unreadable secret: pick the page by the address domain), the toast `removed_toast` for an OAuth mailbox (say that the app keeps access until the owner withdraws it) and the old-bundle residual.
