@@ -6,10 +6,10 @@
 // Characters that show no glyph and break a pattern: zero width, bidi marks and the soft hyphen.
 const FORMAT_CHARS = /[\p{Cf}]/gu;
 
-// Lookalikes that NFKC keeps: ideographic and halfwidth full stops, slash lookalikes, dash lookalikes.
-const DOTS = /[。｡․·∙]/g;
+// Lookalikes that NFKC keeps: the ideographic full stop and the middle dots, slash lookalikes, dash lookalikes.
+const DOTS = /[。·∙]/g;
 const SLASHES = /[⁄∕⧸╱]/g;
-const DASHES = /[‐-―−﹘﹣]/g;
+const DASHES = /[‐-―−]/g;
 
 // Letters of other scripts that look like a Latin letter. The map is small on purpose: it serves the scheme and
 // header-name checks, where one lookalike letter hides a word.

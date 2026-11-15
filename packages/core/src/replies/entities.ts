@@ -28,12 +28,15 @@ const BARE_DOMAIN = new RegExp(
 // characters are digits, so a word run such as "MA12 reply tomorrow please" is no account number.
 const IBAN = /(?<![A-Za-z0-9])[A-Za-z]{2}\d{2}(?:[ -]?[A-Za-z0-9]){11,30}(?![A-Za-z0-9])/g;
 
-// A number that is no phone: a date, a time or an amount. The code cuts these out before it counts digits.
-const DATE_DMY = /(?<!\d)\d{1,2}[./-]\d{1,2}[./-]\d{4}(?!\d)/g;
-const DATE_YMD = /(?<!\d)\d{4}[./-]\d{1,2}[./-]\d{1,2}(?!\d)/g;
+// A number that is no phone: a date, a time or an amount. The code cuts these out before it counts the digits of a
+// phone. It never cuts an amount before the account scan: an account number next to "zł" or "$" is still an account
+// number (BEC fraud: a new account number in a draft).
+const DATE_DMY = /(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?!\d)/g;
+const DATE_YMD = /(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)/g;
 const TIME = /(?<!\d)\d{1,2}:\d{2}(?::\d{2})?(?!\d)/g;
 const NUMBER = String.raw`\d{1,3}(?:[ .]\d{3})*[,.]\d{1,2}(?!\d)|\d+[,.]\d{1,2}(?!\d)|\d+(?: \d{3})*`;
 const CURRENCY = String.raw`(?:zł|zl|pln|eur|usd|gbp|chf|czk|euro|euros|dolar\w*|złot\w*|[€$£])`;
+// The match has at most 12 digits: every run of 13 or more digits is an account number and is gone before this cut.
 const AMOUNT = new RegExp(
   [
     `(?<!\\p{L})${CURRENCY}\\s?(?:${NUMBER})`,
@@ -43,10 +46,14 @@ const AMOUNT = new RegExp(
   "giu"
 );
 
-// A run of digits that allows spaces, dashes, dots, brackets and a leading plus.
+// A run of digits that allows spaces, dashes, dots, brackets and a leading plus: a phone number.
 const DIGIT_RUN = /(?<!\d)\+?[([]?\d[\d ()[\].-]*\d/g;
+// A run of 13 or more digits: a card or an account number. It also spans line breaks, slashes, underscores and a comma
+// between two digits, so a split number is one run.
+const ACCOUNT_RUN = /(?<!\d)\d(?:(?:[\s.\-/_()[\]|]|(?<=\d),(?=\d))*\d){12,}/g;
 
-const SEPARATOR = " | ";
+// A cut leaves this text: no run of digits can join across it.
+const SEPARATOR = " ; ";
 
 function trimTail(text: string): string {
   return text.replace(/[.,;:!?)\]}>"'`]+$/, "");
@@ -65,22 +72,40 @@ function linksOf(view: string): Entity[] {
   return found;
 }
 
+function isDate(day: string, month: string, year: string): boolean {
+  const [d, m, y] = [Number(day), Number(month), Number(year)];
+  return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2199;
+}
+
+// A date that exists on a calendar page (day 1–31, month 1–12, year 1900–2199) is cut out. Another group of digits
+// with dots or dashes stays.
+function cutDates(text: string): string {
+  return text
+    .replace(DATE_DMY, (match, d: string, m: string, y: string) => (isDate(d, m, y) ? SEPARATOR : match))
+    .replace(DATE_YMD, (match, y: string, m: string, d: string) => (isDate(d, m, y) ? SEPARATOR : match));
+}
+
 function numberEntities(view: string): Entity[] {
-  let rest = view
-    .replace(DATE_DMY, SEPARATOR)
-    .replace(DATE_YMD, SEPARATOR)
-    .replace(TIME, SEPARATOR)
-    .replace(AMOUNT, SEPARATOR);
   const found: Entity[] = [];
-  rest = rest.replace(IBAN, (match) => {
+  // 1. An IBAN, on the uncut text. The key stops at the last digit, so a word after the number is no part of it.
+  let rest = view.replace(IBAN, (match) => {
     if (digitsOf(match).length < 10) return match;
-    found.push({ code: "account_number", key: match.replace(/[ -]/g, "").toUpperCase() });
+    const key = match
+      .replace(/[ -]/g, "")
+      .toUpperCase()
+      .replace(/[A-Z]+$/, "");
+    found.push({ code: "account_number", key });
     return SEPARATOR;
   });
+  // 2. A run of 13 or more digits, with dates cut (a range of two dates is no account number) but no amount cut.
+  rest = cutDates(rest).replace(ACCOUNT_RUN, (match) => {
+    found.push({ code: "account_number", key: digitsOf(match) });
+    return SEPARATOR;
+  });
+  // 3. A phone number: 9 to 12 digits that are no time and no amount.
+  rest = rest.replace(TIME, SEPARATOR).replace(AMOUNT, SEPARATOR);
   for (const match of rest.matchAll(DIGIT_RUN)) {
-    const digits = digitsOf(match[0]);
-    if (digits.length >= 13) found.push({ code: "account_number", key: digits });
-    else if (digits.length >= 9) found.push({ code: "phone", key: digits });
+    if (digitsOf(match[0]).length >= 9) found.push({ code: "phone", key: digitsOf(match[0]) });
   }
   return found;
 }
