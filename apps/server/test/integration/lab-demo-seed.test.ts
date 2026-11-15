@@ -31,6 +31,7 @@ import {
   testCapabilities,
 } from "./fixtures";
 import { testDb } from "./helpers";
+import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 
 // F113 stage 15: the demo seed export and import. Every test runs on test organizations of the test DB (committed:
 // the export reads its own snapshot and the replace deletes in its own transaction) and never on a real organization,
@@ -349,7 +350,7 @@ describe("the tables of the seed against the database (a new column or key fails
         ...Object.keys(spec.refs),
         ...(spec.selfRefs ?? []),
         ...(spec.userRefs ?? []),
-        ...(spec.unexportable === undefined ? [] : [spec.unexportable]),
+        ...(spec.unexportable ?? []),
       ]);
       expect(handled.has(col), `${t}.${col} is a foreign key that the seed does not handle`).toBe(true);
     }
@@ -543,6 +544,32 @@ describe("exportDemo (F113 stage 15)", () => {
       .execute();
     const edge = await exportOf(fx, 2);
     expect(ids(edge)).toEqual([fx.emailIds[0], fx.emailIds[1], fx.emailIds[2]].sort());
+  });
+
+  test("3a: an action and a card of an open loop are not in the seed (the loop table is not)", async () => {
+    const fx = await buildFixture();
+    const before = await exportOf(fx);
+    const loop = await db.transaction().execute(async (trx) => {
+      const loopId = await insertLoopRow(trx, { orgId: fx.orgId }, fx.mailboxId);
+      await insertLoopActionPair(trx, { orgId: fx.orgId }, loopId);
+      await trx
+        .insertInto("outbox")
+        .values({
+          org_id: fx.orgId,
+          user_id: fx.userId,
+          kind: "approval",
+          dedup_key: `test:${randomUUID()}`,
+          loop_id: loopId,
+          text: "x",
+          next_attempt_at: NOW,
+          created_at: NOW,
+        })
+        .execute();
+      return loopId;
+    });
+    const after = await exportOf(fx);
+    expect(countsOf(after)).toEqual(countsOf(before));
+    expect(JSON.stringify(after)).not.toContain(loop);
   });
 
   test("3b: a day outside the run, and a run that is not the demo run, are refused before any read", async () => {

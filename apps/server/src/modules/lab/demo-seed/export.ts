@@ -36,7 +36,7 @@ function compare(spec: { sort: string; numericSort?: boolean }, a: DemoRow, b: D
 // reference becomes null instead), so the file has no foreign key that points outside it.
 function closeRows(table: DemoTable, rows: DemoRow[], kept: Map<DemoTable, Set<string>>): DemoRow[] {
   const spec = TABLE_SPECS[table];
-  let open = rows.filter((row) => spec.unexportable === undefined || row[spec.unexportable] === null);
+  let open = rows.filter((row) => (spec.unexportable ?? []).every((column) => row[column] === null));
   open = open.filter((row) => {
     for (const [column, parent] of Object.entries(spec.refs)) {
       const value = row[column];
