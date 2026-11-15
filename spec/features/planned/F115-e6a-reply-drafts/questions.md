@@ -26,3 +26,10 @@ The planner took these defaults (no blocking question). Each is a decision in `p
 22. **[minor]** A newer automatic mail in the thread (`Auto-Submitted` set and not `no`, for example an out-of-office) does not close the open reply (D7).
 23. **[minor]** A tap or redraft request that is not done 10 min after the tap ends `failed` / `timeout`, and the user is told (stage 07).
 24. **[minor]** A reply draft with no copy baseline (the read after APPEND failed) never sends; it ends `draft_missing` and the copy stays (stage 08).
+
+## Refresh 1 (2026-11-15, plan base 17b2a369)
+
+25. **[important: scope]** OAuth mailboxes (F117) now exist. Default (D19): reply drafts only for password IMAP mailboxes until E9. The switch `reply_drafts` refuses a mailbox with `oauth_provider` set (stage 10), and samples answer `blocked` (stage 16). Why: the ticket puts replies on Graph and Gmail out of scope (E9); a Microsoft mailbox sends through Graph. Option: allow them now (the follow-up kind of F116 already sends through the same senders).
+26. **[minor]** The consent version is a date and the link route checks equality. F109 already set `2026-11-15`. Default: stage 12 sets the land date, or `<date>-2` when the value is that date already, so linked users confirm again.
+27. **[minor]** The reply request id in log lines is `reply_request_id`. `request_id` is the HTTP request context of F103 (`deploy/logs.sh --request`).
+28. **[minor]** Stage 03 makes `renderNotice` answer "not ok" for a kind without a renderer (today it throws), so a release with stage 03 is a safe rollback target. A rollback to a release older than stage 03 first fails pending rows of the new outbox kinds by SQL (`deploy/README.md`, stage 17).

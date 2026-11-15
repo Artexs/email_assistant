@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, data delete). Needs 05. Probe P1 follows (coordinator).
 
-PD-076 for the draft, send and reverse paths of `actions`. Merge `master` first (F103 stage 09 may touch these files).
+PD-076 for the draft, send and reverse paths of `actions`. Merge `master` first (F116 changes the committer).
 
 ## Step 1 — Baseline at APPEND
 
@@ -14,12 +14,12 @@ PD-076 for the draft, send and reverse paths of `actions`. Merge `master` first 
 
 ## Step 2 — Check before SMTP
 
-- **Goal:** for a reply, and for other kinds while the org flag `draft_copy_check` is on (new in `featureFlags`, epic `E6a`, default off), `applySend` locates the copy and compares before `startSendWithinLimits`:
+- **Goal:** for a reply, and for other kinds (`follow_up` too) while the org flag `draft_copy_check` is on (new in `featureFlags`, epic `E6a`, default off), `applySend` locates the copy and compares before `startSendWithinLimits`:
   - same hash → continue;
   - other hash, or text null → `closeSend(draft_changed, notify: true, claimed: true)`, no SMTP, the copy stays; a delegation becomes `cancelled` / `draft_changed` through its hook;
   - copy missing → `closeSend(draft_missing, …)`, no SMTP (stage 09 adds `sent_by_user` for replies);
   - no `copy_hash` → today's path (not for a reply, see step 1).
-- **Decisions:** a soft IMAP error in the check → back to `approved`, 5 min, no count; it counts against the 6 h soft cap. Only the first try checks: an `applying` send in recovery searches Sent, as today. One event `reply_send_checked` per check (`action_id`, `result` = `same` / `changed` / `missing` / `no_baseline`).
+- **Decisions:** a soft IMAP error in the check → back to `approved`, 5 min, no count; it counts against the 6 h soft cap. Only the first try checks: an `applying` send in recovery searches Sent, as today. One event `reply_send_checked` per check (`action_id`, new code field `result` = `same` / `changed` / `missing` / `no_baseline`).
 - **Test (integration, GreenMail; flag on unless named):**
   1. Copy untouched → sent, one SMTP call.
   2. The test replaces the copy with an edited body (same `X-EA-Action-Id`) → `draft_changed`, zero SMTP calls, the copy still in Drafts.

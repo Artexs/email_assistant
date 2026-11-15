@@ -7,11 +7,11 @@ Shadow mode makes no drafts; the owner can still see three samples on recent rea
 ## Step 1 — Sample drafts
 
 - **Goal:** `sampleReplies(deps, ctx, { mailboxId, userId, count: 3 })` and `POST /api/mailboxes/:id/reply-samples` (owner; flag `reply_drafts` on; any mode) → 202 with three request ids, then the panel polls them; each `done` request shows `sample_body`. Requests have trigger `sample`; the job stores the body in `reply_requests.sample_body`, writes no actions, no Drafts copy and no notice.
-- **Decisions:** the three mails = the newest mails of the last 7 days that pass `replyEligibility` with trigger `sample` and category `needs_reply` (fewer → fewer samples, and the answer says how many). At most one sample run per mailbox per day (409 `sample_limit`). Samples count in the cap like a tap. In the job (stage 07), a `sample` request skips the mode and switch re-check and the thread rule, and its write step stores only `sample_body` and `done`. The style card (stage 11) gets "Show 3 sample drafts" with "Samples are not saved in Drafts and cannot be sent." F110 (E4-B) links this function from its report later.
+- **Decisions:** the three mails = the newest mails of the last 7 days that pass `replyEligibility` with trigger `sample` and category `needs_reply` (fewer → fewer samples, and the answer says how many). At most one sample run per mailbox per day (409 `sample_limit`). A mailbox with `oauth_provider` set → 409 `blocked` (D19). Samples count in the cap like a tap. In the job (stage 07), a `sample` request skips the mode and switch re-check and the thread rule, and its write step stores only `sample_body` and `done`. The style card (stage 11) gets "Show 3 sample drafts" with "Samples are not saved in Drafts and cannot be sent." F110 (E4-B) links this function from its report later.
 - **Test (integration):**
   1. Shadow mailbox with 4 eligible mails → 3 `sample` requests; after the job: 3 `sample_body` values, zero `actions` rows, zero APPENDs.
   2. A second run the same day → 409 `sample_limit`.
-  3. 1 eligible mail → one sample, answer `count: 1`.
+  3. 1 eligible mail → one sample, answer `count: 1`. An OAuth mailbox → 409 `blocked`, no request.
   4. Retention clears `sample_body` with the payloads (stage 03 rule).
   5. e2e: the button shows three sample texts.
 

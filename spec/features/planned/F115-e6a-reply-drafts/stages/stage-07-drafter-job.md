@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (exactly-once, LLM spend). Needs 0
 
 ## Step 1 — Scan and claim
 
-- **Goal:** `createReplyJobs(deps)` registers `replies.drafter` (every 15 s) in the composition root. Each run: (a) the scan inserts `auto` requests (`ON CONFLICT DO NOTHING`) for mail of active mailboxes in `assist` with the switch and the flag on, status `triaged`, latest category `needs_reply`, `received_at` within 7 days; at most 50 per mailbox per run; (b) claims up to 5 requests per mailbox, oldest first.
+- **Goal:** `createReplyJobs(deps)` registers `replies.drafter` (every 15 s) in the composition root. Each run: (a) the scan inserts `auto` requests (`ON CONFLICT DO NOTHING`) for mail of active password mailboxes (D19) in `assist` with the switch and the flag on, status `triaged`, latest category `needs_reply`, `received_at` within 7 days; at most 50 per mailbox per run; (b) claims up to 5 requests per mailbox, oldest first.
 - **Decisions:** D3, D12. `TRIAGE_LLM_SCOPE` applies as in triage. A paused or suspended org: nothing.
 
 ## Step 2 — Draft one request
@@ -17,7 +17,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (exactly-once, LLM spend). Needs 0
 5. `no_draft` → `no_draft` with the reason; a failed draft → `failed` / `checks` or `output`.
 
 - **Errors:** soft LLM error (timeout, network, 429, 5xx) → release in 5 min, no count; config error → the same plus one `error` event line; hard error → `attempts + 1`, 5 min, at 3 → `failed` / `llm_error`. A DB error after the call → release with a count. A `tap` or `redraft` request still not done 10 min after `created_at` → `failed` / `timeout` (the user waits for it).
-- **Logs (D17):** `reply_drafted` (`request_id`, `action_id`, `count` = attempts), `reply_draft_failed` (`request_id`, `error_code`), `reply_superseded` (`request_id`, `reason`).
+- **Logs (D17):** `reply_drafted` (`reply_request_id`, `action_id`, `count` = attempts), `reply_draft_failed` (`reply_request_id`, `error_code`), `reply_superseded` (`reply_request_id`, `reason`). New uuid field `reply_request_id` (plan F8).
 
 ## Test (integration, fake LLM, fixed clock)
 

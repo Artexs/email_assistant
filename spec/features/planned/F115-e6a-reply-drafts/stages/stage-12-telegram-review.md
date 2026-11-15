@@ -14,7 +14,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 
 ## Step 2 — Review cards
 
-- **Goal:** `reply_review` (optional `afterId`) answers with the next open reply send after `afterId` (order `created_at`, id), as outbox kind `approval` (`ap:`, `ar:` work). Dedup key `approval:<sendId>:r<n>` (n = 1 + earlier review cards of that send for that user), because the key is unique per user and a skipped card must show again (review G6). F102's `listCardsOfSend` must find these keys (test). The approval detector skips kind `reply` (D15). After Send, Reject or Skip, the tap handler queues the next card; none left → "No more replies waiting."
+- **Goal:** `reply_review` (optional `afterId`) answers with the next open reply send after `afterId` (order `created_at`, id), as outbox kind `approval` (`ap:`, `ar:` work). Dedup key `approval:<sendId>:r<n>` (n = 1 + earlier review cards of that send for that user): a skipped card must show again (review G6). F102's `listCardsOfSend` must find these keys (test). The approval detector skips kind `reply` (D15). After Send, Reject or Skip, the tap handler queues the next card; none left → "No more replies waiting."
 - **Card** (`renderApprovalRequest`, kind `reply`): title, `To:`, `Cc:`, `Reply-To:` when it differs from `From`, gaps first ("Fill these: …"), the full body, the quote (shrinks first), the stage 08 line, and when `sentVisible` is false "I cannot see your sent mail; check you did not answer already." Buttons here: 📤 Send (not with gaps), ✖️ Reject, ⏭ Skip. Stage 13 adds ✍️ Redraft, 👥 Reply all (only with other To or Cc) and "Use Reply-To" (only when it differs).
 - **Decisions:** owners only for every reply tap. A send that closed meanwhile is skipped.
 - **Test:**
@@ -26,9 +26,9 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 
 ## Step 3 — Consent bump
 
-- **Goal:** `TELEGRAM_CONSENT_VERSION` = the land date; the consent text (en, pl) adds: "reply drafts that the AI writes for you, and the addresses of the other recipients of a mail (To, Cc, Reply-To) when a reply goes to them". One commit with both texts and the version.
+- **Goal:** `TELEGRAM_CONSENT_VERSION` = the land date, or `<date>-2` if it already holds that date (plan F10); the consent text (en, pl) adds: "reply drafts that the AI writes for you, and the addresses of the other recipients of a mail (To, Cc, Reply-To) when a reply goes to them". One commit with both texts and the version.
 - **Linked chats (D16, review G12):** a user's consent version = their newest `web.telegram_consent` audit row. Older: no review card; `replies_ready` shows only the count, the panel link and "Confirm the new Telegram terms in the panel to review here." This stage adds `POST /api/telegram/consent` (`interfaces.md`); the panel button is stage 15.
-- **Test:** a link request with the old version → 409 `telegram_consent_outdated`; with the new one → linked. A user linked with the old version taps Review → the panel-link answer, no card; after the consent route → cards.
+- **Test:** the new version ≠ `2026-11-15`; a link request with the old version → 409 `telegram_consent_outdated`; with the new one → linked. A user linked with the old version taps Review → the panel-link answer, no card; after the consent route → cards.
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** Redraft, Reply all, Draft reply (13).

@@ -20,7 +20,7 @@ Part of [plan.md](plan.md). These names are the contract between stages and for 
 
 - `reply_requests`: `id`, `org_id`, `mailbox_id`, `email_id`, `thread_key`, `folder` (of the mail at request time), `trigger`, `status` (`pending`, `drafting`, `done`, `no_draft`, `failed`, `cancelled`, `superseded`), `reason_code`, `instruction` (≤ 300, null), `requested_by` (user, null for `auto`), `previous_send_id` (null), `send_action_id` (null), `sample_body` (null), `attempts`, `next_attempt_at`, `locked_at`, `created_at`, `updated_at`. Unique `(org_id, email_id)` where `trigger = 'auto'`. Index `(org_id, status, next_attempt_at)`. RLS on `org_id`; FKs `(email_id, org_id)`, `(mailbox_id, org_id)` with cascade.
 - `mailbox_profiles`: `mailbox_id` (PK), `org_id`, `display_name` (≤ 100), `signature` (≤ 1,000), `writing_style` (≤ 1,000), `updated_at`, `updated_by`. All text nullable. RLS; cascade with the mailbox.
-- Index `emails (mailbox_id, thread_key, received_at)`.
+- Index `emails (mailbox_id, thread_key, received_at)`: exists as `emails_thread_received_idx` (F116); stage 03 adds and drops none.
 - Outbox kinds `replies_ready`, `reply_prompt`, `reply_result`.
 
 ## Server functions
@@ -29,6 +29,10 @@ Part of [plan.md](plan.md). These names are the contract between stages and for 
 - Module `actions`: `replaceApproval(trx, ctx, { sendId, payload, userId, via, now })` (the F102 supersede core, shared by `editApproval`); `closeSend(trx, ctx, { sendId, reason, notify, claimed, now })` for every kind, reasons `answered` | `newer_mail` | `original_moved` | `policy_changed` | `suspicious` | `sent_by_user` | `draft_changed` | `draft_missing`; `claimed: true` = the committer holds the claim of this row; `claimed: false` answers `busy` for a locked row. It edits the Telegram cards through `ApprovalHooks.onDecided` (`expired`); `approvalExpiresAt(kind, row)`.
 - Module `triage`: `suspicionOf(db, ctx, emailIds) → Map<emailId, Suspicion>` (three-state; every id is in the map). `drafter-v1` in the prompt registry.
 - Module `mail`: `replyFactsOf(db, ctx, emailIds)` (headers, flags, user answers, own addresses, folder), `newerMailInThread(db, ctx, emailId) → boolean` (D7 rule; `actions` and `replies` both call it) and `mailboxProfileOf(db, ctx, mailboxId)`.
+
+## Log fields
+
+`reply_request_id` (uuid, new in stage 07), `result` (code, new in stage 08); the other fields exist (`action_id`, `reason`, `error_code`, `count`). Not `request_id`: that is the HTTP request context (F103).
 
 ## Telegram callbacks (`core/digest/callback.ts`)
 
@@ -43,4 +47,4 @@ New kinds, each with an action or mail UUID: `reply_review` (start or next, `aft
 - `GET|PUT /mailboxes/:id/profile`, `POST /mailboxes/:id/profile/preview`, `POST /mailboxes/:id/reply-samples` (stage 10 and 16).
 - `POST /approvals/:id/approve` gains 409 `has_gaps` and 409 `feature_off` (stage 05).
 - `ApprovalItem` gains for kind `reply`: `gaps` (derived), `cc`, `replyTo` (stored, or null), `instruction`, `redraftsLeft`, `sentVisible`.
-- `POST /telegram/consent` `{ version }` (stage 12): an already linked user confirms the new consent; one `web.telegram_consent` audit row.
+- `POST /telegram/consent` `{ version }` (stage 12): an already linked user confirms the new consent; one `web.telegram_consent` audit row. F116 stage 17 builds the same route and reader if it lands first; then stage 12 reuses them and adds only its text and version.
