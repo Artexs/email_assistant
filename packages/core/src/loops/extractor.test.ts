@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
+import type { DueRef } from "./dates";
 import {
   EXTRACT_BODY_MAX,
   type ExtractorOutput,
   extractorInputOf,
   extractorOutputSchema,
   type SentFacts,
+  type SentSkipReason,
   sentSkipReason,
 } from "./extractor";
 
@@ -36,7 +38,7 @@ describe("sentSkipReason", () => {
     expect(sentSkipReason({ ...base, autoSubmitted: "no" })).toBeNull();
   });
 
-  const cases: [string, Partial<SentFacts>][] = [
+  const cases: [SentSkipReason, Partial<SentFacts>][] = [
     ["system_draft", { actionId: ACTION_ID }],
     ["no_text", { content: "headers_only", bodyText: null }],
     ["no_text", { content: "gone", bodyText: null }],
@@ -77,7 +79,7 @@ describe("sentSkipReason", () => {
       autoSubmitted: "auto-generated",
       hasCalendar: true,
     };
-    const steps: [string, Partial<SentFacts>][] = [
+    const steps: [SentSkipReason, Partial<SentFacts>][] = [
       ["system_draft", { actionId: null }],
       ["no_text", { content: "stored", bodyText: "x" }],
       ["too_old", { sentAt: base.sentAt }],
@@ -127,7 +129,7 @@ describe("extractorOutputSchema", () => {
   });
 
   test("a promise_due without a promise is dropped; with a promise it stays", () => {
-    const due = { kind: "date", date: "2026-11-20" };
+    const due: DueRef = { kind: "date", date: "2026-11-20" };
     expect(extractorOutputSchema.parse({ ...answer, promise: null, promise_due: due }).promise_due).toBeNull();
     expect(extractorOutputSchema.parse({ ...answer, promise: "Send the offer", promise_due: due }).promise_due).toEqual(
       due
