@@ -211,10 +211,8 @@ async function plan(
   const createdDraft = created.find((action) => action.type === "create_draft");
   const createdSend = created.find((action) => action.type === "send");
   if (createdDraft === undefined || createdSend === undefined) {
-    // The keys exist: a call that ran at the same time (or before a crash) made the pair and its delegation.
-    const open = await findOpenDelegationOfEmail(trx, ctx, email.id);
-    if (open !== undefined) return { kind: "exists", delegationId: open };
-    throw new HardError("the delegate keys exist without an open delegation");
+    // The mail row is locked and no delegation of the mail is open, so the keys of this attempt cannot exist: an invariant break.
+    throw new HardError("the delegate keys exist after the mail lock");
   }
 
   const delegationId = await createDelegation(trx, ctx, {

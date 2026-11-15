@@ -128,7 +128,7 @@ describe("the key conflict", () => {
         idempotencyKey: `${s.emailId}:create_draft:delegation:button:1`,
       });
       await expect(delegateMail({ db: trx, now: () => NOW }, s.ctx, pick(s))).rejects.toThrow(
-        "the delegate keys exist without an open delegation"
+        "the delegate keys exist after the mail lock"
       );
       const delegations = await trx.selectFrom("delegations").select("id").where("org_id", "=", s.ctx.orgId).execute();
       expect(delegations).toEqual([]);
