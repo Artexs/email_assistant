@@ -6,7 +6,7 @@ import { sql, type Transaction } from "kysely";
 import { sentOriginOf } from "../../src/modules/actions";
 import { MailFolderMissingError, type SeedMessage } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
-import { getSentSyncState, setFolderMapEntry, writeSentSwitch } from "../../src/modules/mail/repo";
+import { getSentSyncState, setFolderMapEntry, updateSentCursor, writeSentSwitch } from "../../src/modules/mail/repo";
 import { renderSeedMessage } from "../../src/modules/mail/seed";
 import { syncSentHeaders, type SentSyncDeps } from "../../src/modules/mail/sent-sync";
 import { baseDedupKey, contentHash, normalizeMessageId } from "../../src/modules/mail/sync-rules";
@@ -263,7 +263,8 @@ describe("syncSentHeaders", () => {
         put(org, 1, ago(DAY));
         const result = await syncSentHeaders(depsOf(trx, org, { chunkSize }), org.ctx, org.mailboxId);
         expect(result).toMatchObject({ status: "done", fetched: 2, stored: 1 });
-        expect(await rowsOf(trx, org)).toHaveLength(1);
+        const rows = await rowsOf(trx, org);
+        expect(rows.map((row) => row.uid)).toEqual(["1"]);
       });
     }
   });
@@ -363,6 +364,34 @@ describe("syncSentHeaders", () => {
           firstPassAt: null,
         });
         if (!again) expect(state.lastPassAt).toBeNull();
+      });
+    }
+  });
+
+  test("12b: a cursor, numbering or path that another run changes during the pass stops the write", async () => {
+    const moves: Record<string, (trx: Transaction<DB>, org: Org) => Promise<unknown>> = {
+      lastUid: (trx, org) => updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 1, lastUid: 99 }),
+      uidValidity: (trx, org) => updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 77, lastUid: 0 }),
+      path: (trx, org) =>
+        sql`update mailbox_sent_sync set path = 'Other' where mailbox_id = ${org.mailboxId}::uuid`.execute(trx),
+    };
+    for (const [field, move] of Object.entries(moves)) {
+      await withRollback(db, async (trx) => {
+        const org = await newOrg(trx);
+        await org.provider.ensureFolder("Sent");
+        await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
+        put(org, 1, ago(HOUR), { headers: { "X-EA-Action-Id": randomUUID() } });
+        const hook: SentSyncDeps["sentOriginOf"] = async () => {
+          await move(trx, org);
+          return null;
+        };
+        const result = await syncSentHeaders(depsOf(trx, org, { sentOriginOf: hook }), org.ctx, org.mailboxId);
+        expect({ field, status: result.status, stored: result.stored }).toEqual({
+          field,
+          status: "cursor_moved",
+          stored: 0,
+        });
+        expect(await rowsOf(trx, org)).toEqual([]);
       });
     }
   });
