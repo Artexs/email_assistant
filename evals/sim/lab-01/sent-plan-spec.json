@@ -1,0 +1,14 @@
+{
+  "seed": 2116,
+  "batchSize": 25,
+  "sizes": { "dev": 50, "holdout": 250 },
+  "hardPerTag": { "dev": 1, "holdout": 6 },
+  "langShare": { "pl": 0.6, "en": 0.4 },
+  "expectsReplyShare": 0.5,
+  "promiseShare": 0.25,
+  "dueShare": 0.3,
+  "delegateShare": 0.2,
+  "weekendShare": 0.2,
+  "threadShare": 0.35,
+  "ccShare": 0.25
+}

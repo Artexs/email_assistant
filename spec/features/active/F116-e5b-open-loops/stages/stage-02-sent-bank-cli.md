@@ -40,3 +40,8 @@ T1–T10 pass; the README of `evals/sim` has a "Sent bank" section: the writer a
 ## Out of scope
 
 Writing texts (03), the extractor runner (06).
+
+## Carry-over from stage 01 (coordinator, 2026-11-15)
+
+- `scenarioSchema.executive` has no signature or voice field. The stage 02 brief and its signature check need one: add it (optional field with a default, so older scenarios stay valid) and test it.
+- Stage 01 choices where the stage file was silent: `sentAt` falls in the `weekStart` week (20% weekend, 07:00–19:00 local). The promise label always has a `promiseDue`. `question_in_forward`, `past_date` and `far_date` set `expectsReply` true. `reported_speech` and `many_recipients` set `promise` null. `time_word_due` sets a time-word due. `fyi_team` goes to team personas only. New spec fields: `hardPerTag`, `delegateShare` (0.2, min 0.15), `weekendShare`, `threadShare`, `ccShare`. Check each against the plan and write any change back to the stage 01 notes.
