@@ -11,8 +11,9 @@ A follow-up answers the user's own sent mail, so it has no incoming mail to hang
   - `actions.email_id` drops NOT NULL; new `actions.loop_id uuid`, FK `(loop_id, org_id)` → `open_loops (id, org_id)` `ON DELETE CASCADE` (a loop row goes only with its mailbox or organization; then its actions go too, like the mail cascade of `email_id`).
   - CHECK `(email_id IS NULL) <> (loop_id IS NULL)`; CHECK `loop_id IS NULL OR type IN ('create_draft', 'send')`.
   - Partial index `(org_id, loop_id) WHERE loop_id IS NOT NULL`.
+  - `outbox.loop_id` (same FK and cascade); `outbox_email_kind_check` becomes "`email_id` or `loop_id` is not null" for the kinds that need a mail today (an `approval`, `approval_set` or `send_result` row of a follow-up carries the loop). Same rule for the latest form of the check at `HEAD` (F102 added `approval_edit`).
   - The down part fails when a loop row exists (no silent delete).
-- **Test (integration):** T1 up, down, up on an empty job DB; T2 a row with both anchors null → CHECK error, both set → error; T3 a `move` row with a `loop_id` → error; T4 the down part with one loop-anchored row → error, the row stays.
+- **Test (integration):** T1 up, down, up on an empty job DB; T2 a row with both anchors null → CHECK error, both set → error; T3 a `move` row with a `loop_id` → error; an `approval` outbox row with neither id → error, with only `loop_id` → stored; T4 the down part with one loop-anchored row → error, the row stays.
 
 ## Step 2 — Types and the guard
 

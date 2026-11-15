@@ -90,7 +90,7 @@ Web stages 21 and 22 add `bun run test:e2e` under `flock /tmp/email-assistant-sh
 - 08 [Loop repository](stages/stage-08-loop-repo.md); needs 07
 - 09 [Action anchor](stages/stage-09-action-anchor.md) `[risky]`; needs 08
 - 10 [Follow-up kind and send](stages/stage-10-follow-up-kind.md) `[risky]`; needs 09
-- 11 [Follow-up cards](stages/stage-11-follow-up-cards.md) `[risky]`; needs 10
+- 11 [Follow-up cards](stages/stage-11-follow-up-cards.md) `[risky]`; needs 10, 17
 - 12 [Sent analysis job](stages/stage-12-analysis-job.md) `[risky]`; needs 06, 08
 - 13 [Close rules](stages/stage-13-close-rules.md) `[risky]`; needs 12
 - 14 [Loop commands](stages/stage-14-loop-commands.md) `[risky]`; needs 11, 13; C2 after
@@ -109,7 +109,7 @@ Web stages 21 and 22 add `bun run test:e2e` under `flock /tmp/email-assistant-sh
 ## How to run (coordinator)
 
 - Worker `claude-sonnet-5-5`, `--prepare 'bash scripts/limen-prepare.sh'`; ticket in `active/`; drift check first.
-- Lanes: {01→02→03→04}, {05} after 01, then 06; {07→08} after F102 and F104 are done, then {09→10→11}, {12→13}, {16}, {17}, {23} in parallel (09 is a migration: not next to 07 or another ticket's migration); then by "needs". `spec/build.md` land check; drop the job DB.
+- Lanes: {01→02→03→04}, {05} after 01, then 06; {07→08} after F102 and F104 are done, then {17}, {09→10}, {12→13}, {16}, {23} in parallel, 11 after 10 and 17 (09 is a migration: not next to 07 or another ticket's migration); then by "needs". `spec/build.md` land check; drop the job DB.
 - Stage 03 runs as several jobs. Stage 15 edits the job list in `main.ts`: merge `master` first.
 
 ## Planning progress
