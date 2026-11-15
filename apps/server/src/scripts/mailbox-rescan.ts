@@ -1,13 +1,13 @@
-import { parseArgs } from "node:util";
+import { format, parseArgs } from "node:util";
 
 import { z } from "zod";
 
 import { configureMailHosts, forceRescan } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-rescan");
+const out = createCliOutput("mailbox-rescan");
 
 const usage = "usage: bun run mailbox:rescan --org-id <uuid> --mailbox-id <uuid>";
 
@@ -34,7 +34,7 @@ function readOptions() {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -45,13 +45,13 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     if (!(await forceRescan(db, { orgId: options.orgId }, options.mailboxId))) {
-      log.error("no mailbox changed: unknown mailbox, or it was never synced");
+      out.fail("no mailbox changed: unknown mailbox, or it was never synced");
       return 1;
     }
-    log.info("rescan forced for every synced folder");
+    out.print("rescan forced for every synced folder");
     return 0;
   } catch (error) {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -61,6 +61,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     process.exit(1);
   });

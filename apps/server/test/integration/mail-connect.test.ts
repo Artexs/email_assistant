@@ -504,7 +504,8 @@ describe("mailbox:connect CLI", () => {
         new Response(proc.stderr).text(),
       ]);
       expect(code).toBe(1);
-      expect(`${stdout}${stderr}`).toContain("mailbox with this address already exists");
+      expect(stderr).toContain("[mailbox-connect] mailbox with this address already exists");
+      expect(stdout).toBe("");
     } finally {
       await db.deleteFrom("organizations").where("id", "=", orgId).execute();
       await db.deleteFrom("users").where("id", "=", userId).execute();
