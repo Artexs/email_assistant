@@ -539,6 +539,40 @@ describe("sentSync in the view and PATCH sent-sync", () => {
     expect((await sentView(app, m1))?.folder).toBe("Sent");
   });
 
+  test("a PATCH sent-sync without Origin or with a foreign Origin → 403 bad_origin, nothing changes", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    for (const origin of [undefined, "https://evil.example"]) {
+      const res = await app.request(`/api/settings/${m1}/sent-sync`, {
+        method: "PATCH",
+        headers: {
+          cookie: "ea.session_token=owner",
+          "content-type": "application/json",
+          ...(origin === undefined ? {} : { origin }),
+        },
+        body: JSON.stringify({ enabled: true }),
+      });
+      expect(res.status).toBe(403);
+      expect((await json(res)).error).toBe("bad_origin");
+    }
+    expect(await getSentSyncState(db, { orgId: org.orgId }, m1)).toBeUndefined();
+    expect(await auditRows(org.orgId, "mailbox.sent_sync_changed")).toHaveLength(0);
+  });
+
+  test("flag on, switch already on, PATCH on: 200, changed false, no new audit row, state kept", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    await switchOn(org.orgId, m1);
+    const before = await getSentSyncState(db, { orgId: org.orgId }, m1);
+    const res = await patchSent(app, m1, true);
+    expect(res.status).toBe(200);
+    const change = settingsChangeSchema.parse(await json(res));
+    expect(change.changed).toBe(false);
+    expect(change.settings.sentSync?.enabled).toBe(true);
+    expect(await auditRows(org.orgId, "mailbox.sent_sync_changed")).toHaveLength(0);
+    expect(await getSentSyncState(db, { orgId: org.orgId }, m1)).toEqual(before);
+  });
+
   test("the owner turns it on: changed, enabled, one audit row with the user; again: changed false", async () => {
     const { app, m1, org } = await setup();
     await setFlag(org.orgId, true);
