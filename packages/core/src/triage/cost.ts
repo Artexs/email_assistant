@@ -1,3 +1,9 @@
+/**
+ * Where an LLM call runs. `standard`: the default API of the provider; `eu`: the OpenAI Europe endpoint;
+ * `own`: an OpenAI-compatible server that the operator runs.
+ */
+export type LlmEndpointKind = "standard" | "eu" | "own";
+
 export interface LlmPrice {
   inputPerM: number;
   outputPerM: number;
