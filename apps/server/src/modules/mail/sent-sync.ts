@@ -117,7 +117,8 @@ export async function syncSentHeaders(
     });
     if (!reset) return finish("cursor_moved", null);
     state = await getSentSyncState(deps.db, ctx, mailboxId);
-    if (state === undefined || !state.enabled) return finish("cursor_moved", null);
+    // Another run changed the switch or the folder between the reset and this read: write nothing.
+    if (state === undefined || !state.enabled || state.path !== path) return finish("cursor_moved", null);
   }
 
   const organization = await getOrganization(deps.db, ctx);

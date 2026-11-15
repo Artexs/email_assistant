@@ -167,6 +167,8 @@ describe("syncSentHeaders", () => {
     put(org, 3, ago(40 * DAY));
     put(org, 4, ago(2 * DAY), { headers: { "X-EA-Action-Id": applied.draftId } });
     put(org, 5, ago(3 * DAY), { headers: { "X-EA-Action-Id": waiting.draftId } });
+    // The last mail is outside the header window: the cursor still ends at the last UID of the folder.
+    put(org, 6, ago(40 * DAY));
     const result = await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
     return { org, result, waiting };
   }
@@ -185,7 +187,9 @@ describe("syncSentHeaders", () => {
       expect([g.origin, g.content, g.action_id]).toEqual(["user", "pending", waiting.draftId]);
       expect((await rowsOf(trx, org)).some((row) => row.subject === "Subject 3")).toBe(false);
       const state = await stateOf(trx, org);
-      expect(state).toMatchObject({ path: "Sent", uidValidity: 1, lastUid: 5, lastErrorCode: null });
+      const { uidNext } = await org.provider.folderStatus("Sent");
+      expect(state).toMatchObject({ path: "Sent", uidValidity: 1, lastUid: uidNext - 1, lastErrorCode: null });
+      expect(state.lastUid).toBe(6);
       expect(state.firstPassAt?.getTime()).toBe(NOW.getTime());
       expect(state.lastPassAt?.getTime()).toBe(NOW.getTime());
     });
@@ -249,7 +253,7 @@ describe("syncSentHeaders", () => {
         ["900", "4"],
       ]);
       const state = await stateOf(trx, org);
-      expect(state).toMatchObject({ uidValidity: 900, lastUid: 4 });
+      expect(state).toMatchObject({ uidValidity: 900, lastUid: 5 });
       expect(state.firstPassAt?.getTime()).toBe(NOW.getTime());
       expect(state.lastPassAt?.getTime()).toBe(later.getTime());
     });
