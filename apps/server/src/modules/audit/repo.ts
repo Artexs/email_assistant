@@ -65,6 +65,7 @@ export const auditEvents = {
   delegationOverdue: "delegation.overdue",
   delegationCancelled: "delegation.cancelled",
   delegationDone: "delegation.done",
+  delegationRemindRequested: "delegation.remind_requested", // data: delegation_id, reminder (1 or 2), via; the actor is the user
   delegationChaserRun: "delegation.chaser_run",
   // F116. Flat; ids and codes only, never the subject, the ask or an address of a loop. The actor is a user id or "system".
   loopOpened: "loop.opened", // data: loop_id, kind

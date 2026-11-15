@@ -8,6 +8,7 @@ import {
   delegationDoneAnswerSchema,
   delegationListQuerySchema,
   delegationListSchema,
+  delegationRemindAnswerSchema,
   z,
 } from "@ea/core";
 
@@ -81,5 +82,19 @@ export const delegationDocs = {
     body: delegationActionBodySchema,
     ok: { status: 200, schema: delegationCancelAnswerSchema },
     errors: [ownerOnly, notFound, { status: 409, codes: ["not_open", "sending"] }],
+  }),
+  remindDelegation: apiDoc({
+    operationId: "remindDelegation",
+    summary:
+      "Plan a reminder to the delegate now (owner only). The reminder is a draft and a send that waits for a tap in `/approvals`; nothing goes out before the tap. No due-date or 3-day gate. `not_open`: the delegation is not sent or overdue. `limit_reached`: two reminders are sent. `reminder_waiting`: a reminder waits for a tap or is on its way out. `drafts_off`: the mailbox is not in assist mode with drafts on. `delegate_inactive`: the delegate is off.",
+    tags: delegationTags,
+    params,
+    body: delegationActionBodySchema,
+    ok: { status: 200, schema: delegationRemindAnswerSchema },
+    errors: [
+      ownerOnly,
+      notFound,
+      { status: 409, codes: ["not_open", "limit_reached", "reminder_waiting", "drafts_off", "delegate_inactive"] },
+    ],
   }),
 };

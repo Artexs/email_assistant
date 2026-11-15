@@ -16,6 +16,7 @@ export type NavKey =
   | "onboarding"
   | "activity"
   | "approvals"
+  | "delegations"
   | "mailboxes"
   | "settings"
   | "rules"

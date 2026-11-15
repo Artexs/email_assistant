@@ -79,6 +79,48 @@ function splitReferences(header: string | null): string[] {
   return header === null ? [] : header.split(/\s+/).filter((id) => id !== "");
 }
 
+// The reminder draft of a delegation: the fixed template, the thread of the delegation mail and the delegate as the only
+// recipient. The chaser and `remindNow` plan the same draft; `count` is the number of this reminder (`reminders_sent` + 1).
+export async function buildReminderDraft(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  row: {
+    id: string;
+    email_id: string;
+    delegate_id: string;
+    draft_action_id: string;
+    task_summary: string;
+    sent_message_id: string | null;
+    delegate_email: string;
+    delegate_name: string;
+  },
+  count: number
+): Promise<DraftPayload> {
+  const email = await getEmailMeta(trx, ctx, row.email_id);
+  const original = await getDraft(trx, ctx, row.draft_action_id);
+  const language = draftLanguageSchema.safeParse(original?.payload.language);
+  const dueDate = original?.payload.due_date;
+  return {
+    kind: "reminder",
+    delegate_id: row.delegate_id,
+    delegate_name: row.delegate_name,
+    to: [row.delegate_email],
+    task: row.task_summary,
+    due_date: typeof dueDate === "string" ? dueDate : "",
+    language: language.success ? language.data : "en",
+    delegation_id: row.id,
+    reminder: count === 1 ? 1 : 2,
+    thread: {
+      in_reply_to: row.sent_message_id,
+      references: uniqueIds([
+        ...splitReferences(email?.references_header ?? null),
+        email?.message_id_header,
+        row.sent_message_id,
+      ]),
+    },
+  };
+}
+
 export async function runChaserForMailbox(
   deps: ChaserDeps,
   ctx: TenantContext,
@@ -134,30 +176,7 @@ export async function runChaserForMailbox(
       }
       if (!decision.remind || reminders >= CHASER_SET_LIMIT) continue;
 
-      const n = locked.reminders_sent + 1;
-      const email = await getEmailMeta(trx, ctx, row.email_id);
-      const original = await getDraft(trx, ctx, row.draft_action_id);
-      const language = draftLanguageSchema.safeParse(original?.payload.language);
-      const dueDate = original?.payload.due_date;
-      const draft: DraftPayload = {
-        kind: "reminder",
-        delegate_id: row.delegate_id,
-        delegate_name: row.delegate_name,
-        to: [row.delegate_email],
-        task: row.task_summary,
-        due_date: typeof dueDate === "string" ? dueDate : "",
-        language: language.success ? language.data : "en",
-        delegation_id: row.id,
-        reminder: n === 1 ? 1 : 2,
-        thread: {
-          in_reply_to: row.sent_message_id,
-          references: uniqueIds([
-            ...splitReferences(email?.references_header ?? null),
-            email?.message_id_header,
-            row.sent_message_id,
-          ]),
-        },
-      };
+      const draft = await buildReminderDraft(trx, ctx, row, locked.reminders_sent + 1);
       const created = await createPlanned(trx, ctx, row.email_id, [
         {
           type: "create_draft",

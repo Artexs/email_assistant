@@ -341,6 +341,26 @@ describe("the real app", () => {
     expect(patch.responses?.["200"]).toBeDefined();
   });
 
+  test("the remind route is described: operation id, owner only, a body, the 409 codes and the answer", async () => {
+    const paths = (await openApiSpec(realApp())).paths;
+    interface Operation {
+      operationId?: string;
+      tags?: string[];
+      requestBody?: unknown;
+      responses?: Record<string, { description?: string } | undefined>;
+    }
+    const remind = paths?.["/api/delegations/{id}/remind"]?.post as Operation;
+    expect(remind.operationId).toBe("remindDelegation");
+    expect(remind.tags).toEqual(["delegations"]);
+    expect(remind.requestBody).toBeDefined();
+    expect(remind.responses?.["200"]).toBeDefined();
+    expect(remind.responses?.["403"]?.description).toContain("owner_only");
+    expect(remind.responses?.["404"]?.description).toContain("not_found");
+    for (const code of ["not_open", "limit_reached", "reminder_waiting", "drafts_off", "delegate_inactive"]) {
+      expect(remind.responses?.["409"]?.description).toContain(code);
+    }
+  });
+
   test("the middleware entries are no route keys", () => {
     const app = realApp();
     // The app has middleware entries under /api (the guards, the 404 catch-all); none of them is a key.

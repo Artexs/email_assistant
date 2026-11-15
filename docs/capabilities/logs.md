@@ -1,6 +1,6 @@
 # Logs
 
-> Checked against the code at `3626dbef`, 2026-11-15.
+> Checked against the code at `c461a394`, 2026-11-15 (deployed as v0.1.0; Compose 2.40.2; `victorialogs` 14.7 MiB, `vlagent` 9.1 MiB; search check: run `f1e9e121-e3ea-456d-aed1-da3b95f822ea` has 8 lines in the server log and 8 in the store).
 
 ## What it does now
 

@@ -5,6 +5,7 @@
 - Progress: F089 (`spec/features/done/2026-11/F089-structured-logs/`) landed point 2 and the base of point 1: the writer with the allow-list and the drop count, the lint in `warn`, `platform/` and `main.ts` converted and held at `error`. The module conversion, the lint in `error` everywhere and points 3–7 are E8a and E8b.
 - Progress: F103 converted every module and script line, holds `apps/server/src` at lint error and split the fields into kinds.
 - Progress: F103 stage 17 split the log drivers (point 4: only `server` is `json-file`, every other service `local`) and added the `cli` Compose service. Reason: the log store reads every `json-file` log of the host, and vlagent cannot filter by container (no filter by container or content), so Postgres lines and CLI answers must not use that driver.
+- Progress: F103 stage 19 (2026-11-15): the VPS runs v0.1.0 with the driver split; the log store runs under the profile `ops`; the search check, the marker checks (CLI, exec and Postgres lines are not in the store) and the memory check passed. The tailnet step (`tailscale serve` for `/select/`) waits for the owner (needs sudo). The agent also reads the log of the other `json-file` container on the host (`astro-app-container`); the store is local to the host.
 
 ## Context
 

@@ -45,3 +45,7 @@ Two steps in `apps/web`.
 ## Carry-over from stage 15 review
 
 - A panel approve of a timed-out send answers `expired` but queues no card edit, so the Telegram cards stay live (review-9 N3, review-11 N3, review-15 N1). Queue the card edit on that path, with a test. Also judge review-9 N1 (`newerEditSent` ordering window of the web cancel and approve).
+
+## Carry-over from stage 17 review
+
+- The "Delegations" tab is rendered whenever the flag is on and `/delegations` is a 404 until this stage lands: this stage must land before stage 20 turns the flag on. Seed a mailbox address in the delegates e2e organization so 400 `mailbox_address` gets a browser test. Firefox and WebKit focus after a row moves is unverified (see review-17.md).

@@ -50,6 +50,11 @@ const serverImageServices = (): string[] => {
     .map(([name]) => name);
 };
 
+const composeVersion = (): string =>
+  Bun.spawnSync(["docker", "compose", "version"], { env: { PATH: process.env.PATH ?? "", HOME: dir } })
+    .stdout.toString()
+    .trim();
+
 let drill: Resolved;
 beforeAll(() => {
   mkdirSync(join(dir, "deploy"), { recursive: true });
@@ -102,9 +107,20 @@ describe("deploy/compose.drill.yaml", () => {
       const service = drill.services[name];
       expect(service, name).toBeDefined();
       expect(service?.image, name).toBe("ea-drill-server");
-      expect(service?.ports ?? [], name).toEqual([]);
+      expect(service?.ports ?? [], `${name}: the drill must publish no port (${composeVersion()})`).toEqual([]);
       expect(service?.logging?.driver, name).toBe("local");
       expect(service?.logging?.options, name).toEqual({ "max-size": "10m", "max-file": "5" });
+    }
+  });
+
+  // Always on, whatever the Compose version: through the `<<` merge of an anchor the `!reset` tag is lost on Compose 2.29 to
+  // 2.40, so the file must name it in the block of each server image service (and restore.sh refuses a drill that publishes).
+  test("the drill file resets the ports in the block of each server image service itself", () => {
+    const text = readFileSync(join(deployDir, "compose.drill.yaml"), "utf8");
+    const services = text.slice(text.search(/^services:/m)).split(/^(?=\S)/m)[0] ?? "";
+    for (const name of serverImageServices()) {
+      const block = services.split(new RegExp(`^  ${name}:\\s*$`, "m"))[1]?.split(/^ {2}\S/m)[0] ?? "";
+      expect(block, name).toMatch(/^ {4}ports: !reset \[\]\s*$/m);
     }
   });
 

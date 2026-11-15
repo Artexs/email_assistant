@@ -10,6 +10,7 @@ import {
   type DelegateList,
   type DelegationCancelAnswer,
   type DelegationDoneAnswer,
+  type DelegationRemindAnswer,
 } from "@ea/core";
 import { Hono, type MiddlewareHandler } from "hono";
 
@@ -20,6 +21,7 @@ import { isFeatureOn } from "../tenancy";
 
 import { delegateDocs, delegationDocs } from "./api-docs";
 import { decodeDelegationCursor, listDelegationItems } from "./list";
+import { remindNow } from "./remind";
 import { getDelegate, listDelegates, type DelegateRow } from "./repo";
 import { addDelegate, cancelByUser, closeDelegation, delegationHooks, updateDelegate } from "./service";
 
@@ -128,7 +130,7 @@ export function delegateRoutes(deps: DelegateRouteDeps): Hono<ApiEnv> {
   return app;
 }
 
-// F102 stage 15: the routes of the delegations page. Any member reads and marks a delegation done; the cancel is owner
+// F102 stages 15 and 16: the routes of the delegations page. Any member reads and marks a delegation done; the cancel and the remind are owner
 // only. The flag comes first, as for the delegates: with it off every route is a 404, for every role and with a bad id.
 // Every write passes `via: "web"` and the user as actor.
 export function delegationRoutes(deps: DelegationRouteDeps): Hono<ApiEnv> {
@@ -198,6 +200,20 @@ export function delegationRoutes(deps: DelegationRouteDeps): Hono<ApiEnv> {
       case "not_found":
         return c.json({ error: "not_found" }, 404);
     }
+  });
+
+  app.post("/delegations/:id/remind", flagFirst, requireOwner, delegationDocs.remindDelegation, async (c) => {
+    const ctx = c.get("ctx");
+    const id = idOf(c.req.param("id"));
+    await parseBody(c, delegationActionBodySchema);
+    const result = await remindNow({ db: deps.db }, ctx, id, {
+      userId: c.get("session").userId,
+      via: "web",
+      now: deps.now(),
+    });
+    if (result.kind === "planned") return c.json<DelegationRemindAnswer>({ status: "planned", sendId: result.sendId });
+    if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
+    return c.json({ error: result.kind }, 409);
   });
 
   return app;

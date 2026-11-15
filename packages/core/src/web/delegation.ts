@@ -1,9 +1,15 @@
 import { z } from "./zod";
 
+export { ADDRESS_PATTERN } from "../triage/payloads";
+
 // GET/POST /api/delegates and PATCH /api/delegates/:id (F102 ticket, D10). Every object is strict. The raw limits of the bodies are
 // wider than the limits of the service (name 1–100 characters, address by `ADDRESS_PATTERN`, at most 10 tags of 1–30 characters
 // after trim): the service decides the real limit and answers 400 `validation` with the field.
 export const DELEGATE_LIST_MAX = 200;
+// The limits of the service, one list for the service and the form of the panel (the server check is the real one).
+export const DELEGATE_NAME_MAX = 100;
+export const DELEGATE_TAGS_MAX = 10;
+export const DELEGATE_TAG_MAX = 30;
 export const DELEGATE_NAME_RAW_MAX = 400;
 export const DELEGATE_EMAIL_RAW_MAX = 320;
 export const DELEGATE_TAGS_RAW_MAX = 50;
@@ -89,6 +95,8 @@ export const delegationDoneAnswerSchema = z.strictObject({ status: z.literal("do
 export type DelegationDoneAnswer = z.infer<typeof delegationDoneAnswerSchema>;
 export const delegationCancelAnswerSchema = z.strictObject({ status: z.literal("cancelled") });
 export type DelegationCancelAnswer = z.infer<typeof delegationCancelAnswerSchema>;
+export const delegationRemindAnswerSchema = z.strictObject({ status: z.literal("planned"), sendId: z.uuid() });
+export type DelegationRemindAnswer = z.infer<typeof delegationRemindAnswerSchema>;
 
-// The body of both POST routes is empty (`{}`); a strict object refuses any field.
+// The body of all three POST routes is empty (`{}`); a strict object refuses any field.
 export const delegationActionBodySchema = z.strictObject({});
