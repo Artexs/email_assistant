@@ -104,5 +104,5 @@ A verdict is `PASS`, `FAIL` or `SKIP`. A `SKIP` means a missing earlier step or 
 
 - The probe leaves the folder `AI/Spike` and a few test mails (subjects start with `EA spike`). Delete them by hand when you want.
 - M13 (removal) and G6 (revoke) end the grant. Run the probe again for a new grant.
-- Port 8765 must be free. With a busy port, the first row fails with a bind error code.
+- The probe listens on port 8765 of both `127.0.0.1` and `::1`. If either address is taken, the first row fails with a bind error code and no consent URL shows.
 - Run a probe again for one provider only if the coordinator asks. Each run asks for a new consent.

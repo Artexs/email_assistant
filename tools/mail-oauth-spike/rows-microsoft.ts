@@ -9,11 +9,12 @@ import {
   smtpLogin,
 } from "./mail";
 import { errorCodes, MS_GRAPH_SCOPE, randomToken, REDIRECT_URI, text, tokenRequest } from "./oauth";
-import { capability, folderPath, word } from "./redact";
+import { word } from "./redact";
 import {
   aadstsOf,
   appendTest,
   askKind,
+  capabilityText,
   askPart,
   combine,
   connectImap,
@@ -22,6 +23,7 @@ import {
   folders,
   imapOrFail,
   isOutcome,
+  listText,
   needs,
   ownerIsLogin,
   pass,
@@ -92,9 +94,7 @@ const m4: Row = {
     const missingFolders = (["\\Sent", "\\Drafts", "\\Trash", "\\Junk"] as const).filter(
       (flag) => !list.some((folder) => folder.specialUse === flag)
     );
-    const evidence = `CAPABILITY: ${capabilities.map(capability).join(" ")}; LIST: ${list
-      .map((folder) => `${folderPath(folder.path)} ${folder.specialUse ?? "-"}`)
-      .join(" | ")}`;
+    const evidence = `CAPABILITY: ${capabilityText(session)}; LIST: ${listText(list)}`;
     const gaps = [...missingCapabilities, ...missingFolders.map((flag) => `special-use ${flag}`)];
     return gaps.length === 0 ? pass(evidence) : fail(`missing ${gaps.join(", ")}; ${evidence}`);
   },

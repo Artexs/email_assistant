@@ -19,7 +19,7 @@ import {
   type IdClaims,
   type Provider,
 } from "./oauth";
-import { word } from "./redact";
+import { capability, folderPath, word } from "./redact";
 
 // Shared types and steps of the probe rows. One `Ctx` per probe run: it holds the tokens in memory only.
 
@@ -330,4 +330,26 @@ export async function appendTest(
   });
   const result = await session.append(path, mime, spec.flags ?? []);
   return result === false ? undefined : result.uid;
+}
+
+const MAX_SPECIAL_FOLDERS = 12;
+const MAX_CAPABILITIES = 40;
+
+/** Capability names for evidence: upper case, a fixed charset, at most 40. */
+export function capabilityText(session: ImapSession): string {
+  const names = [...session.capabilities.keys()].map((key) => key.toUpperCase());
+  const shown = names.slice(0, MAX_CAPABILITIES).map(capability).join(" ");
+  return names.length > MAX_CAPABILITIES ? `${shown} (+${names.length - MAX_CAPABILITIES} more)` : shown;
+}
+
+/**
+ * LIST for evidence. The INBOX and the special-use folders show by name (cut to 40 characters); every other folder
+ * only adds to a count. A big mailbox cannot push the evidence over the guard limit.
+ */
+export function listText(list: ListResponse[]): string {
+  const special = list.filter((folder) => folder.specialUse !== undefined || folder.path === "INBOX");
+  const shown = special
+    .slice(0, MAX_SPECIAL_FOLDERS)
+    .map((folder) => `${folderPath(folder.path)} ${folder.specialUse ?? "-"}`);
+  return `${shown.join(" | ")} | other folders: ${list.length - shown.length}`;
 }

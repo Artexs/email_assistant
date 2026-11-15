@@ -108,27 +108,41 @@ export function startCallbackServer(options: { port: number; state: string; time
     rejectResult = reject;
   });
 
-  const server = Bun.serve({
-    port: options.port,
-    hostname: "localhost",
-    fetch(request) {
-      const url = new URL(request.url);
-      if (url.pathname !== "/callback") return new Response("not found", { status: 404 });
-      if (settled) return new Response("already used", { status: 410 });
-      const state = url.searchParams.get("state");
-      if (state === null || !sameText(state, options.state)) return new Response("state mismatch", { status: 400 });
-      settled = true;
-      clearTimeout(timer);
-      resolveResult(Object.fromEntries(url.searchParams.entries()));
-      queueMicrotask(() => void server.stop());
-      return new Response("You can close this tab and go back to the terminal.", { status: 200 });
-    },
-  });
+  const handle = (request: Request): Response => {
+    const url = new URL(request.url);
+    if (url.pathname !== "/callback") return new Response("not found", { status: 404 });
+    if (settled) return new Response("already used", { status: 410 });
+    const state = url.searchParams.get("state");
+    if (state === null || !sameText(state, options.state)) return new Response("state mismatch", { status: 400 });
+    settled = true;
+    clearTimeout(timer);
+    resolveResult(Object.fromEntries(url.searchParams.entries()));
+    queueMicrotask(stopAll);
+    return new Response("You can close this tab and go back to the terminal.", { status: 200 });
+  };
+
+  // Bun's `localhost` listens on one family only, so another local process could take the other one. Listen on both
+  // loopback addresses. A taken address is an error. A machine without IPv6 gives no `::1` listener, which is fine.
+  const servers: ReturnType<typeof Bun.serve>[] = [];
+  const stopAll = (): void => {
+    for (const server of servers) void server.stop();
+  };
+  const first = Bun.serve({ port: options.port, hostname: "127.0.0.1", fetch: handle });
+  servers.push(first);
+  try {
+    servers.push(Bun.serve({ port: first.port, hostname: "::1", fetch: handle }));
+  } catch (error) {
+    if ((error as { code?: unknown }).code === "EADDRINUSE") {
+      stopAll();
+      throw error;
+    }
+  }
+  const server = first;
 
   const timer = setTimeout(() => {
     if (settled) return;
     settled = true;
-    void server.stop();
+    stopAll();
     rejectResult(new Error("callback timeout"));
   }, options.timeoutMs);
 
@@ -138,7 +152,7 @@ export function startCallbackServer(options: { port: number; state: string; time
     stop: () => {
       clearTimeout(timer);
       settled = true;
-      void server.stop();
+      stopAll();
     },
   };
 }

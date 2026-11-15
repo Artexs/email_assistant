@@ -3,8 +3,8 @@ import { dirname } from "node:path";
 
 import { failureCodes } from "./mail";
 import { ENDPOINTS, randomToken, REDIRECT_PORT, startCallbackServer, type Endpoints, type Provider } from "./oauth";
-import { assertSafeEvidence, EvidenceRefusal, maskAddresses } from "./redact";
-import { newCtx, rowsFor, type Deps, type Row, type SpikeEnv, type Verdict } from "./rows";
+import { assertNoKnownSecret, assertSafeEvidence, EvidenceRefusal, maskAddresses } from "./redact";
+import { newCtx, rowsFor, type Ctx, type Deps, type Row, type SpikeEnv, type Verdict } from "./rows";
 import { closeSession, type Answer } from "./rows-core";
 
 // Probe CLI. Usage: bun tools/mail-oauth-spike/probe.ts <microsoft|microsoft-personal|google> --out <file>
@@ -32,6 +32,22 @@ export interface ProbeOptions {
  * Run the rows in order. Every evidence string passes the guard before it is shown or kept. One refused string means no
  * result file and exit code 1: a partial file with a leak is worse than no file.
  */
+/** Every secret value the run holds now: the client keys, the tokens, the verifier, the code and the state. */
+export function knownSecrets(ctx: Ctx): (string | undefined)[] {
+  const tokens = ctx.state.tokens;
+  return [
+    ctx.env.clientSecret,
+    ctx.env.clientId,
+    tokens?.imap,
+    tokens?.graph,
+    tokens?.refresh,
+    tokens?.idToken,
+    ctx.state.verifier,
+    ctx.state.params?.["code"],
+    ctx.state.params?.["state"],
+  ];
+}
+
 export async function runProbe(options: ProbeOptions): Promise<number> {
   const { provider, deps } = options;
   const ctx = newCtx(provider, options.env, deps, options.endpoints ?? ENDPOINTS[provider]);
@@ -50,6 +66,7 @@ export async function runProbe(options: ProbeOptions): Promise<number> {
       const evidence = typeof outcome.evidence === "string" ? maskAddresses(outcome.evidence, known) : outcome.evidence;
       try {
         assertSafeEvidence(evidence);
+        assertNoKnownSecret(evidence, knownSecrets(ctx));
       } catch (error) {
         const rule = error instanceof EvidenceRefusal ? error.rule : "unknown";
         refused.push({ id: row.id, rule });

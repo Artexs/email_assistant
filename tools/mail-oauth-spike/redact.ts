@@ -10,7 +10,8 @@ export type RefusalRule =
   | "microsoft-refresh-token"
   | "microsoft-access-token"
   | "long-token-run"
-  | "address";
+  | "address"
+  | "known-secret";
 
 const RULES: readonly { rule: RefusalRule; pattern: RegExp }[] = [
   { rule: "jwt", pattern: /eyJ/ },
@@ -44,6 +45,17 @@ export function assertSafeEvidence(evidence: unknown): asserts evidence is strin
   }
 }
 
+const MIN_SECRET_LENGTH = 6;
+
+/** Refuse evidence that holds the exact value of a secret the run knows. A secret shorter than 6 characters is skipped. */
+export function assertNoKnownSecret(evidence: string, secrets: readonly (string | undefined)[]): void {
+  for (const secret of secrets) {
+    if (secret !== undefined && secret.length >= MIN_SECRET_LENGTH && evidence.includes(secret)) {
+      throw new EvidenceRefusal("known-secret");
+    }
+  }
+}
+
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Replace each known address, and its plus forms, with `<owner>`. A defence: a row builds evidence without addresses. */
@@ -72,4 +84,8 @@ export const capability = (value: unknown): string =>
   typeof value === "string" && CAPABILITY.test(value) ? value : "?";
 
 /** A folder path such as `[Gmail]/Sent Mail` or `Wysłane`. A path with other characters becomes `?`. */
-export const folderPath = (value: unknown): string => (typeof value === "string" && FOLDER.test(value) ? value : "?");
+export const folderPath = (value: unknown): string => {
+  if (typeof value !== "string" || !FOLDER.test(value)) return "?";
+  // A long run of name characters looks like a token, so a long name is cut. The result is at most 40 characters.
+  return value.replace(/[A-Za-z0-9_-]{31,}/g, (run) => `${run.slice(0, 30)}...`).slice(0, 40);
+};
