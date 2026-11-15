@@ -41,7 +41,7 @@ runMailSenderContract(
             const lock = await client.getMailboxLock(INBOX);
             try {
               for (let attempt = 0; attempt < 20; attempt += 1) {
-                const [uid] = await client.search({ header: { "message-id": messageId } }, { uid: true });
+                const [uid] = (await client.search({ header: { "message-id": messageId } }, { uid: true })) || [];
                 if (uid !== undefined) {
                   const message = await client.fetchOne(String(uid), { source: true }, { uid: true });
                   if (message !== false && message.source !== undefined) return message.source;
