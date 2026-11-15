@@ -3,6 +3,8 @@ import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
+import { OUTBOX_REMOVED_TEXT } from "./repo";
+
 type DbOrTrx = Db | Transaction<DB>;
 
 export interface CardOfSend {
@@ -114,7 +116,8 @@ export async function newerEditSent(
 
 // The follow-ups whose loop closed (`expired` / `loop_closed`) and whose approval card still shows the buttons: a card that no sender took
 // (`pending`) or one that went out (`sent`) with no `expired` edit queued yet. The decision hooks cannot reach these ends (the committer,
-// the switch-off and the close rules end a send without an approval hook), so a detector finds them. `endedAt` is the time of the end.
+// the switch-off and the close rules end a send without an approval hook), so a detector finds them. A sent card with no text (retention)
+// or no message id has nothing to edit (the skips of `queueCardEdits`): it is not listed, so it cannot hold a place in the limit for ever. `endedAt` is the time of the end.
 export async function listClosedFollowUpCards(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -134,7 +137,10 @@ export async function listClosedFollowUpCards(
       where card.org_id = actions.org_id and card.kind = 'approval'
         and card.dedup_key = 'approval:' || actions.id::text
         and (card.status = 'pending'
-          or (card.status = 'sent' and not exists (
+          or (card.status = 'sent'
+            and card.text is not null and card.text <> '' and card.text <> ${OUTBOX_REMOVED_TEXT}
+            and card.external_message_id is not null
+            and not exists (
             select 1 from outbox edit
             where edit.org_id = card.org_id and edit.user_id = card.user_id
               and edit.dedup_key = 'approval_edit:' || card.id::text || ':expired')))

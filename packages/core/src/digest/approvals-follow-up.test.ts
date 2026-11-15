@@ -80,7 +80,7 @@ describe("the follow-up card (T1, T2, T3)", () => {
     expect(message.text.split("\n").slice(0, 5)).toEqual([
       "📝 Przypomnienie o odpowiedzi",
       "Do: anna@example.test",
-      "Kopia: jan@example.test, ewa@example.test",
+      "DW: jan@example.test, ewa@example.test",
       "Temat: Re: Offer Q1",
       "Przypomnienie 2 z 2",
     ]);
@@ -152,26 +152,86 @@ describe("the follow-up card (T1, T2, T3)", () => {
 
 describe("a recipient that the card could hide or reorder is not an address", () => {
   const ok = ["anna@example.test", "a.b+c@sub.example.test", "ann@exämple.test"];
-  // Quoted, angle, list, header-injection, encoded and invisible forms.
-  const bad = [
-    "anna@example.test\u200b", // zero width space
-    "an\u202ena@example.test", // bidi override
-    "anna@exam\u2066ple.test", // bidi isolate
-    "anna@exa\u061cmple.test", // arabic letter mark
-    "\ufeffanna@example.test", // byte order mark
-    "anna@example.test\u0085", // next line
-    "anna@example\u0007.test", // control
-    "anna@example.test\u2028", // line separator
-    '"anna"@example.test',
-    "<anna@example.test>",
-    "anna@example.test,jan@example.test",
-    "anna@example.test\r\nBcc: x@example.test",
+  // A hidden character is put in the local part and in the domain. A test name holds a label, never an address.
+  const hidden: [string, string][] = [
+    ["zero width space", "\u200b"],
+    ["zero width non-joiner", "\u200c"],
+    ["right-to-left mark", "\u200f"],
+    ["left-to-right embedding", "\u202a"],
+    ["bidi override", "\u202e"],
+    ["word joiner", "\u2060"],
+    ["bidi isolate start", "\u2066"],
+    ["pop directional isolate", "\u2069"],
+    ["arabic letter mark", "\u061c"],
+    ["byte order mark", "\ufeff"],
+    ["delete control", "\u007f"],
+    ["application program command", "\u009f"],
+    ["next line", "\u0085"],
+    ["bell control", "\u0007"],
+    ["line separator", "\u2028"],
+    ["soft hyphen", "\u00ad"],
+    ["combining grapheme joiner", "\u034f"],
+    ["hangul choseong filler", "\u115f"],
+    ["hangul jungseong filler", "\u1160"],
+    ["mongolian vowel separator", "\u180e"],
+    ["hangul filler", "\u3164"],
+    ["variation selector 1", "\ufe00"],
+    ["variation selector 16", "\ufe0f"],
+    ["halfwidth hangul filler", "\uffa0"],
+    ["tag space", "\u{e0020}"],
+    ["tag begin", "\u{e0000}"],
+    ["cancel tag", "\u{e007f}"],
   ];
-
-  test.each(ok)("accepts %s", (address) => expect(addressSchema.safeParse(address).success).toBe(true));
-  test.each(bad.map((address) => [JSON.stringify(address), address] as const))("refuses %s", (_name, address) =>
-    expect(addressSchema.safeParse(address).success).toBe(false)
+  const forms: [string, string][] = [
+    ["quoted", '"anna"@example.test'],
+    ["angle brackets", "<anna@example.test>"],
+    ["list", "anna@example.test,jan@example.test"],
+    ["header injection", "anna@example.test\r\nBcc: x@example.test"],
+  ];
+  const bad: [string, string][] = [
+    ...forms,
+    ...hidden.flatMap(([label, ch]): [string, string][] => [
+      [`${label} in the local part`, `an${ch}na@example.test`],
+      [`${label} in the domain`, `anna@exam${ch}ple.test`],
+      [`${label} at the end`, `anna@example.test${ch}`],
+    ]),
+  ];
+  test.each(ok.map((address, index) => [`plain address ${index + 1}`, address] as const))(
+    "accepts %s",
+    (_label, address) => expect(addressSchema.safeParse(address).success).toBe(true)
   );
+  test.each(bad)("refuses %s", (_label, address) => expect(addressSchema.safeParse(address).success).toBe(false));
+  test("a test label holds no address", () => {
+    for (const [label] of [...bad, ...hidden]) expect(label).not.toContain("@");
+  });
+});
+
+describe("the recipient limit of the card (2,400 characters)", () => {
+  // The two address lines together (`To: ...` and `Cc: ...`, joined by a line break) are checked, never one line alone.
+  const pad = (n: number, tag: string) => `${tag}${"x".repeat(n - tag.length - "@e.test".length)}@e.test`;
+  const lines = (to: string[], cc: string[]) =>
+    [`To: ${to.join(", ")}`, ...(cc.length > 0 ? [`Cc: ${cc.join(", ")}`] : [])].join("\n").length;
+
+  test("a To list of exactly 2,400 characters renders; one more is refused", () => {
+    // "To: " is 4 characters: the address makes up the rest.
+    const fits = [pad(FOLLOW_UP_RECIPIENTS_MAX_CHARS - 4, "a")];
+    expect(lines(fits, [])).toBe(FOLLOW_UP_RECIPIENTS_MAX_CHARS);
+    expect(card(followUp({ to: fits, cc: [] })).text).toContain(fits[0] ?? "");
+    const over = [pad(FOLLOW_UP_RECIPIENTS_MAX_CHARS - 3, "a")];
+    expect(lines(over, [])).toBe(FOLLOW_UP_RECIPIENTS_MAX_CHARS + 1);
+    expect(() => card(followUp({ to: over, cc: [] }))).toThrow(RangeError);
+  });
+
+  test("a Cc-heavy list counts too: To and Cc together at 2,400 render, one more is refused", () => {
+    // "To: a@e.test" is 12 characters, the line break 1, "Cc: " 4: the Cc address makes up the rest.
+    const to = ["a@e.test"];
+    const ccFits = [pad(FOLLOW_UP_RECIPIENTS_MAX_CHARS - 12 - 1 - 4, "c")];
+    expect(lines(to, ccFits)).toBe(FOLLOW_UP_RECIPIENTS_MAX_CHARS);
+    expect(card(followUp({ to, cc: ccFits })).text).toContain(`Cc: ${ccFits[0]}`);
+    const ccOver = [pad(FOLLOW_UP_RECIPIENTS_MAX_CHARS - 12 - 1 - 4 + 1, "c")];
+    expect(lines(to, ccOver)).toBe(FOLLOW_UP_RECIPIENTS_MAX_CHARS + 1);
+    expect(() => card(followUp({ to, cc: ccOver }))).toThrow(RangeError);
+  });
 });
 
 describe("the result lines of a follow-up", () => {
@@ -191,21 +251,44 @@ describe("the result lines of a follow-up", () => {
   test("T8 sent: the first recipient, no subject, no draft lines, no button", () => {
     const sent: SendResultKind = { kind: "sent", sentCopy: "appended", draftRemoved: false };
     expect(result(sent).text).toBe("✅ Follow-up sent to anna@example.test");
-    expect(result(sent, "pl").text).toBe("✅ Przypomnienie wysłane do anna@example.test");
+    expect(result(sent, "pl").text).toBe("✅ Przypomnienie o odpowiedzi wysłane do anna@example.test");
     expect(result(sent).buttons).toEqual([]);
   });
 
   test("rejected and expired", () => {
     expect(result({ kind: "rejected", byName: null, draftRemoved: true }).text).toBe("✖️ Follow-up rejected");
     expect(result({ kind: "rejected", byName: "Artek", draftRemoved: true }, "pl").text).toBe(
-      "✖️ Przypomnienie odrzucone (Artek)"
+      "✖️ Przypomnienie o odpowiedzi odrzucone (Artek)"
     );
     expect(result({ kind: "expired", reason: "timeout", draftRemoved: true }).text).toBe(
       "⌛ Follow-up not sent: the approval expired (48 h)."
     );
     expect(result({ kind: "expired", reason: "loop_closed", draftRemoved: true }, "pl").text).toBe(
-      "⌛ Nie wysłano przypomnienia: sprawa została zamknięta."
+      "⌛ Nie wysłano przypomnienia o odpowiedzi: sprawa została zamknięta."
     );
+  });
+
+  test("Polish: every result line says `Przypomnienie o odpowiedzi` and one form of `Ciebie`", () => {
+    const lines = [
+      result({ kind: "sent", sentCopy: "appended", draftRemoved: false }, "pl").text,
+      result({ kind: "rejected", byName: null, draftRemoved: true }, "pl").text,
+      ...(
+        [
+          "timeout",
+          "draft_missing",
+          "not_notified",
+          "not_seen",
+          "held_timeout",
+          "delegation_closed",
+          "policy_changed",
+          "loop_closed",
+        ] as const
+      ).map((reason) => result({ kind: "expired", reason, draftRemoved: true }, "pl").text),
+    ];
+    for (const line of lines) expect(line.toLowerCase()).toMatch(/przypomnieni(e|a) o odpowiedzi/);
+    expect(lines.join("\n")).not.toMatch(/\bciebie\b/);
+    expect(textTables.pl.approvals.followUp.expired.not_seen).toContain("do Ciebie");
+    expect(textTables.pl.notices.loopConsent.approval).toContain("na Twoje zatwierdzenie");
   });
 
   test("a failed follow-up has no result line (the fixed action_failed notice tells it)", () => {
@@ -307,7 +390,7 @@ describe("the fixed notices of a follow-up (T3b, G13, D17)", () => {
     });
     expect(render("result", "pl")).toEqual({
       ok: true,
-      message: { text: "Jest nowy wynik dotyczący przypomnienia o odpowiedzi. Zobacz go w panelu.", buttons: [] },
+      message: { text: "Przypomnienie o odpowiedzi ma nowy status. Sprawdź go w panelu.", buttons: [] },
     });
   });
 

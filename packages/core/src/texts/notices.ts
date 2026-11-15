@@ -329,7 +329,7 @@ export const noticeTexts = {
     },
     loopConsent: {
       approval: "Przypomnienie o odpowiedzi czeka na Twoje zatwierdzenie w panelu.",
-      result: "Jest nowy wynik dotyczący przypomnienia o odpowiedzi. Zobacz go w panelu.",
+      result: "Przypomnienie o odpowiedzi ma nowy status. Sprawdź go w panelu.",
     },
     sendHeld: {
       first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka ${address}): ${limit}.`,

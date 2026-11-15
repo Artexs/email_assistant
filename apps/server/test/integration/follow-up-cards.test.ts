@@ -6,7 +6,9 @@ import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "
 import type { Transaction } from "kysely";
 
 import { createExpiryJob, noDelegationHooks } from "../../src/modules/actions";
+import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices, loopConsentOf } from "../../src/modules/channels";
+import { listClosedFollowUpCards } from "../../src/modules/channels/card-edits-repo";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
@@ -323,6 +325,22 @@ describe("loopConsentOf: the one choke point of the gate", () => {
     });
   });
 
+  test("only a chat.unlinked row withdraws: another audit event with the same user id, newer than the consent, does not", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      for (const event of [auditEvents.orgMemberAdded, auditEvents.chatLinked, auditEvents.webTelegramConsent]) {
+        await recordAudit(
+          trx,
+          { orgId: w.orgId },
+          { event, actor: "cli", data: { user_id: w.owner, role: "owner" }, at: at(-5 * MINUTE) }
+        );
+      }
+      expect((await loopConsentOf(trx, w.ctx, [w.owner])).has(w.owner)).toBe(true);
+      await unlinkRow(trx, w.orgId, w.owner, at(-4 * MINUTE));
+      expect((await loopConsentOf(trx, w.ctx, [w.owner])).has(w.owner)).toBe(false);
+    });
+  });
+
   test("an unlink row of another organization withdraws nothing here", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
@@ -614,6 +632,60 @@ describe("the card of a follow-up whose loop closed loses its buttons", () => {
   });
 });
 
+describe("the cards that a closed loop still lists (the limit must not clog)", () => {
+  test("a sent card whose text was removed or that has no message id is not listed; a normal sent card and a pending card are", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const mk = async (minutesAgo: number) => {
+        const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
+        await trx
+          .updateTable("actions")
+          .set({ status: "expired", status_reason: "loop_closed", updated_at: at(-minutesAgo * MINUTE) })
+          .where("id", "=", f.sendId)
+          .execute();
+        return f;
+      };
+      const card = async (sendId: string, loopId: string, patch: Record<string, unknown>) =>
+        trx
+          .insertInto("outbox")
+          .values({
+            org_id: w.orgId,
+            user_id: w.owner,
+            kind: "approval",
+            dedup_key: `approval:${sendId}`,
+            loop_id: loopId,
+            text: "CARD",
+            status: "sent",
+            external_message_id: 5,
+            sent_at: at(0),
+            next_attempt_at: at(0),
+            created_at: at(0),
+            ...patch,
+          })
+          .execute();
+      // The useless ones are the oldest: with a limit of one they would hide the good card if they were listed.
+      const removed = await mk(50);
+      await card(removed.sendId, removed.loopId, { text: "[removed]" });
+      const noId = await mk(30);
+      await card(noId.sendId, noId.loopId, { external_message_id: null });
+      const good = await mk(20);
+      await card(good.sendId, good.loopId, {});
+      const pending = await mk(10);
+      await card(pending.sendId, pending.loopId, {
+        status: "pending",
+        text: null,
+        external_message_id: null,
+        sent_at: null,
+      });
+      expect((await listClosedFollowUpCards(trx, w.ctx, { limit: 10 })).map((row) => row.sendId)).toEqual([
+        good.sendId,
+        pending.sendId,
+      ]);
+      expect((await listClosedFollowUpCards(trx, w.ctx, { limit: 1 })).map((row) => row.sendId)).toEqual([good.sendId]);
+    });
+  });
+});
+
 describe("T7 the 48 hour expiry of a follow-up", () => {
   test("a follow-up not tapped for 48 h expires and the loop stays open; a fresh one stays", async () => {
     await withRollback(db, async (trx) => {
@@ -662,6 +734,32 @@ describe("T7 the 48 hour expiry of a follow-up", () => {
       const results = await outbox(trx, w.orgId, "send_result");
       expect(users(results)).toEqual([w.owner, w.owner2].sort());
       expect(results[0]?.text).toBe("⌛ Follow-up not sent: the approval expired (48 h).");
+    });
+  });
+});
+
+describe("a follow-up that no owner could see (every owner uncovered)", () => {
+  test("the hourly job ends it after 48 h with the reason the code gives; the loop stays open", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      for (const user of [w.owner, w.owner2]) await consentRow(trx, w.orgId, user, OLD_CONSENT, at(-10 * MINUTE));
+      const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
+      await run(trx);
+      expect(await outbox(trx, w.orgId, "approval")).toEqual([]);
+      const later = at(49 * HOUR);
+      await createExpiryJob({ db: trx, now: () => later, hooks: noDelegationHooks, uidplus: async () => true }).run();
+      const row = await trx
+        .selectFrom("actions")
+        .select(["status", "status_reason"])
+        .where("id", "=", f.sendId)
+        .executeTakeFirstOrThrow();
+      expect(row).toEqual({ status: "expired", status_reason: "not_seen" });
+      const loop = await trx
+        .selectFrom("open_loops")
+        .select("status")
+        .where("id", "=", f.loopId)
+        .executeTakeFirstOrThrow();
+      expect(loop.status).toBe("open");
     });
   });
 });

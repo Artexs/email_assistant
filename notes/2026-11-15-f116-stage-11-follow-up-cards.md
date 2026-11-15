@@ -14,7 +14,7 @@ Stage file: `spec/features/active/F116-e5b-open-loops/stages/stage-11-follow-up-
 
 1. A failed follow-up gives one fixed `action_failed` notice (not a `send_result` line). `outcome_unknown` has its own text ("may have been sent"). No "Send again" and no "It went out" for a follow-up: a forged tap answers "not found".
 2. `loop_consent` has two kinds, `approval` and `result`, one row per owner, kind and UTC day.
-3. A follow-up card whose To and Cc text is over 2,400 characters is refused (never cut). The panel still shows it. The send expires `not_notified` after 7 days if no owner is covered.
+3. A follow-up card whose To and Cc text is over 2,400 characters is refused (never cut). The panel still shows it. A refused card leaves the send unmarked (`notified_at` null), so it ends `not_notified` after 7 days. When every owner is uncovered, the `loop_consent` line marks the send and the hourly job ends it `not_seen` after 48 h (test `follow-up-cards.test.ts`, "a follow-up that no owner could see").
 4. `ADDRESS_PATTERN` refuses control, zero-width and bidi characters (the address on the card must be the address that is sent). This also applies to delegate addresses.
 5. The consent counts only when it is newer than the user's last `chat.unlinked` row (N4). A consent row at the same instant as the unlink row does not count. A user who re-links by the CLI has no consent until the panel confirm button exists (stage 22).
 6. Card edit for `expired` / `loop_closed` is a detector (`followUpClosedDetector`), because the committer, the switch-off and the close rules end a send with no approval hook. Other expiry reasons edit no card (as for mail).

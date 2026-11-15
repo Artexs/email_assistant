@@ -7,8 +7,9 @@ import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
 // One strict rule for every recipient in a payload (D2): no space, comma, angle bracket, quote or line break, and no control,
 // zero-width or bidi character. The approval card spells a recipient out and the owner decides on it: the address that is shown
 // must be the address that is sent, so no character that a renderer would hide or reorder is allowed.
-const HIDDEN = "\\u0000-\\u001f\\u007f-\\u009f\\u061c\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2069\\ufeff";
-export const ADDRESS_PATTERN = new RegExp(`^[^\\s@<>,;"'\\r\\n${HIDDEN}]+@[^\\s@<>,;"'\\r\\n${HIDDEN}]+$`);
+const HIDDEN =
+  "\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u034f\\u061c\\u115f-\\u1160\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2069\\u3164\\ufe00-\\ufe0f\\ufeff\\uffa0\\u{e0000}-\\u{e007f}";
+export const ADDRESS_PATTERN = new RegExp(`^[^\\s@<>,;"'\\r\\n${HIDDEN}]+@[^\\s@<>,;"'\\r\\n${HIDDEN}]+$`, "u");
 export const addressSchema = z.string().regex(ADDRESS_PATTERN);
 export const draftLanguageSchema = z.enum(["pl", "en"]);
 
