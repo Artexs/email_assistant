@@ -28,7 +28,7 @@ Part of [`../plan.md`](../plan.md). Decisions P2, D2–D5, D7, D8. Needs stages 
 
 - `main.ts`: `scheduler.add("ops.slo", "30 */5 * * * *", …)` in every case (also without `TELEGRAM_BOT_TOKEN`). `send` = the same operator direct send that `channels.operator` gets (chat set) or null.
 - `bun run ops:alerts [--days 7]`: one line per row: kind, opened, notices, resolved (or `open`), facts. Numbers and kinds only.
-- `bun run ops:alert-test (--kind <kind> | --all)`: renders the `test` text from fixed facts and sends it through the real path; no `ops_alerts` write. Prints `sent <kind>` or `unsent <kind> no_chat`; exit 1 on a send error. Stage 08 uses it.
+- `bun run ops:alert-test (--kind <kind> | --all)`: renders the `test` text from fixed facts and sends it through the real path; no `ops_alerts` write. Prints `sent <kind>` or `unsent <kind> no_chat`; exit 1 on a send error. Stage 09 uses it.
 - Both use `createCliOutput`.
 
 ## Step 4 — Docs

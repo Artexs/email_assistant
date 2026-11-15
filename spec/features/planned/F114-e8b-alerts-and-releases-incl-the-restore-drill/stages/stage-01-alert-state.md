@@ -41,7 +41,7 @@ Part of [`../plan.md`](../plan.md). [risky] (migration). Decisions D1, D2, D3.
   - `resolved_at timestamptz`, `resolved_sent_at timestamptz`
   - `facts jsonb NOT NULL DEFAULT '{}'` (numbers only; the repository checks it)
   - `UNIQUE INDEX ops_alerts_active_kind ON ops_alerts (kind) WHERE resolved_sent_at IS NULL`
-- **Decisions:** no `org_id` (D1); app-role grants by the repo pattern. Register it like `auth_lockouts` in the RLS test, the privacy registries (`NO_PERSONAL_TABLES`: "host-wide alert state, numbers only") and any test that lists tables. No retention (Q6).
+- **Decisions:** no `org_id` (D1); app-role grants by the repo pattern. Register it like `auth_lockouts`: RLS test, `EXPORT_MAP` (`export: false`, "host-wide alert state, no organization"), `NO_PERSONAL_TABLES` ("numbers only"), any test that lists tables. No retention (Q9).
 
 ## Step 3 — Repository
 

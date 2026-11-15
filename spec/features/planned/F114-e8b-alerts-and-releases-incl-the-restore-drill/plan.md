@@ -19,19 +19,19 @@ Owner (epic page, 2026-11-13): "I will just use your defaults". Job instruction 
 - **D3 Steps:** pure `nextAlertStep` (stage 01 table). Send first, then write the mark: a crash repeats one notice (at least once, as `channels/operator`). Rejected: mark first (a crash loses the notice). Hysteresis: an open alert closes only on the clear rule.
 - **D4 Delivery:** chat set → Telegram direct send; chat unset → the `info` line `slo_alert_sent` counts as the send. A failed send leaves the mark unset; the next tick retries.
 - **D5 Text:** English like the other operator notices: kind, phase, numbers, up to 5 ids read at send time, `docs/known-alerts.md#<kind>`. Never mail content or error text.
-- **D6 Checks:** fire and clear rules in stages 02 and 04 (discovery notes §2; edge cases solved there: quiet hours, `/resume`, never-synced mailboxes, orgs with no linked chat, suspended orgs, hysteresis). All cross-org, run `withoutTenantScope`. `BACKUP_STATUS_FILE` empty = backup check off (dev, sim, tests).
+- **D6 Checks:** rules and edge cases (quiet hours, resume, start grace, unlinked or suspended orgs, hysteresis) in stages 02 and 04. Cross-org, `withoutTenantScope`. `BACKUP_STATUS_FILE` empty = backup check off.
 - **D7 Job `ops.slo`** `30 */5 * * * *`. A check that throws skips its kind this tick; the others run.
 - **D8 Placement:** checks, steps, repo, texts in `modules/operator` (layer 5, already reads across orgs). Cross-org readers in their owning modules, listed in the `docs/code-patterns.md` exceptions. `main.ts` injects the send. Rejected: a new module (one more layer for the same reads).
-- **D9 Backup status:** `backup.sh` writes `deploy/backup-status/status.json` (format in stage 04), mounted read-only into `server`. The folder is in git, so Docker never creates it as root. `BACKUP_PING_URL` pings Healthchecks; a ping failure never fails the backup. Rejected: the app reads `BACKUP_DIR` file names (host path, no failure state).
+- **D9 Backup status:** `backup.sh` writes `deploy/backup-status/status.json` (format in stage 04), mounted read-only into `server`. Folder in git (never root-owned). `BACKUP_PING_URL` pings Healthchecks; a ping failure never fails the backup. Rejected: the app reads `BACKUP_DIR` file names (host path, no failure state).
 - **D10 Release identity:** build arg `EA_RELEASE` (default `dev`); every log line gets `release`. `/health` stays `{status, db}`. Rejected: version in `/health` (public route).
-- **D11 Images:** `ea-server:latest` is always the running release; `ea-server:<version>` kept for current and previous; state file `deploy/release-state/state` (`current`, `previous`, `pending`). Replaces the manual `pre-<ticket>` tags. Rejected: a tag variable in `compose.yaml` (every one-off command would need it).
-- **D12** `release.sh <tag>`: refusals, steps and verify in stage 05. No automatic rollback: on failure it prints the rollback command. Rejected: automatic rollback (a failed migrate needs a human choice: forward fix or restore).
+- **D11 Images:** `ea-server:latest` is always the running release; `ea-server:<version>` kept for current and previous; state file `deploy/release-state/state` (`current`, `previous`, `pending`). Replaces the manual `pre-<ticket>` tags. Rejected: a tag variable in `compose.yaml` (every one-off needs it).
+- **D12** `release.sh <tag>` (stage 05). No automatic rollback: a failed migrate needs a human choice (forward fix or restore).
 - **D13** `rollback.sh`: `pending` set → back to `current`; else → `previous`; none → refuse. No rebuild, never a down migration.
 - **D14** First tag `v0.1.0`. `CHANGELOG.md` in Keep a Changelog form.
 - **D15 Migration check:** flags contract statements in migrations newer than a fixed cutoff unless the file has `-- contract: <release>`; rules in stage 06. Rejected: a git-diff base (differs between CI push, PR and local).
-- **D16 One restore path:** `deploy/restore.sh --target drill|new-host`. `new-host` refuses when the live DB has any `organizations` row; `drill` uses only project `ea-drill`.
-- **D17 Drill place:** VPS, project `ea-drill` (own volume, subnet `172.29.0.0/24`, no host port), fresh clone at the tag; decrypt on the PC (the key never goes to the VPS), plain dump over ssh. Rejected: clean VM on the PC (no VM tool; jobs have no Docker there); `restore-test.sh` alone (no migrate, no server). Q4.
-- **D18 Drill safety:** no Telegram, heartbeat, operator chat, web URL or LLM keys; scopes `off`; mailboxes `paused` in the drill DB before the server starts (no sync-off key exists, scout 4); `down -v` at the end. Detail in stage 07.
+- **D16 One restore path:** `deploy/restore.sh --target drill|new-host`; both refuse a non-empty target schema; `drill` uses only project `ea-drill` and image `ea-drill-server`.
+- **D17 Drill place:** VPS, project `ea-drill` (own volume, subnet `172.29.0.0/24`, no host port), fresh clone at the tag; decrypt on the PC (the key never goes to the VPS), plain dump over ssh. Rejected: clean VM on the PC (no VM tool; jobs have no Docker there); `restore-test.sh` alone (no migrate, no server). Q3.
+- **D18 Drill safety** (stage 07): no Telegram, heartbeat, operator chat, web or LLM keys; scopes `off`; mailboxes `paused` before the server starts (no sync-off key); `down -v` after.
 - **D19 Counts:** live counts right before and after the drill backup; pass when before ≤ drill ≤ after for `organizations`, `users`, `mailboxes`, `emails`. Rejected: equality (mail arrives during the dump).
 - **D20** `credentials:check`: decrypts each mailbox secret; prints counts only.
 - **D21 Docs:** new `docs/capabilities/operations.md`; `backups.md`; `docs/known-alerts.md`; `deploy/README.md`; `docs/release-checklist.md`; ADR 0024 Progress.
@@ -45,12 +45,11 @@ Scouts 1–4 (operator path, scheduler, config; SLO sources, logger; release pat
 
 ## Not verified
 
-- V1 `statfs("/")` in the container equals the host root: stage 08 compares with `df /`.
-- V2 VPS Compose supports `!reset`: stage 08 runs `config`. V3 `pg_restore` with `db-init` roles: stage 08. V4 the server reads the mounted status file: stage 08.
+- V1 container `statfs("/")` = host root; V2 VPS Compose 2.40 merges the drill override (`!reset`, `!override`, `cli`); V3 `pg_restore` with `db-init` roles; V4 the server reads the status file. All: stage 09.
 
 ## Done when
 
-1. Each kind opens, repeats, resolves (03). 2. `backup.sh` writes the status file and pings (04). 3. Release and rollback with no rebuild (05, 08). 4. The migration check fails on each D15 case (06). 5. Drill time and counts in `deploy/README.md` § VPS lost (08). 6. Five test notices and one real `slo_backup_age` fired (08).
+1. Each kind opens, repeats, resolves (03). 2. `backup.sh` writes the status file and pings (04). 3. Release and rollback with no rebuild (05, 09). 4. The migration check fails on each D15 case (06). 5. Drill time and counts in `deploy/README.md` § VPS lost (09). 6. Five test notices and one real `slo_backup_age` (09).
 
 ## Rules for every stage
 
@@ -70,14 +69,14 @@ mkdir -p /tmp/f114-sNN && bun run lint > /tmp/f114-sNN/lint.log 2>&1 && bun run 
 ## Owner checkpoints and steps
 
 Not a stop (owner, 2026-11-13), except U1.
-- U1 (stage 08 drill only): the `age` identity on the PC; tell the coordinator its path.
+- U1 (stage 09 drill only): the `age` identity on the PC; tell the coordinator its path.
 - U2: Healthchecks.io check "backup" (1 day, grace 2 h) → `BACKUP_PING_URL` in `deploy/backup.env`.
 - U3: group "EA operator" with the VPS bot and HealthchecksBot → `OPERATOR_TELEGRAM_CHAT_ID`.
 - U4: read the five test notices.
 
 ## Review
 
-Opus before land: 01, 03, 05, 07, 08 (migration, sends, deploy, VPS). Sonnet: 02, 04, 06.
+Opus before land: 01, 03, 05, 07, 09. Sonnet: 02, 04, 06, 08.
 
 ## Stages
 
@@ -87,26 +86,27 @@ Opus before land: 01, 03, 05, 07, 08 (migration, sends, deploy, VPS). Sonnet: 02
 4. [04 backup status](stages/stage-04-backup-status.md) status file, ping, disk and backup checks.
 5. [05 release](stages/stage-05-release-scripts.md) identity, release, rollback.
 6. [06 migration check and docs](stages/stage-06-migration-check-docs.md).
-7. [07 restore](stages/stage-07-restore-path.md) restore script, drill override, `credentials:check`.
-8. [08 VPS](stages/stage-08-vps-release-and-drill.md) [risky] first release, alert drill, restore drill.
+7. [07 restore](stages/stage-07-restore-path.md) restore script, drill override.
+8. [08 credentials and runbook](stages/stage-08-credentials-check-runbook.md).
+9. [09 VPS](stages/stage-09-vps-release-and-drill.md) [risky] bootstrap, first release, alert and restore drills.
 
-Order: 01 → 02 → 03 → 04; 05 → 06; 07 any time. 04, 05, 07 touch Compose files: one at a time. 08 last.
+Order: 01 → 02 → 03 → 04; 05 → 06; 07 → 08. 04, 05, 07 touch Compose files: one at a time. 09 last.
 
 ## How to run (coordinator)
 
 1. Gate PD-055 done; move to `active/`, commit.
 2. Spawn per stage: `limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --prepare 'bash scripts/limen-prepare.sh' --label "F114-sNN <slug> · F114" "Implement F114 stage NN (spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/: ticket.md, plan.md, stages/stage-NN-<slug>.md). Run the Proof after the last commit; claim only what a saved log shows."`
 3. TRACK land check, `limen land --keep-open`, drop the job DB. After 01: `bun run db:migrate` on the dev DB.
-4. Stage 08: a coordinator run.
+4. Stage 09: a coordinator run.
 
 ## Planning progress
 
-- Scouts: 4, all done. Stages 01–08 [written].
-- Words (`wc -w`): plan.md 1500; stages 01–08: 694, 637, 695, 640, 685, 656, 699, 667.
+- Scouts: 4, all done. Stages 01–09 [written] (review 1 split old 07 into 07 and 08).
+- Words (`wc -w`): plan.md 1500; stages 01–09: 693, 697, 695, 640, 700, 699, 699, 416, 694.
 
 ## Cold review
 
-Model `claude-opus-5-5`, thinking high: stages 01 and 08 are `[risky]` (migration, deploy, VPS).
+Model `claude-opus-5-5`, thinking high: stages 01 and 09 are `[risky]` (migration, deploy, VPS). Review 1: FAIL, 1 blocking, 14 notes ([plan-review-1.md](plan-review-1.md)); all fixed in place, none rejected. Main changes: drill `cli` block and `--no-build` (07, 05); urgent eligibility, active-minutes lateness and start grace (02); bootstrap deploy (09); old 07 split into 07 and 08.
 
 ## Log
 

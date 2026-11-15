@@ -45,4 +45,4 @@ Tests 1–8 pass; the Proof of `plan.md` prints `PROOF_OK`.
 
 ## Out of scope
 
-The Healthchecks.io check itself and the `backup.env` value on the VPS (owner step U2, stage 08).
+The Healthchecks.io check itself and the `backup.env` value on the VPS (owner step U2, stage 09).

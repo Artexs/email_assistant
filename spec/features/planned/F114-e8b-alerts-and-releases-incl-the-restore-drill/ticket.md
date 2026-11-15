@@ -31,13 +31,13 @@ The operator gets one Telegram alert when a service level breaks (sync late, urg
 
 ## Slices
 
-Eight stages, one worker job each; stage 08 is a coordinator run on the VPS. Order and parallel rules: `plan.md` § Stages and § How to run. Stage 01 holds the migration: no other migration in build next to it.
+Nine stages, one worker job each; stage 09 is a coordinator run on the VPS. Order and parallel rules: `plan.md` § Stages and § How to run. Stage 01 holds the migration: no other migration in build next to it.
 
 ## Sequenced
 
 - Plan after: F103 (E8a Logs: the logger, field kinds and the one-off `cli` service; it has `stages/`).
 - Build after: F103 (E8a Logs) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 20). E8 discovery notes §8 allow stages 01–07 after F103 stage 01 (landed); the coordinator decides.
-- Gate: Owner: grow the VPS root volume (PD-055); stage 08 needs it.
+- Gate: Owner: grow the VPS root volume (PD-055); stage 09 needs it.
 
 ## Notes
 
