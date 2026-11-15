@@ -69,7 +69,8 @@ async function connectWith(
       smtpPort,
     }
   );
-  return { mailboxId, address, imap: { host, port: imapPort, user: address, password } };
+  const imap: ImapConnectOptions = { host, port: imapPort, user: address, auth: { kind: "password", password } };
+  return { mailboxId, address, imap };
 }
 
 /** A mailbox on a fake; `opened` counts the `openProvider` calls of `deliverTestMail`. */

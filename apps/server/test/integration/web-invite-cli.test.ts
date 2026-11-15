@@ -102,7 +102,7 @@ async function inboxSubjects(email: string): Promise<(string | null)[]> {
     host: process.env.TEST_IMAP_HOST ?? "127.0.0.1",
     port: Number(process.env.TEST_IMAP_PORT ?? "3143"),
     user: email,
-    password: "greenmail-test",
+    auth: { kind: "password", password: "greenmail-test" },
   });
   try {
     return (await inbox.fetchAbove(INBOX, 0)).map((meta) => meta.subject);

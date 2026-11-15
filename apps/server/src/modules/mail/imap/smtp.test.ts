@@ -17,7 +17,7 @@ import {
   type SmtpMarks,
 } from "./smtp";
 
-const creds = { user: "me@interia.pl", password: "pw-secret-1" };
+const creds = { user: "me@interia.pl", auth: { kind: "password", password: "pw-secret-1" } } as const;
 
 describe("buildSmtpTransportOptions", () => {
   test("a remote host gets TLS on and no tls key", () => {
@@ -31,7 +31,7 @@ describe("buildSmtpTransportOptions", () => {
     expect(options).toMatchObject({
       host: "poczta.interia.pl",
       port: 465,
-      auth: { user: creds.user, pass: creds.password },
+      auth: { user: creds.user, pass: creds.auth.password },
     });
   });
 
@@ -97,10 +97,10 @@ describe("buildSmtpTransportOptions", () => {
 
 describe("toSmtpError", () => {
   test("EAUTH gives MailAuthError without the password", () => {
-    const original = Object.assign(new Error(`Invalid login for ${creds.password}`), { code: "EAUTH" });
+    const original = Object.assign(new Error(`Invalid login for ${creds.auth.password}`), { code: "EAUTH" });
     const error = toSmtpError(original);
     expect(error).toBeInstanceOf(MailAuthError);
-    expect(error.message).not.toContain(creds.password);
+    expect(error.message).not.toContain(creds.auth.password);
     expect(error.cause).toBe(original);
   });
 
@@ -238,7 +238,13 @@ const RAW = Buffer.from(
 const ENVELOPE = { from: "owner@x.test", to: ["delegate@x.test"] };
 
 function connectOptions(port: number): SmtpConnectOptions {
-  return { host: "127.0.0.1", port, user: "owner@x.test", password: PASSWORD, secure: false };
+  return {
+    host: "127.0.0.1",
+    port,
+    user: "owner@x.test",
+    auth: { kind: "password", password: PASSWORD },
+    secure: false,
+  };
 }
 
 async function sendFailure(

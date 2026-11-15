@@ -20,6 +20,7 @@ export interface WouldDoTexts {
   move: (tense: ActionTense, folder: string | null) => string;
   draft: (tense: ActionTense, kind: DraftKind, name: string | null) => string;
   send: Record<SendPhraseStatus, string>;
+  sendChanged: string; // a send that ended `expired` / `superseded`: a panel edit replaced it (F102 D12)
   sendLimitWait: string; // an approved send held by the send limit (F099 D11 a); the stage plan has no row for it
   staysIn: (folder: string) => string;
 }
@@ -49,6 +50,7 @@ export const wouldDoTexts = {
       expired: "not sent (approval expired)",
       failed: "not sent (failed)",
     },
+    sendChanged: "changed in the panel (new version)",
     sendLimitWait: "approved, waiting: send limit",
     staysIn: (folder) => `stays in ${folder}`,
   },
@@ -75,6 +77,7 @@ export const wouldDoTexts = {
       expired: "niewysłane (zatwierdzenie wygasło)",
       failed: "niewysłane (błąd)",
     },
+    sendChanged: "zmieniono w panelu (nowa wersja)",
     sendLimitWait: "zatwierdzone, czeka (limit wysyłki)",
     staysIn: (folder) => `zostaje w ${folder}`,
   },

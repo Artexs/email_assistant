@@ -250,6 +250,7 @@ export interface Emails {
   dedup_key: string;
   folder: Generated<string>;
   from_address: string | null;
+  from_address_lower: Generated<string | null>;
   id: Generated<string>;
   in_reply_to: string | null;
   inbox_uid: Int8 | null;
@@ -353,6 +354,7 @@ export interface MailboxSettings {
   org_id: string;
   tool_switches: Generated<Json>;
   updated_at: Generated<Timestamp>;
+  urgency_profile: Json | null;
 }
 
 export interface Memberships {
@@ -489,6 +491,7 @@ export interface TriageResults {
   prompt_version: string | null;
   reason: string | null;
   reason_code: string;
+  suspicious_reasons: Generated<string[]>;
   tokens_in: number | null;
   tokens_out: number | null;
   vip: Generated<boolean>;
