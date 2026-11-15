@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { auditEvents, recordAudit, recordLlmCall } from "../../src/modules/audit";
+import { listDelegationOutcomes } from "../../src/modules/delegation";
 import { joinRun, loadLabCorpus, type LabCorpus, type LabEvent, type LabRun } from "../../src/modules/lab";
 import { scoreDelegatesSection } from "../../src/modules/lab/score/delegates";
 import { scoreExecutiveSection } from "../../src/modules/lab/score/executive";
@@ -12,7 +13,6 @@ import { scoreLimitsSection } from "../../src/modules/lab/score/limits";
 import { scoreMetricsSection } from "../../src/modules/lab/score/metrics";
 import { scorePhishingSection } from "../../src/modules/lab/score/phishing";
 import type { SectionScope } from "../../src/modules/lab/score/section";
-import { listDelegationOutcomes } from "../../src/modules/delegation";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
