@@ -108,6 +108,9 @@ export interface FakeExtractor {
 
 // A model client for the extractor role. `reply` is the JSON answer, or a function of the call number (1-based) that
 // returns the answer or throws. Every call is counted in `requests`.
+// The key that the log tests plant in the client. No log line and no audit row may hold it.
+export const PLANTED_KEY = "PLANTED-KEY-f116";
+
 export function fakeExtractor(reply: Answer | ((call: number) => Answer | never) = ASK): FakeExtractor {
   const requests: GenerateRequest[] = [];
   const generate: GenerateFn = async (request) => {
@@ -115,7 +118,7 @@ export function fakeExtractor(reply: Answer | ((call: number) => Answer | never)
     const answer = typeof reply === "function" ? reply(requests.length) : reply;
     return { text: JSON.stringify(answer), tokensIn: 100, tokensOut: 20, blocked: false };
   };
-  return { llm: createFixedLlmClient(generate, { model: "fake-extractor" }), requests };
+  return { llm: createFixedLlmClient(generate, { model: "fake-extractor", apiKey: PLANTED_KEY }), requests };
 }
 
 export function depsOf(trx: Transaction<DB>, fake: FakeExtractor, extra: Partial<AnalyzeDeps> = {}): AnalyzeDeps {

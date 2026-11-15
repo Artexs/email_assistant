@@ -9,7 +9,16 @@ import { LlmConfigError, LlmSoftError } from "../../src/platform/llm";
 import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import { testDb, withRollback } from "./helpers";
-import { analysisOf, ASK, depsOf, fakeExtractor, loopsOrg, RUN_AT, sentMail } from "./loops-analyze-fixtures";
+import {
+  analysisOf,
+  ASK,
+  depsOf,
+  fakeExtractor,
+  loopsOrg,
+  PLANTED_KEY,
+  RUN_AT,
+  sentMail,
+} from "./loops-analyze-fixtures";
 import { ago, HOUR, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
 const MIN = 60_000;
@@ -251,9 +260,56 @@ describe("failures", () => {
   });
 });
 
+describe("timeouts and the cap share", () => {
+  test("a timeout counts as an attempt: the third timeout ends the row failed, and the job is not paused", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const id = await sentMail(trx, org);
+      const fake = fakeExtractor(() => {
+        throw new LlmSoftError("timeout", "fake-extractor");
+      });
+      const pause = createLlmPause();
+      const deps = depsOf(trx, fake, { pause });
+      for (const minutes of [0, 5, 15]) {
+        const out = await analyzeSent(deps, org.ctx, org.mailboxId, {
+          now: new Date(RUN_AT.getTime() + minutes * MIN),
+          limit: 20,
+        });
+        expect(out.stopped).toBe(false);
+      }
+      expect(fake.requests).toHaveLength(3);
+      expect(await analysisOf(trx, id)).toMatchObject({ status: "failed", attempts: 3 });
+      expect(pause.isPaused(new Date(RUN_AT.getTime() + 15 * MIN))).toBe(false);
+    });
+  });
+
+  // The call runs only while (used + 1) * 5 <= cap * 4: the share never rounds up.
+  const shares: [number, number][] = [
+    [1, 0],
+    [3, 2],
+    [7, 5],
+    [100, 80],
+    [300, 240],
+  ];
+  for (const [cap, calls] of shares) {
+    test(`a cap of ${cap} allows ${calls} calls (the last one at ${Math.max(calls - 1, 0)} used)`, async () => {
+      await withRollback(db, async (trx) => {
+        const org = await loopsOrg(trx);
+        for (let i = 0; i < calls + 2; i += 1) {
+          await sentMail(trx, org, { sentAt: new Date(RUN_AT.getTime() - (400 - i) * MIN) });
+        }
+        const fake = fakeExtractor();
+        await analyzeSent(depsOf(trx, fake, { dailyCap: cap }), org.ctx, org.mailboxId, { now: RUN_AT, limit: 500 });
+        expect(fake.requests).toHaveLength(calls);
+      });
+    });
+  }
+});
+
 describe("logs", () => {
   test("no line holds the subject, the text, an address or the key; the lines carry counts and codes", async () => {
     const capture = captureLogs();
+    let auditText = "";
     try {
       await withRollback(db, async (trx) => {
         const org = await loopsOrg(trx);
@@ -270,12 +326,17 @@ describe("logs", () => {
           return { ...ASK, ask: "ASK-MARK" };
         });
         await run(trx, org, fake);
+        // The audit rows hold no planted value either.
+        const audit = await trx.selectFrom("audit_log").selectAll().where("org_id", "=", org.ctx.orgId).execute();
+        auditText = JSON.stringify(audit);
       });
     } finally {
       capture.stop();
     }
-    const planted = ["SUBJECT-MARK", "BODY-MARK", "person-mark@example.test", "other-mark", "ASK-MARK", "MARKER-KEY"];
+    const planted = ["SUBJECT-MARK", "BODY-MARK", "person-mark@example.test", "other-mark", "ASK-MARK", PLANTED_KEY];
     expect(logProblems(capture.lines, planted)).toEqual([]);
+    expect(auditText).not.toBe("");
+    for (const value of planted) expect(auditText).not.toContain(value);
     const done = eventLines(capture.lines, "sent_analysis_done");
     expect(done).toHaveLength(1);
     expect(done[0]).toMatchObject({ count: 1, opened: 1 });

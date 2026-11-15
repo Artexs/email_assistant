@@ -152,10 +152,11 @@ async function recordCall(
 
 type RowOutcome = "analysed" | "skipped" | "waiting" | "failed" | "lost" | "stop" | "off";
 
-// The cap: the calls of the mailbox in the quota day, all roles, at 80% of `dailyCap` or more.
+// The cap: the calls of the mailbox in the quota day, all roles. This call must still fit under 80% of `dailyCap`, so the
+// share never rounds up (a cap of 7 allows 5 calls, a cap of 3 allows 2, a cap of 1 allows none).
 async function capReached(deps: AnalyzeDeps, ctx: TenantContext, mailboxId: string, now: Date): Promise<boolean> {
   const used = await countLlmCallsSince(deps.db, ctx, mailboxId, quotaDayStart(now, QUOTA_TIMEZONE));
-  return used * CAP_SHARE_DEN >= deps.dailyCap * CAP_SHARE_NUM;
+  return (used + 1) * CAP_SHARE_DEN > deps.dailyCap * CAP_SHARE_NUM;
 }
 
 // One candidate: the rules, the cap, the call, the write.
@@ -221,7 +222,9 @@ async function analyzeRow(
   });
   log.with({ org_id: ctx.orgId, mailbox_id: env.mailboxId }).warn("sent_analysis_failed", { error_code: answer.code });
   // The quota or the service, or a wrong key or model: not the mail's fault. The row keeps its tries; the job pauses.
-  const soft = (softCodes as readonly string[]).includes(answer.code);
+  // A timeout is the exception: one mail can time out on every call, so it counts as an attempt and ends `failed`.
+  // On Gemini a schema rejection is a hard `http_400` (3 calls, then `failed`), not a configuration error.
+  const soft = answer.code !== "timeout" && (softCodes as readonly string[]).includes(answer.code);
   if (soft || (configCodes as readonly string[]).includes(answer.code)) {
     deps.pause.trip(soft ? "soft" : "config", answer.code, env.now);
     return "stop";

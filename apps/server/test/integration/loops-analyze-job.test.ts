@@ -120,13 +120,55 @@ describe("createLoopJobs", () => {
   });
 });
 
+describe("the synthetic scope and sender case", () => {
+  test("a mixed-case sender of a test sender address is selected", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const org = await loopsOrg(trx);
+      const id = await sentMail(trx, org, { fromAddress: "Tester@X.Test" });
+      const fake = fakeExtractor(ASK);
+      const jobs = createLoopJobs({
+        db: trx,
+        llm: fake.llm,
+        dailyCap: 300,
+        scope: { kind: "synthetic", testMail: { senders: ["tester@x.test"] } },
+        now: () => RUN_AT,
+      });
+      await jobs.analyze.run();
+      expect((await analysisOf(trx, id))?.status).toBe("done");
+      expect(fake.requests).toHaveLength(1);
+    });
+  });
+});
+
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const script = resolve(import.meta.dir, "../../src/scripts/job-run.ts");
 
-async function runJob(args: string[], env: Record<string, string | undefined>) {
+// The child gets an allow-list of the parent environment, never the whole of it: no LLM variable (OPENAI_*, GEMINI_*,
+// LLM_*, an own endpoint) passes through. The caller adds the fake keys it needs.
+const ENV_ALLOW = [
+  "PATH",
+  "HOME",
+  "TMPDIR",
+  "DATABASE_URL",
+  "MIGRATOR_DATABASE_URL",
+  "CREDENTIALS_KEY",
+  "CREDENTIALS_KEY_VERSION",
+];
+
+function childEnv(extra: Record<string, string>): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const name of ENV_ALLOW) {
+    const value = process.env[name];
+    if (value !== undefined) env[name] = value;
+  }
+  return { ...env, ...extra };
+}
+
+async function runJob(args: string[], env: Record<string, string>) {
   const proc = Bun.spawn(["bun", "--no-env-file", script, ...args], {
     cwd: repoRoot,
-    env: { ...process.env, ...env },
+    env: childEnv(env),
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -176,6 +218,18 @@ describe("job:run --name loops.analyze", () => {
       expect(rows[0]).toMatchObject({ sent_email_id: org.ids[0], status: "skipped", skip_reason: "list" });
     } finally {
       await removeOrg(org);
+    }
+  });
+
+  test("the child environment holds no LLM variable but the two fake keys", () => {
+    process.env.OPENAI_OWN_API_KEY = "parent-own-key";
+    process.env.OPENAI_BASE_URL = "https://parent.invalid";
+    try {
+      const names = Object.keys(childEnv(env)).filter((name) => /^(OPENAI|GEMINI|LLM|TRIAGE)_/.test(name));
+      expect(names.sort()).toEqual(["GEMINI_API_KEY", "OPENAI_API_KEY", "TRIAGE_LLM_SCOPE"]);
+    } finally {
+      delete process.env.OPENAI_OWN_API_KEY;
+      delete process.env.OPENAI_BASE_URL;
     }
   });
 
