@@ -557,6 +557,20 @@ describe("Connect", () => {
     expect(await mailboxRows(address)).toHaveLength(1);
     expect(await auditOf("mailbox.connected")).toHaveLength(0);
   });
+
+  test("8c. two connects of two addresses at once with a limit of 1: one connects, one gets mailbox_limit", async () => {
+    await enable("google");
+    await db.updateTable("organizations").set({ max_mailboxes: 1 }).where("id", "=", org.orgId).execute();
+    const one = await signIn("google", { address: addressOf("limit-a") });
+    const two = await signIn("google", { address: addressOf("limit-b") });
+    const app = appOf();
+    const results = await Promise.all([
+      callback(app, "owner", "google", one.query),
+      callback(app, "owner", "google", two.query),
+    ]);
+    expect(results.map((res) => resultOf(res).get("oauth")).sort()).toEqual(["connected", "mailbox_limit"]);
+    expect(await db.selectFrom("mailboxes").select("id").where("org_id", "=", org.orgId).execute()).toHaveLength(1);
+  });
 });
 
 /** A grant for `applyOAuthGrant` called by hand (no route). */
@@ -852,7 +866,7 @@ describe("the callback route", () => {
     const { query } = await signIn("google", { address: addressOf() });
     const secret = "tok-should-not-appear-1234";
     const res = await callback(
-      appOf({ failSuspendedRead: new Error(`db said ${secret} ${query.code}`) }),
+      appOf({ failSuspendedRead: new Error(`db-said-${secret}-${query.code}`) }),
       "owner",
       "google",
       query
