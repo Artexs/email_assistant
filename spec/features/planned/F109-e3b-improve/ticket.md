@@ -6,27 +6,43 @@ opened: 2026-11-13
 
 ## Outcome
 
-E3b Improve: the Stage 2 ticket in row 15 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 14 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E03-measured-core.md` and its discovery notes `docs/product/stage-2/epics/E03-discovery-notes.md`; the planning job turns them into stages.
+Suspicious mail gets a warning and no delegation draft, attachments show in the notice and reach the classifier, and each classifier change (urgency context, sender history, list signal, a second opinion before a hide) ships only when it wins on the dev set and holds on the holdout. During an LLM pause, VIP and whitelisted mail gets a "not triaged yet" notice. Source: Stage 2 row 15 (`docs/product/stage-2/05-execution-plan.md` §2.1), epic `docs/product/stage-2/epics/E03-measured-core.md` and its discovery notes.
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- Phishing and suspicious-mail rules (PD-063): code rules, stored reason codes, warning in notices, no delegation draft, sim measurement.
+- Attachments (PD-064): summary line in notices; name, type and size in the classifier prompt.
+- Urgency profile storage and its API and CLI command (PD-017); E4-B builds the editor on it.
+- Prompt `classifier-v3` experiments on the dev set and one holdout gate (PD-061, PD-062).
+- Conditional escalation to a stronger model (PD-060), with its own dev and holdout gate.
+- Degraded-mode notice during an LLM pause (PD-067). Capability pages.
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- New categories, reply drafts (E6a, F115), follow-ups (E5b, F116), the urgency editor and unsubscribe (E4-B, F110), the contacts model (E11a, F120), provider fallback (F072).
+- Folder hint (F061) and the cold-mail reason code: no sim truth to measure them (plan D14).
+- Changes to the frozen corpus `lab-01` v1.
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- A sim report of the suspicious-mail rules shows recall ≥ 90% on the planted phishing cases and 0 flags on whitelisted mail of the holdout.
+- With the flag `suspicious_mail` on, a flagged `delegation` mail gets no draft and its notice shows the warning (integration test).
+- A dev report per `classifier-v3` part and one holdout report decide the production prompt; the registry names the prompt that the rule of `plan.md` D13 picked.
+- The escalation dev report states "ship" or "no ship" by `plan.md` D16; escalation runs in triage only after "ship" and with the flag `escalation` on.
+- During an LLM pause, a VIP mail gets one "not triaged yet" notice with the sender only (integration test).
+- All checks of `plan.md` § Done when (8 items) hold.
+
+## Slices
+
+16 stages, one worker job each, in the order and lanes of `plan.md` § How to run. Stage 02 is the only migration. Stages 09, 11, 13 and 14 are `[risky]` (LLM spend or production prompt change). Stage 14 builds only when stage 13 says "ship". No owner checkpoint stops the build.
 
 ## Sequenced
 
-- Plan after: none (planning may run ahead of the build).
-- Build after: E2a, E3a (landed, in `spec/features/done/`).
-- Gate: Second pass after the first E2a holdout report (PD-060, PD-061)
+- Plan after: none (F097 and F100 are in `done/`; their interfaces are at HEAD).
+- Build after: F097 (E2a), F100 (E3a), both in `spec/features/done/`.
+- Gate: second pass after the first E2a holdout report (PD-060, PD-061). The planner took it on defaults (plan P10, `questions.md` Q1); the build does not wait.
 
 ## Notes
 
-Source row: §2.1 # 15. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+- First holdout report: `evals/results/2026-11-15-sim-lab-01-holdout-gpt-6-luna-classifier-v2.md`; gap report `evals/results/2026-11-15-sim-vs-real-gap-lab-01.md`.
+- Interfaces for later tickets: `suspiciousReasonsOf` (E5b, E6a), the urgency command (E4-B), `escalation` role (E11b reads the gate files).
