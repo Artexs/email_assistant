@@ -8,6 +8,7 @@ import { settingsDeps } from "../composition";
 import {
   buildServeParts,
   createFakeTgClient,
+  createOrgLookup,
   createLabState,
   createServeMailClient,
   labEnvIssues,
@@ -26,6 +27,7 @@ import {
   writeServeStatus,
 } from "../modules/lab";
 import { configureMailHosts, openImapProvider, verifySmtpLogin } from "../modules/mail";
+import { deleteOrganization } from "../modules/privacy";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig, llmRoleTable, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
@@ -92,6 +94,13 @@ async function main(): Promise<number> {
         endpoint: table.providers[table.roles[role].provider].endpoint,
       })),
       orgHasMail: (orgId) => orgHasMail(db, orgId),
+      // The reset deletes through the privacy delete (the function of `org:delete`, no flag, no password) and empties
+      // one GreenMail mailbox; the mail client refuses an address outside the scenario addresses.
+      reset: {
+        lookupOrg: createOrgLookup(db),
+        mail: createServeMailClient(corpus),
+        deleteOrg: ({ orgId, confirmName }) => deleteOrganization(db, { orgId, confirmName, via: "cli" }),
+      },
       seed: (target) => {
         // The env guard has run before: a loopback root is set.
         if (config.TELEGRAM_API_ROOT === undefined) throw new Error("TELEGRAM_API_ROOT is not set");

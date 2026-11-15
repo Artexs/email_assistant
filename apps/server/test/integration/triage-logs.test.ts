@@ -1,11 +1,11 @@
-import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createLlmPause, createTriageJob } from "../../src/modules/triage";
 import type { GenerateFn } from "../../src/platform/llm";
 import { createFixedLlmClient } from "../../src/platform/llm/testing";
-import { setLogLevel } from "../../src/platform/log";
+import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import { createOrgWithMailbox, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -14,10 +14,6 @@ const db = testDb();
 
 afterAll(async () => {
   await db.destroy();
-});
-
-afterEach(() => {
-  setLogLevel("info");
 });
 
 const MARKERS = {
@@ -36,9 +32,7 @@ const now = new Date("2026-11-05T12:00:00.000Z");
 
 describe("triage logs", () => {
   test("no log line holds mail text, a summary, an error message, an error body or a key", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation(() => undefined);
-    const errorSpy = spyOn(console, "error").mockImplementation(() => undefined);
-    setLogLevel("debug");
+    const capture = captureLogs();
     try {
       await withRollback(db, async (trx) => {
         await pauseOtherMailboxes(trx);
@@ -117,29 +111,27 @@ describe("triage logs", () => {
         expect(row.status).toBe("triaged");
       });
 
-      const debugLines = logSpy.mock.calls.filter((call: unknown[]) => call[0] === "[llm]");
-      expect(debugLines.length).toBeGreaterThan(0);
-      const output = [...logSpy.mock.calls, ...errorSpy.mock.calls]
-        .map((call: unknown[]) => call.map(String).join(" "))
-        .join("\n");
-      for (const marker of Object.values(MARKERS)) expect(output).not.toContain(marker);
+      const lines = capture.lines;
+      expect(eventLines(lines, "llm_call_ok").length).toBeGreaterThan(0);
+      expect(logProblems(lines, Object.values(MARKERS))).toEqual([]);
 
-      // Every line of the triage module is an event name and key=value pairs: no free text.
-      const triageLines = [...logSpy.mock.calls, ...errorSpy.mock.calls]
-        .map((call: unknown[]) => call.map(String).join(" "))
-        .filter((line) => line.startsWith("[triage] "));
-      for (const line of triageLines) expect(line).toMatch(/^\[triage\] [a-z][a-z0-9_]*( [a-z_]+=\S+)*$/);
-      const events = triageLines.map((line) => line.split(" ")[1]);
+      const triage = lines
+        .map((line) => JSON.parse(line) as Record<string, unknown>)
+        .filter((l) => l.module === "triage");
+      const events = triage.map((line) => line.event);
       for (const event of ["llm_paused", "triage_retry", "llm_config_paused", "triage_done"]) {
         expect(events).toContain(event);
       }
-      expect(triageLines.find((line) => line.startsWith("[triage] triage_retry"))).toMatch(
-        / attempts=1 max_attempts=3 error=LlmHardError error_code=unknown$/
-      );
-      expect(triageLines.find((line) => line.startsWith("[triage] triage_done"))).toMatch(/ category=info reason=\S+$/);
+      expect(eventLines(lines, "triage_retry")[0]).toMatchObject({
+        attempts: 1,
+        max_attempts: 3,
+        error: "LlmHardError",
+        error_code: "unknown",
+      });
+      expect(eventLines(lines, "triage_done")[0]).toMatchObject({ category: "info" });
+      expect(typeof eventLines(lines, "triage_done")[0]?.reason).toBe("string");
     } finally {
-      logSpy.mockRestore();
-      errorSpy.mockRestore();
+      capture.stop();
     }
   });
 });

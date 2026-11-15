@@ -5,6 +5,11 @@ services:
     ports:
       - "127.0.0.1:5433:5432"
 
+  # No backup runs in dev: an empty value turns the backup-age check off (deploy/compose.yaml sets the status file).
+  server:
+    environment:
+      BACKUP_STATUS_FILE: ""
+
   greenmail:
     image: greenmail/standalone:2.1.15
     logging:

@@ -1,8 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { format } from "node:util";
 
 import { encodeCallback } from "@ea/core";
-import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 
 import { createCommitterJob, noDelegationHooks } from "../../src/modules/actions";
 import { detectNotices, handleCallback, type LinkedChat } from "../../src/modules/channels";
@@ -13,7 +12,7 @@ import { contentHash } from "../../src/modules/mail/sync-rules";
 import { createReturnedJob } from "../../src/modules/triage";
 import { createSecretBox } from "../../src/platform/crypto";
 import { HardError } from "../../src/platform/errors";
-import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/log";
+import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import {
   createOrgWithMailbox,
@@ -29,11 +28,6 @@ const db = testDb();
 
 afterAll(async () => {
   await db.destroy();
-});
-
-afterEach(() => {
-  setLogLevel("info");
-  setLogFormat(logFormatFromEnv(process.env));
 });
 
 const MINUTE = 60_000;
@@ -55,14 +49,7 @@ type ActionType = "save_summary" | "flag" | "mark_read" | "move";
 
 describe("actions logs", () => {
   test("no log line holds a subject, an address, a summary or a folder path; the expected lines appear", async () => {
-    // format() shows an error object that was logged raw with its fields.
-    const lines: string[] = [];
-    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
-    const errorSpy = spyOn(console, "error").mockImplementation(
-      (...args: unknown[]) => void lines.push(format(...args))
-    );
-    setLogFormat("text");
-    setLogLevel("debug");
+    const capture = captureLogs();
     try {
       await withRollback(db, async (trx) => {
         await isolateChannels(trx);
@@ -214,9 +201,8 @@ describe("actions logs", () => {
           .execute();
         expect(outbox).toHaveLength(1);
 
-        const output = lines.join("\n");
-
-        for (const marker of [
+        const lines = capture.lines;
+        const planted = [
           MARKERS.subject,
           MARKERS.sender,
           MARKERS.summary,
@@ -225,29 +211,32 @@ describe("actions logs", () => {
           "AI/Info",
           "MARKER-ERRMSG",
           MARKERS.error,
-        ]) {
-          expect(output).not.toContain(marker);
-        }
+        ];
+        expect(logProblems(lines, planted)).toEqual([]);
 
-        const done = (counts: string) =>
-          `committer_done org_id=${orgId} mailbox_id=${mailboxId} ${counts} closed=0 sent=0`;
-        expect(output).toContain(done("applied=3 failed=1 retry=1"));
-        expect(output).toContain(done("applied=0 failed=0 retry=1"));
-        expect(output).toContain(done("applied=0 failed=1 retry=0"));
-        expect(output).toContain(`action_failed action_id=${missing.actionIds[0]} reason=mail_not_found`);
-        expect(output).toContain(
-          `action_retry action_id=${flagFails.actionIds[0]} attempts=1 max_attempts=3 error=HardError`
-        );
-        expect(output).toContain(`action_failed action_id=${flagFails.actionIds[0]} reason=hard_error`);
+        const has = (event: string, fields: Record<string, unknown>) =>
+          expect(eventLines(lines, event)).toContainEqual(expect.objectContaining(fields));
+        const done = (counts: Record<string, number>) => ({
+          org_id: orgId,
+          mailbox_id: mailboxId,
+          ...counts,
+          closed: 0,
+          sent: 0,
+        });
+        has("committer_done", done({ applied: 3, failed: 1, retry: 1 }));
+        has("committer_done", done({ applied: 0, failed: 0, retry: 1 }));
+        has("committer_done", done({ applied: 0, failed: 1, retry: 0 }));
+        has("action_failed", { action_id: missing.actionIds[0], reason: "mail_not_found" });
+        has("action_retry", { action_id: flagFails.actionIds[0], attempts: 1, max_attempts: 3, error: "HardError" });
+        has("action_failed", { action_id: flagFails.actionIds[0], reason: "hard_error" });
         for (const reverse of reverseRows) {
-          expect(output).toContain(`action_applied action_id=${reverse.id} action_type=${reverse.type}`);
+          has("action_applied", { action_id: reverse.id, action_type: reverse.type });
         }
-        expect(output).toContain(`returned_done mailbox_id=${mailboxId} count=1`);
-        expect(output).toContain(`notice_queued kind=action_failed outbox_id=${outbox[0]?.id}`);
+        has("returned_done", { mailbox_id: mailboxId, count: 1 });
+        has("notice_queued", { kind: "action_failed", outbox_id: outbox[0]?.id });
       });
     } finally {
-      logSpy.mockRestore();
-      errorSpy.mockRestore();
+      capture.stop();
     }
   });
 });

@@ -18,6 +18,7 @@ flowchart BT
     triage
     actions
     delegation
+    loops
   end
   subgraph group4["Layer 4"]
     reports
@@ -55,9 +56,11 @@ flowchart BT
   lab --> config
   lab --> delegation
   lab --> mail
+  lab --> privacy
   lab --> reports
   lab --> tenancy
   lab --> triage
+  loops --> triage
   mail --> audit
   mail --> config
   mail --> tenancy

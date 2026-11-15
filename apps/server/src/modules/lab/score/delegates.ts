@@ -64,6 +64,7 @@ const BOT_SKIP_CODES = new Set([
   "send_failed",
   "delegate_unknown",
   "received_gone",
+  "received_changed",
   "address_refused",
 ]);
 

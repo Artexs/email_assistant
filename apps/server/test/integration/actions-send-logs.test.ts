@@ -1,8 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { format } from "node:util";
 
 import { parseToolSwitches } from "@ea/core";
-import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 
 import { createCommitterJob, createExpiryJob } from "../../src/modules/actions";
 import { detectNotices, handleCallback, type CallbackDeps, type LinkedChat } from "../../src/modules/channels";
@@ -14,7 +13,7 @@ import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials, markSynced } from "../../src/modules/mail/repo";
 import { createSecretBox } from "../../src/platform/crypto";
-import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/log";
+import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import {
   createOrgWithMailbox,
@@ -32,11 +31,6 @@ const db = testDb();
 
 afterAll(async () => {
   await db.destroy();
-});
-
-afterEach(() => {
-  setLogLevel("info");
-  setLogFormat(logFormatFromEnv(process.env));
 });
 
 const MINUTE = 60_000;
@@ -59,14 +53,7 @@ const MARKERS = {
 
 describe("send logs", () => {
   test("no S4 log line holds a recipient, a subject, a task, a draft text or an SMTP reply; the expected lines appear", async () => {
-    // format() shows an error object that was logged raw with its fields.
-    const lines: string[] = [];
-    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
-    const errorSpy = spyOn(console, "error").mockImplementation(
-      (...args: unknown[]) => void lines.push(format(...args))
-    );
-    setLogFormat("text");
-    setLogLevel("debug");
+    const capture = captureLogs();
     try {
       await withRollback(db, async (trx) => {
         await isolateChannels(trx);
@@ -250,39 +237,36 @@ describe("send logs", () => {
         await createChaserJob({ db: trx, now: () => clock }).run();
         await notices();
 
-        const output = lines.join("\n");
-
-        for (const marker of [
-          ...Object.values(MARKERS),
-          "@x.test",
-          "MARKER",
-          "queued as FAKE",
-          String(secret.ciphertext),
-        ]) {
-          expect(output).not.toContain(marker);
-        }
+        const lines = capture.lines;
+        const planted = [...Object.values(MARKERS), "@x.test", "MARKER", "queued as FAKE", String(secret.ciphertext)];
+        expect(logProblems(lines, planted)).toEqual([]);
         // `saveTriage` writes its release line only when a setting changes during a run: none does here.
-        expect(output).not.toContain("settings changed, mail released");
+        expect(eventLines(lines, "triage_released_settings_changed")).toEqual([]);
 
+        const has = (event: string, fields: Record<string, unknown>) =>
+          expect(eventLines(lines, event)).toContainEqual(expect.objectContaining(fields));
         for (const pair of [first, second])
-          expect(output).toContain(`action_applied action_id=${pair.draftId} action_type=create_draft`);
-        expect(output).toContain(`action_applied action_id=${appliedSend?.id} action_type=send`);
-        expect(output).toContain(
-          `send_failed action_id=${rejectedSend?.id} reason=smtp_rejected send_stage=envelope code=550`
-        );
-        for (const id of approvals) expect(output).toContain(`notice_queued kind=approval outbox_id=${id}`);
-        for (const id of results) expect(output).toContain(`notice_queued kind=send_result outbox_id=${id}`);
-        const ids = `org_id=${orgId} mailbox_id=${mailboxId}`;
-        expect(output).toContain(
-          `expiry_done ${ids} count=1 expired_timeout=1 expired_draft_missing=0 expired_not_notified=0 expired_not_seen=0 expired_held_timeout=0`
-        );
+          has("action_applied", { action_id: pair.draftId, action_type: "create_draft" });
+        has("action_applied", { action_id: appliedSend?.id, action_type: "send" });
+        has("send_failed", { action_id: rejectedSend?.id, reason: "smtp_rejected", send_stage: "envelope", code: 550 });
+        for (const id of approvals) has("notice_queued", { kind: "approval", outbox_id: id });
+        for (const id of results) has("notice_queued", { kind: "send_result", outbox_id: id });
+        const ids = { org_id: orgId, mailbox_id: mailboxId };
+        has("expiry_done", {
+          ...ids,
+          count: 1,
+          expired_timeout: 1,
+          expired_draft_missing: 0,
+          expired_not_notified: 0,
+          expired_not_seen: 0,
+          expired_held_timeout: 0,
+        });
         // Two committer runs sent: the first (drafts) applies two drafts, the second applies one send and refuses one.
-        expect(output).toContain(`committer_done ${ids} applied=1 failed=1 retry=0 closed=0 sent=1`);
-        expect(output).toContain(`chaser_done mailbox_id=${mailboxId} due=1 overdue=1 reminders=1`);
+        has("committer_done", { ...ids, applied: 1, failed: 1, retry: 0, closed: 0, sent: 1 });
+        has("chaser_done", { mailbox_id: mailboxId, due: 1, overdue: 1, reminders: 1 });
       });
     } finally {
-      logSpy.mockRestore();
-      errorSpy.mockRestore();
+      capture.stop();
     }
   });
 });

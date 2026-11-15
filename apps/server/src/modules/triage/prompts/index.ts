@@ -6,6 +6,7 @@ import * as classifierV2 from "./classifier-v2";
 import * as classifierV3 from "./classifier-v3";
 import { type ClassifierV3Part, optionalParts } from "./classifier-v3";
 import * as escalationV1 from "./escalation-v1";
+import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
 
 /** The prompt of one role in one version; the builders differ per role. */
@@ -74,6 +75,12 @@ export const prompts = {
     buildSystem: escalationV1.buildSystemPrompt,
     buildUser: escalationV1.buildUserPrompt,
   },
+  extractor: {
+    role: "extractor",
+    version: extractorV1.PROMPT_VERSION,
+    buildSystem: extractorV1.buildSystemPrompt,
+    buildUser: extractorV1.buildUserPrompt,
+  },
   judge: {
     role: "judge",
     version: judgeV1.PROMPT_VERSION,
@@ -105,5 +112,4 @@ export function promptLabel(choice: { version: string; parts: readonly Classifie
 // Roles with no prompt yet, and the epic that writes it.
 export const rolesWithoutPrompt = {
   drafter: "E6a",
-  extractor: "E5b",
 } as const satisfies Partial<Record<LlmRole, string>>;

@@ -45,4 +45,15 @@ describe("main", () => {
     expect(source).toContain("createOperatorNotices({ db, now: () => new Date(), send: operatorSend })");
     expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?send: operatorSend,/);
   });
+
+  // F114 stage 04: the disk and backup-age checks are entries `{kind, run}` of the `ops.slo` check list (not bare functions),
+  // and the job runs that list.
+  test("the ops.slo check list holds the disk and backup-age entries", () => {
+    const source = readFileSync(mainPath, "utf8");
+    expect(source).toContain(`{ kind: "slo_disk", run: () => checkDisk(statfs, slo) }`);
+    expect(source).toMatch(
+      /\{ kind: "slo_backup_age", run: \(now\) => checkBackupAge\(\(path\) => readFile\(path, "utf8"\), now, slo\) \}/
+    );
+    expect(source).toMatch(/runSloTick\(\s*\{ db, checks: sloChecks,/);
+  });
 });

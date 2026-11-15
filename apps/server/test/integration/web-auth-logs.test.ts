@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 
-import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createAuth } from "../../src/platform/auth";
-import { setLogLevel } from "../../src/platform/log";
 import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
+import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import { testDb } from "./helpers";
 import { resetBody } from "./web-helpers";
@@ -28,7 +28,6 @@ const userIds: string[] = [];
 const closers: (() => Promise<void>)[] = [];
 
 afterEach(async () => {
-  setLogLevel("info");
   if (userIds.length > 0) {
     await sql`DELETE FROM auth_verifications WHERE value IN (${sql.join(userIds)})`.execute(db);
   }
@@ -82,9 +81,7 @@ function tokenOf(url: string): string {
 
 describe("web auth logs", () => {
   test("no log line holds an address, a password, the secret, a token, a cookie or a link", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
-    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
-    setLogLevel("debug");
+    const capture = captureLogs();
     const forbidden: string[] = [
       MARKERS.email,
       MARKERS.email.toUpperCase(),
@@ -149,29 +146,26 @@ describe("web auth logs", () => {
       // The default sender: no callback, so the server logs its own line.
       const defaultAuth = make();
       await defaultAuth.api.requestPasswordReset({ body: { email: MARKERS.email, redirectTo } });
-      lines = [...logSpy.mock.calls, ...errorSpy.mock.calls].map((call) => call.join(" "));
+      lines = [...capture.lines];
     } finally {
-      logSpy.mockRestore();
-      errorSpy.mockRestore();
+      capture.stop();
     }
 
     expect(lines.length).toBeGreaterThan(0);
-    for (const line of lines) {
-      for (const value of forbidden) {
-        expect(line).not.toContain(value);
-      }
-    }
-    expect(lines.some((line) => line.includes(`password_reset_requested user_id=${userId}`))).toBe(true);
+    expect(logProblems(lines, forbidden)).toEqual([]);
+    expect(eventLines(lines, "password_reset_requested")).toContainEqual(expect.objectContaining({ user_id: userId }));
     // This line comes from the sign-in route (`logger.warn`), not from the onAPIError hook, which stays silent on a 4xx.
-    expect(lines.some((line) => line.includes("better_auth_log reason=invalid_password"))).toBe(true);
+    expect(eventLines(lines, "better_auth_log")).toContainEqual(
+      expect.objectContaining({ reason: "invalid_password" })
+    );
 
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
     let found = 0;
     for (const line of lines) {
-      for (const match of line.matchAll(/user_id=(\S+)/g)) {
-        expect(match[1]).toMatch(uuid);
-        found += 1;
-      }
+      const userIdField = (JSON.parse(line) as Record<string, unknown>).user_id;
+      if (userIdField === undefined) continue;
+      expect(userIdField).toMatch(uuid);
+      found += 1;
     }
     expect(found).toBeGreaterThan(0);
   });
