@@ -38,6 +38,7 @@ import {
   type LlmClient,
   LlmConfigError,
   llmErrorCode,
+  LlmOutputError,
   type LlmProviderId,
   type LlmUsage,
 } from "../../platform/llm";
@@ -294,6 +295,8 @@ interface Deps {
   now: () => Date;
   // Called once for each new result (not for results from `done`). The CLI appends it to the state file.
   onResult?: (result: CaseResult) => Promise<void>;
+  // Called for each case that ends in an error. `issues` holds `path:code` entries of a bad model output, never model text.
+  onCaseFailed?: (failure: { caseId: string; code: string; issues: readonly string[] }) => void;
 }
 
 // One state line. It holds no case text: ids, categories, numbers and codes only.
@@ -376,7 +379,7 @@ interface RunInput {
 type Classified =
   | { kind: "ok"; result: Awaited<ReturnType<typeof classifyEmail>> }
   | { kind: "blocked" }
-  | { kind: "error"; code: string };
+  | { kind: "error"; code: string; issues: readonly string[] };
 
 // Soft errors: wait and try again, at most `retries` more tries. A config error goes to the caller.
 async function classifyWithRetry(
@@ -410,7 +413,7 @@ async function classifyWithRetry(
         await deps.sleep(wait);
         continue;
       }
-      return { kind: "error", code: llmErrorCode(error) };
+      return { kind: "error", code: llmErrorCode(error), issues: error instanceof LlmOutputError ? error.issues : [] };
     }
   }
 }
@@ -482,7 +485,10 @@ async function runCase(
     attempts
   );
   if (classified.kind === "error") {
+    // The log line holds the case id and the code. The issue paths (`fields.task:too_big`, no model text) go to the
+    // hook: a comma list is not a log value (D7).
     log.warn("eval_case_failed", { case_id: c.id, code: classified.code });
+    deps.onCaseFailed?.({ caseId: c.id, code: classified.code, issues: classified.issues });
     return {
       ...base,
       modelCategory: null,

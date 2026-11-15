@@ -183,6 +183,8 @@ export async function runClassifier(options: EvalOptions, deps: ClassifierDeps =
         sleep: (ms) => new Promise((finish) => setTimeout(finish, ms)),
         now: () => new Date(),
         onResult: async (result) => appendFileSync(stateFile, `${JSON.stringify(result)}\n`),
+        onCaseFailed: ({ caseId, code, issues }) =>
+          cli.print(`case ${caseId} failed: ${code}${issues.length > 0 ? ` (${issues.join(", ")})` : ""}`),
       },
       {
         cases,

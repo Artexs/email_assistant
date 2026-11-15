@@ -64,6 +64,10 @@ export async function insertMailbox(
     smtpPort: number;
     /** Left out: the column default `tls`. */
     smtpSecurity?: SmtpSecurity;
+    /** Left out: the column default `smtp`. */
+    sendVia?: "smtp" | "graph";
+    /** Left out: NULL (a password mailbox). */
+    oauthProvider?: "microsoft" | "google";
     capabilities: MailCapabilities;
     folderMap: Record<string, string>;
   }
@@ -79,6 +83,8 @@ export async function insertMailbox(
       smtp_host: input.smtpHost,
       smtp_port: input.smtpPort,
       smtp_security: input.smtpSecurity,
+      send_via: input.sendVia,
+      oauth_provider: input.oauthProvider,
       capabilities: JSON.stringify(input.capabilities),
       folder_map: JSON.stringify(input.folderMap),
     })
@@ -158,6 +164,25 @@ export async function setMailboxStatus(
     .set({
       status,
       status_changed_at: sql<Date>`CASE WHEN status IS DISTINCT FROM ${status} THEN ${at ?? sql`now()`} ELSE status_changed_at END`,
+    })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .execute();
+}
+// The end of a Reconnect: the status and, in the same statement, the reason (the table CHECK allows a reason only in `auth_error`).
+// `status_changed_at` moves only when the status really changes.
+export async function finishMailboxReconnect(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  change: { status: MailboxStatus; at: Date }
+): Promise<void> {
+  await db
+    .updateTable("mailboxes")
+    .set({
+      status: change.status,
+      status_changed_at: sql<Date>`CASE WHEN status IS DISTINCT FROM ${change.status} THEN ${change.at} ELSE status_changed_at END`,
+      auth_reason: null,
     })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)

@@ -50,9 +50,9 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 17 | E11b Private model option | E11 | 7 | E2a | Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage | F111 |
 | 18 | E10a Docs site | E10 | 16 | E1, Astro 7 | — | F112 |
 | 19 | E2b Live lab | E02 | 16 | E2a | Owner: grow the VPS root volume (PD-055) | F113 |
-| 20 | E8b Alerts and releases (incl. the restore drill) | E08 | ≈ 6 | E8a | Owner: grow the VPS root volume (PD-055) | F114 |
+| 20 | E8b Alerts and releases (incl. the restore drill) | E08 | 9 | E8a stage 01 (stages 01–04); E8a stage 17 (stages 05–09) | Owner: grow the VPS root volume (PD-055) | F114 |
 | 21 | E6a Reply drafts | E06 | 18 | E2a, E3a, E4-A, E5a, E7-T2, E3b stage 04 | Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages | F115 |
-| 22 | E5b Open loops | E05 | ≈ 22 | E2a, E3a, E4-A, E5a, E3b stage 04 | Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122) | F116 |
+| 22 | E5b Open loops | E05 | 25 | E2a, E3a, E4-A, E5a, E3b stage 04 | Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122) | F116 |
 | 23 | E9a Mailbox OAuth | E09 | 21 | F082, E7-T2 | Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087) | F117 |
 | 24 | E9b Phone channel (PWA, push, Telegram detail) | E09 | ≈ 14 | E4-A, E4-B | — | F118 |
 | 25 | E7-T7 Identity B (OIDC) | E07 notes §11 | 16 | E7-T2, E7-T6 | Stage 1 is the spike (done 2026-11-14); second pass passed by the coordinator on a default (owner-decisions) | F119 |
