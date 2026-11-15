@@ -39,6 +39,10 @@ describe("the token store is wired into every composition root", () => {
     expect(callOf(main, "committerDeps")).toContain("oauthTokens: mailOAuth.tokens");
   });
 
+  test("main.ts: the history job gets the shared tokens", () => {
+    expect(callOf(main, "createHistoryJob")).toContain("oauthTokens: mailOAuth.tokens");
+  });
+
   test("main.ts: the web Reconnect drops the same cache and uses the same clients", () => {
     const web = callOf(main, "webDeps");
     expect(web).toContain("mailOAuthLogin: { oauthTokens: mailOAuth.tokens }");

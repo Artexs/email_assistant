@@ -3,6 +3,7 @@
 export const uuidFieldNames = [
   "org_id",
   "mailbox_id",
+  "check_id",
   "email_id",
   "action_id",
   "delegation_id",

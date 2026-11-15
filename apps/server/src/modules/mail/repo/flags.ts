@@ -46,6 +46,30 @@ export async function listFlagTargets(
   }));
 }
 
+/**
+ * INBOX mail received at or after `since` whose flags are not known since `checkedSince`: no `email_flags` row, or a row last tried
+ * before that time. The history check waits for this count to reach 0 (F110 D6). `checked_at` means "last tried", so a mail that a
+ * refresh could not read counts as known once it was tried.
+ */
+export async function countInboxMailWithoutFreshFlags(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { since: Date; checkedSince: Date }
+): Promise<number> {
+  const row = await db
+    .selectFrom("emails as e")
+    .leftJoin("email_flags as f", "f.email_id", "e.id")
+    .select(sql<string>`count(*)`.as("n"))
+    .where("e.org_id", "=", ctx.orgId)
+    .where("e.mailbox_id", "=", mailboxId)
+    .where("e.folder", "=", "INBOX")
+    .where("e.received_at", ">=", opts.since)
+    .where((eb) => eb.or([eb("f.checked_at", "is", null), eb("f.checked_at", "<", opts.checkedSince)]))
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
+}
+
 export interface FlagRead extends FlagTarget {
   seen: boolean;
   answered: boolean;

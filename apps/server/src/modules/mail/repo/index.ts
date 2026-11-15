@@ -109,6 +109,7 @@ export {
   type EmailHeadersRow,
 } from "./headers";
 export {
+  countInboxMailWithoutFreshFlags,
   getEmailFlags,
   listFlagTargets,
   setAnsweredCheck,
