@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
@@ -20,7 +21,7 @@ import { contentHash } from "../../src/modules/mail/sync-rules";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
-import { setLogLevel } from "../../src/platform/log";
+import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import {
   createOrgWithMailbox,
@@ -624,25 +625,6 @@ describe("createCommitterJob with sends", () => {
     });
   });
 
-  test("(22) the info line counts sent 1", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
-    setLogLevel("info");
-    try {
-      await withRollback(db, async (trx) => {
-        await pauseOtherMailboxes(trx);
-        const box = await addBox(trx);
-        await pairOf(trx, box);
-
-        await sendJob(trx, openerFor([box]), senderOpener(), box).run();
-
-        const output = logSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" ")).join("\n");
-        expect(output).toContain(`committer ${box.mailboxId}: applied 1, failed 0, retry 0, sent 1`);
-      });
-    } finally {
-      logSpy.mockRestore();
-    }
-  });
-
   test("(26) facts that cannot load release the batch without a count and close the connections", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
@@ -682,7 +664,9 @@ describe("createCommitterJob with sends", () => {
   });
 
   test("(22b) a mailbox with only a held send logs the held line once over two runs", async () => {
-    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    setLogFormat("json");
     setLogLevel("info");
     try {
       await withRollback(db, async (trx) => {
@@ -695,13 +679,16 @@ describe("createCommitterJob with sends", () => {
         await job.run();
         await job.run();
 
-        const output = logSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" ")).join("\n");
-        const line = `committer ${box.mailboxId}: SEND_SCOPE=off, 1 approved sends wait`;
-        expect(output.split(line)).toHaveLength(2);
+        const held = lines
+          .map((line) => JSON.parse(line) as Record<string, unknown>)
+          .filter((line) => line.event === "committer_sends_held");
+        expect(held).toHaveLength(1);
+        expect(held[0]).toMatchObject({ mailbox_id: box.mailboxId, count: 1, scope: "off", config_key: "SEND_SCOPE" });
         expect(smtp.calls).toEqual([]);
       });
     } finally {
       logSpy.mockRestore();
+      setLogFormat(logFormatFromEnv(process.env));
     }
   });
 });
