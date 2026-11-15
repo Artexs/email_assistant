@@ -411,3 +411,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the plan follows E5b and PD-119/120/122; open questions are in `questions.md` (19 items; 1, 2, 3, 4, 5, 17, 18 matter most).
 - Undo: flag off; cut stages 17–23 if unwanted; spend is capped per run.
 - Source: `spec/features/planned/F116-e5b-open-loops/questions.md`, `plan.md`, `plan-review-1.md`, `plan-review-1-fixes.md`.
+
+### 2026-11-15 · F114 alerts, releases and restore drill plan (F114) · production · new
+- Choice (plan defaults, 9 stages): (1) New table `ops_alerts` has no `org_id` (host-wide alert state, numbers only, like `auth_lockouts`): a rule exception. (2) After stage 09 every VPS deploy is a release by `deploy/release.sh <tag>`; a batch deploy becomes a patch version. (3) The restore drill runs on the VPS in a separate stack (`ea-drill`, own volume and image, subnet 172.29.0.0/24, no port), not on a clean VM on the PC (no VM tool; E8 decision 9 asked for a clean VM). The `age` key stays on the PC; the plain dump goes over ssh. (4) `/health` shows no version; the release name goes into every log line and the container env. (5) The drill copies `CREDENTIALS_KEY` from the live `.env` into a mode-600 file it deletes, so it does not check your password-manager copy of the key. (6) `release.sh` never rolls back by itself; it prints the rollback command. Cold review FAIL (B1: the drill override missed the `cli` service) fixed in the plan.
+- Why: the plan follows E8b; open questions are in `questions.md` (Q1–Q6 important).
+- Undo: cut stages 05–09; the alert job stays off with no `OPERATOR_TELEGRAM_CHAT_ID`.
+- Source: `spec/features/planned/F114-e8b-alerts-and-releases-incl-the-restore-drill/questions.md`, `plan.md`, `plan-review-1.md`. Owner steps: U1 `age` identity file on the PC (only for the stage 09 drill), U2 Healthchecks.io "backup" check URL in `BACKUP_PING_URL`, U3 "EA operator" Telegram group, U4 read five test notices; gate PD-055.
