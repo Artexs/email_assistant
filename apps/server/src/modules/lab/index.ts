@@ -1,3 +1,5 @@
+export { runDelegateBotsTick, type BotDeps, type BotTickResult } from "./bots";
+export { createLabMailClient, LabMailError, type LabMailClient, type LabMailClientOptions } from "./mail-client";
 export { renderLabMessage } from "./message";
 export { LAB_MAILBOXES, labAddresses, loadLabCorpus, type LabCorpus } from "./corpus";
 export {

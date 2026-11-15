@@ -17,7 +17,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 
-import type { LiveRunPlan } from "@ea/core";
+import type { BotReplyPlan, LiveRunPlan } from "@ea/core";
 
 import { MONTH_CAP_USD, monthOf, monthSpend, readLedger, runCap } from "../../platform/eval-ledger";
 
@@ -33,15 +33,16 @@ export interface LabOrg {
   chatId: number;
 }
 
-// Stage 08 narrows this record.
-export type BotReplyPlan = Record<string, unknown>;
+export type { BotReplyPlan };
 
 export type StopReason = "done" | "budget" | "operator" | `error:${string}`;
 
 export type LabEvent =
   | { t: "inject_intent" | "inject_done"; slotId: string; messageId: string; lateBySec?: number }
   | { t: "inject_error"; slotId: string; code: string }
-  | { t: "bot_planned"; key: string; at: string; reply: BotReplyPlan }
+  // `delegate` is the persona key and `uid` the UID in the INBOX of its address: the bot reads the mail again when the
+  // reply is due, because an event never holds an address, a subject or text.
+  | { t: "bot_planned"; key: string; at: string; reply: BotReplyPlan; delegate: string; uid: number }
   | { t: "bot_intent" | "bot_done"; key: string; messageId: string }
   | { t: "tap_planned"; key: string; at: string; data: string; messageId: number; then?: "p" | "n" }
   | { t: "tap_intent" | "tap_done"; key: string; data: string }
