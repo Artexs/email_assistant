@@ -270,6 +270,27 @@ describe("triage events: service", () => {
   });
 });
 
+describe("triage events: levels", () => {
+  test("triage_delegates and triage_released_settings_changed are debug: no line at level info", async () => {
+    await withRollback(db, async (trx) => {
+      setLogLevel("info");
+      await mailboxWithMail(trx);
+      await jobOver(trx, {
+        triageOne: async (deps, ctx, mailbox, email) => {
+          await trx
+            .updateTable("mailbox_settings")
+            .set({ updated_at: new Date(now.getTime() + 60_000) })
+            .where("mailbox_id", "=", mailbox.id)
+            .execute();
+          return triageOne(deps, ctx, mailbox, email);
+        },
+      }).run();
+
+      expect(triageLines([...out, ...err])).toEqual([]);
+    });
+  });
+});
+
 describe("triage events: returned job", () => {
   test("returned_mailbox_failed: a failed read writes one error line with the mailbox id and the error name", async () => {
     await withRollback(db, async (trx) => {
