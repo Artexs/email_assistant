@@ -6,13 +6,13 @@ Part of [`../plan.md`](../plan.md). Security review before the land (it decides 
 
 **Goal.** One validated setting picks the endpoint of the `openai` provider (P1, P2, D2, D3).
 
-**Files.** Config; a new pure module `apps/server/src/platform/llm/endpoint.ts`; `LlmEndpointKind` in `packages/core/src/triage/cost.ts` (core cannot import the server).
+**Files.** Config, the eval CLI (case 12); new pure module `apps/server/src/platform/llm/endpoint.ts`; `LlmEndpointKind` in `packages/core/src/triage/cost.ts` (core cannot import the server).
 
 **Interfaces.**
 - `export type LlmEndpointKind = "standard" | "eu" | "own";` (core, exported from `@ea/core`).
-- `parseLlmBaseUrl(raw: string): { url: string; host: string; endpoint: LlmEndpointKind } | { error: string }` — `url` without a trailing `/`; `error` never holds the raw value.
+- `parseLlmBaseUrl(raw: string): { url: string; host: string; endpoint: LlmEndpointKind } | { error: string }` — `url` has no trailing `/`; `error` never holds the raw value.
 - `LlmProviderSettings` gains `baseUrl: string | null` (null for Gemini) and `endpoint: LlmEndpointKind` (Gemini: `standard`). `uniformRoleTable` sets them.
-- Config key `OPENAI_BASE_URL`, default `https://api.openai.com/v1`; empty means the default. Optional `OPENAI_ENDPOINT_KIND=own` (the only value; D3).
+- Config key `OPENAI_BASE_URL`, default `https://api.openai.com/v1`; empty means the default. Optional `OPENAI_ENDPOINT_KIND=own` (only value; D3).
 
 **Decisions.** P1, P2, D2, D3.
 
@@ -28,7 +28,7 @@ Part of [`../plan.md`](../plan.md). Security review before the land (it decides 
 9. `https://user:pw@llm.example.com/v1` → error without `pw` in the text; `…/v1?token=abc` and `…/v1#x` → error without `abc`; `not a url` → error.
 10. `OPENAI_BASE_URL=http://10.0.0.5/v1` with `TRIAGE_LLM_SCOPE=off` still fails the start.
 11. No key → the `openai` provider row has `baseUrl` `https://api.openai.com/v1`, `endpoint` `standard`; with an `own` URL every `openai` role row has `reasoningEffort` `null` (D4), also with `OPENAI_REASONING_EFFORT=low` or `LLM_DRAFTER_REASONING=low`.
-12. `bun run eval --sim lab-01 --part dev` with `OPENAI_BASE_URL=http://10.0.0.5/v1` exits 1; its error names the key, not the value (`main` prints only its name now). With `--suspicious` it still runs (no LLM).
+12. `runSim`, `runClassifier` and `runReal` catch the `ConfigError` of `loadConfig`, print `config error: <keys>`, exit 1. Test (all other keys valid): `http://10.0.0.5/v1` → the key printed, not the value. `--real` stops too (intended, case 10); `--suspicious` runs.
 
 **Done when.** Cases 1–12 pass.
 
@@ -47,7 +47,7 @@ Part of [`../plan.md`](../plan.md). Security review before the land (it decides 
 
 **Test** (`openai.test.ts`, `client.test.ts`):
 1. `openAiClientOptions("k", "https://eu.api.openai.com/v1")` equals `{ apiKey: "k", baseURL: "https://eu.api.openai.com/v1", maxRetries: 0 }`.
-2. A real SDK client against a `Bun.serve` fake on port 0, with `process.env.OPENAI_BASE_URL` = `http://127.0.0.1:1/never` (restored after): the call reaches the fake at `/v1/responses` (plan F2).
+2. A real SDK client against a `Bun.serve` fake (port 0), with `process.env.OPENAI_BASE_URL` = `http://127.0.0.1:1/never`, restored: the call reaches the fake at `/v1/responses` (plan F2).
 3. An `own` row (effort `null`) → the params have no `reasoning` key; `eu` with `"low"` → `reasoning.effort` `low`.
 4. `generate` returns `usage.endpoint` `own` and `endpointOf("classifier")` is `own` for a table whose openai row is `own`; a Gemini row → `standard`.
 
@@ -55,20 +55,20 @@ Part of [`../plan.md`](../plan.md). Security review before the land (it decides 
 
 ## Step 3 — Logs, check script, docs
 
-**Goal.** The operator sees which endpoint runs, and nothing private leaks (D5).
+**Goal.** The operator sees the endpoint; nothing private leaks (D5).
 
-**Files.** `apps/server/src/main.ts` (`llm_settings`), `scripts/llm-check.ts`, the OpenAI `configHint`, `.env.example`, `docs/capabilities/triage.md`, `docs/architecture.md` §6.3, `deploy/README.md` (the env list).
+**Files.** The start log, `llm:check`, the OpenAI `configHint`, `.env.example`, the triage capability page, `docs/architecture.md` §6.3, the env list of `deploy/README.md`.
 
 **Decisions.** D5, D14, D15.
 
 **Rules.**
 - `llm_settings` adds `endpoint` and `host`. The OpenAI `configHint` names `OPENAI_BASE_URL`.
-- `llm:check` prints `endpoint=<kind> host=<host>` next to provider and model.
+- `llm:check` prints `endpoint=<kind> host=<host>` beside provider and model.
 - `.env.example`: the key, its default, the EU value, an Ollama example, and "the API key must belong to the project of that region".
 - D14: if `OUTSIDE_SERVICE_KEYS` exists at `HEAD` (F107 landed), map `OPENAI_BASE_URL` and `OPENAI_ENDPOINT_KIND` to the `openai` row; else write the seam in the final message.
 
 **Test.**
-1. A unit test of the start log fields (or of the function that builds them): `{ provider: "openai", model: "gpt-6-luna", endpoint: "own", host: "127.0.0.1" }`; no path or port.
+1. A unit test of the start log fields: `{ provider: "openai", model: "gpt-6-luna", endpoint: "own", host: "127.0.0.1" }`; no path or port.
 
 **Done when.** The test passes; the capability page states D1–D5 plainly, also "a hosted compatible API is not supported".
 

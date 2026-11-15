@@ -7,7 +7,7 @@ Part of [`../plan.md`](../plan.md). Review before the land (published LLM number
 **Goal.** A local OpenAI-compatible server with the two candidates (P3, P4, D10).
 
 **Setup.**
-- Check the GPU path first: `ollama serve` on `127.0.0.1:11500` (D10 env, as in stage 01), then its log must name a ROCm GPU. If it names only CPU, stop and report "O2 not done" (a CPU run of the holdout takes many hours).
+- Check the GPU path first: `ollama serve` on `127.0.0.1:11500` (D10 env, as in stage 01), then its log must name a ROCm GPU. If it names only CPU, stop and report "O2 not done" (a CPU run takes many hours).
 - Rented GPU (only when the owner chose it): the owner gives a tunnel to its Ollama on `127.0.0.1:11500`; this stage runs nothing on the rented host itself. Spend cap $5 (Q2).
 - Models: Bielik 11B v3.1 at Q4_K_M — first the Ollama library name, else `hf.co/<SpeakLeash GGUF repo>:Q4_K_M`; if neither has v3.1, take the newest Bielik 11B and write the gap in the final message. Second: `gemma3:12b`. Disk need about 16 GB (`df` first).
 - Long commands: `nohup`, poll the log, tool calls under 120 s. Stop the server by its PID at the end.
@@ -28,9 +28,9 @@ OPENAI_BASE_URL=http://127.0.0.1:11500/v1 OPENAI_API_KEY=ollama OPENAI_TIMEOUT_M
   --out evals/results/<date>-sim-lab-01-holdout-<safe tag>-own-<prompt>.md
 ```
 
-- `<prompt>`: the safe `promptLabel` of production (`classifier-v2` now; F109 stage 11 may move it to v3). No prompt flags: the gate file must prove the production prompt.
+- `<prompt>`: the safe `promptLabel` of production (`classifier-v2` now; F109 stage 11 may move it to v3). No prompt flags: the gate file proves the production prompt. Before model two, compare its label with model one's run; a change (F109 stage 11 landed between) is a stop and a question, not a mixed comparison.
 - If stage 04 was built: add `OPENAI_API_STYLE=chat`.
-- A stop (timeouts, soft errors) resumes with the same command (the state file name holds the prompt label and the endpoint, D8); report every resume and the total time.
+- A stop resumes with the same command (the state name holds prompt label and endpoint, D8); report resumes and total time.
 - Never `--judge`, `--limit` (no gate file), `--suspicious` or another part. Nothing reads DB mail.
 - Record per model: total time, mean seconds per case, failed cases, the GPU name, the Ollama version, the tags.
 
@@ -39,9 +39,9 @@ OPENAI_BASE_URL=http://127.0.0.1:11500/v1 OPENAI_API_KEY=ollama OPENAI_TIMEOUT_M
 **Test.**
 1. Two gate files exist with names ending `-own.json`; each parses with `gateFileSchema`, has `endpoint` `own`, `host` `127.0.0.1`, and `promptVersion` and `promptParts` equal to the production choice (`promptParts` absent for `classifier-v2`).
 2. Each report has the line `endpoint=own host=127.0.0.1`.
-3. `grep -cE '\b[bhw]-[a-z]{2,4}-[0-9]{2,4}\b' <report>` prints 0 for both reports (no case id leaks).
+3. `grep -cE '\b[bhw]-[a-z]{2,4}-[0-9]{2,4}\b' <report>` prints 0 for both reports (no case id).
 
-**Done when.** Both runs are complete, or a run that cannot complete is reported with its count and cause (then the gap is a question, not a retry loop).
+**Done when.** Both runs are complete, or a run that cannot complete is reported with its count and cause (a question, not a retry loop).
 
 ## Step 3 — Run record for stage 06
 
@@ -49,7 +49,7 @@ OPENAI_BASE_URL=http://127.0.0.1:11500/v1 OPENAI_API_KEY=ollama OPENAI_TIMEOUT_M
 
 **Files.** `evals/results/<date>-own-model-runs.md` (new): per model the tag, the Ollama version, the GPU, `OLLAMA_CONTEXT_LENGTH`, the total time, seconds per case, resumes, failed cases, the largest `tokensIn` of a case, and the go/no-go per category next to the `standard` gate file of the same prompt version (`gpt-6-luna`; for `classifier-v2` the F097 stage 21 file). No such file: stop and report it. No case id, no mail text.
 
-**Test.** The largest `tokensIn` stays below 8192 − 1024; else stop and report it (Ollama would cut the prompt, D10, and the numbers would be false).
+**Test.** The largest `tokensIn` stays below 8192 − 1024; else stop and report it (Ollama would cut the prompt, D10).
 
 **Done when.** The record exists and its numbers match the two reports.
 
@@ -59,4 +59,4 @@ OPENAI_BASE_URL=http://127.0.0.1:11500/v1 OPENAI_API_KEY=ollama OPENAI_TIMEOUT_M
 mkdir -p /tmp/f111-s05 && bun run lint > /tmp/f111-s05/lint.log 2>&1 && bun run typecheck > /tmp/f111-s05/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f111-s05/unit.log 2>&1 && echo PROOF_OK
 ```
 
-No code changes here except result files and docs, so `test:int:ci` is not part of this proof. The final message lists the run times, the go/no-go per category for both models, and the stopped server PID.
+Only result files and docs change: no `test:int:ci`. The final message lists the run times, the go/no-go per category for both models, and the stopped server PID.

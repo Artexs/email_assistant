@@ -39,9 +39,9 @@ Owner (2026-11-13): "Okay, go with defaults." → PD-104–PD-114. The rows, wor
 
 - F1 No `baseURL` in the adapter or config; prices by model only; cost from `llm.call` rows (`scouts.md`, code read).
 - F2 Probe, openai 7.53.0, Bun 1.4.4: with no `baseURL` the client takes `process.env.OPENAI_BASE_URL`; an explicit `baseURL` wins; the call goes to `<base>/responses`; `dataResidency: "eu"` → `https://eu.api.openai.com/v1`.
-- F3 `eval --sim` has prompt flags, no endpoint flag; `--suspicious`, `--gap` read no LLM config; the pool refuses a zero estimate.
+- F3 `eval --sim` has prompt flags, no endpoint flag; `--suspicious`, `--gap` load no config; the pool refuses a zero estimate.
 - F4 Probe: Bun 1.4.4 keeps a shell variable over the same `.env` key.
-- F5 This PC: AMD RX 6950 XT (`lspci`); `ollama` and `ollama-cuda` 0.40.7, no `ollama-rocm`; service off.
+- F5 This PC: AMD RX 6950 XT; `ollama`, `ollama-cuda` 0.40.7, no `ollama-rocm`; service off.
 
 ## Not verified
 
@@ -51,13 +51,13 @@ Owner (2026-11-13): "Okay, go with defaults." → PD-104–PD-114. The rows, wor
 ## Done when
 
 1. `OPENAI_BASE_URL` selects the endpoint; a bad or hosted third-party URL stops the start (stage 02).
-2. Every `llm.call` row carries its endpoint and is priced by it (stage 03).
+2. Every `llm.call` row carries and is priced by its endpoint (stage 03).
 3. Two own-model gate files and reports exist (stage 05); the guide states them and the `auto` rule (stage 06).
 4. Stage 07 A: an EU gate file and true docs; or B: the ADR 0035 amendment.
 
 ## Rules for every stage
 
-- Read `CLAUDE.md`, `.agents/limen/styleguide.md`, `docs/code-patterns.md`, the ticket, this file and your stage file. Build only your stage; format only your files.
+- Read `CLAUDE.md`, `.agents/limen/styleguide.md`, `docs/code-patterns.md`, the ticket, this file, your stage. Build only your stage; format only your files.
 - Never print, log or commit a key, `.env` or the EU env file. Never open `evals/sim/*/holdout/`.
 - Bun 1.4.4 `toMatchObject` does not compare `Date` values; the logger drops non-UUID id fields.
 - No migration and no `bun.lock` change.
@@ -99,10 +99,12 @@ Opus review before the land: all but 04 (it lands on its proof).
 
 ## Planning progress
 
-- Scouts: 3. Stages 01–07 [written]. Refresh 1: stages 02, 03, 05, 07 (plan-refresh-1.md).
+- Scouts: 3. Stages 01–07 [written]. Refresh 1 (plan-refresh-1.md). Words: plan 1480; stages 657, 700, 700, 368, 694, 643, 700.
 
 ## Cold review
 
-Opus 5.5, high: the plan has `[risky]` stages and touches privacy and LLM spend. Job `2026-11-15-f111-plan-review-93ab9dbc`, candidate `9452974`: FAIL, 5 blocking, 17 notes ([plan-review-1.md](plan-review-1.md)). All 22 fixed, none rejected: B1 D3, B2 D12, B3 D8, B4 D13, B5 D15; N1 D6; N2–N3 stage 03; N4, N15 D8; N5 D10; N6–N8 stage 01; N9 D3, D7; N10 Q1; N11 D4; N12 new stage 06; N13 D2; N14 stage 07; N16 D14; N17 D15.
+Opus 5.5, high: the plan has `[risky]` stages and touches privacy and LLM spend. Job `2026-11-15-f111-plan-review-93ab9dbc`, candidate `9452974`: FAIL, 5 blocking, 17 notes ([plan-review-1.md](plan-review-1.md)). All 22 fixed, none rejected (map: commit a3e382a7).
+
+Refresh 1, Opus 5.5, high (a stage interface changed): job `2026-11-15-f111-plan-review-2-refresh-463fee8a`: FAIL, 1 blocking, 4 notes ([plan-review-2.md](plan-review-2.md)). All fixed (plan-refresh-1.md).
 
 ## Log

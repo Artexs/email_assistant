@@ -1,12 +1,12 @@
 # F111 stage 03 — Cost and gate evidence know the endpoint
 
-Part of [`../plan.md`](../plan.md). Review before the land (money). Needs stage 02 (`LlmEndpointKind`, `LlmUsage.endpoint`, `LlmClient.endpointOf`).
+Part of [`../plan.md`](../plan.md). Review: money. Needs stage 02 (`LlmEndpointKind`, `LlmUsage.endpoint`, `LlmClient.endpointOf`).
 
 ## Step 1 — The audit row and the price table
 
 **Goal.** Each LLM call is priced by its endpoint (D6, D7).
 
-**Files.** `modules/audit/repo.ts`, the triage service that records calls (success and error branch), `packages/core/src/triage/cost.ts`, `packages/core/src/metrics/m7.ts` and its repo, `modules/operator/service.ts` (`llmToday`), `scripts/triage-cost.ts`.
+**Files.** `modules/audit/repo.ts`, the triage call recorder (both branches), `packages/core/src/triage/cost.ts`, `packages/core/src/metrics/m7.ts` and its repo, `modules/operator/service.ts` (`llmToday`), `scripts/triage-cost.ts`.
 
 **Interfaces.**
 - `LlmCallRecord.endpoint: LlmEndpointKind`; `llm.call` data key `endpoint`, always written: from `usage.endpoint`, or `endpointOf(role)` on the error branch. No migration (JSON data).
@@ -28,7 +28,7 @@ Part of [`../plan.md`](../plan.md). Review before the land (money). Needs stage 
 
 ## Step 2 — Eval runs and gate files
 
-**Goal.** A holdout run on a non-standard endpoint has its own state and evidence (D8), and an `own` run has no USD budget (D12).
+**Goal.** A holdout run on a non-standard endpoint has its own state and evidence (D8; an explicit `--state` path gets no suffix), and an `own` run has no USD budget (D12).
 
 **Files.** The triage eval modules (gate file, state name, pool, report), `scripts/eval-sim.ts` (`runSim`), `scripts/eval.ts` (`runClassifier` names a state file too), `gate-evidence.test.ts`, `evals/README.md`. `--suspicious` and `--gap` call no LLM.
 
@@ -36,19 +36,19 @@ Part of [`../plan.md`](../plan.md). Review before the land (money). Needs stage 
 - `gateFileSchema` gains `endpoint: z.enum(["standard", "eu", "own"]).default("standard")` and `host: z.string().nullable().default(null)`; F109's optional `promptParts` stays.
 - `gateFileName({ …, endpoint })` (version, no parts) and `evalStateFileName({ …, endpoint })` (`promptLabel`): unchanged for `standard`; else `-<endpoint>` before the extension.
 - `own` run: no `EvalBudget` (no cap, no price check, ledger line $0). `firstEstimateUsd` keeps its "above zero" rule for `standard` and `eu`.
-- The run line and the report header print `endpoint=<kind> host=<host>`; the report's price line shows the row of the run's endpoint, or "own endpoint: cost 0".
+- The run line and the report header print `endpoint=<kind> host=<host>`; the price line shows the endpoint's row, or "own endpoint: cost 0".
 
 **Test.**
 1. `gateFileName` for `standard` gives today's stage 21 name `classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json`; for `eu` the same with `-eu.json`; for `own`, model `SpeakLeash/bielik-11b-v3.1:Q4_K_M` and effort `null` → the `safe` model, `default`, and `-own.json`.
 2. `evalStateFileName` for `standard` is unchanged; `eu` and `own` names differ from it. `classifier-v3[history,urgency]` with `own` ends `classifier-v3_history_urgency_-…-own.jsonl`; `[urgency]` differs.
 2a. A v3 `own` gate file (`promptParts` `["urgency"]`) parses with `endpoint` `own`, `host` `127.0.0.1`, those parts; its name has no part.
 3. The committed gate file (no `endpoint` key) parses as `standard`, `host` `null`.
-4. `gate-evidence.test.ts` reads only files without an endpoint suffix: an `-own.json` file alone fails it (temp folder).
+4. `gate-evidence.test.ts` still parses every gate file, but counts only files without an endpoint suffix: an `-own.json` file alone fails it (temp dir).
 5. A `standard` run of a model with no price row is refused; an `own` run of the same model starts and charges 0.
-6. A price of 0 on `standard` is still refused.
+6. A price of 0 on `standard` stays refused.
 7. An `own` report has `endpoint=own host=127.0.0.1`, no path or port, and the "own endpoint: cost 0" price line; an `eu` report shows the EU row's source.
 
-**Done when.** Cases 1–7 and 2a pass; `evals/README.md` says how to run against `OPENAI_BASE_URL` (shell variable, F4) and that a gate file proves one model on one endpoint.
+**Done when.** Cases 1–7, 2a pass; `evals/README.md` says how to run against `OPENAI_BASE_URL` (shell variable, F4), that a gate file proves one model on one endpoint, and the `--state` rule.
 
 ## Step 3 — Seam lines
 

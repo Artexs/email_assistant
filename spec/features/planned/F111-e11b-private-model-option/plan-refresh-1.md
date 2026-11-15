@@ -27,7 +27,7 @@ The script reads only full paths (`apps/…`, `scripts/…`). The stages name mo
 - plan.md D8: the gate file holds `endpoint` and `host` next to F109's optional `promptParts`. The state file name keeps `promptLabel` and adds the endpoint. The gate file name keeps F109 stage 11 naming (prompt version, no parts) and adds the endpoint. Rejected: parts in the gate name (it renames the file that F109 stage 11 names). Why: F109 stage 08 changed both names and the schema after the base.
 - plan.md F3: the eval flags at HEAD; `--suspicious` and `--gap` read no LLM config. Facts heading now names base `7f4cd964`. Why: the flags changed.
 - plan.md: shorter wording in Not verified, Rules, Owner steps, Review, How to run. Why: plan.md stays at 1,500 words. No decision changed.
-- Stage 02 case 12 (new): a bad `OPENAI_BASE_URL` stops `eval --sim` with the key name, not the value; `eval --suspicious` still runs. Why: `runSim` calls `loadConfig` outside its `try`, and `main` prints only the error name; `--suspicious` has no LLM.
+- Stage 02 case 12 (new; decision fixed after review 2): a bad `OPENAI_BASE_URL` stops `eval --sim` with the key name, not the value; `eval --suspicious` still runs. Why: `runSim` calls `loadConfig` outside its `try`, and `main` prints only the error name; `--suspicious` has no LLM.
 - Stage 02: shorter wording (Files, cases 2, 3, Done when). Why: 700-word limit.
 - Stage 03 Step 2 Files: `runClassifier` in `scripts/eval.ts` also names a state file and gets the endpoint; `--suspicious` and `--gap` get none. Why: F103 split `runClassifier` out of `main`.
 - Stage 03 Interfaces: `gateFileName` (version, no parts) and `evalStateFileName` (`promptLabel`) add `-<endpoint>`; `promptParts` stays. Why: F109 stage 08.
@@ -41,12 +41,23 @@ The script reads only full paths (`apps/…`, `scripts/…`). The stages name mo
 - `OUTSIDE_SERVICE_KEYS` and `endpointOf`: still absent (F107 not landed; stage 02 creates `endpointOf`). D14 stays a conditional seam.
 - `evals/results/gate/` holds only `classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json`: stage 03 case 1 stays true.
 - No landed ticket did a step of this plan. No migration and no `bun.lock` change are needed.
-- Stages 01, 04, 06: no named path or interface changed.
+- Stages 01, 04, 06: no named path or interface changed (stage 06 got one review-2 line).
+
+## Changes from cold review 2
+
+Review job `2026-11-15-f111-plan-review-2-refresh-463fee8a` (Opus 5.5, high; candidate `1fed167c`): FAIL, 1 blocking, 4 notes. File: `plan-review-2.md`. All five fixed, none rejected.
+
+- B1, stage 02 case 12: decision written. `runSim`, `runClassifier` and `runReal` catch the `ConfigError` of `loadConfig`, print `config error: <keys>`, exit 1. The test sets every other key valid, so only `OPENAI_BASE_URL` shows. The eval CLI is in the stage Files.
+- N2, stage 05: before model two, the worker compares the production prompt label with model one's run; a change is a stop and a question. Stage 06 item 6: the guide names the prompt label of its numbers, and says when production moved since stage 05.
+- N3, stage 03 Step 2 goal and Done when: an explicit `--state` path gets no endpoint suffix; `evals/README.md` states it.
+- N4, stage 03 case 4: the gate-evidence test still parses every gate file; it counts only files without an endpoint suffix as evidence.
+- N5, stage 02 case 12: a bad URL also stops `eval --real`; intended, as case 10.
+- Process note: the word counts are back in plan.md § Planning progress. plan.md § Cold review now has the review-1 map as a commit pointer (`a3e382a7`) and a review-2 line.
 
 ## Words after the refresh
 
-plan 1500; stages 657, 700, 697, 368, 699, 618, 700 (`wc -w`).
+plan 1480; stages 657, 700, 700, 368, 694, 643, 700 (`wc -w`).
 
 ## Cold review
 
-One review ran, because stage 03 states an interface in a new way (the gate and state names next to `promptParts`) and stage 05 has a new rule. See `plan-review-2.md`.
+One review ran, because stage 03 states an interface in a new way (the gate and state names next to `promptParts`) and stage 05 has a new rule. Verdict FAIL, fixed above.
