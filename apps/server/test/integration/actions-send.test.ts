@@ -37,6 +37,7 @@ import {
   insertDelegate,
   insertDraftAndSend,
   insertTestEmail,
+  noSuspiciousContext,
   pauseOtherMailboxes,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -998,6 +999,7 @@ describe("send end to end", () => {
         timezone: "Europe/Warsaw",
         junkFolder: null,
         resumedAt: null,
+        suspicious: noSuspiciousContext,
       };
       const claimMail = async (time: Date) =>
         claimEmails(trx, s.ctx, s.mailboxId, {

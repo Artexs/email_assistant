@@ -15,6 +15,7 @@ import {
   type MailboxMode,
   type PlannedAction,
   type SenderRule,
+  type SuspiciousReason,
   type ToolSwitches,
 } from "@ea/core";
 import type { Transaction } from "kysely";
@@ -36,11 +37,13 @@ import {
   type ClaimedEmail,
   type TestMailRule,
 } from "../mail";
+import { isFeatureOn } from "../tenancy";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
 import type { LlmPause } from "./pause";
 import { prompts } from "./prompts";
 import { insertTriageResult } from "./repo";
+import { assessEmail, type SuspiciousContext } from "./suspicious-context";
 
 const log = createLog("triage");
 
@@ -61,6 +64,8 @@ export interface TriageMailbox {
   junkFolder: string | null;
   // `organizations.resumed_at` (null: never resumed). Drives the backlog rule of D4.
   resumedAt: Date | null;
+  // The known senders and the protected names of this mailbox, read once per batch (F109 stage 03).
+  suspicious: SuspiciousContext;
 }
 
 export interface TriageDecision {
@@ -80,6 +85,8 @@ export interface TriageDecision {
   auditReasonCode: string;
   // The delegation plan input: only for a mail that the model called `delegation`.
   delegation: DelegationInput | null;
+  // The codes of `assessSuspicious`, computed before the LLM call; `triage_results.suspicious_reasons`. Empty on the error path.
+  suspiciousReasons: SuspiciousReason[];
 }
 
 export interface TriageDeps {
@@ -241,6 +248,7 @@ export async function saveTriage(
       tokensIn: decision.usage?.tokensIn ?? null,
       tokensOut: decision.usage?.tokensOut ?? null,
       latencyMs: decision.usage?.latencyMs ?? null,
+      suspiciousReasons: decision.suspiciousReasons,
     });
     const created = await createPlanned(trx, ctx, email.id, items);
     const delegationId = await createDelegationRow(trx, ctx, mailbox, email, decision, items, created, now);
@@ -256,6 +264,8 @@ export async function saveTriage(
         confidence: decision.confidence,
         prompt_version: decision.promptVersion,
         model: decision.model,
+        // Audit data is flat: the codes as one comma list (empty: none).
+        suspicious: decision.suspiciousReasons.join(","),
         ...(delegationId === null ? {} : { delegation_id: delegationId }),
         ...(answeredDelegationId === null ? {} : { answered_delegation_id: answeredDelegationId }),
       },
@@ -308,6 +318,7 @@ export async function finishTriageError(
       usage: null,
       auditReasonCode: "triage_error",
       delegation: null,
+      suspiciousReasons: [],
     },
     deps.now()
   );
@@ -320,6 +331,7 @@ async function handleClassifyError(
   mailbox: TriageMailbox,
   email: ClaimedEmail,
   vip: boolean,
+  suspiciousReasons: SuspiciousReason[],
   error: unknown
 ): Promise<TriageOutcome> {
   const now = deps.now();
@@ -354,6 +366,7 @@ async function handleClassifyError(
         usage: null,
         auditReasonCode: "llm_blocked",
         delegation: null,
+        suspiciousReasons,
       },
       now
     );
@@ -434,6 +447,8 @@ export async function triageOne(
     return skipEmail(deps, ctx, mailbox, email, "body_expired");
   }
   const rules = applyHardRules(email.from_address, mailbox.rules, { delegation: mailbox.delegates.length > 0 });
+  // Before the LLM call: the stages that read the reasons (10, 14) need them for every result of this path.
+  const suspiciousReasons = await assessEmail(deps.db, ctx, mailbox.suspicious, email);
   if (rules.kind === "spam") {
     return saveTriage(
       deps.db,
@@ -454,6 +469,7 @@ export async function triageOne(
         usage: null,
         auditReasonCode: "blocklist",
         delegation: null,
+        suspiciousReasons,
       },
       deps.now()
     );
@@ -521,7 +537,7 @@ export async function triageOne(
     } catch (auditError) {
       log.warn(`triage ${email.id}: llm.call audit write failed: ${describeError(auditError)}`);
     }
-    return handleClassifyError(deps, ctx, mailbox, email, rules.vip, error);
+    return handleClassifyError(deps, ctx, mailbox, email, rules.vip, suspiciousReasons, error);
   }
   deps.pause.reset();
   const { analysis, usage, promptVersion } = result;
@@ -539,7 +555,10 @@ export async function triageOne(
   });
 
   const { category, belowThreshold } = decideCategory(analysis, mailbox.policy);
-  const delegation = delegationInputOf(analysis, mailbox.delegates, email.from_address);
+  // D6: a flagged delegation mail gets no draft, no send and no delegations row. The category and the INBOX place stay.
+  const flaggedDelegation =
+    suspiciousReasons.length > 0 && category === "delegation" && (await isFeatureOn(deps.db, ctx, "suspicious_mail"));
+  const delegation = flaggedDelegation ? null : delegationInputOf(analysis, mailbox.delegates, email.from_address);
   return saveTriage(
     deps.db,
     ctx,
@@ -559,6 +578,7 @@ export async function triageOne(
       usage,
       auditReasonCode: belowThreshold ? "below_threshold" : analysis.reason_code,
       delegation,
+      suspiciousReasons,
     },
     deps.now()
   );

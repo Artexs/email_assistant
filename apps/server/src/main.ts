@@ -14,6 +14,7 @@ import {
   mailSyncCron,
   operatorChatId,
   sendLimits,
+  mailTrustedAuthservIds,
   testMailRule,
   type Config,
 } from "./platform/config";
@@ -154,6 +155,7 @@ if (scope !== null) {
     testMail: testMailRule(config),
     batchSize: 5,
     dailyCap: config.LLM_DAILY_CAP,
+    trustedAuthservIds: mailTrustedAuthservIds(config),
     now: () => new Date(),
     onCapReached: (ctx, mailboxId, dayStart) => operator.capReached(ctx, mailboxId, dayStart, config.LLM_DAILY_CAP),
   });
