@@ -12,7 +12,7 @@ Two steps.
   - `serve.ts`: a Bun static server for `apps/docs/dist` under `DOCS_BASE` on `127.0.0.1:8093` (fixed; next to the panel e2e ports 8081 and 8092). It serves `<path>/index.html` for a path that ends in `/`, and `404.html` with status 404 otherwise.
   - `docs:test` = `bunx playwright test -c apps/docs/e2e/playwright.config.ts`; the build must exist first (the spec fails with a clear message when `dist/index.html` is missing). One project, desktop Chromium 1280×800; `CHROMIUM_PATH` as in the panel e2e config.
   - The page list comes from the built `.html` files, not from a hand list.
-  - Env `DOCS_TEST_URL` (stage 14): when set, the tests open that site instead of starting `serve.ts`; the page list still comes from the local `dist` (build the same commit first).
+  - Env `DOCS_TEST_URL` (stage 16): when set, the tests open that site instead of starting `serve.ts`; the page list still comes from the local `dist` (build the same commit first).
   - The violation listener uses `addInitScript` with the `securitypolicyviolation` event (F4 check script) plus console errors that contain `Content Security Policy`.
   - axe: tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`. A violation in Starlight's own markup that this repo cannot fix by config or CSS is a question with the rule id; do not disable a rule without an answer (N4).
   - Local runs: always under `flock /tmp/email-assistant-shared-tests.lock` (fixed port).
@@ -32,7 +32,8 @@ Two steps.
 - **Decisions:** after `docs:build`: `bunx playwright install --with-deps chromium`, then `bun run docs:test`; on failure upload `apps/docs/e2e/test-results/` (7 days), as the `e2e` job does. `.gitignore` gets the docs test output folders.
 - **Test:**
   - T6: the `docs` job steps parse in the YAML (the T1 command of stage 05 still prints `ci e2e image docs`).
-- **Done when:** T6 holds.
+- **Test:** T7: the server image still builds and holds no `apps/docs` source (stage 01 T11; Docker if available, else the CI `image` job). The Playwright and axe trees may enter the image as dev dependencies (`deploy/Dockerfile` keeps them): say the image size change.
+- **Done when:** T6, T7 hold.
 
 ## Proof
 

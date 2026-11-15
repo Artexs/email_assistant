@@ -25,7 +25,7 @@ Two steps. Markdown about 400 lines, one test.
 ## Step 2 — Explanation
 
 - **Goal:** why the product behaves as it does, in prose.
-- **Files:** `apps/docs/src/content/docs/explanation/*.mdx`, `site-map.test.ts`.
+- **Files:** `apps/docs/src/content/docs/explanation/*.mdx`, `site-map.test.ts`, the tutorial's next-steps links.
 - **Pages:**
   1. `explanation/how-a-mail-is-sorted` · rules before the AI; the classifier; low confidence gives `unsure`; whitelisted mail is never spam; LLM text never picks a recipient or a folder · `triage`.
   2. `explanation/never-sends-alone` · every send needs your tap on the exact text; drafts, approvals, expiry; what "sent" means · `drafts-and-send`.

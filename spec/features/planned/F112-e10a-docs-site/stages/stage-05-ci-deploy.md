@@ -18,18 +18,19 @@ Part of [`../plan.md`](../plan.md). Read P7, D9, D10, Q4 and Q6 in [`../question
 - **Files:** `.github/workflows/docs-deploy.yml` (new), `apps/docs/scripts/deploy-gate.ts` (new) and test.
 - **Decisions:**
   - Triggers: `push: tags: ["v*"]` and `workflow_dispatch` (no inputs: the run uses the ref chosen in the GitHub UI).
-  - `permissions: contents: read, pages: write, id-token: write`; `concurrency: { group: pages, cancel-in-progress: false }`.
-  - Job `build`: checkout with `fetch-depth: 0` (tags), Bun, Node 24, frozen install, the gate step, then `bun run docs:build` with `DOCS_GIT_REF` = the tag name or the commit sha of a manual run, then `actions/upload-pages-artifact` with `apps/docs/dist`. Job `deploy` (needs `build`, environment `github-pages`): `actions/deploy-pages`. Use the current major of each `actions/*` step and say which.
-  - Gate: `deployDecision(ref: { type: "tag" | "branch"; name: string }, tags: string[]): { deploy: boolean; reason: string }` in `deploy-gate.ts`, run from the workflow with `github.ref_type`, `github.ref_name` and `git tag --list 'v*'`. On a tag that is not the highest SemVer `v*` tag, print `skip: <tag> is not the newest release (<newest>)` and set the output `deploy=false`; later steps and the `deploy` job run only with `deploy=true`. A manual run always deploys. A tag that is not SemVer (`v1`, `vtest`) → `deploy=false` with `skip: <tag> is not a release tag`.
-  - Stage 11 adds the screenshot steps to `build`.
+  - Workflow `permissions: contents: read`; only the `deploy` job gets `pages: write` and `id-token: write`. `concurrency: { group: pages, cancel-in-progress: false }` (GitHub still drops an older pending run: accepted, the newer run is the one to keep).
+  - Job `build`: checkout with `fetch-depth: 0` (tags), Bun, Node 24, frozen install, the gate step, `bun run docs:stale --strict` (decision 6: a stale public page blocks a release), then `bun run docs:build` with `DOCS_GIT_REF` = the tag name or the commit sha of a manual run, then `actions/upload-pages-artifact` with `apps/docs/dist`. Job `deploy` (needs `build`, environment `github-pages`): `actions/deploy-pages`. Use the current major of each `actions/*` step and say which.
+  - Gate: `deployDecision(ref: { event: "push" | "workflow_dispatch"; type: "tag" | "branch"; name: string }, tags: string[]): { deploy: boolean; reason: string; error?: string }` in `deploy-gate.ts`, run with `github.event_name`, `github.ref_type`, `github.ref_name` and `git tag --list 'v*'`. An `error` fails the workflow (stage 13 adds one). On a pushed tag that is not the highest SemVer `v*` tag, print `skip: <tag> is not the newest release (<newest>)` and set the output `deploy=false`; later steps and the `deploy` job run only with `deploy=true`. A manual run deploys any ref, also an old tag (rollback). A pushed tag that is not plain SemVer `v<x.y.z>` (`v1`, `vtest`, `v0.2.0-rc.1`) → `deploy=false` with `skip: <tag> is not a release tag`.
+  - Stage 12 adds the screenshot steps and the browser check to `build`.
   - No secret other than the GitHub token; no `.env`.
 - **Test** (`deployDecision`; tag refs unless named):
-  - T2: `("v0.2.0", ["v0.1.0", "v0.2.0"])` → deploy.
+  - T2: push `("v0.2.0", ["v0.1.0", "v0.2.0"])` → deploy.
   - T3: `("v0.1.1", ["v0.1.1", "v0.2.0"])` → skip, newest `v0.2.0`.
   - T4: `("v0.10.0", ["v0.9.0", "v0.10.0"])` → deploy (SemVer order, not text).
-  - T5: `("vtest", ["vtest"])` → skip, not a release tag.
-  - T6: `({ type: "branch", name: "master" }, [])` → deploy.
-  - T7: the YAML parses; its jobs are `build deploy`; `deploy.environment.name` is `github-pages`.
+  - T5: push `("vtest", ["vtest"])` and push `v0.2.0-rc.1` → skip, not a release tag.
+  - T6: dispatch on branch `master`, no tags → deploy.
+  - T6b: dispatch on tag `v0.1.1` with tags `[v0.1.1, v0.2.0]` → deploy (rollback).
+  - T7: the YAML parses; its jobs are `build deploy`; `deploy.environment.name` is `github-pages`; only `deploy` has `pages: write`.
 - **Done when:** T2–T7 hold; the workflow has never run.
 
 ## Step 3 — ADR and rules

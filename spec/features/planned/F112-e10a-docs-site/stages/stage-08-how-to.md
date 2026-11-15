@@ -8,7 +8,7 @@ One step. Markdown about 400 lines.
 
 - **Goal:** one short page per task a user does today.
 - **Files:** `apps/docs/src/content/docs/how-to/*.mdx`, `site-map.test.ts`; the tutorial's "Next steps" links (stage 07 left them as text).
-- **Pages** (id · task · capabilities). Before each page, check that its feature has no default-off flag in `packages/core/src/features.ts`; a flagged feature gets no page (P2), and the final message names it.
+- **Pages** (id · task · capabilities). A feature behind a default-off flag gets no page, and a flagged button or line inside a page is left out (stage 07 shared rules); the final message names each omission.
   1. `how-to/approve-a-send` · approve or reject a draft that waits in Telegram; what "Send again" and "It went out" do · `drafts-and-send`.
   2. `how-to/delegate-and-follow-up` · what a delegation is, who the delegates are (the operator adds them today: say so), the reminder set (`📤 Send all`, `✖️ Skip all`), close with `✅ Done` · `delegation`.
   3. `how-to/undo-a-move` · `↩️ n` in the digest and Undo in Activity; what Undo cannot bring back · `actions-and-undo`.
@@ -18,7 +18,7 @@ One step. Markdown about 400 lines.
   7. `how-to/pause` · `/pause` and `/resume` in Telegram; pause a mailbox in Mailboxes; what a paused account (operator) means · `digest-and-notices`, `sync`, `tenancy-and-plans`.
   8. `how-to/mode-and-switches` · move from shadow to assist; each switch; why a category's automatic move can be locked (go/no-go: 98% precision on at least 30 labels) · `actions-and-undo`, `triage`.
   9. `how-to/two-factor` · turn on two-factor sign-in, backup codes, trusted device, what to do when the phone is lost (ask the operator) · `web-panel`.
-  10. `how-to/language` · panel language in Settings → Account; Telegram language follows it (check `POLISH_MESSAGES_ON` in the capability page and write only what is true) · `web-panel`, `digest-and-notices`.
+  10. `how-to/language` · panel language in Settings → Account; what decides the Telegram language (read the code: `users.locale`; the capability page has a stale sentence, "code wins") · `web-panel`, `digest-and-notices`.
 - **Decisions:**
   - Each page: goal sentence, "Before you start" (only if needed), numbered steps, "What happens next" (1–3 sentences). At most about 50 lines.
   - Owner-only actions say so ("Only the owner of the organization can …"), from the capability page's owner rules.
@@ -28,7 +28,7 @@ One step. Markdown about 400 lines.
   - T2: `site-map.test.ts` passes with the 10 ids (minus any dropped by P2, named in the final message).
   - T3: each how-to page has `capabilities` with at least one entry (the build check of stage 04 proves it; quote its log line).
 - **Done when:** T1–T3 hold; the final message lists each page with the capability rules it uses.
-- **Out of scope:** Polish (stage 10); screenshots (stage 11); delete or export (flag `org_delete`, default off at the plan base; if it is on by default at `HEAD`, add `how-to/delete-or-export` with `account-data`).
+- **Out of scope:** Polish (stage 10); screenshots (stage 12); delete or export (flag `org_delete`, default off at the plan base; if it is on by default at `HEAD`, add `how-to/delete-or-export` with `account-data`).
 
 ## Proof
 

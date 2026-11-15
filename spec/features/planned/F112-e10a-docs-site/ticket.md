@@ -34,13 +34,13 @@ A stranger, a new user and the operator can read the product's docs on a public 
 
 ## Slices
 
-14 stages, one worker job each ([plan.md](plan.md) § Stages, § How to run). Stages 01 and 06 change `bun.lock`: never next to another `bun.lock` change. No migration. Owner step O1 (Pages settings, first deploy) before stage 14.
+16 stages, one worker job each (stage 16: owner and coordinator) ([plan.md](plan.md) § Stages, § How to run). Stages 01 and 06 change `bun.lock`: never next to another `bun.lock` change. No migration. Owner step O1 (Pages settings, first deploy) before stage 16.
 
 ## Sequenced
 
 - Plan after: none (F102 and F114 interfaces are not used: plan P3, D12).
 - Build after: F095 (E1) and F101 (Astro 7) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 18).
-- Gate: —. Stage 14 waits for owner step O1.
+- Gate: —. Stage 16 waits for owner step O1.
 
 ## Notes
 

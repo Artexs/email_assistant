@@ -20,12 +20,12 @@ Three steps.
 
 - **Goal:** a stale Polish page is visible in CI and blocks a release (decision 6).
 - **Files:** `apps/docs/scripts/stale.ts` (new) and test; root script `docs:stale`.
-- **Interfaces:** `bodyHash(markdown: string): string` = first 16 hex of sha256 of the text after the closing `---` of the front matter, with `\r\n` → `\n` and trailing whitespace of the whole body removed.
+- **Interfaces:** `bodyHash(markdown: string): string` = first 16 hex of sha256 of the text after the closing `---` of the front matter, with `\r\n` → `\n`, lines that hold only a `<Shot … />` tag removed (stage 11: a screenshot never stales a translation), and trailing whitespace of the whole body removed.
   - `bun run docs:stale`: for each page under `pl/`: no `source` or `sourceHash` → error; `source` page missing → error; hash differs → `stale pl/<id> (source <id>)`. For each id in `POLISH_SET` without a Polish page → error `missing pl/<id>`. Errors exit 1; stale lines alone exit 0 with the count `stale: <n>`.
   - `--strict`: a stale page whose source is `index` or starts with `start` exits 1 (the public set of this ticket; F121 adds security and pricing). The E8b release checklist runs it.
   - `--stamp <pl file>`: writes the current `sourceHash` of its source into the file, changes nothing else.
 - **Test:**
-  - T3: `bodyHash("---\ntitle: A\n---\nHi\r\n\n")` equals `bodyHash("---\ntitle: B\n---\nHi")` (front matter and line ends do not count).
+  - T3: `bodyHash("---\ntitle: A\n---\nHi\r\n\n")` equals `bodyHash("---\ntitle: B\n---\nHi")` and `bodyHash("---\ntitle: B\n---\nHi\n<Shot page=\"rules\" />")` (front matter, line ends and `<Shot>` lines do not count).
   - T4: a fixture with a matching hash → exit 0, `stale: 0`.
   - T5: a changed English body → exit 0, one `stale` line; with `--strict` and source `start` → exit 1.
   - T6: `POLISH_SET` id without a Polish page → exit 1, `missing pl/<id>`.
@@ -36,11 +36,11 @@ Three steps.
 
 - **Goal:** a panel label on a doc page is the panel's own text (D8).
 - **Files:** `apps/web/package.json` (`exports` for `./i18n/en` and `./i18n/pl`; keep what exists), `apps/docs/src/components/UiText.astro` (new), its test of the lookup function.
-- **Interfaces:** `<UiText k="nav_settings" />` renders the text of key `k` for the page language (`Astro.currentLocale`; `root` → `en`); the type of `k` is the panel's `TextKey`. A text with `{var}` placeholders renders the raw text; an MDX page must not use it for such keys (the lookup throws `ui_text_has_vars <k>`). Output: `<span class="ui-label">…</span>`, no inline style.
+- **Interfaces:** `<UiText k="nav_settings" />` renders the text of key `k` for the page language (`Astro.currentLocale`; `root` → `en`); the type of `k` is the panel's `TextKey`. The lookup throws at build time on an unknown key (`ui_text_unknown <k>`: `astro check` does not type-check MDX) and on a text with `{var}` placeholders (`ui_text_has_vars <k>`). Output: `<span class="ui-label">…</span>`, no inline style.
 - **Test:**
   - T8: lookup `nav_settings` in `en` = `Settings`; in `pl` = the `pl.ts` value.
   - T9: lookup of `trial_ends_on` throws `ui_text_has_vars trial_ends_on`.
-  - T10: the docs `typecheck` fails on an unknown key (show one run with a bad key, then remove it).
+  - T10: lookup of `no_such_key` throws `ui_text_unknown no_such_key`; a fixture `.mdx` page with that key fails `docs:build` (show one run, then remove the fixture).
 - **Done when:** T1–T10 hold; `bun.lock` unchanged (stage 01 added the workspace link; a new package is a question).
 
 ## Proof
