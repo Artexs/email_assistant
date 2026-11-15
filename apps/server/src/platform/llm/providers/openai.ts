@@ -25,7 +25,11 @@ export interface OpenAiResponseLike {
   usage?: { input_tokens?: number; output_tokens?: number };
 }
 
-/** Deep copy without `$schema` and without the rejected keywords. Throws when an object node is not strict. */
+/**
+ * Deep copy without `$schema` and without the rejected keywords. Throws when an object node is not strict.
+ * Strict mode refuses `oneOf` (checked against the API, 2026-11-15: "'oneOf' is not permitted"). Zod writes it for a
+ * discriminated union, whose branches never overlap, so `anyOf` means the same: the copy uses `anyOf`.
+ */
 function strictNode(node: unknown, model: string): unknown {
   if (Array.isArray(node)) return node.map((item) => strictNode(item, model));
   if (!isRecord(node)) return node;
@@ -37,6 +41,8 @@ function strictNode(node: unknown, model: string): unknown {
       copy[key] = Object.fromEntries(Object.entries(value).map(([name, child]) => [name, strictNode(child, model)]));
     } else if (key === "items" || key === "anyOf") {
       copy[key] = strictNode(value, model);
+    } else if (key === "oneOf") {
+      copy.anyOf = strictNode(value, model);
     } else {
       copy[key] = structuredClone(value);
     }
