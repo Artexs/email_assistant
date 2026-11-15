@@ -44,7 +44,11 @@ const slotsWith = (pick: (slot: Slot) => boolean, count: number): Slot[] =>
 const byBehaviour = (behaviour: string, count = 1): Slot[] =>
   slotsWith((slot) => slot.delegateBehaviour === behaviour, count);
 
-type Org = { orgId: string; userId: string; mailboxId: string };
+interface Org {
+  orgId: string;
+  userId: string;
+  mailboxId: string;
+}
 
 // A week run from Monday 2026-11-23: the 7 run days end Mon 2026-11-30 00:00 Warsaw, the tail Fri 2026-12-04 00:00 Warsaw.
 const WEEK = {
