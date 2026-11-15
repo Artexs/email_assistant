@@ -58,6 +58,7 @@ const WRITE_ROUTES = [
   "POST /api/mailboxes/oauth/:provider/start",
   "POST /api/onboarding/keep-mode",
   "POST /api/rules",
+  "POST /api/telegram/consent",
   "PUT /api/settings/:mailboxId/urgency",
 ];
 
