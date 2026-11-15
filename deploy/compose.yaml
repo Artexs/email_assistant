@@ -1,8 +1,14 @@
 name: email-assistant
 
 # Docker log rotation for every service: 5 files of 10 MB per container (deploy/README.md § Logs). deploy/check-logging.sh checks it.
-x-logging: &logging
+# Only `server` writes json-file, the files the log store reads (ADR 0024 point 4); every other service writes `local`.
+x-logging-collected: &logging-collected
   driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+x-logging-local: &logging-local
+  driver: local
   options:
     max-size: 10m
     max-file: "5"
@@ -10,7 +16,7 @@ x-logging: &logging
 services:
   db:
     image: postgres:17
-    logging: *logging
+    logging: *logging-local
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -32,7 +38,7 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
     image: ea-server
-    logging: *logging
+    logging: *logging-collected
     restart: unless-stopped
     stop_grace_period: 45s
     env_file: ../.env
@@ -58,6 +64,20 @@ services:
       test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:8080/health'); process.exit(r.ok ? 0 : 1)"]
       interval: 30s
       retries: 3
+
+  # One-off commands: `$C run --rm cli bun run <script> …`. It reuses the server image and the same .env.
+  # Its output goes to your terminal and to the `local` log, never to the log store (ADR 0024 point 4).
+  # No ports are published: `run` skips them unless you pass --service-ports.
+  cli:
+    extends:
+      service: server
+    profiles: [cli]
+    logging: *logging-local
+    restart: "no"
+    healthcheck:
+      disable: true
+    environment:
+      LOG_FORMAT: text
 
 # The subnet is pinned, so the gateway never changes after a `down` or a Docker upgrade.
 # WEB_TRUSTED_PROXIES in .env is this gateway (deploy/README.md "Web panel", ADR 0017).

@@ -33,11 +33,11 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    - Compose sets `DATABASE_URL`, `MIGRATOR_DATABASE_URL` and `PORT` by itself. Their values in `.env` do not count for `server`.
    - Web panel keys: see the section Web panel. Leave `WEB_BASE_URL` empty to keep the web off, and empty the dev value of `WEB_TRUSTED_ORIGINS` that `cp .env.example .env` copied.
 4. Start the database: `$C up -d --wait db`
-5. Build the image and migrate: `$C run --build --rm server bun run db:migrate`
+5. Build the image and migrate: `$C run --build --rm cli bun run db:migrate`
 6. Create the organisation:
-   `$C run --rm server bun run org:create --org-name <name> --email <email> --display-name <name> --plan active`
+   `$C run --rm cli bun run org:create --org-name <name> --email <email> --display-name <name> --plan active`
 7. Connect the mailbox. The password goes on stdin. Use `-T`, because the command has no terminal on stdin:
-   `read -rsp 'IMAP password: ' P && printf '%s' "$P" | $C run --rm -T server bun run mailbox:connect --org-id <uuid> --address <email>; unset P`
+   `read -rsp 'IMAP password: ' P && printf '%s' "$P" | $C run --rm -T cli bun run mailbox:connect --org-id <uuid> --address <email>; unset P`
 8. Start the server: `$C up -d --build --wait`
 
 ## Update
@@ -49,11 +49,11 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
 ```sh
 git fetch && git merge --ff-only origin/master
 $C up -d --wait db
-$C run --build --rm server bun run db:migrate
+$C run --build --rm cli bun run db:migrate
 $C up -d --build --wait
 ```
 
-4. Check the log rotation. Each line must end with `json-file 10m 5`:
+4. Check the log rotation. The `server` line must end with `json-file 10m 5`. Every other line must end with `local 10m 5`:
 
 ```sh
 docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}} {{index .HostConfig.LogConfig.Config "max-size"}} {{index .HostConfig.LogConfig.Config "max-file"}}' $($C ps -q)
@@ -69,9 +69,9 @@ The server writes one JSON object per line (ADR 0024). Read them as text:
 $C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", .event, (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
 ```
 
-Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. A new service in any Compose file needs the same block. `bash deploy/check-logging.sh` checks it, and CI runs it.
+Docker keeps at most 5 files of 10 MB for each container (`logging:` in `deploy/compose.yaml`). Older lines are gone, and a recreated container starts empty. At about 0.5 MB a day, the files hold months. Only `server` writes `json-file`, the files that the log store reads. Every other service (Postgres, `cli`, the store itself) writes `local`, so its lines never reach the store. A new service in any Compose file needs the `local` block. `bash deploy/check-logging.sh` checks the drivers and fails on a one-off command that runs in `server`, and CI runs it.
 
-Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. A CLI prints the text form with `$C exec -e LOG_FORMAT=text server bun run <script> …`.
+Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. One-off commands run in the `cli` service (`$C run --rm cli bun run <script> …`): readable text, never in the log store. `$C exec server …` prints to your terminal only.
 
 A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text. A sync run writes `sync_done` with `mailbox_id` and the counts; a failure is `sync_failed` or `sync_soft_error` with `error` and `error_code` (`mail/jobs.ts`).
 
@@ -81,7 +81,7 @@ An `auth_error` notice means the mail server refused the stored password. The sy
 
 1. Check the password in the webmail. For Interia, check the "mail program" switch (see `notes/2026-11-03-interia-imap-capabilities.md`).
 2. Store the new password. The CLI tests the IMAP and SMTP login first and saves nothing if the login fails:
-   `read -rsp 'New password: ' P && printf '%s' "$P" | $C run --rm -T server bun run mailbox:password --org-id <uuid> --mailbox-id <uuid>; unset P`
+   `read -rsp 'New password: ' P && printf '%s' "$P" | $C run --rm -T cli bun run mailbox:password --org-id <uuid> --mailbox-id <uuid>; unset P`
    Add `--secret-kind app_password` if the password is an app password.
 3. The mailbox is `active` again. The next sync comes within `MAIL_SYNC_EVERY_MIN` minutes (default 2).
 
@@ -92,7 +92,7 @@ A `paused` mailbox stays paused. Use `/resume` in Telegram.
 A `host_blocked` notice means the server name of the mailbox points to a private or local address. The system does not connect to such an address. The sync, triage and send for that mailbox stop. No mail is lost: it stays on the mail server.
 
 1. Run the check. It prints the status and which side (IMAP or SMTP) the guard refuses, and it makes no connection:
-   `$C run --rm -T server bun run mailbox:check --org-id <uuid> --mailbox-id <uuid>`
+   `$C run --rm -T cli bun run mailbox:check --org-id <uuid> --mailbox-id <uuid>`
 2. Check the DNS answer of the provider host from the server container. A real provider host resolves to a public address. A refusal means a wrong host or a DNS change.
 3. Run nothing else. At the start of each sync run (every `MAIL_SYNC_EVERY_MIN` minutes) the system checks both hosts again, with no connection. When both pass, the mailbox becomes `active` by itself and the same run syncs it. A password change (see "Login error (`auth_error`)") also ends the state.
 
@@ -118,12 +118,12 @@ The server uses long polling (no inbound port). The VPS uses the pilot bot `@Ema
 
 1. Put the pilot bot token in `TELEGRAM_BOT_TOKEN` in the VPS `.env`. Only the user edits this file. Never print the token, never paste it in a chat or a log. An empty value switches Telegram off (the log says `telegram is off`).
    Do not set `TELEGRAM_API_ROOT` on the VPS.
-2. Check the token: `$C run --rm server bun run telegram:check`. The output is `bot @Email_assistant_vps_bot (id …)`.
+2. Check the token: `$C run --rm cli bun run telegram:check`. The output is `bot @Email_assistant_vps_bot (id …)`.
 3. Restart the server so that it reads the new `.env`: `$C up -d server`. The log shows the event `telegram_polling_started` (field `bot_id`, the numeric id of the bot).
-4. Make a link for a member: `$C run --rm server bun run telegram:link --org-id <uuid> [--user-id <uuid>]`.
+4. Make a link for a member: `$C run --rm cli bun run telegram:link --org-id <uuid> [--user-id <uuid>]`.
    The output is a `https://t.me/<bot>?start=<token>` link. It is a one-time secret that is valid for 15 minutes. Open it on the phone of the member. Do not share it. A used or expired link needs a new `telegram:link` run.
-5. Set the digest times if needed: `$C run --rm server bun run digest:times --org-id <uuid> --times 08:00,16:00` (`--times none` switches the digests off). New members get `08:00,16:00` by default.
-6. Remove a link: `$C run --rm server bun run telegram:unlink --org-id <uuid> --user-id <uuid>`.
+5. Set the digest times if needed: `$C run --rm cli bun run digest:times --org-id <uuid> --times 08:00,16:00` (`--times none` switches the digests off). New members get `08:00,16:00` by default.
+6. Remove a link: `$C run --rm cli bun run telegram:unlink --org-id <uuid> --user-id <uuid>`.
 
 A `409` in the log (the event `telegram_polling_conflict`, field `wait_ms`) means that a second process uses the same token, for example the Mac with the pilot token. Stop the other process. The server tries again after 1, 2, 4 … at most 30 minutes. A `401` means that the token is wrong or revoked: fix `.env`, then run `$C up -d server`.
 
@@ -232,9 +232,9 @@ The operator needs it too. The console and `/api/operator/*` refuse an operator 
 Break-glass owner (one owner of an organization; the one exception to "SSO required", section Company sign-in). List the owners and their state, set the owner, or clear it:
 
 ```sh
-$C run --rm server bun run org:break-glass --org-id <uuid>
-$C run --rm server bun run org:break-glass --org-id <uuid> --user-id <uuid>
-$C run --rm server bun run org:break-glass --org-id <uuid> --clear
+$C run --rm cli bun run org:break-glass --org-id <uuid>
+$C run --rm cli bun run org:break-glass --org-id <uuid> --user-id <uuid>
+$C run --rm cli bun run org:break-glass --org-id <uuid> --clear
 ```
 
 The user must be an owner and must have two-factor sign-in on. The break-glass owner cannot turn it off.
@@ -242,7 +242,7 @@ The user must be an owner and must have two-factor sign-in on. The break-glass o
 A member who lost the phone and the backup codes:
 
 1. Check who asks, outside the system: a call to a known number, or in person. Do not trust a mail or a chat message.
-2. Run `$C run --rm server bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>`.
+2. Run `$C run --rm cli bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>`.
 3. The reset ends every session and every trusted device of the user and clears the break-glass mark. The user signs in with the password and can turn two-factor sign-in on again.
 
 Never change `WEB_AUTH_SECRET` without a plan to reset every member's second factor: the secrets and codes are encrypted with it, and a new value makes them unreadable. Each member then needs the reset above.
@@ -260,7 +260,7 @@ Before you start:
 - Below, `<org-id>` is the organization id, `<company-domain>` is the mail domain of the members (the part after `@` in their addresses), and `<tenant-id>` is the Entra directory id. Never write a real tenant id, a secret or a link with a token into the repo or into a ticket.
 
 1. Turn on the flag (off by default; removal date 2027-06-01):
-   `$C run --rm server bun run org:flag --org-id <org-id> --flag sso_sign_in --on`
+   `$C run --rm cli bun run org:flag --org-id <org-id> --flag sso_sign_in --on`
 2. The administrator of the organization registers an app in the IdP.
    - The redirect URI is the panel address plus the callback path: `<WEB_BASE_URL>/api/auth/sso/callback/<org-id>`. `org:sso` prints it as the `redirect` line after step 3.
    - Scopes: `openid email profile`. Copy the client id. Make one client secret. Keep the secret out of chat, tickets and shell history.
@@ -269,19 +269,19 @@ Before you start:
 3. Store the provider. Paste the secret at the prompt; it never goes on the command line:
 
    ```sh
-   read -rs S; printf '%s\n' "$S" | $C run --rm -T server bun run --silent org:sso --org-id <org-id> --set --issuer <issuer-url> --domain <company-domain> --client-id <client-id> --client-secret-stdin; unset S
+   read -rs S; printf '%s\n' "$S" | $C run --rm -T cli bun run --silent org:sso --org-id <org-id> --set --issuer <issuer-url> --domain <company-domain> --client-id <client-id> --client-secret-stdin; unset S
    ```
 
    - `read -rs` does not echo the secret. `bun run --silent` keeps the command line off stderr: `bun run` otherwise prints the whole command, so a wrong call such as `--client-secret <value>` would show the secret once more, and the shell would keep it in its history. Without the pipe, on a terminal, the input echoes and ends only with Ctrl-D: use the pipe.
    - The command fetches the discovery document of the issuer. It refuses an issuer that is not `https:`, an IP address, a host that resolves to a private address, and a domain that another organization holds. It stores the secret in clear in the database (`sso_providers.oidc_config`): the backups hold it, the export does not. It prints `set new` and the `redirect` line.
    - To rotate the secret, make a new one in the IdP and run the same command. It prints `set secret` and keeps the proof and the links. A new issuer, domain or client id prints `set boundary`: it drops the domain proof, "SSO required", every link and every SSO session. Warn the members first.
 
-4. Prove the domain. `$C run --rm server bun run org:sso --org-id <org-id>` prints the line `txt _ea-sso.<company-domain> ea-sso=<token>`. Add it as a DNS TXT record of that domain. The token is not a secret. When the record is live, run `$C run --rm server bun run org:sso --org-id <org-id> --verify`. It prints `verified`, or `error not_found_in_dns` (wait for DNS and run it again). For a test organization with no DNS control (for example an `onmicrosoft.com` domain), the operator vouches for the domain instead: `$C run --rm server bun run org:sso --org-id <org-id> --attest --confirm <company-domain>`. Each of the two writes an audit row (`sso.domain_verified`, `sso.domain_attested`). Attest only a domain that you know the organization owns.
-5. Add the members that have no account yet: `$C run --rm server bun run org:member --org-id <org-id> --add --email <address> --display-name <name> [--role assistant|owner] [--lang pl|en]`. The address must be the address that the IdP sends. A member who already has an account needs no add: the first company sign-in links the IdP identity by e-mail. A member made by `org:member --add` has no password. When the flag is on and the domain is proved, the login page offers company sign-in: `curl -sS https://<machine>.<tailnet>.ts.net/api/sign-in-options` prints `{"sso":true}`. The member opens the panel, chooses "Sign in with your company account" and types the work e-mail. `org:sso --org-id <org-id>` then shows `linked <n>`.
-6. Optional: refuse passwords ("SSO required"). First make a break-glass owner with two-factor sign-in on (section Two-factor sign-in: the owner turns it on in Settings → Account, then you run `org:break-glass`). Then run `$C run --rm server bun run org:sso --org-id <org-id> --require on`. It refuses, with a list of reasons, until all of these hold: a provider, a proved domain, the flag on, a break-glass owner with TOTP, and every other member on the domain. When it goes on, every password session and every pending code step of the other members ends. A password sign-in or reset of such a member then looks like a wrong password. Only the break-glass owner keeps password and TOTP.
-7. An IdP outage: `$C run --rm server bun run org:sso --org-id <org-id> --require off` reopens passwords at once for members who have one. A member made by `org:member --add` has no password: make a setup link with `web:invite --user-id` (section Give a member a password), or wait for the IdP. The break-glass owner always gets in. Turning the flag `sso_sign_in` off does not reopen passwords: it also closes company sign-in, so only the break-glass owner can sign in. `org:flag` prints a warning for that case. A server start with `FEATURES_OFF` that holds the flag logs `sso_flag_killed_with_sso_required`.
-8. Offboarding. Disable the person in the IdP: a company session ends within 12 hours at most, and the IdP refuses a new sign-in. To end access at once, run `$C run --rm server bun run org:member --org-id <org-id> --user-id <user-id> --end-sessions`. Every `org:member` command needs `--org-id`. The command ends every session of the user in every organization (sessions belong to the user); `--only-sso` ends only the company sessions. `--unlink-sso` removes the IdP link and every company session of the user. The next company sign-in links again by e-mail, so disable the person in the IdP first. No CLI removes a member. If the organization does not require SSO, a member who has a password can still sign in with it after the IdP account is disabled.
-9. Remove the provider: `$C run --rm server bun run org:sso --org-id <org-id> --remove --confirm <company-domain>`. It deletes the links and the company sessions and turns "SSO required" off.
+4. Prove the domain. `$C run --rm cli bun run org:sso --org-id <org-id>` prints the line `txt _ea-sso.<company-domain> ea-sso=<token>`. Add it as a DNS TXT record of that domain. The token is not a secret. When the record is live, run `$C run --rm cli bun run org:sso --org-id <org-id> --verify`. It prints `verified`, or `error not_found_in_dns` (wait for DNS and run it again). For a test organization with no DNS control (for example an `onmicrosoft.com` domain), the operator vouches for the domain instead: `$C run --rm cli bun run org:sso --org-id <org-id> --attest --confirm <company-domain>`. Each of the two writes an audit row (`sso.domain_verified`, `sso.domain_attested`). Attest only a domain that you know the organization owns.
+5. Add the members that have no account yet: `$C run --rm cli bun run org:member --org-id <org-id> --add --email <address> --display-name <name> [--role assistant|owner] [--lang pl|en]`. The address must be the address that the IdP sends. A member who already has an account needs no add: the first company sign-in links the IdP identity by e-mail. A member made by `org:member --add` has no password. When the flag is on and the domain is proved, the login page offers company sign-in: `curl -sS https://<machine>.<tailnet>.ts.net/api/sign-in-options` prints `{"sso":true}`. The member opens the panel, chooses "Sign in with your company account" and types the work e-mail. `org:sso --org-id <org-id>` then shows `linked <n>`.
+6. Optional: refuse passwords ("SSO required"). First make a break-glass owner with two-factor sign-in on (section Two-factor sign-in: the owner turns it on in Settings → Account, then you run `org:break-glass`). Then run `$C run --rm cli bun run org:sso --org-id <org-id> --require on`. It refuses, with a list of reasons, until all of these hold: a provider, a proved domain, the flag on, a break-glass owner with TOTP, and every other member on the domain. When it goes on, every password session and every pending code step of the other members ends. A password sign-in or reset of such a member then looks like a wrong password. Only the break-glass owner keeps password and TOTP.
+7. An IdP outage: `$C run --rm cli bun run org:sso --org-id <org-id> --require off` reopens passwords at once for members who have one. A member made by `org:member --add` has no password: make a setup link with `web:invite --user-id` (section Give a member a password), or wait for the IdP. The break-glass owner always gets in. Turning the flag `sso_sign_in` off does not reopen passwords: it also closes company sign-in, so only the break-glass owner can sign in. `org:flag` prints a warning for that case. A server start with `FEATURES_OFF` that holds the flag logs `sso_flag_killed_with_sso_required`.
+8. Offboarding. Disable the person in the IdP: a company session ends within 12 hours at most, and the IdP refuses a new sign-in. To end access at once, run `$C run --rm cli bun run org:member --org-id <org-id> --user-id <user-id> --end-sessions`. Every `org:member` command needs `--org-id`. The command ends every session of the user in every organization (sessions belong to the user); `--only-sso` ends only the company sessions. `--unlink-sso` removes the IdP link and every company session of the user. The next company sign-in links again by e-mail, so disable the person in the IdP first. No CLI removes a member. If the organization does not require SSO, a member who has a password can still sign in with it after the IdP account is disabled.
+9. Remove the provider: `$C run --rm cli bun run org:sso --org-id <org-id> --remove --confirm <company-domain>`. It deletes the links and the company sessions and turns "SSO required" off.
 10. A plugin upgrade. Keep `better-auth` and `@better-auth/sso` on one exact version, never below 1.6.27 (an older plugin allowed account takeover through its domain check: GHSA-8c5h-wx78-2cfg). After an upgrade, run these tests before you deploy: `apps/server/test/integration/web-sso-plugin.test.ts`, `web-sso-resolve.test.ts`, `web-sso-session.test.ts`, `web-sso-required.test.ts` and `sso-provider-service.test.ts`. They check that a user cannot register a provider, that `requestSignUp: true` makes no user, that a callback session ends after 12 hours, and that the operator writes take turns with the plugin's lock on the provider row.
 
 Every change is an audit row (`sso.login`, `sso.refused`, `sso.provider_set`, `sso.provider_removed`, `sso.domain_verified`, `sso.domain_attested`, `sso.required_changed`, `sso.unlinked`, `org.member_added`, `web.member_sessions_ended`) and shows in the security log of the organization. The log lines and their causes are in `docs/known-alerts.md`: `sso_refused`, `sso_audit_failed`, `password_sign_in_refused_sso`, `reset_request_refused_sso`, `operator_sso_session_refused`, `sign_in_options_failed` and `sso_flag_killed_with_sso_required`.
@@ -345,9 +345,9 @@ Restore the copy `.env.bak-s5e` only if the edit of `.env` broke another key.
 Change the mode, the `auto` flags and the switches of a mailbox with `mailbox:settings`. Every change is locked and audited. The command prints the settings table with `before -> after` for the changed field.
 
 ```sh
-$C run --rm server bun run mailbox:settings show --org-id <uuid> --mailbox-id <uuid>
-$C run --rm server bun run mailbox:settings mode --org-id <uuid> --mailbox-id <uuid> --mode assist
-$C run --rm server bun run mailbox:settings auto --org-id <uuid> --mailbox-id <uuid> --category info --value on
+$C run --rm cli bun run mailbox:settings show --org-id <uuid> --mailbox-id <uuid>
+$C run --rm cli bun run mailbox:settings mode --org-id <uuid> --mailbox-id <uuid> --mode assist
+$C run --rm cli bun run mailbox:settings auto --org-id <uuid> --mailbox-id <uuid> --category info --value on
 ```
 
 - `mode --mode assist` sets the switches `move`, `mark_read` and `flag` on. Add `--keep-switches` to keep the old values. Without it, `mode --mode assist` also expires the `ready` rows of each switch it turns off.
@@ -381,13 +381,13 @@ The go/no-go gate: on 2026-11-06 every category was no-go (`spec/features/done/2
 
 The sync reads INBOX and, at Interia, `Oferty`, `Społeczności`, `Rachunki` and the spam folder `Wiadomości-śmieci`. The server inserts a row for each of them in `mailbox_folders` when the server lists the exact name.
 
-- Show the folders: `$C run --rm server bun run mailbox:settings show --org-id <uuid> --mailbox-id <uuid>`.
-- Off switch per folder: `$C run --rm server bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off`. INBOX has no switch. `--value on` again clears the cursor: the next sync takes the last 24 hours of that folder.
+- Show the folders: `$C run --rm cli bun run mailbox:settings show --org-id <uuid> --mailbox-id <uuid>`.
+- Off switch per folder: `$C run --rm cli bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off`. INBOX has no switch. `--value on` again clears the cursor: the next sync takes the last 24 hours of that folder.
 - `mailbox:rescan` forces a rescan of every synced folder. `mailbox:backfill` reads INBOX only.
 - A spam folder mail that the classifier finds valid gets a move into INBOX under the normal move gate (the category `auto` ON). With `auto` OFF, the digest says "would move to INBOX".
 - A final failure of a move by APPEND (the rescue, or an Undo into `Oferty`, `Społeczności`, `Rachunki`) can leave the mail in both folders. The `action_failed` notice tells you. Delete the extra copy by hand.
 - Roll back the code, not the migration (steps (a) and (b) are in `spec/features/done/2026-11/F058-sync-sort-folders/stages/stage-16-merge-and-vps-deploy.md`, "Rollback"): the migration `sync_folders` only adds (a table, `emails.source_folder`, an index). A `db:rollback` after live use loses the cursors of the non-INBOX folders and the source folder of non-INBOX mail. The INBOX cursor stays in `mailboxes` (dual write), so the old code runs on the new schema. After a code rollback, a `ready` move into INBOX ends as `bad_payload`, and an Undo of `Oferty` mail goes to INBOX (ADR 0014, D24 (d)).
-  - (a) Before you switch the checkout, switch the four folders off: `$C run --rm server bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value off` (once for each key). Then wait until this query gives 0: `select count(*) from emails where mailbox_id = '<uuid>' and source_folder <> 'INBOX' and status in ('pending', 'processing');` (run it as `postgres` through `$C exec -T db psql -U postgres -d email_assistant -c "…"`). Else the old code triages spam folder mail as INBOX mail.
+  - (a) Before you switch the checkout, switch the four folders off: `$C run --rm cli bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value off` (once for each key). Then wait until this query gives 0: `select count(*) from emails where mailbox_id = '<uuid>' and source_folder <> 'INBOX' and status in ('pending', 'processing');` (run it as `postgres` through `$C exec -T db psql -U postgres -d email_assistant -c "…"`). Else the old code triages spam folder mail as INBOX mail.
   - (b) Roll forward: before the new code starts, copy the INBOX cursor that the old code wrote: `update mailbox_folders f set uidvalidity = m.uidvalidity, last_uid = m.last_uid, updated_at = now() from mailboxes m where f.mailbox_id = m.id and f.key = 'inbox';`. A mailbox that the old code connected has no INBOX row: first `insert into mailbox_folders (org_id, mailbox_id, key, path, role, enabled, uidvalidity, last_uid) select org_id, id, 'inbox', 'INBOX', 'inbox', true, uidvalidity, last_uid from mailboxes on conflict do nothing;`. Then switch the four folders on with `sync-folder … --value on`. The cursor is cleared, so the next sync takes the last 24 hours of each folder; the dedup key stops duplicates.
 
 ### Notice `action_failed`
@@ -421,7 +421,7 @@ A delegate is a person who gets tasks by mail. Manage delegates and delegations 
 Rule: a delegate address is never a mailbox address of the organization. `delegates:add` refuses it (exit 2).
 The audit rows have the actor `cli`.
 
-On the VPS run each command as `$C run --rm server bun run …`. A mail can be delegated only to an active delegate: with no active delegate the classifier does not use the category `delegation`.
+On the VPS run each command as `$C run --rm cli bun run …`. A mail can be delegated only to an active delegate: with no active delegate the classifier does not use the category `delegation`.
 A disabled delegate gets no new delegation and no reminder; a send that is already waiting for a tap still shows the name with `(inactive)`.
 Close a delegation by hand with `delegations:done` or with the ✅ Done button of the "answered" notice.
 
@@ -494,10 +494,10 @@ Log lines and what to do: `docs/known-alerts.md`.
 Run one job once, with the same settings as the server. Add `--force` only to the chaser: it skips the 07:30 and once-per-day gate.
 
 ```sh
-$C run --rm server bun run job:run --name actions.expiry
-$C run --rm server bun run job:run --name delegation.chaser [--force]
-$C run --rm server bun run job:run --name channels.notifier
-$C run --rm server bun run job:run --name platform.retention
+$C run --rm cli bun run job:run --name actions.expiry
+$C run --rm cli bun run job:run --name delegation.chaser [--force]
+$C run --rm cli bun run job:run --name channels.notifier
+$C run --rm cli bun run job:run --name platform.retention
 ```
 
 `channels.notifier` needs `TELEGRAM_BOT_TOKEN`. `platform.retention` clears the old texts of every organization (the server runs it daily at 02:40); the log event `retention_org_done` holds `org_id` and the row counts (`body_rows`, `header_rows`, …) only. Do not run `--name actions.committer` while the server runs on the same database: the log lines double.
@@ -532,15 +532,15 @@ Roll back the code, not the migration. The code that comes with this migration a
 Each customer is one organization with a plan. The operator manages the plan with the commands below. The output holds ids, codes, dates and counts only, never a name or an address.
 
 ```sh
-$C run --rm server bun run org:create --org-name <name> --email <email> --display-name <name> --plan trial --trial-days 30
-$C run --rm server bun run org:plan --org-id <org id> --plan suspended
-$C run --rm server bun run org:plan --org-id <org id> --plan active
-$C run --rm server bun run org:plan --org-id <org id> --plan trial --trial-days 14
-$C run --rm server bun run org:plan --org-id <org id> --max-mailboxes 5
-$C run --rm server bun run org:flag --org-id <org id>
-$C run --rm server bun run org:flag --org-id <org id> --flag <key> --on
-$C run --rm server bun run org:flag --org-id <org id> --flag <key> --off
-$C run --rm server bun run org:status [--org-id <org id>]
+$C run --rm cli bun run org:create --org-name <name> --email <email> --display-name <name> --plan trial --trial-days 30
+$C run --rm cli bun run org:plan --org-id <org id> --plan suspended
+$C run --rm cli bun run org:plan --org-id <org id> --plan active
+$C run --rm cli bun run org:plan --org-id <org id> --plan trial --trial-days 14
+$C run --rm cli bun run org:plan --org-id <org id> --max-mailboxes 5
+$C run --rm cli bun run org:flag --org-id <org id>
+$C run --rm cli bun run org:flag --org-id <org id> --flag <key> --on
+$C run --rm cli bun run org:flag --org-id <org id> --flag <key> --off
+$C run --rm cli bun run org:status [--org-id <org id>]
 ```
 
 - `org:create --plan trial|active`: the default is `trial` with `--trial-days 30` (1 to 365). The database default of an organization that exists already is `active`.
@@ -579,7 +579,7 @@ What the page shows:
 The security log of an organization (a card in Settings for owners) is behind the flag `security_log`. Turn it on for an organization:
 
 ```sh
-$C run --rm server bun run org:flag --org-id <org id> --flag security_log --on
+$C run --rm cli bun run org:flag --org-id <org id> --flag security_log --on
 ```
 
 ## Account data (F106)
@@ -591,13 +591,13 @@ Three commands delete an organization, export its data and find or erase the dat
 The owner can do it in Settings → Account when the flag `org_delete` is on for the organization (off by default):
 
 ```sh
-$C run --rm server bun run org:flag --org-id <org id> --flag org_delete --on
+$C run --rm cli bun run org:flag --org-id <org id> --flag org_delete --on
 ```
 
 The operator can do it with a command. It needs no flag:
 
 ```sh
-$C run --rm server bun run org:delete --org-id <org id> --confirm "<organization name>"
+$C run --rm cli bun run org:delete --org-id <org id> --confirm "<organization name>"
 ```
 
 - The output is `deleted <org id>: mailboxes <n>` and one line `change the password of <address>` for each mailbox. Tell the owner to change these mailbox passwords at the mail provider: the assistant knew them and they still work. The drafts and folders that the assistant made stay in the mailboxes; the owner deletes them in the mail program.
@@ -612,11 +612,11 @@ An export is an `age`-encrypted file of every table that `EXPORT_MAP` lists. It 
 
 ```sh
 mkdir -m 700 <host folder>
-$C run --rm -v <host folder>:/exports server bun run org:export --org-id <org id> --recipient <age1…> --out /exports/<org id>-<date>.age
+$C run --rm -v <host folder>:/exports cli bun run org:export --org-id <org id> --recipient <age1…> --out /exports/<org id>-<date>.age
 ```
 
 - The output is `exported <org id>: <bytes> bytes` and one line `<table> <count>` for each table. The file has mode 600 and is never replaced: an existing file gives exit 1 (`org_export_refused`, reason `exists`). Choose a new name.
-- If the command fails with `EACCES`, the container user `bun` (uid 1000) cannot write the folder, because the folder belongs to your host user (on the pilot VPS uid 1002). Run the command with your own ids: `$C run --rm --user "$(id -u):$(id -g)" -v <host folder>:/exports server bun run org:export …`. This worked on the pilot VPS on 2026-11-14. Do not use a mode wider than 700.
+- If the command fails with `EACCES`, the container user `bun` (uid 1000) cannot write the folder, because the folder belongs to your host user (on the pilot VPS uid 1002). Run the command with your own ids: `$C run --rm --user "$(id -u):$(id -g)" -v <host folder>:/exports cli bun run org:export …`. This worked on the pilot VPS on 2026-11-14. Do not use a mode wider than 700.
 - Hand the file over by a private channel, never by an open mail. The person decrypts it with `age -d -i <identity file> <file>`. Delete the file on the server and on every other copy after the delivery.
 - Each export writes the audit row `org.exported` (it shows in the security log of the organization as "Data export made").
 
@@ -627,9 +627,9 @@ GDPR Art. 12(3): answer within one month. Run these commands only on the written
 1. Find (a dry run; it changes nothing). For an access request, add a report that is encrypted to the owner's `age` public key:
 
    ```sh
-   $C run --rm server bun run org:dsr --org-id <org id> --address <address> --find
+   $C run --rm cli bun run org:dsr --org-id <org id> --address <address> --find
    mkdir -m 700 <host folder>
-   $C run --rm -v <host folder>:/exports server bun run org:dsr --org-id <org id> --address <address> --find --recipient <age1…> --out /exports/<name>.age
+   $C run --rm -v <host folder>:/exports cli bun run org:dsr --org-id <org id> --address <address> --find --recipient <age1…> --out /exports/<name>.age
    ```
 
    The output is counts: `mails`, `mention <table.column> <n>`, `listed delegates`, `listed sender_rules`, `open actions`, `chain actions`, `chain delegations`, and `report <bytes> bytes`. A find that matches nothing prints `warning: no match, check the spelling of the address` (exit 0): check the address. The report holds the whole mail of each mail that goes; handle the file as an export.
@@ -638,7 +638,7 @@ GDPR Art. 12(3): answer within one month. Run these commands only on the written
 3. Erase. `--confirm` repeats the address:
 
    ```sh
-   $C run --rm server bun run org:dsr --org-id <org id> --address <address> --erase --confirm <address>
+   $C run --rm cli bun run org:dsr --org-id <org id> --address <address> --erase --confirm <address>
    ```
 
    The erase is one transaction. It deletes the mails of the person, writes a tombstone for each (sync, rescan and backfill skip them), removes the address from the kept rows (the text becomes `[removed]`), and blanks the stored digests and approval sets that can list the erased mail. It prints `erased mails`, `tombstones`, `scrubbed <table.column> <n>`, `blanked outbox`, `dropped outbox`, `kept delegates`, `kept sender_rules` and the line `record: dsr erase <org id> <date>`.
@@ -700,7 +700,7 @@ A budget alert warns you before this happens. You do this once. The menu names b
 Turn the flag on for an organization (see § Customers):
 
 ```
-$C run --rm server bun run org:flag --org-id <org id> --flag llm_pause_line --on
+$C run --rm cli bun run org:flag --org-id <org id> --flag llm_pause_line --on
 ```
 
 ## 48-hour test procedure
@@ -708,17 +708,17 @@ $C run --rm server bun run org:flag --org-id <org id> --flag llm_pause_line --on
 Start time `T0`. Use the test mailbox only.
 
 1. Cron on the VPS, every hour:
-   `0 * * * * cd <repo> && docker compose -f deploy/compose.yaml --env-file .env run --rm -T server bun run mailbox:seed --org-id <org> --mailbox-id <test mailbox> >> ~/ea-logs/seed.log 2>&1`
+   `0 * * * * cd <repo> && docker compose -f deploy/compose.yaml --env-file .env run --rm -T cli bun run mailbox:seed --org-id <org> --mailbox-id <test mailbox> >> ~/ea-logs/seed.log 2>&1`
    Run `mkdir -p ~/ea-logs` first.
 2. Move back to INBOX (simulates a system move): in webmail, make the folder `EA-test` and move one stored test mail into it.
    Set the row folder:
    `$C exec db psql -U postgres -d email_assistant -c "update emails set folder = 'EA-test' where id = '<id>'"`
    Move the mail back to INBOX. After the next sync, the row has `returned_at` set and no new row exists.
 3. Forced rescan at about hour 24:
-   `$C run --rm -T server bun run mailbox:rescan --org-id <org> --mailbox-id <id>`
+   `$C run --rm -T cli bun run mailbox:rescan --org-id <org> --mailbox-id <id>`
    The next sync writes a `sync_folder_done` line with `sync_mode=rescan` (in the text form `org_id`, `mailbox_id` and `folder_key` stand between the two words, so search for `sync_mode=rescan`).
 4. At the end (48 hours or more), right after a sync:
-   `$C run --rm -T server bun run mailbox:audit --org-id <org> --mailbox-id <id> --since <T0 ISO time>`
+   `$C run --rm -T cli bun run mailbox:audit --org-id <org> --mailbox-id <id> --since <T0 ISO time>`
    The output must be `missing=0 duplicates=0` with exit code 0.
    After S3, a user move out of INBOX shows as a duplicate; a system move does not.
 5. Remove the cron line.
