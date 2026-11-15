@@ -28,8 +28,8 @@ interface Resolved {
   >;
 }
 
-const config = (files: string[]): Resolved => {
-  const args = ["compose", "-p", "ea-drill", ...files.flatMap((f) => ["-f", f]), "--env-file", "deploy/drill.env"];
+const config = (files: string[], project: string[] = ["-p", "ea-drill"]): Resolved => {
+  const args = ["compose", ...project, ...files.flatMap((f) => ["-f", f]), "--env-file", "deploy/drill.env"];
   const result = Bun.spawnSync(["docker", ...args, "--profile", "*", "config", "--format", "json"], {
     cwd: dir,
     env: { PATH: process.env.PATH ?? "", HOME: dir },
@@ -88,6 +88,10 @@ describe("deploy/compose.drill.yaml", () => {
     expect(drill.name).toBe("ea-drill");
     expect(drill.volumes["db-data"]?.name).toBe("ea-drill_db-data");
     expect(drill.networks.default.ipam.config).toEqual([{ subnet: "172.29.0.0/24", gateway: "172.29.0.1" }]);
+  });
+
+  test("the file names the project itself: without -p the project is ea-drill, not email-assistant", () => {
+    expect(config(["deploy/compose.yaml", "deploy/compose.drill.yaml"], []).name).toBe("ea-drill");
   });
 
   test("the server image services are server and cli, and each one has the drill block", () => {
