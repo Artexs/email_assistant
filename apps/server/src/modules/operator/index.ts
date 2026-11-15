@@ -9,6 +9,7 @@ export {
   type AlertPhase,
   type OpsAlertRow,
 } from "./alerts-repo";
+export { recentAlerts, sendTestAlerts, type TestAlertResult } from "./alerts-service";
 export {
   checkLlmErrors,
   checkSyncLag,
@@ -17,3 +18,5 @@ export {
   SLO_START_GRACE_MS,
   type SloReading,
 } from "./slo-checks";
+export { runSloTick, type SloCheckEntry, type SloCheckFn, type SloTickDeps } from "./slo-job";
+export { sloAlertText, type AlertLocale, type AlertTextPhase, type SloTextInput } from "./slo-texts";

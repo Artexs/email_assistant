@@ -12,12 +12,11 @@ import { createOutboxSender } from "../sender";
 
 import { createTelegramChannel } from "./api";
 import { createTelegramBot } from "./bot";
+import { sendDirectText } from "./direct";
 import { startPolling, type Polling } from "./polling";
 
 // grammY's own API timeout is 500 s: a `getMe` that never answers must not hold `/api/me`.
 const BOT_USERNAME_TIMEOUT_MS = 3_000;
-
-const DIRECT_SEND_TIMEOUT_MS = 10_000;
 
 /** Keeps the promise of a successful `load`; a rejection is dropped, so the next call tries again. */
 export function cacheOnSuccess<T>(load: () => Promise<T>): () => Promise<T> {
@@ -124,13 +123,6 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
       await polling?.stop();
     },
     botUsername,
-    // The bot has no request timeout of its own (the grammY default is 500 s): the abort signal bounds the call.
-    async sendDirect(chatId, text, timeoutMs) {
-      // grammY types the signal with the `abort-controller` package; the runtime's `AbortSignal` is the same object at run time.
-      const signal = AbortSignal.timeout(timeoutMs ?? DIRECT_SEND_TIMEOUT_MS) as unknown as Parameters<
-        typeof bot.api.sendMessage
-      >[3];
-      await bot.api.sendMessage(chatId, text, {}, signal);
-    },
+    sendDirect: (chatId, text, timeoutMs) => sendDirectText(bot.api, chatId, text, timeoutMs),
   };
 }
