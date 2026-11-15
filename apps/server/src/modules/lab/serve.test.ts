@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { formatWithOptions } from "node:util";
@@ -17,6 +17,7 @@ import {
   type ServeRunDeps,
 } from "./serve";
 import type { ServeStatus } from "./serve-files";
+import { writeRunLedgerLine } from "./start";
 import { createLabState, type LabRun, type LabState } from "./state";
 
 // Unit tests of the serve loop with fake parts and a fake clock: no DB, no mail, no Telegram.
@@ -164,6 +165,18 @@ describe("serveTick (spec tests 1 to 5)", () => {
     labState.stopRun("week-20261123-aaaa", "operator");
     await serveTick(deps(labState), new Map());
     expect(calls).toEqual([]);
+  });
+
+  test("2b: an active run that already has its ledger line ends at once, with no part and no second line", async () => {
+    // A crash came between the ledger line and `stopRun`: spend after that line would never reach the month ledger.
+    const labState = start("week-20261123-aaaa");
+    writeRunLedgerLine(labState, "week-20261123-aaaa", 0.5, now, "lab-01-live-error");
+    expect(labState.activeRuns()).toEqual(["week-20261123-aaaa"]);
+    await serveTick(deps(labState), new Map());
+    expect(calls).toEqual(["finish:week-20261123-aaaa:error:ledger_line"]);
+    expect(stoppedEvents(labState, "week-20261123-aaaa")).toMatchObject([{ reason: "error:ledger_line" }]);
+    expect(ledger(labState)).toHaveLength(1);
+    expect(labState.activeRuns()).toEqual([]);
   });
 
   test("3: spend at the cap finishes with budget, no part runs, one stopped event and one ledger line", async () => {
@@ -396,13 +409,40 @@ describe("finishRun", () => {
     expect(stoppedEvents(labState, "week-20261123-aaaa")).toHaveLength(1);
     expect(labState.activeRuns()).toEqual([]);
   });
+
+  test("TG1: a stopRun that throws leaves the ledger line; a repeat adds no second line and stops the run", () => {
+    const labState = start("week-20261123-aaaa");
+    const failing = {
+      ...labState,
+      stopRun: () => {
+        throw new Error("disk");
+      },
+    } as LabState;
+    expect(() => finishRun(failing, "week-20261123-aaaa", "done", 1.25, now)).toThrow();
+    expect(ledger(labState)).toHaveLength(1);
+    expect(stoppedEvents(labState, "week-20261123-aaaa")).toHaveLength(0);
+    finishRun(labState, "week-20261123-aaaa", "done", 9, now);
+    expect(ledger(labState)).toHaveLength(1);
+    expect(ledger(labState)[0]).toContain('"usd":1.25');
+    expect(stoppedEvents(labState, "week-20261123-aaaa")).toHaveLength(1);
+  });
+
+  test("TG1: a ledger write that fails throws and does not stop the run", () => {
+    const labState = start("week-20261123-aaaa");
+    // A file where the ledger folder should be: the append fails.
+    writeFileSync(join(dir, "blocker"), "x");
+    const failing = { ...labState, ledgerPath: () => join(dir, "blocker", "eval-spend.jsonl") } as LabState;
+    expect(() => finishRun(failing, "week-20261123-aaaa", "done", 1, now)).toThrow();
+    expect(stoppedEvents(labState, "week-20261123-aaaa")).toHaveLength(0);
+    expect(labState.activeRuns()).toEqual(["week-20261123-aaaa"]);
+  });
 });
 
 describe("runServe (spec tests 7 and 8)", () => {
   const runDeps = (labState: LabState, over: Partial<ServeRunDeps> = {}): ServeRunDeps => ({
     ...deps(labState),
     envIssues: () => [],
-    takeLock: () => ({ touch: () => undefined, release: () => calls.push("release") }),
+    takeLock: () => ({ touch: () => true, release: () => calls.push("release") }),
     sleep: async () => undefined,
     heartbeatEveryMs: 60_000,
     ...over,
@@ -432,6 +472,29 @@ describe("runServe (spec tests 7 and 8)", () => {
       "executive:week-20261123-aaaa",
       "release",
     ]);
+  });
+
+  test("a lost lock (a foreign token in the file) ends the loop with exit 1 before the next tick; the lock is released", async () => {
+    const labState = start("week-20261123-aaaa");
+    let touches = 0;
+    const code = await runServe(
+      runDeps(labState, {
+        takeLock: () => ({
+          // The first touch is ours; the second finds a foreign token.
+          touch: () => {
+            touches += 1;
+            return touches < 2;
+          },
+          release: () => calls.push("release"),
+        }),
+      }),
+      { everyMs: 1, signal: new AbortController().signal }
+    );
+    expect(code).toBe(1);
+    expect(said).toContain("error serve lock_lost");
+    // One tick ran (executive, bots, injector); the loop never started a second one.
+    expect(calls.filter((call) => call.startsWith("spend:"))).toHaveLength(1);
+    expect(calls.at(-1)).toBe("release");
   });
 
   test("8: a bad env exits 1 before any tick and before the lock", async () => {

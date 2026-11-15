@@ -128,9 +128,9 @@ export async function startLabRun(input: StartInput, deps: StartDeps): Promise<S
 export const labEnvIssues = (env: Record<string, string | undefined>, corpus: LabCorpus): SimEnvIssue[] =>
   checkSimEnv(env, labAddresses(corpus));
 
-// One ledger line per run: a second call, or a serve loop that wrote the line first, adds none. Returns true when it wrote.
-export function writeRunLedgerLine(state: LabState, runId: string, usd: number, now: Date, label: string): boolean {
-  const written = readLedger(state.ledgerPath())
+// True when the ledger holds a line of the run: the run has ended, or a stop crashed between the line and `stopRun`.
+export function ledgerHasRun(state: LabState, runId: string): boolean {
+  return readLedger(state.ledgerPath())
     .split("\n")
     .some((line) => {
       try {
@@ -139,7 +139,11 @@ export function writeRunLedgerLine(state: LabState, runId: string, usd: number, 
         return false;
       }
     });
-  if (written) return false;
+}
+
+// One ledger line per run: a second call, or a serve loop that wrote the line first, adds none. Returns true when it wrote.
+export function writeRunLedgerLine(state: LabState, runId: string, usd: number, now: Date, label: string): boolean {
+  if (ledgerHasRun(state, runId)) return false;
   appendLedgerLine(state.ledgerPath(), ledgerLine({ runId, at: now, usd, label }));
   return true;
 }

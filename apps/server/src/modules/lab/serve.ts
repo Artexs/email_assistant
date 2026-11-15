@@ -1,9 +1,10 @@
 import { localToInstant, nextLocalDate } from "@ea/core";
 
+import { SEEN_PART } from "./executive";
 import { FakeTgError } from "./fake-tg";
 import { LabMailError } from "./mail-client";
 import type { ServeLock, ServeStatus } from "./serve-files";
-import { writeRunLedgerLine } from "./start";
+import { ledgerHasRun, writeRunLedgerLine } from "./start";
 import type { LabState } from "./state";
 
 // The serve loop: every active run goes through one tick after another, every `everyMs`. The parts of a tick are the
@@ -144,6 +145,10 @@ async function tickRun(deps: ServeDeps, errors: Map<string, number>, runId: stri
     }
   }
 
+  // A crash between the ledger line and `stopRun` leaves an active run that has its one line (the ledger takes one line
+  // per run): spend after that line never reaches the month ledger, so the run ends at once.
+  if (ledgerHasRun(state, runId)) return finish("error:ledger_line");
+
   const spend = await attempt("spend", () => deps.spendUsd(runId));
   if (!spend.ok) return;
   if (spend.value === "unpriced") return finish("error:unpriced");
@@ -154,7 +159,7 @@ async function tickRun(deps: ServeDeps, errors: Map<string, number>, runId: stri
   if (!moded.ok && moded.gaveUp) return;
 
   // No `seen` event of the chat yet: the executive has no baseline, so it runs before the injector sends anything.
-  const fresh = !state.events(runId).some((event) => event.t === "seen" && event.part === "tg");
+  const fresh = !state.events(runId).some((event) => event.t === "seen" && event.part === SEEN_PART);
   const order = fresh ? (["executive", "bots", "injector"] as const) : (["injector", "bots", "executive"] as const);
   for (const part of order) {
     if (!live()) return;
@@ -193,7 +198,8 @@ export interface ServeRunDeps extends Omit<ServeDeps, "signal"> {
 
 /**
  * The long-lived process. Returns the exit code: 1 for a bad env or a second serve process (before any tick, so
- * nothing is written), 0 after a signal. The signal ends the tick after the part that runs.
+ * nothing is written), 1 when the lock is lost while the loop runs, 0 after a signal. The signal, or a lost lock, ends the
+ * tick after the part that runs.
  */
 export async function runServe(deps: ServeRunDeps, opts: { everyMs: number; signal: AbortSignal }): Promise<number> {
   const issues = deps.envIssues();
@@ -206,26 +212,40 @@ export async function runServe(deps: ServeRunDeps, opts: { everyMs: number; sign
     deps.say("refused: serve_running");
     return 1;
   }
-  // The lock file time is the proof of life for a second container that shares the state volume.
-  const beat = setInterval(() => lock.touch(), deps.heartbeatEveryMs);
+  // The lock file time is the proof of life for a second container that shares the state volume. A lock that is no
+  // longer ours (a foreign token or no file) means a second serve process may run: this one stops at once.
+  const stop = new AbortController();
+  const onSignal = (): void => stop.abort();
+  opts.signal.addEventListener("abort", onSignal, { once: true });
+  if (opts.signal.aborted) stop.abort();
+  let lost = false;
+  const keepLock = (): void => {
+    if (lock.touch() || lost) return;
+    lost = true;
+    deps.say("error serve lock_lost");
+    stop.abort();
+  };
+  const beat = setInterval(keepLock, deps.heartbeatEveryMs);
   try {
     deps.say(`serve started every ${opts.everyMs} ms`);
     const errors = new Map<string, number>();
-    while (!opts.signal.aborted) {
-      lock.touch();
+    while (!stop.signal.aborted) {
+      keepLock();
+      if (stop.signal.aborted) break;
       try {
-        await serveTick({ ...deps, signal: opts.signal }, errors);
+        await serveTick({ ...deps, signal: stop.signal }, errors);
       } catch (error) {
         // A failure outside the parts (a state file): logged, and the loop goes on.
         deps.say(`error serve tick ${errorCodeOf(error)}`);
       }
-      if (opts.signal.aborted) break;
-      await deps.sleep(opts.everyMs, opts.signal);
+      if (stop.signal.aborted) break;
+      await deps.sleep(opts.everyMs, stop.signal);
     }
     deps.say("serve stopped");
-    return 0;
+    return lost ? 1 : 0;
   } finally {
     clearInterval(beat);
+    opts.signal.removeEventListener("abort", onSignal);
     lock.release();
   }
 }
