@@ -1,6 +1,6 @@
 # Live lab
 
-> Checked against the code at `PLACEHOLDER`, 2026-11-15.
+> Checked against the code at `1f53da2b`, 2026-11-15.
 
 ## What it does now
 
