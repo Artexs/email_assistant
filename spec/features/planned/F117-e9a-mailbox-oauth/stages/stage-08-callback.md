@@ -21,18 +21,18 @@ export interface OAuthGrant {
 }
 export type CallbackResult = { ok: true; grant: OAuthGrant } | { ok: false; code: OAuthRefusalCode };
 export async function finishOAuthCallback(
-  deps: { db: Db; secrets: SecretBox; clients: Record<MailOAuthProvider, MailOAuthClient>; now(): Date },
+  deps: { db: Db; secrets: SecretBox; clients: Partial<Record<MailOAuthProvider, MailOAuthClient>>; now(): Date },
   ctx: TenantContext,
   input: { provider: MailOAuthProvider; userId: string; query: Record<string, string> }
 ): Promise<CallbackResult>;
 ```
 
 **Order.**
-1. No `state` in the query → `oauth_state_invalid`. Else consume the state (stage 07) first, also when the query has `error`: an error ends the attempt.
+1. No client for the provider → `not_configured`. No `state` in the query → `oauth_state_invalid`. Else consume the state (stage 07) first, also when the query has `error`: an error ends the attempt.
 2. `error` in the query: AADSTS 90094, 90095 or 65001 in `error_description`, or `error=consent_required` → `admin_consent_required`; `access_denied` → `oauth_cancelled`; else `oauth_failed`.
-3. No `code` → `oauth_failed`. `redeemCode(code, verifier)`: `OAuthGrantError` → `oauth_code_invalid` (or `admin_consent_required` when that is its reason); soft errors → `oauth_failed`.
+3. No `code` → `oauth_failed`. `redeemCode(code, verifier)`: `OAuthGrantError` with AADSTS 65001, 90094 or 90095 → `admin_consent_required` (at connect, 65001 means "no consent yet"); another `OAuthGrantError` → `oauth_code_invalid`; soft errors → `oauth_failed`.
 4. No refresh token in the answer → `oauth_failed`.
-5. Scopes: the answer's scopes must hold every `mail` resource scope of the provider (case-insensitive) → else `oauth_scope_missing`.
+5. Scopes: the answer's scopes must hold the one mail scope of the provider: Google `https://mail.google.com/`; Microsoft a scope that ends with `IMAP.AccessAsUser.All` (case-insensitive; Microsoft may answer the short or the full form, and leaves out `offline_access` and `openid`). Else `oauth_scope_missing`. Spike rows M2 and G1 record the raw strings.
 6. ID token (`id-token.ts`): decode the payload only (D12, Q8). `aud` = client id, `exp` later than now minus 5 min, `issuerOk(iss)`; else `oauth_failed`. Google: `email_verified === true`, else `oauth_failed`. Microsoft: `tenantId` = `tid`.
 7. Address: Google `email`; Microsoft `email`, else `preferred_username` (spike M12 may change the order). It must match the repo's address pattern; lower-case it. Else `oauth_failed`.
 8. Reconnect (`start.mailboxId` set): the address must equal the stored mailbox address (case-insensitive), else `oauth_wrong_account`.
@@ -50,7 +50,7 @@ export async function finishOAuthCallback(
 3. Query `error=access_denied` → `oauth_cancelled`; the state row is gone.
 4. `error=access_denied&error_description=AADSTS90094: …` → `admin_consent_required`.
 5. Wrong verifier (fake) → `oauth_code_invalid`.
-6. Scopes without `https://mail.google.com/` → `oauth_scope_missing`.
+6. Scopes without `https://mail.google.com/` → `oauth_scope_missing`; Google scopes `https://mail.google.com/ https://www.googleapis.com/auth/userinfo.email openid` and Microsoft `IMAP.AccessAsUser.All` (short form, no `offline_access`) → pass.
 7. Google `email_verified: false` → `oauth_failed`; `aud` of another client → `oauth_failed`.
 8. The same query twice → second `oauth_state_invalid`; the fake saw one redeem.
 9. Reconnect state for `ann@x.test`, the provider answers `eve@x.test` → `oauth_wrong_account`.

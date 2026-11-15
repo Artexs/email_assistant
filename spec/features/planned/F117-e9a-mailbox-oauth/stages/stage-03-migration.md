@@ -31,7 +31,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration). The only migration of
 
 **Edge cases.**
 - Existing rows: `send_via = 'smtp'`, `oauth_provider` and `auth_reason` NULL. An `auth_error` password mailbox stays valid.
-- The status check and the reason check must agree: a status change away from `auth_error` must clear `auth_reason` in the same statement (stage 11 writes it; this stage only adds the CHECK).
+- The status check and the reason check must agree: a status change away from `auth_error` must clear `auth_reason` in the same statement (stage 10 writes it; this stage only adds the CHECK).
 
 **Export, delete, retention.**
 - Export map: `mailbox_oauth_states` excluded as a secret ("OAuth sign-in state, short-lived"). The new `mailboxes` columns are exported (codes, no secret).

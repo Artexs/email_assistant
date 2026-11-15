@@ -11,9 +11,9 @@ Part of [`../plan.md`](../plan.md). Needs stage 02 and gate G1 (row M3 PASS), an
 **Rules.**
 - `url` = `https://login.microsoftonline.com/organizations/v2.0/adminconsent?client_id=<id>&scope=<IMAP and Mail.Send scopes, space-separated>&redirect_uri=<WEB_BASE_URL>/mailboxes/admin-consent&state=<16 random bytes>`. The authority comes from the registry (tests inject the fake). Spike M14 confirms the form.
 - No state row: the result page changes nothing, and the admin is not our user. Rejected: a stored state.
-- The panel page `/mailboxes/admin-consent` (stage 16) only shows "approved" or "not approved" from the query (`admin_consent=True` or `error`).
-- The panel is tailnet-only (ADR 0017): an administrator outside it sees a browser error after the approval; the approval is still done. Stage 16's text says so (Q4).
-- Register both redirect URIs in the app (docs, stage 18): the callback and this page.
+- The panel page `/mailboxes/admin-consent` (stage 17) only shows "approved" or "not approved" from the query (`admin_consent=True` or `error`).
+- The panel is tailnet-only (ADR 0017): an administrator outside it sees a browser error after the approval; the approval is still done. Stage 17's text says so (Q4).
+- Register both redirect URIs in the app (docs, stage 19): the callback and this page.
 
 ## Step 14.2 — Spike facts for Microsoft
 
@@ -37,4 +37,4 @@ From `spike.md` (defaults in brackets, used when the row passed as expected):
 
 **Done when.** The tests pass; `spike.md`'s plan-change lines for this stage are done or answered in the final message; the Proof prints `PROOF_OK`.
 
-**Out of scope.** The panel pages (stage 16), the operator doc (stage 18).
+**Out of scope.** The panel pages (stage 17), the operator doc (stage 19).

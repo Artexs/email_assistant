@@ -26,7 +26,7 @@ export function runMailSenderContract(name: string, harness: () => Promise<MailS
 2. The server gets the raw bytes unchanged (compare the `Message-ID` and `X-EA-Action-Id` lines and the body hash).
 3. Two recipients `b@x.test`, `c@x.test` → both accepted.
 4. `close()` twice does not throw; `send` after `close` rejects.
-5. A refused login rejects with `SmtpSendError` stage `login` (at open or at the first send; the suite accepts both, the adapter documents which).
+5. A refused login rejects with `MailAuthError` (at open or at the first send; the suite accepts both, the adapter documents which). `send.ts` turns only `MailAuthError` into the `auth_error` outcome.
 
 **Runs** against the fake sender (`mail/fake/sender.ts`, unit) and the SMTP sender on GreenMail (integration). GreenMail with auth off refuses no login: case 5 is skipped there with the reason in the test name, and the scripted SMTP server of stage 04 covers it.
 

@@ -15,7 +15,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 01 and owner step U1: the coordi
    - Microsoft folder names and special-use flags (M4) → stage 14 folder map.
    - The address claim (M12) → D12, stage 08.
    - Rotation and old-token validity (M11, G6) → D14, stage 10.
-   - Error and AADSTS codes seen (M1, M13, M14, G6) → the stage 10 error map, stage 14 admin consent.
+   - Error and AADSTS codes seen (M1, M13, M14, G6) → the stage 06 error map, stage 14 admin consent.
    - Graph Message-ID, `X-EA-Action-Id`, `Bcc`, size limit (M10) → stage 13.
    - Gmail label, Sent and Drafts behaviour (G3–G5) → stage 15.
    - Draft in thread (M6, G4) → the reply-drafts ticket (E6a, F115); report only.
@@ -30,4 +30,4 @@ Part of [`../plan.md`](../plan.md). Needs stage 01 and owner step U1: the coordi
 
 **Done when.** `spike.md` has every row of stage 01 with a verdict and evidence, the two gate lines, and the plan-change list. Commit it alone. The final message gives the gate lines and the plan-change list first.
 
-**Out of scope.** Editing other stages (the coordinator runs a refresh job), editing ADR 0031 (stage 18), `docs/product/stage-2/` (the coordinator).
+**Out of scope.** Editing other stages (the coordinator runs a refresh job), editing ADR 0031 (stage 19), `docs/product/stage-2/` (the coordinator).

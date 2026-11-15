@@ -1,6 +1,6 @@
 # F117 stage 09 — Callback route, secret store, Connect and Reconnect
 
-Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, auth). Needs stages 04 and 08.
+Part of [`../plan.md`](../plan.md). `[risky]` (tenant data, auth). Needs stage 08 (and through it 04–07).
 
 ## Step 09.1 — OAuth secret store with the mailbox lock
 
@@ -66,4 +66,4 @@ AAD `mailbox:<id>`, the current key version (D3, D14). Stage 10 uses the same lo
 
 **Done when.** The tests pass; the Proof prints `PROOF_OK`.
 
-**Out of scope.** Refresh in later jobs (stage 10), reason texts (stage 11), the panel (16–17).
+**Out of scope.** Refresh in later jobs (stage 10), reason texts (stage 11), the panel (16, 18).

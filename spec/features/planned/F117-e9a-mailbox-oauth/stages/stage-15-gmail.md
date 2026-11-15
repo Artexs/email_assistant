@@ -8,9 +8,8 @@ Part of [`../plan.md`](../plan.md). Needs stage 02 and gate G1 (row G2 PASS), an
 
 **Rules.**
 - Folder map: `[Gmail]/Drafts` (`\Drafts`), `[Gmail]/Sent Mail` (`\Sent`), `[Gmail]/Trash` (`\Trash`), `[Gmail]/Spam` (`\Junk`) through the special-use flags, as today. Folders with `\All`, `\Important` or `\Flagged` never enter the map.
-- Sync folders: the sync-folder setting refuses a folder with `\All`, `\Important` or `\Flagged` (all providers) with `400 virtual_folder`; the folder list of the settings page marks them as not selectable. A virtual folder holds copies of mail in other folders; syncing it would store each mail twice.
+- Sync folders come only from the fixed default names (`docs/capabilities/sync.md` rule 5), so no Gmail virtual folder can become a sync folder today. Keep it so: the code that adds the default sync-folder rows skips a folder with `\All`, `\Important` or `\Flagged`, even when its name matches a default. A virtual folder would store each mail twice. No route or web text changes (the review of the plan found no path-taking route).
 - `AI/*` folders are Gmail labels. A `UID MOVE` from INBOX removes the INBOX label (spike G3 [PASS]); the copy logic of sync needs no change.
-- The web error text for `virtual_folder` (en, pl): "This folder only shows mail from other folders, so it cannot be synced." / "Ten folder pokazuje tylko wiadomości z innych folderów, więc nie można go synchronizować."
 
 ## Step 15.2 — Spike facts for Gmail
 
@@ -19,18 +18,16 @@ From `spike.md` (defaults in brackets):
 - **Drafts (G4).** `UID EXPUNGE` in `[Gmail]/Drafts` removes the draft [PASS]. If it only moves it to Trash, write it in the final message (the draft-replace path keeps working; Trash fills).
 - **Refresh (G6).** No rotation [Google default]; `invalid_grant` after a revoke maps to `oauth_expired` (Q10).
 - **Testing mode.** The refresh token ends after 7 days (R6): the first weekly `invalid_grant` is `oauth_expired`; the notice of stage 11 says "Reconnect".
-- **App password (G7).** If it passed, the `gmail` preset stays as it is; if it failed, say so in the final message (help text change in stage 18).
+- **App password (G7).** If it passed, the `gmail` preset stays; if it failed, change its help text (en, pl) in this stage and give both texts in the final message for review.
 
 **Decisions.** D5, D17, Q10.
 
 **Test.**
 1. Unit: `buildFolderMap` with the Gmail list (`INBOX`, `[Gmail]/All Mail` `\All`, `[Gmail]/Drafts` `\Drafts`, `[Gmail]/Important` `\Important`, `[Gmail]/Sent Mail` `\Sent`, `[Gmail]/Spam` `\Junk`, `[Gmail]/Starred` `\Flagged`, `[Gmail]/Trash` `\Trash`) → Drafts, Sent, Junk, Trash as named; no `\All`, `\Important` or `\Flagged` path in the map.
-2. Integration: the sync-folder route with `[Gmail]/All Mail` → `400 virtual_folder`, nothing stored; with a normal label → as today.
-3. Integration: the settings folder list marks `[Gmail]/All Mail` not selectable (the view field the panel reads).
-4. Integration (GreenMail, fake token server): a Google OAuth mailbox runs one sync and one approved delegation over XOAUTH2 SMTP; the committer finds no Sent copy on GreenMail (it does not save Sent) and APPENDs one, as for other hosts.
-5. Unit (web i18n): the `virtual_folder` text in en and pl.
+2. Unit or integration: the default sync-folder adder, given a folder named like a default with `\All`, adds no row; a normal default folder → as today.
+3. Integration (GreenMail, fake token server): a Google OAuth mailbox runs one sync and one approved delegation over XOAUTH2 SMTP; the committer finds no Sent copy on GreenMail (it does not save Sent) and APPENDs one, as for other hosts.
 
-**Check.** The Proof, with `&& bun run web:build > /tmp/f117-s15/web.log 2>&1` before `echo` (a web text changes).
+**Check.** The Proof (add `web:build` only if the G7 help text changed).
 
 **Done when.** The tests pass; `spike.md`'s plan-change lines for this stage are done or answered; the Proof prints `PROOF_OK`.
 

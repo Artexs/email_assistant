@@ -1,10 +1,10 @@
 # F117 stage 06 — Provider registry, config, flags, token client, fake token server
 
-Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 03.
+Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 05 (`TokenResource`, `AuthErrorReason`).
 
 ## Step 06.1 — Registry, config and flags
 
-**Files.** New folder `apps/server/src/modules/mail/oauth/` (`providers.ts`, `client.ts`, tests); config in `platform/config.ts`; flags in `packages/core/src/features.ts`.
+**Files.** New folder `apps/server/src/modules/mail/oauth/`; config; the flag registry.
 
 **Interfaces.**
 
@@ -36,18 +36,19 @@ Values (D6; spike rows M2 and G1 may change them):
 export interface TokenAnswer { accessToken: string; expiresInSec: number; refreshToken: string | null; scopes: string[]; idToken: string | null }
 export class OAuthGrantError extends HardError { readonly reason: AuthErrorReason; readonly providerCode: string; readonly aadsts: number | null }
 export class OAuthSoftError extends SoftError { readonly kind: "client_invalid" | "server" | "timeout" }
-export function createMailOAuthClient(spec: MailOAuthProviderSpec, cfg: { clientId: string; clientSecret: string; redirectUri: string }, fetchFn?: typeof fetch): {
+export interface MailOAuthClient {
   authorizeUrl(input: { state: string; codeChallenge: string; loginHint?: string }): string;
   redeemCode(code: string, verifier: string): Promise<TokenAnswer>;
   refresh(refreshToken: string, resource: TokenResource): Promise<TokenAnswer>;
   revoke(refreshToken: string): Promise<void>; // no revoke URL → resolves, no call
-};
+}
+export function createMailOAuthClient(spec: MailOAuthProviderSpec, cfg: { clientId: string; clientSecret: string; redirectUri: string }, opts?: { fetchFn?: typeof fetch; timeoutMs?: number }): MailOAuthClient;
 ```
 
-- Each call has a 10 s `AbortSignal.timeout`. `redeemCode` asks for the `mail` resource (Microsoft: one resource per token).
+- Each call has a `timeoutMs` (default 10 s) `AbortSignal.timeout`. `redeemCode` asks for the `mail` resource (Microsoft: one resource per token).
 - Error map (D17):
   - `oauth_expired`: `invalid_grant` with AADSTS 70008, 700082, 700084 or 70043; any Google `invalid_grant` (Q10); another `invalid_grant`; `interaction_required`.
-  - `oauth_revoked`: `invalid_grant` with AADSTS 50173, 65001 or 65004.
+  - `oauth_revoked`: `invalid_grant` with AADSTS 50173, 65001 or 65004. (At connect time, stages 08 and 09 turn 65001 into `admin_consent_required`: no grant exists yet.)
   - `admin_consent_required`: AADSTS 90094 or 90095; `consent_required`.
   - Soft `client_invalid`: `invalid_client`, `unauthorized_client`. Soft `server`: 5xx, `temporarily_unavailable`, a network error. Soft `timeout`: no answer in 10 s.
 
@@ -69,16 +70,16 @@ startFakeMailOAuth(): Promise<{
 }>
 ```
 
-It checks the PKCE verifier, returns ID tokens with `aud` = the test client id, and rotates refresh tokens when `rotate`.
+It checks the PKCE verifier, sets `aud` to the test client id, rotates when `rotate`.
 
 **Decisions.** D6, D7, D8, D17, D18.
 
 **Test.**
 1. `authorizeUrl` for each provider holds `code_challenge_method=S256`, the redirect URI, the scopes and the params; no client secret.
 2. Each error-map row, with fixed fake answers, gives its reason or soft kind (7 cases).
-3. `redeemCode` with a wrong verifier → `invalid_grant` → `OAuthGrantError`.
+3. `redeemCode`, wrong verifier → `OAuthGrantError`.
 4. A Microsoft refresh returns a new refresh token; a Google one returns `refreshToken: null`.
-5. Config: only `MAIL_OAUTH_GOOGLE_CLIENT_ID` set → `loadConfig` fails naming the key, never its value.
+5. Only `MAIL_OAUTH_GOOGLE_CLIENT_ID` set → `loadConfig` fails, names the key, not its value.
 6. Canary: client secret `cs-canary`, refresh token `rt-canary`, a description `AADSTS70008: … user a@x.test` → no canary or address in an error message, `String(error)` or a captured log line.
 
 **Check.** The Proof.

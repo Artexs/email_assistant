@@ -5,7 +5,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 10. Review (new Polish text).
 ## Step 11.1 — Mailbox view and password paths
 
 **Interfaces.**
-- The mailbox view of `GET /api/mailboxes` gains `authMethod: "password" | "oauth"`, `oauthProvider: MailOAuthProvider | null`, `authReason: AuthErrorReason | null`. Stages 16–17 read them. Update the web API types.
+- The mailbox view of `GET /api/mailboxes` gains `authMethod: "password" | "oauth"`, `oauthProvider: MailOAuthProvider | null`, `authReason: AuthErrorReason | null`. Stages 16 and 18 read them. Update the web API types.
 - `POST /api/mailboxes/:id/password` on an `oauth` mailbox → `409 oauth_mailbox`, nothing changes. `bun run mailbox:password` on one → exit 1, `oauth mailbox: use Reconnect in the panel`.
 
 ## Step 11.2 — The `auth_error` notice and Telegram texts
@@ -29,7 +29,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 10. Review (new Polish text).
 | `stateAuthErrorOAuth` | sign-in error since {since} (Reconnect in the panel) | błąd logowania od {since} (połącz ponownie w panelu) |
 | `loginErrorOAuth` | ❌ {address} has a sign-in error: tap Reconnect in the panel first. | ❌ {address} ma błąd logowania: najpierw stuknij „Połącz ponownie” w panelu. |
 
-Check the panel's Polish label for Mailboxes and the Reconnect button name of stage 17 ("Połącz ponownie"); if the panel uses another word for "Skrzynki", use the panel's word and say so in the final message.
+Check the panel's Polish label for Mailboxes and the Reconnect button name of stage 18 ("Połącz ponownie"); if the panel uses another word for "Skrzynki", use the panel's word and say so in the final message.
 
 **Decisions.** D15, D18.
 
@@ -49,4 +49,4 @@ Check the panel's Polish label for Mailboxes and the Reconnect button name of st
 
 **Done when.** The tests pass; the Proof prints `PROOF_OK`.
 
-**Out of scope.** Panel UI (stage 17), push (E9b).
+**Out of scope.** Panel UI (stage 18), push (E9b).

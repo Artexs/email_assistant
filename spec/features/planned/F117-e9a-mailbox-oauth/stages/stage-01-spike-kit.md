@@ -4,20 +4,20 @@ Part of [`../plan.md`](../plan.md). `[risky]` (real system, tokens). The owner r
 
 ## Step 01.1 — Probe CLI
 
-**Goal.** One command per account: OAuth consent in the owner's browser, then the rows below on the real mailbox, then a result file without secrets.
+**Goal.** Per account: consent in the owner's browser, the rows below on the real mailbox, a result file without secrets.
 
-**Files.** `tools/mail-oauth-spike/` (new; stage 18 deletes it): `probe.ts`, `rows.ts`, `redact.ts`, `redact.test.ts`, `README.md`. Use `imapflow`, `nodemailer` and `fetch` directly: the spike tests the providers, not our code.
+**Files.** `tools/mail-oauth-spike/` (new; stage 19 deletes it): `probe.ts`, `rows.ts`, `redact.ts`, `redact.test.ts`, `README.md`; no `package.json` (`tools/*` is a workspace glob: it would change `bun.lock`). Use `imapflow`, `nodemailer`, `fetch` directly.
 
 **Interface.**
 - `bun tools/mail-oauth-spike/probe.ts <microsoft|microsoft-personal|google> --out <file>`.
 - Env (the owner's shell only): `SPIKE_MS_CLIENT_ID`, `SPIKE_MS_CLIENT_SECRET` (optional: public client), `SPIKE_GOOGLE_CLIENT_ID`, `SPIKE_GOOGLE_CLIENT_SECRET`, `SPIKE_OWNER_ADDRESS` (the only send target).
 - Redirect `http://localhost:8765/callback` on a one-shot `Bun.serve`; PKCE S256; random `state` checked.
-- Output JSON: `{ provider, ranAt, rows: [{ id, verdict: "PASS"|"FAIL"|"SKIP", evidence: string }] }`. Evidence: capability strings, folder names, HTTP status, error and AADSTS codes, booleans, counts; never an address (write `<owner>`). Manual rows ask `y/n/skip` on stdin.
+- Output JSON: `{ provider, ranAt, rows: [{ id, verdict: "PASS"|"FAIL"|"SKIP", evidence: string }] }`. Evidence: capabilities, folder names, HTTP status, error codes, scope strings, booleans, counts; never an address (`<owner>`). Manual rows ask `y/n/skip`.
 
 **Rows.** Microsoft business tenant (`microsoft`):
 
 - **M1** Consent screen kind (user or admin); the error code if refused
-- **M2** One authorize call with the IMAP and `Mail.Send` scopes; the code redeems for IMAP, the refresh token for Graph
+- **M2** One authorize call with the IMAP and `Mail.Send` scopes; the code redeems for IMAP, the refresh token for Graph; the raw granted `scope` strings
 - **M3** Gate: OAuth IMAP login works with security defaults on (owner confirms the setting)
 - **M4** `CAPABILITY`; `LIST` with special-use flags
 - **M5** Create `AI/Spike`; APPEND a test mail to INBOX; `UID MOVE` gives COPYUID
@@ -25,7 +25,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (real system, tokens). The owner r
 - **M7** APPEND to INBOX shows as unread new mail (manual)
 - **M8** `IDLE` starts and ends within 5 s
 - **M9** SMTP XOAUTH2 to `smtp.office365.com:587`: the reply code (expected `5.7.139`)
-- **M10** Graph `sendMail` MIME to `<owner>`: 202; Sent Items copy by `SEARCH HEADER Message-ID` within 60 s; Message-ID and `X-EA-Action-Id` unchanged; `Bcc` delivered (manual); the size limit (docs)
+- **M10** Graph `sendMail` MIME to the `+ea-spike` plus address of `<owner>`: 202, it arrives; Sent Items copy by `SEARCH HEADER Message-ID` within 60 s; Message-ID and `X-EA-Action-Id` unchanged; `Bcc` delivered (manual); the size limit (docs)
 - **M11** Refresh rotates the refresh token; the old one still redeems after it
 - **M12** Which ID-token claim (`email`, `preferred_username`) equals the IMAP login user
 - **M13** Error codes: a garbage refresh token; after removal in My Apps (optional)
@@ -35,21 +35,21 @@ Personal account (`microsoft-personal`): **P1** `common` consent, IMAP login, Gr
 
 Google (`google`, testing mode):
 
-- **G1** Unverified-app screen; granted `scope` holds `https://mail.google.com/`; a refresh token comes back
+- **G1** Unverified-app screen; the raw granted `scope` string; a refresh token comes back
 - **G2** Gate: IMAP XOAUTH2 login; `CAPABILITY` (SPECIAL-USE, MOVE, UIDPLUS); `LIST`
 - **G3** `UID MOVE` INBOX → `AI/Spike`: the mail leaves INBOX; the count in `[Gmail]/All Mail`
 - **G4** APPEND to `[Gmail]/Drafts`, then UID EXPUNGE it; a reply draft sits in the thread (manual)
-- **G5** SMTP XOAUTH2 on `smtp.gmail.com:465` to `<owner>`; one copy in `[Gmail]/Sent Mail` with the same Message-ID
+- **G5** SMTP XOAUTH2 on `smtp.gmail.com:465` to the `+ea-spike` plus address of `<owner>`, it arrives; one copy in `[Gmail]/Sent Mail` with the same Message-ID
 - **G6** Refresh rotates or not; revoke answers 200; then refresh gives `invalid_grant`
 - **G7** App-password IMAP login, typed at a hidden prompt (optional)
 
-**Decisions.** D3, D9, D12, D18. A FAIL gets no workaround in the kit.
+**Decisions.** D9, D12, D18. A FAIL gets no workaround.
 
 **Test** (`bun test tools/mail-oauth-spike`, unit):
 1. `redact` throws for evidence that holds `eyJ`, `ya29.`, `1//`, `M.C`, `EwB`, 40 or more base64url characters in a run, or an `@` address.
 2. `redact` accepts `AUTH=XOAUTH2 UIDPLUS MOVE`, `AADSTS65001`, `202`, `Sent Items`.
 3. One bad row → no file, exit 1.
-4. The callback server refuses a wrong `state` (400) and stops after one good callback.
+4. The callback server refuses a wrong `state` (400), stops after one good one.
 
 **Owner runbook** (in `README.md`; this is U1):
 1. Buy one Microsoft 365 Business Basic seat (PD-090). Check that security defaults are on.
