@@ -24,3 +24,8 @@ Review job `2026-11-15-f102-review-s11-opus-approvals-w-87d7a388`, candidate 4ae
 ## Other
 
 - The test setup moved to `web-approvals-kit.ts` (one kit per test file, no shared state); `web-approvals-write.test.ts` and `web-approvals-races.test.ts` use it (files stay below 400 lines).
+
+## Re-review (Opus, FAIL on candidate 070d06df) and repair
+
+- B2: the repair of B1 made reject and edit of a `logged` send answer 500. A plan can be `logged` (shadow mode, `create_draft` off) and the row stays after the mailbox goes to assist mode; `stateOf` gives no name for it, and `closedStateOf` threw `HardError`. Fixed in `channels/approval-routes.ts`: `closedStateOf` returns `undefined` for a status that is not a send state and the route answers `404 not_found`, as the detail route and approve do; `HardError` stays only for a `waiting` or `superseded` send. Test: `web-approvals-races.test.ts` "a send whose status is not a send state ... never 500" lists every status of `ACTION_STATUSES` (it fails when a status is added until the test names it) and seeds `logged` and `undone` (the database refuses a send in `ready`, `actions_send_never_ready_check`); detail, approve, reject and edit all answer 404 and the send stays unchanged. Mutation: `closedStateOf` without the `undefined` case fails it (`/tmp/f102-s11/mut3-closedstate-undefined.log`).
+- N3: the 7-day check in `approveRow` runs before `draft_not_ready`. A never-notified send older than 7 days with a failed or undone draft expires as `not_notified`; the expiry job would give `draft_missing`. Only the reason differs; low impact; no change.
