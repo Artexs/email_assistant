@@ -319,3 +319,21 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: fewer cache reads per plan job; the measured cost was about $12–25 per plan.
 - Undo: remove the scout rule from `.agents/limen/planner.md`.
 - Source: `notes/2026-11-15-harness-review.md` section 8.
+
+### 2026-11-15 · Panel approvals and delegations: reminder drafts not editable, any member marks Done, cancel is final, five phone tabs, flags on for pilot (F102) · user-visible · new
+- Choice: reminder drafts can only be approved or rejected in the panel (Q2). A Telegram decision also edits the other owners' cards (Q3). No panel "send all" button (Q4). The panel can approve with no linked Telegram (Q5). Any member can mark a delegation Done; remind, cancel and approvals are owner only (Q7). The phone tab bar keeps five tabs and Rules and Stats move to the user menu (Q8). Stage 20 turns `approvals_page` and `delegation_pages` on for the pilot organization (Q10). A panel cancel sets `user_cancelled` and cannot be undone (Q12). A rollback of stage 20 expires waiting sends of edited drafts (Q17).
+- Why: smallest design that keeps owner-only control and avoids sending a template text instead of an approved edit.
+- Undo: the questions file gives each other option and its change.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q2, Q3, Q4, Q5, Q7, Q8, Q10, Q12, Q17.
+
+### 2026-11-15 · Docs site: no text for flagged features, API and evidence reference later, tag deploy rule, inline styles (F112) · scope · new
+- Choice: the user docs describe nothing that a default-off flag gates, and a test enforces it (Q1). The API reference and the autonomy-evidence reference move to F121, because F102 and F110 have no code yet (Q2). A tag deploys the docs only when it is the newest plain `v<x.y.z>` tag and `CHANGELOG.md` holds that release; a manual run deploys any branch or tag and is the rollback; the first deploy is a manual run on `master` (Q4). The docs site allows `'unsafe-inline'` for styles because Starlight sets `style` attributes, and it has no `frame-ancestors` because a meta tag cannot set it and Pages sets no headers (Q6).
+- Why: docs must not promise what is off; the plan-after rule; a safe, reversible publish path; a limit of the Pages host.
+- Undo: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6 give the other option and its change.
+- Source: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6.
+
+### 2026-11-15 · Operator console gets no axe check in F102 (F102) · scope · new
+- Choice: F102 stage 07 runs the axe accessibility check on every customer page and not on the operator console (Q20). The e2e server reads `OPERATOR_USER_IDS` at boot, before the seed makes user ids.
+- Why: an operator e2e user needs a separate stage; the console is for the owner only.
+- Undo: add a stage that gives the e2e run an operator user, then add the console to the axe spec.
+- Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q20.

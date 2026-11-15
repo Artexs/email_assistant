@@ -5,7 +5,7 @@ import { sql, type Transaction } from "kysely";
 import { recordAudit } from "../../src/modules/audit";
 import { insertOutbox } from "../../src/modules/channels";
 import { getMailboxSettings, insertDefaultSettings, insertSenderRule } from "../../src/modules/config";
-import { insertCredentials } from "../../src/modules/mail/repo";
+import { insertCredentials, insertSentEmails, writeSentSwitch } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { insertDelegate, insertDelegation, insertDraftAndSend, insertTriagedWithActions } from "./fixtures";
@@ -84,27 +84,30 @@ export async function fillMailbox(
   }
   await insertCredentials(trx, ctx, { mailboxId, encryptedSecret: "secret", secretKind: "password", keyVersion: 1 });
 
-  // The sent-mail tables have no repository yet: plain inserts (one sent row, one enabled state row).
-  await trx
-    .insertInto("sent_emails")
-    .values({
-      org_id: ctx.orgId,
-      mailbox_id: mailboxId,
-      dedup_key: `mid:<${randomUUID()}@x.test>:h1`,
+  // One sent row and an enabled state row, through the repository.
+  await insertSentEmails(trx, ctx, [
+    {
+      mailboxId,
+      dedupKey: `mid:<${randomUUID()}@x.test>:h1`,
       path: "Sent",
-      uidvalidity: 7,
+      uidValidity: 7,
       uid: 1,
-      thread_key: `<${randomUUID()}@x.test>`,
+      messageId: null,
+      parentMessageId: null,
+      referencesIds: [],
+      threadKey: `<${randomUUID()}@x.test>`,
+      fromAddress: null,
+      toAddresses: [],
+      ccAddresses: [],
+      subject: null,
+      sentAt: now,
+      internalDate: now,
       origin: "user",
+      actionId: null,
       content: "pending",
-      sent_at: now,
-      internal_date: now,
-    })
-    .execute();
-  await trx
-    .insertInto("mailbox_sent_sync")
-    .values({ mailbox_id: mailboxId, org_id: ctx.orgId, enabled: true, enabled_at: now })
-    .execute();
+    },
+  ]);
+  await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: now });
 
   return { mailboxId, emailIds, actionIds };
 }

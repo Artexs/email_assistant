@@ -38,7 +38,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 5 | E7-T2 Platform controls (send limits, feature flags, operator console, security log) | E07 notes §11 | 15 | F082, F091 (closed) | — | F099 |
 | 6 | E3a Measure | E03 | 19 | E1 (F095); flags from F087 (landed); F097 stage 03 before F100 stage 04, F097 stages 01 and 03 before F100 stages 10-11, F097 stage 04 before F100 stage 15 | — | F100 |
 | 7 | Panel to Astro 7 | E10 (PD-098 area, notes §5) | 4 | E1 | — | F101 |
-| 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1, Astro 7 | — | F102 |
+| 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1; Astro 7 before the web stages (07, 12, 13, 17, 18) | — | F102 |
 | 9 | E8a Logs | E08 | 19 | E1 | — | F103 |
 | 10 | E5a Read Sent | E05 | ≈ 7 | E1, E7-T2 | — | F104 |
 | 11 | E7-T6 Identity A (TOTP, backup codes, break-glass) | E07 notes §11 | 15 | F082 | — | F105 |
@@ -48,7 +48,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 15 | E3b Improve | E03 | ≈ 14 | E2a, E3a | Second pass after the first E2a holdout report (PD-060, PD-061) | F109 |
 | 16 | E4-B Earn trust | E04 | ≈ 25 | E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command | — | F110 |
 | 17 | E11b Private model option | E11 | ≈ 5 | E2a | Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage | F111 |
-| 18 | E10a Docs site | E10 | ≈ 10 | E1, Astro 7 | — | F112 |
+| 18 | E10a Docs site | E10 | 16 | E1, Astro 7 | — | F112 |
 | 19 | E2b Live lab | E02 | ≈ 16 | E2a | Owner: grow the VPS root volume (PD-055) | F113 |
 | 20 | E8b Alerts and releases (incl. the restore drill) | E08 | ≈ 6 | E8a | Owner: grow the VPS root volume (PD-055) | F114 |
 | 21 | E6a Reply drafts | E06 | ≈ 17 | E2a, E3a, E4-A, E5a, E7-T2 | Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages | F115 |

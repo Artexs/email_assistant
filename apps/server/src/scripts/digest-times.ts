@@ -4,14 +4,14 @@ import { parseDigestTimesInput } from "@ea/core";
 import { z } from "zod";
 
 import { getOrganization, setDigestTimes } from "../modules/tenancy";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { pickMemberId } from "./pick-member";
 
-const log = createLog("digest-times");
+const out = createCliOutput("digest-times");
 
 const usage = "usage: bun run digest:times --org-id <uuid> [--user-id <uuid>] --times <HH:MM,HH:MM | none>";
 
@@ -40,13 +40,13 @@ function readOptions() {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
   const parsed = parseDigestTimesInput(options.input);
   if (!parsed.ok) {
-    log.error(parsed.error);
-    log.error(usage);
+    out.fail(parsed.error);
+    out.fail(usage);
     return 1;
   }
 
@@ -55,19 +55,19 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const ctx = { orgId: options.orgId };
-    const userId = await pickMemberId(db, options.orgId, options.userId, log);
+    const userId = await pickMemberId(db, options.orgId, options.userId, out);
     if (userId === undefined) return 1;
     if (!(await setDigestTimes(db, ctx, userId, parsed.times))) {
-      log.error("no membership for this user in this organization");
+      out.fail("no membership for this user in this organization");
       return 1;
     }
     const organization = await getOrganization(db, ctx);
-    log.info(
+    out.print(
       `digest times of user ${userId}: ${parsed.times.join(", ") || "none"} (${organization?.timezone ?? "unknown timezone"})`
     );
     return 0;
   } catch (error) {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -77,6 +77,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

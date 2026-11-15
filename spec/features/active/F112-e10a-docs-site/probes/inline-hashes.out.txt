@@ -1,0 +1,10 @@
+MISSING    (() => { const storedTheme = typeof localStorage !== 'undefined' && localStorage.ge
+MISSING    (() => { const openBtn = document.querySelector('button[data-open-modal]'); const sh
+MISSING   (() => { const theme = (typeof localStorage !== 'undefined' && localStorage.getItem('sta
+HASHED   type="module" var e=`starlight-theme`,t=e=>e===`auto`||e===`dark`||e===`light`?e:`auto`,n=()=>t(typeof l
+HASHED   type="module" var e=class extends HTMLElement{constructor(){super();let e=this.querySelector(`select`);e
+HASHED   type="module" var e=class extends HTMLElement{constructor(){super();let e=matchMedia(`(min-width: 50em)`
+MISSING  aria-hidden="true"  (() => { try { if (!matchMedia('(min-width: 50em)').matches) return; /** @ty
+MISSING  aria-hidden="true"  (() => { const scroller = document.getElementById('starlight__sidebar'); if (!win
+MISSING   (() => { const theme = (typeof localStorage !== 'undefined' && localStorage.getItem('sta
+HASHED   type="module" var e=document.getElementById(`starlight__sidebar`),t=e?.querySelector(`sl-sidebar-state-p
