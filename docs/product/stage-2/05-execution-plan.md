@@ -53,7 +53,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 20 | E8b Alerts and releases (incl. the restore drill) | E08 | ≈ 6 | E8a | Owner: grow the VPS root volume (PD-055) | F114 |
 | 21 | E6a Reply drafts | E06 | ≈ 17 | E2a, E3a, E4-A, E5a, E7-T2 | Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages | F115 |
 | 22 | E5b Open loops | E05 | ≈ 22 | E2a, E3a, E4-A, E5a | Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122) | F116 |
-| 23 | E9a Mailbox OAuth | E09 | ≈ 19 | F082, E7-T2 | Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087) | F117 |
+| 23 | E9a Mailbox OAuth | E09 | 21 | F082, E7-T2 | Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087) | F117 |
 | 24 | E9b Phone channel (PWA, push, Telegram detail) | E09 | ≈ 14 | E4-A, E4-B | — | F118 |
 | 25 | E7-T7 Identity B (OIDC) | E07 notes §11 | 16 | E7-T2, E7-T6 | Stage 1 is the spike (done 2026-11-14); second pass passed by the coordinator on a default (owner-decisions) | F119 |
 | 26 | E11a Sender context | E11 | ≈ 10 | E3a, E5a, E4-B | — | F120 |

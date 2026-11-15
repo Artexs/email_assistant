@@ -301,3 +301,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the harness review of 2026-11-15 shows plan jobs are a large share of token cost; the cold review still checks the decisions.
 - Undo: set planner back to high in `spec/build.md` TRACK.
 - Source: `notes/2026-11-15-harness-review.md`, owner decision commit 0499dd1c, rule `harness-2026-11-15`.
+
+### 2026-11-15 · Mailbox OAuth: token memory, flags, consent page, revoke, ID-token check (F117) · security · new
+- Choice: the server keeps access tokens in process memory and reuses each while 5 minutes or more remain (ADR 0031 said "for one job"; stage 19 amends it, because Microsoft rotates the refresh token at each redeem). Flags `mail_oauth_microsoft` and `mail_oauth_google` gate only a new connect. The admin-consent result page sits on the tailnet-only panel (an administrator outside the tailnet sees an error page; the approval still counts). An organization delete revokes no Google token; a single mailbox Remove does. The code does not check the ID-token signature; it checks `aud`, `exp` and `iss` (OIDC Core §3.1.3.7 rule 6, token from the token endpoint).
+- Why: a refresh-token rotation cannot be reused per job; a connected mailbox must keep working with a flag off; the panel is tailnet-only by design.
+- Undo: Q1, Q2, Q4, Q6, Q8 of the questions file give the other option and its change.
+- Source: `spec/features/planned/F117-e9a-mailbox-oauth/questions.md` Q1, Q2, Q4, Q6, Q8.
