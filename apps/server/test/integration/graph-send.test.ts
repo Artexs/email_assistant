@@ -1,3 +1,4 @@
+import { createServer, type Server, type Socket } from "node:net";
 import { format, inspect } from "node:util";
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
@@ -339,6 +340,56 @@ describe("the answer map", () => {
     await dead.stop();
     const sender = await open({ baseUrl });
     expect(await failureOf(sender.send(simple(["b@x.test"])))).toMatchObject({ stage: "connect", soft: true });
+  });
+
+  /** A raw TCP server: it reads the whole request (the headers and the body), then runs `act` on the socket. */
+  async function rawServer(act: (socket: Socket) => void): Promise<{ baseUrl: string; server: Server }> {
+    const server = createServer((socket) => {
+      let seen = Buffer.alloc(0);
+      let acted = false;
+      socket.on("error", () => undefined);
+      socket.on("data", (chunk) => {
+        seen = Buffer.concat([seen, chunk]);
+        const end = seen.indexOf("\r\n\r\n");
+        if (acted || end === -1) return;
+        const length = Number(/content-length: (\d+)/i.exec(seen.subarray(0, end).toString("latin1"))?.[1] ?? "0");
+        if (seen.length - (end + 4) < length) return;
+        acted = true;
+        act(socket);
+      });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (address === null || typeof address === "string") throw new Error("no port");
+    return { baseUrl: `http://127.0.0.1:${address.port}`, server };
+  }
+
+  test("7g. the connection is reset after the request left: unknown, not connect (the server may have the mail)", async () => {
+    const { baseUrl, server } = await rawServer((socket) => socket.destroy());
+    try {
+      const sender = await open({ baseUrl });
+      expect(await failureOf(sender.send(simple(["b@x.test"])))).toMatchObject({
+        stage: "unknown",
+        soft: false,
+        permanent: false,
+        responseCode: null,
+      });
+    } finally {
+      server.close();
+    }
+  });
+
+  test("7h. a half response (the headers started, never ended, then the socket is destroyed): unknown", async () => {
+    const { baseUrl, server } = await rawServer((socket) => {
+      // The header block never ends, so `fetch` has no response to return.
+      socket.write("HTTP/1.1 202 Accepted\r\ncontent-le", () => socket.destroy());
+    });
+    try {
+      const sender = await open({ baseUrl });
+      expect(await failureOf(sender.send(simple(["b@x.test"])))).toMatchObject({ stage: "unknown", soft: false });
+    } finally {
+      server.close();
+    }
   });
 
   test("7f. a redirect is not followed: no request, with or without the token, reaches another host", async () => {
