@@ -119,6 +119,8 @@ file="$S/df-values"
 if [[ -s "$file" ]]; then value="$(head -n 1 "$file")"; [[ "$(wc -l <"$file")" -gt 1 ]] && sed -i 1d "$file"; else value=${10 * GIB}; fi
 printf 'Avail\\n%s\\n' "$value"`
   );
+  // `mv` records its call and then runs the real one: a test reads that the state goes through a temp file.
+  stub(stubs, "mv", `echo "mv $*" >>"$CALLS"\nPATH=/usr/bin:/bin exec mv "$@"`);
   // The backup script of the temp layout: stdout ends with the `backup ok` line, a failed ping prints on stderr after it.
   writeFileSync(
     join(root, "deploy", "backup.sh"),

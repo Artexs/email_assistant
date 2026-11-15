@@ -28,7 +28,6 @@ refuse() {
 
 # From a function for the same reason as in release.sh: git checkout rewrites the scripts.
 main() {
-  [[ -f "$STATE_FILE" ]] || refuse "no release state ($STATE_FILE)"
   state_load || exit 2
   local target target_commit
   if [[ -n "$pending" ]]; then
@@ -38,7 +37,7 @@ main() {
     target="$previous"
     target_commit="$previous_commit"
   fi
-  [[ -n "$target" && -n "$target_commit" ]] || refuse "no target release in the state"
+  [[ -n "$target" && -n "$target_commit" ]] || refuse "no target release: $STATE_FILE is missing or holds no previous release"
   docker image inspect "$IMAGE:$target" >/dev/null 2>&1 || refuse "image $IMAGE:$target is missing"
 
   step=tag-image

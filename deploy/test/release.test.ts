@@ -50,14 +50,20 @@ describe("release.sh refusals (exit 2, no change)", () => {
     expect(dockerCalls()).toEqual([]);
   });
 
-  test("a tag that does not exist, and a name that is not v<major>.<minor>.<patch>, exit 2", () => {
+  test("a tag that does not exist exits 2 before the backup", () => {
     h.setSwitch("missing-tag");
-    expect(h.run("release.sh", ["v0.1.0"]).code).toBe(2);
-    for (const bad of ["", "0.1.0", "v0.1", "v0.1.0-rc1", "v0.1.0 x", "master"]) {
-      expect(h.run("release.sh", bad === "" ? [] : [bad]).code).toBe(2);
-    }
+    const result = h.run("release.sh", ["v0.1.0"]);
+    expect(result.code).toBe(2);
+    expect(result.output).toContain("does not exist");
     expect(h.calls().some((line) => line.includes("deploy/backup.sh"))).toBe(false);
     expect(dockerCalls()).toEqual([]);
+  });
+
+  test("a name that is not v<major>.<minor>.<patch> exits 2 before any git or docker call", () => {
+    for (const bad of ["", "0.1.0", "v0.1", "v0.1.0-rc1", "v0.1.0 x", "master"]) {
+      expect(h.run("release.sh", bad === "" ? [] : [bad]).code, `tag '${bad}'`).toBe(2);
+    }
+    expect(h.calls()).toEqual([]);
   });
 
   test("a pending release and the current tag exit 2 and leave the state as it was", () => {
@@ -101,6 +107,13 @@ describe("release.sh steps", () => {
       pending: "",
     });
     expect(readdirSync(join(h.root, "deploy", "release-state"))).toEqual(["state"]);
+  });
+
+  test("every state write goes through a temp file and mv", () => {
+    expect(h.run("release.sh", ["v0.1.0"]).code).toBe(0);
+    const moves = h.calls().filter((line) => line.startsWith("mv "));
+    expect(moves).toHaveLength(2);
+    expect(new Set(moves)).toEqual(new Set(["mv deploy/release-state/state.tmp deploy/release-state/state"]));
   });
 
   test("backup.sh runs with $HOME/bin first on PATH when that folder exists", () => {
