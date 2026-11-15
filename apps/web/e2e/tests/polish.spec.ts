@@ -14,7 +14,7 @@ function onMobile(): boolean {
   return test.info().project.name === "mobile";
 }
 
-// The two projects run in different worker processes, so each gets its own block of the 198.51.100.0/24 range.
+// The two projects run in different worker processes, so each gets its own block of the `nextAddress` range (see helpers.ts).
 test.beforeEach(async ({ context, page }) => {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": nextAddress(onMobile() ? 20 : 120) });
   errors = await cspErrors(page);

@@ -5,14 +5,19 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { en } from "../src/i18n/en";
 import { E2E_BASE_URL, e2eEnv, GREENMAIL, repoRoot } from "./env";
 
-// An address range for documentation (RFC 5737). Every test gets its own, so the login rate limit counts per test.
+// Every test gets its own client address, so the login rate limit (3 per 10 s per address) counts per test.
 // The counter lives in the worker process and all spec files of that worker share it, so two files can use the same block.
 // Playwright runs each project in its own worker process, where the counter starts at 1 again: the caller gives each a block.
+// The sum `base + counter` is the host number inside the range 198.18.0.0/15 (RFC 2544, benchmark testing): a sum above 255
+// moves to the next third octet. A fourth octet above 255 (the old `198.51.100.${base + counter}`, F117 s16 made it reach 256
+// in the desktop project) is no address: the server then keys the limit on the proxy address 127.0.0.1, and every later test
+// of the project shares one bucket. The specs with a literal address use 198.51.100.0/24 and 203.0.113.0/24, away from this range.
 let addressCount = 0;
 
 export function nextAddress(base: number): string {
   addressCount += 1;
-  return `198.51.100.${base + addressCount}`;
+  const host = base + addressCount;
+  return `198.18.${Math.floor(host / 256)}.${host % 256}`;
 }
 
 interface SignInTexts {
