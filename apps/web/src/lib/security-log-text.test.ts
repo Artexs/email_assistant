@@ -34,7 +34,7 @@ describe("security log text", () => {
       sso_provider_removed: ["Company sign-in removed", "Usunięto logowanie kontem firmowym"],
       sso_domain_verified: ["Domain proved by DNS", "Domenę potwierdzono przez DNS"],
       sso_domain_attested: ["Domain attested by the operator", "Domenę potwierdził operator"],
-      sso_required_changed: ['"SSO required" changed', "Zmieniono wymóg SSO"],
+      sso_required_changed: ['Setting "SSO required" changed', "Zmieniono ustawienie „Wymagane SSO”"],
       sso_unlinked: ["Company account unlinked", "Odłączono konto firmowe"],
       member_added: ["Member added", "Dodano członka"],
       member_sessions_ended: ["A member's sessions ended", "Zakończono sesje członka"],
