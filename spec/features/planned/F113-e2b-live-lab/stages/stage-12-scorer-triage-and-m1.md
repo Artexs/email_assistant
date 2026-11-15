@@ -1,4 +1,4 @@
-# F113 stage 11 — scorer: triage and M1
+# F113 stage 12 — scorer: triage and M1
 
 Part of [`../plan.md`](../plan.md). Decisions D14, P6.
 
@@ -20,7 +20,7 @@ scoreTriage(rows: ScoredMail[]): TriageScore;
 renderLabReport(score: LabScore): { markdown: string; json: string };
 ```
 
-Stage 12 adds entries to `sections` and its own render parts; keep `renderLabReport` open for that (one renderer per section).
+Stage 13 adds entries to `sections` and its own render parts; keep `renderLabReport` open for that (one renderer per section).
 
 ## Decisions
 
@@ -31,7 +31,7 @@ Stage 12 adds entries to `sections` and its own render parts; keep `renderLabRep
 - False-negative rate for `urgent` and `needs_reply`; urgent recall per `urgencySource` (`text`, `vip`, `context`); recall per hard-case tag (counts).
 - **M1.** `missedImportant` (core `metrics/m1.ts`) with one `MailTruthRow` per scored mail: `truth` = slot category, `truthSource` null, `wrongOnly` false, `predicted` = the result. No change to the core type.
 - **Header.** Run id, mode, start, `offsetDays`, corpus id, version and manifest hash, owner audit status, model ids seen in `llm.call` rows, cap and spend, stop reason, scored at.
-- **Files.** `<out>/sim-<scored date>-lab-01-<mode>-<runId>.md` and `.json`; default `<out>` = `evals/results/` (the container writes to `LAB_STATE_DIR/results/`; the runbook copies it out). The JSON holds counts and slot ids, no text and no address (week ids are allowed, F097 D28).
+- **Files.** `<out>/sim-<scored date>-lab-01-<runId>.md` (the run id holds the mode; review N9) and `.json`; default `<out>` = `evals/results/` (the container writes to `LAB_STATE_DIR/results/`; the runbook copies it out). The JSON holds counts and slot ids, no text and no address (week ids are allowed, F097 D28).
 - A run that is not stopped can be scored; the header says `partial`.
 
 ## Tests
@@ -54,4 +54,4 @@ Tests pass; `live-lab.md` has the scorer rules and the report path; the Proof pr
 
 ## Out of scope
 
-M2–M5, M7, behaviours, send limits (stage 12). A draft judge (questions.md Q8).
+M2–M5, M7, behaviours, send limits (stage 13). A draft judge (questions.md Q8).

@@ -25,15 +25,15 @@ The frozen lab-01 week of made-up mail runs in real time through the real pipeli
 
 ## Acceptance
 
-- `docker compose -f deploy/compose.sim.yaml config --quiet` passes in CI; every sim service has log rotation and a memory limit.
-- `bun run lab score --run <id>` writes `evals/results/sim-<date>-lab-01-day-<id>.md` from the VPS live day.
+- `docker compose -f deploy/compose.sim.yaml --env-file deploy/sim.env.example config --quiet --no-env-resolution` passes in CI; every sim service has log rotation, a memory limit and the env check in its command.
+- `bun run lab score --run <id>` writes `evals/results/sim-<date>-lab-01-day-<YYYYMMDD>-<hex>.md` from the VPS live day.
 - The live week report holds M1–M5, M7, the delegate behaviour table and the send-limit hits.
 - `bun run lab demo-reset` rebuilds the demo organization; `lab demo-import` loads its export into a dev DB.
-- With a wrong env (real bot token, non-loopback Telegram root, `SEND_SCOPE=all`), `lab` refuses to start.
+- With a wrong env (real bot token, unset or non-loopback Telegram root, `SEND_SCOPE=all`), `lab:env-check` exits 1, so no sim container starts its program.
 
 ## Slices
 
-15 stages, one worker job each; order and parallel lanes in `plan.md` § How to run. No migration and no `bun.lock` change in any stage. The VPS runs are coordinator steps after stage 15.
+16 stages, one worker job each; order and parallel lanes in `plan.md` § How to run. No migration and no `bun.lock` change in any stage. The VPS runs are coordinator steps after stage 16.
 
 ## Sequenced
 

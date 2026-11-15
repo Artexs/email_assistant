@@ -1,10 +1,10 @@
-# F113 stage 06 — injector `[risky]`
+# F113 stage 07 — injector `[risky]`
 
-Part of [`../plan.md`](../plan.md). Decisions D7, D8, D12. Risk area: exactly-once (a double mail changes every count of the run).
+Part of [`../plan.md`](../plan.md). Decisions D7, D8, D12. Risk: exactly-once. Review 1: B3, B5, T7.
 
 ## Goal
 
-Each planned slot reaches the run's mailbox once, at its time: by SMTP into the INBOX, or by APPEND into `Sent` for executive-started mail.
+Each planned slot reaches the run's mailbox once, at its time: SMTP into the INBOX, or APPEND into `Sent` for executive mail.
 
 ## Files
 
@@ -18,25 +18,24 @@ runInjectorTick(deps: InjectorDeps, runId: string): Promise<{ injected: number; 
 type LabMailClient = {
   smtpSend(input: { envelopeFrom: string; to: string; raw: string }): Promise<void>;
   appendSent(mailbox: string, raw: string): Promise<void>;                     // folder "Sent", flag \Seen
-  hasMessageId(mailbox: string, folder: "INBOX" | "Sent", messageId: string): Promise<boolean>;
+  hasMessageId(mailbox: string, messageId: string): Promise<boolean>;   // every folder of the mailbox
   fetchSince(mailbox: string, folder: string, afterUid: number): Promise<{ uid: number; raw: string }[]>;
 };
-LabCorpus = { scenario; slots: Map<string, Slot>; texts: Map<string, SimText> };   // loaded once per process
 ```
 
-Stage 07 and stage 13 reuse `LabMailClient`.
+`LabCorpus` is stage 04's. Stages 08 and 14 reuse `LabMailClient`.
 
 ## Decisions
 
-- A tick takes the plan items with `at ≤ now` and no `inject_done`, in plan order, at most 20 per tick.
-- Budget first: when `spendUsd() ≥ run.capUsd`, append `stopped: budget`, inject nothing, return `stopped`.
+- A tick takes the plan items with `at ≤ now` and neither `inject_done` nor `skip`, in plan order, at most 20 per tick (review T7).
+- Budget first: when `spendUsd() ≥ run.capUsd`, inject nothing and return `stopped: "budget"`. The serve loop calls `stopRun` (stage 04: only `stopRun` writes `stopped`; review B5).
 - Per item: append `inject_intent` (slot id, Message-ID), send, append `inject_done`. `lateBySec` = `now − at` when over 120 s.
 - `smtp`: envelope from = the sender's address, envelope to = the run mailbox only (the other `to` and `cc` personas get no copy). `append_sent`: APPEND to `Sent` of the run mailbox; create the folder when it does not exist.
-- Resume: an item with `inject_intent` and no `inject_done` → `hasMessageId` on its folder. Found → append `inject_done` (no resend). Not found → send.
-- A send error: no `inject_done`; the next tick tries again. The fifth error for one slot → `skip` with code `smtp_failed` or `append_failed`, then `inject_done` is never written for it. The scorer counts skips.
-- Threads: a reply's parent chain comes from `parentId`. A parent that is skipped still gives its Message-ID (the reply keeps its headers).
-- The mail client's errors carry codes, never the raw message.
-- `mail.hasMessageId` uses IMAP `SEARCH HEADER Message-ID`.
+- Resume: an item with `inject_intent` and no `inject_done` → `hasMessageId` over **every folder** of the run mailbox (the sim server may have moved the mail out of the INBOX already; review B3). Found → append `inject_done` (no resend). Not found → send.
+- A send error: append `inject_error` (slot id, code), no `inject_done`; the next tick tries again. The fifth `inject_error` for one slot (counted from the events, so it survives a restart) → `skip` with code `smtp_failed` or `append_failed`. A skipped slot is never selected again. The scorer counts skips.
+- A skipped parent still gives its Message-ID to its replies.
+- Mail client errors carry codes, never the raw message.
+- `mail.hasMessageId` lists the folders and runs IMAP `SEARCH HEADER Message-ID` in each.
 
 ## Tests (integration, shared GreenMail, random mailbox address per test, fake clock)
 
@@ -45,12 +44,13 @@ Use a 5-slot fixture (2 roots, 1 reply to root 1, 1 `sent` slot, 1 later slot), 
 1. Clock after the first four slots: 4 delivered — 3 in INBOX, 1 in `Sent` with `\Seen`; the later slot is not sent.
 2. The reply in INBOX has `In-Reply-To` = root 1's lab Message-ID and `References` with it.
 3. Crash after delivery: write `inject_intent` by hand, deliver the mail by hand, then run a tick → `inject_done` appears, INBOX count stays 1.
+3b. Same, but move the delivered mail to a folder `Newsletters` before the tick → no second mail in any folder (review B3).
 4. `inject_intent` with no delivery → the tick sends it once.
-5. `spendUsd` returns 5.00 with cap 5 → 0 sent, `stopped: budget`.
+5. `spendUsd` returns 5.00 with cap 5 → 0 sent, the tick returns `stopped: "budget"` and writes no `stopped` event.
 6. Clock 10 min after a slot's `at` → `lateBySec` = 600.
 7. 25 due items → 20 in the first tick, 5 in the second.
-8. SMTP failing 5 times (fake client) → one `skip` with `smtp_failed`; the next slot still goes.
-9. Mutation check: remove the resume `hasMessageId` call → test 3 fails (two mails). Restore.
+8. SMTP always failing (fake client) → 5 `inject_error` events, then one `skip` with `smtp_failed`; later ticks add no event for that slot; the next slot still goes. With 3 errors, a restart, then 2 more → `skip`.
+9. Mutation check: search only the INBOX in the resume check → test 3b fails. Restore.
 
 ## Check
 
@@ -62,4 +62,4 @@ Tests 1–9 pass; `live-lab.md` has the injector rules (once per slot, late, ski
 
 ## Out of scope
 
-The loop that calls the tick (stage 10). Bots.
+The loop that calls the tick (stage 11). Bots.
