@@ -109,6 +109,12 @@ describe("deploy/logs.sh", () => {
     expect(result.code).toBe(0);
     expect(result.err).toBe("");
     expect(result.out).toBe("T 30 [mail] odd\n");
+    const object = run(
+      ["--stdin"],
+      lines(JSON.stringify({ time: "T", level: { a: 1 }, module: "mail", event: "odd" }))
+    );
+    expect(object.err).toBe("");
+    expect(object.out).toBe('T {"a":1} [mail] odd\n');
   });
 
   test("it runs from the repo root whatever the caller's directory is", () => {
