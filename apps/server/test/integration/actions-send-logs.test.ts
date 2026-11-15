@@ -264,9 +264,12 @@ describe("send logs", () => {
         // `saveTriage` writes its release line only when a setting changes during a run: none does here.
         expect(output).not.toContain("settings changed, mail released");
 
-        for (const pair of [first, second]) expect(output).toContain(`action ${pair.draftId}: applied create_draft`);
-        expect(output).toContain(`action ${appliedSend?.id}: applied send`);
-        expect(output).toContain(`action ${rejectedSend?.id}: failed smtp_rejected (stage envelope, code 550)`);
+        for (const pair of [first, second])
+          expect(output).toContain(`action_applied action_id=${pair.draftId} action_type=create_draft`);
+        expect(output).toContain(`action_applied action_id=${appliedSend?.id} action_type=send`);
+        expect(output).toContain(
+          `send_failed action_id=${rejectedSend?.id} reason=smtp_rejected send_stage=envelope code=550`
+        );
         for (const id of approvals) expect(output).toContain(`notice_queued kind=approval outbox_id=${id}`);
         for (const id of results) expect(output).toContain(`notice_queued kind=send_result outbox_id=${id}`);
         const ids = `org_id=${orgId} mailbox_id=${mailboxId}`;

@@ -77,6 +77,8 @@ interface Failure {
   countAttempt?: true;
   providerResult: ProviderResult;
   auditData: AuditData;
+  // The SMTP response number or the provider code, for the log line only (never the reply text).
+  logCode?: string | number;
 }
 
 // The send-failure transaction: the row, its audit row and, for a delegation send, the delegation (send, then delegation).
@@ -124,10 +126,12 @@ async function failSend(
     return true;
   });
   if (!done) return { kind: "lost" };
-  const stage = failure.providerResult.stage ?? "none";
-  log.warn(
-    `action ${action.id}: failed ${failure.reason} (stage ${stage}, code ${failure.providerResult.response_code ?? failure.providerResult.code ?? "none"})`
-  );
+  log.warn("send_failed", {
+    action_id: action.id,
+    reason: failure.reason,
+    send_stage: failure.providerResult.stage ?? "none",
+    ...(failure.logCode === undefined ? {} : { code: failure.logCode }),
+  });
   return { kind: "failed", reason: failure.reason };
 }
 
@@ -249,7 +253,7 @@ async function saveSentCopy(
         at: now,
       });
     });
-    log.warn(`action ${action.id}: sent copy failed: ${label}`);
+    log.warn("send_copy_failed", { action_id: action.id, ...errorFields(error) });
     return;
   }
   await updateProviderResult(deps.db, ctx, action.id, { sent_copy: copy });
@@ -275,7 +279,12 @@ async function composeFailed(
       auditData: { action_type: "send", stage: "compose", attempts: action.attempts + 1 },
     });
   }
-  log.warn(`action ${action.id}: ${label}, try ${action.attempts + 1} of ${SEND_HARD_TRIES}`);
+  log.warn("send_retry", {
+    action_id: action.id,
+    attempts: action.attempts + 1,
+    max_attempts: SEND_HARD_TRIES,
+    ...errorFields(error),
+  });
   await releaseAction(deps.db, ctx, action.id, action.locked_at, {
     toStatus: "approved",
     nextAttemptAt: new Date(now.getTime() + SEND_RETRY_WAIT_MS),
@@ -301,6 +310,8 @@ async function sendFailed(
   const code = smtp?.code ?? describeError(error);
   const responseCode = smtp?.responseCode ?? null;
   const lastError = `smtp_${responseCode ?? code}`;
+  // The log code: the response number, else the SMTP or system code; none for an error without a code.
+  const logCode = responseCode ?? smtp?.code ?? errorFields(error).error_code;
 
   if (outcome.kind === "auth_error") {
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
@@ -312,7 +323,11 @@ async function sendFailed(
     return { kind: "auth_error" };
   }
   if (outcome.kind === "retry") {
-    log.warn(`action ${action.id}: send retry (stage ${stage}, code ${responseCode ?? code})`);
+    log.warn("send_retry", {
+      action_id: action.id,
+      send_stage: stage,
+      ...(logCode === undefined ? {} : { code: logCode }),
+    });
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
       toStatus: "approved",
       nextAttemptAt: new Date(now.getTime() + SEND_RETRY_WAIT_MS),
@@ -328,6 +343,7 @@ async function sendFailed(
       : { stage, response_code: responseCode, code, ...(outcome.capped ? { cap: SOFT_CAP_MARK } : {}) };
   return failSend(deps, ctx, action, {
     reason: outcome.reason,
+    ...(logCode === undefined ? {} : { logCode }),
     from: "applying",
     cancel: outcome.reason === "outcome_unknown" ? "outcome_unknown" : "send_failed",
     lastError: outcome.reason === "outcome_unknown" ? `smtp_${code}` : lastError,
@@ -354,9 +370,10 @@ export async function applySend(
 ): Promise<ApplyOutcome> {
   if (action.status === "applying") return recoverSend(deps, ctx, action, provider);
   const now = deps.now();
+  const actionLog = log.with({ action_id: action.id });
 
   if (deps.sender === null) {
-    log.error(`action ${action.id}: no sender for send`);
+    actionLog.error("send_no_sender");
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
       toStatus: action.status,
       nextAttemptAt: new Date(now.getTime() + SEND_RETRY_WAIT_MS),
@@ -371,7 +388,7 @@ export async function applySend(
   const draft =
     action.depends_on_action_id === null ? undefined : await getDraft(deps.db, ctx, action.depends_on_action_id);
   if (draft === undefined || draft.status !== "applied") {
-    log.warn(`action ${action.id}: the draft is not applied; the send waits`);
+    actionLog.warn("send_waits_for_draft");
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
       toStatus: "approved",
       nextAttemptAt: new Date(now.getTime() + SEND_RETRY_WAIT_MS),
@@ -405,11 +422,11 @@ export async function applySend(
   );
   if (start.kind === "lost") return { kind: "lost" };
   if (start.kind === "held") {
-    log.info("send_limited", { action_id: action.id, mailbox_id: deps.mailboxId, kind: start.hit.limit });
+    actionLog.info("send_limited", { mailbox_id: deps.mailboxId, kind: start.hit.limit });
     try {
       deps.onSendLimited?.(ctx, start.hit);
     } catch (error) {
-      log.warn("send_limited_callback_failed", { action_id: action.id, ...errorFields(error) });
+      actionLog.warn("send_limited_callback_failed", { ...errorFields(error) });
     }
     return { kind: "retry", soft: false };
   }
@@ -433,7 +450,7 @@ export async function applySend(
   });
   // `lost`: the mail went out. The row stays `applying`; a recovery run ends it as `outcome_unknown`.
   if (!done) return { kind: "lost" };
-  log.debug(`action ${action.id}: applied send`);
+  actionLog.debug("action_applied", { action_type: "send" });
 
   // (5) The Sent copy never changes the outcome.
   await deps.beforeSentCopy?.();
@@ -473,7 +490,12 @@ async function recoveryFailed(
       auditData: { action_type: "send", recovered: true },
     });
   }
-  log.warn(`action ${action.id}: recovery ${label}, try ${action.attempts + 1} of ${SEND_HARD_TRIES}`);
+  log.warn("send_recovery_retry", {
+    action_id: action.id,
+    attempts: action.attempts + 1,
+    max_attempts: SEND_HARD_TRIES,
+    ...errorFields(error),
+  });
   await releaseAction(deps.db, ctx, action.id, action.locked_at, {
     toStatus: "applying",
     nextAttemptAt: new Date(now.getTime() + SEND_RETRY_WAIT_MS),
@@ -518,6 +540,6 @@ async function recoverSend(
     message_id: prepared.message.messageId,
   });
   if (!done) return { kind: "lost" };
-  log.debug(`action ${action.id}: applied send (recovered)`);
+  log.debug("send_recovered", { action_id: action.id });
   return { kind: "applied" };
 }

@@ -109,7 +109,7 @@ function toView(row: MailboxSettingsRow, movesSupported: boolean): SettingsView 
 }
 
 // A stored value that no longer parses reads as no profile (the writer only stores valid ones).
-function parseUrgencyProfile(value: unknown): UrgencyProfile | null {
+export function parseUrgencyProfile(value: unknown): UrgencyProfile | null {
   const parsed = urgencyProfileSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }

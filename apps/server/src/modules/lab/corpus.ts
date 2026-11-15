@@ -1,4 +1,4 @@
-import type { CaseText, Manifest, Scenario, Slot } from "@ea/core";
+import { otherAddressOf, type CaseText, type Manifest, type Scenario, type Slot } from "@ea/core";
 
 import { corpusDir, readManifest, readScenario, readSlots, readTexts } from "../../platform/sim-files";
 
@@ -42,11 +42,14 @@ export async function loadLabCorpus(root: string, scenarioId: string): Promise<L
   return { scenario, slots, texts, manifest, parentsOf };
 }
 
-// The `allowedAddresses` input of `checkSimEnv`: every scenario address and both executive mailboxes. Stage 08 adds the
-// `other_address` aliases through `otherAddressOf`; until then the alias list is empty.
+// The `allowedAddresses` input of `checkSimEnv`: every scenario address, both executive mailboxes and the
+// `other_address` alias of each delegate (`otherAddressOf`), the address a bot may answer from.
 export function labAddresses(corpus: LabCorpus): string[] {
   const addresses = new Set<string>([corpus.scenario.executive.address, ...Object.values(LAB_MAILBOXES)]);
-  for (const persona of corpus.scenario.personas) addresses.add(persona.address);
+  for (const persona of corpus.scenario.personas) {
+    addresses.add(persona.address);
+    if (persona.group === "delegate") addresses.add(otherAddressOf(persona.address));
+  }
   for (const slot of corpus.slots.values()) if (slot.fromOverride !== undefined) addresses.add(slot.fromOverride);
   return [...addresses].map((address) => address.toLowerCase()).sort();
 }

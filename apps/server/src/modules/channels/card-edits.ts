@@ -1,11 +1,18 @@
 import type { HeldBy } from "@ea/core";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../platform/db";
+import { errorFields } from "../../platform/errors";
+import { createLog } from "../../platform/log";
+import type { ApprovalHooks, SendScope } from "../actions";
 import { getOrganization } from "../tenancy";
 
 import { failPendingCardsOfSend, listCardsOfSend } from "./card-edits-repo";
+import { heldReason } from "./held-reason";
 import { queueNotice } from "./notice-queue";
+import { OUTBOX_REMOVED_TEXT } from "./repo";
+
+const log = createLog("channels");
 
 export type CardEditOutcome = "approved" | "approved_held" | "rejected" | "changed" | "expired";
 
@@ -44,7 +51,16 @@ export async function queueCardEdits(
   for (const card of await listCardsOfSend(trx, ctx, input.sendId)) {
     if (card.userId === input.exceptUserId) continue;
     const { text, externalMessageId, emailId } = card;
-    if (card.status !== "sent" || !text || externalMessageId === null || emailId === null) continue;
+    // A card whose text retention removed has nothing to show: the edit would copy the marker.
+    if (
+      card.status !== "sent" ||
+      !text ||
+      text === OUTBOX_REMOVED_TEXT ||
+      externalMessageId === null ||
+      emailId === null
+    ) {
+      continue;
+    }
     const id = await queueNotice(trx, ctx, {
       userId: card.userId,
       locale: card.locale,
@@ -66,4 +82,36 @@ export async function queueCardEdits(
     if (id !== null) queued += 1;
   }
   return { queued, cancelled: await failPendingCardsOfSend(trx, ctx, input.sendId) };
+}
+
+const SAVEPOINT = "card_edits";
+
+// The real `ApprovalHooks` (F102 card sync). Runs in the transaction of the decision, with no call to the outside.
+// `approved` becomes `approved_held` when `heldReason` names a cause. Card sync is best effort: a failure here (a view that
+// does not render, a database error) is logged and undone to a savepoint, and the decision stays. The send of the edit is
+// the sender's; its failures end the edit row as `failed` (the visible state).
+export function cardEditHooks(deps: { sendScope: SendScope }): ApprovalHooks {
+  return {
+    async onDecided(trx, ctx, input) {
+      await sql`savepoint ${sql.id(SAVEPOINT)}`.execute(trx);
+      try {
+        const { decision } = input;
+        const heldBy =
+          decision === "approved"
+            ? await heldReason({ db: trx, sendScope: deps.sendScope }, ctx, input.sendId)
+            : undefined;
+        const edit: CardEdit = heldBy === undefined ? { outcome: decision } : { outcome: "approved_held", heldBy };
+        await queueCardEdits(trx, ctx, {
+          ...edit,
+          sendId: input.sendId,
+          ...(input.exceptUserId === undefined ? {} : { exceptUserId: input.exceptUserId }),
+          at: input.at,
+        });
+      } catch (error) {
+        await sql`rollback to savepoint ${sql.id(SAVEPOINT)}`.execute(trx);
+        log.error("card_edits_not_queued", { kind: input.decision, action_id: input.sendId, ...errorFields(error) });
+      }
+      await sql`release savepoint ${sql.id(SAVEPOINT)}`.execute(trx);
+    },
+  };
 }

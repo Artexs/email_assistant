@@ -257,6 +257,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     testMail: testMailRule(config),
     operatorContact: config.OPERATOR_CONTACT ?? null,
     syncEveryMin: Number(config.MAIL_SYNC_EVERY_MIN),
+    ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
   });
   telegram = runtime;
   scheduler.add("channels.notifier", "*/15 * * * * *", () => {

@@ -2,6 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } fr
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { otherAddressOf } from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { LAB_MAILBOXES, labAddresses, loadLabCorpus } from "./corpus";
@@ -38,6 +39,16 @@ describe("lab corpus", () => {
     expect(addresses).toContain(LAB_MAILBOXES.lab);
     expect(addresses).toContain(LAB_MAILBOXES.demo);
     expect(new Set(addresses).size).toBe(addresses.length);
+  });
+
+  test("labAddresses holds the other_address alias of each delegate and of no other persona", async () => {
+    const corpus = await loadLabCorpus(ROOT, "lab-01");
+    const addresses = labAddresses(corpus);
+    const delegates = corpus.scenario.personas.filter((persona) => persona.group === "delegate");
+    expect(delegates.length).toBeGreaterThan(0);
+    for (const persona of delegates) expect(addresses).toContain(otherAddressOf(persona.address));
+    expect(addresses).toContain("dorota.wilczynska@poczta-prywatna.test");
+    expect(addresses.filter((address) => address.endsWith("@poczta-prywatna.test"))).toHaveLength(delegates.length);
   });
 
   test("7: the loader never reads holdout/ or dev/", async () => {

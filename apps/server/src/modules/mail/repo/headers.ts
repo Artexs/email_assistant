@@ -82,6 +82,28 @@ export async function getEmailHeaders(
   };
 }
 
+// The captured attachment list and the part count of each mail (F109 stage 06). A mail with no `email_headers` row is absent.
+// Every query filters `org_id`; after retention the list is `[]` and the count stays.
+export async function listAttachmentInputs(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, { attachments: CapturedAttachment[]; count: number }>> {
+  const found = new Map<string, { attachments: CapturedAttachment[]; count: number }>();
+  if (emailIds.length === 0) return found;
+  const rows = await db
+    .selectFrom("email_headers")
+    .select(["email_id", "attachments", "attachment_count"])
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "in", [...emailIds])
+    .where("attachment_count", ">", 0)
+    .execute();
+  for (const row of rows) {
+    found.set(row.email_id, { attachments: attachmentsSchema.parse(row.attachments), count: row.attachment_count });
+  }
+  return found;
+}
+
 // Retention: the text fields of rows captured before `before` go, the counts and codes stay.
 // Like `clearMailHeaders`: batches by id, rows that a job holds wait for the next day, a repeat call changes nothing.
 export async function clearCapturedHeaders(

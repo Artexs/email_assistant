@@ -33,6 +33,7 @@ export {
   createMailOAuthClients,
   consumeOAuthState,
   createOAuthState,
+  finishOAuthCallback,
   mailOAuthProviders,
   mailOAuthRoutes,
   missingResourceScopes,
@@ -40,10 +41,14 @@ export {
   OAuthSoftError,
   OAuthStateRefusedError,
   requiredResourceScopes,
+  type CallbackDeps,
+  type CallbackResult,
   type ConsumeResult,
   type MailOAuthClient,
   type MailOAuthClients,
   type MailOAuthRouteDeps,
+  type OAuthGrant,
+  type OAuthRefusalCode,
   type OAuthStart,
   type MailOAuthProvider,
   type MailOAuthProviderSpec,
@@ -89,6 +94,7 @@ export {
   SmtpSendError,
   type MailSender,
 } from "./port";
+export { attachmentFactsToShow } from "./attachment-facts";
 export {
   changeMailboxStatus,
   claimEmails,

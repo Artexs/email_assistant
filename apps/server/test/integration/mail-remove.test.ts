@@ -298,6 +298,7 @@ describe("removeMailbox", () => {
       junkFolder: null,
       resumedAt: null,
       suspicious: noSuspiciousContext,
+      urgencyProfile: null,
     };
 
     const result = await removeMailbox(deps, s.ctx, s.mailboxId, {

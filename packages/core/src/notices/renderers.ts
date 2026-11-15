@@ -71,6 +71,7 @@ export const noticeRenderers = {
               texts
             ),
             ...(view.suspicious === undefined ? {} : { suspicious: view.suspicious }),
+            ...(view.attachments === undefined ? {} : { attachments: view.attachments }),
             now: view.now,
             timeZone: view.timeZone,
           },

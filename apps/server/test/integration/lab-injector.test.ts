@@ -8,8 +8,10 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:te
 import { ImapFlow } from "imapflow";
 
 import {
-  createGreenMailClient,
+  createLabMailClient,
   createLabState,
+  LAB_MAIL_PASSWORD,
+  labAddresses,
   loadLabCorpus,
   LabMailError,
   runInjectorTick,
@@ -128,6 +130,9 @@ function fakeMail(failWhen: (raw: string) => boolean = () => false) {
     async fetchSince() {
       return [];
     },
+    async newestUid() {
+      return 0;
+    },
   };
   return { client, delivered, calls };
 }
@@ -150,8 +155,25 @@ async function withImap<T>(address: string, fn: (client: ImapFlow) => Promise<T>
   }
 }
 
-const mailsIn = (address: string, folder: string) =>
-  createGreenMailClient({ host, imapPort, smtpPort }).fetchSince(address, folder, 0);
+// The injector sends from the scenario addresses to the run mailbox: the guard list is `labAddresses` plus that mailbox.
+const clientFor = (corpus: LabCorpus, runMailbox: string): LabMailClient =>
+  createLabMailClient({
+    host,
+    imapPort,
+    smtpPort,
+    password: LAB_MAIL_PASSWORD,
+    allowedAddresses: new Set([...labAddresses(corpus), runMailbox]),
+  });
+// Reads only: it sends nothing, so its list of addresses is empty.
+const readClient = createLabMailClient({
+  host,
+  imapPort,
+  smtpPort,
+  password: LAB_MAIL_PASSWORD,
+  allowedAddresses: new Set(),
+});
+
+const mailsIn = (address: string, folder: string) => readClient.fetchSince(address, folder, 0);
 
 async function allFolders(address: string): Promise<Record<string, number>> {
   const names = await withImap(address, async (client) => (await client.list()).map((entry) => entry.path));
@@ -165,11 +187,12 @@ describe("lab injector (stage 07)", () => {
   let clock = T0;
   let fixture: Fixture;
   let state: LabState;
-  const real = createGreenMailClient({ host, imapPort, smtpPort });
+  let real: LabMailClient;
 
   const open = (path: string): LabState => createLabState(path, () => clock);
   function setup(extraSlots = 0): void {
     fixture = fixtureOf(randomUUID().slice(0, 8), extraSlots);
+    real = clientFor(fixture.corpus, fixture.address);
     state = open(dir);
     state.writeOrgs({ lab: { orgId: randomUUID(), mailboxId: randomUUID(), address: fixture.address, chatId: 1 } });
     expect(state.startRun({ plan: fixture.plan, org: "lab", capUsd: 5 })).toBe("ok");
@@ -408,6 +431,7 @@ describe("lab injector (stage 07)", () => {
 
   test("9: with two seeded orgs the run on `demo` delivers to the demo mailbox and nothing to the lab mailbox", async () => {
     fixture = fixtureOf(randomUUID().slice(0, 8));
+    real = clientFor(fixture.corpus, fixture.address);
     const labAddress = `lab-${randomUUID().slice(0, 8)}@localhost`;
     state = open(dir);
     state.writeOrgs({
@@ -427,7 +451,13 @@ describe("lab injector (stage 07)", () => {
     for (const badHost of ["mail.example.com", "10.0.0.5", "greenmail"]) {
       let caught: unknown;
       try {
-        createGreenMailClient({ host: badHost, imapPort, smtpPort });
+        createLabMailClient({
+          host: badHost,
+          imapPort,
+          smtpPort,
+          password: LAB_MAIL_PASSWORD,
+          allowedAddresses: new Set(),
+        });
       } catch (error) {
         caught = error;
       }
@@ -435,11 +465,25 @@ describe("lab injector (stage 07)", () => {
       expect((caught as LabMailError).code).toBe("host_refused");
       expect((caught as LabMailError).message).toBe("host_refused");
     }
-    expect(() => createGreenMailClient({ host: "localhost", imapPort, smtpPort })).not.toThrow();
+    expect(() =>
+      createLabMailClient({
+        host: "localhost",
+        imapPort,
+        smtpPort,
+        password: LAB_MAIL_PASSWORD,
+        allowedAddresses: new Set(),
+      })
+    ).not.toThrow();
   });
 
   test("a mail client error holds a code, never the text of the mail", async () => {
-    const dead = createGreenMailClient({ host, imapPort, smtpPort: 1 });
+    const dead = createLabMailClient({
+      host,
+      imapPort,
+      smtpPort: 1,
+      password: LAB_MAIL_PASSWORD,
+      allowedAddresses: new Set(["a@lab.test", "b@localhost"]),
+    });
     const error = await dead
       .smtpSend({ envelopeFrom: "a@lab.test", to: "b@localhost", raw: "Subject: secret-canary\r\n\r\nsecret-canary" })
       .catch((caught: unknown) => caught);
@@ -448,6 +492,6 @@ describe("lab injector (stage 07)", () => {
     expect(failure.code).toBe("smtp_failed");
     expect(failure.message).toBe("smtp_failed");
     expect(JSON.stringify([failure.message, failure.detail])).not.toContain("secret-canary");
-    expect(await real.fetchSince(`nobody-${randomUUID().slice(0, 8)}@localhost`, "Nope", 0)).toEqual([]);
+    expect(await readClient.fetchSince(`nobody-${randomUUID().slice(0, 8)}@localhost`, "Nope", 0)).toEqual([]);
   });
 });

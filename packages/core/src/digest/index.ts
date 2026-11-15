@@ -6,6 +6,7 @@ export * from "./answers";
 export * from "./action-feedback";
 export * from "./answered-check";
 export * from "./approvals";
+export * from "./attachment-line";
 export * from "./callback";
 export * from "./labels";
 export * from "./message";

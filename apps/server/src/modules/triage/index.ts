@@ -16,6 +16,8 @@ export type { LabelInput } from "./label-input";
 export { classifyEmail, EMPTY_EXTRAS } from "./classifier";
 export type { ClassifierEmail, ClassifierExtras, SenderContext } from "./classifier";
 export { deadlinesInWindow } from "./classifier-extras";
+export { loadClassifierExtras, SENDER_HISTORY_DAYS } from "./extras-reader";
+export type { ClassifierExtrasInput } from "./extras-reader";
 export {
   clearTriageTexts,
   countTriagedBetween,
