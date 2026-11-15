@@ -23,7 +23,7 @@ import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { errorFields } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
-import { createLlmClient, llmEndpointFields, llmProviders, type LlmProviderId } from "./platform/llm";
+import { createLlmClient, llmEndpointFields, type LlmProviderId } from "./platform/llm";
 import { createLog, setLogFormat, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
@@ -154,12 +154,11 @@ let triageRun: Promise<void> = Promise.resolve();
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
-const provider = llmProviders[classifierRow.provider];
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
   log.info("llm_settings", llmEndpointFields(llmTable, "classifier"));
   const llm = createLlmClient({ table: llmTable });
-  const pause = createLlmPause({ configHint: provider.configHint });
+  const pause = createLlmPause();
   degraded = { pause, scope };
   const triage = createTriageJob({
     db,

@@ -123,6 +123,20 @@ describe("triage logs", () => {
         .map((call: unknown[]) => call.map(String).join(" "))
         .join("\n");
       for (const marker of Object.values(MARKERS)) expect(output).not.toContain(marker);
+
+      // Every line of the triage module is an event name and key=value pairs: no free text.
+      const triageLines = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+        .map((call: unknown[]) => call.map(String).join(" "))
+        .filter((line) => line.startsWith("[triage] "));
+      for (const line of triageLines) expect(line).toMatch(/^\[triage\] [a-z][a-z0-9_]*( [a-z_]+=\S+)*$/);
+      const events = triageLines.map((line) => line.split(" ")[1]);
+      for (const event of ["llm_paused", "triage_retry", "llm_config_paused", "triage_done"]) {
+        expect(events).toContain(event);
+      }
+      expect(triageLines.find((line) => line.startsWith("[triage] triage_retry"))).toMatch(
+        / attempts=1 max_attempts=3 error=LlmHardError error_code=unknown$/
+      );
+      expect(triageLines.find((line) => line.startsWith("[triage] triage_done"))).toMatch(/ category=info reason=\S+$/);
     } finally {
       logSpy.mockRestore();
       errorSpy.mockRestore();

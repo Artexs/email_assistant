@@ -13,7 +13,7 @@ providers, to switch between them, and to allow more providers later.
 
 - One global switch: `LLM_PROVIDER` (`gemini` | `openai`; code default `gemini`). A restart applies it. The classifier uses it; other roles fall back to it (see Amendment).
 - Code: `apps/server/src/platform/llm/` holds the shared client (Zod check, timeout, rate limiter) and `providers/{gemini,openai}.ts`.
-  `providers/index.ts` is the registry: one row per provider (id, `createGenerate`, `classifyError`, `configHint`). ESLint allows
+  `providers/index.ts` is the registry: one row per provider (id, `createGenerate`, `classifyError`). ESLint allows
   `@google/genai` only in `providers/gemini.ts` and `openai` only in `providers/openai.ts`.
 - Keys stay separate per provider: `GEMINI_*` and `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER` (default `gpt-6-luna`),
   `OPENAI_TIMEOUT_MS`, `OPENAI_RPM`, `OPENAI_REASONING_EFFORT`.

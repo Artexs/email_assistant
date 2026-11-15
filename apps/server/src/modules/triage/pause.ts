@@ -14,10 +14,9 @@ export interface LlmPause {
   reset(): void;
 }
 
-export function createLlmPause(opts: { baseMs?: number; maxMs?: number; configHint?: string } = {}): LlmPause {
+export function createLlmPause(opts: { baseMs?: number; maxMs?: number } = {}): LlmPause {
   const baseMs = opts.baseMs ?? 5 * 60_000;
   const maxMs = opts.maxMs ?? 60 * 60_000;
-  const configHint = opts.configHint ?? "check the LLM API key, the classifier model and the provider project";
   let trips = 0;
   let until: Date | null = null;
   let since: Date | null = null;
@@ -28,13 +27,11 @@ export function createLlmPause(opts: { baseMs?: number; maxMs?: number; configHi
       if (since === null) since = now;
       const ms = Math.min(baseMs * 2 ** (trips - 1), maxMs);
       until = new Date(now.getTime() + ms);
-      const minutes = Math.round(ms / 60_000);
       if (kind === "soft") {
-        log.warn(`LLM soft error ${code}: triage paused for ${minutes} min, until ${until.toISOString()}`);
+        log.warn("llm_paused", { code, wait_ms: ms, until: until.toISOString() });
       } else {
-        log.error(
-          `LLM config error ${code}: ${configHint}; triage paused for ${minutes} min, until ${until.toISOString()}`
-        );
+        // The hint text is not logged: docs/known-alerts.md keeps it per code.
+        log.error("llm_config_paused", { code, wait_ms: ms, until: until.toISOString() });
       }
       return until;
     },

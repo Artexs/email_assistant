@@ -73,5 +73,5 @@ export {
   statusMessage,
   type CommandDeps,
 } from "./commands";
-export { listUrgentNoticeTimes } from "./metrics-repo";
+export { listUrgentCandidates, listUrgentNoticeTimes, type UrgentCandidate } from "./metrics-repo";
 export { heldReason, type HeldReasonDeps } from "./held-reason";
