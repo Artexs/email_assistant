@@ -193,7 +193,7 @@ function statusText(mailbox: MailboxSummary, clock: (at: Date) => string, texts:
     case "paused":
       return t.statePaused(since);
     case "auth_error":
-      return t.stateAuthError(since);
+      return mailbox.oauth_provider === null ? t.stateAuthError(since) : t.stateAuthErrorOAuth(since);
     case "host_blocked":
       return t.stateHostBlocked(since);
   }
@@ -267,7 +267,7 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
   const extra: string[] = [];
   for (const mailbox of await listMailboxes(deps.db, ctx)) {
     const address = cutText(mailbox.address, ADDRESS_MAX);
-    const skip = skipText(mailbox.status, address, texts);
+    const skip = skipText(mailbox, address, texts);
     if (skip !== null) {
       extra.push(skip);
       continue;
@@ -281,7 +281,7 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
     if (result.kind === "changed") changed.push(address);
     else if (result.kind === "already")
       extra.push(change.to === "paused" ? texts.alreadyPaused(address) : texts.alreadyActive(address));
-    else if (result.kind === "auth_error") extra.push(texts.loginError(address));
+    else if (result.kind === "auth_error") extra.push(loginErrorText(mailbox, address, texts));
     else if (result.kind === "host_blocked") extra.push(texts.hostBlocked(address));
   }
   return {
@@ -290,11 +290,16 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
   };
 }
 
+// An OAuth mailbox is fixed with Reconnect in the panel, a password mailbox with `mailbox:password`.
+function loginErrorText(mailbox: MailboxSummary, address: string, texts: CoreTexts["bot"]["switch"]): string {
+  return mailbox.oauth_provider === null ? texts.loginError(address) : texts.loginErrorOAuth(address);
+}
+
 // A mailbox in a state that only the system leaves is not paused or resumed: its own line says why.
-function skipText(status: MailboxSummary["status"], address: string, texts: CoreTexts["bot"]["switch"]): string | null {
-  switch (status) {
+function skipText(mailbox: MailboxSummary, address: string, texts: CoreTexts["bot"]["switch"]): string | null {
+  switch (mailbox.status) {
     case "auth_error":
-      return texts.loginError(address);
+      return loginErrorText(mailbox, address, texts);
     case "host_blocked":
       return texts.hostBlocked(address);
     case "active":

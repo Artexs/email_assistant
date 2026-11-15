@@ -22,6 +22,7 @@ import {
   MailboxExistsError,
   MailboxLimitError,
   MailboxNotFoundError,
+  MailboxOAuthError,
 } from "./port";
 import { removeMailbox, type RemoveDeps } from "./remove";
 import { switchMailboxStatus } from "./status";
@@ -46,6 +47,7 @@ export interface MailRouteDeps {
 export function mailErrorBody(error: unknown): { status: 400 | 404 | 409 | 422 | 502; error: ApiErrorCode } | null {
   if (error instanceof HostNotAllowedError) return { status: 400, error: "host_not_allowed" };
   if (error instanceof MailboxNotFoundError) return { status: 404, error: "not_found" };
+  if (error instanceof MailboxOAuthError) return { status: 409, error: "oauth_mailbox" };
   if (error instanceof MailboxExistsError) return { status: 409, error: "mailbox_exists" };
   if (error instanceof MailboxLimitError) return { status: 409, error: "mailbox_limit" };
   if (error instanceof MailAuthError) return { status: 422, error: "mail_login_failed" };
