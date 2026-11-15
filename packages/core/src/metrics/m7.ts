@@ -1,11 +1,13 @@
 // M7: cost per mailbox per month, from the week's LLM calls and the reference numbers of the cost model.
-import { costPerMail } from "../triage/cost";
+import { costPerMail, type LlmEndpointKind } from "../triage/cost";
 
 import { costModel } from "./cost-model";
 
 export interface LlmCallRow {
   mailboxId: string | null;
   model: string | null;
+  // `standard` when the row has no `endpoint` key (written before F111).
+  endpoint: LlmEndpointKind;
   tokensIn: number | null;
   tokensOut: number | null;
   at: Date;
@@ -26,7 +28,8 @@ export function unitCost(rows: readonly LlmCallRow[], opts: { mailboxes: number 
   let llmUsdWeek = 0;
   let unpricedCalls = 0;
   for (const row of rows) {
-    const cost = row.model === null ? null : costPerMail(row.model, row.tokensIn ?? 0, row.tokensOut ?? 0, row.at);
+    const cost =
+      row.model === null ? null : costPerMail(row.model, row.tokensIn ?? 0, row.tokensOut ?? 0, row.at, row.endpoint);
     if (cost === null) unpricedCalls += 1;
     else llmUsdWeek += cost;
   }

@@ -533,6 +533,8 @@ export async function triageOne(
         role: "classifier",
         promptVersion: prompts.classifier.version,
         model: deps.llm.modelOf("classifier"),
+        // The error branch has no `LlmUsage`: the table says where the call went.
+        endpoint: deps.llm.endpointOf("classifier"),
         outcome: llmErrorCode(error),
         tokensIn: null,
         tokensOut: null,
@@ -552,6 +554,7 @@ export async function triageOne(
     role: usage.role,
     promptVersion: usage.promptVersion,
     model: usage.model,
+    endpoint: usage.endpoint,
     outcome: "ok",
     tokensIn: usage.tokensIn,
     tokensOut: usage.tokensOut,

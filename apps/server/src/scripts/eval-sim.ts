@@ -32,7 +32,7 @@ import {
   readLedger,
   runCap,
 } from "../platform/eval-ledger";
-import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
+import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable } from "../platform/llm";
 import { corpusDir, readScenario } from "../platform/sim-files";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
@@ -105,9 +105,18 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   const judgeRow = options.judge ? table.roles.judge : undefined;
   const effort = row.reasoningEffort;
 
-  // A model without a price today cannot be held to a cap, and a zero estimate would mean no cap.
+  const { endpoint, host } = llmEndpointFields(table, "classifier");
+  // An own server costs nothing and has no price row: the run takes no budget (D12). The judge is a paid provider
+  // (PD-026), so an own run with `--judge` would send paid calls with no cap: it is refused.
+  const own = endpoint === "own";
+  if (own && options.judge) {
+    cli.fail("an own endpoint run has no USD budget, so it cannot use --judge (the judge is a paid provider)");
+    return 1;
+  }
+  // A paid run (standard or eu) of a model without a price today cannot be held to a cap, and a zero estimate would
+  // mean no cap: it is refused. This guard stays for every endpoint that costs money.
   const startedAt = (deps.now ?? (() => new Date()))();
-  const estimateUsd = firstEstimateUsd(model, startedAt);
+  const estimateUsd = own ? 0 : firstEstimateUsd(model, startedAt, endpoint);
   if (estimateUsd === null) {
     cli.fail(`no price for model ${model}: add it to llmPrices before a sim run`);
     return 1;
@@ -149,17 +158,20 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     cli.fail(error instanceof Error ? error.message : "no ledger path");
     return 1;
   }
-  const cap = runCap({
-    requested: options.budgetUsd,
-    monthSpent: monthSpend(readLedger(ledgerPath), monthOf(startedAt)),
-    monthCap: MONTH_CAP_USD,
-  });
-  if (cap <= 0) {
+  // An own run spends nothing, so the month cap does not apply to it.
+  const cap = own
+    ? null
+    : runCap({
+        requested: options.budgetUsd,
+        monthSpent: monthSpend(readLedger(ledgerPath), monthOf(startedAt)),
+        monthCap: MONTH_CAP_USD,
+      });
+  if (cap !== null && cap <= 0) {
     cli.fail("month budget used");
     return 1;
   }
   cli.print(
-    `provider=${row.provider} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=$${cap}`
+    `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
   );
 
   // `--rpm` is the classifier provider's rate; the judge provider keeps the configured rate (`--judge-rpm` overrides).
@@ -175,6 +187,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     runs,
     evalStateFileName({
       model,
+      endpoint,
       reasoningEffort: effort,
       // The version and the sorted parts: two variants never share a state file.
       promptVersion: promptLabel(options.prompt),
@@ -191,8 +204,13 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   }
 
   let newSpendUsd = 0;
+  // The judge is on another provider than the classifier (PD-026): a call is priced at the endpoint of its provider.
+  const endpointOfModel = (usedModel: string) =>
+    judgeRow !== undefined && usedModel === judgeRow.model && usedModel !== model
+      ? table.providers[judgeRow.provider].endpoint
+      : endpoint;
   const callCostUsd = (usage: { model: string; tokensIn: number; tokensOut: number }, at: Date) =>
-    costPerMail(usage.model, usage.tokensIn, usage.tokensOut, at);
+    costPerMail(usage.model, usage.tokensIn, usage.tokensOut, at, endpointOfModel(usage.model));
   try {
     if (options.fresh) rmSync(stateFile, { force: true });
     const done = existsSync(stateFile) ? parseCaseResults(readFileSync(stateFile, "utf8")) : [];
@@ -210,6 +228,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         cases,
         model,
         provider: row.provider,
+        host,
         reasoningEffort: effort,
         bar: options.bar,
         minKept: options["min-kept"],
@@ -222,15 +241,20 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         ...(judgeRow === undefined
           ? {}
           : { judge: { llm, provider: judgeRow.provider, model: judgeRow.model, addressOf: evalDelegateAddress } }),
-        budget: {
-          capUsd: cap,
-          callCostUsd,
-          firstEstimateUsd: estimateUsd,
-          // Every charge of the run, also a failed attempt: the ledger line holds the new spend.
-          onSpend: (usd) => {
-            newSpendUsd += usd;
-          },
-        },
+        // An own run has no budget (no cap, no price check): the ledger line stays $0.
+        ...(cap === null
+          ? {}
+          : {
+              budget: {
+                capUsd: cap,
+                callCostUsd,
+                firstEstimateUsd: estimateUsd,
+                // Every charge of the run, also a failed attempt: the ledger line holds the new spend.
+                onSpend: (usd: number) => {
+                  newSpendUsd += usd;
+                },
+              },
+            }),
       }
     );
     const sim = {
@@ -250,6 +274,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       const dir = deps.gateDir ?? gateDir;
       const name = gateFileName({
         role: report.role,
+        endpoint: report.endpoint,
         promptVersion: report.promptVersion,
         model,
         reasoningEffort: effort,

@@ -86,6 +86,8 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     role: "classifier",
     model: "gemini-3.5-flash-lite",
     provider: "gemini",
+    endpoint: "standard",
+    host: null,
     reasoningEffort: null,
     promptVersion: "classifier-v2",
     promptParts: null,
