@@ -13,6 +13,7 @@ import {
   switchBodySchema,
   syncFolderBodySchema,
   toolSwitchNames,
+  urgencyBodySchema,
   z,
 } from "@ea/core";
 
@@ -59,6 +60,16 @@ export const settingsDocs = {
     body: autoBodySchema,
     ok: { status: 200, schema: settingsChangeSchema },
     errors: [ownerOnly, notFound, { status: 409, codes: ["no_go"], schema: noGoBodySchema }],
+  }),
+  putSettingsUrgency: apiDoc({
+    operationId: "putSettingsUrgency",
+    summary:
+      "Set or clear the urgency profile of a mailbox: topics and deadlines (owner only). The answer is the settings.",
+    tags: ["settings"],
+    params: z.object({ mailboxId }),
+    body: urgencyBodySchema,
+    ok: { status: 200, schema: settingsViewSchema },
+    errors: [ownerOnly, notFound],
   }),
   patchSettingsSyncFolder: apiDoc({
     operationId: "patchSettingsSyncFolder",

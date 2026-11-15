@@ -8,6 +8,7 @@ import {
   switchBodySchema,
   syncFolderBodySchema,
   toolSwitchNames,
+  urgencyBodySchema,
   type BarCategory,
   type GateView,
   type RuleView,
@@ -24,7 +25,7 @@ import { parseBody, parseQuery, requireOwner, type ApiEnv } from "../../platform
 import { rulesDocs, settingsDocs } from "./api-docs";
 import { getMailboxSettings, listSenderRuleRows, type SenderRuleRow } from "./repo";
 import { addSenderRule, removeSenderRule } from "./rules";
-import { setMode, setToolSwitch, SettingsNotFoundError, type SettingsChange } from "./service";
+import { setMode, setToolSwitch, setUrgencyProfile, SettingsNotFoundError, type SettingsChange } from "./service";
 import { buildSettingsView, type SettingsViewDeps } from "./view";
 
 export type AutoGateOutcome = { kind: "changed"; change: SettingsChange } | { kind: "refused"; gate: GateView };
@@ -132,6 +133,19 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
       });
       if (result.kind === "refused") return c.json({ error: "no_go", gate: result.gate }, 409);
       return respond(c, id, result.change);
+    });
+  });
+
+  app.put("/settings/:mailboxId/urgency", requireOwner, settingsDocs.putSettingsUrgency, async (c) => {
+    const id = mailboxIdOf(c);
+    if (!id || !(await ensureSettings(c, id))) return notFound(c);
+    const body = await parseBody(c, urgencyBodySchema);
+    return guarded(c, async () => {
+      await setUrgencyProfile(deps.settings.db, c.get("ctx"), id, body.profile, {
+        via: "web",
+        userId: c.get("session").userId,
+      });
+      return c.json(await buildSettingsView(deps, c.get("ctx"), id));
     });
   });
 
