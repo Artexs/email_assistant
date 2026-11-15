@@ -60,6 +60,7 @@ export interface Actions {
   send_started_at: Timestamp | null;
   status: string;
   status_reason: string | null;
+  supersedes_action_id: string | null;
   type: string;
   updated_at: Generated<Timestamp>;
 }
@@ -396,6 +397,7 @@ export interface Outbox {
   dedup_key: string;
   detail: Generated<string>;
   digest_id: string | null;
+  edit_of_outbox_id: string | null;
   email_id: string | null;
   error_code: string | null;
   external_message_id: Int8 | null;

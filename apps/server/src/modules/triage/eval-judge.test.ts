@@ -16,6 +16,7 @@ const classifierUsage: LlmUsage = {
   tokensIn: 100,
   tokensOut: 20,
   latencyMs: 50,
+  endpoint: "standard",
 };
 
 const allTwos = {
@@ -60,6 +61,7 @@ function routedLlm(scripts: { classifier: Step[]; judge: Step[] }) {
   const counts = { classifier: 0, judge: 0 };
   const llm: LlmClient = {
     modelOf: () => "fake",
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const role = req.role as "classifier" | "judge";
       const script = scripts[role];

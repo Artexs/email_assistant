@@ -1,3 +1,4 @@
+import type { LlmEndpointKind } from "@ea/core";
 import { describe, expect, spyOn, test } from "bun:test";
 import { z } from "zod";
 
@@ -28,6 +29,8 @@ interface Built {
   provider: LlmProviderId;
   apiKey: string;
   reasoningEffort: string | null;
+  baseUrl: string | null;
+  endpoint: string;
 }
 
 // Fake providers: each records how it was built and every request it got.
@@ -35,7 +38,12 @@ function fakeProviders(answer: (provider: LlmProviderId, req: GenerateRequest) =
   const built: Built[] = [];
   const requests: { provider: LlmProviderId; req: GenerateRequest }[] = [];
   const make = (provider: LlmProviderId) => ({
-    createGenerate: (o: { apiKey: string; reasoningEffort: string | null }): GenerateFn => {
+    createGenerate: (o: {
+      apiKey: string;
+      reasoningEffort: string | null;
+      baseUrl: string | null;
+      endpoint: LlmEndpointKind;
+    }): GenerateFn => {
       built.push({ provider, ...o });
       return async (req) => {
         requests.push({ provider, req });
@@ -56,15 +64,21 @@ const classifierRow: LlmRoleSettings = {
 };
 
 function twoProviderTable(judge: Partial<LlmRoleSettings> = {}): LlmRoleTable {
-  const base = uniformRoleTable(classifierRow, { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 });
+  const base = uniformRoleTable(classifierRow, {
+    apiKeyName: "OPENAI_API_KEY",
+    apiKey: "o-key",
+    rpm: 60,
+    baseUrl: null,
+    endpoint: "standard",
+  });
   return {
     roles: {
       ...base.roles,
       judge: { provider: "gemini", model: "gem-j", timeoutMs: 50, rpm: null, reasoningEffort: null, ...judge },
     },
     providers: {
-      openai: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 },
-      gemini: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 30 },
+      openai: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60, baseUrl: null, endpoint: "standard" },
+      gemini: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 30, baseUrl: null, endpoint: "standard" },
     },
   };
 }
@@ -100,8 +114,11 @@ describe("createLlmClient", () => {
       tokensIn: 1,
       tokensOut: 2,
       latencyMs: 0,
+      endpoint: "standard",
     });
-    expect(fake.built).toEqual([{ provider: "openai", apiKey: "o-key", reasoningEffort: "none" }]);
+    expect(fake.built).toEqual([
+      { provider: "openai", apiKey: "o-key", reasoningEffort: "none", baseUrl: null, endpoint: "standard" },
+    ]);
   });
 
   test("a second role on another provider uses that provider's generate", async () => {
@@ -114,8 +131,8 @@ describe("createLlmClient", () => {
       ["gemini", "gem-j"],
     ]);
     expect(fake.built).toEqual([
-      { provider: "openai", apiKey: "o-key", reasoningEffort: "none" },
-      { provider: "gemini", apiKey: "g-key", reasoningEffort: null },
+      { provider: "openai", apiKey: "o-key", reasoningEffort: "none", baseUrl: null, endpoint: "standard" },
+      { provider: "gemini", apiKey: "g-key", reasoningEffort: null, baseUrl: null, endpoint: "standard" },
     ]);
     expect(judge.usage.role).toBe("judge");
     expect(llm.modelOf("judge")).toBe("gem-j");
@@ -204,6 +221,28 @@ describe("createLlmClient", () => {
       llm.generate({ ...classifierCall, role: "writer" });
     expect(typeof wrongVersion).toBe("function");
     expect(typeof wrongRole).toBe("function");
+  });
+
+  test("the usage and endpointOf carry the endpoint kind of the role's provider", async () => {
+    const fake = fakeProviders(() => okText);
+    const table = twoProviderTable({ provider: "gemini" });
+    table.providers.openai = { ...table.providers.openai, baseUrl: "http://127.0.0.1:11434/v1", endpoint: "own" };
+    const llm = createLlmClient({ table, providers: fake.providers, ...fakeClock() });
+    expect(llm.endpointOf("classifier")).toBe("own");
+    expect(llm.endpointOf("judge")).toBe("standard");
+    expect((await llm.generate(classifierCall)).usage.endpoint).toBe("own");
+    expect((await llm.generate(judgeCall)).usage.endpoint).toBe("standard");
+    // The provider gets the base URL and the kind of its own row.
+    expect(fake.built).toEqual([
+      {
+        provider: "openai",
+        apiKey: "o-key",
+        reasoningEffort: "none",
+        baseUrl: "http://127.0.0.1:11434/v1",
+        endpoint: "own",
+      },
+      { provider: "gemini", apiKey: "g-key", reasoningEffort: null, baseUrl: null, endpoint: "standard" },
+    ]);
   });
 
   test("the debug log holds the role and the model, not the prompt or the key", async () => {

@@ -12,7 +12,7 @@ import {
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { createPlanned, getDraft } from "../actions";
 import { auditEvents, countMailboxEventsBetween, recordAudit } from "../audit";
@@ -191,7 +191,12 @@ export async function runChaserForMailbox(
     : await deps.db.transaction().execute(run);
 
   if (rows.length > 0 && result.skipped === null) {
-    log.info(`chaser ${mailbox.id}: due ${rows.length}, overdue ${result.overdue}, reminders ${result.reminders}`);
+    log.info("chaser_done", {
+      mailbox_id: mailbox.id,
+      due: rows.length,
+      overdue: result.overdue,
+      reminders: result.reminders,
+    });
   }
   return result;
 }
@@ -205,28 +210,29 @@ export function createChaserJob(deps: ChaserDeps): { run(opts?: { force?: boolea
       const targets = await listSyncTargets(deps.db);
       for (const { orgId, mailboxId } of targets) {
         const ctx = { orgId };
+        const mailboxLog = log.with({ org_id: orgId, mailbox_id: mailboxId });
         try {
           const settings = await getMailboxSettings(deps.db, ctx, mailboxId);
           const switches = settings && parseToolSwitches(settings.tool_switches);
           if (!settings || !switches || settings.mode !== "assist" || !switches.create_draft) {
             if (!warnedSettings.has(mailboxId)) {
               warnedSettings.add(mailboxId);
-              log.info(`chaser ${mailboxId}: skipped settings`);
+              mailboxLog.info("chaser_skipped_settings");
             }
             continue;
           }
           const organization = await getOrganization(deps.db, ctx);
           if (!organization) continue;
-          if (opts?.force === true) log.info(`chaser ${mailboxId}: forced`);
+          if (opts?.force === true) mailboxLog.info("chaser_forced");
           const mailbox = { id: mailboxId, timezone: organization.timezone, settingsVersion: settings.version };
           const result = await runChaserForMailbox(deps, ctx, mailbox, deps.now(), opts);
           // One line per mailbox and reason, not one per tick.
           if (result.skipped !== null && !warnedSkips.has(`${mailboxId}:${result.skipped}`)) {
             warnedSkips.add(`${mailboxId}:${result.skipped}`);
-            log.info(`chaser ${mailboxId}: skipped ${result.skipped}`);
+            mailboxLog.info("chaser_skipped", { reason: result.skipped });
           }
         } catch (error) {
-          log.error(`chaser ${mailboxId} failed: ${describeError(error)}`);
+          mailboxLog.error("chaser_failed", { ...errorFields(error) });
         }
       }
     },

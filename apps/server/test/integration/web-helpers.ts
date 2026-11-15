@@ -46,6 +46,8 @@ export interface WebTestOptions {
   isOrgSuspended?: WebDeps["isOrgSuspended"];
   operatorUserIds?: WebDeps["operatorUserIds"];
   twoFactorOff?: ReadonlySet<string>; // user ids whose fake session has TOTP off; every other user has it on
+  ssoUsers?: ReadonlySet<string>; // user ids whose fake session is an SSO session; every other session is a password session
+  anySsoUsable?: WebDeps["anySsoUsable"]; // the read of GET /api/sign-in-options; absent = the route answers false
 }
 
 const cookieOf = (headers: Headers): string => headers.get("cookie")?.replace("ea.session_token=", "") ?? "";
@@ -62,7 +64,7 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
               userId,
               sessionId: cookieOf(headers),
               twoFactorEnabled: opts.twoFactorOff?.has(userId) !== true,
-              signInMethod: "password",
+              signInMethod: opts.ssoUsers?.has(userId) === true ? "sso" : "password",
             }
           : null;
       },
@@ -79,6 +81,7 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
     routers: opts.routers,
     ...(opts.isOrgSuspended ? { isOrgSuspended: opts.isOrgSuspended } : {}),
     ...(opts.operatorUserIds ? { operatorUserIds: opts.operatorUserIds } : {}),
+    ...(opts.anySsoUsable ? { anySsoUsable: opts.anySsoUsable } : {}),
   };
   return createApp({ checkDb: async () => true, web });
 }

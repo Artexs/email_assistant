@@ -86,6 +86,7 @@ describe("generate output", () => {
       tokensIn: 100,
       tokensOut: 25,
       latencyMs: 0,
+      endpoint: "standard",
     });
   });
 

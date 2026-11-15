@@ -257,12 +257,12 @@ describe("send logs", () => {
         for (const pair of [first, second]) expect(output).toContain(`action ${pair.draftId}: applied create_draft`);
         expect(output).toContain(`action ${appliedSend?.id}: applied send`);
         expect(output).toContain(`action ${rejectedSend?.id}: failed smtp_rejected (stage envelope, code 550)`);
-        for (const id of approvals) expect(output).toContain(`notice approval queued: outbox ${id}`);
-        for (const id of results) expect(output).toContain(`notice send_result queued: outbox ${id}`);
+        for (const id of approvals) expect(output).toContain(`notice_queued kind=approval outbox_id=${id}`);
+        for (const id of results) expect(output).toContain(`notice_queued kind=send_result outbox_id=${id}`);
         expect(output).toContain(
           `expiry ${mailboxId}: expired 1 (timeout 1, draft_missing 0, not_notified 0, not_seen 0, held_timeout 0)`
         );
-        expect(output).toContain(`chaser ${mailboxId}: due 1, overdue 1, reminders 1`);
+        expect(output).toContain(`chaser_done mailbox_id=${mailboxId} due=1 overdue=1 reminders=1`);
       });
     } finally {
       logSpy.mockRestore();

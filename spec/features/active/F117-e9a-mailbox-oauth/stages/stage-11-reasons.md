@@ -50,3 +50,7 @@ Check the panel's Polish label for Mailboxes and the Reconnect button name of st
 **Done when.** The tests pass; the Proof prints `PROOF_OK`.
 
 **Out of scope.** Panel UI (stage 18), push (E9b).
+
+## Carry-over from the stage 06 review (2026-11-15)
+
+AADSTS 65001 gives `admin_consent_required` and means "the user or an administrator has not consented". A personal Outlook.com account, or a user who withdrew consent, gets it too. The `fixOAuth` text for `admin_consent_required` must not say only "administrator": word it so that it also fits a user who must approve the app (en and pl).
