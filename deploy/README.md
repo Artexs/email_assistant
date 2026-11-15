@@ -555,7 +555,7 @@ Run one job once, with the same settings as the server. Add `--force` only to th
 
 ```sh
 $C run --rm cli bun run job:run --name actions.expiry
-$C run --rm cli bun run job:run --name delegation.chaser [--force]
+$C run --rm cli bun run job:run --name loops.chaser [--force]
 $C run --rm cli bun run job:run --name channels.notifier
 $C run --rm cli bun run job:run --name platform.retention
 ```

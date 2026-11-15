@@ -37,7 +37,7 @@ flowchart LR
         J3[actions.committer<br/>every 15 s]
         J4[channels.notifier<br/>every 15 s]
         J5[channels.digest<br/>every minute]
-        J6[delegation.chaser<br/>every 15 min, acts daily]
+        J6[loops.chaser<br/>every 15 min, acts daily]
         J7[triage.returned<br/>every 15 s]
     end
 
@@ -452,7 +452,7 @@ S4 scripts (`package.json`):
 
 - `delegates:add` / `delegates:list` / `delegates:disable` / `delegates:enable` — manage the delegates of an organization (`--org-id`; `add` takes `--name`, `--email`, `--tags`; `list --all` shows disabled ones).
 - `delegations:list` (`--status`, `--limit`) / `delegations:done` — list delegations, close an answered or overdue one.
-- `job:run --name actions.expiry|delegation.chaser|actions.committer|channels.notifier|platform.retention|loops.analyze|loops.match [--force]` — runs one job once with the deps of `main.ts`. `--force` is only for the chaser and skips its time gate. Do not run the committer while the server runs on the same database.
+- `job:run --name actions.expiry|loops.chaser|delegation.chaser|actions.committer|channels.notifier|platform.retention|loops.analyze|loops.match [--force]` — runs one job once with the deps of `main.ts`. `--force` is only for the chaser (`loops.chaser`; `delegation.chaser` is its alias) and skips its time gate. Do not run the committer while the server runs on the same database.
 - `mailbox:probe-send` — checks the Interia draft, SMTP, Sent and own-mail facts with one synthetic mail on the test mailbox (`TEST_MAILBOX_ADDRESS` only; the password on stdin).
 
 ## 5. `packages/core` — shared pure logic

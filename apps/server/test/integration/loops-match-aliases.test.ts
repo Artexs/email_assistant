@@ -151,3 +151,56 @@ describe("an alias of the user does not close a loop", () => {
     });
   });
 });
+
+describe("the own-address rule (stage 14 re-review: the two test gaps)", () => {
+  const mailboxAddress = async (trx: Parameters<typeof waiting>[0], mailboxId: string): Promise<string> =>
+    (await trx.selectFrom("mailboxes").select("address").where("id", "=", mailboxId).executeTakeFirstOrThrow()).address;
+
+  test("a loop with an own mailbox address in To, Cc or as counterpart: a mail from that address does not close it", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const own = await mailboxAddress(trx, org.mailboxId);
+      // The user wrote to themselves (a note to self, a Cc to themselves): the mailbox address is in the loop's people.
+      const byTo = await waiting(trx, org, {
+        to_addresses: [own],
+        cc_addresses: [],
+        counterpart: "first@example.test",
+      });
+      const byCc = await waiting(trx, org, { to_addresses: [ANNA], cc_addresses: [own], counterpart: ANNA });
+      const byCounterpart = await waiting(trx, org, { to_addresses: [ANNA], cc_addresses: [], counterpart: own });
+      for (const loop of [byTo, byCc, byCounterpart]) {
+        await reply(trx, org, { from: own, threadKey: loop.threadKey, subject: "Note to self" });
+      }
+      const out = await matchReplies({ db: trx }, org.ctx, org.mailboxId, { now: RUN_AT });
+      expect(out.replied).toBe(0);
+      for (const loop of [byTo, byCc, byCounterpart]) {
+        expect((await loopRow(trx, loop.id)).status).toBe("open");
+        expect(await loopHooks().isOpen(trx, org.ctx, loop.id)).toBe(true);
+      }
+    });
+  });
+
+  test("a recipient stored in mixed case still closes the loop when the same person writes in lower case, and the reverse", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      // The person is also a Sent From address (send-as), in another case than in the loop.
+      await sentMail(trx, org, { fromAddress: "ANNA@Example.TEST" });
+      const mixedLoop = await waiting(trx, org, {
+        to_addresses: ["Anna@Example.Test"],
+        cc_addresses: [],
+        counterpart: "Anna@Example.Test",
+      });
+      await reply(trx, org, { from: "anna@example.test", threadKey: mixedLoop.threadKey, subject: "Anything" });
+      const lowerLoop = await waiting(trx, org, {
+        to_addresses: ["jan@example.test"],
+        cc_addresses: [],
+        counterpart: "jan@example.test",
+      });
+      await sentMail(trx, org, { fromAddress: "jan@example.test" });
+      await reply(trx, org, { from: "JAN@EXAMPLE.TEST", threadKey: lowerLoop.threadKey, subject: "Anything" });
+      const out = await matchReplies({ db: trx }, org.ctx, org.mailboxId, { now: RUN_AT });
+      expect(out.replied).toBe(2);
+      for (const loop of [mixedLoop, lowerLoop]) expect((await loopRow(trx, loop.id)).status).toBe("closed");
+    });
+  });
+});

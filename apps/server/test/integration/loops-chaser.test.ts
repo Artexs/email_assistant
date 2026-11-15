@@ -67,6 +67,17 @@ describe("the gates", () => {
     });
   });
 
+  test("T1b exactly 07:30 acts (the gate is `before 07:30`); the same minute in the next local day acts again", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await org(trx);
+      await delegatedLoop(trx, o);
+      const at0730 = new Date("2026-11-20T06:30:00Z");
+      expect((await chase(trx, o, at0730)).skipped).toBeNull();
+      expect((await chase(trx, o, new Date(at0730.getTime() + DAY_MS))).skipped).toBeNull();
+      expect(await markers(trx, o.ctx.orgId, "loops.chaser_run")).toHaveLength(2);
+    });
+  });
+
   test("the day marker is per part: the delegation marker alone does not stop the loop part", async () => {
     await withRollback(db, async (trx) => {
       const o = await org(trx);
