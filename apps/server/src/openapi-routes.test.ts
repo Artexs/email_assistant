@@ -311,12 +311,12 @@ describe("the real app", () => {
 
   test("T13. the three delegate routes are described: operation ids, owner only on the writes, the codes of the answers", async () => {
     const paths = (await openApiSpec(realApp())).paths;
-    type Operation = {
+    interface Operation {
       operationId?: string;
       tags?: string[];
       requestBody?: unknown;
       responses?: Record<string, { description?: string } | undefined>;
-    };
+    }
     const list = paths?.["/api/delegates"]?.get as Operation;
     const add = paths?.["/api/delegates"]?.post as Operation;
     const patch = paths?.["/api/delegates/{id}"]?.patch as Operation;

@@ -1,8 +1,8 @@
 import { delegateListSchema, delegateSchema, DELEGATE_LIST_MAX } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
-import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { delegateRoutes } from "../../src/modules/delegation";
+import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 
 import { insertDelegate, testCapabilities } from "./fixtures";
