@@ -144,10 +144,12 @@ jobs:
           docker build -f deploy/Dockerfile.sim --build-arg EA_SERVER_IMAGE=ea-sim-base:ci -t ea-sim-server:ci .
           test "$(docker run --rm --entrypoint stat ea-sim-server:ci -c %U /var/lib/ea-lab)" = "bun"
           docker run --rm --env-file deploy/sim.env.example ea-sim-server:ci bun run lab:env-check
-          if docker run --rm --env-file deploy/sim.env.example -e TELEGRAM_BOT_TOKEN=7234567890:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw ea-sim-server:ci bun run lab:env-check; then
-            echo "the guard accepted a real-form bot token"
-            exit 1
-          fi
+          # The guard must refuse with the code of the real-form token on stdout and a non-zero exit (a missing script or corpus would fail too, but with another output).
+          status=0
+          out="$(docker run --rm --env-file deploy/sim.env.example -e TELEGRAM_BOT_TOKEN=7234567890:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw ea-sim-server:ci bun run lab:env-check)" || status=$?
+          echo "$out"
+          test "$status" -ne 0
+          test "$out" = "[lab-env-check] telegram_token_not_fake"
       - name: Check that the image holds only the package.json of the test tools
         run: |
           files="$(docker run --rm --entrypoint find ea-server:ci /app/tools -not -path '*/node_modules/*' -not -name node_modules -type f | sort)"

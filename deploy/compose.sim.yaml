@@ -53,7 +53,8 @@ services:
     image: ea-sim-server
     logging: *logging
     restart: unless-stopped
-    mem_limit: 128m
+    # 256m: the env guard (bun run, corpus load) peaks at 154 MB RSS before the fake starts (review N1).
+    mem_limit: 256m
     env_file: sim.env
     command:
       - sh
@@ -62,7 +63,7 @@ services:
     ports:
       - "127.0.0.1:8180:8080"
     healthcheck:
-      test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:8090/health'); process.exit(r.ok ? 0 : 1)"]
+      test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:8090/_fake/health'); process.exit(r.ok ? 0 : 1)"]
       interval: 5s
       retries: 10
 
@@ -99,6 +100,7 @@ services:
       retries: 3
 
   # `bun run lab serve` is built in stage 11 of F113. Until then the command exits 1 (the script `lab` does not exist).
+  # Stage 11 must exec the script itself (`exec bun apps/server/src/scripts/<lab script>.ts serve`), so signals reach the lab (review N6).
   lab:
     build: *sim-build
     image: ea-sim-server

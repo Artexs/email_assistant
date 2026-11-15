@@ -72,11 +72,74 @@ describe("checkSimCompose", () => {
     ).toEqual(["fake-telegram: network_mode_not_fake_telegram"]);
   });
 
-  test("the production image tag is refused, as a service image and as the base of the sim build (review N4)", () => {
-    expect(checkSimCompose(Bun.YAML.parse(change("server", "image: ea-sim-server", "image: ea-server")))).toEqual([
-      "server: production_image_tag",
-    ]);
-    const base = source.replace("${EA_SERVER_IMAGE:-ea-sim-base}", "${EA_SERVER_IMAGE:-ea-server}");
+  // The false passes of the stage 03 review (T2): forms of Compose that the first rules did not see.
+  test("v3 an image under any tag of the production image is refused", () => {
+    for (const image of ["ea-server:latest", "ea-server", "docker.io/library/ea-server:1"]) {
+      const text = change("server", "image: ea-sim-server", `image: ${image}`);
+      expect(checkSimCompose(Bun.YAML.parse(text))).toEqual(["server: production_image_tag"]);
+    }
+    const text = change("server", "image: ea-sim-server", "image: ea-server-sim");
+    expect(checkSimCompose(Bun.YAML.parse(text))).toEqual([]);
+  });
+
+  test("v3b the production image as the default of the base build arg is refused, under any tag", () => {
+    const base = source.replace("${EA_SERVER_IMAGE:-ea-sim-base}", "${EA_SERVER_IMAGE:-ea-server:latest}");
     expect(checkSimCompose(Bun.YAML.parse(base))).toContain("server: production_base_tag");
+  });
+
+  test("v4 an entrypoint, which would skip the env guard in the command, is refused", () => {
+    const text = change(
+      "server",
+      "    restart: unless-stopped\n",
+      "    restart: unless-stopped\n    entrypoint: [bun, apps/server/src/main.ts]\n"
+    );
+    expect(checkSimCompose(Bun.YAML.parse(text))).toEqual(["server: entrypoint_set"]);
+  });
+
+  test("v5 a service on another network, and an external network, are refused", () => {
+    const joined = change("db", "    restart: unless-stopped\n", "    restart: unless-stopped\n    networks: [prod]\n");
+    const text = joined.replace(
+      "networks:\n  default:\n",
+      "networks:\n  prod:\n    external: true\n    name: email-assistant_default\n  default:\n"
+    );
+    expect(checkSimCompose(Bun.YAML.parse(text)).sort()).toEqual([
+      "db: network_not_default",
+      "project: external_network",
+    ]);
+  });
+
+  test("v5b an external volume is refused", () => {
+    const text = source.replace(
+      "  lab-state: {}",
+      "  lab-state:\n    external: true\n    name: email-assistant_db-data"
+    );
+    expect(checkSimCompose(Bun.YAML.parse(text))).toEqual(["project: external_volume"]);
+  });
+
+  test("v6 extends is refused", () => {
+    const text = change(
+      "db",
+      "    restart: unless-stopped\n",
+      "    restart: unless-stopped\n    extends:\n      file: compose.yaml\n      service: server\n"
+    );
+    expect(checkSimCompose(Bun.YAML.parse(text))).toEqual(["db: extends_used"]);
+  });
+
+  test("v7 ports given as a string are refused", () => {
+    const text = change("fake-telegram", '    ports:\n      - "127.0.0.1:8180:8080"\n', '    ports: "8180:8080"\n');
+    expect(checkSimCompose(Bun.YAML.parse(text))).toEqual(["fake-telegram: ports_not_list"]);
+  });
+
+  test("v9 a bind mount of ../.env, or any source outside the two sim paths, is refused", () => {
+    for (const volume of ["../.env:/app/.env:ro", "/var/run/docker.sock:/s", "../deploy/sim.env:/e"]) {
+      const text = change("db", "    volumes:\n", `    volumes:\n      - ${volume}\n`);
+      expect(checkSimCompose(Bun.YAML.parse(text))).toEqual(["db: bind_mount_not_allowed"]);
+    }
+    const long = change(
+      "db",
+      "    volumes:\n",
+      "    volumes:\n      - type: bind\n        source: ../.env\n        target: /app/.env\n"
+    );
+    expect(checkSimCompose(Bun.YAML.parse(long))).toEqual(["db: bind_mount_not_allowed"]);
   });
 });
