@@ -450,6 +450,57 @@ describe("committer log events", () => {
   });
 });
 
+describe("committer log events with a nodemailer-shaped error", () => {
+  // nodemailer puts the server reply in `response`, the status in `responseCode` and the SMTP command (with the
+  // recipient) in `command`. `util.format` prints all own fields of an error that is logged raw.
+  const smtpError = () =>
+    Object.assign(new Error(`Mail command failed: ${CANARY.reply}`), {
+      code: "EENVELOPE",
+      response: CANARY.reply,
+      responseCode: 550,
+      command: `RCPT TO:<${CANARY.recipient}> SUBJECT ${CANARY.subject}`,
+    });
+
+  test("at open, at send and at close no line holds the reply, the recipient or the subject", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      await pairOf(trx, box);
+      const ids = { org_id: box.orgId, mailbox_id: box.mailboxId };
+
+      // At open: the sender cannot open.
+      const opened = await captured(() =>
+        committerFor(trx, box, {
+          openSender: async () => {
+            throw smtpError();
+          },
+          sendScope: { kind: "all" },
+        }).run()
+      );
+      expect(opened.entries).toEqual([
+        {
+          level: "error",
+          event: "committer_open_failed",
+          fields: { ...ids, error: "Error", error_code: "EENVELOPE" },
+        },
+      ]);
+
+      // At send: the server refuses the mail; at close: the connection close fails.
+      const smtp = senderOpener();
+      smtp.sender.failNext(smtpError());
+      smtp.sender.close = () => Promise.reject(smtpError());
+      const sent = await captured(() =>
+        committerFor(trx, box, { openSender: smtp.openSender, sendScope: { kind: "all" } }).run()
+      );
+      expect(sent.entries.map((entry) => entry.event)).toEqual(["committer_done", "committer_close_failed"]);
+      expect(sent.entries[1]).toEqual({
+        level: "warn",
+        event: "committer_close_failed",
+        fields: { ...ids, error: "Error", error_code: "EENVELOPE" },
+      });
+    });
+  });
+});
+
 describe("expiry log events", () => {
   const waiting = (trx: Transaction<DB>, box: Box, opts: Parameters<typeof insertDraftAndSend>[3] = {}) =>
     insertDraftAndSend(trx, { orgId: box.orgId }, box.mailboxId, {
@@ -488,6 +539,37 @@ describe("expiry log events", () => {
             expired_not_notified: 0,
             expired_not_seen: 0,
             expired_held_timeout: 0,
+          },
+        },
+      ]);
+    });
+  });
+
+  test("expiry_done.count is the total of two reasons in one mailbox, not the timeout count", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      await waiting(trx, box);
+      await waiting(trx, box, {
+        sendStatus: "approved",
+        approved: { userId: box.userId, at: new Date(NOW.getTime() - 49 * HOUR) },
+        lockedAt: null,
+      });
+
+      const { entries: all } = await captured(() => expiryFor(trx).run());
+
+      expect(all.filter((entry) => entry.fields.mailbox_id === box.mailboxId)).toEqual([
+        {
+          level: "info",
+          event: "expiry_done",
+          fields: {
+            org_id: box.orgId,
+            mailbox_id: box.mailboxId,
+            count: 2,
+            expired_timeout: 1,
+            expired_draft_missing: 0,
+            expired_not_notified: 0,
+            expired_not_seen: 0,
+            expired_held_timeout: 1,
           },
         },
       ]);
