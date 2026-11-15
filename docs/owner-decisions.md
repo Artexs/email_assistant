@@ -477,3 +477,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a person who also sends as the user (send-as or delegate access) would otherwise never close the loop, and the chaser would ask the user to chase someone who already answered.
 - Undo: use the plain Sent-row address set again in `sentFromAddressesOf`.
 - Source: job `2026-11-15-f116-review-s14-opus-sending-to-83298456`, stage 14 review N2.
+
+### 2026-11-15 · F112 docs site: the Ctrl K hint of the search button is hidden by CSS (F112) · product · new
+- Choice: Starlight 0.43.1 has an axe violation on every page at desktop width (`label-content-name-mismatch`: the search button label is "Search", its visible text is "Ctrl K"). `apps/docs/src/styles/custom.css` hides `site-search kbd`. The Ctrl+K shortcut still works. No axe rule is disabled.
+- Why: the docs site must pass axe with no disabled rule; the hint costs nothing in function.
+- Undo: remove the CSS rule and override Starlight's `Search` component so the visible text contains the label.
+- Source: job `2026-11-15-f112-s06-browser-check-906ad293`, stage 06.
