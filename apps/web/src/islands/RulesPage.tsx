@@ -5,6 +5,7 @@ import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { AddRuleForm } from "../components/rules/AddRuleForm";
 import { RuleList } from "../components/rules/RuleList";
+import { UrgencyCard } from "../components/rules/UrgencyCard";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -157,6 +158,14 @@ function Rules() {
         reloadMe={reloadMe}
         reloadMailboxes={reloadMailboxes}
       />
+      {me.features.includes("urgency_editor") && (
+        <UrgencyCard
+          mailboxes={mailboxes}
+          isOwner={isOwner}
+          timeZone={me.organization.timezone}
+          reloadMailboxes={reloadMailboxes}
+        />
+      )}
     </div>
   );
 }

@@ -133,6 +133,12 @@ export const featureFlags = {
     epic: "E4-B",
     removeBy: "2027-03-01",
   },
+  urgency_editor: {
+    default: false,
+    description: 'The "What is urgent for me" card on the Rules page: topics and deadlines per mailbox.',
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

@@ -40,7 +40,7 @@ export const LAB_TARGETS: Record<LabOrgKey, SeedTarget> = {
 };
 
 // Every key of `packages/core/src/features.ts` is in exactly one list. `mistake_capture` is on: the executive needs the
-// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on. `trust_ladder` stays off until the evidence stages of the same epic are built; the pilot turns it on.
+// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on. `trust_ladder` stays off until the evidence stages of the same epic are built; the pilot turns it on. `urgency_editor` is on: its server side exists, and the lab run writes the profile the card shows.
 export const LAB_FLAGS_OFF = [
   "org_delete",
   "sso_sign_in",
@@ -65,6 +65,7 @@ export const LAB_FLAGS_ON = [
   "suspicious_mail",
   "attachment_line",
   "degraded_notice",
+  "urgency_editor",
 ] as const satisfies readonly FeatureKey[];
 
 /** The keys that are in neither list. A new flag fails the lab test until a person puts it in a list. */
