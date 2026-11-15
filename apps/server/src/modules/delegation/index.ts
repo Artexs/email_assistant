@@ -30,6 +30,7 @@ export {
   findOpenDelegationByMessageIds,
   getDelegate,
   getDelegation,
+  hasOpenDelegationInThread,
   insertDelegation,
   isOpenDelegationDraft,
   listAnsweredUnnotified,

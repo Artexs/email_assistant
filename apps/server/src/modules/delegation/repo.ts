@@ -1,3 +1,4 @@
+import { DELEGATION_REMINDER_LIMIT } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -14,7 +15,7 @@ export type DelegationSource = "triage" | "button";
 export const USER_CANCELLED = "user_cancelled";
 
 // The chaser sends at most this many reminders for one delegation (D23).
-export const MAX_REMINDER_SENDS = 2;
+export const MAX_REMINDER_SENDS = DELEGATION_REMINDER_LIMIT;
 
 // A delegation is open while the chaser can still act on it: the draft waits, the task is out, or it is overdue with a
 // reminder left. Retention keeps the task text and the applied draft payload of an open delegation (A23, F083).
@@ -334,6 +335,28 @@ export async function findOpenDelegationByMessageIds(
     .limit(1)
     .executeTakeFirst();
   return row && { id: row.id, delegateId: row.delegate_id };
+}
+
+// F116 (G10): is a delegation of the mailbox out (`sent` or `overdue`) for a mail of this thread? The thread key is the
+// one of the delegated incoming mail. The user's own mail in that thread belongs to the delegation chaser. A read only.
+export async function hasOpenDelegationInThread(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  threadKey: string
+): Promise<boolean> {
+  const row = await db
+    .selectFrom("delegations as d")
+    .innerJoin("emails as e", (join) => join.onRef("e.id", "=", "d.email_id").onRef("e.org_id", "=", "d.org_id"))
+    .select("d.id")
+    .where("d.org_id", "=", ctx.orgId)
+    .where("e.org_id", "=", ctx.orgId)
+    .where("d.mailbox_id", "=", mailboxId)
+    .where("d.status", "in", ["sent", "overdue"])
+    .where("e.thread_key", "=", threadKey)
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
 }
 
 async function updateDelegation(

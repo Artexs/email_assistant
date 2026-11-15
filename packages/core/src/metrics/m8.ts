@@ -18,7 +18,7 @@ export interface AutoEvidence extends GateRow {
 /** PD-066: the precision of real labels is shown only from 30 labels. */
 export const EVIDENCE_MIN_LABELS = 30;
 
-export function autoEvidence(rows: readonly GateRow[]): AutoEvidence[] {
+export function realLabelEvidence(rows: readonly GateRow[]): AutoEvidence[] {
   return rows.map((row) => ({
     ...row,
     wilsonLower:

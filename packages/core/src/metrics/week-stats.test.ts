@@ -19,7 +19,7 @@ import { seriousMistakes } from "./m3";
 import { handledShare } from "./m4";
 import { urgentLatency } from "./m5";
 import { unitCost } from "./m7";
-import { autoEvidence } from "./m8";
+import { realLabelEvidence } from "./m8";
 import { weekRange } from "./week";
 import { buildWeekStats, type WeekRows } from "./week-stats";
 
@@ -67,7 +67,7 @@ describe("buildWeekStats", () => {
     expect(stats.m4).toEqual(handledShare(input.handled));
     expect(stats.m5).toEqual(urgentLatency(input.urgent, { timeZone }));
     expect(stats.m7).toEqual(unitCost(input.llmCalls, { mailboxes: 2 }));
-    expect(stats.m8).toEqual(autoEvidence(input.gates));
+    expect(stats.m8).toEqual(realLabelEvidence(input.gates));
     expect(weekStatsSchema.parse(stats)).toEqual(stats);
   });
 

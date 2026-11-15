@@ -39,3 +39,16 @@ T1–T12 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s19`).
 ## Out of scope
 
 Routes and panel (20–22).
+
+## Carry-over from stage 12 review
+
+- The loop text (ask, subject) can hold markdown and the remains of an escape sequence: escape it in the brief and in the Telegram cards (review-12.md N6).
+
+## Carry-over from stage 17 review
+
+- N5: the keyboard builder drops the loop buttons when loopConsent is false (use the stage 11 choke point) (review-17.md).
+
+## Carry-over from the stage 16 re-review (PASS 5f2f26ab)
+
+- When `delegateMail` gets a caller transaction it writes the send before a key-conflict throw and leaves the rollback to the caller: do not catch that error and commit (stages 19 and 22).
+- `lockEmail` uses `FOR UPDATE`; `FOR NO KEY UPDATE` gives the same serialization without blocking FK inserts on the mail: optional, only with a test.

@@ -1,4 +1,10 @@
-import { telegramLinkBodySchema, telegramLinkSchema, telegramStateSchema } from "@ea/core";
+import {
+  telegramConsentBodySchema,
+  telegramConsentSchema,
+  telegramLinkBodySchema,
+  telegramLinkSchema,
+  telegramStateSchema,
+} from "@ea/core";
 
 import { apiDoc } from "../../platform/openapi";
 
@@ -23,6 +29,14 @@ export const channelDocs = {
       { status: 409, codes: ["telegram_off", "telegram_consent_outdated"] },
       { status: 502, codes: ["telegram_unreachable"] },
     ],
+  }),
+  postTelegramConsent: apiDoc({
+    operationId: "postTelegramConsent",
+    summary: "Confirm the current Telegram consent text for the signed-in user.",
+    tags,
+    body: telegramConsentBodySchema,
+    ok: { status: 200, schema: telegramConsentSchema },
+    errors: [{ status: 409, codes: ["telegram_consent_outdated"] }],
   }),
   deleteTelegramLink: apiDoc({
     operationId: "deleteTelegramLink",

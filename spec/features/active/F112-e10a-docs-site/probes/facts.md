@@ -16,3 +16,12 @@ Evidence record of the plan (2026-11-15, plan base `116efb17`). `plan.md` cites 
 - **F12 Missing sources**: no `CHANGELOG.md`, no OpenAPI file in the repo (ADR 0023 serves `/api/openapi.json` behind login, from F102), no git tag. F102 (E4-A) and F114 (E8b) have no `stages/`.
 - **F13 CI**: `.github/workflows/ci.yml` has jobs `ci`, `e2e`, `image`; `ci` and `e2e` set up Node 24 (Astro 7 CLI); `permissions: contents: read`.
 - **F14 Public repo**: `gh repo view` showed the repository `Artexs/email_assistant` as public (E10 discovery notes §1, 2026-11-13). Links to `github.com/Artexs/email_assistant/blob/…` work for a stranger, and Pages needs no paid plan. Stage 16 O1 sees it again in the Pages settings.
+
+## Refresh 1 (2026-11-15, HEAD 17b2a369)
+
+- **F8 now**: `deploy/README.md` has 877 lines, first heading `# Pilot host runbook`; the address examples are the same (`a@b.com`, `a@b.com.pl`, `p@x.test`, `p@x.test.vcf`, near line 719); new IPv4 `172.29.0.0` (RFC 1918); new URLs only in text and code (`accounts.google.com`, `login.microsoftonline.com/<tenant-id>`, `api.openai.com`, `<machine>.<tailnet>.ts.net:9443`). New sections § Release, § Logs, § VPS lost (F114, F103).
+- **F11 now**: `deploy/Dockerfile` copies `apps/docs/package.json` and runs `bun install --frozen-lockfile --filter "!@ea/docs"` (stage 01); `ARG EA_RELEASE` after the web build (F114). It still does not copy `CHANGELOG.md`.
+- **F12 now**: `CHANGELOG.md` exists (F114 stage 06; release `0.1.0`, no "For users" lines); tag `v0.1.0` exists and holds `apps/docs` but no `docs-deploy.yml`; `docs/release-checklist.md` exists and does not run `docs:stale`. No OpenAPI file in the repo.
+- **F13 now**: `ci.yml` jobs are still `ci`, `e2e`, `image`; `image` checks that `/app/apps/docs` holds only `package.json` and that no Starlight or pagefind tree exists.
+- **F15** `apps/web` pins `@playwright/test` `1.65.0` and `@axe-core/playwright` `4.14.0`; `apps/web/e2e/a11y.ts` holds the WCAG tags. The e2e seed has organizations with flags on (approvals, delegates, stats, delete); the main organization (`e2e-owner@x.test`) has no flag row.
+

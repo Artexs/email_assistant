@@ -51,3 +51,9 @@ mkdir -p /tmp/f102-s19 && bunx prettier --check <the nine files> > /tmp/f102-s19
 ## Carry-over from stage 16 review
 
 - Add the audit event `delegation.remind_requested` to the audit lists in `docs/capabilities/delegation.md`, the `audit_log` row in `docs/architecture.md` and `docs/modules.md`; the chaser text (rule 8, "3 days apart") needs the remind-now exception: remind-now has no gap rule and sets `last_reminder_at` at planning, as the chaser does (review-16.md N4, N7).
+
+## Carry-over from stage 18 re-review (PASS aea56cf9)
+
+- N-focus: track `focusout` too (clear the focused-row ref when `relatedTarget` is null), so a later reload does not move focus to the status line without a user action.
+- N-pl: optional wording for `dgn_moved`: "To zlecenie zmieniło stan i nie ma go już na tej liście." (the page has no "karta"); keep en and pl in step.
+- Docs (capability page): Remind now stays visible with `aria-disabled` and a reason; the cancel question keeps its item after a reload.

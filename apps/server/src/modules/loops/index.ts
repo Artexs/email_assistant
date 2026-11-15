@@ -31,3 +31,8 @@ export {
 export type { ExtractorGateFile } from "./extractor-report";
 export { delegateMail, delegateTaskText } from "./delegate";
 export type { DelegateMailDeps, DelegateMailResult, DelegateMailVia } from "./delegate";
+export { analyzeSent, DEFAULT_LIMIT, MAX_ATTEMPTS } from "./analyze";
+export type { AnalysisScope, AnalyzeDeps, AnalyzeResult } from "./analyze";
+export { writeExtraction } from "./analyze-write";
+export { createLoopJobs } from "./jobs";
+export type { LoopJobDeps, LoopJobs } from "./jobs";

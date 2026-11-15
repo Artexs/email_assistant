@@ -24,20 +24,20 @@
 
 ## Entry points
 
-| Kind     | Name                                                                                                                                                      | Where                                                |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| function | `weekStats`, `recentWeekStats`                                                                                                                            | `apps/server/src/modules/reports/metrics.ts`         |
-| route    | `GET /api/stats`                                                                                                                                          | `apps/server/src/modules/reports/routes.ts`          |
-| page     | `/stats` (the weekly numbers, read-only)                                                                                                                  | `apps/web/src/islands/StatsPage.tsx`                 |
-| CLI      | `bun run stats:week`                                                                                                                                      | `apps/server/src/scripts/stats-week.ts`              |
-| CLI      | `bun run mailbox:signals`                                                                                                                                 | `apps/server/src/scripts/mailbox-signals.ts`         |
-| function | the pure metrics (`missedImportant`, `openLoopsOnTime`, `seriousMistakes`, `handledShare`, `urgentLatency`, `unitCost`, `autoEvidence`, `buildWeekStats`) | `packages/core/src/metrics/index.ts`                 |
-| function | `realGoNoGoRows`                                                                                                                                          | `apps/server/src/modules/triage/gate.ts`             |
-| function | `listTruthRows`, `listHandledRows`                                                                                                                        | `apps/server/src/modules/triage/metrics-repo.ts`     |
-| function | `listHiddenMoveRows`, `listRejectRows`, `listMistakeRows`                                                                                                 | `apps/server/src/modules/actions/repo/metrics.ts`    |
-| function | `listDelegationDueRows`                                                                                                                                   | `apps/server/src/modules/delegation/metrics-repo.ts` |
-| function | `listLlmCallRows`                                                                                                                                         | `apps/server/src/modules/audit/metrics-repo.ts`      |
-| function | `listUrgentNoticeTimes`                                                                                                                                   | `apps/server/src/modules/channels/metrics-repo.ts`   |
+| Kind     | Name                                                                                                                                                           | Where                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| function | `weekStats`, `recentWeekStats`                                                                                                                                 | `apps/server/src/modules/reports/metrics.ts`         |
+| route    | `GET /api/stats`                                                                                                                                               | `apps/server/src/modules/reports/routes.ts`          |
+| page     | `/stats` (the weekly numbers, read-only)                                                                                                                       | `apps/web/src/islands/StatsPage.tsx`                 |
+| CLI      | `bun run stats:week`                                                                                                                                           | `apps/server/src/scripts/stats-week.ts`              |
+| CLI      | `bun run mailbox:signals`                                                                                                                                      | `apps/server/src/scripts/mailbox-signals.ts`         |
+| function | the pure metrics (`missedImportant`, `openLoopsOnTime`, `seriousMistakes`, `handledShare`, `urgentLatency`, `unitCost`, `realLabelEvidence`, `buildWeekStats`) | `packages/core/src/metrics/index.ts`                 |
+| function | `realGoNoGoRows`                                                                                                                                               | `apps/server/src/modules/triage/gate.ts`             |
+| function | `listTruthRows`, `listHandledRows`                                                                                                                             | `apps/server/src/modules/triage/metrics-repo.ts`     |
+| function | `listHiddenMoveRows`, `listRejectRows`, `listMistakeRows`                                                                                                      | `apps/server/src/modules/actions/repo/metrics.ts`    |
+| function | `listDelegationDueRows`                                                                                                                                        | `apps/server/src/modules/delegation/metrics-repo.ts` |
+| function | `listLlmCallRows`                                                                                                                                              | `apps/server/src/modules/audit/metrics-repo.ts`      |
+| function | `listUrgentNoticeTimes`                                                                                                                                        | `apps/server/src/modules/channels/metrics-repo.ts`   |
 
 ## Data
 
