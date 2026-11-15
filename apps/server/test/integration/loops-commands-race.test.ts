@@ -324,9 +324,13 @@ describe.each(pairs)("a follow-up tap against a settings change (%s)", (_name, c
       finished = true;
       return result;
     });
-    await sleep(80);
-    expect(finished).toBe(false);
-    held.resolve(undefined);
+    try {
+      await sleep(80);
+      expect(finished).toBe(false);
+    } finally {
+      // The setter must end also when the check fails, or its open transaction blocks the clean-up of the organization.
+      held.resolve(undefined);
+    }
     await setter;
     expect(await withTimeout(tap, 8_000)).toEqual({ kind: "drafts_off" });
     expect(await actionsOfLoop(app, loop.id)).toEqual([]);
