@@ -49,7 +49,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `slo_disk` (operator alert text `ALERT slo_disk`)
 
-- **First seen:** 2026-11-15 (F114 stage 03 text; the check itself comes with F114 stage 04)
+- **First seen:** 2026-11-15 (F114 stage 04; not seen live)
 - **Source:** job `ops.slo` (`checkDisk`, stage 04). Line 2 shows the free percent and the free gigabytes of the volume `SLO_DISK_PATH`.
 - **Cause:** The free space is below `SLO_DISK_FREE_PCT` percent (default 15) or below `SLO_DISK_FREE_GB` gigabytes (default 2). It closes at 5 points and 0.5 GB above those values.
 - **Fix:** Free space on the VPS: old backups (`BACKUP_DIR`), Docker images and build cache (`docker system df`), logs. Never delete the database volume. `deploy/README.md` § Update has the disk check.
@@ -57,7 +57,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `slo_backup_age` (operator alert text `ALERT slo_backup_age`)
 
-- **First seen:** 2026-11-15 (F114 stage 03 text; the check itself comes with F114 stage 04)
+- **First seen:** 2026-11-15 (F114 stage 04; not seen live)
 - **Source:** job `ops.slo` (`checkBackupAge`, stage 04), reading the status file that `deploy/backup.sh` writes.
 - **Cause:** The status file is missing or unreadable (line 2: no backup status file), the last backup run failed, or the last good backup is older than `SLO_BACKUP_MAX_AGE_H` hours (default 26).
 - **Fix:** Read `~/ea-logs/backup.log` on the VPS and run `deploy/backup.sh` by hand; the last line must be `backup ok <name> <bytes>`. The alert resolves at the next tick after a good run.
