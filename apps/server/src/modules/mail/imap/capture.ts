@@ -85,29 +85,37 @@ function textHostOf(innerHtml: string): string | null {
   return BARE_HOST.test(lower) ? cleanCut(lower, CAPTURE_LIMITS.host) : null;
 }
 
-function linkPairs(parsed: ParsedMail): CapturedLink[] {
+function addLink(pairs: CapturedLink[], seen: Set<string>, host: string | null, textHost: string | null): void {
+  if (host === null) return;
+  const key = `${host} ${textHost}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  pairs.push({ host, textHost });
+}
+
+/** The (host, textHost) pairs of the `<a href>` links of an HTML part, first seen first, unique. */
+export function linkPairsOfHtml(html: string): CapturedLink[] {
   const pairs: CapturedLink[] = [];
   const seen = new Set<string>();
-  const add = (host: string | null, textHost: string | null): void => {
-    if (host === null) return;
-    const key = `${host} ${textHost}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    pairs.push({ host, textHost });
-  };
-  if (typeof parsed.html === "string") {
-    for (const match of parsed.html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi)) {
-      const href = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(match[1] ?? "");
-      const raw = href?.[1] ?? href?.[2] ?? href?.[3];
-      if (raw === undefined) continue;
-      const url = httpUrl(decodeEntities(raw).trim());
-      if (url === null) continue;
-      add(hostOf(url), textHostOf(match[2] ?? ""));
-    }
-  } else if (parsed.text !== undefined) {
+  for (const match of html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi)) {
+    const href = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(match[1] ?? "");
+    const raw = href?.[1] ?? href?.[2] ?? href?.[3];
+    if (raw === undefined) continue;
+    const url = httpUrl(decodeEntities(raw).trim());
+    if (url === null) continue;
+    addLink(pairs, seen, hostOf(url), textHostOf(match[2] ?? ""));
+  }
+  return pairs;
+}
+
+function linkPairs(parsed: ParsedMail): CapturedLink[] {
+  if (typeof parsed.html === "string") return linkPairsOfHtml(parsed.html);
+  const pairs: CapturedLink[] = [];
+  const seen = new Set<string>();
+  if (parsed.text !== undefined) {
     for (const match of parsed.text.matchAll(/https?:\/\/[^\s<>"')]+/g)) {
       const url = httpUrl(match[0]);
-      if (url !== null) add(hostOf(url), null);
+      if (url !== null) addLink(pairs, seen, hostOf(url), null);
     }
   }
   return pairs;

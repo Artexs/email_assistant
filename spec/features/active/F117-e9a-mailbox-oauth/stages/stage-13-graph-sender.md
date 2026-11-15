@@ -53,3 +53,7 @@ Run `runMailSenderContract("graph", …)` (stage 05) against it: `received` deco
 **Done when.** The tests pass; the composition wires the Graph sender; the Proof prints `PROOF_OK`.
 
 **Out of scope.** Graph draft creation (E6 fallback), any Graph read call.
+
+## Correction from the stage 04 build (coordinator)
+
+- A refused login is a `MailAuthError` with a `reason`, also for a Graph 401 or 403 (plan decision D15, review B1). Where a test or step above says `login` with a reason (for example line 42: "login, oauth_revoked"), read it as `MailAuthError` with that `reason`. Stage 04 left `reason` on `MailAuthError`; stage 10 sets it.

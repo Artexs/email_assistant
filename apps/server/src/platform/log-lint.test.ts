@@ -137,11 +137,63 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
+    "a template literal in scripts fails",
+    async () => {
+      expect(
+        await logEventSeverities("apps/server/src/scripts/__log-fixture.ts", "log.info(`x ${y}`);", "../platform/log")
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
     "an old-form line in main.ts fails",
     async () => {
       expect(
         await logEventSeverities("apps/server/src/main.ts", 'log.error("config error:", e);', "./platform/log")
       ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in channels/sender.ts fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/sender.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in channels/operator.ts fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/operator.ts",
+          'log.error("operator notice run:", e);',
+          "../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "another file of channels stays at warn",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/commands.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([1]);
     },
     TIMEOUT
   );

@@ -99,6 +99,7 @@ OpenAI has no free daily quota. The project budget and the rate limit apply. A 1
 `bun run eval --sim <scenario> --part dev|holdout|week` classifies one part of a synthetic corpus in `evals/sim/<scenario>/`. It cannot be combined with `--real`, `--set`, `--per-category` or `--state`.
 
 - `--part dev|holdout|week` (required): the part to run. `holdout` needs a frozen corpus (`manifest.json`) and prints no case ids in its report. `dev` and `week` run on a draft corpus.
+- `--suspicious`: no LLM call, no key, no spend. Runs the suspicious-mail rules (`assessSuspicious`) on every case of the part and prints counts: phishing cases (tag `phishing_*`) flagged per tag, whitelisted cases flagged, other cases flagged with their truth category, and the reason codes. Only `--sim`, `--part` and `--out` may go with it. The `dev` report lists case ids; `holdout` and `week` print counts only. Known senders are the persona groups of the scenario, not the frequency rule of production.
 - `--concurrency <n>`: calls in flight. Default 8 (the old command keeps 1).
 - `--rpm <n>`: requests per minute of the classifier provider only, for this process only. Default 240 (the old command keeps the config value). The judge provider is not changed: it keeps its configured rate (`GEMINI_RPM` or `OPENAI_RPM`, or `LLM_JUDGE_RPM` for the judge role).
 - `--judge-rpm <n>`: requests per minute of the judge provider (needs `--judge`). Replaces the configured rate for this process.

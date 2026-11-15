@@ -11,8 +11,8 @@ export interface ClassifierDelegate {
   tags: string[];
 }
 
-const BODY_CHARS = 8000;
-const THREAD_MAILS = 3;
+export const BODY_CHARS = 8000;
+export const THREAD_MAILS = 3;
 export const EXCERPT_CHARS = 500;
 
 // Short meanings from architecture §4.2. Only the allowed ones go into the prompt.
@@ -67,24 +67,24 @@ Output fields:
 }
 
 // Removes the marker sequences until none is left: one pass can make a new one ("<<>>><" → "<<<").
-function neutralize(text: string): string {
+export function neutralize(text: string): string {
   let out = text;
   while (/<<<|>>>/.test(out)) out = out.replace(/<<<|>>>/g, "");
   return out;
 }
 
-function dataBlock(nonce: string, lines: string[]): string {
+export function dataBlock(nonce: string, lines: string[]): string {
   return [`<<<EMAIL_DATA ${nonce}>>>`, ...lines.map(neutralize), `<<<END_EMAIL_DATA ${nonce}>>>`].join("\n");
 }
 
-const flag = (value: boolean): string => (value ? "yes" : "no");
+export const flag = (value: boolean): string => (value ? "yes" : "no");
 
-const oneLine = (text: string): string =>
+export const oneLine = (text: string): string =>
   neutralize(text)
     .replace(/\s*[\r\n]+\s*/g, " ")
     .trim();
 
-function delegateLine(delegate: ClassifierDelegate): string {
+export function delegateLine(delegate: ClassifierDelegate): string {
   const tags = delegate.tags.map(oneLine).filter((tag) => tag !== "");
   const suffix = tags.length > 0 ? ` (${tags.join(", ")})` : "";
   return `- ${delegate.id}: ${oneLine(delegate.name)}${suffix}`;

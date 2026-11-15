@@ -6,6 +6,7 @@ import { parseQuery, ValidationError, type ApiEnv } from "../../platform/http";
 import { getUserAuthProfile, isFeatureOn } from "../tenancy";
 
 import { decodeActivityCursor, listActivity } from "./activity";
+import { reportDocs } from "./api-docs";
 import { recentWeekStats, type WeekStatsDeps } from "./metrics";
 
 export interface ActivityRouteDeps {
@@ -17,7 +18,7 @@ export function activityRoutes(deps: ActivityRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
   // A foreign or unknown mailboxId matches no row: the answer is a page with no items.
-  app.get("/activity", async (c) => {
+  app.get("/activity", reportDocs.getActivity, async (c) => {
     const q = parseQuery(c, activityQuerySchema);
     const cursor = q.before === undefined ? undefined : decodeActivityCursor(q.before);
     if (cursor === null) {
@@ -55,7 +56,7 @@ export interface StatsRouteDeps extends WeekStatsDeps {
 export function statsRoutes(deps: StatsRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
-  app.get("/stats", async (c) => {
+  app.get("/stats", reportDocs.getStats, async (c) => {
     const ctx = c.get("ctx");
     if (!(await isFeatureOn(deps.db, ctx, "stats_page"))) return c.json({ error: "not_found" }, 404);
     const q = parseQuery(c, statsQuerySchema);

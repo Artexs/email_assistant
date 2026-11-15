@@ -2,7 +2,7 @@ import { isQuietTime, quietEnd, renderNotice, type OutMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError } from "../../platform/errors";
+import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { markDigestSent } from "../reports";
 import { getOrganization } from "../tenancy";
@@ -42,11 +42,7 @@ function backoff(attempt: number): number {
   return Math.min(SOFT_BACKOFF_START_MS * 2 ** (attempt - 1), SOFT_BACKOFF_MAX_MS);
 }
 
-function seconds(ms: number): number {
-  return Math.round(ms / 1000);
-}
-
-// Log lines hold the row id, the kind, codes and seconds only: never the text, the buttons, the chat id or a name.
+// Log lines hold the row id, the kind, codes and milliseconds only: never the text, the buttons, the chat id or a name.
 export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
   const { db, channel } = deps;
   const batchSize = deps.batchSize ?? DEFAULT_BATCH_SIZE;
@@ -57,7 +53,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
     try {
       await action();
     } catch (error) {
-      log.error(`outbox ${id}: database call failed (${describeError(error)})`);
+      log.error("outbox_db_failed", { outbox_id: id, ...errorFields(error) });
     }
   }
 
@@ -88,7 +84,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         staleBefore: new Date(now.getTime() - SENDER_STALE_MS),
       });
     } catch (error) {
-      log.error(`outbox claim failed (${describeError(error)})`);
+      log.error("outbox_claim_failed", { ...errorFields(error) });
       return;
     }
 
@@ -106,15 +102,16 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
 
     for (const [index, row] of claimed.entries()) {
       const ctx = { orgId: row.orgId };
+      const outboxLog = log.with({ outbox_id: row.id });
       const later = claimed.slice(index + 1);
       let sent = false;
       try {
         if (row.wasStale) {
-          log.warn(`outbox ${row.id}: sent again after a stale send (a duplicate is possible)`);
+          outboxLog.warn("outbox_resent_after_stale");
         }
         if (now.getTime() - row.createdAt.getTime() > OUTBOX_MAX_AGE_MS) {
           await fail(row, "expired");
-          log.warn(`outbox ${row.id}: expired`);
+          outboxLog.warn("outbox_expired");
           continue;
         }
         // A row with a text is sent as it is (rows queued before send-time rendering); every other row is rendered now
@@ -130,7 +127,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           });
           if (!rendered.ok) {
             await fail(row, "bad_view");
-            log.error(`outbox ${row.id}: bad view (${row.kind})`);
+            outboxLog.error("outbox_bad_view", { kind: row.kind });
             continue;
           }
           message = rendered.message;
@@ -149,7 +146,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         const link = await getChatLinkForUser(db, ctx, row.userId);
         if (!link) {
           await fail(row, "no_chat");
-          log.warn(`outbox ${row.id}: the member has no chat`);
+          outboxLog.warn("outbox_no_chat");
           continue;
         }
 
@@ -166,9 +163,9 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         };
         const marked = await (db.isTransaction ? markSent(db as Transaction<DB>) : db.transaction().execute(markSent));
         if (!marked) {
-          log.warn(`outbox ${row.id}: lost the claim after the send`);
+          outboxLog.warn("outbox_claim_lost");
         }
-        log.info(`outbox ${row.id}: sent ${row.kind}`);
+        outboxLog.info("outbox_sent", { kind: row.kind });
       } catch (error) {
         if (error instanceof ChannelError) {
           switch (error.kind) {
@@ -177,9 +174,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
               await release(row, next, false);
               await releaseAll(later, next);
               pausedUntil = next;
-              log.warn(
-                `outbox ${row.id}: rate limited; sending paused for ${seconds(next.getTime() - now.getTime())} s`
-              );
+              outboxLog.warn("outbox_rate_limited", { wait_ms: next.getTime() - now.getTime() });
               return;
             }
             case "soft": {
@@ -188,7 +183,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
               await release(row, next, true);
               await releaseAll(later, next);
               pausedUntil = next;
-              log.warn(`outbox ${row.id}: ${error.code}; sending paused for ${seconds(wait)} s`);
+              outboxLog.warn("outbox_paused", { code: error.code, wait_ms: wait });
               return;
             }
             case "config": {
@@ -196,16 +191,16 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
               await release(row, next, false);
               await releaseAll(later, next);
               pausedUntil = next;
-              log.error("telegram token rejected (401): check TELEGRAM_BOT_TOKEN; sending paused for 10 min");
+              outboxLog.error("outbox_token_rejected");
               return;
             }
             case "blocked":
               await fail(row, "blocked");
-              log.warn(`outbox ${row.id}: the user blocked the bot (403)`);
+              outboxLog.warn("outbox_bot_blocked");
               continue;
             case "bad_request":
               await fail(row, "bad_request");
-              log.error(`outbox ${row.id}: Telegram refused the message (${error.code})`);
+              outboxLog.error("outbox_refused", { code: error.code });
               continue;
             case "other":
               if (row.attempts + 1 >= MAX_OTHER_ERRORS) {
@@ -213,7 +208,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
               } else {
                 await release(row, new Date(now.getTime() + backoff(row.attempts + 1)), true);
               }
-              log.error(`outbox ${row.id}: ${error.code}`);
+              outboxLog.error("outbox_failed", { code: error.code });
               continue;
           }
         }
@@ -221,7 +216,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         if (!sent) {
           await release(row, new Date(now.getTime() + backoff(row.attempts + 1)), true);
         }
-        log.error(`outbox ${row.id}: ${describeError(error)}`);
+        outboxLog.error("outbox_failed", { ...errorFields(error) });
       }
     }
   }

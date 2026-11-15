@@ -4,12 +4,12 @@ import type { Category } from "@ea/core";
 import { z } from "zod";
 
 import { listForLabeling, parseLabelInput, recordFeedback, type LabelItem } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
-const log = createLog("triage-label");
+const cli = createCliOutput("triage-label");
 
 const usage = [
   "usage: bun run triage:label --org-id <uuid> --mailbox-id <uuid> [--limit 20] [--user-id <uuid>] [--synthetic]",
@@ -97,7 +97,7 @@ function showItem(item: LabelItem, index: number, total: number): void {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    cli.fail(usage);
     return 1;
   }
 
@@ -115,7 +115,7 @@ async function main(): Promise<number> {
         source: "cli",
         userId: options.userId,
       });
-      log.info(`feedback ${result.id} verdict ${result.verdict}`);
+      cli.print(`feedback ${result.id} verdict ${result.verdict}`);
       return 0;
     }
 
@@ -139,7 +139,7 @@ async function main(): Promise<number> {
           skipped += 1;
           done = true;
         } else if (parsed.kind === "quit") {
-          log.info(`labeled ${labeled}, skipped ${skipped}`);
+          cli.print(`labeled ${labeled}, skipped ${skipped}`);
           return 0;
         } else {
           await recordFeedback(db, ctx, {
@@ -153,10 +153,10 @@ async function main(): Promise<number> {
         }
       }
     }
-    log.info(`labeled ${labeled}, skipped ${skipped}`);
+    cli.print(`labeled ${labeled}, skipped ${skipped}`);
     return 0;
   } catch (error) {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -166,6 +166,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

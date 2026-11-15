@@ -241,8 +241,15 @@ export default tseslint.config(
     rules: { "no-restricted-syntax": ["warn", ...logEventSelectors] },
   },
   {
-    // Converted to events (F089): an old-form log line here fails the lint. E8a adds each module when it converts it.
-    files: ["apps/server/src/platform/**/*.ts", "apps/server/src/main.ts"],
+    // Converted to events: an old-form log line here fails the lint. Each F103 conversion stage adds its folders.
+    files: [
+      "apps/server/src/platform/**/*.ts",
+      "apps/server/src/main.ts",
+      "apps/server/src/scripts/**/*.ts",
+      // Stage 07 replaces these two files with the folder `modules/channels/`.
+      "apps/server/src/modules/channels/sender.ts",
+      "apps/server/src/modules/channels/operator.ts",
+    ],
     ignores: ["**/*.test.ts"],
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors] },
   },

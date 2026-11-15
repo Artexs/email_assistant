@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { draftPayloadSchema, sendPayloadFor, sendPayloadSchema, type DraftPayload } from "./payloads";
+import { draftPayloadSchema, draftVersion, sendPayloadFor, sendPayloadSchema, type DraftPayload } from "./payloads";
 
 const ID = "5b1f3c2e-0a4d-4e8b-9c6f-1d2e3f4a5b6c";
 const ID2 = "6c2a4d3f-1b5e-4f9c-8d7a-2e3f4a5b6c7d";
@@ -89,5 +89,39 @@ describe("sendPayloadFor", () => {
       delegation_id: ID2,
       reminder: 1,
     });
+  });
+});
+
+describe("edit fields of a draft payload", () => {
+  const body = "Hello Anna,\nplease send the report.\n\nAdam";
+
+  test("an old payload parses and gets no new key", () => {
+    for (const draft of [delegation, clarification]) {
+      expect(draftPayloadSchema.parse(draft)).toEqual(draft);
+    }
+  });
+
+  test("T8 the schema checks the length of the stored text", () => {
+    const parse = (patch: object) => draftPayloadSchema.safeParse({ ...delegation, ...patch }).success;
+    expect(parse({ body_text: "x".repeat(3000), subject_text: "y".repeat(200), version: 2 })).toBe(true);
+    expect(parse({ body_text: "x".repeat(3001) })).toBe(false);
+    expect(parse({ body_text: "" })).toBe(false);
+    expect(parse({ subject_text: "y".repeat(201) })).toBe(false);
+    expect(parse({ subject_text: "" })).toBe(false);
+    expect(parse({ version: 0 })).toBe(false);
+    expect(parse({ version: 1.5 })).toBe(false);
+    expect(draftPayloadSchema.safeParse({ ...clarification, body_text: "x".repeat(3001) }).success).toBe(false);
+    expect(draftPayloadSchema.safeParse({ ...clarification, body_text: body, version: 2 }).success).toBe(true);
+  });
+
+  test("T9 draftVersion, and a reminder drops the edit fields", () => {
+    expect(draftVersion(delegation)).toBe(1);
+    expect(draftVersion(draftPayloadSchema.parse({ ...delegation, version: 3 }))).toBe(3);
+    expect(draftVersion(draftPayloadSchema.parse({ ...clarification, version: 2 }))).toBe(2);
+    expect(draftVersion(reminder)).toBe(1);
+    const parsed = draftPayloadSchema.parse({ ...reminder, body_text: body, subject_text: "S", version: 4 });
+    expect("body_text" in parsed).toBe(false);
+    expect("subject_text" in parsed).toBe(false);
+    expect("version" in parsed).toBe(false);
   });
 });

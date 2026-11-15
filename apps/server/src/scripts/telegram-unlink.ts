@@ -3,12 +3,12 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { unlinkUser } from "../modules/channels";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
-const log = createLog("telegram-unlink");
+const out = createCliOutput("telegram-unlink");
 
 const usage = "usage: bun run telegram:unlink --org-id <uuid> --user-id <uuid>";
 
@@ -35,7 +35,7 @@ function readOptions() {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -44,10 +44,10 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const count = await unlinkUser(db, { orgId: options.orgId }, options.userId, new Date());
-    log.info(`unlinked ${count} chat(s) of user ${options.userId}`);
+    out.print(`unlinked ${count} chat(s) of user ${options.userId}`);
     return 0;
   } catch (error) {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -57,6 +57,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

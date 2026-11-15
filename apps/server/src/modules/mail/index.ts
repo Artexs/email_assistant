@@ -33,17 +33,21 @@ export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe
 export { isAllowedRecipient, probeSend, type ProbeSendReport } from "./imap/probe-send";
 export { composeMessage } from "./imap/compose";
 export { bodyTextFromSource } from "./imap/mapper";
+export { linkPairsOfHtml } from "./imap/capture";
 export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {
   INBOX,
   HostNotAllowedError,
   MailAuthError,
+  assertAuthMaterial,
   MailboxExistsError,
   MailboxLimitError,
   MailboxNotFoundError,
   MailFolderMissingError,
   MailNotFoundError,
   CAPTURE_LIMITS,
+  type AuthErrorReason,
+  type AuthMaterial,
   type CapturedAttachment,
   type CapturedHeaders,
   type CapturedLink,

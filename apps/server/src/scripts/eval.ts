@@ -20,15 +20,16 @@ import {
   renderGap,
   runEval,
 } from "../modules/triage";
-import { ConfigError, llmRoleTable, loadConfig, testMailRule } from "../platform/config";
+import { createCliOutput } from "../platform/cli";
+import { type Config, ConfigError, llmRoleTable, loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
-import { createLog } from "../platform/log";
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
 import { runSim } from "./eval-sim";
+import { runSuspicious } from "./eval-suspicious";
 
-const log = createLog("eval");
+const cli = createCliOutput("eval");
 
 const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
@@ -86,7 +87,7 @@ function runGap(options: EvalOptions): number {
       error instanceof SyntaxError ||
       (error as { code?: string }).code === "ENOENT"
     ) {
-      log.error(error instanceof GapInputError ? `${error.message}` : "cannot read or parse an input file");
+      cli.fail(error instanceof GapInputError ? `${error.message}` : "cannot read or parse an input file");
       return 1;
     }
     throw error;
@@ -96,14 +97,26 @@ function runGap(options: EvalOptions): number {
 async function main(): Promise<number> {
   const options = parseEvalArgs(process.argv.slice(2));
   if (!options) {
-    log.error(evalUsage);
+    cli.fail(evalUsage);
     return 1;
   }
   if (options.gap) return runGap(options);
+  if (options.suspicious) return runSuspicious(options);
   if (options.sim !== undefined) return runSim(options);
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
+  return runClassifier(options);
+}
 
-  const config = loadConfig();
+// What a test replaces: the CLI passes none of them.
+export interface ClassifierDeps {
+  config?: Config;
+  createLlmClient?: typeof createLlmClient;
+  runsDir?: string;
+}
+
+// The old case sets through the classifier: no DB, a key for the provider.
+export async function runClassifier(options: EvalOptions, deps: ClassifierDeps = {}): Promise<number> {
+  const config = deps.config ?? loadConfig();
   let table: LlmRoleTable;
   try {
     table = llmRoleTable(config, {
@@ -115,19 +128,19 @@ async function main(): Promise<number> {
     });
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
-    log.error(evalUsage);
+    cli.fail(evalUsage);
     return 1;
   }
   const row = table.roles.classifier;
   const keys = table.providers[row.provider];
   if (keys.apiKey === undefined) {
-    log.error(`${keys.apiKeyName} is missing`);
+    cli.fail(`${keys.apiKeyName} is missing`);
     return 1;
   }
   const model = row.model;
   const effort = row.reasoningEffort;
-  log.info(`provider=${row.provider} model=${model} effort=${effort ?? "-"}`);
-  const llm = createLlmClient({ table });
+  cli.print(`provider=${row.provider} model=${model} effort=${effort ?? "-"}`);
+  const llm = (deps.createLlmClient ?? createLlmClient)({ table });
 
   const selected = selectCases(
     [
@@ -143,7 +156,7 @@ async function main(): Promise<number> {
   const stateFile =
     options.state ??
     resolve(
-      runsDir,
+      deps.runsDir ?? runsDir,
       evalStateFileName({
         model,
         reasoningEffort: effort,
@@ -155,7 +168,7 @@ async function main(): Promise<number> {
   if (options.fresh) rmSync(stateFile, { force: true });
   mkdirSync(dirname(stateFile), { recursive: true });
   const done = existsSync(stateFile) ? parseCaseResults(readFileSync(stateFile, "utf8")) : [];
-  log.info(`state ${stateFile}: ${done.length} earlier results`);
+  cli.print(`state ${stateFile}: ${done.length} earlier results`);
 
   try {
     const report = await runEval(
@@ -180,20 +193,23 @@ async function main(): Promise<number> {
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
     const code = evalExitCode(report);
-    if (!report.complete) log.warn(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
+    if (!report.complete) cli.fail(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
     return code;
   } catch (error) {
     if (error instanceof LlmConfigError) {
-      log.error(`LLM config error ${error.code}`);
+      cli.fail(`LLM config error ${error.code}`);
       return 1;
     }
     throw error;
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.name : "unknown error");
-    process.exit(1);
-  });
+// A test imports `runClassifier` without running the CLI.
+if (import.meta.main) {
+  main()
+    .then((code) => process.exit(code))
+    .catch((error) => {
+      cli.fail(`failed: ${error instanceof Error ? error.name : "unknown error"}`);
+      process.exit(1);
+    });
+}

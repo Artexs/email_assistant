@@ -12,7 +12,7 @@ test("IMAPS with a self-signed certificate is rejected, and not as a login failu
     port: Number(process.env.TEST_IMAPS_PORT ?? "3993"),
     secure: true,
     user: "tls-check@localhost",
-    password: "greenmail-test",
+    auth: { kind: "password", password: "greenmail-test" },
     connectionTimeoutMs: 10_000,
   });
   const error = await attempt.then(

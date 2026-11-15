@@ -26,6 +26,8 @@ export interface ApprovalView {
   body: string; // parts.body
   quote: { text: string; cut: boolean } | null;
   synthetic: boolean;
+  version?: number; // the edit version of the send, from 2 on (stage 08 sets it)
+  panelUrl?: string; // the panel page of this send (stage 09 sets it)
 }
 
 export function approvalViewOf(

@@ -96,6 +96,19 @@ describe("describeActions for drafts and sends", () => {
     expect(describeActions([send(status)], names, {}, EN)).toBe(expected);
   });
 
+  test("T8 a send that expired as superseded says it changed; every other reason keeps the old phrase", () => {
+    const superseded = { ...send("expired"), reason: "superseded" };
+    expect(describeActions([superseded], names, {}, EN)).toBe("changed in the panel (new version)");
+    expect(describeActions([superseded], names, {}, PL)).toBe("zmieniono w panelu (nowa wersja)");
+    expect(describeAction(superseded, names, EN)).toBe("changed in the panel (new version)");
+    const timeout = { ...send("expired"), reason: "timeout" };
+    expect(describeActions([timeout], names, {}, EN)).toBe("not sent (approval expired)");
+    expect(describeActions([timeout], names, {}, PL)).toBe("niewysłane (zatwierdzenie wygasło)");
+    expect(describeActions([{ ...send("expired"), reason: null }], names, {}, EN)).toBe("not sent (approval expired)");
+    // The reason decides only for an expired send.
+    expect(describeActions([{ ...send("rejected"), reason: "superseded" }], names, {}, EN)).toBe("rejected");
+  });
+
   test("an approved send held by the send limit says so; every other status keeps its phrase", () => {
     const held = { ...send("approved"), waiting: "send_limit" as const };
     expect(describeAction(held, names, EN)).toBe("approved, waiting: send limit");
