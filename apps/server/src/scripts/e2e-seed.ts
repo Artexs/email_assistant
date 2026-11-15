@@ -30,6 +30,10 @@ import {
   E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_APPROVALS_MEMBER_EMAILS,
   E2E_APPROVALS_OWNER_EMAILS,
+  E2E_DELEGATES_ANNA,
+  E2E_DELEGATES_MEMBER_EMAILS,
+  E2E_DELEGATES_OWNER_EMAILS,
+  e2eDelegatesOrgName,
   e2eApprovalsMailbox,
   e2eApprovalsOrgName,
   E2E_ASSISTANT_EMAILS,
@@ -87,6 +91,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eTwoFactorOrgName),
         ...E2E_PROJECTS.map(e2eDeleteOrgName),
         ...E2E_PROJECTS.map(e2eApprovalsOrgName),
+        ...E2E_PROJECTS.map(e2eDelegatesOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -106,6 +111,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_DELETE_ASSISTANT_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_APPROVALS_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_APPROVALS_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_DELEGATES_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_DELEGATES_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -331,6 +338,40 @@ async function main(): Promise<number> {
         };
       }
 
+      // F102 stage 17: one organization per project for the delegates spec. The flag `delegation_pages` is on; one delegate (Anna Nowak,
+      // tag `finance`), no mailbox.
+      const delegatesIds = {} as Record<E2eProject, { orgId: string; ownerId: string; memberId: string }>;
+      for (const project of E2E_PROJECTS) {
+        const delegatesOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eDelegatesOrgName(project),
+          timezone: "Europe/Warsaw",
+          email: E2E_DELEGATES_OWNER_EMAILS[project],
+          displayName: `E2E Delegates owner ${project}`,
+        });
+        const ctx = { orgId: delegatesOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_DELEGATES_MEMBER_EMAILS[project],
+          displayName: `E2E Delegates member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        await upsertOrgFeature(db, ctx, {
+          flag: "delegation_pages",
+          enabled: true,
+          setBy: delegatesOwner.userId,
+          setAt: new Date(),
+        });
+        await db
+          .insertInto("delegates")
+          .values({
+            org_id: ctx.orgId,
+            name: E2E_DELEGATES_ANNA.name,
+            email: E2E_DELEGATES_ANNA.email,
+            competence_tags: [...E2E_DELEGATES_ANNA.tags],
+          })
+          .execute();
+        delegatesIds[project] = { orgId: delegatesOwner.orgId, ownerId: delegatesOwner.userId, memberId: member.id };
+      }
+
       // The organization of the isolation checks: one mail that the E2E organization must never see.
       const other = await createOrganizationWithOwner(db, {
         orgName: E2E_OTHER_ORG_NAME,
@@ -385,6 +426,22 @@ async function main(): Promise<number> {
       await insertDefaultSettings(db, pausedCtx, pausedMailboxId);
       const suspended = await setOrgPlan(db, pausedCtx, { plan: "suspended", actor: "e2e-seed", now });
       if (suspended.kind !== "changed") throw new Error(`suspending the paused organization gave ${suspended.kind}`);
+      // F102 stage 17: the delegates page of a suspended organization shows the list and takes no write. One delegate, the flag on.
+      await upsertOrgFeature(db, pausedCtx, {
+        flag: "delegation_pages",
+        enabled: true,
+        setBy: paused.userId,
+        setAt: now,
+      });
+      await db
+        .insertInto("delegates")
+        .values({
+          org_id: pausedCtx.orgId,
+          name: E2E_DELEGATES_ANNA.name,
+          email: E2E_DELEGATES_ANNA.email,
+          competence_tags: [...E2E_DELEGATES_ANNA.tags],
+        })
+        .execute();
 
       // The stats organization: the flag `stats_page` is on, so the panel shows the Stats page. It has no mailbox.
       const stats = await createOrganizationWithOwner(db, {
@@ -483,6 +540,20 @@ async function main(): Promise<number> {
         };
       }
 
+      const delegatesOrgs = {} as SeedFile["delegatesOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_DELEGATES_OWNER_EMAILS[project];
+        const memberEmail = E2E_DELEGATES_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = delegatesIds[project];
+        delegatesOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+        };
+      }
+
       // The reset stores the current terms; the terms owners then go back to an old version.
       const termsOwners = {} as SeedFile["termsOwners"];
       for (const project of E2E_PROJECTS) {
@@ -531,6 +602,7 @@ async function main(): Promise<number> {
           password: E2E_OWNER_PASSWORD,
           orgId: stats.orgId,
         },
+        delegatesOrgs,
         approvalsOrgs,
       };
       const path = seedFilePath(repoRoot);
