@@ -3,6 +3,7 @@ name: Docs deploy
 # Publishes the docs site to GitHub Pages (ADR 0030 point 2).
 # - A pushed tag `v<x.y.z>` deploys only when it is the newest release tag (apps/docs/scripts/deploy-gate.ts).
 # - A manual run deploys the ref chosen in the GitHub UI, also an old tag (rollback).
+# A pushed release tag whose version has no release in CHANGELOG.md fails the gate (error changelog_missing, a red run, not a skip).
 # A pushed release tag starts this workflow. Until the owner has done the Pages setup (owner step O1), the deploy job fails red.
 on:
   push:
