@@ -109,7 +109,12 @@ async function connectGreenmail(
     ctx,
     { address, password, secretKind: "password", imapHost: host, imapPort, smtpHost: host, smtpPort }
   );
-  return { mailboxId, address, password, imap: { host, port: imapPort, user: address, password } };
+  return {
+    mailboxId,
+    address,
+    password,
+    imap: { host, port: imapPort, user: address, auth: { kind: "password", password } },
+  };
 }
 
 async function syncOnce(orgId: string, mailboxId: string, imap: ImapConnectOptions): Promise<void> {

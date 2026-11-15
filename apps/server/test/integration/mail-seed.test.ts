@@ -62,7 +62,7 @@ async function connectGreenmail(
     ctx,
     { address, password, secretKind: "password", imapHost: host, imapPort, smtpHost: host, smtpPort }
   );
-  return { mailboxId, address, imap: { host, port: imapPort, user: address, password } };
+  return { mailboxId, address, imap: { host, port: imapPort, user: address, auth: { kind: "password", password } } };
 }
 
 async function inboxMessageIds(imap: ImapConnectOptions, folder = "INBOX"): Promise<string[]> {
@@ -219,7 +219,12 @@ describe("auditMailbox", () => {
         { key: "inbox", counts: { mail: 2, stored: 0, missing: 2, duplicates: 0, cross: 0 } },
       ]);
 
-      const provider = await openImapProvider({ host, port: imapPort, user: address, password: "any" });
+      const provider = await openImapProvider({
+        host,
+        port: imapPort,
+        user: address,
+        auth: { kind: "password", password: "any" },
+      });
       try {
         await syncMailbox(
           { db: trx, provider, isOwnActionId: async () => false, now: () => new Date() },
