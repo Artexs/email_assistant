@@ -16,7 +16,7 @@ Binding: E10 decisions 1–18 (PD-096–PD-103, owner "Go with defaults.", 2026-
 ### Product decisions
 
 - **P1 Scope.** The docs app, its checks, CI and deploy, operator docs read in place, user docs (tutorial, how-to, reference, explanation, FAQ) for what exists, the changelog page, the panel Help link and "What is new" card, and the first publication. Home and positioning, security, pricing, the demo video and the cold read are F121 (E10b). Source: decision 1, notes §7.
-- **P2 Truth.** A user page describes only behaviour that the code at `HEAD` has with the default config. A feature behind a default-off flag gets no user page. Its page comes when its flag defaults on (PD-009 extension). Rejected: "ask your operator" asides (a stranger cannot tell what is real). Default, owner to confirm (Q1).
+- **P2 Truth.** A user page describes only behaviour that the code at `HEAD` has. A feature behind a default-off flag of `packages/core/src/features.ts` gets no user page; env scopes (`ACTIONS_SCOPE`, `SEND_SCOPE`) are operator setup, named once. Its page comes when its flag defaults on (PD-009 extension). Rejected: "ask your operator" asides (a stranger cannot tell what is real). Default, owner to confirm (Q1).
 - **P3** API reference (needs the F102 OpenAPI file) and the autonomy-evidence reference (F110) move to F121. Rejected: a stage that guesses F102's interface. Default (Q2).
 - **P4** The panel Help link and the card ship behind one flag `docs_links` (default off, epic E10a). Default (Q7).
 - **P5** Screenshots come from the existing e2e seed (synthetic, `x.test`, F9). F121 moves them to the E2b demo fixture. Default (Q3).

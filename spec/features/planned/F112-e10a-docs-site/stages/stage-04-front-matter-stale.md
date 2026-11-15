@@ -11,7 +11,7 @@ Three steps.
 - **Interfaces:**
   - Fields: `capabilities?: string[]` (file names in `docs/capabilities/` without `.md`); `source?: string` (the English page id, for example `start`); `sourceHash?: string` (16 lowercase hex).
   - `USER_SECTIONS = ["start", "how-to", "reference", "explanation", "faq"]`; a page whose id starts with one of them (also under `pl/`) needs `capabilities` with at least one entry, each an existing file. Error at build: `front_matter capabilities <id>`.
-  - `POLISH_SET: readonly string[]`: the English ids that need a Polish page (P6). This stage sets it to `["index"]`; stages 07–09 add their pages to it.
+  - `POLISH_SET: readonly string[]`: the English ids that need a Polish page (P6). This stage sets it to `["index"]`; stage 10 adds the P6 pages.
 - **Test:**
   - T1: `capabilities: ["sync"]` passes; `["nope"]` fails with `front_matter capabilities <id>`.
   - T2: a `how-to/x` page without `capabilities` fails; `operate/install-and-run` needs none.
