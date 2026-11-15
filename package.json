@@ -33,6 +33,7 @@
     "delegates:enable": "bun apps/server/src/scripts/delegates.ts enable",
     "delegations:list": "bun apps/server/src/scripts/delegations.ts list",
     "delegations:done": "bun apps/server/src/scripts/delegations.ts done",
+    "release:prepare": "bun apps/server/src/scripts/release-prepare.ts",
     "ops:alerts": "bun apps/server/src/scripts/ops-alerts.ts",
     "ops:alert-test": "bun apps/server/src/scripts/ops-alert-test.ts",
     "job:run": "bun apps/server/src/scripts/job-run.ts",
