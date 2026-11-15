@@ -13,7 +13,7 @@ import { insertMailbox } from "../../src/modules/mail/repo";
 import { tenancyRoutes } from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
 import type { ApiEnv } from "../../src/platform/http";
-import { countMailboxes, homePathOf, onboardingDeps } from "../../src/web";
+import { approvalsWaiting, countMailboxes, homePathOf, onboardingDeps } from "../../src/web";
 
 import { linkChat, randomChatId, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
@@ -66,6 +66,7 @@ async function setup(options: SetupOptions = {}) {
           now: () => NOW,
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          approvalsWaiting: approvalsWaiting(db),
           operatorContact: null,
           sessions: async () => [],
           backupCodesLeft: noBackupCodes,

@@ -20,6 +20,7 @@ const checkDb = async () => true;
 const extras = {
   secrets: createSecretBox(randomBytes(32).toString("base64"), 1),
   actionsScope: { kind: "off" } as const,
+  sendScope: { kind: "off" } as const,
   botUsername: null,
 };
 
@@ -211,6 +212,7 @@ describe("api", () => {
               now: () => new Date(),
               scopes: { triage: offScope, actions: offScope, send: offScope },
               countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
+              approvalsWaiting: async () => 0,
               operatorContact: null,
               sessions: async () => [],
               backupCodesLeft: async () => null,

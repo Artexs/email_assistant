@@ -39,3 +39,7 @@ Part of [`../plan.md`](../plan.md). Read every D and [`../commands.md`](../comma
 ```
 mkdir -p /tmp/f102-s19 && bunx prettier --check <the nine files> > /tmp/f102-s19/prettier.log 2>&1 && bun run lint > /tmp/f102-s19/lint.log 2>&1 && bun run test:unit:ci > /tmp/f102-s19/unit.log 2>&1 && echo PROOF_OK
 ```
+
+## Carry-over from stage 10 review
+
+- `docs/capabilities/tenancy-and-plans.md` line 32 says `approvals_page` has one reader, the panel link on the approval card. Now the approvals read routes and the `/api/me` badge read it too. Update the line.

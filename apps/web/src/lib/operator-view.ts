@@ -1,6 +1,6 @@
-import type { OperatorOrgRow } from "@ea/core/web";
+import type { OperatorOrgDetail, OperatorOrgRow } from "@ea/core/web";
 
-import { dateLocale, t } from "../i18n";
+import { dateLocale, t, tp } from "../i18n";
 
 // The first 8 characters of an id; the full id goes in a `title`.
 export function shortId(id: string): string {
@@ -42,4 +42,27 @@ export function sortNotices<T extends { at: string; orgId: string }>(rows: reado
     if (byTime !== 0) return byTime;
     return a.orgId < b.orgId ? -1 : a.orgId > b.orgId ? 1 : 0;
   });
+}
+
+export interface SsoLines {
+  domain: string;
+  proof: string;
+  required: string;
+  linked: string;
+  breakGlass: string;
+}
+
+// The SSO block of the organization detail (F119 PD-047). `null` means no provider: the caller shows `op_sso_none`.
+// Only the fields of the strict operator schema reach the screen: a domain, three flags and a count.
+export function ssoLines(sso: OperatorOrgDetail["sso"]): SsoLines | null {
+  if (sso === null) return null;
+  const proof =
+    sso.proof === "dns" ? "op_sso_proof_dns" : sso.proof === "attested" ? "op_sso_proof_attested" : "op_sso_proof_none";
+  return {
+    domain: sso.domain,
+    proof: t(proof),
+    required: t(sso.required ? "op_sso_required_yes" : "op_sso_required_no"),
+    linked: tp("op_sso_linked", sso.linkedMembers),
+    breakGlass: t(sso.breakGlassReady ? "op_sso_break_glass_ready" : "op_sso_break_glass_missing"),
+  };
 }

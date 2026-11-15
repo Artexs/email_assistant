@@ -393,3 +393,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the plan follows the E4-B epic and the F111 gate rule (model and endpoint).
 - Undo: flag `trust_ladder` off; cut stages 22–24 if unwanted.
 - Source: `spec/features/planned/F110-e4-b-earn-trust/questions.md` (Q1, Q2, Q5, Q6, Q8, Q13 are the important ones) and `plan.md`.
+
+### 2026-11-15 · F119 docs: SSO-only member can set a password by reset link (F119) · security · new
+- Choice: the code does not refuse it. A reset creates a credential account, and in an organization without "SSO required" that password signs in. Docs state it as a default.
+- Why: refusing needs code and a plan change; the owner can still require SSO per organization.
+- Undo: a later ticket adds a refusal for SSO-only members. Also open: axe checks for the company sign-in block, the Account card of a member with no password and `/operator` (no e2e spec opens them).
+- Source: `notes/2026-11-15-f119-sso-docs-facts.md`, `deploy/README.md` section "Company sign-in (F119)".

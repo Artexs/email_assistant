@@ -275,6 +275,7 @@ void heartbeat.tick();
 const web = webDeps(config, db, {
   secrets,
   actionsScope: scopeOfActions,
+  sendScope: scopeOfSends,
   botUsername: telegram ? () => telegram.botUsername() : null,
   onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });

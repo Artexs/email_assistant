@@ -44,3 +44,7 @@ mkdir -p /tmp/f119-s14 && bunx prettier --check <files> > /tmp/f119-s14/prettier
 ## Carry-over from stage 12 review (U1)
 
 No axe test covers `/login` (only `apps/web/e2e/tests/stats.spec.ts` uses `e2e/a11y.ts`), so the company sign-in block has no axe check, and Q9 rules out a Playwright spec for SSO. No F119 stage owns e2e or axe work (stage 13 is unit-tested, stage 15 and 16 are VPS checks). Stage 14 states this in `docs/capabilities/web-panel.md` (Limits and Tests: "no axe test for `/login`; the stage 12 tests check label, `autocomplete`, `role=alert` and focus on rendered markup and the form state") and the coordinator may open a small follow-up ticket for an axe run on `/login` with the SSO block open.
+
+## Carry-over from stage 13 review (U1)
+
+No axe test covers `/settings` (the Account card) or `/operator` (only `apps/web/e2e/tests/stats.spec.ts` uses `e2e/a11y.ts`). This is the same gap as the `/login` line above. Stage 14 may name it in `docs/capabilities/web-panel.md` (Limits and Tests); the coordinator may open one follow-up ticket for an axe run on `/login`, `/settings` and `/operator`.

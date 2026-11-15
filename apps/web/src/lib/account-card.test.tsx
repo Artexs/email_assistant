@@ -8,7 +8,7 @@ import { MeContext } from "../components/shell/MeProvider";
 import { setLocaleForTest, t } from "../i18n";
 
 // The `me` that `/api/me` answers; only `role`, `features` and `organization` matter to the Account card.
-const baseMe = {
+const baseMe: Me = {
   user: { id: "0190f5a0-0000-7000-8000-000000000001", email: "a@x.test", displayName: "Ann", locale: null },
   organization: {
     id: "0190f5a0-0000-7000-8000-000000000002",
@@ -35,7 +35,8 @@ const baseMe = {
   features: [],
   signInMethod: "password",
   hasPassword: true,
-} as unknown as Me;
+  approvalsWaiting: 0,
+};
 
 function render(me: Me | null): string {
   const value = { me, error: null, loading: me === null, reload: () => undefined };
@@ -67,15 +68,82 @@ describe("AccountCard delete block (F106 stage 04, B1)", () => {
     }
     // The UI does not change at all: the bordered blocks are the same as without the new block (the card ends with
     // the sessions block, and the security-log block is not there for these three).
-    for (const html of [flagOff, assistant, loading]) {
+    for (const html of [flagOff, assistant]) {
       const blocks = html.match(/<div class="border-t pt-4">/g) ?? [];
       expect(blocks.length).toBe(1);
     }
+    // F119 stage 13: while `me` is not loaded no password control shows, so the two-factor block is not there either.
+    expect(loading.match(/<div class="border-t pt-4">/g) ?? []).toHaveLength(0);
   });
 
   test("with org_delete on, there is exactly one bordered block more than with it off", () => {
     const on = render(withFlag()).match(/<div class="border-t pt-4">/g) ?? [];
     const off = render({ ...baseMe, features: [] }).match(/<div class="border-t pt-4">/g) ?? [];
     expect(on.length).toBe(off.length + 1);
+  });
+});
+
+describe("AccountCard for a member without a password (F119 stage 13, D14)", () => {
+  const passwordOnlyMarks = [
+    'id="acct-current"', // the change-password form
+    'id="acct-new"',
+    'name="current-password"',
+    'data-section="two-factor"', // the two-factor section
+    'data-action="delete-organization"', // the delete button
+  ];
+  const sso = (over: Partial<Me> = {}): Me => ({
+    ...baseMe,
+    features: ["org_delete", "security_log"],
+    signInMethod: "sso",
+    hasPassword: false,
+    ...over,
+  });
+
+  for (const locale of ["en", "pl"] as const) {
+    test(`${locale}: hasPassword false hides password, two-factor and delete, and shows the hint`, () => {
+      setLocaleForTest(locale);
+      const html = render(sso());
+      for (const mark of passwordOnlyMarks) expect(html).not.toContain(mark);
+      expect(html).not.toContain(t("acct_change"));
+      expect(html).not.toContain(t("del_title"));
+      expect(html).toContain(t("acct_sso_only"));
+      // Language, sessions and "sign out everywhere" stay, and so does the owner's security log.
+      expect(html).toContain('id="acct-language"');
+      expect(html).toContain('data-section="sessions"');
+      expect(html).toContain(t("acct_sign_out_all"));
+      expect(html).toContain('data-section="security-log"');
+      expect(html).toContain(t("acct_sso_session"));
+      setLocaleForTest("en");
+    });
+
+    test(`${locale}: hasPassword true with an SSO session keeps every section and adds the session note`, () => {
+      setLocaleForTest(locale);
+      const html = render(sso({ hasPassword: true }));
+      expect(html).toContain('id="acct-current"');
+      expect(html).toContain('id="acct-new"');
+      expect(html).toContain(t("acct_change"));
+      expect(html).toContain('data-action="delete-organization"');
+      expect(html).toContain('data-section="two-factor"');
+      expect(html).not.toContain(t("acct_sso_only"));
+      expect(html).toContain(t("acct_sso_session"));
+      // The note sits inside the sessions block.
+      const sessions = html.slice(html.indexOf('data-section="sessions"'));
+      expect(sessions.indexOf(t("acct_sso_session"))).toBeGreaterThan(0);
+      setLocaleForTest("en");
+    });
+  }
+
+  test("a password session shows neither the hint nor the session note", () => {
+    const html = render({ ...baseMe, features: ["org_delete"] });
+    expect(html).not.toContain(t("acct_sso_only"));
+    expect(html).not.toContain(t("acct_sso_session"));
+    expect(html).toContain('id="acct-current"');
+  });
+
+  test("while me is not loaded no password control, hint or note shows", () => {
+    const html = render(null);
+    for (const mark of passwordOnlyMarks) expect(html).not.toContain(mark);
+    expect(html).not.toContain(t("acct_sso_only"));
+    expect(html).not.toContain(t("acct_sso_session"));
   });
 });

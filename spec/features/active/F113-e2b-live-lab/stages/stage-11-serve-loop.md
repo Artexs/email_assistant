@@ -61,6 +61,12 @@ Scoring (stages 12–13) and demo reset (stage 14).
 
 `deploy/compose.sim.yaml` runs the `lab` service as `bun run lab:env-check && exec bun run lab serve`. `bun run` stays PID 1 and the lab is its child, so a stop signal may not reach the lab. When this stage builds the lab script, change that command to `exec bun apps/server/src/scripts/<lab script>.ts serve`. `apps/server/src/scripts/sim-compose-rules.ts` and its test hold the old command text: change them together.
 
+## Carry-over from the stage 10 review
+
+- **Lock covers the executive (note 2).** The driver has no lock of its own: two parallel `runExecutiveTick` calls could both write a `tap_intent` and both press. The `O_EXCL` serve lock (carry-over N2 of stage 07) must cover `runExecutiveTick` as well as `runInjectorTick`. Test a second `lab serve` against it.
+- **First-tick order (note 7).** The first `runExecutiveTick` of a run stores the newest message id and reads nothing. `live-lab.md` rule 10.3 and the comment in `executive.ts` say a tick must run before the injector sends its first mail. This stage orders injector, bots, executive. Either call the executive first on the first tick of a run, or relax that rule in `live-lab.md` (the mail sync of 2 min makes a real miss unlikely, but a card made before the baseline is lost for good).
+- **Fake restart can lose cards (note 6, by design).** After a fake restart the seen id resets to the newest id. Cards the server sent to the new fake before that tick are never read. This gives lost taps, not double presses. The scorer counts the expired approvals. Do not add a retry.
+
 ## Carry-over from the stage 08 review (notes 4, 8, 9, 11)
 
 Source: [`../review-8.md`](../review-8.md).

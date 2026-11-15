@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:tes
 import { sql } from "kysely";
 
 import { setBreakGlassOwner, tenancyRoutes } from "../../src/modules/tenancy";
-import { countMailboxes, onboardingDeps } from "../../src/web";
+import { approvalsWaiting, countMailboxes, onboardingDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
@@ -46,6 +46,7 @@ function app(opts: { twoFactorOff?: ReadonlySet<string>; operators?: ReadonlySet
           now: () => NOW,
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          approvalsWaiting: approvalsWaiting(db),
           operatorContact: null,
           sessions: async () => [],
           backupCodesLeft: async (userId) => {

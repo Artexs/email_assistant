@@ -51,6 +51,7 @@ export const meSchema = z.object({
   scopes: z.object({ triage: scopeInfoSchema, actions: scopeInfoSchema, send: scopeInfoSchema }),
   mailboxCount: z.number().int().min(0),
   mailboxesInAuthError: z.number().int().min(0),
+  approvalsWaiting: z.number().int().min(0), // sends in `awaiting_approval` with an applied draft; 0 while `approvals_page` is off (F102 ticket, nav badge)
   digestTimes: z.array(z.string()),
   terms: z.object({ accepted: z.boolean(), current: z.string() }),
   operator: z.boolean(),
