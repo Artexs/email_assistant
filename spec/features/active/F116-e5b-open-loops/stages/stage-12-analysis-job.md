@@ -49,3 +49,7 @@ Read `review-5.md`. `extractSent(llm, input, { timeZone })` has no db and writes
 ## Carry-over from stage 06 review
 
 Read `review-6.md`: check that Gemini accepts the extractor schema (`oneOf` is sent raw as `responseJsonSchema`; the anyOf rewrite is OpenAI only) before the extractor runs on a Gemini install; consider requiring `errors` = 0 in the gate evidence.
+
+## Carry-over from stage 08 review
+
+- Lock order: `onSentOff` locks the sent-sync state first, then the loops; this job locks the loop first, then sends. Confirm no deadlock with `setSentSync` (review-8.md N9).
