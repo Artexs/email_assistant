@@ -191,6 +191,17 @@ describe("release.sh steps", () => {
     expect(h.calls().filter((line) => line.includes("docker builder prune -f"))).toHaveLength(2);
   });
 
+  test("10c. a df that fails, and a df that prints junk, stop the release at disk before any change", () => {
+    for (const body of ["exit 1", "echo junk"]) {
+      Bun.spawnSync(["bash", "-c", `printf '#!/usr/bin/env bash\n${body}\n' >stubs/df`], { cwd: h.root });
+      const result = h.run("release.sh", ["v0.1.1"]);
+      expect(result.code, body).toBe(1);
+      expect(result.output).toContain("release failed at disk; nothing changed");
+      expect(h.calls().some((line) => line.includes("git checkout") || line.includes("docker tag"))).toBe(false);
+      expect(h.state()).toBeNull();
+    }
+  });
+
   test("10b. enough free space calls no prune", () => {
     h.setSwitch("df-values", `${3 * GIB_BYTES}\n`);
     expect(h.run("release.sh", ["v0.1.1"]).code).toBe(0);
@@ -253,5 +264,31 @@ describe("release.sh steps", () => {
     expect(build).toBeGreaterThan(-1);
     expect(calls.slice(build + 1).filter((line) => /(^| )--build( |$)/.test(line))).toEqual([]);
     expect(calls.slice(build).some((line) => /(^| )up( |$)/.test(line) && line.includes("--no-build"))).toBe(true);
+  });
+});
+
+describe("state values", () => {
+  const bad: [string, string, string][] = [
+    ["current", "v0.1.0;rm", "a value with a semicolon"],
+    ["previous_commit", "-q", "a value that starts with a dash"],
+    ["current_commit", "a b", "a value with a space"],
+  ];
+
+  test.each(bad)(
+    "a bad %s (%s: %s) exits 2 in release.sh and rollback.sh and reaches no git or docker call",
+    (key, value) => {
+      for (const script of ["release.sh", "rollback.sh"] as const) {
+        h.writeState({ ...stateV010, [key]: value });
+        const result = h.run(script, script === "release.sh" ? ["v0.1.1"] : []);
+        expect(result.code, script).toBe(2);
+        expect(result.output).toContain(`bad value for ${key}`);
+        expect(h.calls().some((line) => line.includes("git checkout") || line.includes(" docker "))).toBe(false);
+      }
+    }
+  );
+
+  test("valid values with dots, dashes and a pre- prefix are kept", () => {
+    h.writeState({ current: "pre-v0.1.0", current_commit: "commit-head", previous: "", previous_commit: "" });
+    expect(h.run("release.sh", ["v0.1.1"]).code).toBe(0);
   });
 });

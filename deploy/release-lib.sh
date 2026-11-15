@@ -18,7 +18,8 @@ previous=""
 previous_commit=""
 pending=""
 
-# Reads the state file into the five variables. A value outside [A-Za-z0-9._-] is refused: it goes to docker and git later.
+# Reads the state file into the five variables. A value outside [A-Za-z0-9._-], or one that starts with `-`, is refused:
+# it goes to docker and git later and must not read as an option.
 state_load() {
   current="" current_commit="" previous="" previous_commit="" pending=""
   [[ -f "$STATE_FILE" ]] || return 0
@@ -26,7 +27,7 @@ state_load() {
   while IFS='=' read -r key value || [[ -n "$key" ]]; do
     case "$key" in
       current | current_commit | previous | previous_commit | pending)
-        if [[ ! "$value" =~ ^[A-Za-z0-9._-]*$ ]]; then
+        if [[ ! "$value" =~ ^([A-Za-z0-9._][A-Za-z0-9._-]*)?$ ]]; then
           echo "$STATE_FILE: bad value for $key" >&2
           return 2
         fi

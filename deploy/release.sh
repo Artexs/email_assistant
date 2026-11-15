@@ -60,9 +60,15 @@ main() {
 
   step=disk
   local min_free=$((3 * 1024 * 1024 * 1024))
-  if (($(free_bytes) < min_free)); then
+  # A failed df or a non-number must stop the release: inside `if ((...))` an arithmetic error would only read as false.
+  local free
+  free="$(free_bytes)"
+  [[ "$free" =~ ^[0-9]+$ ]]
+  if ((free < min_free)); then
     docker builder prune -f
-    (($(free_bytes) >= min_free))
+    free="$(free_bytes)"
+    [[ "$free" =~ ^[0-9]+$ ]]
+    ((free >= min_free))
   fi
 
   step=pending
