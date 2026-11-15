@@ -92,12 +92,12 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     ],
     { cwd: repoRoot, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
   );
-  type Service = {
+  interface Service {
     logging?: { driver: string; options: Record<string, string> };
     environment?: Record<string, string>;
     restart?: string;
     healthcheck?: { disable?: boolean };
-  };
+  }
   const services = (JSON.parse(result.stdout.toString()) as { services: Record<string, Service> }).services;
 
   test("server writes json-file, db and cli write local, all 10m x 5", () => {
