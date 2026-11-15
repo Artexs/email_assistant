@@ -5,8 +5,8 @@ import type { Db } from "../../platform/db";
 import { parseQuery, ValidationError, type ApiEnv } from "../../platform/http";
 import { getUserAuthProfile, isFeatureOn } from "../tenancy";
 
-import { reportDocs } from "./api-docs";
 import { decodeActivityCursor, listActivity } from "./activity";
+import { reportDocs } from "./api-docs";
 import { recentWeekStats, type WeekStatsDeps } from "./metrics";
 
 export interface ActivityRouteDeps {

@@ -255,7 +255,9 @@ describe("the real app", () => {
 
   test("GET /api/activity has the query parameters before and limit", async () => {
     const operation = (await openApiSpec(realApp())).paths?.["/api/activity"]?.get;
-    const names = (operation?.parameters as { name: string; in: string }[] | undefined)?.map((p) => `${p.in}:${p.name}`);
+    const names = (operation?.parameters as { name: string; in: string }[] | undefined)?.map(
+      (p) => `${p.in}:${p.name}`
+    );
     expect(names).toContain("query:before");
     expect(names).toContain("query:limit");
   });
