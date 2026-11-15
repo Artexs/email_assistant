@@ -29,7 +29,9 @@ export type NewEmail = Omit<
   Insertable<DB["emails"]>,
   "id" | "org_id" | "status" | "attempts" | "created_at" | "source_folder" | "from_address_lower"
 > & { source_folder: string };
-export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail): Promise<boolean> {
+// `status` is `pending` (the default) except for the history backfill, which stores `skipped` with `skip_reason` `history_check`.
+export type InsertableEmail = NewEmail & { status?: "skipped" };
+export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: InsertableEmail): Promise<boolean> {
   const result = await db
     .insertInto("emails")
     .values({ ...row, inbox_uid: row.uid, org_id: ctx.orgId })
