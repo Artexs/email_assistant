@@ -1,10 +1,10 @@
 import {
-  approvalClosedStates,
   approvalConflictSchema,
   rejectReasonBodySchema,
   textTables,
   type ApprovalApproveAnswer,
   type ApprovalClosedState,
+  type ApprovalEditClosedCode,
   type ApprovalConflict,
   type ApprovalDetail,
   type ApprovalItem,
@@ -101,20 +101,21 @@ export function decisions(
   };
 }
 
-const CLOSED_TEXTS: Record<ApprovalClosedState, TextKey> = {
+const CLOSED_TEXTS: Record<ApprovalClosedState | ApprovalEditClosedCode, TextKey> = {
   held: "appr_closed_held",
   sending: "appr_closed_sending",
   sent: "appr_closed_sent",
   rejected: "appr_closed_rejected",
   expired: "appr_closed_expired",
   failed: "appr_closed_failed",
+  payload_gone: "appr_closed_payload_gone",
+  draft_gone: "appr_closed_draft_gone",
+  delegation_closed: "appr_closed_delegation_closed",
 };
 
-// One text per closed-state name. The edit codes (`payload_gone`, `draft_gone`, `delegation_closed`) and a missing name share one general text.
+// One text per closed-state name and per edit code (`payload_gone`, `draft_gone`, `delegation_closed`). A missing name gets a general text.
 export function closedTextKey(state: ApprovalConflict["state"]): TextKey {
-  return state !== undefined && (approvalClosedStates as readonly string[]).includes(state)
-    ? CLOSED_TEXTS[state as ApprovalClosedState]
-    : "appr_closed_other";
+  return state === undefined ? "appr_closed_other" : CLOSED_TEXTS[state];
 }
 
 export interface Message {

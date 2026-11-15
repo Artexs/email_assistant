@@ -29,6 +29,16 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     subject: "text",
     body_text: "text",
   },
+  // A loop copies recipients, the first recipient and a short ask or promise from sent mail. No mail filter: a loop is
+  // never a row of a mail that goes (its Sent row goes, the loop stays). The erase also clears `text` of a loop that
+  // names the person in `counterpart`, `to_addresses` or `cc_addresses` (see `clearLoopTextsOfPerson` in erase.ts).
+  open_loops: {
+    counterpart: "equal",
+    to_addresses: "recipients",
+    cc_addresses: "recipients",
+    subject: "text",
+    text: "text",
+  },
   email_headers: {
     // The display name can be an address (`"p@x.test" <r@x.test>`), so a kept mail can hold the person's address here.
     from_name: "text",
@@ -95,6 +105,19 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ),
   ...reasons(["actions.idempotency_key"], "built from ids and hashes, no address"),
   ...reasons(["actions.outgoing_message_id"], "the Message-ID that we make: random part and our own host, no address"),
+  ...reasons(["delegations.source"], "closed list of codes (CHECK constraint)"),
+  ...reasons(
+    ["open_loops.kind", "open_loops.status", "open_loops.close_reason", "open_loops.language", "open_loops.due_source"],
+    "closed list of codes (CHECK constraint)"
+  ),
+  ...reasons(
+    ["open_loops.thread_key", "open_loops.message_id", "open_loops.references_ids"],
+    "a Message-ID: random part and the host of the sender's system, no address of a person"
+  ),
+  ...reasons(
+    ["sent_analyses.status", "sent_analyses.skip_reason", "sent_analyses.prompt_version"],
+    "closed list of codes, or the name of a prompt version"
+  ),
   ...reasons(["delegations.status", "delegations.status_reason"], "closed list of codes"),
   ...reasons(["delegations.sent_message_id"], "the Message-ID of our own send, no address of a person"),
   ...reasons(

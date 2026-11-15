@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 09; review (Polish text).
 
 ## Step 16.1 — Connect dialog
 
-- `ConnectDialog` reads `GET /api/mailboxes/oauth/options`. For each provider with `connect: true`, a button above the presets: "Sign in with Microsoft" or "Sign in with Google". A tap: `POST …/:provider/start` with no body, then `location.assign(url)`. A start error shows the text of its code.
+- `ConnectDialog` reads `GET /api/mailboxes/oauth/options`. For each provider with `connect: true`, a button above the presets: "Sign in with Microsoft" or "Sign in with Google". A tap: `POST …/:provider/start` with the body `{}` (the route parses JSON; an empty body is a 400 `invalid_json`), then `location.assign(url)`. A start error shows the text of its code.
 - The password presets stay below "Or connect with a password". The `gmail` preset stays (PD-087).
 - Under the Google button: the testing-mode hint (R6).
 

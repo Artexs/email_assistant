@@ -40,12 +40,14 @@ export const LAB_TARGETS: Record<LabOrgKey, SeedTarget> = {
 };
 
 // Every key of `packages/core/src/features.ts` is in exactly one list. `mistake_capture` is on: the executive needs the
-// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab never deletes its org, has no SSO and no OAuth mailbox (its mailbox is a GreenMail password login).
+// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab never deletes its org, has no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on.
 export const LAB_FLAGS_OFF = [
   "org_delete",
   "sso_sign_in",
   "mail_oauth_microsoft",
   "mail_oauth_google",
+  "open_loops",
+  "delegate_button",
 ] as const satisfies readonly FeatureKey[];
 export const LAB_FLAGS_ON = [
   "stats_page",

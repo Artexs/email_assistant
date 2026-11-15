@@ -271,7 +271,7 @@ async function main(): Promise<number> {
       // stack, so an approved send to the delegate that SEND_SCOPE=self admits goes out and leaves the list. See `e2e-approvals-rows.ts`.
       const approvalsIds = {} as Record<
         E2eProject,
-        { orgId: string; ownerId: string; memberId: string; waitingSendId: string; heldSendId: string }
+        { orgId: string; ownerId: string; memberId: string } & Awaited<ReturnType<typeof seedApprovalsRows>>
       >;
       for (const project of E2E_PROJECTS) {
         const approvalsOwner = await createOrganizationWithOwner(db, {
@@ -476,6 +476,10 @@ async function main(): Promise<number> {
           member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
           waitingSendId: ids.waitingSendId,
           heldSendId: ids.heldSendId,
+          editSendId: ids.editSendId,
+          closedSendId: ids.closedSendId,
+          raceSendId: ids.raceSendId,
+          reminderSendId: ids.reminderSendId,
         };
       }
 

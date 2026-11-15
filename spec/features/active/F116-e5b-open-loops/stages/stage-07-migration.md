@@ -35,3 +35,7 @@ T1–T10 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s07`).
 ## Out of scope
 
 `actions.loop_id` (09), any reader or writer of loops (08).
+
+## Decision (coordinator, after review)
+
+The review (Opus, FAIL on b77b1062, finding B1) showed that the erase kept the `subject` of a Sent mail that the same erase deletes: the loop held a copy. Decision, privacy-conservative: the erase clears `subject` with `text` (and sets `texts_cleared_at`) for every loop that names the person in `counterpart`, `to_addresses` or `cc_addresses` (`clearLoopTextsOfPerson` in `apps/server/src/modules/privacy/erase.ts`). `subject` is nullable; the panel shows "-" for a null subject (stage 21). `thread_key` and `message_id` stay: they are opaque Message-IDs for matching, with no address and no text. A loop whose subject only mentions the address (the person is not a recipient) keeps its subject with the address scrubbed.

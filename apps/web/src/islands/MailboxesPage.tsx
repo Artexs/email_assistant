@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { ConnectDialog } from "../components/mailboxes/ConnectDialog";
+import { OAuthResultBanner } from "../components/mailboxes/OAuthBanner";
 import { MailboxCard } from "../components/mailboxes/MailboxCard";
 import { TelegramLink } from "../components/telegram/TelegramLink";
 import { Button } from "../components/ui/button";
@@ -12,6 +13,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { getLocale, t, useLocale } from "../i18n";
 import { api } from "../lib/api";
 import { canWrite } from "../lib/can-write";
+import { takeOAuthBanner, type OAuthBanner } from "../lib/mail-oauth";
 import { useNow } from "../lib/use-now";
 import { useResource } from "../lib/use-resource";
 
@@ -20,6 +22,7 @@ function Mailboxes() {
   const now = useNow();
   const [lastLoad, setLastLoad] = useState<Date | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [banner, setBanner] = useState<OAuthBanner | null>(null);
   // Edit right: the owner of an organization that is not paused. No text here depends on the role alone.
   const isOwner = me?.role === "owner" && canWrite(me);
   const { data, error, loading, reload } = useResource(async () => {
@@ -38,6 +41,13 @@ function Mailboxes() {
     const query = params.toString();
     history.replaceState(null, "", `${location.pathname}${query === "" ? "" : `?${query}`}${location.hash}`);
   }, [isOwner]);
+
+  // `?oauth=<code>` is the result of a sign-in (the callback redirect). Read it once, show it, then drop `oauth`, `mailbox` and
+  // `provider` from the address so a reload shows no banner again. The list reloads on its own: this page loads it after the redirect.
+  useEffect(() => {
+    const found = takeOAuthBanner({ location, history });
+    if (found !== null) setBanner(found);
+  }, []);
 
   if (me === null) return null;
   const timeZone = me.organization.timezone;
@@ -95,6 +105,7 @@ function Mailboxes() {
           </Button>
         </div>
       </div>
+      {banner !== null && <OAuthResultBanner banner={banner} onClose={() => setBanner(null)} />}
       {content}
       <Card>
         <CardHeader>

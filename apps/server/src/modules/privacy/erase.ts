@@ -23,6 +23,8 @@ const TEXT_LIMITS: Readonly<Record<string, number>> = {
   "email_headers.from_name": 200,
   "email_headers.auth_results": 1000,
   "outbox.text": 4096,
+  "open_loops.subject": 300,
+  "open_loops.text": 80,
 };
 
 // One step inside the erase transaction, after the mails are deleted and before the scrub. The default is
@@ -94,6 +96,29 @@ async function nullability(trx: Transaction<DB>): Promise<Record<string, boolean
   );
 }
 
+// A loop that names the person (the counterpart or a recipient) loses its ask or promise text and its subject whole,
+// not only the address: the text says what was asked of that person, and the subject can be the copy of the subject of
+// a sent mail that this erase deletes (health, money). Runs before the scrub, while the rows still name the address.
+// `texts_cleared_at` marks the row as cleared, as the retention clear does. A loop without recipients left is closed by
+// the match job of the loop module. The `thread_key` and `message_id` of the loop stay: they are opaque Message-IDs
+// kept for matching, no address and no text. Exported for its own test with a connection that bypasses row-level
+// security; `index.ts` does not export it.
+export async function clearLoopTextsOfPerson(
+  trx: Transaction<DB>,
+  orgId: string,
+  patterns: AddressPatterns
+): Promise<number> {
+  const named = Object.entries(DSR_ADDRESS_MAP.open_loops ?? {})
+    .filter(([, rule]) => rule === "equal" || rule === "recipients")
+    .flatMap(([column, rule]) => rowCondition(rule, column, patterns) ?? []);
+  if (named.length === 0) return 0;
+  const result = await sql`
+    update open_loops as t set text = null, subject = null, texts_cleared_at = now(), updated_at = now()
+    where t.org_id = ${orgId}::uuid and (t.text is not null or t.subject is not null)
+      and (${sql.join(named, sql` or `)})`.execute(trx);
+  return Number(result.numAffectedRows ?? 0n);
+}
+
 // Every kept row of the organization loses the address, by the rule of its column. Selected by the same condition as the
 // match, so a row that the match shows is a row that the scrub changes. `sender` and `list` rows never change here (the
 // mails that go are already deleted; the operator reads the listed rows).
@@ -104,6 +129,8 @@ async function scrubMentions(
 ): Promise<Record<string, number>> {
   const nullable = await nullability(trx);
   const scrubbed: Record<string, number> = {};
+  const cleared = await clearLoopTextsOfPerson(trx, orgId, patterns);
+  if (cleared > 0) scrubbed["open_loops.text"] = cleared;
   for (const [table, columns] of Object.entries(DSR_ADDRESS_MAP)) {
     for (const [column, rule] of Object.entries(columns)) {
       if (rule === "sender" || rule === "list") continue;
@@ -115,7 +142,7 @@ async function scrubMentions(
         update ${sql.table(table)} as t set ${sql.id(column)} = ${value}
         where t.org_id = ${orgId}::uuid and ${condition}`.execute(trx);
       const changed = Number(result.numAffectedRows ?? 0n);
-      if (changed > 0) scrubbed[key] = changed;
+      if (changed > 0) scrubbed[key] = (scrubbed[key] ?? 0) + changed;
     }
   }
   return scrubbed;
