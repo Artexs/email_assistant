@@ -417,3 +417,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the plan follows E8b; open questions are in `questions.md` (Q1–Q6 important).
 - Undo: cut stages 05–09; the alert job stays off with no `OPERATOR_TELEGRAM_CHAT_ID`.
 - Source: `spec/features/planned/F114-e8b-alerts-and-releases-incl-the-restore-drill/questions.md`, `plan.md`, `plan-review-1.md`. Owner steps: U1 `age` identity file on the PC (only for the stage 09 drill), U2 Healthchecks.io "backup" check URL in `BACKUP_PING_URL`, U3 "EA operator" Telegram group, U4 read five test notices; gate PD-055.
+
+### 2026-11-15 · F116 plan refresh: consent version after a same-day bump (F116) · privacy · new
+- Choice: F109 stage 06 already set `TELEGRAM_CONSENT_VERSION = "2026-11-15"`. F116 stage 17 must set a version greater than that (land date, or `<date>.2` on a day with a bump). This breaks the code-patterns same-day rule for this stage only; option: land stage 17 on a later day.
+- Why: a consent to the F109 text must not count as consent to loop data (the F109 text has no loop sentence).
+- Undo: none needed; a later version only asks again.
+- Source: `spec/features/active/F116-e5b-open-loops/plan-refresh-1.md`, `questions.md` item 20.
+
+### 2026-11-15 · F104 Sent switch texts: truth of "never changes Sent", no retention line (F104) · privacy · new
+- Choice: (1) The text "The assistant reads Sent, never changes it" is not exact: the assistant's own send can append a copy into Sent. The stage 10 fix changes the text to "reads Sent and does not change or delete your mail there". (2) The consent texts name no retention (30 days headers, 14 days text, off = delete). Not added: sent-mail rule 13 says no consent version bump while Sent data goes to no LLM or Telegram. Add a retention line before the flag goes on for any real org if you want it.
+- Why: E5 §4.1 wording was the owner's; a consent text must be true.
+- Undo: restore the old sentence in `apps/web/src/i18n/en.ts` and `pl.ts` (`sent_line`).
+- Source: `.limen/jobs/2026-11-15-f104-review-s10-opus-sent-switch-422e67bb/result` (N1, N2), `spec/features/active/F104-e5a-read-sent/review-10.md`.

@@ -5,13 +5,22 @@ import { llmRoles } from "@ea/core";
 
 import { settingsDeps } from "../composition";
 import {
+  buildServeParts,
   createFakeTgClient,
   createLabState,
+  createServeMailClient,
+  labEnvIssues,
   loadLabCorpus,
   orgHasMail,
+  readServeStatus,
+  runServe,
   runSpend,
+  SERVE_EVERY_MS,
+  SERVE_HEARTBEAT_MS,
   seedLabOrg,
   storeRunUrgencyProfile,
+  takeServeLock,
+  writeServeStatus,
 } from "../modules/lab";
 import { configureMailHosts, openImapProvider, verifySmtpLogin } from "../modules/mail";
 import { createCliOutput } from "../platform/cli";
@@ -32,6 +41,21 @@ const LAB_ROLES = llmRoles.filter((role) => role !== "judge");
 // Seed waits this long for the server to link the fake chat after `/start`.
 const LINK_TIMEOUT_MS = 60_000;
 const LINK_POLL_MS = 1000;
+
+// Resolves after `ms`, or at once when the signal aborts.
+function sleepUnlessAborted(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolveSleep) => {
+    const timer = setTimeout(resolveSleep, ms);
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        resolveSleep();
+      },
+      { once: true }
+    );
+  });
+}
 
 async function main(): Promise<number> {
   const command = parseLabArgs(process.argv.slice(2));
@@ -59,7 +83,10 @@ async function main(): Promise<number> {
       env: process.env,
       state,
       corpus,
-      models: LAB_ROLES.map((role) => table.roles[role].model),
+      models: LAB_ROLES.map((role) => ({
+        model: table.roles[role].model,
+        endpoint: table.providers[table.roles[role].provider].endpoint,
+      })),
       orgHasMail: (orgId) => orgHasMail(db, orgId),
       seed: (target) => {
         // The env guard has run before: a loopback root is set.
@@ -91,6 +118,41 @@ async function main(): Promise<number> {
         const org = state.readOrgs()[run.org];
         if (org === undefined) throw new Error("lab state: the run org is not in orgs.json");
         return runSpend(db, org.orgId, run);
+      },
+      serveStatus: () => readServeStatus(stateDir),
+      serve: () => {
+        // The env guard has run before: a loopback root is set.
+        if (config.TELEGRAM_API_ROOT === undefined) throw new Error("TELEGRAM_API_ROOT is not set");
+        const { parts, spendOf } = buildServeParts({
+          db,
+          state,
+          corpus,
+          mail: createServeMailClient(corpus),
+          tg: createFakeTgClient(config.TELEGRAM_API_ROOT),
+          settings: settingsDeps(db, () => new Date()),
+          now: () => new Date(),
+        });
+        // SIGTERM and SIGINT end the tick after the part that runs, release the lock and exit 0.
+        const stop = new AbortController();
+        for (const signal of ["SIGTERM", "SIGINT"] as const) process.on(signal, () => stop.abort());
+        return runServe(
+          {
+            state,
+            parts,
+            now: () => new Date(),
+            spendUsd: async (runId) => {
+              const spend = await spendOf(runId);
+              return spend.kind === "unpriced" ? "unpriced" : spend.usd;
+            },
+            say: (line) => cli.print(line),
+            heartbeat: (status) => writeServeStatus(stateDir, status),
+            envIssues: () => labEnvIssues(process.env, corpus),
+            takeLock: () => takeServeLock(stateDir),
+            sleep: sleepUnlessAborted,
+            heartbeatEveryMs: SERVE_HEARTBEAT_MS,
+          },
+          { everyMs: SERVE_EVERY_MS, signal: stop.signal }
+        );
       },
       now: () => new Date(),
       hex4: () => randomUUID().replaceAll("-", "").slice(0, 4),

@@ -1,6 +1,6 @@
 # F116 · Open loops: plan
 
-> **Status 2026-11-15 — planned.** Plan base: 9531f16a. 25 stages, none built.
+> **Status: planned.** Plan base: 09704dcd, refreshed 2026-11-15. 25 stages; none built.
 
 Names: [interfaces.md](interfaces.md). Defaults: [questions.md](questions.md). Source: epic E05 notes §4.2, §5.
 
@@ -116,7 +116,7 @@ Web stages 21 and 22 add the web tail of F102 `plan.md` § Proof (`test:e2e` und
 
 - Scouts: 4, all done (`scouts.md`).
 - [written] ticket, plan, interfaces, facts, questions, stages 01–25.
-- Words (`wc -w`): plan ≤ 1,500; stages ≤ 700.
+- Words: plan ≤ 1,500, stages ≤ 700. [Refresh 1](plan-refresh-1.md).
 
 ## Cold review
 

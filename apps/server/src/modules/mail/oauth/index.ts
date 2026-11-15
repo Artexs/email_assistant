@@ -19,9 +19,20 @@ export {
   type OAuthGrant,
   type OAuthRefusalCode,
 } from "./callback";
+export { applyOAuthGrant, type ApplyGrantDeps, type ApplyResult, type OAuthResultCode } from "./apply";
+export { mailOAuthCallbackRoutes, type MailOAuthCallbackDeps } from "./callback-route";
+export {
+  decodeOAuthSecret,
+  encodeOAuthSecret,
+  readOAuthSecret,
+  saveOAuthSecret,
+  withMailboxOAuthLock,
+  type OAuthSecret,
+} from "./secret-store";
 export { parseIdTokenClaims, type IdTokenClaims } from "./id-token";
 export { createMailOAuthClients, type MailOAuthClientsDeps } from "./clients";
 export {
+  mailOAuthFlag,
   mailOAuthProviders,
   missingResourceScopes,
   requiredResourceScopes,

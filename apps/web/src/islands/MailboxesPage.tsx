@@ -105,7 +105,14 @@ function Mailboxes() {
         </CardContent>
       </Card>
       <p className="text-sm text-muted-foreground">{t("mb_scopes_note")}</p>
-      {isOwner && <ConnectDialog open={connectOpen} onOpenChange={setConnectOpen} onConnected={onChanged} />}
+      {isOwner && (
+        <ConnectDialog
+          open={connectOpen}
+          onOpenChange={setConnectOpen}
+          onConnected={onChanged}
+          sentSyncLine={me.features.includes("sent_sync")}
+        />
+      )}
     </div>
   );
 }

@@ -49,6 +49,7 @@ export {
   startLabRun,
   stopLabRun,
   writeRunLedgerLine,
+  type LabModel,
   type StartDeps,
   type StartInput,
   type StartRefusal,
@@ -69,3 +70,26 @@ export {
   type LabMailClientOptions,
   type LabMailErrorCode,
 } from "./mail-client";
+export {
+  errorCodeOf,
+  finishRun,
+  MAX_PART_FAILURES,
+  runModeStep,
+  runServe,
+  SERVE_EVERY_MS,
+  serveTick,
+  type FinishReason,
+  type ServeDeps,
+  type ServeParts,
+  type ServeRunDeps,
+} from "./serve";
+export {
+  readServeStatus,
+  SERVE_HEARTBEAT_MS,
+  SERVE_LOCK_STALE_MS,
+  takeServeLock,
+  writeServeStatus,
+  type ServeLock,
+  type ServeStatus,
+} from "./serve-files";
+export { buildServeParts, createServeMailClient, labMailOptions, type ServePartsDeps } from "./serve-parts";

@@ -621,6 +621,33 @@ describe("real webDeps", () => {
     }
   });
 
+  test("the OAuth callback sits before the session guard: no session is a 303 to /login, and only GET is public", async () => {
+    const web = webDeps(
+      loadConfig({
+        ...process.env,
+        WEB_BASE_URL: "http://127.0.0.1:8080",
+        WEB_AUTH_SECRET: "x".repeat(40),
+        WEB_DIST: dist,
+        ...AUTH_MAIL_OFF,
+      }),
+      db,
+      extras
+    );
+    if (web === null) throw new Error("webDeps returned null");
+    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    try {
+      const app = createApp({ checkDb, web });
+      const res = await app.request("/api/mailboxes/oauth/google/callback?code=c&state=s");
+      expect(res.status).toBe(303);
+      expect(res.headers.get("location")).toBe("/login");
+      const post = await app.request("/api/mailboxes/oauth/google/callback", { method: "POST", headers: ORIGIN });
+      expect(post.status).toBe(401);
+    } finally {
+      logSpy.mockRestore();
+      await web.close();
+    }
+  });
+
   test("returns null when WEB_BASE_URL is empty", () => {
     const lines: string[] = [];
     const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]): void => {

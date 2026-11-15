@@ -14,6 +14,12 @@ Part of [plan.md](plan.md). Read at plan base 9531f16a; scout leads in [scouts.m
 - **F8** The claim's mail-age limit (7 days) applies only to mailbox changes, not to drafts and sends (`actions/repo/claims.ts`).
 - **F9** The offline-lab corpus shapes (`packages/core/src/sim`) describe incoming mail with a category label; no shape for sent mail exists.
 
+## Facts checked at refresh 1 (2026-11-15, 09704dcd)
+
+- **F10** `TELEGRAM_CONSENT_VERSION` = `"2026-11-15"` (F109 stage 06). The server compares the link body by equality (`channels/routes.ts`); `web.telegram_consent` audit rows hold `data.version`. The consent text is the panel key `tg_consent_text` (`apps/web/src/i18n/en.ts`, `pl.ts`), tested in `apps/web/src/i18n/i18n.test.ts`; `packages/core/src/texts/` holds no consent text.
+- **F11** `featureFlags` has `attachment_line` (E3b, off); no `open_loops`, no `delegate_button` yet. `tenancy-features.test.ts` lists every flag in registry order.
+- **F12** Digest rows show `📎 …` after the subject when `attachment_line` is on (`DigestItem.attachments`, `reports/digest.ts` via `mail.attachmentFactsToShow`); `reports-digest.test.ts` has the F109 test "digest attachment line".
+
 ## Not verified
 
 - **N1** Interia threads an APPENDed follow-up and keeps the To/Cc (stage 25).

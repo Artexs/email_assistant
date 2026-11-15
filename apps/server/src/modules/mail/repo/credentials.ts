@@ -2,10 +2,13 @@ import type { TenantContext } from "../../../platform/db";
 
 import type { DbOrTrx } from "./shared";
 
+/** `oauth`: the secret is an encoded `OAuthSecret` (F117 D3); the others are a password. */
+export type CredentialKind = "password" | "app_password" | "oauth";
+
 export async function insertCredentials(
   db: DbOrTrx,
   ctx: TenantContext,
-  input: { mailboxId: string; encryptedSecret: string; secretKind: "password" | "app_password"; keyVersion: number }
+  input: { mailboxId: string; encryptedSecret: string; secretKind: CredentialKind; keyVersion: number }
 ): Promise<void> {
   await db
     .insertInto("mailbox_credentials")
@@ -23,7 +26,7 @@ export async function updateCredentials(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  row: { encryptedSecret: string; secretKind: "password" | "app_password"; keyVersion: number }
+  row: { encryptedSecret: string; secretKind: CredentialKind; keyVersion: number }
 ): Promise<boolean> {
   const result = await db
     .updateTable("mailbox_credentials")
