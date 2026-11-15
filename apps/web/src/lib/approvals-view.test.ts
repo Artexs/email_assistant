@@ -62,7 +62,7 @@ describe("the text maps", () => {
       ...heldBys.map((cause) => HELD_TEXTS[cause]),
       ...draftKinds.map((kind) => KIND_TITLES[kind]),
       ...REJECT_REASONS.map((reason) => REASON_TEXTS[reason]),
-      ...approvalClosedStates.map((state) => closedTextKey(state)),
+      ...[...approvalClosedStates, ...approvalEditClosedCodes].map((state) => closedTextKey(state)),
       stateLabelKey("held", null),
     ];
     for (const key of keys) {
@@ -86,10 +86,10 @@ describe("the text maps", () => {
     expect(stateLabelKey("waiting", null)).toBe("appr_state_waiting");
   });
 
-  test("each closed-state name has its own text; the edit codes and no name share the general text", () => {
-    const texts = approvalClosedStates.map((state) => closedTextKey(state));
-    expect(new Set(texts).size).toBe(approvalClosedStates.length);
-    for (const code of approvalEditClosedCodes) expect(closedTextKey(code)).toBe("appr_closed_other");
+  test("each closed-state name and each edit code has its own text; no name gets the general text", () => {
+    const texts = [...approvalClosedStates, ...approvalEditClosedCodes].map((state) => closedTextKey(state));
+    expect(new Set(texts).size).toBe(approvalClosedStates.length + approvalEditClosedCodes.length);
+    expect(texts).not.toContain("appr_closed_other");
     expect(closedTextKey(undefined)).toBe("appr_closed_other");
   });
 
@@ -168,9 +168,11 @@ describe("failureOutcome", () => {
         key: closedTextKey(state),
       });
     }
+    // A closed answer with no state name gets the general text; an edit code has its own text.
+    expect(failureOutcome(conflict({ error: "closed" }))).toEqual({ kind: "notice", key: "appr_closed_other" });
     expect(failureOutcome(conflict({ error: "closed", state: "draft_gone" }))).toEqual({
       kind: "notice",
-      key: "appr_closed_other",
+      key: "appr_closed_draft_gone",
     });
   });
 

@@ -2,11 +2,14 @@ import {
   actionFeedbackAnswerSchema,
   approvalApproveAnswerSchema,
   approvalDetailSchema,
+  approvalEditAnswerSchema,
   approvalListSchema,
   approvalRejectAnswerSchema,
   type ActionFeedbackAnswer,
   type ApprovalApproveAnswer,
   type ApprovalDetail,
+  type ApprovalEditAnswer,
+  type ApprovalEditBody,
   type ApprovalList,
   type ApprovalRejectAnswer,
   type RejectReasonBody,
@@ -34,6 +37,11 @@ export function postApprove(id: string): Promise<ApprovalApproveAnswer> {
 
 export function postReject(id: string): Promise<ApprovalRejectAnswer> {
   return api(`/api/approvals/${id}/reject`, approvalRejectAnswerSchema, { method: "POST", body: {} });
+}
+
+// The id is the send that the dialog opened (D2). The answer names the new send: a new version, and a new request to approve.
+export function postEdit(id: string, body: ApprovalEditBody): Promise<ApprovalEditAnswer> {
+  return api(`/api/approvals/${encodeURIComponent(id)}/edit`, approvalEditAnswerSchema, { method: "POST", body });
 }
 
 // The reason route is the one of the Telegram reason buttons; the action id of a send is its id.

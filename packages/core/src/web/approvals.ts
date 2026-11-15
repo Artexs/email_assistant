@@ -24,6 +24,8 @@ const heldByMatches: [HeldBy] extends [(typeof heldBys)[number]]
 void heldByMatches;
 
 export { approvalViewSchema };
+// The limits and the cleaning of the edit: the form uses the same rule as the service (a pure module, safe for the browser).
+export { cleanUserText, EDIT_BODY_MAX, EDIT_SUBJECT_MAX } from "../outgoing/user-text";
 
 export const approvalListStates = ["waiting", "held"] as const;
 export const approvalDetailStates = [
@@ -115,6 +117,7 @@ export type ApprovalEditAnswer = z.infer<typeof approvalEditAnswerSchema>;
 export const approvalClosedStates = ["held", "sending", "sent", "rejected", "expired", "failed"] as const;
 export type ApprovalClosedState = (typeof approvalClosedStates)[number];
 export const approvalEditClosedCodes = ["payload_gone", "draft_gone", "delegation_closed"] as const;
+export type ApprovalEditClosedCode = (typeof approvalEditClosedCodes)[number];
 const closedStatesAreDetailStates: [(typeof approvalClosedStates)[number]] extends [
   (typeof approvalDetailStates)[number],
 ]

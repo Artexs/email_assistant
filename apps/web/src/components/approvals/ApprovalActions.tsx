@@ -15,11 +15,23 @@ export interface ApprovalActionsProps {
   busy: boolean;
   // A member reads only: the page says why there is no button.
   ownerOnly: boolean;
+  // An owner may edit a waiting delegation or clarification (`canEdit`).
+  canEdit: boolean;
   onApprove(): void;
   onReject(): void;
+  onEdit(): void;
 }
 
-export function ApprovalActions({ decisions, draftReady, busy, ownerOnly, onApprove, onReject }: ApprovalActionsProps) {
+export function ApprovalActions({
+  decisions,
+  draftReady,
+  busy,
+  ownerOnly,
+  canEdit,
+  onApprove,
+  onReject,
+  onEdit,
+}: ApprovalActionsProps) {
   if (ownerOnly) return <p className="text-sm text-muted-foreground">{t("owner_only")}</p>;
   if (!decisions.approve && !decisions.reject) return null;
   return (
@@ -32,6 +44,11 @@ export function ApprovalActions({ decisions, draftReady, busy, ownerOnly, onAppr
       {decisions.reject && (
         <Button type="button" variant="outline" disabled={busy} onClick={onReject}>
           {t("appr_reject")}
+        </Button>
+      )}
+      {canEdit && (
+        <Button type="button" variant="outline" disabled={busy} onClick={onEdit}>
+          {t("appr_edit")}
         </Button>
       )}
     </div>
