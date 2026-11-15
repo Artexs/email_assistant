@@ -1,0 +1,39 @@
+---
+title: Set sender rules
+description: Mark a sender or a domain as VIP, whitelist or blocklist so that the assistant treats its mail your way.
+capabilities:
+  - triage
+---
+
+import UiText from "../../../components/UiText.astro";
+
+A sender rule tells the assistant how to treat mail from one address or one domain. Rules run before the AI.
+This guide shows how to add and remove a rule.
+
+## The three kinds
+
+- **<UiText k="rule_kind_vip" />**: <UiText k="rules_vip_text" />
+- **<UiText k="rule_kind_whitelist" />**: <UiText k="rules_whitelist_text" />
+- **<UiText k="rule_kind_blocklist" />**: <UiText k="rules_blocklist_text" />
+
+A VIP sender is also a whitelisted sender. If a sender is on the blocklist and on the whitelist or the VIP list, the whitelist wins.
+A blocklisted mail becomes Spam with no call to the AI. For a whitelisted or VIP sender, the AI still sorts the mail, but it cannot choose Spam.
+
+## Before you start
+
+Only the owner of the organization can add or delete a rule. Other members see the list and the text **<UiText k="set_owner_only" />**.
+
+## Steps
+
+1. Open the page **<UiText k="nav_rules" />**.
+2. In the block **<UiText k="rules_add_title" />**, choose the kind.
+3. In the field **<UiText k="rules_pattern_label" />**, type an address such as `anna@example.com` or a domain such as `example.com`. A domain also covers its subdomains.
+4. In the list **<UiText k="rules_scope_label" />**, choose one mailbox or **<UiText k="rules_all_mailboxes" />**.
+5. Press **<UiText k="rules_add" />**.
+
+To remove a rule, press its delete button in the list on the same page.
+
+## What happens next
+
+The rule works on mail that the system sorts after you add it. Mail that is already sorted stays as it is.
+You can have up to 1000 rules. If the same rule exists, the page says **<UiText k="err_rule_exists" />**.

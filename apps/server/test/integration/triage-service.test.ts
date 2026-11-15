@@ -149,7 +149,7 @@ describe("saveTriage", () => {
         reason_code: "newsletter",
       });
       expect(rows[0]?.suspicious_reasons).toEqual([]);
-      expect(rows[0]?.fields).toEqual({ lang: "pl", model_category: "info" });
+      expect(rows[0]?.fields).toEqual({ lang: "pl", model_category: "info", rule: null });
 
       const actions = await listActionsForEmail(trx, ctx, emailId);
       expect(actions.map((a) => [a.type, a.status]).sort()).toEqual([
@@ -193,7 +193,7 @@ describe("saveTriage", () => {
       const rows = await results(trx, emailId);
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({ category: "unsure", reason_code: "fyi", confidence: 0.5 });
-      expect(rows[0]?.fields).toEqual({ lang: "pl", model_category: "info" });
+      expect(rows[0]?.fields).toEqual({ lang: "pl", model_category: "info", rule: null });
 
       const actions = await listActionsForEmail(trx, ctx, emailId);
       expect(actions.map((a) => [a.type, a.status, a.payload])).toEqual([["move", "logged", { folder: "ai_manual" }]]);
@@ -208,7 +208,7 @@ describe("saveTriage", () => {
       await saveTriage(trx, ctx, mailbox, email, decision({ usage: null, modelCategory: null, model: null }), now);
       const [row] = await results(trx, emailId);
       expect(row).toMatchObject({ tokens_in: null, tokens_out: null, latency_ms: null, model: null });
-      expect(row?.fields).toEqual({ lang: "pl" });
+      expect(row?.fields).toEqual({ lang: "pl", rule: null });
     });
   });
 
@@ -1674,6 +1674,73 @@ describe("triageOne: the plan by the source folder (D11)", () => {
       const s = await folderSetup(trx, { sourceFolder: JUNK, junkRow: false });
       const { actions } = await run(trx, s, "urgent");
       expect(actions.map((a) => [a.type, a.status])).toEqual([["flag", "ready"]]);
+    });
+  });
+});
+
+describe("the rule that shaped a result (F110 stage 16)", () => {
+  const deps = (trx: Transaction<DB>, llm: ReturnType<typeof fakeLlm>) => ({
+    db: trx,
+    llm,
+    pause: fakePause(),
+    testMail: NO_TEST_SENDERS,
+    dailyCap: 1000,
+    now: () => now,
+  });
+
+  async function ruleOf(from: string, rules: { pattern: string; kind: "blocklist" | "whitelist" | "vip" }[]) {
+    let fields: Record<string, unknown> = {};
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: from }, rules);
+      await triageOne(deps(trx, fakeLlm(analysis())), ctx, mailbox, email);
+      const [row] = await results(trx, emailId);
+      fields = row?.fields as Record<string, unknown>;
+    });
+    return fields;
+  }
+
+  test("a blocklisted sender: rule blocklist, and the pattern is not stored", async () => {
+    const fields = await ruleOf("bad@spam.test", [{ pattern: "spam.test", kind: "blocklist" }]);
+    expect(fields.rule).toBe("blocklist");
+    expect(JSON.stringify(fields)).not.toContain("spam.test");
+  });
+
+  test("a VIP: rule vip, also when the sender is on the whitelist and the blocklist too", async () => {
+    const vip = [{ pattern: "boss@firma.test", kind: "vip" as const }];
+    expect((await ruleOf("boss@firma.test", vip)).rule).toBe("vip");
+    const all = [
+      ...vip,
+      { pattern: "firma.test", kind: "whitelist" as const },
+      { pattern: "firma.test", kind: "blocklist" as const },
+    ];
+    expect((await ruleOf("boss@firma.test", all)).rule).toBe("vip");
+  });
+
+  test("a whitelisted sender that is not VIP: rule whitelist, also against a blocklist hit", async () => {
+    expect((await ruleOf("a@corp.test", [{ pattern: "corp.test", kind: "whitelist" }])).rule).toBe("whitelist");
+    const both = [
+      { pattern: "corp.test", kind: "blocklist" as const },
+      { pattern: "a@corp.test", kind: "whitelist" as const },
+    ];
+    expect((await ruleOf("a@corp.test", both)).rule).toBe("whitelist");
+  });
+
+  test("no rule hit: rule null, the key is there, and the model fields stay", async () => {
+    const fields = await ruleOf("x@else.test", [{ pattern: "corp.test", kind: "whitelist" }]);
+    expect("rule" in fields).toBe(true);
+    expect(fields.rule).toBeNull();
+    expect(fields.model_category).toBe("info");
+  });
+
+  test("an error result of a VIP keeps the rule", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: "boss@firma.test" }, [
+        { pattern: "boss@firma.test", kind: "vip" },
+      ]);
+      expect(await finishTriageError(deps(trx, fakeLlm(analysis())), ctx, mailbox, email)).toEqual({ kind: "triaged" });
+      const [row] = await results(trx, emailId);
+      expect(row).toMatchObject({ category: "unsure", reason_code: "triage_error" });
+      expect((row?.fields as Record<string, unknown>).rule).toBe("vip");
     });
   });
 });

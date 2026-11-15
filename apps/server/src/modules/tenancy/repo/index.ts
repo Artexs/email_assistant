@@ -12,11 +12,16 @@ export {
   type OrgPlanState,
 } from "./organizations";
 export {
+  getMemberNotify,
   getMembership,
   insertMembership,
   listMemberships,
   listMembershipsOfUser,
+  listQuietHoursOf,
   setDigestTimes,
+  setMemberQuietHours,
+  setMemberReportChannel,
+  type MemberNotify,
   type MembershipWithUser,
   type UserMembership,
 } from "./memberships";

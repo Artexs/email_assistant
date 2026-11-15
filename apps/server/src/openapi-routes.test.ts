@@ -361,6 +361,19 @@ describe("the real app", () => {
     }
   });
 
+  test("F110 s18: GET and PATCH /api/me/notify are described, the patch has a body and the 409 no_mailbox", async () => {
+    const path = (await openApiSpec(realApp())).paths?.["/api/me/notify"] as
+      | Record<
+          string,
+          { operationId?: string; requestBody?: unknown; responses?: Record<string, { description?: string }> }
+        >
+      | undefined;
+    expect(path?.get?.operationId).toBe("getNotify");
+    expect(path?.patch?.operationId).toBe("patchNotify");
+    expect(path?.patch?.requestBody).toBeDefined();
+    expect(path?.patch?.responses?.["409"]?.description).toContain("no_mailbox");
+  });
+
   test("the middleware entries are no route keys", () => {
     const app = realApp();
     // The app has middleware entries under /api (the guards, the 404 catch-all); none of them is a key.

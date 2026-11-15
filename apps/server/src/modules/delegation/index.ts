@@ -36,6 +36,7 @@ export {
   listAnsweredUnnotified,
   listDelegateAddresses,
   listDelegateNames,
+  listDelegateTags,
   listDelegates,
   listDelegationPage,
   listDelegationsDueBy,

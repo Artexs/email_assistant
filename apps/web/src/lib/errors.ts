@@ -16,6 +16,7 @@ const codeTexts: Record<string, TextKey> = {
   not_found: "err_not_found",
   org_suspended: "err_org_suspended",
   mailbox_limit: "err_mailbox_limit",
+  no_mailbox: "notify_no_mailbox",
 };
 
 export function errorText(error: unknown): TextKey {

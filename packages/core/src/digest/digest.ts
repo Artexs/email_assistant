@@ -1,6 +1,7 @@
 import { dropLastLine, renderBrief, shownIds, type BriefRenderOptions, type BriefSections } from "../loops/brief";
 import type { CoreTexts } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
+import type { SenderRuleKind } from "../triage/rules";
 import type { SuspiciousReason } from "../triage/suspicious";
 import type { MailboxStatus } from "../web/mailboxes";
 
@@ -12,6 +13,7 @@ import { MESSAGE_MAX_CHARS, type OutButton, type OutMessage } from "./message";
 import { feedbackButtons, suspiciousLine } from "./notices";
 import { cleanSubject, cutText, senderLabel } from "./text";
 import { rateText } from "./weekly";
+import { aiLine, whySuffix } from "./why-line";
 
 export const DIGEST_MAX_LINES = 15;
 
@@ -47,6 +49,9 @@ export interface DigestItem {
   attachments?: AttachmentLineInput;
   // A draft exists or is planned for the mail (an original `create_draft` action). A flagged delegation shows "no draft" only without one.
   hasDraft?: boolean;
+  // Set only while the flag `why_lines` is on (F110 stage 16). Absent reads as no mark: the item renders as before.
+  confidence?: number | null;
+  rule?: SenderRuleKind | null;
 }
 
 export interface DigestHandled {
@@ -153,7 +158,8 @@ function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {
   ];
   const attachments = item.attachments === undefined ? null : attachmentLine(item.attachments, texts.locale);
   if (attachments !== null) lines.push(attachments);
-  if (item.aiText !== null && item.aiText !== "") lines.push(`💬 ${cutText(item.aiText, 120)}`);
+  const ai = aiLine(item.aiText, whySuffix(item, texts), 120);
+  if (ai !== null) lines.push(ai);
   const warning = suspiciousLine(item.suspicious, texts);
   if (warning !== null) lines.push(warning);
   // A flagged delegation mail gets no draft: that line replaces the "would do" line.

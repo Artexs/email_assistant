@@ -1,0 +1,51 @@
+---
+title: Switch from shadow mode to assist mode
+description: Let the assistant act on a mailbox, choose the switches and understand why an automatic move can be locked.
+capabilities:
+  - actions-and-undo
+  - triage
+---
+
+import UiText from "../../../components/UiText.astro";
+
+A new mailbox starts in shadow mode. The assistant reads and sorts, reports what it would do and changes nothing.
+In assist mode it acts on the mailbox by the switches that you choose. It still sends nothing without your approval.
+
+## Before you start
+
+- Only the owner of the organization can change the mode and the switches. Other members see them.
+- Let the assistant run in shadow mode for a few days. Check the reports in Activity and in the digest first.
+
+## Switch to assist mode
+
+1. Open the page **<UiText k="nav_settings" />**. Choose the mailbox in the list at the top.
+2. In the card **<UiText k="mode_title" />**, press **<UiText k="mode_to_assist" />**.
+3. In the dialog **<UiText k="assist_title" />**, choose one button:
+   - **<UiText k="assist_usual" />**: the switches Move, Mark as read and Flag go on. The switch for unsure mail goes off. The switch for drafts stays as it is.
+   - **<UiText k="assist_keep" />**: the switches stay as they are.
+
+To go back, press **<UiText k="mode_to_shadow" />**. The actions that wait to run expire.
+
+## The switches
+
+All switches are off in a new mailbox. Each one is in the same card.
+
+- **<UiText k="switch_move" />**
+- **<UiText k="switch_mark_read" />**
+- **<UiText k="switch_flag" />**
+- **<UiText k="switch_create_draft" />**
+- **<UiText k="switch_move_unsure" />**
+
+The system never moves or marks as read the mail of a VIP sender.
+The badges in the dialog show what the server allows. For example, the badge **<UiText k="badge_actions_off" />** means that the server holds back all mailbox changes. Your switches then have no effect until the operator changes the server.
+
+## Why automatic moves can be locked
+
+The switch for a category in the card **<UiText k="cat_title" />** is its automatic switch, called auto. A move or a mark as read needs the main switch and auto for the category.
+A category passes the check when 98% or more of its mails are right. The check counts at least 30 rated mails of this mailbox. Rate mails as in [Confirm or correct a category](../correct-a-category/).
+Under each switch the panel shows how far the category is from the bar. An owner can turn auto on at once when the category passed.
+If it did not pass, the panel asks **<UiText k="anyway_title" />** Press **<UiText k="anyway_submit" />** only when you accept the risk. You can undo each move for 7 days. See [Undo what the assistant did to a mail](../undo-a-move/).
+
+## What happens next
+
+In assist mode the assistant moves, marks and flags new mail by the switches. Mail that it sorted in shadow mode stays where it is.

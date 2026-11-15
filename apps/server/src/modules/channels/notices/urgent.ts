@@ -1,7 +1,10 @@
+import { hasModelMark } from "@ea/core";
+
 import { type TenantContext } from "../../../platform/db";
 import { listActionsForEmails } from "../../actions";
 import { listDelegateNames } from "../../delegation";
 import { attachmentFactsToShow, getJunkFolderPath, INBOX, isSyntheticMessageId } from "../../mail";
+import { isFeatureOn } from "../../tenancy";
 import { listTriagedBetween, suspiciousReasonsToShow } from "../../triage";
 import { type LinkedChat } from "../port";
 
@@ -56,6 +59,8 @@ async function detectUrgent(
     ctx,
     rows.map((row) => row.email_id)
   );
+  // F110 stage 16: the keys of the why line go into the view only while the flag is on.
+  const whyOn = await isFeatureOn(db, ctx, "why_lines");
   const delegateIds = new Set<string>();
   for (const list of actions.values()) {
     for (const action of list) {
@@ -110,6 +115,8 @@ async function detectUrgent(
               ...(flagged.length > 0 ? { suspicious: flagged } : {}),
               // The same rule for the attachment line: no field with the flag off or without an attachment to show.
               ...(attachmentFact === undefined ? {} : { attachments: attachmentFact }),
+              // The same rule for the why line: no keys with the flag off. A rule result carries no model mark.
+              ...(whyOn ? { confidence: hasModelMark(row.reason_code) ? row.confidence : null, rule: row.rule } : {}),
               now,
               timeZone,
             },

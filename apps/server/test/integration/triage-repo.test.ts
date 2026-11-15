@@ -8,13 +8,14 @@ import {
   latestTriageResult,
   listLabeledResults,
   listLatestTriageByEmailIds,
+  listTriagedBetween,
   listUnlabeled,
   listUsageSince,
   type TriageResultInput,
 } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
+import { createOrgWithMailbox, insertTestEmail, insertTriaged } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -623,6 +624,42 @@ describe("triage repository", () => {
       const rows = await listLatestTriageByEmailIds(trx, a.ctx, [emailA, emailB]);
       expect(rows.map((r) => [r.email_id, r.category, r.prompt_version])).toEqual([[emailA, "spam", "classifier-v1"]]);
       expect(await listLatestTriageByEmailIds(trx, a.ctx, [])).toEqual([]);
+    });
+  });
+});
+
+describe("listTriagedBetween reads the rule (F110 stage 16)", () => {
+  test("a kind is read; an old row, a junk value and a non-string value read null", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const at = new Date("2026-11-06T06:00:00Z");
+      const make = (fields: Record<string, unknown>, minutes: number) =>
+        insertTriaged(trx, a.ctx, a.mailboxId, {
+          category: "info",
+          createdAt: new Date(at.getTime() + minutes * 60_000),
+          fields,
+        });
+      const vip = await make({ rule: "vip" }, 1);
+      const old = await make({}, 2);
+      const junk = await make({ rule: "somebody@example.com" }, 3);
+      const nonString = await make({ rule: 5 }, 4);
+      await insertTriaged(trx, b.ctx, b.mailboxId, {
+        category: "info",
+        createdAt: new Date(at.getTime() + 60_000),
+        fields: { rule: "vip" },
+      });
+      const rows = await listTriagedBetween(
+        trx,
+        a.ctx,
+        { after: new Date(at.getTime() - 1), until: new Date(at.getTime() + 3_600_000) },
+        { limit: 10 }
+      );
+      const ruleOf = (id: string) => rows.find((row) => row.email_id === id)?.rule;
+      expect(rows).toHaveLength(4);
+      expect(ruleOf(vip)).toBe("vip");
+      expect(ruleOf(old)).toBeNull();
+      expect(ruleOf(junk)).toBeNull();
+      expect(ruleOf(nonString)).toBeNull();
     });
   });
 });

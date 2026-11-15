@@ -46,3 +46,7 @@ M2 (23), docs (24).
 ## Carry-over from stage 11 review
 
 - TG-4: the Playwright case S11 (loop closes while Edit is open) of review-11.md, if stage 21 did not add it.
+
+## Carry-over from stage 15 review
+
+- Add `auto_follow_up` to `toolSwitchesSchema`: a switch or mode change through the service drops the raw key today (review-15.md).

@@ -1,0 +1,59 @@
+---
+title: How a mail is sorted
+description: Learn why the system puts each mail in a category, and why it sometimes says it is unsure.
+capabilities:
+  - triage
+---
+
+The system sorts each new mail in a fixed order. Your rules come first. The AI comes second.
+This page explains the steps and the reasons for them. For the list of categories, see [Categories](../../reference/categories/).
+
+## The steps
+
+1. **Age check.** The system does not sort mail that is older than 7 days. It also skips mail that came more than 24 hours before your account was resumed after a pause.
+2. **Your sender rules.** The system compares the sender with your blocklist, whitelist and VIP list.
+3. **The AI.** If the rules do not decide, the AI reads the mail. It answers with a category, a confidence and a short reason.
+4. **The confidence check.** If the confidence is too low, the category becomes `unsure`.
+5. **The plan.** A fixed table turns the category into a plan: for example a flag, a move or a draft.
+6. **The mode.** The mode and the switches of the mailbox decide if the system does the plan or only logs it. See [Shadow mode and assist mode](../shadow-and-assist/).
+
+## Why your rules come first
+
+A blocklisted sender gets the category `spam` at once. The system makes no AI call for this mail.
+A rule is a decision that you made. The AI must not overrule it.
+
+A whitelisted sender never gets `spam`. The AI cannot choose that category for the sender.
+A VIP sender is also whitelisted. The system never moves a VIP mail and never marks it as read.
+If a sender is on the blocklist and on the whitelist, the whitelist wins.
+
+## Why the system says unsure
+
+The AI gives a confidence with each answer. Each category has a limit. The start limit is 0.7.
+If the confidence is below the limit, the system does not trust the answer. It sets the category `unsure`.
+
+The system also sets `unsure` when the AI fails three times on one mail, or when the AI refuses to read the mail for a safety reason.
+An unsure mail stays in INBOX. The digest lists it under `NEEDS ACTION`. You decide.
+The reason is simple. A wrong move hides a mail from you. A mail that stays in INBOX costs you a short look.
+
+## What the AI can decide and what it cannot
+
+The AI returns data only: a category, a confidence, a reason and a few details. It decides nothing else.
+
+- **It never picks a recipient.** For a delegation, the AI can name a delegate from your list. The system checks that the delegate is on the list.
+  An id that is not on the list counts as no delegate. The recipient of a draft is the address that is stored for the delegate. For a question, it is the address of the sender.
+- **It never picks a folder.** The category decides the folder, through a fixed table in the code.
+- **It never gets a category that is not allowed.** The category `delegation` exists only when you have a delegate. A whitelisted sender never gets `spam`.
+- **Its text is data.** The system marks the text of the mail as outside data when it sends the mail to the AI.
+  The AI returns a fixed form. An answer that does not fit the form is an error. The system does not use it.
+
+This split has one purpose. Text in a mail must not decide where a mail goes or who gets a message.
+The fixed code and your rules decide this.
+
+## How you correct the result
+
+You can rate each sorted mail with `✅ n` and `✏️ n` in the digest, or on the page **Activity**.
+If you move a mail that the system moved back to its old folder by hand, the system sees it and records that the sort was wrong.
+The system also records an Undo as a correction.
+
+The system does not sort a mail again after it sorted it once.
+The system uses your ratings to check if a category is ready for automatic moves. Read [Shadow mode and assist mode](../shadow-and-assist/).

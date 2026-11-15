@@ -1,10 +1,12 @@
+import { execFileSync } from "node:child_process";
+
 import { expect, test, type Page } from "@playwright/test";
 
 import { ACTIVITY_SUBJECTS } from "../../../server/src/scripts/e2e-seed-args";
 import { en } from "../../src/i18n/en";
 import { t } from "../../src/i18n";
 import { expectNoA11yViolations } from "../a11y";
-import { E2E_BASE_URL } from "../env";
+import { E2E_BASE_URL, e2eEnv, repoRoot } from "../env";
 import {
   cleanUpOrg,
   connectGreenMail,
@@ -17,6 +19,20 @@ import {
 import { readSeed } from "../seed";
 
 test.describe.configure({ mode: "serial" });
+
+// F110 stage 16: the rule hit shows only while the flag `why_lines` is on. The CLI of the platform (`bun run org:flag`) with the
+// e2e env, as the OAuth spec does. The flag is on for the seed organization only while this file runs.
+function setFlag(flag: string, enabled: boolean): void {
+  const { orgId } = readSeed();
+  execFileSync(
+    "bun",
+    ["apps/server/src/scripts/org-flag.ts", "--org-id", orgId, "--flag", flag, enabled ? "--on" : "--off"],
+    { cwd: repoRoot, env: e2eEnv(), stdio: "pipe" }
+  );
+}
+
+test.beforeAll(() => setFlag("why_lines", true));
+test.afterAll(() => setFlag("why_lines", false));
 
 let errors: string[] = [];
 
@@ -78,6 +94,10 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await expect(delegated.getByRole("button", { name: rightLabel(en.act_cat_delegation) })).toHaveCount(0);
   await expect(delegated).toContainText(t("act_dlg_line", { name: "Ola", status: en.act_dlg_drafted }));
 
+  // F110 stage 16: the rule hit shows on the row of a VIP result, and on no other row.
+  await expect(reply).toContainText(en.act_rule_vip);
+  await expect(moved).not.toContainText(en.act_rule_vip);
+
   // The panel.
   await moved.getByText(ACTIVITY_SUBJECTS.moved).click();
   const panel = page.getByRole("dialog");
@@ -85,6 +105,14 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await expect(panel).toContainText("Automated shipping update.");
   await expect(panel).toContainText("done: move to AI/Notifications");
   await expect(panel).toContainText("done: mark read");
+  await expectNoA11yViolations(page);
+  await expect(panel).not.toContainText(en.act_rule_hit_vip);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // The panel of the VIP result names the rule.
+  await reply.getByText(ACTIVITY_SUBJECTS.reply).click();
+  await expect(page.getByRole("dialog")).toContainText(en.act_rule_hit_vip);
   await expectNoA11yViolations(page);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);

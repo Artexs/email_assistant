@@ -9,6 +9,7 @@ import { sendLimitKinds } from "../send-limits";
 import { barCategories } from "../triage/metrics";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
+import { senderRuleKinds } from "../triage/rules";
 import { suspiciousReasons } from "../triage/suspicious";
 import { movingCategories, tripReasons } from "../trust";
 import { authErrorReasons, mailOAuthProviderKeys, removeAccessPages } from "../web/mail-oauth";
@@ -116,6 +117,10 @@ const urgentView = z.strictObject({
   suspicious: z.array(z.enum(suspiciousReasons)).optional(),
   // Optional on read, written only when the flag `attachment_line` is on and the mail has an attachment to show (F109 stage 06).
   attachments: attachmentFactSchema.optional(),
+  // Optional on read, written only when the flag `why_lines` is on (F110 stage 16): the model confidence (null: no model mark)
+  // and the sender rule that shaped the result.
+  confidence: z.number().min(0).max(1).nullable().optional(),
+  rule: z.enum(senderRuleKinds).nullable().optional(),
   now: isoDate,
   timeZone,
 });

@@ -3,6 +3,7 @@ import {
   briefSectionKeys,
   describeActions,
   handledShare,
+  hasModelMark,
   isUndoable,
   loopSections,
   mailboxModes,
@@ -25,7 +26,7 @@ import { HardError } from "../../platform/errors";
 import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
-import { countOpenDelegations, listDelegateNames, listDelegationsDueBy } from "../delegation";
+import { countOpenDelegations, listDelegateNames, listDelegateTags, listDelegationsDueBy } from "../delegation";
 import { endOfLocalDay, loadLoopBrief } from "../loops";
 import {
   attachmentFactsToShow,
@@ -261,6 +262,10 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
     rows.map((row) => row.email_id)
   );
 
+  // F110 stage 16: the keys of the why line go into the items only while the flag is on.
+  const whyOn = await isFeatureOn(db, ctx, "why_lines");
+  const delegateTags = whyOn ? await listDelegateTags(db, ctx, [...delegateIds]) : new Map<string, string[]>();
+
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
     category: row.category,
@@ -281,11 +286,24 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
       },
       texts
     ),
-    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, texts),
+    // F110 stage 16: with the flag on, a delegation draft names the competence tags of its delegate.
+    wouldDo: describeActions(
+      actions.get(row.email_id) ?? [],
+      names,
+      { stayFolder: row.folder, ...(whyOn ? { delegateTags } : {}) },
+      texts
+    ),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
     suspicious: suspicious.get(row.email_id) ?? [],
     ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
     hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
+    ...(whyOn
+      ? {
+          // No model mark for a result that no model made (a rule, an error): confidence 1 or 0 there is not a measure.
+          confidence: hasModelMark(row.reason_code) ? row.confidence : null,
+          rule: row.rule,
+        }
+      : {}),
   }));
 
   const skippedTooOld = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range, { reasonCode: "too_old" });

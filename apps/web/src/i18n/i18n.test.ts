@@ -156,3 +156,39 @@ describe("the Telegram consent text", () => {
     expect(OPEN_LOOPS_CONSENT_SINCE > "2026-11-15").toBe(true);
   });
 });
+
+// F110 stage 18 review: the settled words of the notify cards and the time-zone help.
+describe("the texts of the quiet hours and report channel cards", () => {
+  test("the Polish channel help uses the settled words: komunikaty, w Telegramie, raporty zaufania", () => {
+    // "Powiadomienia" is the mail category; the settled word for what the bot sends is "komunikaty" (tg_intro).
+    expect(pl.notify_channel_help).not.toContain("owiadomienia");
+    expect(pl.notify_channel_help).toContain("w Telegramie");
+    expect(pl.notify_channel_help).not.toContain("na Telegram");
+    expect(pl.notify_channel_help).toContain("Pilne komunikaty");
+    expect(pl.notify_channel_help).toContain("raporty zaufania");
+    expect(en.notify_channel_help).toContain("trust reports");
+  });
+
+  test("the no-mailbox text uses the verb of the Connect button (Połącz)", () => {
+    expect(pl.notify_no_mailbox).toContain("połącz skrzynkę");
+    expect(pl.notify_no_mailbox).not.toContain("podłącz");
+  });
+
+  test("the channel options read in parallel: Only Telegram, Only mail", () => {
+    expect(pl.notify_channel_telegram).toBe("Tylko Telegram");
+    expect(pl.notify_channel_mail).toBe("Tylko poczta");
+    expect(en.notify_channel_telegram).toBe("Only Telegram");
+    expect(en.notify_channel_mail).toBe("Only mail");
+  });
+
+  test("the time-zone help names 22:00–07:00 only as the default, as the quiet hours of a member can differ", () => {
+    expect(en.tz_note).toContain("by default 22:00–07:00");
+    expect(pl.tz_note).toContain("domyślnie 22:00–07:00");
+    expect(pl.tz_note).not.toContain("cisza nocna");
+  });
+
+  test("the too-long message names the limit in both languages", () => {
+    expect(en.quiet_too_long).toContain("18");
+    expect(pl.quiet_too_long).toContain("18");
+  });
+});

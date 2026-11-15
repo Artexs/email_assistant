@@ -17,6 +17,7 @@ import { MailboxSelector } from "../components/settings/MailboxSelector";
 import { AccountCard } from "../components/settings/AccountCard";
 import { CategoriesCard } from "../components/settings/CategoriesCard";
 import { DigestTimesCard } from "../components/settings/DigestTimesCard";
+import { NotifySection } from "../components/settings/NotifyCards";
 import { ModeCard } from "../components/settings/ModeCard";
 import { SentMailCard } from "../components/settings/SentMailCard";
 import { SignatureCard } from "../components/settings/SignatureCard";
@@ -132,6 +133,7 @@ function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRol
       <h2 className="text-lg font-semibold">{t("set_section_general")}</h2>
       {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
       {me !== null && <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />}
+      {me !== null && <NotifySection features={me.features} timeZone={me.organization.timezone} />}
       {organizationCards}
       <AccountCard />
     </section>
