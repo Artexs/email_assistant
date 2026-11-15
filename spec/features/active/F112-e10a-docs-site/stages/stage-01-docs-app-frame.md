@@ -1,5 +1,7 @@
 # F112 stage 01 — Docs app frame [risky]
 
+**Built** (refresh 1): landed as `b2b49ee0`, `dff11778`, `803afd40` (review B1: the image installs with `--filter "!@ea/docs"`; TG2: `docsUrl` also rejects `..`, a page path without `/`, and a doubled `/pl`). Do not build again.
+
 Part of [`../plan.md`](../plan.md). Read D1, D2, D13, § Rules and [`../probes/facts.md`](../probes/facts.md) F1, F2, F7, F11. Needs F101 in `done/`.
 
 `[risky]`: new dependencies, a `bun.lock` change and the server image. Three steps.

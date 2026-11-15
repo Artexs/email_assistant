@@ -7,14 +7,14 @@ Two steps.
 ## Step 1 — Playwright on the built site
 
 - **Goal:** a real browser shows each page with no CSP violation, a working search and no accessibility error.
-- **Files:** `apps/docs/e2e/` (new: `playwright.config.ts`, `serve.ts`, `site.spec.ts`), `apps/docs/package.json` (dev dependencies `@playwright/test` at the version that `apps/web` pins, and `@axe-core/playwright` exact), `bun.lock`, root script `docs:test`.
+- **Files:** `apps/docs/e2e/` (new: `playwright.config.ts`, `serve.ts`, `site.spec.ts`), `apps/docs/package.json` (dev dependencies `@playwright/test` and `@axe-core/playwright` at the exact versions that `apps/web` pins: `1.65.0` and `4.14.0` at refresh 1), `bun.lock`, root script `docs:test`.
 - **Decisions:**
   - `serve.ts`: a Bun static server for `apps/docs/dist` under `DOCS_BASE` on `127.0.0.1:8093` (fixed; next to the panel e2e ports 8081 and 8092). It serves `<path>/index.html` for a path that ends in `/`, and `404.html` with status 404 otherwise.
   - `docs:test` = `bunx playwright test -c apps/docs/e2e/playwright.config.ts`; the build must exist first (the spec fails with a clear message when `dist/index.html` is missing). One project, desktop Chromium 1280×800; `CHROMIUM_PATH` as in the panel e2e config.
   - The page list comes from the built `.html` files, not from a hand list.
   - Env `DOCS_TEST_URL` (stage 16): when set, the tests open that site instead of starting `serve.ts`; the page list still comes from the local `dist` (build the same commit first).
   - The violation listener uses `addInitScript` with the `securitypolicyviolation` event (F4 check script) plus console errors that contain `Content Security Policy`.
-  - axe: tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`. A violation in Starlight's own markup that this repo cannot fix by config or CSS is a question with the rule id; do not disable a rule without an answer (N4).
+  - axe: tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` (the panel's `apps/web/e2e/a11y.ts`, F102). Report a violation as that helper does: one line per rule (id, impact, count, first target, help URL), no page text. A docs-local copy; no import from `apps/web/e2e`. A violation in Starlight's own markup that this repo cannot fix by config or CSS is a question with the rule id; do not disable a rule without an answer (N4).
   - Local runs: always under `flock /tmp/email-assistant-shared-tests.lock` (fixed port).
 - **Test:**
   - T1: every built page: 0 CSP violations, 0 page errors.
@@ -32,7 +32,7 @@ Two steps.
 - **Decisions:** after `docs:build`: `bunx playwright install --with-deps chromium`, then `bun run docs:test`; on failure upload `apps/docs/e2e/test-results/` (7 days), as the `e2e` job does. `.gitignore` gets the docs test output folders.
 - **Test:**
   - T6: the `docs` job steps parse in the YAML (the T1 command of stage 05 still prints `ci e2e image docs`).
-- **Test:** T7: the server image still builds and holds no `apps/docs` source (stage 01 T11; Docker if available, else the CI `image` job). The Playwright and axe trees may enter the image as dev dependencies (`deploy/Dockerfile` keeps them): say the image size change.
+- **Test:** T7: the server image still builds and holds no `apps/docs` source and no Starlight tree (the stage 01 checks of the CI `image` job; Docker if available). The image install skips `@ea/docs` (`--filter "!@ea/docs"`, stage 01), so the docs dev dependencies add nothing to it.
 - **Done when:** T6, T7 hold.
 
 ## Proof

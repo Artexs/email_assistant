@@ -24,10 +24,10 @@ Two steps.
 
 - **Goal:** the real panel shows the link and follows the flag.
 - **Files:** one new spec in `apps/web/e2e/tests/`; the e2e seed only if no existing helper turns the flag on for the seeded organization.
-- **Test** (the built panel holds the real `CHANGELOG.md`, which has only `Unreleased` until F114 makes a release; T2 proves the card):
+- **Test** (the built panel holds the real `CHANGELOG.md`; at refresh 1 its only release `0.1.0` has no "For users" lines; T2 proves the card):
   - T5: flag off → no Help link, no card.
   - T6: flag on → Help link `href` = `https://artexs.github.io/email_assistant/`, and `…/email_assistant/pl/` after the switch to Polish.
-  - T7: flag on, the real changelog without a released version → no card.
+  - T7: flag on, empty storage → the card state equals `whatsNew(<real changelog>, null)`: no card when `show` is empty (true for `0.1.0`), else the card with the `show` lines. The test computes it, so a later release with "For users" lines does not break it.
 - **Done when:** T1–T7 hold; e2e under the flock with an own e2e DB (F101 stage 02 Step 3 method, DB `f112_s15_e2e`).
 
 ## Proof

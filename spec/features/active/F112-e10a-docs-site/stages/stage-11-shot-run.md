@@ -22,7 +22,7 @@ Two steps.
 - **Goal:** one command makes every PNG from the e2e seed.
 - **Files:** `apps/web/e2e/docs-shots.config.ts` (new), `apps/web/e2e/docs-shots/shots.spec.ts` (new), root script `docs:shots`.
 - **Decisions:**
-  - Same web servers, seed and env as the panel e2e config (reuse its pieces; `test:e2e` must not run this spec). Sign in as the seeded owner; set the language through the panel's locale switch or the `ea.locale` storage key.
+  - Same web servers, seed and env as the panel e2e config (reuse its pieces; `test:e2e` must not run this spec). Sign in as the owner of the seed's main organization (`E2E_OWNER_EMAIL`, no flag row), never as an owner of the flagged spec organizations (approvals, delegates, stats, delete). Before the first shot, assert that `/api/me` `features` has no flag on (P2). Set the language through the panel's locale switch or the `ea.locale` storage key.
   - Viewports: desktop 1280×800, phone the `Pixel 7` device. Not full page. Wait until the page's island settles (no spinner).
   - Write to `apps/docs/public/shots/<name>.png`. Before each shot, run `publicContentProblems` (`@ea/core/web`, stage 02) on the page text; a problem stops the run with its rule and the shot name.
   - Pages: `onboarding`, `mailboxes`, `settings`, `rules`, `activity` (what the seed holds; an empty state is fine).

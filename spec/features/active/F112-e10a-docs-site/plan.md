@@ -1,14 +1,12 @@
 # F112 · E10a Docs site: plan
 
-> **Status 2026-11-15 — planned.** Plan base: 116efb17. 16 stages; nothing built; cold review 1 fixed. Defaults: [questions.md](questions.md). Probe facts F1–F13: [probes/facts.md](probes/facts.md).
+> **Status 2026-11-15 — active.** Plan base: 17b2a369, refreshed 2026-11-15 ([plan-refresh-1.md](plan-refresh-1.md)). 16 stages; stage 01 landed; cold review 1 fixed. Defaults: [questions.md](questions.md). Probe facts F1–F13: [probes/facts.md](probes/facts.md).
 
 ## Planning progress
 
-- [x] Decisions; stages 01–16 [written]; cold review 1 [fixed].
+- [x] Decisions; stages 01–16 [written]; cold review 1 [fixed]; refresh 1 [done] (review 2: see § Cold review).
 
 ## Input
-
-Job instruction (2026-11-15), word for word: "plan against the landed code … Owner checkpoints and owner steps are not a stop: use plan defaults."
 
 Binding: E10 decisions 1–18 (PD-096–PD-103, owner "Go with defaults.", 2026-11-13); ADR 0030 (proposed); discovery notes §4.1, §4.6, §4.7, §7. Repo rule (F10): new user-visible behaviour ships behind a default-off flag.
 
@@ -37,8 +35,8 @@ Binding: E10 decisions 1–18 (PD-096–PD-103, owner "Go with defaults.", 2026-
 - **D9 All checks run inside `bun run docs:build`**. Log lines: `csp checked in <n> page(s)`, `public content checked in <n> file(s)`, `links checked in <n> page(s)`.
 - **D10 CI and deploy** (stage 05): job `docs` in `ci.yml`; `.github/workflows/docs-deploy.yml` (P7): the gate `deployDecision` skips a pushed tag that is not the newest, fails a tag without its changelog release; Pages permissions only on the `deploy` job; `docs:stale --strict` and (stage 12) the browser check before the upload. No secret.
 - **D11 Browser check** (stage 06): Playwright, port 8093, flock.
-- **D12 Changelog** (stage 13): `CHANGELOG.md` (Keep a Changelog 1.1) and `parseChangelog` in `@ea/core`; F114 writes releases in this form.
-- **D13 Image** (F11): the server image has no `apps/docs` source; the frozen install still passes; the image gets `CHANGELOG.md` for the card (stage 15).
+- **D12 Changelog** (stage 13): F114's `CHANGELOG.md` (Keep a Changelog 1.1, `release:prepare`) gains the "For users" form; `parseChangelog` in `@ea/core`.
+- **D13 Image** (F11): no `apps/docs` source; install `--filter "!@ea/docs"` (stage 01); `CHANGELOG.md` for the card (stage 15).
 
 ### Edge cases (answered)
 
@@ -48,9 +46,9 @@ Binding: E10 decisions 1–18 (PD-096–PD-103, owner "Go with defaults.", 2026-
 
 - **N1** The `github-pages` environment accepts a tag deploy → stage 16 (owner).
 - **N2** Search in Firefox, Safari → open.
-- **N3** Frozen install in the image with the new workspace → stage 01 (`image` job).
+- **N3** Closed by stage 01: filtered frozen install.
 - **N4** axe WCAG 2.2 AA on Starlight's own markup → stage 06; a violation there is a question.
-- **N5** Bun resolves the Starlight peer `@astrojs/markdown-remark` → stage 01.
+- **N5** Closed by stage 01: the peer is optional; not added.
 
 ## Done when
 
@@ -131,3 +129,4 @@ Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 4 blocking, 14 notes. All
 ## Log
 
 - 2026-11-15: planned (Opus 5.5, thinking medium); review 1 fixed.
+- 2026-11-15: stage 01 landed. Refresh 1 to `17b2a369`: stages 03, 04, 06, 11, 13, 15, 16 ([plan-refresh-1.md](plan-refresh-1.md)).
