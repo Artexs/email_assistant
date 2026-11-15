@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import {
@@ -316,6 +317,46 @@ describe("listSentHealth", () => {
       expect(rows[0]?.newestUserAt).toBeNull();
       expect(rows[0]?.lastErrorCode).toBeNull();
       expect(await listSentHealth(trx, b.ctx)).toEqual([]);
+    });
+  });
+});
+
+describe("the readers and the log", () => {
+  test("write no console line and no mail data: canary subject, body and address", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      await pathOn(trx, a, "Sent");
+      await updateSentCursor(trx, a.ctx, a.mailboxId, { uidValidity: 7, lastUid: 1 }, { firstPassAt: ago(DAY) });
+      const x = await incoming(trx, a, "<x@a.test>");
+      const id = await sent(trx, a, ago(HOUR), {
+        parentMessageId: "<x@a.test>",
+        subject: "CanarySubject",
+        toAddresses: ["canary-to@x.test"],
+        fromAddress: "canary-from@x.test",
+      });
+      await trx
+        .updateTable("sent_emails")
+        .set({ content: "stored", body_text: "CanaryBody" })
+        .where("id", "=", id)
+        .execute();
+      const lines: string[] = [];
+      const spies = (["log", "info", "warn", "error", "debug"] as const).map((method) =>
+        spyOn(console, method).mockImplementation((...args: unknown[]) => {
+          lines.push(format(...args));
+        })
+      );
+      try {
+        const answers = await listUserAnswers(trx, a.ctx, [x]);
+        const summary = await getSentSummary(trx, a.ctx, a.mailboxId, { since: ago(30 * DAY) });
+        const health = await listSentHealth(trx, a.ctx);
+        expect(answers.has(x)).toBe(true);
+        expect(summary.userCount).toBe(1);
+        expect(health).toHaveLength(1);
+      } finally {
+        for (const spy of spies) spy.mockRestore();
+      }
+
+      expect(lines).toEqual([]);
     });
   });
 });

@@ -217,10 +217,17 @@ describe("clearMailHeaders", () => {
 });
 
 // A stored Sent row. `internalDate` decides the retention window; `tag` makes the ids unique and readable.
-async function insertSentRow(trx: Transaction<DB>, org: Org, tag: string, internalDate: Date): Promise<string> {
+async function insertSentRow(
+  trx: Transaction<DB>,
+  org: Org,
+  tag: string,
+  internalDate: Date,
+  id?: string
+): Promise<string> {
   const row = await trx
     .insertInto("sent_emails")
     .values({
+      ...(id === undefined ? {} : { id }),
       org_id: org.ctx.orgId,
       mailbox_id: org.mailboxId,
       dedup_key: `dedup-${tag}`,
@@ -279,6 +286,21 @@ describe("clearSentBodies", () => {
       expect(await clearSentBodies(trx, a.ctx, { before: before30, batch: 1 })).toBe(3);
     });
   });
+
+  // The inner selection must filter by organization: else its batch fills with the rows of other organizations (and locks them).
+  test("batch 1 with an older row of org B that sorts first: org A still clears its row, org B is untouched", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const b = await newOrg(trx);
+      const otherOrg = await insertSentRow(trx, b, "b", over30, "00000000-0000-4000-8000-000000000001");
+      const mine = await insertSentRow(trx, a, "a", over30, "ffffffff-ffff-4fff-8fff-ffffffffffff");
+
+      expect(await clearSentBodies(trx, a.ctx, { before: before30, batch: 1 })).toBe(1);
+
+      expect(await readSent(trx, mine)).toMatchObject({ body_text: null });
+      expect(await readSent(trx, otherOrg)).toMatchObject({ body_text: "Body text" });
+    });
+  });
 });
 
 describe("clearSentHeaders", () => {
@@ -319,6 +341,21 @@ describe("clearSentHeaders", () => {
       const a = await newOrg(trx);
       for (const tag of ["one", "two", "three"]) await insertSentRow(trx, a, tag, over90);
       expect(await clearSentHeaders(trx, a.ctx, { before: before90, batch: 1 })).toBe(3);
+    });
+  });
+
+  // The inner selection must filter by organization: else its batch fills with the rows of other organizations (and locks them).
+  test("batch 1 with an older row of org B that sorts first: org A still clears its row, org B is untouched", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const b = await newOrg(trx);
+      const otherOrg = await insertSentRow(trx, b, "b", over90, "00000000-0000-4000-8000-000000000001");
+      const mine = await insertSentRow(trx, a, "a", over90, "ffffffff-ffff-4fff-8fff-ffffffffffff");
+
+      expect(await clearSentHeaders(trx, a.ctx, { before: before90, batch: 1 })).toBe(1);
+
+      expect(await readSent(trx, mine)).toMatchObject({ subject: null, from_address: null });
+      expect(await readSent(trx, otherOrg)).toMatchObject({ subject: "Subject", from_address: "me@x.test" });
     });
   });
 });

@@ -50,7 +50,7 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - Mail moved into Sent by hand after it is older than 30 days is not stored (`tooOld`).
 - No switch in the panel, the CLI or the connect flow yet, so the switch is not settable by the product: F104 stages 08 to 10. No "no sent mail seen" notice (stage 11), no DSR erase of sent mail (stage 12).
 - No analysis of sent mail by the LLM: E5b. No pass before a system send: E6a (F115).
-- `listUserAnswers` reads a direct reply only (the parent id): a later reply elsewhere in the thread does not mark older mails; a reader that wants the thread rule builds it from `thread_key`. No caller yet: E3a, E4-B and E11a use it.
+- `listUserAnswers` reads a direct reply only (the parent id): a later reply elsewhere in the thread does not mark older mails; a reader that wants the thread rule builds it from `thread_key`. No caller yet: E3a, E4-B, E11a, E6 (reply drafts) and E5b (open loops) use it. F116 (open loops) note: Sent text goes after `data_retention_days` and the recipients after 90 days, so a loop that stays open longer than `data_retention_days` needs its own copy of what it needs.
 
 ## Decisions
 
