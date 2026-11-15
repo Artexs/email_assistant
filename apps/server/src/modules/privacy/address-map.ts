@@ -132,7 +132,10 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ),
   ...reasons(["outbox.dedup_key"], "built from ids and kinds, no address"),
   ...reasons(["outbox.buttons"], "callback data made of ids and codes, no address"),
-  ...reasons(["triage_results.category", "triage_results.reason_code"], "closed list of codes"),
+  ...reasons(
+    ["triage_results.category", "triage_results.reason_code", "triage_results.suspicious_reasons"],
+    "closed list of codes (CHECK constraint)"
+  ),
   ...reasons(["triage_results.model", "triage_results.prompt_version"], "model and prompt names"),
   ...reasons(["audit_log.actor", "audit_log.event", "audit_log.reason_code"], "closed list of codes or an id"),
   ...reasons(
@@ -159,6 +162,10 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     "closed keys of the organization's settings"
   ),
   ...reasons(["mailbox_settings.mode"], "closed list of codes"),
+  ...reasons(
+    ["mailbox_settings.urgency_profile"],
+    "the owner's own topics, keywords and deadlines; an organization setting, not mail data (open: an address typed there stays)"
+  ),
   ...reasons(
     ["organizations.name", "organizations.timezone", "organizations.plan"],
     "name and codes of our own customer"

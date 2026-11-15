@@ -173,7 +173,15 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "created_at",
     "updated_at"
   ),
-  mailbox_settings: byOrg("mailbox_id", "org_id", "mode", "tool_switches", "category_policy", "updated_at"),
+  mailbox_settings: byOrg(
+    "mailbox_id",
+    "org_id",
+    "mode",
+    "tool_switches",
+    "category_policy",
+    "urgency_profile",
+    "updated_at"
+  ),
   mailboxes: byOrg(
     "id",
     "org_id",
@@ -294,6 +302,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "vip",
     "confidence",
     "reason_code",
+    "suspicious_reasons",
     "reason",
     "fields",
     "model",
