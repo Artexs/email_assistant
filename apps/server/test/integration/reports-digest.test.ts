@@ -507,24 +507,34 @@ describe("buildDigestMessage: suspicious mail", () => {
     const b = await createOrgWithMailbox(trx);
     const ctx = { orgId: a.orgId };
     await insertDefaultSettings(trx, ctx, a.mailboxId);
-    const draft = async (orgCtx: { orgId: string }, mailboxId: string, subject: string, reasons: string[]) => {
+    const draft = async (
+      orgCtx: { orgId: string },
+      mailboxId: string,
+      subject: string,
+      reasons: string[],
+      withDraft = true
+    ) => {
       const emailId = await insertTriaged(trx, orgCtx, mailboxId, {
         category: "delegation",
         createdAt: at(-2 * HOUR),
         subject,
         suspiciousReasons: reasons,
       });
-      await createPlanned(trx, orgCtx, emailId, [
-        {
-          type: "create_draft",
-          status: "logged",
-          idempotencyKey: `draft:${emailId}`,
-          payload: { kind: "delegation" },
-        },
-      ]);
+      if (withDraft) {
+        await createPlanned(trx, orgCtx, emailId, [
+          {
+            type: "create_draft",
+            status: "logged",
+            idempotencyKey: `draft:${emailId}`,
+            payload: { kind: "delegation" },
+          },
+        ]);
+      }
       return emailId;
     };
-    await draft(ctx, a.mailboxId, "SUBJECT-A", ["link_mismatch"]);
+    // A flagged mail that got no plan (stage 03), and one that was drafted before the flag went on (it keeps its would-do line).
+    await draft(ctx, a.mailboxId, "SUBJECT-A", ["link_mismatch"], false);
+    await draft(ctx, a.mailboxId, "SUBJECT-DRAFTED", ["risky_attachment"]);
     // Organization B has a flagged mail too: it never shows in the digest of A.
     await draft({ orgId: b.orgId }, b.mailboxId, "SUBJECT-B", ["auth_fail"]);
     return { ctx, ctxB: { orgId: b.orgId } };
@@ -536,15 +546,16 @@ describe("buildDigestMessage: suspicious mail", () => {
       const off = (await buildDigestMessage(trx, ctx, request)).text;
       expect(off).not.toContain("Suspicious");
       expect(off).not.toContain("no draft");
-      expect(off).toContain("→ would draft a delegation");
+      expect(off).toContain("SUBJECT-DRAFTED\n→ would draft a delegation");
 
       await setOrgFeature(trx, ctx, { flag: "suspicious_mail", enabled: true, actor: "cli", now: T });
       const on = (await buildDigestMessage(trx, ctx, request)).text;
       expect(on).toContain("SUBJECT-A");
       expect(on).toContain("⚠ Suspicious: link goes elsewhere\n→ no draft: suspicious mail");
       expect(on).not.toContain("SUBJECT-B");
+      expect(on).toContain("⚠ Suspicious: risky attachment\n→ would draft a delegation");
+      expect(on.match(/no draft/g)).toHaveLength(1);
       expect(on).not.toContain("sender check failed");
-      expect(on).not.toContain("draft a");
 
       // The flag is per organization: B has it off, so its digest has no warning.
       const forB = (await buildDigestMessage(trx, ctxB, request)).text;

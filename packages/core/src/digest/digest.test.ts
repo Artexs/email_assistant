@@ -64,6 +64,17 @@ describe("suspicious warning", () => {
     expect(pl).toContain("⚠ Podejrzana wiadomość: link prowadzi gdzie indziej\n→ bez szkicu: podejrzana wiadomość");
   });
 
+  test("a flagged delegation that has a draft keeps its would-do line", () => {
+    const flagged = item(1, "delegation", {
+      suspicious: ["link_mismatch"],
+      hasDraft: true,
+      wouldDo: "would draft a delegation to Anna",
+    });
+    const text = renderDigest(input({ counts: { delegation: 1 }, items: [flagged] }), textTables.en).text;
+    expect(text).toContain("⚠ Suspicious: link goes elsewhere\n→ would draft a delegation to Anna");
+    expect(text).not.toContain("no draft");
+  });
+
   test("an item without the field, or with an empty list, renders as before", () => {
     const plain = [item(1, "urgent"), item(2, "delegation")];
     const before = renderDigest(input({ counts: { urgent: 1, delegation: 1 }, items: plain }), textTables.en);

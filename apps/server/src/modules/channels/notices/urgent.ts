@@ -73,6 +73,7 @@ async function detectUrgent(
             delegateId,
           })
         );
+        const flagged = suspicious.get(row.email_id) ?? [];
         const delegateNames = Object.fromEntries(
           rowActions.flatMap(({ delegateId }) => {
             const name = delegateId === null ? undefined : names.get(delegateId);
@@ -99,7 +100,8 @@ async function detectUrgent(
               actions: rowActions,
               delegateNames,
               stayFolder: row.folder,
-              suspicious: suspicious.get(row.email_id) ?? [],
+              // Only a flagged mail gets the field: a view without it also renders in the code before F109 (rollback).
+              ...(flagged.length > 0 ? { suspicious: flagged } : {}),
               now,
               timeZone,
             },

@@ -179,7 +179,7 @@ describe("urgent notices", () => {
     });
   });
 
-  test("the urgent view holds the suspicious codes only while the flag is on, and only of its own organization", async () => {
+  test("the urgent view holds the suspicious codes only while the flag is on (flag off: no field), and only of its own organization", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const on = await org(trx);
@@ -204,16 +204,21 @@ describe("urgent notices", () => {
       for (const row of onRows) {
         expect(row.email_id).toBe(onId);
         expect((row.view as { suspicious?: string[] }).suspicious).toEqual(["lookalike_domain", "risky_attachment"]);
-        expect(row.text).toContain("⚠ Suspicious: look-alike domain, risky attachment");
+        // The whole line: nothing but the fixed phrases of the codes (no sender, no domain, no subject).
+        expect(row.text.split("\n").filter((line) => line.startsWith("⚠"))).toEqual([
+          "⚠ Suspicious: look-alike domain, risky attachment",
+        ]);
       }
       for (const row of await rows(trx, off.orgId, "urgent")) {
         expect(row.email_id).toBe(offId);
-        expect((row.view as { suspicious?: string[] }).suspicious).toEqual([]);
+        // No field at all: a view without it also renders in the code before F109 (rollback safety).
+        expect("suspicious" in (row.view as object)).toBe(false);
         expect(row.text).not.toContain("⚠");
       }
       for (const row of await rows(trx, other.orgId, "urgent")) {
         expect(row.email_id).toBe(cleanId);
-        expect((row.view as { suspicious?: string[] }).suspicious).toEqual([]);
+        // No field at all: a view without it also renders in the code before F109 (rollback safety).
+        expect("suspicious" in (row.view as object)).toBe(false);
         expect(row.text).not.toContain("⚠");
       }
     });

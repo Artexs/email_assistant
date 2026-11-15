@@ -43,3 +43,7 @@ Part of [`../plan.md`](../plan.md). Decisions P2, P8, D8. Needs stage 04 (same r
 **Done when.** Tests 1–9 pass; Proof `PROOF_OK`.
 
 **Out of scope.** Attachments in the prompt (stages 08–11), the web panel.
+
+## Carry-over from stage 04 review
+
+- Attachment names or types in Telegram are a new kind of mail-derived data: this stage bumps `TELEGRAM_CONSENT_VERSION` and the consent text (`tg_consent_*`, en and pl) in the same commit as the line, and lists attachment names in the consent text. Source: `review-4.md` N2.

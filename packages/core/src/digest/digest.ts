@@ -41,6 +41,8 @@ export interface DigestItem {
   undoable: boolean;
   // Set only while the flag `suspicious_mail` is on. Absent reads as none.
   suspicious?: readonly SuspiciousReason[];
+  // A draft exists or is planned for the mail (an original `create_draft` action). A flagged delegation shows "no draft" only without one.
+  hasDraft?: boolean;
 }
 
 export interface DigestHandled {
@@ -126,7 +128,9 @@ function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {
   const warning = suspiciousLine(item.suspicious, texts);
   if (warning !== null) lines.push(warning);
   // A flagged delegation mail gets no draft: that line replaces the "would do" line.
-  lines.push(`→ ${warning !== null && item.category === "delegation" ? texts.suspicious.noDraft : item.wouldDo}`);
+  lines.push(
+    `→ ${warning !== null && item.category === "delegation" && item.hasDraft !== true ? texts.suspicious.noDraft : item.wouldDo}`
+  );
   return lines;
 }
 

@@ -135,6 +135,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, texts),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
     suspicious: suspicious.get(row.email_id) ?? [],
+    hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
   }));
 
   const skippedTooOld = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range, { reasonCode: "too_old" });
