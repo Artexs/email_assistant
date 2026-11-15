@@ -158,6 +158,25 @@ test("T4: add Piotr Lis and see the row; the same address again shows the exists
   expect(errors).toEqual([]);
 });
 
+test("T4c: the address of a mailbox of the organization is refused with its own text under the address field (400 mailbox_address)", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  await page.goto("/delegates");
+  await expect(rowOf(page, E2E_DELEGATES_ANNA.name)).toBeVisible();
+  const before = await listOf(page).getByRole("listitem").count();
+  await fillAdd(page, { name: "Own Box", email: org().mailboxAddress.toUpperCase(), tags: "" });
+  await expect(page.getByText(en.dlg_mailbox_address)).toBeVisible();
+  await expect(emailField(page)).toBeFocused();
+  await expect(emailField(page)).toHaveAttribute("aria-invalid", "true");
+  await expect(emailField(page)).toHaveAccessibleDescription(en.dlg_mailbox_address);
+  await expect(switchOf(page, "Own Box")).toHaveCount(0);
+  expect(await listOf(page).getByRole("listitem").count()).toBe(before);
+  await expectNoA11yViolations(page);
+  expect(errors).toEqual([]);
+});
+
 test("T4b: a delegate with no tag shows a word; the add form refuses a blank name and a bad address before it asks the server", async ({
   context,
   page,

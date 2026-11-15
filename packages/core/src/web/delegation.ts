@@ -53,6 +53,8 @@ export type DelegatePatchBody = z.infer<typeof delegatePatchBodySchema>;
 // GET /api/delegations and the two POST routes (F102 stage 15). The list answers one page of delegations by state, newest
 // first; `kind` is always `delegation` (E5b adds loop kinds to the same list). The task text and the subject never go to a log.
 export const DELEGATION_PAGE_SIZE = 50;
+// The most reminders that one delegation gets (the chaser and "Remind now" share it). The server and the panel read this one value.
+export const DELEGATION_REMINDER_LIMIT = 2;
 export const DELEGATION_MAX_LIMIT = 100;
 export const delegationFilters = ["open", "overdue", "answered", "closed"] as const;
 export type DelegationFilter = (typeof delegationFilters)[number];

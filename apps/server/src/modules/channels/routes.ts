@@ -1,4 +1,11 @@
-import { TELEGRAM_CONSENT_VERSION, telegramLinkBodySchema, type TelegramLink, type TelegramState } from "@ea/core";
+import {
+  TELEGRAM_CONSENT_VERSION,
+  telegramConsentBodySchema,
+  telegramLinkBodySchema,
+  type TelegramConsent,
+  type TelegramLink,
+  type TelegramState,
+} from "@ea/core";
 import { Hono } from "hono";
 
 import type { Db } from "../../platform/db";
@@ -70,6 +77,25 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
       expiresAt: expiresAt.toISOString(),
     };
     return c.json(linkAnswer);
+  });
+
+  // A linked user confirms the current consent text (F116 stage 17). The user comes from the session, never from the body.
+  app.post("/telegram/consent", channelDocs.postTelegramConsent, async (c) => {
+    const ctx = c.get("ctx");
+    const { userId } = c.get("session");
+    const body = await parseBody(c, telegramConsentBodySchema);
+    if (body.version !== TELEGRAM_CONSENT_VERSION) {
+      return c.json({ error: "telegram_consent_outdated" }, 409);
+    }
+    await recordAudit(deps.db, ctx, {
+      event: auditEvents.webTelegramConsent,
+      actor: userId,
+      data: { via: "web", version: TELEGRAM_CONSENT_VERSION },
+      at: deps.now(),
+    });
+    log.info("telegram_consent_confirmed", { user_id: userId });
+    const answer: TelegramConsent = { version: TELEGRAM_CONSENT_VERSION };
+    return c.json(answer);
   });
 
   app.delete("/channels/telegram/link", channelDocs.deleteTelegramLink, async (c) => {

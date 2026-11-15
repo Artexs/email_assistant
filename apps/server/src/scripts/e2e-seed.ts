@@ -20,12 +20,13 @@ import { createAuth } from "../platform/auth";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal, webTrustedOrigins } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
-import { assertAppRole, createDb } from "../platform/db";
+import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
 import { seedApprovalsRows } from "./e2e-approvals-rows";
+import { seedDelegationsRows } from "./e2e-delegations-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_APPROVALS_MEMBER_EMAILS,
@@ -35,6 +36,11 @@ import {
   E2E_DELEGATES_OWNER_EMAILS,
   e2eDelegatesOrgName,
   e2eApprovalsMailbox,
+  e2eDelegatesMailbox,
+  e2eDelegationsMailbox,
+  e2eDelegationsOrgName,
+  E2E_DELEGATIONS_MEMBER_EMAILS,
+  E2E_DELEGATIONS_OWNER_EMAILS,
   e2eApprovalsOrgName,
   E2E_ASSISTANT_EMAILS,
   E2E_DELETE_ASSISTANT_EMAILS,
@@ -75,6 +81,40 @@ const TRIAL_DAYS = 10;
 
 const repoRoot = resolve(import.meta.dir, "../../../..");
 
+// A mailbox on the GreenMail of the dev stack, in assist mode with the draft switch on, as the approvals and the reminders need it (an
+// approval of a draft-less mailbox is a shadow plan). The password is a test value; the mailbox is never polled by a spec.
+async function seedAssistMailbox(
+  db: Db,
+  secretBox: ReturnType<typeof createSecretBox>,
+  ctx: { orgId: string },
+  address: string
+): Promise<string> {
+  const mailboxId = randomUUID();
+  await insertMailbox(db, ctx, {
+    id: mailboxId,
+    address,
+    imapHost: GREENMAIL_HOST,
+    imapPort: 3143,
+    smtpHost: GREENMAIL_HOST,
+    smtpPort: 3025,
+    capabilities: { move: true, uidplus: true, idle: false, condstore: false, specialUse: false, keywords: false },
+    folderMap: { drafts: "Drafts" },
+  });
+  await insertInboxFolder(db, ctx, mailboxId);
+  const mailboxSecret = secretBox.encrypt("e2e-assist-box-password", `mailbox:${mailboxId}`);
+  await insertCredentials(db, ctx, {
+    mailboxId,
+    encryptedSecret: mailboxSecret.ciphertext,
+    secretKind: "password",
+    keyVersion: mailboxSecret.keyVersion,
+  });
+  await insertDefaultSettings(db, ctx, mailboxId);
+  await db
+    .transaction()
+    .execute((trx) => updateMailboxSettings(trx, ctx, mailboxId, { mode: "assist", toolSwitches: ASSIST_SWITCHES }));
+  return mailboxId;
+}
+
 async function wipe(migratorUrl: string): Promise<void> {
   const client = new Client({ connectionString: migratorUrl });
   await client.connect();
@@ -92,6 +132,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eDeleteOrgName),
         ...E2E_PROJECTS.map(e2eApprovalsOrgName),
         ...E2E_PROJECTS.map(e2eDelegatesOrgName),
+        ...E2E_PROJECTS.map(e2eDelegationsOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -113,6 +154,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_APPROVALS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELEGATES_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELEGATES_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_DELEGATIONS_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_DELEGATIONS_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -296,39 +339,7 @@ async function main(): Promise<number> {
         for (const flag of ["approvals_page", "stats_page", "mistake_capture"] as const) {
           await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: approvalsOwner.userId, setAt: new Date() });
         }
-        const mailboxId = randomUUID();
-        await insertMailbox(db, ctx, {
-          id: mailboxId,
-          address: e2eApprovalsMailbox(project),
-          imapHost: GREENMAIL_HOST,
-          imapPort: 3143,
-          smtpHost: GREENMAIL_HOST,
-          smtpPort: 3025,
-          capabilities: {
-            move: true,
-            uidplus: true,
-            idle: false,
-            condstore: false,
-            specialUse: false,
-            keywords: false,
-          },
-          folderMap: { drafts: "Drafts" },
-        });
-        await insertInboxFolder(db, ctx, mailboxId);
-        const mailboxSecret = secretBox.encrypt("e2e-approvals-box-password", `mailbox:${mailboxId}`);
-        await insertCredentials(db, ctx, {
-          mailboxId,
-          encryptedSecret: mailboxSecret.ciphertext,
-          secretKind: "password",
-          keyVersion: mailboxSecret.keyVersion,
-        });
-        await insertDefaultSettings(db, ctx, mailboxId);
-        // The assist mode with the draft switch on, as the approvals need it (an approval of a draft-less mailbox is a shadow plan).
-        await db
-          .transaction()
-          .execute((trx) =>
-            updateMailboxSettings(trx, ctx, mailboxId, { mode: "assist", toolSwitches: ASSIST_SWITCHES })
-          );
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eApprovalsMailbox(project));
         const rows = await seedApprovalsRows(db, ctx, mailboxId, approvalsOwner.userId, new Date());
         approvalsIds[project] = {
           orgId: approvalsOwner.orgId,
@@ -339,7 +350,7 @@ async function main(): Promise<number> {
       }
 
       // F102 stage 17: one organization per project for the delegates spec. The flag `delegation_pages` is on; one delegate (Anna Nowak,
-      // tag `finance`), no mailbox.
+      // tag `finance`) and a mailbox.
       const delegatesIds = {} as Record<E2eProject, { orgId: string; ownerId: string; memberId: string }>;
       for (const project of E2E_PROJECTS) {
         const delegatesOwner = await createOrganizationWithOwner(db, {
@@ -369,7 +380,41 @@ async function main(): Promise<number> {
             competence_tags: [...E2E_DELEGATES_ANNA.tags],
           })
           .execute();
+        // A mailbox address: adding it as a delegate gives 400 `mailbox_address` (the delegates spec).
+        await seedAssistMailbox(db, secretBox, ctx, e2eDelegatesMailbox(project));
         delegatesIds[project] = { orgId: delegatesOwner.orgId, ownerId: delegatesOwner.userId, memberId: member.id };
+      }
+
+      // F102 stage 18: one organization per project for the delegations spec. The three flags are on (a full phone tab bar); the
+      // mailbox is in assist mode with drafts on; one delegation for each case of the page. See `e2e-delegations-rows.ts`.
+      const delegationsIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; draftedSendId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const delegationsOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eDelegationsOrgName(project),
+          timezone: "Europe/Warsaw",
+          email: E2E_DELEGATIONS_OWNER_EMAILS[project],
+          displayName: `E2E Delegations owner ${project}`,
+        });
+        const ctx = { orgId: delegationsOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_DELEGATIONS_MEMBER_EMAILS[project],
+          displayName: `E2E Delegations member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        for (const flag of ["delegation_pages", "approvals_page", "stats_page"] as const) {
+          await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: delegationsOwner.userId, setAt: new Date() });
+        }
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eDelegationsMailbox(project));
+        const rows = await seedDelegationsRows(db, ctx, mailboxId, delegationsOwner.userId, new Date());
+        delegationsIds[project] = {
+          orgId: delegationsOwner.orgId,
+          ownerId: delegationsOwner.userId,
+          memberId: member.id,
+          ...rows,
+        };
       }
 
       // The organization of the isolation checks: one mail that the E2E organization must never see.
@@ -551,6 +596,22 @@ async function main(): Promise<number> {
           orgId: ids.orgId,
           owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
           member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          mailboxAddress: e2eDelegatesMailbox(project),
+        };
+      }
+
+      const delegationsOrgs = {} as SeedFile["delegationsOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_DELEGATIONS_OWNER_EMAILS[project];
+        const memberEmail = E2E_DELEGATIONS_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = delegationsIds[project];
+        delegationsOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          draftedSendId: ids.draftedSendId,
         };
       }
 
@@ -603,6 +664,7 @@ async function main(): Promise<number> {
           orgId: stats.orgId,
         },
         delegatesOrgs,
+        delegationsOrgs,
         approvalsOrgs,
       };
       const path = seedFilePath(repoRoot);

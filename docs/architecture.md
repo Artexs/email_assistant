@@ -619,6 +619,7 @@ Tenancy:
     The web panel is the one inbound path, and it does not open a port on the router: the server port is published on `127.0.0.1:8080` only (`ports: ["127.0.0.1:8080:8080"]`).
     Tailscale on the host (`tailscale serve --bg 8080`) gives HTTPS at `https://<machine>.<tailnet>.ts.net` to tailnet members only (ADR 0017). `WEB_BASE_URL`, `WEB_AUTH_SECRET` and `WEB_TRUSTED_PROXIES` are the env keys of the web.
     The steps (Tailscale, turn on, first password, access checks, roll back) are in `deploy/README.md`, section Web panel.
+- **Sim stack (F113, ADR 0021):** a second Compose project `ea-sim` (`deploy/compose.sim.yaml`) on the same host, with its own database, GreenMail, a fake Telegram, the server and the lab. It plays made-up mail only and sends nothing outside the stack; its panel is on `127.0.0.1:8180`, behind Tailscale Serve port 8443. Detail: `docs/capabilities/live-lab.md`; runbook: `deploy/README.md` § Sim stack.
 - **Production (E7-T5, F108):** the home VPS (PD-001). A hosted EU VPS with the same Compose files is the path if outside users come later (availability, physical security, GDPR duties of a processor).
 - **azyl dev server:** demos with test data only. Its home folder is shared with other projects (skill `vps-ssh`).
 - **Config:** env only; `.env.example` lists every key; the server checks env with Zod at start.
