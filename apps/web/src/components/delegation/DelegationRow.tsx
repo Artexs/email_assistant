@@ -17,7 +17,8 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 
 // The ids that the page uses to give the focus back to a control of a row.
-export const rowId = (id: string): string => `delegation-row-${id}`;
+export const ROW_ID_PREFIX = "delegation-row-";
+export const rowId = (id: string): string => `${ROW_ID_PREFIX}${id}`;
 export const cancelButtonId = (id: string): string => `delegation-cancel-${id}`;
 const reasonId = (id: string): string => `delegation-remind-reason-${id}`;
 

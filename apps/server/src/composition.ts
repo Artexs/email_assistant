@@ -1,4 +1,6 @@
-import type { SendLimits } from "@ea/core";
+import { resolve } from "node:path";
+
+import type { GateEvidenceDeps, SendLimits } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import {
@@ -30,6 +32,7 @@ import {
   type SentSwitchHooks,
 } from "./modules/mail";
 import type { SetOrgPlanHooks } from "./modules/tenancy";
+import { noGateEvidence } from "./modules/triage";
 import { sendTestAddresses, testMailRule, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { DB, Db, TenantContext } from "./platform/db";
@@ -128,11 +131,13 @@ export const sentSwitchHooks: SentSwitchHooks = {
 };
 
 // The one builder of the settings setters' deps: the CLI and the web call it, so both close the gate the same way.
-export function settingsDeps(db: Db, now: () => Date): SettingsDeps {
+// `gate` is the global evidence of the running classifier, built once at start; the default has no file (a closed gate).
+export function settingsDeps(db: Db, now: () => Date, gate: GateEvidenceDeps = noGateEvidence): SettingsDeps {
   const hooks = delegationHooks({ db });
   return {
     db,
     now,
+    gate,
     expireReady: async (trx, trxCtx, filter, opts) =>
       expireReady(trx, trxCtx, filter, {
         ...opts,
@@ -165,4 +170,10 @@ export function resumeHook(
 // resume the same way: suspend cancels the queued messages, resume closes the sends with an unseen approval request.
 export function orgPlanHooks(db: Db): SetOrgPlanHooks {
   return { onSuspended: cancelPendingOutboxOfOrg, onResumed: resumeHook(db) };
+}
+
+// The gate files of the image. `GATE_EVIDENCE_DIR` overrides the folder; the default is `evals/results/gate` from the repo
+// root, where the eval scripts write it (the Dockerfile copies it to the same place).
+export function gateEvidenceDir(config: Config): string {
+  return config.GATE_EVIDENCE_DIR ?? resolve(import.meta.dir, "../../../evals/results/gate");
 }
