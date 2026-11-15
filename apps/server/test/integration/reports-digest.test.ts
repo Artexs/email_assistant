@@ -14,6 +14,7 @@ import {
   lastSentDigestEnd,
   markDigestSent,
 } from "../../src/modules/reports";
+import { listDelegateTags } from "../../src/modules/delegation";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
@@ -721,6 +722,21 @@ describe("digest why lines (F110 stage 16)", () => {
       const forB = (await buildDigestMessage(trx, ctxB, request)).text;
       expect(forB).toContain("SUBJECT-OTHER\n💬 Other reason\n");
       expect(forB).not.toContain("%");
+    });
+  });
+});
+
+describe("listDelegateTags (F110 stage 16)", () => {
+  test("returns the tags of the own organization only", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const ctxA = { orgId: a.orgId };
+      const ctxB = { orgId: b.orgId };
+      const own = await insertDelegate(trx, ctxA, { tags: ["finance", "legal"] });
+      const other = await insertDelegate(trx, ctxB, { tags: ["secret-b"] });
+      expect(await listDelegateTags(trx, ctxA, [own, other])).toEqual(new Map([[own, ["finance", "legal"]]]));
+      expect(await listDelegateTags(trx, ctxA, [])).toEqual(new Map());
     });
   });
 });
