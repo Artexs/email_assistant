@@ -43,3 +43,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 11, 12 and 17; review (Polish t
 **Done when.** The tests pass; `bun run web:build` passes; the Proof prints `PROOF_OK`.
 
 **Out of scope.** Server routes (stages 07–12).
+
+## Carry-over from the stage 06 review (2026-11-15)
+
+`mb_reason_admin_consent_required` and the admin block: AADSTS 65001 means "the user or an administrator has not consented" (a personal account or a withdrawn consent gives it too). The card text must not say only "administrator".

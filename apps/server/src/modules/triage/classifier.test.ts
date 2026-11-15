@@ -15,6 +15,7 @@ const usage: LlmUsage = {
   tokensIn: 10,
   tokensOut: 5,
   latencyMs: 7,
+  endpoint: "standard",
 };
 
 interface Recorded {
@@ -30,6 +31,7 @@ function fakeLlm(answer: unknown | (() => never)): { llm: LlmClient; calls: Reco
   const calls: Recorded[] = [];
   const llm: LlmClient = {
     modelOf: () => "fake-model",
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       calls.push(req);
       if (typeof answer === "function") answer();

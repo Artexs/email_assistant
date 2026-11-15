@@ -37,6 +37,15 @@ export async function countWaiting(db: DbOrTrx, ctx: TenantContext, opts: { rece
     .executeTakeFirstOrThrow();
   return Number(row.count);
 }
+// Every mail row of the org, whatever its status. The live lab refuses a measured run on an org that holds mail.
+export async function countOrgEmails(db: DbOrTrx, ctx: TenantContext): Promise<number> {
+  const row = await db
+    .selectFrom("emails")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
 // Claims due pending rows and stale processing rows. `locked_at` = `opts.now` (a JS value, not SQL now()):
 // it is the token for releaseEmail and finishEmail, so it must survive the round trip exactly.
 // Taking back a stale processing row counts an attempt (the earlier run may have died on this mail), so `attempts` in

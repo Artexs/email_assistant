@@ -21,6 +21,7 @@ import { getOrganization, isOrgSuspended } from "../tenancy";
 
 import type { LlmPause } from "./pause";
 import { finishTriageError, HARD_ERROR_TRIES, triageOne, type TriageMailbox } from "./service";
+import { loadSuspiciousContext } from "./suspicious-context";
 
 const log = createLog("triage");
 
@@ -41,6 +42,8 @@ export interface TriageJobDeps {
   testMail: TestMailRule;
   batchSize: number;
   dailyCap: number;
+  // `MAIL_TRUSTED_AUTHSERV_IDS` (lower case): authserv-ids that the suspicious-mail rules trust besides the IMAP host of the mailbox.
+  trustedAuthservIds?: readonly string[];
   now(): Date;
   // The operator notice of a reached cap. Called on every capped mail, never awaited: it must not block the loop.
   onCapReached?: (ctx: TenantContext, mailboxId: string, dayStart: Date) => void;
@@ -108,21 +111,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
             }));
 
             const capabilities: { move?: boolean; uidplus?: boolean } = row.capabilities;
-            mailbox = {
-              id: mailboxId,
-              settingsVersion: settings.version,
-              mode: modeSchema.parse(settings.mode),
-              toolSwitches: parseToolSwitches(settings.tool_switches),
-              policy: parseCategoryPolicy(settings.category_policy),
-              rules: await listSenderRules(deps.db, ctx, mailboxId),
-              movesSupported: capabilities.move === true || capabilities.uidplus === true,
-              delegates,
-              timezone: org.timezone,
-              junkFolder: await getJunkFolderPath(deps.db, ctx, mailboxId),
-              resumedAt: org.resumedAt,
-            };
-            log.debug(`triage ${mailboxId}: delegates ${delegates.length}`);
-
+            const rules = await listSenderRules(deps.db, ctx, mailboxId);
             const now = deps.now();
             claimed = await claimEmails(deps.db, ctx, mailboxId, {
               now,
@@ -130,6 +119,31 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               staleBefore: new Date(now.getTime() - STALE_AFTER_MS),
               syntheticOnly: deps.scope.kind === "synthetic" ? { testMail: deps.scope.testMail } : false,
             });
+            if (claimed.length === 0) continue;
+            // Once per batch: the known senders, the protected names and the trusted authserv-ids of this mailbox.
+            const suspicious = await loadSuspiciousContext(deps.db, ctx, {
+              mailbox: { id: mailboxId, rules, delegates },
+              imapHost: row.imap_host,
+              senders: claimed.map((email) => email.from_address),
+              trustedAuthservIds: deps.trustedAuthservIds ?? [],
+              now,
+            });
+            mailbox = {
+              id: mailboxId,
+              settingsVersion: settings.version,
+              mode: modeSchema.parse(settings.mode),
+              toolSwitches: parseToolSwitches(settings.tool_switches),
+              policy: parseCategoryPolicy(settings.category_policy),
+              rules,
+              movesSupported: capabilities.move === true || capabilities.uidplus === true,
+              delegates,
+              timezone: org.timezone,
+              junkFolder: await getJunkFolderPath(deps.db, ctx, mailboxId),
+              resumedAt: org.resumedAt,
+              suspicious,
+            };
+            log.debug(`triage ${mailboxId}: delegates ${delegates.length}`);
+
             for (const [index, email] of claimed.entries()) {
               current = index;
               // A stale take-back counts an attempt: a mail that reached the limit this way gets no more LLM call.

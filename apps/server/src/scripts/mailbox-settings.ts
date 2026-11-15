@@ -1,8 +1,8 @@
-import { describeSettings, MAILBOX_ACTION_TYPES, type SettingsSnapshot } from "@ea/core";
+import { describeSettings, MAILBOX_ACTION_TYPES, type SettingsSnapshot, type UrgencyProfile } from "@ea/core";
 
 import { settingsDeps } from "../composition";
 import { countReadyOriginals, expireReady } from "../modules/actions";
-import { getSettingsView, setMode, setToolSwitch, type SettingsChange } from "../modules/config";
+import { getSettingsView, setMode, setToolSwitch, setUrgencyProfile, type SettingsChange } from "../modules/config";
 import { configureMailHosts, listSyncFolders, setSyncFolderEnabled, type TestMailRule } from "../modules/mail";
 import { setCategoryAutoWithGate } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
@@ -10,7 +10,14 @@ import { loadConfig, mailAllowLocal, testMailRule } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { describeSyncFolder, parseSettingsArgs, usage, type SettingsCommand } from "./mailbox-settings-args";
+import {
+  describeSyncFolder,
+  describeUrgency,
+  parseSettingsArgs,
+  parseUrgencyFile,
+  usage,
+  type SettingsCommand,
+} from "./mailbox-settings-args";
 
 const out = createCliOutput("mailbox-settings");
 
@@ -49,9 +56,36 @@ async function run(command: SettingsCommand, db: Db, now: Date, testMail: TestMa
     case "show": {
       const view = await getSettingsView(deps, ctx, mailboxId);
       describeSettings(view).forEach((line) => out.print(line));
+      out.print(describeUrgency(view.urgencyProfile));
       for (const row of await listSyncFolders(db, ctx, mailboxId, { enabledOnly: false })) {
         out.print(describeSyncFolder(row));
       }
+      return 0;
+    }
+    case "urgency": {
+      let profile: UrgencyProfile | null = null;
+      if ("file" in command.source) {
+        let text: string;
+        try {
+          text = await Bun.file(command.source.file).text();
+        } catch {
+          out.fail("cannot read the urgency file");
+          return 1;
+        }
+        const parsed = parseUrgencyFile(text);
+        if (!parsed.ok) {
+          out.fail(usage);
+          out.fail(
+            parsed.reason === "not_json"
+              ? "urgency file: not JSON"
+              : `urgency file: schema errors at ${parsed.paths.join(", ")}`
+          );
+          return 1;
+        }
+        profile = parsed.profile;
+      }
+      const { changed, stored } = await setUrgencyProfile(db, ctx, mailboxId, profile, { via: "cli" });
+      out.print(`${describeUrgency(stored)}${changed ? "" : " (no change)"}`);
       return 0;
     }
     case "sync-folder": {

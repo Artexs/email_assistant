@@ -52,7 +52,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "updated_at",
     "applied_at",
     "result_notified_at",
-    "send_started_at"
+    "send_started_at",
+    "supersedes_action_id"
   ),
   audit_log: byOrg("id", "org_id", "email_id", "action_id", "actor", "event", "reason_code", "data", "created_at"),
   auth_accounts: secret("secrets: the password hash and the provider tokens"),
@@ -250,7 +251,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "view",
     "channel",
     "locale",
-    "detail"
+    "detail",
+    "edit_of_outbox_id"
   ),
   schema_migrations: { export: false, reason: "the migration ledger, not data of the organization" },
   sender_rules: byOrg("id", "org_id", "mailbox_id", "pattern", "kind", "created_at"),

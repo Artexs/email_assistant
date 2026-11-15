@@ -77,8 +77,21 @@ export function toGeminiResult(response: GeminiResponse): GenerateResult {
   };
 }
 
+/** The Gemini API endpoint. The SDK has the same default. */
+export const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/";
+
+/**
+ * The SDK client options. Set explicitly, so that a stray `GOOGLE_GEMINI_BASE_URL`, `GOOGLE_VERTEX_BASE_URL` or
+ * `GOOGLE_GENAI_USE_VERTEXAI` in the env cannot send mail text to another host.
+ */
+export const geminiClientOptions = (apiKey: string) => ({
+  apiKey,
+  vertexai: false,
+  httpOptions: { baseUrl: GEMINI_BASE_URL },
+});
+
 function createGenerate(opts: { apiKey: string }): GenerateFn {
-  const ai = new GoogleGenAI({ apiKey: opts.apiKey });
+  const ai = new GoogleGenAI(geminiClientOptions(opts.apiKey));
   return async (req) => toGeminiResult(await ai.models.generateContent(toGenerateParams(req)));
 }
 

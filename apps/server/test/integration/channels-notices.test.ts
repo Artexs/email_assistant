@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
@@ -10,7 +11,7 @@ import { insertSenderRule } from "../../src/modules/config";
 import { ensureSyncFolders, NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertMailbox, markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
-import type { DB, TenantContext } from "../../src/platform/db";
+import type { DB, Db, TenantContext } from "../../src/platform/db";
 
 import {
   addMember,
@@ -54,7 +55,7 @@ beforeEach(() => {
   errorLines = [];
   logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
   errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
-    errorLines.push(args.join(" "));
+    errorLines.push(format(...args));
   });
 });
 
@@ -568,7 +569,10 @@ describe("organizations", () => {
       await run(trx);
       expect(await rows(trx, b.orgId, "urgent")).toHaveLength(2);
       expect(await rows(trx, a.orgId)).toHaveLength(0);
-      expect(errorLines.filter((line) => line.includes(`notice urgent ${skipped}: skipped:`))).toHaveLength(1);
+      expect(errorLines.filter((line) => line.includes(`notice_skipped kind=urgent item_id=${skipped} `))).toHaveLength(
+        1
+      );
+      expect(errorLines.filter((line) => line.includes("dropped_fields"))).toEqual([]);
       expect(errorLines.filter((line) => line.includes(b.orgId))).toHaveLength(0);
     });
   });
@@ -591,9 +595,21 @@ describe("organizations", () => {
       await run(trx);
       expect(await rows(trx, b.orgId, "urgent")).toHaveLength(2);
       expect(await rows(trx, a.orgId)).toHaveLength(0);
-      expect(errorLines.filter((line) => line.includes(`notices for org ${a.orgId} failed`))).toHaveLength(1);
-      expect(errorLines.filter((line) => line.includes(b.orgId))).toHaveLength(0);
+      expect(errorLines).toEqual([`[channels] notices_org_failed org_id=${a.orgId} error=TypeError`]);
     });
+  });
+});
+
+describe("a database error", () => {
+  test("stops the tick, logs notices_failed with the error name and never the error text", async () => {
+    const broken = {
+      selectFrom: () => {
+        throw new Error("123456:MARKER-DB-TOKEN");
+      },
+    } as unknown as Db;
+
+    await detectNotices({ db: broken, now: () => T, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+    expect(errorLines).toEqual(["[channels] notices_failed error=Error"]);
   });
 });
 
@@ -1115,8 +1131,12 @@ describe("approval requests", () => {
       ]);
       expect((await rows(trx, o.orgId, "urgent")).filter((r) => r.email_id === urgentId)).toHaveLength(3);
       expect((await sendState(trx, broken.sendId)).notified_at).toBeNull();
-      const warns = errorLines.filter((line) => line.includes(`notice approval ${broken.sendId}: skipped:`));
+      const warns = errorLines.filter((line) =>
+        line.includes(`notice_skipped kind=approval item_id=${broken.sendId} `)
+      );
       expect(warns).toHaveLength(1);
+      expect(warns[0]).toMatch(/^\[channels\] notice_skipped kind=approval item_id=[0-9a-f-]{36} error=\w+/);
+      expect(errorLines.filter((line) => line.includes("dropped_fields"))).toEqual([]);
     });
   });
 });
@@ -1521,6 +1541,22 @@ describe("send_held notices", () => {
 
       await runAt(trx, NOW);
       expect(await rows(trx, o.orgId, "send_held")).toEqual([]);
+    });
+  });
+
+  test("a hold with an unknown limit text skips with one warn line per run, no text in it", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE), "send_limit:123456:MARKER-LIMIT");
+
+      await runAt(trx, NOW);
+      expect(await rows(trx, o.orgId, "send_held")).toEqual([]);
+      const lines = errorLines.filter((line) => line.includes(`item_id=${o.mailboxId}`));
+      expect(lines).toEqual([
+        `[channels] notice_skipped kind=send_held item_id=${o.mailboxId} reason=unknown_send_limit`,
+      ]);
+      expect(errorLines.join("\n")).not.toContain("MARKER-LIMIT");
     });
   });
 
