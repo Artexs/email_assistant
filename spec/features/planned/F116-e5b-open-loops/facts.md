@@ -16,5 +16,5 @@ Part of [plan.md](plan.md). Read at plan base 9531f16a; scout leads in [scouts.m
 
 ## Not verified
 
-- **N1** Interia threads an APPENDed follow-up and keeps the To/Cc (stage 24).
+- **N1** Interia threads an APPENDed follow-up and keeps the To/Cc (stage 25).
 - **N2** `extractor-v1` meets the gate (stage 06).

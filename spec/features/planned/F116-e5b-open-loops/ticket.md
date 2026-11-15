@@ -34,7 +34,7 @@ Nothing the executive waits for slips. The system tracks the replies they wait f
 
 - Plan after: F104 (Sent reader), F102 (panel commands and delegation page), F109 (suspicious-mail readers), F115 (reply drafts: shared thread index and consent gate). All four have stage files.
 - Build after: F097 (offline lab) and F100 (measurement) in `done/`; F102 and F104 in `done/` before stage 07; F109 stage 04 is on `master`. Stages 01–06 need only F097.
-- Gate: Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122): gate G1 before stage 24.
+- Gate: Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122): gate G1 before stage 25.
 
 ## Notes
 
