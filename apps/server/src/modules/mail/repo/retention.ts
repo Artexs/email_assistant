@@ -98,3 +98,36 @@ export async function clearMailHeaders(
     if (changed === 0) return total;
   }
 }
+
+// Retention: sign-in states of the OAuth flow that expired before `before` (the caller passes now − 1 h) are deleted.
+// A state is single use and lives 10 minutes; the grace keeps a row a short time for a support look.
+export async function deleteOldOAuthStates(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { before: Date; batch?: number }
+): Promise<number> {
+  const batch = opts.batch ?? RETENTION_BATCH;
+  let total = 0;
+  for (;;) {
+    const result = await db
+      .deleteFrom("mailbox_oauth_states")
+      .where("org_id", "=", ctx.orgId)
+      .where(
+        "id",
+        "in",
+        db
+          .selectFrom("mailbox_oauth_states")
+          .select("id")
+          .where("org_id", "=", ctx.orgId)
+          .where("expires_at", "<", opts.before)
+          .orderBy("id")
+          .limit(batch)
+          .forUpdate()
+          .skipLocked()
+      )
+      .executeTakeFirst();
+    const changed = Number(result.numDeletedRows);
+    total += changed;
+    if (changed === 0) return total;
+  }
+}

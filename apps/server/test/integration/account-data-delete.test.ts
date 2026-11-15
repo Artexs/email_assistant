@@ -128,6 +128,7 @@ const DELETE_SEEDS: Record<string, Seed> = {
   emails: base,
   mailbox_credentials: base,
   mailbox_folders: base,
+  mailbox_oauth_states: base,
   mailbox_sent_sync: base,
   mailbox_settings: base,
   mailboxes: base,

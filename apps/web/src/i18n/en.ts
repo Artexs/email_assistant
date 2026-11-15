@@ -74,8 +74,13 @@ export const en = {
   tf_codes_unknown: "The number of backup codes left is not known.",
   tf_codes_few: "Few backup codes are left. Make new ones.",
   tf_password_help_enable: "Type your password to start.",
-  tf_password_help_codes: "Type your password. The old backup codes stop working.",
-  tf_password_help_disable: "Type your password. Sign-in then asks only for the password.",
+  tf_password_help_codes:
+    "Type your password and a code from your app or a backup code. The old backup codes stop working.",
+  tf_password_help_disable:
+    "Type your password and a code from your app or a backup code. Sign-in then asks only for the password.",
+  tf_confirm_code_label: "Code from your app or a backup code",
+  tf_confirm_code_format: "Type the 6 digits from your app, or a backup code such as abcde-12345.",
+  tf_error_code_required: "Type a code from your app or a backup code.",
   tf_scan_title: "Connect your authenticator app",
   tf_scan_step_app:
     "Open an authenticator app on your phone, for example Google Authenticator, Microsoft Authenticator or Aegis, and scan this code.",
@@ -438,6 +443,7 @@ export const en = {
   sec_kind_backup_codes_new: "New backup codes made",
   sec_kind_backup_code_used: "Signed in with a backup code",
   sec_kind_two_factor_locked: "Code step locked after wrong codes",
+  sec_kind_two_factor_refused: "Two-factor change refused: no code or a wrong code",
   sec_kind_break_glass_set: "Break-glass owner chosen",
   sec_kind_break_glass_cleared: "Break-glass owner removed",
   sec_kind_data_exported: "Data export made",

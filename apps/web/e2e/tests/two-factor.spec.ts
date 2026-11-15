@@ -235,6 +235,7 @@ test("the break-glass owner sees the note and cannot turn it off", async ({ brow
     await expect(section.getByText(en.tf_break_glass_note)).toBeVisible();
     await section.getByRole("button", { name: en.tf_turn_off }).click();
     await section.getByLabel(en.password_label).fill(user.password);
+    await type(section.getByLabel(en.tf_confirm_code_label), totpCode(secret));
     await section.getByRole("button", { name: en.continue }).click();
     await expect(section.getByText(en.tf_error_break_glass)).toBeVisible();
 
@@ -246,6 +247,36 @@ test("the break-glass owner sees the note and cannot turn it off", async ({ brow
   }
 });
 
+test("new backup codes need a code: a wrong code is refused, a backup code works", async ({ browser }, testInfo) => {
+  const user = readSeed().twoFactorOwners[projectOf(testInfo.project.name)];
+  const page = await newSession(browser, testInfo.project.name);
+  await signInWithCode(page, user);
+  await page.goto("/settings");
+  const section = page.locator("[data-section=two-factor]");
+  await section.getByRole("button", { name: en.tf_new_codes }).click();
+  await expect(section.getByLabel(en.password_label)).toBeFocused();
+  await section.getByLabel(en.password_label).fill(user.password);
+  const field = section.getByLabel(en.tf_confirm_code_label);
+
+  // A wrong code: the plugin's error shows under the code field and keeps the field linked.
+  await type(field, wrongCode());
+  await section.getByRole("button", { name: en.continue }).click();
+  await expect(section.getByText(en.tf_error_code)).toBeVisible();
+  await expect(field).toHaveAttribute("aria-invalid", "true");
+  expect(await field.getAttribute("aria-describedby")).toBe("tf-confirm-code-error");
+  await expect(section.locator("[data-backup-codes]")).toHaveCount(0);
+
+  // A backup code of the old set works, and the new set replaces the old one.
+  await section.getByLabel(en.password_label).fill(user.password);
+  await type(field, codes[1] ?? "");
+  await section.getByRole("button", { name: en.continue }).click();
+  const items = section.locator("[data-backup-codes] li");
+  await expect(items).toHaveCount(10);
+  const fresh = await items.allInnerTexts();
+  expect(fresh).not.toContain(codes[1]);
+  codes = [...codes, ...fresh];
+});
+
 test("turn off: the next sign-in asks only for the password", async ({ browser }, testInfo) => {
   const user = readSeed().twoFactorOwners[projectOf(testInfo.project.name)];
   const page = await newSession(browser, testInfo.project.name);
@@ -255,6 +286,16 @@ test("turn off: the next sign-in asks only for the password", async ({ browser }
   await section.getByRole("button", { name: en.tf_turn_off }).click();
   await expect(section.getByLabel(en.password_label)).toBeFocused();
   await section.getByLabel(en.password_label).fill(user.password);
+
+  // F128: the password alone is not enough. The empty code field is refused in the panel, nothing is sent.
+  const offRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().includes("/two-factor/disable")) offRequests.push(request.url());
+  });
+  await section.getByRole("button", { name: en.continue }).click();
+  await expect(section.getByText(en.tf_error_code_required)).toBeVisible();
+  expect(offRequests).toHaveLength(0);
+  await type(section.getByLabel(en.tf_confirm_code_label), totpCode(secret));
   await section.getByRole("button", { name: en.continue }).click();
   await expect(page.getByText(en.tf_off_toast)).toBeVisible();
   await expect(section.getByText(en.tf_off_text)).toBeVisible();

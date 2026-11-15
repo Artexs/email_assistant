@@ -27,6 +27,44 @@ export async function isOwnActionId(
     .executeTakeFirst();
   return row !== undefined;
 }
+// Who made a mail of the Sent folder, by its `X-EA-Action-Id` (one query; any sender can write the header).
+// `system`: a send of this mailbox that went out (applied or started), or a draft with such a send.
+// `draft`: a draft of this mailbox that was not sent by the system: the user sent it by hand. null: not an own action.
+export async function sentOriginOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  actionId: string
+): Promise<"system" | "draft" | null> {
+  if (!z.uuid().safeParse(actionId).success) return null;
+  const row = await db
+    .selectFrom("actions as a")
+    .innerJoin("emails as e", (join) => join.onRef("e.id", "=", "a.email_id").onRef("e.org_id", "=", "a.org_id"))
+    .select((eb) => [
+      "a.type",
+      "a.status",
+      "a.send_started_at",
+      eb
+        .exists(
+          eb
+            .selectFrom("actions as s")
+            .select("s.id")
+            .whereRef("s.org_id", "=", "a.org_id")
+            .whereRef("s.depends_on_action_id", "=", "a.id")
+            .where("s.type", "=", "send")
+            .where((w) => w.or([w("s.status", "=", "applied"), w("s.send_started_at", "is not", null)]))
+        )
+        .as("has_sent_send"),
+    ])
+    .where("a.org_id", "=", ctx.orgId)
+    .where("a.id", "=", actionId)
+    .where("a.type", "in", ["create_draft", "send"])
+    .where("e.mailbox_id", "=", mailboxId)
+    .executeTakeFirst();
+  if (row === undefined) return null;
+  const sent = row.type === "send" ? row.status === "applied" || row.send_started_at !== null : row.has_sent_send;
+  return sent ? "system" : "draft";
+}
 export interface PlannedActionInput {
   type: ActionType;
   payload: Record<string, unknown>;

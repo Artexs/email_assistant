@@ -32,9 +32,12 @@ export function accountTwoFactorError(
   error: { status?: number; code?: string } | null | undefined
 ): AccountTwoFactorError | null {
   if (error === null || error === undefined) return null;
+  if (error.code === "ACCOUNT_TEMPORARILY_LOCKED") return { field: null, key: "tf_error_locked" };
   if (error.status === 429) return { field: null, key: "error_too_many" };
   if (error.code === "INVALID_PASSWORD") return { field: "password", key: "tf_error_password" };
   if (error.code === "INVALID_CODE") return { field: "code", key: "tf_error_code" };
+  if (error.code === "INVALID_BACKUP_CODE") return { field: "code", key: "tf_error_backup_code" };
+  if (error.code === "TWO_FACTOR_CODE_REQUIRED") return { field: "code", key: "tf_error_code_required" };
   if (error.code === "BREAK_GLASS_NEEDS_TWO_FACTOR") return { field: null, key: "tf_error_break_glass" };
   if (
     error.code === "TOTP_ALREADY_ENABLED" ||
@@ -50,6 +53,11 @@ export function accountTwoFactorError(
 export function cleanTotpCode(input: string): string | null {
   const code = input.replace(/\s+/g, "");
   return /^\d{6}$/.test(code) ? code : null;
+}
+
+// The one field of "turn off" and "new codes": a 6-digit code from the app, or a backup code. Null when it is neither.
+export function cleanConfirmCode(input: string): string | null {
+  return cleanTotpCode(input) ?? cleanBackupCode(input);
 }
 
 // A backup code is trimmed only (it is case-sensitive). The dash may be left out.

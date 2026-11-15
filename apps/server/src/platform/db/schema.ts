@@ -283,6 +283,7 @@ export interface MailboxCredentials {
 
 export interface Mailboxes {
   address: string;
+  auth_reason: string | null;
   capabilities: Generated<Json>;
   created_at: Generated<Timestamp>;
   folder_map: Generated<Json>;
@@ -291,8 +292,10 @@ export interface Mailboxes {
   imap_port: number;
   last_synced_at: Timestamp | null;
   last_uid: Int8 | null;
+  oauth_provider: string | null;
   org_id: string;
   protocol: Generated<string>;
+  send_via: Generated<string>;
   smtp_host: string;
   smtp_port: number;
   smtp_security: Generated<string>;
@@ -313,6 +316,19 @@ export interface MailboxFolders {
   role: string;
   uidvalidity: Int8 | null;
   updated_at: Generated<Timestamp>;
+}
+
+export interface MailboxOauthStates {
+  created_at: Generated<Timestamp>;
+  encrypted_verifier: string;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  key_version: number;
+  mailbox_id: string | null;
+  org_id: string;
+  provider: string;
+  state_hash: string;
+  user_id: string;
 }
 
 export interface MailboxSentSync {
@@ -512,6 +528,7 @@ export interface DB {
   emails: Emails;
   mailbox_credentials: MailboxCredentials;
   mailbox_folders: MailboxFolders;
+  mailbox_oauth_states: MailboxOauthStates;
   mailbox_sent_sync: MailboxSentSync;
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;

@@ -1,0 +1,21 @@
+{
+  "name": "@ea/docs",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.43.1",
+    "@ea/core": "workspace:*",
+    "@ea/web": "workspace:*",
+    "astro": "7.4.12"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.9.3"
+  }
+}
