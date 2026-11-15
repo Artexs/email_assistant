@@ -303,6 +303,8 @@ describe("Connect", () => {
     const res = await callback(appOf(), "owner", "google", query);
     const result = resultOf(res);
     expect(result.get("oauth")).toBe("connected");
+    // The URL carries a single-use code: no cache may keep the redirect.
+    expect(res.headers.get("cache-control")).toBe("no-store");
     const [row] = await mailboxRows(address);
     expect(row).toBeDefined();
     expect(result.get("mailbox")).toBe(row?.id ?? "");
@@ -732,6 +734,9 @@ describe("Reconnect", () => {
       expect(result).toEqual({ ok: false, code: "oauth_failed" });
       expect((await credentialsOf(box.id))?.encrypted_secret).toBe(before?.encrypted_secret ?? "");
     }
+    // No login ran: a grant of one provider never sends its access token to the hosts of a mailbox of another kind.
+    expect(login.imap).toHaveLength(0);
+    expect(login.smtp).toHaveLength(0);
     expect((await credentialsOf(password.id))?.secret_kind).toBe("password");
   });
 
@@ -778,9 +783,14 @@ describe("Reconnect", () => {
       return result;
     });
     // The login tests run before the lock. Wait until Postgres shows a lock request that is not granted: the Reconnect is at the lock.
+    // Only the lock key of this mailbox counts: another suite that waits on an advisory lock cannot end the wait early.
     const waiting = async (): Promise<number> => {
       const { rows } = await sql<{ n: string }>`
-        select count(*) as n from pg_locks where locktype = 'advisory' and not granted`.execute(db);
+        select count(*) as n from pg_locks
+        where locktype = 'advisory' and not granted and database = (select oid from pg_database where datname = current_database())
+          and ((classid::bigint << 32) | objid::bigint) = hashtextextended(${`mailbox_oauth:${box.id}`}, 0)`.execute(
+        db
+      );
       return Number(rows[0]?.n);
     };
     const deadline = Date.now() + 10_000;
@@ -885,6 +895,7 @@ describe("the callback route", () => {
     const { state } = await signIn("google", { address: addressOf() });
     const res = await callback(appOf(), "owner", "google", { error: "access_denied", state });
     expect(locationOf(res)).toBe("/mailboxes?oauth=oauth_cancelled");
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(await stateRows()).toHaveLength(0);
   });
 
