@@ -14,7 +14,7 @@ The service functions of `interfaces.md` § Commands, in module `loops`. Telegra
   4. `follow_ups_sent = 2` → `limit_reached`; the second one before `last_follow_up_at` + 3 working days → `too_soon`.
   5. `thread_key` in `suspiciousThreadKeysOf` → `suspicious` (PD-128; any reason, whatever the `suspicious_mail` flag).
   6. Mode `shadow` → `would_draft` (one `loop.would_draft` audit row, no action); `assist` with `create_draft` off → `drafts_off`.
-  7. Plan the pair with `createPlanned`: `create_draft` `ready`, `send` `awaiting_approval`, both with `loop_id`; keys `<loop id>:follow_up:<n>:<k>`, `k` = 1 + the count of this loop's closed (`rejected`, `expired`, `failed`) follow-up sends with the same `n` (review G2). A repeated tap after a crash finds the open pair (step 3: `waiting`); a tap after a reject gets a new `k`.
+  7. Plan the pair with `createPlanned`: `create_draft` `ready`, `send` `awaiting_approval`, both with `loop_id`; keys `<loop id>:create_draft:follow_up:<n>:<k>` and `<loop id>:send:follow_up:<n>:<k>` (`createPlannedForLoop` finds the draft of a send by the `:send` to `:create_draft` swap), `k` = 1 + the count of this loop's follow-up sends with the same `n`; none of them waits at that point, so all are closed (`rejected`, `expired`, `failed`) (review G2). A repeated tap after a crash finds the open pair (step 3: `waiting`); a tap after a reject gets a new `k`.
 - **Payload:** `n` = `follow_ups_sent + 1`; `waiting` → To and Cc of the loop; `delegated` → To = the loop's `counterpart` only, no Cc (the address the mail went to, review N9); `quote` = `body_text` of `sent_email_id` (the mail that opened the loop, review G4) while stored, else null; `subject`, `sent_at` (of that mail) and `language` from the loop.
 - **Test (integration):** T1 a waiting loop in `assist` → a pair with `loop_id`, payload To/Cc equal to the loop; T2 the same tap again → `waiting`, no second pair; T3 shadow → `would_draft`, no action row; T4 a suspicious thread → `suspicious`; T5 `follow_ups_sent` 1 and the last one 2 working days ago → `too_soon`, 3 days → planned with `n` 2; T6 a member → `not_allowed`; T7 a delegated loop → To is the counterpart only; T8 sent text cleared by retention → `quote` null; T8b a rejected follow-up, then a new tap → a new pair (`k` 2), the loop unchanged; T8c a restart by a later own mail → the quote is still the opening mail.
 
@@ -54,3 +54,39 @@ The chaser (15), Telegram and routes (19, 20).
 - A follow-up that is `failed` has no "Send again" and no "It went out"; the failure notice is fixed text (`action_failed` with the panel link). A new follow-up is drafted from the loop: decide in `draftFollowUp` whether a `failed` follow-up counts as "waiting" (it does not: only `awaiting_approval` and `approved` sends do).
 - The writer sets draft and send payloads with `to` and `cc` from the loop only, no `set_id` (`sendPayloadSchema` refuses it), and a subject without CR/LF. A panel edit keeps `to`, `cc`, `quote` and `n`.
 - Full list: `notes/2026-11-15-f116-stage-11-follow-up-cards.md`.
+
+## Built in stage 14 (worker, 2026-11-15)
+
+Full note, with the obligation list and the evidence: `notes/2026-11-15-f116-stage-14-loop-commands.md`.
+
+- `apps/server/src/modules/loops/follow-up-draft.ts` (`draftFollowUp`) and `loop-commands.ts` (`laterLoop`, `doneLoop`, `dropLoop`, `reopenLoop`, `untrackLoop`). The repo functions are now `setLoopLater` and `reopenLoopRow` (stage 08 carry-over: the commands own the plain names).
+- The writer rules of the stage 10 carry-over are met in `draftFollowUp`: the subject has one line (`oneLineSubject`), a `delegated` loop writes to the counterpart only, no `set_id`.
+- `createPlannedForLoop` (module `actions`) plans the pair with `loop_id` and no `email_id`.
+- New audit event `loop.would_draft`; the audit rows of the commands carry `via`. New log fields `loop_id` (UUID) and `via` (code).
+- Stage 13 review N2 (an alias of the user closes a loop): done. `ownAddressesOf(db, ctx, mailboxId)` adds every From address of the Sent rows of the mailbox (newest 100, lower case, trimmed) to the mailbox addresses; `matchReplies` and `isOpen` use it. A wrong alias can only hide a reply (the safe direction).
+
+### Decisions taken (defaults, no owner input)
+
+- `reopenLoop` sets `wait_from_at` to now. Without it, a reply that closed the loop (`replied`) closes it again at the next `loops.match` run, so Reopen would do nothing. The due date, `later_count` and `follow_ups_sent` stay (as stage 08 says).
+- `reopenLoop` answers `not_allowed` while "Track my sent mail" is off: nothing would close or restart an open loop. It also refuses `close_reason = sent_off` on its own, not only through `texts_cleared_at`.
+- With the flag `open_loops` off, `doneLoop`, `dropLoop`, `untrackLoop` and `reopenLoop` answer `not_found` (the type of `interfaces.md` has no `feature_off` for them); `draftFollowUp` and `laterLoop` answer `feature_off`.
+- A loop whose recipients the draft schema refuses (none left after a DSR erase, a hidden character, a display name) gives `not_allowed` from `draftFollowUp`, with no row. The match job closes an empty-recipient loop `dropped` within 2 minutes.
+- A `failed` follow-up does not count as waiting (carry-over of stage 11), also when its outcome is unknown; the user sees a new card and decides.
+- `k` of the keys counts every follow-up send of the loop with the same `n`, not only the `rejected`, `expired` and `failed` ones (a superset; at that point none waits).
+
+### Carry-over for later stages
+
+- Stage 15 (chaser): `draftFollowUp` needs an owner user and writes `action.planned` rows with that user as actor. The chaser has no user: it needs its own caller of the same planning code (`judge`, `draftOf`, `createPlannedForLoop` in `follow-up-draft.ts`; actor `system`), or a `system` variant of the command. Decide there; the keys and the rules of this stage stay the same.
+- Stage 19 and 20: the commands answer with the kinds of `interfaces.md`; `laterLoop` has `closed` and `feature_off` too. `reopenLoop` can answer `not_allowed` for a loop that the list still shows as closed (`sent_off`, tracking off): the card or route needs one text for it.
+- Stage 21: the Reopen button should be hidden for `sent_off` loops and while Sent tracking is off.
+- Docs (stage 24): `docs/capabilities/sent-mail.md` rule 21 describes the commands; rule 20 now names the alias rule.
+
+### Repair after the review of stage 14 (worker, 2026-11-15)
+
+Review: FAIL on `70211178`, one blocking finding. Evidence logs: `/tmp/f116-s14/`.
+
+- B1: a `delegated` loop with no `counterpart` (a data erase clears it and keeps `to_addresses` with another person) gives `not_allowed` and no row. `recipientsOf` has no fallback to `to_addresses[0]`. Tests: B1 and the changed T7 (the counterpart is not the first To) in `loops-follow-up-draft.test.ts`.
+- TG2: Reopen against `setSentSync(off)` has a race test on three connection pairs (`loops-commands-race.test.ts`), also a deterministic one: an uncommitted switch-off makes Reopen wait on the lock of the Sent state row.
+- Owner decision, Sent tracking off also clears the follow-up copies: `onSentOff` removes `quote`, `to`, `cc` and `subject` from `actions.payload` of every `create_draft` and `send` of the loops of the mailbox (`clearLoopSentCopies`, module `actions`), and the composition root runs `clearLoopCards` (module `channels`) after it in the same transaction: card text `[removed]`, view `{}`; a pending or sending card ends `failed` / `outdated`. The texts of a loop that was closed before the switch-off stay on the loop row until retention (the stage 08 rule and test T7 of that stage). A message that Telegram delivered stays in the chat. Test: `loops-sent-off-copies.test.ts` (one test per place, and a scan of every table for planted values).
+- Owner decision, own addresses: `ownAddressesFor(sets, loop)` drops the counterpart, To and Cc of the loop from the aliases of the Sent rows, for `matchReplies` and `isOpen`. A person who also sends as the user now closes the loop with a reply. The mailbox addresses of the organization stay own. Tests: `loops-match-aliases.test.ts`.
+- N4: the key shape above. N5: the worker note said that `loop_id` of the `loop_command` line is "read from the database"; it is `input.loopId`, which Postgres has accepted as a UUID, and the logger drops any value that is not a lower-case UUID.

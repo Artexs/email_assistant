@@ -1,7 +1,14 @@
 import { formatClock, type ActivityItem } from "@ea/core/web";
 
 import { getLocale, t } from "../../i18n";
-import { categoryTagText, confidenceText, delegationText, senderText, subjectText } from "../../lib/activity-text";
+import {
+  categoryTagText,
+  confidenceText,
+  delegationText,
+  ruleName,
+  senderText,
+  subjectText,
+} from "../../lib/activity-text";
 import { Badge } from "../ui/badge";
 import { ActionButtons, type ActionButtonsProps } from "./ActionButtons";
 
@@ -33,6 +40,7 @@ export function ActivityRow({ item, timeZone, now, mailboxAddress, onOpen, onPat
           <span>
             {categoryTagText(item.category)} {confidenceText(item.confidence)} · {item.phrase}
           </span>
+          {item.rule !== null && <Badge variant="outline">{ruleName(item.rule)}</Badge>}
           {item.delegation !== null && <Badge variant="secondary">{delegationText(item.delegation)}</Badge>}
           {item.undoPending && <Badge variant="outline">{t("act_undo_pending")}</Badge>}
         </span>

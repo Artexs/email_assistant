@@ -475,3 +475,51 @@ describe("activity cursor", () => {
     expect(decodeActivityCursor(b64(`0000-01-01T00:00:00.000000Z|${cursor.id}`))).toBeNull();
   });
 });
+
+describe("activity rule hit (F110 stage 16)", () => {
+  test("the rule shows only while why_lines is on; an old row and another organization read null", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, ctxA, ctxB } = await setup(trx);
+      const vip = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "needs_reply",
+        createdAt: ago(HOUR),
+        fields: { rule: "vip" },
+      });
+      const black = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "spam",
+        createdAt: ago(2 * HOUR),
+        reasonCode: "blocklist",
+        fields: { rule: "blocklist" },
+      });
+      const white = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(3 * HOUR),
+        fields: { rule: "whitelist" },
+      });
+      const old = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(4 * HOUR) });
+      // A value that is no rule reads null.
+      const junk = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(5 * HOUR),
+        fields: { rule: "somebody@example.com" },
+      });
+      await insertTriaged(trx, ctxB, b.mailboxId, { category: "info", createdAt: ago(HOUR), fields: { rule: "vip" } });
+      const byId = async (ctx: TenantContext) =>
+        new Map((await listActivity(trx, ctx, query, NOW, textsFor("en"))).items.map((i) => [i.emailId, i.rule]));
+
+      const off = await byId(ctxA);
+      expect([...off.values()]).toEqual([null, null, null, null, null]);
+
+      await setOrgFeature(trx, ctxA, { flag: "why_lines", enabled: true, actor: "cli", now: NOW });
+      const on = await byId(ctxA);
+      expect(on.get(vip)).toBe("vip");
+      expect(on.get(black)).toBe("blocklist");
+      expect(on.get(white)).toBe("whitelist");
+      expect(on.get(old)).toBeNull();
+      expect(on.get(junk)).toBeNull();
+
+      // The flag is per organization: B has it off.
+      expect([...(await byId(ctxB)).values()]).toEqual([null]);
+    });
+  });
+});

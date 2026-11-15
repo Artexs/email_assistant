@@ -1,6 +1,7 @@
 import { undoAnswerKinds } from "../digest/answers";
 import { labelCategories } from "../digest/callback";
 import { categories, feedbackSources, feedbackVerdicts } from "../triage/categories";
+import { senderRuleKinds } from "../triage/rules";
 import { suspiciousReasons } from "../triage/suspicious";
 
 import { z } from "./zod";
@@ -93,6 +94,8 @@ export const activityItemSchema = z.object({
   delegation: activityDelegationSchema.nullable(),
   // The codes of the suspicious-mail rules; always `[]` while the flag `suspicious_mail` is off (F109).
   suspicious: z.array(z.enum(suspiciousReasons)),
+  // The sender rule that shaped the result (F110 stage 16); always null while the flag `why_lines` is off and on an old row.
+  rule: z.enum(senderRuleKinds).nullable(),
 });
 export type ActivityItem = z.infer<typeof activityItemSchema>;
 

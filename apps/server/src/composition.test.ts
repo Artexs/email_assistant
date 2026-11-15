@@ -31,12 +31,35 @@ function callOf(source: string, name: string): string {
   throw new Error(`call of ${name} does not end`);
 }
 
+describe("the history job is wired in main.ts", () => {
+  const main = read("main.ts");
+
+  test("it is scheduled every 15 seconds, once, and only inside the block of the triage scope that is not off", () => {
+    const start = main.indexOf("if (scope !== null) {");
+    expect(start).toBeGreaterThan(-1);
+    const end = main.indexOf("\n}\n", start);
+    expect(main.slice(start, end)).toContain('scheduler.add("trust.history", "*/15 * * * * *"');
+    expect(main.split('scheduler.add("trust.history"')).toHaveLength(2);
+  });
+
+  test("the shutdown waits for its run", () => {
+    const start = main.indexOf("Promise.allSettled([");
+    expect(start).toBeGreaterThan(-1);
+    expect(main.slice(start, main.indexOf("])", start))).toContain("historyRun");
+    expect(main).toContain("historyRun = history.run();");
+  });
+});
+
 describe("the token store is wired into every composition root", () => {
   const main = read("main.ts");
 
   test("main.ts: the sync job and the committer deps get the shared tokens", () => {
     expect(callOf(main, "createMailSyncJob")).toContain("oauthTokens: mailOAuth.tokens");
     expect(callOf(main, "committerDeps")).toContain("oauthTokens: mailOAuth.tokens");
+  });
+
+  test("main.ts: the history job gets the shared tokens", () => {
+    expect(callOf(main, "createHistoryJob")).toContain("oauthTokens: mailOAuth.tokens");
   });
 
   test("main.ts: the web Reconnect drops the same cache and uses the same clients", () => {
@@ -96,7 +119,10 @@ describe("the sent switch hooks are wired into every caller of setSentSync", () 
         expect(callOf(text.slice(call.index), "setSentSync"), file).toContain("sentSwitchHooks");
       }
       expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web.ts"]);
-      expect(read("composition.ts")).toContain("onDisabled: (trx, ctx, input) => onSentOff(trx, ctx, input)");
+      // The hook closes the loops (`onSentOff`) and then clears the follow-up cards (`clearLoopCards`), in one transaction.
+      const wiring = read("composition.ts");
+      expect(wiring).toContain("await onSentOff(trx, ctx, input);");
+      expect(wiring).toContain("await clearLoopCards(trx, ctx, input);");
     })();
   });
 });

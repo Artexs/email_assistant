@@ -48,3 +48,12 @@ export function delegationText(delegation: NonNullable<ActivityItem["delegation"
     status: t(`act_dlg_${delegation.status}`),
   });
 }
+
+// The sender rule that shaped a result, as a short phrase ("VIP sender"). The pattern of the rule is never known here.
+export function ruleName(rule: NonNullable<ActivityItem["rule"]>): string {
+  return t(`act_rule_${rule}`);
+}
+
+export function ruleLine(rule: NonNullable<ActivityItem["rule"]>): string {
+  return t(`act_rule_hit_${rule}`);
+}

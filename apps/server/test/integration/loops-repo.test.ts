@@ -9,11 +9,11 @@ import {
   decodeLoopCursor,
   getLoop,
   insertLoop,
-  laterLoop,
+  setLoopLater,
   listLoops,
   lockLoop,
   openLoopsByThread,
-  reopenLoop,
+  reopenLoopRow,
   restartLoop,
   type NewLoop,
 } from "../../src/modules/loops";
@@ -230,7 +230,7 @@ describe("closeLoop", () => {
   });
 });
 
-describe("reopenLoop", () => {
+describe("reopenLoopRow", () => {
   test("T3: a replied loop opens again with the old due date, later_count and follow_ups_sent", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
@@ -242,7 +242,7 @@ describe("reopenLoop", () => {
       });
       await closeLoop(trx, org.ctx, { loopId: id, reason: "replied", at: AT });
 
-      const result = await reopenLoop(trx, org.ctx, { loopId: id, userId: org.userId, at: AT });
+      const result = await reopenLoopRow(trx, org.ctx, { loopId: id, userId: org.userId, at: AT });
 
       expect(result).toBe("ok");
       const loop = await row(trx, id);
@@ -268,7 +268,7 @@ describe("reopenLoop", () => {
       const id = await insertLoopRow(trx, org.ctx, org.mailboxId);
       await closeLoop(trx, org.ctx, { loopId: id, reason: "dropped", userId: org.userId, at: AT });
 
-      await reopenLoop(trx, org.ctx, { loopId: id, at: AT });
+      await reopenLoopRow(trx, org.ctx, { loopId: id, at: AT });
 
       expect((await row(trx, id)).closed_by_user_id).toBeNull();
     });
@@ -287,9 +287,9 @@ describe("reopenLoop", () => {
       });
       const open = await insertLoopRow(trx, org.ctx, org.mailboxId);
 
-      expect(await reopenLoop(trx, org.ctx, { loopId: cleared, at: AT })).toBe("not_allowed");
-      expect(await reopenLoop(trx, org.ctx, { loopId: open, at: AT })).toBe("already");
-      expect(await reopenLoop(trx, org.ctx, { loopId: randomUUID(), at: AT })).toBe("not_found");
+      expect(await reopenLoopRow(trx, org.ctx, { loopId: cleared, at: AT })).toBe("not_allowed");
+      expect(await reopenLoopRow(trx, org.ctx, { loopId: open, at: AT })).toBe("already");
+      expect(await reopenLoopRow(trx, org.ctx, { loopId: randomUUID(), at: AT })).toBe("not_found");
 
       expect((await row(trx, cleared)).status).toBe("closed");
       expect(await auditOf(trx, org, "loop.reopened")).toHaveLength(0);
@@ -305,14 +305,14 @@ describe("reopenLoop", () => {
         closed_at: AT,
       });
 
-      expect(await reopenLoop(trx, b.ctx, { loopId: id, at: AT })).toBe("not_found");
+      expect(await reopenLoopRow(trx, b.ctx, { loopId: id, at: AT })).toBe("not_found");
 
       expect((await row(trx, id)).status).toBe("closed");
     });
   });
 });
 
-describe("laterLoop", () => {
+describe("setLoopLater", () => {
   test("moves the due date, counts the use, writes loop.later; the fourth use is limit_reached", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
@@ -320,9 +320,9 @@ describe("laterLoop", () => {
       const due = (n: number) => new Date(AT.getTime() + n * DAY_MS);
 
       for (const n of [1, 2, 3]) {
-        expect(await laterLoop(trx, org.ctx, { loopId: id, dueAt: due(n), userId: org.userId, at: AT })).toBe("ok");
+        expect(await setLoopLater(trx, org.ctx, { loopId: id, dueAt: due(n), userId: org.userId, at: AT })).toBe("ok");
       }
-      expect(await laterLoop(trx, org.ctx, { loopId: id, dueAt: due(4), at: AT })).toBe("limit_reached");
+      expect(await setLoopLater(trx, org.ctx, { loopId: id, dueAt: due(4), at: AT })).toBe("limit_reached");
 
       const loop = await row(trx, id);
       expect(loop.later_count).toBe(3);
@@ -347,8 +347,8 @@ describe("laterLoop", () => {
       });
       const before = (await row(trx, open)).due_at;
 
-      expect(await laterLoop(trx, a.ctx, { loopId: closed, dueAt: AT, at: AT })).toBe("closed");
-      expect(await laterLoop(trx, b.ctx, { loopId: open, dueAt: AT, at: AT })).toBe("closed");
+      expect(await setLoopLater(trx, a.ctx, { loopId: closed, dueAt: AT, at: AT })).toBe("closed");
+      expect(await setLoopLater(trx, b.ctx, { loopId: open, dueAt: AT, at: AT })).toBe("closed");
 
       expect((await row(trx, open)).due_at.getTime()).toBe(before.getTime());
       expect((await row(trx, open)).later_count).toBe(0);

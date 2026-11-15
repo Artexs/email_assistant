@@ -43,6 +43,23 @@ export default defineConfig({
             { slug: "how-to/language" },
           ],
         },
+        {
+          label: "Reference",
+          items: [
+            { slug: "reference/categories" },
+            { slug: "reference/telegram" },
+            { slug: "reference/settings" },
+            { slug: "reference/limits" },
+          ],
+        },
+        {
+          label: "Explanation",
+          items: [
+            { slug: "explanation/how-a-mail-is-sorted" },
+            { slug: "explanation/never-sends-alone" },
+            { slug: "explanation/shadow-and-assist" },
+          ],
+        },
         { label: "FAQ", items: [{ slug: "faq" }] },
         { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.filter(inOperate).map((page) => ({ slug: page.id })) },
         ...IN_PLACE_PAGES.filter((page) => !inOperate(page)).map((page) => ({ slug: page.id })),

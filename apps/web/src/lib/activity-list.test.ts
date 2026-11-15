@@ -38,6 +38,7 @@ function item(n: string, minute: number): ActivityItem {
     feedback: null,
     delegation: null,
     suspicious: [],
+    rule: null,
   };
 }
 

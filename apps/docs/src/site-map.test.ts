@@ -36,6 +36,9 @@ function sourcePageIds(
 // Each content stage adds its ids here (stage 07: the tutorial and the FAQ; stage 08: the how-to guides).
 const EXPECTED_PAGE_IDS = [
   "changelog",
+  "explanation/how-a-mail-is-sorted",
+  "explanation/never-sends-alone",
+  "explanation/shadow-and-assist",
   "faq",
   "how-to/approve-a-send",
   "how-to/correct-a-category",
@@ -51,6 +54,10 @@ const EXPECTED_PAGE_IDS = [
   "operate/install-and-run",
   "operate/release-checklist",
   "pl/index",
+  "reference/categories",
+  "reference/limits",
+  "reference/settings",
+  "reference/telegram",
   "start",
 ];
 
@@ -68,6 +75,9 @@ describe("site map", () => {
       (id) => id !== "index" && id !== "changelog" && !id.startsWith("pl/") && !id.startsWith("operate/")
     );
     expect(userPages).toEqual([
+      "explanation/how-a-mail-is-sorted",
+      "explanation/never-sends-alone",
+      "explanation/shadow-and-assist",
       "faq",
       "how-to/approve-a-send",
       "how-to/correct-a-category",
@@ -79,6 +89,10 @@ describe("site map", () => {
       "how-to/sender-rules",
       "how-to/two-factor",
       "how-to/undo-a-move",
+      "reference/categories",
+      "reference/limits",
+      "reference/settings",
+      "reference/telegram",
       "start",
     ]);
     for (const id of userPages)
