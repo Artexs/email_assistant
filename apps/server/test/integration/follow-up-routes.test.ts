@@ -150,6 +150,8 @@ describe("T6 the panel edit of a follow-up", () => {
       .where("org_id", "=", s.org.orgId)
       .where("loop_id", "=", f.loopId)
       .where("status", "in", ["ready", "awaiting_approval"])
+      // The edit with UIDPLUS also queues a reverse row that removes the old Drafts copy: it is not the new draft.
+      .where("reverses_action_id", "is", null)
       .execute();
     const newSend = rows.find((row) => row.type === "send");
     const newDraft = rows.find((row) => row.type === "create_draft");
@@ -162,6 +164,14 @@ describe("T6 the panel edit of a follow-up", () => {
     });
     expect(newDraft).toMatchObject({ status: "ready", email_id: null, loop_id: f.loopId });
     expect(newSend?.depends_on_action_id).toBe(newDraft?.id ?? "");
+    // The reverse row of the old draft is `ready` too and carries the loop: it hangs on the old draft, not on the new one.
+    const reverse = await db
+      .selectFrom("actions")
+      .select(["loop_id", "email_id", "status"])
+      .where("org_id", "=", s.org.orgId)
+      .where("reverses_action_id", "is not", null)
+      .execute();
+    expect(reverse).toEqual([{ loop_id: f.loopId, email_id: null, status: "ready" }]);
     expect(newDraft?.payload).toMatchObject({
       kind: "follow_up",
       loop_id: f.loopId,
