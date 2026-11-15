@@ -152,8 +152,13 @@ describe("ops_alerts schema", () => {
         sql`insert into ops_alerts (kind, opened_at) values ('slo_other', now())`.execute(trx)
       ).rejects.toThrow();
       await trx.executeQuery(sql`rollback to savepoint s1`.compile(trx));
+      await trx.executeQuery(sql`rollback to savepoint s1`.compile(trx));
       await expect(
         sql`insert into ops_alerts (kind, opened_at, facts) values ('slo_disk', now(), '[1]')`.execute(trx)
+      ).rejects.toThrow();
+      await trx.executeQuery(sql`rollback to savepoint s1`.compile(trx));
+      await expect(
+        sql`insert into ops_alerts (kind, opened_at, notice_count) values ('slo_disk', now(), -1)`.execute(trx)
       ).rejects.toThrow();
     });
   });
