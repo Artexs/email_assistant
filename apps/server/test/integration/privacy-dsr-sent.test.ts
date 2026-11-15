@@ -407,7 +407,7 @@ describe("data request for sent mail", () => {
     expect(nobody.stderr).toContain("warning: no match");
   });
 
-  test("5. a Sent pass that holds the state row makes the erase wait; its mail from the person goes too", async () => {
+  test("5. a Sent pass that holds the state row makes the erase wait; its late mail to the person goes too", async () => {
     const w = await seedWorld();
     await addSent(w, { from: w.boss, to: [w.person] });
     let locked!: () => void;
@@ -478,6 +478,37 @@ describe("data request for sent mail", () => {
     }
     expect(await snapshot(w.orgId)).toBe(before);
     expect(await tombstones(w.orgId)).toEqual([]);
+  });
+
+  test("a failure in the erase rolls back the sent part: rows, pending content, tombstones and the audit row", async () => {
+    const w = await seedWorld();
+    await addSent(w, { from: w.boss, to: [w.person] });
+    await addSent(w, { from: w.boss, to: [w.person, w.other] });
+    const before = await snapshot(w.orgId);
+    await expect(
+      eraseSubjectData(db, {
+        orgId: w.orgId,
+        address: w.person,
+        confirm: w.person,
+        credentialsKey: KEY,
+        now: NOW,
+        step: async () => {
+          throw new Error("boom");
+        },
+      })
+    ).rejects.toThrow("boom");
+    expect(await snapshot(w.orgId)).toBe(before);
+    expect(await tombstones(w.orgId)).toEqual([]);
+    expect(await auditData(w.orgId, auditEvents.dsrErase)).toEqual([]);
+  });
+
+  test("the person as sender in another letter case is found and erased", async () => {
+    const w = await seedWorld();
+    const goes = await addSent(w, { from: w.person.toUpperCase(), to: [w.boss] });
+    expect(ids((await match(w.orgId, w.person)).sentMails)).toEqual([goes.id]);
+    const result = await erased(w);
+    expect(result.counts.sent_mails).toBe(1);
+    expect(await sentRow(goes.id)).toBeUndefined();
   });
 
   test("the export of a row that retention cleared shows body_text null", async () => {
