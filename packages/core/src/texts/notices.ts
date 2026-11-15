@@ -19,6 +19,7 @@ export interface NoticeTexts {
     fixOAuth: (provider: string, reason: AuthErrorReason | null) => string;
   };
   hostBlocked: { first: (address: string, since: string) => string; why: string; noRead: string; recheck: string };
+  sentMissing: { first: (address: string, since: string) => string; ask: string };
   syncStale: { first: (address: string) => string; last: (last: string) => string; status: string; never: string };
   syncOk: (address: string, last: string) => string;
   actionFailed: {
@@ -33,6 +34,8 @@ export interface NoticeTexts {
     status: string;
   };
   mailboxRemoved: string;
+  // F109 stage 15: mail of a VIP or whitelisted sender waits while the AI service is paused.
+  notTriaged: (sender: string) => string;
   sendHeld: {
     first: (address: string, limit: string) => string;
     limit: Record<SendLimitKind, string>;
@@ -132,6 +135,10 @@ export const noticeTexts = {
       recheck:
         "The system checks the server again at each sync and starts the mailbox again by itself. /status shows the state.",
     },
+    sentMissing: {
+      first: (address, since) => `📭 No sent mail seen for ${address} since ${since}.`,
+      ask: "Does your mail app keep a copy in Sent? The assistant needs it to see what you wait for.",
+    },
     syncStale: {
       first: (address) => `⚠️ Mail sync is late for ${address}.`,
       last: (last) => `Last good sync: ${last}. The system keeps trying.`,
@@ -156,6 +163,8 @@ export const noticeTexts = {
       status: "/status shows the mailbox state.",
     },
     mailboxRemoved: "Mailbox removed. Change its password in your mail provider's settings now.",
+    notTriaged: (sender) =>
+      `📭 Mail from ${sender} is not triaged yet: the AI service is paused. It is triaged when the service is back.`,
     sendHeld: {
       first: (address, limit) => `⏸ Sends from ${address} wait: ${limit}.`,
       limit: {
@@ -230,6 +239,10 @@ export const noticeTexts = {
       recheck:
         "System sprawdza serwer przy każdej synchronizacji i sam uruchomi skrzynkę ponownie. /status pokazuje stan.",
     },
+    sentMissing: {
+      first: (address, since) => `📭 Brak wysłanej poczty dla ${address} od ${since}.`,
+      ask: "Czy Twój program pocztowy zapisuje kopię w folderze Wysłane? Asystent potrzebuje jej, żeby wiedzieć, na co czekasz.",
+    },
     syncStale: {
       first: (address) => `⚠️ Synchronizacja poczty jest opóźniona: ${address}.`,
       last: (last) => `Ostatnia udana synchronizacja: ${last}. System dalej próbuje.`,
@@ -269,6 +282,8 @@ export const noticeTexts = {
       status: "/status pokazuje stan skrzynki.",
     },
     mailboxRemoved: "Skrzynka usunięta. Zmień teraz jej hasło w ustawieniach dostawcy poczty.",
+    notTriaged: (sender) =>
+      `📭 Wiadomość od ${sender} nie jest jeszcze posortowana: usługa AI ma przerwę. Zostanie posortowana, gdy usługa wróci.`,
     sendHeld: {
       first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka ${address}): ${limit}.`,
       limit: {

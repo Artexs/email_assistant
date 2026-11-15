@@ -110,6 +110,26 @@ export function renderHostBlockedNotice(
   };
 }
 
+// Mail of a VIP or whitelisted sender waits for triage during an LLM pause (F109 stage 15). The sender goes through the
+// chat-safe text helper; the view holds no subject and no other mail text.
+export function renderNotTriagedNotice(input: { sender: string }, texts: CoreTexts): OutMessage {
+  return { text: texts.notices.notTriaged(senderLabel(input.sender, texts)), buttons: [] };
+}
+
+// The mailbox shows no sent mail for 7 days (F104). The view holds no recipient and no subject.
+export function renderSentMissingNotice(
+  input: { address: string; since: Date; now: Date; timeZone: string },
+  texts: CoreTexts
+): OutMessage {
+  const since = formatClock(input.since, input.timeZone, input.now, texts.locale);
+  return {
+    text: [texts.notices.sentMissing.first(cutText(input.address, 60), since), texts.notices.sentMissing.ask].join(
+      "\n"
+    ),
+    buttons: [],
+  };
+}
+
 // Sends of one mailbox wait on a send limit (PD-044). The view holds no limit number: the text names the window.
 export function renderSendHeldNotice(
   input: {

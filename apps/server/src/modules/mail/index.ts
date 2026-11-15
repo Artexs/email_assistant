@@ -144,6 +144,8 @@ export {
   listSyncFolders,
   listSyncTargets,
   listThreadContext,
+  listWaitingFromSenders,
+  listWaitingSenders,
   mailboxHasUidplus,
   mailKindFilter,
   deleteSentEmails,
@@ -188,6 +190,7 @@ export type {
   SentTextWrite,
   UserAnswer,
 } from "./repo";
+export type { WaitingMail, WaitingQuery } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   syncSentFolder,

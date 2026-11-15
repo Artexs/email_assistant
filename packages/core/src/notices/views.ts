@@ -236,6 +236,23 @@ const approvalEditView = z.strictObject({
   actionId: id.optional(),
 });
 
+// Mail of a VIP or whitelisted sender waits while the AI is paused (F109 stage 15, D17). The sender address only: no
+// subject, display name, body or summary (PD-067). The text of the notice is a fixed phrase of ours.
+const notTriagedView = z.strictObject({
+  emailId: id,
+  mailboxId: id,
+  sender: text,
+});
+
+// The mailbox has shown no sent mail for a long time (F104). The view holds the mailbox address and the start of the
+// quiet period only: no subject, no recipient.
+const sentMissingView = z.strictObject({
+  address: text,
+  since: isoDate,
+  now: isoDate,
+  timeZone,
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -252,6 +269,8 @@ export const noticeViewSchemas = {
   weekly_report: weeklyReportView,
   host_blocked: hostBlockedView,
   approval_edit: approvalEditView,
+  not_triaged: notTriagedView,
+  sent_missing: sentMissingView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;
