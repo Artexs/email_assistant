@@ -1,6 +1,6 @@
 # Live lab
 
-> Checked against the code at `f9bb9662`, 2026-11-15.
+> Checked against the code at `8a6d2c17`, 2026-11-15.
 
 ## What it does now
 
@@ -31,6 +31,7 @@ The live lab plays the frozen week of made-up mail (`lab-01`) through the real p
 | CLI      | argument parser and the 10 usage lines                                         | `apps/server/src/scripts/lab-args.ts`      |
 | function | command dispatch with the env guard                                            | `apps/server/src/scripts/lab-run.ts`       |
 | function | `startLabRun`, `stopLabRun`, `writeRunLedgerLine`                              | `apps/server/src/modules/lab/start.ts`     |
+| function | `orgHasMail` (the fresh-org check; counts the mail rows)                       | `apps/server/src/modules/lab/org-mail.ts`  |
 | function | `runSpend`                                                                     | `apps/server/src/modules/lab/run-spend.ts` |
 | function | run state, locks and `capFor`                                                  | `apps/server/src/modules/lab/state.ts`     |
 | function | `checkSimEnv`, `planLiveRun`                                                   | `packages/core/src/sim/live/env-guard.ts`  |
