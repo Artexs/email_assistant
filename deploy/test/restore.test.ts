@@ -239,9 +239,9 @@ describe("restore.sh drill", () => {
     }
     const order = [
       " config ",
-      " build server",
       " up -d --wait db",
       "pg_tables",
+      " build server",
       "pg_restore",
       "from organizations",
       "update mailboxes set status = 'paused'",
@@ -404,10 +404,17 @@ describe("restore.sh new-host", () => {
     expect(out.at(-2)).toContain("record: dsr erase");
   });
 
-  test("4b. one table in the target exits 2 and never restores over data", () => {
+  test("4b. one table in the target exits 2 and never restores over data, with no build call", () => {
     setSwitch("tables", "3\n");
     const result = run(["--target", "new-host", "--stdin"], { stdin: DUMP });
     expect(result.code).toBe(2);
+    // A build would retag the live ea-server image before the refusal.
+    expect(dockerCalls().some((line) => / build /.test(line))).toBe(false);
+    expect(
+      dockerCalls().map(
+        (line) => line.replace(/^docker compose -f deploy\/compose.yaml --env-file .env /, "").split(" ")[0]
+      )
+    ).toEqual(["up", "exec"]);
     expect(result.output).toContain("never goes over data");
     expect(dockerCalls().some((line) => line.includes("pg_restore"))).toBe(false);
   });

@@ -23,6 +23,7 @@ interface Resolved {
       logging?: { driver: string; options: Record<string, string> };
       environment?: Record<string, string | null>;
       env_file?: unknown;
+      restart?: string;
       profiles?: string[];
     }
   >;
@@ -141,6 +142,14 @@ describe("deploy/compose.drill.yaml", () => {
       for (const key of ["TRIAGE_LLM_SCOPE", "ACTIONS_SCOPE", "SEND_SCOPE"])
         expect(env[key], `${name} ${key}`).toBe("off");
     }
+  });
+
+  test("no drill service restarts after a reboot", () => {
+    for (const [name, service] of Object.entries(drill.services)) {
+      if (service.profiles?.includes("ops")) continue;
+      expect(service.restart, name).toBe("no");
+    }
+    for (const name of ["db", ...serverImageServices()]) expect(drill.services[name]?.restart, name).toBe("no");
   });
 
   test("the db service publishes no port and keeps the shared postgres:17 image", () => {

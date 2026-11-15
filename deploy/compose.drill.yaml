@@ -16,6 +16,8 @@ x-logging-local: &logging-local
 # override, so `cli` (it extends `server`) needs its own copy: the base block of `server` alone would not reach it.
 x-drill-server: &drill-server
   image: ea-drill-server
+  # A reboot of the host must not bring the drill back (`restore.sh --down` removes it).
+  restart: "no"
   # `run` skips ports, but `up` would publish them: the drill publishes none.
   ports: !reset []
   # The live server logs json-file, the files the log store reads. The drill must never reach that store: `local` only.
@@ -39,6 +41,10 @@ x-drill-server: &drill-server
     SEND_SCOPE: "off"
 
 services:
+  # `db` is not a server image service; it needs its own line.
+  db:
+    restart: "no"
+
   server:
     <<: *drill-server
 

@@ -174,10 +174,6 @@ restore() {
     drill_guard
   fi
 
-  # The only build. Every later call is --no-build (or exec).
-  step=build
-  "${C[@]}" build server </dev/null
-
   step=db
   "${C[@]}" up -d --wait db </dev/null
 
@@ -192,6 +188,11 @@ restore() {
     fi
     refuse "the database has $tables tables; a new-host restore never goes over data"
   fi
+
+  # The only build, after the guard: a refused run must change nothing, and a build retags the server image.
+  # The db service needs no server image. Every later call is --no-build (or exec).
+  step=build
+  "${C[@]}" build server </dev/null
 
   step=pg_restore
   if ((use_stdin)); then
