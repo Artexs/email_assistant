@@ -1,5 +1,10 @@
-import { connectMailboxBodySchema, connectResultSchema, type SmtpSecurity } from "@ea/core/web";
-import { useState, type FormEvent } from "react";
+import {
+  connectMailboxBodySchema,
+  connectResultSchema,
+  type MailOAuthProviderKey,
+  type SmtpSecurity,
+} from "@ea/core/web";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n";
@@ -15,10 +20,12 @@ import {
   type ProviderChoice,
 } from "../../lib/connect-form";
 import { errorText } from "../../lib/errors";
+import { readConnectProviders, startOAuth } from "../../lib/mail-oauth";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { OAuthSignIn } from "./OAuthSignIn";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 
@@ -28,6 +35,8 @@ export interface ConnectDialogProps {
   onConnected(): void;
   // The organization has the flag `sent_sync`: the dialog says that the assistant reads Sent.
   sentSyncLine: boolean;
+  // The sign-in buttons before the options read ends (a test renders with it; the page leaves it out).
+  initialOauthProviders?: MailOAuthProviderKey[];
 }
 
 type FieldErrors = ReturnType<typeof fieldErrorKeys>;
@@ -94,16 +103,48 @@ export function SentSyncLine({ show }: { show: boolean }) {
   return show ? <p className="text-sm text-muted-foreground">{t("sent_line")}</p> : null;
 }
 
-export function ConnectDialog({ open, onOpenChange, onConnected, sentSyncLine }: ConnectDialogProps) {
+export function ConnectDialog({
+  open,
+  onOpenChange,
+  onConnected,
+  sentSyncLine,
+  initialOauthProviders = [],
+}: ConnectDialogProps) {
   const [form, setForm] = useState<ConnectFormState>(initialConnectForm);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<TextKey | null>(null);
   const [pending, setPending] = useState(false);
+  const [oauthProviders, setOauthProviders] = useState<MailOAuthProviderKey[]>(initialOauthProviders);
+  const [oauthError, setOauthError] = useState<TextKey | null>(null);
+
+  // The server tells which sign-in buttons this organization gets. A failed read gives none: the password form stays.
+  useEffect(() => {
+    if (!open) return;
+    let current = true;
+    void readConnectProviders().then((providers) => {
+      if (current) setOauthProviders(providers);
+    });
+    return () => {
+      current = false;
+    };
+  }, [open]);
 
   const reset = () => {
     setForm(initialConnectForm());
     setFieldErrors({});
     setError(null);
+    setOauthError(null);
+  };
+
+  // `pending` stays on after a good start: the page is leaving for the provider, and a second tap would start a second sign-in.
+  const startSignIn = async (provider: MailOAuthProviderKey) => {
+    setError(null);
+    setOauthError(null);
+    setPending(true);
+    const result = await startOAuth(provider);
+    if (result.ok) return;
+    setOauthError(result.key);
+    setPending(false);
   };
 
   const changeOpen = (next: boolean) => {
@@ -150,6 +191,7 @@ export function ConnectDialog({ open, onOpenChange, onConnected, sentSyncLine }:
           <DialogHeader>
             <DialogTitle>{t("connect_title")}</DialogTitle>
           </DialogHeader>
+          <OAuthSignIn providers={oauthProviders} disabled={pending} error={oauthError} onStart={startSignIn} />
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="connect-provider">{t("provider_label")}</Label>
             <Select
