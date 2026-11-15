@@ -10,8 +10,12 @@ import {
   labAddresses,
   LAB_MAILBOXES,
   loadLabCorpus,
+  LabSeedError,
   type LabCorpus,
+  type LabOrg,
   type RunSpend,
+  type SeedResult,
+  type SeedTarget,
 } from "../modules/lab";
 import type { CliOutput } from "../platform/cli";
 import { ledgerLine } from "../platform/eval-ledger";
@@ -49,8 +53,20 @@ describe("lab command", () => {
   let hexes: string[] = [];
   let models: string[] = ["gpt-6-luna"];
   let env = simEnv();
+  let seedCalls: SeedTarget[] = [];
+  let seedResult: SeedResult | Error;
+  let stored: string[] = [];
+  let storeError: Error | undefined;
 
   beforeEach(() => {
+    seedCalls = [];
+    seedResult = {
+      org: { orgId: "o-new", mailboxId: "m-new", address: LAB_MAILBOXES.lab, chatId: 5550001 },
+      created: true,
+      added: { mailbox: 1, delegates: 3, rules: 2, flags: 11, linked: true, relinked: false },
+    };
+    stored = [];
+    storeError = undefined;
     dir = mkdtempSync(join(tmpdir(), "f113-s05-lab-"));
     printed = [];
     failed = [];
@@ -75,6 +91,15 @@ describe("lab command", () => {
     corpus,
     models,
     orgHasMail: async () => hasMail,
+    seed: async (target) => {
+      seedCalls.push(target);
+      if (seedResult instanceof Error) throw seedResult;
+      return seedResult;
+    },
+    storeUrgency: async (org: LabOrg, plan) => {
+      if (storeError) throw storeError;
+      stored.push(`${org.orgId} ${plan.runId} ${plan.deadlines.length}`);
+    },
     spendOf: async () => spend,
     now: () => NOW,
     hex4: () => hexes.shift() ?? "ffff",
@@ -123,11 +148,57 @@ describe("lab command", () => {
   });
 
   test("commands of later stages exit 1 with not built", async () => {
-    for (const argv of [["seed"], ["serve"], ["score", "--run", "day-20261123-aaaa"], ["demo-reset", "--yes"]]) {
+    for (const argv of [
+      ["reset", "--org", "lab", "--yes"],
+      ["serve"],
+      ["score", "--run", "day-20261123-aaaa"],
+      ["demo-reset", "--yes"],
+    ]) {
       failed = [];
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not built");
     }
+  });
+
+  test("seed prints the ids and counts of the org and picks the target of the flag", async () => {
+    expect(await run(["seed"])).toBe(0);
+    expect(await run(["seed", "--org", "demo"])).toBe(0);
+    expect(seedCalls.map((target) => [target.key, target.mode, target.mailbox])).toEqual([
+      ["lab", "assist", LAB_MAILBOXES.lab],
+      ["demo", "shadow", LAB_MAILBOXES.demo],
+    ]);
+    expect(printed[0]).toBe(
+      "seed: created lab org o-new mailbox m-new chat 5550001 · added mailbox 1 delegates 3 rules 2 flags 11 · link linked"
+    );
+  });
+
+  test("seed: a refusal of the seed exits 1 with its code; another error is not caught", async () => {
+    seedResult = new LabSeedError("org_gone");
+    expect(await run(["seed"])).toBe(1);
+    expect(failed).toEqual(["refused: org_gone"]);
+    seedResult = new Error("boom");
+    await expect(run(["seed"])).rejects.toThrow("boom");
+  });
+
+  test("start stores the urgency profile after the run is written; a refused start stores none", async () => {
+    seedOrgs();
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23", "--cap-usd", "9"])).toBe(1);
+    expect(stored).toEqual([]);
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toStartWith("o-lab day-20261123-aaaa ");
+    // The second start of the same org is refused by the lock and does not touch the profile of the active run.
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(1);
+    expect(stored).toHaveLength(1);
+  });
+
+  test("start: a failed profile store stops the run and frees the org", async () => {
+    seedOrgs();
+    storeError = new Error("store down");
+    await expect(run(["start", "--mode", "day", "--date", "2026-11-23"])).rejects.toThrow("store down");
+    expect(state().activeRuns()).toEqual([]);
+    const events = state().events(state().listRuns()[0] as string);
+    expect(events.map((event) => event.t === "stopped" && event.reason)).toContain("error:urgency_profile");
   });
 
   test("not_seeded: an org that is not in orgs.json is refused", async () => {

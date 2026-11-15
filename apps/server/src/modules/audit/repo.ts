@@ -34,6 +34,7 @@ export const auditEvents = {
   actionApproved: "action.approved",
   actionRejected: "action.rejected",
   actionSendAgain: "action.send_again",
+  actionEdited: "action.edited", // data: previous_action_id, version, delegate_changed, via; never text
   actionWentOut: "action.went_out", // data: delegation_id, outgoing_message_id
   actionRejectReason: "action.reject_reason", // reason_code: the reason; data: via
   actionMistake: "action.mistake", // data: via
