@@ -15,3 +15,4 @@ export * from "./security-log";
 export * from "./sim";
 export * from "./metrics";
 export * from "./site";
+export * from "./loopback";

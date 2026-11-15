@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
 import { t } from "../../src/i18n";
+import { expectNoA11yViolations } from "../a11y";
 import { cleanUpOrg, consoleErrors, cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
@@ -38,6 +39,7 @@ test("add, a duplicate, a bad pattern, delete", async ({ page }) => {
   const vip = page.locator("[data-kind=vip]");
   await expect(vip.getByText(en.rules_empty)).toBeVisible();
   expect(logged).toEqual([]);
+  await expectNoA11yViolations(page);
 
   await expect(form.getByRole("combobox", { name: en.rules_kind_label })).toHaveText(en.rule_kind_vip);
   await expect(form.getByRole("combobox", { name: en.rules_scope_label })).toHaveText(en.rules_all_mailboxes);
@@ -46,6 +48,7 @@ test("add, a duplicate, a bad pattern, delete", async ({ page }) => {
   await expect(page.getByText(en.rule_added_toast)).toBeVisible();
   await expect(vip.getByText("boss@e2e.test", { exact: true })).toBeVisible();
   await expect(vip.getByText(en.rules_all_mailboxes)).toBeVisible();
+  await expectNoA11yViolations(page);
 
   // The same rule again: the server answers 409 and the form shows it inline.
   await form.getByLabel(en.rules_pattern_label, { exact: true }).fill("boss@e2e.test");

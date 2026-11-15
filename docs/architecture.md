@@ -406,6 +406,7 @@ Tenancy:
   A webhook with the `X-Telegram-Bot-Api-Secret-Token` header only when the server has a public HTTPS address.
   A 401 stops polling with one `error` line. A 409 (another process polls this token) logs one `error` line and starts again after 1, 2, 4 … at most 30 minutes.
   Any other polling failure retries on the same schedule. The command list is set with `setMyCommands` at each start.
+  Every log line of one update carries `job` `telegram.update` and one `run_id` (first middleware of `createTelegramBot`); the `update_failed` line of `bot.catch` and the polling lines carry none (`update_id` and `bot_id` are number fields).
 - Linking: the CLI `telegram:link` (the web panel in S5) creates a one-time token bound to one member, valid for 15 minutes.
   The user opens `t.me/<bot>?start=<token>`. The server stores the `chat_id` for that member (table `chat_links`, §5).
 - Private chats only: updates from groups, channels and bots get no reply. The server accepts updates only from linked chats:
@@ -415,7 +416,7 @@ Tenancy:
   One digest is one message of at most 4096 characters with at most 15 lines. No silent sends.
 - Two bots: the dev bot (`@Email_assistant_local_bot`) and the pilot bot (`@Email_assistant_vps_bot`). Each environment has its own token.
 - Token handling (D8): `TELEGRAM_BOT_TOKEN` comes only from env; an empty value switches Telegram off (`telegram is off`). No log line, error text or DB row holds it.
-  Telegram errors are logged only as `...telegramErrorFields(error)` (`error`, `error_code`, `method`) or, in an old-form line, `telegramErrorLabel(error)`, never as `error.message`, `payload` or `description`.
+  Telegram errors are logged only as `...telegramErrorFields(error)` (`error`, `error_code`, `method`) or, in a line that E8a has not converted yet, `telegramErrorLabel(error)`, never as `error.message`, `payload` or `description`.
 - Fake Bot API (dev only): `TELEGRAM_API_ROOT` points the bot at the local fake `tools/fake-telegram`. Empty = the real Telegram.
   The config accepts only a loopback root (`127.0.0.1`, `localhost`, `[::1]`, no path, no trailing `/`); other values stop the start. The server logs one `warn` line when it is set and Telegram is on. `telegram:check`, `telegram:link` and the Telegram jobs of `job:run` use the same key. Never set it on the VPS.
 - Messages to the user are rows in the `outbox` table (§5). A row holds the facts of the notice; the sender renders its text when it sends (ADR 0032 point 5, `docs/code-patterns.md` § Notices are facts). Delivery is at least once: a duplicate is possible only when the process dies

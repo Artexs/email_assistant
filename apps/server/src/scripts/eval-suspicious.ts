@@ -17,10 +17,10 @@ import {
 import { linkPairsOfHtml } from "../modules/mail";
 import { createCliOutput } from "../platform/cli";
 import { createLog } from "../platform/log";
+import { corpusDir, readScenario } from "../platform/sim-files";
 
 import type { EvalOptions } from "./eval-args";
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
-import { corpusDir, readScenario } from "./sim-files";
 
 // `eval --suspicious`: the suspicious-mail rules on a sim corpus part (ticket F109-e3b-improve, stage 05). No LLM, no key, no spend.
 
