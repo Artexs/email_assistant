@@ -451,6 +451,8 @@ describe("data request for sent mail", () => {
     const person = a.person;
     const bGoes = await addSent({ ...b, person }, { from: b.boss, to: [person] });
     await addSent({ ...b, person }, { from: b.boss, to: [person, b.other], subject: `about ${person}` });
+    // A row of B that has only addresses that A owns, so the rule alone would send it with A's mails.
+    await addSent(b, { from: a.boss, to: [person] });
     const aGoes = await addSent(a, { from: a.boss, to: [person] });
     // The match of organization A reads only its own rows (the find has no tenant scope here, so only the filter holds).
     const foundA = await match(a.orgId, person);
