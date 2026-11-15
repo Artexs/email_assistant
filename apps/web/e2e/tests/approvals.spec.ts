@@ -1,15 +1,17 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
-import { E2E_APPROVALS } from "../../../server/src/scripts/e2e-seed-args";
+import { E2E_APPROVALS, E2E_APPROVALS_COUNT, E2E_APPROVALS_WAITING } from "../../../server/src/scripts/e2e-seed-args";
 import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// The approvals organization of the project (see `e2e-approvals-rows.ts`): a waiting send to Anna Nowak and a send that the owner
-// approved and SEND_SCOPE=self holds (Piotr Kowalski is not on the list of the e2e server). The two tests that decide a send change it,
-// so the tests of a project run in this order: the reads first, then the reject, then the approve.
+// The approvals organization of the project (see `e2e-approvals-rows.ts`): a waiting send to Anna Nowak (the `waiting` send), a send that
+// the owner approved and SEND_SCOPE=self holds (Piotr Lis is not on the list of the e2e server), a second waiting send (`edit`) and a
+// waiting reminder. The tests that decide or edit a send change it, so the tests of a project run in this order: the reads first, then
+// the reject of the held send, then the edits of the `waiting` send (conflict, delegate, the dialog under axe, the keyboard path, which
+// approves the newest version), then the edit and approve of the `edit` send.
 test.describe.configure({ mode: "serial" });
 
 const project = (): "mobile" | "desktop" => (test.info().project.name === "mobile" ? "mobile" : "desktop");
@@ -31,6 +33,8 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
 
 const detailOf = (page: Page) => page.getByRole("region", { name: en.appr_detail_label });
 const listOf = (page: Page) => page.getByRole("list", { name: en.appr_list_label });
+// The line of the result (the page moves the focus here after an answer).
+const statusOf = (page: Page, text: string | RegExp) => page.getByRole("status").filter({ hasText: text });
 const badgeName = (count: number) => `${en.nav_approvals} ${en.nav_approvals_badge.replace("{n}", `${count}`)}`;
 
 test("T4: with the flag on the nav shows Approvals with the count; with it off there is no item and the page says so", async ({
@@ -41,9 +45,9 @@ test("T4: with the flag on the nav shows Approvals with the count; with it off t
   const errors = await startSession(context, page, org().owner);
   await page.goto("/approvals");
   await expect(page.getByRole("heading", { level: 1, name: en.title_approvals })).toBeVisible();
-  // One waiting send; the held one is approved already and does not count.
-  await expect(page.getByRole("link", { name: badgeName(1) })).toBeVisible();
-  await expect(listOf(page).getByRole("link")).toHaveCount(2);
+  // Three waiting sends (a reminder too); the held one is approved already and does not count.
+  await expect(page.getByRole("link", { name: badgeName(E2E_APPROVALS_WAITING) })).toBeVisible();
+  await expect(listOf(page).getByRole("link")).toHaveCount(E2E_APPROVALS_COUNT);
   expect(errors).toEqual([]);
 
   // The main organization has the flag off: no item, and the page shows the flag-off text. A second browser context, its own address.
@@ -87,18 +91,20 @@ test("T5: the page of a send shows the recipient, the subject, the body, the quo
   await expect(detail).toContainText(en.appr_send_note);
   await expect(detail.getByRole("button", { name: en.appr_approve })).toBeEnabled();
   await expect(detail.getByRole("button", { name: en.appr_reject })).toBeEnabled();
+  await expect(detail.getByRole("button", { name: en.appr_edit })).toBeEnabled();
   expect(errors).toEqual([]);
 });
 
 test("T8: a member sees the list and the draft and has no Approve or Reject button", async ({ context, page }) => {
   const errors = await startSession(context, page, org().member);
   await page.goto("/approvals");
-  await expect(listOf(page).getByRole("link")).toHaveCount(2);
+  await expect(listOf(page).getByRole("link")).toHaveCount(E2E_APPROVALS_COUNT);
   await page.goto(`/approvals?id=${org().waitingSendId}`);
   await expect(detailOf(page)).toContainText(E2E_APPROVALS.waiting.body);
   await expect(detailOf(page).getByText(en.owner_only)).toBeVisible();
   await expect(page.getByRole("button", { name: en.appr_approve })).toHaveCount(0);
   await expect(page.getByRole("button", { name: en.appr_reject })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: en.appr_edit })).toHaveCount(0);
   // The server refuses a member as well (the page is no gate).
   const refused = await page.request.post(`/api/approvals/${org().waitingSendId}/approve`, {
     data: {},
@@ -111,7 +117,7 @@ test("T8: a member sees the list and the draft and has no Approve or Reject butt
 test("T9: the list and the open draft have no axe violation", async ({ context, page }) => {
   await startSession(context, page, org().owner);
   await page.goto("/approvals");
-  await expect(listOf(page).getByRole("link")).toHaveCount(2);
+  await expect(listOf(page).getByRole("link")).toHaveCount(E2E_APPROVALS_COUNT);
   await expectNoA11yViolations(page);
 
   await page.goto(`/approvals?id=${org().waitingSendId}`);
@@ -149,44 +155,355 @@ test("T10: the phone tab bar holds 5 items and the menu holds Stats; the desktop
   }
 });
 
-test("T7: Reject on the held send asks for a reason; Wrong person is saved", async ({ context, page }) => {
+test("T7: Reject on the held send asks for a reason; Wrong person is saved; the focus and axe hold after the answer", async ({
+  context,
+  page,
+}) => {
   const errors = await startSession(context, page, org().owner);
   await page.goto(`/approvals?id=${org().heldSendId}`);
   const detail = detailOf(page);
-  // The send is approved and held by the scope: it can only be rejected.
+  // The send is approved and held by the scope: it can only be rejected, and it cannot be edited.
   await expect(detail).toContainText(en.appr_held_scope);
   await expect(detail.getByRole("button", { name: en.appr_approve })).toHaveCount(0);
+  await expect(detail.getByRole("button", { name: en.appr_edit })).toHaveCount(0);
   await detail.getByRole("button", { name: en.appr_reject }).click();
   await expect(page.getByText(en.appr_done_rejected)).toBeVisible();
+  // The Reject button is gone: the focus is on the line of the result, not on the page start.
+  await expect(statusOf(page, en.appr_done_rejected)).toBeFocused();
+  // Axe with the notice shown and the reason select closed, then open.
+  await expect(detail.getByRole("combobox", { name: en.appr_reason_label })).toBeVisible();
+  await expectNoA11yViolations(page);
 
   await detail.getByRole("combobox", { name: en.appr_reason_label }).click();
+  await expect(page.getByRole("option", { name: en.appr_reason_wrong_person })).toBeVisible();
+  // While the select is open, Radix hides the rest of the page with aria-hidden and leaves its buttons focusable, so axe reports
+  // `aria-hidden-focus` for the page behind (a known effect of the Radix select, not of this page). Only the open list is checked.
+  await expectNoA11yViolations(page, { include: '[role="listbox"]' });
   await page.getByRole("option", { name: en.appr_reason_wrong_person }).click();
   await expect(page.getByText(en.appr_reason_saved)).toBeVisible();
+  // The select is gone as well: the focus is on the saved line.
+  await expect(page.getByText(en.appr_reason_saved)).toBeFocused();
   await expect(page.getByRole("alert")).toHaveCount(0);
+  await expectNoA11yViolations(page);
   // The detail shows the new state; the rejected send is no longer in the list after a reload.
   await expect(detail).toContainText(en.appr_state_rejected);
   await page.goto("/approvals");
-  await expect(listOf(page).getByRole("link")).toHaveCount(1);
+  await expect(listOf(page).getByRole("link")).toHaveCount(E2E_APPROVALS_COUNT - 1);
   expect(errors).toEqual([]);
 });
 
-test("T6: Approve says it sends; the item leaves the list and the badge shows no number", async ({ context, page }) => {
+test("S13-T6: a reminder has no Edit button; Reject and Skip put the focus on the result line", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  await page.goto(`/approvals?id=${org().reminderSendId}`);
+  const detail = detailOf(page);
+  await expect(detail.getByRole("heading", { level: 2 })).toContainText(
+    en.appr_title_reminder.replace(
+      "{to}",
+      `${E2E_APPROVALS.reminder.delegateName} <${E2E_APPROVALS.reminder.delegateEmail}>`
+    )
+  );
+  await expect(detail.getByRole("button", { name: en.appr_approve })).toBeVisible();
+  await expect(detail.getByRole("button", { name: en.appr_reject })).toBeVisible();
+  await expect(detail.getByRole("button", { name: en.appr_edit })).toHaveCount(0);
+  // Reject it and choose Skip: the select is gone, the focus is on the line of the result.
+  await detail.getByRole("button", { name: en.appr_reject }).click();
+  await expect(statusOf(page, en.appr_done_rejected)).toBeFocused();
+  await detail.getByRole("combobox", { name: en.appr_reason_label }).click();
+  await page.getByRole("option", { name: en.appr_reason_skip }).click();
+  await expect(detail.getByRole("combobox", { name: en.appr_reason_label })).toHaveCount(0);
+  await expect(statusOf(page, en.appr_done_rejected)).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+// A second signed-in browser of the same owner, as the project makes it (own client address: the login rate limit counts per address).
+async function secondClient(browser: Browser) {
+  const context = await browser.newContext({
+    baseURL: E2E_BASE_URL,
+    ...(project() === "mobile"
+      ? { viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true }
+      : { viewport: { width: 1280, height: 800 } }),
+  });
+  const page = await context.newPage();
+  await startSession(context, page, org().owner);
+  return { context, page };
+}
+
+const editDialog = (page: Page) => page.getByRole("dialog", { name: en.appr_edit_title });
+// While the dialog asks to discard, its name is the question.
+const discardDialog = (page: Page) => page.getByRole("dialog", { name: en.appr_edit_discard_title });
+const subjectBox = (page: Page) => editDialog(page).getByRole("textbox", { name: en.appr_subject, exact: true });
+const bodyBox = (page: Page) => editDialog(page).getByRole("textbox", { name: en.appr_edit_body, exact: true });
+const saveButton = (page: Page) => editDialog(page).getByRole("button", { name: en.save, exact: true });
+const savedText = (version: number) => en.appr_edit_saved.replace("{n}", `${version}`);
+
+async function openEditor(page: Page, id: string) {
+  await page.goto(`/approvals?id=${id}`);
+  await detailOf(page).getByRole("button", { name: en.appr_edit }).click();
+  await expect(editDialog(page)).toBeVisible();
+}
+
+test("S13-T4: a second browser that edits an old version gets the changed text and the button to the new version", async ({
+  browser,
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  const second = await secondClient(browser);
+  try {
+    // Both browsers show version 1 of the send.
+    await page.goto(`/approvals?id=${org().waitingSendId}`);
+    await second.page.goto(`/approvals?id=${org().waitingSendId}`);
+    await expect(detailOf(second.page)).toContainText(E2E_APPROVALS.waiting.subject);
+
+    await detailOf(page).getByRole("button", { name: en.appr_edit }).click();
+    await subjectBox(page).fill("Budget first");
+    await saveButton(page).click();
+    await expect(page.getByText(savedText(2))).toBeVisible();
+
+    // The second browser still shows version 1: its save names the old id.
+    await detailOf(second.page).getByRole("button", { name: en.appr_edit }).click();
+    await subjectBox(second.page).fill("Budget second");
+    await saveButton(second.page).click();
+    await expect(editDialog(second.page).getByText(en.appr_edit_changed)).toBeVisible();
+    // The typed text stays in the dialog (the owner may copy it).
+    await expect(subjectBox(second.page)).toHaveValue("Budget second");
+    await editDialog(second.page).getByRole("button", { name: en.appr_edit_open_new }).click();
+    await expect(editDialog(second.page)).toHaveCount(0);
+    await expect(detailOf(second.page)).toContainText(en.appr_version.replace("{n}", "2"));
+    await expect(detailOf(second.page)).toContainText("Budget first");
+    // The new version is open and the focus is on the line of the result (not on the Edit button of the old item).
+    await expect(statusOf(second.page, en.appr_changed)).toBeFocused();
+    expect(errors).toEqual([]);
+  } finally {
+    await second.context.close();
+  }
+});
+
+test("S13-T5: another delegate with no text change makes a new version for that delegate", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  // The first send was replaced in the test before: its address shows the newest version.
+  await page.goto(`/approvals?id=${org().waitingSendId}`);
+  await expect(detailOf(page)).toContainText(en.appr_version.replace("{n}", "2"));
+  await detailOf(page).getByRole("button", { name: en.appr_edit }).click();
+  // With no change, Save is off.
+  await expect(saveButton(page)).toBeDisabled();
+  await editDialog(page).getByRole("combobox", { name: en.appr_edit_delegate }).click();
+  await page
+    .getByRole("option", { name: `${E2E_APPROVALS.held.delegateName} <${E2E_APPROVALS.held.delegateEmail}>` })
+    .click();
+  await expect(saveButton(page)).toBeEnabled();
+  await saveButton(page).click();
+  await expect(page.getByText(savedText(3))).toBeVisible();
+  await expect(detailOf(page).getByRole("heading", { level: 2 })).toContainText(
+    `${E2E_APPROVALS.held.delegateName} <${E2E_APPROVALS.held.delegateEmail}>`
+  );
+  expect(errors).toEqual([]);
+});
+
+test("S13-T8: the edit dialog and its discard question have no axe violation; the page has none after the save", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, org().owner);
+  await openEditor(page, org().waitingSendId);
+  await expect(subjectBox(page)).toBeFocused();
+  await expectNoA11yViolations(page);
+
+  // A typed change: closing asks first. Escape asks; "Keep editing" returns to Subject.
+  await subjectBox(page).fill("Budget axe");
+  await page.keyboard.press("Escape");
+  await expect(discardDialog(page)).toBeVisible();
+  await expectNoA11yViolations(page);
+  await discardDialog(page).getByRole("button", { name: en.appr_edit_keep }).click();
+  await expect(subjectBox(page)).toBeFocused();
+  await expect(subjectBox(page)).toHaveValue("Budget axe");
+
+  // An over-long body: the counter and the error state have no violation, Save is off.
+  await bodyBox(page).fill("x".repeat(3001));
+  await expect(saveButton(page)).toBeDisabled();
+  await expectNoA11yViolations(page);
+
+  // Discard closes the dialog and gives the focus back to the Edit button.
+  await bodyBox(page).fill("Short text");
+  await page.keyboard.press("Escape");
+  await discardDialog(page).getByRole("button", { name: en.appr_edit_discard, exact: true }).click();
+  await expect(editDialog(page)).toHaveCount(0);
+  await expect(detailOf(page).getByRole("button", { name: en.appr_edit })).toBeFocused();
+
+  // The page after a save (notice shown, new version open).
+  await detailOf(page).getByRole("button", { name: en.appr_edit }).click();
+  await subjectBox(page).fill("Budget axe saved");
+  await saveButton(page).click();
+  await expect(page.getByText(savedText(4))).toBeVisible();
+  await expect(detailOf(page)).toContainText("Budget axe saved");
+  await expectNoA11yViolations(page);
+});
+
+// Presses Tab until the element is focused (the other stops on the way are links and buttons of the page). Only the keyboard moves.
+async function tabTo(page: Page, target: Locator, max = 40) {
+  for (let step = 0; step < max; step += 1) {
+    await page.keyboard.press("Tab");
+    if ((await target.count()) > 0 && (await target.first().evaluate((el) => el === document.activeElement))) return;
+  }
+  await expect(target, `Tab did not reach the element in ${max} steps`).toBeFocused();
+}
+
+test("S13-T7: the keyboard alone opens a draft, edits it, saves and approves it", async ({ context, page }) => {
+  test.skip(project() === "mobile", "the keyboard path runs on the desktop project");
+  // The committer of the e2e server runs every 15 seconds (the mailbox copy of the new version).
+  test.setTimeout(120_000);
+  const errors = await startSession(context, page, org().owner);
+  await page.goto("/approvals");
+  const first = listOf(page).getByRole("link").first();
+  await expect(first).toBeVisible();
+
+  // From the page start: Tab reaches the first item (the newest version of the `waiting` send); Enter opens its detail.
+  await tabTo(page, first);
+  await page.keyboard.press("Enter");
+  const detail = detailOf(page);
+  await expect(detail.getByRole("button", { name: en.appr_edit })).toBeVisible();
+
+  // Tab reaches Edit; Enter opens the dialog with the focus in Subject.
+  await tabTo(page, detail.getByRole("button", { name: en.appr_edit }));
+  await page.keyboard.press("Enter");
+  await expect(editDialog(page)).toBeVisible();
+  await expect(subjectBox(page)).toBeFocused();
+
+  // Typing changes the subject. Escape asks to discard; "Keep editing" puts the focus back in Subject.
+  await page.keyboard.press("End");
+  await page.keyboard.type(" keyboard");
+  await expect(subjectBox(page)).toHaveValue(/ keyboard$/);
+  await page.keyboard.press("Escape");
+  const keep = discardDialog(page).getByRole("button", { name: en.appr_edit_keep });
+  await expect(keep).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(subjectBox(page)).toBeFocused();
+  await expect(subjectBox(page)).toHaveValue(/ keyboard$/);
+
+  // Tab reaches Save; Enter saves: the dialog closes and the focus is on the line of the result.
+  await tabTo(page, saveButton(page));
+  await page.keyboard.press("Enter");
+  await expect(editDialog(page)).toHaveCount(0);
+  await expect(statusOf(page, savedText(5))).toBeFocused();
+
+  // Tab reaches Approve; Enter approves. The Approve button is gone afterwards: the focus is on the line of the result.
+  const approve = detail.getByRole("button", { name: en.appr_approve });
+  await expect(approve).toBeVisible();
+  await expect(detail).toContainText("keyboard");
+  // Approve is off while the committer makes the mailbox copy of the new version; the page turns it on by itself.
+  await expect(approve).toBeEnabled({ timeout: 60_000 });
+  await tabTo(page, approve);
+  await page.keyboard.press("Enter");
+  const result = statusOf(page, /^Approved/);
+  await expect(result).toBeVisible();
+  await expect(result).toBeFocused();
+  await expectNoA11yViolations(page);
+  expect(errors).toEqual([]);
+});
+
+test("S13-N1: the draft poll does not close an open dialog when another browser replaces the version", async ({
+  browser,
+  context,
+  page,
+}) => {
+  test.skip(project() === "mobile", "the race runs on the desktop project");
+  test.setTimeout(90_000);
+  const errors = await startSession(context, page, org().owner);
+  const second = await secondClient(browser);
+  try {
+    await openEditor(page, org().raceSendId);
+    await subjectBox(page).fill("Race v2");
+    await saveButton(page).click();
+    await expect(page.getByText(savedText(2))).toBeVisible();
+    const version2 = new URL(page.url()).searchParams.get("id") ?? "";
+
+    // Version 2 has no mailbox copy yet, so the page polls it. The second browser opens it and types.
+    await second.page.goto(`/approvals?id=${version2}`);
+    await detailOf(second.page).getByRole("button", { name: en.appr_edit }).click();
+    await subjectBox(second.page).fill("Typed in the second browser");
+
+    // The first browser replaces version 2 by version 3.
+    await detailOf(page).getByRole("button", { name: en.appr_edit }).click();
+    await subjectBox(page).fill("Race v3");
+    await saveButton(page).click();
+    await expect(page.getByText(savedText(3))).toBeVisible();
+
+    // Longer than one poll step (5 s): the dialog stays open with the typed text, and the save answers `changed`.
+    await second.page.waitForTimeout(7_000);
+    await expect(editDialog(second.page)).toHaveCount(1);
+    await expect(subjectBox(second.page)).toHaveValue("Typed in the second browser");
+    await saveButton(second.page).click();
+    await expect(editDialog(second.page).getByText(en.appr_edit_changed)).toBeVisible();
+    await expect(subjectBox(second.page)).toHaveValue("Typed in the second browser");
+    expect(errors).toEqual([]);
+  } finally {
+    await second.context.close();
+  }
+});
+
+test("S13-TG2: a send closed while the dialog is open closes it and the focus is on the result line", async ({
+  browser,
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  const second = await secondClient(browser);
+  try {
+    await openEditor(page, org().closedSendId);
+    await subjectBox(page).fill("Closed case typed");
+    // The second browser rejects the send.
+    await second.page.goto(`/approvals?id=${org().closedSendId}`);
+    await detailOf(second.page).getByRole("button", { name: en.appr_reject }).click();
+    await expect(statusOf(second.page, en.appr_done_rejected)).toBeVisible();
+
+    await saveButton(page).click();
+    await expect(editDialog(page)).toHaveCount(0);
+    await expect(statusOf(page, en.appr_closed_rejected)).toBeVisible();
+    await expect(statusOf(page, en.appr_closed_rejected)).toBeFocused();
+    expect(errors).toEqual([]);
+  } finally {
+    await second.context.close();
+  }
+});
+
+test("S13-T3: edit the subject and the body, see version 2, approve it and see it sent", async ({ context, page }) => {
   // The committer of the e2e server runs every 15 seconds and sends through the GreenMail of the dev stack.
   test.setTimeout(120_000);
   const errors = await startSession(context, page, org().owner);
-  await page.goto(`/approvals?id=${org().waitingSendId}`);
+  await openEditor(page, org().editSendId);
+  // The text of the draft and the note about the quote and the editing place.
+  await expect(editDialog(page)).toContainText(en.appr_edit_hint);
+  await expect(editDialog(page)).toContainText(en.appr_edit_quote_note);
+  // The subject of a delegation starts with "Fwd: " (the forwarded mail).
+  await expect(subjectBox(page)).toHaveValue(new RegExp(`${E2E_APPROVALS.edit.subject}$`));
+  await subjectBox(page).fill("Budget 2027");
+  await bodyBox(page).fill("Hello Anna, please send the report.");
+  await saveButton(page).click();
+  await expect(page.getByText(savedText(2))).toBeVisible();
   const detail = detailOf(page);
-  await expect(page.getByRole("link", { name: badgeName(1) })).toBeVisible();
+  await expect(detail).toContainText(en.appr_version.replace("{n}", "2"));
+  await expect(detail).toContainText("Budget 2027");
+  await expect(detail).toContainText("Hello Anna, please send the report.");
+  // A new version is a new request: the old one is not in the list any more (a reminder, the edit and the first send remain or not).
+  expect(new URL(page.url()).searchParams.get("id")).not.toBe(org().editSendId);
+
+  // The new version has no copy in the mailbox yet: Approve is off until the committer made it, and the page finds that out by itself
+  // (no reload here).
+  await expect(detail.getByRole("button", { name: en.appr_approve })).toBeEnabled({ timeout: 60_000 });
   await detail.getByRole("button", { name: en.appr_approve }).click();
   await expect(page.getByText(en.appr_done_sending)).toBeVisible();
-  await expect(page.getByRole("link", { name: en.nav_approvals, exact: true })).toBeVisible();
+  await expect(statusOf(page, en.appr_done_sending)).toBeFocused();
+  await expectNoA11yViolations(page);
 
   await expect(async () => {
     await page.reload();
     await expect(detail).toContainText(en.appr_state_sent, { timeout: 3_000 });
   }).toPass({ timeout: 90_000, intervals: [3_000] });
-  await page.goto("/approvals");
-  await expect(page.getByText(en.appr_empty)).toBeVisible();
-  await expect(page.getByRole("link", { name: en.nav_approvals, exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });

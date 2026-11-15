@@ -1,7 +1,13 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { connectResultSchema, mailboxListSchema, mailboxViewSchema, type ScopeEnv } from "@ea/core";
+import {
+  connectResultSchema,
+  mailboxListSchema,
+  mailboxViewSchema,
+  removeMailboxResultSchema,
+  type ScopeEnv,
+} from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Hono } from "hono";
 
@@ -272,8 +278,13 @@ describe("mailbox routes", () => {
         as("owner", { method: "DELETE", body: { confirmAddress: ` ${address1.toUpperCase()} ` } })
       );
     const res = await remove();
-    expect(res.status).toBe(204);
-    expect(await res.text()).toBe("");
+    expect(res.status).toBe(200);
+    expect(removeMailboxResultSchema.parse(await res.json())).toEqual({
+      authMethod: "password",
+      oauthProvider: null,
+      revoked: null,
+      accessPage: null,
+    });
 
     const list = mailboxListSchema.parse(await (await app.request("/api/mailboxes", as("owner"))).json());
     expect(list.map((v) => v.id)).toEqual([m2]);

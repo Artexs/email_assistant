@@ -21,6 +21,13 @@ export const authErrorReasons = [
 ] as const;
 export type AuthErrorReason = (typeof authErrorReasons)[number];
 
+/**
+ * Where an owner withdraws the app's access after a Remove. `google`: the revoke call may have done it already.
+ * `microsoft_work`: My Apps of the tenant. `microsoft_personal`: the consent page of a personal account.
+ */
+export const removeAccessPages = ["google", "microsoft_work", "microsoft_personal"] as const;
+export type RemoveAccessPage = (typeof removeAccessPages)[number];
+
 export const mailOAuthProviderParamsSchema = z.object({ provider: z.enum(mailOAuthProviderKeys) });
 
 /** `mailboxId` is set for a Reconnect of an OAuth mailbox; left out it starts a new connect. */
@@ -43,3 +50,26 @@ export const mailOAuthOptionsSchema = z.object({
   ),
 });
 export type MailOAuthOptions = z.infer<typeof mailOAuthOptionsSchema>;
+
+/**
+ * The value of `?oauth=` on `/mailboxes` after the callback redirect (D11). The panel maps each code to a text.
+ * The server type `OAuthResultCode` (`mail/oauth/apply.ts`) must hold the same codes.
+ */
+export const mailOAuthResultCodes = [
+  "connected",
+  "reconnected",
+  "oauth_cancelled",
+  "oauth_state_invalid",
+  "oauth_state_expired",
+  "oauth_code_invalid",
+  "oauth_scope_missing",
+  "oauth_wrong_account",
+  "mailbox_exists",
+  "mailbox_limit",
+  "admin_consent_required",
+  "protocol_disabled",
+  "feature_off",
+  "not_configured",
+  "oauth_failed",
+] as const;
+export type MailOAuthResultCode = (typeof mailOAuthResultCodes)[number];

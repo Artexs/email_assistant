@@ -1,7 +1,15 @@
 # Dev overrides: publishes the db port and runs a local IMAP/SMTP test server.
 # Use with: docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml
+# Anchors do not cross files, so the `local` log block of deploy/compose.yaml is written out here.
+x-logging-local: &logging-local
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "5"
+
 services:
   db:
+    logging: *logging-local
     ports:
       - "127.0.0.1:5433:5432"
 
@@ -12,11 +20,7 @@ services:
 
   greenmail:
     image: greenmail/standalone:2.1.15
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: "5"
+    logging: *logging-local
     environment:
       GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false"
     ports:

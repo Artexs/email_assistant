@@ -36,3 +36,7 @@ Steps 5–10 hold; the record is committed; the final message names each check w
 ## Out of scope
 
 SLO alerts and release scripts (E8b). Growing the disk (PD-055).
+
+## Carry-over from stage 16 review
+
+Read `review-16.md` (TG3): list the real paths with mail data that the canary does not drive as a standing limit of the logs capability page, or drive some of them (Telegram inbound updates, delegation chaser, Sent sync, permanent send failures, OAuth refresh errors, the HTTP error handler).

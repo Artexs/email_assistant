@@ -79,5 +79,9 @@ export function e2eEnv(): Record<string, string> {
     TELEGRAM_API_ROOT: E2E_TELEGRAM_URL,
     HEARTBEAT_URL: "",
     LOG_LEVEL: "info",
+    // F117 stage 16: fake client keys turn the Microsoft sign-in on as "configured". A new connect also needs the flag
+    // `mail_oauth_microsoft`, which only `mailbox-oauth.spec.ts` turns on. No request goes to Microsoft.
+    MAIL_OAUTH_MICROSOFT_CLIENT_ID: "e2e-fake-client-id",
+    MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "e2e-fake-client-secret",
   };
 }

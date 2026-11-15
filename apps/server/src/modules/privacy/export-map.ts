@@ -84,7 +84,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "answered_at",
     "answered_notified_at",
     "created_at",
-    "updated_at"
+    "updated_at",
+    "source"
   ),
   digests: byOrg("id", "org_id", "user_id", "slot_key", "period_start", "period_end", "sent_at", "created_at"),
   dsr_tombstones: secret("hashes of erased mail keys, of no use to the controller"),
@@ -190,7 +191,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "tool_switches",
     "category_policy",
     "urgency_profile",
-    "updated_at"
+    "updated_at",
+    "loop_wait_days"
   ),
   mailboxes: byOrg(
     "id",
@@ -215,6 +217,46 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "auth_reason"
   ),
   memberships: byOrg("org_id", "user_id", "role", "digest_times", "created_at", "break_glass"),
+  // What the user waits for, promised or handed on: the text of the mail-derived copy and the state a person understands.
+  // The ids and the counters of the chaser stay out (they mean nothing without the database). `org_id` goes out like in
+  // every table: the export test checks that no row of another organization is in the file.
+  open_loops: byOrgExcluding(
+    {
+      id: "an internal id",
+      mailbox_id: "an internal id",
+      sent_email_id: "an internal id",
+      last_sent_email_id: "an internal id",
+      thread_key: "a Message-ID used for matching",
+      message_id: "a Message-ID used for matching",
+      references_ids: "Message-IDs used for matching",
+      delegate_id: "an internal id",
+      language: "the language of the follow-up draft",
+      due_source: "internal: whether the date was stated or defaulted",
+      wait_from_at: "internal state of the chaser",
+      later_count: "internal state of the chaser",
+      follow_ups_sent: "internal state of the chaser",
+      last_follow_up_at: "internal state of the chaser",
+      surfaced_at: "internal state of the brief",
+      auto_reply_at: "internal state of the matcher",
+      stale_notified_at: "internal state of the chaser",
+      closed_by_email_id: "an internal id",
+      closed_by_user_id: "an internal id",
+      texts_cleared_at: "internal state of the retention clear",
+      updated_at: "internal state",
+    },
+    "org_id",
+    "kind",
+    "status",
+    "close_reason",
+    "subject",
+    "counterpart",
+    "to_addresses",
+    "cc_addresses",
+    "text",
+    "due_at",
+    "created_at",
+    "closed_at"
+  ),
   ops_alerts: secret("host-wide alert state, no organization"),
   org_features: byOrg("org_id", "flag", "enabled", "set_by", "set_at"),
   organizations: byOrg(
@@ -257,6 +299,23 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
   ),
   schema_migrations: { export: false, reason: "the migration ledger, not data of the organization" },
   sender_rules: byOrg("id", "org_id", "mailbox_id", "pattern", "kind", "created_at"),
+  // The result of the analysis of a sent mail: codes only, no text.
+  sent_analyses: byOrgExcluding(
+    {
+      sent_email_id: "an internal id",
+      mailbox_id: "an internal id",
+      attempts: "internal state of the analysis job",
+      next_attempt_at: "internal state of the analysis job",
+      created_at: "internal state",
+      updated_at: "internal state",
+    },
+    "org_id",
+    "status",
+    "skip_reason",
+    "expects_reply",
+    "has_promise",
+    "prompt_version"
+  ),
   sent_emails: byOrg(
     "id",
     "org_id",

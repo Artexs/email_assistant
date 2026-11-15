@@ -175,8 +175,10 @@ describe("ApprovalActions", () => {
     draftReady: true,
     busy: false,
     ownerOnly: false,
+    canEdit: false,
     onApprove: () => undefined,
     onReject: () => undefined,
+    onEdit: () => undefined,
   };
   const buttons = (html: string) => [...html.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((match) => match[1]);
 
@@ -189,6 +191,22 @@ describe("ApprovalActions", () => {
     ).toEqual(["Reject"]);
     expect(
       buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={{ approve: false, reject: false }} />))
+    ).toEqual([]);
+  });
+
+  test("Edit shows only when the page allows it, after Reject, and is off while a request runs", () => {
+    const decisions = { approve: true, reject: true };
+    expect(buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={decisions} canEdit />))).toEqual([
+      "Approve",
+      "Reject",
+      "Edit",
+    ]);
+    expect(buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={decisions} />))).not.toContain("Edit");
+    const busy = renderToStaticMarkup(<ApprovalActions {...props} busy decisions={decisions} canEdit />);
+    expect(busy.match(/disabled=""/g)).toHaveLength(3);
+    // A member sees no Edit even when the flag is set by mistake: the owner note replaces every button.
+    expect(
+      buttons(renderToStaticMarkup(<ApprovalActions {...props} ownerOnly decisions={decisions} canEdit />))
     ).toEqual([]);
   });
 

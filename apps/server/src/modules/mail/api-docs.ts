@@ -5,6 +5,7 @@ import {
   mailboxPasswordBodySchema,
   mailboxViewSchema,
   removeMailboxBodySchema,
+  removeMailboxResultSchema,
   z,
 } from "@ea/core";
 
@@ -65,11 +66,12 @@ export const mailDocs = {
   }),
   deleteMailbox: apiDoc({
     operationId: "deleteMailbox",
-    summary: "Remove a mailbox and its data; the body repeats the address (owner only).",
+    summary:
+      "Remove a mailbox and its data; the body repeats the address (owner only). An OAuth mailbox is revoked at Google; the answer says where to withdraw the access.",
     tags,
     params,
     body: removeMailboxBodySchema,
-    ok: { status: 204 },
+    ok: { status: 200, schema: removeMailboxResultSchema },
     errors: [ownerOnly, notFound, { status: 400, codes: ["confirm_mismatch"] }],
   }),
 };

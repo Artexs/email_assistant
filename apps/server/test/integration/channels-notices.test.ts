@@ -1453,6 +1453,24 @@ describe("send result notices", () => {
     });
   });
 
+  test('(1d) a copy that the provider saves (a Graph send) reads as found: no "No copy" line', async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      const graph = await ended(trx, o, {
+        status: "applied",
+        appliedAt: at(-20 * MINUTE),
+        providerResult: { sent_copy: "provider" },
+      });
+
+      await run(trx);
+
+      const text = (await resultText(trx, o, graph.sendId)).text;
+      expect(text).toContain(`✅ Sent to Anna Nowak ${graph.to} · Fwd: Quarterly offer`);
+      expect(text).not.toContain("No copy in Sent");
+    });
+  });
+
   test("(1c) the draft line follows the reverse row", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);

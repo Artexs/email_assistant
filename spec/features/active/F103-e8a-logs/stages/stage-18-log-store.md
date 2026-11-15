@@ -94,3 +94,12 @@ Three steps. No Docker daemon on the worker machine: checks use `docker compose 
 **Done when.** `capability-map.test.ts` and `prettier --check` pass; the Proof (`/tmp/f103-s18`) prints `PROOF_OK`.
 
 **Out of scope.** The VPS (19). Alerts from the store (E8b).
+
+## Carry-over from stage 17 review
+
+- (a) `apps/server/src/modules/testmail/remote.ts:38` still builds `docker compose … run --rm -T -v … server bun …`. Change `server` to `cli` there (the one-off command must not run in `server`: its output would reach the store). Adapt the test that pins the line. `check-logging.sh` does not scan `.ts` files.
+- (b) Runbook for the deploy batch (stage 19 and the coordinator):
+  - The first `up -d --wait db` on the VPS recreates `db` (its log driver changed). The named volume `db-data` stays.
+  - The server pool has no `pool.on("error")` handler, so one server restart is possible when `db` restarts.
+  - Take a backup first. Run `$C stop server` before the `db` recreate, then `up -d --wait`.
+  - The next `up` of the shared dev stack recreates `db` and `greenmail`.
