@@ -52,7 +52,7 @@ async function overdue(
   const id = await db.transaction().execute((trx) =>
     insertDelegation(trx, ctx, {
       mailboxId,
-      emailId: pair.email_id,
+      emailId: pair.email_id as string,
       delegateId,
       draftActionId: draftId,
       sendActionId: sendId,
