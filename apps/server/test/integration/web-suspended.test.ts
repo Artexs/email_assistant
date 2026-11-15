@@ -49,6 +49,7 @@ const WRITE_ROUTES = [
   "POST /api/delegates",
   "POST /api/delegations/:id/cancel",
   "POST /api/delegations/:id/done",
+  "POST /api/delegations/:id/remind",
   "POST /api/feedback",
   "POST /api/mailboxes",
   "POST /api/mailboxes/:id/password",

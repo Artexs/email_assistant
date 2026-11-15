@@ -89,6 +89,8 @@ export const delegationDoneAnswerSchema = z.strictObject({ status: z.literal("do
 export type DelegationDoneAnswer = z.infer<typeof delegationDoneAnswerSchema>;
 export const delegationCancelAnswerSchema = z.strictObject({ status: z.literal("cancelled") });
 export type DelegationCancelAnswer = z.infer<typeof delegationCancelAnswerSchema>;
+export const delegationRemindAnswerSchema = z.strictObject({ status: z.literal("planned"), sendId: z.uuid() });
+export type DelegationRemindAnswer = z.infer<typeof delegationRemindAnswerSchema>;
 
-// The body of both POST routes is empty (`{}`); a strict object refuses any field.
+// The body of all three POST routes is empty (`{}`); a strict object refuses any field.
 export const delegationActionBodySchema = z.strictObject({});
