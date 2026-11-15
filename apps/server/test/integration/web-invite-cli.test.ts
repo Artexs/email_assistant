@@ -188,12 +188,14 @@ describe("web:invite CLI", () => {
   });
 
   test("with the sender on, the link goes by mail and not to stdout", async () => {
-    const { email, orgId } = await createOwner();
+    const { email, orgId, userId } = await createOwner();
 
     const result = await runInvite(["--org-id", orgId], mailEnv);
 
     expect(result.code).toBe(0);
     expectNoLeak(result, email, false);
+    expect(result.stdout).toContain(`invite mail sent to user ${userId}`);
+    expect(result.stderr).not.toContain("invite mail sent");
     expect(await inboxSubjects(email)).toHaveLength(1);
   });
 

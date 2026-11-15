@@ -31,6 +31,7 @@ import {
   getUserAuthProfile,
   isBreakGlassOwner,
   isOrgSuspended,
+  isPasswordSignInRefused,
   listMembershipsOfUser,
   resolveSsoMember,
   setUserTerms,
@@ -376,6 +377,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     resetLinkTtlSeconds: 3_600,
     lockout,
     keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId),
+    passwordSignInRefused: (userId) => isPasswordSignInRefused(db, userId),
     resolveSsoMember: (identity) => resolveSsoMember(db, identity),
     onSsoEvent: auditSsoEvent(db),
     ...(config.AUTH_PWNED_CHECK === "on"

@@ -1,12 +1,12 @@
 import { addDelegate, listDelegates, setDelegateState } from "../modules/delegation";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import { parseDelegatesArgs, usage } from "./delegates-args";
 
-const log = createLog("delegates");
+const cli = createCliOutput("delegates");
 
 const ACTOR = "cli";
 
@@ -18,7 +18,7 @@ function out(line: string): void {
 async function main(): Promise<number> {
   const command = parseDelegatesArgs(process.argv.slice(2));
   if (!command) {
-    log.error(usage);
+    cli.fail(usage);
     return 1;
   }
 
@@ -83,7 +83,7 @@ async function main(): Promise<number> {
       }
     }
   } catch (error) {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -93,6 +93,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

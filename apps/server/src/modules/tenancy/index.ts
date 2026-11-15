@@ -10,6 +10,7 @@ export {
   insertUser,
   isBreakGlassOwner,
   isOrgSuspended,
+  isPasswordSignInRefused,
   listBreakGlassOrgIdsOfUser,
   listMemberships,
   listMembershipsOfUser,
