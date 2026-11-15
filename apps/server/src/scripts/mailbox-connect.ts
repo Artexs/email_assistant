@@ -104,7 +104,11 @@ async function main(): Promise<number> {
       { ...input, password }
     );
     out.print(`connected mailbox ${mailboxId}`);
-    if (sentSync) out.print("sent mail: tracked, read only");
+    if (sentSync) {
+      out.print(
+        `sent mail: tracked, read only (turn off: bun run mailbox:settings sent-sync --org-id ${orgId} --mailbox-id ${mailboxId} --value off)`
+      );
+    }
     for (const [key, label] of CAPABILITY_LABELS) {
       out.print(`${label}=${info.capabilities[key] ? "yes" : "no"}`);
     }

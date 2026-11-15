@@ -6,6 +6,7 @@ import {
   urgencyProfileSchema,
   type BarCategory,
   type MailboxMode,
+  type SentSyncView,
   type ToolSwitches,
   type UrgencyProfile,
 } from "@ea/core";
@@ -20,6 +21,7 @@ export const usage = [
   "  bun run mailbox:settings auto   --org-id <uuid> --mailbox-id <uuid> --category urgent|needs_reply|info|notification|spam --value on|off [--threshold 0.nn] [--force]",
   "  bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name move|mark_read|flag|move_unsure|create_draft --value on|off",
   "  bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off",
+  "  bun run mailbox:settings sent-sync --org-id <uuid> --mailbox-id <uuid> --value on|off   (consent to read Sent: turn it on only on the owner's instruction)",
   "  bun run mailbox:settings urgency --org-id <uuid> --mailbox-id <uuid> (--file <path.json> | --clear)",
   "  bun run mailbox:settings expire-ready --org-id <uuid> --mailbox-id <uuid>",
   "  Exit 0: ok. Exit 1: usage error or failure. Exit 2: refused by the go/no-go gate.",
@@ -45,6 +47,7 @@ export type SettingsCommand =
       key: "offers" | "social" | "bills" | "junk";
       value: boolean;
     }
+  | { kind: "sent-sync"; orgId: string; mailboxId: string; value: boolean }
   | { kind: "urgency"; orgId: string; mailboxId: string; source: { file: string } | { clear: true } };
 
 const onOff = z.enum(["on", "off"]).transform((value) => value === "on");
@@ -89,6 +92,7 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
       auto: ["category", "value", "threshold", "force"],
       switch: ["name", "value"],
       "sync-folder": ["key", "value"],
+      "sent-sync": ["value"],
       urgency: ["file", "clear"],
     };
     const own = allowed[kind ?? ""];
@@ -140,6 +144,10 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
           .parse({ ...ids, key: values.key, value: values.value });
         return { kind, ...parsed };
       }
+      case "sent-sync": {
+        const parsed = z.object({ ...common, value: onOff }).parse({ ...ids, value: values.value });
+        return { kind, ...parsed };
+      }
       default: {
         const parsed = z
           .object({ ...common, name: z.enum(toolSwitchNames), value: onOff })
@@ -156,6 +164,20 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
 export function describeSyncFolder(row: SyncFolderRow): string {
   const cursor = row.uidvalidity === null || row.last_uid === null ? "none" : "set";
   return `sync folder ${row.key}: ${row.enabled ? "on" : "off"}, role ${row.role}, path ${row.path}, cursor ${cursor}`;
+}
+
+// The `show` line of "Track my sent mail". An operator CLI on the server: the folder path may show here, never in a server log.
+export function describeSentSync(view: SentSyncView | null): string {
+  if (view === null) return "sent: off (flag)";
+  const parts = [
+    view.enabled ? "on" : "off",
+    `folder ${view.folder ?? "none"}`,
+    `stored ${view.storedCount}`,
+    `last ${view.lastSentAt ?? "none"}`,
+    view.firstPassDone ? "first pass done" : "first pass pending",
+    `error ${view.errorCode ?? "none"}`,
+  ];
+  return `sent: ${parts.join(", ")}${view.flagOn ? "" : ", paused (flag off)"}`;
 }
 
 export type UrgencyFileResult =

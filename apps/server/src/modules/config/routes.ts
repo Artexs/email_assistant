@@ -4,6 +4,7 @@ import {
   modeBodySchema,
   ruleBodySchema,
   rulesQuerySchema,
+  sentSyncBodySchema,
   switchableSyncFolderKeys,
   switchBodySchema,
   syncFolderBodySchema,
@@ -43,6 +44,11 @@ export interface SettingsRouteDeps extends SettingsViewDeps {
     mailboxId: string,
     input: { key: SwitchableSyncFolderKey; enabled: boolean; actor: string; now: Date }
   ): Promise<"changed" | "same" | "not_found">;
+  setSentSync(
+    ctx: TenantContext,
+    mailboxId: string,
+    input: { enabled: boolean; actor: string; now: Date }
+  ): Promise<"changed" | "same" | "not_found" | "flag_off">;
 }
 
 type Ctx = Context<ApiEnv>;
@@ -162,6 +168,22 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
         now: deps.now(),
       });
       if (result === "not_found") return notFound(c);
+      return respond(c, id, { changed: result === "changed", expired: 0 });
+    });
+  });
+
+  // A hidden feature (flag off) looks absent: `flag_off` answers 404 like an unknown mailbox.
+  app.patch("/settings/:mailboxId/sent-sync", requireOwner, settingsDocs.patchSettingsSentSync, async (c) => {
+    const id = mailboxIdOf(c);
+    if (!id || !(await ensureSettings(c, id))) return notFound(c);
+    const body = await parseBody(c, sentSyncBodySchema);
+    return guarded(c, async () => {
+      const result = await deps.setSentSync(c.get("ctx"), id, {
+        enabled: body.enabled,
+        actor: c.get("session").userId,
+        now: deps.now(),
+      });
+      if (result === "not_found" || result === "flag_off") return notFound(c);
       return respond(c, id, { changed: result === "changed", expired: 0 });
     });
   });
