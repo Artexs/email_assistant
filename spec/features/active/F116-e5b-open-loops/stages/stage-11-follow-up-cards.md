@@ -57,3 +57,7 @@ Stage 10 opened the committer side for a loop action: the claim and its counts, 
 ## Carry-over from stage 10 review
 
 - N1: `onSentOff` clears the loop To and Cc, so an approved follow-up claimed before the switch-off ends `failed / bad_payload`, and after SMTP + crash + switch-off `failed / outcome_unknown` (`follow_ups_sent` 0, no second mail): the failure notices handle both. N6: `heldReason` of a loop send says scope (`getSend` is mail-only). N7: `detectForOrg` has no catch per detector: add one with the follow-up cards, so a `NoticeViewError` cannot stop the later detectors of the org (review-10.md).
+
+## Carry-over from stage 17 review
+
+- N4 (count only consent rows newer than the user's last chat.unlinked row), N5 (one choke point loopConsentOf(db, ctx, userIds) with a border test; this stage calls it for the follow-up approval card and the send_result notice: a not-covered owner gets the loop_consent line), N6 (keep open_loops off until stage 22 lands) (review-17.md).

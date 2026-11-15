@@ -15,9 +15,9 @@ The coordinator asks the owner for these steps and waits (outside publication ne
 ## Step 2 — Coordinator checks
 
 - **Goal:** the live site is the built site, with its rules.
-- **Checks** (save output under `/tmp/f112-s14/`):
+- **Checks** (save output under `/tmp/f112-s16/`):
   - C1: the workflow run is green: `gh run list --workflow docs-deploy.yml --limit 1` shows `completed success`; both jobs ran (not the skip path).
-  - C2: `curl -sS -o /tmp/f112-s14/index.html -w '%{http_code}' https://artexs.github.io/email_assistant/` prints `200`; the same for `…/pl/`, `…/start/`, `…/operate/install-and-run/`, `…/changelog/`.
+  - C2: `curl -sS -o /tmp/f112-s16/index.html -w '%{http_code}' https://artexs.github.io/email_assistant/` prints `200`; the same for `…/pl/`, `…/start/`, `…/operate/install-and-run/`, `…/operate/release-checklist/`, `…/changelog/`.
   - C3: `index.html` holds one `<meta http-equiv="content-security-policy"` with `default-src 'self'` and no `'unsafe-inline'` in `script-src`.
   - C4: after `bun run docs:build` at the deployed commit: `DOCS_TEST_URL=https://artexs.github.io/email_assistant/ CHROMIUM_PATH=/usr/bin/chromium bun run docs:test` passes (stage 06 T1–T5 on the live site; T5 needs Pages to serve the site's `404.html`).
   - C5: `curl -sS https://artexs.github.io/email_assistant/shots/onboarding-en-desktop.png -o /dev/null -w '%{http_code}'` prints `200` (stage 12 shots in the artifact).
@@ -28,5 +28,5 @@ The coordinator asks the owner for these steps and waits (outside publication ne
 
 - ADR 0030: add the date of the first publication to its "Built" note (a docs commit by the coordinator or the next worker).
 - The panel flag `docs_links` stays off. The owner turns it on per organization when wanted (`bun run org:flag`); not part of this stage.
-- Rollback: run the workflow by hand on the last good tag `vX` (a manual run deploys any ref, stage 05 T6b), or push a fixed release tag. To take the site down, the owner sets Pages to "None" (Settings → Pages). Never a force push.
+- Rollback: run the workflow by hand on the last good tag `vX` (a manual run deploys any ref, stage 05 T6b), or push a fixed release tag. Only a tag that holds `docs-deploy.yml` and the docs app can be a target: `v0.1.0` (F114, before stage 05) cannot. Until the first such tag exists, the rollback is a fix on `master` and a manual run on `master`, or Pages "None". To take the site down, the owner sets Pages to "None" (Settings → Pages). Never a force push.
 - Risk to other work: none on the VPS; the deploy touches only GitHub Pages.

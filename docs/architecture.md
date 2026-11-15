@@ -543,19 +543,20 @@ Tenancy:
 
 - **Scheduler** (in the server process, `croner`, one tick never overlaps the next). Every job of `apps/server/src/main.ts`; the detail of a job is on its page:
 
-  | Job                  | Schedule                                                                      | Page                                                        |
-  | -------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------- |
-  | `mail.sync`          | `*/N * * * *` (every `MAIL_SYNC_EVERY_MIN` min; default 2)                    | [sync.md](capabilities/sync.md)                             |
-  | `platform.heartbeat` | `*/5 * * * *` (every 5 min)                                                   | Liveness, below                                             |
-  | `channels.operator`  | `0 13 * * * *` (hourly at minute 13)                                          | [digest-and-notices.md](capabilities/digest-and-notices.md) |
-  | `triage.worker`      | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)        | [triage.md](capabilities/triage.md)                         |
-  | `actions.committer`  | `*/15 * * * * *` (every 15 s)                                                 | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
-  | `actions.expiry`     | `0 7 * * * *` (hourly at minute 7)                                            | [drafts-and-send.md](capabilities/drafts-and-send.md)       |
-  | `delegation.chaser`  | `20 */15 * * * *` (every 15 min; acts from 07:30 local time)                  | [delegation.md](capabilities/delegation.md)                 |
-  | `triage.returned`    | `*/15 * * * * *` (every 15 s)                                                 | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
-  | `platform.retention` | `0 40 2 * * *` (daily at 02:40; the backup runs at 03:30, from the host cron) | [retention.md](capabilities/retention.md)                   |
-  | `channels.notifier`  | `*/15 * * * * *` (every 15 s; only when Telegram is on)                       | [digest-and-notices.md](capabilities/digest-and-notices.md) |
-  | `channels.digest`    | `5 * * * * *` (every minute at second 5; only when Telegram is on)            | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | Job                  | Schedule                                                                            | Page                                                        |
+  | -------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+  | `mail.sync`          | `*/N * * * *` (every `MAIL_SYNC_EVERY_MIN` min; default 2)                          | [sync.md](capabilities/sync.md)                             |
+  | `platform.heartbeat` | `*/5 * * * *` (every 5 min)                                                         | Liveness, below                                             |
+  | `channels.operator`  | `0 13 * * * *` (hourly at minute 13)                                                | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | `triage.worker`      | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)              | [triage.md](capabilities/triage.md)                         |
+  | `actions.committer`  | `*/15 * * * * *` (every 15 s)                                                       | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
+  | `actions.expiry`     | `0 7 * * * *` (hourly at minute 7)                                                  | [drafts-and-send.md](capabilities/drafts-and-send.md)       |
+  | `delegation.chaser`  | `20 */15 * * * *` (every 15 min; acts from 07:30 local time)                        | [delegation.md](capabilities/delegation.md)                 |
+  | `loops.analyze`      | `35 * * * * *` (every minute at second 35; only when the triage scope is not `off`) | [sent-mail.md](capabilities/sent-mail.md) rule 19           |
+  | `triage.returned`    | `*/15 * * * * *` (every 15 s)                                                       | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
+  | `platform.retention` | `0 40 2 * * *` (daily at 02:40; the backup runs at 03:30, from the host cron)       | [retention.md](capabilities/retention.md)                   |
+  | `channels.notifier`  | `*/15 * * * * *` (every 15 s; only when Telegram is on)                             | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | `channels.digest`    | `5 * * * * *` (every minute at second 5; only when Telegram is on)                  | [digest-and-notices.md](capabilities/digest-and-notices.md) |
 
 - Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).

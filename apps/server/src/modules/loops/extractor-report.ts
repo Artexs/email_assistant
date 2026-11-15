@@ -155,7 +155,7 @@ export function buildExtractorGateFile(scores: ExtractorScores, id: GateIdentity
 const ENDPOINT_SUFFIX = /-(eu|own)\.json$/;
 
 // The files of the gate folder that prove the extractor prompt version: a standard endpoint, the bars as in code, every
-// number at its bar (checked again from the numbers, not only the `passed` flag), and the flag set. Every file of the
+// number at its bar (checked again from the numbers, not only the `passed` flag), no error case, and the flag set. Every file of the
 // prompt version is parsed, so a broken file fails the check.
 export function extractorGateEvidence(dir: string, promptVersion: string): string[] {
   const files = readdirSync(dir).filter(
@@ -166,6 +166,8 @@ export function extractorGateEvidence(dir: string, promptVersion: string): strin
     const gate = extractorGateFileSchema.parse(JSON.parse(readFileSync(join(dir, file), "utf8")));
     if (ENDPOINT_SUFFIX.test(file) || gate.endpoint !== "standard") continue;
     if (gate.promptVersion !== promptVersion || !gate.passed) continue;
+    // An error case counts as an empty answer: a run with errors proves less than its numbers say.
+    if (gate.errors > 0) continue;
     const { numbers: n } = gate;
     const atBars =
       (n.replyRecallLower ?? 0) >= EXTRACTOR_BARS.replyRecallLower &&
