@@ -9,7 +9,7 @@ import { as } from "./web-helpers";
 
 // F102 ticket, approvals write API: one name for one closed send, races between the three writes, and the limit of a send that nobody was told about.
 const db = testDb();
-const { cleanup, setup, addSend, send, auditOf, sendCount } = approvalKit(db);
+const { cleanup, setup, addSend, send, auditOf, editRows, sendCount } = approvalKit(db);
 
 afterEach(cleanup);
 
@@ -120,6 +120,8 @@ describe("a send that no owner was told about (no notified_at)", () => {
     const id = await addSend(s, { notifiedAt: null, createdAt: new Date(NOW.getTime() - 7 * 24 * HOUR - HOUR) });
     expect(await call(s, id, "approve")).toEqual({ status: 409, body: { error: "closed", state: "expired" } });
     expect(await send(id)).toMatchObject({ status: "expired", status_reason: "not_notified", approved_by: null });
+    // The same expiry path as the 48 h one: each owner's card (the seed gives both) gets the expired edit.
+    expect((await editRows(s.org.orgId)).map((row) => row.dedup_key.split(":").pop())).toEqual(["expired", "expired"]);
   });
 
   test("younger than 7 days: the panel approves it (no 48 h limit without a notice)", async () => {
