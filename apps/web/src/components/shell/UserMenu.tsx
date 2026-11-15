@@ -19,7 +19,7 @@ export function UserMenu({ email, onLogOut }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="w-full justify-between" aria-label={t("user_menu")}>
+        <Button variant="ghost" className="w-full justify-between" aria-label={t("user_menu_named", { email })}>
           <span className="truncate" title={email}>
             {email}
           </span>

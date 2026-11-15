@@ -41,7 +41,13 @@ const orgIds: string[] = [];
 const userIds: string[] = [];
 
 let refusedThrows = false;
+// The answers of the next checks, in order; after that the real check answers. `false` lets a sign-in pass the before
+// hook of the endpoint, so the test reaches the check of `databaseHooks.session.create.before` (the window of the switch).
+const refusedScript: (boolean | "throw")[] = [];
 const passwordSignInRefused = async (userId: string): Promise<boolean> => {
+  const next = refusedScript.shift();
+  if (next === "throw") throw new Error("refused_boom");
+  if (next !== undefined) return next;
   if (refusedThrows) throw new Error("refused_boom");
   return isPasswordSignInRefused(db, userId);
 };
@@ -83,6 +89,7 @@ let lastResetUrl = "";
 afterEach(async () => {
   setLogLevel("info");
   refusedThrows = false;
+  refusedScript.length = 0;
   configureFeatures({ off: [] });
   resets.length = 0;
   lockoutMails.length = 0;
@@ -510,6 +517,73 @@ describe("SSO required refuses passwords", () => {
     expect(result.json).toEqual(WRONG_ANSWER);
     expect(result.setCookie).toEqual([]);
     expect(await sessionCount(olaf.id)).toBe(before);
+  });
+
+  test("18: the window of the switch: a sign-in that passed the before hook gets no session", async () => {
+    const a = await makeOrg("pia");
+    const ann = await makeMember("ann", a.domain, [a.orgId]);
+    await setRequired(a.orgId, true);
+    refusedScript.push(false); // the before hook of the sign-in sees "not refused" (the switch had not committed)
+    const from = captured.length;
+    const result = await signIn(ann.email);
+    // Better Auth answers a missing session of a password sign-in with 401.
+    expect(result.status).toBe(401);
+    expect(result.setCookie).toEqual([]);
+    expect(await sessionCount(ann.id)).toBe(0);
+    expect(refusedLines(from, "password_session_refused_sso", ann.id)).toHaveLength(1);
+  });
+
+  test("19: the window with TOTP: verify-totp makes no session for a member that the rule refuses now", async () => {
+    const a = await makeOrg("pia");
+    const pia = await makeMember("pia2", a.domain, [a.orgId]);
+    const secret = await enrol(pia.email);
+    const before = await sessionCount(pia.id);
+    await setRequired(a.orgId, true);
+    // The before hook and the session of the credential step pass; the challenge starts. The check at verify-totp is real.
+    refusedScript.push(false, false);
+    const client = new Client();
+    const first = await client.signIn(pia.email);
+    expect(first.json?.twoFactorRedirect).toBe(true);
+    const second = await client.call("POST", "/two-factor/verify-totp", { code: totpCode(secret) });
+    expect(second.status).toBe(500);
+    expect(client.jar.has("ea.session_token")).toBe(false);
+    expect(await sessionCount(pia.id)).toBe(before);
+  });
+
+  test("20: the session hook: refused member gets no session; a free member, the break-glass owner and an SSO sign-in do", async () => {
+    const a = await makeOrg("pia");
+    const b = await makeOrg("bob");
+    const ann = await makeMember("ann", a.domain, [a.orgId]);
+    const cara = await makeMember("cara", b.domain, [b.orgId]);
+    const olaf = await makeMember("olaf", a.domain, [a.orgId], { breakGlass: true });
+    await enrol(olaf.email);
+    const olafBefore = await sessionCount(olaf.id);
+    await setRequired(a.orgId, true);
+    const context = await handle.auth.$context;
+    const create = async (userId: string): Promise<boolean> => {
+      try {
+        return (await context.internalAdapter.createSession(userId)) !== null;
+      } catch {
+        return false;
+      }
+    };
+    expect(await create(ann.id)).toBe(false);
+    expect(await sessionCount(ann.id)).toBe(0);
+    expect(await create(cara.id)).toBe(true);
+    expect(await sessionCount(cara.id)).toBe(1);
+    expect(await create(olaf.id)).toBe(true);
+    expect(await sessionCount(olaf.id)).toBe(olafBefore + 1);
+    // The SSO sign-in of the refused member is test 11 (it stays open).
+  });
+
+  test("21: an error of the check in the session hook fails closed: 500, no session, no cookie", async () => {
+    const a = await makeOrg("pia");
+    const ann = await makeMember("ann", a.domain, [a.orgId]);
+    refusedScript.push(false, "throw");
+    const result = await signIn(ann.email);
+    expect(result.status).toBe(500);
+    expect(result.setCookie).toEqual([]);
+    expect(await sessionCount(ann.id)).toBe(0);
   });
 
   test("17: no log line holds a password, a TOTP secret or an e-mail address", () => {

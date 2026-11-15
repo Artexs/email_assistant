@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
+import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, nextAddress } from "../helpers";
 
 function onMobile(): boolean {
@@ -28,6 +29,7 @@ test("a visitor without a session sees the forgot page", async ({ page }) => {
   await openForgot(page);
   await expect(page).toHaveURL(/\/forgot$/);
   await expect(page.getByLabel(en.email_label)).toBeVisible();
+  await expectNoA11yViolations(page);
 });
 
 test("the e2e server has no sender, so the page says reset by e-mail is off", async ({ page }) => {

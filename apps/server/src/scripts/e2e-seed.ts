@@ -42,6 +42,8 @@ import {
   E2E_PAUSED_ORG_NAME,
   E2E_PAUSED_OWNER_EMAIL,
   E2E_PROJECTS,
+  E2E_STATS_ORG_NAME,
+  E2E_STATS_OWNER_EMAIL,
   E2E_TERMS_EMAILS,
   e2eTermsOrgName,
   E2E_TRIAL_ORG_NAME,
@@ -72,6 +74,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         E2E_OTHER_ORG_NAME,
         E2E_TRIAL_ORG_NAME,
         E2E_PAUSED_ORG_NAME,
+        E2E_STATS_ORG_NAME,
         ...E2E_PROJECTS.map(e2eTermsOrgName),
         ...E2E_PROJECTS.map(e2eTwoFactorOrgName),
         ...E2E_PROJECTS.map(e2eDeleteOrgName),
@@ -86,6 +89,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         E2E_OTHER_OWNER_EMAIL,
         E2E_TRIAL_OWNER_EMAIL,
         E2E_PAUSED_OWNER_EMAIL,
+        E2E_STATS_OWNER_EMAIL,
         ...E2E_PROJECTS.map((project) => E2E_TERMS_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_TWO_FACTOR_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_ACTIVITY_MEMBER_EMAILS[project]),
@@ -307,6 +311,19 @@ async function main(): Promise<number> {
       const suspended = await setOrgPlan(db, pausedCtx, { plan: "suspended", actor: "e2e-seed", now });
       if (suspended.kind !== "changed") throw new Error(`suspending the paused organization gave ${suspended.kind}`);
 
+      // The stats organization: the flag `stats_page` is on, so the panel shows the Stats page. It has no mailbox.
+      const stats = await createOrganizationWithOwner(db, {
+        orgName: E2E_STATS_ORG_NAME,
+        timezone: "Europe/Warsaw",
+        email: E2E_STATS_OWNER_EMAIL,
+        displayName: "E2E Stats Owner",
+      });
+      await upsertOrgFeature(
+        db,
+        { orgId: stats.orgId },
+        { flag: "stats_page", enabled: true, setBy: stats.userId, setAt: now }
+      );
+
       // Takes the link of the last reset request for an e-mail address.
       const requestLink = async (email: string): Promise<string> => {
         resets.length = 0;
@@ -326,7 +343,7 @@ async function main(): Promise<number> {
       const token = new URL(ownerLink).pathname.split("/").pop() ?? "";
       await setPassword(E2E_OWNER_PASSWORD, token);
 
-      for (const email of [E2E_TRIAL_OWNER_EMAIL, E2E_PAUSED_OWNER_EMAIL]) {
+      for (const email of [E2E_TRIAL_OWNER_EMAIL, E2E_PAUSED_OWNER_EMAIL, E2E_STATS_OWNER_EMAIL]) {
         const planToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
         await setPassword(E2E_OWNER_PASSWORD, planToken);
       }
@@ -412,6 +429,12 @@ async function main(): Promise<number> {
           password: E2E_OWNER_PASSWORD,
           orgId: paused.orgId,
           mailboxId: pausedMailboxId,
+        },
+        statsOwner: {
+          userId: stats.userId,
+          email: E2E_STATS_OWNER_EMAIL,
+          password: E2E_OWNER_PASSWORD,
+          orgId: stats.orgId,
         },
       };
       const path = seedFilePath(repoRoot);
