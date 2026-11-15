@@ -13,3 +13,17 @@ export {
   type LoggedLabEvent,
   type StopReason,
 } from "./state";
+export { orgHasMail } from "./org-mail";
+export { runSpend, type RunSpend } from "./run-spend";
+export {
+  DEFAULT_CAP_USD,
+  defaultStartDate,
+  labEnvIssues,
+  startLabRun,
+  stopLabRun,
+  writeRunLedgerLine,
+  type StartDeps,
+  type StartInput,
+  type StartRefusal,
+  type StartResult,
+} from "./start";

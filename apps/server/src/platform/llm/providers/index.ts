@@ -1,3 +1,5 @@
+import type { LlmEndpointKind } from "@ea/core";
+
 import type { GenerateFn } from "../client";
 import type { LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
 
@@ -9,7 +11,12 @@ export interface LlmProvider {
   readonly label: string;
   /** Text of the config-error log line. */
   readonly configHint: string;
-  createGenerate(opts: { apiKey: string; reasoningEffort: string | null }): GenerateFn;
+  createGenerate(opts: {
+    apiKey: string;
+    reasoningEffort: string | null;
+    baseUrl: string | null;
+    endpoint: LlmEndpointKind;
+  }): GenerateFn;
   classifyError(error: unknown, model: string): LlmSoftError | LlmConfigError | LlmHardError;
 }
 
