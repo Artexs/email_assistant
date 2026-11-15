@@ -264,8 +264,15 @@ export async function runLoopChaser(
     const part = await wanted(trx, await isFeatureOn(trx, ctx, "open_loops"));
     if (!part.delegation && !part.loops) return skip("gate");
 
-    const out = skip("gate");
-    out.skipped = null;
+    const out: LoopChaserResult = {
+      skipped: null,
+      due: 0,
+      overdue: 0,
+      reminders: 0,
+      followUps: 0,
+      stale: 0,
+      expired: 0,
+    };
     let pairs: Awaited<ReturnType<typeof planDelegationReminders>>["pairs"] = [];
     if (part.delegation) {
       const plan = await planDelegationReminders(trx, ctx, mailboxId, { now, limit: MAX_PLANNED });
