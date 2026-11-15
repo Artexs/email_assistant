@@ -392,6 +392,11 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 - **Does:** the code filters (`sentSkipReason`) decide which mail goes to the model. The model gets the subject, the local sent date, the number of recipients and the first 8,000 characters of the text. No header address (From, To, Cc) goes to the model. The body goes as written, inside the nonce data block, so an address in a signature can reach the model (triage does the same). LLM text is untrusted: Zod checks the answer, the code empties an `ask` or `promise` that holds an address, a link or a long number, and the code resolves every date.
 - **Edges (same layer, named in `layers.json`):** `loops → actions`, `loops → delegation`, `loops → triage` (the prompt registry; later the suspicion of a thread). No module of layers 1–3 imports `loops`; `channels` and `reports` may.
 
+### 3.15 `trust` — earn the right to act on its own (F110, layer 5)
+
+- **Owns (built so far):** the tables `history_checks`, `history_check_items` and `autonomy_trips` (migration `20261115180001`) and their repository: `queueHistoryCheck` (one open check per mailbox, by a partial unique index), `latestHistoryCheck`, `historyResultFor` (the newest `done` check; a newer `no_result` check does not hide a `fail`), `activeTripsOf`, `insertTrip` (one trip per grant) and `clearTrips`. Later stages add the grant, the history job, the re-gate, the tripwire and the trust view (`spec/features/active/F110-e4-b-earn-trust/`).
+- **Imports:** only the `index.ts` of lower layers (`channels`, `reports`, `triage`, `config`, `mail`, `audit`, `tenancy`); no module imports `trust`. `reports` gets trust data by a parameter that the composition root fills.
+
 ## 4. `apps/web` — pages
 
 | Page                 | Content                                                                                                                                                                         | Slice       |

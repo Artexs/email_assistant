@@ -1,6 +1,12 @@
-import type { Insertable, Transaction } from "kysely";
+import { randomUUID } from "node:crypto";
 
+import { sql, type Insertable, type Transaction } from "kysely";
+
+import { insertDefaultSettings } from "../../src/modules/config";
+import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import type { DB } from "../../src/platform/db";
+
+import { testCapabilities } from "./fixtures";
 
 // Rows for the tests of the trust tables (F110). Raw inserts: the repository is the code under test elsewhere.
 
@@ -66,4 +72,27 @@ export async function insertTripRow(
     .returning("id")
     .executeTakeFirstOrThrow();
   return row.id;
+}
+
+// A second mailbox of an organization, with its INBOX folder and default settings. Returns the id.
+export async function addMailbox(trx: Transaction<DB>, ctx: { orgId: string }): Promise<string> {
+  const id = randomUUID();
+  await insertMailbox(trx, ctx, {
+    id,
+    address: `second-${id}@x.test`,
+    imapHost: "imap.x.test",
+    imapPort: 993,
+    smtpHost: "smtp.x.test",
+    smtpPort: 465,
+    capabilities: testCapabilities,
+    folderMap: {},
+  });
+  await insertInboxFolder(trx, ctx, id);
+  await insertDefaultSettings(trx, ctx, id);
+  return id;
+}
+
+// The `delete_mailbox` function (the only delete path of a mailbox), run as the app role.
+export async function deleteMailboxRow(trx: Transaction<DB>, ctx: { orgId: string }, mailboxId: string): Promise<void> {
+  await sql`select delete_mailbox(${ctx.orgId}::uuid, ${mailboxId}::uuid)`.execute(trx);
 }
