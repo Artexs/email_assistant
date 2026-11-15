@@ -19,6 +19,7 @@ flowchart BT
     actions
     delegation
     loops
+    replies
   end
   subgraph group4["Layer 4"]
     reports
@@ -80,6 +81,7 @@ flowchart BT
   privacy --> audit
   privacy --> channels
   privacy --> tenancy
+  replies --> triage
   reports --> actions
   reports --> audit
   reports --> config
