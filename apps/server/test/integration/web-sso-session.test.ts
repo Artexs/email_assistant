@@ -259,10 +259,11 @@ const within = (a: Date, b: Date, ms: number): boolean => Math.abs(a.getTime() -
 async function ssoSessionOf(name: string, interval: string, totp = false) {
   const org = await ssoOrg(name);
   const app = openApp();
+  let secret = "";
   if (totp) {
     const first = new Browser(app);
     expect((await first.signInWithPassword(org.email)).status).toBe(200);
-    await first.enrolTotp();
+    secret = await first.enrolTotp();
     await sql`DELETE FROM auth_sessions WHERE user_id = ${org.userId}::uuid`.execute(db);
   }
   const browser = new Browser(app);
@@ -270,7 +271,7 @@ async function ssoSessionOf(name: string, interval: string, totp = false) {
   await moveStart(org.userId, interval);
   const [old] = await sessionsOf(org.userId);
   if (!old?.started) throw new Error("the SSO session has no start");
-  return { org, browser, app, old, started: old.started };
+  return { org, browser, app, old, started: old.started, secret };
 }
 
 // Every session row of the user is an SSO session with the start of `started`; at least one is not the old session.
@@ -346,10 +347,30 @@ describe("the SSO session", () => {
   });
 
   test("5c: TOTP turn-off from an SSO session makes an SSO session with the same start and end", async () => {
-    const { org, browser, old, started } = await ssoSessionOf("ann", "2 hours", true);
-    const off = await browser.post("/api/auth/two-factor/disable", { password: PASSWORD });
+    const { org, browser, old, started, secret } = await ssoSessionOf("ann", "2 hours", true);
+    const off = await browser.post("/api/auth/two-factor/disable", { password: PASSWORD, code: totpCode(secret) });
     expect(off.status).toBe(200);
     await expectInherited(org.userId, started, old.id);
+  });
+
+  // F128: an SSO session skips the code step at sign-in, but turning TOTP off asks it for a code like any session.
+  test("5d: an SSO session of a user with TOTP on needs a code to turn it off", async () => {
+    const { org, browser, secret } = await ssoSessionOf("ann", "2 hours", true);
+    const refused = await browser.post("/api/auth/two-factor/disable", { password: PASSWORD });
+    expect(refused.status).toBe(400);
+    expect(refused.json?.code).toBe("TWO_FACTOR_CODE_REQUIRED");
+    const flag = await sql<{ two_factor_enabled: boolean }>`
+      SELECT two_factor_enabled FROM users WHERE id = ${org.userId}::uuid`.execute(db);
+    expect(flag.rows[0]?.two_factor_enabled).toBe(true);
+    const rows = await sql<{ data: Record<string, unknown> }>`
+      SELECT data FROM audit_log WHERE org_id = ${org.orgId}::uuid AND event = 'web.two_factor_refused'`.execute(db);
+    expect(rows.rows.map((row) => row.data)).toEqual([{ via: "web", action: "disable", reason: "missing" }]);
+
+    const off = await browser.post("/api/auth/two-factor/disable", { password: PASSWORD, code: totpCode(secret) });
+    expect(off.status).toBe(200);
+    const after = await sql<{ two_factor_enabled: boolean }>`
+      SELECT two_factor_enabled FROM users WHERE id = ${org.userId}::uuid`.execute(db);
+    expect(after.rows[0]?.two_factor_enabled).toBe(false);
   });
 
   test("6: a password session of 13 h is still valid", async () => {
