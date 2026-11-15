@@ -57,7 +57,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F109-e3b-improve` (🔴 PLANNED, needs plan): E3b Improve; sequenced after E2a, E3a; gate Second pass after the first E2a holdout report (PD-060, PD-061).
 - `F110-e4-b-earn-trust` (🔴 PLANNED, needs plan): E4-B Earn trust; sequenced after E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command; gate —.
 - `F111-e11b-private-model-option` (🔴 PLANNED, needs plan): E11b Private model option; sequenced after E2a; gate Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage.
-- `F112-e10a-docs-site` (🔴 PLANNED, needs plan): E10a Docs site; sequenced after E1, Astro 7; gate —.
+- `F112-e10a-docs-site` (🔴 PLANNED, plan landed, 16 stages, plan base 116efb17, no drift): public docs site on GitHub Pages; build after F095, F101 closed (F101 stages 01–03 are on master; stage 01 and 06 change `bun.lock`); gate —; stage 16 needs owner step O1 (Pages source, `v*` tags in the `github-pages` environment, first deploy on master).
 - `F113-e2b-live-lab` (🔴 PLANNED, needs plan): E2b Live lab; sequenced after E2a; gate Owner: grow the VPS root volume (PD-055).
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🔴 PLANNED, needs plan): E8b Alerts and releases (incl. the restore drill); sequenced after E8a; gate Owner: grow the VPS root volume (PD-055).
 - `F115-e6a-reply-drafts` (🔴 PLANNED, needs plan): E6a Reply drafts; sequenced after E2a, E3a, E4-A, E5a, E7-T2; gate Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages.

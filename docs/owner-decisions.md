@@ -325,3 +325,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: smallest design that keeps owner-only control and avoids sending a template text instead of an approved edit.
 - Undo: the questions file gives each other option and its change.
 - Source: `spec/features/planned/F102-e4-a-act-from-the-panel/questions.md` Q2, Q3, Q4, Q5, Q7, Q8, Q10, Q12, Q17.
+
+### 2026-11-15 · Docs site: no text for flagged features, API and evidence reference later, tag deploy rule, inline styles (F112) · scope · new
+- Choice: the user docs describe nothing that a default-off flag gates, and a test enforces it (Q1). The API reference and the autonomy-evidence reference move to F121, because F102 and F110 have no code yet (Q2). A tag deploys the docs only when it is the newest plain `v<x.y.z>` tag and `CHANGELOG.md` holds that release; a manual run deploys any branch or tag and is the rollback; the first deploy is a manual run on `master` (Q4). The docs site allows `'unsafe-inline'` for styles because Starlight sets `style` attributes, and it has no `frame-ancestors` because a meta tag cannot set it and Pages sets no headers (Q6).
+- Why: docs must not promise what is off; the plan-after rule; a safe, reversible publish path; a limit of the Pages host.
+- Undo: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6 give the other option and its change.
+- Source: `spec/features/planned/F112-e10a-docs-site/questions.md` Q1, Q2, Q4, Q6.
