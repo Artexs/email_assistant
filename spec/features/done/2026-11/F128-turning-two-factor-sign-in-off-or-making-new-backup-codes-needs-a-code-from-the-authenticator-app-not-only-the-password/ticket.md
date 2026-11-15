@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-15
+landed: 2026-11-16
 ---
 
 # F128 · turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password

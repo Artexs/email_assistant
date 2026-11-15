@@ -17,7 +17,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟠 ACTIVE): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
 - `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
@@ -97,6 +96,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
 - `F109-e3b-improve` (🟢 PROVEN): E3b Improve; landed 2026-11-15
 - `F106-e7-t3-account-data-delete-export-dsr` (🟢 PROVEN): E7-T3 Account data (delete, export, DSR); landed 2026-11-15
@@ -106,5 +106,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
 - `F032-copy-below-cursor` (🟢 PROVEN): Store and triage a copy that lands below the UID cursor; landed 2026-11-15
-- `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
-- 2026-11: 78 landed. spec/features/done/2026-11/
+- 2026-11: 79 landed. spec/features/done/2026-11/
