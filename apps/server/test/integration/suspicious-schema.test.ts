@@ -2,10 +2,9 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { suspiciousReasons } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
-
-import { suspiciousReasons } from "@ea/core";
 
 import { createDb, type Db, type DB } from "../../src/platform/db";
 
