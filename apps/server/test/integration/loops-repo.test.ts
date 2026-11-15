@@ -184,19 +184,21 @@ describe("closeLoop", () => {
       const org = await newOrg(trx);
       const id = await insertLoopRow(trx, org.ctx, org.mailboxId);
 
-      expect(await closeLoop(trx, org.ctx, { loopId: id, reason: "done", userId: org.userId, at: AT })).toBe("closed");
+      expect(await closeLoop(trx, org.ctx, { loopId: id, reason: "replied_subject", userId: org.userId, at: AT })).toBe(
+        "closed"
+      );
       expect(await closeLoop(trx, org.ctx, { loopId: id, reason: "dropped", userId: org.userId, at: AT })).toBe(
         "already"
       );
 
       const loop = await row(trx, id);
-      expect(loop).toMatchObject({ status: "closed", close_reason: "done", closed_by_user_id: org.userId });
+      expect(loop).toMatchObject({ status: "closed", close_reason: "replied_subject", closed_by_user_id: org.userId });
       expect(loop.closed_at?.getTime()).toBe(AT.getTime());
       const audit = await auditOf(trx, org, "loop.closed");
       expect(audit).toHaveLength(1);
       expect(audit[0]).toMatchObject({
         actor: org.userId,
-        data: { loop_id: id, kind: "waiting", reason: "done" },
+        data: { loop_id: id, kind: "waiting", reason: "replied_subject" },
       });
     });
   });

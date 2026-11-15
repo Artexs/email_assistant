@@ -17,7 +17,7 @@ export function clearedTexts(at: Date) {
   };
 }
 
-// Retention: the texts of a loop go 90 days after it closed (`before` = now - 90 days). Only closed loops: an open
+// Retention: the texts of a loop go 90 days after it closed (`before` = now - 90 days). Only closed loops (`closed_at` is set only on a closed loop, by the table check): an open
 // loop keeps its subject and ask, because the chaser and the brief read them while the loop lives; its Sent mail may be
 // cleared before, so the loop copy is the only one left. Batches by id with `FOR UPDATE SKIP LOCKED`; a locked row waits
 // for the next day. A repeat call changes nothing. The `thread_key` and the Message-IDs stay: opaque ids, no address.
@@ -41,7 +41,6 @@ export async function clearLoopTexts(
           .selectFrom("open_loops")
           .select("id")
           .where("org_id", "=", ctx.orgId)
-          .where("status", "=", "closed")
           .where("closed_at", "<", opts.before)
           .where("texts_cleared_at", "is", null)
           .orderBy("id")

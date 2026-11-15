@@ -326,6 +326,26 @@ describe("retention job: runOrg", () => {
     });
   });
 
+  test("a loop closed 60 days ago keeps its texts although the organization period is 30 days", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx, 30);
+      const id = await insertLoopRow(trx, a, a.mailboxId, {
+        status: "closed",
+        close_reason: "replied",
+        closed_at: ago(60 * DAY_MS),
+      });
+
+      const counts = await createRetentionJob({ db: trx, now: () => NOW }).runOrg(
+        { id: a.orgId, dataRetentionDays: 30 },
+        NOW
+      );
+
+      expect(counts.loops).toBe(0);
+      const row = await trx.selectFrom("open_loops").select("subject").where("id", "=", id).executeTakeFirstOrThrow();
+      expect(row.subject).not.toBeNull();
+    });
+  });
+
   test("keeps the applied draft payload of an open delegation; clears the one of a closed delegation", async () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx, 30);

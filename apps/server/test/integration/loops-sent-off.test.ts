@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { sentSwitchHooks } from "../../src/composition";
+import { onSentOff } from "../../src/modules/loops";
 import { noSentSwitchHooks, setSentSync, type SentSwitchHooks } from "../../src/modules/mail";
 import { configureFeatures } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
@@ -94,6 +95,19 @@ describe("onSentOff through setSentSync", () => {
       expect((await loopRow(trx, inSecond)).status).toBe("open");
       expect((await loopRow(trx, inSecond)).subject).not.toBeNull();
       expect((await loopRow(trx, otherMailbox)).status).toBe("open");
+    });
+  });
+
+  test("onSentOff with the organization of another mailbox closes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const other = await newOrg(trx);
+      const id = await insertLoopRow(trx, org.ctx, org.mailboxId);
+
+      expect(await onSentOff(trx, other.ctx, { mailboxId: org.mailboxId, at: AT })).toBe(0);
+
+      expect((await loopRow(trx, id)).status).toBe("open");
+      expect(await onSentOff(trx, org.ctx, { mailboxId: org.mailboxId, at: AT })).toBe(1);
     });
   });
 
