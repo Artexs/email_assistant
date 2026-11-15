@@ -459,3 +459,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: an open loop needs its text to be useful; clearing it would break the brief. A cleared loop has nothing to show on reopen.
 - Undo: (1) clear open loops too after the Sent copy clears; (2) set `surfaced_at` to null in `restartLoop`; (3) allow reopen and show an empty loop.
 - Source: job `2026-11-15-f116-s08-loop-repository-retenti-22f82745`, stage 08.
+
+### 2026-11-15 · F103 log store: the log of another site on the VPS is shipped too (F103) · ops · new
+- Choice: the store reads every `json-file` container log of the host, so `astro-app-container` (another site) is in it (48 lines in 10 minutes). The store is on the host, bound to `127.0.0.1`, kept 30 days. I started it as is.
+- Why: `vlagent` has no filter by container; filtering would need a second log driver on the astro container or a change of the agent's input. Its lines may hold visitor IP addresses.
+- Undo: stop the store (`$C --profile ops stop victorialogs vlagent`), or set `logging: driver: local` on `astro-app-container` in its own Compose file and recreate it.
+- Source: `notes/2026-11-15-vps-deploy-queue.md` (batch 3), F103 stage 19 step 6.
