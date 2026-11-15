@@ -164,13 +164,13 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-13 (S6b, F082 stage 6; not seen live)
 - **Source:** `apps/server/src/platform/pwned.ts`. Warning. Fields: `status=<n>` (an answer other than 200), `reason=no_range_lines` (200 with no `SUFFIX:COUNT` line), or `error=<name>` (for example `TimeoutError`). The password set or change answers `503 PASSWORD_CHECK_UNAVAILABLE` and changes nothing.
 - **Cause:** `api.pwnedpasswords.com` did not answer in 5 s (`TimeoutError`), answered with a status other than 200 (`status=<n>`), answered 200 with no `SUFFIX:COUNT` line, or the server has no outbound HTTPS to it.
-- **Fix:** check outbound HTTPS from the server container to `api.pwnedpasswords.com`. For a long outage only: set `AUTH_PWNED_CHECK=off`, restart (the log then warns `AUTH_PWNED_CHECK=off: leaked passwords are not refused`), and remove the key when the API answers again.
+- **Fix:** check outbound HTTPS from the server container to `api.pwnedpasswords.com`. For a long outage only: set `AUTH_PWNED_CHECK=off`, restart (the log then warns `pwned_check_off`, field `config_key=AUTH_PWNED_CHECK`), and remove the key when the API answers again.
 - **Status:** investigating (per case)
 
-### `lockout_failed`, `terms_record_failed` (before F089: `web: lockout: <label>`, `web: terms record failed for user <id>: <label>`)
+### `lockout_failed`, `terms_record_failed` (before F089: `web: lockout: <label>`; `terms_record_failed` before F103: `web: terms record failed for user <id>: <label>`)
 
 - **First seen:** 2026-11-13 (S6b, F082 stages 5 and 7; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written. `web.ts` still writes `web: terms record failed for user <id>: <label>` until E8a converts it; search for both.
+- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written. `web.ts` writes the same event code and fields.
 - **Cause:** a database error. The sign-in itself is not changed: the user gets the normal answer. A failed lock write means that failed sign-ins are not counted. A failed terms write means the user sees the terms dialog at the next sign-in.
 - **Fix:** read the `error` field (the old form: `<label>`) and check the database. No manual repair: the user accepts the terms in the dialog.
 - **Status:** investigating (per case)
@@ -296,7 +296,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** the next tick tries again. After 3 runs in a row, the alert `sync_folder_failing` follows. Check the folder in the webmail.
 - **Status:** investigating (per case)
 
-### `web is off (WEB_BASE_URL is empty)`
+### `web_off` (field `config_key`=`WEB_BASE_URL`; before F103: `web is off (WEB_BASE_URL is empty)`)
 
 - **First seen:** 2026-11-10 (S5a code; seen live with `WEB_BASE_URL= bun run dev`, hand check 8.2)
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `info`, once per process start).
@@ -304,12 +304,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action, and expected on a host where the web panel is off; the VPS has it on since S5e (deploy/README.md, Web panel). To turn the panel on, set `WEB_BASE_URL` and `WEB_AUTH_SECRET` in the `.env` (only the user edits `.env`) and restart the server.
 - **Status:** won't fix (expected behaviour)
 
-### `web is on: <origin>, dist <path>`
+### `web_on` (before F103: `web is on: <origin>, dist <path>`)
 
 - **First seen:** 2026-11-10 (hand checks 8.2 and 11.3)
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `info`, once per process start).
-- **Cause:** The web panel is on. `<origin>` is the origin of `WEB_BASE_URL`, the trust anchor for the cookie and the links. `<path>` is the resolved `WEB_DIST` folder.
-- **Fix:** No action. Compare `<path>` with the folder that `bun run web:build` wrote (`apps/web/dist` unless `WEB_DIST` says otherwise). A wrong path gives `web: dist folder missing, pages are off`.
+- **Cause:** The web panel is on. The line holds no origin and no path: read them from `WEB_BASE_URL` and `WEB_DIST` in the `.env`. The origin is the trust anchor for the cookie and the links.
+- **Fix:** No action. Compare the `WEB_DIST` folder with the one that `bun run web:build` wrote (`apps/web/dist` unless `WEB_DIST` says otherwise). A wrong path gives `web_dist_missing`.
 - **Status:** won't fix (expected behaviour)
 
 ### `web_dist_missing` (before F089: `web: dist folder missing, pages are off`)
@@ -320,7 +320,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Run `bun run web:build`, or set `WEB_DIST` to the folder that holds the build (the image sets `/app/apps/web/dist`). Then restart the server.
 - **Status:** workaround (build the pages, or set `WEB_DIST`)
 
-### `WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure`
+### `web_cookies_not_secure` (field `config_key`=`WEB_BASE_URL`; before F103: `WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure`)
 
 - **First seen:** 2026-11-10 (S5a code; not seen live)
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `warn`, once per process start).
@@ -416,7 +416,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action for one line: the user sees the oldest organization, and the audit rows of the web events go there. A second organization is a bug of the setup until a switcher exists.
 - **Status:** won't fix (expected behaviour)
 
-### `web: no organization for user <id>`
+### `web_no_organization` (field `user_id`; before F103: `web: no organization for user <id>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `warn`).
@@ -424,12 +424,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Give the user a membership: `bun run org:create` makes an owner; any other user needs an invitation (S5b). Until then that user's `/api/me` answers 403 `no_organization` and the shell shows "Your account is not in any organization. Ask the owner for an invitation."
 - **Status:** investigating
 
-### `web: audit <kind> failed: <label>`
+### `web_audit_failed` (fields `kind`, `error`; before F103: `web: audit <kind> failed: <label>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `error`). `<kind>` is `login`, `password_set`, `password_changed`, `login_locked`, `sessions_revoked` or `other_sessions_revoked`.
 - **Cause:** The audit row of a login or a password change was not written: a database error in `recordAudit` or in the membership query. The login itself succeeded, because the composer catches every `onEvent` error.
-- **Fix:** Read the label and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
+- **Fix:** Read the `error` field and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
 - **Status:** investigating
 
 ### `auth_event_failed` (before F089: `web: onEvent <kind> failed: <label>`)

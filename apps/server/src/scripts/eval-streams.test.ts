@@ -14,6 +14,7 @@ import { readSlots, writeJson } from "../platform/sim-files";
 
 import { type ClassifierDeps, runClassifier } from "./eval";
 import { parseEvalArgs } from "./eval-args";
+import { evalFailureLine } from "./eval-failure-line";
 import { runSim, type SimDeps } from "./eval-sim";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
@@ -118,6 +119,7 @@ interface SimRun {
   part?: "holdout" | "dev";
   failFrom?: number;
   configError?: boolean;
+  badOutput?: readonly string[];
   config?: Config;
   ledger?: string | null;
   before?: (paths: { runs: string; stateFile: string }) => void;
@@ -166,6 +168,7 @@ async function sim(opts: SimRun = {}): Promise<number> {
       fakeClient(readSlots((corpus as MiniCorpus).dir, part), {
         failFrom: opts.failFrom,
         configError: opts.configError,
+        badOutput: opts.badOutput,
       }),
   };
   return runSim(options as NonNullable<typeof options>, deps);
@@ -258,6 +261,13 @@ describe("eval --sim streams", () => {
     expectStream("resume with the same command", "stderr");
   });
 
+  test("a case with a bad model output: the issue paths on stdout, not in the log on stderr", async () => {
+    await sim({ badOutput: ["fields.task:too_big"] });
+    expectStream("failed: bad_output (fields.task:too_big)", "stdout");
+    expect(stderr.join("\n")).not.toContain("too_big");
+    expect(stderr.join("\n")).not.toContain("dropped_fields");
+  });
+
   test("an LLM config error: its line on stderr, exit 1", async () => {
     const code = await sim({ configError: true });
     expect(code).toBe(1);
@@ -316,5 +326,24 @@ describe("eval (case sets) streams", () => {
     const code = await classify([], { createLlmClient: () => fakeClient([], { configError: true }) });
     expect(code).toBe(1);
     expectStream("LLM config error missing_key", "stderr");
+  });
+});
+
+describe("evalFailureLine", () => {
+  test("holds the issue paths; an escalation failure says so; no paths, no brackets", () => {
+    const base = {
+      caseId: "inv-001",
+      code: "bad_output",
+      issues: ["fields.task:too_big", "fields.due_date:invalid_type"],
+    };
+    expect(evalFailureLine({ ...base, stage: "classifier" })).toBe(
+      "case inv-001 failed: bad_output (fields.task:too_big, fields.due_date:invalid_type)"
+    );
+    expect(evalFailureLine({ ...base, stage: "escalation" })).toBe(
+      "case inv-001 escalation failed: bad_output (fields.task:too_big, fields.due_date:invalid_type)"
+    );
+    expect(evalFailureLine({ caseId: "a", code: "http_503", issues: [], stage: "classifier" })).toBe(
+      "case a failed: http_503"
+    );
   });
 });

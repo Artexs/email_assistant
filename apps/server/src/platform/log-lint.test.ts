@@ -326,9 +326,23 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
-    "web.ts (not converted yet) stays at warn",
+    "an old-form line in a root file (web.ts) fails",
     async () => {
-      expect(await logEventSeverities("apps/server/src/web.ts", "log.info(`x ${y}`);", "./platform/log")).toEqual([1]);
+      expect(await logEventSeverities("apps/server/src/web.ts", "log.info(`x ${y}`);", "./platform/log")).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in testmail fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/testmail/__log-fixture.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([2]);
     },
     TIMEOUT
   );

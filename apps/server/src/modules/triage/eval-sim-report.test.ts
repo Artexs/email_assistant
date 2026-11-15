@@ -110,6 +110,7 @@ function report(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     reasoningEffort: "none",
     promptVersion: "classifier-v2",
     promptParts: null,
+    escalation: null,
     cases,
     cost: { spentUsd: 1.23456, capUsd: 5, stoppedByBudget: false },
     complete: true,
