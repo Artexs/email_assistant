@@ -638,7 +638,7 @@ describe("real webDeps", () => {
 describe("web root events", () => {
   const CANARY = "canary-web-failure@x.test";
 
-  /** Every line the three console channels get while `run` runs, before the platform filter of the writer. */
+  /** Every line the three console channels get while `run` runs. The writer has already dropped a bad field, so each test also checks that `dropped_fields` is absent. */
   async function captureLines(run: () => Promise<void> | void): Promise<string[]> {
     const lines: string[] = [];
     const spies = (["log", "warn", "error"] as const).map((method) =>
@@ -692,6 +692,7 @@ describe("web root events", () => {
       expect(all).not.toContain("panel.x.test");
       expect(all).not.toContain("4321");
       expect(all).not.toContain("ea-web-dist-");
+      expect(all).not.toContain("dropped_fields");
     } finally {
       await (web as ReturnType<typeof webDeps>)?.close();
     }
@@ -703,6 +704,7 @@ describe("web root events", () => {
     const found = lines.filter((line) => line.includes("web_no_organization"));
     expect(found).toHaveLength(1);
     expect(found[0]).toContain(`user_id=${userId}`);
+    expect(lines.join("\n")).not.toContain("dropped_fields");
   });
 
   test("a failed audit writes web_audit_failed with the kind and the error name only", async () => {
@@ -712,6 +714,7 @@ describe("web root events", () => {
     expect(found[0]).toContain("kind=login");
     expect(found[0]).toContain("error=Error");
     expect(lines.join("\n")).not.toContain(CANARY);
+    expect(lines.join("\n")).not.toContain("dropped_fields");
   });
 
   test("a failed notice lookup writes web_auth_mail_notice_failed with the user id and the error name only", async () => {
@@ -725,5 +728,6 @@ describe("web root events", () => {
     expect(found[0]).toContain(`user_id=${userId}`);
     expect(found[0]).toContain("error=Error");
     expect(lines.join("\n")).not.toContain(CANARY);
+    expect(lines.join("\n")).not.toContain("dropped_fields");
   });
 });

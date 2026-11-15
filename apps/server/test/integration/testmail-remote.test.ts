@@ -398,6 +398,7 @@ describe("buildReviewedBundle", () => {
         const output = warn.mock.calls.flat().join(" ");
         expect(output).toContain("testmail_bundle_remove_failed");
         expect(output).not.toContain(other);
+        expect(output).not.toContain("dropped_fields");
       } finally {
         warn.mockRestore();
       }

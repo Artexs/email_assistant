@@ -105,6 +105,7 @@ describe("retention job: run", () => {
       expect(await body(trx, rows.c10)).toBe("Body text");
       expect(await body(trx, rows.c40)).toBeNull();
       expect(lines.some((line) => /^\[retention\] retention_done .*org_count=\d+ count=\d+$/.test(line))).toBe(true);
+      expect(lines.join("\n")).not.toContain("dropped_fields");
     });
   });
 });
@@ -503,6 +504,7 @@ describe("retention job: log", () => {
       ]) {
         expect(done[0]).toContain(`${key}=1`);
       }
+      expect(joined).not.toContain("dropped_fields");
       expect(joined).not.toContain("TopSecretText");
       expect(joined).not.toContain("@x.test");
       expect(joined).not.toContain(old);
@@ -538,9 +540,37 @@ describe("retention job: an error in one organization", () => {
       expect(
         lines.filter((line) => line.includes("retention_org_failed") && line.includes(firstOrg.orgId))
       ).toHaveLength(1);
+      expect(lines.join("\n")).not.toContain("dropped_fields");
+      expect(lines.filter((line) => line.includes("retention_org_failed"))[0]).toContain("error=Error");
       expect(await body(trx, firstMail)).toBe("Body text");
       expect(await body(trx, secondMail)).toBeNull();
     });
+  });
+});
+
+describe("retention job: a failed organization list", () => {
+  test("run() resolves and writes retention_failed with the error name only", async () => {
+    const failing = new Proxy(db, {
+      get(target, property) {
+        if (property === "selectFrom") {
+          return () => {
+            throw new Error("CanaryText failed@x.test");
+          };
+        }
+        const value: unknown = Reflect.get(target, property);
+        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      },
+    });
+
+    await createRetentionJob({ db: failing, now: () => NOW }).run();
+
+    const failed = lines.filter((line) => line.includes("retention_failed"));
+    expect(failed).toHaveLength(1);
+    expect(failed[0]).toContain("error=Error");
+    const joined = lines.join("\n");
+    expect(joined).not.toContain("dropped_fields");
+    expect(joined).not.toContain("CanaryText");
+    expect(joined).not.toContain("@x.test");
   });
 });
 
@@ -578,6 +608,7 @@ describe("retention job: an error in a Sent clear function", () => {
         expect(
           lines.filter((line) => line.includes("retention_org_failed") && line.includes(firstOrg.orgId))
         ).toHaveLength(1);
+        expect(joined).not.toContain("dropped_fields");
         expect(joined).not.toContain("CanaryText");
         expect(joined).not.toContain("OtherText");
         expect(joined).not.toContain("@x.test");
