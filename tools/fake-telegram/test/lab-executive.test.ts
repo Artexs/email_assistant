@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -341,6 +342,22 @@ test("2: a delegation to another delegate: ar:, then rw:p: on the same message a
     });
     expect(w.callbackData(w.a.chatId)).toEqual([`ar:${sendId}`, `rw:p:${sendId}`]);
     expect((await w.tick()).planned).toBe(0);
+    // Each press writes its intent before the press and its done after it: planned, intent, done, in this order, once.
+    // A press with no intent would be pressed again and answered 404 (the button is gone): `tap_gone` shows it.
+    const tapEvents = w
+      .events()
+      .filter((event) => event.t.startsWith("tap_") || (event.t === "skip" && event.code === "tap_gone"))
+      .map((event) => [event.t, (event as { key?: string; ref?: string }).key ?? (event as { ref?: string }).ref]);
+    const arKey = `${message.messageId}:ar:${sendId}`;
+    const rwKey = `${message.messageId}:rw:p:${sendId}`;
+    expect(tapEvents).toEqual([
+      ["tap_planned", arKey],
+      ["tap_intent", arKey],
+      ["tap_done", arKey],
+      ["tap_planned", rwKey],
+      ["tap_intent", rwKey],
+      ["tap_done", rwKey],
+    ]);
   });
 }, 60_000);
 
@@ -575,6 +592,128 @@ test("7b: cards older than the start of the run are never pressed", async () => 
     const fresh = await approvalCard(w, { to: RIGHT_DELEGATE, slotId: "w-1-018" });
     expect((await w.tick()).planned).toBe(1);
     expect(w.events().find((event) => event.t === "tap_planned")).toMatchObject({ data: `ap:${fresh.sendId}` });
+  });
+}, 60_000);
+
+test("TG1: two digests list the same wrongly moved urgent mail: one fu: press and skip tap_repeat", async () => {
+  await withWorld(async (w) => {
+    await w.tick();
+    const emailId = await movedMail(w, "w-1-011", "urgent", "ai_info");
+    const first = await digestCard(w);
+    expect(await w.tick()).toMatchObject({ planned: 1 });
+    const second = await digestCard(w);
+    expect(second.messageId).not.toBe(first.messageId);
+    expect(second.buttons.flat().map((button) => button.data)).toContain(`fu:${emailId}`);
+    expect(await w.tick()).toEqual({ planned: 0, pressed: 0, unmapped: 0, noRule: 0 });
+    expect(w.events().filter((event) => event.t === "skip")).toEqual([
+      expect.objectContaining({ code: "tap_repeat", ref: `${second.messageId}:fu:${emailId}` }),
+    ]);
+    expect(w.events().filter((event) => event.t === "tap_planned")).toHaveLength(1);
+
+    w.clock.at = new Date("2026-11-23T12:00:00Z");
+    expect((await w.tick()).pressed).toBe(1);
+    await until("undo reverse row", async () => {
+      const rows = await w.trx
+        .selectFrom("actions")
+        .select("id")
+        .where("email_id", "=", emailId)
+        .where("reverses_action_id", "is not", null)
+        .execute();
+      return rows.length === 1;
+    });
+    expect(w.callbackData(w.a.chatId)).toEqual([`fu:${emailId}`]);
+    expect(kinds(w.events()).filter((type) => type === "tap_intent")).toHaveLength(1);
+  });
+}, 60_000);
+
+test("TG2: a press the fake refuses (the button is gone) writes tap_gone, not tap_done, and is not tried again", async () => {
+  await withWorld(async (w) => {
+    await w.tick();
+    const { sendId, message } = await approvalCard(w, { to: RIGHT_DELEGATE });
+    expect((await w.tick()).planned).toBe(1);
+    // The card loses its buttons before the press: the fake answers 404 and queues no callback.
+    w.fake.state.botEdit({ chatId: w.a.chatId, messageId: message.messageId, text: "gone", buttons: [] });
+    w.clock.at = new Date("2026-11-23T12:00:00Z");
+    expect(await w.tick()).toEqual({ planned: 0, pressed: 0, unmapped: 0, noRule: 0 });
+    const key = `${message.messageId}:ap:${sendId}`;
+    expect(w.events().filter((event) => event.t.startsWith("tap_") || event.t === "skip")).toEqual([
+      expect.objectContaining({ t: "tap_planned", key }),
+      expect.objectContaining({ t: "tap_intent", key }),
+      expect.objectContaining({ t: "skip", code: "tap_gone", ref: key }),
+    ]);
+    expect(w.callbackData(w.a.chatId)).toEqual([]);
+    expect(await sendStatus(w.trx, sendId)).toBe("awaiting_approval");
+    await w.tick();
+    expect(kinds(w.events()).filter((type) => type === "tap_intent")).toHaveLength(1);
+  });
+}, 60_000);
+
+test("TG2: a stopped run is not read and presses nothing, even a planned tap", async () => {
+  await withWorld(async (w) => {
+    await w.tick();
+    const { sendId } = await approvalCard(w, { to: RIGHT_DELEGATE });
+    expect((await w.tick()).planned).toBe(1);
+    await approvalCard(w, { to: RIGHT_DELEGATE, slotId: "w-1-017" });
+    w.state.stopRun(runId, "operator");
+    const before = w.events().length;
+    w.clock.at = new Date("2026-11-23T12:00:00Z");
+    expect(await w.tick()).toEqual({ planned: 0, pressed: 0, unmapped: 0, noRule: 0 });
+    expect(w.events()).toHaveLength(before);
+    expect(w.callbackData(w.a.chatId)).toEqual([]);
+    expect(await sendStatus(w.trx, sendId)).toBe("awaiting_approval");
+  });
+}, 60_000);
+
+test("TG2: an as: press on a reminder set card approves the set; an ag: press on a failed send creates a new send", async () => {
+  await withWorld(async (w) => {
+    await w.tick();
+    const ctx = { orgId: w.a.orgId };
+    const setId = randomUUID();
+    const reminder = await insertDraftAndSend(w.trx, ctx, w.a.mailboxId, {
+      reminder: 1,
+      setId,
+      to: RIGHT_DELEGATE,
+      messageId: labId("w-1-008"),
+      createdAt: new Date(),
+    });
+    const failed = await insertDraftAndSend(w.trx, ctx, w.a.mailboxId, {
+      to: RIGHT_DELEGATE,
+      messageId: labId("w-1-017"),
+      sendStatus: "failed",
+      createdAt: new Date(),
+      lastError: "smtp",
+    });
+    await w.trx
+      .updateTable("actions")
+      .set({ status_reason: "smtp_error" })
+      .where("id", "=", failed.sendId)
+      .where("org_id", "=", w.a.orgId)
+      .execute();
+    await w.runtime.notify();
+    const buttons = async (): Promise<string[]> =>
+      (await w.client.read(w.a.chatId)).flatMap((message) => message.buttons.flat().map((button) => button.data));
+    await until("set and failed cards", async () => {
+      const data = await buttons();
+      return data.includes(`as:${setId}`) && data.includes(`ag:${failed.sendId}`);
+    });
+
+    expect((await w.tick()).planned).toBe(2);
+    w.clock.at = new Date("2026-11-24T12:00:00Z");
+    expect((await w.tick()).pressed).toBe(2);
+    await until("set approved", async () => (await sendStatus(w.trx, reminder.sendId)) === "approved");
+    await until("new send for the failed one", async () => {
+      const rows = await w.trx
+        .selectFrom("actions")
+        .select("id")
+        .where("email_id", "=", failed.emailId)
+        .where("type", "=", "send")
+        .execute();
+      return rows.length === 2;
+    });
+    expect(w.callbackData(w.a.chatId).sort()).toEqual([`ag:${failed.sendId}`, `as:${setId}`].sort());
+    // No second ag: for the same action, even after the new send card appears.
+    await w.tick();
+    expect(w.callbackData(w.a.chatId)).toHaveLength(2);
   });
 }, 60_000);
 
