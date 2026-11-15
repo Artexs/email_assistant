@@ -213,6 +213,17 @@ describe("runExtractorEval", () => {
     expect(stdout).not.toMatch(/\bs-\d{4}\b/);
   });
 
+  test("a failed holdout case prints its code and no case id", async () => {
+    await setup(true);
+    const ids = readSentSlots((corpus as SentCorpus).dir, "sent-holdout").map((slot) => slot.id);
+    const failId = ids[0] as string;
+    const r = await run({ part: "sent-holdout", client: fakeClient("sent-holdout", { failIds: new Set([failId]) }) });
+    expect(r.calls).toContain(failId);
+    // The failure line exists, with the code only.
+    expect(lines.some((line) => line.includes("failed: http_503"))).toBe(true);
+    for (const id of ids) expect(lines.some((line) => line.includes(id))).toBe(false);
+  });
+
   test("a holdout run with --limit writes no gate file", async () => {
     await setup(true);
     const r = await run({ part: "sent-holdout", args: ["--limit", "5"] });
