@@ -1,0 +1,47 @@
+---
+title: Change the digest times and the time zone
+description: Choose when your digest comes in Telegram, and set the time zone of the organization.
+capabilities:
+  - digest-and-notices
+---
+
+import UiText from "../../../components/UiText.astro";
+
+By default the bot sends you a digest at 08:00 and at 16:00. Use this guide to change the times, or the time zone that they follow.
+
+## Change your digest times
+
+Each member sets their own times.
+
+1. Open the page **<UiText k="nav_settings" />**.
+2. In the card **<UiText k="digest_title" />**, change a time in its field.
+3. To add a time, press **<UiText k="digest_add" />**. You can set up to 6 times. Use each time only once.
+4. To remove a time, press the remove button (an X) next to it. If you remove all times, you get no digests.
+5. Press **<UiText k="save" />**.
+
+A new time that passed less than 6 hours ago today sends a digest at once. The page says:
+
+> <UiText k="digest_new_time_note" />
+
+To get a digest outside your times, send `/digest` to the bot. Send `/status` to see the next digest time.
+
+## Change the time zone
+
+The time zone is one setting for the whole organization. Only the owner can change it.
+
+1. Open the page **<UiText k="nav_settings" />**.
+2. In the card **<UiText k="tz_title" />**, type a part of a name in the search field, for example `Warsaw`.
+3. Choose the zone in the list.
+4. Press **<UiText k="save" />**.
+
+All digest times follow this zone. A change applies within a minute. On that day, digests can be skipped, come later or come at once.
+
+## Quiet hours
+
+Quiet hours are 22:00 to 07:00 in the time zone of the organization. You cannot change them.
+In quiet hours the bot holds notices, for example an urgent mail or an approval request. They come at 07:00.
+Digests are not held. A digest comes at its time, also in quiet hours.
+
+## What happens next
+
+The bot sends your next digest at the next time on your list, in the time zone of the organization.

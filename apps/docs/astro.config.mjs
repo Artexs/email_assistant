@@ -29,6 +29,21 @@ export default defineConfig({
       sidebar: [
         { label: "Start", items: [{ slug: "start" }] },
         {
+          label: "How-to",
+          items: [
+            { slug: "how-to/approve-a-send" },
+            { slug: "how-to/delegate-and-follow-up" },
+            { slug: "how-to/undo-a-move" },
+            { slug: "how-to/correct-a-category" },
+            { slug: "how-to/sender-rules" },
+            { slug: "how-to/digest-times" },
+            { slug: "how-to/pause" },
+            { slug: "how-to/mode-and-switches" },
+            { slug: "how-to/two-factor" },
+            { slug: "how-to/language" },
+          ],
+        },
+        {
           label: "Reference",
           items: [
             { slug: "reference/categories" },

@@ -1,0 +1,47 @@
+---
+title: Delegate a task and follow up
+description: Hand a task from a mail to a delegate, approve the reminders and close the delegation.
+capabilities:
+  - delegation
+---
+
+import UiText from "../../../components/UiText.astro";
+
+A delegation is a task from one of your mails that you hand to a delegate. The system writes the mail to the delegate and tracks the answer.
+This guide shows the whole life of a delegation.
+
+## Who the delegates are
+
+Delegates are the people on a list. Each one has a name, a mail address and topic tags. Your operator keeps the list today. You cannot add a delegate in the panel.
+The AI can sort a mail as `Delegate` only when the list has an active delegate. The address of a delegate is never one of your own mailboxes.
+
+## Before you start
+
+- You are an owner of the organization. Only an owner can approve a send.
+- The mailbox is in assist mode, and the switch **<UiText k="switch_create_draft" />** is on. See [Mode and switches](../mode-and-switches/).
+- Your Telegram chat is linked.
+
+## Steps
+
+1. A mail arrives. The AI sorts it as `Delegate`, picks one delegate from the list and writes a short task. The digest shows the mail under `NEEDS ACTION`.
+2. The system saves a draft in your Drafts folder. The bot sends `📤 Send? Delegation to …` to each owner. Approve or reject it as in [Approve or reject a draft](../approve-a-send/).
+3. After the send, the delegation waits for an answer. The due date is the date that the mail names, at 17:00 in your organization time zone. If the mail names no date, it is 3 days after the send.
+4. The delegate answers from the same address, in the same mail thread. A reply from another address does not count.
+5. Every linked member gets the message `📩 name answered · subject` and the button `✅ Done`. Tap `✅ Done` when the task is closed. The message then says `✅ Done HH:MM.` Any linked member can tap it.
+
+## When no answer comes
+
+After the due date the system plans a reminder. It checks once each day, from 07:30 in your organization time zone.
+The bot sends one message, for example `📤 Send 2 reminders?`. It lists each delegate, the subject and the task.
+
+- Tap `📤 Send all` to send the reminders that the message shows.
+- Tap `✖️ Skip all` to send none. The delegation stays open. The system can plan a new reminder 3 days later.
+
+Only an owner can tap these buttons. A reminder uses a fixed text with the task. It quotes nothing.
+The system sends at most 2 reminders for each delegation, 3 days apart. One message holds up to 10 reminders.
+
+## What happens next
+
+The digest shows the line `👥 Delegations: n waiting for a reply, n overdue` while delegations are open.
+After the second reminder goes out, the system plans no more. The delegation stays overdue. Your operator can close it.
+If the send of the delegation is rejected, fails or expires, the delegation is cancelled. The result message says so. A failed reminder does not cancel it.
