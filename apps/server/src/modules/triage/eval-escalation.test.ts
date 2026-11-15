@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { type EvalCase, type LlmRole } from "@ea/core";
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import {
   LlmBlockedError,
@@ -271,6 +271,58 @@ describe("runEval --escalate", () => {
     expect(fake.callsOf("classifier")).toHaveLength(1);
     expect(fake.callsOf("escalation")).toHaveLength(2);
     expect(report.cases[0]?.finalCategory).toBe("needs_reply");
+  });
+
+  describe("log lines", () => {
+    let lines: string[] = [];
+    let spies: { mockRestore(): void }[] = [];
+    beforeEach(() => {
+      lines = [];
+      spies = (["log", "error"] as const).map((name) =>
+        spyOn(console, name).mockImplementation((...args: unknown[]) => {
+          lines.push(args.map(String).join(" "));
+        })
+      );
+    });
+    afterEach(() => {
+      for (const spy of spies) spy.mockRestore();
+    });
+
+    test("an escalation error writes eval_escalation_failed with the case id and the code; the issue paths go to the hook", async () => {
+      const fake = fakeLlm({
+        classifier: [answer("spam")],
+        escalation: [new LlmOutputError(ESCALATION_MODEL, ["fields.task:too_big", "fields.due_date:invalid_type"])],
+      });
+      const failures: { caseId: string; code: string; issues: readonly string[]; stage: string }[] = [];
+      await runEval(
+        { ...deps(fake.llm), onCaseFailed: (failure) => void failures.push(failure) },
+        { ...base, cases: [makeCase({ id: "inv-001" })], escalation }
+      );
+      expect(lines.filter((line) => line.includes("failed"))).toEqual([
+        "[eval] eval_escalation_failed case_id=inv-001 code=bad_output",
+      ]);
+      expect(lines.join("\n")).not.toContain("too_big");
+      expect(lines.join("\n")).not.toContain("dropped_fields");
+      expect(failures).toEqual([
+        {
+          caseId: "inv-001",
+          code: "bad_output",
+          issues: ["fields.task:too_big", "fields.due_date:invalid_type"],
+          stage: "escalation",
+        },
+      ]);
+    });
+
+    test("a soft error of the second call writes eval_escalation_retry, not eval_case_retry", async () => {
+      const fake = fakeLlm({
+        classifier: [answer("spam")],
+        escalation: [new LlmSoftError("http_503", ESCALATION_MODEL), answer("needs_reply")],
+      });
+      await runEval(deps(fake.llm), { ...base, retries: 2, cases: [makeCase({ id: "inv-002" })], escalation });
+      expect(lines.filter((line) => line.includes("retry"))).toEqual([
+        "[eval] eval_escalation_retry case_id=inv-002 attempts=1 wait_ms=10000",
+      ]);
+    });
   });
 
   test("a blocked second call ends the case as unsure and counts as blocked", async () => {

@@ -150,6 +150,7 @@ export {
   getSentSummary,
   listPendingSentTexts,
   listSentHealth,
+  listSentMessageIds,
   listUserAnswers,
   lockSentSyncState,
   markSentPass,

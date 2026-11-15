@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-holdout",
+  "batch": "batch-010",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "sh-pst-07",
+      "subject": "Rekrutacje i obsada magazynów",
+      "body": "Cześć Rafale,\n\nlistę otwartych punktów w sprawie rekrutacji miałem dostać do 19 stycznia i jeszcze jej nie ma. Prześlij mi ją proszę.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-qfw-01",
+      "subject": "Kalendarz zarządu i podróże służbowe",
+      "body": "Szanowny Panie Zbigniewie,\n\nproszę o listę otwartych punktów dotyczących kalendarza zarządu do 11 lutego. Poniżej przekazuję wiadomość od Piotra Lewandrowskiego, tylko do wiadomości. Zawarte w niej pytania dotyczą działu sprzedaży i nie wymagają Pana odpowiedzi.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\n---------- Przekazana wiadomość ----------\nPiotr Lewandrowski napisał:\n> Wiktor, czy ktoś z działu sprzedaży potwierdzi udział w targach? Czy mamy już termin spotkania z klientem sieciowym?\n> Piotr L.\n\nWiktor Szalewski napisał:\n> Piotr, pierwsze terminy w kalendarzu zarządu są już wpisane."
+    },
+    {
+      "id": "sh-qfw-02",
+      "subject": "Zakup naczep i serwis floty",
+      "body": "Cześć Halino,\n\npotwierdź mi proszę liczby dotyczące zakupu naczep i serwisu do 29 stycznia. Oddzwonię do Ciebie w sprawie zakupu naczep we wtorek i omówimy je razem. Poniżej przekazuję wiadomość klienta z pytaniami do działu logistyki, tylko do wiadomości.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\n---------- Przekazana wiadomość ----------\nGenowefa Jastrzebska napisała:\n> Dzień dobry, czy dział logistyki potwierdzi, które naczepy będą dostępne do załadunku dla naszych zamówień? Czy możecie podać godzinę podstawienia?\n\nWiktor Szalewski napisał:\n> Halina, widzę Twoje zestawienie. Dostawca przedstawił dwie oferty.\n\nHalina Strzemecka napisała:\n> Wiktor, zebrałam wstępne liczby dotyczące zakupu naczep i kosztów serwisu floty."
+    },
+    {
+      "id": "sh-qfw-04",
+      "subject": "Umowa ramowa z Nordic Foods Trade",
+      "body": "Hi Oliver,\n\nCan you answer one question on the Nordic framework agreement: do the revised delivery clauses cover the export lanes through Gdańsk? Below is a trade newsletter note that someone sent me. The questions in it are meant for the industry audience, so ignore them. I only need your answer on the clause.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\n---------- Forwarded message ----------\nMagazyn Logistyka Dzis napisał:\n> Nordic Foods Trade renegocjuje umowy ramowe z partnerami logistycznymi. Którzy przewoźnicy zaakceptują nowe kary umowne? Kto pokryje koszt monitoringu temperatury?"
+    },
+    {
+      "id": "sh-qfw-05",
+      "subject": "Posiedzenie rady nadzorczej i budżet",
+      "body": "Szanowny Panie Zbigniewie,\n\nproszę o listę otwartych punktów dotyczących posiedzenia rady nadzorczej. Podsumowanie posiedzenia wyślę do 8 lutego. Poniżej przekazuję wiadomość od dostawcy naczep, w której zadano pytania naszemu zespołowi serwisowemu. Pan nie musi na nie odpowiadać.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\n---------- Przekazana wiadomość ----------\nMatthias Brandt schrieb:\n> Sehr geehrter Herr Szalewski, wer in Ihrem Team übernimmt die Abnahme der Naczepy? Können Sie uns die Lieferfenster für den Service bestätigen?\n> Mit freundlichen Grüssen, Matthias Brandt"
+    },
+    {
+      "id": "sh-qfw-06",
+      "subject": "Eksport i odprawy celne",
+      "body": "Dear Daniel,\n\nPlease answer one question for me: which customs agent will Baltic Freight Partners use for the Gdańsk lane? Below I forward a message from our trailer supplier. It contains questions for our service team, so there is nothing for you to answer there.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\n---------- Forwarded message ----------\nMatthias Brandt wrote:\n> Dear Mr Szalewski, who in your team will accept the delivery of the trailers? Can you confirm the service slots for the first inspection?\n> Kind regards, Matthias Brandt"
+    },
+    {
+      "id": "sh-qfw-07",
+      "subject": "Umowa ramowa z Nordic Foods Trade",
+      "body": "Dear Karin, dear Oliver,\n\nPlease confirm the figures for the Nordic framework agreement: the annual volume and the rebate steps. I forward below a message from Tomasz Brzezinski of Meblodrew. His questions are meant for our sales team, so you need not answer them.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\n---------- Forwarded message ----------\nTomasz Brzezinski napisał:\n> Dzień dobry, czy dział sprzedaży potwierdzi nowy cennik? Czy rabaty z umowy ramowej obejmują także nasze zamówienia?"
+    },
+    {
+      "id": "sh-rep-01",
+      "subject": "Reklamacje i uszkodzone dostawy",
+      "body": "Szanowna Pani Genowefo,\n\nHalina Strzemecka rozmawiała z przewoźnikiem o uszkodzonej paczce z ostatniej dostawy. Przewoźnik przyznał, że paczka została uszkodzona przy rozładunku, i sam wystawi protokół szkody. Według Oliviera Pembertona zwrot kosztów zostanie rozliczony w grudniowej fakturze.\n\nWiktor"
+    },
+    {
+      "id": "sh-rep-02",
+      "subject": "Wspólne przetargi",
+      "body": "Dear Daniel,\n\nFor your information: Piotr Lewandrowski told me that the sales team reached an agreement with the first retail client on the shared lane pricing. According to Piotr, the client will announce its decision itself. I have nothing to add from my side.\n\nWiktor"
+    },
+    {
+      "id": "sh-rep-03",
+      "subject": "Terminy dostaw i okna rozładunku",
+      "body": "Cześć Halino,\n\nrozmawiałem z Tomaszem Brzezińskim z Meblodrew. Powiedział, że okno rozładunku w Gdańsku jest dla nich za wąskie i że ich kierowcy przyjeżdżają zwykle po południu. Piotr Lewandrowski dodał, że dział sprzedaży sam skontaktuje się z klientem w tej sprawie. Przekazuję Ci to tylko jako informację, bez żadnej decyzji z mojej strony.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-rep-05",
+      "subject": "Re: Terminy dostaw i okna rozładunku",
+      "body": "Dear Karin,\n\nI spoke with Halina Strzemecka about your question on the unloading windows. She told me that the Gdańsk terminal can keep the two morning windows for your trucks, and that the dock team plans the early slots with your forwarder. I pass this on as she gave it to me; the details are with her team.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nKarin Lindqvist wrote:\n> Dear Wiktor, we would like to know whether the two morning unloading windows stay available for our trucks.\n> Kind regards, Karin"
+    },
+    {
+      "id": "sh-rep-06",
+      "subject": "Re: Eksport i odprawy celne",
+      "body": "Dear Daniel,\n\nTomasz Brzezinski told me that his warehouse accepts the export pallets without extra checks. According to Oliver Pemberton, the broker handles the rest. That is all I have on the subject.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nDaniel Hargreaves wrote:\n> Dear Wiktor, quick check on the customs paperwork for the pallets.\n> Kind regards, Daniel"
+    },
+    {
+      "id": "sh-rep-07",
+      "subject": "Rekrutacje i obsada magazynów",
+      "body": "Cześć Rafale,\n\nchcę Ci opowiedzieć, co usłyszałem w ostatnich dniach o obsadzie magazynów, żebyś miał pełny obraz przed kolejną rundą rozmów z kandydatami.\n\nHalina Strzemecka mówi, że magazyn w Gdańsku radzi sobie z obsadą na pierwszej zmianie, ale na nocnej brakuje jej dwóch osób. Jej zdaniem największy problem to rotacja wśród nowych pracowników, którzy odchodzą po pierwszym miesiącu. Przyczyną jest według niej grafik, bo nowi dostają najmniej wygodne zmiany.\n\nPiotr Lewandrowski opowiedział mi z kolei, że klienci sieciowi zauważają różnicę w jakości załadunku, gdy w ekipie są osoby bez doświadczenia. Wspomniał o dwóch uwagach od Zielonej Hurtowni, które dotyczyły kolejności palet. Jego zdaniem szkolenie wstępne jest za krótkie.\n\nDorota Wilczynska usłyszała od kilku osób z biura, że chętnie pomogłyby w rekrutacji, polecając znajomych. Mówi, że nikt nie wie, czy firma wypłaca za to premię.\n\nOpisuję to tylko jako obraz sytuacji. Każdy z nich widzi problem ze swojej strony, a ja nie wyciągam z tego żadnych wniosków.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-thx-01",
+      "subject": "Umowy i cenniki sprzedaży",
+      "body": "Szanowny Panie Tomaszu,\n\ndziękuję za spotkanie i za czas, który Pan poświęcił na omówienie cenników na nowy rok. Rozmowa była rzeczowa i bardzo pomogła mi uporządkować stanowisko naszej firmy wobec Meblodrew. Doceniam, że przygotował Pan zestawienie zamówień z ostatnich dwóch lat. Dzięki niemu Piotr Lewandrowski mógł od razu porównać stawki z naszymi wyliczeniami.\n\nSzczególnie dziękuję za jasne przedstawienie oczekiwań wobec rabatów i warunków płatności. Wiem, że to nie są łatwe tematy, a Pan podszedł do nich spokojnie i konstruktywnie. Dzięki temu nasze zespoły mogą teraz pracować na wspólnych liczbach. Halina Strzemecka zauważyła też, że Pana uwagi o terminach dostaw pomogły nam dopracować harmonogram na pierwszy kwartał, a to dla obu stron duża oszczędność czasu i nerwów.\n\nPrześlę Panu podsumowanie umów i cenników do 12 lutego.\n\nJeszcze raz dziękuję za dobrą współpracę. To dla nas ważny klient, a rozmowy takie jak ta budują zaufanie po obu stronach.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-thx-02",
+      "subject": "Faktury i płatności",
+      "body": "Dear Ewelina,\n\nThank you for the quick correction of the January fuel invoice. The corrected document arrived, and our finance team booked it without problems. I appreciate the fast help.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-thx-03",
+      "subject": "Reklamacje i uszkodzone dostawy",
+      "body": "Cześć Halino,\n\ndziękuję za szybkie zebranie danych o uszkodzonych dostawach. Zestawienie jest czytelne i pomogło mi zrozumieć, gdzie powstają największe straty. Przekażę Ci liczby dotyczące reklamacji do 11 lutego, razem z moim komentarzem dla zarządu.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-thx-04",
+      "subject": "Faktury i płatności",
+      "body": "Dear Ewelina,\n\nI want to thank you for the work that your team at Paliwa-Flota did over the past weeks on the fuel card accounts. The statements arrived in good order, the numbers were clear, and the questions from our finance department were answered quickly. That kind of reliability is not common, and we notice it.\n\nMagdalena Czerniak told me that the new report layout saves her team several hours each month. The split by card and by vehicle group makes the monthly check much simpler, and the mistakes we saw last year no longer appear. My thanks go to everyone who helped to set it up.\n\nI will deliver the invoice and payment numbers for the last quarter by 2 February, so that you have our side of the reconciliation in hand.\n\nThank you again for the good cooperation. We value Paliwa-Flota as a partner, and I look forward to continuing in the same way.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-thx-05",
+      "subject": "Re: Umowa ramowa z Nordic Foods Trade",
+      "body": "Hi Oliver,\n\nThanks a lot for the quick work on the Nordic framework agreement papers. The summary of the open clauses was exactly what I needed for the meeting. Good job, and thanks also to Ewelina for the fuel cost figures she added.\n\nWiktor\n\nOliver Pemberton wrote:\n> Boss, summary of the open Nordic clauses attached. Fuel cost figures from Ewelina are in the last table. Oliver"
+    },
+    {
+      "id": "sh-thx-07",
+      "subject": "Reklamacje i uszkodzone dostawy",
+      "body": "Szanowny Panie Tomaszu,\n\ndziękuję za szybkie zgłoszenie uszkodzonych palet i za dokładne zdjęcia, które Pan przesłał. Dzięki nim dział reklamacji mógł od razu rozpocząć wyjaśnianie sprawy z przewoźnikiem. Doceniam Pana zrozumienie i spokojną współpracę przy tej sprawie. To ułatwia pracę obu naszym zespołom.\n\nWiktor Szalewski"
+    },
+    {
+      "id": "sh-twd-02",
+      "subject": "Posiedzenie rady: wybór opcji",
+      "body": "Hi Dorota, hi Daniel,\n\nPlease tell me which option for the board meeting fits best by Sunday. I will send the updated board meeting offer by Thursday.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-twd-03",
+      "subject": "Zakup naczep i serwis floty",
+      "body": "Cześć Halino, cześć Rafale,\n\npiszę do Was obojga w sprawie zakupu naczep i serwisu floty, bo zbliża się decyzja o zamówieniu i chcę mieć pewność, że liczby, na których pracujemy, są aktualne.\n\nDostawca przedstawił ofertę na osiem nowych naczep oraz pakiet serwisowy na trzy lata. Z mojego zestawienia wynika, że koszt jednej naczepy wzrósł o kilka procent w porównaniu z poprzednią ofertą, a pakiet serwisowy jest teraz droższy, ale obejmuje przeglądy w naszych magazynach. Halina, Ty znasz potrzeby floty najlepiej i wiesz, ile naczep rzeczywiście potrzebujemy na sezon. Rafale, od Ciebie potrzebuję informacji, czy obsada kierowców i techników pozwala na taki plan.\n\nProszę, potwierdźcie mi liczby dotyczące zakupu naczep i serwisu do niedzieli. Chodzi o liczbę naczep, koszt jednostkowy i koszt pakietu serwisowego. Jeśli któraś liczba się nie zgadza, napiszcie, co trzeba poprawić.\n\nWiem, że to krótki czas, ale od tych liczb zależy rozmowa z dostawcą.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-twd-04",
+      "subject": "Faktury i płatności",
+      "body": "Dear Ewelina,\n\nPaliwa-Flota offered us two ways to handle the monthly invoices: one consolidated invoice per month, or separate invoices per card group. Please tell me which option for the invoices fits best for your side by Monday. Our finance department can work with either way, so the choice is yours.\n\nWiktor"
+    },
+    {
+      "id": "sh-twd-05",
+      "subject": "Eksport i odprawy celne",
+      "body": "Dear Daniel,\n\nI would like your answer to one question about the export lanes: does Baltic Freight Partners accept the customs handover at the Gdańsk terminal, or does it need its own agent on site? Please answer by next week. Oliver Pemberton can send you the lane details if they help.\n\nWiktor"
+    },
+    {
+      "id": "sh-twd-06",
+      "subject": "Kalendarz zarządu i podróże służbowe",
+      "body": "Szanowny Panie Zbigniewie,\n\nproszę o informację, który wariant kalendarza zarządu pasuje Panu najlepiej: dwa wyjazdy w jednym tygodniu czy rozłożone na dwa. Odpowiedź proszę do piątku.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "sh-twd-07",
+      "subject": "Umowy i cenniki sprzedaży",
+      "body": "Cześć Piotrze,\n\npowiedz mi proszę, czy plan dla umów i cenników sprzedaży jest zatwierdzony. Odpowiedź potrzebuję do wtorku.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    }
+  ]
+}

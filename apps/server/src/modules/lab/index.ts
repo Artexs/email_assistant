@@ -41,7 +41,19 @@ export {
   type SeedTarget,
 } from "./seed";
 export { storeRunUrgencyProfile, type UrgencyDeps } from "./urgency";
-export { runSpend, type RunSpend } from "./run-spend";
+export { runModels, runSpend, type RunSpend } from "./run-spend";
+export { joinRun, joinSentCopies, type ScoredMail, type SentCopies } from "./score/join";
+export {
+  renderLabReport,
+  reportBaseName,
+  SECTION_RENDERERS,
+  type CoverageSection,
+  type LabScore,
+  type ScoreHeader,
+  type SentCopiesSection,
+} from "./score/report";
+export { coverageOf, LabScoreError, scoreLabRun, writeLabReport, type ScoreDeps } from "./score/run";
+export { scoreM1, scoreTriage, type TriageScore } from "./score/triage";
 export {
   DEFAULT_CAP_USD,
   defaultStartDate,

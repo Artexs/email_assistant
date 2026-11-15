@@ -10,6 +10,7 @@ import {
   labAddresses,
   LAB_MAILBOXES,
   loadLabCorpus,
+  LabScoreError,
   LabSeedError,
   type LabCorpus,
   type LabModel,
@@ -63,6 +64,8 @@ describe("lab command", () => {
   let storeError: Error | undefined;
   let serveCalls = 0;
   let serveStatus: ServeStatus | undefined;
+  let scoreCalls: [string, string | undefined][] = [];
+  let scoreResult: { markdown: string; json: string; partial: boolean } | Error;
 
   beforeEach(() => {
     seedCalls = [];
@@ -75,6 +78,8 @@ describe("lab command", () => {
     storeError = undefined;
     serveCalls = 0;
     serveStatus = undefined;
+    scoreCalls = [];
+    scoreResult = { markdown: "/out/r.md", json: "/out/r.json", partial: false };
     dir = mkdtempSync(join(tmpdir(), "f113-s05-lab-"));
     printed = [];
     failed = [];
@@ -109,6 +114,11 @@ describe("lab command", () => {
       stored.push(`${org.orgId} ${plan.runId} ${plan.deadlines.length}`);
     },
     spendOf: async () => spend,
+    score: async (runId, out) => {
+      scoreCalls.push([runId, out]);
+      if (scoreResult instanceof Error) throw scoreResult;
+      return scoreResult;
+    },
     serveStatus: () => serveStatus,
     serve: async () => {
       serveCalls += 1;
@@ -150,7 +160,13 @@ describe("lab command", () => {
 
   test("2b: every command but demo-import checks the env first", async () => {
     env = { LAB_STACK: "ea-prod" };
-    for (const argv of [["status"], ["serve"], ["stop", "--run", "day-20261123-aaaa"], ["seed"]]) {
+    for (const argv of [
+      ["status"],
+      ["serve"],
+      ["stop", "--run", "day-20261123-aaaa"],
+      ["seed"],
+      ["score", "--run", "day-20261123-aaaa"],
+    ]) {
       failed = [];
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not_sim_stack");
@@ -163,13 +179,39 @@ describe("lab command", () => {
   test("commands of later stages exit 1 with not built", async () => {
     for (const argv of [
       ["reset", "--org", "lab", "--yes"],
-      ["score", "--run", "day-20261123-aaaa"],
       ["demo-reset", "--yes"],
     ]) {
       failed = [];
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not built");
     }
+  });
+
+  test("score: an unknown run is refused; a known run prints the paths and passes --out on", async () => {
+    seedOrgs();
+    expect(await run(["score", "--run", "day-20261123-aaaa"])).toBe(1);
+    expect(failed).toEqual(["refused: no_such_run"]);
+    expect(scoreCalls).toEqual([]);
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    printed = [];
+    expect(await run(["score", "--run", "day-20261123-aaaa", "--out", "/tmp/x"])).toBe(0);
+    expect(scoreCalls).toEqual([["day-20261123-aaaa", "/tmp/x"]]);
+    expect(printed).toEqual(["score: day-20261123-aaaa report /out/r.md json /out/r.json"]);
+    scoreResult = { markdown: "/out/r.md", json: "/out/r.json", partial: true };
+    printed = [];
+    expect(await run(["score", "--run", "day-20261123-aaaa"])).toBe(0);
+    expect(printed[0]).toContain("day-20261123-aaaa partial report");
+  });
+
+  test("score: a LabScoreError exits 1 with its code; another error is not caught", async () => {
+    seedOrgs();
+    expect(await run(["start", "--mode", "day", "--date", "2026-11-23"])).toBe(0);
+    scoreResult = new LabScoreError("org_gone");
+    failed = [];
+    expect(await run(["score", "--run", "day-20261123-aaaa"])).toBe(1);
+    expect(failed).toEqual(["refused: org_gone"]);
+    scoreResult = new Error("boom");
+    await expect(run(["score", "--run", "day-20261123-aaaa"])).rejects.toThrow("boom");
   });
 
   test("serve: a bad env exits 1 before the loop starts; a good env hands over to the serve loop", async () => {

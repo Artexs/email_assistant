@@ -1,5 +1,5 @@
 import { delegateIdOf, type EvalCase, type LlmRole } from "@ea/core";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 
 import { type LlmCall, type LlmClient, LlmConfigError, LlmSoftError, type LlmUsage } from "../../platform/llm";
 
@@ -260,6 +260,19 @@ describe("eval --judge", () => {
       budget: { capUsd: 1, callCostUsd: () => 0.0003, firstEstimateUsd: 0.0003 },
     });
     expect(report.cost.spentUsd).toBeCloseTo(0.0006, 12);
+  });
+});
+
+describe("eval --judge log lines", () => {
+  test("a soft judge error then success writes eval_judge_retry with the case id, the attempt and the wait", async () => {
+    const spy = spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const { llm } = routedLlm({ classifier: [delegationAnswer()], judge: [soft(), allTwos] });
+      await runEval(deps(llm), { ...opts, retries: 1, cases: [delegationCase("d1")], judge: judgeSetup(llm) });
+      expect(spy.mock.calls).toEqual([["[eval]", "eval_judge_retry case_id=d1 attempts=1 wait_ms=10000"]]);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 
