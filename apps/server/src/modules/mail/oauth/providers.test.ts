@@ -75,6 +75,7 @@ describe("granted scopes (N1)", () => {
 
   test("Microsoft leaves offline_access out and changes the case: nothing is missing", () => {
     expect(missingResourceScopes(microsoft, "mail", ["https://outlook.office.com/imap.accessasuser.all"])).toEqual([]);
+    expect(missingResourceScopes(microsoft, "mail", ["HTTPS://OUTLOOK.OFFICE.COM/IMAP.ACCESSASUSER.ALL"])).toEqual([]);
   });
 
   test("a missing resource scope is named; an identity scope does not stand in for it", () => {
@@ -119,6 +120,11 @@ describe("config (D7)", () => {
       MAIL_OAUTH_GOOGLE_CLIENT_SECRET: "gsec",
       MAIL_OAUTH_MICROSOFT_CLIENT_ID: "mid",
       MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "msec",
+      // Keys that would hold a URL: the schema must not know them, so loadConfig drops them.
+      MAIL_OAUTH_GOOGLE_TOKEN_URL: "http://127.0.0.1:1/token",
+      MAIL_OAUTH_MICROSOFT_AUTHORIZE_URL: "http://127.0.0.1:1/authorize",
+      MAIL_OAUTH_GOOGLE_REVOKE_URL: "http://127.0.0.1:1/revoke",
+      MAIL_OAUTH_GRAPH_BASE_URL: "http://127.0.0.1:1",
     });
     const keys = Object.keys(config).filter((key) => key.startsWith("MAIL_OAUTH_"));
     expect(keys.sort()).toEqual([
