@@ -20,6 +20,7 @@ import {
   insertSyncFolders,
   insertMailbox,
   listEmailsByMessageIds,
+  listFolderRowsAtUids,
   listFolderUids,
   listFolderEmailKeys,
   listMoveCandidates,
@@ -1119,6 +1120,74 @@ describe("mail repository: sync folders", () => {
         .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "junk_b", path: "X", role: "sort" })
         .execute();
       await expect(listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: false })).rejects.toBeInstanceOf(HardError);
+    });
+  });
+});
+
+describe("mail repository: listFolderRowsAtUids", () => {
+  test("returns the rows that hold one of the UIDs in the folder, with their identity fields", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { dedup_key: "mid:<1@x.test>:hash-1", uid: 10 }));
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, { dedup_key: "mid:<2@x.test>:hash-2", message_id_header: "<2@x.test>", uid: 12 })
+      );
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, { dedup_key: "mid:<1@x.test>:hash-1#2", folder: "Oferty", uid: 10 })
+      );
+      const idA = (await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).id;
+
+      expect(await listFolderRowsAtUids(trx, a.ctx, a.mailboxId, "INBOX", [10, 11])).toEqual([
+        {
+          id: idA,
+          uid: 10,
+          message_id_header: "<1@x.test>",
+          content_hash: "hash-1",
+          from_address: "sender@x.test",
+          received_at: new Date("2026-11-03T10:00:00Z"),
+        },
+      ]);
+    });
+  });
+
+  test("returns [] for an empty UID list", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { uid: 10 }));
+      expect(await listFolderRowsAtUids(trx, a.ctx, a.mailboxId, "INBOX", [])).toEqual([]);
+    });
+  });
+
+  test("leaves out the rows of another mailbox of the same org", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const otherMailboxId = randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: otherMailboxId,
+        address: `other-${otherMailboxId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await insertEmail(trx, a.ctx, newEmail(otherMailboxId, { uid: 10 }));
+      expect(await listFolderRowsAtUids(trx, a.ctx, a.mailboxId, "INBOX", [10])).toEqual([]);
+      expect(await listFolderRowsAtUids(trx, a.ctx, otherMailboxId, "INBOX", [10])).toHaveLength(1);
+    });
+  });
+
+  test("leaves out the rows of another org", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertEmail(trx, b.ctx, newEmail(b.mailboxId, { uid: 10 }));
+      expect(await listFolderRowsAtUids(trx, a.ctx, b.mailboxId, "INBOX", [10])).toEqual([]);
+      expect(await listFolderRowsAtUids(trx, b.ctx, b.mailboxId, "INBOX", [10])).toHaveLength(1);
     });
   });
 });

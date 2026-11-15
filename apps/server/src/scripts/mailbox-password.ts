@@ -9,13 +9,13 @@ import {
   updateMailboxPassword,
   verifySmtpLogin,
 } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { ConfigError, loadConfig, mailAllowLocal, type Config } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-password");
+const out = createCliOutput("mailbox-password");
 
 const usage = [
   "usage: read -rsp 'New password: ' P && printf '%s' \"$P\" | bun run mailbox:password --org-id <uuid> --mailbox-id <uuid>",
@@ -61,9 +61,9 @@ function readConfig(): Config | undefined {
     return config;
   } catch (error) {
     if (error instanceof ConfigError) {
-      log.error(`config error: missing or bad keys: ${error.keys.join(", ")}`);
+      out.fail(`config error: missing or bad keys: ${error.keys.join(", ")}`);
     } else {
-      log.error("config error");
+      out.fail("config error");
     }
     return undefined;
   }
@@ -73,7 +73,7 @@ async function main(): Promise<number> {
   const options = readOptions();
   const password = options && (await readPassword());
   if (!options || password === undefined) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -89,17 +89,17 @@ async function main(): Promise<number> {
       { orgId },
       { mailboxId, password, secretKind, now: new Date() }
     );
-    log.info(`password updated for mailbox ${mailboxId}; status ${status}`);
-    if (reactivated) log.info("the next sync runs within the sync interval (MAIL_SYNC_EVERY_MIN, default 2 minutes)");
-    if (status === "paused") log.info("the mailbox stays paused: use /resume in Telegram");
+    out.print(`password updated for mailbox ${mailboxId}; status ${status}`);
+    if (reactivated) out.print("the next sync runs within the sync interval (MAIL_SYNC_EVERY_MIN, default 2 minutes)");
+    if (status === "paused") out.print("the mailbox stays paused: use /resume in Telegram");
     return 0;
   } catch (error) {
     if (error instanceof MailAuthError) {
-      log.error(`${error.message}: the password was not saved`);
+      out.fail(`${error.message}: the password was not saved`);
     } else if (error instanceof HardError) {
-      log.error(error.message);
+      out.fail(error.message);
     } else {
-      log.error(`failed: ${describeError(error)}`);
+      out.fail(`failed: ${describeError(error)}`);
     }
     return 1;
   } finally {
@@ -110,6 +110,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

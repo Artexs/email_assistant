@@ -6,6 +6,8 @@ Part of [`../plan.md`](../plan.md). Needs stages 09 and 10. Server, core and the
 
 **Goal.** The login page shows company sign-in only when it can work (D14, Q6).
 
+If F102 stage 01 has landed, give the route `apiDoc` with `public: true` (F102 plan, refresh 1, N8).
+
 **Files.** `platform/http.ts` (mount before the session guard, like `/api/auth/*`), tenancy repo, `@ea/core/web` schema file `sso.ts` (stage 03).
 
 **Interfaces.**

@@ -24,7 +24,7 @@ E4-B Earn trust: the Stage 2 ticket in row 16 of `docs/product/stage-2/05-execut
 ## Sequenced
 
 - Plan after: none (planning may run ahead of the build).
-- Build after: E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command (landed, in `spec/features/done/`).
+- Build after: E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command (landed, in `spec/features/done/`); its unsubscribe stage also needs F109 stage 04.
 - Gate: —
 
 ## Notes

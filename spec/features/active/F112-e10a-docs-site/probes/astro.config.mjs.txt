@@ -1,0 +1,8 @@
+import { defineConfig } from "astro/config";
+import starlight from "@astrojs/starlight";
+export default defineConfig({
+  site: "https://example.github.io",
+  base: "/email_assistant",
+  security: { csp: { directives: ["default-src 'self'", "img-src 'self' data:", "object-src 'none'", "base-uri 'self'", "form-action 'none'", "frame-ancestors 'none'"] } },
+  integrations: [starlight({ title: "Email Assistant", defaultLocale: "root", locales: { root: { label: "English", lang: "en" }, pl: { label: "Polski", lang: "pl" } } })],
+});

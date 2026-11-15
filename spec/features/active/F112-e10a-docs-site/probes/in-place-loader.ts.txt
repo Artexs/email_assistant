@@ -1,0 +1,18 @@
+import { defineCollection } from "astro:content";
+import { docsLoader } from "@astrojs/starlight/loaders";
+import { docsSchema } from "@astrojs/starlight/schema";
+import { readFileSync } from "node:fs";
+const base = docsLoader();
+const inPlace = {
+  name: "in-place",
+  load: async (ctx: any) => {
+    await base.load(ctx);
+    const raw = readFileSync(new URL("../../ext/README.md", import.meta.url), "utf8");
+    const title = /^# (.+)$/m.exec(raw)![1];
+    const body = raw.replace(/^# .+\n/, "");
+    const id = "operate/install";
+    const data = await ctx.parseData({ id, data: { title } });
+    ctx.store.set({ id, data, body, filePath: "../ext/README.md", rendered: await ctx.renderMarkdown(body) });
+  },
+};
+export const collections = { docs: defineCollection({ loader: inPlace, schema: docsSchema() }) };
