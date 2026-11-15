@@ -74,7 +74,7 @@ Module dependencies are generated: [`docs/diagrams/module-graph.md`](diagrams/mo
 `channels → delegation`: the Done tap calls `closeDelegation`; the notifier reads answered delegations and delegate names; `/status` counts open delegations (S4).
 `reports → delegation`: the digest reads the delegate names and the open delegations (S4).
 `delegation → actions | mail | config | tenancy | audit`: the service closes the reminder sends (`expireReminderActions`); the chaser plans reminders with `createPlanned` and reads the settings, the organization timezone and the audit count (S4).
-**Hooks pattern (S4):** `actions` must not import `delegation` (`delegation → actions` already exists, so the reverse edge would be a cycle). `actions` defines the interface `DelegationHooks` (`actions/hooks.ts`: `onSent`, `onReminderSent`, `onCancelled`, `isOpen`); `delegation` implements it (`delegationHooks`); `main.ts` and `scripts/job-run.ts` wire it into the committer, the expiry job and the Telegram handlers. There is no `actions → delegation` edge.
+**Hooks pattern (S4):** `actions` must not import `delegation` (`delegation → actions` already exists, so the reverse edge would be a cycle). `actions` defines the interface `DelegationHooks` (`actions/hooks.ts`: `onSent`, `onReminderSent`, `onCancelled`, `onWentOut`, `isOpen`, and since F102 `onSuperseded` and `activeDelegate`); `delegation` implements it (`delegationHooks`); `actions` defines `ApprovalHooks` too (`onDecided`, with `noApprovalHooks`), which `channels` implements (`cardEditHooks`) so that a decision edits the Telegram cards without an `actions → channels` edge; `main.ts` and `scripts/job-run.ts` wire it into the committer, the expiry job and the Telegram handlers. There is no `actions → delegation` edge.
 `triage → actions`: the triage worker writes the action rows through `actions.createPlanned()` in its transaction. The returned job (`triage/returned.ts`, S3) locks and updates the original move through `lockLatestOriginalMove` and `markUndone`.
 `triage → audit`: the triage worker and `triage/backfill.ts` write audit rows through `audit.recordAudit()` in their transactions.
 `channels → triage`: the ✅ / ✏️ buttons and the Undo button write feedback through `triage.recordFeedback()`.
@@ -238,6 +238,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **SEND_SCOPE:** the committer reads `SEND_SCOPE` (`off`, `self`, `all`; architecture §4.3) for the send only. A draft is made under `ACTIONS_SCOPE`.
 - **Built in S6a:** the scopes `all` carry no mailbox address (`ActionsScope`, `SendScope`): every active mailbox of a not `suspended` organization, by the mode and the switches. The committer skips `suspended` organizations (the approval expiry still runs for them). The retention clear functions `clearActionPayloads` and `clearActionErrors`; "Send again" on a failed send with a cleared payload answers `draft_gone`.
 - **Built in F099:** `send-limit.ts` (`startSendWithinLimits`: lock, count, `markApplying` or hold, in one transaction), `actions.send_started_at`, `listRecentSends`, `lockMailboxSends`, `listSendLimitHolds`, `countFailedSendsSince`, `lastSendAppliedAt`.
+- **Built in F102:** `edit.ts` (`editApproval`: the panel edit as a superseding draft and send, `supersedes_action_id`, the status reason `superseded`; the rules are in `docs/capabilities/drafts-and-send.md` rule 12) with `repo/edit.ts`; `repo/approval-reads.ts` (`listApprovalSends`, `countWaitingApprovals`: the reads of the approvals page and of the nav badge); `hooks.ts` (`ApprovalHooks`, `DelegationHooks.onSuperseded`, `DelegationHooks.activeDelegate`); `approve` and `reject` take `via: "web"` and answer `superseded` with `currentId` for a replaced send.
 - **Built in F100:** `action_feedback` (`repo/feedback.ts`: the reject reason and the mistake mark of a send) and the metric readers `listHiddenMoveRows`, `listRejectRows`, `listMistakeRows` (`repo/metrics.ts`). The two owner routes `POST /api/actions/:id/reject-reason` and `POST /api/actions/:id/mistake` (`routes.ts`, flag `mistake_capture`) write the same rows as the Telegram taps. `docs/capabilities/drafts-and-send.md` rule 11.
 
 ### 3.6 `audit` — what happened and why (S1b)
@@ -248,6 +249,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **Built in S2:** the events `chat.linked`, `chat.unlinked`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed`; `countEventsBetween` (for the digest).
 - **Built in S3:** the events `action.applied`, `action.failed`, `action.expired`, `action.undo_requested`, `action.undone`, `email.returned`, `mailbox.folder_created`, `mailbox.mode_changed`, `mailbox.policy_changed`, `mailbox.switch_changed`. `data` holds ids, action types, folder keys, attempts, codes and booleans.
 - **Built in S4:** the events `action.applying`, `action.approved`, `action.rejected`, `action.send_again`, `action.sent_copy_failed`, `delegate.added`, `delegate.changed`, `delegation.created`, `delegation.sent`, `delegation.answered`, `delegation.overdue`, `delegation.cancelled`, `delegation.done`, `delegation.chaser_run`; `countMailboxEventsBetween` (the chaser's once-per-day gate).
+- **Built in F102:** the events `action.edited` (data `previous_action_id`, `version`, `delegate_changed`, `via`; never text) and `delegation.remind_requested` (data `delegation_id`, `reminder`, `via`).
 - **Built in F099:** `listAuditEvents`, `sumLlmCallsByModelSince`, the event `action.send_limited` (data `limit`, `until`, `mailbox_id`).
 - **Built in F100:** `latestLlmPause` (`llm-pause.ts`: the LLM pause read from the newest `llm.call` rows, for `/status` and the digest).
 - **Built in F100 (metrics):** `metrics.ts`: `weekStats` and `recentWeekStats`, the one service that the Monday report, `GET /api/stats` and `bun run stats:week` call. It reads rows through the readers of the modules that own the tables (`triage/metrics-repo.ts`, `actions/repo/metrics.ts`, `delegation/metrics-repo.ts`, `audit/metrics-repo.ts`, and `channels/metrics-repo.ts` through the port `UrgentNoticeReader`) and passes plain rows to `packages/core/src/metrics/`. `routes.ts` adds `GET /api/stats` (flag `stats_page`). `docs/capabilities/measurement.md`.
@@ -292,6 +294,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **Built in F100 (stage 17):** the notice kind `weekly_report` (`notices/weekly-report.ts`, dedup `weekly_report:<weekStart>`, flag `weekly_report`): on Monday each linked member gets the numbers of the last finished week at the member's first digest time from 07:00 (else 08:00). `NoticeDeps`, `DigestJobDeps` and `DigestRequest` carry `testMail`; the digest adds the handled-share line behind the flag `handled_share`.
 - **Built in F100 (taps):** `action-feedback-taps.ts` (callbacks `rw:<p|c|n>:<action id>` and `mk:<action id>`: the reject reason and the mistake mark, flag `mistake_capture`), `answered-taps.ts` and the `/review` answered check (flag `answered_check`, writes `triage_feedback` rows with source `answered_check`), and `metrics-repo.ts` (`listUrgentNoticeTimes`). The weekly detector is the line above.
 - **Built in F104 (stage 11):** the notice kind `sent_missing` (`notices/sent-missing.ts`, text `renderSentMissingNotice` in `core/digest/notices.ts`, run after the host-blocked detector): one notice per owner and quiet period for a mailbox whose user mail is absent from Sent for 7 days (`SENT_MISSING_AFTER_MS`). It reads `mail.listSentHealth` and the flag `sent_sync`; key `sent_missing:<mailbox id>:<quiet since ms>`. No flag, no switch, a mailbox that is not `active`, an error code, a last pass older than 1 hour (`SENT_PASS_FRESH_MS`), or less than 7 quiet days cancel the pending rows (`cancelPendingOutbox`). Migration `20261115150001_outbox_sent_missing.sql`.
+- **Built in F102:** the notice kind `approval_edit` (`card-edits.ts`: `queueCardEdits`, `cardEditHooks`, one row per sent approval card and outcome; `card-edits-repo.ts`; `card-edit-check.ts`: `checkCardEdit`; `held-reason.ts`: `heldReason`), the edit branch of `sender.ts` (edits the message in place, skips quiet hours; the failure codes `answered_elsewhere`, `stale_edit`, `no_target`, `edit_failed`), the panel line on the approval card (`notices/approval.ts`, flag `approvals_page` and `WEB_BASE_URL`), and the routes of the approvals page: `approval-routes.ts` (`approvalRoutes`), `approvals-read.ts` (`listApprovals`, `getApprovalDetail`, `stateOf`; it sits here because it needs `delegation` and `config`) and `approval-api-docs.ts`. Migration `20261115130001_approval_edit.sql`. Rules: `docs/capabilities/digest-and-notices.md` rule 13 and `docs/capabilities/drafts-and-send.md` rules 12 to 14.
 - **Built in F088:** notices are facts: `outbox.view`, `channel`, `locale`, `detail`; renderers in `packages/core/src/notices/`; the detector registry `notices/`; `docs/code-patterns.md` § Notices are facts.
 - **Entry points without a `TenantContext`:** listed in `docs/code-patterns.md`.
 - **Later:** `mobile/` (push to the app), `whatsapp/`, and the `assistant` module (intents, chat state, voice).
@@ -312,56 +315,65 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
   - `chaser.ts`: `createChaserJob`, `runChaserForMailbox`, `reminderDecision`. Rules: `docs/capabilities/delegation.md` § Rules.
   - CLIs: `delegates:add|list|disable|enable`, `delegations:list|done` (§4; runbook `deploy/README.md` "Delegates").
   - **Built in S6a:** the chaser skips `suspended` organizations (`listSyncTargets`); the retention clear function `clearDelegationTasks`.
+  - **Built in F102:** `service.ts` adds `updateDelegate` (name, tags, active; one `delegate.changed` row) and `cancelByUser` (the user's cancel, reason `user_cancelled`, final); `remind.ts`: `remindNow` (a reminder now, same draft builder as the chaser, no gap and no clock gate); `list.ts`: `listDelegationItems` and the cursor of the list; `routes.ts`: `delegateRoutes` and `delegationRoutes` (flag `delegation_pages`); `api-docs.ts`. Rules: `docs/capabilities/delegation.md` rules 11 to 14.
 
 ### 3.10 HTTP API (routes from each module, composed in `platform/http` and `web.ts`)
 
 Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `apps/server/src/web.ts`); the paths below have no `/api` prefix, except the `/api/auth/*` row. Every `/api` route needs a session and a tenant (`requireSession`, `requireTenant`). An unknown `/api` path is 404 `not_found` only with a session; without a session it is 401. Role `owner` = `requireOwner`; `member` = any member.
 
-| Method and path                                                       | Role     | Module     | Slice |
-| --------------------------------------------------------------------- | -------- | ---------- | ----- |
-| `GET /health` (no session)                                            | public   | `platform` | S0    |
-| `GET, POST /api/auth/*` (allow-list only; no session)                 | public   | `platform` | S5a   |
-| `GET /me`                                                             | member   | `tenancy`  | S5a   |
-| `GET /mailboxes`                                                      | member   | `mail`     | S5b   |
-| `POST /mailboxes`                                                     | owner    | `mail`     | S5b   |
-| `POST /mailboxes/:id/password`                                        | owner    | `mail`     | S5b   |
-| `POST /mailboxes/:id/pause`                                           | owner    | `mail`     | S5b   |
-| `POST /mailboxes/:id/resume`                                          | owner    | `mail`     | S5b   |
-| `DELETE /mailboxes/:id`                                               | owner    | `mail`     | S5b   |
-| `GET /channels/telegram`                                              | member   | `channels` | S5b   |
-| `POST /channels/telegram/link`                                        | member   | `channels` | S5b   |
-| `DELETE /channels/telegram/link`                                      | member   | `channels` | S5b   |
-| `POST /onboarding/keep-mode`                                          | owner    | `tenancy`  | S5b   |
-| `GET /organization`                                                   | member   | `tenancy`  | S5c   |
-| `PATCH /organization`                                                 | owner    | `tenancy`  | S5c   |
-| `PATCH /me/digest-times`                                              | member   | `tenancy`  | S5c   |
-| `PATCH /me/locale`                                                    | member   | `tenancy`  | F098  |
-| `GET /me/sessions`                                                    | member   | `tenancy`  | S6b   |
-| `POST /me/terms`                                                      | member   | `tenancy`  | S6b   |
-| `GET /security-log` (owner; flag `security_log`)                      | owner    | `tenancy`  | F099  |
-| `GET /operator/flags`                                                 | operator | `operator` | F087  |
-| `GET /operator/orgs`, `GET /operator/orgs/:orgId`                     | operator | `operator` | F099  |
-| `GET /operator/notices?days=N`                                        | operator | `operator` | F099  |
-| `POST /operator/orgs/:orgId/plan`, `POST /operator/orgs/:orgId/flags` | operator | `operator` | F099  |
-| `GET /settings/:mailboxId`                                            | member   | `config`   | S5c   |
-| `PATCH /settings/:mailboxId/mode`                                     | owner    | `config`   | S5c   |
-| `PATCH /settings/:mailboxId/switches/:name`                           | owner    | `config`   | S5c   |
-| `PATCH /settings/:mailboxId/auto/:category`                           | owner    | `config`   | S5c   |
-| `PATCH /settings/:mailboxId/sync-folders/:key`                        | owner    | `config`   | S5c   |
-| `PATCH /settings/:mailboxId/sent-sync`                                | owner    | `config`   | F104  |
-| `GET /rules`                                                          | member   | `config`   | S5c   |
-| `POST /rules`                                                         | owner    | `config`   | S5c   |
-| `DELETE /rules/:id`                                                   | owner    | `config`   | S5c   |
-| `GET /activity`                                                       | member   | `reports`  | S5d   |
-| `GET /stats`                                                          | member   | `reports`  | F100  |
-| `POST /actions/:id/reject-reason`                                     | owner    | `actions`  | F100  |
-| `POST /actions/:id/mistake`                                           | owner    | `actions`  | F100  |
-| `POST /feedback`                                                      | member   | `triage`   | S5d   |
-| `POST /actions/undo`                                                  | member   | `triage`   | S5d   |
+| Method and path                                                                          | Role     | Module       | Slice |
+| ---------------------------------------------------------------------------------------- | -------- | ------------ | ----- |
+| `GET /health` (no session)                                                               | public   | `platform`   | S0    |
+| `GET, POST /api/auth/*` (allow-list only; no session)                                    | public   | `platform`   | S5a   |
+| `GET /me`                                                                                | member   | `tenancy`    | S5a   |
+| `GET /openapi.json` (the OpenAPI file of every route, ADR 0023)                          | member   | `platform`   | F102  |
+| `GET /mailboxes`                                                                         | member   | `mail`       | S5b   |
+| `POST /mailboxes`                                                                        | owner    | `mail`       | S5b   |
+| `POST /mailboxes/:id/password`                                                           | owner    | `mail`       | S5b   |
+| `POST /mailboxes/:id/pause`                                                              | owner    | `mail`       | S5b   |
+| `POST /mailboxes/:id/resume`                                                             | owner    | `mail`       | S5b   |
+| `DELETE /mailboxes/:id`                                                                  | owner    | `mail`       | S5b   |
+| `GET /channels/telegram`                                                                 | member   | `channels`   | S5b   |
+| `POST /channels/telegram/link`                                                           | member   | `channels`   | S5b   |
+| `DELETE /channels/telegram/link`                                                         | member   | `channels`   | S5b   |
+| `POST /onboarding/keep-mode`                                                             | owner    | `tenancy`    | S5b   |
+| `GET /organization`                                                                      | member   | `tenancy`    | S5c   |
+| `PATCH /organization`                                                                    | owner    | `tenancy`    | S5c   |
+| `PATCH /me/digest-times`                                                                 | member   | `tenancy`    | S5c   |
+| `PATCH /me/locale`                                                                       | member   | `tenancy`    | F098  |
+| `GET /me/sessions`                                                                       | member   | `tenancy`    | S6b   |
+| `POST /me/terms`                                                                         | member   | `tenancy`    | S6b   |
+| `GET /security-log` (owner; flag `security_log`)                                         | owner    | `tenancy`    | F099  |
+| `GET /operator/flags`                                                                    | operator | `operator`   | F087  |
+| `GET /operator/orgs`, `GET /operator/orgs/:orgId`                                        | operator | `operator`   | F099  |
+| `GET /operator/notices?days=N`                                                           | operator | `operator`   | F099  |
+| `POST /operator/orgs/:orgId/plan`, `POST /operator/orgs/:orgId/flags`                    | operator | `operator`   | F099  |
+| `GET /settings/:mailboxId`                                                               | member   | `config`     | S5c   |
+| `PATCH /settings/:mailboxId/mode`                                                        | owner    | `config`     | S5c   |
+| `PATCH /settings/:mailboxId/switches/:name`                                              | owner    | `config`     | S5c   |
+| `PATCH /settings/:mailboxId/auto/:category`                                              | owner    | `config`     | S5c   |
+| `PATCH /settings/:mailboxId/sync-folders/:key`                                           | owner    | `config`     | S5c   |
+| `PATCH /settings/:mailboxId/sent-sync`                                                   | owner    | `config`     | F104  |
+| `GET /rules`                                                                             | member   | `config`     | S5c   |
+| `POST /rules`                                                                            | owner    | `config`     | S5c   |
+| `DELETE /rules/:id`                                                                      | owner    | `config`     | S5c   |
+| `GET /activity`                                                                          | member   | `reports`    | S5d   |
+| `GET /stats`                                                                             | member   | `reports`    | F100  |
+| `POST /actions/:id/reject-reason`                                                        | owner    | `actions`    | F100  |
+| `POST /actions/:id/mistake`                                                              | owner    | `actions`    | F100  |
+| `POST /feedback`                                                                         | member   | `triage`     | S5d   |
+| `POST /actions/undo`                                                                     | member   | `triage`     | S5d   |
+| `GET /approvals`, `GET /approvals/:id` (flag `approvals_page`)                           | member   | `channels`   | F102  |
+| `POST /approvals/:id/approve`, `/reject`, `/edit` (flag `approvals_page`)                | owner    | `channels`   | F102  |
+| `GET /delegates` (flag `delegation_pages`)                                               | member   | `delegation` | F102  |
+| `POST /delegates`, `PATCH /delegates/:id` (flag `delegation_pages`)                      | owner    | `delegation` | F102  |
+| `GET /delegations` (flag `delegation_pages`)                                             | member   | `delegation` | F102  |
+| `POST /delegations/:id/done` (flag `delegation_pages`)                                   | member   | `delegation` | F102  |
+| `POST /delegations/:id/remind`, `POST /delegations/:id/cancel` (flag `delegation_pages`) | owner    | `delegation` | F102  |
 
 - `/api/auth/*` allow-list (`AUTH_ALLOWED_PATHS` in `platform/auth.ts`): `/sign-in/email`, `/sign-out`, `/get-session`, `/reset-password`, `/change-password`, `/revoke-other-sessions`, `/revoke-sessions`, and `GET /reset-password/<token>`; `POST /request-password-reset` too, only when the auth-mail sender is on (S6b). Every other path is 404. `/list-sessions` is not open: it returns tokens (use `GET /me/sessions`).
 - Pages are not routes of a module: `platform/http` serves the Astro build (`WEB_DIST`) with a session check. `/login`, `/setup`, `/forgot`, the legal pages `/legal/{pl,en}/{privacy,terms,dpa}` and the assets are public; `/` redirects to `/onboarding` or `/activity`.
-- **Phase 2 web (not built):** `/actions` list, approve and reject (Telegram has them from S4), `/delegates`, `/delegations` (Telegram and CLI from S4).
+- **Phase 2 web (not built):** a list of all actions (moves, flags, drafts); the approvals, delegates and delegations pages are built (F102).
 
 ### 3.11 Phase 2 modules (not built in MVP)
 
@@ -388,7 +400,7 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 
 ### 3.14 `loops` — open loops of the user's own sent mail (F116, layer 3)
 
-- **Owns (built so far):** `extractSent`, the one LLM call that reads a mail that the user sent (role `extractor`, prompt `extractor-v1`) and returns the resolved ask, promise and due dates. The pure part is in `packages/core/src/loops/` (`extractorOutputSchema`, `sentSkipReason`, `extractorInputOf`, `resolveDue`). The eval of that call (`runExtractorCase`, `scoreExtractor`, the report, the gate file and `extractorGateEvidence`) is in the same module and runs with `bun run eval --sim <scenario> --part sent-dev|sent-holdout --extractor` (`evals/README.md`). `loopHooks` (the implementation of `LoopHooks`, F116 stage 10) and `onSentOff`, which also ends the waiting follow-up sends (`loop_closed`). `analyzeSent` and `createLoopJobs` (the job `loops.analyze`, F116 stage 12): the rules without a model (promise, thread, delegation, code filters), the cap, the one call and the write of the analysis row and the loops. Later stages add the close rules, the one chaser and the follow-up commands (`spec/features/active/F116-e5b-open-loops/`).
+- **Owns (built so far):** `extractSent`, the one LLM call that reads a mail that the user sent (role `extractor`, prompt `extractor-v1`) and returns the resolved ask, promise and due dates. The pure part is in `packages/core/src/loops/` (`extractorOutputSchema`, `sentSkipReason`, `extractorInputOf`, `resolveDue`). The eval of that call (`runExtractorCase`, `scoreExtractor`, the report, the gate file and `extractorGateEvidence`) is in the same module and runs with `bun run eval --sim <scenario> --part sent-dev|sent-holdout --extractor` (`evals/README.md`). `loopHooks` (the implementation of `LoopHooks`, F116 stage 10) and `onSentOff`, which also ends the waiting follow-up sends (`loop_closed`). `analyzeSent` and `createLoopJobs` (the job `loops.analyze`, F116 stage 12): the rules without a model (promise, thread, delegation, code filters), the cap, the one call and the write of the analysis row and the loops. Later stages add the close rules, the one chaser and the follow-up commands (`spec/features/active/F116-e5b-open-loops/`). `delegateMail` (F116 stage 16, `delegate.ts`): the Delegate command; it reads `config`, `mail`, `tenancy` and `triage`, and calls `delegation` and `actions` for the rows (`docs/capabilities/delegation.md` rule 10). Later stages add the analysis job, the close rules, the one chaser and the follow-up commands (`spec/features/active/F116-e5b-open-loops/`).
 - **Does:** the code filters (`sentSkipReason`) decide which mail goes to the model. The model gets the subject, the local sent date, the number of recipients and the first 8,000 characters of the text. No header address (From, To, Cc) goes to the model. The body goes as written, inside the nonce data block, so an address in a signature can reach the model (triage does the same). LLM text is untrusted: Zod checks the answer, the code empties an `ask` or `promise` that holds an address, a link or a long number, and the code resolves every date.
 - **Edges (same layer, named in `layers.json`):** `loops → actions`, `loops → delegation`, `loops → triage` (the prompt registry; later the suspicion of a thread). No module of layers 1–3 imports `loops`; `channels` and `reports` may.
 
@@ -404,9 +416,10 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 | Rules                | Whitelist, blocklist, VIP                                                                                                                                                       | S5c         |
 | Activity             | What happened to each mail and why; Undo; ✅ / ✏️ feedback                                                                                                                      | S5d         |
 | Stats                | The weekly numbers of the last 8 finished weeks, read-only (`/stats`, flag `stats_page`); the cells come from `apps/web/src/lib/stats-view.ts`                                  | F100        |
-| Approvals            | Pending actions with approve / reject (Telegram has them from S4)                                                                                                               | Phase 2 web |
+| Approvals            | Sends that wait for a tap or are held: the full draft and the mail it answers, approve, reject (optional reason), edit; a nav badge (`/approvals`, flag `approvals_page`)       | F102        |
 | Digests              | Past reports (Telegram has them from S2)                                                                                                                                        | Phase 2 web |
-| Delegation           | Delegates and open delegations                                                                                                                                                  | Phase 2 web |
+| Delegations          | The delegations in four tabs, remind now, done, cancel (`/delegations`, flag `delegation_pages`)                                                                                | F102        |
+| Delegates            | The delegates: add, edit name and tags, turn off and on (`/delegates`, same flag; a header tab of Delegations)                                                                  | F102        |
 | Account page         | Delete mailbox / account and data (the Account card in Settings is S5a)                                                                                                         | S6          |
 | Operator console     | `/operator` (operators only; others get the 404 page): organizations with plan, flags, mailboxes, failures and LLM calls today; notices; plan and flag changes (F099, ADR 0027) | F099        |
 
@@ -442,6 +455,7 @@ S4 scripts (`package.json`):
 - `schemas/`: Zod schemas for LLM output, API input and output.
 - `rules/`, `policy/`, `planners/`, `digest/`, `metrics/`: pure functions with unit tests. `metrics/` (F100) holds M1–M5, M7 and M8, `buildWeekStats`, `weekRange` and `weekStatsSchema`; every Stage 2 metric is defined there (`docs/code-patterns.md` § Metrics).
 - S4 pieces: `triage/payloads.ts` (the draft and send payload schemas), `triage/planners.ts` (`planDelegation`, `delegationInputOf`), `triage/untrusted-text.ts` (`markUntrustedText`), `outgoing/` (`buildOutgoingMessage`, the templates, the quote, `isExternalSender`, `approvalViewOf`), `digest/approvals.ts` (the approval, set, result and answered texts), `digest/callback.ts` (the six new taps).
+- F102 pieces: `web/approvals.ts` and `web/delegation.ts` (the schemas of the new routes, shared with the panel), `outgoing/user-text.ts` (`cleanUserText`, `EDIT_SUBJECT_MAX`, `EDIT_BODY_MAX`), `outgoing/view-schema.ts` (the approval view schema), and the approval edit texts in `texts/approvals.ts`.
 - No imports from `apps/*`, no DB, no network.
 
 ## 6. Status flows
