@@ -97,7 +97,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
      `approve` refuses while the draft is not `applied` (`draft_not_ready`), and a tap later than 48 h after `notified_at` expires the send (the hourly job can be late by up to an hour).
    - **The edit after the tap:** the approval message keeps its text (the stored text of the sent card) and gets one line: `⏳ Approved HH:MM, sending.`, `✖️ Rejected HH:MM.`, `⌛ Expired HH:MM. The mail was not sent.` or `✅ Done HH:MM.` or `✅ Marked as sent HH:MM.` (after ✅ It went out). An approved send that is held (by `SEND_SCOPE`, a paused mailbox, a login error or a mail server that is not allowed) says so, keeps the ✖️ Reject button and expires 48 h after the tap.
    - **The result notice** is a new message (outbox kind `send_result`), one per owner, when the send ends: `✅ Sent to …`, `❌ Not sent …` (`smtp_rejected`, `smtp_error`), `⚠️ Unknown whether the mail … went out` (`outcome_unknown`; "Check Sent or ask the recipient before you send again"), `⌛ Not sent: …` for each `expired` reason, `✖️ Rejected`.
-     A `sent` notice adds "No copy in Sent" when the copy failed and "The draft stays in Drafts" when the server has no UIDPLUS. A `pending` Sent copy older than 10 min counts as failed. An edit of the approval message instead of a new message is a follow-up (`F039-approval-edit-in-place`, dropped; E4-A F102 takes it).
+     A `sent` notice adds "No copy in Sent" when the copy failed and "The draft stays in Drafts" when the server has no UIDPLUS. A `pending` Sent copy older than 10 min counts as failed. The approval card is edited in place after a decision in another channel: rule 13.
      - Check against the code: the old text named the `plan.md` of the ticket `F039-approval-edit-in-place` in the `planned` lane. That ticket is dropped now, and E4-A (`F102-e4-a-act-from-the-panel`) absorbs it.
    - **Notice kinds (S4):** `approval`, `approval_set`, `send_result` (owners only) and `delegation_answered` (every linked member, with a ✅ Done button). The notifier queues a request only after the draft is `applied`, and only for an `active` mailbox.
      With no linked owner it queues nothing and sets nothing: `notified_at` stays null, and after 7 days from creation the expiry job ends the send as `not_notified`.
@@ -130,6 +130,12 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
     - Answers: `edited`, `changed` (the send was replaced; `currentId` is the newest version), `closed` (with the state), `not_editable` (a reminder), `unchanged` (the same text and delegate as the built message), `delegate_inactive`, `drafts_off`, `not_found`. A `delegateId` on a kind other than `delegation`, and text that is empty or too long after cleaning, throw a `ValidationError`.
     - `approve` and `reject` of the old send answer `superseded` with `currentId`; a Telegram tap on it answers `taps.changed`. The audit row `action.edited` (on the new send) holds `previous_action_id`, `version`, `delegate_changed` and `via`, never text.
     - Metric readers skip a superseded send because they read other states: `listRejectRows` (only `rejected`), `listMistakeRows` (only `applied`), `listHiddenMoveRows` (moves), `countFailedSendsSince` (only `failed`), `listRecentSends` (`applying`, `applied`, `failed`), `listExpiredApprovals` (only `awaiting_approval` and `approved`) and `listSendResultsToNotify` (`result_notified_at` is set). The digest phrase says "changed in the panel".
+13. **Card sync (F102): a decision edits the other Telegram cards of the send.** `approve`, `reject` and `editApproval` call `ApprovalHooks.onDecided` in their transaction after a change; the real hook is `cardEditHooks` (`channels/card-edits.ts`). A Telegram tap passes `exceptUserId` (the tap edits its own card); a panel or CLI decision edits every card.
+    - The hook turns `approved` into `approved_held` with `heldBy` when `heldReason` (`channels/held-reason.ts`, the same check as the tap answer) names a cause. It queues one `approval_edit` row per sent card (`queueCardEdits`). A failure in the hook (a view that does not encode, a database error) is logged (`card_edits_not_queued`), undone to a savepoint, and the decision stays.
+    - The sender (`createOutboxSender`) edits the sent message in place (`channel.edit` with the message id of the target card; no new message, no sound, so quiet hours do not hold it; it counts in the per-user limit). Before it edits, `checkCardEdit` loads the target with the same organization and user, `sent`, with a message id and a text that retention did not remove; else the row ends `failed` / `no_target`. A card that went out before the user linked another chat is `no_target` too.
+    - The row ends `failed` / `stale_edit` when the send no longer has the outcome of the row (`approved` and `approved_held` need `approved`, `applying` or `applied`; `rejected` needs `rejected`; `changed` needs `expired` / `superseded`; `expired` needs `expired`), or when a newer edit of the same card went out. A refused edit (`bad_request`, `blocked`) ends `failed` / `edit_failed` with no retry; `soft`, `rate_limited` and `config` follow the release rules of other rows. A Telegram failure never changes the decision.
+    - The approval card of a send with an edited draft (version 2 or more) has the line `✏️ Version N, edited in the panel.`. It links to the panel (`<WEB_BASE_URL>/approvals?id=<send id>`) only when `WEB_BASE_URL` is set and the flag `approvals_page` is on (read once per notifier run for the organization); a link that the view schema refuses is left out and the card still goes out.
+    - No consent version bump: the edit rows hold the text that the card already sent, and the new lines are fixed phrases and our own panel address with a send id; no new kind of mail data reaches Telegram.
 
 ## Entry points
 
@@ -186,7 +192,7 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - No web approval page: approvals work only in Telegram. E4-A (F102) adds the panel and the edit of a waiting draft (PD-031).
 - Send limits (PD-044, F099): per mailbox 20 an hour and 100 in 24 h, per recipient 5 in 24 h (`SEND_LIMIT_*`). A send over a limit waits as `approved` with `last_error = send_limit:<kind>`; rules in `docs/code-patterns.md` § Side effects and `docs/architecture.md` §4.1. No per-organization limit and no limit in the panel: the operator sets the env keys.
 - A send needs an owner with a linked Telegram chat. With no linked owner the send ends as `not_notified` after 7 days.
-- The approval message is a new message; the edit in place of a card in the chat is E4-A (F102).
+- The panel page and the routes for decisions are E4-A (F102) later stages. A card of a reminder set (`approval_set:`) gets no edit from a decision on one of its sends; the set tap answers with its counts. The hourly expiry job edits no card.
 - `SEND_SCOPE` is one setting for the whole server, not per organization.
 
 ## Decisions
@@ -201,6 +207,7 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `apps/server/test/integration/actions-send.test.ts`
 - `apps/server/test/integration/actions-approvals.test.ts`
 - `apps/server/test/integration/actions-edit.test.ts`
+- `apps/server/test/integration/channels-card-sync.test.ts`
 - `apps/server/test/integration/actions-resume-approvals.test.ts`
 - `apps/server/test/integration/actions-close.test.ts`
 - `apps/server/test/integration/actions-feedback.test.ts`

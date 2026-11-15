@@ -93,12 +93,17 @@ describe("encodeNoticeView", () => {
       ).not.toThrow();
     });
 
-    test.each(["javascript:alert(1)", "ftp://example.test/x", "https://a b", `https://${"a".repeat(300)}`, ""])(
-      "T5 panelUrl %p fails the view schema",
-      (panelUrl) => {
-        expect(() => encodeNoticeView("approval", approval({ panelUrl }) as never)).toThrow(NoticeViewError);
-      }
-    );
+    test.each([
+      "javascript:alert(1)",
+      "ftp://example.test/x",
+      "https://a b",
+      `https://${"a".repeat(300)}`,
+      "",
+      "https://a\nb",
+      "https://a.test/x\r\nhttps://b.test",
+    ])("T5 panelUrl %p fails the view schema", (panelUrl) => {
+      expect(() => encodeNoticeView("approval", approval({ panelUrl }) as never)).toThrow(NoticeViewError);
+    });
 
     test("T5 a version below 1 or not whole fails", () => {
       expect(() => encodeNoticeView("approval", approval({ version: 0 }) as never)).toThrow(NoticeViewError);

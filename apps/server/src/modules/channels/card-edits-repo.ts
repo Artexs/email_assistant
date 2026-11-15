@@ -51,3 +51,65 @@ export async function failPendingCardsOfSend(db: DbOrTrx, ctx: TenantContext, se
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
 }
+
+export interface EditTarget {
+  id: string;
+  messageId: number;
+  sentAt: Date | null;
+  text: string;
+  // The send that the card asks about (`approval:<send id>`).
+  sendId: string;
+}
+
+// The card that an `approval_edit` row edits: same organization and same user (the database also refuses a pointer across
+// organizations), an approval card, `sent`, with a message id and its text. undefined: the sender fails the row (`no_target`).
+export async function getEditTarget(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  edit: { targetId: string; userId: string }
+): Promise<EditTarget | undefined> {
+  const row = await db
+    .selectFrom("outbox")
+    .select(["id", "external_message_id", "sent_at", "text", "dedup_key"])
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", edit.targetId)
+    .where("user_id", "=", edit.userId)
+    .where("kind", "=", "approval")
+    .where("status", "=", "sent")
+    .executeTakeFirst();
+  const prefix = "approval:";
+  if (!row || row.external_message_id === null || !row.text || !row.dedup_key.startsWith(prefix)) return undefined;
+  return {
+    id: row.id,
+    messageId: Number(row.external_message_id),
+    sentAt: row.sent_at,
+    text: row.text,
+    sendId: row.dedup_key.slice(prefix.length),
+  };
+}
+
+// A newer edit row of the same card that went out already: an older row must not overwrite it (the order of the rows is the
+// order of the outcomes: `created_at`, then the id).
+export async function newerEditSent(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  edit: { id: string; targetId: string; createdAt: Date }
+): Promise<boolean> {
+  const row = await db
+    .selectFrom("outbox")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("kind", "=", "approval_edit")
+    .where("edit_of_outbox_id", "=", edit.targetId)
+    .where("status", "=", "sent")
+    .where("id", "<>", edit.id)
+    .where((eb) =>
+      eb.or([
+        eb("created_at", ">", edit.createdAt),
+        eb.and([eb("created_at", "=", edit.createdAt), eb("id", ">", edit.id)]),
+      ])
+    )
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}

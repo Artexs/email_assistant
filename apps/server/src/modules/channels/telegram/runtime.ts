@@ -57,6 +57,8 @@ export interface TelegramRuntimeDeps {
   testMail: TestMailRule;
   operatorContact: string | null;
   syncEveryMin: number;
+  // `WEB_BASE_URL`; the approval card links to the panel only when it is set and `approvals_page` is on.
+  webBaseUrl?: string;
   // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
   // Only for tests.
@@ -105,7 +107,13 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
 
   return {
     async notify() {
-      await detectNotices({ db, now, startedAt, testMail: deps.testMail });
+      await detectNotices({
+        db,
+        now,
+        startedAt,
+        testMail: deps.testMail,
+        ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
+      });
       await sender.run();
     },
     scheduleDigests: () => scheduleDigests({ db, now, testMail: deps.testMail }),

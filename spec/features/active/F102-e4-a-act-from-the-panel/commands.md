@@ -38,7 +38,7 @@ Flags: `/approvals*` → `approvals_page`; `/delegates*`, `/delegations*` → `d
 - `ApproveResult` and `RejectResult` gain `{ kind: "superseded", currentId }`.
 - `ApprovalHooks.onDecided(trx, ctx, { sendId, decision: "approved" | "rejected" | "changed" | "expired", exceptUserId?, at })` (defined in `actions` with `noApprovalHooks`, stage 08; the real one is `cardEditHooks(deps)` in `channels`, stage 09). The hook, not the caller, turns `approved` into `approved_held` + `heldBy` (shared `heldReason` in `channels`).
 - `queueCardEdits(trx, ctx, { sendId, outcome, heldBy?, exceptUserId?, at })` in `channels` (stage 06): one `approval_edit` row per sent `approval:<sendId>` card.
-- `DelegationHooks.onSuperseded(trx, ctx, { delegationId, draftActionId, sendActionId, delegateId })` → `boolean`; `DelegationHooks.activeDelegate(trx, ctx, delegateId)` → `{ id, name, email } | undefined` (`actions` must not import `delegation`).
+- `DelegationHooks.onSuperseded(trx, ctx, { delegationId, draftActionId, sendActionId, delegateId, at })` → `boolean`; `DelegationHooks.activeDelegate(trx, ctx, delegateId)` → `{ id, name, email } | undefined` (`actions` must not import `delegation`).
 - `cleanUserText(text, { oneLine })` in `packages/core/src/outgoing/`.
 - `remindNow`, `cancelByUser`, `updateDelegate` in module `delegation`, each with `via`.
 
