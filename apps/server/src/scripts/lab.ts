@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
 import { llmRoles } from "@ea/core";
@@ -11,12 +11,12 @@ import {
   createOrgLookup,
   createLabState,
   createServeMailClient,
-  DemoSeedError,
   exportDemo,
   importDemo,
   labEnvIssues,
   loadLabCorpus,
   orgHasMail,
+  readSeedFile,
   readServeStatus,
   runServe,
   runSpend,
@@ -27,6 +27,7 @@ import {
   storeRunUrgencyProfile,
   takeServeLock,
   writeLabReport,
+  writeNewSeedFile,
   writeServeStatus,
 } from "../modules/lab";
 import { configureMailHosts, openImapProvider, verifySmtpLogin } from "../modules/mail";
@@ -148,21 +149,8 @@ async function main(): Promise<number> {
       demo: {
         exportSeed: (orgId, run, day) => exportDemo(db, { orgId }, run, day, { scenario: SCENARIO }),
         importSeed: (seed, opts) => importDemo(db, seed, opts),
-        writeNewFile: (path, text) => {
-          try {
-            writeFileSync(resolve(path), text, { flag: "wx" });
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new DemoSeedError("out_exists");
-            throw error;
-          }
-        },
-        readFile: (path) => {
-          try {
-            return readFileSync(resolve(path), "utf8");
-          } catch {
-            return undefined;
-          }
-        },
+        writeNewFile: writeNewSeedFile,
+        readFile: readSeedFile,
       },
       serveStatus: () => readServeStatus(stateDir),
       serve: () => {

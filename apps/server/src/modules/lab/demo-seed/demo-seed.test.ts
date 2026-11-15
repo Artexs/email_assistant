@@ -1,5 +1,10 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, test } from "bun:test";
 
+import { readSeedFile, writeNewSeedFile } from "./files";
 import { checkDemoSeed, parseDemoSeed, serializeDemoSeed } from "./format";
 import { findNonTestAddress, findRealHost, hasNonTestAddress } from "./scan";
 import { DEMO_TABLES, demoColumns, type DemoRow, type DemoTable } from "./tables";
@@ -382,5 +387,21 @@ describe("buildImportRows", () => {
     const twice = demoSeed();
     twice.tables.delegates = [...twice.tables.delegates, ...twice.tables.delegates];
     expect(() => buildImportRows(twice, ctx())).toThrow(DemoSeedError);
+  });
+});
+
+describe("the seed files", () => {
+  test("a new file is written; an existing file is out_exists and keeps its text; a missing file reads as undefined", () => {
+    const dir = mkdtempSync(join(tmpdir(), "f113-s15-files-"));
+    try {
+      const path = join(dir, "demo.json");
+      writeNewSeedFile(path, "one");
+      expect(readSeedFile(path)).toBe("one");
+      expect(() => writeNewSeedFile(path, "two")).toThrow(DemoSeedError);
+      expect(readSeedFile(path)).toBe("one");
+      expect(readSeedFile(join(dir, "missing.json"))).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
