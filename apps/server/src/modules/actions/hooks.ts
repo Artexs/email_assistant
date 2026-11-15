@@ -39,7 +39,7 @@ export interface DelegationHooks {
   onSuperseded(
     trx: Transaction<DB>,
     ctx: TenantContext,
-    input: { delegationId: string; draftActionId: string; sendActionId: string; delegateId: string }
+    input: { delegationId: string; draftActionId: string; sendActionId: string; delegateId: string; at: Date }
   ): Promise<boolean>;
   // The reader that lets `actions` resolve the delegate of an edit without importing `delegation` (layer rule).
   // undefined: no such delegate in this organization, or it is not active.

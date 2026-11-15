@@ -29,6 +29,12 @@ const wouldDoActionSchema = z.strictObject({
   delegateId: nullableText,
 });
 
+// The link to the panel page of a send: a text line on the approval card. One line, http or https, no space.
+export const panelUrlSchema = z
+  .string()
+  .max(300)
+  .regex(/^https?:\/\/\S+$/);
+
 const approvalViewSchema = z.strictObject({
   kind: draftKind,
   recipient: z.strictObject({ name: nullableText, address: text }),
@@ -40,11 +46,7 @@ const approvalViewSchema = z.strictObject({
   quote: z.strictObject({ text, cut: z.boolean() }).nullable(),
   synthetic: z.boolean(),
   version: z.number().int().min(1).optional(),
-  panelUrl: z
-    .string()
-    .max(300)
-    .regex(/^https?:\/\/\S+$/)
-    .optional(),
+  panelUrl: panelUrlSchema.optional(),
 });
 
 const sendResultKindSchema = z.discriminatedUnion("kind", [
