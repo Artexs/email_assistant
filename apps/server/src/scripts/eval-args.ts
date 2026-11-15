@@ -3,11 +3,21 @@ import { parseArgs } from "node:util";
 import { simParts } from "@ea/core";
 import { z } from "zod";
 
+import {
+  type ClassifierPromptChoice,
+  type ClassifierVersion,
+  type ClassifierV3Part,
+  classifierV3Parts,
+  classifierVersionIds,
+  optionalParts,
+  productionClassifierChoice,
+} from "../modules/triage";
 import { openAiReasoningEfforts } from "../platform/config";
 import { llmProviderIds } from "../platform/llm";
 
 import { RUN_CAP_USD } from "./eval-ledger";
 
+const v3Version: ClassifierVersion = "classifier-v3";
 const sets = ["synthetic", "injection", "delegation", "all"] as const;
 
 // The bare `--sim` command meets the 10 minute exit: 1,417 calls at 240 per minute take about 6 minutes.
@@ -24,6 +34,9 @@ export const evalUsage = [
   "       bun run eval --sim <scenario> --part dev|holdout|week [--provider …] [--model …] [--reasoning-effort …]",
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
+  "                    [--prompt-version classifier-v2|classifier-v3 (default: the production prompt)]",
+  "                    [--prompt-parts urgency,history,list|none (only with classifier-v3; none = attachments only; default: the production parts when v3 is in production, else none)]",
+  "                    (the history part gives the model the sim's generated received count and corrections: the persona group's ideal mix, not the model's own past labels)",
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
   "       bun run eval --sim <scenario> --part dev|holdout|week --suspicious [--out <file.md>]   (suspicious-mail rules, no LLM)",
 ].join("\n");
@@ -60,6 +73,8 @@ const optionsSchema = z.object({
   "spend-ledger": z.string().min(1).optional(),
   "fresh-lock": z.boolean().default(false),
   suspicious: z.boolean().default(false),
+  "prompt-version": z.enum(classifierVersionIds as [ClassifierVersion, ...ClassifierVersion[]]).optional(),
+  "prompt-parts": z.string().min(1).optional(),
   judge: z.boolean().default(false),
   "judge-provider": z.enum(llmProviderIds).optional(),
   "judge-model": z.string().min(1).optional(),
@@ -70,6 +85,8 @@ export type EvalOptions = z.infer<typeof optionsSchema> & {
   // The old command runs one case at a time and keeps the configured rpm (`rpm` undefined).
   concurrency: number;
   budgetUsd: number;
+  // The classifier prompt of the run. Only a sim run picks another one than production.
+  prompt: ClassifierPromptChoice;
 };
 
 // --real reads labels from the DB and takes no case-run options; the case run takes no DB options.
@@ -100,7 +117,31 @@ const simOnly = [
   "judge-provider",
   "judge-model",
   "judge-rpm",
+  "prompt-version",
+  "prompt-parts",
 ] as const;
+
+// `none` is attachments only. Undefined means a usage error: an empty or unknown name, or `none` with a name.
+function parsePromptParts(text: string): ClassifierV3Part[] | undefined {
+  const names = text.split(",").map((name) => name.trim());
+  if (names.length === 1 && names[0] === "none") return [];
+  const known = new Set<string>(classifierV3Parts);
+  if (!names.every((name) => known.has(name))) return undefined;
+  return optionalParts(names as ClassifierV3Part[]);
+}
+
+// Review N5: without `--prompt-parts`, v3 runs the production parts when v3 is the production pointer, else `none`.
+export function resolvePrompt(
+  version: ClassifierVersion | undefined,
+  partsText: string | undefined,
+  production: ClassifierPromptChoice = productionClassifierChoice()
+): ClassifierPromptChoice | undefined {
+  const chosen = version ?? production.version;
+  if (partsText === undefined) return chosen === production.version ? production : { version: chosen, parts: [] };
+  if (chosen !== v3Version) return undefined;
+  const parts = parsePromptParts(partsText);
+  return parts === undefined ? undefined : { version: chosen, parts };
+}
 
 // Undefined means a usage error.
 export function parseEvalArgs(args: string[]): EvalOptions | undefined {
@@ -140,6 +181,8 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "judge-provider": { type: "string" },
         "judge-model": { type: "string" },
         "judge-rpm": { type: "string" },
+        "prompt-version": { type: "string" },
+        "prompt-parts": { type: "string" },
       },
       strict: true,
     });
@@ -150,7 +193,7 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       const allowed = new Set<string>(["gap", "out", ...gapOnly]);
       if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
       if (data["sim-json"] === undefined || data["real-json"] === undefined) return undefined;
-      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD };
+      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
     }
     if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
     if (data.suspicious) {
@@ -158,7 +201,7 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       const allowed = new Set<string>(["sim", "part", "suspicious", "out"]);
       if (data.sim === undefined || data.part === undefined) return undefined;
       if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
-      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD };
+      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
     }
     if (data.sim !== undefined) {
       if (data.part === undefined) return undefined;
@@ -170,8 +213,11 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       ) {
         return undefined;
       }
+      const prompt = resolvePrompt(data["prompt-version"], data["prompt-parts"]);
+      if (prompt === undefined) return undefined;
       return {
         ...data,
+        prompt,
         concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,
         rpm: data.rpm ?? SIM_DEFAULT_RPM,
         budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
@@ -183,7 +229,9 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         data["org-id"] === undefined ||
         data["mailbox-id"] === undefined
       : realOnly.some((key) => values[key] !== undefined);
-    return wrong ? undefined : { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD };
+    return wrong
+      ? undefined
+      : { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
   } catch {
     return undefined;
   }

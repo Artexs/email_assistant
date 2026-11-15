@@ -62,7 +62,7 @@ async function main(): Promise<number> {
   // Read here, not through loadConfig: the probe needs no DB and no other key.
   assertTestAddress(options.address, process.env.TEST_MAILBOX_ADDRESS);
   const report = await probeMove(
-    { host: options.host, port: options.port, user: options.address, password },
+    { host: options.host, port: options.port, user: options.address, auth: { kind: "password", password } },
     { probeId: randomUUID(), now: new Date(), log: (line) => out.print(line) }
   );
   for (const line of reportLines(report)) out.print(line);

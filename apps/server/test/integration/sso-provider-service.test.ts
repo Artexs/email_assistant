@@ -287,7 +287,9 @@ describe("the provider service (F119 stage 07)", () => {
     await linkAnn(org);
     await setRequired(org.orgId, true);
 
-    expect(await removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW })).toEqual({
+    expect(
+      await removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW, confirmDomain: org.domain })
+    ).toEqual({
       kind: "removed",
       linksRemoved: 1,
       sessionsEnded: 1,
@@ -305,7 +307,9 @@ describe("the provider service (F119 stage 07)", () => {
       sessions_ended: 1,
     });
 
-    expect(await removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW })).toEqual({ kind: "none" });
+    expect(
+      await removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW, confirmDomain: org.domain })
+    ).toEqual({ kind: "none" });
     expect(await auditRows(org.orgId, auditEvents.ssoProviderRemoved)).toHaveLength(1);
   });
 
@@ -387,7 +391,9 @@ describe("the provider service (F119 stage 07)", () => {
     expect(await setFor(org, first)).toEqual({ kind: "new" });
     expect(await setFor(org, await configOf(fakeA, { clientSecret: `${secret}-2` }))).toEqual({ kind: "secret" });
     expect(await setFor(org, await configOf(fakeB))).toMatchObject({ kind: "boundary" });
-    expect(await removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW })).toMatchObject({
+    expect(
+      await removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW, confirmDomain: org.domain })
+    ).toMatchObject({
       kind: "removed",
     });
 
@@ -424,7 +430,9 @@ describe("review gaps of stage 07 (TG1 to TG4)", () => {
     await linkAnn(b);
     await setRequired(b.orgId, true);
 
-    expect(await removeSsoProvider(db, { orgId: a.orgId }, { actor: "cli", now: NOW })).toEqual({
+    expect(
+      await removeSsoProvider(db, { orgId: a.orgId }, { actor: "cli", now: NOW, confirmDomain: a.domain })
+    ).toEqual({
       kind: "removed",
       linksRemoved: 0,
       sessionsEnded: 0,
@@ -524,7 +532,11 @@ describe("review gaps of stage 07 (TG1 to TG4)", () => {
     const held = await db.transaction().execute(async (trx) => {
       // The plugin holds the provider row like this during a callback.
       await sql`UPDATE sso_providers SET provider_id = provider_id WHERE org_id = ${org.orgId}::uuid`.execute(trx);
-      const removal = removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW });
+      const removal = removeSsoProvider(
+        db,
+        { orgId: org.orgId },
+        { actor: "cli", now: NOW, confirmDomain: org.domain }
+      );
       expect(await stillPending(removal, 500)).toBe(true);
       await sql`INSERT INTO auth_accounts (account_id, provider_id, user_id) VALUES (${`sub-${org.userId}`}, ${org.orgId}, ${org.userId}::uuid)`.execute(
         trx

@@ -16,11 +16,12 @@ export interface ActionView {
   kind: DraftKind | null; // from the payload of a draft or a send
   delegateId: string | null;
   waiting?: "send_limit"; // an approved send held by the send limit (F099 D11 a)
+  reason?: string | null; // the status reason of the row (`superseded` for a send that a panel edit replaced)
 }
 
 export type WouldDoAction = Pick<
   ActionView,
-  "type" | "status" | "folder" | "reverse" | "kind" | "delegateId" | "waiting"
+  "type" | "status" | "folder" | "reverse" | "kind" | "delegateId" | "waiting" | "reason"
 >;
 
 const TENSES: Record<string, ActionTense> = {
@@ -57,6 +58,7 @@ const SEND_STATUSES: ReadonlySet<string> = new Set<SendPhraseStatus>([
 // A send phrase has no tense.
 function sendPhrase(action: WouldDoAction, texts: CoreTexts): string | undefined {
   if (action.status === "approved" && action.waiting === "send_limit") return texts.wouldDo.sendLimitWait;
+  if (action.status === "expired" && action.reason === "superseded") return texts.wouldDo.sendChanged;
   return SEND_STATUSES.has(action.status) ? texts.wouldDo.send[action.status as SendPhraseStatus] : undefined;
 }
 
