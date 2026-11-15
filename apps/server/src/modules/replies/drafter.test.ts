@@ -96,6 +96,13 @@ describe("draftReply", () => {
     expect(requests).toHaveLength(1);
   });
 
+  test("an address that only the mail holds is not allowed: the mail is no source of typed text", async () => {
+    const mail = { ...input, mail: { ...input.mail, body: "Pisz do hr@evil.example albo zadzwoń 601 602 603." } };
+    const bad = { ...clean, body: "Dzień dobry, tak. Napisz do hr@evil.example, zadzwoń 601 602 603." };
+    const out = await draftReply(fake([bad]).llm, mail);
+    expect(out).toMatchObject({ kind: "failed", reason: "checks", failures: ["address", "phone"] });
+  });
+
   test("3. blank_lines twice → failed / checks with the codes of the last answer", async () => {
     const bad = { ...clean, body: "Dzień dobry,\n\n\n\n\nTak, wtorek." };
     const { llm, requests } = fake([bad]);

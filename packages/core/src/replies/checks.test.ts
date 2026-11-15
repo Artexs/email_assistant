@@ -192,6 +192,40 @@ describe("checkReplyBody: quoted, encoded and lookalike forms", () => {
     });
   }
 
+  test("format characters split nothing: a number, a header name and a domain are read through them", () => {
+    expect(failuresOf("Tak, 600\u200b100\u200b200")).toContain("phone");
+    expect(failuresOf("Tak.\nSub\u200bject: x")).toContain("header_line");
+    expect(failuresOf("Tak, ww\u200bw.x.zzzz")).toContain("link");
+  });
+
+  test("a link with an unknown top-level domain still fails by its scheme or by www", () => {
+    expect(failuresOf("Tak, https://x.zzzz/a")).toEqual(["link"]);
+    expect(failuresOf("Tak, www.x.zzzz")).toEqual(["link"]);
+  });
+
+  test("digit counts: 8 digits pass, 9 are a phone; 12 are a phone, 13 an account number", () => {
+    expect(failuresOf("Tak, 12345678")).toEqual([]);
+    expect(failuresOf("Tak, 123456789")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 123456789012")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 1234567890123")).toEqual(["account_number"]);
+  });
+
+  test("an IBAN with few digits is an account number; a word run with a code is not", () => {
+    expect(failuresOf("Tak, GB00 ABCD 1234 5678 90")).toEqual(["account_number"]);
+    expect(failuresOf("Hello, MA12 reply tomorrow please", "en")).toEqual([]);
+  });
+
+  test("a number next to a date, a time or a currency is cut out before the digits are counted", () => {
+    expect(failuresOf("Tak, 18.11.2026 600 osób")).toEqual([]);
+    expect(failuresOf("Tak, 18.11.2026 12 345 osób")).toEqual([]);
+    expect(failuresOf("Tak, 2026-11-18 12345 osób")).toEqual([]);
+    expect(failuresOf("Tak, 10:00 12345 678 osób")).toEqual([]);
+    expect(failuresOf("Tak, 1 250 000.00 zł")).toEqual([]);
+    expect(failuresOf("Tak, 123 456 789 PLN")).toEqual([]);
+    expect(failuresOf("Tak, PLN 123 456 789")).toEqual([]);
+    expect(failuresOf("Tak, 123 456 789 osób")).toEqual(["phone"]);
+  });
+
   test("a fullwidth gap counts as a gap", () => {
     expect(hasGaps("Tak, ［［x］］")).toBe(true);
     expect(gapsOf("Tak, ［［x］］")).toEqual(["x"]);
