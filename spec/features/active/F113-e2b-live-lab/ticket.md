@@ -43,4 +43,6 @@ The frozen lab-01 week of made-up mail runs in real time through the real pipeli
 
 ## Notes
 
+- Owner, 2026-11-15: the week run (C4) may spend its $5 cap ("Yes ... Proceed with it").
+
 §2.1 row 19. The old AgentMail delegate ticket (F066) is already dropped; GreenMail bots replace it. The "delegate answers from another address" case (F040) is planted and reported.

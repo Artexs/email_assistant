@@ -1,5 +1,7 @@
 # F111 stage 07 — The EU endpoint is verified, or the fallback is recorded
 
+**Parked (owner, 2026-11-15: "I don't want to complicate it").** The install keeps the default US API (ADR 0035 decision 1). Stage 07 does not run; F111 closes after stages 05 and 06. Run it later only if the owner asks for the EU option.
+
 Part of [`../plan.md`](../plan.md). `[risky]`: privacy claim and a real paid endpoint. Gate: owner step O1 (PD-111, the EU project request) is answered and O3 (the PD-110 second pass) is done. The coordinator writes the owner's answer and its date into the spawn text: "branch A" (approved) or "branch B" (refused). Without an answer this stage does not start (P6). Needs stages 02, 03 and 06.
 
 Release-note rule for both branches: this stage changes no VPS env and no deploy (P1, P5).

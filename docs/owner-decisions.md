@@ -519,3 +519,27 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the owner turned two-factor sign-in on once, then off by choice. `/operator` redirects to the settings page until it is on again; that is the designed rule.
 - Undo: turn two-factor sign-in on in Settings → Account; the operator console opens with no code change.
 - Source: `spec/features/done/2026-11/F105-e7-t6-identity-a-totp-backup-codes-break-glass/outcome.md`.
+
+### 2026-11-15 · Reply drafts: block long numbers the user did not type; approval is the final control (F115) · security · new
+- Choice: a draft fails on any run of 12+ digits (separators allowed) not typed by the user and on any mod-97-valid IBAN; the digit budget stays as a second layer; zero misses on hostile text is no longer a goal.
+- Why: no pattern check reaches zero misses; the user approves the exact version before any send (ADR 0033 §5). Owner answer to the question: "idk".
+- Undo: tell the coordinator another rule before the stage 01 re-review.
+- Source: `spec/features/active/F115-e6a-reply-drafts/ticket.md` § Notes; `notes/2026-11-15-f115-s01-account-check-open.md`.
+
+### 2026-11-15 · Reply drafts: gate G1 passes on defaults; the model stays open (F115) · scope · new
+- Choice: stages 03+ build before the stage 02 prototype run; PD-071 and PD-083 keep their defaults; PD-072 (model) is a config value set when the owner's new provider key exists.
+- Why: the owner wants another provider (for example DeepSeek) and has no key yet; nothing else in stages 03+ depends on the model.
+- Undo: hold stages 03+ until stage 02 runs.
+- Source: F115 `ticket.md` § Notes; `notes/owner-later.md` item 2.
+
+### 2026-11-15 · Mailbox OAuth: gate G1 passes on defaults without a live spike; `openid` added to the Microsoft redeem (F117) · scope · new
+- Choice: `spike.md` records every row as not run; M3 and G2 assumed PASS; stage 14 adds `openid` to the Microsoft code-redeem scope so an ID token surely returns; OAuth flags stay off.
+- Why: owner answer 2026-11-15 (skip the live checks); `openid` is the fix the stage 08 review named for the unknown case.
+- Undo: run the stage 01 kit live and refresh stages 14–15 from its facts.
+- Source: F117 `plan.md` § Owner steps; `stages/stage-02-spike-report.md` § No live run.
+
+### 2026-11-15 · Docs site: GitHub Pages stays off until stages 10–15 land (F112) · production · new
+- Choice: the `github-pages` environment allows `master` and `v*` tags now; the Pages source (GitHub Actions) and the `v*` tag ruleset are set at stage 16.
+- Why: with Pages on, the v0.2.0 tag push would publish a half-built public site.
+- Undo: `gh api -X POST repos/Artexs/email_assistant/pages -f build_type=workflow`.
+- Source: F112 `stages/stage-16-publication.md` § Step 1.
