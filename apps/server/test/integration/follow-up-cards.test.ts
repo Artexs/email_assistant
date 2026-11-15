@@ -1,5 +1,7 @@
 // F116 stage 11: the follow-up card, the consent gate, the result and failure notices, the held notice, the card edit of a closed
 // loop and the 48 hour expiry. Every test runs in a transaction that is rolled back. The races are in `follow-up-cards-races.test.ts`.
+import { format } from "node:util";
+
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -27,13 +29,22 @@ const at = (ms: number) => new Date(T.getTime() + ms);
 // The notice code logs and warns about rows it skips; these tests read the output.
 let logSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
+let warnSpy: ReturnType<typeof spyOn>;
+let warnings: string[] = [];
 beforeEach(() => {
+  warnings = [];
   logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
-  errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+  errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+    warnings.push(format(...args));
+  });
+  warnSpy = spyOn(console, "warn").mockImplementation((...args: unknown[]) => {
+    warnings.push(format(...args));
+  });
 });
 afterEach(() => {
   logSpy.mockRestore();
   errorSpy.mockRestore();
+  warnSpy.mockRestore();
 });
 
 interface World {
@@ -230,6 +241,39 @@ describe("T4 the approval card of a follow-up and the consent gate", () => {
     });
   });
 
+  test("a draft that names another loop than its send gets no card: the owner never sees text that the loop did not make", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
+      const other = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { sendStatus: "rejected" });
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ ...f.draftPayload, loop_id: other.loopId }) })
+        .where(
+          "id",
+          "=",
+          (
+            await trx
+              .selectFrom("actions")
+              .select("depends_on_action_id")
+              .where("id", "=", f.sendId)
+              .executeTakeFirstOrThrow()
+          ).depends_on_action_id ?? ""
+        )
+        .execute();
+      await run(trx);
+      expect(
+        (await outbox(trx, w.orgId, "approval")).filter((row) => row.dedup_key === `approval:${f.sendId}`)
+      ).toEqual([]);
+      const row = await trx
+        .selectFrom("actions")
+        .select("notified_at")
+        .where("id", "=", f.sendId)
+        .executeTakeFirstOrThrow();
+      expect(row.notified_at).toBeNull();
+    });
+  });
+
   test("a mail send keeps going to every owner: the gate is for loop data only", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
@@ -400,6 +444,8 @@ describe("T3b a failed follow-up: one fixed action_failed notice, no recipient, 
       expect(JSON.stringify(failed)).not.toContain("secret-anna@example.test");
       expect(JSON.stringify(failed)).not.toContain("SECRET-SUBJECT");
       expect((await outbox(trx, w.orgId, "send_result")).filter((row) => row.loop_id !== null)).toEqual([]);
+      // The result detector never even tried it: no skipped-notice warning for a failed follow-up.
+      expect(warnings.filter((line) => line.includes("notice_skipped kind=send_result"))).toEqual([]);
       // The mail send is told by its result line, once, with the Send again button; the follow-up marks keep a rerun quiet.
       expect((await outbox(trx, w.orgId, "send_result")).filter((row) => row.email_id === mail.emailId)).toHaveLength(
         4
@@ -414,7 +460,8 @@ describe("T3b a failed follow-up: one fixed action_failed notice, no recipient, 
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { sendStatus: "failed", notifiedAt: at(-HOUR) });
-      await trx.deleteFrom("chat_links").where("org_id", "=", w.orgId).execute();
+      // Only the assistant keeps a chat: the organization is visited, but it has no owner to tell.
+      await trx.deleteFrom("chat_links").where("org_id", "=", w.orgId).where("user_id", "<>", w.member).execute();
       await run(trx);
       const mark = await trx
         .selectFrom("actions")
@@ -495,6 +542,24 @@ describe("the card of a follow-up whose loop closed loses its buttons", () => {
       expect(pending).toEqual({ status: "failed", error_code: "answered_elsewhere" });
       await run(trx);
       expect(await outbox(trx, w.orgId, "approval_edit")).toHaveLength(1);
+    });
+  });
+
+  test("a closed loop whose cards were never sent: the pending cards are cancelled, no edit is queued", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
+      await run(trx);
+      expect(await outbox(trx, w.orgId, "approval")).toHaveLength(2);
+      await trx
+        .updateTable("actions")
+        .set({ status: "expired", status_reason: "loop_closed" })
+        .where("id", "=", f.sendId)
+        .execute();
+      await run(trx);
+      const cards = await outbox(trx, w.orgId, "approval");
+      expect(cards.every((card) => card.status === "failed")).toBe(true);
+      expect(await outbox(trx, w.orgId, "approval_edit")).toEqual([]);
     });
   });
 

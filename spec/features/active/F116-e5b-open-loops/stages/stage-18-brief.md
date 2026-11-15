@@ -47,3 +47,7 @@ Buttons on these lines (19).
 ## Carry-over from stage 17 review
 
 - N5: the digest reads the gate per member through the choke point of stage 11 and passes loopConsent into buildDigestMessage; N4: count only consent rows newer than the last chat.unlinked row (review-17.md).
+
+## Carry-over from stage 11 (worker, 2026-11-15)
+
+- `loopConsentOf(db, ctx, userIds)` exists (`channels/consent.ts`); stage 11 uses it for the card and the result notice. A new sender of loop data must also be added to the list in `channels/consent-gate.test.ts`.

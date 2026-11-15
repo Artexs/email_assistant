@@ -19,6 +19,7 @@ import {
   listActionsForEmails,
   listApprovalSends,
   listExpiredApprovals,
+  listFailedFollowUps,
   listFailedUnnotified,
   listFollowUpLimitHolds,
   listRecentSends,
@@ -222,6 +223,13 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
         sendStatus: "expired",
         createdAt: ago(HOUR),
       });
+      // A failed follow-up is told by the fixed failure notice (`listFailedFollowUps`), never by a result line.
+      const failedLoop = await insertLoopActionPair(trx, a, loopId, {
+        draftStatus: "applied",
+        sendStatus: "failed",
+        createdAt: ago(HOUR),
+        send: { status_reason: "outcome_unknown" },
+      });
       const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR) });
       const mineSet = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         setId: "22222222-2222-4222-8222-222222222222",
@@ -246,6 +254,10 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
         pendingCopyMaxAgeMs: HOUR,
       });
       expect(results.map((send) => send.id).sort()).toEqual([ended.sendId, done.sendId].sort());
+      expect(await listFailedFollowUps(trx, a.ctx, { limit: 50 })).toEqual([
+        { id: failedLoop.sendId, loopId, unknown: true },
+      ]);
+      expect(await listFailedFollowUps(trx, b.ctx, { limit: 50 })).toEqual([]);
     });
   });
 

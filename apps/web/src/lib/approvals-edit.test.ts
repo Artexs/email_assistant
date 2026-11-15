@@ -110,9 +110,12 @@ describe("the edit form state (T1)", () => {
 
 describe("who edits what", () => {
   const owner = { owner: true, canWrite: true };
-  test("an owner edits a waiting delegation or clarification; a reminder, a held send and a member get no Edit", () => {
+  test("an owner edits a waiting delegation, clarification or follow-up; a reminder, a held send and a member get no Edit", () => {
     expect(canEdit({ state: "waiting", kind: "delegation" }, owner)).toBe(true);
     expect(canEdit({ state: "waiting", kind: "clarification" }, owner)).toBe(true);
+    expect(canEdit({ state: "waiting", kind: "follow_up" }, owner)).toBe(true);
+    expect(canEdit({ state: "held", kind: "follow_up" }, owner)).toBe(false);
+    expect(canEdit({ state: "waiting", kind: "follow_up" }, { owner: false, canWrite: true })).toBe(false);
     expect(canEdit({ state: "waiting", kind: "reminder" }, owner)).toBe(false);
     expect(canEdit({ state: "waiting", kind: null }, owner)).toBe(false);
     expect(canEdit({ state: "held", kind: "delegation" }, owner)).toBe(false);
@@ -204,6 +207,42 @@ describe("the answer map of an edit (T2)", () => {
     expect(editOutcome(new Error("offline")).kind).toBe("error");
     expect(editOutcome(failure(500, "internal")).kind).toBe("error");
     expect(editOutcome(failure(409, "closed", { error: "closed", state: "nonsense" })).kind).toBe("error");
+  });
+
+  // F116 stage 11: the follow-up of a loop can vanish while the dialog is open (a reply closes the loop, the 48 h job expires it).
+  // A reload that no longer has the row ends as `closed` (the page says why and reloads) or `gone` (404: "does not exist").
+  test("a follow-up that closed or vanished while the dialog was open: the save answers with its own text", () => {
+    const closed = editOutcome(failure(409, "closed", { error: "closed", state: "loop_closed" }));
+    expect(closed).toEqual({ kind: "closed", key: "appr_closed_loop_closed" });
+    expect(en.appr_closed_loop_closed).toBe("The open loop is closed. The follow-up cannot be edited.");
+    expect(pl.appr_closed_loop_closed).toBe("Sprawa jest zamknięta. Nie można edytować przypomnienia.");
+    expect(editOutcome(failure(409, "closed", { error: "closed", state: "expired" }))).toEqual({
+      kind: "closed",
+      key: "appr_closed_expired",
+    });
+    expect(editOutcome(failure(404, "not_found"))).toEqual({ kind: "gone" });
+  });
+
+  test("the form of a follow-up starts with its subject and body, no delegate, and no picker", () => {
+    const followUp = detail({
+      kind: "follow_up",
+      view: {
+        kind: "follow_up",
+        recipient: { name: null, address: "anna@example.test" },
+        sender: null,
+        recipientInactive: false,
+        subject: "Re: Offer",
+        dueDate: null,
+        body: "Hello",
+        quote: null,
+        synthetic: false,
+        to: ["anna@example.test"],
+        cc: ["jan@example.test"],
+        followUpNumber: 1,
+      },
+    });
+    expect(editStart(followUp)).toEqual({ subject: "Re: Offer", body: "Hello", delegateId: null });
+    expect(delegateOptions(followUp)).toEqual([]);
   });
 
   test("every new text exists in both languages, and the Polish one is not a copy of the English one", () => {

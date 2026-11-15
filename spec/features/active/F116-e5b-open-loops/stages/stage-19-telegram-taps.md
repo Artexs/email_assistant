@@ -47,3 +47,7 @@ Routes and panel (20–22).
 ## Carry-over from stage 17 review
 
 - N5: the keyboard builder drops the loop buttons when loopConsent is false (use the stage 11 choke point) (review-17.md).
+
+## Carry-over from stage 11 (worker, 2026-11-15)
+
+- Use `loopConsentOf` (`channels/consent.ts`) for the keyboard builder. A tap on a follow-up card (`ap:` / `ar:`) is the existing approval tap; there is no set tap and no "Send again" for a follow-up.

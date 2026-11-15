@@ -48,3 +48,9 @@ The chaser (15), Telegram and routes (19, 20).
 ## Carry-over from stage 10 review
 
 - N2: strip CR/LF from the subject in the writer. N4: D12 says a `delegated` loop sends to the counterpart only; stage 10 allows the full loop To and Cc: enforce D12 in the writer (review-10.md).
+
+## Carry-over from stage 11 (worker, 2026-11-15)
+
+- A follow-up that is `failed` has no "Send again" and no "It went out"; the failure notice is fixed text (`action_failed` with the panel link). A new follow-up is drafted from the loop: decide in `draftFollowUp` whether a `failed` follow-up counts as "waiting" (it does not: only `awaiting_approval` and `approved` sends do).
+- The writer sets draft and send payloads with `to` and `cc` from the loop only, no `set_id` (`sendPayloadSchema` refuses it), and a subject without CR/LF. A panel edit keeps `to`, `cc`, `quote` and `n`.
+- Full list: `notes/2026-11-15-f116-stage-11-follow-up-cards.md`.

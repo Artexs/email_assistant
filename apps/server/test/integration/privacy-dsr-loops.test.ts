@@ -267,6 +267,10 @@ describe("open loops in a data request", () => {
           dedup_key: `approval:${pair.sendId}`,
           loop_id: loop,
           text: `Follow-up to ${w.person}`,
+          // The stored view of a follow-up card spells out every recipient (F116 stage 11).
+          view: JSON.stringify({
+            view: { kind: "follow_up", to: [w.person, w.other], cc: [], body: `Hi ${w.person}` },
+          }),
           buttons: "[]",
           status: "sent",
           created_at: NOW,
@@ -289,8 +293,14 @@ describe("open loops in a data request", () => {
       expect(JSON.stringify(row.payload)).not.toContain(w.person);
       expect(JSON.stringify(row.payload)).toContain("[removed]");
     }
-    const outbox = await db.selectFrom("outbox").select("text").where("loop_id", "=", loop).executeTakeFirstOrThrow();
+    const outbox = await db
+      .selectFrom("outbox")
+      .select(["text", "view"])
+      .where("loop_id", "=", loop)
+      .executeTakeFirstOrThrow();
     expect(outbox.text).toBe("Follow-up to [removed]");
+    expect(JSON.stringify(outbox.view)).not.toContain(w.person);
+    expect(JSON.stringify(outbox.view)).toContain(w.other);
     // The other recipient stays.
     expect(JSON.stringify(rows.find((row) => row.id === closed.sendId)?.payload)).toContain(w.other);
 
