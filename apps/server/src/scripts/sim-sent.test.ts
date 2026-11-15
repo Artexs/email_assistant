@@ -446,6 +446,20 @@ describe("sent eval cases", () => {
     expect(JSON.stringify(first?.blind)).not.toContain("expectsReply");
   });
 
+  test("an injection case carries the planted strings of its text; any other case has none", async () => {
+    const c = await complete();
+    const cases = sentEvalCasesOf(c.root, "mini", "sent-dev");
+    const injection = cases.filter((item) => item.hardCases.includes("injection_quote"));
+    expect(injection.length).toBeGreaterThan(0);
+    for (const item of injection) {
+      expect(item.planted).toEqual(readSentTexts(c.dir, "sent-dev").get(item.id)?.planted as string[]);
+      expect(item.planted.length).toBeGreaterThan(0);
+    }
+    expect(
+      cases.filter((item) => !item.hardCases.includes("injection_quote")).every((item) => item.planted.length === 0)
+    ).toBe(true);
+  });
+
   test("T10 the holdout loads only with { holdout: true }", async () => {
     const c = await complete();
     expect(() => sentEvalCasesOf(c.root, "mini", "sent-holdout")).toThrow(SimFileError);

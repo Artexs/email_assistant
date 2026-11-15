@@ -60,6 +60,7 @@ const SAME_IN_BOTH: TextKey[] = [
   "op_plan_state",
   "op_notice_line", // placeholders and a separator only
   "stats_minutes", // a number, "min" and a number in both languages
+  "appr_dur_min", // a number and "min" in both languages
 ];
 
 function forms(table: Record<PluralKey, Record<string, string>>): string[] {

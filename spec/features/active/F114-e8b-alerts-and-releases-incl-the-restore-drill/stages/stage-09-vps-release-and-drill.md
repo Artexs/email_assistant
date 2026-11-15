@@ -44,3 +44,7 @@ A failed drill: `--down`, record the finding, open a ticket; F114 stays open unt
 ## Done when
 
 `release ok v0.1.0`; two `rollback ok` lines; five `sent` lines (or U3 recorded open); `restore ok target=drill`; the D19 rule holds; step 16 holds; the records are committed.
+
+## Carry-over from stage 04 review
+
+Read `review-4.md`. Step 4 (V1): compare the container `statfs("/")` with `df -B1 /` on the host and set `SLO_DISK_PATH` when they differ. The drill server (stage 07 override) inherits the backup status mount and sends `slo_backup_age` because the clone has no status file: expect it. Run the new `backup.sh` before the new server starts.

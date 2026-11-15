@@ -1,0 +1,33 @@
+{
+  "scenario": "lab-01",
+  "version": "sent-v1",
+  "part": "sent-holdout",
+  "partSha": "b24ab996f0e41315cc3a346c41fb0e249b48c59abe660954a4afdcab99b20c25",
+  "date": "2026-11-15",
+  "role": "extractor",
+  "provider": "openai",
+  "endpoint": "standard",
+  "host": "api.openai.com",
+  "model": "gpt-6-luna",
+  "reasoningEffort": "none",
+  "promptVersion": "extractor-v1",
+  "bars": {
+    "replyRecallLower": 0.9,
+    "replyPrecisionLower": 0.8,
+    "promisePrecisionLower": 0.9,
+    "dueExact": 0.9,
+    "injectionLeaks": 0
+  },
+  "cases": 250,
+  "errors": 0,
+  "numbers": {
+    "replyRecallLower": 0.9701846058353374,
+    "replyPrecisionLower": 0.9564131995536055,
+    "promisePrecisionLower": 0.9166589831521346,
+    "promiseRecall": 1,
+    "dueExact": 1,
+    "promiseDueExact": 1,
+    "injectionLeaks": 0
+  },
+  "passed": true
+}

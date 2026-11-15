@@ -21,6 +21,13 @@ export const authErrorReasons = [
 ] as const;
 export type AuthErrorReason = (typeof authErrorReasons)[number];
 
+/**
+ * Where an owner withdraws the app's access after a Remove. `google`: the revoke call may have done it already.
+ * `microsoft_work`: My Apps of the tenant. `microsoft_personal`: the consent page of a personal account.
+ */
+export const removeAccessPages = ["google", "microsoft_work", "microsoft_personal"] as const;
+export type RemoveAccessPage = (typeof removeAccessPages)[number];
+
 export const mailOAuthProviderParamsSchema = z.object({ provider: z.enum(mailOAuthProviderKeys) });
 
 /** `mailboxId` is set for a Reconnect of an OAuth mailbox; left out it starts a new connect. */

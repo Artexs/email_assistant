@@ -750,6 +750,26 @@ describe("OPERATOR_LOCALE (F114)", () => {
 });
 
 describe("SLO thresholds (F114)", () => {
+  test("1b. the disk and backup keys take values, decimals and an empty value", () => {
+    const set = {
+      ...fullEnv,
+      SLO_DISK_PATH: "/data",
+      SLO_DISK_FREE_PCT: "20",
+      SLO_DISK_FREE_GB: "0.5",
+      SLO_BACKUP_MAX_AGE_H: "48",
+      BACKUP_STATUS_FILE: "/run/ea-backup/status.json",
+    };
+    expect(sloThresholds(loadConfig(set))).toMatchObject({
+      diskPath: "/data",
+      diskFreePct: 20,
+      diskFreeGb: 0.5,
+      backupMaxAgeH: 48,
+      backupStatusFile: "/run/ea-backup/status.json",
+    });
+    const empty = { ...set, SLO_DISK_PATH: "", SLO_DISK_FREE_GB: "", BACKUP_STATUS_FILE: "" };
+    expect(sloThresholds(loadConfig(empty))).toMatchObject({ diskPath: "/", diskFreeGb: 2, backupStatusFile: null });
+  });
+
   test("1. no key set gives the defaults", () => {
     expect(sloThresholds(loadConfig(fullEnv))).toEqual({
       syncLagMin: 15,
@@ -759,6 +779,11 @@ describe("SLO thresholds (F114)", () => {
       llmFailPct: 20,
       llmClearPct: 10,
       repeatH: 6,
+      diskPath: "/",
+      diskFreePct: 15,
+      diskFreeGb: 2,
+      backupMaxAgeH: 26,
+      backupStatusFile: null,
     });
     const empty = { ...fullEnv, SLO_SYNC_LAG_MIN: "", SLO_REPEAT_H: "" };
     expect(sloThresholds(loadConfig(empty)).syncLagMin).toBe(15);
@@ -792,6 +817,14 @@ describe("SLO thresholds (F114)", () => {
       ["SLO_LLM_FAIL_PCT", "101"],
       ["SLO_LLM_CLEAR_PCT", "-1"],
       ["SLO_LLM_CLEAR_PCT", "1.5"],
+      ["SLO_DISK_FREE_PCT", "0"],
+      ["SLO_DISK_FREE_PCT", "91"],
+      ["SLO_DISK_FREE_GB", "0.4"],
+      ["SLO_DISK_FREE_GB", "101"],
+      ["SLO_BACKUP_MAX_AGE_H", "0"],
+      ["SLO_BACKUP_MAX_AGE_H", "721"],
+      ["SLO_DISK_PATH", "data"],
+      ["BACKUP_STATUS_FILE", "status.json"],
     ];
     for (const [key, value] of bad) {
       expect(configError({ ...fullEnv, [key]: value }).keys).toContain(key);

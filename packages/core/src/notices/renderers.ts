@@ -127,7 +127,23 @@ export const noticeRenderers = {
   }),
   mailbox_removed: defineRenderer({
     schema: noticeViewSchemas.mailbox_removed,
-    telegram: { full: (_view, opts) => ({ text: textsFor(opts.locale).notices.mailboxRemoved, buttons: [] }) },
+    telegram: {
+      full: (view, opts) => {
+        const texts = textsFor(opts.locale).notices;
+        const access = view.access;
+        // No access field: a row queued before F117, or a password mailbox. Today's text.
+        if (access === undefined) return { text: texts.mailboxRemoved, buttons: [] };
+        const text = {
+          google:
+            access.revoked === true
+              ? texts.mailboxRemovedAccess.googleRevoked
+              : texts.mailboxRemovedAccess.googleFailed,
+          microsoft_work: texts.mailboxRemovedAccess.microsoftWork,
+          microsoft_personal: texts.mailboxRemovedAccess.microsoftPersonal,
+        }[access.page];
+        return { text, buttons: [] };
+      },
+    },
   }),
   send_held: defineRenderer({
     schema: noticeViewSchemas.send_held,

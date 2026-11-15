@@ -37,3 +37,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration, privacy maps). The onl
 - **Check:** `bun test` on the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`. After the land: the coordinator runs `bun run db:migrate` on the shared dev DB.
 - **Out of scope:** any reader of the profile in mail building (stage 04), the payload kind.
+
+## Carry-over from F116 stage 07 review
+
+F116 stage 07 (landing first) owns `emails_thread_received_idx`. This migration must create no index and drop none: remove the `CREATE INDEX IF NOT EXISTS` line (or keep it as a no-op that checks the columns) and make sure its Down does not drop the index. `IF NOT EXISTS` checks only the name: a same-name index with other columns is skipped without a warning. See `spec/features/active/F116-e5b-open-loops/review-7.md` (N3).

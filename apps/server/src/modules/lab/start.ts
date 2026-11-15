@@ -37,6 +37,8 @@ export interface StartInput {
   date?: string;
   capUsd?: number;
   reuse: boolean;
+  // The demo run: the mailbox switches to assist from this day (the serve loop does it; `runModeStep`).
+  modePlan?: { assistFromDay: number };
 }
 
 export interface LabModel {
@@ -113,7 +115,12 @@ export async function startLabRun(input: StartInput, deps: StartDeps): Promise<S
 
   if (!input.reuse && (await deps.orgHasMail(org.orgId))) return refuse("org_not_fresh");
 
-  const run: LabRun = { plan, org: input.org, capUsd };
+  const run: LabRun = {
+    plan,
+    org: input.org,
+    capUsd,
+    ...(input.modePlan === undefined ? {} : { modePlan: input.modePlan }),
+  };
   if (state.startRun(run) === "run_active") return refuse("run_active");
   // After the lock: a refused start never changes the profile of an active run. A failed store ends the run at once.
   try {
