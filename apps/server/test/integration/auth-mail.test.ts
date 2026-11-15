@@ -31,7 +31,12 @@ test("an invite in Polish reaches the recipient inbox", async () => {
   });
   expect(result).toEqual({ ok: true });
 
-  const inbox = await openImapProvider({ host, port: imapPort, user: to, password: "greenmail-test" });
+  const inbox = await openImapProvider({
+    host,
+    port: imapPort,
+    user: to,
+    auth: { kind: "password", password: "greenmail-test" },
+  });
   try {
     const messages = await inbox.fetchAbove(INBOX, 0);
     expect(messages).toHaveLength(1);

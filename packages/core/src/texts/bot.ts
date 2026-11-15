@@ -84,6 +84,7 @@ export interface BotTexts {
     draftNotReady: string;
     rejectedNow: string;
     notFound: string;
+    changed: string; // an old card of a draft that a panel edit replaced
     sendAgain: string;
     sendAgainHeld: { scope: string; paused: string; auth_error: string; host_blocked: string };
     heldNotes: { scope: string; paused: string; auth_error: string; host_blocked: string };
@@ -269,6 +270,7 @@ export const botTexts = {
       draftNotReady: "The draft is not in Drafts yet. Tap again in a minute.",
       rejectedNow: "✖️ Rejected. The draft will be removed.",
       notFound: "This mail is not in your account.",
+      changed: "This draft was changed in the panel. Use the newest message.",
       sendAgain: "⏳ A new send was approved. Sending within a minute.",
       sendAgainHeld: {
         scope: "A new send was approved. Sending is held by SEND_SCOPE on the server; /status shows it.",
@@ -393,6 +395,7 @@ export const botTexts = {
       draftNotReady: "Szkicu nie ma jeszcze w folderze Drafts. Stuknij ponownie za minutę.",
       rejectedNow: "✖️ Odrzucono. Szkic zostanie usunięty.",
       notFound: "Tej wiadomości nie ma na Twoim koncie.",
+      changed: "Ten szkic zmieniono w panelu. Użyj najnowszej wiadomości.",
       sendAgain: "⏳ Zatwierdzono nową wysyłkę. Wysyłanie w ciągu minuty.",
       sendAgainHeld: {
         scope:

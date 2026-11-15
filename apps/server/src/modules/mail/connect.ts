@@ -145,7 +145,7 @@ export async function connectMailbox(
       host: valid.imapHost,
       port: valid.imapPort,
       user: valid.address,
-      password: valid.password,
+      auth: { kind: "password", password: valid.password },
       connectionTimeoutMs: timeouts?.socketMs,
     }),
     timeouts?.deadlineMs
@@ -156,7 +156,7 @@ export async function connectMailbox(
       port: valid.smtpPort,
       security: valid.smtpSecurity,
       user: valid.address,
-      password: valid.password,
+      auth: { kind: "password", password: valid.password },
       timeoutMs: timeouts?.socketMs,
     }),
     timeouts?.deadlineMs
@@ -226,7 +226,7 @@ export async function updateMailboxPassword(
         host: mailbox.imap_host,
         port: mailbox.imap_port,
         user: mailbox.address,
-        password,
+        auth: { kind: "password", password },
         connectionTimeoutMs: timeouts?.socketMs,
       });
       await provider.close();
@@ -239,7 +239,7 @@ export async function updateMailboxPassword(
       port: mailbox.smtp_port,
       security: mailbox.smtp_security,
       user: mailbox.address,
-      password,
+      auth: { kind: "password", password },
       timeoutMs: timeouts?.socketMs,
     }),
     timeouts?.deadlineMs

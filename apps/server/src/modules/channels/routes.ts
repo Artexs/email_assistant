@@ -6,6 +6,7 @@ import { parseBody, type ApiEnv } from "../../platform/http";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
+import { channelDocs } from "./api-docs";
 import { createLinkToken, unlinkUser } from "./linking";
 import { getChatLinkForUser } from "./repo";
 import { telegramErrorLabel } from "./telegram/errors";
@@ -22,7 +23,7 @@ export interface ChannelRouteDeps {
 export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
-  app.get("/channels/telegram", async (c) => {
+  app.get("/channels/telegram", channelDocs.getTelegram, async (c) => {
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
     const link = await getChatLinkForUser(deps.db, ctx, userId);
@@ -36,7 +37,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     return c.json(state);
   });
 
-  app.post("/channels/telegram/link", async (c) => {
+  app.post("/channels/telegram/link", channelDocs.postTelegramLink, async (c) => {
     if (deps.botUsername === null) return c.json({ error: "telegram_off" }, 409);
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
@@ -71,7 +72,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     return c.json(linkAnswer);
   });
 
-  app.delete("/channels/telegram/link", async (c) => {
+  app.delete("/channels/telegram/link", channelDocs.deleteTelegramLink, async (c) => {
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
     await unlinkUser(deps.db, ctx, userId, deps.now(), { actor: userId });

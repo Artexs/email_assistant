@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { EDIT_BODY_MAX, EDIT_SUBJECT_MAX } from "../outgoing/user-text";
+
 import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
 
 // One strict rule for every recipient in a payload (D2): no space, comma, angle bracket, quote or line break.
@@ -20,6 +22,13 @@ export function textIsClean(text: string): boolean {
   return !/@|http|www\./i.test(text) && !/\d{9,}/.test(text.replace(/[ -]/g, ""));
 }
 
+// A panel edit stores the user's own text and a version number. An old payload has none of them (version 1).
+const editFields = {
+  version: z.number().int().min(1).optional(),
+  subject_text: z.string().min(1).max(EDIT_SUBJECT_MAX).optional(),
+  body_text: z.string().min(1).max(EDIT_BODY_MAX).optional(),
+};
+
 export const draftPayloadSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("delegation"),
@@ -29,12 +38,14 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
     task: z.string().min(1).max(TASK_MAX_CHARS),
     due_date: dueDateSchema,
     language: draftLanguageSchema,
+    ...editFields,
   }),
   z.object({
     kind: z.literal("clarification"),
     to: recipientSchema,
     question: z.string().min(1).max(CLARIFICATION_MAX_CHARS),
     language: draftLanguageSchema,
+    ...editFields,
   }),
   z.object({
     kind: z.literal("reminder"),
@@ -50,6 +61,10 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 export type DraftPayload = z.infer<typeof draftPayloadSchema>;
+
+export function draftVersion(draft: DraftPayload): number {
+  return "version" in draft && draft.version !== undefined ? draft.version : 1;
+}
 
 export const sendPayloadSchema = z.object({
   kind: z.enum(draftKinds),

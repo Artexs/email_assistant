@@ -133,14 +133,19 @@ function startServer(opts: { offerStartTls: boolean; pair?: { key: string; cert:
   });
 }
 
-const base = { host: "127.0.0.1", user: "owner@x.test", password: "pw-secret-1", security: "starttls" } as const;
+const base = {
+  host: "127.0.0.1",
+  user: "owner@x.test",
+  auth: { kind: "password", password: "pw-secret-1" },
+  security: "starttls",
+} as const;
 const RAW = Buffer.from(
   "Message-ID: <x@ea.local>\r\nFrom: owner@x.test\r\nTo: d@x.test\r\nSubject: p\r\n\r\nhello\r\n"
 );
 const ENVELOPE = { from: "owner@x.test", to: ["d@x.test"] };
 
 describe("buildSmtpTransportOptions with STARTTLS", () => {
-  const creds = { user: "me@icloud.com", password: "pw" };
+  const creds = { user: "me@icloud.com", auth: { kind: "password", password: "pw" } } as const;
 
   test("a remote host gets secure false, requireTLS and no way to skip the certificate check", () => {
     const options = buildSmtpTransportOptions(

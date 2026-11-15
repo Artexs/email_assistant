@@ -40,13 +40,18 @@ test("a mail in a sort folder is stored once with its source folder, also after 
     });
     const ctx = { orgId };
     const address = `u-${suffix}@localhost`;
-    const imap: ImapConnectOptions = { host, port: imapPort, user: address, password: `pw-${suffix}` };
+    const imap: ImapConnectOptions = {
+      host,
+      port: imapPort,
+      user: address,
+      auth: { kind: "password", password: `pw-${suffix}` },
+    };
     const { mailboxId } = await connectMailbox(
       { db: trx, secrets, openProvider: openImapProvider, verifySmtp: verifySmtpLogin },
       ctx,
       {
         address,
-        password: imap.password,
+        password: `pw-${suffix}`,
         secretKind: "password",
         imapHost: host,
         imapPort,

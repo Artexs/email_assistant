@@ -196,6 +196,84 @@ function item(n: number, overrides: Partial<Parameters<typeof renderApprovalSetR
   };
 }
 
+describe("renderApprovalRequest with an edited body", () => {
+  test("T10 a 3000-character body and an 8000-character quote fit in one message", () => {
+    const body = `${"x".repeat(99)}\n`.repeat(30).slice(0, 3000);
+    expect(body.length).toBe(3000);
+    const message = request(view({ body, quote: { text: "q".repeat(8000), cut: false } }));
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    expect(message.text).toContain("x".repeat(90));
+    expect(message.text).toContain("Quoted original:");
+  });
+});
+
+const PANEL_URL = "https://ea.example.ts.net/approvals?id=7f1c0d1e-0000-4000-8000-000000000001";
+const SEND_LINE_EN = "The system sends it after your tap. Do not send the draft from your mail client.";
+
+describe("renderApprovalRequest version line and panel link", () => {
+  test("T1 a view without the new fields has no version line and no panel line", () => {
+    const en = request(view()).text;
+    expect(en).not.toContain("edited in the panel");
+    expect(en).not.toContain("Open in panel");
+    expect(en.split("\n")[1]).toBe("From: boss@client.test · ⚠️ external sender");
+    expect(en.endsWith(`\n\n${SEND_LINE_EN}`)).toBe(true);
+    const pl = renderApprovalRequest({ actionId: ID, view: view(), now: NOW, timeZone: TZ }, textTables.pl).text;
+    expect(pl).not.toContain("zmieniona w panelu");
+    expect(pl).not.toContain("Otwórz w panelu");
+  });
+
+  test("T1 version 1 shows no version line", () => {
+    expect(request(view({ version: 1 })).text).toBe(request(view()).text);
+  });
+
+  test("T2 version 2 adds the version line as the second line", () => {
+    const lines = request(view({ version: 2 })).text.split("\n");
+    expect(lines[0]).toBe("📤 Send? Delegation to Anna Nowak anna@example.com");
+    expect(lines[1]).toBe("✏️ Version 2, edited in the panel.");
+    expect(lines[2]).toBe("From: boss@client.test · ⚠️ external sender");
+    const pl = renderApprovalRequest(
+      { actionId: ID, view: view({ version: 3 }), now: NOW, timeZone: TZ },
+      textTables.pl
+    );
+    expect(pl.text.split("\n")[1]).toBe("✏️ Wersja 3, zmieniona w panelu.");
+  });
+
+  test("T3 the panel link stands directly above the send line", () => {
+    const en = request(view({ panelUrl: PANEL_URL })).text;
+    expect(en.endsWith(`\n\nOpen in panel: ${PANEL_URL}\n${SEND_LINE_EN}`)).toBe(true);
+    const pl = renderApprovalRequest(
+      { actionId: ID, view: view({ panelUrl: PANEL_URL }), now: NOW, timeZone: TZ },
+      textTables.pl
+    );
+    expect(pl.text).toContain(`\nOtwórz w panelu: ${PANEL_URL}\nSystem wyśle wiadomość`);
+  });
+
+  test("T4 a 3000-character body, an 8000-character quote and both fields fit and keep both lines", () => {
+    const body = `${"x".repeat(99)}\n`.repeat(30).slice(0, 3000);
+    const long = view({
+      body,
+      quote: { text: "q".repeat(8000), cut: false },
+      version: 12,
+      panelUrl: `https://ea.example.ts.net/${"a".repeat(270)}`,
+    });
+    for (const texts of [textTables.en, textTables.pl]) {
+      const message = renderApprovalRequest({ actionId: ID, view: long, now: NOW, timeZone: TZ }, texts);
+      expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+      expect(message.text).toContain(texts.approvals.versionLine(12));
+      expect(message.text).toContain(texts.approvals.panelLine(long.panelUrl ?? ""));
+      expect(message.text).toContain("x".repeat(90));
+    }
+  });
+
+  test("T4 the body guard keeps both lines when there is no quote", () => {
+    const long = view({ body: "x".repeat(5000), quote: null, version: 2, panelUrl: PANEL_URL });
+    const message = request(long);
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    expect(message.text).toContain("✏️ Version 2, edited in the panel.");
+    expect(message.text).toContain(`Open in panel: ${PANEL_URL}`);
+  });
+});
+
 describe("renderApprovalRequest in Polish", () => {
   const pl = textTables.pl;
   const plRequest = (v: ApprovalView) => renderApprovalRequest({ actionId: ID, view: v, now: NOW, timeZone: TZ }, pl);
@@ -684,6 +762,27 @@ describe("approvalEdit", () => {
     const message = approvalEdit({ ...base, original: "o".repeat(4090), outcome: "approved" }, textTables.en);
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     expect(message.text.endsWith("\n\n⏳ Approved 11:07, sending.")).toBe(true);
+  });
+});
+
+describe("approvalEdit changed", () => {
+  const at = new Date("2026-11-07T13:05:00Z"); // 14:05 in Warsaw
+  const original = "📤 Send? Delegation to Anna\nDraft:\nHi";
+
+  test("T6 the line is appended and the card has no buttons", () => {
+    const message = approvalEdit({ original, outcome: "changed", at, timeZone: TZ, actionId: ID }, textTables.en);
+    expect(message.text).toBe(`${original}\n\n✏️ Changed in the panel 14:05. The new version comes as a new message.`);
+    expect(message.buttons).toEqual([]);
+  });
+
+  test("T7 the Polish edit line and the tap answer", () => {
+    const message = approvalEdit({ original, outcome: "changed", at, timeZone: TZ, actionId: ID }, textTables.pl);
+    expect(message.text).toBe(
+      `${original}\n\n✏️ Zmieniono w panelu 14:05. Nowa wersja przyjdzie w osobnej wiadomości.`
+    );
+    expect(message.buttons).toEqual([]);
+    expect(textTables.pl.bot.taps.changed).toBe("Ten szkic zmieniono w panelu. Użyj najnowszej wiadomości.");
+    expect(textTables.en.bot.taps.changed).toBe("This draft was changed in the panel. Use the newest message.");
   });
 });
 

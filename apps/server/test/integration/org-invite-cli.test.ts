@@ -97,7 +97,12 @@ function expectNoLeak(result: Result, email: string, printed: boolean) {
 }
 
 async function inboxSubjects(email: string): Promise<(string | null)[]> {
-  const inbox = await openImapProvider({ host: mailHost, port: imapPort, user: email, password: "greenmail-test" });
+  const inbox = await openImapProvider({
+    host: mailHost,
+    port: imapPort,
+    user: email,
+    auth: { kind: "password", password: "greenmail-test" },
+  });
   try {
     return (await inbox.fetchAbove(INBOX, 0)).map((meta) => meta.subject);
   } finally {

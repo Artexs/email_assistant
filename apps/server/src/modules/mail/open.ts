@@ -36,7 +36,7 @@ export async function openMailboxProvider(
     host: mailbox.imap_host,
     port: mailbox.imap_port,
     user: mailbox.address,
-    password,
+    auth: { kind: "password", password },
   });
   if (opts.withSender !== true || deps.openSender === undefined) return { provider, sender: null, mailbox };
   try {
@@ -45,7 +45,7 @@ export async function openMailboxProvider(
       port: mailbox.smtp_port,
       security: mailbox.smtp_security,
       user: mailbox.address,
-      password,
+      auth: { kind: "password", password },
     });
     return { provider, sender, mailbox };
   } catch (error) {

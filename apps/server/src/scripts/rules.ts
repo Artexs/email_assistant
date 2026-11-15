@@ -10,12 +10,12 @@ import {
 import { z } from "zod";
 
 import { addSenderRule, listSenderRules } from "../modules/config";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
-const log = createLog("rules");
+const cli = createCliOutput("rules");
 
 const usage = [
   `usage: bun run rules:add --org-id <uuid> [--mailbox-id <uuid>] --pattern <address or domain> --kind ${senderRuleKinds.join("|")}`,
@@ -74,7 +74,7 @@ function out(line: string): void {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    cli.fail(usage);
     return 1;
   }
 
@@ -95,11 +95,11 @@ async function main(): Promise<number> {
       if (result.kind === "added") out(`added ${options.kind} ${options.pattern}`);
       if (result.kind === "exists") out(`already there: ${options.kind} ${options.pattern}`);
       if (result.kind === "limit") {
-        log.error(`refused: rule limit reached (${SENDER_RULE_LIMIT})`);
+        cli.fail(`refused: rule limit reached (${SENDER_RULE_LIMIT})`);
         return 1;
       }
       if (result.kind === "mailbox_not_found") {
-        log.error("refused: mailbox not found");
+        cli.fail("refused: mailbox not found");
         return 1;
       }
       return 0;
@@ -111,7 +111,7 @@ async function main(): Promise<number> {
     for (const rule of rules) out(`${rule.kind}\t${rule.pattern}`);
     return 0;
   } catch (error) {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -121,6 +121,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

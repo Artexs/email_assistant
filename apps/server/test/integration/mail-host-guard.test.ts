@@ -10,7 +10,9 @@ import {
   openSmtpSender,
   resolveMailHost,
   verifySmtpLogin,
+  type ImapConnectOptions,
   type LookupAll,
+  type SmtpConnectOptions,
 } from "../../src/modules/mail";
 import { insertCredentials } from "../../src/modules/mail/repo";
 import { createSecretBox } from "../../src/platform/crypto";
@@ -40,8 +42,18 @@ function refuseWith(answer: string): { calls: string[] } {
   return { calls };
 }
 
-const imapOptions = { host: "imap.x.test", port: 3143, user: "u@x.test", password: "greenmail-test" };
-const smtpOptions = { host: "smtp.x.test", port: 3025, user: "u@x.test", password: "p" };
+const imapOptions: ImapConnectOptions = {
+  host: "imap.x.test",
+  port: 3143,
+  user: "u@x.test",
+  auth: { kind: "password", password: "greenmail-test" },
+};
+const smtpOptions: SmtpConnectOptions = {
+  host: "smtp.x.test",
+  port: 3025,
+  user: "u@x.test",
+  auth: { kind: "password", password: "p" },
+};
 
 describe("the mail host guard on every connect", () => {
   test("openImapProvider refuses a name that resolves to a local address", async () => {

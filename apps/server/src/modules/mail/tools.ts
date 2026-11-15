@@ -62,7 +62,12 @@ async function loadImapOptions(
     { ciphertext: credentials.encrypted_secret, keyVersion: credentials.key_version },
     `mailbox:${mailboxId}`
   );
-  return { host: mailbox.imap_host, port: mailbox.imap_port, user: mailbox.address, password };
+  return {
+    host: mailbox.imap_host,
+    port: mailbox.imap_port,
+    user: mailbox.address,
+    auth: { kind: "password", password },
+  };
 }
 
 /**

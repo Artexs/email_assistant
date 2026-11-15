@@ -48,7 +48,7 @@ afterAll(async () => {
 });
 
 function imapOptions(address: string, password: string): ImapConnectOptions {
-  return { host, port: imapPort, user: address, password };
+  return { host, port: imapPort, user: address, auth: { kind: "password", password } };
 }
 
 function seedRaw(address: string, subject: string): string {
@@ -277,7 +277,7 @@ describe("probeSentAutosave", () => {
     const address = `u-${randomUUID()}@localhost`;
     const password = "greenmail-test";
     const imap = imapOptions(address, password);
-    const smtp = { host, port: smtpPort, user: address, password };
+    const smtp = { host, port: smtpPort, user: address, auth: { kind: "password", password } } as const;
     const probeId = randomUUID();
 
     await expect(

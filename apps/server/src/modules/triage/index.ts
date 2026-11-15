@@ -13,8 +13,9 @@ export { triageRoutes } from "./routes";
 export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";
 export type { LabelInput } from "./label-input";
-export { classifyEmail } from "./classifier";
-export type { ClassifierEmail, SenderContext } from "./classifier";
+export { classifyEmail, EMPTY_EXTRAS } from "./classifier";
+export type { ClassifierEmail, ClassifierExtras, SenderContext } from "./classifier";
+export { deadlinesInWindow } from "./classifier-extras";
 export {
   clearTriageTexts,
   countTriagedBetween,
@@ -72,8 +73,18 @@ export {
   simMetaOf,
 } from "./eval-sim-report";
 export type { GateFile, SimMeta, SimReportInput } from "./eval-sim-report";
-export { prompts, rolesWithoutPrompt } from "./prompts";
-export type { PromptEntry } from "./prompts";
+export {
+  CLASSIFIER_V3_PARTS,
+  classifierV3Parts,
+  classifierVersionIds,
+  classifierVersions,
+  optionalParts,
+  productionClassifierChoice,
+  prompts,
+  promptLabel,
+  rolesWithoutPrompt,
+} from "./prompts";
+export type { ClassifierPromptChoice, ClassifierV3Part, ClassifierVersion, PromptEntry } from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";
 export { createLlmPause } from "./pause";
 export type { LlmPause } from "./pause";

@@ -1,8 +1,8 @@
 import { Client } from "pg";
 import { z } from "zod";
 
+import { createCliOutput } from "../platform/cli";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
 import {
   adminUrl,
@@ -16,7 +16,7 @@ import {
   worktreeDbComment,
 } from "./db-worktree-args";
 
-const log = createLog("db-worktree");
+const out = createCliOutput("db-worktree");
 
 const envSchema = z.object({
   MIGRATOR_DATABASE_URL: z.string().min(1),
@@ -68,7 +68,7 @@ async function createDatabase(adminPostgresUrl: string, database: string): Promi
       try {
         await client.query(`CREATE DATABASE ${quoted(database)}`);
         await client.query(`COMMENT ON DATABASE ${quoted(database)} IS '${worktreeDbComment}'`);
-        log.info(`created ${database}`);
+        out.print(`created ${database}`);
         mark = { exists: true, comment: worktreeDbComment };
         created = true;
       } catch (error) {
@@ -77,10 +77,10 @@ async function createDatabase(adminPostgresUrl: string, database: string): Promi
       }
     }
     if (!hasWorktreeMark(mark.comment)) {
-      log.error(refusal(database));
+      out.fail(refusal(database));
       return false;
     }
-    if (!created) log.info(`database ${database} exists, reusing it`);
+    if (!created) out.print(`database ${database} exists, reusing it`);
     await client.query(`GRANT CONNECT ON DATABASE ${quoted(database)} TO migrator, app`);
     return true;
   });
@@ -107,11 +107,11 @@ async function dropDatabase(adminPostgresUrl: string, database: string): Promise
   return withClient(adminPostgresUrl, async (client) => {
     const mark = await markOf(client, database);
     if (!mark.exists) {
-      log.info(`no database ${database}`);
+      out.print(`no database ${database}`);
       return exitDone;
     }
     if (!hasWorktreeMark(mark.comment)) {
-      log.error(refusal(database));
+      out.fail(refusal(database));
       return exitFailure;
     }
     try {
@@ -119,16 +119,16 @@ async function dropDatabase(adminPostgresUrl: string, database: string): Promise
     } catch (error) {
       const state = sqlState(error);
       if (state === "55006") {
-        log.error(`database ${database} is in use: stop the server and the tests that use it`);
+        out.fail(`database ${database} is in use: stop the server and the tests that use it`);
         return exitFailure;
       }
       if (state === "3D000") {
-        log.info(`no database ${database}`);
+        out.print(`no database ${database}`);
         return exitDone;
       }
       throw error;
     }
-    log.info(`dropped ${database}`);
+    out.print(`dropped ${database}`);
     return exitDone;
   });
 }
@@ -140,21 +140,21 @@ async function main(): Promise<number> {
   const env = envSchema.safeParse(process.env);
   if (args === null || !env.success) {
     if (args !== null && !env.success) {
-      log.error(`env check failed: ${env.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
+      out.fail(`env check failed: ${env.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
     }
-    log.error(usage);
+    out.fail(usage);
     return exitUsage;
   }
   const { MIGRATOR_DATABASE_URL, DATABASE_URL, POSTGRES_PASSWORD } = env.data;
   const database = worktreeDatabaseName(args.name);
   if (database === null) {
-    log.error(`bad name\n${usage}`);
+    out.fail(`bad name\n${usage}`);
     return exitUsage;
   }
   try {
     const protectedNames = [DATABASE_URL, MIGRATOR_DATABASE_URL].map((url) => new URL(url).pathname.slice(1));
     if (protectedNames.includes(database)) {
-      log.error(`${database} is a base database: refusing`);
+      out.fail(`${database} is a base database: refusing`);
       return exitFailure;
     }
     if (
@@ -162,7 +162,7 @@ async function main(): Promise<number> {
       !isLoopbackHost(MIGRATOR_DATABASE_URL) ||
       !sameServer(DATABASE_URL, MIGRATOR_DATABASE_URL)
     ) {
-      log.error("DATABASE_URL and MIGRATOR_DATABASE_URL must point at the same loopback server: refusing");
+      out.fail("DATABASE_URL and MIGRATOR_DATABASE_URL must point at the same loopback server: refusing");
       return exitFailure;
     }
     const adminPostgresUrl = adminUrl(MIGRATOR_DATABASE_URL, POSTGRES_PASSWORD);
@@ -171,14 +171,14 @@ async function main(): Promise<number> {
     await grantSchema(withDatabase(adminPostgresUrl, database));
     const migratorUrl = withDatabase(MIGRATOR_DATABASE_URL, database);
     if (!(await migrate(migratorUrl))) {
-      log.error("db:migrate failed");
+      out.fail("db:migrate failed");
       return exitFailure;
     }
     process.stdout.write(`DATABASE_URL=${withDatabase(DATABASE_URL, database)}\n`);
     process.stdout.write(`MIGRATOR_DATABASE_URL=${migratorUrl}\n`);
     return exitDone;
   } catch (error) {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     return exitFailure;
   }
 }
