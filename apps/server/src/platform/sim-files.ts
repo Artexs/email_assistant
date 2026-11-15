@@ -18,6 +18,7 @@ import {
   type SimBlindBatchFile,
   type SimLabelBatchFile,
   type SimPart,
+  type SentPart,
   type SimTextBatchFile,
   type VerdictFile,
   type Slot,
@@ -32,6 +33,9 @@ import type { ZodType } from "zod";
 const DEFAULT_ROOT = resolve(import.meta.dir, "../../../../evals/sim");
 
 export type BatchFolder = "slots" | "texts" | "blind" | "labels";
+
+// A part folder of the corpus: the incoming parts and the sent parts (F116) share the batch layout.
+export type BankPart = SimPart | SentPart;
 
 // A file problem. The message holds file paths and issue codes, never mail text.
 export class SimFileError extends Error {}
@@ -53,12 +57,12 @@ export function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function batchPath(dir: string, part: SimPart, folder: BatchFolder, batch: string): string {
+export function batchPath(dir: string, part: BankPart, folder: BatchFolder, batch: string): string {
   return join(dir, part, folder, `${batch}.json`);
 }
 
 // Reads one JSON file through its schema; undefined when the file does not exist.
-function readParsed<T>(dir: string, path: string, schema: ZodType<T>): T | undefined {
+export function readParsed<T>(dir: string, path: string, schema: ZodType<T>): T | undefined {
   if (!existsSync(path)) return undefined;
   const shown = relative(dir, path);
   let json: unknown;
@@ -93,7 +97,7 @@ export function readPlanSpec(dir: string): PlanSpec {
 }
 
 // Batch names (`batch-NNN`) that have a file in the folder, in order.
-export function listBatches(dir: string, part: SimPart, folder: BatchFolder): string[] {
+export function listBatches(dir: string, part: BankPart, folder: BatchFolder): string[] {
   const path = join(dir, part, folder);
   if (!existsSync(path)) return [];
   return readdirSync(path)

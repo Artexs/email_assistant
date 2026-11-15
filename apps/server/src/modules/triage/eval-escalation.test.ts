@@ -383,6 +383,50 @@ describe("runEval --escalate", () => {
     expect(report.escalation?.cost.escalationUsd).toBeGreaterThan(0);
   });
 
+  // Stage 13 carry-over: an escalation error stores the first call's usage and runs the whole case again on resume.
+  test("a resumed escalation error runs the whole case again and counts each call of the new result once", async () => {
+    const failing = fakeLlm({
+      classifier: [answer("spam")],
+      escalation: [new LlmOutputError(ESCALATION_MODEL, ["fields.task:too_big"])],
+    });
+    const lines: string[] = [];
+    const cases = [makeCase({ id: "p" })];
+    await runEval(
+      { ...deps(failing.llm), onResult: async (result) => void lines.push(JSON.stringify(result)) },
+      { ...base, cases, escalation }
+    );
+    const done = parseCaseResults(lines.join("\n"));
+    // The stored error holds the first call and no second call.
+    expect(done[0]).toMatchObject({ errorCode: "bad_output" });
+    expect(done[0]?.usage?.model).toBe(CLASSIFIER_MODEL);
+    expect(done[0]?.escalationUsage).toBeNull();
+
+    const fixed = fakeLlm({ classifier: [answer("spam")], escalation: [answer("needs_reply")] });
+    const report = await runEval(deps(fixed.llm), {
+      ...base,
+      cases,
+      escalation,
+      done,
+      budget: {
+        capUsd: 1,
+        callCostUsd: (usage) => (usage.model === ESCALATION_MODEL ? 0.0015 : 0.00015),
+        firstEstimateUsd: 0.00165,
+      },
+    });
+    // The case runs again from the first call: one call per role, not two first calls.
+    expect(fixed.callsOf("classifier")).toHaveLength(1);
+    expect(fixed.callsOf("escalation")).toHaveLength(1);
+    expect(report.cases).toHaveLength(1);
+    expect(report.cases[0]).toMatchObject({ finalCategory: "needs_reply", errorCode: null });
+    expect(report.cases[0]?.usage?.model).toBe(CLASSIFIER_MODEL);
+    expect(report.cases[0]?.escalationUsage?.model).toBe(ESCALATION_MODEL);
+    // The earlier error result is not an earlier spend of this report: one first call and one second call.
+    expect(report.cost.spentUsd).toBeCloseTo(0.00165, 10);
+    expect(report.escalation?.calledCases).toBe(1);
+    expect(report.escalation?.cost.classifierUsd).toBeCloseTo(0.00015, 10);
+    expect(report.escalation?.cost.escalationUsd).toBeCloseTo(0.0015, 10);
+  });
+
   test("a result of an older state file (no escalation fields) parses as not escalated", () => {
     const line = JSON.stringify({
       id: "old",

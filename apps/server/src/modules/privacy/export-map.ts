@@ -215,6 +215,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "auth_reason"
   ),
   memberships: byOrg("org_id", "user_id", "role", "digest_times", "created_at", "break_glass"),
+  ops_alerts: secret("host-wide alert state, no organization"),
   org_features: byOrg("org_id", "flag", "enabled", "set_by", "set_at"),
   organizations: byOrg(
     "id",

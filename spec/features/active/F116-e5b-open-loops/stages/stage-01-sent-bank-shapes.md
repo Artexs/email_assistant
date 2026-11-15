@@ -37,3 +37,15 @@ T1–T8 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s01`).
 ## Out of scope
 
 The CLI (02), texts (03), the extractor (05).
+
+## Build notes (stage 02 check of the stage 01 choices, 2026-11-15)
+
+The stage 01 worker made these choices where this file was silent. Stage 02 checked each one against `plan.md` and `interfaces.md`. No change was needed.
+
+- `sentAt` falls in the `weekStart` week (20% weekend, 07:00–19:00 local): fits "in the scenario week range".
+- The promise label always has a `promiseDue`: fits D7 (an undated promise opens nothing); `sentLabelSchema` repeats the rule.
+- `question_in_forward`, `past_date`, `far_date` set `expectsReply` true: fits stage 03 (the ask sits above the forward) and the step 2 text (the date is in the ask).
+- `reported_speech` and `many_recipients` set `promise` null: fits PD-122 (only firm own promises) and "labels all false".
+- `time_word_due` sets a time-word due; `fyi_team` goes to team personas only.
+- New spec fields `hardPerTag`, `delegateShare` (0.2, min 0.15), `weekendShare`, `threadShare`, `ccShare`: fit the sizes and the 15% delegate floor of Step 3.
+- Stage 02 added `executive.voice` and `executive.signature` to the scenario (default `""`) and set both in `evals/sim/lab-01/scenario.json`.
