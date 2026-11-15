@@ -49,6 +49,15 @@ describe("the token store is wired into every composition root", () => {
     expect(callOf(read("scripts/job-run.ts"), "committerDeps")).toContain("oauthTokens:");
   });
 
+  test("the history check is queued at every connect path: web form, OAuth callback and mailbox:connect", () => {
+    const hook = "onConnected: queueHistoryCheckOnConnect(db)";
+    const web = read("web.ts");
+    expect(web.split(hook)).toHaveLength(3);
+    expect(callOf(web, "mailRoutes")).toContain(hook);
+    expect(callOf(web, "mailOAuthCallbackRoutes")).toContain(hook);
+    expect(callOf(read("scripts/mailbox-connect.ts"), "connectMailbox")).toContain(hook);
+  });
+
   test("no other file builds a sync job or committer deps without being listed here", () => {
     const files = new Bun.Glob("**/*.ts").scan({ cwd: import.meta.dir });
     return (async () => {
@@ -64,6 +73,8 @@ describe("the token store is wired into every composition root", () => {
         "modules/actions/committer.ts",
         "modules/mail/jobs.ts",
         "modules/mail/open.ts",
+        // `backfillMailbox` with the purpose `history`: its caller (the history job) passes `oauthTokens` from its composition root.
+        "modules/mail/tools.ts",
         "scripts/job-run.ts",
       ]);
     })();
@@ -85,7 +96,10 @@ describe("the sent switch hooks are wired into every caller of setSentSync", () 
         expect(callOf(text.slice(call.index), "setSentSync"), file).toContain("sentSwitchHooks");
       }
       expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web.ts"]);
-      expect(read("composition.ts")).toContain("onDisabled: (trx, ctx, input) => onSentOff(trx, ctx, input)");
+      // The hook closes the loops (`onSentOff`) and then clears the follow-up cards (`clearLoopCards`), in one transaction.
+      const wiring = read("composition.ts");
+      expect(wiring).toContain("await onSentOff(trx, ctx, input);");
+      expect(wiring).toContain("await clearLoopCards(trx, ctx, input);");
     })();
   });
 });

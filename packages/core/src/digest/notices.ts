@@ -1,8 +1,10 @@
 import type { SendLimitKind } from "../send-limits";
 import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
+import type { BarCategory } from "../triage/metrics";
 import type { SenderRuleKind } from "../triage/rules";
 import { suspiciousReasons, type SuspiciousReason } from "../triage/suspicious";
+import type { MovingCategory, TripReason } from "../trust";
 import { mailOAuthProviderNames, type AuthErrorReason, type MailOAuthProviderKey } from "../web/mail-oauth";
 
 import { attachmentLine, type AttachmentLineInput } from "./attachment-line";
@@ -173,6 +175,41 @@ export function renderLoopConsentNotice(
 ): OutMessage {
   const lines = [texts.notices.loopConsent[input.about]];
   if (input.panelUrl !== undefined) lines.push(texts.approvals.panelLine(input.panelUrl));
+  return { text: lines.join("\n"), buttons: [] };
+}
+
+// The check of the last 30 days is ready (F110 D15): a count, category names and the report link. No mail data.
+export function renderTrustReportReadyNotice(
+  input: { checked: number; recommended: readonly MovingCategory[]; reportUrl: string | null },
+  texts: CoreTexts
+): OutMessage {
+  const ready = texts.notices.trustReady;
+  const lines = [
+    ready.first(input.checked),
+    input.recommended.length === 0
+      ? ready.none
+      : ready.recommended(input.recommended.map((category) => texts.categories[category]).join(", ")),
+  ];
+  if (input.reportUrl !== null) lines.push(ready.link(input.reportUrl));
+  return { text: lines.join("\n"), buttons: [] };
+}
+
+// A category lost its `auto` (F110 D15): the category, a fixed reason phrase and the settings link. No mail data.
+export function renderAutonomyPausedNotice(
+  input: { category: BarCategory; reason: TripReason; corrections: number; settingsUrl: string | null },
+  texts: CoreTexts
+): OutMessage {
+  const paused = texts.notices.autonomyPaused;
+  const category = texts.categories[input.category];
+  const first = {
+    corrections: () => paused.corrections(category, input.corrections),
+    important_hidden: () => paused.importantHidden(category),
+    model_switch: () => paused.modelSwitch(category),
+    evidence_changed: () => paused.evidenceChanged(category),
+    history_fail: () => paused.historyFail(category),
+  }[input.reason]();
+  const lines = [first, paused.again];
+  if (input.settingsUrl !== null) lines.push(paused.link(input.settingsUrl));
   return { text: lines.join("\n"), buttons: [] };
 }
 

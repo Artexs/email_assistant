@@ -1,3 +1,5 @@
+export { queueHistoryCheckOnConnect } from "./connect-hook";
+export { queueHistoryCheckByOperator, type OperatorQueueResult } from "./operator";
 export {
   setCategoryAutoWithEvidence,
   type CategoryEvidence,

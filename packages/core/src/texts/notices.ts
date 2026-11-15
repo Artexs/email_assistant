@@ -51,6 +51,22 @@ export interface NoticeTexts {
   };
   // The one line for an owner whose consent does not cover open-loop data (replaces a follow-up card or result).
   loopConsent: { approval: string; result: string };
+  // F110 stage 10 (D15): counts, category names and fixed phrases only. `link` is a text line, not a button.
+  trustReady: {
+    first: (checked: number) => string;
+    recommended: (categories: string) => string;
+    none: string;
+    link: (url: string) => string;
+  };
+  autonomyPaused: {
+    corrections: (category: string, count: number) => string;
+    importantHidden: (category: string) => string;
+    modelSwitch: (category: string) => string;
+    evidenceChanged: (category: string) => string;
+    historyFail: (category: string) => string;
+    again: string;
+    link: (url: string) => string;
+  };
   sendHeld: {
     first: (address: string, limit: string) => string;
     limit: Record<SendLimitKind, string>;
@@ -196,6 +212,26 @@ export const noticeTexts = {
       approval: "A follow-up waits for your approval in the panel.",
       result: "A follow-up has a new result in the panel.",
     },
+    trustReady: {
+      first: (checked) =>
+        `📋 Your check is ready: I looked at ${checked} ${checked === 1 ? "mail" : "mails"} from the last 30 days.`,
+      recommended: (categories) => `Recommended: ${categories}`,
+      none: "Nothing to turn on yet.",
+      link: (url) => `Report: ${url}`,
+    },
+    autonomyPaused: {
+      corrections: (category, count) =>
+        `⏸ Automatic moves for ${category} are off: you corrected ${count} of them in 7 days.`,
+      importantHidden: (category) => `⏸ Automatic moves for ${category} are off: one of them hid a mail you needed.`,
+      modelSwitch: (category) =>
+        `⏸ Automatic moves for ${category} are off: the AI model changed and has no proof yet for this category.`,
+      evidenceChanged: (category) =>
+        `⏸ Automatic moves for ${category} are off: new test results no longer support them.`,
+      historyFail: (category) =>
+        `⏸ Automatic moves for ${category} are off: the check of your last 30 days found mail you needed among them.`,
+      again: "Turn them on again in Settings.",
+      link: (url) => `Settings: ${url}`,
+    },
     sendHeld: {
       first: (address, limit) => `⏸ Sends from ${address} wait: ${limit}.`,
       limit: {
@@ -330,6 +366,26 @@ export const noticeTexts = {
     loopConsent: {
       approval: "Przypomnienie o odpowiedzi czeka na Twoje zatwierdzenie w panelu.",
       result: "Przypomnienie o odpowiedzi ma nowy status. Sprawdź go w panelu.",
+    },
+    trustReady: {
+      first: (checked) => `📋 Sprawdzanie poczty z ostatnich 30 dni zakończone. Przejrzane wiadomości: ${checked}.`,
+      recommended: (categories) => `Polecane do włączenia: ${categories}`,
+      none: "Na razie nie ma nic do włączenia.",
+      link: (url) => `Raport: ${url}`,
+    },
+    autonomyPaused: {
+      corrections: (category, count) =>
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: w ciągu 7 dni poprawiono ${count} z tych przeniesień.`,
+      importantHidden: (category) =>
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: jedno z przeniesień ukryło wiadomość, która była Ci potrzebna.`,
+      modelSwitch: (category) =>
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: zmienił się model AI, a nowy model nie ma jeszcze potwierdzonych wyników dla tej kategorii.`,
+      evidenceChanged: (category) =>
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: nowe wyniki testów już go nie uzasadniają.`,
+      historyFail: (category) =>
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: sprawdzenie poczty z ostatnich 30 dni wykryło wśród przeniesionych wiadomości takie, które były Ci potrzebne.`,
+      again: "Włącz je ponownie w Ustawieniach.",
+      link: (url) => `Ustawienia: ${url}`,
     },
     sendHeld: {
       first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka ${address}): ${limit}.`,

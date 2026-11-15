@@ -34,3 +34,7 @@ The coordinator asks the owner for these steps and waits (outside publication ne
 ## Carry-over from stage 05 review
 
 - N3: the O1 text says the deploy gate is not a security control; set a tag ruleset for `v*` (who may create release tags) and limit branch deploys of the `github-pages` environment to `master`; until O1 is done the deploy job fails red and publishes nothing (review-5.md).
+
+## Carry-over from stage 13
+
+- The FLAGGED_TEXT scan of stage 07 (`flagged-text.test.ts`) did not exist when stage 13 landed: make sure it also scans the built changelog page (src/content or dist), and that the `site-map.test.ts` list has the changelog page (stage 13 note: `notes/2026-11-15-f112-s13-changelog.md`).
