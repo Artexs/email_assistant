@@ -15,11 +15,14 @@ import {
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
 import {
+  createMailOAuthClients,
   listMailboxes,
   listSyncFolders,
+  mailOAuthRoutes,
   mailRoutes,
   openImapProvider,
   setSyncFolderEnabled,
+  type MailOAuthClients,
   type TestMailRule,
   verifySmtpLogin,
   WEB_MAIL_TIMEOUTS,
@@ -28,6 +31,7 @@ import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
 import { activityRoutes, statsRoutes } from "./modules/reports";
 import {
+  anySsoUsable,
   getUserAuthProfile,
   isBreakGlassOwner,
   isOrgSuspended,
@@ -274,6 +278,8 @@ export interface WebExtras {
   secrets: SecretBox;
   actionsScope: ActionsScope;
   botUsername: (() => Promise<string>) | null; // null: Telegram is off
+  /** Default: the clients of the config (`createMailOAuthClients`). A test passes clients that point at the fake token server. */
+  mailOAuthClients?: MailOAuthClients;
   onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
 }
 
@@ -321,6 +327,15 @@ export function apiRouters(
         onRemoved: async (trx, ctx, input) => {
           await queueMailboxRemovedNotices(trx, ctx, input);
         },
+      })
+    );
+    api.route(
+      "/",
+      mailOAuthRoutes({
+        db,
+        now,
+        secrets: extras.secrets,
+        clients: extras.mailOAuthClients ?? createMailOAuthClients(config),
       })
     );
     api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config))));
@@ -438,6 +453,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     ),
     operatorUserIds: operators,
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
+    anySsoUsable: () => anySsoUsable(db),
     resetRequestOpen: mailTasks !== null,
     close: async () => {
       if (mailTasks !== null) {

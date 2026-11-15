@@ -130,11 +130,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .bun-version
-      # deploy/sim.env is not in git: the example feeds the interpolation, and --no-env-resolution skips the env_file of the services (F113 stage 03, review B1).
-      # On the VPS a missing deploy/sim.env stops `sim:up` with an error: the services never start with another env.
+      # deploy/sim.env is not in git. The CI runner is throwaway: it gets a copy of the example so that Compose finds the env_file of the services (older Compose versions check that the file exists even with --no-env-resolution).
+      # The file in the Compose file stays required: on the VPS a missing deploy/sim.env stops `sim:up` with an error, and the services never start with another env.
       - name: Check that the sim Compose file is valid and keeps the sim stack apart from production
         run: |
-          docker compose -p ea-sim -f deploy/compose.sim.yaml --env-file deploy/sim.env.example config --quiet --no-env-resolution
+          cp deploy/sim.env.example deploy/sim.env
+          docker compose -p ea-sim -f deploy/compose.sim.yaml --env-file deploy/sim.env config --quiet --no-env-resolution
           bun run sim:check
       - name: Build the server image
         run: docker build -f deploy/Dockerfile -t ea-server:ci .

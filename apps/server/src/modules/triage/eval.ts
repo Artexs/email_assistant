@@ -18,6 +18,7 @@ import {
   type EvalCase,
   goNoGo,
   monthlyCost,
+  type LlmEndpointKind,
   type LlmRole,
   type PlannedAction,
   planActions,
@@ -43,6 +44,7 @@ import {
 import { createLog } from "../../platform/log";
 
 import { type ClassifierEmail, type ClassifierExtras, classifyEmail } from "./classifier";
+import { endpointSuffix } from "./eval-format";
 import {
   type CaseJudge,
   judgeCaseDraft,
@@ -129,6 +131,9 @@ export interface CasesEvalReport extends EvalReportBase {
   kind: "cases";
   model: string;
   provider: LlmProviderId;
+  // Where the calls ran and the host name of the server (null: the provider default, Gemini). No path, no port.
+  endpoint: LlmEndpointKind;
+  host: string | null;
   reasoningEffort: string | null;
   promptVersion: string;
   // The optional parts of a `classifier-v3` run in the type's order; null for another version (stage 08).
@@ -167,8 +172,11 @@ export interface RealEvalReport extends EvalReportBase {
 export type EvalReport = CasesEvalReport | RealEvalReport;
 
 // The state file of one run. Gemini has no effort, so its names stay as before.
+// The endpoint is part of the name: a resume never takes the results of another endpoint (F111 D8). A run with an
+// explicit `--state` path skips this function, so the endpoint is the caller's duty there.
 export function evalStateFileName(opts: {
   model: string;
+  endpoint: LlmEndpointKind;
   reasoningEffort: string | null;
   // A `promptLabel` (`classifier-v3[history,urgency]`) keeps two variants apart; its brackets and commas become `_`.
   promptVersion: string;
@@ -178,7 +186,7 @@ export function evalStateFileName(opts: {
   const effort = opts.reasoningEffort === null ? "" : `-${opts.reasoningEffort}`;
   const perCategory = opts.perCategory === undefined ? "" : `-pc${opts.perCategory}`;
   const version = opts.promptVersion.replace(/[^\w.-]/g, "_");
-  return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${version}-${opts.set}${perCategory}.jsonl`;
+  return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${version}-${opts.set}${perCategory}${endpointSuffix(opts.endpoint)}.jsonl`;
 }
 
 export function toClassifierInput(c: EvalCase): ClassifierEmail {
@@ -537,6 +545,8 @@ export async function runEval(
     cases: EvalCase[];
     model: string;
     provider: LlmProviderId;
+    // The host name of the server of the classifier (no path, no port). The endpoint kind comes from the client.
+    host?: string | null;
     reasoningEffort?: string | null;
     bar: number;
     minKept: number;
@@ -611,7 +621,9 @@ export async function runEval(
 
   const avgIn = average(usages.map((u) => u.tokensIn));
   const avgOut = average(usages.map((u) => u.tokensOut));
-  const perMail = avgIn === null || avgOut === null ? null : costPerMail(input.model, avgIn, avgOut, startedAt);
+  const endpoint = deps.llm.endpointOf("classifier");
+  const perMail =
+    avgIn === null || avgOut === null ? null : costPerMail(input.model, avgIn, avgOut, startedAt, endpoint);
   const latencies = usages.map((u) => u.latencyMs).sort((a, b) => a - b);
 
   const judgeSummary = summarizeJudge(cases);
@@ -632,6 +644,8 @@ export async function runEval(
     errorCodes,
     model: input.model,
     provider: input.provider,
+    endpoint,
+    host: input.host ?? null,
     reasoningEffort: input.reasoningEffort ?? null,
     promptVersion: (input.prompt ?? productionClassifierChoice()).version,
     promptParts: promptPartsOf(input.prompt ?? productionClassifierChoice()),

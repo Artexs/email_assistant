@@ -128,6 +128,7 @@ beforeAll(async () => {
       role: "classifier",
       promptVersion: "p1",
       model,
+      endpoint: "standard",
       outcome: "ok",
       tokensIn: tokens,
       tokensOut: tokens === null ? null : tokens / 5,

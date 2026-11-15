@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { BlockList, isIP } from "node:net";
 import { join } from "node:path";
 
-import { type MembershipRole, safeNextPath } from "@ea/core";
+import { type MembershipRole, safeNextPath, type SignInOptions, signInOptionsSchema } from "@ea/core";
 import { serveStatic } from "@hono/bun";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -16,7 +16,7 @@ import { isAllowedAuthPath } from "./auth";
 import { type Db, type TenantContext, withoutTenantScope, withTenantScope } from "./db";
 import { errorFields } from "./errors";
 import { createLog, withLogContext } from "./log";
-import { OPENAPI_PATH, openApiSpec } from "./openapi";
+import { apiDoc, OPENAPI_PATH, openApiSpec } from "./openapi";
 
 const log = createLog("http");
 
@@ -52,6 +52,7 @@ export interface WebDeps {
   isOrgSuspended?: (orgId: string) => Promise<boolean>; // absent: no organization is suspended (old tests)
   resetRequestOpen?: boolean; // absent = false: /request-password-reset answers 404
   operatorUserIds?: ReadonlySet<string>; // D16: absent = nobody is an operator
+  anySsoUsable?: () => Promise<boolean>; // F119 D14: one provider is proved and its flag is on; absent = false
 }
 
 export interface HttpDeps {
@@ -311,6 +312,14 @@ async function homeOf(web: WebDeps, userId: string): Promise<"/onboarding" | "/a
   }
 }
 
+const signInOptionsDoc = apiDoc({
+  operationId: "getSignInOptions",
+  summary: "Whether the login page offers company sign-in (SSO). Public; one answer for every caller.",
+  tags: ["tenancy"],
+  ok: { status: 200, schema: signInOptionsSchema },
+  public: true,
+});
+
 const MISSING_BUILD = "The web build is missing. Run bun run web:build.";
 
 export function createApp(deps: HttpDeps): Hono<ApiEnv> {
@@ -384,6 +393,21 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
       return c.json({ error: "not_found" }, 404);
     const address = clientAddress(web.connInfo(c), c.req.header("x-forwarded-for"), web.trustedProxies);
     return web.auth.handler(authRequest(c.req.raw, address));
+  });
+
+  // Public, before the session guard (F119 D14, Q6). It takes no input and answers one bit that is the same for every
+  // caller, so it cannot tell an address or an organization apart. The read is small: sso_providers (a seq scan at this
+  // size) joined to org_features by key, the same for any data. Only GET: every other method falls through to the session guard like an unknown path.
+  app.get("/api/sign-in-options", signInOptionsDoc, async (c) => {
+    c.header("Cache-Control", "no-store");
+    let sso = false;
+    try {
+      sso = (await web.anySsoUsable?.()) === true;
+    } catch (error) {
+      // The password form still works: a failed read must not break the login page.
+      log.warn("sign_in_options_failed", { ...errorFields(error) });
+    }
+    return c.json({ sso } satisfies SignInOptions);
   });
 
   const api = new Hono<ApiEnv>();

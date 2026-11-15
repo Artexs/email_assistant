@@ -129,16 +129,24 @@ export async function getSend(db: DbOrTrx, ctx: TenantContext, id: string): Prom
   return row && toSendRow(row);
 }
 // `from` guards the change. An `approved` send closes only when no run holds it (`locked_at` null or before `staleBefore`).
-// `result_notified_at` stays null: the notifier sends the result (D20). The caller writes the audit row.
+// `result_notified_at` stays null: the notifier sends the result (D20). `resultNotifiedAt` is for the send that a panel edit
+// replaced (`superseded`): no result notice is due (F102 ticket). The caller writes the audit row.
 export async function setExpired(
   trx: Transaction<DB>,
   ctx: TenantContext,
   id: string,
-  opts: { reason: string; at: Date; from: "awaiting_approval" | "approved"; staleBefore: Date }
+  opts: { reason: string; at: Date; from: "awaiting_approval" | "approved"; staleBefore: Date; resultNotifiedAt?: Date }
 ): Promise<boolean> {
   const result = await trx
     .updateTable("actions")
-    .set({ status: "expired", status_reason: opts.reason, locked_at: null, next_attempt_at: null, updated_at: opts.at })
+    .set({
+      status: "expired",
+      status_reason: opts.reason,
+      locked_at: null,
+      next_attempt_at: null,
+      updated_at: opts.at,
+      ...(opts.resultNotifiedAt === undefined ? {} : { result_notified_at: opts.resultNotifiedAt }),
+    })
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
     .where("type", "=", "send")
@@ -342,4 +350,21 @@ export async function lastSendAppliedAt(db: DbOrTrx, ctx: TenantContext): Promis
     .limit(1)
     .executeTakeFirst();
   return row?.applied_at ?? null;
+}
+
+// F102 ticket: the newest version of a send through `supersedes_action_id` (the send itself when nothing replaced it).
+// One recursive query, tenant-scoped on both sides; the unique index on `supersedes_action_id` makes the chain a line.
+export async function newestVersionOf(db: DbOrTrx, ctx: TenantContext, id: string): Promise<string> {
+  const result = await sql<{ id: string }>`
+    with recursive chain(id, depth) as (
+      select a.id, 0 from actions a where a.org_id = ${ctx.orgId} and a.id = ${id} and a.type = 'send'
+      union all
+      select n.id, c.depth + 1
+      from chain c
+      join actions n on n.org_id = ${ctx.orgId} and n.supersedes_action_id = c.id and n.type = 'send'
+      where c.depth < 1000
+    )
+    select id from chain order by depth desc limit 1
+  `.execute(db);
+  return result.rows[0]?.id ?? id;
 }

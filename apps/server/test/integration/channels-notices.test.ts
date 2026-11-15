@@ -180,6 +180,51 @@ describe("urgent notices", () => {
     });
   });
 
+  test("the urgent view holds the suspicious codes only while the flag is on (flag off: no field), and only of its own organization", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const on = await org(trx);
+      const off = await org(trx);
+      const other = await org(trx);
+      await setOrgFeature(trx, on.ctx, { flag: "suspicious_mail", enabled: true, actor: "cli", now: T });
+      await setOrgFeature(trx, other.ctx, { flag: "suspicious_mail", enabled: true, actor: "cli", now: T });
+      const flagged = (o: Org, reasons: string[]) =>
+        insertTriaged(trx, o.ctx, o.mailboxId, {
+          category: "urgent",
+          createdAt: at(-10 * MINUTE),
+          suspiciousReasons: reasons,
+        });
+      const onId = await flagged(on, ["lookalike_domain", "risky_attachment"]);
+      const offId = await flagged(off, ["lookalike_domain"]);
+      const cleanId = await flagged(other, []);
+
+      await run(trx);
+
+      const onRows = await rows(trx, on.orgId, "urgent");
+      expect(onRows).toHaveLength(2);
+      for (const row of onRows) {
+        expect(row.email_id).toBe(onId);
+        expect((row.view as { suspicious?: string[] }).suspicious).toEqual(["lookalike_domain", "risky_attachment"]);
+        // The whole line: nothing but the fixed phrases of the codes (no sender, no domain, no subject).
+        expect(row.text.split("\n").filter((line) => line.startsWith("⚠"))).toEqual([
+          "⚠ Suspicious: look-alike domain, risky attachment",
+        ]);
+      }
+      for (const row of await rows(trx, off.orgId, "urgent")) {
+        expect(row.email_id).toBe(offId);
+        // No field at all: a view without it also renders in the code before F109 (rollback safety).
+        expect("suspicious" in (row.view as object)).toBe(false);
+        expect(row.text).not.toContain("⚠");
+      }
+      for (const row of await rows(trx, other.orgId, "urgent")) {
+        expect(row.email_id).toBe(cleanId);
+        // No field at all: a view without it also renders in the code before F109 (rollback safety).
+        expect("suspicious" in (row.view as object)).toBe(false);
+        expect(row.text).not.toContain("⚠");
+      }
+    });
+  });
+
   test("a member linked after the mail does not get it", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);

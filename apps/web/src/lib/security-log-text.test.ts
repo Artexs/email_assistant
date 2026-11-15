@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { securityEventKinds, type SecurityLogEntry } from "@ea/core/web";
 
 import { en } from "../i18n/en";
+import { pl } from "../i18n/pl";
 import { setLocaleForTest, t } from "../i18n";
 import { securityActorText, securityKindText, securityLineText } from "./security-log-text";
 
@@ -12,6 +13,40 @@ const timeZone = "Europe/Warsaw";
 describe("security log text", () => {
   test("every event kind has an English text", () => {
     for (const kind of securityEventKinds) expect(Object.keys(en)).toContain(`sec_kind_${kind}`);
+  });
+
+  test("every event kind has a Polish text that differs from the English one, with at most one colon", () => {
+    const polish: Record<string, string> = pl;
+    const english: Record<string, string> = en;
+    for (const kind of securityEventKinds) {
+      const key = `sec_kind_${kind}`;
+      expect(Object.keys(polish)).toContain(key);
+      expect(polish[key]).not.toBe(english[key]);
+      expect((polish[key] ?? "").split(":").length - 1).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("the company sign-in kinds read right in Polish and English (F119 D12)", () => {
+    const expected = {
+      sso_sign_in: ["Signed in with the company account", "Zalogowano kontem firmowym"],
+      sso_refused: ["Company sign-in refused", "Odmowa logowania kontem firmowym"],
+      sso_provider_set: ["Company sign-in set up or changed", "Ustawiono lub zmieniono logowanie kontem firmowym"],
+      sso_provider_removed: ["Company sign-in removed", "Usunięto logowanie kontem firmowym"],
+      sso_domain_verified: ["Domain proved by DNS", "Domenę potwierdzono przez DNS"],
+      sso_domain_attested: ["Domain attested by the operator", "Domenę potwierdził operator"],
+      sso_required_changed: ['"SSO required" changed', "Zmieniono wymóg SSO"],
+      sso_unlinked: ["Company account unlinked", "Odłączono konto firmowe"],
+      member_added: ["Member added", "Dodano członka"],
+      member_sessions_ended: ["A member's sessions ended", "Zakończono sesje członka"],
+    } as const;
+    for (const [kind, [english, polish]] of Object.entries(expected)) {
+      setLocaleForTest("en");
+      expect(securityKindText(kind)).toBe(english);
+      setLocaleForTest("pl");
+      expect(securityKindText(kind)).toBe(polish);
+    }
+    expect(en.sec_help).toContain("company sign-in changes");
+    expect(pl.sec_help).toContain("zmiany logowania kontem firmowym");
   });
 
   test("an unknown kind reads as other", () => {

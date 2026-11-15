@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+
 import {
   categories,
   type Category,
@@ -5,6 +8,7 @@ import {
   confidenceHistogram,
   confusionMatrix,
   goNoGo,
+  type LlmEndpointKind,
   ruleSummary,
   thresholdSweep,
 } from "@ea/core";
@@ -101,6 +105,8 @@ function report(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     errorCodes: {},
     model: "gpt-6-luna",
     provider: "openai",
+    endpoint: "standard",
+    host: "api.openai.com",
     reasoningEffort: "none",
     promptVersion: "classifier-v2",
     promptParts: null,
@@ -218,6 +224,7 @@ describe("buildGateFile", () => {
 describe("gateFileName", () => {
   const base = {
     role: "classifier" as const,
+    endpoint: "standard" as LlmEndpointKind,
     promptVersion: "classifier-v2",
     model: "gpt-6-luna",
     reasoningEffort: "none" as string | null,
@@ -234,6 +241,43 @@ describe("gateFileName", () => {
 
   test("a path character becomes an underscore", () => {
     expect(gateFileName({ ...base, model: "a/b c" })).toContain("-a_b_c-");
+  });
+
+  // F111 D8: the endpoint is part of the name; `standard` keeps the name of stage 21.
+  test("standard is the stage 21 name; eu and own add the endpoint", () => {
+    const stage21 = { ...base, version: "1" };
+    expect(gateFileName(stage21)).toBe("classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json");
+    expect(gateFileName({ ...stage21, endpoint: "eu" })).toBe(
+      "classifier-classifier-v2-gpt-6-luna-none-lab-01-v1-eu.json"
+    );
+    expect(
+      gateFileName({
+        ...stage21,
+        endpoint: "own",
+        model: "SpeakLeash/bielik-11b-v3.1:Q4_K_M",
+        reasoningEffort: null,
+      })
+    ).toBe("classifier-classifier-v2-SpeakLeash_bielik-11b-v3.1_Q4_K_M-default-lab-01-v1-own.json");
+  });
+});
+
+describe("gateFileSchema endpoint and host", () => {
+  const committed = resolve(import.meta.dir, "../../../../../evals/results/gate");
+
+  test("3. the committed gate file (no endpoint key) reads as standard with host null", () => {
+    const names = readdirSync(committed).filter((name) => name.endsWith("-v1.json"));
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) {
+      const raw: unknown = JSON.parse(readFileSync(join(committed, name), "utf8"));
+      expect(raw).not.toHaveProperty("endpoint");
+      expect(gateFileSchema.parse(raw)).toMatchObject({ endpoint: "standard", host: null });
+    }
+  });
+
+  test("a bad endpoint value is refused", () => {
+    const [name] = readdirSync(committed);
+    const raw = JSON.parse(readFileSync(join(committed, name as string), "utf8")) as Record<string, unknown>;
+    expect(gateFileSchema.safeParse({ ...raw, endpoint: "free" }).success).toBe(false);
   });
 });
 

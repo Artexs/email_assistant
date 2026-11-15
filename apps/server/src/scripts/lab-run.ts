@@ -1,9 +1,16 @@
+import type { LiveRunPlan } from "@ea/core";
+
 import {
   labEnvIssues,
+  LabSeedError,
+  LAB_TARGETS,
   type LabCorpus,
   type LabEvent,
+  type LabOrg,
   type LabState,
   type RunSpend,
+  type SeedResult,
+  type SeedTarget,
   startLabRun,
   stopLabRun,
 } from "../modules/lab";
@@ -19,6 +26,10 @@ export interface LabDeps {
   // The models the stack is configured to call (roles the lab uses).
   models: readonly string[];
   orgHasMail(orgId: string): Promise<boolean>;
+  // Makes or repairs the lab organization of the target.
+  seed(target: SeedTarget): Promise<SeedResult>;
+  // Stores the urgency profile of a started run on the org mailbox.
+  storeUrgency(org: LabOrg, plan: LiveRunPlan): Promise<unknown>;
   spendOf(runId: string): Promise<RunSpend>;
   now(): Date;
   hex4(): string;
@@ -27,7 +38,6 @@ export interface LabDeps {
 
 // A later stage fills each of these; until then the command exits 1.
 const NOT_BUILT: readonly LabCommand["kind"][] = [
-  "seed",
   "reset",
   "serve",
   "score",
@@ -80,6 +90,26 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
   }
 
   switch (command.kind) {
+    case "seed": {
+      try {
+        const { org, created, added } = await deps.seed(LAB_TARGETS[command.org]);
+        const link = added.linked ? "linked" : added.relinked ? "relinked" : "ok";
+        cli.print(
+          [
+            `seed: ${created ? "created" : "exists"} ${command.org} org ${org.orgId} mailbox ${org.mailboxId} chat ${org.chatId}`,
+            `added mailbox ${added.mailbox} delegates ${added.delegates} rules ${added.rules} flags ${added.flags}`,
+            `link ${link}`,
+          ].join(" · ")
+        );
+        return 0;
+      } catch (error) {
+        if (error instanceof LabSeedError) {
+          cli.fail(`refused: ${error.code}`);
+          return 1;
+        }
+        throw error;
+      }
+    }
     case "start": {
       const result = await startLabRun(
         {
@@ -94,6 +124,7 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
           corpus: deps.corpus,
           models: deps.models,
           orgHasMail: deps.orgHasMail,
+          storeUrgency: deps.storeUrgency,
           now: deps.now,
           hex4: deps.hex4,
         }

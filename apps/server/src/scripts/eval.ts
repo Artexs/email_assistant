@@ -23,7 +23,7 @@ import {
 import { createCliOutput } from "../platform/cli";
 import { type Config, ConfigError, llmRoleTable, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
+import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable } from "../platform/llm";
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
 import { loadEvalConfig } from "./eval-config";
@@ -142,7 +142,8 @@ export async function runClassifier(options: EvalOptions, deps: ClassifierDeps =
   }
   const model = row.model;
   const effort = row.reasoningEffort;
-  cli.print(`provider=${row.provider} model=${model} effort=${effort ?? "-"}`);
+  const { endpoint, host } = llmEndpointFields(table, "classifier");
+  cli.print(`provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${model} effort=${effort ?? "-"}`);
   const llm = (deps.createLlmClient ?? createLlmClient)({ table });
 
   const selected = selectCases(
@@ -156,12 +157,14 @@ export async function runClassifier(options: EvalOptions, deps: ClassifierDeps =
   const cases = options.limit === undefined ? selected : selected.slice(0, options.limit);
 
   // The state file holds per-case results (ids, categories, numbers), no mail text. It lives outside git.
+  // An explicit `--state` path gets no endpoint suffix: the caller keeps one endpoint per file.
   const stateFile =
     options.state ??
     resolve(
       deps.runsDir ?? runsDir,
       evalStateFileName({
         model,
+        endpoint,
         reasoningEffort: effort,
         promptVersion: prompts.classifier.version,
         set: options.set,
@@ -185,6 +188,7 @@ export async function runClassifier(options: EvalOptions, deps: ClassifierDeps =
         cases,
         model,
         provider: row.provider,
+        host,
         reasoningEffort: effort,
         bar: options.bar,
         minKept: options["min-kept"],
