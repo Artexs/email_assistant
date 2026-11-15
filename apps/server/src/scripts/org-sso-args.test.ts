@@ -34,6 +34,40 @@ describe("parseOrgSsoArgs", () => {
     });
   });
 
+  test("verify, attest and require", () => {
+    expect(parseOrgSsoArgs(["--org-id", orgId, "--verify"], none)).toEqual({ kind: "verify", orgId });
+    expect(parseOrgSsoArgs(["--org-id", orgId, "--attest", "--confirm", "x.test"], none)).toEqual({
+      kind: "attest",
+      orgId,
+      confirm: "x.test",
+    });
+    expect(parseOrgSsoArgs(["--org-id", orgId, "--require", "on"], none)).toEqual({
+      kind: "require",
+      orgId,
+      required: true,
+    });
+    expect(parseOrgSsoArgs(["--org-id", orgId, "--require", "off"], none)).toEqual({
+      kind: "require",
+      orgId,
+      required: false,
+    });
+  });
+
+  test("usage (null) for verify, attest and require: bad value, no confirm, two commands, a stray", () => {
+    const base = ["--org-id", orgId];
+    expect(parseOrgSsoArgs([...base, "--require", "yes"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--require"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--attest"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--attest", "--confirm", " "], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--verify", "--confirm", "x.test"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--require", "on", "--confirm", "x.test"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--verify", "--attest", "--confirm", "x.test"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--verify", "--require", "on"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--verify", "--remove", "--confirm", "x.test"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...base, "--verify", "--domain", "x.test"], none)).toBeNull();
+    expect(parseOrgSsoArgs([...setArgs, "--verify"], none)).toBeNull();
+  });
+
   test("usage (null): no org id, a bad org id, a missing part, the secret as a value, two commands, strays", () => {
     const without = (flag: string): string[] => {
       const at = setArgs.indexOf(flag);
