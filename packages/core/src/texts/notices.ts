@@ -12,6 +12,7 @@ export interface NoticeTexts {
   received: (clock: string) => string;
   authError: { first: (address: string, since: string) => string; noRead: string; fix: (mailboxId: string) => string };
   hostBlocked: { first: (address: string, since: string) => string; why: string; noRead: string; recheck: string };
+  sentMissing: { first: (address: string, since: string) => string; ask: string };
   syncStale: { first: (address: string) => string; last: (last: string) => string; status: string; never: string };
   syncOk: (address: string, last: string) => string;
   actionFailed: {
@@ -111,6 +112,10 @@ export const noticeTexts = {
       recheck:
         "The system checks the server again at each sync and starts the mailbox again by itself. /status shows the state.",
     },
+    sentMissing: {
+      first: (address, since) => `📭 No sent mail seen for ${address} since ${since}.`,
+      ask: "Does your mail app keep a copy in Sent? The assistant needs it to see what you wait for.",
+    },
     syncStale: {
       first: (address) => `⚠️ Mail sync is late for ${address}.`,
       last: (last) => `Last good sync: ${last}. The system keeps trying.`,
@@ -194,6 +199,10 @@ export const noticeTexts = {
         "System nie czyta teraz tej skrzynki i nie wysyła z niej poczty. Żadna wiadomość nie ginie, bo zostaje na serwerze poczty.",
       recheck:
         "System sprawdza serwer przy każdej synchronizacji i sam uruchomi skrzynkę ponownie. /status pokazuje stan.",
+    },
+    sentMissing: {
+      first: (address, since) => `📭 Brak wysłanej poczty dla ${address} od ${since}.`,
+      ask: "Czy Twój program pocztowy zapisuje kopię w folderze Wysłane? Asystent potrzebuje jej, żeby wiedzieć, na co czekasz.",
     },
     syncStale: {
       first: (address) => `⚠️ Synchronizacja poczty jest opóźniona: ${address}.`,

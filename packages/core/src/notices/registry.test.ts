@@ -14,6 +14,7 @@ import {
   renderAuthErrorNotice,
   renderHostBlockedNotice,
   renderSendHeldNotice,
+  renderSentMissingNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
   renderUrgentNotice,
@@ -274,6 +275,12 @@ const cases: Case[] = [
       renderHostBlockedNotice({ address: "box@example.test", since: receivedAt, now, timeZone }, texts),
   },
   {
+    kind: "sent_missing",
+    view: { address: "box@example.test", since: receivedAt, now, timeZone },
+    direct: (texts) =>
+      renderSentMissingNotice({ address: "box@example.test", since: receivedAt, now, timeZone }, texts),
+  },
+  {
     kind: "approval_edit",
     view: { original: "📤 Send? Contract", outcome: "approved", at: now, timeZone },
     direct: (texts) => approvalEdit({ original: "📤 Send? Contract", outcome: "approved", at: now, timeZone }, texts),
@@ -314,6 +321,17 @@ describe("the weekly report view", () => {
 
   test("has a renderer", () => {
     expect(noticeRenderers.weekly_report.schema).toBe(noticeViewSchemas.weekly_report);
+  });
+});
+
+describe("the sent_missing view", () => {
+  const view = { address: "boss@x.test", since: new Date("2026-11-12T09:00:00Z"), now, timeZone };
+
+  test("accepts the stored view, refuses an extra field and a missing since", () => {
+    const stored = encodeNoticeView("sent_missing", view);
+    expect(noticeViewSchemas.sent_missing.safeParse(stored).success).toBe(true);
+    expect(noticeViewSchemas.sent_missing.safeParse({ ...stored, subject: "x" }).success).toBe(false);
+    expect(noticeViewSchemas.sent_missing.safeParse({ ...stored, since: undefined }).success).toBe(false);
   });
 });
 

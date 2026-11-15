@@ -8,9 +8,9 @@ import { listSendLimitHolds, SENT_COPY_PENDING_MAX_AGE_MS } from "../../src/modu
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices } from "../../src/modules/channels";
 import { insertSenderRule } from "../../src/modules/config";
-import { ensureSyncFolders, NO_TEST_SENDERS } from "../../src/modules/mail";
-import { insertMailbox, markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
-import { setOrgFeature } from "../../src/modules/tenancy";
+import { ensureSyncFolders, insertSentEmails, NO_TEST_SENDERS, type NewSentEmail } from "../../src/modules/mail";
+import { insertMailbox, markSynced, writeSentSwitch, type MailboxStatus } from "../../src/modules/mail/repo";
+import { configureFeatures, featureSettings, setOrgFeature, upsertOrgFeature } from "../../src/modules/tenancy";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 
 import {
@@ -1974,6 +1974,375 @@ describe("stored views and locales", () => {
       for (const action of actions) {
         expect(Object.keys(action).sort()).toEqual(["delegateId", "folder", "kind", "reverse", "status", "type"]);
       }
+    });
+  });
+});
+
+describe("sent_missing notices", () => {
+  const DAY = 24 * HOUR;
+  const initialOff = [...featureSettings().off];
+
+  beforeEach(() => {
+    configureFeatures({ off: [] });
+  });
+  afterAll(() => {
+    configureFeatures({ off: initialOff });
+  });
+
+  interface SentOrg extends Org {
+    secondOwnerId: string;
+  }
+
+  // Two linked owners and one member (the assistant). The flag and the switch are on; the first pass ended 8 days ago and
+  // the last pass 5 minutes ago. The flag is set for this test organization only (never a real one).
+  async function sentOrg(
+    trx: Transaction<DB>,
+    opts: {
+      flag?: boolean;
+      switchOn?: boolean;
+      firstPass?: Date;
+      lastPass?: Date | null;
+      errorCode?: string | null;
+    } = {}
+  ): Promise<SentOrg> {
+    const o = await org(trx);
+    const secondOwnerId = await addMember(trx, o.orgId, "owner");
+    await linkChat(trx, o.ctx, secondOwnerId, randomChatId(), at(-HOUR));
+    await upsertOrgFeature(trx, o.ctx, {
+      flag: "sent_sync",
+      enabled: opts.flag ?? true,
+      setBy: "test",
+      setAt: T,
+    });
+    await writeSentSwitch(trx, o.ctx, o.mailboxId, { enabled: opts.switchOn ?? true, at: at(-30 * DAY) });
+    if (opts.switchOn === false) return { ...o, secondOwnerId };
+    await trx
+      .updateTable("mailbox_sent_sync")
+      .set({
+        path: "Sent",
+        uidvalidity: "7",
+        last_uid: "1",
+        first_pass_at: opts.firstPass ?? at(-8 * DAY),
+        last_pass_at: opts.lastPass === undefined ? at(-5 * MINUTE) : opts.lastPass,
+        last_error_code: opts.errorCode ?? null,
+      })
+      .where("mailbox_id", "=", o.mailboxId)
+      .execute();
+    return { ...o, secondOwnerId };
+  }
+
+  let counter = 0;
+  async function sentMail(trx: Transaction<DB>, o: Org, when: Date, extra: Partial<NewSentEmail> = {}): Promise<void> {
+    counter += 1;
+    const key = `sm${counter}-${randomUUID()}`;
+    await insertSentEmails(trx, o.ctx, [
+      {
+        mailboxId: o.mailboxId,
+        dedupKey: key,
+        path: "Sent",
+        uidValidity: 7,
+        uid: counter,
+        messageId: `<${key}@x.test>`,
+        parentMessageId: null,
+        referencesIds: [],
+        threadKey: key,
+        fromAddress: "me@corp.test",
+        toAddresses: ["to@x.test"],
+        ccAddresses: [],
+        subject: "Re: X",
+        sentAt: when,
+        internalDate: when,
+        origin: "user",
+        actionId: null,
+        content: "headers_only",
+        ...extra,
+      },
+    ]);
+  }
+
+  const missing = (trx: Transaction<DB>, o: Org) => rows(trx, o.orgId, "sent_missing");
+
+  async function expectCancelled(trx: Transaction<DB>, o: Org): Promise<void> {
+    const found = await missing(trx, o);
+    expect(found.length).toBeGreaterThan(0);
+    for (const row of found) {
+      expect(row.status).toBe("failed");
+      expect(row.error_code).toBe("outdated");
+    }
+  }
+
+  test("1: no sent mail: one row per owner, none for the member; key, view and mailbox", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx);
+
+      await run(trx);
+
+      const found = await missing(trx, o);
+      expect(found.map((row) => row.user_id).sort()).toEqual([o.ownerId, o.secondOwnerId].sort());
+      const address = (
+        await trx.selectFrom("mailboxes").select("address").where("id", "=", o.mailboxId).executeTakeFirstOrThrow()
+      ).address;
+      for (const row of found) {
+        expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-8 * DAY).getTime()}`);
+        expect(row.mailbox_id).toBe(o.mailboxId);
+        expect(row.status).toBe("pending");
+        expect(row.view).toEqual({
+          address,
+          since: at(-8 * DAY).toISOString(),
+          now: T.toISOString(),
+          timeZone: "Europe/Warsaw",
+        });
+        expect(row.text).toContain(address);
+      }
+    });
+  });
+
+  test("2: a second run adds no row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx);
+      await run(trx);
+      await run(trx);
+      expect(await missing(trx, o)).toHaveLength(2);
+    });
+  });
+
+  test("3: the newest user mail starts the quiet period when it is later than the first pass", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx, { firstPass: at(-20 * DAY) });
+      await sentMail(trx, o, at(-9 * DAY));
+      await sentMail(trx, o, at(-15 * DAY));
+
+      await run(trx);
+
+      const found = await missing(trx, o);
+      expect(found).toHaveLength(2);
+      for (const row of found) {
+        expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-9 * DAY).getTime()}`);
+        expect((row.view as { since: string }).since).toBe(at(-9 * DAY).toISOString());
+      }
+    });
+  });
+
+  test("4: a user mail 6 days ago gives no row; a pending row of the older period is cancelled", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx, { firstPass: at(-20 * DAY) });
+      await sentMail(trx, o, at(-9 * DAY));
+      await run(trx);
+      expect(await missing(trx, o)).toHaveLength(2);
+
+      await sentMail(trx, o, at(-6 * DAY));
+      await run(trx);
+
+      await expectCancelled(trx, o);
+      expect((await missing(trx, o)).every((row) => row.status === "failed")).toBe(true);
+    });
+  });
+
+  test("a new quiet period after a new user mail: a new row; the old pending row is cancelled", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx, { firstPass: at(-30 * DAY) });
+      await run(trx);
+      const firstKey = `sent_missing:${o.mailboxId}:${at(-30 * DAY).getTime()}`;
+      expect((await missing(trx, o)).map((row) => row.dedup_key)).toEqual([firstKey, firstKey]);
+
+      await sentMail(trx, o, at(-8 * DAY));
+      await run(trx);
+
+      const found = await missing(trx, o);
+      expect(found).toHaveLength(4);
+      const secondKey = `sent_missing:${o.mailboxId}:${at(-8 * DAY).getTime()}`;
+      expect(found.filter((row) => row.dedup_key === firstKey).every((row) => row.status === "failed")).toBe(true);
+      expect(found.filter((row) => row.dedup_key === secondKey).map((row) => row.status)).toEqual([
+        "pending",
+        "pending",
+      ]);
+    });
+  });
+
+  test("5: only a system send, a day ago: the user is still quiet", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx);
+      await sentMail(trx, o, at(-DAY), { origin: "system", actionId: randomUUID() });
+      await run(trx);
+      expect(await missing(trx, o)).toHaveLength(2);
+    });
+  });
+
+  test("6: a first pass 6 days ago gives no row; the limit is 7 days, not less", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx, { firstPass: at(-6 * DAY) });
+      await run(trx);
+      expect(await missing(trx, o)).toHaveLength(0);
+
+      await trx
+        .updateTable("mailbox_sent_sync")
+        .set({ first_pass_at: new Date(at(-7 * DAY).getTime() + 1) })
+        .where("mailbox_id", "=", o.mailboxId)
+        .execute();
+      await run(trx);
+      expect(await missing(trx, o)).toHaveLength(0);
+
+      await trx
+        .updateTable("mailbox_sent_sync")
+        .set({ first_pass_at: at(-7 * DAY) })
+        .where("mailbox_id", "=", o.mailboxId)
+        .execute();
+      await run(trx);
+      expect(await missing(trx, o)).toHaveLength(2);
+    });
+  });
+
+  describe("7: a condition that ends the notice cancels the pending rows", () => {
+    const cases: [string, (trx: Transaction<DB>, o: SentOrg) => Promise<void>][] = [
+      [
+        "flag off",
+        (trx, o) => upsertOrgFeature(trx, o.ctx, { flag: "sent_sync", enabled: false, setBy: "test", setAt: T }),
+      ],
+      ["mailbox paused", (trx, o) => setStatus(trx, o, "paused")],
+      ["mailbox host_blocked", (trx, o) => setStatus(trx, o, "host_blocked", at(-HOUR))],
+      ["mailbox auth_error", (trx, o) => setStatus(trx, o, "auth_error", at(-HOUR))],
+      ["switch off", (trx, o) => writeSentSwitch(trx, o.ctx, o.mailboxId, { enabled: false, at: at(-HOUR) })],
+    ];
+    test.each(cases)("%s", async (_name, change) => {
+      await withRollback(db, async (trx) => {
+        await isolateChannels(trx);
+        const o = await sentOrg(trx);
+        await run(trx);
+        expect((await missing(trx, o)).every((row) => row.status === "pending")).toBe(true);
+
+        await change(trx, o);
+        await run(trx);
+
+        await expectCancelled(trx, o);
+        expect(await missing(trx, o)).toHaveLength(2);
+      });
+    });
+
+    test("with the condition from the start: no row at all", async () => {
+      await withRollback(db, async (trx) => {
+        await isolateChannels(trx);
+        const noFlag = await sentOrg(trx, { flag: false });
+        const noSwitch = await sentOrg(trx, { switchOn: false });
+        const paused = await sentOrg(trx);
+        await setStatus(trx, paused, "paused");
+        await run(trx);
+        for (const o of [noFlag, noSwitch, paused]) expect(await missing(trx, o)).toHaveLength(0);
+      });
+    });
+  });
+
+  test("8: (tenant) each organization gets rows for its own mailbox and owners only", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await sentOrg(trx);
+      const b = await sentOrg(trx, { firstPass: at(-12 * DAY) });
+      // Organization C is quiet too but its flag is off: the flag of A and B does not reach it.
+      const c = await sentOrg(trx, { flag: false });
+      // Organization D has a recent mail: the quiet mailbox of A does not make D quiet.
+      const d = await sentOrg(trx, { firstPass: at(-20 * DAY) });
+      await sentMail(trx, d, at(-2 * DAY));
+
+      await run(trx);
+
+      expect(await missing(trx, c)).toHaveLength(0);
+      expect(await missing(trx, d)).toHaveLength(0);
+      for (const [o, days] of [
+        [a, 8],
+        [b, 12],
+      ] as const) {
+        const found = await missing(trx, o);
+        expect(found.map((row) => row.user_id).sort()).toEqual([o.ownerId, o.secondOwnerId].sort());
+        for (const row of found) {
+          expect(row.mailbox_id).toBe(o.mailboxId);
+          expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-days * DAY).getTime()}`);
+        }
+      }
+      const all = await trx
+        .selectFrom("outbox")
+        .select(["org_id", "mailbox_id"])
+        .where("kind", "=", "sent_missing")
+        .execute();
+      expect(all.filter((row) => row.org_id === a.orgId).every((row) => row.mailbox_id === a.mailboxId)).toBe(true);
+      expect(all.filter((row) => row.org_id === b.orgId).every((row) => row.mailbox_id === b.mailboxId)).toBe(true);
+      expect(all).toHaveLength(4);
+    });
+  });
+
+  test("9: an error code or a last pass older than an hour gives no row and cancels pending rows", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx);
+      await run(trx);
+      await trx
+        .updateTable("mailbox_sent_sync")
+        .set({ last_error_code: "folder_missing" })
+        .where("mailbox_id", "=", o.mailboxId)
+        .execute();
+      await run(trx);
+      await expectCancelled(trx, o);
+
+      const stale = await sentOrg(trx, { lastPass: at(-2 * HOUR) });
+      await run(trx);
+      expect(await missing(trx, stale)).toHaveLength(0);
+      const edge = await sentOrg(trx, { lastPass: at(-HOUR) });
+      await run(trx);
+      expect(await missing(trx, edge)).toHaveLength(2);
+      const never = await sentOrg(trx, { lastPass: null });
+      await run(trx);
+      expect(await missing(trx, never)).toHaveLength(0);
+    });
+  });
+
+  test("9b: a pass of an older period that ended late gives no row (a last pass before the first pass)", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx, { firstPass: at(-8 * DAY), lastPass: at(-30 * MINUTE) });
+      await run(trx);
+      expect(await missing(trx, o)).toHaveLength(2);
+
+      // The stale pass marks `last_pass_at` with its own start, which is before the first pass of the new period.
+      await trx
+        .updateTable("mailbox_sent_sync")
+        .set({ first_pass_at: at(-20 * MINUTE), last_pass_at: at(-30 * MINUTE) })
+        .where("mailbox_id", "=", o.mailboxId)
+        .execute();
+      await run(trx);
+      await expectCancelled(trx, o);
+    });
+  });
+
+  test("two mailboxes of one organization each get their own rows", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sentOrg(trx);
+      const id = randomUUID();
+      await insertMailbox(trx, o.ctx, {
+        id,
+        address: `second-${id}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await writeSentSwitch(trx, o.ctx, id, { enabled: true, at: at(-30 * DAY) });
+      await trx
+        .updateTable("mailbox_sent_sync")
+        .set({ path: "Sent", first_pass_at: at(-9 * DAY), last_pass_at: at(-MINUTE) })
+        .where("mailbox_id", "=", id)
+        .execute();
+      await run(trx);
+      expect((await missing(trx, o)).map((row) => row.mailbox_id).sort()).toEqual(
+        [o.mailboxId, o.mailboxId, id, id].sort()
+      );
     });
   });
 });

@@ -29,6 +29,8 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 
 16. **The panel.** The settings page shows the card "Sent mail" (`data-card="sent"`) after the sync folders card while `settings.sentSync` is not `null`. It holds one switch "Track my sent mail" that calls `PATCH …/sent-sync`, the fixed line `sent_line`, the Sent folder path, one status line (`sentStatusLine`: first match wins: paused, no folder, folder gone, failed, first read pending, no mail in 30 days, else the time of the last mail) and the off note. The switch is disabled for a member, while a request runs. While the flag is off and the switch is on (paused), the switch can only go off. The connect dialog shows `sent_line` as one muted line while `/api/me` `features` holds `sent_sync`. The texts are `sent_*` in `apps/web/src/i18n`.
 
+17. **The notice `sent_missing`.** `sentMissingDetector` (`channels/notices/sent-missing.ts`) reads `listSentHealth` and queues one notice per linked owner when a mailbox has no mail of the user in Sent for 7 days (`SENT_MISSING_AFTER_MS`). It needs all of: the flag `sent_sync`, the mailbox `active`, the switch on with a first pass, no `last_error_code`, a `last_pass_at` that is not older than 1 hour (`SENT_PASS_FRESH_MS`) and not before `first_pass_at` (a pass of an older period that ended late does not count), and `now − quietSince ≥ 7 days`. `quietSince` is the later of the newest user mail (any age, current path) and `first_pass_at`; a system send never moves it. The key is `sent_missing:<mailbox id>:<quietSince ms>`: one row per owner and quiet period; a later user mail that goes quiet again starts a new period. Any other case cancels the pending rows of the mailbox (`failed` / `outdated`), so a quiet period after a flag-off or pause period gives no notice. The view holds the mailbox address and the dates only. The text asks whether the mail app keeps a copy in Sent; it never names an error (the card does).
+
 ## Entry points
 
 | Kind     | Name                                                                       | Where                                                 |
@@ -62,7 +64,8 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - One mail that makes `fetchContent` fail on every run (a server `BAD` on one UID) holds the text step: the order is oldest first and the error ends the step. It clears when the row leaves the text window, after up to 14 days. The pass logs `sent_sync_failed` each run.
 - Worst case of one run: 100 text fetches of up to 5 MB each, one after another, on the connection of the mailbox. It adds to the run time of `mail.sync`.
 - Mail moved into Sent by hand after it is older than 30 days is not stored (`tooOld`).
-- The switch is set by `setSentSync`, at connect, by the route and by the CLI (rule 15). No "no sent mail seen" notice (stage 11), no DSR erase of sent mail (stage 12).
+- The switch is set by `setSentSync`, at connect, by the route and by the CLI (rule 15). No DSR erase of sent mail (stage 12).
+- The notice (rule 17) never fires for a period that the pass did not observe, and it names no error: the panel card shows an error code.
 - No analysis of sent mail by the LLM: E5b. No pass before a system send: E6a (F115).
 - `listUserAnswers` reads a direct reply only (the parent id): a later reply elsewhere in the thread does not mark older mails; a reader that wants the thread rule builds it from `thread_key`. No caller yet: E3a, E4-B, E11a, E6 (reply drafts) and E5b (open loops) use it. F116 (open loops) note: Sent text goes after `data_retention_days` and the recipients after 90 days, so a loop that stays open longer than `data_retention_days` needs its own copy of what it needs.
 
