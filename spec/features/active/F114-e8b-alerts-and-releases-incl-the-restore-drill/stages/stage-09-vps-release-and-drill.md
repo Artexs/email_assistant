@@ -52,3 +52,7 @@ Read `review-4.md`. Step 4 (V1): compare the container `statfs("/")` with `df -B
 ## Carry-over from stage 05 review
 
 - On the VPS confirm: `run --rm -T cli` runs the just-built image; `up -d --no-build` recreates `server` after `docker tag`; `printenv EA_RELEASE`; the rollback target checkout matches its image (review-5.md N1).
+
+## Carry-over from stage 07 review
+
+- On the VPS (Compose 2.40): `docker compose -p ea-drill -f deploy/compose.yaml -f deploy/compose.drill.yaml --env-file deploy/drill.env config --format json | jq .networks` shows exactly one subnet 172.29.0.0/24 and the name `ea-drill_default`; `docker network inspect $(docker network ls -q)` shows no other network on 172.29.0.0/24; the drill config has no live keys for `server` and `cli` and no ports. Compare `df` with the live DB size before the drill (a second DB copy; the build cache stays after `--down`). Never type a profile by hand with the drill files (`--profile ops` would publish 127.0.0.1:9428). See review-7.md.

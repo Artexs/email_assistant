@@ -188,6 +188,7 @@ async function findListed(db: DbOrTrx, orgId: string, address: string): Promise<
 }
 
 // A chain action that is `applying` is open too: the erase would delete an action that a worker is running.
+// An action of an open loop has no mail (`email_id` is null): `coalesce` keeps it in the payload branch.
 export async function findOpenActions(
   db: DbOrTrx,
   orgId: string,
@@ -202,7 +203,7 @@ export async function findOpenActions(
       and a.status <> all (${[...ENDED_STATUSES]}::text[])
       and (
         (a.email_id = any (${goes}::uuid[]) and (a.status = 'applying' or a.type in ('send', 'create_draft')))
-        or (not (a.email_id = any (${goes}::uuid[])) and a.payload::text ~* ${regex})
+        or (not coalesce(a.email_id = any (${goes}::uuid[]), false) and a.payload::text ~* ${regex})
         or (a.id = any (${chain}::uuid[]) and a.status = 'applying')
       )
     order by a.id`.execute(db);

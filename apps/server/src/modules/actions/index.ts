@@ -7,6 +7,7 @@ export {
   type FolderResolver,
   type ResolvableFolderKey,
 } from "./apply";
+export { ActionAnchorError, anchorOfRow, emailIdOf, type ActionAnchor, type ActionAnchorColumns } from "./anchor";
 export { applyDraft, buildDraftMessage } from "./drafts";
 export { editApproval, type EditInput, type EditResult } from "./edit";
 export { type SendLimitHit } from "./send-limit";

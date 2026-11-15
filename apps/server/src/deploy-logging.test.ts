@@ -103,23 +103,99 @@ describe("deploy/check-logging.sh", () => {
   });
 });
 
+describe("deploy/check-logging.sh --drill (restore drill file set, F114 stage 07)", () => {
+  const drillCompose = (services: Record<string, { logging: string; extra?: string }>): string =>
+    `services:\n${Object.entries(services)
+      .map(([name, s]) => `  ${name}:\n    image: x\n${s.logging}\n${s.extra ?? ""}`)
+      .join("")}`;
+
+  test("passes on the real drill file set: every service local, no log store service outside a profile", () => {
+    const result = check([]);
+    expect(result.err).toBe("");
+    expect(result.out).toContain("logging ok (drill): every service local; services: ");
+  });
+
+  test("a drill set with server on json-file fails (the drill must stay out of the log store)", () => {
+    const path = write(
+      "drill-json.yaml",
+      drillCompose({ server: { logging: block("json-file") }, db: { logging: block("local") } })
+    );
+    const result = check(["--drill", path]);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("server must be local");
+  });
+
+  test("a drill set passes with server on local and the store service behind a profile", () => {
+    const path = write(
+      "drill-ok.yaml",
+      drillCompose({
+        server: { logging: block("local") },
+        db: { logging: block("local") },
+        "store-tool": { logging: block("local"), extra: "    profiles: [ops]\n" },
+      })
+    );
+    const result = check(["--drill", path]);
+    expect(result.err).toBe("");
+    expect(result.code).toBe(0);
+  });
+
+  test("a drill set fails when a service outside db, server and cli has no profile, or has the profile cli", () => {
+    for (const [name, extra] of [
+      ["drill-noprofile.yaml", ""],
+      ["drill-cliprofile.yaml", "    profiles: [cli, ops]\n"],
+    ] as const) {
+      const path = write(
+        name,
+        drillCompose({
+          server: { logging: block("local") },
+          "store-tool": { logging: block("local"), extra },
+        })
+      );
+      const result = check(["--drill", path]);
+      expect(result.code, name).toBe(1);
+      expect(result.err, name).toContain("the drill must not run store-tool");
+    }
+  });
+
+  test("--drill without a file fails", () => {
+    expect(check(["--drill"]).code).toBe(1);
+  });
+});
+
 // Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
+// The `server` service has `env_file: ../.env`. The CI checkout has no .env, and the Compose of the runner checks that this file
+// exists even with --no-env-resolution. So the file goes to a throwaway project folder with an empty .env, and the repo stays clean.
+const project = mkdtempSync(join(tmpdir(), "f103-s18-"));
+mkdirSync(join(project, "deploy"));
+writeFileSync(join(project, ".env"), "");
+writeFileSync(join(project, "deploy", "compose.yaml"), readFileSync(join(repoRoot, "deploy", "compose.yaml")));
+afterAll(() => rmSync(project, { recursive: true, force: true }));
+
+// Fails loud: a Compose error stops the test with its stderr text, never an empty stdout that JSON.parse reads.
 const composeConfig = (profile: string | null) => {
   const result = Bun.spawnSync(
     [
       "docker",
       "compose",
       "-f",
-      "deploy/compose.yaml",
+      join(project, "deploy", "compose.yaml"),
       ...(profile === null ? [] : ["--profile", profile]),
       "config",
       "--no-env-resolution",
       "--format",
       "json",
     ],
-    { cwd: repoRoot, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
+    { cwd: project, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
   );
-  return result;
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `docker compose config (profile ${profile ?? "none"}) exited ${result.exitCode}: ${result.stderr.toString()}`
+    );
+  }
+  return {
+    exitCode: result.exitCode,
+    services: (JSON.parse(result.stdout.toString()) as { services: Record<string, unknown> }).services,
+  };
 };
 
 interface OpsService {
@@ -135,7 +211,7 @@ interface OpsService {
 
 describe("deploy/compose.yaml profile ops (the log store)", () => {
   const withOps = composeConfig("ops");
-  const services = (JSON.parse(withOps.stdout.toString()) as { services: Record<string, OpsService> }).services;
+  const services = withOps.services as Record<string, OpsService>;
   const store = services.victorialogs;
   const agent = services.vlagent;
 
@@ -154,15 +230,21 @@ describe("deploy/compose.yaml profile ops (the log store)", () => {
     expect(agent?.mem_limit).toBe("67108864");
     expect(agent?.ports).toBeUndefined();
     // Only the container logs (read-only) and its own volume: no Docker socket, no other host path.
-    expect(agent?.volumes).toEqual([
+    // Compare only these fields: Compose versions differ in default bind/volume options.
+    const volumes = (agent?.volumes ?? []).map(({ type, source, target, read_only }) => ({
+      type,
+      source,
+      target,
+      read_only: read_only ?? false,
+    }));
+    expect(volumes).toEqual([
       {
         type: "bind",
         source: "/var/lib/docker/containers",
         target: "/var/lib/docker/containers",
         read_only: true,
-        bind: {},
       },
-      { type: "volume", source: "vlagent-data", target: "/vlagent", volume: {} },
+      { type: "volume", source: "vlagent-data", target: "/vlagent", read_only: false },
     ]);
     expect(agent?.command).toContain("-fileCollector.glob=/var/lib/docker/containers/*/*-json.log");
     expect(agent?.logging?.driver).toBe("local");
@@ -189,7 +271,7 @@ describe("deploy/compose.yaml profile ops (the log store)", () => {
   test("without the profile the config lists neither service", () => {
     const plain = composeConfig(null);
     expect(plain.exitCode).toBe(0);
-    const names = Object.keys((JSON.parse(plain.stdout.toString()) as { services: object }).services);
+    const names = Object.keys(plain.services);
     expect(names).not.toContain("victorialogs");
     expect(names).not.toContain("vlagent");
     expect(names).toContain("server");
@@ -205,7 +287,7 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     healthcheck?: { disable?: boolean };
     profiles?: string[];
   }
-  const services = (JSON.parse(result.stdout.toString()) as { services: Record<string, Service> }).services;
+  const services = result.services as Record<string, Service>;
 
   test("server writes json-file, db and cli write local, all 10m x 5", () => {
     expect(result.exitCode).toBe(0);

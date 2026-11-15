@@ -39,6 +39,8 @@ export async function countWaitingApprovals(db: DbOrTrx, ctx: TenantContext): Pr
     .select(sql<string>`count(*)`.as("count"))
     .where("actions.org_id", "=", ctx.orgId)
     .where("draft.org_id", "=", ctx.orgId)
+    // loop rows: open loops stage 10/11
+    .where("actions.email_id", "is not", null)
     .where("actions.type", "=", "send")
     .where("actions.status", "=", "awaiting_approval")
     .where("draft.status", "=", "applied")

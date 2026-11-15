@@ -5,7 +5,11 @@
 # CHECK_LOGGING_DOCS (space-separated files) replaces the document list; the test uses it.
 # Usage: bash deploy/check-logging.sh [compose file ...]. No arguments: deploy/compose.yaml and deploy/compose.dev.yaml, merged,
 # then deploy/compose.sim.yaml on its own (the sim stack shares nothing with the production pair, so it is never merged with it).
-# A new Compose file in deploy/ must be added to one of the two lists below: without arguments the script fails until then.
+# The restore drill (deploy/restore.sh) runs compose.yaml with compose.drill.yaml, with no profile but `cli`. That set is checked on
+# its own and it follows other rules: `server` writes `local` too (the log store reads only json-file, so no drill line reaches it),
+# and every service but db, server and cli sits behind a profile (the log store is in `ops`; the drill never starts it).
+# `--drill <compose file ...>` checks the files as the drill set.
+# A new Compose file in deploy/ must be added to one of the three lists below: without arguments the script fails until then.
 # It never prints the Compose config, because the config can hold secrets. CI runs it (job `image`).
 set -euo pipefail
 
@@ -13,6 +17,8 @@ want_collected='{"driver":"json-file","options":{"max-size":"10m","max-file":"5"
 want_local='{"driver":"local","options":{"max-size":"10m","max-file":"5"}}'
 default_files=(compose.yaml compose.dev.yaml)
 alone_files=(compose.sim.yaml)
+drill_files=(compose.yaml compose.drill.yaml)
+drill_mode=0
 
 # One check of one set of Compose files, merged. It never prints the config.
 check_set() {
@@ -29,13 +35,25 @@ check_set() {
   fi
 
   local bad
-  bad="$(printf '%s' "$config" | jq -r --argjson collected "$want_collected" --argjson local "$want_local" '
+  bad="$(printf '%s' "$config" | jq -r --argjson collected "$want_collected" --argjson local "$want_local" --argjson drill "$drill_mode" '
     .services | to_entries | sort_by(.key)[]
-    | if .key == "server" then select(.value.logging != $collected) | "logging: \(.key) must be json-file 10m 5"
+    | if .key == "server" and $drill == 0 then select(.value.logging != $collected) | "logging: \(.key) must be json-file 10m 5"
       else select(.value.logging != $local) | "logging: \(.key) must be local 10m 5" end')"
   if [ -n "$bad" ]; then
     echo "$bad" >&2
     exit 1
+  fi
+
+  # `drill_extra`: the drill runs db and server, and cli on request (profile `cli`), nothing else. Every other service must sit
+  # behind a profile that restore.sh never passes: a store service in the drill would collect or ship logs of the host.
+  # (`config --no-interpolate` lists the services of every profile, so the profiles are read here.)
+  if [ "$drill_mode" -eq 1 ]; then
+    local drill_extra
+    drill_extra="$(printf '%s' "$config" | jq -r '.services | to_entries[] | select(.key != "db" and .key != "server" and .key != "cli") | select((.value.profiles // []) == [] or ((.value.profiles // []) | index("cli")) != null) | "check-logging: the drill must not run \(.key)"')"
+    if [ -n "$drill_extra" ]; then
+      echo "$drill_extra" >&2
+      exit 1
+    fi
   fi
 
   # The one-off service must stay behind its profile (a plain `up` would start a second server) and must have no healthcheck.
@@ -76,6 +94,11 @@ check_set() {
   fi
 
   local others
+  if [ "$drill_mode" -eq 1 ]; then
+    others="$(printf '%s' "$config" | jq -r '.services | keys | join(" ")')"
+    echo "logging ok (drill): every service local; services: $others"
+    return 0
+  fi
   others="$(printf '%s' "$config" | jq -r '.services | keys | map(select(. != "server")) | join(" ")')"
   echo "logging ok: server json-file; local: $others"
 }
@@ -119,6 +142,12 @@ check_docs() {
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+if [ "${1:-}" = "--drill" ]; then
+  shift
+  drill_mode=1
+  [ "$#" -gt 0 ] || { echo "check-logging: --drill needs compose files" >&2; exit 1; }
+fi
+
 if [ "$#" -gt 0 ]; then
   check_set "$@"
   check_docs "$root"
@@ -129,7 +158,7 @@ shopt -s nullglob
 for path in "$root"/deploy/compose*.yaml "$root"/deploy/compose*.yml; do
   name="$(basename "$path")"
   known=0
-  for d in "${default_files[@]}" "${alone_files[@]}"; do
+  for d in "${default_files[@]}" "${alone_files[@]}" "${drill_files[@]}"; do
     if [ "$d" = "$name" ]; then known=1; fi
   done
   if [ "$known" -eq 0 ]; then
@@ -146,4 +175,11 @@ check_set "${merged[@]}"
 for d in "${alone_files[@]}"; do
   check_set "$root/deploy/$d"
 done
+drill_mode=1
+drilled=()
+for d in "${drill_files[@]}"; do
+  drilled+=("$root/deploy/$d")
+done
+check_set "${drilled[@]}"
+drill_mode=0
 check_docs "$root"
