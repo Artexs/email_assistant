@@ -20,17 +20,17 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
-### `action_no_provider` and `send_no_sender` (fields `action_id`, `action_type` for the first)
+### `action_no_provider` and `send_no_sender` (fields `action_id`, `action_type` for the first; before F103: `action <id>: no provider for <type>` and `action <id>: no sender for send`)
 
-- **First seen:** 2026-11-15 (F103 stage 09; before: `action <id>: no provider for <type>` and `action <id>: no sender for send`)
+- **First seen:** 2026-11-15 (F103 stage 09)
 - **Source:** `apps/server/src/modules/actions/apply.ts` (`action_no_provider`) and `send.ts` (`send_no_sender`) (`[actions]`, level `error`).
 - **Cause:** The committer claimed an action that needs the mail server (or a send that needs the SMTP sender), but the run holds no provider (or no sender). This is a bug in the committer wiring, not a mailbox problem. The row goes back to its status with a 5 minute wait and no count.
 - **Fix:** Read the `committer_*` lines of the same run and the code of `committer.ts` (`needs` of the handler). File a bug with the action type.
 - **Status:** investigating
 
-### `send_waits_for_draft` (field `action_id`)
+### `send_waits_for_draft` (field `action_id`; before F103: `action <id>: the draft is not applied; the send waits`)
 
-- **First seen:** 2026-11-15 (F103 stage 09; before: `action <id>: the draft is not applied; the send waits`)
+- **First seen:** 2026-11-15 (F103 stage 09)
 - **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
 - **Cause:** A claimed send found that its draft is no longer `applied` (a reject or a failure of the draft ran in the same moment). The send goes back to `approved` with no count and waits.
 - **Fix:** No action if one line appears. If it repeats for hours, read the status of the draft row; the send expires by its 48 h rule.
