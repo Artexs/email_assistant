@@ -88,8 +88,8 @@ export async function getEditTarget(
   };
 }
 
-// A newer edit row of the same card that went out already: an older row must not overwrite it (the order of the rows is the
-// order of the outcomes: `created_at`, then the id).
+// A newer edit row of the same card that went out already: an older row must not overwrite it. "Newer" is a later
+// `created_at` (the time of the decision); rows with the same time cannot be ordered, and the check of the outcome decides.
 export async function newerEditSent(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -103,12 +103,7 @@ export async function newerEditSent(
     .where("edit_of_outbox_id", "=", edit.targetId)
     .where("status", "=", "sent")
     .where("id", "<>", edit.id)
-    .where((eb) =>
-      eb.or([
-        eb("created_at", ">", edit.createdAt),
-        eb.and([eb("created_at", "=", edit.createdAt), eb("id", ">", edit.id)]),
-      ])
-    )
+    .where("created_at", ">", edit.createdAt)
     .limit(1)
     .executeTakeFirst();
   return row !== undefined;
