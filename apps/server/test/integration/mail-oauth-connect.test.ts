@@ -734,6 +734,18 @@ describe("Reconnect", () => {
     expect((await credentialsOf(password.id))?.secret_kind).toBe("password");
   });
 
+  test("17c. an oauth_provider mailbox whose secret is a password (a broken row) is refused under the lock; the secret stays", async () => {
+    const box = await seedMailbox({ password: true });
+    await db.updateTable("mailboxes").set({ oauth_provider: "google" }).where("id", "=", box.id).execute();
+    const before = await credentialsOf(box.id);
+    const result = await applyOAuthGrant(depsOf(), ctxA(), grantOf("google", box.address, box.id), org.ownerId);
+    expect(result).toEqual({ ok: false, code: "oauth_failed" });
+    const after = await credentialsOf(box.id);
+    expect(after?.secret_kind).toBe("password");
+    expect(after?.encrypted_secret).toBe(before?.encrypted_secret ?? "");
+    expect(dropped).toHaveLength(0);
+  });
+
   test("17b. no client for the provider: not_configured", async () => {
     const box = await seedMailbox();
     const deps = { ...depsOf(), clients: {} };
@@ -815,6 +827,28 @@ describe("the callback route", () => {
     }
     // The real owner still finishes the flow with the same URL.
     expect(resultOf(await callback(appOf(), "owner", "google", mine.query)).get("oauth")).toBe("connected");
+  });
+
+  test("20b. the query never names the user, the organization or the mailbox: extra parameters are ignored", async () => {
+    await enable("google");
+    const address = addressOf();
+    const { query } = await signIn("google", { address });
+    const extra = {
+      ...query,
+      org: org.otherOrgId,
+      org_id: org.otherOrgId,
+      orgId: org.otherOrgId,
+      user: org.otherOwnerId,
+      user_id: org.otherOwnerId,
+      userId: org.otherOwnerId,
+      mailbox: randomUUID(),
+      mailbox_id: randomUUID(),
+      mailboxId: randomUUID(),
+    };
+    expect(resultOf(await callback(appOf(), "owner", "google", extra)).get("oauth")).toBe("connected");
+    expect(await mailboxRows(address)).toHaveLength(1);
+    const other = await db.selectFrom("mailboxes").select("id").where("org_id", "=", org.otherOrgId).execute();
+    expect(other).toHaveLength(0);
   });
 
   test("21. an owner demoted since the start gets oauth_failed: nothing is redeemed or stored", async () => {
