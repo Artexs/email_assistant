@@ -1,4 +1,4 @@
-import { ADDRESS_PATTERN, localToInstant } from "@ea/core";
+import { ADDRESS_PATTERN, DELEGATE_NAME_MAX, DELEGATE_TAG_MAX, DELEGATE_TAGS_MAX, localToInstant } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -27,9 +27,6 @@ import {
 
 type DbOrTrx = Db | Transaction<DB>;
 
-const NAME_MAX = 100;
-const TAGS_MAX = 10;
-const TAG_MAX = 30;
 const DUE_TIME = "17:00";
 
 export type AddDelegateResult =
@@ -44,13 +41,17 @@ function inTransaction<T>(db: DbOrTrx, run: (trx: Transaction<DB>) => Promise<T>
 
 function normalizeTags(tags: readonly string[]): string[] | null {
   const result = [...new Set(tags.map((tag) => tag.trim().toLowerCase()))];
-  if (result.length > TAGS_MAX || result.some((tag) => tag === "" || Array.from(tag).length > TAG_MAX)) return null;
+  if (
+    result.length > DELEGATE_TAGS_MAX ||
+    result.some((tag) => tag === "" || Array.from(tag).length > DELEGATE_TAG_MAX)
+  )
+    return null;
   return result;
 }
 
 function cleanName(raw: string): string | null {
   const name = raw.trim();
-  return name === "" || Array.from(name).length > NAME_MAX ? null : name;
+  return name === "" || Array.from(name).length > DELEGATE_NAME_MAX ? null : name;
 }
 
 // A delegate's address is never a mailbox address of the organization (modules §3.3).
