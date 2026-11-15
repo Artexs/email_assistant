@@ -349,14 +349,14 @@ export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
   return {
     command: async (link, name) => {
       if (name !== "help" && (await isOrgSuspended(deps.db, { orgId: link.orgId }))) {
-        log.info(`telegram: org ${link.orgId} suspended: ${name} refused`);
+        log.info("command_refused_suspended", { org_id: link.orgId, command: name });
         return { text: textsFor(link.locale).bot.accountPaused(deps.operatorContact), buttons: [] };
       }
       return runCommand(deps, link, name);
     },
     callback: async (link, data) => {
       if (await isOrgSuspended(deps.db, { orgId: link.orgId })) {
-        log.info(`telegram: org ${link.orgId} suspended: tap refused`);
+        log.info("tap_refused_suspended", { org_id: link.orgId });
         return { answer: textsFor(link.locale).bot.accountPaused(deps.operatorContact) };
       }
       return handleCallback(

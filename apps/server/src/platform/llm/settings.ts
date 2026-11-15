@@ -1,4 +1,4 @@
-import type { LlmRole } from "@ea/core";
+import type { LlmEndpointKind, LlmRole } from "@ea/core";
 
 import type { LlmProviderId } from "./providers";
 
@@ -20,6 +20,10 @@ export interface LlmProviderSettings {
   apiKey: string | undefined;
   /** Calls per minute of all roles on this provider, in this process. */
   rpm: number;
+  /** The base URL the adapter passes to its SDK; null: the SDK default (Gemini). */
+  baseUrl: string | null;
+  /** Where the calls of this provider run; Gemini: `standard`. */
+  endpoint: LlmEndpointKind;
 }
 
 export interface LlmRoleTable {
@@ -33,4 +37,18 @@ export function uniformRoleTable(row: LlmRoleSettings, provider: LlmProviderSett
     roles: { classifier: row, judge: row, drafter: row, extractor: row, escalation: row },
     providers: { gemini: provider, openai: provider },
   };
+}
+
+/**
+ * The endpoint of one role for logs and `llm:check`: the kind and the hostname only. Never the URL: it has a path
+ * and a port, and a bad config may have held user info.
+ */
+export function llmEndpointFields(
+  table: LlmRoleTable,
+  role: LlmRole
+): { provider: LlmProviderId; model: string; endpoint: LlmEndpointKind; host: string | null } {
+  const row = table.roles[role];
+  const provider = table.providers[row.provider];
+  const host = provider.baseUrl === null ? null : new URL(provider.baseUrl).hostname.replace(/^\[|\]$/g, "");
+  return { provider: row.provider, model: row.model, endpoint: provider.endpoint, host };
 }

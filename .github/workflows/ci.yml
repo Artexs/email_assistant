@@ -125,10 +125,31 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check that the image uses the pinned Bun
         run: test "FROM oven/bun:$(tr -d '[:space:]' < .bun-version)" = "$(head -n 1 deploy/Dockerfile)"
-      - name: Check that every Compose service rotates its log
+      - name: Check that every Compose service rotates its log (the sim file is checked on its own)
         run: bash deploy/check-logging.sh
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      # deploy/sim.env is not in git: the example feeds the interpolation, and --no-env-resolution skips the env_file of the services (F113 stage 03, review B1).
+      # On the VPS a missing deploy/sim.env stops `sim:up` with an error: the services never start with another env.
+      - name: Check that the sim Compose file is valid and keeps the sim stack apart from production
+        run: |
+          docker compose -p ea-sim -f deploy/compose.sim.yaml --env-file deploy/sim.env.example config --quiet --no-env-resolution
+          bun run sim:check
       - name: Build the server image
         run: docker build -f deploy/Dockerfile -t ea-server:ci .
+      - name: Build the sim image on a sim-only tag and check its guard and its state folder
+        run: |
+          docker tag ea-server:ci ea-sim-base:ci
+          docker build -f deploy/Dockerfile.sim --build-arg EA_SERVER_IMAGE=ea-sim-base:ci -t ea-sim-server:ci .
+          test "$(docker run --rm --entrypoint stat ea-sim-server:ci -c %U /var/lib/ea-lab)" = "bun"
+          docker run --rm --env-file deploy/sim.env.example ea-sim-server:ci bun run lab:env-check
+          # The guard must refuse with the code of the real-form token on stdout and a non-zero exit (a missing script or corpus would fail too, but with another output).
+          status=0
+          out="$(docker run --rm --env-file deploy/sim.env.example -e TELEGRAM_BOT_TOKEN=7234567890:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw ea-sim-server:ci bun run lab:env-check)" || status=$?
+          echo "$out"
+          test "$status" -ne 0
+          test "$out" = "[lab-env-check] telegram_token_not_fake"
       - name: Check that the image holds only the package.json of the test tools
         run: |
           files="$(docker run --rm --entrypoint find ea-server:ci /app/tools -not -path '*/node_modules/*' -not -name node_modules -type f | sort)"

@@ -939,6 +939,7 @@ describe("applySend: crashes and the recovery of an applying send", () => {
 function fakeLlm(answer: Record<string, unknown>): LlmClient {
   return {
     modelOf: () => "fake-model",
+    endpointOf: () => "standard",
     async generate(req: { role: string; promptVersion: string; schema: { parse(value: unknown): unknown } }) {
       return {
         data: req.schema.parse(answer),
@@ -949,6 +950,7 @@ function fakeLlm(answer: Record<string, unknown>): LlmClient {
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 300,
+          endpoint: "standard",
         },
       };
     },

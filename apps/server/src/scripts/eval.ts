@@ -21,11 +21,12 @@ import {
   runEval,
 } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
-import { type Config, ConfigError, llmRoleTable, loadConfig, testMailRule } from "../platform/config";
+import { type Config, ConfigError, llmRoleTable, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
+import { loadEvalConfig } from "./eval-config";
 import { runSim } from "./eval-sim";
 import { runSuspicious } from "./eval-suspicious";
 
@@ -43,8 +44,9 @@ function loadCases(file: string): EvalCase[] {
 }
 
 // Real labels from triage_feedback: no case file, no LLM call, no API key.
-async function runReal(options: EvalOptions, orgId: string, mailboxId: string): Promise<number> {
-  const config = loadConfig();
+export async function runReal(options: EvalOptions, orgId: string, mailboxId: string): Promise<number> {
+  const config = loadEvalConfig();
+  if (config === null) return 1;
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
@@ -116,7 +118,8 @@ export interface ClassifierDeps {
 
 // The old case sets through the classifier: no DB, a key for the provider.
 export async function runClassifier(options: EvalOptions, deps: ClassifierDeps = {}): Promise<number> {
-  const config = deps.config ?? loadConfig();
+  const config = deps.config ?? loadEvalConfig();
+  if (config === null) return 1;
   let table: LlmRoleTable;
   try {
     table = llmRoleTable(config, {

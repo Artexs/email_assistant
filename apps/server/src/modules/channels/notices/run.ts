@@ -2,7 +2,7 @@ import { type NoticeKind } from "@ea/core";
 import { type Transaction } from "kysely";
 
 import { type DB, type Db, type TenantContext } from "../../../platform/db";
-import { describeError } from "../../../platform/errors";
+import { errorFields } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
 import { type MailboxSummary, type TestMailRule } from "../../mail";
 import { queueNotice, type QueueNoticeInput } from "../notice-queue";
@@ -46,11 +46,12 @@ export interface Detector {
 // A row that fails every tick warns once per process, not every 15 s.
 const warnedRows = new Set<string>();
 
-export function warnSkipped(kind: string, id: string, error: unknown): void {
-  const key = `${kind}:${id}`;
+// `id` is the row id (a UUID, logged as `item_id`). `dedup` is the once-per-process key when one id has several rows.
+export function warnSkipped(kind: string, id: string, error: unknown, dedup: string = id): void {
+  const key = `${kind}:${dedup}`;
   if (warnedRows.has(key)) return;
   warnedRows.add(key);
-  log.warn(`notice ${kind} ${id}: skipped: ${describeError(error)}`);
+  log.warn("notice_skipped", { kind, item_id: id, ...errorFields(error) });
 }
 
 export function inTransaction<T>(db: DbOrTrx, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
@@ -64,5 +65,5 @@ export async function queue<K extends NoticeKind>(
   now: Date
 ): Promise<void> {
   const id = await queueNotice(db, ctx, { ...input, now });
-  if (id !== null) log.info(`notice ${input.kind} queued: outbox ${id}`);
+  if (id !== null) log.info("notice_queued", { kind: input.kind, outbox_id: id });
 }

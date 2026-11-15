@@ -38,3 +38,8 @@ From `spike.md` (defaults in brackets, used when the row passed as expected):
 **Done when.** The tests pass; `spike.md`'s plan-change lines for this stage are done or answered in the final message; the Proof prints `PROOF_OK`.
 
 **Out of scope.** The panel pages (stage 17), the operator doc (stage 19).
+
+## Carry-over from the stage 06 review (2026-11-15)
+
+- Do not compare Graph scopes by name before spike M2 records the raw string (see stage 13).
+- The Microsoft redeem sends `scope` = IMAP + `offline_access`, without `openid` (stage 06 `redeemCode`). Check at spike M2 that an `id_token` still comes back; stage 08 needs it. If it does not, add `openid` to `resourceScopes.mail` (the scope check ignores identity names) and update the registry test.

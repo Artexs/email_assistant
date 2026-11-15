@@ -231,7 +231,7 @@ describe("actions logs", () => {
           expect(output).toContain(`action ${reverse.id}: applied ${reverse.type}`);
         }
         expect(output).toContain(`returned ${mailboxId}: processed 1`);
-        expect(output).toContain(`notice action_failed queued: outbox ${outbox[0]?.id}`);
+        expect(output).toContain(`notice_queued kind=action_failed outbox_id=${outbox[0]?.id}`);
       });
     } finally {
       logSpy.mockRestore();

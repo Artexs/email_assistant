@@ -75,6 +75,7 @@ function fakeClient(
   let calls = 0;
   const client: LlmClient = {
     modelOf: () => MODEL,
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls;
       calls += 1;
@@ -92,6 +93,7 @@ function fakeClient(
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 5,
+          endpoint: "standard",
         },
       };
     },

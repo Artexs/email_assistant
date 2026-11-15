@@ -128,6 +128,7 @@ const urgentAnswer = {
 export function urgentLlm(): LlmClient {
   return {
     modelOf: () => "fake-model",
+    endpointOf: () => "standard",
     async generate(req) {
       return {
         data: req.schema.parse(urgentAnswer),
@@ -138,6 +139,7 @@ export function urgentLlm(): LlmClient {
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 300,
+          endpoint: "standard",
         },
       };
     },

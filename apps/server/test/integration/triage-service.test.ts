@@ -93,6 +93,7 @@ function decision(overrides: Partial<TriageDecision> = {}): TriageDecision {
       tokensIn: 120,
       tokensOut: 30,
       latencyMs: 850,
+      endpoint: "standard",
     },
     auditReasonCode: "newsletter",
     delegation: null,
@@ -255,6 +256,7 @@ function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
   const requests: { system: string; prompt: string }[] = [];
   return {
     modelOf: () => "fake-model",
+    endpointOf: () => "standard",
     requests,
     async generate(req) {
       requests.push({ system: req.system, prompt: req.prompt });
@@ -268,6 +270,7 @@ function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 300,
+          endpoint: "standard",
         },
       };
     },
@@ -1157,6 +1160,7 @@ describe("triageOne: the delegation plan", () => {
       const seen: { categories: string[]; delegates: boolean }[] = [];
       const recording: LlmClient = {
         modelOf: () => "fake-model",
+        endpointOf: () => "standard",
         async generate(req) {
           const shape = (req.schema as unknown as { shape: { category: { options: string[] } } }).shape;
           seen.push({ categories: shape.category.options, delegates: req.prompt.includes("Anna") });
@@ -1169,6 +1173,7 @@ describe("triageOne: the delegation plan", () => {
               tokensIn: 1,
               tokensOut: 1,
               latencyMs: 1,
+              endpoint: "standard",
             },
           };
         },

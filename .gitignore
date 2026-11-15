@@ -31,6 +31,9 @@ pnpm-debug.log*
 # backup settings (VPS only)
 deploy/backup.env
 
+# sim stack settings (secrets; made from deploy/sim.env.example)
+deploy/sim.env
+
 # eval run state (per-case results)
 evals/.runs/
 

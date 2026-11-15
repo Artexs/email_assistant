@@ -83,7 +83,7 @@ async function detectWeeklyReport(run: OrgRun): Promise<void> {
     failedAt.delete(key);
   } catch (error) {
     failedAt.set(key, now.getTime());
-    warnSkipped("weekly_report", `${ctx.orgId}:${weekStart}`, error);
+    warnSkipped("weekly_report", ctx.orgId, error, `${ctx.orgId}:${weekStart}`);
   }
 }
 
