@@ -1,5 +1,6 @@
 export {
   addDelegate,
+  cancelByUser,
   cancelDelegation,
   closeDelegation,
   createDelegation,
@@ -9,11 +10,14 @@ export {
   setDelegateState,
   updateDelegate,
   type AddDelegateResult,
+  type CancelByUserDeps,
+  type CancelByUserResult,
   type CloseResult,
   type DelegateVia,
   type UpdateDelegateResult,
 } from "./service";
-export { delegateRoutes, type DelegateRouteDeps } from "./routes";
+export { delegateRoutes, delegationRoutes, type DelegateRouteDeps, type DelegationRouteDeps } from "./routes";
+export { decodeDelegationCursor, encodeDelegationCursor, listDelegationItems } from "./list";
 export {
   bumpReminder,
   clearDelegationTasks,
@@ -29,6 +33,7 @@ export {
   listDelegateAddresses,
   listDelegateNames,
   listDelegates,
+  listDelegationPage,
   listDelegations,
   listDueDelegations,
   listLatestDelegationsByEmailIds,
@@ -39,7 +44,14 @@ export {
   markReminderPlanned,
 } from "./repo";
 export { listDelegationDueRows, listDelegationOutcomes, type DelegationOutcomeRow } from "./metrics-repo";
-export type { DelegateRow, DelegationRow, DelegationStatus, LatestDelegationRow } from "./repo";
+export type {
+  DelegateRow,
+  DelegationPageCursor,
+  DelegationPageRow,
+  DelegationRow,
+  DelegationStatus,
+  LatestDelegationRow,
+} from "./repo";
 export {
   CHASER_LOCAL_TIME,
   CHASER_SET_LIMIT,

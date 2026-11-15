@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import {
   bumpReminder,
@@ -14,6 +14,7 @@ import {
   listDelegateAddresses,
   listDelegateNames,
   listDelegates,
+  listDelegationPage,
   listDelegations,
   listDueDelegations,
   lockDelegation,
@@ -21,6 +22,7 @@ import {
   markDelegationOverdue,
   markDelegationSent,
   markReminderPlanned,
+  type DelegationPageRow,
 } from "../../src/modules/delegation";
 import {
   insertDelegate,
@@ -29,6 +31,7 @@ import {
   markDelegationCancelled,
   markDelegationDone,
   updateDelegateFields,
+  USER_CANCELLED,
 } from "../../src/modules/delegation/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -371,6 +374,109 @@ describe("delegations", () => {
       expect(await markAnsweredNotified(trx, ctxA, answered.id, now)).toBe(true);
       expect(await markAnsweredNotified(trx, ctxA, answered.id, now)).toBe(false);
       expect(await listAnsweredUnnotified(trx, ctxA, { limit: 10 })).toEqual([]);
+    });
+  });
+});
+
+describe("the cancel by the user and the page list", () => {
+  test("markDelegationCancelled: `user_cancelled` takes drafted, sent and overdue; no other reason takes sent; answered, done and cancelled never change", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, ctxA, ctxB } = await twoOrgs(trx);
+      const delegateId = await fixtureDelegate(trx, ctxA);
+      const cancel = (id: string, reason = USER_CANCELLED) =>
+        markDelegationCancelled(trx, ctxA, id, { reason, at: now });
+      for (const status of ["drafted", "sent", "overdue"]) {
+        const d = await makeDelegation(trx, ctxA, a.mailboxId, delegateId, { status });
+        expect(await cancel(d.id, "expired")).toBe(status === "drafted");
+        expect(await cancel(d.id)).toBe(status !== "drafted");
+        if (status === "drafted") expect(await cancel(d.id)).toBe(false);
+      }
+      for (const status of ["answered", "done", "cancelled"] as const) {
+        const d = await makeDelegation(trx, ctxA, a.mailboxId, delegateId, { status });
+        expect(await cancel(d.id)).toBe(false);
+        expect((await getDelegation(trx, ctxA, d.id))?.status).toBe(status);
+      }
+      // A cancel by the user of another organization changes nothing.
+      const d = await makeDelegation(trx, ctxA, a.mailboxId, delegateId, { status: "sent" });
+      expect(await markDelegationCancelled(trx, ctxB, d.id, { reason: USER_CANCELLED, at: now })).toBe(false);
+      expect((await getDelegation(trx, ctxA, d.id))?.status).toBe("sent");
+      expect(b.orgId).not.toBe(a.orgId);
+    });
+  });
+
+  test("markDelegationSent: a delegation that the user cancelled stays cancelled; a failed send can still be sent again", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await twoOrgs(trx);
+      const delegateId = await fixtureDelegate(trx, ctxA);
+      const next = { sentMessageId: "<m1>", sentAt: now, dueAtWhenNull: new Date("2026-11-10T12:00:00Z") };
+      const user = await makeDelegation(trx, ctxA, a.mailboxId, delegateId);
+      expect(await markDelegationCancelled(trx, ctxA, user.id, { reason: USER_CANCELLED, at: now })).toBe(true);
+      expect(await markDelegationSent(trx, ctxA, user.id, next)).toBe(false);
+      expect(await getDelegation(trx, ctxA, user.id)).toMatchObject({
+        status: "cancelled",
+        status_reason: USER_CANCELLED,
+      });
+      for (const reason of ["outcome_unknown", "send_failed", "rejected"]) {
+        const d = await makeDelegation(trx, ctxA, a.mailboxId, delegateId);
+        expect(await markDelegationCancelled(trx, ctxA, d.id, { reason, at: now })).toBe(true);
+        expect(await markDelegationSent(trx, ctxA, d.id, next)).toBe(true);
+      }
+    });
+  });
+
+  test("listDelegationPage: states, order, cursor with ties, reminder flag, and nothing of another organization", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, ctxA, ctxB } = await twoOrgs(trx);
+      const delegateId = await fixtureDelegate(trx, ctxA, { name: "Named", email: "named@x.test" });
+      // Microseconds: a JS date holds milliseconds only, so the time goes in as text.
+      const at = sql<Date>`'2026-11-07T10:00:00.123456Z'::timestamptz`;
+      const ids: string[] = [];
+      for (const status of ["sent", "sent", "sent", "answered", "drafted"]) {
+        const d = await makeDelegation(trx, ctxA, a.mailboxId, delegateId, { status });
+        await trx.updateTable("delegations").set({ created_at: at }).where("id", "=", d.id).execute();
+        ids.push(d.id);
+      }
+      const [s1, s2, s3, answered, drafted] = ids as [string, string, string, string, string];
+      // The ties come in id order; a cursor from a row (microseconds kept) gives the rows after it, none twice.
+      const page = (opts: Partial<Parameters<typeof listDelegationPage>[2]> = {}) =>
+        listDelegationPage(trx, ctxA, { statuses: ["sent"], limit: 10, ...opts });
+      const all = await page();
+      expect(all.map((r) => r.id)).toEqual([s1, s2, s3].sort());
+      expect(all[0]).toMatchObject({ delegate_name: "Named", delegate_email: "named@x.test", delegate_active: true });
+      expect(all[0]?.created_at_key).toBe("2026-11-07T10:00:00.123456Z");
+      const second = (await page({ cursor: { createdAtKey: all[0]?.created_at_key ?? "", id: all[0]?.id ?? "" } })).map(
+        (r) => r.id
+      );
+      expect(second).toEqual(all.slice(1).map((r) => r.id));
+      expect(await page({ limit: 2 })).toHaveLength(2);
+      expect((await page({ statuses: ["answered"] })).map((r) => r.id)).toEqual([answered]);
+      expect((await page({ statuses: ["drafted", "sent"] })).map((r) => r.id).sort()).toEqual(
+        [s1, s2, s3, drafted].sort()
+      );
+
+      // Another organization sees none of it, and its reminder send that names the delegation of A does not count for A.
+      const forged = await insertTestEmail(trx, ctxB, b.mailboxId);
+      await insertAction(trx, ctxB, forged, {
+        type: "send",
+        status: "awaiting_approval",
+        payload: { kind: "reminder", delegation_id: s1, reminder: 1 },
+      });
+      const flags = (rows: DelegationPageRow[]) => rows.map((r) => r.reminder_waiting);
+      expect(flags(await page())).toEqual([false, false, false]);
+      for (const statuses of [["sent"], ["drafted", "sent", "answered", "overdue", "done", "cancelled"]] as const) {
+        expect(await listDelegationPage(trx, ctxB, { statuses, limit: 10 })).toEqual([]);
+      }
+      // A real reminder of A counts, in A only.
+      await insertAction(trx, ctxA, (await getDelegation(trx, ctxA, s2))?.email_id ?? "", {
+        type: "send",
+        status: "awaiting_approval",
+        payload: { kind: "reminder", delegation_id: s2, reminder: 1 },
+      });
+      expect(Object.fromEntries((await page()).map((r) => [r.id, r.reminder_waiting]))).toEqual({
+        [s1]: false,
+        [s2]: true,
+        [s3]: false,
+      });
     });
   });
 });

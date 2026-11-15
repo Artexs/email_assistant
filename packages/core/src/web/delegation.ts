@@ -43,3 +43,52 @@ export const delegatePatchBodySchema = z
     message: "name, tags or active is required",
   });
 export type DelegatePatchBody = z.infer<typeof delegatePatchBodySchema>;
+
+// GET /api/delegations and the two POST routes (F102 stage 15). The list answers one page of delegations by state, newest
+// first; `kind` is always `delegation` (E5b adds loop kinds to the same list). The task text and the subject never go to a log.
+export const DELEGATION_PAGE_SIZE = 50;
+export const DELEGATION_MAX_LIMIT = 100;
+export const delegationFilters = ["open", "overdue", "answered", "closed"] as const;
+export type DelegationFilter = (typeof delegationFilters)[number];
+export const DELEGATION_DEFAULT_FILTER: DelegationFilter = "open";
+export const delegationStatuses = ["drafted", "sent", "answered", "overdue", "done", "cancelled"] as const;
+
+export const delegationListQuerySchema = z.object({
+  filter: z.enum(delegationFilters).optional(),
+  before: z.string().min(1).max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(DELEGATION_MAX_LIMIT).optional(),
+});
+export type DelegationListQuery = z.infer<typeof delegationListQuerySchema>;
+
+export const delegationItemSchema = z.strictObject({
+  kind: z.literal("delegation"),
+  id: z.uuid(),
+  status: z.enum(delegationStatuses),
+  delegate: z.strictObject({ id: z.uuid(), name: z.string(), email: z.string(), active: z.boolean() }),
+  // null after retention cleared the task text.
+  task: z.string().nullable(),
+  subject: z.string().nullable(),
+  dueAt: z.iso.datetime().nullable(),
+  sentAt: z.iso.datetime().nullable(),
+  answeredAt: z.iso.datetime().nullable(),
+  remindersSent: z.number().int().min(0),
+  // A reminder send of this delegation waits for a tap or is on its way out.
+  reminderWaiting: z.boolean(),
+  // The send that the page links to `/approvals?id=` while the delegation is `drafted`, else null.
+  sendId: z.uuid().nullable(),
+});
+export type DelegationItem = z.infer<typeof delegationItemSchema>;
+
+export const delegationListSchema = z.strictObject({
+  items: z.array(delegationItemSchema).max(DELEGATION_MAX_LIMIT),
+  next: z.string().nullable(),
+});
+export type DelegationList = z.infer<typeof delegationListSchema>;
+
+export const delegationDoneAnswerSchema = z.strictObject({ status: z.literal("done") });
+export type DelegationDoneAnswer = z.infer<typeof delegationDoneAnswerSchema>;
+export const delegationCancelAnswerSchema = z.strictObject({ status: z.literal("cancelled") });
+export type DelegationCancelAnswer = z.infer<typeof delegationCancelAnswerSchema>;
+
+// The body of both POST routes is empty (`{}`); a strict object refuses any field.
+export const delegationActionBodySchema = z.strictObject({});

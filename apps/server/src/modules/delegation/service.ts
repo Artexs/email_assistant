@@ -2,7 +2,7 @@ import { ADDRESS_PATTERN, localToInstant } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { expireReminderActions, type DelegationHooks } from "../actions";
+import { expireReminderActions, reject, type ApprovalDeps, type DelegationHooks } from "../actions";
 import { auditEvents, recordAudit } from "../audit";
 import { listMailboxes, mailboxHasUidplus, normalizeMessageId } from "../mail";
 
@@ -10,6 +10,7 @@ import {
   bumpReminder,
   findOpenDelegationByMessageIds,
   getDelegate,
+  getDelegation,
   insertDelegate,
   insertDelegation,
   lockDelegate,
@@ -20,6 +21,7 @@ import {
   markDelegationSent,
   moveDelegationToVersion,
   updateDelegateFields,
+  USER_CANCELLED,
   type DelegationStatus,
 } from "./repo";
 
@@ -213,13 +215,13 @@ async function closeReminders(
   delegation: { mailbox_id: string },
   delegationId: string,
   opts: { at: Date; actor: string }
-): Promise<number> {
-  const { sends } = await expireReminderActions(trx, ctx, delegationId, {
+): Promise<string[]> {
+  const { sendIds } = await expireReminderActions(trx, ctx, delegationId, {
     now: opts.at,
     uidplus: await mailboxHasUidplus(trx, ctx, delegation.mailbox_id),
     actor: opts.actor,
   });
-  return sends;
+  return sendIds;
 }
 
 export async function markAnswered(
@@ -238,32 +240,115 @@ export async function markAnswered(
     emailId: input.emailId,
     actor: "system",
     event: auditEvents.delegationAnswered,
-    data: { delegation_id: delegationId, delegate_id: delegation.delegate_id, reminders_expired: expired },
+    data: { delegation_id: delegationId, delegate_id: delegation.delegate_id, reminders_expired: expired.length },
     at: input.at,
   });
   return true;
+}
+
+// The delegation is cancelled and its open reminder sends expire. The caller holds the transaction; this locks the delegation first,
+// then its reminder sends (lock order: the delegation, then its sends). `reason` `user_cancelled` is the user's own cancel: it also takes `sent` and `overdue`
+// (`markDelegationCancelled`), and the audit row names the user (`actor`) and the channel (`via`). `expiredSendIds` are the reminder sends
+// that this call closed; a caller that edits their cards queues the edits.
+async function cancelLocked(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  delegationId: string,
+  input: { reason: string; at: Date; actor?: string; via?: string }
+): Promise<{ cancelled: boolean; expiredSendIds: string[] }> {
+  const delegation = await lockDelegation(trx, ctx, delegationId);
+  if (delegation === undefined) return { cancelled: false, expiredSendIds: [] };
+  if (!(await markDelegationCancelled(trx, ctx, delegationId, input))) return { cancelled: false, expiredSendIds: [] };
+  const actor = input.actor ?? "system";
+  const expired = await closeReminders(trx, ctx, delegation, delegationId, { at: input.at, actor });
+  await recordAudit(trx, ctx, {
+    emailId: delegation.email_id,
+    actionId: delegation.send_action_id,
+    actor,
+    event: auditEvents.delegationCancelled,
+    reasonCode: input.reason,
+    data: {
+      delegation_id: delegationId,
+      delegate_id: delegation.delegate_id,
+      reminders_expired: expired.length,
+      ...(input.via === undefined ? {} : { reason: input.reason, via: input.via }),
+    },
+    at: input.at,
+  });
+  return { cancelled: true, expiredSendIds: expired };
 }
 
 export async function cancelDelegation(
   trx: Transaction<DB>,
   ctx: TenantContext,
   delegationId: string,
-  input: { reason: string; at: Date }
+  input: { reason: string; at: Date; actor?: string; via?: string }
 ): Promise<boolean> {
-  const delegation = await lockDelegation(trx, ctx, delegationId);
-  if (delegation === undefined) return false;
-  if (!(await markDelegationCancelled(trx, ctx, delegationId, input))) return false;
-  const expired = await closeReminders(trx, ctx, delegation, delegationId, { at: input.at, actor: "system" });
-  await recordAudit(trx, ctx, {
-    emailId: delegation.email_id,
-    actionId: delegation.send_action_id,
-    actor: "system",
-    event: auditEvents.delegationCancelled,
-    reasonCode: input.reason,
-    data: { delegation_id: delegationId, delegate_id: delegation.delegate_id, reminders_expired: expired },
-    at: input.at,
-  });
-  return true;
+  return (await cancelLocked(trx, ctx, delegationId, input)).cancelled;
+}
+
+export interface CancelByUserResult {
+  kind: "cancelled" | "not_open" | "sending" | "not_found";
+}
+
+export interface CancelByUserDeps extends ApprovalDeps {
+  // Test seam: runs after the delegation read of each attempt, before the cancel (a panel edit can come between them).
+  afterRead?(delegationId: string): Promise<void>;
+}
+
+// F102 stage 15: the user cancels an open delegation. Status flow: `drafted`, `sent` or `overdue` -> `cancelled` /
+// `user_cancelled`; the reason is final. Two ways, as the lock orders differ:
+//   `drafted`: the waiting send is rejected (`reject`: lock the send, then the delegation), with the card hooks, so the Telegram cards
+//     follow. A panel edit can replace the send between the read and the lock: `reject` answers `superseded`, and the call reads the
+//     delegation again and tries once more with the current send. A send that already went out leaves a `sent` delegation: that
+//     read takes the second way.
+//   `sent` or `overdue`: lock the delegation, mark it cancelled, expire its waiting reminder sends (the existing reminder close), and
+//     call `onDecided` with `expired` for each, so their cards lose the buttons (lock order: delegation, then its reminder sends).
+// A send that is in flight (`applying`, or `approved` with a fresh lock) gives `sending`; the mail may reach the delegate.
+export async function cancelByUser(
+  deps: CancelByUserDeps,
+  ctx: TenantContext,
+  delegationId: string,
+  input: { userId: string; via: "web" | "cli"; now: Date }
+): Promise<CancelByUserResult> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const delegation = await getDelegation(deps.db, ctx, delegationId);
+    if (delegation === undefined) return { kind: "not_found" };
+    await deps.afterRead?.(delegationId);
+    if (delegation.status === "drafted") {
+      const result = await reject(deps, ctx, delegation.send_action_id, {
+        userId: input.userId,
+        via: input.via,
+        now: input.now,
+        delegationReason: USER_CANCELLED,
+      });
+      switch (result.kind) {
+        case "rejected":
+          return { kind: "cancelled" };
+        case "not_found":
+          return { kind: "not_found" };
+        case "superseded":
+          continue;
+        case "already":
+          if (result.status === "applied") continue;
+          return { kind: result.status === "applying" || result.status === "approved" ? "sending" : "not_open" };
+      }
+    }
+    return inTransaction(deps.db, async (trx): Promise<CancelByUserResult> => {
+      const result = await cancelLocked(trx, ctx, delegationId, {
+        reason: USER_CANCELLED,
+        at: input.now,
+        actor: input.userId,
+        via: input.via,
+      });
+      if (!result.cancelled) return { kind: "not_open" };
+      for (const sendId of result.expiredSendIds) {
+        await deps.approvalHooks.onDecided(trx, ctx, { sendId, decision: "expired", at: input.now });
+      }
+      return { kind: "cancelled" };
+    });
+  }
+  return { kind: "not_open" };
 }
 
 // `done` only from `answered` or `overdue`; `already` for `done`; `not_closable` for `drafted`, `sent` and `cancelled`.
@@ -277,7 +362,7 @@ export async function closeDelegation(
   trx: Transaction<DB>,
   ctx: TenantContext,
   delegationId: string,
-  input: { actor: string; at: Date }
+  input: { actor: string; at: Date; via?: "web" }
 ): Promise<CloseResult> {
   const delegation = await lockDelegation(trx, ctx, delegationId);
   if (delegation === undefined) return { kind: "not_found" };
@@ -290,7 +375,12 @@ export async function closeDelegation(
     emailId: delegation.email_id,
     actor: input.actor,
     event: auditEvents.delegationDone,
-    data: { delegation_id: delegationId, delegate_id: delegation.delegate_id, reminders_expired: expired },
+    data: {
+      delegation_id: delegationId,
+      delegate_id: delegation.delegate_id,
+      reminders_expired: expired.length,
+      ...(input.via === undefined ? {} : { via: input.via }),
+    },
     at: input.at,
   });
   return { kind: "done" };

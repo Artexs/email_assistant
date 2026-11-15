@@ -37,6 +37,12 @@ export interface ApprovalInput {
   now: Date;
 }
 
+// A reject can name the reason that the delegation gets when this send is its waiting draft (F102 stage 15: the user cancels the
+// delegation). Default `rejected`. `user_cancelled` is final: no "Send again" or "It went out" reopens it.
+export interface RejectInput extends ApprovalInput {
+  delegationReason?: "user_cancelled";
+}
+
 export type ApproveResult =
   | { kind: "approved" }
   | { kind: "already_approved"; at: Date; byUserId: string | null }
@@ -168,7 +174,7 @@ async function rejectRow(
   deps: ApprovalDeps,
   ctx: TenantContext,
   send: SendRow,
-  input: ApprovalInput
+  input: RejectInput
 ): Promise<RejectResult> {
   const staleBefore = new Date(input.now.getTime() - STALE_AFTER_MS);
   if (!(await setRejected(trx, ctx, send.id, { at: input.now, staleBefore }))) {
@@ -192,7 +198,13 @@ async function rejectRow(
   }
   const delegationId = send.payload.delegation_id;
   if (typeof delegationId === "string" && !("reminder" in send.payload)) {
-    await deps.hooks.onCancelled(trx, ctx, { delegationId, reason: "rejected", at: input.now });
+    await deps.hooks.onCancelled(trx, ctx, {
+      delegationId,
+      reason: input.delegationReason ?? "rejected",
+      at: input.now,
+      // The user's own cancel is the user's act: the audit row of the delegation names the user and the channel.
+      ...(input.delegationReason === undefined ? {} : { actor: input.userId, via: input.via }),
+    });
   }
   await deps.approvalHooks.onDecided(trx, ctx, {
     sendId: send.id,
@@ -221,7 +233,7 @@ export async function reject(
   deps: ApprovalDeps,
   ctx: TenantContext,
   actionId: string,
-  input: ApprovalInput
+  input: RejectInput
 ): Promise<RejectResult> {
   return inTransaction(deps.db, async (trx) => {
     const send = await lockSend(trx, ctx, actionId);

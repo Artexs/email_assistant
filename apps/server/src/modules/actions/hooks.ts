@@ -15,7 +15,8 @@ export interface DelegationHooks {
   onCancelled(
     trx: Transaction<DB>,
     ctx: TenantContext,
-    input: { delegationId: string; reason: string; at: Date }
+    // `actor` and `via` name the user of a cancel that the user asked for (`user_cancelled`); the system cancels have none.
+    input: { delegationId: string; reason: string; at: Date; actor?: string; via?: string }
   ): Promise<boolean>;
   // "It went out": the owner says that a send that ended `outcome_unknown` reached the delegate. Locks the delegation row.
   // `changed`: it was `cancelled` with the reason `outcome_unknown` and is `sent` now. `already`: it is past `cancelled` and holds this message id.
