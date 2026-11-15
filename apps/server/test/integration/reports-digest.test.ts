@@ -364,6 +364,7 @@ describe("buildDigestMessage", () => {
         role: "classifier",
         promptVersion: "test",
         model: "test-model",
+        endpoint: "standard",
         outcome: "http_429_quota",
         tokensIn: null,
         tokensOut: null,

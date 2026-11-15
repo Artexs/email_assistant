@@ -40,3 +40,7 @@ mkdir -p /tmp/f119-s14 && bunx prettier --check <files> > /tmp/f119-s14/prettier
 - Sessions belong to the user, not to the organization: `org:member --end-sessions` checks the membership in `--org-id` and then ends every session of the user, so a user who is a member of two organizations loses the sessions in both (the audit row goes to the organization of `--org-id`). `--unlink-sso` ends every SSO session of the user too, also one from a second provider. Say so in the docs and in the `endUserSessions` comment (`platform/auth-sessions-end.ts`).
 - Every `org:member` command needs `--org-id`, including `--end-sessions` and `--unlink-sso`.
 - `docs/capabilities/tenancy-and-plans.md` § Limits still says that no CLI adds a second member.
+
+## Carry-over from stage 12 review (U1)
+
+No axe test covers `/login` (only `apps/web/e2e/tests/stats.spec.ts` uses `e2e/a11y.ts`), so the company sign-in block has no axe check, and Q9 rules out a Playwright spec for SSO. No F119 stage owns e2e or axe work (stage 13 is unit-tested, stage 15 and 16 are VPS checks). Stage 14 states this in `docs/capabilities/web-panel.md` (Limits and Tests: "no axe test for `/login`; the stage 12 tests check label, `autocomplete`, `role=alert` and focus on rendered markup and the form state") and the coordinator may open a small follow-up ticket for an axe run on `/login` with the SSO block open.

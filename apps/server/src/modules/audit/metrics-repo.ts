@@ -1,5 +1,5 @@
 // Row reader of the cost metric (M7). It counts every `llm.call` row of the organization, also of test mail.
-import type { LlmCallRow, WeekQuery } from "@ea/core";
+import { type LlmCallRow, toEndpointKind, type WeekQuery } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -10,6 +10,7 @@ type DbOrTrx = Db | Transaction<DB>;
 const rowSchema = z.object({
   mailbox_id: z.string().nullable(),
   model: z.string().nullable(),
+  endpoint: z.string().nullable(),
   tokens_in: z.number().nullable(),
   tokens_out: z.number().nullable(),
   at: z.date(),
@@ -29,6 +30,7 @@ export async function listLlmCallRows(
   const { rows } = await sql<unknown>`
     SELECT data->>'mailbox_id' AS mailbox_id,
       CASE WHEN jsonb_typeof(data->'model') = 'string' THEN data->>'model' END AS model,
+      CASE WHEN jsonb_typeof(data->'endpoint') = 'string' THEN data->>'endpoint' END AS endpoint,
       ${jsonNumber("tokens_in")} AS tokens_in,
       ${jsonNumber("tokens_out")} AS tokens_out,
       created_at AS at
@@ -43,6 +45,7 @@ export async function listLlmCallRows(
     return {
       mailboxId: row.mailbox_id,
       model: row.model,
+      endpoint: toEndpointKind(row.endpoint),
       tokensIn: row.tokens_in,
       tokensOut: row.tokens_out,
       at: row.at,

@@ -349,6 +349,22 @@ export async function markDelegationCancelled(
   });
 }
 
+// A panel edit replaced the waiting send and its draft (F102 ticket): the delegation points at the new rows and the delegate of the new version.
+// Only a `drafted` delegation takes it; the caller holds the delegation lock.
+export async function moveDelegationToVersion(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string,
+  next: { draftActionId: string; sendActionId: string; delegateId: string; at: Date }
+): Promise<boolean> {
+  return updateDelegation(trx, ctx, id, ["drafted"], {
+    draft_action_id: next.draftActionId,
+    send_action_id: next.sendActionId,
+    delegate_id: next.delegateId,
+    updated_at: next.at,
+  });
+}
+
 export async function markDelegationDone(
   trx: Transaction<DB>,
   ctx: TenantContext,

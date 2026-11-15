@@ -12,6 +12,21 @@ function counts(cases: CasesEvalReport["cases"], kind: "synthetic" | "injection"
   return cases.filter((c) => c.kind === kind).length;
 }
 
+// The price rows of the endpoint of the run. An own server has none: the operator runs it, the cost is 0.
+// A secondary-source row says so in the line (F111: the EU price is not verified).
+function priceSourceLines(report: CasesEvalReport): string[] {
+  if (report.endpoint === "own") return [`- price source ${report.model}: own endpoint: cost 0`];
+  const prices = Object.hasOwn(llmPrices, report.model) ? llmPrices[report.model] : undefined;
+  const rows = (prices ?? []).filter((price) => (price.endpoint ?? "standard") === report.endpoint);
+  // `standard` keeps the line of older reports.
+  const label = report.endpoint === "standard" ? "" : ` (${report.endpoint})`;
+  if (rows.length === 0) return [`- price source ${report.model}${label}: none`];
+  return rows.map(
+    (price) =>
+      `- price source ${report.model}${label}: ${price.source} (checked ${price.checked})${price.unverified ? " UNVERIFIED: secondary source" : ""}`
+  );
+}
+
 function header(report: EvalReport): string[] {
   const date = report.startedAt.toISOString().slice(0, 10);
   const bar = `bar: ${pct(report.bar)}`;
@@ -23,6 +38,7 @@ function header(report: EvalReport): string[] {
         `- role: ${report.role}`,
         `- model: ${report.model}`,
         `- provider: ${report.provider}`,
+        `- endpoint=${report.endpoint} host=${report.host ?? "-"}`,
         ...(report.reasoningEffort === null ? [] : [`- reasoning effort: ${report.reasoningEffort}`]),
         `- prompt version: ${promptLabel({ version: report.promptVersion, parts: report.promptParts ?? [] })}`,
         `- cases: ${counts(report.cases, "synthetic")} synthetic, ${counts(report.cases, "injection")} injection`,
@@ -216,14 +232,7 @@ function casesParts(report: CasesEvalReport, hideIds: boolean): string[] {
     `- cost per mail: ${usd(usage.costPerMail)}`,
     `- cost per mailbox per month at ${DEFAULT_MAILS_PER_DAY} mails per day: ${usd(usage.monthlyCostAt200)}`
   );
-  const prices = Object.hasOwn(llmPrices, report.model) ? llmPrices[report.model] : undefined;
-  if (prices) {
-    for (const price of prices) {
-      lines.push(`- price source ${report.model}: ${price.source} (checked ${price.checked})`);
-    }
-  } else {
-    lines.push(`- price source ${report.model}: none`);
-  }
+  lines.push(...priceSourceLines(report));
   lines.push("");
   return lines;
 }

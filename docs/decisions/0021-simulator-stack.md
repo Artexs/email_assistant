@@ -9,13 +9,14 @@
 The quality lab (Stage 2 epic E2) must run a "simulated week" through the real pipeline: about 830 made-up mails over 7 days, delegate personas that answer, and an executive who taps approve, reject, edit and Undo. PD-006 forbids the pilot mailbox. AgentMail (the current test sender) has 3 inboxes and 100 mails a day on its Free plan and cannot set a per-mail `From`. The pipeline reads the system clock, so the week runs in real time.
 
 Running the simulation as one more organization on the production stack has three problems:
+
 - The mail host guard (`apps/server/src/modules/mail/host-check.ts`) refuses private addresses. A local mail server needs `MAIL_ALLOW_LOCAL_HOSTS=true`, which is one switch for every organization.
 - `TELEGRAM_API_ROOT` is one value per server. The simulated executive needs the fake Telegram; the pilot needs the real one.
 - A scripted approver on the production stack is one bug away from a tap on a real organization's draft.
 
 ## Decision
 
-1. The simulation runs on its own Compose project (`ea-sim`, file `deploy/compose.sim.yaml`): the same server image, its own database, a GreenMail service, a fake Telegram service (`tools/fake-telegram`), and its own `.env`.
+1. The simulation runs on its own Compose project (`ea-sim`, file `deploy/compose.sim.yaml`): the same server image, its own database, a GreenMail service (in the network namespace of the fake Telegram, so the server reaches it on 127.0.0.1: it opens plain mail only to a loopback host), a fake Telegram service (`tools/fake-telegram`), and its own `.env`.
 2. Only this stack sets `MAIL_ALLOW_LOCAL_HOSTS=true` and points `TELEGRAM_API_ROOT` at the fake. The production `.env` never sets either.
 3. The stack has no outbound mail path: every mailbox and every delegate address of the stack is a GreenMail user on `*.test` addresses. GreenMail stores mail for its own users and does not relay [check in the first E2b stage: send to an outside address and see it refused or kept local].
 4. The scripted executive and the delegate bots talk only to services of this stack (its API, its fake Telegram, its GreenMail).

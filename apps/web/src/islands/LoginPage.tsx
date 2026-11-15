@@ -1,7 +1,8 @@
-import { fieldErrors as toFieldErrors, loginFormSchema, safeNextPath } from "@ea/core/web";
+import { fieldErrors as toFieldErrors, loginFormSchema, safeNextPath, type SignInOptions } from "@ea/core/web";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
+import { SsoSignIn } from "../components/login/SsoSignIn";
 import { Alert } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -10,6 +11,8 @@ import { Switch } from "../components/ui/switch";
 import { t, type TextKey, useLocale } from "../i18n";
 import { authClient } from "../lib/auth-client";
 import { takeDeletedNotice, type DeletedNotice } from "../lib/delete-organization";
+import { ssoReturnError } from "../lib/sso-errors";
+import { loginSections, readSignInOptions } from "../lib/sso-sign-in";
 import { cleanBackupCode, cleanTotpCode, codeStepError } from "../lib/two-factor-errors";
 
 type FieldErrors = Partial<Record<"email" | "password", TextKey>>;
@@ -18,7 +21,7 @@ function nextTarget(): string {
   return safeNextPath(new URLSearchParams(location.search).get("next"));
 }
 
-export default function LoginPage() {
+export default function LoginPage({ initialOptions = null }: { initialOptions?: SignInOptions | null }) {
   useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +37,12 @@ export default function LoginPage() {
   const codeInput = useRef<HTMLInputElement>(null);
   const [restartNotice, setRestartNotice] = useState<TextKey | null>(null);
   const [deletedNotice, setDeletedNotice] = useState<DeletedNotice | null>(null);
+  // `null` until the read ends; a failed read is `{ sso: false }` (the password form stays).
+  const [signInOptions, setSignInOptions] = useState<SignInOptions | null>(initialOptions);
+  // The return from the callback is in the address at the first render (the page runs on the client only).
+  const [ssoReturn] = useState<TextKey | null>(() =>
+    typeof location === "undefined" ? null : ssoReturnError(location.search)
+  );
 
   useEffect(() => {
     setSetupDone(new URLSearchParams(location.search).get("setup") === "done");
@@ -47,6 +56,9 @@ export default function LoginPage() {
     const deleted = takeDeletedNotice(location.search, store, Date.now());
     if (deleted !== null) setDeletedNotice((current) => current ?? deleted);
     let active = true;
+    void readSignInOptions().then((options) => {
+      if (active) setSignInOptions(options);
+    });
     void authClient
       .getSession()
       .then(({ data }) => {
@@ -225,6 +237,11 @@ export default function LoginPage() {
           {t(restartNotice)}
         </p>
       )}
+      {ssoReturn === null ? null : (
+        <p role="alert" className="text-destructive text-sm">
+          {t(ssoReturn)}
+        </p>
+      )}
       <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t("email_label")}</Label>
@@ -274,6 +291,7 @@ export default function LoginPage() {
           </p>
         )}
       </form>
+      {loginSections(signInOptions).sso ? <SsoSignIn next={nextTarget()} /> : null}
       <a href="/forgot" className="text-sm underline">
         {t("login_forgot_link")}
       </a>

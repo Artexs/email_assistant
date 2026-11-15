@@ -41,3 +41,7 @@ Two steps. Read only: no write route, no state change.
 ## Done when (stage)
 
 - Steps 1 and 2 hold. The Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s10`).
+
+## Carry-over from stage 08 review
+
+- `editApproval` does not say in its answer that the old Drafts copy stays when the mailbox has no UIDPLUS. The detail answer carries it: `draftRemovable` (the mailbox has UIDPLUS). Test that a mailbox without UIDPLUS gives `draftRemovable` false.

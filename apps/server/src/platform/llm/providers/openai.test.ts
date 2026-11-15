@@ -248,6 +248,9 @@ describe("openAiClientOptions", () => {
       baseURL: "https://eu.api.openai.com/v1",
       maxRetries: 0,
       logLevel: "off",
+      adminAPIKey: null,
+      webhookSecret: null,
+      defaultHeaders: {},
     });
   });
 });
