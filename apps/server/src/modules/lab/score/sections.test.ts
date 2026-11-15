@@ -153,6 +153,8 @@ describe("delegates table (stage 13 tests 1 and 2)", () => {
       { t: "skip", code: "auto_submitted", ref: "asystentka:7" },
       { t: "skip", code: "unexpected_delegation", ref: "ksiegowa:5" },
       { t: "skip", code: "unmapped", ref: "ksiegowa:6" },
+      // A UID that held another mail at send time (a mailbox reset between): the stage 14 code.
+      { t: "skip", code: "received_changed", ref: "k4" },
       // Not bot events: an executive unmapped (digits), an executive no_rule, an injector skip.
       { t: "skip", code: "unmapped", ref: "17:abc" },
       { t: "skip", code: "unmapped", ref: "rw:17:abc" },
@@ -162,13 +164,15 @@ describe("delegates table (stage 13 tests 1 and 2)", () => {
     expect(botCountsOf(events)).toEqual({
       replies: 2,
       errors: 2,
-      skips: { send_failed: 1, auto_submitted: 2, unexpected_delegation: 1, unmapped: 1 },
+      skips: { send_failed: 1, auto_submitted: 2, unexpected_delegation: 1, unmapped: 1, received_changed: 1 },
     });
     const section = scoreDelegates([], events);
     expect(section).toMatchObject({ unexpectedDelegation: 1, unmapped: 1 });
     const text = renderDelegates(section).join("\n");
     expect(text).toContain("Bot replies sent 2, failed tries 2. Unexpected delegation 1, unmapped 1.");
-    expect(text).toContain("Bot skips: auto_submitted 2, send_failed 1, unexpected_delegation 1, unmapped 1.");
+    expect(text).toContain(
+      "Bot skips: auto_submitted 2, received_changed 1, send_failed 1, unexpected_delegation 1, unmapped 1."
+    );
   });
 });
 
