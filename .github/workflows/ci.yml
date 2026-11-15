@@ -185,3 +185,12 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run docs:build
       - run: bun run docs:stale
+      # The browser check of the built site (stage 06): CSP, search, language, accessibility, the 404 page. Chromium only.
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run docs:test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: docs-playwright-results
+          path: apps/docs/e2e/test-results/
+          retention-days: 7
