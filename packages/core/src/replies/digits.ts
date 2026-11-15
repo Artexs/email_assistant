@@ -10,7 +10,7 @@
 // The draft fails `account_number` when the cost of the whole body is above DIGIT_BUDGET, and `phone` when the digits
 // that cost something make a phone-like run of 9 or more digits. A real IBAN (mod 97) fails whatever its digits cost.
 // Pure code.
-import { skeleton, viewsOf } from "./views";
+import { plainView, skeleton, viewsOf } from "./views";
 
 /** The digits of a whole body that no typed text, date, time or amount explains. */
 export const DIGIT_BUDGET = 12;
@@ -30,7 +30,7 @@ const DATE_DMY = /(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?!\d)/g;
 const DATE_YMD = /(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)/g;
 const TIME = /(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)/g;
 const MONTHS =
-  "stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|wrzesnia|października|pazdziernika|listopada|grudnia|january|february|march|april|may|june|july|august|september|october|november|december";
+  "stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|wrzesnia|pazdziernika|listopada|grudnia|january|february|march|april|may|june|july|august|september|october|november|december";
 const DATE_WORDS = new RegExp(`(?<!\\d)(\\d{1,2})\\s(?:${MONTHS})\\s(\\d{4})(?!\\d)`, "giu");
 const PERIOD = /(?<![\p{L}\d])[QH][1-4]\s(\d{4})(?!\d)/giu;
 
@@ -59,7 +59,7 @@ export const AMOUNT_FREE_DIGITS = 9;
 export const SHAPED_FREE_TOTAL = 40;
 
 // A phone-like run of digits: spaces, dashes, dots and brackets between digits.
-const PHONE_RUN = /(?<!\d)\+?\d[\d ()[\].-]*\d/g;
+const PHONE_RUN = /\d[\d ()[\].-]*\d/g;
 
 /** The IBAN length of each country of the registry (IBAN_LENGTHS of the 84 registry examples, plus BI, DJ and NI). */
 export const IBAN_LENGTHS: Readonly<Record<string, number>> = {
@@ -204,13 +204,13 @@ function numberKeys(view: string): string[] {
 }
 
 function typedKeysOf(texts: readonly string[]): string[] {
-  return texts.flatMap((text) => viewsOf(text).flatMap(numberKeys));
+  return texts.flatMap((text) => numberKeys(plainView(text)));
 }
 
 // The numbers of the quoted mail that an order number may be: 9 to 12 digits in one run.
 function mailKeysOf(texts: readonly string[]): string[] {
   return texts
-    .flatMap((text) => viewsOf(text).flatMap((view) => runsOf(view).map((run) => run.digits)))
+    .flatMap((text) => runsOf(plainView(text)).map((run) => run.digits))
     .filter((digits) => digits.length >= MAIL_KNOWN_MIN_DIGITS && digits.length <= MAIL_KNOWN_MAX_DIGITS);
 }
 
@@ -245,9 +245,10 @@ export function ibansOf(text: string): string[] {
   for (const view of viewsOf(text)) {
     // Once as it is and once without markup tags ("<b>GI74</b>"): the letters of a tag are no part of the number.
     for (const stream of [alnumStream(view), alnumStream(view.replace(MARKUP_TAG, " "))]) {
-      for (const m of stream.matchAll(/(?=([A-Z]{2}\d{2}))/g)) {
-        const length = IBAN_LENGTHS[(m[1] as string).slice(0, 2)];
-        const candidate = length === undefined ? "" : stream.slice(m.index, m.index + length);
+      for (let start = 0; start + 4 <= stream.length; start += 1) {
+        const length = IBAN_LENGTHS[stream.slice(start, start + 2)];
+        if (length === undefined || !/^\d{2}$/.test(stream.slice(start + 2, start + 4))) continue;
+        const candidate = stream.slice(start, start + length);
         if (candidate.length === length && /^[A-Z0-9]+$/.test(candidate) && mod97(candidate) === 1)
           found.add(candidate);
       }
@@ -299,9 +300,7 @@ function runsInside(runs: readonly Run[], start: number, end: number): number[] 
 /** For each run of a view: does it cost nothing? */
 function freeRuns(view: string, runs: readonly Run[], known: (digits: string) => boolean): boolean[] {
   const dated = dateTimePlaces(view);
-  const free = runs.map(
-    (run) => known(run.digits) || [...Array(run.end - run.start).keys()].every((i) => dated.has(run.start + i))
-  );
+  const free = runs.map((run) => known(run.digits) || dated.has(run.start));
   // Only these runs (typed, from the mail, a date or a time) may stand next to an amount.
   const explained = [...free];
   let freeDigits = 0;

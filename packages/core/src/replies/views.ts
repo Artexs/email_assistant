@@ -3,9 +3,6 @@
 // "hxxp" and lookalike dots, slashes and digits. Each view undoes one group of these tricks. A check scans every
 // view, so a form that shows in any view counts. Pure code.
 
-// Characters that show no glyph and break a pattern: zero width, bidi marks and the soft hyphen.
-const FORMAT_CHARS = /[\p{Cf}]/gu;
-
 // Lookalikes that NFKC keeps: the ideographic full stop and the middle dots, slash lookalikes, dash lookalikes.
 const DOTS = /[。·∙]/g;
 const SLASHES = /[⁄∕⧸╱]/g;
@@ -53,7 +50,6 @@ const NAMED_ENTITIES: Record<string, string> = {
   lbrack: "[",
   rbrack: "]",
   hyphen: "-",
-  comma: ",",
 };
 
 /** Any Unicode decimal digit becomes 0–9: Arabic-Indic, fullwidth, mathematical and the others. */
@@ -68,17 +64,15 @@ export function asciiDigits(text: string): string {
 }
 
 // Marks (accents, underlines, keycaps, variation selectors) and every other default-ignorable character show no glyph
-// of their own: they are removed after NFD, so "Ĺ" becomes "L" and four marks between two digits change nothing.
+// of their own: they are removed after NFKC and NFD, so "Ĺ" becomes "L" and four marks between two digits change nothing.
 const MARKS = /[\p{M}\p{Default_Ignorable_Code_Point}]/gu;
 
 function foldBasics(text: string): string {
   return asciiDigits(
     text
-      .replace(FORMAT_CHARS, "")
       .normalize("NFKC")
       .normalize("NFD")
       .replace(MARKS, "")
-      .normalize("NFC")
       .replace(DOTS, ".")
       .replace(SLASHES, "/")
       .replace(DASHES, "-")
