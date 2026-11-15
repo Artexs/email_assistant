@@ -80,3 +80,40 @@ export const approvalDetailSchema = z.strictObject({
   delegates: z.array(approvalDelegateSchema),
 });
 export type ApprovalDetail = z.infer<typeof approvalDetailSchema>;
+
+// POST /api/approvals/:id/approve, /reject and /edit (F102 ticket). The body of approve and reject is `{}`. The raw limits of the
+// edit are wider than the limits of the service (subject 1–200, body 1–3000 characters after cleaning): cleaning removes characters,
+// so the service decides the real limit and answers 400 `validation`.
+export const APPROVAL_EDIT_SUBJECT_RAW_MAX = 400;
+export const APPROVAL_EDIT_BODY_RAW_MAX = 6000;
+
+export const approvalDecisionBodySchema = z.strictObject({});
+
+export const approvalEditBodySchema = z.strictObject({
+  subject: z.string().max(APPROVAL_EDIT_SUBJECT_RAW_MAX),
+  body: z.string().max(APPROVAL_EDIT_BODY_RAW_MAX),
+  delegateId: z.uuid().optional(),
+});
+export type ApprovalEditBody = z.infer<typeof approvalEditBodySchema>;
+
+// `approved_held`: the send is approved but the committer does not take it now; `heldBy` names the cause.
+export const approvalApproveAnswerSchema = z.strictObject({
+  status: z.enum(["approved", "approved_held"]),
+  heldBy: heldBySchema.optional(),
+});
+export type ApprovalApproveAnswer = z.infer<typeof approvalApproveAnswerSchema>;
+
+export const approvalRejectAnswerSchema = z.strictObject({ status: z.literal("rejected") });
+export type ApprovalRejectAnswer = z.infer<typeof approvalRejectAnswerSchema>;
+
+export const approvalEditAnswerSchema = z.strictObject({ id: z.uuid(), version: z.number().int().min(2) });
+export type ApprovalEditAnswer = z.infer<typeof approvalEditAnswerSchema>;
+
+// The 409 body of the write routes: `changed` names the newest version, `closed` names the state of the send.
+export const approvalConflictCodes = ["changed", "closed", "draft_not_ready", "drafts_off"] as const;
+export const approvalConflictSchema = z.strictObject({
+  error: z.enum(approvalConflictCodes),
+  currentId: z.uuid().optional(),
+  state: z.string().optional(),
+});
+export type ApprovalConflict = z.infer<typeof approvalConflictSchema>;
