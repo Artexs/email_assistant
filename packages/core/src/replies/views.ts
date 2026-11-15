@@ -67,11 +67,18 @@ export function asciiDigits(text: string): string {
   });
 }
 
+// Marks (accents, underlines, keycaps, variation selectors) and every other default-ignorable character show no glyph
+// of their own: they are removed after NFD, so "Ĺ" becomes "L" and four marks between two digits change nothing.
+const MARKS = /[\p{M}\p{Default_Ignorable_Code_Point}]/gu;
+
 function foldBasics(text: string): string {
   return asciiDigits(
     text
       .replace(FORMAT_CHARS, "")
       .normalize("NFKC")
+      .normalize("NFD")
+      .replace(MARKS, "")
+      .normalize("NFC")
       .replace(DOTS, ".")
       .replace(SLASHES, "/")
       .replace(DASHES, "-")

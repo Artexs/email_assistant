@@ -1,5 +1,6 @@
 // The code checks of a reply body (ADR 0033 §3, PD-073). The drafter's text is untrusted: it is stored and shown only
 // when every check passes. Pure code. Each check scans every view of the text (`views.ts`).
+import { digitVerdict } from "./digits";
 import { type EntityCode, findEntities } from "./entities";
 import { hasBrokenGapSyntax, withoutGaps } from "./gaps";
 import { detectLanguage } from "./language";
@@ -78,17 +79,7 @@ function entityFailures(body: string, allowed: readonly string[]): Set<EntityCod
   const permitted = allowedKeys(allowed);
   const failures = new Set<EntityCode>();
   for (const entity of findEntities(body)) {
-    if (permitted.has(`${entity.code}:${entity.key}`)) continue;
-    // The account view joins a number with the group that follows it ("PL61 …, 15 zł"): a key that starts with a typed
-    // account number is that number.
-    if (
-      entity.code === "account_number" &&
-      [...permitted].some(
-        (key) => key.startsWith("account_number:") && entity.key.startsWith(key.slice("account_number:".length))
-      )
-    )
-      continue;
-    failures.add(entity.code);
+    if (!permitted.has(`${entity.code}:${entity.key}`)) failures.add(entity.code);
   }
   return failures;
 }
@@ -107,9 +98,12 @@ function languageFails(body: string, language: "pl" | "en"): boolean {
  */
 export function checkReplyBody(
   body: string,
-  opts: { language: "pl" | "en"; allowed: readonly string[] }
+  opts: { language: "pl" | "en"; allowed: readonly string[]; quoted?: readonly string[] }
 ): ReplyCheckResult {
   const failed = new Set<ReplyCheckCode>(entityFailures(body, opts.allowed));
+  const digits = digitVerdict(body, { allowed: opts.allowed, quoted: opts.quoted });
+  if (digits.account) failed.add("account_number");
+  if (digits.phone) failed.add("phone");
   if (hasLongBlankRun(body)) failed.add("blank_lines");
   if (hasHeaderLine(body)) failed.add("header_line");
   if (hasControlChars(body)) failed.add("control_chars");

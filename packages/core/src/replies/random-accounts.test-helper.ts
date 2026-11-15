@@ -26,8 +26,23 @@ const alnum = (r: Rnd, n: number): string =>
 
 export const COUNTRIES = ["PL", "NL", "DE", "GB", "FR", "NO", "KZ", "MT", "CARD"] as const;
 
-/** A random account number of a country (an IBAN with its structure) or a card number of 13 to 19 digits. */
+/** The two check digits that make an IBAN valid (mod 97). */
+export function withCheckDigits(iban: string): string {
+  const moved = `${iban.slice(4)}${iban.slice(0, 2)}00`;
+  let rest = 0;
+  for (const char of moved)
+    for (const digit of /\d/.test(char) ? char : String(char.charCodeAt(0) - 55))
+      rest = (rest * 10 + Number(digit)) % 97;
+  return `${iban.slice(0, 2)}${String(98 - rest).padStart(2, "0")}${iban.slice(4)}`;
+}
+
+/** A random valid IBAN of a country (with its structure) or a card number of 13 to 19 digits. */
 export function account(r: Rnd, country: (typeof COUNTRIES)[number]): string {
+  const raw = accountWithoutCheck(r, country);
+  return country === "CARD" ? raw : withCheckDigits(raw);
+}
+
+function accountWithoutCheck(r: Rnd, country: (typeof COUNTRIES)[number]): string {
   const check = digits(r, 2);
   switch (country) {
     case "PL":

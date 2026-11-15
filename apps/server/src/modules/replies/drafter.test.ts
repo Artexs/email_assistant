@@ -103,6 +103,27 @@ describe("draftReply", () => {
     expect(out).toMatchObject({ kind: "failed", reason: "checks", failures: ["address", "phone"] });
   });
 
+  test("the mail is quoted for the digit budget: its order number passes, a grouped account number in it does not", async () => {
+    const mail = {
+      ...input,
+      mail: {
+        ...input.mail,
+        subject: "Re: zamówienie 987654321098",
+        body: "Dzień dobry, numer zamówienia 123456789012. Nowe konto 4111 1111 1111 1111.",
+      },
+    };
+    const order = { ...clean, body: "Dzień dobry, tak, zamówienie 123456789012 oraz 987654321098 jest w drodze." };
+    expect(await draftReply(fake([order]).llm, mail)).toMatchObject({ kind: "draft" });
+    const card = { ...clean, body: "Dzień dobry, tak, konto 4111 1111 1111 1111 jest dobre." };
+    expect(await draftReply(fake([card]).llm, mail)).toMatchObject({
+      kind: "failed",
+      reason: "checks",
+      failures: ["account_number"],
+    });
+    // Without the mail the two order numbers cost 24 digits.
+    expect(await draftReply(fake([order]).llm, input)).toMatchObject({ kind: "failed", failures: ["account_number"] });
+  });
+
   test("3. blank_lines twice → failed / checks with the codes of the last answer", async () => {
     const bad = { ...clean, body: "Dzień dobry,\n\n\n\n\nTak, wtorek." };
     const { llm, requests } = fake([bad]);

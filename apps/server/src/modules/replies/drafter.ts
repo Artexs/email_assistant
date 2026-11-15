@@ -74,7 +74,11 @@ export async function draftReply(llm: LlmClient, input: DrafterInput): Promise<D
       usages.push(usage);
       if (data.decision === "no_draft") return { kind: "no_draft", reason: data.reason_code ?? "needs_facts", usages };
       const body = normalizeDraftText(data.body);
-      const checked = checkReplyBody(body, { language: input.language, allowed });
+      const checked = checkReplyBody(body, {
+        language: input.language,
+        allowed,
+        quoted: [input.mail.subject ?? "", input.mail.body],
+      });
       if (checked.ok) return { kind: "draft", body, gaps: gapsOf(body), usages };
       last = { kind: "draft", body, failures: checked.failures };
       retry = { reason: "checks", failures: checked.failures };
