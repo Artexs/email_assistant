@@ -78,14 +78,18 @@ export function buildOutgoingMessage(input: BuildInput): OutgoingMessage {
   const styleText = organization.styleText?.trim() ?? "";
   const signature = styleText === "" ? owner.displayName : styleText;
   const dueDate = "due_date" in draft && draft.due_date !== "" ? draft.due_date : null;
-  const body = renderTemplate(draft.kind, draft.language, {
-    task: "task" in draft ? oneLine(draft.task) : undefined,
-    question: "question" in draft ? oneLine(draft.question) : undefined,
-    dueDate,
-    senderLabel: cleanFromAddress(original.fromAddress),
-    dateLabel: formatDateLabel(original.receivedAt, organization.timezone, draft.language),
-    signature,
-  });
+  const editedBody = "body_text" in draft ? draft.body_text : undefined;
+  const editedSubject = "subject_text" in draft ? draft.subject_text : undefined;
+  const body =
+    editedBody ??
+    renderTemplate(draft.kind, draft.language, {
+      task: "task" in draft ? oneLine(draft.task) : undefined,
+      question: "question" in draft ? oneLine(draft.question) : undefined,
+      dueDate,
+      senderLabel: cleanFromAddress(original.fromAddress),
+      dateLabel: formatDateLabel(original.receivedAt, organization.timezone, draft.language),
+      signature,
+    });
   const quote = draft.kind === "reminder" ? null : quoteOriginal(original, draft.language, organization.timezone);
 
   const chain = uniqueIds([...original.references, original.messageId]);
@@ -102,7 +106,7 @@ export function buildOutgoingMessage(input: BuildInput): OutgoingMessage {
     date: createdAt,
     from: { name: owner.displayName, address: mailbox.address },
     to: [{ name: "delegate_name" in draft ? draft.delegate_name : null, address: recipient }],
-    subject: outgoingSubject(draft.kind, original.subject),
+    subject: editedSubject ?? outgoingSubject(draft.kind, original.subject),
     text: quote === null ? body : `${body}\n\n${quote}`,
     inReplyTo,
     references,
