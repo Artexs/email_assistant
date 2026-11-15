@@ -346,6 +346,7 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     expect(second.status).toBe(409);
     expect(approvalConflictSchema.parse(await second.json())).toEqual({ error: "changed", currentId: answer.id });
     expect((await auditOf(answer.id)).some((row) => row.event === "action.approved")).toBe(false);
+    expect((await auditOf(answer.id)).find((row) => row.event === "action.edited")?.data).toMatchObject({ via: "web" });
   });
 
   test("T9. a text that is too long after cleaning, a reminder and the shadow mode", async () => {
@@ -357,10 +358,16 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     );
     expect(long.status).toBe(400);
     expect((await long.json()).error).toBe("validation");
-    // The raw limit: 6001 characters never reach the service.
-    const raw = await s.app.request(
+    // The raw limit is wider than the limit after cleaning: 5000 raw characters that clean to 2500 pass, 7500 never reach the service.
+    const bidi = "a\u202e";
+    const wide = await s.app.request(
       `/api/approvals/${id}/edit`,
-      post("owner", "edit", { subject: "S", body: "x".repeat(6001) })
+      post("owner", "edit", { subject: "S", body: bidi.repeat(2500) })
+    );
+    expect(wide.status).toBe(200);
+    const raw = await s.app.request(
+      `/api/approvals/${approvalEditAnswerSchema.parse(await wide.json()).id}/edit`,
+      post("owner", "edit", { subject: "S", body: `${bidi}${"a\u202e\u202e".repeat(2500)}` })
     );
     expect(raw.status).toBe(400);
     expect((await raw.json()).error).toBe("validation");
@@ -428,6 +435,14 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     // The other owner still sees and decides its own send.
     expect(await send(foreign)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     expect(await sendCount(s.org.orgId)).toBe(0);
+    // The other organization's owner cannot decide this organization's send either.
+    const mine = await addSend(s);
+    for (const route of ROUTES) {
+      const res = await s.app.request(`/api/approvals/${mine}/${route}`, post("other", route, bodyOf(route)));
+      expect(res.status).toBe(404);
+    }
+    expect(await send(mine)).toMatchObject({ status: "awaiting_approval", approved_by: null });
+    expect(await editRows(s.org.orgId)).toEqual([]);
     const unknown = await s.app.request(`/api/approvals/${randomUUID()}/approve`, post("owner", "approve"));
     expect(unknown.status).toBe(404);
   });
