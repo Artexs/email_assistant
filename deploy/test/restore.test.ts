@@ -62,7 +62,7 @@ beforeEach(() => {
     "docker",
     `bytes="$(cat | wc -c)"
 args="$*"; args="\${args//$'\\n'/ }"
-echo "docker $args stdin=$bytes proj=\${COMPOSE_PROJECT_NAME:-}" >>"$CALLS"
+echo "docker $args stdin=$bytes proj=\${COMPOSE_PROJECT_NAME:-} rel=\${EA_RELEASE:-}" >>"$CALLS"
 if [[ -f "$S/docker-fail" && "$*" == *"$(cat "$S/docker-fail")"* ]]; then exit 1; fi
 if [[ "$*" == *" config "* ]]; then
   if [[ -f "$S/config-json" ]]; then cat "$S/config-json"; else printf '%s' '${DRILL_CONFIG_OK}'; fi
@@ -233,7 +233,7 @@ describe("restore.sh drill", () => {
     for (const line of lines) {
       expect(line.startsWith(DRILL_PREFIX), line).toBe(true);
       // The caller's COMPOSE_PROJECT_NAME never reaches Compose.
-      expect(line.endsWith("proj="), line).toBe(true);
+      expect(line, line).toMatch(/ proj= rel=\S*$/);
     }
     const order = [
       " config ",
@@ -265,10 +265,32 @@ describe("restore.sh drill", () => {
     expect(result.stdout).not.toContain("deleted <org id>");
   });
 
+  test("EA_RELEASE is the checked-out tag for the build, the migrate and the up, and dev when HEAD has no tag", () => {
+    writeDrillEnv();
+    const git = (...args: string[]): void => {
+      const result = Bun.spawnSync(["git", "-c", "user.email=a@x.test", "-c", "user.name=a", ...args], { cwd: root });
+      expect(result.exitCode, args.join(" ")).toBe(0);
+    };
+    git("init", "-q");
+    git("add", "deploy/restore.sh");
+    git("commit", "-q", "-m", "x");
+    expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code).toBe(0);
+    const untagged = dockerCalls().filter((line) => / (build server|run --rm|up -d --no-build)/.test(line));
+    expect(untagged).toHaveLength(4); // build, migrate, credentials, up
+    for (const line of untagged) expect(line, line).toEndWith(" rel=dev");
+
+    rmSync(join(root, "calls.log"));
+    git("tag", "v0.1.0");
+    expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code).toBe(0);
+    for (const line of dockerCalls().filter((line) => / (build server|run --rm|up -d --no-build)/.test(line))) {
+      expect(line, line).toEndWith(" rel=v0.1.0");
+    }
+  });
+
   test("7. only the pg_restore call reads stdin; the dump reaches it whole", () => {
     writeDrillEnv();
     expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code).toBe(0);
-    const reading = dockerCalls().filter((line) => !line.endsWith("stdin=0 proj="));
+    const reading = dockerCalls().filter((line) => !/ stdin=0 proj= rel=\S*$/.test(line));
     expect(reading).toHaveLength(1);
     expect(reading[0]).toContain("pg_restore");
     expect(reading[0]).toContain(`stdin=${DUMP.length} `);
@@ -283,7 +305,7 @@ describe("restore.sh drill", () => {
     ]);
     const restoreCall = dockerCalls().find((line) => line.includes("pg_restore"));
     expect(restoreCall).toContain(`stdin=${DUMP.length} `);
-    expect(dockerCalls().filter((line) => !line.endsWith("stdin=0 proj=")).length).toBe(1);
+    expect(dockerCalls().filter((line) => !/ stdin=0 proj= rel=\S*$/.test(line)).length).toBe(1);
   });
 
   test("4. one table in the target exits 2 for the drill, with no pg_restore call", () => {

@@ -164,9 +164,10 @@ psql_db() {
 }
 
 restore() {
-  local release tag
+  local tag
   tag="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
-  release="${tag:-dev}"
+  # Every compose call below reads it: the build stamps it, and the other calls must not see another value.
+  export EA_RELEASE="${tag:-dev}"
 
   if [[ "$target" == drill ]]; then
     step=guard
@@ -175,7 +176,7 @@ restore() {
 
   # The only build. Every later call is --no-build (or exec).
   step=build
-  EA_RELEASE="$release" "${C[@]}" build server </dev/null
+  "${C[@]}" build server </dev/null
 
   step=db
   "${C[@]}" up -d --wait db </dev/null
@@ -223,7 +224,7 @@ restore() {
   psql_db -c "delete from auth_sessions" >/dev/null
 
   step=migrate
-  EA_RELEASE="$release" "${C[@]}" run --rm -T cli bun run db:migrate </dev/null
+  "${C[@]}" run --rm -T cli bun run db:migrate </dev/null
 
   # The key of this host must open every stored mailbox secret before the server starts.
   step=credentials
@@ -238,7 +239,7 @@ restore() {
   fi
 
   step=up
-  EA_RELEASE="$release" "${C[@]}" up -d --no-build --wait </dev/null
+  "${C[@]}" up -d --no-build --wait </dev/null
 
   step=""
   if [[ "$target" == new-host ]]; then
