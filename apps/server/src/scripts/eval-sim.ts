@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { costPerMail } from "@ea/core";
+import { costPerMail, type EvalCase } from "@ea/core";
 
 import {
   buildGateFile,
+  type ClassifierExtras,
   evalExitCode,
   evalDelegateAddress,
   gateFileName,
@@ -13,7 +14,7 @@ import {
   evalStateFileName,
   firstEstimateUsd,
   parseCaseResults,
-  prompts,
+  promptLabel,
   renderEvalReport,
   runEval,
   simMetaOf,
@@ -23,6 +24,7 @@ import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/
 import { createLog } from "../platform/log";
 
 import { type EvalOptions, evalUsage } from "./eval-args";
+import { classifierExtrasOfCase } from "./eval-extras";
 import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import {
   acquireStateLock,
@@ -36,6 +38,7 @@ import {
   runCap,
 } from "./eval-ledger";
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
+import { corpusDir, readScenario } from "./sim-files";
 
 const log = createLog("eval");
 
@@ -45,6 +48,17 @@ const gateDir = resolve(import.meta.dir, "../../../../evals/results/gate");
 
 function out(text: string): void {
   process.stdout.write(`${text}\n`);
+}
+
+function extrasMapperOf(
+  options: EvalOptions,
+  root: string,
+  scenarioId: string,
+  htmlById: ReadonlyMap<string, string>
+): ((c: EvalCase) => ClassifierExtras) | undefined {
+  if (options.prompt.version === "classifier-v2") return undefined;
+  const scenario = readScenario(corpusDir(scenarioId, root));
+  return (evalCase) => classifierExtrasOfCase(evalCase, scenario, htmlById.get(evalCase.id));
 }
 
 // What a test replaces: the CLI passes none of them.
@@ -121,6 +135,9 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     `corpus ${scenario} v${loaded.version} part ${part}: ${cases.length} cases, skipped dropped ${loaded.skipped.dropped} unwritten ${loaded.skipped.unwritten} sent ${loaded.skipped.sent}`
   );
 
+  // The scenario holds the known senders and the time zone of the extras.
+  const extrasOf = extrasMapperOf(options, root, scenario, loaded.htmlById);
+
   let ledgerPath: string;
   try {
     ledgerPath =
@@ -157,7 +174,8 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     evalStateFileName({
       model,
       reasoningEffort: effort,
-      promptVersion: prompts.classifier.version,
+      // The version and the sorted parts: two variants never share a state file.
+      promptVersion: promptLabel(options.prompt),
       set: `sim-${scenario}-v${loaded.version}-${part}`,
     })
   );
@@ -195,6 +213,9 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         minKept: options["min-kept"],
         retries: options.retries,
         done,
+        prompt: options.prompt,
+        // Only v3 reads extras; v2 ignores them.
+        ...(extrasOf === undefined ? {} : { extrasOf }),
         concurrency: options.concurrency,
         ...(judgeRow === undefined
           ? {}
