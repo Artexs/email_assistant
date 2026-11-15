@@ -141,10 +141,10 @@ describe("the Telegram consent text", () => {
   // Loop lines and follow-up cards carry recipients, the ask and the promise (F116 stage 17): the text ends with a sentence about them.
   test("T6 ends with the open-loops sentence in both languages", () => {
     expect(en.tg_consent_text).toEndWith(
-      "If you turn on open loops: who you wait for (addresses from your sent mail), a short line of what you asked or promised, and follow-up drafts with their recipients."
+      "If you turn on open loops: who you wait for (addresses from your sent mail), a short description of what you asked or promised, the due date taken from your sent mail, the subject of the mail, and follow-up drafts with their recipients. Open-loop lines never hold mail bodies."
     );
     expect(pl.tg_consent_text).toEndWith(
-      "Jeśli włączysz otwarte sprawy: na kogo czekasz (adresy z wysłanej poczty), krótką linię o tym, o co prosisz lub co obiecujesz, oraz szkice przypomnień z ich adresatami."
+      "Jeśli włączysz otwarte sprawy: na kogo czekasz (adresy z wysłanej poczty), krótki opis tego, o co prosisz lub co obiecujesz, termin z Twojej wysłanej poczty, temat wiadomości oraz szkice przypomnień z ich adresatami. Linie otwartych spraw nigdy nie zawierają treści wiadomości."
     );
   });
 

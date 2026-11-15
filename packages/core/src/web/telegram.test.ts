@@ -13,6 +13,19 @@ describe("consentCovers", () => {
     expect(consentCovers(null, "2026-11-15")).toBe(false);
     expect(consentCovers(null, "2000-01-01")).toBe(false);
   });
+
+  test("N1 a version is a date with a numeric suffix; an invalid version is never covered", () => {
+    const since = "2026-11-15.2";
+    expect(consentCovers("2026-11-15", since)).toBe(false);
+    expect(consentCovers("2026-11-15.1", since)).toBe(false);
+    expect(consentCovers("2026-11-15.2", since)).toBe(true);
+    expect(consentCovers("2026-11-15.10", since)).toBe(true);
+    expect(consentCovers("2026-11-16", since)).toBe(true);
+    for (const garbage of ["", "zzzz", "2026-11-15.", "2026-11-15.x", "2099-1-1", " 2026-11-16", "2026-11-16\n"]) {
+      expect(consentCovers(garbage, since)).toBe(false);
+    }
+    expect(consentCovers("2026-11-16", "garbage")).toBe(false);
+  });
 });
 
 describe("telegramConsentBodySchema", () => {

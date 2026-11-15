@@ -122,6 +122,14 @@ describe("consentVersionsOf (repo)", () => {
       const versions = await consentVersionsOf(trx, ctx, [a.userId, NO_USER]);
       expect(versions.get(a.userId)).toBe(F109_VERSION);
       expect(versions.get(NO_USER)).toBeNull();
+      // A later row of another event with a version in its data is ignored.
+      await recordAudit(trx, ctx, {
+        event: auditEvents.webLogin,
+        actor: a.userId,
+        data: { version: "2099-01-01" },
+        at: new Date("2026-11-03T00:00:00Z"),
+      });
+      expect((await consentVersionsOf(trx, ctx, [a.userId])).get(a.userId)).toBe(F109_VERSION);
     });
   });
 
@@ -144,7 +152,8 @@ describe("consentVersionsOf (repo)", () => {
 describe("POST /api/telegram/consent", () => {
   test("T2 an old, empty or missing version is refused and writes no row", async () => {
     const { org, app } = await setup();
-    for (const version of [F109_VERSION, "2000-01-01", "2026-11-15.1"]) {
+    // Older, newer and garbage versions: only the current version is accepted.
+    for (const version of [F109_VERSION, "2000-01-01", "2026-11-15.1", "2099-01-01", "2026-11-15.3", "zzzz"]) {
       const res = await app.request(CONSENT, as("owner", { method: "POST", body: { version } }));
       expect(res.status).toBe(409);
       expect(await res.json()).toEqual({ error: "telegram_consent_outdated" });

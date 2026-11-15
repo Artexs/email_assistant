@@ -23,9 +23,21 @@ export const TELEGRAM_CONSENT_VERSION = "2026-11-15.2";
 export const OPEN_LOOPS_CONSENT_SINCE = "2026-11-15.2";
 
 // True when the consent `version` of a user is not older than `since`. A user with no consent row (null) is not covered.
-// String order is date order because both sides are ISO dates with an optional ".N" suffix.
+// The date part compares as text, the ".N" suffix as a number; an invalid version (either side) is not covered.
 export function consentCovers(version: string | null, since: string): boolean {
-  return version !== null && version >= since;
+  const have = parseConsentVersion(version);
+  const need = parseConsentVersion(since);
+  if (have === null || need === null) return false;
+  if (have.date !== need.date) return have.date > need.date;
+  return have.suffix >= need.suffix;
+}
+
+// A valid version is `YYYY-MM-DD` or `YYYY-MM-DD.N`; no suffix is 0. Anything else (garbage, empty) is not a version.
+const CONSENT_VERSION = /^(\d{4}-\d{2}-\d{2})(?:\.(\d+))?$/;
+function parseConsentVersion(version: string | null): { date: string; suffix: number } | null {
+  const match = version === null ? null : CONSENT_VERSION.exec(version);
+  if (!match?.[1]) return null;
+  return { date: match[1], suffix: match[2] === undefined ? 0 : Number(match[2]) };
 }
 export const telegramLinkBodySchema = z.object({ consentVersion: z.string().min(1).max(32) });
 export type TelegramLinkBody = z.infer<typeof telegramLinkBodySchema>;
