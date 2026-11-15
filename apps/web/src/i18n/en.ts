@@ -394,7 +394,7 @@ export const en = {
   folder_off_toast: "{folder}: not synced.",
   sent_title: "Sent mail",
   sent_switch: "Track my sent mail",
-  sent_line: "The assistant reads Sent, never changes it, to see what you wait for.",
+  sent_line: "The assistant reads Sent to see what you wait for. It does not change or delete your mail there.",
   sent_off_note: "Turning it off deletes the sent mail that the assistant stored.",
   sent_no_folder: "No Sent folder found in this mailbox.",
   sent_folder_missing: "The Sent folder is not on the server any more.",

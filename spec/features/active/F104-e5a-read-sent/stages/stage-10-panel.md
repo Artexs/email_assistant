@@ -21,15 +21,15 @@ Texts (both files; Polish per D17):
 | --- | --- | --- |
 | `sent_title` | Sent mail | Wysłane |
 | `sent_switch` | Track my sent mail | Śledź moją wysłaną pocztę |
-| `sent_line` | The assistant reads Sent, never changes it, to see what you wait for. | Asystent czyta folder Wysłane i nigdy go nie zmienia, żeby wiedzieć, na co czekasz. |
+| `sent_line` | The assistant reads Sent to see what you wait for. It does not change or delete your mail there. | Asystent czyta folder Wysłane, żeby wiedzieć, na co czekasz. Nie zmienia ani nie usuwa tam Twoich wiadomości. |
 | `sent_off_note` | Turning it off deletes the sent mail that the assistant stored. | Wyłączenie usuwa wysłaną pocztę zapisaną przez asystenta. |
 | `sent_no_folder` | No Sent folder found in this mailbox. | W tej skrzynce nie ma folderu Wysłane. |
 | `sent_folder_missing` | The Sent folder is not on the server any more. | Folderu Wysłane nie ma już na serwerze. |
-| `sent_failed` | The last read of Sent failed. The next sync tries again. | Ostatni odczyt folderu Wysłane się nie udał. Następna synchronizacja spróbuje ponownie. |
+| `sent_failed` | The last read of Sent failed. The next sync tries again. | Ostatni odczyt folderu Wysłane nie powiódł się. Następna synchronizacja spróbuje ponownie. |
 | `sent_first_pass` | The first read of Sent runs at the next sync. | Pierwszy odczyt folderu Wysłane nastąpi przy najbliższej synchronizacji. |
 | `sent_none` | No sent mail in the last 30 days. Does your mail app keep a copy in Sent? | Brak wysłanej poczty z ostatnich 30 dni. Czy Twój program pocztowy zapisuje kopię w folderze Wysłane? |
 | `sent_last` | Last sent mail seen: {time}. | Ostatnia wysłana wiadomość: {time}. |
-| `sent_paused` | Sent mail tracking is paused for your organization. You can turn it off; that deletes the stored sent mail. | Śledzenie wysłanej poczty jest wstrzymane dla Twojej organizacji. Możesz je wyłączyć; to usuwa zapisaną wysłaną pocztę. |
+| `sent_paused` | Sent mail tracking is paused for your organization. You can turn it off; that deletes the stored sent mail. | Śledzenie wysłanej poczty jest wstrzymane dla Twojej organizacji. Możesz je wyłączyć; to usunie zapisaną wysłaną pocztę. |
 | `sent_on_toast` | Sent mail is tracked. | Wysłana poczta jest śledzona. |
 | `sent_off_toast` | Sent mail is not tracked. The stored sent mail is deleted. | Wysłana poczta nie jest śledzona. Zapisana wysłana poczta została usunięta. |
 

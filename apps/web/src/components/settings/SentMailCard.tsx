@@ -3,8 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { getLocale, t, type TextKey } from "../../i18n";
-import { ApiError } from "../../lib/api";
-import { errorText } from "../../lib/errors";
+import { changeSentSync } from "../../lib/sent-switch";
 import { sentStatusLine } from "../../lib/sent-text";
 import { patchSettings } from "../../lib/settings-api";
 import { useNow } from "../../lib/use-now";
@@ -30,11 +29,11 @@ export function SentMailCard({ settings, isOwner, timeZone, onChanged, onMissing
   const change = async (enabled: boolean) => {
     setPending(true);
     try {
-      const result = await patchSettings(settings.mailboxId, "/sent-sync", { enabled });
-      onChanged(result, enabled ? "sent_on_toast" : "sent_off_toast");
-    } catch (error) {
-      toast.error(t(errorText(error)));
-      if (error instanceof ApiError && error.status === 404) onMissing?.();
+      await changeSentSync(
+        { patch: patchSettings, onChanged, toastError: (key) => toast.error(t(key)), onMissing },
+        settings.mailboxId,
+        enabled
+      );
     } finally {
       setPending(false);
     }
