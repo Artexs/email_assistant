@@ -790,6 +790,8 @@ describe("pins of the link and address keys (mutation survivors)", () => {
     expect(failuresOf("Tak, other-site.com", "pl", ["my-site.com"])).toEqual(["link"]);
     expect(failuresOf("Tak, xwww.y.zzzz")).toEqual([]);
     // The domain of an address is no link: after the at sign, after a dot or a hyphen of it.
+    expect(failuresOf("Tak, jan@mail.firma.pl")).toEqual(["address"]);
+    expect(failuresOf("Tak, jan@my-firma.pl")).toEqual(["address"]);
     expect(failuresOf("Tak, jan@mail.firma.pl", "pl", ["jan@mail.firma.pl"])).toEqual([]);
     expect(failuresOf("Tak, jan@my-firma.pl", "pl", ["jan@my-firma.pl"])).toEqual([]);
     expect(failuresOf("Tak, jan%40firma.pl", "pl", ["jan@firma.pl"])).toEqual([]);

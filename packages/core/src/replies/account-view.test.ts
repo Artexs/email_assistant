@@ -460,6 +460,15 @@ describe("pins of the account view (mutation survivors)", () => {
     expect(failuresOf("Tak, 123456789,500 zł")).toEqual(["phone"]);
   });
 
+  test("a typed account number allows no other kind of entity whose key starts with its digits", () => {
+    expect(failuresOf("Tak, 4111111111111.com dziękuję", ["Karta 4111111111111"])).toEqual(["link"]);
+    expect(failuresOf("Tak, karta 4111111111111 dziękuję", ["Karta 4111111111111"])).toEqual([]);
+  });
+
+  test("a group that follows a number sign is a group start; the Roman numeral is no letter", () => {
+    expect(failuresOf("Tak, \u2180NL 91 ABNA 0417 1643 dziękuję")).toEqual(["account_number"]);
+  });
+
   test("a typed card does not allow a phone number that starts with its digits", () => {
     expect(failuresOf("Tak, tel 411111111 dziękuję", ["Karta 4111 1111 1111 1111"])).toEqual(["phone"]);
     expect(failuresOf("Tak, karta 4111 1111 1111 1111 dziękuję", ["Karta 4111 1111 1111 1111"])).toEqual([]);
