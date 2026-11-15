@@ -1,4 +1,5 @@
 import { configureMailHosts, signalsOfMailbox } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
@@ -7,12 +8,13 @@ import { createLog } from "../platform/log";
 
 import { readSignalsOptions, signalsLines, usage } from "./mailbox-signals-args";
 
+const out = createCliOutput("mailbox-signals");
 const log = createLog("mailbox-signals");
 
 async function main(): Promise<number> {
   const options = readSignalsOptions(process.argv.slice(2));
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 

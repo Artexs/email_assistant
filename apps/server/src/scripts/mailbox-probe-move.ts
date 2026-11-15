@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { parseArgs } from "node:util";
+import { format, parseArgs } from "node:util";
 
 import { z } from "zod";
 
 import { assertTestAddress, configureMailHosts, probeMove, type ProbeMoveReport } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { mailAllowLocalFromEnv } from "../platform/config";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-probe-move");
+const out = createCliOutput("mailbox-probe-move");
 
 const usage = [
   "usage: printf '%s' \"$PASSWORD\" | TEST_MAILBOX_ADDRESS=<address> bun run mailbox:probe-move --host <imap host> --port <port> --address <address>",
@@ -55,7 +55,7 @@ async function main(): Promise<number> {
   const options = readOptions();
   const password = options && (await readPassword());
   if (!options || password === undefined) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
   configureMailHosts({ allowLocal: mailAllowLocalFromEnv(process.env) });
@@ -63,15 +63,15 @@ async function main(): Promise<number> {
   assertTestAddress(options.address, process.env.TEST_MAILBOX_ADDRESS);
   const report = await probeMove(
     { host: options.host, port: options.port, user: options.address, password },
-    { probeId: randomUUID(), now: new Date(), log: (line) => log.info(line) }
+    { probeId: randomUUID(), now: new Date(), log: (line) => out.print(line) }
   );
-  for (const line of reportLines(report)) log.info(line);
+  for (const line of reportLines(report)) out.print(line);
   return 0;
 }
 
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     process.exit(1);
   });
