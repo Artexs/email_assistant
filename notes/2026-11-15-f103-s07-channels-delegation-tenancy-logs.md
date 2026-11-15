@@ -37,3 +37,7 @@ Each mutation failed at least one test (count in brackets):
 - Lint: tenancy (2), delegation (2) or channels (10) removed from the `error` block.
 - Field kind: `item_id` moved to the code list (1).
 - All changed and new integration files also pass with `.env` moved away and only `DATABASE_URL` set (`/tmp/f103-s07/env-unset.log`: 211 pass).
+
+## Found by the full proof run
+
+- `channels-weekly-report.test.ts` ("a later week's failure logs again") pinned the week inside the log id (`weekly_report <org>:<week>`). The event holds the organization id only, so the week is no longer in the line. The test now counts `notice_skipped kind=weekly_report` lines (one per week, none on a retry in the same week). Mutation "dedup key ignored" fails it (1 fail, `/tmp/f103-s07/mut/weekly_dedup_ignored.log`).
