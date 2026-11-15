@@ -80,8 +80,9 @@ describe("an alias of the user does not close a loop", () => {
       const org = await loopsOrg(trx);
       // Send-as or delegate access: the people below appear as From in the Sent rows of the mailbox.
       for (const address of [ANNA, JAN, "third@example.test"]) await sentMail(trx, org, { fromAddress: address });
-      const byTo = await waiting(trx, org);
-      const byCc = await waiting(trx, org);
+      // Each person is only in one list: the counterpart is another address, so To and Cc are tested alone.
+      const byTo = await waiting(trx, org, { cc_addresses: [], counterpart: "first@example.test" });
+      const byCc = await waiting(trx, org, { to_addresses: ["first@example.test"], counterpart: "first@example.test" });
       const byCounterpart = await waiting(trx, org, {
         to_addresses: ["first@example.test"],
         cc_addresses: [],

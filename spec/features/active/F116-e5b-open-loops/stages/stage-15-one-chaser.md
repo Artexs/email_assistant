@@ -40,3 +40,9 @@ Brief lines (18), routes (20).
 
 - One card per follow-up: a follow-up never joins an approval set (the set readers are mail-only and the send payload refuses `set_id`). The chaser queues no set for loops.
 - Cards go only to owners whose consent covers loop data (`loopConsentOf`); an uncovered owner gets one `loop_consent` line per day. Details: `notes/2026-11-15-f116-stage-11-follow-up-cards.md`.
+
+## Carry-over from the review of stage 14 (worker, 2026-11-15)
+
+- N3 (performance): `sentFromAddressesOf` in `loops/match.ts` runs a GROUP BY over every `sent_emails` row of the mailbox on each `matchReplies` run (every 2 minutes) and on each `isOpen`, which runs in the committer and draft transactions while they hold the loop lock. No index covers `(mailbox_id, from_address)`. The chaser must not add more calls. Options for this stage or a later one: read the aliases once per run and pass them in; or add an index `sent_emails (mailbox_id, lower(from_address))` in a migration (the next free timestamp after `20261115190001`); or cache the alias set per mailbox for a few minutes.
+- N6: a `failed` follow-up send whose outcome is unknown (`outcome_unknown`) does not count as waiting in `draftFollowUp`, so a new tap or the chaser can plan a second follow-up to the same people. The user approves each card, so no mail goes out unseen. Decide here whether the chaser skips a loop whose newest follow-up failed with an unknown outcome, or says so on the card.
+- The chaser has no user: `draftFollowUp` needs an owner and writes the user as actor of the `action.planned` rows (see the stage 14 carry-over).
