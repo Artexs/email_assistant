@@ -631,12 +631,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action. The mail stays in INBOX. If it repeats, find why the committer did not apply the actions in time (scope, `auth_error`, a pause).
 - **Status:** won't fix (expected behaviour)
 
-### `callback failed: <label>`
+### `callback_failed` (fields `error`, `error_code`, `method`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
-- **Source:** `apps/server/src/modules/channels/telegram/bot.ts` (`[telegram]`, level `error`).
-- **Cause:** The handler of a button tap threw an error (a database error or a bug). The label is `GrammyError <method> <code>`, `HttpError <method>` or the `describeError` text. The user sees "Something went wrong".
-- **Fix:** Read the label. A database label: check the DB and the migration state. Repeat the tap. If it repeats, file a bug with the label (never with a message text).
+- **Source:** `apps/server/src/modules/channels/telegram/bot.ts` (`[telegram]`, level `error`). The line carries `job` `telegram.update` and the `run_id` of the update.
+- **Cause:** The handler of a button tap threw an error (a database error or a bug). `error` is `GrammyError`, `HttpError` or the error name; `error_code` and `method` show for a Telegram error. The user sees "Something went wrong".
+- **Fix:** Read the fields. A database error: check the DB and the migration state. Repeat the tap. If it repeats, file a bug with the fields (never with a message text). The lines of the same update share the `run_id`.
 - **Status:** investigating
 
 ### `digest for org <id> user <id> failed: <label>`
@@ -695,31 +695,31 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check the token with `bun run telegram:check`. Fix `TELEGRAM_BOT_TOKEN` in `.env` (the user edits it) and restart the server.
 - **Status:** fix pending (user action when it fires)
 
-### `telegram: setMyCommands failed: <label>`
+### `telegram_set_commands_failed` (fields `error`, `error_code`, `method`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `warn`).
 - **Cause:** The server could not set the command list at the start (network error or Telegram error). Polling goes on; only the `/` menu in the app is missing or old.
-- **Fix:** No action. The next start sets the list again. If it repeats with the label `GrammyError setMyCommands 401`, fix the token.
+- **Fix:** No action. The next start sets the list again. If it repeats with `error` `GrammyError`, `method` `setMyCommands` and `error_code` 401, fix the token.
 - **Status:** won't fix (expected behaviour)
 
-### `telegram: polling failed: <label>; next try in <n> min`
+### `telegram_polling_failed` (fields `error`, `error_code`, `method`, `wait_ms`)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `error`).
-- **Cause:** `bot.start` failed with an error other than 401 or 409 (network down, Telegram 5xx). The server tries again after 1, 2, 4 … at most 30 minutes. The count resets after a good `getUpdates`.
+- **Cause:** `bot.start` failed with an error other than 401 or 409 (network down, Telegram 5xx). The server tries again after `wait_ms` milliseconds: 1, 2, 4 … at most 30 minutes. The count resets after a good `getUpdates`.
 - **Fix:** Check the network of the host. No action if the next try works. Mail sync and the DB are not affected.
 - **Status:** won't fix (expected behaviour)
 
-### `telegram: another process polls this bot token (409); dev and pilot must use different bots (ADR 0005); next try in <n> min`
+### `telegram_polling_conflict` (field `wait_ms`; dev and pilot must use different bots, ADR 0005)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `error`).
-- **Cause:** Telegram allows one update consumer per token. A second process (for example the Mac with the pilot token, or a second server container) polls the same bot (409). The server tries again after 1, 2, 4 … at most 30 minutes.
+- **Cause:** Telegram allows one update consumer per token. A second process (for example the Mac with the pilot token, or a second server container) polls the same bot (409). The server tries again after `wait_ms` milliseconds: 1, 2, 4 … at most 30 minutes.
 - **Fix:** Find and stop the other process. Use the dev bot on the Mac and the pilot bot on the VPS. The server takes over by itself at the next try.
 - **Status:** workaround (stop the other poller)
 
-### `telegram: the bot token was rejected (401): check TELEGRAM_BOT_TOKEN; polling stopped`
+### `telegram_polling_token_rejected` (check `TELEGRAM_BOT_TOKEN`; polling stopped)
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `error`).

@@ -96,7 +96,12 @@ export function operatorRoutes(deps: OperatorRouteDeps): Hono<ApiEnv> {
         return c.json({ error: "unknown_flag" }, 400);
       case "changed":
       case "unchanged":
-        return c.json({ result: result.kind, flag: result.flag, enabled: result.enabled } satisfies OperatorFlagResult);
+        return c.json({
+          result: result.kind,
+          flag: result.flag,
+          enabled: result.enabled,
+          ...(result.warning ? { warning: result.warning } : {}),
+        } satisfies OperatorFlagResult);
     }
   });
   return app;

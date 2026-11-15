@@ -185,6 +185,20 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
+    "an old-form line in channels/telegram/ fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/channels/telegram/__log-fixture.ts",
+          "log.info(`x ${y}`);",
+          "../../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
     "another file of channels stays at warn",
     async () => {
       expect(

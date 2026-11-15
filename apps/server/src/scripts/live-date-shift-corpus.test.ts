@@ -1,7 +1,7 @@
 import { shiftDatesInText, type CaseText } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { corpusDir, readScenario, readTexts } from "./sim-files";
+import { corpusDir, readScenario, readTexts } from "../platform/sim-files";
 
 // The frozen lab-01 week is only read. The regexes here are the test's own, written apart from the function's.
 const OFFSET = -364;

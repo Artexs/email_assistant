@@ -9,10 +9,10 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { gateFileName, gateFileSchema } from "../modules/triage";
 import { loadConfig } from "../platform/config";
 import { type LlmCall, type LlmClient, LlmSoftError } from "../platform/llm";
+import { readSlots, writeJson } from "../platform/sim-files";
 
 import { parseEvalArgs } from "./eval-args";
 import { runSim } from "./eval-sim";
-import { readSlots, writeJson } from "./sim-files";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
 // The gate file rule of D27 at the runSim level: a gate file comes only from a COMPLETE holdout run at the default

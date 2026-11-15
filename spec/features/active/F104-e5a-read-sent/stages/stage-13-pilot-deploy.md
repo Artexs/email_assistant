@@ -49,3 +49,9 @@ After the next `mail.sync` run (every `MAIL_SYNC_EVERY_MIN`, default 2 minutes):
 
 - Behaviour wrong, server healthy: `org:flag --org-id <pilot org> --flag sent_sync --off`. The pass and the notice stop at once; the card says "paused", and the owner can still turn the switch off (that deletes the rows); else retention clears text and headers.
 - Server broken: `docker tag ea-server:pre-f104 ea-server && $C up -d --wait` with the rollback commit checked out. Keep the migrations: the old code ignores the new tables, the trigger and the extra CHECK member.
+
+## Carry-over from stage 06 review (time budget)
+
+- The Sent pass has no wall-clock budget. imapflow keeps its default 5-minute socket inactivity timeout, so a slow server can hold one mailbox for a long time (30-day header fetch, then up to 100 text fetches of up to 5 MB in sequence); the scheduler skips the next ticks while a run is active (`job_skipped`, debug). Before the pilot switch goes on: add a time budget per pass (or a short socket timeout for the Sent stage only) and a test, and read the pilot's run times.
+- In `initial` and `rescan` mode a pass that fails on every run repeats the full 30-day SEARCH every tick (2 minutes): check this in the pilot logs. Each enabled mailbox logs one `sent_sync_done` line per tick.
+- Pilot facts still unproven: the Interia Sent folder name (`Wysłane`, modified UTF-7), Gmail `[Gmail]/Sent Mail`, PEEK on real servers, the size of a real Sent folder.

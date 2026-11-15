@@ -21,11 +21,6 @@ import {
 } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
 import { type Config, ConfigError, llmRoleTable, loadConfig } from "../platform/config";
-import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
-
-import { type EvalOptions, evalUsage } from "./eval-args";
-import { classifierExtrasOfCase } from "./eval-extras";
-import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -36,9 +31,14 @@ import {
   monthSpend,
   readLedger,
   runCap,
-} from "./eval-ledger";
+} from "../platform/eval-ledger";
+import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
+import { corpusDir, readScenario } from "../platform/sim-files";
+
+import { type EvalOptions, evalUsage } from "./eval-args";
+import { classifierExtrasOfCase } from "./eval-extras";
+import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
-import { corpusDir, readScenario } from "./sim-files";
 
 const cli = createCliOutput("eval");
 

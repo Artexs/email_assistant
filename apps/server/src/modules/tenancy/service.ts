@@ -243,9 +243,12 @@ export interface SetOrgFeatureInput {
   now: Date;
 }
 
+// F119 N12: `sso_sign_in` is off and the organization requires SSO, so only the break-glass owner can sign in. The write still applies.
+export type SetOrgFeatureWarning = "sso_required_on";
+
 export type SetOrgFeatureResult =
-  | { kind: "changed"; flag: FeatureKey; before: boolean | null; enabled: boolean } // before null = there was no row
-  | { kind: "unchanged"; flag: FeatureKey; enabled: boolean }
+  | { kind: "changed"; flag: FeatureKey; before: boolean | null; enabled: boolean; warning?: SetOrgFeatureWarning } // before null = there was no row
+  | { kind: "unchanged"; flag: FeatureKey; enabled: boolean; warning?: SetOrgFeatureWarning }
   | { kind: "not_found" }
   | { kind: "unknown_flag" };
 
@@ -260,9 +263,12 @@ export async function setOrgFeature(
   if (!isFeatureKey(flag)) return { kind: "unknown_flag" };
 
   const run = async (trx: Transaction<DB>): Promise<SetOrgFeatureResult> => {
-    if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };
+    const org = await lockOrganization(trx, ctx);
+    if (!org) return { kind: "not_found" };
+    const warning: { warning?: SetOrgFeatureWarning } =
+      flag === "sso_sign_in" && !enabled && org.sso_required ? { warning: "sso_required_on" } : {};
     const row = await getOrgFeature(trx, ctx, flag);
-    if (row === enabled) return { kind: "unchanged", flag, enabled };
+    if (row === enabled) return { kind: "unchanged", flag, enabled, ...warning };
 
     await upsertOrgFeature(trx, ctx, { flag, enabled, setBy: input.actor, setAt: input.now });
     await recordAudit(trx, ctx, {
@@ -272,7 +278,7 @@ export async function setOrgFeature(
       at: input.now,
     });
     log.info(`organization ${ctx.orgId} flag ${flag} ${enabled ? "on" : "off"} by ${input.actor}`);
-    return { kind: "changed", flag, before: row ?? null, enabled };
+    return { kind: "changed", flag, before: row ?? null, enabled, ...warning };
   };
 
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
