@@ -7,7 +7,7 @@ import { anySsoUsable, configureFeatures, upsertOrgFeature } from "../../src/mod
 import { setLogLevel } from "../../src/platform/log";
 
 import { testDb } from "./helpers";
-import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // F119 stage 11 (step 11.1, D14, Q6): GET /api/sign-in-options is public and answers one bit for every caller.
 const db = testDb();
@@ -115,8 +115,10 @@ describe("GET /api/sign-in-options", () => {
         body: { error: "not_found" },
       });
     }
-    // No session: the same guard as for any unknown path under /api.
-    expect((await app(read).request("/api/sign-in-options", { method: "POST" })).status).toBe(401);
+    // No session, a trusted Origin (a bare POST would stop at the origin check with 403): the session guard answers
+    // 401, as for any unknown path under /api.
+    const anon = await app(read).request("/api/sign-in-options", { method: "POST", headers: { origin: TEST_ORIGIN } });
+    expect(anon.status).toBe(401);
     expect(reads).toBe(0);
   });
 
