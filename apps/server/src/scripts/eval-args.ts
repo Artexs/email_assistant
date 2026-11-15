@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { simParts } from "@ea/core";
+import { type SentPart, sentParts, type SimPart, simParts } from "@ea/core";
 import { z } from "zod";
 
 import {
@@ -40,6 +40,10 @@ export const evalUsage = [
   "                    [--escalate [--escalation-model <id>] [--escalation-reasoning-effort <value>] (a second call by the escalation role for person mail answered info, notification, spam or unsure; the report shows the cascade)]",
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
   "       bun run eval --sim <scenario> --part dev|holdout|week --suspicious [--out <file.md>]   (suspicious-mail rules, no LLM)",
+  "       bun run eval --sim <scenario> --part sent-dev|sent-holdout --extractor [--provider …] [--model …] [--reasoning-effort …]",
+  `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
+  "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
+  "                    (the open-loops extractor on the sent-mail bank; the part sent-holdout needs --extractor, and --extractor needs a sent part)",
 ].join("\n");
 
 const optionsSchema = z.object({
@@ -67,13 +71,15 @@ const optionsSchema = z.object({
     .string()
     .regex(/^[a-z0-9][a-z0-9-]*$/)
     .optional(),
-  part: z.enum(simParts).optional(),
+  // `dev|holdout|week` of the incoming bank, or a part of the sent bank (only with `--extractor`).
+  part: z.enum([...simParts, ...sentParts]).optional(),
   concurrency: z.coerce.number().int().min(1).max(64).optional(),
   rpm: z.coerce.number().positive().optional(),
   "budget-usd": z.coerce.number().positive().optional(),
   "spend-ledger": z.string().min(1).optional(),
   "fresh-lock": z.boolean().default(false),
   suspicious: z.boolean().default(false),
+  extractor: z.boolean().default(false),
   "prompt-version": z.enum(classifierVersionIds as [ClassifierVersion, ...ClassifierVersion[]]).optional(),
   "prompt-parts": z.string().min(1).optional(),
   escalate: z.boolean().default(false),
@@ -85,7 +91,11 @@ const optionsSchema = z.object({
   "judge-rpm": z.coerce.number().positive().optional(),
 });
 
-export type EvalOptions = z.infer<typeof optionsSchema> & {
+export type EvalOptions = Omit<z.infer<typeof optionsSchema>, "part"> & {
+  // The part of the incoming bank. Undefined in an extractor run.
+  part?: SimPart;
+  // The part of the sent bank. Set only in an extractor run.
+  sentPart?: SentPart;
   // The old command runs one case at a time and keeps the configured rpm (`rpm` undefined).
   concurrency: number;
   budgetUsd: number;
@@ -109,7 +119,26 @@ const casesOnly = [
 ] as const;
 // A sim run takes its set and state file from the corpus, and has no DB.
 const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly] as const;
+// The options of `--sim <scenario> --part sent-dev|sent-holdout --extractor`.
+const extractorAllowed = new Set<string>([
+  "sim",
+  "part",
+  "extractor",
+  "provider",
+  "model",
+  "reasoning-effort",
+  "concurrency",
+  "rpm",
+  "budget-usd",
+  "spend-ledger",
+  "fresh",
+  "fresh-lock",
+  "retries",
+  "limit",
+  "out",
+]);
 const simOnly = [
+  "extractor",
   "part",
   "suspicious",
   "concurrency",
@@ -127,6 +156,8 @@ const simOnly = [
   "escalation-model",
   "escalation-reasoning-effort",
 ] as const;
+
+const isSentPart = (value: string): value is SentPart => (sentParts as readonly string[]).includes(value);
 
 // `none` is attachments only. Undefined means a usage error: an empty or unknown name, or `none` with a name.
 function parsePromptParts(text: string): ClassifierV3Part[] | undefined {
@@ -184,6 +215,7 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "spend-ledger": { type: "string" },
         "fresh-lock": { type: "boolean" },
         suspicious: { type: "boolean" },
+        extractor: { type: "boolean" },
         escalate: { type: "boolean" },
         "escalation-model": { type: "string" },
         "escalation-reasoning-effort": { type: "string" },
@@ -198,7 +230,13 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
     });
     const parsed = optionsSchema.safeParse(values);
     if (!parsed.success) return undefined;
-    const data = parsed.data;
+    const rawPart = parsed.data.part;
+    const sentPart = rawPart !== undefined && isSentPart(rawPart) ? rawPart : undefined;
+    const data = {
+      ...parsed.data,
+      part: sentPart === undefined ? (rawPart as SimPart | undefined) : undefined,
+      sentPart,
+    };
     if (data.gap) {
       const allowed = new Set<string>(["gap", "out", ...gapOnly]);
       if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
@@ -206,6 +244,18 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
     }
     if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
+    if (data.extractor || data.sentPart !== undefined) {
+      // A sent part runs only with --extractor and the other way round; the classifier options mean nothing here.
+      if (data.sim === undefined || data.sentPart === undefined || !data.extractor) return undefined;
+      if (Object.keys(values).some((key) => !extractorAllowed.has(key))) return undefined;
+      return {
+        ...data,
+        prompt: productionClassifierChoice(),
+        concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,
+        rpm: data.rpm ?? SIM_DEFAULT_RPM,
+        budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
+      };
+    }
     if (data.suspicious) {
       // The rules need no provider, model, judge or spend option: any other option is a usage error.
       const allowed = new Set<string>(["sim", "part", "suspicious", "out"]);
