@@ -39,3 +39,7 @@ T1–T9 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s08`).
 ## Out of scope
 
 Any job (12, 13, 15), the follow-up kind (10).
+
+## Carry-over from stage 07 review
+
+Read `review-7.md`. `clearLoopTexts` also clears `subject` (and the erase clears `subject` with `text`); decide whether an open loop keeps its subject copy after the Sent subject clears at 90 days (only closed loops are cleared today). The retention hook is `apps/server/src/retention.ts` (model: F104 `clearSentBodies` and `clearSentHeaders`).

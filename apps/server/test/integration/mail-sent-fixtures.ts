@@ -106,6 +106,7 @@ export async function rowsOf(trx: Transaction<DB>, org: Org) {
     .where("org_id", "=", org.ctx.orgId)
     .where("mailbox_id", "=", org.mailboxId)
     .orderBy("uid")
+    .orderBy("path")
     .execute();
 }
 
