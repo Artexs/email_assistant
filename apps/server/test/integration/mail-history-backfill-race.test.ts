@@ -151,25 +151,54 @@ for (const [role, conn] of [
       });
     });
 
-    test("a history run and a regular sync at once: no mail twice, whatever order they take; a second history run completes the store", async () => {
+    test("a history run and a regular sync read one shared server: live mail above the cursor ends pending, whatever order they take", async () => {
       await withCommittedMailbox(conn, async (box, newFake) => {
-        const live = newFake();
-        live.deliver("INBOX", seed(100), { internalDate: ago(1_000) });
+        // One server for both runs: the live mail (UID above the cursor) is visible to the history run too.
+        const server = newFake();
+        server.deliver("INBOX", seed(100), { internalDate: ago(1_000) });
         const settled = await Promise.allSettled([
-          backfillInbox(depsOf(conn, newFake(), 1), box, box.mailboxId, { since, purpose: "history" }),
-          syncMailbox(depsOf(conn, live), box, box.mailboxId),
+          backfillInbox(depsOf(conn, server, 1), box, box.mailboxId, { since, purpose: "history" }),
+          syncMailbox(depsOf(conn, server), box, box.mailboxId),
         ]);
         for (const result of settled) {
           // The only error that may come is the soft one: the other run moved the cursor in the window between plan and apply.
           if (result.status === "rejected") expect(result.reason).toBeInstanceOf(CursorMovedError);
         }
-        await backfillInbox(depsOf(conn, newFake(), 1), box, box.mailboxId, { since, purpose: "history" });
+        // A run that lost the race is repeated, as the job does; the order of the repeats does not matter either.
+        await backfillInbox(depsOf(conn, server, 1), box, box.mailboxId, { since, purpose: "history" });
+        await syncMailbox(depsOf(conn, server), box, box.mailboxId);
         const after = await counts(conn, box.mailboxId);
         expect(after.distinct).toBe(after.emails.length);
         expect(after.headers).toBe(after.emails.length);
         expect(after.emails.filter((row) => row.skip_reason === "history_check")).toHaveLength(MAILS);
-        expect(after.emails.filter((row) => row.status === "pending").length).toBeGreaterThanOrEqual(1);
+        const live = after.emails.filter((row) => row.dedup_key.includes("<r100@x.test>"));
+        expect(live).toHaveLength(1);
+        expect(live[0]).toMatchObject({ status: "pending", skip_reason: null });
       });
+    });
+
+    test("a history run after the sync, and a sync after the history run, both leave live mail pending", async () => {
+      for (const order of ["history first", "sync first"] as const) {
+        await withCommittedMailbox(conn, async (box, newFake) => {
+          const server = newFake();
+          server.deliver("INBOX", seed(100), { internalDate: ago(1_000) });
+          const history = () =>
+            backfillInbox(depsOf(conn, server, 1), box, box.mailboxId, { since, purpose: "history" });
+          const sync = () => syncMailbox(depsOf(conn, server), box, box.mailboxId);
+          if (order === "history first") {
+            await history();
+            await sync();
+          } else {
+            await sync();
+            await history();
+          }
+          const after = await counts(conn, box.mailboxId);
+          const live = after.emails.filter((row) => row.dedup_key.includes("<r100@x.test>"));
+          expect(live).toHaveLength(1);
+          expect(live[0]).toMatchObject({ status: "pending", skip_reason: null });
+          expect(after.emails.filter((row) => row.skip_reason === "history_check")).toHaveLength(MAILS);
+        });
+      }
     });
 
     test("a mail that an operator backfill stores between the plan and the apply of a history run keeps its status", async () => {

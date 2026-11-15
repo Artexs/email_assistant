@@ -21,7 +21,7 @@ import {
 } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { protocolDisabled } from "../../src/modules/mail/oauth/login";
-import { insertCredentials } from "../../src/modules/mail/repo";
+import { insertCredentials, updateCursor } from "../../src/modules/mail/repo";
 import { buildDigestMessage } from "../../src/modules/reports";
 import { createLlmPause, createTriageJob } from "../../src/modules/triage";
 import { requeueBackfillWindow } from "../../src/modules/triage";
@@ -352,6 +352,133 @@ describe("history purpose: backfillInbox", () => {
   });
 });
 
+describe("history purpose: only mail of before the connect", () => {
+  test("mail above the cursor is left to the regular sync, which stores it pending", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      // A live mail that arrived after the last sync tick: UID 5, the cursor is 4.
+      s.fake.deliver("INBOX", seed(9), { internalDate: ago(10 * 60_000) });
+      const outcome = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, {
+        since: sinceOf(),
+        purpose: "history",
+      });
+      expect(outcome).toMatchObject({ kind: "done", result: { fetched: 3, stored: 2 } });
+      expect((await rowsOf(trx, s.mailboxId)).map((row) => row.message_id_header)).not.toContain("<h9@x.test>");
+
+      const next = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(next).toMatchObject({ stored: 1, uidUpdated: 0 });
+      expect(byId(await rowsOf(trx, s.mailboxId), 9)).toMatchObject({ status: "pending", skip_reason: null });
+    });
+  });
+
+  test("a mail at the cursor is history mail", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      const outcome = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, {
+        since: sinceOf(),
+        purpose: "history",
+      });
+      // h4 sits at UID 4 = the cursor and is stored already; h2 and h3 are below it.
+      expect(outcome).toMatchObject({ kind: "done", result: { fetched: 3 } });
+    });
+  });
+
+  test("the purpose backfill still stores mail above the cursor", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      s.fake.deliver("INBOX", seed(9), { internalDate: ago(10 * 60_000) });
+      const result = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: sinceOf() });
+      expect(result.stored).toBe(3);
+    });
+  });
+
+  test("a history run drops the returned and relocated writes: a moved row keeps its folder, UID and returned_at", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      // The operator backfill stores h2 and h3; then h2 looks system-moved (it sits in AI/Info, its source is INBOX) and h3 looks
+      // user-moved (it sits in Oferty, its own source folder). Both mails are in INBOX on the server: the user moved them back.
+      await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: sinceOf() });
+      const moveRow = (n: number, folder: string, sourceFolder: string) =>
+        trx
+          .updateTable("emails")
+          .set({ folder, source_folder: sourceFolder })
+          .where("mailbox_id", "=", s.mailboxId)
+          .where("message_id_header", "=", `<h${n}@x.test>`)
+          .execute();
+      await moveRow(2, "AI/Info", "INBOX");
+      await moveRow(3, "Oferty", "Oferty");
+      const before = await rowsOf(trx, s.mailboxId);
+
+      const outcome = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, {
+        since: sinceOf(),
+        purpose: "history",
+      });
+      expect(outcome).toMatchObject({ kind: "done", result: { stored: 0, returned: 0, relocated: 0, uidUpdated: 0 } });
+      const after = await rowsOf(trx, s.mailboxId);
+      expect(JSON.stringify(after)).toBe(JSON.stringify(before));
+      expect(byId(after, 2)).toMatchObject({ folder: "AI/Info", returned_at: null });
+      expect(byId(after, 3)).toMatchObject({ folder: "Oferty" });
+
+      // The same setup does move both rows for the operator backfill: the history run left them alone on purpose.
+      const control = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: sinceOf() });
+      expect(control).toMatchObject({ returned: 1, relocated: 1 });
+    });
+  });
+
+  test("no triage_results row exists for a history mail, also after the triage worker ran", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const s = await syncedMailbox(trx);
+      await insertDefaultSettings(trx, s.ctx, s.mailboxId);
+      await triagedH4(trx, s.mailboxId);
+      await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: sinceOf(), purpose: "history" });
+      const llm = {
+        modelOf: () => "fake-model",
+        endpointOf: () => "standard",
+        async generate(req) {
+          return {
+            data: req.schema.parse({
+              category: "info",
+              confidence: 0.9,
+              reason_code: "newsletter",
+              reason: "a newsletter",
+              summary: "short",
+              fields: { due_date: null, language: "pl", delegate_id: null, task: null, clarification: null },
+            }),
+            usage: {
+              role: req.role,
+              promptVersion: req.promptVersion,
+              model: "fake-model",
+              tokensIn: 1,
+              tokensOut: 1,
+              latencyMs: 1,
+              endpoint: "standard",
+            },
+          };
+        },
+      } as LlmClient;
+      await createTriageJob({
+        db: trx,
+        llm,
+        pause: createLlmPause(),
+        scope: { kind: "all" },
+        batchSize: 10,
+        testMail: NO_TEST_SENDERS,
+        dailyCap: 1000,
+        now: () => NOW,
+      }).run();
+      const rows = await rowsOf(trx, s.mailboxId);
+      const historyIds = [2, 3].map((n) => byId(rows, n).id);
+      const results = await trx
+        .selectFrom("triage_results")
+        .select("email_id")
+        .where("email_id", "in", historyIds)
+        .execute();
+      expect(results).toEqual([]);
+    });
+  });
+});
+
 describe("history purpose: refusals are values", () => {
   const refused = (reason: BackfillRefusal): HistoryBackfillOutcome => ({ kind: "refused", reason });
 
@@ -644,6 +771,14 @@ describe("history purpose: backfillMailbox opens through openMailboxProvider", (
       const emailId = await insertTestEmail(trx, s.ctx, s.mailboxId);
       const draftId = await insertAction(trx, s.ctx, emailId, { type: "create_draft", status: "ready" });
       s.fake.deliver("INBOX", { ...seed(6), headers: { "X-EA-Action-Id": draftId } }, { internalDate: ago(HOUR_MS) });
+      // The draft is mail of before the connect: the sync cursor has passed it (a history run reads only up to the cursor).
+      await updateCursor(
+        trx,
+        s.ctx,
+        s.mailboxId,
+        { uidValidity: UID_VALIDITY, lastUid: 4 },
+        { uidValidity: UID_VALIDITY, lastUid: 5 }
+      );
       const outcome = await backfillInbox(
         {
           ...deps(trx, s.fake),

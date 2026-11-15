@@ -855,7 +855,10 @@ export async function backfillInbox(
     throw new SoftError("UIDVALIDITY changed: wait for the regular sync to rescan, then run the backfill again");
   }
 
-  const kept = await fetchSince(deps.provider, INBOX, opts.since);
+  const fetched = await fetchSince(deps.provider, INBOX, opts.since);
+  // The history check keeps only mail at or below the cursor, the mail of before the connect. Mail above it is live mail: the regular
+  // sync stores it `pending` and triages it, and it would find a history row there and only update its UID.
+  const kept = history ? fetched.filter((meta) => meta.uid <= (folder.last_uid ?? 0)) : fetched;
   const result: SyncResult = { ...emptyResult("inbox", "backfill"), fetched: kept.length };
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
