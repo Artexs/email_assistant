@@ -929,6 +929,7 @@ export const en = {
   dgn_cancelled: "Delegation cancelled: {name}.",
   dgn_cancel_sending: "The mail is being sent now.",
   dgn_gone: "This delegation does not exist any more.",
+  dgn_moved: "This delegation changed and is no longer on this tab.",
   dgn_cancel_title: "Cancel this delegation?",
   dgn_cancel_text: "Delegate: {name}. It cannot be undone.",
   dgn_cancel_confirm: "Cancel delegation",

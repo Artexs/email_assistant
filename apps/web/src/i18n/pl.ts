@@ -945,6 +945,7 @@ export const pl: Record<TextKey, string> = {
   dgn_cancelled: "Anulowano zlecenie: {name}.",
   dgn_cancel_sending: "Wiadomość jest właśnie wysyłana.",
   dgn_gone: "Tego zlecenia już nie ma.",
+  dgn_moved: "To zlecenie zmieniło stan i nie jest już na tej karcie.",
   dgn_cancel_title: "Anulować to zlecenie?",
   dgn_cancel_text: "Wykonawca: {name}. Nie można tego cofnąć.",
   dgn_cancel_confirm: "Anuluj zlecenie",

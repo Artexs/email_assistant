@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { E2E_DELEGATIONS } from "../../../server/src/scripts/e2e-seed-args";
@@ -384,6 +386,101 @@ test("T15: Show more loads the next page with the cursor and puts the focus on t
 });
 
 const rowOf0 = (page: Page, text: string) => listOf(page).getByRole("listitem").filter({ hasText: text });
+
+// The state of a delegation changes "elsewhere" (the delegate answers, another owner closes it): the test writes it into the database with the
+// migrator role, then makes the page reload. The 30 s timer would do the same; a `visibilitychange` event runs the reload at once.
+function sql(query: string): string {
+  const url = process.env.E2E_MIGRATOR_DATABASE_URL ?? "";
+  return execFileSync("psql", [url, "-tA", "-c", query], { encoding: "utf8" }).trim();
+}
+function setStatus(key: Key, status: "overdue" | "answered" | "done"): void {
+  const answered = status === "answered" ? "now()" : "null";
+  sql(
+    `update delegations d set status='${status}', answered_at=${answered} from delegates g where g.id=d.delegate_id and d.org_id='${org().orgId}' and g.name='${nameOf(key)}'`
+  );
+}
+async function reloadNow(page: Page): Promise<void> {
+  const reloaded = page.waitForResponse((response) => response.url().includes("/api/delegations?"));
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await reloaded;
+}
+const activeTag = (page: Page) => page.evaluate(() => document.activeElement?.tagName ?? "null");
+
+test("T17: the delegation leaves the tab while the cancel question is open: the question stays; Confirm says it is closed and the status line has the focus", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, org().owner);
+  await page.goto("/delegations?filter=overdue");
+  await cancelButton(page, "limit").click();
+  const dialog = cancelDialog(page);
+  await expect(dialog).toBeVisible();
+  try {
+    setStatus("limit", "answered");
+    await reloadNow(page);
+    await expect(rowOf(page, "limit")).toHaveCount(0);
+    // The reload dropped the row; the question stays, with its focus.
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: en.dgn_keep })).toBeFocused();
+    await dialog.getByRole("button", { name: en.dgn_cancel_confirm }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(status(page)).toContainText(en.dgn_closed);
+    await expect(status(page)).toBeFocused();
+  } finally {
+    setStatus("limit", "overdue");
+  }
+});
+
+test("T18: the user closes the cancel question after the row left: the focus is on the status line with a text, never on the page body", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, org().owner);
+  await page.goto("/delegations?filter=overdue");
+  await cancelButton(page, "limit").click();
+  const dialog = cancelDialog(page);
+  await expect(dialog).toBeVisible();
+  try {
+    setStatus("limit", "answered");
+    await reloadNow(page);
+    await expect(rowOf(page, "limit")).toHaveCount(0);
+    await dialog.getByRole("button", { name: en.dgn_keep }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(status(page)).toBeFocused();
+    await expect(status(page)).toContainText(en.dgn_moved);
+    expect(await activeTag(page)).not.toBe("BODY");
+  } finally {
+    setStatus("limit", "overdue");
+  }
+});
+
+test("T19: a reload removes the row whose button has the focus (Done, Remind now): the focus goes to the status line with a text, not to the page body", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, org().owner);
+  await page.goto("/delegations?filter=overdue");
+  const cases = [
+    ["limit", doneButton(page, "limit")],
+    ["inactive", remindButton(page, "inactive")],
+  ] as const;
+  for (const [key, button] of cases) {
+    await expect(rowOf(page, key)).toBeVisible();
+    await button.focus();
+    await expect(button).toBeFocused();
+    try {
+      setStatus(key, "done");
+      await reloadNow(page);
+      await expect(rowOf(page, key)).toHaveCount(0);
+      await expect(status(page)).toBeFocused();
+      await expect(status(page)).toContainText(en.dgn_moved);
+    } finally {
+      setStatus(key, "overdue");
+    }
+    // The next round starts from a loaded page with the row back.
+    await page.goto("/delegations?filter=overdue");
+  }
+});
 
 test("T10: every filter tab and the cancel question have no axe violation", async ({ context, page }) => {
   await startSession(context, page, org().owner);

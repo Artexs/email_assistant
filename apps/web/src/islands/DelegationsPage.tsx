@@ -62,7 +62,9 @@ function Delegations() {
   const [filter, selectFilter] = useDelegationFilter();
   const list = useDelegationList(filter);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
+  // The delegation of the open cancel question. It stays in state, not in the list: a reload that drops the row (the delegate answered, someone
+  // closed it) must not close the question. Confirm then gets 409 `not_open` and the status line says so.
+  const [confirmCancel, setConfirmCancel] = useState<DelegationItem | null>(null);
   // The reason that the server gave for Remind now, per delegation (`drafts_off` is not on the row). A new tab clears them.
   const [blocked, setBlocked] = useState<Record<string, RemindBlock>>({});
   const [loadingMore, setLoadingMore] = useState(false);
@@ -75,6 +77,27 @@ function Delegations() {
   useEffect(() => {
     if (statusTick > 0) statusRef.current?.focus();
   }, [statusTick]);
+  // A reload can remove the row whose button has the focus (the delegation moved to another tab): the browser then puts the focus on the
+  // page body. The line of the result gets it instead, with a text that says what happened. `focusedRow` is the row that holds the focus.
+  const focusedRow = useRef<string | null>(null);
+  useEffect(() => {
+    const onFocusIn = (event: FocusEvent) => {
+      const row = event.target instanceof Element ? event.target.closest("li[id^='delegation-row-']") : null;
+      focusedRow.current = row === null ? null : row.id.replace("delegation-row-", "");
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => document.removeEventListener("focusin", onFocusIn);
+  }, []);
+  const loaded = list.data;
+  useEffect(() => {
+    const id = focusedRow.current;
+    if (id === null || loaded === null || loaded.items.some((item) => item.id === id)) return;
+    focusedRow.current = null;
+    if (document.activeElement === null || document.activeElement === document.body) {
+      setNotice({ tone: "info", key: "dgn_moved" });
+      statusRef.current?.focus();
+    }
+  }, [loaded]);
   const focusStatus = () => setStatusTick((tick) => tick + 1);
 
   const changeFilter = (next: typeof filter) => {
@@ -99,8 +122,6 @@ function Delegations() {
   const writable = canWrite(me);
   const timeZone = me?.organization.timezone ?? "UTC";
   const items = list.data?.items ?? [];
-  const itemOf = (id: string | null): DelegationItem | undefined =>
-    id === null ? undefined : items.find((item) => item.id === id);
 
   const refresh = () => {
     list.reload();
@@ -121,7 +142,7 @@ function Delegations() {
   const run = (item: DelegationItem, action: DelegationAction) => {
     if (action === "cancel") {
       focusTarget.current = "row";
-      setConfirmCancel(item.id);
+      setConfirmCancel(item);
       return;
     }
     void flight(async () => {
@@ -179,9 +200,15 @@ function Delegations() {
     });
   };
 
+  // The row can be gone when the question closes (a reload dropped it): the status line takes the focus then, never the page body.
   const returnFocus = (id: string) => {
-    if (focusTarget.current === "status") statusRef.current?.focus();
-    else document.getElementById(cancelButtonId(id))?.focus();
+    const answered = focusTarget.current === "status";
+    const button = answered ? null : document.getElementById(cancelButtonId(id));
+    if (button !== null) button.focus();
+    else {
+      if (!answered) setNotice({ tone: "info", key: "dgn_moved" });
+      statusRef.current?.focus();
+    }
     focusTarget.current = "row";
   };
 
@@ -219,7 +246,7 @@ function Delegations() {
     );
   }
 
-  const cancelling = itemOf(confirmCancel);
+  const cancelling = confirmCancel;
   return (
     <div className="flex max-w-3xl flex-col gap-4">
       <DelegationTabs current="delegations" />
@@ -254,7 +281,7 @@ function Delegations() {
           {moreFailed && <p className="text-sm text-destructive">{t("dgn_more_error")}</p>}
         </div>
       )}
-      {cancelling !== undefined && (
+      {cancelling !== null && (
         <DelegationCancelDialog
           item={cancelling}
           onKeep={() => setConfirmCancel(null)}

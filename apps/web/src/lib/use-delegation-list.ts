@@ -26,16 +26,19 @@ export async function loadPages(filter: DelegationFilter, pages: number): Promis
   return { filter, items, next };
 }
 
+// A new tab starts at page 1 again: the pages that "Show more" loaded for the old tab must not make the new tab load that many pages.
+export function restartPages(pages: { current: number }, reload: () => void): void {
+  pages.current = 1;
+  reload();
+}
+
 // The list reloads every 30 s while the tab is visible and keeps the pages that the user loaded with "Show more". A new tab starts at
 // page 1.
 export function useDelegationList(filter: DelegationFilter) {
   const pages = useRef(1);
   const resource = useResource(() => loadPages(filter, pages.current));
   const { reload } = resource;
-  const restart = useCallback(() => {
-    pages.current = 1;
-    reload();
-  }, [reload]);
+  const restart = useCallback(() => restartPages(pages, reload), [reload]);
   useReloadOn(filter, restart);
   const data = resource.data !== null && resource.data.filter === filter ? resource.data : null;
 
