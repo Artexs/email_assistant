@@ -60,3 +60,11 @@ Scoring (stages 12–13) and demo reset (stage 14).
 ## Carry-over from the stage 03 review (N6)
 
 `deploy/compose.sim.yaml` runs the `lab` service as `bun run lab:env-check && exec bun run lab serve`. `bun run` stays PID 1 and the lab is its child, so a stop signal may not reach the lab. When this stage builds the lab script, change that command to `exec bun apps/server/src/scripts/<lab script>.ts serve`. `apps/server/src/scripts/sim-compose-rules.ts` and its test hold the old command text: change them together.
+
+## Carry-over from the stage 07 review (N1, N2, N5)
+
+Details: [`../review-7.md`](../review-7.md). The `LabMailClient` type is in `notes/2026-11-15-f113-s07-mail-client-for-s08.md`.
+
+- **N1 (client host).** Build the client with `createGreenMailClient({ host: LAB_MAIL_HOST, imapPort: LAB_IMAP_PORT, smtpPort: LAB_SMTP_PORT })` from `modules/lab/seed.ts`. The client already throws `host_refused` for a host that is not loopback. Add a test that the serve wiring uses these constants.
+- **N2 (one writer).** `runInjectorTick` has no lock. `serve` must take an `O_EXCL` lock file (for example `<LAB_STATE_DIR>/locks/serve.lock`, freed on exit, a stale lock taken over as `state.ts` does for the org lock) before the first tick, so a second `lab serve` (for example `docker compose run lab serve`) cannot inject twice. Test: a second `serve` on the same state dir exits 1 and writes no event.
+- **N5 (SDK import rule).** Add a `restrictImports` pattern in `eslint.config.js` for `imapflow`, `mailparser` and `nodemailer` on `apps/server/src/**`, with these files excluded: `modules/mail/imap/**`, `modules/lab/mail-client.ts`, `platform/auth-mail.ts` and `*.test.ts`. Run `bun run lint` to find other imports first. If this stage is full, stage 16 does it.

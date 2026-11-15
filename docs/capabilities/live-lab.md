@@ -33,28 +33,28 @@ The live lab plays the frozen week of made-up mail (`lab-01`) through the real p
    3. **Late.** A slot that goes out more than 120 s after its `at` gets `lateBySec` (now − at) in its `inject_done`. A slot due while the loop was down goes out at once.
    4. **Errors and skip.** A send or search error writes `inject_error` (slot id, code) and no `inject_done`; the next tick tries again. The fifth `inject_error` of one slot (counted from the events, so a restart keeps the count) writes `skip` with code `smtp_failed` or `append_failed`. A skipped slot is never selected again. The scorer counts skips. A skipped parent still gives its Message-ID to its replies (the id comes from the plan, not from the delivery).
    5. **Budget.** When the run spend is at or above the run cap, the tick sends nothing and returns `stopped: "budget"`. It writes no `stopped` event: the serve loop calls `stopRun`, so the ledger line is written once.
-   6. **Mail client.** `createGreenMailClient` (SMTP by nodemailer, IMAP by ImapFlow, no logger) talks to the sim GreenMail only. Its errors are `LabMailError` with a code (`smtp_failed`, `imap_connect`, `imap_list`, `imap_search`, `imap_append`, `imap_fetch`) and never the server text or the mail text. The folder search uses `SEARCH HEADER Message-ID`, which is fine on GreenMail and is not a product path.
+   6. **Mail client.** `createGreenMailClient` (SMTP by nodemailer, IMAP by ImapFlow, no logger) talks to the sim GreenMail only. Its errors are `LabMailError` with a code (`smtp_failed`, `imap_connect`, `host_refused`, `imap_search`, `imap_append`, `imap_fetch`) and never the server text or the mail text. A host that is not loopback (`127.0.0.1`, `localhost`, `::1`) makes `createGreenMailClient` throw `host_refused` before any connection. The folder search uses `SEARCH HEADER Message-ID`, which is fine on GreenMail and is not a product path.
 9. **Status.** One line per run: org, cap, planned, injected, late, replies, taps, skips, spend and the stop reason. The serve heartbeat comes with the serve loop.
 10. **Executive rules.** `executiveDecision` (core) says which button the scripted executive presses on a Telegram card. First match wins: no lab truth for the mail = no press (`unmapped`); a delegation draft to the expected delegate (case-insensitive) = `ap:`; a delegation draft for a mail that is not a delegation = `ar:` with reason "not needed"; a delegation draft to another person = `ar:` with reason "wrong person"; a clarification draft = `ap:` only when the truth expects one, else `ar:` with "not needed"; a reason card = the planned reason `rw:p` or `rw:n` (none planned = no press, `no_rule`); a reminder set = `as:`; a failed send = `ag:` once; a feedback card that reports a move of an urgent, needs-reply or delegation mail = `fu:` (Undo). No rule presses a relabel, edit, check, review, `gw:`, `dd:` or `mk:` button. An approval card with no read draft gets no press. A reject edits the approval message in place, so the reason buttons come on the same message id; `cardsOf` splits one message into one card per id in its buttons (a digest holds many mails). `executiveTapAt` gives the tap time: Warsaw weekdays 08:00-18:00 and weekends 10:00-11:00, the card time or the next window start plus 5 to 90 minutes (seeded); the longest gap is 23 h, inside the 48 h approval time. The driver (stage 10) reads the fake Telegram and the DB.
 
 ## Entry points
 
-| Kind     | Name                                                                                   | Where                                      |
-| -------- | -------------------------------------------------------------------------------------- | ------------------------------------------ |
-| CLI      | `bun run lab seed`, `start`, `status`, `stop` (the other commands exit 1: `not built`) | `apps/server/src/scripts/lab.ts`           |
-| CLI      | argument parser and the 10 usage lines                                                 | `apps/server/src/scripts/lab-args.ts`      |
-| function | command dispatch with the env guard                                                    | `apps/server/src/scripts/lab-run.ts`       |
-| function | `startLabRun`, `stopLabRun`, `writeRunLedgerLine`                                      | `apps/server/src/modules/lab/start.ts`     |
-| function | `seedLabOrg`, `LAB_TARGETS`, `LAB_FLAGS_ON`, `LAB_FLAGS_OFF`                           | `apps/server/src/modules/lab/seed.ts`      |
-| function | `createFakeTgClient` (HTTP client of the fake's `/_fake/*` routes)                     | `apps/server/src/modules/lab/fake-tg.ts`   |
-| function | `storeRunUrgencyProfile`                                                               | `apps/server/src/modules/lab/urgency.ts`   |
-| function | `orgHasMail` (the fresh-org check; counts the mail rows)                               | `apps/server/src/modules/lab/org-mail.ts`  |
-| function | `runSpend`                                                                             | `apps/server/src/modules/lab/run-spend.ts` |
-| function | `runInjectorTick`                                                              | `apps/server/src/modules/lab/injector.ts`    |
-| function | `createGreenMailClient` and `LabMailClient` (stages 08 and 14 reuse it)        | `apps/server/src/modules/lab/mail-client.ts` |
-| function | run state, locks and `capFor`                                                          | `apps/server/src/modules/lab/state.ts`     |
-| function | `checkSimEnv`, `planLiveRun`                                                           | `packages/core/src/sim/live/env-guard.ts`  |
-| function | `executiveDecision`, `executiveTapAt`, `cardsOf`                                       | `packages/core/src/sim/live/executive.ts`  |
+| Kind     | Name                                                                                   | Where                                        |
+| -------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
+| CLI      | `bun run lab seed`, `start`, `status`, `stop` (the other commands exit 1: `not built`) | `apps/server/src/scripts/lab.ts`             |
+| CLI      | argument parser and the 10 usage lines                                                 | `apps/server/src/scripts/lab-args.ts`        |
+| function | command dispatch with the env guard                                                    | `apps/server/src/scripts/lab-run.ts`         |
+| function | `startLabRun`, `stopLabRun`, `writeRunLedgerLine`                                      | `apps/server/src/modules/lab/start.ts`       |
+| function | `seedLabOrg`, `LAB_TARGETS`, `LAB_FLAGS_ON`, `LAB_FLAGS_OFF`                           | `apps/server/src/modules/lab/seed.ts`        |
+| function | `createFakeTgClient` (HTTP client of the fake's `/_fake/*` routes)                     | `apps/server/src/modules/lab/fake-tg.ts`     |
+| function | `storeRunUrgencyProfile`                                                               | `apps/server/src/modules/lab/urgency.ts`     |
+| function | `orgHasMail` (the fresh-org check; counts the mail rows)                               | `apps/server/src/modules/lab/org-mail.ts`    |
+| function | `runSpend`                                                                             | `apps/server/src/modules/lab/run-spend.ts`   |
+| function | `runInjectorTick`                                                                      | `apps/server/src/modules/lab/injector.ts`    |
+| function | `createGreenMailClient` and `LabMailClient` (stages 08 and 14 reuse it)                | `apps/server/src/modules/lab/mail-client.ts` |
+| function | run state, locks and `capFor`                                                          | `apps/server/src/modules/lab/state.ts`       |
+| function | `checkSimEnv`, `planLiveRun`                                                           | `packages/core/src/sim/live/env-guard.ts`    |
+| function | `executiveDecision`, `executiveTapAt`, `cardsOf`                                       | `packages/core/src/sim/live/executive.ts`    |
 
 ## Data
 

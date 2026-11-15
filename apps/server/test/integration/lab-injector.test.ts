@@ -406,6 +406,38 @@ describe("lab injector (stage 07)", () => {
     expect(mail.calls.smtp).toBe(0);
   });
 
+  test("9: with two seeded orgs the run on `demo` delivers to the demo mailbox and nothing to the lab mailbox", async () => {
+    fixture = fixtureOf(randomUUID().slice(0, 8));
+    const labAddress = `lab-${randomUUID().slice(0, 8)}@localhost`;
+    state = open(dir);
+    state.writeOrgs({
+      // `lab` comes first in the file: a read of the first org instead of the run org would deliver there.
+      lab: { orgId: randomUUID(), mailboxId: randomUUID(), address: labAddress, chatId: 1 },
+      demo: { orgId: randomUUID(), mailboxId: randomUUID(), address: fixture.address, chatId: 2 },
+    });
+    expect(state.startRun({ plan: fixture.plan, org: "demo", capUsd: 5 })).toBe("ok");
+    clock = minutes(4);
+    expect((await runInjectorTick(deps(real), RUN)).injected).toBe(4);
+    const labFolders = await allFolders(labAddress);
+    expect(Object.values(labFolders).reduce((sum, count) => sum + count, 0)).toBe(0);
+    expect((await allFolders(fixture.address)).INBOX).toBe(3);
+  });
+
+  test("a client for a host that is not loopback is refused before any connection", () => {
+    for (const badHost of ["mail.example.com", "10.0.0.5", "greenmail"]) {
+      let caught: unknown;
+      try {
+        createGreenMailClient({ host: badHost, imapPort, smtpPort });
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(LabMailError);
+      expect((caught as LabMailError).code).toBe("host_refused");
+      expect((caught as LabMailError).message).toBe("host_refused");
+    }
+    expect(() => createGreenMailClient({ host: "localhost", imapPort, smtpPort })).not.toThrow();
+  });
+
   test("a mail client error holds a code, never the text of the mail", async () => {
     const dead = createGreenMailClient({ host, imapPort, smtpPort: 1 });
     const error = await dead

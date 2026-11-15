@@ -2,14 +2,14 @@ import { ImapFlow } from "imapflow";
 import { createTransport } from "nodemailer";
 
 // The lab's own client for the sim GreenMail: SMTP delivery into a mailbox, IMAP APPEND, and reads for the exactly-once
-// checks. GreenMail runs with auth off, so any password logs in. It is not a product mail path: no host guard, no
-// credentials, loopback host and fixed ports from the lab config. Stages 08 (bots) and 14 (reset) reuse it.
+// checks. GreenMail runs with auth off, so any password logs in. It is not a product mail path: no product host guard
+// and no credentials; it refuses any host that is not loopback. Stages 08 (bots) and 14 (reset) reuse it.
 // Errors carry a short code, never the text of the server or of a message.
 
 export type LabMailErrorCode =
   | "smtp_failed"
   | "imap_connect"
-  | "imap_list"
+  | "host_refused"
   | "imap_search"
   | "imap_append"
   | "imap_fetch";
@@ -81,7 +81,12 @@ async function withImap<T>(
   }
 }
 
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+
+// The client talks to the sim GreenMail only. In the sim stack GreenMail shares the network namespace of the lab, so its
+// host is loopback (`LAB_MAIL_HOST`); any other host is refused before a connection opens, so no lab mail can leave the stack.
 export function createGreenMailClient(options: GreenMailOptions): LabMailClient {
+  if (!LOOPBACK_HOSTS.has(options.host.toLowerCase())) throw new LabMailError("host_refused", undefined);
   return {
     async smtpSend({ envelopeFrom, to, raw }) {
       const transport = createTransport({
