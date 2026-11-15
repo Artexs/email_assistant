@@ -38,7 +38,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 5 | E7-T2 Platform controls (send limits, feature flags, operator console, security log) | E07 notes §11 | 15 | F082, F091 (closed) | — | F099 |
 | 6 | E3a Measure | E03 | 19 | E1 (F095); flags from F087 (landed); F097 stage 03 before F100 stage 04, F097 stages 01 and 03 before F100 stages 10-11, F097 stage 04 before F100 stage 15 | — | F100 |
 | 7 | Panel to Astro 7 | E10 (PD-098 area, notes §5) | 4 | E1 | — | F101 |
-| 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1, Astro 7 | — | F102 |
+| 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1; Astro 7 before the web stages (07, 12, 13, 17, 18) | — | F102 |
 | 9 | E8a Logs | E08 | 19 | E1 | — | F103 |
 | 10 | E5a Read Sent | E05 | ≈ 7 | E1, E7-T2 | — | F104 |
 | 11 | E7-T6 Identity A (TOTP, backup codes, break-glass) | E07 notes §11 | 15 | F082 | — | F105 |
