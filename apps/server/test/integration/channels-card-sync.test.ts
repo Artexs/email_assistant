@@ -2,7 +2,7 @@ import { format } from "node:util";
 
 import { encodeCallback, textTables } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { type Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import {
   approve,
@@ -26,6 +26,7 @@ import {
 import { checkCardEdit } from "../../src/modules/channels/card-edit-check";
 import { getEditTarget, newerEditSent } from "../../src/modules/channels/card-edits-repo";
 import { createFakeChannel } from "../../src/modules/channels/fake/channel";
+import { replaceChatLink } from "../../src/modules/channels/repo";
 import { insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { setOrgFeature } from "../../src/modules/tenancy";
@@ -823,6 +824,151 @@ describe("approval cards: version and panel link (T9, T10)", () => {
       const v2 = await notify(w);
       expect(v2.length).toBe(2);
       for (const card of v2) expect(card.message.text).toContain(t.versionLine(2));
+    });
+  });
+});
+
+describe("card sync: review probes", () => {
+  test("a real Postgres error inside the hook: the savepoint keeps the decision and the transaction alive", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const real = cardEditHooks({ sendScope: { kind: "all" } });
+      // An invalid uuid makes `heldReason` raise 22P02 in a statement, inside the savepoint of the hook.
+      const broken: ApprovalHooks = {
+        onDecided: (t, c, input) => real.onDecided(t, c, { ...input, sendId: "not-a-uuid" }),
+      };
+      const result = await approve(depsOf(w, { kind: "all" }, broken), w.ctx, w.sendId, {
+        userId: w.u1,
+        via: "web",
+        now: NOW,
+      });
+      expect(result.kind).toBe("approved");
+      expect((await sendState(w)).status).toBe("approved");
+      expect(await editRows(w)).toEqual([]);
+      const line = [...logLines, ...errorLines].find((entry) => entry.includes("card_edits_not_queued"));
+      expect(line).toBeDefined();
+      const fields = JSON.parse(line ?? "{}") as Record<string, unknown>;
+      // The test id is not a uuid, so the logger drops the `action_id` field: ids and codes only.
+      expect(fields.error_code).toBe("22P02");
+      expect(Object.keys(fields).sort()).toEqual(
+        ["dropped_fields", "error", "error_code", "event", "kind", "level", "module", "msg", "time"].sort()
+      );
+      const audit = await trx
+        .selectFrom("audit_log")
+        .select("event")
+        .where("org_id", "=", w.orgId)
+        .where("action_id", "=", w.sendId)
+        .execute();
+      expect(audit.map((row) => row.event)).toContain("action.approved");
+      expect((await sql<{ x: number }>`select 1 as x`.execute(trx)).rows[0]?.x).toBe(1);
+    });
+  });
+
+  test("a held Telegram approval with two owners: the tap edits C1, one row for C2, no card edited twice", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const off: SendScope = { kind: "off" };
+      const reject = [
+        [
+          {
+            text: textTables.en.approvals.buttons.reject,
+            data: encodeCallback({ kind: "reject", actionId: w.sendId }),
+          },
+        ],
+      ];
+      const held = edits.approvedHeld(CLOCK, textTables.en.approvals.held.scope);
+      const tap = await handleCallback(
+        tapDeps(w, off),
+        linkOf(w, w.u1),
+        encodeCallback({ kind: "approve", actionId: w.sendId })
+      );
+      expect(tap.edit?.text).toBe(`CARD-ONE\n\n${held}`);
+      const rows = await trx
+        .selectFrom("outbox")
+        .select(["edit_of_outbox_id", "dedup_key", "view", "user_id"])
+        .where("org_id", "=", w.orgId)
+        .where("kind", "=", "approval_edit")
+        .execute();
+      expect(rows.map((row) => [row.edit_of_outbox_id, row.user_id, row.dedup_key])).toEqual([
+        [w.c2, w.u2, `approval_edit:${w.c2}:approved_held`],
+      ]);
+      expect(rows[0]?.view).toMatchObject({ outcome: "approved_held", heldBy: "scope", actionId: w.sendId });
+      const sender = senderOf(w);
+      await sender.run();
+      expect(sender.channel.edited).toEqual([
+        { chatId: w.chat2, messageId: 502, message: { text: `CARD-TWO\n\n${held}`, buttons: reject } },
+      ]);
+      // U2 taps Reject on C2: the tap edits C2, the outbox edits C1 only.
+      const tap2 = await handleCallback(
+        tapDeps(w, off),
+        linkOf(w, w.u2),
+        encodeCallback({ kind: "reject", actionId: w.sendId })
+      );
+      expect(tap2.edit?.text).toBe(`CARD-TWO\n\n${edits.rejected(CLOCK)}`);
+      await sender.run();
+      expect(sender.channel.edited.slice(1)).toEqual([
+        { chatId: w.chat1, messageId: 501, message: { text: `CARD-ONE\n\n${edits.rejected(CLOCK)}`, buttons: [] } },
+      ]);
+    });
+  });
+
+  test("queue side: a card whose text retention removed gets no edit row", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      await trx
+        .updateTable("outbox")
+        .set({ text: "[removed]", view: JSON.stringify({}) })
+        .where("id", "=", w.c2)
+        .execute();
+      await approve(depsOf(w), w.ctx, w.sendId, { userId: w.u1, via: "web", now: NOW });
+      expect((await editRows(w)).map((row) => row.edit_of_outbox_id)).toEqual([w.c1]);
+      const sender = senderOf(w);
+      await sender.run();
+      expect(sender.channel.edited.map((edit) => edit.messageId)).toEqual([501]);
+      expect(JSON.stringify(sender.channel.edited)).not.toContain("[removed]");
+    });
+  });
+
+  test("a re-link of the same chat after the card went out drops the edit as no_target", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      await replaceChatLink(trx, w.ctx, {
+        userId: w.u2,
+        chatId: w.chat2,
+        linkedAt: new Date(CARD_AT.getTime() + 60_000),
+      });
+      await approve(depsOf(w), w.ctx, w.sendId, { userId: w.u1, via: "web", now: NOW });
+      const sender = senderOf(w);
+      await sender.run();
+      const rows = await editRows(w);
+      expect(rows.find((row) => row.edit_of_outbox_id === w.c2)).toMatchObject({
+        status: "failed",
+        error_code: "no_target",
+      });
+      expect(sender.channel.edited.map((edit) => edit.messageId)).toEqual([501]);
+    });
+  });
+
+  test("a card of another organization with the dedup key of this send gets no row", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await world(trx);
+      const bOrg = await createOrgWithMailbox(trx);
+      const b = await insertDraftAndSend(trx, { orgId: bOrg.orgId }, bOrg.mailboxId, {
+        notifiedAt: CARD_AT,
+        createdAt: CARD_AT,
+      });
+      // Only possible by hand: a reader without the org filter would pick this card up.
+      await insertCard(trx, { orgId: bOrg.orgId, emailId: b.emailId, sendId: a.sendId }, bOrg.userId, 777, "CARD-B");
+      await approve(depsOf(a), a.ctx, a.sendId, { userId: a.u1, via: "web", now: NOW });
+      expect((await editRows(a)).length).toBe(2);
+      const rowsB = await trx
+        .selectFrom("outbox")
+        .select("id")
+        .where("org_id", "=", bOrg.orgId)
+        .where("kind", "=", "approval_edit")
+        .execute();
+      expect(rowsB).toEqual([]);
+      expect([...logLines, ...errorLines].some((entry) => entry.includes("card_edits_not_queued"))).toBe(false);
     });
   });
 });
