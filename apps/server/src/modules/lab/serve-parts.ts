@@ -6,7 +6,7 @@ import { labAddresses, type LabCorpus } from "./corpus";
 import { runExecutiveTick } from "./executive";
 import type { FakeTgClient } from "./fake-tg";
 import { runInjectorTick } from "./injector";
-import { createLabMailClient, type LabMailClient, type LabMailClientOptions } from "./mail-client";
+import { createLabMailClient, type LabMailAdmin, type LabMailClient, type LabMailClientOptions } from "./mail-client";
 import { runSpend, type RunSpend } from "./run-spend";
 import { LAB_IMAP_PORT, LAB_MAIL_HOST, LAB_MAIL_PASSWORD, LAB_SMTP_PORT } from "./seed";
 import { finishRun, runModeStep, type ServeParts } from "./serve";
@@ -42,7 +42,8 @@ export interface ServePartsDeps {
   now: () => Date;
 }
 
-export const createServeMailClient = (corpus: LabCorpus): LabMailClient => createLabMailClient(labMailOptions(corpus));
+export const createServeMailClient = (corpus: LabCorpus): LabMailClient & LabMailAdmin =>
+  createLabMailClient(labMailOptions(corpus));
 
 function orgOf(state: LabState, run: LabRun): { orgId: string; mailboxId: string } {
   const org = state.readOrgs()[run.org];

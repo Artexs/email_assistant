@@ -6,13 +6,13 @@ import { z } from "zod";
 export const usage = [
   "usage:",
   "  bun run lab seed [--org lab|demo]",
-  "  bun run lab reset --org lab|demo --yes",
+  "  bun run lab reset --org lab|demo [--yes]",
   "  bun run lab start --mode day|week [--date YYYY-MM-DD] [--org lab|demo] [--cap-usd <n>] [--reuse]",
   "  bun run lab status [--run <id>]",
   "  bun run lab stop --run <id>",
   "  bun run lab serve",
   "  bun run lab score --run <id> [--out <dir>]",
-  "  bun run lab demo-reset --yes",
+  "  bun run lab demo-reset [--date YYYY-MM-DD] [--yes]",
   "  bun run lab demo-export --day <n> --out <file>",
   "  bun run lab demo-import --file <file> --email <address> [--replace]",
   "  Exit 0: ok. Exit 1: usage error, refusal or failure.",
@@ -22,13 +22,14 @@ export type LabOrgFlag = "lab" | "demo";
 
 export type LabCommand =
   | { kind: "seed"; org: LabOrgFlag }
-  | { kind: "reset"; org: LabOrgFlag }
+  // Without `--yes` a reset only prints what it would delete (`confirm_needed`).
+  | { kind: "reset"; org: LabOrgFlag; yes: boolean }
   | { kind: "start"; mode: "day" | "week"; date?: string; org: LabOrgFlag; capUsd?: number; reuse: boolean }
   | { kind: "status"; runId?: string }
   | { kind: "stop"; runId: string }
   | { kind: "serve" }
   | { kind: "score"; runId: string; out?: string }
-  | { kind: "demo-reset" }
+  | { kind: "demo-reset"; yes: boolean; date?: string }
   | { kind: "demo-export"; day: number; out: string }
   | { kind: "demo-import"; file: string; email: string; replace: boolean };
 
@@ -46,7 +47,7 @@ const allowedFlags: Record<LabCommand["kind"], readonly string[]> = {
   stop: ["run"],
   serve: [],
   score: ["run", "out"],
-  "demo-reset": ["yes"],
+  "demo-reset": ["yes", "date"],
   "demo-export": ["day", "out"],
   "demo-import": ["file", "email", "replace"],
 };
@@ -92,8 +93,8 @@ export function parseLabArgs(argv: string[]): LabCommand | undefined {
       case "seed":
         return { kind, org: org.data };
       case "reset":
-        // A reset deletes data: the org must be named and `--yes` must be given.
-        return values.org !== undefined && values.yes === true ? { kind, org: org.data } : undefined;
+        // A reset deletes data: the org must be named. `--yes` is checked by the command.
+        return values.org !== undefined ? { kind, org: org.data, yes: values.yes === true } : undefined;
       case "start": {
         const mode = z.enum(["day", "week"]).safeParse(values.mode);
         if (!mode.success) return undefined;
@@ -120,8 +121,11 @@ export function parseLabArgs(argv: string[]): LabCommand | undefined {
         return runId?.success
           ? { kind, runId: runId.data, ...(values.out === undefined ? {} : { out: values.out }) }
           : undefined;
-      case "demo-reset":
-        return values.yes === true ? { kind } : undefined;
+      case "demo-reset": {
+        const date = values.date === undefined ? undefined : dateSchema.safeParse(values.date);
+        if (date !== undefined && !date.success) return undefined;
+        return { kind, yes: values.yes === true, ...(date?.success ? { date: date.data } : {}) };
+      }
       case "demo-export": {
         const day = z.coerce.number().int().min(1).max(7).safeParse(values.day);
         if (!day.success || values.out === undefined || values.out === "") return undefined;
