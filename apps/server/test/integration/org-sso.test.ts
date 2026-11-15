@@ -4,8 +4,9 @@ import { resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
-import { createOrganizationWithOwner, setOrgFeature } from "../../src/modules/tenancy";
-import type { Db } from "../../src/platform/db";
+import { createOrganizationWithOwner, setOrgFeature, setSsoProvider } from "../../src/modules/tenancy";
+import { createDb, type Db } from "../../src/platform/db";
+import { buildOidcConfig, discoverProviderConfig } from "../../src/platform/auth-sso";
 import type { LookupAll } from "../../src/platform/net-address";
 import { runOrgSso, type OrgSsoDeps } from "../../src/scripts/org-sso";
 import { startFakeOidc, type FakeOidc } from "../fake-oidc";
@@ -111,11 +112,22 @@ const setArgv = (org: Org, over: { issuer?: string; domain?: string; clientId?: 
   "--client-secret-stdin",
 ];
 
+async function discoverFake() {
+  const found = await discoverProviderConfig(fake.issuer, { allowOrigins: [fake.origin], timeoutMs: 5000 });
+  if (found.kind !== "ok") throw new Error(`discovery failed: ${found.code}`);
+  return found.discovered;
+}
+
 const providerRows = (orgId: string) =>
   db.selectFrom("sso_providers").selectAll().where("org_id", "=", orgId).execute();
 
-async function spawnEntry(args: string[], stdin = ""): Promise<{ code: number; stdout: string; stderr: string }> {
-  const proc = Bun.spawn(["bun", script, ...args], {
+// `viaRun` starts the package script like the operator does (`bun run` echoes the command line on stderr); the other tests start the script file.
+async function spawnEntry(
+  args: string[],
+  stdin = "",
+  viaRun = false
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const proc = Bun.spawn(viaRun ? ["bun", "run", "org:sso", ...args] : ["bun", script, ...args], {
     cwd: repoRoot,
     env: { ...process.env },
     stdin: "pipe",
@@ -264,6 +276,59 @@ describe("org:sso", () => {
     expect(again.out).toEqual(["none"]);
   });
 
+  test("6b. remove on an unknown organization: error organization_not_found, exit 1, like show and set", async () => {
+    const missing = "00000000-0000-4000-8000-000000000000";
+    const result = await cli(["--org-id", missing, "--remove", "--confirm", "x.test"]);
+    expect(result.code).toBe(1);
+    expect(result.out).toEqual([]);
+    expect(result.err).toEqual(["error organization_not_found"]);
+  });
+
+  test("6c. a set that changes the domain after the CLI began the remove: nothing is removed (the compare runs under the lock)", async () => {
+    const org = await seedOrg();
+    expect((await cli(setArgv(org))).code).toBe(0);
+    const moved = freshDomain();
+    let raced = false;
+    // The first transaction the remove opens runs a competing set first: the domain changes after the operator confirmed the old one.
+    const racing = new Proxy(db, {
+      get(target, prop) {
+        if (prop === "transaction") {
+          return () => ({
+            execute: async (fn: (trx: unknown) => Promise<unknown>) => {
+              if (!raced) {
+                raced = true;
+                const found = await discoverFake();
+                const competing = await setSsoProvider(
+                  target,
+                  { orgId: org.orgId },
+                  {
+                    issuer: fake.issuer,
+                    domain: moved,
+                    clientId: fake.clientId,
+                    oidcConfig: buildOidcConfig(found, { clientId: fake.clientId, clientSecret: SECRET }),
+                    actor: "test",
+                    now: NOW,
+                  }
+                );
+                expect(competing.kind).toBe("boundary");
+              }
+              return target.transaction().execute(fn as never);
+            },
+          });
+        }
+        const value: unknown = Reflect.get(target, prop, target);
+        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      },
+    }) as unknown as Db;
+    const result = await cli(["--org-id", org.orgId, "--remove", "--confirm", org.domain], { db: racing });
+    expect(raced).toBe(true);
+    expect(result.code).toBe(1);
+    expect(result.out).toEqual([]);
+    expect(result.err).toEqual(["error confirm_mismatch"]);
+    const rows = await providerRows(org.orgId);
+    expect(rows.map((row) => row.domain)).toEqual([moved]);
+  });
+
   test("7. a bad domain, a stopped IdP, a private host: exit 1 with the code, nothing written; a taken domain", async () => {
     const org = await seedOrg();
     const bad = await cli(setArgv(org, { domain: "x..test" }));
@@ -329,6 +394,50 @@ describe("org:sso", () => {
       expect(result.code).toBe(1);
       expect(result.out).toEqual([]);
       expect(result.err).toEqual(["error failed DatabaseError 23514"]);
+    }
+  });
+
+  test("9b. a real Postgres CHECK failure (23514): name and code only; the migrator-role error holds the secret in its detail", async () => {
+    const canary = "rev1ew-secret-zz9";
+    const constraint = `org_sso_probe_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+    const admin = createDb(process.env.MIGRATOR_DATABASE_URL ?? "");
+    const org = await seedOrg();
+    try {
+      await sql
+        .raw(
+          `ALTER TABLE sso_providers ADD CONSTRAINT ${constraint} CHECK (oidc_config NOT LIKE '%rev1ew-secret%') NOT VALID`
+        )
+        .execute(admin);
+      // Proof that the guard has work to do: the raw error of this CHECK, as the migrator, carries the secret in `detail`.
+      let rawDetail = "";
+      try {
+        await sql`INSERT INTO sso_providers (provider_id, org_id, issuer, domain, oidc_config)
+          VALUES (${org.orgId}, ${org.orgId}::uuid, 'https://idp.x.test', ${org.domain}, ${`{"clientSecret":"${canary}"}`})`.execute(
+          admin
+        );
+      } catch (error) {
+        rawDetail = String((error as { detail?: unknown }).detail);
+      }
+      expect(rawDetail).toContain(canary);
+
+      // The app role (RLS on: Postgres omits the row) and the migrator role (the detail lists the row).
+      for (const handle of [db, admin]) {
+        const before = logged.length;
+        const result = await cli(setArgv(org), { db: handle }, `${canary}\n`);
+        expect(result.code).toBe(1);
+        expect(result.out).toEqual([]);
+        expect(result.err).toHaveLength(1);
+        expect(result.err[0]).toMatch(/^error failed \S+ 23514$/);
+        for (const line of [...result.out, ...result.err, ...logged.slice(before)]) {
+          expect(line).not.toContain(canary);
+          expect(line).not.toContain("clientSecret");
+          expect(line).not.toContain(constraint);
+        }
+        expect(await providerRows(org.orgId)).toEqual([]);
+      }
+    } finally {
+      await sql.raw(`ALTER TABLE sso_providers DROP CONSTRAINT IF EXISTS ${constraint}`).execute(admin);
+      await admin.destroy();
     }
   });
 

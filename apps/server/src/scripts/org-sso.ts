@@ -136,22 +136,27 @@ export async function runOrgSso(argv: string[], deps: OrgSsoDeps): Promise<numbe
       }
 
       case "remove": {
-        const state = await getSsoState(deps.db, ctx);
-        if (!state) {
-          deps.out("none");
-          return 0;
-        }
-        if (state.domain !== command.confirm.trim().toLowerCase()) {
-          deps.err("error confirm_mismatch");
+        if (!(await getOrganization(deps.db, ctx))) {
+          deps.err("error organization_not_found");
           return 1;
         }
-        const result = await removeSsoProvider(deps.db, ctx, { actor: ACTOR, now: deps.now() });
-        deps.out(
-          result.kind === "removed"
-            ? `removed links_removed=${result.linksRemoved} sessions_ended=${result.sessionsEnded}`
-            : "none"
-        );
-        return 0;
+        // The service compares the confirmed domain under the organization lock (a read here would race with a set).
+        const result = await removeSsoProvider(deps.db, ctx, {
+          actor: ACTOR,
+          now: deps.now(),
+          confirmDomain: command.confirm,
+        });
+        switch (result.kind) {
+          case "confirm_mismatch":
+            deps.err("error confirm_mismatch");
+            return 1;
+          case "removed":
+            deps.out(`removed links_removed=${result.linksRemoved} sessions_ended=${result.sessionsEnded}`);
+            return 0;
+          case "none":
+            deps.out("none");
+            return 0;
+        }
       }
     }
   } catch (error) {
