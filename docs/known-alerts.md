@@ -20,6 +20,22 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `action_no_provider` and `send_no_sender` (fields `action_id`, `action_type` for the first; before F103: `action <id>: no provider for <type>` and `action <id>: no sender for send`)
+
+- **First seen:** 2026-11-15 (F103 stage 09)
+- **Source:** `apps/server/src/modules/actions/apply.ts` (`action_no_provider`) and `send.ts` (`send_no_sender`) (`[actions]`, level `error`).
+- **Cause:** The committer claimed an action that needs the mail server (or a send that needs the SMTP sender), but the run holds no provider (or no sender). This is a bug in the committer wiring, not a mailbox problem. The row goes back to its status with a 5 minute wait and no count.
+- **Fix:** Read the `committer_*` lines of the same run and the code of `committer.ts` (`needs` of the handler). File a bug with the action type.
+- **Status:** investigating
+
+### `send_waits_for_draft` (field `action_id`; before F103: `action <id>: the draft is not applied; the send waits`)
+
+- **First seen:** 2026-11-15 (F103 stage 09)
+- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Cause:** A claimed send found that its draft is no longer `applied` (a reject or a failure of the draft ran in the same moment). The send goes back to `approved` with no count and waits.
+- **Fix:** No action if one line appears. If it repeats for hours, read the status of the draft row; the send expires by its 48 h rule.
+- **Status:** won't fix (expected behaviour)
+
 ### `committer_open_failed`, `committer_folders_failed`, `committer_facts_failed`, `committer_close_failed`, `committer_release_failed`, `committer_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`; before F103: `committer <mailboxId>: open failed: …`, `sync folders failed`, `facts failed`, `close failed`, `release failed`, `committer <mailboxId> failed: …`)
 
 - **First seen:** 2026-11-15 (F103 stage 08)
@@ -111,7 +127,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none. It is a record, not an error. `held` means the mailbox is paused or `ACTIONS_SCOPE` does not admit the mail.
 - **Status:** won't fix (expected)
 
-### `action <id>: failed mail_not_found` (in an e2e run after the activity spec)
+### `action_failed` with `reason=mail_not_found` (in an e2e run after the activity spec; fields `action_id`, `reason`; before F103: `action <id>: failed mail_not_found`)
 
 - **First seen:** 2026-11-11 (S5d, from the code; not seen in the stage 10 run)
 - **Source:** the committer (`apps/server/src/modules/actions/apply.ts`), level `warn`, and an `action.failed` audit row. In an e2e run under `ACTIONS_SCOPE=synthetic` after `activity.spec.ts`.
@@ -487,23 +503,23 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action if you want no sends. To send: set `SEND_SCOPE` (and `SEND_TEST_ADDRESSES`) in the `.env` and restart the server (`deploy/README.md`, "Approvals and sends"). Held sends expire 48 h after the tap (`held_timeout`).
 - **Status:** won't fix (expected behaviour)
 
-### `action <id>: failed hard_error` (a `create_draft` row)
+### `action_failed` with `reason=hard_error` (a `create_draft` row; fields `action_id`, `reason`; before F103: `action <id>: failed hard_error`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/actions/drafts.ts` (`[actions]`, level `warn`). A draft with a bad payload gives `action <id>: failed bad_payload` from the same file.
+- **Source:** `apps/server/src/modules/actions/drafts.ts` (`[actions]`, level `warn`). A draft with a bad payload gives `action_failed` with `reason=bad_payload` from the same file.
 - **Cause:** The draft APPEND (or its recovery, or the removal of a draft) failed with a hard error three times. The draft is `failed`, its open sends expire (`draft_missing`) and the owners get a notice. For a reverse row (draft removal) the notice says that the draft stays in Drafts.
 - **Fix:** Read the audit row `action.failed` (`attempts`, `error`) and run `bun run mailbox:check`. Check that the Drafts folder exists and the mailbox is not full. For a reverse row, delete the draft by hand in the mail client. For `bad_payload`, file a bug with the action type (never with the payload).
 - **Status:** investigating
 
-### `action <id>: sent copy failed: <Class code>`
+### `send_copy_failed` (fields `action_id`, `error`, `error_code`; before F103: `action <id>: sent copy failed: <Class code>`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
 - **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
-- **Cause:** The mail went out (the send is `applied`), but the copy to `Wysłane` failed: the locate or the APPEND gave an error. `provider_result.sent_copy` is `failed`, and the audit row `action.sent_copy_failed` holds the error label. The owners read "No copy in Sent".
+- **Cause:** The mail went out (the send is `applied`), but the copy to `Wysłane` failed: the locate or the APPEND gave an error. `provider_result.sent_copy` is `failed`, and the audit row `action.sent_copy_failed` holds the error label. The line has the error name and code only. The owners read "No copy in Sent".
 - **Fix:** No action for the mail: it was sent. Add the copy by hand if you need it. If it repeats, check the `Sent` folder with `bun run mailbox:check`.
 - **Status:** investigating
 
-### `action <id>: failed outcome_unknown (stage <s>, code <c>)`
+### `send_failed` with `reason=outcome_unknown` (fields `action_id`, `reason`, `send_stage`, `code`; before F103: `action <id>: failed outcome_unknown (stage <s>, code <c>)`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
 - **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
@@ -511,19 +527,19 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Look in `Wysłane` and ask the recipient. If the mail did not go out, tap 📤 Send again in the result notice. If it went out, do nothing (the delegation stays `cancelled`: follow-up `spec/features/planned/F041-delegation-went-out-button/plan.md`).
 - **Status:** investigating
 
-### `action <id>: failed smtp_error (stage <s>, code <c>)`
+### `send_failed` with `reason=smtp_error` (fields `action_id`, `reason`, `send_stage`, `code`; before F103: `action <id>: failed smtp_error (stage <s>, code <c>)`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
 - **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
 - **Cause:** One of four: a soft error before the content (`connect`, `login` or `envelope`) that comes 6 h or more after the tap (the soft cap, F044; `provider_result.cap` is `soft_retry`, the notice says "did not accept the mail for 6 hours", the mail was not sent); a hard error before the content (`connect`, `login` or `envelope`) three times; a 4xx or another non-5xx error after the content (`content`: the server may have the mail, so the system does not retry); or the mail could not be built three times (`compose`). The row is `failed` and the owners get a notice with 📤 Send again.
-- **Fix:** For `content`, look in `Wysłane` and ask the recipient before you tap Send again. Otherwise check `/status` and `bun run mailbox:check`, fix the cause, then tap Send again. The line `action <id>: send retry (stage <s>, code <c>)` (level `warn`) is a try that will repeat in 5 minutes; a soft error does not count, but the retries stop 6 hours after the tap. For the soft cap, check the mail server and the network first, then tap Send again.
+- **Fix:** For `content`, look in `Wysłane` and ask the recipient before you tap Send again. Otherwise check `/status` and `bun run mailbox:check`, fix the cause, then tap Send again. The line `send_retry` (level `warn`; fields `action_id`, `send_stage`, `code`) is a try that will repeat in 5 minutes; a soft error does not count, but the retries stop 6 hours after the tap. For the soft cap, check the mail server and the network first, then tap Send again.
 - **Status:** investigating
 
-### `action <id>: failed smtp_rejected (stage <s>, code <n>)`
+### `send_failed` with `reason=smtp_rejected` (fields `action_id`, `reason`, `send_stage`, `code`; before F103: `action <id>: failed smtp_rejected (stage <s>, code <n>)`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
 - **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
-- **Cause:** The mail server refused the mail with a 5xx reply, at the envelope (`MAIL FROM`, `RCPT TO`) or after the content. `<s>` is `envelope` or `content`, `<n>` is the reply code. The row is `failed`. The draft stays in Drafts and the delegation is `cancelled`. There is no Send again button, because the address or the mail is wrong.
+- **Cause:** The mail server refused the mail with a 5xx reply, at the envelope (`MAIL FROM`, `RCPT TO`) or after the content. `send_stage` is `envelope` or `content`, `code` is the reply number (never the reply text). The row is `failed`. The draft stays in Drafts and the delegation is `cancelled`. There is no Send again button, because the address or the mail is wrong.
 - **Fix:** Check the delegate address (`delegates:list`). Replace it with `delegates:disable` and `delegates:add`. The system does not plan the mail again; send it by hand from the draft if you need it.
 - **Status:** investigating
 
@@ -591,15 +607,15 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Fix the secret (password or app password) with `bun run mailbox:password` and set the mailbox to `active` again. Actions wait and apply later if they are younger than 24 h and the mail is younger than 7 days; older ones expire.
 - **Status:** investigating
 
-### `action <id>: <Class code>, try <n> of 3`
+### `action_retry` (fields `action_id`, `attempts`, `max_attempts`, `error`, `error_code`; before F103: `action <id>: <Class code>, try <n> of 3`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).
-- **Cause:** An IMAP call failed. A soft error (network, timeout) waits 5 minutes and does not count as a try. A hard error waits 5 minutes and counts. After the third hard error the action is `failed` (`hard_error`).
+- **Cause:** An IMAP call failed. A soft error (network, timeout) waits 5 minutes and does not count as a try. A hard error waits 5 minutes and counts. After the third hard error the action is `failed` (`hard_error`). `attempts` is the number of the try, `max_attempts` is 3, and the line has the error name and code only. `drafts.ts` writes the same event for a draft; `send.ts` writes `send_retry` for the mail that cannot be built (same fields) and `send_recovery_retry` for the recovery of a send that was left `applying` (same fields).
 - **Fix:** No action for try 1 and 2. Read the `last_error` column of the action. For a repeat, check the mailbox with `bun run mailbox:check`.
 - **Status:** won't fix (expected behaviour)
 
-### `action <id>: failed bad_payload`
+### `action_failed` with `reason=bad_payload` (fields `action_id`, `reason`; before F103: `action <id>: failed bad_payload`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).
@@ -607,7 +623,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Read the audit row `action.failed` and the `payload` of the action. File a bug with the action type. Never put the payload in the bug text if it holds mail data.
 - **Status:** investigating
 
-### `action <id>: failed hard_error`
+### `action_failed` with `reason=hard_error` (fields `action_id`, `reason`; before F103: `action <id>: failed hard_error`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).
@@ -615,7 +631,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Read the audit data (`attempts`, `error`). Check the mailbox with `bun run mailbox:check`. The mail stays where it was; the user can move it by hand.
 - **Status:** investigating
 
-### `action <id>: failed mail_not_found`
+### `action_failed` with `reason=mail_not_found` (fields `action_id`, `reason`; before F103: `action <id>: failed mail_not_found`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).

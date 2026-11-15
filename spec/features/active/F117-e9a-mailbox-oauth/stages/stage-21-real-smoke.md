@@ -36,3 +36,9 @@ A check that fails: stop, write it in `smoke.md`, ask the owner; no fix in this 
 **Done when.** `smoke.md` shows checks 1–6 held for both providers and the VPS checks held.
 
 **Out of scope.** Turning the flags on for the pilot (an owner decision after this ticket).
+
+## Carry-over from the stage 08 review
+
+Source: `review-8.md` (U1).
+
+- **ID token at the code redeem.** `redeemCode` sends `scope` = the mail resource scopes only (IMAP and `offline_access`), with no `openid`. It was not checked whether Microsoft then returns an `id_token`. If it does not, `finishOAuthCallback` refuses every Microsoft connect with `oauth_failed` (no ID token, no address). Record in the rows M2 and M12: does the redeem answer hold `id_token`? Which claims does it hold (`email`, `preferred_username`, `tid`, `aud`, `iss`)? If no `id_token` comes, the fix is to add `openid email profile` to the `scope` of `redeemCode`, or to read the address another way: a stage 06/08 refresh job.

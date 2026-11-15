@@ -357,7 +357,7 @@ The sync reads INBOX and, at Interia, `Oferty`, `Społeczności`, `Rachunki` and
 
 The owners get one notice for each failed action. An action fails after 3 hard errors, or at once for an unknown folder. The notice names the action, the subject and where the mail is.
 
-1. Read the log: `$C logs --since 1h server | grep 'action '`. The line `action <id>: failed hard_error` has the reason. Alert texts: `docs/known-alerts.md`.
+1. Read the log: `$C logs --since 1h server | grep 'action_failed'`. The line has the `reason` and the `action_id`. Alert texts: `docs/known-alerts.md`.
 2. Open `/status` in Telegram. Check that the mailbox is `active`.
 3. A failed move leaves the mail in INBOX. A failed Undo (reverse) leaves the mail in its `AI/…` folder. Move the mail by hand in the mail client.
 4. The notice names the default `AI/…` folder name. It does not name the real path of `folder_map`.
@@ -440,7 +440,7 @@ Each notice says what happened. The left part is the start of the text.
 - `⌛ Not sent: you did not receive the approval request (the account was paused, or it did not go out)` (`not_seen`): the request did not reach you, either before the account was paused (the system ended the send at the resume) or for 48 h while the account ran. The draft was removed (or the notice says it stays). Send the task by hand if it is still needed.
 - `⌛ Not sent: it waited 48 h after your approval` (`held_timeout`): a held approval. Read the scope: `SEND_SCOPE`, a paused mailbox (`/resume`), a login error (`mailbox:password`) or a mail server that is not allowed (`host_blocked`). The system does not plan it again; send the task by hand from the draft, which stays in Drafts.
 - `⌛ Not sent: no approval request could go out within 7 days` (`not_notified`): no owner was linked, or the draft was not created. Link an owner with `telegram:link`.
-- `❌ Not sent: the draft could not be created` (`draft_missing`): the draft failed three times. Read `docs/known-alerts.md` (`action <id>: failed hard_error`).
+- `❌ Not sent: the draft could not be created` (`draft_missing`): the draft failed three times. Read `docs/known-alerts.md` (`action_failed` with `reason=hard_error`).
 - `⌛ Not sent: the setting was changed` (`policy_changed`): `mode shadow` or `switch create_draft off` closed the gate.
 - `⌛ Not sent: the delegation was closed`: a reminder that waited for a tap while the delegate answered or you closed the delegation.
 

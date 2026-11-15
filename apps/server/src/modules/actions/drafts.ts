@@ -2,7 +2,7 @@ import { buildOutgoingMessage, draftPayloadSchema, type OutgoingMessage } from "
 import { z } from "zod";
 
 import type { TenantContext } from "../../platform/db";
-import { describeError, SoftError } from "../../platform/errors";
+import { describeError, errorFields, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { locateByActionId, MailAuthError, type MailProvider } from "../mail";
@@ -102,7 +102,7 @@ async function failDraft(
     return true;
   });
   if (!done) return { kind: "lost" };
-  log.warn(`action ${action.id}: failed ${reason}`);
+  log.warn("action_failed", { action_id: action.id, reason });
   return { kind: "failed", reason };
 }
 
@@ -122,7 +122,12 @@ async function failedWith(
   if (!soft && action.attempts + 1 >= HARD_ERROR_TRIES) {
     return failDraft(deps, ctx, action, "hard_error", { lastError: label });
   }
-  log.warn(`action ${action.id}: ${label}, try ${action.attempts + 1} of ${HARD_ERROR_TRIES}`);
+  log.warn("action_retry", {
+    action_id: action.id,
+    attempts: action.attempts + 1,
+    max_attempts: HARD_ERROR_TRIES,
+    ...errorFields(error),
+  });
   await releaseAction(deps.db, ctx, action.id, action.locked_at, {
     toStatus: phase === "before_append" && action.status === "ready" ? "ready" : "applying",
     nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
@@ -225,7 +230,7 @@ export async function applyDraft(
   });
   // `lost`: the message stays. The next claimer's locate finds it.
   if (!done) return { kind: "lost" };
-  log.debug(`action ${action.id}: applied create_draft`);
+  log.debug("action_applied", { action_id: action.id, action_type: "create_draft" });
   return { kind: "applied" };
 }
 
@@ -254,7 +259,7 @@ async function closeDraft(deps: ApplyDeps, ctx: TenantContext, action: ClaimedAc
     return true;
   });
   if (!done) return { kind: "lost" };
-  log.info(`action ${action.id}: closed create_draft (send_closed)`);
+  log.info("action_closed", { action_id: action.id, action_type: "create_draft", reason: "send_closed" });
   return { kind: "expired", reason: "send_closed" };
 }
 
@@ -326,6 +331,6 @@ export async function removeDraft(
   });
   // `lost`: the draft is gone. The next claimer's locate finds nothing and still finishes the row.
   if (!done) return { kind: "lost" };
-  log.debug(`action ${action.id}: applied create_draft (reverse)`);
+  log.debug("action_reversed", { action_id: action.id, action_type: "create_draft" });
   return { kind: "applied" };
 }
