@@ -19,10 +19,12 @@ export {
   setCategoryAuto,
   setMode,
   setToolSwitch,
+  setUrgencyProfile,
   SettingsNotFoundError,
   type SettingsChange,
   type SettingsDeps,
   type SettingsView,
+  type UrgencyVia,
 } from "./service";
 export {
   rulesRoutes,

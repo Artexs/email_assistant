@@ -5,8 +5,9 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
-import { isFeatureOn } from "./features";
+import { featureSettings, isFeatureOn } from "./features";
 import {
+  countSsoRequiredOrgs,
   hasUsableBreakGlass,
   isPasswordSignInRefused,
   listMemberships,
@@ -16,6 +17,7 @@ import {
   setSsoRequiredFlag,
   strandsOtherBreakGlass,
 } from "./repo";
+import { hasMailDomain } from "./sso-provider";
 
 const log = createLog("tenancy");
 
@@ -24,12 +26,6 @@ export type SsoRequireRefusal = "no_provider" | "unproved" | "flag_off" | "no_br
 export type SetSsoRequiredResult =
   | { kind: "changed" | "unchanged" }
   | { kind: "refused"; reasons: SsoRequireRefusal[]; userIds: string[] };
-
-// The e-mail has the provider domain after the last `@`; a subdomain does not match (one domain per provider). Like `resolveSsoMember`.
-function hasDomain(email: string, domain: string): boolean {
-  const at = email.lastIndexOf("@");
-  return at > 0 && email.slice(at + 1) === domain;
-}
 
 // "SSO required" (ADR 0026 point 6). On: one transaction with the organization locked, every prerequisite
 // checked and every failure returned, so the operator fixes all of them at once. Then the flag, and the end of the
@@ -64,7 +60,7 @@ export async function setSsoRequired(
       if (provider) {
         // The break-glass owner signs in with a password and may use any address.
         offDomain = (await listMemberships(trx, ctx))
-          .filter((member) => !member.break_glass && !hasDomain(member.email.toLowerCase(), provider.domain))
+          .filter((member) => !member.break_glass && !hasMailDomain(member.email.toLowerCase(), provider.domain))
           .map((member) => member.user_id);
         if (offDomain.length > 0) reasons.push("off_domain_members");
       }
@@ -91,4 +87,10 @@ export async function setSsoRequired(
     return { kind: "changed" };
   };
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+// F119 N12, start-up check: when `FEATURES_OFF` holds `sso_sign_in`, the number of organizations that require SSO (those
+// lose every sign-in but the break-glass owner's). 0 when the flag is not killed: no query then.
+export async function countSsoRequiredWhileKilled(db: Db | Transaction<DB>): Promise<number> {
+  return featureSettings().off.has("sso_sign_in") ? countSsoRequiredOrgs(db) : 0;
 }
