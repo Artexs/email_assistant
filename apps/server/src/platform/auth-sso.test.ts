@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 
 import { isAllowedAuthPath } from "./auth";
 import {
@@ -242,11 +242,10 @@ describe("checkPublicHosts (test 8)", () => {
 
   test("discoverProviderConfig stops at a private issuer host before any fetch", async () => {
     const fetched: string[] = [];
-    const realFetch = globalThis.fetch;
-    globalThis.fetch = (async (input: Request | string | URL) => {
+    const spy = spyOn(globalThis, "fetch").mockImplementation(((input: unknown) => {
       fetched.push(String(input));
-      throw new Error("no fetch expected");
-    }) as typeof fetch;
+      return Promise.reject(new Error("no fetch expected"));
+    }) as unknown as typeof fetch);
     try {
       const result = await discoverProviderConfig("https://idp.x.test", {
         allowOrigins: [],
@@ -256,7 +255,7 @@ describe("checkPublicHosts (test 8)", () => {
       expect(result).toEqual({ kind: "failed", code: "discovery_private_host" });
       expect(fetched).toEqual([]);
     } finally {
-      globalThis.fetch = realFetch;
+      spy.mockRestore();
     }
   });
 

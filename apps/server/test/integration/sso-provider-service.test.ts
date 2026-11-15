@@ -321,13 +321,13 @@ describe("the provider service (F119 stage 07)", () => {
 
   test("6b: an endpoint of the discovery document that resolves to a private address fails; a public one passes", async () => {
     // An IdP at an allowed origin whose document names endpoints at a DNS name (the plugin skips its own DNS check for these).
+    let origin = "";
     const server = Bun.serve({
       hostname: "127.0.0.1",
       port: 0,
       fetch: (req) => {
         if (new URL(req.url).pathname !== "/.well-known/openid-configuration")
           return new Response("no", { status: 404 });
-        const origin = `http://127.0.0.1:${server.port}`;
         return Response.json({
           issuer: origin,
           authorization_endpoint: "https://login.x.test/authorize",
@@ -336,8 +336,8 @@ describe("the provider service (F119 stage 07)", () => {
         });
       },
     });
+    origin = `http://127.0.0.1:${server.port}`;
     try {
-      const origin = `http://127.0.0.1:${server.port}`;
       const lookupFor = (privateHost: string) => async (host: string) => [
         { address: host === privateHost ? "10.0.0.1" : "93.184.215.14", family: 4 },
       ];
