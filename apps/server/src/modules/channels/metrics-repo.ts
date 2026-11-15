@@ -97,12 +97,13 @@ export async function listUrgentCandidates(
     ) t ON true
     JOIN LATERAL (
       SELECT MIN(cl.linked_at) AS first_linked_at FROM chat_links cl WHERE cl.org_id = emails.org_id
-    ) c ON c.first_linked_at IS NOT NULL
+    ) c ON true
     WHERE t.category = 'urgent'
       AND mailboxes.status = 'active'
       AND organizations.plan <> 'suspended'
       AND emails.backfilled_at IS NULL
       AND emails.received_at >= ${opts.since}
+      -- NULL (no linked chat) is never true: such mail gets no urgent notice.
       AND t.created_at >= c.first_linked_at
       AND (organizations.resumed_at IS NULL OR t.created_at >= organizations.resumed_at)
       AND NOT EXISTS (

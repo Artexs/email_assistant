@@ -318,6 +318,15 @@ describe("urgent latency", () => {
     });
   });
 
+  test("8d. mail received before the 24 h window is not counted", async () => {
+    await inRollback(async (trx) => {
+      const org = await urgentOrg(trx);
+      await setMailbox(trx, org.mailboxId, { status_changed_at: at("08:00", "2026-11-17") });
+      await urgentMail(trx, org, { receivedAt: at("09:00", "2026-11-18") });
+      expect((await urgent(trx)).check.state).toBe("clear");
+    });
+  });
+
   test("9a. no linked chat: clear", async () => {
     await inRollback(async (trx) => {
       const org = await orgWithMailbox(trx);
@@ -525,6 +534,17 @@ describe("LLM errors", () => {
       await llmCalls(trx, org, failCalls(10), at("09:29"));
       await llmCalls(trx, other, failCalls(10), at("09:50"));
       await suspendOrg(trx, other.orgId);
+      // An audit row of another event is no call.
+      await trx
+        .insertInto("audit_log")
+        .values({
+          org_id: org.orgId,
+          actor: "system",
+          event: "email.triaged",
+          reason_code: "x",
+          created_at: at("09:50"),
+        })
+        .execute();
       const reading = await checkLlmErrors(trx, NOW, cfg);
       expect(reading.check.state).toBe("clear");
       expect(reading.check.facts.calls).toBe(0);
