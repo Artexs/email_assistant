@@ -497,6 +497,21 @@ describe("the other additions", () => {
   });
 });
 
+describe("open_loops: indexes", () => {
+  test("11: the list index, the open-thread index and the sent-kind unique index have the shape of the interface", async () => {
+    const { rows } = await sql<{ indexname: string; indexdef: string }>`
+      select indexname, indexdef from pg_indexes
+      where schemaname = 'public' and tablename = 'open_loops' order by 1`.execute(db);
+    const def = (name: string) => rows.find((row) => row.indexname === name)?.indexdef ?? "";
+    expect(def("open_loops_mailbox_status_due_idx")).toContain("(org_id, mailbox_id, status, due_at)");
+    expect(def("open_loops_thread_idx")).toContain("(mailbox_id, thread_key)");
+    expect(def("open_loops_thread_idx")).toContain("WHERE (status = 'open'::text)");
+    expect(def("open_loops_sent_kind_key")).toContain("UNIQUE INDEX");
+    expect(def("open_loops_sent_kind_key")).toContain("(org_id, sent_email_id, kind)");
+    expect(def("open_loops_sent_kind_key")).toContain("WHERE (sent_email_id IS NOT NULL)");
+  });
+});
+
 const migration = readFileSync(
   join(import.meta.dir, "../../../../db/migrations/20261115160001_open_loops.sql"),
   "utf8"
