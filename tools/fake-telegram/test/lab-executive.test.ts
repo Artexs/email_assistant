@@ -238,8 +238,14 @@ const sendStatus = async (trx: Transaction<DB>, sendId: string): Promise<string>
 const kinds = (events: readonly LoggedLabEvent[]): string[] => events.map((event) => event.t);
 
 // A mail with an applied move out of the INBOX and a digest line that carries its Undo button.
-async function movedMail(w: World, slotId: string, category: "urgent" | "info" | "spam", folder: string) {
-  const { emailId } = await insertTriagedWithActions(w.trx, { orgId: w.a.orgId }, w.a.mailboxId, {
+async function movedMail(
+  w: World,
+  slotId: string,
+  category: "urgent" | "info" | "spam",
+  folder: string,
+  org: Org = w.a
+) {
+  const { emailId } = await insertTriagedWithActions(w.trx, { orgId: org.orgId }, org.mailboxId, {
     category,
     createdAt: new Date(Date.now() - 10 * MINUTE),
     messageId: labId(slotId),
@@ -482,13 +488,20 @@ test("6: a card in the other org's chat is never read or pressed; a card in the 
     expect(await sendStatus(w.trx, other.sendId)).toBe("awaiting_approval");
     expect(kinds(w.events())).not.toContain("tap_planned");
 
-    // A card in the lab chat that names the other org's action: the lookup filters by org, so the card is unmapped.
+    // Cards in the lab chat that name the other org's send and the other org's wrongly moved urgent mail: the lookups
+    // filter by org, so both cards are unmapped.
+    const otherMoved = await movedMail(w, "w-1-011", "urgent", "ai_info", w.b);
     w.fake.state.botSend({
       chatId: w.a.chatId,
       text: "forged",
       buttons: [[{ text: "Approve", data: `ap:${other.sendId}` }]],
     });
-    expect(await w.tick()).toEqual({ planned: 0, pressed: 0, unmapped: 1, noRule: 0 });
+    w.fake.state.botSend({
+      chatId: w.a.chatId,
+      text: "forged",
+      buttons: [[{ text: "Undo", data: `fu:${otherMoved}` }]],
+    });
+    expect(await w.tick()).toEqual({ planned: 0, pressed: 0, unmapped: 2, noRule: 0 });
     w.clock.at = new Date("2026-11-24T08:00:00Z");
     await w.tick();
     expect(w.callbackData(w.a.chatId)).toEqual([]);
