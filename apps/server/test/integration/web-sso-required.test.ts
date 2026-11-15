@@ -459,7 +459,60 @@ describe("SSO required refuses passwords", () => {
     expect(resets).toEqual([]);
   });
 
-  test("13: no log line holds a password, a TOTP secret or an e-mail address", () => {
+  test("14: a padded address on the reset request gives one answer for a refused member, a free member and an unknown address", async () => {
+    const a = await makeOrg("pia");
+    const b = await makeOrg("bob");
+    const ann = await makeMember("ann", a.domain, [a.orgId]);
+    const cara = await makeMember("cara", b.domain, [b.orgId]);
+    await setRequired(a.orgId, true);
+    resets.length = 0;
+    const from = captured.length;
+    const ask = async (email: string) => {
+      const answer = await new Client().call("POST", "/request-password-reset", {
+        email,
+        redirectTo: `${SSO_TEST_ORIGIN}/setup`,
+      });
+      return { status: answer.status, text: answer.text };
+    };
+    const refused = await ask(` ${ann.email}`);
+    const free = await ask(` ${cara.email}`);
+    const unknown = await ask(` nobody-${randomUUID()}@${a.domain}`);
+    expect(refused.status).toBe(400);
+    expect(free).toEqual(refused);
+    expect(unknown).toEqual(refused);
+    expect(resets).toEqual([]);
+    expect(await verificationCount(ann.id)).toBe(0);
+    expect(refusedLines(from, "reset_request_refused_sso", ann.id)).toEqual([]);
+  });
+
+  test("15: a wrong password of a member outside the rule still counts when the check is set", async () => {
+    const a = await makeOrg("pia");
+    const b = await makeOrg("bob");
+    const ann = await makeMember("ann", a.domain, [a.orgId]);
+    const cara = await makeMember("cara", b.domain, [b.orgId]);
+    await setRequired(a.orgId, true);
+    expect((await signIn(ann.email)).status).toBe(401);
+    expect((await signIn(cara.email, WRONG_PASSWORD)).status).toBe(401);
+    expect((await lockoutRow(cara.id))?.failed_count).toBe(1);
+    expect(await lockoutRow(ann.id)).toBeUndefined();
+  });
+
+  test("16: the break-glass mark of another organization gives no exemption", async () => {
+    const a = await makeOrg("pia");
+    const b = await makeOrg("bob");
+    // Olaf holds the mark and TOTP in B (no rule there) and is a plain owner in A (the rule is on).
+    const olaf = await makeMember("olaf", a.domain, [b.orgId, a.orgId], { breakGlass: true });
+    await enrol(olaf.email);
+    await setRequired(a.orgId, true);
+    const before = await sessionCount(olaf.id);
+    const result = await signIn(olaf.email);
+    expect(result.status).toBe(401);
+    expect(result.json).toEqual(WRONG_ANSWER);
+    expect(result.setCookie).toEqual([]);
+    expect(await sessionCount(olaf.id)).toBe(before);
+  });
+
+  test("17: no log line holds a password, a TOTP secret or an e-mail address", () => {
     const lines = captured.filter((line) => line.length > 0);
     expect(lines.some((line) => line.includes("password_sign_in_refused_sso"))).toBe(true);
     expect(secretsSeen.size).toBeGreaterThan(0);

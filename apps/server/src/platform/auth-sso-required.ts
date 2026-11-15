@@ -78,14 +78,16 @@ export async function refuseSsoRequiredSignIn(
 }
 
 // A reset request of a refused member sends no mail and writes no token; the caller answers the generic answer.
+// Better Auth checks the body after the hooks, so an address that its own schema (`z.email()`) refuses must not match
+// here: the endpoint answers 400 for it, and a 200 would show that the address is a refused member. No trim.
 // An error of `isRefused` is not caught (fail closed).
 export async function isSsoRequiredResetRequest(
   ctx: HookContext,
   isRefused: (userId: string) => Promise<boolean>
 ): Promise<boolean> {
   const email = (ctx.body as { email?: unknown } | undefined)?.email;
-  if (typeof email !== "string") return false;
-  const found = await ctx.context.internalAdapter.findUserByEmail(email.trim().toLowerCase());
+  if (!emailSchema.safeParse(email).success) return false;
+  const found = await ctx.context.internalAdapter.findUserByEmail((email as string).toLowerCase());
   if (!found || !(await isRefused(found.user.id))) return false;
   log.info("reset_request_refused_sso", { user_id: found.user.id });
   return true;
