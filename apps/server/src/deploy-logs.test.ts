@@ -16,9 +16,9 @@ if (Bun.which("jq") === null) {
   throw new Error("deploy-logs.test.ts needs jq on PATH (install jq, then run again)");
 }
 
-const run = (args: string[], stdin = "", env: Record<string, string> = {}) => {
+const run = (args: string[], stdin = "", env: Record<string, string> = {}, cwd = repoRoot) => {
   const result = Bun.spawnSync(["bash", script, ...args], {
-    cwd: repoRoot,
+    cwd,
     env: { ...process.env, ...env },
     stdin: new TextEncoder().encode(stdin),
   });
@@ -101,5 +101,36 @@ describe("deploy/logs.sh", () => {
     expect(result.out).toBe("2026-11-20T10:00:00.000Z info [mail] from_docker run_id=r-9\n");
     const plain = run([], "", { PATH: `${bin}:${process.env.PATH ?? ""}` });
     expect(plain.err).toContain("logs --no-log-prefix --since 1h server");
+  });
+
+  test("a line with a non-string level is printed, not dropped", () => {
+    const input = lines(JSON.stringify({ time: "T", level: 30, module: "mail", event: "odd" }));
+    const result = run(["--stdin", "--level", "info"], input);
+    expect(result.code).toBe(0);
+    expect(result.err).toBe("");
+    expect(result.out).toBe("T 30 [mail] odd\n");
+  });
+
+  test("it runs from the repo root whatever the caller's directory is", () => {
+    const bin = join(dir, "bin-pwd");
+    Bun.spawnSync(["mkdir", "-p", bin]);
+    const fake = join(bin, "docker");
+    writeFileSync(fake, `#!/usr/bin/env bash\nprintf '%s\\n' "$PWD" >&2\n`);
+    chmodSync(fake, 0o755);
+    const result = run([], "", { PATH: `${bin}:${process.env.PATH ?? ""}` }, tmpdir());
+    expect(result.code).toBe(0);
+    expect(result.err.trim()).toBe(repoRoot);
+  });
+
+  test("--follow gives jq --unbuffered; without --follow it does not", () => {
+    const bin = join(dir, "bin-jq");
+    Bun.spawnSync(["mkdir", "-p", bin]);
+    writeFileSync(join(bin, "docker"), "#!/usr/bin/env bash\nexit 0\n");
+    writeFileSync(join(bin, "jq"), `#!/usr/bin/env bash\nprintf 'jq %s\\n' "$*" >&2\nexec ${Bun.which("jq")} "$@"\n`);
+    chmodSync(join(bin, "docker"), 0o755);
+    chmodSync(join(bin, "jq"), 0o755);
+    const env = { PATH: `${bin}:${process.env.PATH ?? ""}` };
+    expect(run(["--follow"], "", env).err).toContain("--unbuffered");
+    expect(run([], "", env).err).not.toContain("--unbuffered");
   });
 });

@@ -112,6 +112,8 @@ services:
     command:
       - -remoteWrite.url=http://victorialogs:9428/internal/insert
       - -tmpDataPath=/vlagent
+      # Caps what vlagent buffers on disk when the store is down (vlagent-data).
+      - -remoteWrite.maxDiskUsagePerURL=500MB
       # Only json-file logs: the server's (ADR 0024 point 4).
       - -fileCollector.glob=/var/lib/docker/containers/*/*-json.log
       - -fileCollector.ignoreFields=hostname

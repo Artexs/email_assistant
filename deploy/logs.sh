@@ -6,6 +6,9 @@
 # The hidden option --stdin reads JSON lines from stdin instead of `docker compose logs` (the test uses it).
 set -euo pipefail
 
+# Run from the repo root whatever the caller's directory is (the Compose paths below are relative to it).
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 usage() {
   echo "usage: bash deploy/logs.sh [--since <duration>] [--run <id>] [--request <id>] [--event <code>] [--level <debug|info|warn|error>] [--follow]" >&2
   exit 2
@@ -42,17 +45,24 @@ case "$level" in
   *) usage ;;
 esac
 
+# --follow needs jq to print each line at once, not in blocks.
+jq_flags=()
+if [ "$follow" -eq 1 ]; then
+  jq_flags=(--unbuffered)
+fi
+
 # The filters hold values only through --arg. An empty value means no filter.
 render() {
-  jq -rR --arg run "$run" --arg request "$request" --arg event "$event" --arg level "$level" '
-    def rank: {debug: 0, info: 1, warn: 2, error: 3}[.] // 0;
+  jq -rR ${jq_flags[@]+"${jq_flags[@]}"} --arg run "$run" --arg request "$request" --arg event "$event" --arg level "$level" '
+    # A level that is not one of the four (a number, say) ranks as the highest: it is shown, not hidden.
+    def rank: {debug: 0, info: 1, warn: 2, error: 3}[tostring] // 99;
     fromjson?
     | select(type == "object")
     | select($run == "" or .run_id == $run)
     | select($request == "" or .request_id == $request)
     | select($event == "" or .event == $event)
     | select($level == "" or ((.level // "info") | rank) >= ($level | rank))
-    | [.time, .level, "[\(.module)]", .event, (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))]
+    | [.time, (.level | tostring), "[\(.module)]", .event, (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))]
     | map(select(. != "")) | join(" ")'
 }
 

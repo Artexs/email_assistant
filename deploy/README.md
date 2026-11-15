@@ -119,6 +119,8 @@ Limits:
 - It holds only `server` lines: the agent reads only `json-file` logs, and only `server` writes them. Postgres, `cli`, `exec` and the store itself never reach it.
 - The agent also reads the `json-file` logs of any other Compose project on the host. Check with `docker ps -a` before the first start.
 - The agent runs as root, because Docker writes its log files with mode `0640`.
+- The agent buffers at most 500 MB on disk (`-remoteWrite.maxDiskUsagePerURL`, volume `vlagent-data`) while the store is down.
+- The read-only mount of `/var/lib/docker/containers` also lets the `vlagent` container read the `config.v2.json` of each container (its environment and secrets). `vlagent` ships only the `*-json.log` files. For this reason the agent does not use the Docker socket, and it runs only under the profile `ops`.
 - No lines? See `docs/known-alerts.md` § "Log store: vlagent reads no lines".
 
 ## Login error (`auth_error`)
