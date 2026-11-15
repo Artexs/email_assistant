@@ -310,7 +310,7 @@ export async function runSuspicious(options: EvalOptions, deps: SuspiciousDeps =
     loaded = await loadSimCases({ root, scenario: scenarioId, part, requireManifest: part === "holdout" });
     scenario = readScenario(corpusDir(scenarioId, root));
   } catch (error) {
-    if (error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE) log.error(HOLDOUT_NEEDS_FREEZE);
+    if (error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE) log.error("holdout_needs_freeze");
     else log.error("corpus_load_failed");
     return 1;
   }
