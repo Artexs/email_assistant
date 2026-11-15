@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { autoEvidence, type AutoEvidenceInput, type GlobalEvidence } from "./evidence";
+import { autoEvidence, type AutoEvidenceInput, type EvidenceBlock, type GlobalEvidence } from "./evidence";
 
 const go: GlobalEvidence = {
   decision: "go",
@@ -135,13 +135,13 @@ describe("autoEvidence over the whole input space", () => {
                   recommended: eligible && !activeTrip.tripped && moving,
                 });
                 // Every reason that the rule names is in the list, and no other reason is.
-                const expected = [
-                  ...(decision === "none" ? ["no_global"] : []),
-                  ...(decision === "no-go" || decision === "too-few" ? ["global_no_go"] : []),
-                  ...(provisional ? ["global_provisional"] : []),
-                  ...(history === "fail" ? ["history_fail"] : []),
-                  ...(activeTrip.tripped ? ["tripped"] : []),
-                  ...(labelsBlock ? ["real_labels_no_go"] : []),
+                const expected: EvidenceBlock[] = [
+                  ...(decision === "none" ? (["no_global"] as const) : []),
+                  ...(decision === "no-go" || decision === "too-few" ? (["global_no_go"] as const) : []),
+                  ...(provisional ? (["global_provisional"] as const) : []),
+                  ...(history === "fail" ? (["history_fail"] as const) : []),
+                  ...(activeTrip.tripped ? (["tripped"] as const) : []),
+                  ...(labelsBlock ? (["real_labels_no_go"] as const) : []),
                 ];
                 expect({ label, blocks: result.blocks }).toEqual({ label, blocks: expected });
               }
