@@ -187,6 +187,8 @@ async function reverseRowsOf(trx: Db | Transaction<DB>, draftId: string) {
   return trx.selectFrom("actions").selectAll().where("reverses_action_id", "=", draftId).execute();
 }
 
+const approval = (userId: string) => ({ approved_by: userId, approved_at: NOW, approved_via: "web" });
+
 function editInput(over: Partial<Parameters<typeof editApproval>[3]> = {}): Parameters<typeof editApproval>[3] {
   return { userId: randomUUID(), via: "web", now: NOW, subject: NEW_SUBJECT, body: NEW_BODY, ...over };
 }
@@ -390,6 +392,33 @@ describe("editApproval: the new version", () => {
     });
   });
 
+  test("T5c: a send in any other state answers closed with that state and nothing changes", async () => {
+    // The checks of `actions` want the approval fields for every state after `awaiting_approval`.
+    const states: { state: string; set: (userId: string) => Record<string, unknown> }[] = [
+      { state: "applying", set: (u) => ({ status: "applying", locked_at: NOW, ...approval(u) }) },
+      { state: "applied", set: (u) => ({ status: "applied", applied_at: NOW, ...approval(u) }) },
+      { state: "rejected", set: () => ({ status: "rejected", status_reason: "rejected" }) },
+      { state: "expired", set: () => ({ status: "expired", status_reason: "timeout" }) },
+      // Held by the send scope or a pause: approved, not locked.
+      { state: "approved", set: (u) => ({ status: "approved", ...approval(u) }) },
+    ];
+    for (const { state, set } of states) {
+      await withRollback(db, async (trx) => {
+        const s = await seed(trx);
+        await trx.updateTable("actions").set(set(s.userId)).where("id", "=", s.p.sendId).execute();
+        expect(await edit(trx, s, s.p.sendId), state).toEqual({ kind: "closed", state });
+        const rows = await trx
+          .selectFrom("actions")
+          .select("id")
+          .where("org_id", "=", s.ctx.orgId)
+          .where("supersedes_action_id", "is not", null)
+          .execute();
+        expect(rows, state).toEqual([]);
+        expect((await row(trx, s.p.draftId)).status, state).toBe("applied");
+      });
+    }
+  });
+
   test("T5b: a reminder is not editable; a delegateId on a clarification is a validation error; bad text too", async () => {
     await withRollback(db, async (trx) => {
       const reminder = await seed(trx, { kind: "reminder" });
@@ -544,14 +573,14 @@ describe("editApproval: the new version", () => {
         } as never)
       ).toEqual([]);
 
-      const link: LinkedChat = {
+      const linkOf = (locale: "en" | "pl"): LinkedChat => ({
         orgId: s.ctx.orgId,
         userId: s.userId,
         role: "owner",
         chatId: 1,
         linkedAt: CREATED,
-        locale: "en",
-      };
+        locale,
+      });
       const deps: CallbackDeps = {
         db: trx,
         now: () => NOW,
@@ -560,8 +589,12 @@ describe("editApproval: the new version", () => {
         uidplus: async () => true,
         sendScope: { kind: "all" },
       };
-      expect((await handleCallback(deps, link, `ap:${s.p.sendId}`)).answer).toBe(textTables.en.bot.taps.changed);
-      expect((await handleCallback(deps, link, `ar:${s.p.sendId}`)).answer).toBe(textTables.en.bot.taps.changed);
+      for (const locale of ["en", "pl"] as const) {
+        const changed = textTables[locale].bot.taps.changed;
+        expect((await handleCallback(deps, linkOf(locale), `ap:${s.p.sendId}`)).answer).toBe(changed);
+        expect((await handleCallback(deps, linkOf(locale), `ar:${s.p.sendId}`)).answer).toBe(changed);
+      }
+      expect(textTables.pl.bot.taps.changed).not.toBe(textTables.en.bot.taps.changed);
       expect((await row(trx, s.p.sendId)).status_reason).toBe("superseded");
     });
   });
@@ -650,6 +683,37 @@ describe("editApproval: concurrent writers", () => {
         .execute();
       expect(rows.filter((r) => r.status === "awaiting_approval")).toHaveLength(1);
       expect(rows.find((r) => r.id === c.p.sendId)).toMatchObject({ status: "expired", status_reason: "superseded" });
+    } finally {
+      await c.clean();
+    }
+  });
+
+  test("T9b: the setter commits first: the edit answers drafts_off and no new send waits", async () => {
+    const c = await committed();
+    try {
+      const [editor, setter] = [connection(), connection()];
+      await setMode(
+        settingsDeps(setter, () => NOW),
+        c.ctx,
+        c.mailboxId,
+        { mode: "shadow", keepSwitches: true, actor: "test" }
+      );
+
+      const result = await editApproval(
+        depsOf(editor, { hooks: noDelegationHooks }),
+        c.ctx,
+        c.p.sendId,
+        editInput({ userId: c.userId })
+      );
+
+      expect(result).toEqual({ kind: "drafts_off" });
+      const sends = await db
+        .selectFrom("actions")
+        .select(["status", "status_reason"])
+        .where("org_id", "=", c.orgId)
+        .where("type", "=", "send")
+        .execute();
+      expect(sends).toEqual([{ status: "expired", status_reason: "policy_changed" }]);
     } finally {
       await c.clean();
     }
