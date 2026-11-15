@@ -740,6 +740,15 @@ describe("mailbox OAuth keys (F117 D7)", () => {
   });
 });
 
+describe("OPERATOR_LOCALE (F114)", () => {
+  test("empty gives en; pl is allowed; another value is refused", () => {
+    expect(loadConfig(fullEnv).OPERATOR_LOCALE).toBe("en");
+    expect(loadConfig({ ...fullEnv, OPERATOR_LOCALE: "" }).OPERATOR_LOCALE).toBe("en");
+    expect(loadConfig({ ...fullEnv, OPERATOR_LOCALE: "pl" }).OPERATOR_LOCALE).toBe("pl");
+    expect(configError({ ...fullEnv, OPERATOR_LOCALE: "de" }).keys).toEqual(["OPERATOR_LOCALE"]);
+  });
+});
+
 describe("SLO thresholds (F114)", () => {
   test("1. no key set gives the defaults", () => {
     expect(sloThresholds(loadConfig(fullEnv))).toEqual({

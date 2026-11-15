@@ -304,6 +304,7 @@ function fakePause(): FakePause {
       return new Date(at.getTime() + 5 * 60_000);
     },
     isPaused: () => false,
+    pausedSince: () => null,
     reset() {
       this.resets += 1;
     },

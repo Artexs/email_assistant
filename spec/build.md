@@ -20,8 +20,11 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟠 ACTIVE): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
+- `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
+- `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟠 ACTIVE): E8b Alerts and releases (incl. the restore drill)
+- `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
 - `F112-e10a-docs-site` (🟠 ACTIVE): E10a Docs site
-- `F109-e3b-improve` (🟠 ACTIVE): E3b Improve
+- `F111-e11b-private-model-option` (🟠 ACTIVE): E11b Private model option
 - `F106-e7-t3-account-data-delete-export-dsr` (🟠 ACTIVE): E7-T3 Account data (delete, export, DSR)
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
 - `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
@@ -55,7 +58,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, plan landed, 12 stages): E7-T3 Account data (delete, export, DSR); stage 01 the only migration, stage 05 the only `bun.lock` change; build after F082, F098 (closed); gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, plan landed, 8 stages): E7-T4 Papers and cost; legal drafts (pl, en), internal papers, claims list, cost model v1; sequenced after F106 (build after F106 is in `done/`); gate —; stage 07 is the VPS deploy (coordinator), stage 08 the cost model.
 - `F108-e7-t5-production-on-the-vps` (🔴 PLANNED, needs plan): E7-T5 Production on the VPS; sequenced after E7-T1 … T4; the E8b drill proves its restore; gate —.
-- `F109-e3b-improve` (🔴 PLANNED, plan landed, 16 stages, plan base b9261659, no drift): E3b Improve (suspicious-mail rules, classifier-v3, escalation experiment, degraded-mode notice); build after E2a, E3a (closed); second pass taken on defaults (Q1); stage 02 the only migration; stages 09, 11, 13 spend real LLM money (caps in plan); escalation stage 14 builds only on a 'ship' decision.
 - `F110-e4-b-earn-trust` (🔴 PLANNED, plan landed, 26 stages, plan base 9341d9f0): E4-B Earn trust: a new user earns auto per category from global evidence, a history check at connect and a tripwire, with report, mail channel, quiet hours, urgency editor and bulk unsubscribe (stages 22–24 can be cut); build after F097, F100, F102 stages 01–03, F109 stage 04, F111 stage 03 (all landed except F102/F097 closure: check `Build after`); stage 03 and 22 migrations; refresh before stage 01 (`scripts/plan-drift.sh`); gate —.
 - `F111-e11b-private-model-option` (🟠 ACTIVE, plan landed and refreshed, 7 stages, plan base 7f4cd964): E11b Private model option (endpoint config, own model on the owner's PC); stages 01–06 do not wait for OpenAI's EU answer; stage 07 (EU) waits for PD-111 and the PD-110 second pass; owner steps O1 (OpenAI Europe project request now), O2 (`ollama-rocm` before stage 05, or rent a GPU), O3 (PD-110 second pass before stage 07); no migration, no `bun.lock` change.
 - `F112-e10a-docs-site` (🔴 PLANNED, plan landed, 16 stages, plan base 116efb17, no drift): public docs site on GitHub Pages; build after F095, F101 closed (F101 stages 01–03 are on master; stage 01 and 06 change `bun.lock`); gate —; stage 16 needs owner step O1 (Pages source, `v*` tags in the `github-pages` environment, first deploy on master).
@@ -93,6 +95,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
+- `F109-e3b-improve` (🟢 PROVEN): E3b Improve; landed 2026-11-15
 - `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
 - `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
@@ -101,5 +104,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
 - `F100-e3a-measure` (🟢 PROVEN): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes; landed 2026-11-14
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟢 PROVEN): E7-T2 Platform controls (send limits, feature flags, operator console, security log); landed 2026-11-14
-- `F098-e7-t1-polish-ui-i18n-frame-first` (🟢 PROVEN): E7-T1 Polish UI (i18n frame first); landed 2026-11-14
-- 2026-11: 74 landed. spec/features/done/2026-11/
+- 2026-11: 75 landed. spec/features/done/2026-11/

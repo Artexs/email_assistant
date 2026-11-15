@@ -217,7 +217,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     } catch (error) {
       await release(ctx, batch, now);
       if (error instanceof MailAuthError) {
-        await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", now);
+        await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", now, error.reason ?? null);
         mailboxLog.warn("committer_auth_error");
       } else if (error instanceof HostNotAllowedError) {
         await markHostBlocked(deps.db, ctx, mailboxId, { now, source: "committer" });
@@ -304,7 +304,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
         else if (outcome.kind === "failed") counts.failed += 1;
         else if (outcome.kind === "retry") counts.retry += 1;
         if (outcome.kind === "auth_error") {
-          await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", now);
+          await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", now, outcome.reason ?? null);
           mailboxLog.warn("committer_auth_error");
           await release(ctx, batch.slice(index), now);
           index = batch.length;

@@ -41,3 +41,7 @@ T1–T11 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s12`).
 ## Out of scope
 
 Closing by replies (13), the chaser (15).
+
+## Carry-over from stage 05 review
+
+Read `review-5.md`. `extractSent(llm, input, { timeZone })` has no db and writes no `llm.call` row: this stage writes it (success from `usage`; failure with `llm.modelOf("extractor")`, `llm.endpointOf("extractor")` and the caller's own latency) so extractor calls count in the D14 cap. Filter `pending` rows before `sentSkipReason`. A soft error is told from a hard one with `softCodes.includes(code)`. Stage 12 opens `waiting` only when `expects_reply` is true (an `ask` with `expects_reply` false is ignored).

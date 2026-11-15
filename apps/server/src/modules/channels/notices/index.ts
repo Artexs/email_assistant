@@ -12,9 +12,11 @@ import { approvalSetDetector } from "./approval-set";
 import { authErrorDetector } from "./auth-error";
 import { delegationAnsweredDetector } from "./delegation-answered";
 import { hostBlockedDetector } from "./host-blocked";
+import { notTriagedDetector } from "./not-triaged";
 import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
 import { sendHeldDetector } from "./send-held";
 import { sendResultDetector } from "./send-result";
+import { sentMissingDetector } from "./sent-missing";
 import { SYNC_LATE_MS, syncDetector } from "./sync";
 import { urgentDetector } from "./urgent";
 import { weeklyReportDetector } from "./weekly-report";
@@ -30,6 +32,7 @@ export const detectors: readonly Detector[] = [
   actionFailedDetector,
   authErrorDetector,
   hostBlockedDetector,
+  sentMissingDetector,
   syncDetector,
   approvalDetector,
   approvalSetDetector,
@@ -37,6 +40,7 @@ export const detectors: readonly Detector[] = [
   sendHeldDetector,
   delegationAnsweredDetector,
   weeklyReportDetector,
+  notTriagedDetector,
 ];
 
 // Kinds that a producer outside the detector list queues.

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -34,5 +35,14 @@ describe("main", () => {
     expect(exitCode).toBe(1);
     expect(stderr).toContain("TELEGRAM_BOT_TOKEN");
     expect(stderr).not.toContain("abc");
+  });
+
+  // Source-level pin of the wiring (F114 stage 03): the `ops.slo` tick sends through the one operator send that
+  // `channels.operator` also gets (a function when OPERATOR_TELEGRAM_CHAT_ID is set, null when it is unset).
+  test("the ops.slo job and the operator notices share one operator send", () => {
+    const source = readFileSync(mainPath, "utf8");
+    expect(source).toMatch(/const operatorSend =\s+operatorChat === null\s+\? null\s+: async/);
+    expect(source).toContain("createOperatorNotices({ db, now: () => new Date(), send: operatorSend })");
+    expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?send: operatorSend,/);
   });
 });
