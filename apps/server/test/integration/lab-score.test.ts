@@ -154,6 +154,23 @@ describe("joinRun (stage 12 tests 6 to 8)", () => {
     });
   });
 
+  test("8b: two mail rows with one Message-ID: the row that has a result wins, whatever the order of the ids", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const [a] = inbound as [Slot];
+      const first = await insertTestEmail(trx, { orgId: org.orgId }, org.mailboxId, { message_id_header: idOf(a.id) });
+      const second = await insertTestEmail(trx, { orgId: org.orgId }, org.mailboxId, { message_id_header: idOf(a.id) });
+      // The result goes to the copy with the higher id, so a pick of the lowest id would lose it.
+      const [, higher] = [first, second].sort((x, y) => x.localeCompare(y)) as [string, string];
+      await trx
+        .insertInto("triage_results")
+        .values({ org_id: org.orgId, email_id: higher, category: "spam", confidence: 0.9, reason_code: "other" })
+        .execute();
+      const [row] = await joinRun(trx, { orgId: org.orgId }, runOf([a.id]), [done(a.id)], corpus, org.mailboxId);
+      expect(row).toMatchObject({ emailId: higher, predicted: "spam" });
+    });
+  });
+
   test("8: two triage rows for one mail: the latest is used", async () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);
@@ -303,7 +320,8 @@ describe("scoreLabRun", () => {
       expect(score.header.manifestHash).toMatch(/^[0-9a-f]{64}$/);
       expect(score.header.spendUsd).toBeGreaterThan(0);
       expect(score.triage.scored).toBe(2);
-      expect(score.triage.missing.skipped).toEqual({ smtp_failed: 1 });
+      // The sent slot is no triage row: it is neither not_synced nor scored.
+      expect(score.triage.missing).toEqual({ notSynced: 0, notTriaged: 0, skipped: { smtp_failed: 1 } });
       expect(score.sections.coverage).toEqual(coverageOf(run, state.events(RUN)));
       expect(score.sections.sentCopies).toEqual({ appended: 1, seen: 0 });
 
