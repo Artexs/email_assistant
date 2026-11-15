@@ -10,7 +10,7 @@ import {
   listExpiredApprovals,
   noDelegationHooks,
 } from "../../src/modules/actions";
-import { MailAuthError, NO_TEST_SENDERS, SmtpSendError } from "../../src/modules/mail";
+import { MailAuthError, SmtpSendError } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials } from "../../src/modules/mail/repo";
