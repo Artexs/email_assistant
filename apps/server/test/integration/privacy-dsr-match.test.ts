@@ -185,6 +185,7 @@ describe("DSR address map", () => {
     // table (no `org_id`) is exempt only when it is named in HOST_WIDE_TABLES and exists.
     const tenantTables = new Set(tenant.map((column) => column.table));
     const existing = await realColumns();
+    expect(Object.keys(NO_PERSONAL_TABLES)).toEqual(expect.arrayContaining(HOST_WIDE_TABLES));
     for (const [table, reason] of Object.entries(NO_PERSONAL_TABLES)) {
       if (HOST_WIDE_TABLES.includes(table)) {
         expect(tenantTables.has(table)).toBe(false);
