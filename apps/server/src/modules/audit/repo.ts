@@ -43,6 +43,7 @@ export const auditEvents = {
   mailboxModeChanged: "mailbox.mode_changed",
   mailboxPolicyChanged: "mailbox.policy_changed",
   mailboxSwitchChanged: "mailbox.switch_changed",
+  settingsUrgencySet: "settings.urgency_set", // data: mailbox_id, topics, deadlines (counts), via
   mailboxSyncFolderAdded: "mailbox.sync_folder_added", // data: mailbox_id, folder_key, role
   mailboxSyncFolderChanged: "mailbox.sync_folder_changed", // data: mailbox_id, folder_key, enabled
   ruleAdded: "rule.added", // data: rule_id, kind, scope, mailbox_id when scope is "mailbox"
@@ -91,6 +92,9 @@ export const auditEvents = {
   ssoDomainVerified: "sso.domain_verified", // actor: cli; data: provider_id, domain (the DNS proof)
   ssoDomainAttested: "sso.domain_attested", // actor: cli; data: provider_id, domain (the attestation of a test organization)
   ssoRequiredChanged: "sso.required_changed", // actor: cli; data: from, to, sessions_ended
+  ssoUnlinked: "sso.unlinked", // actor: cli; data: user_id, sessions_ended
+  orgMemberAdded: "org.member_added", // actor: cli; data: user_id, role
+  webMemberSessionsEnded: "web.member_sessions_ended", // actor: cli; data: user_id, count, only_sso
 } as const;
 
 export interface AuditEvent {

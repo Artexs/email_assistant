@@ -8,13 +8,13 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { evalStateFileName, prompts } from "../modules/triage";
 import { type Config, llmRoleTable, loadConfig } from "../platform/config";
+import { ledgerLine } from "../platform/eval-ledger";
 import { type LlmCall, type LlmClient, LlmConfigError, LlmSoftError } from "../platform/llm";
+import { readSlots, writeJson } from "../platform/sim-files";
 
 import { type ClassifierDeps, runClassifier } from "./eval";
 import { parseEvalArgs } from "./eval-args";
-import { ledgerLine } from "./eval-ledger";
 import { runSim, type SimDeps } from "./eval-sim";
-import { readSlots, writeJson } from "./sim-files";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
 // `bun run eval` and `eval --sim` print through createCliOutput: `print` to stdout, `fail` to stderr. Each test reads
@@ -84,6 +84,7 @@ function fakeClient(slots: Slot[], opts: { failFrom?: number; configError?: bool
   let calls = 0;
   return {
     modelOf: () => MODEL,
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls;
       calls += 1;
@@ -101,6 +102,7 @@ function fakeClient(slots: Slot[], opts: { failFrom?: number; configError?: bool
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 5,
+          endpoint: "standard",
         },
       };
     },

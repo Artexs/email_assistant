@@ -12,7 +12,7 @@ import {
 import { claimEmails } from "../../src/modules/mail";
 import { saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
 
-import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
+import { createOrgWithMailbox, insertTestEmail, noSuspiciousContext } from "./fixtures";
 import { testDb } from "./helpers";
 
 const db = testDb();
@@ -37,6 +37,7 @@ const decision: TriageDecision = {
   usage: null,
   auditReasonCode: "newsletter",
   delegation: null,
+  suspiciousReasons: [],
 };
 
 // Own org, committed: the setter and the writer run on separate connections. The caller cleans up.
@@ -72,6 +73,7 @@ async function committedSetup() {
       timezone: "Europe/Warsaw",
       junkFolder: null,
       resumedAt: null,
+      suspicious: noSuspiciousContext,
     };
     return { created, ctx, emailId, email, mailbox };
   } catch (error) {

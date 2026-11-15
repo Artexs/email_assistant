@@ -453,7 +453,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `notice_skipped` (fields `kind`, `item_id`, `error`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `warn`; `kind` is `approval`, `approval_set`, `send_result`, `delegation_answered` and more; `item_id` is the row id (for `weekly_report` the organization id); `error` is the error name). Once per process and row. The `send_held` kind has `reason` `unknown_send_limit` instead of `error`, and it repeats on each tick.
+- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `warn`; `kind` is `approval`, `approval_set`, `send_result`, `delegation_answered` and more; `item_id` is the row id (for `weekly_report` the organization id); `error` is the error name). Once per process and row. One line of the `send_held` kind (a hold with an unknown limit text) has `reason` `unknown_send_limit` and no `error`; it repeats on each tick. Other `send_held` skips carry `error` like the rest.
 - **Cause:** The notice job could not build the message for one row (for example a draft payload that does not parse, a missing mailbox, or a missing organization). It skips that row and goes on with the others. The row keeps failing on every tick until someone fixes it, and the owner gets no message for it.
 - **Fix:** Find the row with a read-only query (`$C exec db psql -U postgres -d email_assistant -c "<sql>"`):
   `approval`: `select id, status, notified_at, payload->>'kind' from actions where id = '<id>';`
@@ -759,12 +759,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check `GEMINI_API_KEY`, `GEMINI_MODEL_CLASSIFIER` and the Google project. Then restart the server. The pause uses the same backoff as a soft error and the mail gets no try count.
 - **Status:** investigating (per case)
 
-### `LLM config error <code>: check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER and the OpenAI project (billing, budget, model access); triage paused for <n> min, until <time>`
+### `LLM config error <code>: check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER, OPENAI_BASE_URL and the OpenAI project (billing, budget, model access); triage paused for <n> min, until <time>`
 
 - **First seen:** 2026-11-06
 - **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`) with `LLM_PROVIDER=openai`. Codes: `http_401` (bad key), `http_403` (no access or region), `http_404` (unknown model), `http_429_quota`, `http_400_schema`, `schema_not_strict`.
 - **Cause:** See the code. `http_429_quota`: no money on the OpenAI account or the project budget is spent; a retry does not help. `http_400_schema`: OpenAI rejects the strict schema, so every mail would fail. `schema_not_strict`: our own check found a schema object that breaks the strict rules (a code change).
-- **Fix:** `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER` and the OpenAI project. `http_429_quota`: add credit or raise the budget, then wait for the pause to end or restart the server. `/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07; flag `llm_pause_line`). `http_400_schema`: run `bun run llm:check --provider openai`, check the strict schema adapter and the rejected keywords (`notes/2026-11-06-openai-api-facts.md`). `schema_not_strict`: make every property required and nullable, `additionalProperties: false`.
+- **Fix:** `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER`, `OPENAI_BASE_URL` (`llm_settings` and `llm:check` show the endpoint kind and host) and the OpenAI project. `http_429_quota`: add credit or raise the budget, then wait for the pause to end or restart the server. `/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07; flag `llm_pause_line`). `http_400_schema`: run `bun run llm:check --provider openai`, check the strict schema adapter and the rejected keywords (`notes/2026-11-06-openai-api-facts.md`). `schema_not_strict`: make every property required and nullable, `additionalProperties: false`.
 - **Status:** investigating (per case)
 
 ### `triage <mailboxId>: no mailbox_settings row, mailbox skipped`

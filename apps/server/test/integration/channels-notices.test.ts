@@ -595,9 +595,7 @@ describe("organizations", () => {
       await run(trx);
       expect(await rows(trx, b.orgId, "urgent")).toHaveLength(2);
       expect(await rows(trx, a.orgId)).toHaveLength(0);
-      expect(errorLines.filter((line) => line.includes(`notices_org_failed org_id=${a.orgId} error=`))).toHaveLength(1);
-      expect(errorLines.filter((line) => line.includes("dropped_fields"))).toEqual([]);
-      expect(errorLines.filter((line) => line.includes(b.orgId))).toHaveLength(0);
+      expect(errorLines).toEqual([`[channels] notices_org_failed org_id=${a.orgId} error=TypeError`]);
     });
   });
 });

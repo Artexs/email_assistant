@@ -119,6 +119,7 @@ describe("a mailbox whose host the guard refuses: the whole episode", () => {
           return createFakeMailProvider({ uidValidity: 7 });
         },
         isOwnActionId: async () => false,
+        sentOriginOf: async () => null,
         now: () => clock,
       });
       const notices = (time: Date) =>

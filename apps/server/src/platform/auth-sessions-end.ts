@@ -49,3 +49,28 @@ export async function endPasswordSessionsAndChallenges(
     .executeTakeFirst();
   return { sessionsEnded: Number(sessions.numDeletedRows), challengesEnded: Number(verifications.numDeletedRows) };
 }
+
+// Ends the sessions of one user: all of them, or only the SSO ones (F119 stage 10). Returns the count. The caller has checked
+// that the user belongs to the organization of the operator's request.
+export async function endUserSessions(trx: Transaction<DB>, userId: string, onlySso: boolean): Promise<number> {
+  let query = trx.deleteFrom("auth_sessions").where("user_id", "=", userId);
+  if (onlySso) query = query.where("sign_in_method", "=", "sso");
+  const result = await query.executeTakeFirst();
+  return Number(result.numDeletedRows);
+}
+
+// Removes the link of one user to one SSO provider and, when a link existed, the SSO sessions of the user. A password session
+// stays. Without a link nothing changes: no SSO session can exist without one (the provider removal ends both together).
+export async function unlinkSsoAccount(
+  trx: Transaction<DB>,
+  userId: string,
+  providerId: string
+): Promise<{ linkRemoved: boolean; sessionsEnded: number }> {
+  const removed = await trx
+    .deleteFrom("auth_accounts")
+    .where("user_id", "=", userId)
+    .where("provider_id", "=", providerId)
+    .executeTakeFirst();
+  if (Number(removed.numDeletedRows) === 0) return { linkRemoved: false, sessionsEnded: 0 };
+  return { linkRemoved: true, sessionsEnded: await endUserSessions(trx, userId, true) };
+}

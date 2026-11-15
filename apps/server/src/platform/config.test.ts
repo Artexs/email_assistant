@@ -12,6 +12,7 @@ import {
   loadConfig,
   loadTestmailConfig,
   mailSyncCron,
+  mailTrustedAuthservIds,
   operatorChatId,
   operatorUserIds,
   sendLimits,
@@ -296,7 +297,13 @@ describe("loadConfig", () => {
       rpm: null,
       reasoningEffort: null,
     });
-    expect(table.providers.gemini).toEqual({ apiKeyName: "GEMINI_API_KEY", apiKey: "test-key", rpm: 12 });
+    expect(table.providers.gemini).toEqual({
+      apiKeyName: "GEMINI_API_KEY",
+      apiKey: "test-key",
+      rpm: 12,
+      baseUrl: null,
+      endpoint: "standard",
+    });
   });
 
   test("LLM_PROVIDER=openai needs OPENAI_API_KEY when the scope is not off", () => {
@@ -314,7 +321,13 @@ describe("loadConfig", () => {
       rpm: null,
       reasoningEffort: "none",
     };
-    const provider = { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 };
+    const provider = {
+      apiKeyName: "OPENAI_API_KEY",
+      apiKey: "o-key",
+      rpm: 60,
+      baseUrl: "https://api.openai.com/v1",
+      endpoint: "standard" as const,
+    };
     const table = llmRoleTable(loadConfig({ ...env, LLM_PROVIDER: "openai" }));
     expect(table.roles.classifier).toEqual(classifier);
     expect(table.providers.openai).toEqual(provider);
@@ -593,6 +606,18 @@ describe("FEATURES_OFF", () => {
   });
 });
 
+describe("MAIL_TRUSTED_AUTHSERV_IDS", () => {
+  test("unset or empty means no id", () => {
+    expect(mailTrustedAuthservIds(loadConfig(fullEnv))).toEqual([]);
+    expect(mailTrustedAuthservIds(loadConfig({ ...fullEnv, MAIL_TRUSTED_AUTHSERV_IDS: "" }))).toEqual([]);
+  });
+
+  test("the list is trimmed, lower case and unique", () => {
+    const config = loadConfig({ ...fullEnv, MAIL_TRUSTED_AUTHSERV_IDS: " MX.Corp.test , evil.test,mx.corp.test" });
+    expect(mailTrustedAuthservIds(config)).toEqual(["mx.corp.test", "evil.test"]);
+  });
+});
+
 describe("OPERATOR_USER_IDS", () => {
   const lower = "0b0f3b3e-6f1c-4d57-9d0e-3f0a8f6f2a11";
 
@@ -672,5 +697,44 @@ describe("mailSyncCron", () => {
     for (const value of ["4", "1", "0", "abc"]) {
       expect(configError({ ...fullEnv, MAIL_SYNC_EVERY_MIN: value }).keys).toContain("MAIL_SYNC_EVERY_MIN");
     }
+  });
+});
+
+describe("mailbox OAuth keys (F117 D7)", () => {
+  const web = { ...fullEnv, WEB_BASE_URL: "https://ea.x.test", WEB_AUTH_SECRET: randomBytes(32).toString("hex") };
+
+  test("only MAIL_OAUTH_GOOGLE_CLIENT_ID set: loadConfig fails, names the missing key, not a value", () => {
+    const error = configError({ ...web, MAIL_OAUTH_GOOGLE_CLIENT_ID: "id-canary" });
+    expect(error.keys).toEqual(["MAIL_OAUTH_GOOGLE_CLIENT_SECRET"]);
+    expect(error.message).toContain("MAIL_OAUTH_GOOGLE_CLIENT_SECRET");
+    expect(error.message).not.toContain("id-canary");
+  });
+
+  test("only the secret set: loadConfig fails, names the client id, not the secret", () => {
+    const error = configError({ ...web, MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "secret-canary" });
+    expect(error.keys).toEqual(["MAIL_OAUTH_MICROSOFT_CLIENT_ID"]);
+    expect(error.message).not.toContain("secret-canary");
+  });
+
+  test("a pair without WEB_BASE_URL fails and names WEB_BASE_URL", () => {
+    const error = configError({
+      ...fullEnv,
+      MAIL_OAUTH_GOOGLE_CLIENT_ID: "id",
+      MAIL_OAUTH_GOOGLE_CLIENT_SECRET: "secret-canary",
+    });
+    expect(error.keys).toEqual(["WEB_BASE_URL"]);
+    expect(error.message).not.toContain("secret-canary");
+  });
+
+  test("a full pair with WEB_BASE_URL loads; an empty string counts as unset", () => {
+    const config = loadConfig({
+      ...web,
+      MAIL_OAUTH_GOOGLE_CLIENT_ID: "id",
+      MAIL_OAUTH_GOOGLE_CLIENT_SECRET: "secret",
+      MAIL_OAUTH_MICROSOFT_CLIENT_ID: "",
+      MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "",
+    });
+    expect(config.MAIL_OAUTH_GOOGLE_CLIENT_ID).toBe("id");
+    expect(config.MAIL_OAUTH_MICROSOFT_CLIENT_ID).toBeUndefined();
   });
 });

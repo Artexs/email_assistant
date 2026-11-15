@@ -31,6 +31,7 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   send_held: "no_mail", // mailbox address, limit, counts
   host_blocked: "no_mail", // mailbox address
   weekly_report: "no_mail", // counts and category names only (`renderWeeklyReport`)
+  approval_edit: "one_mail", // `queueCardEdits` sets `emailId` of the target card (F102); its view keeps the card text
 };
 
 const MANY_MAILS_KINDS = noticeKinds.filter((kind) => NOTICE_MAIL_CONTENT[kind] === "many_mails");

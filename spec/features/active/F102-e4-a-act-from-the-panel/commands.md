@@ -45,6 +45,6 @@ Flags: `/approvals*` → `approvals_page`; `/delegates*`, `/delegations*` → `d
 ## Data
 
 - `actions.supersedes_action_id` (uuid, null), FK `(supersedes_action_id, org_id)` → `actions (id, org_id)`, unique where not null.
-- `outbox.edit_of_outbox_id` (uuid, null; an `approval_edit` row also has the target's `email_id`), FK → `outbox (id)` `ON DELETE CASCADE` (`outbox` has no `(id, org_id)` key; the sender checks that both rows have one `org_id`); kind `approval_edit` in `outbox_kind_check`; CHECK `kind <> 'approval_edit' OR edit_of_outbox_id IS NOT NULL`.
+- `outbox.edit_of_outbox_id` (uuid, null; an `approval_edit` row also has the target's `email_id`), composite FK `(edit_of_outbox_id, org_id)` → `outbox (id, org_id)` `ON DELETE CASCADE` (stage 06 adds `UNIQUE (id, org_id)`; the review of stage 06 N1: a plain FK on `id` crossed organizations); kind `approval_edit` in `outbox_kind_check`; CHECK `kind <> 'approval_edit' OR edit_of_outbox_id IS NOT NULL`.
 - Draft payload: `version` (int ≥ 1), `subject_text`, `body_text` (all optional).
 - Status reasons: send `superseded`; delegation `user_cancelled`. `approved_via` value `web`.

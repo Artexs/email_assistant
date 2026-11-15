@@ -27,6 +27,7 @@ const usage: LlmUsage = {
   tokensIn: 100,
   tokensOut: 20,
   latencyMs: 50,
+  endpoint: "standard",
 };
 
 type Step = Record<string, unknown> | Error;
@@ -52,6 +53,7 @@ function fakeLlm(script: Step[] | ((c: Recorded, n: number) => Step)): { llm: Ll
   const calls: Recorded[] = [];
   const llm: LlmClient = {
     modelOf: () => "gemini-3.5-flash-lite",
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls.length;
       calls.push({ prompt: req.prompt, system: req.system });
@@ -589,6 +591,7 @@ function delayedLlm(plan: (id: string, n: number) => { ms: number; step: Step })
   let maxInFlight = 0;
   const llm: LlmClient = {
     modelOf: () => "gemini-3.5-flash-lite",
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const id = /^Subject: (.*)$/m.exec(req.prompt)?.[1] ?? "?";
       const n = started.length;

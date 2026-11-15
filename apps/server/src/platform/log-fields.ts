@@ -52,6 +52,9 @@ export const codeFieldNames = [
   "folder_key",
   "provider",
   "model",
+  // The LLM endpoint: a kind (standard, eu, own) and a hostname from the operator config, never a URL.
+  "endpoint",
+  "host",
   "role",
   "method",
   "route",

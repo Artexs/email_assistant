@@ -61,6 +61,9 @@ async function main(): Promise<number> {
         out.fail("organization not found");
         return 1;
     }
+    if (result.warning === "sso_required_on") {
+      out.print("warning: sso_required is on; only the break-glass owner can sign in");
+    }
     if (killed.some((key) => key === result.flag)) {
       out.print(`(FEATURES_OFF holds ${result.flag}: it reads off everywhere)`);
     }

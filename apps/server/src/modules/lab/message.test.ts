@@ -2,7 +2,7 @@ import { LAB_FAKE_TELEGRAM_TOKEN, parseLabMessageId, planLiveRun, toLabMessage, 
 import { FAKE_TOKEN } from "@ea/fake-telegram";
 import { describe, expect, test } from "bun:test";
 
-import { corpusDir, readScenario, readSlots, readTexts } from "../../scripts/sim-files";
+import { corpusDir, readScenario, readSlots, readTexts } from "../../platform/sim-files";
 import { isSyntheticMessageId } from "../mail";
 
 import { renderLabMessage } from "./message";

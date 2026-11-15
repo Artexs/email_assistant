@@ -79,6 +79,24 @@ export const featureFlags = {
     epic: "E7-T7",
     removeBy: "2027-06-01",
   },
+  suspicious_mail: {
+    default: false,
+    description: "Suspicious mail gets a warning and no delegation draft.",
+    epic: "E3b",
+    removeBy: "2027-03-01",
+  },
+  mail_oauth_microsoft: {
+    default: false,
+    description: "Connect a Microsoft 365 or Outlook mailbox with Microsoft sign-in.",
+    epic: "E9a",
+    removeBy: "2027-06-01",
+  },
+  mail_oauth_google: {
+    default: false,
+    description: "Connect a Gmail mailbox with Google sign-in.",
+    epic: "E9a",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

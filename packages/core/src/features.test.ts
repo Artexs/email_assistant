@@ -23,6 +23,18 @@ describe("featureFlags registry", () => {
     }
   });
 
+  test("the mailbox OAuth flags default off, epic E9a, remove by 2027-06-01", () => {
+    for (const key of ["mail_oauth_microsoft", "mail_oauth_google"] as const) {
+      expect(featureFlags[key].default).toBe(false);
+      expect(featureFlags[key].epic).toBe("E9a");
+      expect(featureFlags[key].removeBy).toBe("2027-06-01");
+    }
+    expect(featureFlags.mail_oauth_microsoft.description).toBe(
+      "Connect a Microsoft 365 or Outlook mailbox with Microsoft sign-in."
+    );
+    expect(featureFlags.mail_oauth_google.description).toBe("Connect a Gmail mailbox with Google sign-in.");
+  });
+
   test("the epic pattern accepts every epic code form and refuses the rest", () => {
     for (const ok of ["E3a", "E4-A", "E5a", "E7-T2", "E8-LR", "E11b", "E7i"]) {
       expect(featureEpicPattern.test(ok)).toBe(true);

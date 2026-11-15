@@ -25,7 +25,14 @@ import {
   type LlmClient,
 } from "../../src/platform/llm";
 
-import { createOrgWithMailbox, insertAction, insertDelegate, insertDelegation, insertTestEmail } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertAction,
+  insertDelegate,
+  insertDelegation,
+  insertTestEmail,
+  noSuspiciousContext,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -62,6 +69,7 @@ async function setup(trx: Transaction<DB>) {
     timezone: "Europe/Warsaw",
     junkFolder: null,
     resumedAt: null,
+    suspicious: noSuspiciousContext,
   };
   return { ctx, emailId, email, mailbox };
 }
@@ -85,9 +93,11 @@ function decision(overrides: Partial<TriageDecision> = {}): TriageDecision {
       tokensIn: 120,
       tokensOut: 30,
       latencyMs: 850,
+      endpoint: "standard",
     },
     auditReasonCode: "newsletter",
     delegation: null,
+    suspiciousReasons: [],
     ...overrides,
   };
 }
@@ -135,6 +145,7 @@ describe("saveTriage", () => {
         latency_ms: 850,
         reason_code: "newsletter",
       });
+      expect(rows[0]?.suspicious_reasons).toEqual([]);
       expect(rows[0]?.fields).toEqual({ lang: "pl", model_category: "info" });
 
       const actions = await listActionsForEmail(trx, ctx, emailId);
@@ -157,6 +168,7 @@ describe("saveTriage", () => {
         confidence: 0.9,
         prompt_version: "classifier-v1",
         model: "m",
+        suspicious: "",
       });
       expect(JSON.stringify(log.map((r) => r.data))).not.toContain("short summary");
     });
@@ -244,6 +256,7 @@ function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
   const requests: { system: string; prompt: string }[] = [];
   return {
     modelOf: () => "fake-model",
+    endpointOf: () => "standard",
     requests,
     async generate(req) {
       requests.push({ system: req.system, prompt: req.prompt });
@@ -257,6 +270,7 @@ function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 300,
+          endpoint: "standard",
         },
       };
     },
@@ -1146,6 +1160,7 @@ describe("triageOne: the delegation plan", () => {
       const seen: { categories: string[]; delegates: boolean }[] = [];
       const recording: LlmClient = {
         modelOf: () => "fake-model",
+        endpointOf: () => "standard",
         async generate(req) {
           const shape = (req.schema as unknown as { shape: { category: { options: string[] } } }).shape;
           seen.push({ categories: shape.category.options, delegates: req.prompt.includes("Anna") });
@@ -1158,6 +1173,7 @@ describe("triageOne: the delegation plan", () => {
               tokensIn: 1,
               tokensOut: 1,
               latencyMs: 1,
+              endpoint: "standard",
             },
           };
         },
@@ -1456,6 +1472,7 @@ describe("triageOne: the plan by the source folder (D11)", () => {
       delegates: [{ id: delegateId, name: "Anna", email: "anna@firma.test", tags: ["offers"] }],
       junkFolder: opts.junkRow === false ? null : await getJunkFolderPath(trx, base.ctx, base.mailbox.id),
       resumedAt: null,
+      suspicious: noSuspiciousContext,
     };
     return { ...base, mailbox, delegateId };
   }

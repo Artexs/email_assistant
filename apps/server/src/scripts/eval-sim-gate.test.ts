@@ -9,10 +9,10 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { gateFileName, gateFileSchema } from "../modules/triage";
 import { loadConfig } from "../platform/config";
 import { type LlmCall, type LlmClient, LlmSoftError } from "../platform/llm";
+import { readSlots, writeJson } from "../platform/sim-files";
 
 import { parseEvalArgs } from "./eval-args";
 import { runSim } from "./eval-sim";
-import { readSlots, writeJson } from "./sim-files";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
 // The gate file rule of D27 at the runSim level: a gate file comes only from a COMPLETE holdout run at the default
@@ -75,6 +75,7 @@ function fakeClient(
   let calls = 0;
   const client: LlmClient = {
     modelOf: () => MODEL,
+    endpointOf: () => "standard",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls;
       calls += 1;
@@ -92,6 +93,7 @@ function fakeClient(
           tokensIn: 100,
           tokensOut: 20,
           latencyMs: 5,
+          endpoint: "standard",
         },
       };
     },
