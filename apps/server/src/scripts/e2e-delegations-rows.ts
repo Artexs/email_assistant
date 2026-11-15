@@ -96,6 +96,9 @@ async function seedDelegation(
       sent_message_id: sentStatus ? `<sent-${randomUUID()}@e2e.test>` : null,
       sent_at: drafted ? null : new Date(now.getTime() - 3 * DAY),
       reminders_sent: plan.remindersSent,
+      // The chaser of the e2e server (one run each minute) plans a reminder for an overdue delegation that has no reminder in the last
+      // 3 days: a planned reminder would change the rows under the spec. "Remind now" has no gap rule, so the spec is not affected.
+      last_reminder_at: sentStatus ? now : null,
       answered_at: plan.status === "answered" ? new Date(now.getTime() - DAY) : null,
       // The newest first: the list orders by `created_at`, so the seed order is the order on the page.
       created_at: new Date(now.getTime() - index * MINUTE),
