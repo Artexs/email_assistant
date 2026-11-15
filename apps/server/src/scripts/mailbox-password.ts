@@ -5,7 +5,6 @@ import { z } from "zod";
 import {
   configureMailHosts,
   MailAuthError,
-  MailboxOAuthError,
   openImapProvider,
   updateMailboxPassword,
   verifySmtpLogin,
@@ -97,9 +96,8 @@ async function main(): Promise<number> {
   } catch (error) {
     if (error instanceof MailAuthError) {
       out.fail(`${error.message}: the password was not saved`);
-    } else if (error instanceof MailboxOAuthError) {
-      out.fail("oauth mailbox: use Reconnect in the panel");
     } else if (error instanceof HardError) {
+      // `MailboxOAuthError` is one: its message is `oauth mailbox: use Reconnect in the panel`.
       out.fail(error.message);
     } else {
       out.fail(`failed: ${describeError(error)}`);
