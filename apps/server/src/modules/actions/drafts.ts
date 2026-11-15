@@ -7,7 +7,7 @@ import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { locateByActionId, MailAuthError, type MailProvider } from "../mail";
 
-import { inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
+import { authErrorOutcome, inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import {
@@ -115,7 +115,7 @@ async function failedWith(
   error: unknown,
   phase: "before_append" | "append"
 ): Promise<ApplyOutcome> {
-  if (error instanceof MailAuthError) return { kind: "auth_error" };
+  if (error instanceof MailAuthError) return authErrorOutcome(error);
   const now = deps.now();
   const label = describeError(error);
   const soft = error instanceof SoftError;

@@ -15,7 +15,16 @@ import {
 } from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
-import { composeMessage, mailboxHasUidplus, openImapProvider, openSmtpSender } from "./modules/mail";
+import {
+  composeMessage,
+  createMailOAuthClients,
+  createOAuthTokens,
+  mailboxHasUidplus,
+  openImapProvider,
+  openSmtpSender,
+  type MailOAuthClients,
+  type OAuthTokens,
+} from "./modules/mail";
 import type { SetOrgPlanHooks } from "./modules/tenancy";
 import { sendTestAddresses, testMailRule, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
@@ -59,9 +68,21 @@ export function uidplusOf(db: Db): (ctx: TenantContext, mailboxId: string) => Pr
   return (ctx, mailboxId) => mailboxHasUidplus(db, ctx, mailboxId);
 }
 
+// The access-token cache and the OAuth clients of one process. The sync job, the committer and the web Reconnect share the one
+// cache, so a Reconnect drops the token the jobs hold. `mail_oauth_not_configured` logs once per process and provider.
+export function mailOAuthRuntime(
+  config: Config,
+  db: Db,
+  secrets: SecretBox
+): { clients: MailOAuthClients; tokens: OAuthTokens } {
+  const clients = createMailOAuthClients(config);
+  return { clients, tokens: createOAuthTokens({ pool: db, secrets, clients, now: () => new Date() }) };
+}
+
 export function committerDeps(input: {
   db: Db;
   secrets: SecretBox;
+  oauthTokens: OAuthTokens;
   scope: ActionsScope;
   sendScope: SendScope;
   sendLimits: SendLimits;
@@ -72,6 +93,7 @@ export function committerDeps(input: {
     secrets: input.secrets,
     openProvider: openImapProvider,
     openSender: openSmtpSender,
+    oauthTokens: input.oauthTokens,
     compose: composeMessage,
     hooks: delegationHooks({ db: input.db }),
     scope: input.scope,

@@ -152,18 +152,23 @@ export async function markSynced(db: DbOrTrx, ctx: TenantContext, mailboxId: str
 export type MailboxStatus = CoreMailboxStatus;
 export const mailboxStatusSchema = z.enum(mailboxStatuses);
 // The update is unconditional (an `auth_error` from the sync job wins over a pause). `status_changed_at` moves only when the status really changes.
+// `auth_reason` is written in the same statement (the table CHECK allows a reason only in `auth_error` on an `oauth` mailbox): `reason`
+// counts only for `auth_error`; every other status clears it. A password mailbox keeps NULL, so a reason for it never reaches the CHECK.
 export async function setMailboxStatus(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
   status: MailboxStatus,
-  at?: Date
+  at?: Date,
+  reason?: AuthErrorReason | null
 ): Promise<void> {
+  const authReason = status === "auth_error" ? (reason ?? null) : null;
   await db
     .updateTable("mailboxes")
     .set({
       status,
       status_changed_at: sql<Date>`CASE WHEN status IS DISTINCT FROM ${status} THEN ${at ?? sql`now()`} ELSE status_changed_at END`,
+      auth_reason: sql<string | null>`CASE WHEN oauth_provider IS NOT NULL THEN ${authReason}::text ELSE NULL END`,
     })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
@@ -199,7 +204,8 @@ export async function changeMailboxStatus(
 ): Promise<boolean> {
   let query = db
     .updateTable("mailboxes")
-    .set({ status: change.to, status_changed_at: change.at })
+    // `auth_reason` goes with the status (the table CHECK): none of the targets is `auth_error` with a reason.
+    .set({ status: change.to, status_changed_at: change.at, auth_reason: null })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
     .where("status", "=", change.from);

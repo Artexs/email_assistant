@@ -8,6 +8,7 @@ import {
   applyOAuthGrant,
   createMailOAuthClients,
   createOAuthState,
+  createOAuthTokens,
   MailAuthError,
   openImapProvider,
   verifySmtpLogin,
@@ -60,7 +61,7 @@ let logSpies: Mock<(...args: unknown[]) => void>[] = [];
 
 // What the login stub saw, and what it refuses.
 const login = {
-  imap: [] as { user: string; accessToken: string; scope: string | null }[],
+  imap: [] as { user: string; host: string; port: number; accessToken: string; scope: string | null }[],
   smtp: [] as { user: string; accessToken: string }[],
   refuseImap: false,
   refuseSmtp: false,
@@ -80,6 +81,8 @@ const extrasOf = (over: Partial<WebExtras> = {}): WebExtras => ({
     openProvider: async (opts) => {
       login.imap.push({
         user: opts.user,
+        host: opts.host,
+        port: opts.port,
         accessToken: opts.auth.kind === "oauth" ? opts.auth.accessToken : "",
         scope: currentTenantScope(),
       });
@@ -610,6 +613,29 @@ const depsOf = (): ApplyGrantDeps => {
 };
 
 describe("Reconnect", () => {
+  test("9b. the route drops the real token cache of the mailbox: the next token call refreshes with the new refresh token", async () => {
+    const address = addressOf("seed");
+    const redeemed = await clients.google?.redeemCode(fake.code({ provider: "google", address }), "v".repeat(43));
+    const box = await seedMailbox({
+      address,
+      refreshToken: redeemed?.refreshToken ?? "",
+      status: "auth_error",
+      reason: "oauth_expired",
+    });
+    const tokens = createOAuthTokens({ pool: db, secrets, clients, now: () => new Date() });
+    const first = await tokens.accessToken(ctxA(), box.id, "mail");
+    expect(await tokens.accessToken(ctxA(), box.id, "mail")).toBe(first);
+    const { query } = await signIn("google", { address: box.address, mailboxId: box.id });
+    const app = appOf({ extras: { mailOAuthLogin: { ...extrasOf().mailOAuthLogin, oauthTokens: tokens } } });
+    expect(locationOf(await callback(app, "owner", "google", query))).toBe(
+      `/mailboxes?oauth=reconnected&mailbox=${box.id}`
+    );
+    fake.calls.length = 0;
+    expect(await tokens.accessToken(ctxA(), box.id, "mail")).not.toBe(first);
+    const refreshes = fake.calls.filter((call) => call.grant === "refresh_token");
+    expect(refreshes.map((call) => call.refreshToken)).toEqual([(await secretOf(box.id)).refreshToken]);
+  });
+
   test("9. an auth_error mailbox with the reason oauth_expired and 3 mails: reconnected, same id, active, no reason, 3 rows, new secret", async () => {
     const box = await seedMailbox({ status: "auth_error", reason: "oauth_expired" });
     await db.transaction().execute(async (trx) => {
@@ -738,6 +764,23 @@ describe("Reconnect", () => {
     expect(login.imap).toHaveLength(0);
     expect(login.smtp).toHaveLength(0);
     expect((await credentialsOf(password.id))?.secret_kind).toBe("password");
+  });
+
+  test("17d. a Reconnect tests the login at the hosts stored on the mailbox, not at the registry hosts (decision, F117 stage 10)", async () => {
+    // Decision: keep the stored hosts. The jobs connect there with the new token, so the check must too. A refusal when the registry
+    // hosts differ would strand a mailbox after a registry change, with Remove as the only way out. No path changes the hosts after
+    // the insert, and the insert took them from the registry, so the token goes to the host the registry named for the provider.
+    const box = await seedMailbox({ status: "auth_error", reason: "oauth_expired" });
+    await db
+      .updateTable("mailboxes")
+      .set({ imap_host: "stored-imap.x.test", imap_port: 1993, smtp_host: "stored-smtp.x.test" })
+      .where("id", "=", box.id)
+      .execute();
+    login.refuseImap = true;
+    const result = await applyOAuthGrant(depsOf(), ctxA(), grantOf("google", box.address, box.id), org.ownerId);
+    expect(result).toEqual({ ok: false, code: "protocol_disabled" });
+    expect(login.imap).toMatchObject([{ host: "stored-imap.x.test", port: 1993 }]);
+    expect(login.imap[0]?.host).not.toBe(HOSTS.imap.host);
   });
 
   test("17c. an oauth_provider mailbox whose secret is a password (a broken row) is refused under the lock; the secret stays", async () => {
