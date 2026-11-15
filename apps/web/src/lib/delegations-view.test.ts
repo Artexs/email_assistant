@@ -120,7 +120,7 @@ describe("remindBlock", () => {
   });
 
   test("all five 409 codes have a text in both languages, and the limit text names the limit", () => {
-    expect([...REMIND_BLOCKS].sort()).toEqual(
+    expect<string[]>([...REMIND_BLOCKS].sort()).toEqual(
       ["delegate_inactive", "drafts_off", "limit_reached", "not_open", "reminder_waiting"].sort()
     );
     for (const code of REMIND_BLOCKS) expect(t(REMIND_BLOCK_TEXTS[code], { max: 2 })).not.toContain("{");
