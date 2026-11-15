@@ -7,7 +7,7 @@ import { z } from "zod";
 import { t, type TextKey } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
-import { kindTitles, scopeLabel } from "../../lib/rules-view";
+import { kindTitles, scopeLabel, vipCardId } from "../../lib/rules-view";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
@@ -45,7 +45,7 @@ export function RuleList({ kind, rules, mailboxes, isOwner, onDeleted }: RuleLis
   };
 
   return (
-    <Card data-kind={kind}>
+    <Card data-kind={kind} id={kind === "vip" ? vipCardId : undefined}>
       <CardHeader>
         <CardTitle>{t(kindTitles[kind])}</CardTitle>
         <p className="text-sm text-muted-foreground">{t(kindTexts[kind])}</p>
