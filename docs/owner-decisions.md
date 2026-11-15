@@ -387,3 +387,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: reply text and recipient addresses are mail-derived data; the copy check fails safe (no send) and needs a stable copy on Interia (probe P1 after stage 08).
 - Undo: set the flag `reply_drafts` off; the consent raise is one version constant; spend is capped per run.
 - Source: `spec/features/planned/F115-e6a-reply-drafts/questions.md` (24 items: 1, 2, 4, 6, 19, 20 are the important ones), `plan.md`, `plan-review-1.md`.
+
+### 2026-11-15 · F110 earn-trust plan: evidence rule, history check at connect, pause (F110) · privacy · new
+- Choice (plan defaults, 26 stages): (1) A gate file marked provisional (owner audit pending) is shown but makes no category eligible, so today no category is recommended until the audit of lab-01 v1 is applied. (2) The PD-068 rule (upper bound ≤ 2% on ≥ 50 acted-on mails) needs at least 189 mails with zero hidden; applied as written most mailboxes fail, against PD-030 ("only blocks"). Default: `fail` only when the observed share is over 2%; `inconclusive` (does not block) between that and a pass; `no_result` under 50 mails. (3) At connect, the history backfill stores up to 30 days of INBOX mail as `skipped` / `history_check` rows, behind the flag `trust_ladder` (privacy). (4) A history `fail` pauses a category that already has `auto` on, unless the user forced it on. (5) By mail go only the digest, the weekly report and the two trust notices. (6) With no price for the model and endpoint, no history check runs. Stages 22–24 (bulk unsubscribe) can be cut.
+- Why: the plan follows the E4-B epic and the F111 gate rule (model and endpoint).
+- Undo: flag `trust_ladder` off; cut stages 22–24 if unwanted.
+- Source: `spec/features/planned/F110-e4-b-earn-trust/questions.md` (Q1, Q2, Q5, Q6, Q8, Q13 are the important ones) and `plan.md`.
