@@ -11,6 +11,7 @@ import {
   classifierVersionIds,
   optionalParts,
   productionClassifierChoice,
+  prompts,
 } from "../modules/triage";
 import { openAiReasoningEfforts } from "../platform/config";
 import { RUN_CAP_USD } from "../platform/eval-ledger";
@@ -231,6 +232,11 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       }
       const prompt = resolvePrompt(data["prompt-version"], data["prompt-parts"]);
       if (prompt === undefined) return undefined;
+      // The second call always uses the text of the escalation base version. A first call on another version, or on
+      // `--prompt-parts`, would mix two prompts, so the run measures nothing (F109 stage 12 review, stage 13).
+      if (data.escalate && (data["prompt-parts"] !== undefined || prompt.version !== prompts.escalation.base)) {
+        return undefined;
+      }
       return {
         ...data,
         prompt,
