@@ -125,7 +125,7 @@ Opus review before the land: stages 02, 03, 09, 11, 13, 14, 15. No owner checkpo
 
 ## Cold review
 
-Not run yet.
+Model `claude-opus-5-5`, thinking high: the plan has `[risky]` stages (LLM spend, a production prompt switch) and a migration. Result: pending.
 
 ## Log
 
