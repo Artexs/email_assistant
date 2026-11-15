@@ -220,6 +220,7 @@ export const outboxFailCodes = [
   "outdated",
   "too_many_errors",
   "bad_view",
+  "answered_elsewhere",
 ] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];
 
@@ -230,6 +231,8 @@ export interface NewOutboxRow {
   emailId?: string;
   mailboxId?: string;
   digestId?: string;
+  // Only kind `approval_edit`: the card that the row edits (`outbox_approval_edit_check`).
+  editOfOutboxId?: string;
   view: Record<string, unknown>;
   locale: UserLocale;
   createdAt: Date;
@@ -248,6 +251,7 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       email_id: row.emailId ?? null,
       mailbox_id: row.mailboxId ?? null,
       digest_id: row.digestId ?? null,
+      edit_of_outbox_id: row.editOfOutboxId ?? null,
       view: JSON.stringify(row.view),
       locale: row.locale,
       status: "pending",

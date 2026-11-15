@@ -25,7 +25,14 @@ import {
   type LlmClient,
 } from "../../src/platform/llm";
 
-import { createOrgWithMailbox, insertAction, insertDelegate, insertDelegation, insertTestEmail } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertAction,
+  insertDelegate,
+  insertDelegation,
+  insertTestEmail,
+  noSuspiciousContext,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -62,6 +69,7 @@ async function setup(trx: Transaction<DB>) {
     timezone: "Europe/Warsaw",
     junkFolder: null,
     resumedAt: null,
+    suspicious: noSuspiciousContext,
   };
   return { ctx, emailId, email, mailbox };
 }
@@ -89,6 +97,7 @@ function decision(overrides: Partial<TriageDecision> = {}): TriageDecision {
     },
     auditReasonCode: "newsletter",
     delegation: null,
+    suspiciousReasons: [],
     ...overrides,
   };
 }
@@ -136,6 +145,7 @@ describe("saveTriage", () => {
         latency_ms: 850,
         reason_code: "newsletter",
       });
+      expect(rows[0]?.suspicious_reasons).toEqual([]);
       expect(rows[0]?.fields).toEqual({ lang: "pl", model_category: "info" });
 
       const actions = await listActionsForEmail(trx, ctx, emailId);
@@ -158,6 +168,7 @@ describe("saveTriage", () => {
         confidence: 0.9,
         prompt_version: "classifier-v1",
         model: "m",
+        suspicious: "",
       });
       expect(JSON.stringify(log.map((r) => r.data))).not.toContain("short summary");
     });
@@ -1461,6 +1472,7 @@ describe("triageOne: the plan by the source folder (D11)", () => {
       delegates: [{ id: delegateId, name: "Anna", email: "anna@firma.test", tags: ["offers"] }],
       junkFolder: opts.junkRow === false ? null : await getJunkFolderPath(trx, base.ctx, base.mailbox.id),
       resumedAt: null,
+      suspicious: noSuspiciousContext,
     };
     return { ...base, mailbox, delegateId };
   }

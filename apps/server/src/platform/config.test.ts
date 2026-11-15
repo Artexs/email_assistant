@@ -12,6 +12,7 @@ import {
   loadConfig,
   loadTestmailConfig,
   mailSyncCron,
+  mailTrustedAuthservIds,
   operatorChatId,
   operatorUserIds,
   sendLimits,
@@ -602,6 +603,18 @@ describe("FEATURES_OFF", () => {
       expect(error).toBeInstanceOf(ConfigError);
       expect((error as ConfigError).keys).toEqual(["FEATURES_OFF"]);
     }
+  });
+});
+
+describe("MAIL_TRUSTED_AUTHSERV_IDS", () => {
+  test("unset or empty means no id", () => {
+    expect(mailTrustedAuthservIds(loadConfig(fullEnv))).toEqual([]);
+    expect(mailTrustedAuthservIds(loadConfig({ ...fullEnv, MAIL_TRUSTED_AUTHSERV_IDS: "" }))).toEqual([]);
+  });
+
+  test("the list is trimmed, lower case and unique", () => {
+    const config = loadConfig({ ...fullEnv, MAIL_TRUSTED_AUTHSERV_IDS: " MX.Corp.test , evil.test,mx.corp.test" });
+    expect(mailTrustedAuthservIds(config)).toEqual(["mx.corp.test", "evil.test"]);
   });
 });
 
