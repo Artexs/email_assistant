@@ -84,6 +84,28 @@ export async function fillMailbox(
   }
   await insertCredentials(trx, ctx, { mailboxId, encryptedSecret: "secret", secretKind: "password", keyVersion: 1 });
 
+  // The sent-mail tables have no repository yet: plain inserts (one sent row, one enabled state row).
+  await trx
+    .insertInto("sent_emails")
+    .values({
+      org_id: ctx.orgId,
+      mailbox_id: mailboxId,
+      dedup_key: `mid:<${randomUUID()}@x.test>:h1`,
+      path: "Sent",
+      uidvalidity: 7,
+      uid: 1,
+      thread_key: `<${randomUUID()}@x.test>`,
+      origin: "user",
+      content: "pending",
+      sent_at: now,
+      internal_date: now,
+    })
+    .execute();
+  await trx
+    .insertInto("mailbox_sent_sync")
+    .values({ mailbox_id: mailboxId, org_id: ctx.orgId, enabled: true, enabled_at: now })
+    .execute();
+
   return { mailboxId, emailIds, actionIds };
 }
 
@@ -98,7 +120,9 @@ export async function countMailboxRows(
   const { mailboxId, emailIds, actionIds } = ids;
   const except = opts?.exceptEvents ?? [];
 
-  const byMailbox = async (table: "mailboxes" | "mailbox_credentials" | "mailbox_settings" | "mailbox_folders") => {
+  const byMailbox = async (
+    table: "mailboxes" | "mailbox_credentials" | "mailbox_settings" | "mailbox_folders" | "mailbox_sent_sync"
+  ) => {
     const column = table === "mailboxes" ? "id" : "mailbox_id";
     const row = await trx
       .selectFrom(table)
@@ -138,7 +162,7 @@ export async function countMailboxRows(
     ).executeTakeFirstOrThrow();
     return Number(row.n);
   };
-  const single = async (table: "emails" | "delegations" | "sender_rules") => {
+  const single = async (table: "emails" | "delegations" | "sender_rules" | "sent_emails") => {
     const row = await trx
       .selectFrom(table)
       .select((eb) => eb.fn.countAll<string>().as("n"))
@@ -165,6 +189,8 @@ export async function countMailboxRows(
     actions: Number(actions.n),
     delegations: await single("delegations"),
     sender_rules: await single("sender_rules"),
+    sent_emails: await single("sent_emails"),
+    mailbox_sent_sync: await byMailbox("mailbox_sent_sync"),
     audit_log_by_email: await audit("email_id"),
     audit_log_by_action: await audit("action_id"),
     audit_log_by_mailbox: await audit("mailbox"),

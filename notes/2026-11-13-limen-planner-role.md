@@ -1,13 +1,13 @@
 # Limen planning jobs (planner role)
 
 - Limen F069 lets a project add a job kind: `limen spawn --role <name>` loads `.agents/limen/<name>.md` (resolver: limen `src/commands/spawn.ts` resolvePreamble). No Limen code change needed.
-- This repo now has `.agents/limen/planner.md`: a detached job that runs the `plan-task` method on one existing ticket, with no owner questions (defaults go to `questions.md`), no nested spawn, commits only its ticket folder.
+- This repo now has `.agents/limen/planner.md`: a detached job that runs the `plan-task` method on one existing ticket, with no owner questions (defaults go to `questions.md`), commits only its ticket folder. Its only nested spawns: up to 4 Sonnet scouts before it reads code (owner, 2026-11-15) and its own cold review.
 - Spawn (Opus plans, Sonnet builds):
-  `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --label "plan · FNNN" "Plan FNNN: write stages/ for spec/features/planned/FNNN-slug/"`
+  `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking medium --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --label "plan · FNNN" "Plan FNNN: write stages/ for spec/features/planned/FNNN-slug/"`
 - No `--prepare` needed: planning uses no DB.
 - Review (owner decision 2026-11-13: not the coordinator's work): the planner job commits the plan, starts its own `--review --branch <own branch>` job (Opus 5.5, high, fresh context; owner decision 2026-11-13, was Sonnet), waits, files `plan-review-1.md`, fixes the findings, commits. The coordinator only starts the planner and lands it. Spawn the planner with `--timeout 3h`, so the review fits in its deadline.
 - Alternative for a high-risk ticket: `limen group start <ticket> --team <Opus> --team <other model> --rounds draft,critique,revise,final` (docs/groups.md in the limen repo). Two independent plans, cross critique, one merged result. Needs the interactive coordinator pane as lead.
-- Not verified: a job's nested `limen spawn --review` on its own branch. Limen does not refuse spawn under LIMEN_JOB=1 (only `group start`), but no run has proved it.
+- Proven since 2026-11-13: a planner's nested `limen spawn --review` on its own branch works (every plan review since then). Limen does not refuse spawn under LIMEN_JOB=1 (only `group start`), but no run has proved it.
 - Trap: a job worktree starts from HEAD. Uncommitted ticket folders do not exist there. Commit the ticket folder first.
 - Limit: plan-task §2 (ask the owner before stages) is lost in a detached job. Fit: tickets whose plan.md already holds the decisions. For a ticket with open product choices, use an interactive session or `--tab`.
 - Status 2026-11-13: preamble written, not yet tried in a real spawn.
@@ -20,7 +20,7 @@
   "Planning: start a `--role planner` job for the first NEXT ticket that has no `stages/` and whose `Plan after` tickets all have `stages/`. At most three planner jobs at once. Land it into `planned/`, give the owner the summary and `questions.md`. A ticket builds only after the owner says `Build FNNN` and its `Build after` tickets are in `done/`."
 
 ## Coordinator rule (in force 2026-11-13; one-line pointer in `spec/build.md` NEXT)
-- Spawn: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan · FNNN" "Plan FNNN: write stages/ for spec/features/planned/FNNN-slug/"`
+- Spawn: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking medium --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan · FNNN" "Plan FNNN: write stages/ for spec/features/planned/FNNN-slug/"`
 - At most three planner jobs at once. F091 plans after F088 and F090 have `stages/`. F092 waits for the owner (`needs-adam`).
 - The job runs its own cold review. The coordinator lands it with `limen land`.
 - A job that ends with `needs-adam` set: ask the owner, then `limen continue <job> "<answer>"`.
@@ -38,7 +38,7 @@
 - Problem: plans written while other tickets were still landing name files, functions and tables that later moved (F097 was written before the F091 repo split; F100 and F101 before F098 and F099 built).
 - Rule: a plan whose first stage has not built yet gets a refresh job just before that stage, when `scripts/plan-drift.sh <ticket folder> <plan base>` exits 1 (named paths changed or gone since the plan base). Exit 0: build directly.
 - A refresh is not a new plan: it keeps decisions, scope and stage count, fixes the stages to the code at `HEAD`, writes `plan-refresh-<n>.md`, and runs a cold review only when a stage changed in substance. Method: `.agents/limen/planner.md` § Refresh job.
-- Spawn: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan refresh · FNNN" "Refresh FNNN: make spec/features/<lane>/FNNN-slug/ true for HEAD"`. It counts against the cap of three planners.
+- Spawn: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking medium --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan refresh · FNNN" "Refresh FNNN: make spec/features/<lane>/FNNN-slug/ true for HEAD"`. It counts against the cap of three planners.
 - Plan base: new plans write `Plan base: <sha>` in the `plan.md` status line. Older plans: the `Refresh:` line in `ticket.md` § Sequenced, else the `base` file of the planner job in `.limen/jobs/`.
 - Marked 2026-11-14: F097 (base 9d9bfb8), F100 (10e81b9, after the F097 refresh), F101 (a72b214). Not marked: F095 (nearly built), F098 and F099 (in build; a land conflict resumes the worker), F092 (plan base def6883; its stage 01 reads the live catalog), F102 (already held for a re-check), F103 (planning now).
 
@@ -47,3 +47,4 @@
 - Planners mark each `questions.md` item `[important: <kind>]` or `[minor]` (`.agents/limen/planner.md`). Workers end each final message with `Decisions for the owner` (`.agents/limen/styleguide.md` § Decisions for the owner). The coordinator copies the important ones when it lands, and adds its own calls.
 - Blocking question in a worker: the worker finishes with a question file; the coordinator decides, resumes with `limen continue`, adds an entry. Only keys, secrets, money, deletion of real data and outside publication still wait for the owner.
 - Back-fill 2026-11-14: 22 entries from 15 `questions.md` files and the coordinator's overnight calls.
+- Owner 2026-11-15: planner and refresh jobs run `--thinking medium` (was `high`). The planner's cold review stays `high`. Do not switch thinking inside one job: a thinking change can drop the prompt cache, and the next turn then writes the whole context again. Source: `notes/2026-11-15-harness-review.md`.

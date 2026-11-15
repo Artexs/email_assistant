@@ -344,6 +344,40 @@ describe("findSubjectData", () => {
     expect(seen).toEqual({ readOnly: "on", isolation: "repeatable read", scope: w.orgId, writeCode: "25006" });
   });
 
+  test("12. a sent mail to another party that names the person in cc and subject is a mention, not a mail", async () => {
+    const w = await seed();
+    const mailbox = await db
+      .selectFrom("mailboxes")
+      .select("id")
+      .where("org_id", "=", w.orgId)
+      .where("address", "=", w.own)
+      .executeTakeFirstOrThrow();
+    const sent = await db
+      .insertInto("sent_emails")
+      .values({
+        org_id: w.orgId,
+        mailbox_id: mailbox.id,
+        dedup_key: `mid:<s-${randomUUID()}@x.test>:h1`,
+        path: "Sent",
+        uidvalidity: 7,
+        uid: 1,
+        thread_key: "<s@x.test>",
+        origin: "user",
+        content: "pending",
+        sent_at: new Date("2026-11-10T10:00:00Z"),
+        internal_date: new Date("2026-11-10T10:00:00Z"),
+        to_addresses: ["q@x.test"],
+        cc_addresses: [w.person],
+        subject: `about ${w.person}`,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person));
+    expect(match.mentions["sent_emails.cc_addresses"]).toEqual([sent.id]);
+    expect(match.mentions["sent_emails.subject"]).toEqual([sent.id]);
+    expect(match.mails).toHaveLength(2);
+  });
+
   test("counts and audit data come from the match", async () => {
     const w = await seed();
     const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person));

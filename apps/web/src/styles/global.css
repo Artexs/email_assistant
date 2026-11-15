@@ -72,6 +72,12 @@
   }
 }
 
+/* Tailwind 4.1 font stack: Tailwind 4.3 changed the default (ticket F101-panel-to-astro-7). */
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
