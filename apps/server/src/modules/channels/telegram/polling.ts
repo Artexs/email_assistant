@@ -4,7 +4,7 @@ import { GrammyError, type Bot } from "grammy";
 import { createLog } from "../../../platform/log";
 import type { CommandName } from "../port";
 
-import { telegramErrorLabel } from "./errors";
+import { telegramErrorFields } from "./errors";
 
 const log = createLog("telegram");
 
@@ -45,7 +45,7 @@ function timerSleep(ms: number, signal: AbortSignal): Promise<void> {
 
 /**
  * Long polling (ADR 0005). A 401 stops polling; a 409 or any other failure retries after 1, 2, 4 … at most 30 minutes.
- * Log lines hold only labels, never the token.
+ * Log lines hold only codes and numbers, never the token.
  */
 export function startPolling(bot: Bot, deps?: PollingDeps): Polling {
   const sleep = deps?.sleep ?? timerSleep;
@@ -64,9 +64,9 @@ export function startPolling(bot: Bot, deps?: PollingDeps): Polling {
   });
 
   const onStart = (info: { id: number; username: string }): void => {
-    log.info(`telegram: polling as @${info.username} (id ${info.id})`);
+    log.info("telegram_polling_started", { bot_id: info.id });
     // One call after the other: the default menu first. A failure of one call does not stop the other.
-    const warn = (error: unknown): void => log.warn(`telegram: setMyCommands failed: ${telegramErrorLabel(error)}`);
+    const warn = (error: unknown): void => log.warn("telegram_set_commands_failed", telegramErrorFields(error));
     void bot.api
       .setMyCommands(BOT_COMMANDS)
       .catch(warn)
@@ -84,18 +84,15 @@ export function startPolling(bot: Bot, deps?: PollingDeps): Polling {
           return;
         }
         if (error instanceof GrammyError && error.error_code === 401) {
-          log.error("telegram: the bot token was rejected (401): check TELEGRAM_BOT_TOKEN; polling stopped");
+          log.error("telegram_polling_token_rejected");
           return;
         }
         failures += 1;
         const delay = Math.min(BASE_DELAY_MS * 2 ** (failures - 1), MAX_DELAY_MS);
-        const minutes = Math.round(delay / 60_000);
         if (error instanceof GrammyError && error.error_code === 409) {
-          log.error(
-            `telegram: another process polls this bot token (409); dev and pilot must use different bots (ADR 0005); next try in ${minutes} min`
-          );
+          log.error("telegram_polling_conflict", { wait_ms: delay });
         } else {
-          log.error(`telegram: polling failed: ${telegramErrorLabel(error)}; next try in ${minutes} min`);
+          log.error("telegram_polling_failed", { ...telegramErrorFields(error), wait_ms: delay });
         }
         await sleep(delay, abort.signal);
       }
@@ -113,7 +110,7 @@ export function startPolling(bot: Bot, deps?: PollingDeps): Polling {
         try {
           await bot.stop();
         } catch (error) {
-          log.warn(`telegram: stopping the bot failed: ${telegramErrorLabel(error)}`);
+          log.warn("telegram_stop_failed", telegramErrorFields(error));
         }
       }
       await done;

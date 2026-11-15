@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { cutText, textsFor, type UserLocale } from "@ea/core";
 import { Bot, type Context } from "grammy";
 import type { UserFromGetMe } from "grammy/types";
@@ -5,14 +7,14 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../../platform/db";
 import { errorFields } from "../../../platform/errors";
-import { createLog } from "../../../platform/log";
+import { createLog, withLogContext } from "../../../platform/log";
 import { getUserAuthProfile } from "../../tenancy";
 import { consumeLinkToken } from "../linking";
 import { commandNames, type LinkedChat, type UpdateHandlers } from "../port";
 import { findChatLink } from "../repo";
 
 import { messageOptions } from "./api";
-import { isNotModified, telegramErrorLabel } from "./errors";
+import { isNotModified, telegramErrorFields } from "./errors";
 
 const log = createLog("telegram");
 
@@ -35,7 +37,7 @@ export interface BotDeps {
 }
 
 /**
- * The update router. Order: chat guard, `/start` linking, link guard, commands, buttons, other messages.
+ * The update router. Order: log context, chat guard, `/start` linking, link guard, commands, buttons, other messages.
  * An unlinked chat gets no reply except for a `/start` with a token.
  */
 export function createTelegramBot(
@@ -51,6 +53,9 @@ export function createTelegramBot(
   const links = new WeakMap<Context, LinkedChat>();
 
   const reply = (ctx: Context, text: string) => ctx.reply(text, messageOptions([], { clearKeyboard: false }));
+
+  // 0. Log context: every line of one update carries job and run_id (docs/code-patterns.md § Logs).
+  bot.use((_ctx, next) => withLogContext({ job: "telegram.update", run_id: randomUUID() }, next));
 
   // 1. Chat guard: private chats of people only.
   bot.use(async (ctx, next) => {
@@ -71,22 +76,22 @@ export function createTelegramBot(
     }
     const result = await consumeLinkToken(db, { token: payload, chatId, now: deps.now() });
     if (result.kind === "linked") {
-      log.info(`chat linked for user ${result.userId} in org ${result.orgId}`);
+      log.info("chat_linked", { user_id: result.userId, org_id: result.orgId });
       await reply(ctx, textsFor(await localeOfUser(db, result.userId)).bot.linked);
     } else if (result.kind === "used") {
-      log.info("a used link token was tried");
+      log.info("link_token_used");
       const link = await findChatLink(db, chatId);
       await reply(
         ctx,
         link ? textsFor(link.locale).bot.alreadyLinked : textsFor(await localeOfUser(db, result.userId)).bot.linkUsed
       );
     } else if (result.kind === "expired") {
-      log.info("an expired link token was tried");
+      log.info("link_token_expired");
       await reply(ctx, textsFor(await localeOfUser(db, result.userId)).bot.linkExpired);
     } else {
       const link = await findChatLink(db, chatId);
       if (link) await reply(ctx, textsFor(link.locale).bot.help);
-      else log.debug("ignored /start with an unknown token");
+      else log.debug("link_token_unknown");
     }
   });
 
@@ -94,7 +99,7 @@ export function createTelegramBot(
   bot.use(async (ctx, next) => {
     const link = ctx.chat ? await findChatLink(db, ctx.chat.id) : undefined;
     if (!link) {
-      log.debug("ignored an update from an unlinked chat");
+      log.debug("update_unlinked_chat");
       return;
     }
     links.set(ctx, link);
@@ -116,13 +121,13 @@ export function createTelegramBot(
       try {
         message = await handlers.command(linkOf(ctx), name);
       } catch (error) {
-        log.error(`command failed: ${telegramErrorLabel(error)}`);
+        log.error("command_failed", telegramErrorFields(error));
         message = { text: textsFor(linkOf(ctx).locale).bot.error, buttons: [] };
       }
       try {
         await ctx.reply(message.text, messageOptions(message.buttons, { clearKeyboard: false }));
       } catch (error) {
-        log.warn(`replying to a command failed: ${telegramErrorLabel(error)}`);
+        log.warn("command_reply_failed", telegramErrorFields(error));
       }
     });
   }
@@ -134,20 +139,20 @@ export function createTelegramBot(
     try {
       result = await handlers.callback(link, ctx.callbackQuery.data);
     } catch (error) {
-      log.error(`callback failed: ${telegramErrorLabel(error)}`);
+      log.error("callback_failed", telegramErrorFields(error));
       result = { answer: textsFor(link.locale).bot.error };
     }
     try {
       await ctx.answerCallbackQuery({ text: cutText(result.answer, ANSWER_MAX_CHARS) });
     } catch (error) {
-      log.warn(`answering a button tap failed: ${telegramErrorLabel(error)}`);
+      log.warn("callback_answer_failed", telegramErrorFields(error));
     }
     if (result.edit) {
       try {
         await ctx.editMessageText(result.edit.text, messageOptions(result.edit.buttons, { clearKeyboard: true }));
       } catch (error) {
         if (!isNotModified(error)) {
-          log.warn(`editing a message failed: ${telegramErrorLabel(error)}`);
+          log.warn("message_edit_failed", telegramErrorFields(error));
         }
       }
     }
@@ -163,7 +168,7 @@ export function createTelegramBot(
 
   // 7. Without this, grammY stops polling on the first error.
   bot.catch((err) => {
-    log.error(`update ${err.ctx.update.update_id} failed: ${telegramErrorLabel(err.error)}`);
+    log.error("update_failed", { update_id: err.ctx.update.update_id, ...telegramErrorFields(err.error) });
   });
 
   return bot;

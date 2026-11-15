@@ -48,7 +48,7 @@ bun run dev
 
 - Always write `127.0.0.1`, not `localhost`. The fake binds only `127.0.0.1`.
 - The config accepts only a loopback host (`127.0.0.1`, `::1`, `localhost`). The value has no path and no trailing `/`. Any other value stops the server at start.
-- The log of the dev server must show `telegram: polling as @fake_ea_bot`.
+- The log of the dev server must show the event `telegram_polling_started` (field `bot_id`).
 - Use the same two keys for `bun run telegram:link --org-id <id>` and `bun run telegram:check`.
 - Link the test chat: run `telegram:link`, take the token from the printed `t.me` link, then:
 

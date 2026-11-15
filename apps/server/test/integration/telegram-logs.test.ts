@@ -1,3 +1,5 @@
+import { format } from "node:util";
+
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Update } from "grammy/types";
 
@@ -6,7 +8,7 @@ import { createLinkToken, createTelegramRuntime } from "../../src/modules/channe
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import { setDigestTimes } from "../../src/modules/tenancy";
-import { setLogLevel } from "../../src/platform/log";
+import { setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import { createOrgWithMailbox, insertTriaged, isolateChannels } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -19,6 +21,7 @@ afterAll(async () => {
 });
 
 afterEach(() => {
+  setLogFormat("text");
   setLogLevel("info");
 });
 
@@ -110,6 +113,7 @@ describe("telegram logs", () => {
     const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     const fake = startFakeBotApi();
+    setLogFormat("json");
     setLogLevel("debug");
     let linkToken = "";
     let emailId = "";
@@ -221,10 +225,18 @@ describe("telegram logs", () => {
         expect(outbox.some((row) => row.kind === "digest" && row.status === "sent")).toBe(true);
       });
 
-      const output = [...logSpy.mock.calls, ...errorSpy.mock.calls]
-        .map((call: unknown[]) => call.map(String).join(" "))
-        .join("\n");
-      expect(output).toContain("[telegram]");
+      // Every line is JSON; the format call shows the fields of a raw error object like the console does.
+      const outputLines = [...logSpy.mock.calls, ...errorSpy.mock.calls].map((call: unknown[]) => format(...call));
+      const output = outputLines.join("\n");
+      const telegram = outputLines
+        .map((line) => JSON.parse(line) as Record<string, unknown>)
+        .filter((line) => line.module === "telegram");
+      const events = telegram.map((line) => line.event);
+      expect(events).toContain("chat_linked");
+      expect(events).toContain("telegram_polling_started");
+      // No free-text line and no dropped field: every value passed the logger.
+      expect(events).not.toContain("legacy_text");
+      expect(telegram.some((line) => "dropped_fields" in line)).toBe(false);
       for (const marker of [
         MARKERS.token,
         MARKERS.token.split(":")[1] ?? "",
