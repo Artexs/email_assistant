@@ -63,9 +63,12 @@ const SENT_COPY_KEYS = ["quote", "to", "cc", "subject"];
 
 // "Track my sent mail" went off: the copies of the Sent mail in the `create_draft` and `send` rows of every loop of the
 // mailbox (a panel edit's successor included) lose these keys. The row, its status and the other keys stay (`kind`,
-// `loop_id`: the reverse of a draft in the Drafts folder reads them). A send that the committer holds (`applying`) or
-// that was approved and not yet claimed then fails as a bad payload and sends nothing: consent is withdrawn. The caller
-// holds the transaction of the switch; the loops are locked before (loop first, then sends). Returns the row count.
+// `loop_id`: the reverse of a draft in the Drafts folder reads them). A send that was approved and not yet claimed ended
+// `expired` before this call (`expireFollowUpSends`), so it sends nothing. A send that the committer already holds
+// (`applying`) finishes: the mail goes out from the payload that the committer holds in memory, which is the accepted rule
+// "an applying send finishes". Only a claim that reads the payload after this commit meets a payload with no recipient and
+// fails as a bad payload. The caller holds the transaction of the switch; the loops are locked before (loop first, then
+// sends). Returns the row count.
 export async function clearLoopSentCopies(
   trx: Transaction<DB>,
   ctx: TenantContext,

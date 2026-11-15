@@ -20,8 +20,8 @@ One place for harness ideas that the owner parked or must decide. One entry each
 - Jobs have priority 1–3 (all run at 2 now). A rule `limen rule set claude-week --until <reset> --start-priority 1 "…"` lets only priority 1 jobs start; the others wait and start after the rule ends.
 - Needs a TRACK line first that says which jobs get 1, 2 and 3.
 
-## Quality pass · owner decides
-- Limen role `--role quality`: one job writes `spec/quality/YYYY-MM.md` with drop-candidates and small tickets. Never run here (72 tickets landed).
+## Quality pass · on, 2026-11-15
+- Every 10 landed tickets, the coordinator starts a cleanup check of merged code; its findings become new tickets (rule: `spec/build.md` TRACK, Standing models).
 
 ## Phone alerts · open question
 - Moshi or ntfy ping for failed jobs and stops. Setup: Limen `docs/seat/README.md`.

@@ -5,20 +5,17 @@ import {
   localDateTime,
   localKey,
   localToInstant,
-  parseToolSwitches,
   sendPayloadFor,
   type DraftPayload,
 } from "@ea/core";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { createPlanned, getDraft } from "../actions";
 import { auditEvents, countMailboxEventsBetween, recordAudit } from "../audit";
-import { getMailboxSettings, lockSettingsForShare } from "../config";
-import { getEmailMeta, listSyncTargets } from "../mail";
-import { getOrganization } from "../tenancy";
+import { lockSettingsForShare } from "../config";
+import { getEmailMeta } from "../mail";
 
 import {
   countPendingReminderSends,
@@ -121,6 +118,159 @@ export async function buildReminderDraft(
   };
 }
 
+// The day gate of the chaser (once per local day per mailbox). The run and the marker share one lock: `lockChaserDay`.
+export function chaserDay(now: Date, timeZone: string): { day: string; after: Date } {
+  const day = localKey(now, timeZone).slice(0, 10);
+  const dayStart = localToInstant(day, "00:00", timeZone);
+  return { day, after: new Date(dayStart.getTime() - 1) };
+}
+
+// True when the event of a part already ran in this local day of the mailbox.
+export async function chaserRanToday(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  input: { event: string; mailboxId: string; now: Date; timeZone: string }
+): Promise<boolean> {
+  const { after } = chaserDay(input.now, input.timeZone);
+  return (await countMailboxEventsBetween(db, ctx, input.event, input.mailboxId, { after, until: input.now })) > 0;
+}
+
+// "Once per local day" is a rule of two connections too: the gate read before the transaction is only a cheap first look.
+// Inside the transaction, after the settings share lock, one advisory lock per mailbox makes the runs wait one after the
+// other; the run then reads the day marker again and sees the commit of the run that went first. Lock order: settings
+// (share), this lock, the delegations / loops, their sends. Nobody takes this lock while it holds one of those rows.
+export async function lockChaserDay(trx: Transaction<DB>, mailboxId: string): Promise<void> {
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`chaser:${mailboxId}`}, 0))`.execute(trx);
+}
+
+type DueDelegationRow = Awaited<ReturnType<typeof listDueDelegations>>[number];
+
+export interface PlannedReminder {
+  row: DueDelegationRow;
+  draft: DraftPayload;
+}
+
+export interface DelegationPlan {
+  due: number;
+  overdue: number;
+  // At most `limit` pairs. The delegations are locked; the pairs are not yet written (`createReminderSet`).
+  pairs: PlannedReminder[];
+}
+
+// The delegation part of the chaser, in the caller's transaction (the settings share lock is taken): lists the due
+// delegations, locks each one (the delegation first, then its reminder sends), marks it overdue, and returns the reminder
+// pairs that the rules allow, up to `limit`. Nothing is planned yet: the caller writes the set with `createReminderSet`.
+export async function planDelegationReminders(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { now: Date; limit: number }
+): Promise<DelegationPlan> {
+  const { now } = opts;
+  const rows = await listDueDelegations(trx, ctx, mailboxId, { now, limit: DUE_BATCH });
+  let overdue = 0;
+  const pairs: PlannedReminder[] = [];
+  for (const row of rows) {
+    const locked = await lockDelegation(trx, ctx, row.id);
+    if (locked === undefined || (locked.status !== "sent" && locked.status !== "overdue")) continue;
+    // The listing may be old: a delegate deactivated since then gets no reminder.
+    const delegateActive = await isDelegateActive(trx, ctx, row.delegate_id);
+    const pending = await countPendingReminderSends(trx, ctx, row.id);
+    const decision = reminderDecision(
+      { ...locked, status: locked.status, delegate_active: delegateActive },
+      pending,
+      now
+    );
+    if (decision.markOverdue && (await markDelegationOverdue(trx, ctx, row.id, now))) {
+      overdue += 1;
+      await recordAudit(trx, ctx, {
+        emailId: row.email_id,
+        actor: "system",
+        event: auditEvents.delegationOverdue,
+        data: { delegation_id: row.id },
+        at: now,
+      });
+    }
+    if (!decision.remind || pairs.length >= opts.limit) continue;
+    pairs.push({ row, draft: await buildReminderDraft(trx, ctx, row, locked.reminders_sent + 1) });
+  }
+  return { due: rows.length, overdue, pairs };
+}
+
+// The set creation: one `create_draft` and one `send` per planned reminder, all with the same `set_id`, then the reminder
+// counters. A crash after the rows made the keys exist: the insert is a no-op and nothing counts. Returns the pairs written.
+export async function createReminderSet(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  pairs: readonly PlannedReminder[],
+  opts: { setId: string; day: string; now: Date }
+): Promise<number> {
+  let written = 0;
+  for (const { row, draft } of pairs) {
+    const created = await createPlanned(trx, ctx, row.email_id, [
+      {
+        type: "create_draft",
+        payload: draft,
+        status: "ready",
+        idempotencyKey: `${row.email_id}:create_draft:reminder:${opts.day}`,
+      },
+      {
+        type: "send",
+        payload: { ...sendPayloadFor(draft), set_id: opts.setId },
+        status: "awaiting_approval",
+        idempotencyKey: `${row.email_id}:send:reminder:${opts.day}`,
+        dependsOn: "create_draft",
+      },
+    ]);
+    if (created.length === 0) continue;
+    await markReminderPlanned(trx, ctx, row.id, opts.now);
+    written += 1;
+  }
+  return written;
+}
+
+export interface DelegationRunCounts {
+  mailboxId: string;
+  due: number;
+  overdue: number;
+  reminders: number;
+}
+
+// The marker of the delegation part: the audit row `delegation.chaser_run` (counts and ids only).
+export async function recordDelegationRun(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  input: DelegationRunCounts & { setId: string; forced: boolean; now: Date }
+): Promise<void> {
+  await recordAudit(trx, ctx, {
+    actor: "system",
+    event: auditEvents.delegationChaserRun,
+    data: {
+      mailbox_id: input.mailboxId,
+      due: input.due,
+      overdue: input.overdue,
+      reminders: input.reminders,
+      set_id: input.setId,
+      forced: input.forced,
+    },
+    at: input.now,
+  });
+}
+
+// The line `chaser_done` after the commit.
+export function logDelegationRunDone(input: DelegationRunCounts): void {
+  if (input.due === 0) return;
+  log.info("chaser_done", {
+    mailbox_id: input.mailboxId,
+    due: input.due,
+    overdue: input.overdue,
+    reminders: input.reminders,
+  });
+}
+
+// The delegation part alone, with its own gate: a thin wrapper of the parts above. `runLoopChaser` (module `loops`) runs the
+// same parts in one transaction with the loop part. The snapshot `mailbox` is what the caller read before: the run writes
+// nothing when the settings changed since.
 export async function runChaserForMailbox(
   deps: ChaserDeps,
   ctx: TenantContext,
@@ -130,130 +280,40 @@ export async function runChaserForMailbox(
 ): Promise<ChaserResult> {
   const force = opts?.force === true;
   const tz = mailbox.timezone;
-  const day = localKey(now, tz).slice(0, 10);
+  const ran = (db: Db | Transaction<DB>): Promise<boolean> =>
+    chaserRanToday(db, ctx, { event: auditEvents.delegationChaserRun, mailboxId: mailbox.id, now, timeZone: tz });
   if (!force) {
     if (localDateTime(now, tz).time < CHASER_LOCAL_TIME) return { overdue: 0, reminders: 0, skipped: "gate" };
-    const dayStart = localToInstant(day, "00:00", tz);
-    const done = await countMailboxEventsBetween(deps.db, ctx, auditEvents.delegationChaserRun, mailbox.id, {
-      after: new Date(dayStart.getTime() - 1),
-      until: now,
-    });
-    if (done > 0) return { overdue: 0, reminders: 0, skipped: "gate" };
+    if (await ran(deps.db)) return { overdue: 0, reminders: 0, skipped: "gate" };
   }
-
-  const rows = await listDueDelegations(deps.db, ctx, mailbox.id, { now, limit: DUE_BATCH });
+  const { day } = chaserDay(now, tz);
   const setId = randomUUID();
 
-  const run = async (trx: Transaction<DB>): Promise<ChaserResult> => {
-    // M13: the first statement. A setter waits for this transaction, or this one sees the setter's commit.
+  const run = async (trx: Transaction<DB>): Promise<ChaserResult & { due: number }> => {
+    // The first statement of the transaction. A setter waits for this transaction, or this one sees the setter's commit.
     const version = await lockSettingsForShare(trx, ctx, mailbox.id);
     if (version === undefined || version !== mailbox.settingsVersion) {
-      return { overdue: 0, reminders: 0, skipped: "settings" };
+      return { overdue: 0, reminders: 0, skipped: "settings", due: 0 };
     }
-    let overdue = 0;
-    let reminders = 0;
-    for (const row of rows) {
-      // Lock order (D6): the delegation first, then its reminder sends.
-      const locked = await lockDelegation(trx, ctx, row.id);
-      if (locked === undefined || (locked.status !== "sent" && locked.status !== "overdue")) continue;
-      // The listing may be old: a delegate deactivated since then gets no reminder.
-      const delegateActive = await isDelegateActive(trx, ctx, row.delegate_id);
-      const pending = await countPendingReminderSends(trx, ctx, row.id);
-      const decision = reminderDecision(
-        { ...locked, status: locked.status, delegate_active: delegateActive },
-        pending,
-        now
-      );
-      if (decision.markOverdue && (await markDelegationOverdue(trx, ctx, row.id, now))) {
-        overdue += 1;
-        await recordAudit(trx, ctx, {
-          emailId: row.email_id,
-          actor: "system",
-          event: auditEvents.delegationOverdue,
-          data: { delegation_id: row.id },
-          at: now,
-        });
-      }
-      if (!decision.remind || reminders >= CHASER_SET_LIMIT) continue;
-
-      const draft = await buildReminderDraft(trx, ctx, row, locked.reminders_sent + 1);
-      const created = await createPlanned(trx, ctx, row.email_id, [
-        {
-          type: "create_draft",
-          payload: draft,
-          status: "ready",
-          idempotencyKey: `${row.email_id}:create_draft:reminder:${day}`,
-        },
-        {
-          type: "send",
-          payload: { ...sendPayloadFor(draft), set_id: setId },
-          status: "awaiting_approval",
-          idempotencyKey: `${row.email_id}:send:reminder:${day}`,
-          dependsOn: "create_draft",
-        },
-      ]);
-      // A crash after the rows made the keys exist: the insert is a no-op and nothing counts.
-      if (created.length === 0) continue;
-      await markReminderPlanned(trx, ctx, row.id, now);
-      reminders += 1;
-    }
-    await recordAudit(trx, ctx, {
-      actor: "system",
-      event: auditEvents.delegationChaserRun,
-      data: { mailbox_id: mailbox.id, due: rows.length, overdue, reminders, set_id: setId, forced: force },
-      at: now,
+    await lockChaserDay(trx, mailbox.id);
+    if (!force && (await ran(trx))) return { overdue: 0, reminders: 0, skipped: "gate", due: 0 };
+    const plan = await planDelegationReminders(trx, ctx, mailbox.id, { now, limit: CHASER_SET_LIMIT });
+    const reminders = await createReminderSet(trx, ctx, plan.pairs, { setId, day, now });
+    await recordDelegationRun(trx, ctx, {
+      mailboxId: mailbox.id,
+      due: plan.due,
+      overdue: plan.overdue,
+      reminders,
+      setId,
+      forced: force,
+      now,
     });
-    return { overdue, reminders, skipped: null };
+    return { overdue: plan.overdue, reminders, skipped: null, due: plan.due };
   };
-  const result = deps.db.isTransaction
+  const { due, ...result } = deps.db.isTransaction
     ? await run(deps.db as Transaction<DB>)
     : await deps.db.transaction().execute(run);
 
-  if (rows.length > 0 && result.skipped === null) {
-    log.info("chaser_done", {
-      mailbox_id: mailbox.id,
-      due: rows.length,
-      overdue: result.overdue,
-      reminders: result.reminders,
-    });
-  }
+  if (result.skipped === null) logDelegationRunDone({ mailboxId: mailbox.id, due, ...result });
   return result;
-}
-
-export function createChaserJob(deps: ChaserDeps): { run(opts?: { force?: boolean }): Promise<void> } {
-  const warnedSettings = new Set<string>();
-  const warnedSkips = new Set<string>();
-
-  return {
-    async run(opts) {
-      const targets = await listSyncTargets(deps.db);
-      for (const { orgId, mailboxId } of targets) {
-        const ctx = { orgId };
-        const mailboxLog = log.with({ org_id: orgId, mailbox_id: mailboxId });
-        try {
-          const settings = await getMailboxSettings(deps.db, ctx, mailboxId);
-          const switches = settings && parseToolSwitches(settings.tool_switches);
-          if (!settings || !switches || settings.mode !== "assist" || !switches.create_draft) {
-            if (!warnedSettings.has(mailboxId)) {
-              warnedSettings.add(mailboxId);
-              mailboxLog.info("chaser_skipped_settings");
-            }
-            continue;
-          }
-          const organization = await getOrganization(deps.db, ctx);
-          if (!organization) continue;
-          if (opts?.force === true) mailboxLog.info("chaser_forced");
-          const mailbox = { id: mailboxId, timezone: organization.timezone, settingsVersion: settings.version };
-          const result = await runChaserForMailbox(deps, ctx, mailbox, deps.now(), opts);
-          // One line per mailbox and reason, not one per tick.
-          if (result.skipped !== null && !warnedSkips.has(`${mailboxId}:${result.skipped}`)) {
-            warnedSkips.add(`${mailboxId}:${result.skipped}`);
-            mailboxLog.info("chaser_skipped", { reason: result.skipped });
-          }
-        } catch (error) {
-          mailboxLog.error("chaser_failed", { ...errorFields(error) });
-        }
-      }
-    },
-  };
 }

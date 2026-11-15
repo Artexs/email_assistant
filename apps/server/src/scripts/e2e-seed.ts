@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import { TERMS_VERSION } from "@ea/core";
 import { Client } from "pg";
 
-import { insertDefaultSettings, updateMailboxSettings } from "../modules/config";
+import { insertDefaultSettings, setUrgencyProfile, updateMailboxSettings } from "../modules/config";
 import { configureMailHosts } from "../modules/mail";
 import { insertCredentials, insertInboxFolder, insertMailbox } from "../modules/mail/repo";
 import {
@@ -42,6 +42,11 @@ import {
   E2E_DELEGATIONS_MEMBER_EMAILS,
   E2E_DELEGATIONS_OWNER_EMAILS,
   e2eApprovalsOrgName,
+  E2E_URGENCY_MEMBER_EMAILS,
+  E2E_URGENCY_OWNER_EMAILS,
+  e2eUrgencyMailbox,
+  e2eUrgencyOrgName,
+  e2eUrgencyProfile,
   E2E_ASSISTANT_EMAILS,
   E2E_DELETE_ASSISTANT_EMAILS,
   E2E_DELETE_OWNER_EMAILS,
@@ -60,6 +65,7 @@ import {
   E2E_STATS_ORG_NAME,
   E2E_STATS_OWNER_EMAIL,
   E2E_TERMS_EMAILS,
+  E2E_TIMEZONE,
   e2eTermsOrgName,
   E2E_TRIAL_ORG_NAME,
   E2E_TRIAL_OWNER_EMAIL,
@@ -133,6 +139,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eApprovalsOrgName),
         ...E2E_PROJECTS.map(e2eDelegatesOrgName),
         ...E2E_PROJECTS.map(e2eDelegationsOrgName),
+        ...E2E_PROJECTS.map(e2eUrgencyOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -156,6 +163,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_DELEGATES_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELEGATIONS_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELEGATIONS_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_URGENCY_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_URGENCY_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -417,6 +426,43 @@ async function main(): Promise<number> {
         };
       }
 
+      // F110 stage 21: one organization per project for the urgency editor spec. The flag `urgency_editor` is on; two mailboxes, one
+      // with a profile (a topic, a deadline of yesterday, a deadline in ten days) and one without.
+      const urgencyIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; seededId: string; emptyId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const urgencyOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eUrgencyOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_URGENCY_OWNER_EMAILS[project],
+          displayName: `E2E Urgency owner ${project}`,
+        });
+        const ctx = { orgId: urgencyOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_URGENCY_MEMBER_EMAILS[project],
+          displayName: `E2E Urgency member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        await upsertOrgFeature(db, ctx, {
+          flag: "urgency_editor",
+          enabled: true,
+          setBy: urgencyOwner.userId,
+          setAt: new Date(),
+        });
+        const seededId = await seedAssistMailbox(db, secretBox, ctx, e2eUrgencyMailbox(project, "seeded"));
+        const emptyId = await seedAssistMailbox(db, secretBox, ctx, e2eUrgencyMailbox(project, "empty"));
+        await setUrgencyProfile(db, ctx, seededId, e2eUrgencyProfile(new Date()), { via: "cli" });
+        urgencyIds[project] = {
+          orgId: urgencyOwner.orgId,
+          ownerId: urgencyOwner.userId,
+          memberId: member.id,
+          seededId,
+          emptyId,
+        };
+      }
+
       // The organization of the isolation checks: one mail that the E2E organization must never see.
       const other = await createOrganizationWithOwner(db, {
         orgName: E2E_OTHER_ORG_NAME,
@@ -615,6 +661,22 @@ async function main(): Promise<number> {
         };
       }
 
+      const urgencyOrgs = {} as SeedFile["urgencyOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_URGENCY_OWNER_EMAILS[project];
+        const memberEmail = E2E_URGENCY_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = urgencyIds[project];
+        urgencyOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          seeded: { id: ids.seededId, address: e2eUrgencyMailbox(project, "seeded") },
+          empty: { id: ids.emptyId, address: e2eUrgencyMailbox(project, "empty") },
+        };
+      }
+
       // The reset stores the current terms; the terms owners then go back to an old version.
       const termsOwners = {} as SeedFile["termsOwners"];
       for (const project of E2E_PROJECTS) {
@@ -665,6 +727,7 @@ async function main(): Promise<number> {
         },
         delegatesOrgs,
         delegationsOrgs,
+        urgencyOrgs,
         approvalsOrgs,
       };
       const path = seedFilePath(repoRoot);

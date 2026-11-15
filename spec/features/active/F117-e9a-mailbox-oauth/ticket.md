@@ -33,7 +33,7 @@ An owner connects a Microsoft 365 or Gmail mailbox with "Sign in with Microsoft"
 
 - Plan after: none.
 - Build after: F082 (public login) and F099 (E7-T2 platform controls: send limits, feature flags); both in `spec/features/done/`.
-- Gate: Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087). Plan form: owner step U1 runs the spike kit, gate G1 after stage 02 (`plan.md`).
+- Gate: Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087). Plan form: owner step U1 runs the spike kit, gate G1 after stage 02 (`plan.md`). Owner, 2026-11-15: "if that's not necessary explicitly important ... we should skip the tests there and just proceed with the rest of the implementation." So: no real tenant and no real Gmail run now. U1 and U2 are skipped; stage 02 writes `spike.md` from the plan defaults (every row "not run"); G1 passes on the defaults (M3 and G2 assumed PASS); stages 14, 15 and 17–20 build and test against the fakes and the spike kit; stage 21 (real smoke) is skipped. The ticket closes with the line "Microsoft and Google OAuth: not proven live". The flags `mail_oauth_microsoft` and `mail_oauth_google` stay off for every organization until a live run passes.
 
 ## Notes
 

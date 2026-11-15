@@ -124,3 +124,20 @@ describe("the texts registry", () => {
     }
   });
 });
+
+// F116 stage 15: the text that replaces a delivered follow-up card when "Track my sent mail" goes off. It holds no mail data and
+// no placeholder, so a leak of a recipient, a subject or a quote cannot ride in it.
+describe("followUpRemoved", () => {
+  test("Polish keeps its diacritics and the shared term for a follow-up; English says the same without mail data", () => {
+    const pl = textTables.pl.approvals.followUpRemoved;
+    const en = textTables.en.approvals.followUpRemoved;
+    expect(pl).toBe("↩️ Przypomnienie o odpowiedzi usunięte: śledzenie Twojej wysłanej poczty jest wyłączone.");
+    expect(en).toBe("↩️ Follow-up removed: tracking of your sent mail is off.");
+    for (const text of [pl, en]) {
+      expect(text).not.toContain("@");
+      expect(text).not.toContain("\n");
+      expect(text.length).toBeLessThan(120);
+    }
+    expect(pl).toContain("Przypomnienie o odpowiedzi");
+  });
+});

@@ -36,6 +36,7 @@ describe("the consent gate of open-loop data", () => {
     );
     const known = [
       "modules/channels/card-edits.ts", // the edit of an existing card: only a covered owner holds a card
+      "modules/channels/loop-cards.ts", // the edit of a delivered card after the Sent switch off: a fixed text of ours, no loop data
       "modules/channels/notices/action-failed.ts", // a fixed text, no loop data
       "modules/channels/notices/approval.ts", // loop data: gated
       "modules/channels/notices/send-result.ts", // loop data: gated

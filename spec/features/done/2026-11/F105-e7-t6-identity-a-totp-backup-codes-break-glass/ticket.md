@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-15
 ---
 
 # F105 · E7-T6 Identity A (TOTP, backup codes, break-glass)
@@ -39,5 +40,7 @@ A member can turn on a second sign-in factor in the Account card: an authenticat
 - Gate: —. F099 stages 12 and 13 have landed; stage 13 needs only stage 07.
 
 ## Notes
+
+- 2026-11-15: owner step U1 (turn on two-factor sign-in) declined by the owner; F105 closes without it (`plan.md` § Log).
 
 Open defaults: [questions.md](questions.md). Sources: `docs/product/stage-2/epics/E07-discovery-notes.md` §8, §11; `docs/decisions/0026-identity-tier-1-oidc-totp.md`; PD-042, PD-043, PD-048.

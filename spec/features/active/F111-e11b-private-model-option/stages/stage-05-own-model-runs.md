@@ -1,6 +1,6 @@
 # F111 stage 05 — Holdout numbers for two own models
 
-Part of [`../plan.md`](../plan.md). Review before the land (published LLM numbers). Owner step O2 comes first (plan § Owner steps): `ollama-rocm` is installed on this PC (P3), or the owner said "rent a GPU". Needs stages 02, 03 and, if built, 04. Long job: if time runs short after model one, commit its files and report; the coordinator continues for model two.
+Part of [`../plan.md`](../plan.md). Review before the land (published LLM numbers). Owner step O2 comes first (plan § Owner steps): `ollama-rocm` is installed on this PC (P3), or the owner said "rent a GPU". Needs stages 02, 03 and, if built, 04. Stage 06 landed first (owner, 2026-11-15): at the end, fill `docs/own-model.md` content 3 and 6 and the ADR 0035 amendment with the numbers of this stage (stage 06 rules and tests). Long job: if time runs short after model one, commit its files and report; the coordinator continues for model two.
 
 ## Step 1 — Serve the models
 

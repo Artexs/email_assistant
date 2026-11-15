@@ -4,16 +4,21 @@ import { z } from "zod";
 // One shape for the stored profile, the classifier prompt and the editor.
 export const URGENCY_MAX_ITEMS = 20;
 
+// A NUL character cannot be stored in a Postgres text value: the route would answer 500. The message is the code that the
+// editor card reads to show its own text.
+export const URGENCY_NUL_MESSAGE = "nul_char";
+const noNul = (value: string): boolean => !value.includes("\u0000");
+
 export const urgencyTopicSchema = z
   .object({
-    label: z.string().trim().min(1).max(80),
-    keywords: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
+    label: z.string().trim().min(1).max(80).refine(noNul, URGENCY_NUL_MESSAGE),
+    keywords: z.array(z.string().trim().min(1).max(40).refine(noNul, URGENCY_NUL_MESSAGE)).max(10).default([]),
   })
   .strict();
 
 export const urgencyDeadlineSchema = z
   .object({
-    label: z.string().trim().min(1).max(80),
+    label: z.string().trim().min(1).max(80).refine(noNul, URGENCY_NUL_MESSAGE),
     due: z.iso.date(),
   })
   .strict();

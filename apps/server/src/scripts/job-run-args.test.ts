@@ -30,12 +30,49 @@ describe("parseJobRunArgs", () => {
     expect(parseJobRunArgs(["--name"])).toBeNull();
   });
 
-  test("--force is for delegation.chaser only", () => {
+  test("--force is for the chaser (loops.chaser and its alias delegation.chaser) only", () => {
+    expect(parseJobRunArgs(["--name", "loops.chaser", "--force"])).toEqual({ name: "loops.chaser", force: true });
     expect(parseJobRunArgs(["--name", "delegation.chaser", "--force"])).toEqual({
       name: "delegation.chaser",
       force: true,
     });
+    expect(parseJobRunArgs(["--name", "loops.chaser"])).toEqual({ name: "loops.chaser", force: false });
     expect(parseJobRunArgs(["--name", "actions.expiry", "--force"])).toBeNull();
+  });
+
+  // The name is compared as a whole string: a quoted, encoded or look-alike form is a usage error, not a job.
+  test.each([
+    ['"loops.chaser"', "quoted"],
+    ["'loops.chaser'", "single quoted"],
+    ["loops.chaser ", "trailing space"],
+    [" loops.chaser", "leading space"],
+    ["loops.chaser\n", "newline"],
+    ["Loops.Chaser", "upper case"],
+    ["loops%2Echaser", "percent encoded dot"],
+    ["loops\\u002echaser", "escaped dot as text"],
+    ["loops\u2024chaser", "one dot leader"],
+    ["loops\uff0echaser", "full-width dot"],
+    ["l\u043eops.chaser", "Cyrillic o"],
+    ["loops.chaser\u200b", "zero-width space"],
+    ["loops.chaser,delegation.chaser", "two names"],
+    ["loops.chase", "prefix"],
+  ])("refuses the name %j (%s)", (name) => {
+    expect(parseJobRunArgs(["--name", name])).toBeNull();
+    expect(parseJobRunArgs(["--name", name, "--force"])).toBeNull();
+  });
+
+  test("refuses a second name, a stray word and the equals form with a space", () => {
+    expect(parseJobRunArgs(["--name", "loops.chaser", "--name", "actions.expiry"])).toEqual({
+      name: "actions.expiry",
+      force: false,
+    });
+    expect(parseJobRunArgs(["--name", "loops.chaser", "now"])).toBeNull();
+    expect(parseJobRunArgs(["--name=loops.chaser"])).toEqual({ name: "loops.chaser", force: false });
+    expect(parseJobRunArgs(["--name= loops.chaser"])).toBeNull();
+    expect(parseJobRunArgs(["--force", "--name", "loops.chaser", "--force"])).toEqual({
+      name: "loops.chaser",
+      force: true,
+    });
   });
 
   test("rejects an unknown flag", () => {

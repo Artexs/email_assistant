@@ -74,7 +74,7 @@ Run it after the last commit.
 ## Owner checkpoints and steps
 
 - O1 (PD-111, now): an OpenAI project with region Europe; ask for ZDR or MAM approval. 01–06 do not wait.
-- O2 (before 05): `sudo pacman -S ollama-rocm`, or "rent a GPU" (Q2).
+- O2 (before 05): `sudo pacman -S ollama-rocm`, or "rent a GPU" (Q2). Owner, 2026-11-15: later, not now; the owner's reminder is `notes/owner-later.md`. Stage 06 does not wait: it builds now (see stage 06 § Order change).
 - O3 (before 07): the PD-110 second pass; on approval, the EU env file (D11).
 
 ## Review
@@ -95,7 +95,7 @@ Opus review before the land: all but 04 (it lands on its proof).
 
 1. Move the ticket to `active/` and commit.
 2. Order 01 → … → 07; 01 may run next to 02. Land each stage before the next.
-3. Spawn with the board's worker flags and `--prepare 'bash scripts/limen-prepare.sh'`: "Implement F111 stage NN. Read spec/features/active/F111-e11b-private-model-option/ticket.md, plan.md and stages/stage-NN-<slug>.md. Final proof: the Proof of your stage file. List as proven only what a saved log shows." Drop the job DB after the land. Stop before 05 (O2) and 07 (O3).
+3. Spawn with the board's worker flags and `--prepare 'bash scripts/limen-prepare.sh'`: "Implement F111 stage NN. Read spec/features/active/F111-e11b-private-model-option/ticket.md, plan.md and stages/stage-NN-<slug>.md. Final proof: the Proof of your stage file. List as proven only what a saved log shows." Drop the job DB after the land. Stop before 05 (O2) and 07 (O3). Order since 2026-11-15: 06 before 05; 05 waits for O2.
 
 ## Planning progress
 

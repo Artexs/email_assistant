@@ -16,7 +16,7 @@ An operator who never saw this plan can start the sim stack on the VPS, run a li
 
 ## Runbook (the section must hold these steps with their commands)
 
-1. **Disk.** `df -h /`. At least 2 GB free for a live day; the live week waits for owner step O1 (PD-055).
+1. **Disk.** `df -h /`. Under 5 GB free: stop and tell the owner (owner, 2026-11-15; O1 is dropped).
 2. **Backup first.** The usual production backup (`deploy/backup.sh`); the sim stack never touches production rows, but the backup names the rollback point.
 3. **Build.** At the deployed commit: `docker build -f deploy/Dockerfile -t ea-sim-base:<sha> .` (a sim-only tag; never retag `ea-server`, review N4), then `docker build -f deploy/Dockerfile.sim -t ea-sim:<sha> --build-arg EA_SERVER_IMAGE=ea-sim-base:<sha> .`.
 4. **Env.** `cp deploy/sim.env.example deploy/sim.env`; make `CREDENTIALS_KEY`, `WEB_AUTH_SECRET` and DB passwords; copy the LLM key lines from `.env` with `grep '^OPENAI_API_KEY=' .env >> deploy/sim.env` (never print them). Then `chmod 600 deploy/sim.env`.

@@ -2,6 +2,9 @@ import type { RuleView, SenderRuleKind } from "@ea/core/web";
 
 import type { TextKey } from "../i18n";
 
+// The id of the VIP card on the Rules page: the urgency card links to it.
+export const vipCardId = "rules-vip";
+
 export const ruleKindOrder = ["vip", "whitelist", "blocklist"] as const;
 
 export const kindTitles: Record<SenderRuleKind, TextKey> = {

@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). [risky] (deploy, VPS). Decisions P2, P4, P6, D11–D19. A coordinator run. Pre-approved (owner, 2026-11-13): backup first, name the rollback target, verify after. The live database is never a restore target.
 
-**Gate:** PD-055 done (root volume grown); stages 01–08 landed; CI green on `master`. U1 is needed for Part C only. On the VPS, run the scripts with `PATH=$HOME/bin:$PATH` (rclone 1.75).
+**Gate:** stages 01–08 landed; the v0.2.0 release of the other coordinator thread is verified; disk: `ssh home_vm df -h /` first, under 5 GB free stop and tell the owner (owner, 2026-11-15; PD-055 is no gate); CI green on `master`. U1 is needed for Part C only. On the VPS, run the scripts with `PATH=$HOME/bin:$PATH` (rclone 1.75).
 
 ## Part A — Release `v0.1.0` and a rollback
 

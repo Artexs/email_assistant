@@ -2,6 +2,15 @@
 
 Part of [`../plan.md`](../plan.md). Needs stage 01 and owner step U1: the coordinator commits `spike-result-microsoft.json`, `spike-result-microsoft-personal.json` and `spike-result-google.json` in the ticket folder first. If a file is missing, stop and say so.
 
+## No live run (owner, 2026-11-15)
+
+The owner skipped U1: no result files exist, and that is not a stop. Write `spike.md` anyway:
+- Every row of stage 01 has the verdict `NOT RUN` and, as evidence, the default that the later stages use (the bracketed defaults of stages 14 and 15, and D-lines of `plan.md`).
+- Gate lines: `M3: ASSUMED PASS (not proven live)`, `G2: ASSUMED PASS (not proven live)`.
+- Plan changes: one line for stage 14 (or a stage 06/08 refresh, if the code needs it): the Microsoft code redeem must get an `id_token` without a live check, so add `openid` to the Microsoft redeem scope (the fix that the stage 08 review and stage 14 carry-over name). Other rows: "none (default kept)".
+- Second-pass text: "Accepted on the defaults; to prove at the first live run (stage 01 kit, then stage 21)".
+- A section "Not proven live" that lists each row, so stage 19 docs can copy it.
+
 ## Step 02.1 — `spike.md`
 
 **Goal.** Turn the three result files into the facts the later stages and the owner's second pass (PD-086, PD-087) need.

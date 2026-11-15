@@ -47,11 +47,29 @@ export type { DelegateMailDeps, DelegateMailResult, DelegateMailVia } from "./de
 export { analyzeSent, DEFAULT_LIMIT, MAX_ATTEMPTS } from "./analyze";
 export type { AnalysisScope, AnalyzeDeps, AnalyzeResult } from "./analyze";
 export { writeExtraction } from "./analyze-write";
-export { createLoopJobs, createLoopMatchJob } from "./jobs";
-export type { LoopJobDeps, LoopJobs, LoopMatchJob, LoopMatchJobDeps } from "./jobs";
+export { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "./jobs";
+export type { LoopChaserJob, LoopChaserJobDeps, LoopJobDeps, LoopJobs, LoopMatchJob, LoopMatchJobDeps } from "./jobs";
+export {
+  autoFollowUpOn,
+  loopFate,
+  MAX_PLANNED,
+  PROMISE_GRACE_DAYS,
+  runLoopChaser,
+  runLoopPart,
+  STALE_AFTER_DUE_DAYS,
+  STALE_AFTER_LAST_FOLLOW_UP_DAYS,
+} from "./chaser";
+export type { LoopChaserDeps, LoopChaserResult, LoopChaserSkip, LoopFate } from "./chaser";
 export { matchReplies } from "./match";
 export type { MatchResult } from "./match";
-export { draftFollowUp, oneLineSubject, recipientsOf } from "./follow-up-draft";
+export {
+  draftFollowUp,
+  followUpOffered,
+  judgeFollowUp,
+  oneLineSubject,
+  planFollowUpPair,
+  recipientsOf,
+} from "./follow-up-draft";
 export type { DraftFollowUpResult } from "./follow-up-draft";
 export { doneLoop, dropLoop, laterLoop, reopenLoop, untrackLoop, LATER_WORKING_DAYS } from "./loop-commands";
 export type { LaterAnswer, LoopAnswer, LoopCommandDeps, LoopCommandInput } from "./loop-commands";

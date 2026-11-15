@@ -1,5 +1,7 @@
 # F117 stage 21 — Provider smoke on the real test mailboxes, then the VPS
 
+**Skipped (owner, 2026-11-15):** no real tenant and no real smoke now. The OAuth flags stay off; the ticket closes with "Microsoft and Google OAuth: not proven live". Run this stage later, after a live stage 01 kit run, when the owner wants OAuth mailboxes.
+
 Part of [`../plan.md`](../plan.md). `[risky]` (real system, real sends). Run by the coordinator in the main checkout (as the VPS stages of other tickets), not by a worker job. Needs stages 19, 20, gate G1 and owner step U2.
 
 ## Owner runbook (U2; real secrets, browser consent)

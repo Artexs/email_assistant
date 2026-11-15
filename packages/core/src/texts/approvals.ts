@@ -69,6 +69,8 @@ export interface ApprovalTexts {
   };
   closings: { delegation: string; reminder: string }; // a clarification has no closing line
   draftRemoved: string;
+  // The whole text that replaces a follow-up card after "Track my sent mail" went off: no quote, no address, no subject.
+  followUpRemoved: string;
   draftStays: string;
   causes: {
     tries: (tries: number, code: string) => string; // code "" = none
@@ -199,6 +201,7 @@ export const approvalTexts = {
       reminder: "The delegation stays open.",
     },
     draftRemoved: "The draft was removed.",
+    followUpRemoved: "↩️ Follow-up removed: tracking of your sent mail is off.",
     draftStays: "The draft stays in Drafts.",
     causes: {
       tries: (tries, code) => `The send failed ${tries} times${code === "" ? "" : ` (${code})`}`,
@@ -332,6 +335,7 @@ export const approvalTexts = {
       reminder: "Zlecenie zostaje otwarte.",
     },
     draftRemoved: "Szkic został usunięty.",
+    followUpRemoved: "↩️ Przypomnienie o odpowiedzi usunięte: śledzenie Twojej wysłanej poczty jest wyłączone.",
     draftStays: "Szkic zostaje w folderze Drafts.",
     causes: {
       tries: (tries, code) =>
