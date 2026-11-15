@@ -124,6 +124,18 @@ export function toMailError(error: unknown, action: string): Error {
   return new HardError(`IMAP ${action} failed${code === null ? "" : ` (${code})`}`, { cause: error });
 }
 
+/**
+ * imapflow with no XOAUTH2 or OAUTHBEARER offer (and no password) throws a plain error with this text; it has no `authenticationFailed`.
+ * `toMailError` made a `HardError` of it. The text is fixed (it holds no token): the check compares it and logs nothing.
+ */
+export function isUnsupportedAuthMechanism(error: unknown): boolean {
+  return (
+    error instanceof HardError &&
+    error.cause instanceof Error &&
+    error.cause.message === "Unsupported authentication mechanism"
+  );
+}
+
 async function guard<T>(action: string, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();

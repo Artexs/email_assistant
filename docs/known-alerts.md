@@ -20,6 +20,75 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `slo_sync_lag` (operator alert text `ALERT slo_sync_lag`; also `STILL OPEN`, `RESOLVED`, `TEST`)
+
+- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
+- **Source:** job `ops.slo` (`apps/server/src/modules/operator/slo-job.ts`, check `checkSyncLag`). The text goes to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` (with no chat: the `info` line `slo_alert_sent`, `kind=slo_sync_lag`).
+- **Cause:** An active mailbox of an organization that is not suspended has shown no sign of life for more than `SLO_SYNC_LAG_MIN` minutes (default 15). A sign of life is the last sync, the last status change, the creation of the mailbox, or the resume of its organization. Line 2 shows the count of late mailboxes and the age of the oldest; line 3 shows up to five mailbox ids. The alert opens at once, repeats every `SLO_REPEAT_H` hours (default 6) while a mailbox is late, and resolves when no mailbox is late. For 10 minutes after a server start it gives no verdict (an open alert stays open).
+- **Fix:** `bun run org:status` lists the mailboxes with their organization ids; then `bun run mailbox:check --org-id <uuid> --mailbox-id <uuid>` for the id in line 3. The usual causes: the IMAP server is down or slow, the password changed (`auth_error` is a different status and does not count here), the sync job fails (grep the log for `sync_failed`), or the server was down. When the cause is gone, the next sync clears the alert within 5 minutes.
+- **Status:** won't fix (expected behaviour)
+
+### `slo_urgent_latency` (operator alert text `ALERT slo_urgent_latency`)
+
+- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
+- **Source:** job `ops.slo` (`checkUrgentLatency`).
+- **Cause:** An urgent mail that the urgent notice covers waited more than `SLO_URGENT_LATENCY_MIN` minutes (default 10) outside the quiet hours (22:00 to 07:00 of the organization) for its notice, or still waits. Line 2 shows the count and the longest wait; line 3 shows up to five mail ids. A late notice that went out stops counting one hour after its send, so the alert resolves one hour after the last late notice. Three readings can look like a false alarm, and are not:
+  - A notice that fails for good (`blocked`, `no_chat`, `bad_view`) has no send time, so the mail counts as late for the 24 h look-back. One user who blocked the bot can hold this alert open. Check `outbox` rows of kind `urgent` with `status = 'failed'` for the mail id, and fix the chat link of that user.
+  - The wait starts at the receive time of the mail (or at the later status change of the mailbox or resume of the organization), not at the triage time. A slow or late triage counts as a late notice.
+  - The check reads at most 200 urgent mails per organization in 24 h. Mail beyond that counts as late. This is an edge case that a real organization does not reach.
+- **Fix:** For each id, read the state of the notice: the `outbox` row of kind `urgent` and the log lines of the sender (`outbox_failed`). A stuck worker or a Telegram outage is the usual cause. The alert resolves by itself once the notices go out.
+- **Status:** won't fix (expected behaviour)
+
+### `slo_llm_errors` (operator alert text `ALERT slo_llm_errors`)
+
+- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
+- **Source:** job `ops.slo` (`checkLlmErrors`).
+- **Cause:** In the last `SLO_LLM_WINDOW_MIN` minutes (default 30) at least `SLO_LLM_MIN_CALLS` calls (default 5) ran and at least `SLO_LLM_FAIL_PCT` percent of them failed (default 20), or an organization is paused by a spent quota (`http_429_quota`). Line 2 shows the failed and total calls and the percent; line 3 shows up to five organization ids with a quota pause. The alert closes only when fewer than `SLO_LLM_CLEAR_PCT` percent fail (default 10) or there are too few calls, and no quota pause remains.
+- **Fix:** Read the `reason_code` of the failed `llm.call` audit rows in the window. `http_429_quota` means the provider quota is spent: raise the quota at the provider. Other codes (`http_5xx`, `timeout`) mean a provider outage: wait, or change `LLM_*` roles in the config.
+- **Status:** won't fix (expected behaviour)
+
+### `slo_disk` (operator alert text `ALERT slo_disk`)
+
+- **First seen:** 2026-11-15 (F114 stage 03 text; the check itself comes with F114 stage 04)
+- **Source:** job `ops.slo` (`checkDisk`, stage 04). Line 2 shows the free percent and the free gigabytes of the volume `SLO_DISK_PATH`.
+- **Cause:** The free space is below `SLO_DISK_FREE_PCT` percent (default 15) or below `SLO_DISK_FREE_GB` gigabytes (default 2). It closes at 5 points and 0.5 GB above those values.
+- **Fix:** Free space on the VPS: old backups (`BACKUP_DIR`), Docker images and build cache (`docker system df`), logs. Never delete the database volume. `deploy/README.md` § Update has the disk check.
+- **Status:** won't fix (expected behaviour)
+
+### `slo_backup_age` (operator alert text `ALERT slo_backup_age`)
+
+- **First seen:** 2026-11-15 (F114 stage 03 text; the check itself comes with F114 stage 04)
+- **Source:** job `ops.slo` (`checkBackupAge`, stage 04), reading the status file that `deploy/backup.sh` writes.
+- **Cause:** The status file is missing or unreadable (line 2: no backup status file), the last backup run failed, or the last good backup is older than `SLO_BACKUP_MAX_AGE_H` hours (default 26).
+- **Fix:** Read `~/ea-logs/backup.log` on the VPS and run `deploy/backup.sh` by hand; the last line must be `backup ok <name> <bytes>`. The alert resolves at the next tick after a good run.
+- **Status:** won't fix (expected behaviour)
+
+### `slo_check_failed` (field `kind`; fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
+- **Source:** job `ops.slo` (`apps/server/src/modules/operator/slo-job.ts`, level `warn`).
+- **Cause:** The check of one kind threw, or the alert state of that kind could not be read or written (usually a database error). The job skips that kind for this tick and runs the other kinds. An open alert of the kind stays as it is.
+- **Fix:** Read `error` and `error_code`. A database error repeats for all kinds: check `/health` and the database. If one kind fails every 5 minutes, read the check code of that kind. No operator alert goes out for this line: it is only in the log.
+- **Status:** investigating
+
+### `slo_alert_send_failed` (fields `kind`, `status`; fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
+- **Source:** job `ops.slo` (`slo-job.ts`, level `warn`). `status` is the phase: `open`, `repeat` or `resolved`.
+- **Cause:** The direct send to the operator chat failed (Telegram down, the bot was removed from the group, a wrong chat id, a timeout after 10 s). The job writes no mark, so the next tick (5 minutes later) sends the same notice again. Nothing is lost; the notice is late.
+- **Fix:** If it repeats, check the bot and the group: `bun run telegram:check`, then `bun run ops:alert-test --kind slo_disk`. The open and resolved alert state stays in `ops_alerts` (`bun run ops:alerts`).
+- **Status:** investigating
+
+### `slo_urgent_zone_bad` (field `org_id`)
+
+- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
+- **Source:** job `ops.slo` (`checkUrgentLatency`, level `warn`), once per tick per organization.
+- **Cause:** The time zone stored for the organization (`organizations.timezone`) is not a zone that the runtime knows. The check skips the urgent mail of that organization, so the urgent alert gives no verdict for it. The other organizations still count.
+- **Fix:** Set a valid IANA zone for the organization (for example `Europe/Warsaw`). Also check the digest of that organization: it uses the same zone.
+- **Status:** investigating
+
+---
+
 ### `sso_refused` (fields `org_id`, `code`; the matching success line is `sso_sign_in`)
 
 - **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
@@ -440,11 +509,27 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check the `onEvent` wiring in `apps/server/src/web.ts`. `auditWebEvent` must return without a throw; an audit miss must never fail a login.
 - **Status:** investigating
 
+### `process_uncaught_exception` and `process_unhandled_rejection` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F103 stage 14; before it Bun printed the message and the source line, and the process exited 1 as well)
+- **Source:** `apps/server/src/platform/process-guard.ts`, installed in `main.ts`. The server process writes the event and exits with code 1; Compose restarts the container.
+- **Cause:** A bug: code threw outside any `try`, or a promise rejected and nobody handled it. The event carries the error name and code only, never the message.
+- **Fix:** Read `error` and `error_code`, then the lines of the same `run_id` or `request_id` just before it (a job run or a request). The container restarted, so check that `server_listening` follows. Fix the missing `catch` at the site.
+- **Status:** investigating
+
+### `console_output` (field `dropped_fields`=1; context fields `job`, `run_id`, `request_id` when set)
+
+- **First seen:** 2026-11-15 (F103 stage 14)
+- **Source:** `installConsoleGuard()` in `apps/server/src/platform/log.ts`, installed in `main.ts` when `LOG_FORMAT=json`. A library or other code called `console.log`, `info`, `debug`, `warn`, `error` or `trace`. The guard drops the text, so it can hold no database value or mail text.
+- **Cause:** A library prints on its own (for example `better-call` prints `# SERVER_ERROR: …`). One `console_output` line stands for one call.
+- **Fix:** Find the library by the `run_id` or `request_id` and the time: read our own lines around it (for example `better_auth_error`). Run the server in text format (dev) to read the text. An own call to `console.*` is a lint error: use the logger.
+- **Status:** investigating
+
 ### `# SERVER_ERROR: <message and stack>`
 
 - **First seen:** 2026-11-09 (S5a code, stage 3 fix review; not seen live)
 - **Source:** `better-call` `router.mjs` (`console.error`), not our logger. It follows our own `better_auth_error` or `better_auth_log` line.
-- **Cause:** An error that is not a `better-call` `APIError` was thrown inside Better Auth, for example a database error. The line holds the full message and stack, so it can hold database text. `onAuthError` cannot suppress it.
+- **Cause:** An error that is not a `better-call` `APIError` was thrown inside Better Auth, for example a database error. The line holds the full message and stack, so it can hold database text. `onAuthError` cannot suppress it. In JSON format the console guard replaces the line with one `console_output` event (see the entry above); the text exists only in text format (dev).
 - **Fix:** Read our own `better_auth_error` or `better_auth_log` line first (name and code only); use this line for the stack. A database label: check the DB. Cut database text before you paste the line into a task file or a ticket.
 - **Status:** investigating
 

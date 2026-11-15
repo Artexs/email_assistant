@@ -435,3 +435,21 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the rule was fixed before the run; the gain does not pay for the cost.
 - Undo: a cheaper trigger (smaller share than 24%) or a cheaper second model needs a new trigger version and a new decision (about 1 stage plus a $0.50 dev run). Raise the $3.00 limit only if you accept the cost.
 - Source: `evals/results/2026-11-15-f109-escalation-summary.md`.
+
+### 2026-11-15 · F114 operator alerts: operator chat, English default, new key OPERATOR_LOCALE (F114) · ops · new
+- Choice: the SLO alert goes only to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` by direct send (plan D4), not to the chats of `OPERATOR_USER_IDS` users. A new key `OPERATOR_LOCALE` (`en` default, `pl` optional) sets the language of the alert text.
+- Why: `OPERATOR_USER_IDS` only gates `/api/operator/*`; the plan names the operator group (U3). English stays the default (plan D5).
+- Undo: replace `operatorSend` in `apps/server/src/main.ts` to send to user chats; remove `OPERATOR_LOCALE` to use English only.
+- Source: `spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/plan.md` (P2, D4, D5), job `2026-11-15-f114-s03-ops-slo-job-alert-texts-a4ad9975`.
+
+### 2026-11-15 · F116 extractor: addresses in the mail body go to the model (F116) · privacy · new
+- Choice: the sent-mail extractor (`extractor-v1`) gets the mail body as written (cut to 8,000 characters, inside a nonce data block). No header address (From, To, Cc) goes to the model, but an address in the body (a signature) can. Triage already works this way. The Telegram rule "never a raw mail body" does not cover an LLM call.
+- Why: the plan lists the body in the model input; masking addresses would change the prompt and could cost recall.
+- Undo: a new prompt version `extractor-v2` that masks addresses in the body, plus one eval run (stage 06 shape).
+- Source: `spec/features/active/F116-e5b-open-loops/review-5.md`, job `2026-11-15-f116-review-s05-opus-loops-modul-6bcb0bc3`.
+
+### 2026-11-15 · F109 send limits: the per-recipient day limit holds lab delegation sends (F109) · ops · new
+- Choice: none yet. The send-limit re-check (stage 16) found that the lab week would send 10 mails per day to one delegate (`asystentka`) against `SEND_LIMIT_RECIPIENT_DAY` = 5. Result: those sends go back to `approved` with `send_limit:recipient_day` and the owner gets `send_held`. The hourly (3 against 20) and daily mailbox (13 against 100) limits fit.
+- Why: the lab persona delegates more per day than a normal executive. For a real user 5 per recipient per day may be right.
+- Undo: leave the limit as is (the lab shows `send_held`); or raise `SEND_LIMIT_RECIPIENT_DAY` for the lab org only.
+- Source: `notes/2026-11-15-e3b-improve-results.md` (send-limit re-check), job `2026-11-15-f109-s16-capability-pages-result-4a208d30`.

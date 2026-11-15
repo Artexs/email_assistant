@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { actionsScope, committerDeps, sendScope, uidplusOf } from "../composition";
+import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "../composition";
 import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
@@ -48,6 +48,7 @@ async function main(): Promise<number> {
           committerDeps({
             db,
             secrets,
+            oauthTokens: mailOAuthRuntime(config, db, secrets).tokens,
             scope: actionsScope(config),
             sendScope: sendScope(config),
             sendLimits: sendLimits(config),

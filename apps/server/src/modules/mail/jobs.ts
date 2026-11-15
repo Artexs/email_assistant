@@ -143,7 +143,7 @@ export function createMailSyncJob(deps: MailSyncJobDeps): { run(): Promise<void>
         } catch (error) {
           if (error instanceof MailAuthError) {
             try {
-              await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", deps.now());
+              await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", deps.now(), error.reason ?? null);
               mailboxLog.warn("sync_auth_error");
             } catch (statusError) {
               mailboxLog.error("sync_auth_error_save_failed", errorFields(statusError));

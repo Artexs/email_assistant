@@ -7,10 +7,11 @@ const repoRoot = path.resolve(import.meta.dir, "../../../..");
 const eslint = new ESLint({ cwd: repoRoot });
 
 const headerFor = (importPath: string) =>
-  `import { createLog } from "${importPath}";\n\nconst log = createLog("mail");\nconst mailboxLog = log.with({});\ndeclare const id: string, e: unknown, a: unknown, b: unknown, y: string;\n`;
+  `import { createLog } from "${importPath}";\n\nconst log = createLog("mail");\nconst mailboxLog = log.with({});\ndeclare const id: string, e: unknown, a: unknown, b: unknown, y: string, err: Error, fields: Record<string, string>;\ndeclare function errorFields(error: unknown): Record<string, string>;\ndeclare function telegramErrorFields(error: unknown): Record<string, string>;\n`;
 
 const TIMEOUT = 30_000;
 const fixtureFile = "apps/server/src/lint-fixture/__log-fixture.ts";
+const modFixture = "apps/server/src/modules/mail/__log-fixture.ts";
 
 /** Severities of the log-event messages for `line` in a virtual file. */
 async function logEventSeverities(file: string, line: string, importPath = "../../platform/log"): Promise<number[]> {
@@ -23,59 +24,94 @@ async function logEventSeverities(file: string, line: string, importPath = "../.
     .map((message) => message.severity);
 }
 
-describe("log lint: old forms warn", () => {
+describe("log lint: old forms fail", () => {
   test(
-    "a template literal warns",
+    "a template literal fails",
     async () => {
-      expect(await logEventSeverities(fixtureFile, "log.info(`sync ${id} done`);")).toEqual([1]);
+      expect(await logEventSeverities(fixtureFile, "log.info(`sync ${id} done`);")).toEqual([2]);
     },
     TIMEOUT
   );
 
   test(
-    "free text warns",
+    "free text fails",
     async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.info("sync done");')).toEqual([1]);
+      expect(await logEventSeverities(fixtureFile, 'log.info("sync done");')).toEqual([2]);
     },
     TIMEOUT
   );
 
   test(
-    "a plain string with ${ warns",
+    "a plain string with ${ fails",
     async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.info("sync ${id}");')).toEqual([1]);
+      expect(await logEventSeverities(fixtureFile, 'log.info("sync ${id}");')).toEqual([2]);
     },
     TIMEOUT
   );
 
   test(
-    "a text with an error argument warns",
+    "a text with an error argument fails",
     async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.error("config error:", e);')).toEqual([1]);
+      expect(await logEventSeverities(fixtureFile, 'log.error("config error:", e);')).toEqual([2, 2]);
     },
     TIMEOUT
   );
 
   test(
-    "three arguments warn",
+    "three arguments fail",
     async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.warn("ping_failed", a, b);')).toEqual([1]);
+      expect(await logEventSeverities(fixtureFile, 'log.warn("ping_failed", a, b);')).toEqual([2]);
     },
     TIMEOUT
   );
 
   test(
-    "a child logger with a template literal warns",
+    "a child logger with a template literal fails",
     async () => {
-      expect(await logEventSeverities(fixtureFile, "mailboxLog.info(`x ${y}`);")).toEqual([1]);
+      expect(await logEventSeverities(fixtureFile, "mailboxLog.info(`x ${y}`);")).toEqual([2]);
     },
     TIMEOUT
   );
 
   test(
-    "a call with no argument warns",
+    "a member logger fails (this.log, o.mailboxLog), also on a chain",
     async () => {
-      expect(await logEventSeverities(fixtureFile, "log.info();")).toEqual([1]);
+      expect(
+        await logEventSeverities(
+          fixtureFile,
+          "declare const o: { log: typeof log; mailboxLog: typeof log };\no.log.info(`x ${y}`);"
+        )
+      ).toEqual([2]);
+      expect(
+        await logEventSeverities(
+          fixtureFile,
+          "declare const o: { log: typeof log; mailboxLog: typeof log };\no.mailboxLog.warn(`x ${y}`);"
+        )
+      ).toEqual([2]);
+      expect(
+        await logEventSeverities(fixtureFile, "declare const o: { log: typeof log };\no.log.with({}).error(`x ${y}`);")
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a member logger with an event code passes",
+    async () => {
+      expect(
+        await logEventSeverities(
+          fixtureFile,
+          'declare const o: { log: typeof log };\no.log.info("sync_done", { count: 1 });'
+        )
+      ).toEqual([]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a call with no argument fails",
+    async () => {
+      expect(await logEventSeverities(fixtureFile, "log.info();")).toEqual([2]);
     },
     TIMEOUT
   );
@@ -151,7 +187,7 @@ describe("log lint: converted files fail", () => {
     async () => {
       expect(
         await logEventSeverities("apps/server/src/main.ts", 'log.error("config error:", e);', "./platform/log")
-      ).toEqual([2]);
+      ).toEqual([2, 2]);
     },
     TIMEOUT
   );
@@ -179,7 +215,7 @@ describe("log lint: converted files fail", () => {
           'log.error("operator notice run:", e);',
           "../../platform/log"
         )
-      ).toEqual([2]);
+      ).toEqual([2, 2]);
     },
     TIMEOUT
   );
@@ -343,6 +379,133 @@ describe("log lint: converted files fail", () => {
           "../../platform/log"
         )
       ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+});
+
+describe("log lint: the chain, the second argument and .message", () => {
+  test(
+    "a template literal on a chain fails",
+    async () => {
+      expect(await logEventSeverities(modFixture, "log.with({}).info(`x ${y}`);")).toEqual([2]);
+      expect(await logEventSeverities(modFixture, "mailboxLog.with({}).with({}).warn(`x ${y}`);")).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "free text on a chain fails; an event code on a chain passes",
+    async () => {
+      expect(await logEventSeverities(modFixture, 'log.with({}).error("free text", {});')).toEqual([2]);
+      expect(await logEventSeverities(modFixture, 'log.with({ org_id: id }).info("sync_done", { count: 1 });')).toEqual(
+        []
+      );
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a second argument that is a variable or an error fails",
+    async () => {
+      expect(await logEventSeverities(modFixture, 'log.error("x_failed", e);')).toEqual([2]);
+      expect(await logEventSeverities(modFixture, 'log.error("x_failed", fields);')).toEqual([2]);
+      expect(await logEventSeverities(modFixture, 'mailboxLog.error("x_failed", { ...fields });')).toEqual([]);
+      expect(await logEventSeverities(modFixture, 'log.with({}).error("x_failed", err);')).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a second argument that is an object literal, errorFields or telegramErrorFields passes",
+    async () => {
+      expect(await logEventSeverities(modFixture, 'log.error("x_failed", { count: 1 });')).toEqual([]);
+      expect(await logEventSeverities(modFixture, 'log.error("x_failed", errorFields(e));')).toEqual([]);
+      expect(await logEventSeverities(modFixture, 'log.error("x_failed", telegramErrorFields(e));')).toEqual([]);
+      expect(await logEventSeverities(modFixture, 'log.error("x_failed", { ...errorFields(e) });')).toEqual([]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a .message field fails, also with a cast, a call or an optional chain",
+    async () => {
+      expect(await logEventSeverities(modFixture, 'log.info("a", { reason: err.message });')).toEqual([2]);
+      expect(await logEventSeverities(modFixture, 'log.info("a", { reason: (e as Error).message });')).toEqual([2]);
+      expect(await logEventSeverities(modFixture, 'log.info("a", { reason: String(err.message) });')).toEqual([2]);
+      expect(await logEventSeverities(modFixture, 'log.info("a", { reason: err?.message });')).toEqual([2]);
+      expect(await logEventSeverities(modFixture, 'log.with({}).info("a", { reason: err.message });')).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "other fields of an error pass the .message selector",
+    async () => {
+      expect(await logEventSeverities(modFixture, 'log.info("a", { reason: err.name });')).toEqual([]);
+      expect(await logEventSeverities(modFixture, 'log.info("a", { count: 1 }); const m = err.message;')).toEqual([]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "test files are ignored",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/mail/__log-fixture.test.ts",
+          'log.info("a", { reason: err.message }); log.with({}).info(`x ${y}`); log.error("x_failed", e);'
+        )
+      ).toEqual([]);
+    },
+    TIMEOUT
+  );
+});
+
+describe("log lint: no-console", () => {
+  /** Severities of `no-console` for `line` in a virtual file. */
+  async function consoleSeverities(file: string, line: string): Promise<number[]> {
+    const [result] = await eslint.lintText(`${headerFor("../../platform/log")}${line}\n`, {
+      filePath: path.join(repoRoot, file),
+    });
+    return (result?.messages ?? [])
+      .filter((message) => message.ruleId === "no-console")
+      .map((message) => message.severity);
+  }
+
+  test(
+    "console.log in a server file is an error",
+    async () => {
+      expect(await consoleSeverities(modFixture, "console.log(y);")).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "console.error in a script or in platform is an error",
+    async () => {
+      expect(await consoleSeverities("apps/server/src/scripts/__log-fixture.ts", "console.error(e);")).toEqual([2]);
+      expect(await consoleSeverities("apps/server/src/platform/__log-fixture.ts", "console.warn(e);")).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "console in a test file is not an error",
+    async () => {
+      expect(
+        (await consoleSeverities("apps/server/src/modules/mail/__log-fixture.test.ts", "console.log(y);")).filter(
+          (severity) => severity === 2
+        )
+      ).toEqual([]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "process.stdout.write is not console output",
+    async () => {
+      expect(await consoleSeverities(modFixture, "process.stdout.write(y);")).toEqual([]);
     },
     TIMEOUT
   );

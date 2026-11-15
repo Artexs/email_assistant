@@ -2,13 +2,21 @@ import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { localToInstant } from "@ea/core";
+
 import type { Db } from "../../../platform/db";
 import type { LabCorpus } from "../corpus";
 import { runModels, runSpend } from "../run-spend";
 import type { LabEvent, LabRun, LabState } from "../state";
 
+import { scoreDelegatesSection } from "./delegates";
+import { scoreExecutiveSection } from "./executive";
 import { joinRun, joinSentCopies, type ScoredMail } from "./join";
+import { scoreLimitsSection } from "./limits";
+import { scoreMetricsSection } from "./metrics";
+import { scorePhishingSection } from "./phishing";
 import { renderLabReport, reportBaseName, type CoverageSection, type LabScore, type SentCopiesSection } from "./report";
+import type { SectionScope } from "./section";
 import { scoreM1, scoreTriage } from "./triage";
 
 export type ScoreErrorCode = "org_gone";
@@ -57,7 +65,7 @@ const mailsOf = (rows: readonly ScoredMail[]) =>
     return { ...rest, joined: emailId !== null };
   });
 
-/** Scores the first half of the report (triage, M1, coverage, sent copies) for one run. A run that is not stopped is scored as `partial`. */
+/** Scores a run: triage, M1, coverage, sent copies, M2 to M5 and M7, the delegates, the executive, the send limits and the phishing mail. A run that is not stopped is scored as `partial`. */
 export async function scoreLabRun(deps: ScoreDeps, runId: string): Promise<LabScore> {
   const { db, state, corpus } = deps;
   const run = state.readRun(runId);
@@ -72,6 +80,18 @@ export async function scoreLabRun(deps: ScoreDeps, runId: string): Promise<LabSc
   const stopped = events.find((event) => event.t === "stopped");
 
   const sentCopies: SentCopiesSection = sent;
+  const scope: SectionScope = {
+    run,
+    events,
+    corpus,
+    mailboxId: org.mailboxId,
+    now: deps.now(),
+    window: {
+      start: localToInstant(run.plan.startDate, "00:00", "Europe/Warsaw"),
+      end: new Date(run.plan.tailEndsAt),
+    },
+  };
+  const metrics = await scoreMetricsSection(db, ctx, scope, rows);
   return {
     header: {
       runId,
@@ -92,7 +112,16 @@ export async function scoreLabRun(deps: ScoreDeps, runId: string): Promise<LabSc
     },
     triage: scoreTriage(rows),
     m1: scoreM1(rows),
-    sections: { coverage: coverageOf(run, events), sentCopies, mails: mailsOf(rows) },
+    sections: {
+      coverage: coverageOf(run, events),
+      sentCopies,
+      metrics: metrics.section,
+      delegates: await scoreDelegatesSection(db, ctx, scope, rows),
+      executive: await scoreExecutiveSection(db, ctx, scope),
+      limits: await scoreLimitsSection(db, ctx, scope),
+      phishing: await scorePhishingSection(db, ctx, scope, rows, metrics.urgent),
+      mails: mailsOf(rows),
+    },
   };
 }
 

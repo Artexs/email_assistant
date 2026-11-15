@@ -1,10 +1,11 @@
-import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition";
+import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
+import { checkLlmErrors, checkSyncLag, checkUrgentLatency, runSloTick, type SloCheckEntry } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
-import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
+import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
 import {
   ConfigError,
   featuresOff,
@@ -14,6 +15,7 @@ import {
   mailSyncCron,
   operatorChatId,
   sendLimits,
+  sloThresholds,
   mailTrustedAuthservIds,
   testMailRule,
   type Config,
@@ -24,7 +26,8 @@ import { errorFields } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
 import { createLlmClient, llmEndpointFields, type LlmProviderId } from "./platform/llm";
-import { createLog, setLogFormat, setLogLevel } from "./platform/log";
+import { createLog, installConsoleGuard, setLogFormat, setLogLevel } from "./platform/log";
+import { installProcessGuard } from "./platform/process-guard";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
 import { webDeps } from "./web";
@@ -62,6 +65,9 @@ function triageScope(config: Config, provider: LlmProviderId): TriageScope | nul
 const config = loadConfigOrExit();
 setLogLevel(config.LOG_LEVEL);
 setLogFormat(config.LOG_FORMAT);
+// JSON format (production): text from a library never reaches the log. Text format (dev) keeps the console.
+if (config.LOG_FORMAT === "json") installConsoleGuard();
+installProcessGuard(log);
 configureMailHosts({ allowLocal: mailAllowLocal(config) });
 const featuresOffList = featuresOff(config);
 configureFeatures({ off: featuresOffList });
@@ -91,10 +97,12 @@ try {
 }
 
 const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+const mailOAuth = mailOAuthRuntime(config, db, secrets);
 const mailSync = createMailSyncJob({
   db,
   secrets,
   openProvider: openImapProvider,
+  oauthTokens: mailOAuth.tokens,
   isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
   sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(db, ctx, mailboxId, actionId),
   now: () => new Date(),
@@ -130,17 +138,14 @@ let telegram: ReturnType<typeof createTelegramRuntime> | null = null;
 
 // Operator notices (D31): the chat id is private data and never reaches a log line.
 const operatorChat = operatorChatId(config);
-const operator = createOperatorNotices({
-  db,
-  now: () => new Date(),
-  send:
-    operatorChat === null
-      ? null
-      : async (text) => {
-          if (telegram === null) throw new Error("telegram is off");
-          await telegram.sendDirect(operatorChat, text);
-        },
-});
+const operatorSend =
+  operatorChat === null
+    ? null
+    : async (text: string): Promise<void> => {
+        if (telegram === null) throw new Error("telegram is off");
+        await telegram.sendDirect(operatorChat, text);
+      };
+const operator = createOperatorNotices({ db, now: () => new Date(), send: operatorSend });
 let operatorRun: Promise<void> = Promise.resolve();
 scheduler.add("channels.operator", "0 13 * * * *", () => {
   operatorRun = operator.run();
@@ -148,18 +153,43 @@ scheduler.add("channels.operator", "0 13 * * * *", () => {
 });
 log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegram" });
 
+// F114: the service-level alerts. The job runs in every case: with no operator chat the `slo_alert_sent` line is the send.
+// The alert goes only to the operator chat, through the same send as the operator notices. The scheduler runs the tick
+// with no tenant scope, because the checks read every organization.
+const slo = sloThresholds(config);
+const sloChecks: SloCheckEntry[] = [
+  { kind: "slo_sync_lag", run: (now) => checkSyncLag(db, now, slo, startedAt) },
+  {
+    kind: "slo_urgent_latency",
+    run: (now) => checkUrgentLatency(db, now, slo, startedAt, testMailRule(config)),
+  },
+  { kind: "slo_llm_errors", run: (now) => checkLlmErrors(db, now, slo) },
+];
+let sloRun: Promise<void> = Promise.resolve();
+scheduler.add("ops.slo", "30 */5 * * * *", () => {
+  sloRun = runSloTick(
+    { db, checks: sloChecks, send: operatorSend, cfg: slo, log, locale: config.OPERATOR_LOCALE },
+    new Date()
+  );
+  return sloRun;
+});
+
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
+// One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
+let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
-  log.info("llm_settings", llmEndpointFields(llmTable, "classifier"));
+  log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
   const llm = createLlmClient({ table: llmTable });
+  const pause = createLlmPause();
+  degraded = { pause, scope };
   const triage = createTriageJob({
     db,
     llm,
-    pause: createLlmPause(),
+    pause,
     scope,
     testMail: testMailRule(config),
     batchSize: 5,
@@ -194,6 +224,7 @@ const committer = createCommitterJob(
   committerDeps({
     db,
     secrets,
+    oauthTokens: mailOAuth.tokens,
     scope: scopeOfActions,
     sendScope: scopeOfSends,
     sendLimits: limitsOfSends,
@@ -254,6 +285,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     uidplus,
     sendScope: scopeOfSends,
     testMail: testMailRule(config),
+    ...(degraded === undefined ? {} : { degraded }),
     operatorContact: config.OPERATOR_CONTACT ?? null,
     syncEveryMin: Number(config.MAIL_SYNC_EVERY_MIN),
     ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
@@ -276,6 +308,8 @@ const web = webDeps(config, db, {
   actionsScope: scopeOfActions,
   sendScope: scopeOfSends,
   botUsername: telegram ? () => telegram.botUsername() : null,
+  mailOAuthClients: mailOAuth.clients,
+  mailOAuthLogin: { oauthTokens: mailOAuth.tokens },
   onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });
 const app = createApp({ checkDb: () => checkDb(db), web });
@@ -309,6 +343,7 @@ async function shutdown(): Promise<void> {
       channelRun,
       digestRun,
       operatorRun,
+      sloRun,
       retentionRun,
     ]),
     sleep(SHUTDOWN_WAIT_MS),

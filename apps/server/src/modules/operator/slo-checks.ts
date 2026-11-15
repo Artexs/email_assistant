@@ -3,6 +3,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
 import { configCodes, softCodes } from "../../platform/llm";
+import { createLog, type Log } from "../../platform/log";
 import { countLlmCallOutcomesSince, latestLlmPause } from "../audit";
 import { listUrgentCandidates } from "../channels";
 import { listLaggingMailboxes, type TestMailRule } from "../mail";
@@ -13,6 +14,8 @@ import { listOrganizations } from "../tenancy";
 // organizations, at most `MAX_IDS`, never stored (`ops_alerts` has no org_id).
 
 type DbOrTrx = Db | Transaction<DB>;
+
+const log = createLog("operator");
 
 export interface SloReading {
   check: SloCheck;
@@ -53,13 +56,16 @@ export async function checkSyncLag(db: DbOrTrx, now: Date, cfg: SloThresholds, s
 /**
  * Firing: an urgent mail that the urgent notice covers waited more than `urgentLatencyMin` minutes outside quiet hours, for
  * its notice or until now. A late notice that went out stops counting 1 h after its send. Start grace: `between`.
+ * An organization whose time zone is bad is skipped with one `slo_urgent_zone_bad` warning per tick: its mail gives no verdict,
+ * and the other organizations still count.
  */
 export async function checkUrgentLatency(
   db: DbOrTrx,
   now: Date,
   cfg: SloThresholds,
   startedAt: Date,
-  testMail: TestMailRule
+  testMail: TestMailRule,
+  logger: Pick<Log, "warn"> = log
 ): Promise<SloReading> {
   if (inStartGrace(now, startedAt)) return reading("slo_urgent_latency", "between", { mails: 0, max_wait_min: 0 }, []);
   const candidates = await listUrgentCandidates(db, {
@@ -67,9 +73,19 @@ export async function checkUrgentLatency(
     testMail,
   });
   const late: { emailId: string; waitMin: number }[] = [];
+  const badZoneOrgs = new Set<string>();
   for (const mail of candidates) {
+    if (badZoneOrgs.has(mail.orgId)) continue;
     if (mail.noticeAt !== null && mail.noticeAt.getTime() < now.getTime() - SLO_URGENT_LATE_MEMORY_MS) continue;
-    const waitMin = lateMin(mail.startAt, mail.noticeAt ?? now, mail.timeZone);
+    let waitMin: number;
+    try {
+      waitMin = lateMin(mail.startAt, mail.noticeAt ?? now, mail.timeZone);
+    } catch {
+      // `Intl` throws a RangeError for a time zone it does not know. One organization must not fail the whole reading.
+      badZoneOrgs.add(mail.orgId);
+      logger.warn("slo_urgent_zone_bad", { org_id: mail.orgId });
+      continue;
+    }
     if (waitMin > cfg.urgentLatencyMin) late.push({ emailId: mail.emailId, waitMin });
   }
   if (late.length === 0) return reading("slo_urgent_latency", "clear", { mails: 0, max_wait_min: 0 }, []);

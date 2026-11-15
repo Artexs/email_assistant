@@ -6,7 +6,15 @@ import { checkLlmErrors, checkSyncLag, checkUrgentLatency } from "../../src/modu
 import { loadConfig, sloThresholds } from "../../src/platform/config";
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertTriaged, linkChat, randomChatId, resumeOrg, suspendOrg } from "./fixtures";
+import {
+  addMember,
+  createOrgWithMailbox,
+  insertTriaged,
+  linkChat,
+  randomChatId,
+  resumeOrg,
+  suspendOrg,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 // F114 stage 02: the three service-level checks that read the database. They read every organization that is not
@@ -190,13 +198,13 @@ async function sentNotice(
   org: { orgId: string; userId: string },
   emailId: string,
   sentAt: Date,
-  opts: { kind?: string; status?: string } = {}
+  opts: { kind?: string; status?: string; userId?: string } = {}
 ) {
   await trx
     .insertInto("outbox")
     .values({
       org_id: org.orgId,
-      user_id: org.userId,
+      user_id: opts.userId ?? org.userId,
       kind: opts.kind ?? "urgent",
       dedup_key: `${opts.kind ?? "urgent"}:${emailId}`,
       email_id: emailId,
@@ -357,6 +365,51 @@ describe("urgent latency", () => {
       expect((await urgent(trx)).check.state).toBe("clear");
       await urgentMail(trx, org, { receivedAt: at("09:00"), triagedAt: at("09:31") });
       expect((await urgent(trx)).check.state).toBe("firing");
+    });
+  });
+
+  test("9c2. the earliest link of two members counts: mail triaged between the two links is covered", async () => {
+    await inRollback(async (trx) => {
+      const org = await orgWithMailbox(trx);
+      const second = await addMember(trx, org.orgId);
+      await linkChat(trx, { orgId: org.orgId }, second, randomChatId(), at("09:30"));
+      await linkChat(trx, { orgId: org.orgId }, org.userId, randomChatId(), at("08:30"));
+      await urgentMail(trx, org, { receivedAt: at("09:00") });
+      // MIN(linked_at) = 08:30, so the mail triaged at 09:00 is covered; the later link (09:30) would exclude it.
+      expect((await urgent(trx)).check.state).toBe("firing");
+    });
+  });
+
+  test("8f. the first sent notice of a mail counts, not the last: two notices at 09:20 and 09:40 make a wait of 20", async () => {
+    await inRollback(async (trx) => {
+      const org = await urgentOrg(trx);
+      const second = await addMember(trx, org.orgId);
+      const mail = await urgentMail(trx, org, { receivedAt: at("09:00") });
+      await sentNotice(trx, org, mail, at("09:40"), { userId: second });
+      await sentNotice(trx, org, mail, at("09:20"));
+      const reading = await urgent(trx);
+      expect(reading.check.state).toBe("firing");
+      expect(reading.check.facts).toEqual({ mails: 1, max_wait_min: 20 });
+    });
+  });
+
+  test("9i. a time zone that Intl does not know skips that organization with one warning; the others still count", async () => {
+    await inRollback(async (trx) => {
+      const bad = await urgentOrg(trx);
+      await urgentMail(trx, bad, { receivedAt: at("09:00") });
+      await urgentMail(trx, bad, { receivedAt: at("09:01") });
+      await trx.updateTable("organizations").set({ timezone: "Mars/Olympus" }).where("id", "=", bad.orgId).execute();
+      const warnings: { event: string; fields: unknown }[] = [];
+      const logger = { warn: (event: string, fields?: unknown) => void warnings.push({ event, fields }) };
+      expect((await checkUrgentLatency(trx, NOW, cfg, STARTED, noTestMail, logger)).check.state).toBe("clear");
+      expect(warnings).toEqual([{ event: "slo_urgent_zone_bad", fields: { org_id: bad.orgId } }]);
+      const good = await urgentOrg(trx);
+      const goodMail = await urgentMail(trx, good, { receivedAt: at("09:00") });
+      warnings.length = 0;
+      const reading = await checkUrgentLatency(trx, NOW, cfg, STARTED, noTestMail, logger);
+      expect(reading.check.state).toBe("firing");
+      expect(reading.ids).toEqual([goodMail]);
+      expect(warnings).toHaveLength(1);
     });
   });
 
