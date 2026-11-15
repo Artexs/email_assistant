@@ -16,8 +16,7 @@ Part of [plan.md](plan.md). These names are the contract between the stages and 
 
 - `extractorOutputSchema` (zod): `{ expects_reply: boolean, ask: string ≤ 80 | null, due: DueRef | null, promise: string ≤ 80 | null, promise_due: DueRef | null, language: "pl" | "en" | "other" }`. `DueRef = { kind: "date", date: "YYYY-MM-DD" } | { kind: "word", word: "today" | "tomorrow" | "monday" … "sunday" | "end_of_week" | "next_week" }`.
 - `sentSkipReason(facts) → SkipReason | null` (the rule filters, D6).
-- `resolveDue(ref, { sentAt, timeZone }) → Date | null` (D7; 17:00 local on the day).
-- `defaultDue(sentAt, waitDays, timeZone) → Date` (`addWorkingDays`, 17:00 local).
+- `DueRef`, `resolveDue(ref, { sentAt, timeZone }) → Date | null`, `defaultDue(sentAt, waitDays, timeZone) → Date` (`core/loops/dates.ts`, stage 01; rules there).
 - `normalizeSubject(subject) → string` (drops `Re:`, `RE:`, `Odp:`, `Fwd:`, `FW:`, `PD:` prefixes, repeated; trims; lower case).
 - `isAutoReply({ autoSubmitted, precedence, fromAddress }) → boolean` (D10).
 - `loopSections(input) → BriefSections` and `renderBrief(sections, texts, opts)` (stage 17).
