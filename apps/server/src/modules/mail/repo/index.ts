@@ -45,6 +45,13 @@ export {
   type MovedRow,
 } from "./copies";
 export {
+  listWaitingFromSenders,
+  listWaitingSenders,
+  WAITING_SENDER_LIMIT,
+  type WaitingMail,
+  type WaitingQuery,
+} from "./waiting";
+export {
   clearReturned,
   getEmailMailbox,
   getEmailMeta,

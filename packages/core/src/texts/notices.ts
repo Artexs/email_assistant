@@ -26,6 +26,8 @@ export interface NoticeTexts {
     status: string;
   };
   mailboxRemoved: string;
+  // F109 stage 15: mail of a VIP or whitelisted sender waits while the AI service is paused.
+  notTriaged: (sender: string) => string;
   sendHeld: {
     first: (address: string, limit: string) => string;
     limit: Record<SendLimitKind, string>;
@@ -135,6 +137,8 @@ export const noticeTexts = {
       status: "/status shows the mailbox state.",
     },
     mailboxRemoved: "Mailbox removed. Change its password in your mail provider's settings now.",
+    notTriaged: (sender) =>
+      `📭 Mail from ${sender} is not triaged yet: the AI service is paused. It is triaged when the service is back.`,
     sendHeld: {
       first: (address, limit) => `⏸ Sends from ${address} wait: ${limit}.`,
       limit: {
@@ -234,6 +238,8 @@ export const noticeTexts = {
       status: "/status pokazuje stan skrzynki.",
     },
     mailboxRemoved: "Skrzynka usunięta. Zmień teraz jej hasło w ustawieniach dostawcy poczty.",
+    notTriaged: (sender) =>
+      `📭 Wiadomość od ${sender} nie jest jeszcze posortowana: usługa AI ma przerwę. Zostanie posortowana, gdy usługa wróci.`,
     sendHeld: {
       first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka ${address}): ${limit}.`,
       limit: {

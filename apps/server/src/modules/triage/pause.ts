@@ -7,6 +7,9 @@ export interface LlmPause {
   // Starts a pause and returns its end. Each trip since the last `reset` doubles the length, up to `maxMs`.
   trip(kind: "soft" | "config", code: string, now: Date): Date;
   isPaused(now: Date): boolean;
+  // The time of the first trip of the current run of pauses (the trips since the last `reset`), or null. Only `reset`
+  // clears it: a pause that grew from 5 to 10 min is one run (F109 stage 15).
+  pausedSince(): Date | null;
   // A call got an answer: the next trip starts at `baseMs` again.
   reset(): void;
 }
@@ -17,10 +20,12 @@ export function createLlmPause(opts: { baseMs?: number; maxMs?: number; configHi
   const configHint = opts.configHint ?? "check the LLM API key, the classifier model and the provider project";
   let trips = 0;
   let until: Date | null = null;
+  let since: Date | null = null;
 
   return {
     trip(kind, code, now) {
       trips += 1;
+      if (since === null) since = now;
       const ms = Math.min(baseMs * 2 ** (trips - 1), maxMs);
       until = new Date(now.getTime() + ms);
       const minutes = Math.round(ms / 60_000);
@@ -36,8 +41,12 @@ export function createLlmPause(opts: { baseMs?: number; maxMs?: number; configHi
     isPaused(now) {
       return until !== null && now.getTime() < until.getTime();
     },
+    pausedSince() {
+      return since;
+    },
     reset() {
       trips = 0;
+      since = null;
     },
   };
 }

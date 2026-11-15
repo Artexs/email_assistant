@@ -104,6 +104,12 @@ export function renderHostBlockedNotice(
   };
 }
 
+// Mail of a VIP or whitelisted sender waits for triage during an LLM pause (F109 stage 15). The sender goes through the
+// chat-safe text helper; the view holds no subject and no other mail text.
+export function renderNotTriagedNotice(input: { sender: string }, texts: CoreTexts): OutMessage {
+  return { text: texts.notices.notTriaged(senderLabel(input.sender, texts)), buttons: [] };
+}
+
 // Sends of one mailbox wait on a send limit (PD-044). The view holds no limit number: the text names the window.
 export function renderSendHeldNotice(
   input: {

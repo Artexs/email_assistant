@@ -180,6 +180,7 @@ describe("org_features", () => {
         { flag: "sso_sign_in", enabled: false, source: "default" },
         { flag: "suspicious_mail", enabled: false, source: "default" },
         { flag: "attachment_line", enabled: false, source: "default" },
+        { flag: "degraded_notice", enabled: false, source: "default" },
         { flag: "mail_oauth_microsoft", enabled: false, source: "default" },
         { flag: "mail_oauth_google", enabled: false, source: "default" },
       ]);

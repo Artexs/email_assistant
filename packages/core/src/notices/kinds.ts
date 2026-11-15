@@ -19,6 +19,7 @@ export const noticeKinds = [
   "weekly_report",
   "host_blocked",
   "approval_edit",
+  "not_triaged",
 ] as const;
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);
