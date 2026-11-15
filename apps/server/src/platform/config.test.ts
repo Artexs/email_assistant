@@ -296,7 +296,13 @@ describe("loadConfig", () => {
       rpm: null,
       reasoningEffort: null,
     });
-    expect(table.providers.gemini).toEqual({ apiKeyName: "GEMINI_API_KEY", apiKey: "test-key", rpm: 12 });
+    expect(table.providers.gemini).toEqual({
+      apiKeyName: "GEMINI_API_KEY",
+      apiKey: "test-key",
+      rpm: 12,
+      baseUrl: null,
+      endpoint: "standard",
+    });
   });
 
   test("LLM_PROVIDER=openai needs OPENAI_API_KEY when the scope is not off", () => {
@@ -314,7 +320,13 @@ describe("loadConfig", () => {
       rpm: null,
       reasoningEffort: "none",
     };
-    const provider = { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 };
+    const provider = {
+      apiKeyName: "OPENAI_API_KEY",
+      apiKey: "o-key",
+      rpm: 60,
+      baseUrl: "https://api.openai.com/v1",
+      endpoint: "standard" as const,
+    };
     const table = llmRoleTable(loadConfig({ ...env, LLM_PROVIDER: "openai" }));
     expect(table.roles.classifier).toEqual(classifier);
     expect(table.providers.openai).toEqual(provider);

@@ -1,4 +1,4 @@
-import type { LlmRole } from "@ea/core";
+import type { LlmEndpointKind, LlmRole } from "@ea/core";
 
 import type { LlmProviderId } from "./providers";
 
@@ -20,6 +20,10 @@ export interface LlmProviderSettings {
   apiKey: string | undefined;
   /** Calls per minute of all roles on this provider, in this process. */
   rpm: number;
+  /** The base URL the adapter passes to its SDK; null: the SDK default (Gemini). */
+  baseUrl: string | null;
+  /** Where the calls of this provider run; Gemini: `standard`. */
+  endpoint: LlmEndpointKind;
 }
 
 export interface LlmRoleTable {

@@ -1,8 +1,10 @@
+import type { LlmEndpointKind } from "@ea/core";
 import OpenAI from "openai";
 import type { ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
 import type { ReasoningEffort } from "openai/resources/shared";
 
 import type { GenerateFn, GenerateRequest, GenerateResult } from "../client";
+import { DEFAULT_OPENAI_BASE_URL } from "../endpoint";
 import { isNetworkError, isRecord, LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
 import type { ConfigCode, SoftCode } from "../errors";
 
@@ -98,8 +100,11 @@ export function toOpenAiResult(response: OpenAiResponseLike): GenerateResult {
   return { text: response.output_text, tokensIn, tokensOut, blocked: false };
 }
 
-/** Used only by `createOpenAiGenerate`; the options are fixed because our pause logic retries. */
-export const openAiClientOptions = (apiKey: string) => ({ apiKey, maxRetries: 0 });
+/**
+ * Used only by `createOpenAiGenerate`; the options are fixed because our pause logic retries.
+ * `baseURL` is always set: without it the SDK reads `OPENAI_BASE_URL` from the env and skips the config check.
+ */
+export const openAiClientOptions = (apiKey: string, baseUrl: string) => ({ apiKey, baseURL: baseUrl, maxRetries: 0 });
 
 /** The part of the SDK client that the adapter calls (the tests pass a fake). */
 export interface OpenAiLike {
@@ -146,16 +151,21 @@ export function classifyOpenAiError(error: unknown, model: string): LlmSoftError
 export function createOpenAiGenerate(opts: {
   apiKey: string;
   reasoningEffort: string | null;
+  baseUrl: string;
+  endpoint?: LlmEndpointKind;
   client?: OpenAiLike;
 }): GenerateFn {
-  const client: OpenAiLike = opts.client ?? new OpenAI(openAiClientOptions(opts.apiKey));
+  const client: OpenAiLike = opts.client ?? new OpenAI(openAiClientOptions(opts.apiKey, opts.baseUrl));
+  // An own server gets no `reasoning` field, also when a caller passes an effort.
+  const effort = opts.endpoint === "own" ? null : opts.reasoningEffort;
   return async (req) =>
-    toOpenAiResult(await client.responses.create(toResponseParams(req, opts.reasoningEffort), { signal: req.signal }));
+    toOpenAiResult(await client.responses.create(toResponseParams(req, effort), { signal: req.signal }));
 }
 
 export const openaiProvider: LlmProvider = {
   label: "OpenAI",
   configHint: "check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER and the OpenAI project (billing, budget, model access)",
-  createGenerate: (opts) => createOpenAiGenerate(opts),
+  // A null base URL only comes from a hand-made table: it takes the default, never the env of the SDK.
+  createGenerate: (opts) => createOpenAiGenerate({ ...opts, baseUrl: opts.baseUrl ?? DEFAULT_OPENAI_BASE_URL }),
   classifyError: classifyOpenAiError,
 };

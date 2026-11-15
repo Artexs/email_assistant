@@ -20,6 +20,7 @@ import {
 } from "./openai";
 
 const MODEL = "test-model";
+const BASE = "https://api.openai.com/v1";
 
 const triageJsonSchema = (allowed: typeof classifierCategories) =>
   z.toJSONSchema(buildTriageAnalysisSchema(allowed)) as Record<string, unknown>;
@@ -242,7 +243,11 @@ describe("through the shared client", () => {
 
 describe("openAiClientOptions", () => {
   test("turns the SDK retries off", () => {
-    expect(openAiClientOptions("k")).toEqual({ apiKey: "k", maxRetries: 0 });
+    expect(openAiClientOptions("k", "https://eu.api.openai.com/v1")).toEqual({
+      apiKey: "k",
+      baseURL: "https://eu.api.openai.com/v1",
+      maxRetries: 0,
+    });
   });
 });
 
@@ -272,7 +277,7 @@ describe("createOpenAiGenerate", () => {
       return goodResponse;
     });
     const signal = new AbortController().signal;
-    const generate = createOpenAiGenerate({ apiKey: "k", reasoningEffort: "none", client });
+    const generate = createOpenAiGenerate({ apiKey: "k", reasoningEffort: "none", baseUrl: BASE, client });
     const result = await generate(request(signal));
     expect(result).toEqual({ text: "{}", tokensIn: 5, tokensOut: 7, blocked: false });
     expect(calls).toHaveLength(1);
@@ -294,12 +299,79 @@ describe("createOpenAiGenerate", () => {
       seen = params as unknown as Record<string, unknown>;
       return goodResponse;
     });
-    await createOpenAiGenerate({ apiKey: "k", reasoningEffort: null, client })(request(new AbortController().signal));
+    await createOpenAiGenerate({ apiKey: "k", reasoningEffort: null, baseUrl: BASE, client })(
+      request(new AbortController().signal)
+    );
     expect("reasoning" in seen).toBe(false);
   });
 
+  test("an own endpoint sends no reasoning field, even when a caller passes an effort", async () => {
+    let seen: Record<string, unknown> = {};
+    const client = fakeClient(async (params) => {
+      seen = params as unknown as Record<string, unknown>;
+      return goodResponse;
+    });
+    await createOpenAiGenerate({
+      apiKey: "k",
+      reasoningEffort: "low",
+      baseUrl: "http://127.0.0.1:11434/v1",
+      endpoint: "own",
+      client,
+    })(request(new AbortController().signal));
+    expect("reasoning" in seen).toBe(false);
+    await createOpenAiGenerate({
+      apiKey: "k",
+      reasoningEffort: "low",
+      baseUrl: "https://eu.api.openai.com/v1",
+      endpoint: "eu",
+      client,
+    })(request(new AbortController().signal));
+    expect(seen.reasoning).toEqual({ effort: "low" });
+  });
+
+  test("a real SDK client calls the configured URL, not the OPENAI_BASE_URL of the env", async () => {
+    const paths: string[] = [];
+    const server = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch(req) {
+        paths.push(new URL(req.url).pathname);
+        return Response.json({
+          status: "completed",
+          output_text: "{}",
+          output: [],
+          usage: { input_tokens: 3, output_tokens: 4 },
+        });
+      },
+    });
+    const saved = process.env.OPENAI_BASE_URL;
+    process.env.OPENAI_BASE_URL = "http://127.0.0.1:1/never";
+    try {
+      const generate = openaiProvider.createGenerate({
+        apiKey: "k",
+        reasoningEffort: null,
+        baseUrl: `http://127.0.0.1:${server.port}/v1`,
+        endpoint: "own",
+      });
+      const result = await generate(request(AbortSignal.timeout(5000)));
+      expect(result).toEqual({ text: "{}", tokensIn: 3, tokensOut: 4, blocked: false });
+      expect(paths).toEqual(["/v1/responses"]);
+    } finally {
+      if (saved === undefined) delete process.env.OPENAI_BASE_URL;
+      else process.env.OPENAI_BASE_URL = saved;
+      await server.stop(true);
+    }
+  });
+
   test("the provider row builds a function with the same shape", () => {
-    expect(typeof openaiProvider.createGenerate({ apiKey: "k", reasoningEffort: "none" })).toBe("function");
+    expect(
+      typeof openaiProvider.createGenerate({
+        apiKey: "k",
+        reasoningEffort: "none",
+        baseUrl: BASE,
+        endpoint: "standard",
+      })
+    ).toBe("function");
     expect(openaiProvider.label).toBe("OpenAI");
   });
 });
@@ -396,7 +468,12 @@ describe("OpenAI through the shared client", () => {
   const schema = buildTriageAnalysisSchema(classifierCategories);
   const clientFor = (create: OpenAiLike["responses"]["create"], timeoutMs = 1000) =>
     createFixedLlmClient(
-      createOpenAiGenerate({ apiKey: "MARKER-KEY", reasoningEffort: "none", client: fakeClient(create) }),
+      createOpenAiGenerate({
+        apiKey: "MARKER-KEY",
+        reasoningEffort: "none",
+        baseUrl: BASE,
+        client: fakeClient(create),
+      }),
       { provider: "openai", model: MODEL, timeoutMs, rpm: 6000, reasoningEffort: "none" }
     );
   const input = {
