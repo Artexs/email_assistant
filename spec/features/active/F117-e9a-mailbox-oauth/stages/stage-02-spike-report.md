@@ -31,3 +31,9 @@ Part of [`../plan.md`](../plan.md). Needs stage 01 and owner step U1: the coordi
 **Done when.** `spike.md` has every row of stage 01 with a verdict and evidence, the two gate lines, and the plan-change list. Commit it alone. The final message gives the gate lines and the plan-change list first.
 
 **Out of scope.** Editing other stages (the coordinator runs a refresh job), editing ADR 0031 (stage 19), `docs/product/stage-2/` (the coordinator).
+
+## Carry-over from the stage 08 review
+
+Source: `review-8.md` (U1).
+
+- **ID token at the code redeem.** `redeemCode` sends `scope` = the mail resource scopes only (IMAP and `offline_access`), with no `openid`. It was not checked whether Microsoft then returns an `id_token`. If it does not, `finishOAuthCallback` refuses every Microsoft connect with `oauth_failed` (no ID token, no address). Record in the rows M2 and M12: does the redeem answer hold `id_token`? Which claims does it hold (`email`, `preferred_username`, `tid`, `aud`, `iss`)? If no `id_token` comes, the fix is to add `openid email profile` to the `scope` of `redeemCode`, or to read the address another way: a stage 06/08 refresh job.

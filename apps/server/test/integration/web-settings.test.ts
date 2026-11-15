@@ -1,11 +1,21 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { barCategories, noGoBodySchema, settingsChangeSchema, settingsViewSchema } from "@ea/core";
-import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { insertDefaultSettings, settingsRoutes } from "../../src/modules/config";
-import { ensureSyncFolders, NO_TEST_SENDERS } from "../../src/modules/mail";
-import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
+import { ensureSyncFolders, getSentSyncView, NO_TEST_SENDERS } from "../../src/modules/mail";
+import {
+  getSentSyncState,
+  insertInboxFolder,
+  insertMailbox,
+  insertSentEmails,
+  type NewSentEmail,
+  setFolderMapEntry,
+  writeSentSwitch,
+} from "../../src/modules/mail/repo";
+import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import { settingsRouteDeps } from "../../src/web";
 
 import { insertTriagedWithActions, testCapabilities } from "./fixtures";
@@ -17,6 +27,10 @@ const NOW = new Date("2026-11-11T12:00:00Z");
 const UNKNOWN = "00000000-0000-4000-8000-000000000000";
 
 const orgs: WebOrg[] = [];
+
+beforeEach(() => {
+  configureFeatures({ off: [] });
+});
 
 afterEach(async () => {
   for (const org of orgs) await org.cleanup();
@@ -78,10 +92,11 @@ const patchRoutes = [
   { path: "switches/flag", body: { value: true } },
   { path: "auto/info", body: { auto: true } },
   { path: "sync-folders/offers", body: { enabled: false } },
+  { path: "sent-sync", body: { enabled: true } },
 ] as const;
 
 describe("route matrix", () => {
-  test("no cookie → 401 on the five routes", async () => {
+  test("no cookie → 401 on the six routes", async () => {
     const { app, m1 } = await setup();
     const noCookie = { origin: TEST_ORIGIN, "content-type": "application/json" };
     expect((await app.request(`/api/settings/${m1}`)).status).toBe(401);
@@ -95,7 +110,7 @@ describe("route matrix", () => {
     }
   });
 
-  test("the assistant: GET 200, the four PATCH routes 403 owner_only", async () => {
+  test("the assistant: GET 200, the five PATCH routes 403 owner_only", async () => {
     const { app, m1 } = await setup();
     expect((await app.request(`/api/settings/${m1}`, as("assistant"))).status).toBe(200);
     for (const route of patchRoutes) {
@@ -181,6 +196,7 @@ describe("route matrix", () => {
       { path: "auto/info", body: { auto: "yes" }, field: "auto" },
       { path: "auto/info", body: { auto: true, force: 1 }, field: "force" },
       { path: "sync-folders/offers", body: { enabled: "yes" }, field: "enabled" },
+      { path: "sent-sync", body: { enabled: "yes" }, field: "enabled" },
     ];
     for (const item of cases) {
       const res = await app.request(
@@ -411,5 +427,264 @@ describe("PATCH sync-folders", () => {
       as("owner", { method: "PATCH", body: { enabled: false } })
     );
     expect(missing.status).toBe(404);
+  });
+});
+
+const DAY = 24 * 3_600_000;
+
+async function setFlag(orgId: string, enabled: boolean): Promise<void> {
+  await upsertOrgFeature(db, { orgId }, { flag: "sent_sync", enabled, setBy: "test", setAt: NOW });
+}
+
+// The repository function takes a transaction.
+function insertRows(ctx: { orgId: string }, rows: NewSentEmail[]): Promise<number> {
+  return db.transaction().execute((trx) => insertSentEmails(trx, ctx, rows));
+}
+
+// One sent row; the internal date is `ageDays` before NOW.
+async function putSent(
+  orgId: string,
+  mailboxId: string,
+  n: number,
+  ageDays: number,
+  origin: "user" | "system" = "user"
+): Promise<void> {
+  const at = new Date(NOW.getTime() - ageDays * DAY);
+  await insertRows({ orgId }, [
+    {
+      mailboxId,
+      dedupKey: `mid:<settings-sent-${n}-${mailboxId}@x.test>:h1`,
+      path: "Sent",
+      uidValidity: 7,
+      uid: n,
+      messageId: null,
+      parentMessageId: null,
+      referencesIds: [],
+      threadKey: `<settings-sent-${n}-${mailboxId}@x.test>`,
+      fromAddress: null,
+      toAddresses: [],
+      ccAddresses: [],
+      subject: null,
+      sentAt: at,
+      internalDate: at,
+      origin,
+      actionId: origin === "system" ? randomUUID() : null,
+      content: origin === "system" ? "headers_only" : "pending",
+    },
+  ]);
+}
+
+async function switchOn(orgId: string, mailboxId: string): Promise<void> {
+  await db.transaction().execute((trx) => writeSentSwitch(trx, { orgId }, mailboxId, { enabled: true, at: NOW }));
+}
+
+async function sentRows(orgId: string, mailboxId: string): Promise<number> {
+  const rows = await db
+    .selectFrom("sent_emails")
+    .select("id")
+    .where("org_id", "=", orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .execute();
+  return rows.length;
+}
+
+async function sentView(app: Awaited<ReturnType<typeof setup>>["app"], mailboxId: string) {
+  const res = await app.request(`/api/settings/${mailboxId}`, as("owner"));
+  expect(res.status).toBe(200);
+  return settingsViewSchema.parse(await json(res)).sentSync;
+}
+
+function patchSent(app: Awaited<ReturnType<typeof setup>>["app"], mailboxId: string, enabled: boolean, who = "owner") {
+  return app.request(`/api/settings/${mailboxId}/sent-sync`, as(who, { method: "PATCH", body: { enabled } }));
+}
+
+describe("sentSync in the view and PATCH sent-sync", () => {
+  test("flag off, no state: the field is null and PATCH on is 404 (a hidden feature looks absent)", async () => {
+    const { app, m1, org } = await setup();
+    expect(await sentView(app, m1)).toBeNull();
+    const res = await patchSent(app, m1, true);
+    expect(res.status).toBe(404);
+    expect(await json(res)).toEqual({ error: "not_found" });
+    expect(await getSentSyncState(db, { orgId: org.orgId }, m1)).toBeUndefined();
+    expect(await auditRows(org.orgId, "mailbox.sent_sync_changed")).toHaveLength(0);
+  });
+
+  test("flag off, switch on, one row: paused view; PATCH off deletes the row, then the field is null", async () => {
+    const { app, m1, org } = await setup();
+    await switchOn(org.orgId, m1);
+    await putSent(org.orgId, m1, 1, 1);
+    expect(await sentView(app, m1)).toMatchObject({ flagOn: false, enabled: true });
+    const res = await patchSent(app, m1, false);
+    expect(res.status).toBe(200);
+    const change = settingsChangeSchema.parse(await json(res));
+    expect(change.changed).toBe(true);
+    expect(change.settings.sentSync).toBeNull();
+    expect(await sentRows(org.orgId, m1)).toBe(0);
+    expect(await sentView(app, m1)).toBeNull();
+  });
+
+  test("flag on, no state: the off view; with folder_map.sent the folder shows", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    expect(await sentView(app, m1)).toEqual({
+      flagOn: true,
+      enabled: false,
+      folder: null,
+      firstPassDone: false,
+      lastSentAt: null,
+      storedCount: 0,
+      errorCode: null,
+    });
+    await setFolderMapEntry(db, { orgId: org.orgId }, m1, "sent", "Sent");
+    expect((await sentView(app, m1))?.folder).toBe("Sent");
+  });
+
+  test("a PATCH sent-sync without Origin or with a foreign Origin → 403 bad_origin, nothing changes", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    for (const origin of [undefined, "https://evil.example"]) {
+      const res = await app.request(`/api/settings/${m1}/sent-sync`, {
+        method: "PATCH",
+        headers: {
+          cookie: "ea.session_token=owner",
+          "content-type": "application/json",
+          ...(origin === undefined ? {} : { origin }),
+        },
+        body: JSON.stringify({ enabled: true }),
+      });
+      expect(res.status).toBe(403);
+      expect((await json(res)).error).toBe("bad_origin");
+    }
+    expect(await getSentSyncState(db, { orgId: org.orgId }, m1)).toBeUndefined();
+    expect(await auditRows(org.orgId, "mailbox.sent_sync_changed")).toHaveLength(0);
+  });
+
+  test("flag on, switch already on, PATCH on: 200, changed false, no new audit row, state kept", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    await switchOn(org.orgId, m1);
+    const before = await getSentSyncState(db, { orgId: org.orgId }, m1);
+    const res = await patchSent(app, m1, true);
+    expect(res.status).toBe(200);
+    const change = settingsChangeSchema.parse(await json(res));
+    expect(change.changed).toBe(false);
+    expect(change.settings.sentSync?.enabled).toBe(true);
+    expect(await auditRows(org.orgId, "mailbox.sent_sync_changed")).toHaveLength(0);
+    expect(await getSentSyncState(db, { orgId: org.orgId }, m1)).toEqual(before);
+  });
+
+  test("the owner turns it on: changed, enabled, one audit row with the user; again: changed false", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    const first = await patchSent(app, m1, true);
+    expect(first.status).toBe(200);
+    const change = settingsChangeSchema.parse(await json(first));
+    expect(change.changed).toBe(true);
+    expect(change.expired).toBe(0);
+    expect(change.settings.sentSync?.enabled).toBe(true);
+    const rows = await auditRows(org.orgId, "mailbox.sent_sync_changed");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.actor).toBe(org.ownerId);
+    const again = settingsChangeSchema.parse(await json(await patchSent(app, m1, true)));
+    expect(again.changed).toBe(false);
+    expect(again.settings.sentSync?.enabled).toBe(true);
+    expect(await auditRows(org.orgId, "mailbox.sent_sync_changed")).toHaveLength(1);
+  });
+
+  test("two user rows and a system row: storedCount 2 and lastSentAt of the newest; off: 0 and enabled false", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    await setFolderMapEntry(db, { orgId: org.orgId }, m1, "sent", "Sent");
+    await switchOn(org.orgId, m1);
+    await db
+      .updateTable("mailbox_sent_sync")
+      .set({ path: "Sent" })
+      .where("org_id", "=", org.orgId)
+      .where("mailbox_id", "=", m1)
+      .execute();
+    await putSent(org.orgId, m1, 1, 1);
+    await putSent(org.orgId, m1, 2, 2);
+    await putSent(org.orgId, m1, 3, 0, "system");
+    const view = await sentView(app, m1);
+    expect(view?.storedCount).toBe(2);
+    expect(view?.lastSentAt).toBe(new Date(NOW.getTime() - DAY).toISOString());
+    const change = settingsChangeSchema.parse(await json(await patchSent(app, m1, false)));
+    expect(change.settings.sentSync).toMatchObject({ enabled: false, storedCount: 0 });
+    expect(await sentRows(org.orgId, m1)).toBe(0);
+  });
+
+  test("a member: 403; no session: 401; bad body: 400; another org's id or a non-UUID: 404", async () => {
+    const { app, m1, m2, org } = await setup();
+    await setFlag(org.orgId, true);
+    expect((await patchSent(app, m1, true, "assistant")).status).toBe(403);
+    const noSession = await app.request(`/api/settings/${m1}/sent-sync`, {
+      method: "PATCH",
+      headers: { origin: TEST_ORIGIN, "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    });
+    expect(noSession.status).toBe(401);
+    const bad = await app.request(
+      `/api/settings/${m1}/sent-sync`,
+      as("owner", { method: "PATCH", body: { enabled: "yes" } })
+    );
+    expect(bad.status).toBe(400);
+    expect((await patchSent(app, m2, true)).status).toBe(404);
+    // A foreign id with a bad body is 404, not 400.
+    const foreignBad = await app.request(
+      `/api/settings/${m2}/sent-sync`,
+      as("owner", { method: "PATCH", body: { enabled: "yes" } })
+    );
+    expect(foreignBad.status).toBe(404);
+    expect((await patchSent(app, "not-a-uuid", true)).status).toBe(404);
+    expect(await getSentSyncState(db, { orgId: org.orgId }, m1)).toBeUndefined();
+  });
+
+  test("another organization's owner cannot read or change the switch of this mailbox", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    await setFlag(org.otherOrgId, true);
+    await switchOn(org.orgId, m1);
+    await putSent(org.orgId, m1, 1, 1);
+    expect((await patchSent(app, m1, false, "other")).status).toBe(404);
+    expect((await app.request(`/api/settings/${m1}`, as("other"))).status).toBe(404);
+    expect((await getSentSyncState(db, { orgId: org.orgId }, m1))?.enabled).toBe(true);
+    expect(await sentRows(org.orgId, m1)).toBe(1);
+    expect(await auditRows(org.orgId, "mailbox.sent_sync_changed")).toHaveLength(0);
+  });
+
+  test("no log line holds the subject, the text or the folder of a sent mail (every console method, util.format)", async () => {
+    const { app, m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    await setFolderMapEntry(db, { orgId: org.orgId }, m1, "sent", "canary-folder");
+    await switchOn(org.orgId, m1);
+    await putSent(org.orgId, m1, 1, 1);
+    await db
+      .updateTable("sent_emails")
+      .set({ subject: "canary-subject", content: "stored", body_text: "canary-body" })
+      .where("mailbox_id", "=", m1)
+      .execute();
+    const lines: string[] = [];
+    const spies = (["log", "info", "warn", "error", "debug"] as const).map((method) =>
+      spyOn(console, method).mockImplementation((...args: unknown[]) => {
+        lines.push(format(...args));
+      })
+    );
+    try {
+      expect((await app.request(`/api/settings/${m1}`, as("owner"))).status).toBe(200);
+      expect((await patchSent(app, m1, false)).status).toBe(200);
+      expect((await patchSent(app, m1, false, "other")).status).toBe(404);
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+    expect(lines.filter((line) => line.includes("canary"))).toEqual([]);
+  });
+
+  test("getSentSyncView with the context of another organization gives null", async () => {
+    const { m1, org } = await setup();
+    await setFlag(org.orgId, true);
+    await setFlag(org.otherOrgId, true);
+    await switchOn(org.orgId, m1);
+    expect(await getSentSyncView(db, { orgId: org.orgId }, m1, NOW)).not.toBeNull();
+    expect(await getSentSyncView(db, { orgId: org.otherOrgId }, m1, NOW)).toBeNull();
   });
 });

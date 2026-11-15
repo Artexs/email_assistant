@@ -17,11 +17,13 @@ import {
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
 import {
   createMailOAuthClients,
+  getSentSyncView,
   listMailboxes,
   listSyncFolders,
   mailOAuthRoutes,
   mailRoutes,
   openImapProvider,
+  setSentSync,
   setSyncFolderEnabled,
   type MailOAuthClients,
   type TestMailRule,
@@ -265,6 +267,9 @@ export function settingsRouteDeps(db: Db, now: () => Date, testMail: TestMailRul
       })),
     setSyncFolder: (ctx, id, input) =>
       setSyncFolderEnabled(db, ctx, id, input.key, input.enabled, input.actor, input.now),
+    getSentSync: (ctx, id) => getSentSyncView(db, ctx, id, now()),
+    setSentSync: async (ctx, id, input) =>
+      (await setSentSync(db, ctx, id, { enabled: input.enabled, actor: input.actor, at: input.now })).result,
   };
 }
 

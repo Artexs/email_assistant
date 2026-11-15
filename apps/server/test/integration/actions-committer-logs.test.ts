@@ -17,7 +17,7 @@ import { insertCredentials } from "../../src/modules/mail/repo";
 import { contentHash } from "../../src/modules/mail/sync-rules";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
-import { SoftError } from "../../src/platform/errors";
+import { HardError, SoftError } from "../../src/platform/errors";
 import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/log";
 
 import { createOrgWithMailbox, insertDraftAndSend, insertTriagedWithActions, pauseOtherMailboxes } from "./fixtures";
@@ -58,8 +58,7 @@ interface Entry {
 }
 
 // Runs `body` in JSON format with the console spies. `format()` shows an error object that was logged raw with its
-// fields. Every line must be JSON. The old-form lines of `apply.ts` (`legacy_text`, until its conversion) are dropped
-// from `entries` but still checked for the canaries.
+// fields. Every line must be JSON.
 async function captured(body: () => Promise<void>) {
   const lines: string[] = [];
   const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
@@ -86,10 +85,10 @@ async function captured(body: () => Promise<void>) {
     for (const [key, value] of Object.entries(entry.fields)) {
       if (key.endsWith("_id")) expect(String(value)).toMatch(UUID);
       // Values are lower-case codes, ids and numbers; only the error name, the error code and the config key differ.
-      if (!["error", "error_code", "config_key"].includes(key)) expect(String(value)).not.toMatch(/[A-Z]{3}/);
+      if (!["error", "error_code", "config_key", "code"].includes(key)) expect(String(value)).not.toMatch(/[A-Z]{3}/);
     }
   }
-  return { lines, entries: entries.filter((entry) => entry.event !== "legacy_text") };
+  return { lines, entries };
 }
 
 interface Box {
@@ -113,16 +112,29 @@ async function addBox(trx: Transaction<DB>): Promise<Box> {
   return { userId, orgId, mailboxId, address, fake: createFakeMailProvider() };
 }
 
-// A mail with a canary subject and sender, delivered to the fake INBOX, with `count` flag actions.
-async function addMail(trx: Transaction<DB>, box: Box, opts: { count?: number; ageMs?: number } = {}) {
+// A mail with a canary subject and sender, delivered to the fake INBOX (unless `inFake` is false), with `count` flag
+// actions or the actions of `types`.
+async function addMail(
+  trx: Transaction<DB>,
+  box: Box,
+  opts: {
+    count?: number;
+    ageMs?: number;
+    types?: ("save_summary" | "mark_read" | "flag" | "move")[];
+    inFake?: boolean;
+  } = {}
+) {
   const receivedAt = new Date(NOW.getTime() - (opts.ageMs ?? HOUR));
   const messageId = `<${randomUUID()}@x.test>`;
-  const uid = box.fake.deliver(
-    "INBOX",
-    { messageId, from: CANARY.recipient, to: [box.address], subject: CANARY.subject, date: receivedAt },
-    { internalDate: receivedAt }
-  );
-  const meta = await box.fake.fetchMetaIn("INBOX", uid);
+  const delivered = opts.inFake !== false;
+  const uid = delivered
+    ? box.fake.deliver(
+        "INBOX",
+        { messageId, from: CANARY.recipient, to: [box.address], subject: CANARY.subject, date: receivedAt },
+        { internalDate: receivedAt }
+      )
+    : 999;
+  const meta = delivered ? await box.fake.fetchMetaIn("INBOX", uid) : null;
   return insertTriagedWithActions(trx, { orgId: box.orgId }, box.mailboxId, {
     category: "info",
     createdAt: receivedAt,
@@ -131,8 +143,12 @@ async function addMail(trx: Transaction<DB>, box: Box, opts: { count?: number; a
     subject: CANARY.subject,
     messageId,
     uid,
-    contentHash: contentHash(meta as NonNullable<typeof meta>),
-    actions: Array.from({ length: opts.count ?? 1 }, () => ({ type: "flag" as const, status: "ready" })),
+    contentHash: meta === null ? "h" : contentHash(meta),
+    actions: (opts.types ?? Array.from({ length: opts.count ?? 1 }, () => "flag" as const)).map((type) => ({
+      type,
+      status: "ready",
+      ...(type === "move" ? { payload: { folder: "ai_info" } } : {}),
+    })),
   });
 }
 
@@ -323,13 +339,14 @@ describe("committer log events", () => {
     await withRollback(db, async (trx) => {
       const box = await addBox(trx);
       const smtp = senderOpener();
-      await pairOf(trx, box);
+      const first = await pairOf(trx, box);
       const ids = { org_id: box.orgId, mailbox_id: box.mailboxId };
 
       const sent = await captured(() =>
         committerFor(trx, box, { openSender: smtp.openSender, sendScope: { kind: "all" } }).run()
       );
       expect(sent.entries).toEqual([
+        { level: "debug", event: "action_applied", fields: { action_id: first.sendId, action_type: "send" } },
         {
           level: "info",
           event: "committer_done",
@@ -347,14 +364,23 @@ describe("committer log events", () => {
       const refused = await captured(() =>
         committerFor(trx, box, { openSender: refusing.openSender, sendScope: { kind: "all" } }).run()
       );
-      expect(refused.entries).toEqual([
-        {
-          level: "info",
-          event: "committer_done",
-          // `applied` 1: the reverse row that the first send left for its draft.
-          fields: { ...ids, applied: 1, failed: 1, retry: 0, closed: 0, sent: 0 },
-        },
+      // The reverse row of the first send and the refused send run in one batch; their order is not fixed.
+      expect(refused.entries.map((entry) => entry.event).sort()).toEqual([
+        "action_reversed",
+        "committer_done",
+        "send_failed",
       ]);
+      expect(refused.entries.find((entry) => entry.event === "send_failed")).toEqual({
+        level: "warn",
+        event: "send_failed",
+        fields: { action_id: second.sendId, reason: "smtp_rejected", send_stage: "envelope", code: 550 },
+      });
+      expect(refused.entries.at(-1)).toEqual({
+        level: "info",
+        event: "committer_done",
+        // `applied` 1: the reverse row that the first send left for its draft.
+        fields: { ...ids, applied: 1, failed: 1, retry: 0, closed: 0, sent: 0 },
+      });
       const row = await trx
         .selectFrom("actions")
         .select("status")
@@ -440,12 +466,97 @@ describe("committer log events", () => {
       const { entries } = await captured(() => committerFor(trx, box).run());
 
       const ids = { org_id: box.orgId, mailbox_id: box.mailboxId };
-      expect(entries.map((entry) => entry.event)).toEqual(["committer_done", "committer_close_failed"]);
-      expect(entries[1]).toEqual({
+      expect(entries.map((entry) => entry.event)).toEqual([
+        "action_applied",
+        "committer_done",
+        "committer_close_failed",
+      ]);
+      expect(entries[2]).toEqual({
         level: "warn",
         event: "committer_close_failed",
         fields: { ...ids, error: "Error", error_code: 421 },
       });
+    });
+  });
+});
+
+describe("apply log events in a committer run", () => {
+  test("action_applied carries the action id and the type of a summary, a mark_read and a move", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      const mail = await addMail(trx, box, { types: ["save_summary", "mark_read", "move"] });
+
+      const { entries } = await captured(() => committerFor(trx, box).run());
+
+      expect(entries.map((entry) => entry.event)).toEqual([
+        "action_applied",
+        "action_applied",
+        "action_applied",
+        "committer_done",
+      ]);
+      const applied = entries.slice(0, 3).map((entry) => entry.fields);
+      expect(applied).toHaveLength(3);
+      for (const [index, type] of (["save_summary", "mark_read", "move"] as const).entries()) {
+        expect(applied).toContainEqual({ action_id: mail.actionIds[index], action_type: type });
+      }
+      expect(entries.slice(0, 3).every((entry) => entry.level === "debug")).toBe(true);
+    });
+  });
+
+  test("action_failed with the reason mail_not_found for a mail that is not on the server", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      const mail = await addMail(trx, box, { inFake: false });
+
+      const { entries } = await captured(() => committerFor(trx, box).run());
+
+      expect(entries[0]).toEqual({
+        level: "warn",
+        event: "action_failed",
+        fields: { action_id: mail.actionIds[0], reason: "mail_not_found" },
+      });
+    });
+  });
+
+  test("action_retry for a soft and a hard error, then action_failed hard_error: names and counts only", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      const mail = await addMail(trx, box);
+      const actionId = mail.actionIds[0] as string;
+      const retry = (attempts: number, error: string, code?: string) => ({
+        level: "warn",
+        event: "action_retry",
+        fields: {
+          action_id: actionId,
+          attempts,
+          max_attempts: 3,
+          error,
+          ...(code === undefined ? {} : { error_code: code }),
+        },
+      });
+
+      // A soft error does not count a try: the next run shows try 1 again.
+      box.fake.failOn("setFlags", new SoftError(CANARY.error));
+      const soft = await captured(() => committerFor(trx, box).run());
+      expect(soft.entries[0]).toEqual(retry(1, "SoftError"));
+
+      // Three hard errors with a code: the third fails the action.
+      const hardError = () => Object.assign(new HardError(CANARY.error), { code: "EBOOM" });
+      const seen = [];
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        box.fake.failOn("setFlags", hardError());
+        await trx
+          .updateTable("actions")
+          .set({ next_attempt_at: null, locked_at: null })
+          .where("id", "=", actionId)
+          .execute();
+        seen.push(...(await captured(() => committerFor(trx, box).run())).entries.slice(0, 1));
+      }
+      expect(seen).toEqual([
+        retry(1, "HardError", "EBOOM"),
+        retry(2, "HardError", "EBOOM"),
+        { level: "warn", event: "action_failed", fields: { action_id: actionId, reason: "hard_error" } },
+      ]);
     });
   });
 });
@@ -491,8 +602,13 @@ describe("committer log events with a nodemailer-shaped error", () => {
       const sent = await captured(() =>
         committerFor(trx, box, { openSender: smtp.openSender, sendScope: { kind: "all" } }).run()
       );
-      expect(sent.entries.map((entry) => entry.event)).toEqual(["committer_done", "committer_close_failed"]);
-      expect(sent.entries[1]).toEqual({
+      // The send fails with an error that is not an SmtpSendError: the outcome is unknown, the code is the provider code.
+      expect(sent.entries.map((entry) => entry.event)).toEqual([
+        "send_failed",
+        "committer_done",
+        "committer_close_failed",
+      ]);
+      expect(sent.entries[2]).toEqual({
         level: "warn",
         event: "committer_close_failed",
         fields: { ...ids, error: "Error", error_code: "EENVELOPE" },

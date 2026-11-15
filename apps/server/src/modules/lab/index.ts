@@ -1,3 +1,4 @@
+export { MAX_ERRORS_PER_REPLY, runDelegateBotsTick, type BotDeps, type BotTickResult } from "./bots";
 export { renderLabMessage } from "./message";
 export { LAB_MAILBOXES, labAddresses, loadLabCorpus, type LabCorpus } from "./corpus";
 export {
@@ -14,6 +15,13 @@ export {
   type StopReason,
 } from "./state";
 export { createFakeTgClient, FakeTgError, type FakeButton, type FakeMessage, type FakeTgClient } from "./fake-tg";
+export {
+  lookupCard,
+  runExecutiveTick,
+  type CardLookup,
+  type ExecutiveDeps,
+  type ExecutiveTickResult,
+} from "./executive";
 export { orgHasMail } from "./org-mail";
 export {
   LAB_FLAGS_OFF,
@@ -55,9 +63,9 @@ export {
   type InjectorTick,
 } from "./injector";
 export {
-  createGreenMailClient,
+  createLabMailClient,
   LabMailError,
-  type GreenMailOptions,
   type LabMailClient,
+  type LabMailClientOptions,
   type LabMailErrorCode,
 } from "./mail-client";

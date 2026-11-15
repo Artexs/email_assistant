@@ -3,7 +3,9 @@ import { createTransport } from "nodemailer";
 
 // The lab's own client for the sim GreenMail: SMTP delivery into a mailbox, IMAP APPEND, and reads for the exactly-once
 // checks. GreenMail runs with auth off, so any password logs in. It is not a product mail path: no product host guard
-// and no credentials; it refuses any host that is not loopback. Stages 08 (bots) and 14 (reset) reuse it.
+// and no credentials. Two guards stand before any traffic: the host must be loopback (`host_refused`) and every SMTP
+// envelope address must be in the list the caller gives (`address_refused`; the scenario addresses of `labAddresses`).
+// The injector, the delegate bots and the org reset share it.
 // Errors carry a short code, never the text of the server or of a message.
 
 export type LabMailErrorCode =
@@ -12,14 +14,15 @@ export type LabMailErrorCode =
   | "host_refused"
   | "imap_search"
   | "imap_append"
-  | "imap_fetch";
+  | "imap_fetch"
+  | "address_refused";
 
 export class LabMailError extends Error {
   readonly code: LabMailErrorCode;
   // A short transport code such as `ECONNREFUSED`; `unknown` when the library gave none that looks like a code.
   readonly detail: string;
 
-  constructor(code: LabMailErrorCode, cause: unknown) {
+  constructor(code: LabMailErrorCode, cause?: unknown) {
     super(code);
     this.name = "LabMailError";
     this.code = code;
@@ -37,20 +40,25 @@ export interface LabMailClient {
   hasMessageId(mailbox: string, messageId: string): Promise<boolean>;
   /** The mails of one folder with a UID above `afterUid`, in UID order. A missing folder gives an empty list. */
   fetchSince(mailbox: string, folder: string, afterUid: number): Promise<{ uid: number; raw: string }[]>;
+  /** The highest UID of one folder; 0 when the folder is missing or empty. */
+  newestUid(mailbox: string, folder: string): Promise<number>;
 }
 
-export interface GreenMailOptions {
+export interface LabMailClientOptions {
   host: string;
   imapPort: number;
   smtpPort: number;
+  /** Any password logs in with GreenMail auth off (`LAB_MAIL_PASSWORD`). */
+  password: string;
+  /** The envelope addresses `smtpSend` may use, as the `labAddresses` of the corpus (compared in lower case). */
+  allowedAddresses: ReadonlySet<string>;
 }
 
 const SENT_FOLDER = "Sent";
-// Any password is accepted by GreenMail with auth off.
-const PLACEHOLDER_PASSWORD = "lab";
+const IMAP_TIMEOUT_MS = 15_000;
 
 async function withImap<T>(
-  options: GreenMailOptions,
+  options: LabMailClientOptions,
   mailbox: string,
   code: LabMailErrorCode,
   fn: (client: ImapFlow) => Promise<T>
@@ -60,9 +68,13 @@ async function withImap<T>(
     port: options.imapPort,
     secure: false,
     doSTARTTLS: false,
-    auth: { user: mailbox, pass: PLACEHOLDER_PASSWORD },
+    auth: { user: mailbox, pass: options.password },
     // The default logger prints the protocol, mail text included.
     logger: false,
+    disableAutoIdle: true,
+    connectionTimeout: IMAP_TIMEOUT_MS,
+    greetingTimeout: IMAP_TIMEOUT_MS,
+    socketTimeout: IMAP_TIMEOUT_MS,
   });
   // Without a listener, an "error" event would end the process.
   client.on("error", () => undefined);
@@ -85,10 +97,14 @@ const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 // The client talks to the sim GreenMail only. In the sim stack GreenMail shares the network namespace of the lab, so its
 // host is loopback (`LAB_MAIL_HOST`); any other host is refused before a connection opens, so no lab mail can leave the stack.
-export function createGreenMailClient(options: GreenMailOptions): LabMailClient {
-  if (!LOOPBACK_HOSTS.has(options.host.toLowerCase())) throw new LabMailError("host_refused", undefined);
+export function createLabMailClient(options: LabMailClientOptions): LabMailClient {
+  if (!LOOPBACK_HOSTS.has(options.host.toLowerCase())) throw new LabMailError("host_refused");
+  const allowed = new Set([...options.allowedAddresses].map((address) => address.toLowerCase()));
   return {
     async smtpSend({ envelopeFrom, to, raw }) {
+      if (!allowed.has(envelopeFrom.toLowerCase()) || !allowed.has(to.toLowerCase())) {
+        throw new LabMailError("address_refused");
+      }
       const transport = createTransport({
         host: options.host,
         port: options.smtpPort,
@@ -147,6 +163,20 @@ export function createGreenMailClient(options: GreenMailOptions): LabMailClient 
             }
           }
           return rows.sort((a, b) => a.uid - b.uid);
+        } finally {
+          lock.release();
+        }
+      });
+    },
+
+    newestUid(mailbox, folder) {
+      return withImap(options, mailbox, "imap_fetch", async (client) => {
+        const folders = await client.list();
+        if (!folders.some((entry) => entry.path === folder)) return 0;
+        const lock = await client.getMailboxLock(folder, { readOnly: true });
+        try {
+          const found = await client.search({ all: true }, { uid: true });
+          return found === false || found.length === 0 ? 0 : Math.max(...found);
         } finally {
           lock.release();
         }

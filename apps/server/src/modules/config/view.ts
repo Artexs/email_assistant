@@ -9,9 +9,10 @@ export interface SettingsViewDeps {
   settings: SettingsDeps;
   goNoGo(ctx: TenantContext, mailboxId: string, now: Date): Promise<Record<BarCategory, GateView>>;
   listSyncFolders(ctx: TenantContext, mailboxId: string): Promise<SettingsWebView["syncFolders"]>;
+  getSentSync(ctx: TenantContext, mailboxId: string): Promise<SettingsWebView["sentSync"]>;
 }
 
-// Three reads, no write. Throws `SettingsNotFoundError` when the mailbox has no settings row.
+// Four reads, no write. Throws `SettingsNotFoundError` when the mailbox has no settings row.
 export async function buildSettingsView(
   deps: SettingsViewDeps,
   ctx: TenantContext,
@@ -20,6 +21,7 @@ export async function buildSettingsView(
   const view = await getSettingsView(deps.settings, ctx, mailboxId);
   const gates = await deps.goNoGo(ctx, mailboxId, deps.settings.now());
   const syncFolders = await deps.listSyncFolders(ctx, mailboxId);
+  const sentSync = await deps.getSentSync(ctx, mailboxId);
   return {
     mailboxId,
     mode: view.mode,
@@ -33,6 +35,7 @@ export async function buildSettingsView(
     })),
     syncFolders,
     urgencyProfile: view.urgencyProfile,
+    sentSync,
     bar: GATE_BAR,
     minKept: GATE_MIN_KEPT,
   };

@@ -35,6 +35,7 @@ const WRITE_ROUTES = [
   "PATCH /api/organization",
   "PATCH /api/settings/:mailboxId/auto/:category",
   "PATCH /api/settings/:mailboxId/mode",
+  "PATCH /api/settings/:mailboxId/sent-sync",
   "PATCH /api/settings/:mailboxId/switches/:name",
   "PATCH /api/settings/:mailboxId/sync-folders/:key",
   "POST /api/actions/:id/mistake",

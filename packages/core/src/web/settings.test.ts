@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { barCategories, noGoBodySchema, settingsViewSchema, urgencyBodySchema } from "./settings";
+import { barCategories, noGoBodySchema, sentSyncBodySchema, settingsViewSchema, urgencyBodySchema } from "./settings";
 
 const gate = { decision: "go", precision: 0.99, kept: 40, atConfidence: 0.8, threshold: 0.8 } as const;
 
@@ -16,6 +16,7 @@ function fixture() {
       { key: "junk", role: "junk", path: "Junk", enabled: false },
     ],
     urgencyProfile: null,
+    sentSync: null,
     bar: 0.98,
     minKept: 30,
   };
@@ -38,6 +39,40 @@ describe("settingsViewSchema", () => {
     expect(settingsViewSchema.safeParse(rest).success).toBe(false);
     const profile = { topics: [{ label: "a", keywords: [] }], deadlines: [] };
     expect(settingsViewSchema.safeParse({ ...fixture(), urgencyProfile: profile }).success).toBe(true);
+  });
+});
+
+describe("sentSync in the settings view", () => {
+  const full = {
+    flagOn: true,
+    enabled: true,
+    folder: "Sent",
+    firstPassDone: true,
+    lastSentAt: "2026-11-20T10:00:00.000Z",
+    storedCount: 12,
+    errorCode: null,
+  };
+
+  test("takes null and a full object", () => {
+    expect(settingsViewSchema.safeParse({ ...fixture(), sentSync: null }).success).toBe(true);
+    expect(settingsViewSchema.safeParse({ ...fixture(), sentSync: full }).success).toBe(true);
+    expect(settingsViewSchema.safeParse({ ...fixture(), sentSync: { ...full, errorCode: "failed" } }).success).toBe(
+      true
+    );
+  });
+
+  test("refuses an unknown error code and a missing field", () => {
+    expect(settingsViewSchema.safeParse({ ...fixture(), sentSync: { ...full, errorCode: "other" } }).success).toBe(
+      false
+    );
+    const rest: Partial<typeof full> = { ...full };
+    delete rest.storedCount;
+    expect(settingsViewSchema.safeParse({ ...fixture(), sentSync: rest }).success).toBe(false);
+  });
+
+  test("the body schema takes a boolean and refuses text", () => {
+    expect(sentSyncBodySchema.safeParse({ enabled: true }).success).toBe(true);
+    expect(sentSyncBodySchema.safeParse({ enabled: "yes" }).success).toBe(false);
   });
 });
 

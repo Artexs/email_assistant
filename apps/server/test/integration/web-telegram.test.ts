@@ -268,9 +268,12 @@ describe("telegram link consent", () => {
       const res = await app.request(LINK, as("owner", { method: "POST", body }));
       expect(res.status).toBe(400);
     }
-    const old = await app.request(LINK, as("owner", { method: "POST", body: { consentVersion: "2000-01-01" } }));
-    expect(old.status).toBe(409);
-    expect(await old.json()).toEqual({ error: "telegram_consent_outdated" });
+    // The text before the attachment names went to Telegram (F109 stage 06) is outdated too.
+    for (const consentVersion of ["2000-01-01", "2026-11-14"]) {
+      const old = await app.request(LINK, as("owner", { method: "POST", body: { consentVersion } }));
+      expect(old.status).toBe(409);
+      expect(await old.json()).toEqual({ error: "telegram_consent_outdated" });
+    }
     expect(await tokenRows(org.orgId)).toHaveLength(0);
     expect(await consentRows(org.orgId)).toHaveLength(0);
   });

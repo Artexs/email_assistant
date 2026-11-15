@@ -65,6 +65,7 @@ export {
   finishAction,
   getDraft,
   getSend,
+  getSetSend,
   insertReverse,
   isOwnActionId,
   sentOriginOf,

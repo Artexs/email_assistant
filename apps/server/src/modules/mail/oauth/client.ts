@@ -52,6 +52,8 @@ export class OAuthSoftError extends SoftError {
 
 /** What stages 08 and 10 call. One per configured provider (`MailOAuthClients`). */
 export interface MailOAuthClient {
+  /** The public client id of the app: the `aud` an ID token must carry (stage 08). Not the secret. */
+  readonly clientId: string;
   authorizeUrl(input: { state: string; codeChallenge: string; loginHint?: string }): string;
   /** Asks for the `mail` resource (Microsoft gives one resource per token). */
   redeemCode(code: string, verifier: string): Promise<TokenAnswer>;
@@ -268,6 +270,8 @@ export function createMailOAuthClient(
   }
 
   return {
+    clientId: app.clientId,
+
     authorizeUrl({ state, codeChallenge, loginHint }) {
       const url = new URL(spec.authorizeUrl);
       const query = url.searchParams;

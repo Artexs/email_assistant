@@ -516,6 +516,9 @@ describe("mailbox:connect CLI", () => {
         expect(code).toBe(0);
         expect(stdout.includes("sent mail: tracked, read only")).toBe(flag);
         const mailboxId = /\[mailbox-connect\] connected mailbox (\S+)/.exec(stdout)?.[1] ?? "";
+        expect(
+          stdout.includes(`bun run mailbox:settings sent-sync --org-id ${orgId} --mailbox-id ${mailboxId} --value off)`)
+        ).toBe(flag);
         expect((await getSentSyncState(db, { orgId }, mailboxId))?.enabled).toBe(flag);
       } finally {
         await db.deleteFrom("organizations").where("id", "=", orgId).execute();
