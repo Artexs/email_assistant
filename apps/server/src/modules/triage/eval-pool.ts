@@ -44,6 +44,8 @@ interface PoolResult {
   usage: CaseUsage | null;
   // A second call of the same case (the draft judge). Its cost counts like the first call's.
   judgeUsage?: CaseUsage | null;
+  // The second call of the escalation (F109 stage 12). It counts like the first call.
+  escalationUsage?: CaseUsage | null;
   errorCode: string | null;
 }
 
@@ -110,7 +112,8 @@ export async function runPool<C extends { id: string }, R extends PoolResult>(in
     if (budget === undefined) return 0;
     return (
       (result.usage === null ? 0 : callCost(result.usage, budget)) +
-      (result.judgeUsage == null ? 0 : callCost(result.judgeUsage, budget))
+      (result.judgeUsage == null ? 0 : callCost(result.judgeUsage, budget)) +
+      (result.escalationUsage == null ? 0 : callCost(result.escalationUsage, budget))
     );
   };
 

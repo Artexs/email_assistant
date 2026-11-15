@@ -164,21 +164,21 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-13 (S6b, F082 stage 6; not seen live)
 - **Source:** `apps/server/src/platform/pwned.ts`. Warning. Fields: `status=<n>` (an answer other than 200), `reason=no_range_lines` (200 with no `SUFFIX:COUNT` line), or `error=<name>` (for example `TimeoutError`). The password set or change answers `503 PASSWORD_CHECK_UNAVAILABLE` and changes nothing.
 - **Cause:** `api.pwnedpasswords.com` did not answer in 5 s (`TimeoutError`), answered with a status other than 200 (`status=<n>`), answered 200 with no `SUFFIX:COUNT` line, or the server has no outbound HTTPS to it.
-- **Fix:** check outbound HTTPS from the server container to `api.pwnedpasswords.com`. For a long outage only: set `AUTH_PWNED_CHECK=off`, restart (the log then warns `AUTH_PWNED_CHECK=off: leaked passwords are not refused`), and remove the key when the API answers again.
+- **Fix:** check outbound HTTPS from the server container to `api.pwnedpasswords.com`. For a long outage only: set `AUTH_PWNED_CHECK=off`, restart (the log then warns `pwned_check_off`, field `config_key=AUTH_PWNED_CHECK`), and remove the key when the API answers again.
 - **Status:** investigating (per case)
 
-### `lockout_failed`, `terms_record_failed` (before F089: `web: lockout: <label>`, `web: terms record failed for user <id>: <label>`)
+### `lockout_failed`, `terms_record_failed` (before F089: `web: lockout: <label>`; `terms_record_failed` before F103: `web: terms record failed for user <id>: <label>`)
 
 - **First seen:** 2026-11-13 (S6b, F082 stages 5 and 7; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written. `web.ts` still writes `web: terms record failed for user <id>: <label>` until E8a converts it; search for both.
+- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written. `web.ts` writes the same event code and fields.
 - **Cause:** a database error. The sign-in itself is not changed: the user gets the normal answer. A failed lock write means that failed sign-ins are not counted. A failed terms write means the user sees the terms dialog at the next sign-in.
 - **Fix:** read the `error` field (the old form: `<label>`) and check the database. No manual repair: the user accepts the terms in the dialog.
 - **Status:** investigating (per case)
 
-### `web undo <kind> mail <id> by user <id>`
+### `web_undo` (fields `kind`, `email_id`, `user_id`)
 
 - **First seen:** 2026-11-11 (S5d)
-- **Source:** `apps/server/src/modules/triage/routes.ts`, `POST /api/actions/undo`. Level `info`. One line for each web Undo. `<kind>` is `started`, `already`, `nothing`, `too_old` or `held`. Ids only, no mail text. There is no line for a 404 or for feedback.
+- **Source:** `apps/server/src/modules/triage/routes.ts`, `POST /api/actions/undo`. Level `info`. One line for each web Undo. `kind` is `started`, `already`, `nothing`, `too_old` or `held`. Ids only, no mail text. There is no line for a 404 or for feedback.
 - **Cause:** a member tapped ↩️ on the Activity page. A `started` Undo also writes the `action.undo_requested` audit rows and, for a mail that is not `unsure`, a `wrong` feedback row with source `undo`.
 - **Fix:** none. It is a record, not an error. `held` means the mailbox is paused or `ACTIONS_SCOPE` does not admit the mail.
 - **Status:** won't fix (expected)
@@ -296,7 +296,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** the next tick tries again. After 3 runs in a row, the alert `sync_folder_failing` follows. Check the folder in the webmail.
 - **Status:** investigating (per case)
 
-### `web is off (WEB_BASE_URL is empty)`
+### `web_off` (field `config_key`=`WEB_BASE_URL`; before F103: `web is off (WEB_BASE_URL is empty)`)
 
 - **First seen:** 2026-11-10 (S5a code; seen live with `WEB_BASE_URL= bun run dev`, hand check 8.2)
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `info`, once per process start).
@@ -304,12 +304,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action, and expected on a host where the web panel is off; the VPS has it on since S5e (deploy/README.md, Web panel). To turn the panel on, set `WEB_BASE_URL` and `WEB_AUTH_SECRET` in the `.env` (only the user edits `.env`) and restart the server.
 - **Status:** won't fix (expected behaviour)
 
-### `web is on: <origin>, dist <path>`
+### `web_on` (before F103: `web is on: <origin>, dist <path>`)
 
 - **First seen:** 2026-11-10 (hand checks 8.2 and 11.3)
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `info`, once per process start).
-- **Cause:** The web panel is on. `<origin>` is the origin of `WEB_BASE_URL`, the trust anchor for the cookie and the links. `<path>` is the resolved `WEB_DIST` folder.
-- **Fix:** No action. Compare `<path>` with the folder that `bun run web:build` wrote (`apps/web/dist` unless `WEB_DIST` says otherwise). A wrong path gives `web: dist folder missing, pages are off`.
+- **Cause:** The web panel is on. The line holds no origin and no path: read them from `WEB_BASE_URL` and `WEB_DIST` in the `.env`. The origin is the trust anchor for the cookie and the links.
+- **Fix:** No action. Compare the `WEB_DIST` folder with the one that `bun run web:build` wrote (`apps/web/dist` unless `WEB_DIST` says otherwise). A wrong path gives `web_dist_missing`.
 - **Status:** won't fix (expected behaviour)
 
 ### `web_dist_missing` (before F089: `web: dist folder missing, pages are off`)
@@ -320,7 +320,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Run `bun run web:build`, or set `WEB_DIST` to the folder that holds the build (the image sets `/app/apps/web/dist`). Then restart the server.
 - **Status:** workaround (build the pages, or set `WEB_DIST`)
 
-### `WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure`
+### `web_cookies_not_secure` (field `config_key`=`WEB_BASE_URL`; before F103: `WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure`)
 
 - **First seen:** 2026-11-10 (S5a code; not seen live)
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `warn`, once per process start).
@@ -416,7 +416,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action for one line: the user sees the oldest organization, and the audit rows of the web events go there. A second organization is a bug of the setup until a switcher exists.
 - **Status:** won't fix (expected behaviour)
 
-### `web: no organization for user <id>`
+### `web_no_organization` (field `user_id`; before F103: `web: no organization for user <id>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `warn`).
@@ -424,12 +424,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Give the user a membership: `bun run org:create` makes an owner; any other user needs an invitation (S5b). Until then that user's `/api/me` answers 403 `no_organization` and the shell shows "Your account is not in any organization. Ask the owner for an invitation."
 - **Status:** investigating
 
-### `web: audit <kind> failed: <label>`
+### `web_audit_failed` (fields `kind`, `error`; before F103: `web: audit <kind> failed: <label>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `error`). `<kind>` is `login`, `password_set`, `password_changed`, `login_locked`, `sessions_revoked` or `other_sessions_revoked`.
 - **Cause:** The audit row of a login or a password change was not written: a database error in `recordAudit` or in the membership query. The login itself succeeded, because the composer catches every `onEvent` error.
-- **Fix:** Read the label and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
+- **Fix:** Read the `error` field and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
 - **Status:** investigating
 
 ### `auth_event_failed` (before F089: `web: onEvent <kind> failed: <label>`)
@@ -615,12 +615,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action for the alert. Read the audit row `action.failed` of the action (`reason_code`). The user decides in the mailbox. See `deploy/README.md`, "Assist mode".
 - **Status:** won't fix (expected behaviour)
 
-### `returned <mailboxId>: processed <n>`
+### `returned_done` (fields `mailbox_id`, `count`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
-- **Source:** `apps/server/src/modules/triage/returned.ts` (`[triage]`, level `info`; job `triage.returned`, every 15 s).
-- **Cause:** The job processed <n> mails that the sync marked as returned to INBOX (`emails.returned_at`). Only some get a feedback row: `imap_move` for a user move back; none after an Undo or for an `unsure` mail.
-- **Fix:** No action. A line `returned <id>: <label>` at level `error` means one row failed; read the label and check the DB.
+- **Source:** `apps/server/src/modules/triage/returned.ts` (`[triage]`, level `info`; job `triage.returned`, every 15 s). `count` is the number of mails of this run.
+- **Cause:** The job processed `count` mails that the sync marked as returned to INBOX (`emails.returned_at`). Only some get a feedback row: `imap_move` for a user move back; none after an Undo or for an `unsure` mail.
+- **Fix:** No action. A line `returned_failed` (field `email_id`, `error`, `error_code`) at level `error` means one row failed; read the error name and check the DB. A line `returned_mailbox_failed` (field `mailbox_id`) means the read of the mailbox failed. `returned_feedback` (debug) records one saved feedback row.
 - **Status:** won't fix (expected behaviour)
 
 ### `expired <n> ready actions`
@@ -815,39 +815,36 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check for a real double store first: `SELECT message_id_header, content_hash, count(*) FROM emails WHERE mailbox_id = '<MB>' AND folder = 'INBOX' AND received_at >= '<since>' GROUP BY 1, 2 HAVING count(*) > 1;`. 0 rows and `missing=0` = no problem. To name the rows, compare the `fetchSince` keys with `listFolderEmailKeys` in a one-off read-only script. Since the sort-folder sync the tool also prints one `folder=<key> …` line per enabled synced folder. A `cross` count is no problem: it counts mail that has a row in another synced folder (the mail is not lost; independent review m10, `spec/features/done/2026-11/F058-sync-sort-folders/plan.md`).
 - **Status:** won't fix (audit limit; expected after a delete)
 
-### `daily LLM cap reached for mailbox <mailboxId>: <cap> calls since <dayStart> (America/Los_Angeles day); mail waits until <time>`
+### `llm_daily_cap_reached` (fields `org_id`, `mailbox_id`, `count`, `day_start`, `until`)
 
 - **First seen:** 2026-11-05
-- **Source:** `apps/server/src/modules/triage/jobs.ts`, `[triage]` worker. One warning per mailbox and quota day, per process (a restart logs it again).
+- **Source:** `apps/server/src/modules/triage/jobs.ts`, `[triage]` worker. One warning per mailbox and quota day, per process (a restart logs it again). `count` is `LLM_DAILY_CAP`; `day_start` is the start of the quota day (America/Los_Angeles) and `until` the time when the mail waits until (both ISO times).
 - **Cause:** The mailbox used `LLM_DAILY_CAP` LLM call attempts (`audit_log` event `llm.call`, failed calls too) since the start of the Pacific day.
 - **Fix:** No action needed. The mail goes back to `pending` and waits until the next quota day. If it fires too early, check failed `llm.call` rows (503 retries count) and read `notes/2026-11-05-gemini-free-tier-triage.md`. Change `LLM_DAILY_CAP` only with the real RPD.
 - **Status:** won't fix (expected behaviour)
 
-### `LLM soft error <code>: triage paused for <n> min, until <time>`
+### `llm_paused` (fields `code`, `wait_ms`, `until`)
 
 - **First seen:** 2026-11-05
-- **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`). Codes: `http_429`, `http_500`, `http_502`, `http_503`, `http_504`, `timeout`, `network`.
+- **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`, level `warn`). Codes: `http_429`, `http_500`, `http_502`, `http_503`, `http_504`, `timeout`, `network`. `wait_ms` is the length of the pause, `until` its end (ISO time).
 - **Cause:** Google quota or overload, or no network connection to Google (code `network`: refused, reset or DNS failure). Not the mail. The LLM client of the process pauses with a backoff of 5 → 60 min, in memory.
 - **Fix:** Wait. The mail goes back to `pending` with `next_attempt_at` = the pause end and no try count. A restart clears the pause. Often seen with `gemini-3.8-flash` (503) and on Flash-Lite at busy times (`notes/2026-11-05-gemini-free-tier-triage.md`).
 - **Status:** workaround
 
-### `LLM config error <code>: check GEMINI_API_KEY, GEMINI_MODEL_CLASSIFIER and the Google project (billing, region); triage paused for <n> min, until <time>`
+### `llm_config_paused` (fields `code`, `wait_ms`, `until`)
 
 - **First seen:** 2026-11-05
-- **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`). Codes: `http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`.
-- **Cause:** A bad or missing key, no access or billing, a wrong region, or an unknown model name. Retrying the mail does not help.
-- **Fix:** Check `GEMINI_API_KEY`, `GEMINI_MODEL_CLASSIFIER` and the Google project. Then restart the server. The pause uses the same backoff as a soft error and the mail gets no try count.
+- **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`, level `error`). The line holds the code, the length of the pause and its end only. It holds no hint: the hint for each code is in the Fix line below. The pause uses the same backoff as a soft error and the mail gets no try count.
+- **Cause:** A bad or missing key, no access or billing, a wrong region or project, or an unknown model name. Retrying the mail does not help. Gemini codes: `http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`. OpenAI codes (`LLM_PROVIDER=openai`): `http_401` (bad key), `http_403` (no access or region), `http_404` (unknown model), `http_429_quota`, `http_400_schema`, `schema_not_strict`. `http_429_quota`: no money on the OpenAI account or the project budget is spent. `http_400_schema`: OpenAI rejects the strict schema, so every mail would fail. `schema_not_strict`: our own check found a schema object that breaks the strict rules (a code change).
+- **Fix:** One line for each code.
+  - Gemini `http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`: check `GEMINI_API_KEY`, `GEMINI_MODEL_CLASSIFIER` and the Google project (billing, region). Then restart the server.
+  - OpenAI `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER`, `OPENAI_BASE_URL` (`llm_settings` and `llm:check` show the endpoint kind and host) and the OpenAI project (billing, budget, model access).
+  - OpenAI `http_429_quota`: add credit or raise the budget, then wait for the pause to end or restart the server. `/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07; flag `llm_pause_line`).
+  - OpenAI `http_400_schema`: run `bun run llm:check --provider openai`, check the strict schema adapter and the rejected keywords (`notes/2026-11-06-openai-api-facts.md`).
+  - OpenAI `schema_not_strict`: make every property required and nullable, `additionalProperties: false`.
 - **Status:** investigating (per case)
 
-### `LLM config error <code>: check OPENAI_API_KEY, OPENAI_MODEL_CLASSIFIER, OPENAI_BASE_URL and the OpenAI project (billing, budget, model access); triage paused for <n> min, until <time>`
-
-- **First seen:** 2026-11-06
-- **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`) with `LLM_PROVIDER=openai`. Codes: `http_401` (bad key), `http_403` (no access or region), `http_404` (unknown model), `http_429_quota`, `http_400_schema`, `schema_not_strict`.
-- **Cause:** See the code. `http_429_quota`: no money on the OpenAI account or the project budget is spent; a retry does not help. `http_400_schema`: OpenAI rejects the strict schema, so every mail would fail. `schema_not_strict`: our own check found a schema object that breaks the strict rules (a code change).
-- **Fix:** `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER`, `OPENAI_BASE_URL` (`llm_settings` and `llm:check` show the endpoint kind and host) and the OpenAI project. `http_429_quota`: add credit or raise the budget, then wait for the pause to end or restart the server. `/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07; flag `llm_pause_line`). `http_400_schema`: run `bun run llm:check --provider openai`, check the strict schema adapter and the rejected keywords (`notes/2026-11-06-openai-api-facts.md`). `schema_not_strict`: make every property required and nullable, `additionalProperties: false`.
-- **Status:** investigating (per case)
-
-### `triage <mailboxId>: no mailbox_settings row, mailbox skipped`
+### `triage_no_settings` (fields `org_id`, `mailbox_id`; before F103: `triage <mailboxId>: no mailbox_settings row, mailbox skipped`)
 
 - **First seen:** 2026-11-05
 - **Source:** `apps/server/src/modules/triage/jobs.ts`, `[triage]` worker. One warning per mailbox and process.
@@ -855,15 +852,23 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Create the settings row for the mailbox (default settings). Restart to log the line again. The worker skips the mailbox until the row exists.
 - **Status:** workaround
 
-### `triage <mailboxId> failed: <Class> <code>`
+### `triage_no_organization` (fields `org_id`, `mailbox_id`)
+
+- **First seen:** 2026-11-15 (F103 stage 11)
+- **Source:** `apps/server/src/modules/triage/jobs.ts`, `[triage]` worker. One warning per mailbox and process.
+- **Cause:** The organization row of the mailbox is missing, so the worker has no time zone for it.
+- **Fix:** Check the `organizations` row of `org_id`. The worker skips the mailbox until the row exists. Restart to log the line again.
+- **Status:** investigating (per case)
+
+### `triage_mailbox_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`; before F103: `triage <mailboxId> failed: <Class> <code>`)
 
 - **First seen:** 2026-11-05
-- **Source:** `apps/server/src/modules/triage/jobs.ts`, error handler of one mailbox. `<Class> <code>` comes from `describeError`: the class name, then the `code` if the error has one (no brackets), never the message text.
+- **Source:** `apps/server/src/modules/triage/jobs.ts`, error handler of one mailbox. `error` is the class name and `error_code` the `code` if the error has one, never the message text.
 - **Cause:** An error outside the LLM call: thread read, save, DB or a bug. It stopped this mailbox for this run.
 - **Fix:** The mail in work counts one try and waits 5 minutes. At 3 tries it ends as `unsure` / `triage_error`. Later claimed mail goes back with no count. Look at the class and code, then at the DB and server logs.
 - **Status:** investigating (per case)
 
-### `triage failed: <Class> <code>`
+### `triage_failed` (fields `error`, `error_code`; before F103: `triage failed: <Class> <code>`)
 
 - **First seen:** 2026-11-05
 - **Source:** `apps/server/src/modules/triage/jobs.ts`, outer handler of the run (for example the mailbox list failed).
@@ -871,7 +876,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** The next run tries again. If it repeats, check the DB connection and the server log.
 - **Status:** investigating (per case)
 
-### `triage <emailId>: lost the claim`
+### `triage_claim_lost` (fields `org_id`, `mailbox_id`, `email_id`; before F103: `triage <emailId>: lost the claim`)
 
 - **First seen:** 2026-11-05
 - **Source:** `apps/server/src/modules/triage/service.ts`, `[triage]`, on save of a triaged or skipped (`too_old`) mail. Warning.
@@ -879,7 +884,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action. The run that holds the claim triages the mail. If it repeats often, check for two servers on one DB or very slow LLM calls.
 - **Status:** won't fix (expected behaviour)
 
-### `triage <mailboxId>: release failed: <Class> <code>`
+### `triage_release_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`; before F103: `triage <mailboxId>: release failed: <Class> <code>`)
 
 - **First seen:** 2026-11-05
 - **Source:** `apps/server/src/modules/triage/jobs.ts`, when it puts claimed mail back to `pending`.
@@ -887,7 +892,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** The mail becomes claimable after 5 minutes (stale claim). That take-back counts one attempt. Check the DB.
 - **Status:** investigating (per case)
 
-### `triage <mailboxId>: triage_error save failed: <Class> <code>`
+### `triage_error_save_failed` (fields `org_id`, `mailbox_id`, `error`, `error_code`; before F103: `triage <mailboxId>: triage_error save failed: <Class> <code>`)
 
 - **First seen:** 2026-11-05
 - **Source:** `apps/server/src/modules/triage/jobs.ts`, when the third hard error should save `unsure` / `triage_error`.
@@ -895,7 +900,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** The code releases the mail with a 5-minute wait and a count. It tries again later. Check the DB.
 - **Status:** investigating (per case)
 
-### `triage <emailId>: llm.call audit write failed: <Class> <code>`
+### `llm_audit_failed` (fields `org_id`, `mailbox_id`, `email_id`, `error`, `error_code`; before F103: `triage <emailId>: llm.call audit write failed: <Class> <code>`)
 
 - **First seen:** 2026-11-05
 - **Source:** `apps/server/src/modules/triage/service.ts`, after a failed LLM call. Warning.

@@ -89,7 +89,7 @@ export async function buildReviewedBundle(
     const old = join(cacheDir, name);
     if (name === sha || !SHA.test(name) || !lstatSync(old).isDirectory()) continue;
     const removed = await deps.run(["git", "worktree", "remove", "--force", old], { cwd: repoRoot });
-    if (removed.code !== 0) log.warn(`could not remove old bundle worktree ${name}`);
+    if (removed.code !== 0) log.warn("testmail_bundle_remove_failed");
   }
   return { path: built.path, sha, text: built.text };
 }

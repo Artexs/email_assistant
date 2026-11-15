@@ -16,7 +16,7 @@ import { listOrganizations } from "./modules/tenancy";
 import { clearTriageTexts } from "./modules/triage";
 import { deleteExpiredVerifications } from "./platform/auth";
 import type { DB, Db } from "./platform/db";
-import { describeError, errorFields } from "./platform/errors";
+import { errorFields } from "./platform/errors";
 import { createLog } from "./platform/log";
 
 const log = createLog("retention");
@@ -135,9 +135,20 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
       tokens,
     };
     if (sumOf(counts) > 0) {
-      log.info(
-        `retention org ${org.id}: body ${body}, headers ${headers}, sent body ${sentBody}, sent headers ${sentHeaders}, captured ${capturedHeaders}, triage ${triage}, payloads ${payloads}, errors ${errors}, tasks ${tasks}, outbox ${outbox}, tokens ${tokens}`
-      );
+      log.info("retention_org_done", {
+        org_id: org.id,
+        body_rows: body,
+        header_rows: headers,
+        sent_body_rows: sentBody,
+        sent_header_rows: sentHeaders,
+        captured_header_rows: capturedHeaders,
+        triage_rows: triage,
+        payload_rows: payloads,
+        error_rows: errors,
+        task_rows: tasks,
+        outbox_rows: outbox,
+        token_rows: tokens,
+      });
     }
     return counts;
   }
@@ -166,12 +177,12 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
         try {
           total += sumOf(await runOrg(org, now));
         } catch (error) {
-          log.error(`retention org ${org.id} failed: ${describeError(error)}`);
+          log.error("retention_org_failed", { org_id: org.id, ...errorFields(error) });
         }
       }
-      log.info(`retention: ${orgs.length} organizations, ${total} rows`);
+      log.info("retention_done", { org_count: orgs.length, count: total });
     } catch (error) {
-      log.error(`retention failed: ${describeError(error)}`);
+      log.error("retention_failed", { ...errorFields(error) });
     }
   }
 

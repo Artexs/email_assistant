@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-dev",
+  "batch": "batch-001",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "s-0019",
+      "subject": "Re: Terminy dostaw i okna rozladunku",
+      "body": "Dear Karin,\n\nThank you for the revised unloading schedule for the Gdańsk terminal. I went through it with Halina Strzemecka this morning, and the new Tuesday and Thursday windows fit our dock capacity without trouble. Our warehouse team has already updated its own plan, so the schedule is now aligned on both sides.\nI also appreciate the early warning about the holiday week. It helped us to move two other deliveries that would have collided with your trucks.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nKarin Lindqvist wrote:\n> Dear Wiktor,\n> Attached is the revised unloading schedule with the new Tuesday and Thursday windows. The holiday week is marked in yellow.\n> Kind regards, Karin\n\nWiktor Szalewski wrote:\n> Karin,\n> Understood on the windows. Halina will check them against the dock plan.\n\nKarin Lindqvist wrote:\n> Dear Wiktor,\n> We would like to discuss shifting two of the weekly unloading windows to the early morning."
+    },
+    {
+      "id": "s-0021",
+      "subject": "Re: Rekrutacje i obsada magazynów",
+      "body": "Cześć Rafał, cześć Karin,\n\npiszę do Was obojga, bo obsada magazynu w Gdańsku ma bezpośredni wpływ na okna rozładunku dla Nordic Foods. Rekrutacja magazynierów idzie zgodnie z planem, a pierwsza grupa nowych osób kończy szkolenie w lutym.\nZadzwonię do Was w sprawie rekrutacji i obsady do 8 lutego i wtedy podam konkretne liczby.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0025",
+      "subject": "Eksport i odprawy celne",
+      "body": "Hi Oliver,\n\nThanks for the update on the Rotterdam clearance. Please send me back the signed customs clearance document by 26 January, the broker cannot release the load without it. I will send you the updated export offer by 27 January, so you can take it to the client before the end of the month.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nOliver Pemberton wrote:\n> Boss, clearance in Rotterdam done, only the signed paper missing. Offer for the client still on your side.\n\nWiktor Szalewski wrote:\n> Oliver, noted. I look at the offer terms today.\n\nOliver Pemberton wrote:\n> Hi Wiktor, starting the export lane for the new client, details to follow. Oliver"
+    },
+    {
+      "id": "s-0043",
+      "subject": "Plan obsady magazynu",
+      "body": "Cześć Rafał,\n\nprzejrzałem plan obsady magazynu w Gdańsku. Wygląda rozsądnie i nie mam do niego uwag. Dobra robota z kandydatami na operatorów wózków.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0049",
+      "subject": "Re: Umowy i cenniki sprzedazy",
+      "body": "Szanowni Państwo,\n\ninformuję, że nowy cennik sprzedaży został zatwierdzony przez zarząd. Obejmuje on zarówno stawki podstawowe, jak i zmienione upusty ilościowe, które omawialiśmy w poprzedniej korespondencji. Dziękuję za cierpliwość i rzeczowe uwagi w trakcie tych uzgodnień. Dzięki nim udało się ograniczyć liczbę zmian w porównaniu z pierwszą wersją, a nowe stawki są prostsze w stosowaniu w codziennej pracy działów sprzedaży.\n\nZ poważaniem\nWiktor Szalewski"
+    },
+    {
+      "id": "s-0053",
+      "subject": "Re: Faktury i platnosci",
+      "body": "Dear Ewelina,\n\nThank you for the fuel invoice summary. Our finance team matched it with the delivery records, and the totals agree.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nEwelina Marszalek wrote:\n> Dear Mr Szalewski,\n> Please find the fuel invoice summary for the past month attached.\n> Regards, Ewelina"
+    },
+    {
+      "id": "s-0064",
+      "subject": "Otwarte sprawy z fakturami i płatnościami",
+      "body": "Cześć Magdalena,\n\nzbliża się koniec miesiąca i chcę mieć pełny obraz tego, co jest otwarte po stronie faktur i płatności. W ostatnich tygodniach słyszałem o kilku różnych sprawach: o fakturach od dostawców paliw, które czekają na akceptację, o dwóch płatnościach od klientów, które przychodzą z opóźnieniem, oraz o nocie obciążeniowej od przewoźnika. Nie wiem, które z nich są już zamknięte, a które nadal wymagają decyzji.\nDlatego proszę Cię o przygotowanie listy otwartych punktów w sprawie faktur i płatności. Przy każdym punkcie wpisz kontrahenta, kwotę, powód zwłoki i osobę, która ma wykonać następny krok. Nie musi to być formalny raport; wystarczy zwykła lista w mailu albo krótki arkusz. Rafał jest w kopii, bo część punktów dotyczy wynagrodzeń i premii, więc może dopisać to, co widzi po swojej stronie.\nWolę zobaczyć problemy wcześniej, niż dowiedzieć się o nich od banku albo od klienta. Do tej pory Twoje zestawienia były czytelne i konkretne, więc zakładam, że lista nie zajmie dużo czasu.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0067",
+      "subject": "Umowa ramowa Nordic – projekt",
+      "body": "Hi Oliver,\n\nI read the draft framework terms for Nordic Foods. The structure is clear and the liability section sits where it should. Good work on the pricing annex.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0070",
+      "subject": "Re: Rekrutacje i obsada magazynów",
+      "body": "Cześć Rafał,\n\ndzięki za odpowiedź. Rozumiem Twoje uwagi do budżetu na dwa dodatkowe etaty w magazynie w Poznaniu i nie mam więcej zastrzeżeń.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nRafał Kwieciński wrote:\n> Szanowny Panie Prezesie,\n> budżet na dwa dodatkowe etaty w Poznaniu jest ograniczony przez limit kosztów osobowych, dlatego proponuję zatrudnienie etapami.\n\nWiktor Szalewski wrote:\n> Rafał, widzę potrzebę obsady w Poznaniu. Jakie są Twoje uwagi do budżetu?"
+    },
+    {
+      "id": "s-0077",
+      "subject": "Zestawienie faktur i płatności",
+      "body": "Cześć Magdalena,\n\nproszę o potwierdzenie kwot z zestawienia faktur i płatności za styczeń. Zaktualizowaną ofertę dla dostawcy paliw wyślę Ci do czwartku, żebyś mogła porównać obie wersje.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0079",
+      "subject": "Posiedzenie rady – termin",
+      "body": "Hi Dorota,\n\nI have two options for the supervisory board meeting: a morning session or an afternoon session. The morning one is shorter and leaves the afternoon free for the budget discussion, while the afternoon one gives the chairman more time to read the papers. Please tell me which option fits best with the chairman's calendar and the travel plans.\nI will deliver the board meeting numbers next week, so you can assemble the pack straight after that.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0082",
+      "subject": "Reklamacje i uszkodzone dostawy – lista",
+      "body": "Szanowna Pani Prezes,\n\nproszę o przesłanie listy otwartych punktów w sprawie reklamacji uszkodzonych dostaw do 9 lutego. Podsumowanie reklamacji z naszej strony wyślę do poniedziałku.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0083",
+      "subject": "Re: System magazynowy i awarie ERP",
+      "body": "Cześć Halina, cześć Matthias,\n\npo ostatniej awarii przeanalizowałem wstępny plan poprawek do systemu magazynowego. Zmiany dotyczą przede wszystkim modułu rozładunku i aktualizacji interfejsu do ERP. Proszę o informację, czy plan jest zatwierdzony po Waszej stronie. Tomasz jest w kopii, bo awaria wpłynęła także na jego dostawy.\nWiktor\n\nHalina Strzemecka napisała:\n> Cześć Wiktor,\n> dział IT przygotował plan poprawek do systemu magazynowego po awarii ERP. Zakres obejmuje moduł rozładunku i interfejs.\n> Pozdrawiam, Halina"
+    },
+    {
+      "id": "s-0088",
+      "subject": "Export customs documents",
+      "body": "Dear Karin,\n\nThank you for the clear summary of the customs documents for the last shipment. Everything matches our records.\n\nBest regards,\nWiktor"
+    },
+    {
+      "id": "s-0090",
+      "subject": "Export plan – Baltic lanes",
+      "body": "Hi Oliver,\n\nI have your draft export plan for the Baltic lanes and I went through the routing, the transit times and the customs partners you propose. The plan is complete, but I want your own view on one point before we present it to the board. Please confirm by 15 February whether the export plan is approved on the customs side, including the new lane through the northern ports.\nThanks,\nWiktor"
+    },
+    {
+      "id": "s-0093",
+      "subject": "Re: Reklamacje i uszkodzone dostawy",
+      "body": "Szanowni Państwo,\n\nw nawiązaniu do ostatniej korespondencji przesyłam plan postępowania w sprawie reklamacji uszkodzonych dostaw. Plan obejmuje sposób zgłaszania szkód, zasady oględzin towaru oraz kolejność rozliczeń. Proszę o informację, czy plan jest przez Państwa zaakceptowany.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0095",
+      "subject": "Export figures",
+      "body": "Hi Oliver, hi Tomasz,\n\nplease confirm the export figures for the last quarter. I will call you back about the export lane by Tuesday.\nWiktor"
+    },
+    {
+      "id": "s-0105",
+      "subject": "Fuel prices and invoices",
+      "body": "Dear Ewelina,\n\nThank you for the latest fuel price overview and for the clear breakdown of the invoices. Our finance team has reviewed both documents, and the new pricing scheme looks fair to us.\nWe also value the quick service of your office during the past quarter. It makes our planning easier.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0106",
+      "subject": "Posiedzenie rady – liczby",
+      "body": "Cześć wszystkim,\n\nproszę o potwierdzenie liczb do posiedzenia rady do 10 lutego. Zadzwonię do Was w sprawie posiedzenia rady do 18 lutego.\nWiktor"
+    },
+    {
+      "id": "s-0117",
+      "subject": "Kalendarz zarządu na luty",
+      "body": "Dzień dobry, Zbigniewie,\n\nkalendarz zarządu na luty jest już ułożony. Dorota zsynchronizowała terminy z Twoim kalendarzem, a wizyty u klientów zaplanowaliśmy tak, aby nie kolidowały z posiedzeniami rady. Dwa dni wyjazdowe wypadają w środku miesiąca, ale nie wpływają na żadne ustalone spotkanie.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0119",
+      "subject": "Rekrutacje i obsada magazynów – otwarte punkty",
+      "body": "Cześć Rafał, cześć Karin,\n\nobsada magazynów i okna rozładunku dla Nordic Foods są ze sobą powiązane, dlatego piszę do Was obojga. Proszę o listę otwartych punktów w sprawie rekrutacji i obsady do 1 lutego. Przy każdym punkcie wpiszcie, kto jest odpowiedzialny i co blokuje decyzję.\nZaktualizowaną ofertę w sprawie rekrutacji i obsady wyślę Wam do 9 lutego.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0121",
+      "subject": "Umowa ramowa Nordic",
+      "body": "Hi Oliver,\n\nthanks for the call on the Nordic framework. Karin's terms look acceptable to me and the price corridor is clear.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0123",
+      "subject": "Re: Rekrutacje i obsada magazynów",
+      "body": "Cześć Rafał,\n\ndziękuję za ostatnie zestawienie dotyczące rekrutacji i obsady magazynów. Widzę, że liczba kandydatów jest wyższa niż w poprzednim miesiącu, a koszty szkoleń mieszczą się w budżecie. Zanim przedstawię to radzie, chcę mieć pewność, że liczby są kompletne. Proszę o potwierdzenie liczb dotyczących rekrutacji i obsady do 11 lutego.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    },
+    {
+      "id": "s-0124",
+      "subject": "Re: Umowy i cenniki sprzedazy",
+      "body": "Szanowni Panowie,\n\nwracam do tematu umów i cenników sprzedaży. Po lekturze Państwa ostatniej wiadomości widzę, że kilka punktów pozostaje jeszcze nieuzgodnionych, zarówno po stronie stawek, jak i warunków płatności. Proszę o listę otwartych punktów w sprawie umów i cenników, żebyśmy mogli uporządkować dalsze rozmowy.\nZ poważaniem\nWiktor Szalewski\n\nTomasz Brzeziński wrote:\n> Szanowny Panie Prezesie,\n> nasze uwagi do cennika dotyczą głównie warunków płatności i rabatów kwartalnych."
+    },
+    {
+      "id": "s-0129",
+      "subject": "Re: Faktury i platnosci",
+      "body": "Dear Ewelina, dear Matthias,\n\nI am writing to both of you because the invoices from your companies reached our finance department in the same week, and I want to be sure that our records are complete before the month is closed. Over the past quarter we have worked together on fuel cards, on the purchase of new trailers and on the maintenance of our fleet, and each of these topics produces several invoices with different payment terms. When invoices from different suppliers arrive together, small differences in amounts or in payment dates are easy to overlook.\nOur accountant, Magdalena Czerniak, has prepared a summary of the amounts that we have booked for both of you. The summary covers fuel purchases, the first instalment for the trailers and the service invoices for the workshop. I would like you to compare these amounts with your own ledgers, because a difference of even a small sum can cause a delay in the transfer. Please confirm that the invoice figures in our summary are correct on your side. If one of you finds a difference, a short note with the invoice number is enough.\nThank you both for the good cooperation in the past months.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja"
+    }
+  ]
+}

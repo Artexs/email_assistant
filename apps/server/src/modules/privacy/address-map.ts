@@ -204,6 +204,7 @@ export const NO_PERSONAL_TABLES: Readonly<Record<string, string>> = {
   mailbox_oauth_states: "a provider code, the hash of a sign-in state and an encrypted verifier",
   mailbox_sent_sync: "folder path, a cursor and codes of the sent-mail sync",
   memberships: "role and digest times of a member",
+  ops_alerts: "numbers only: a kind code and numeric facts, no organization",
   org_features: "a flag name and a code",
   triage_feedback: "source, verdict and category codes",
 };

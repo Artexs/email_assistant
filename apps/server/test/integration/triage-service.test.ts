@@ -759,7 +759,9 @@ describe("triageOne", () => {
         expect(pause.trips).toEqual([{ kind: "soft", code: "http_503" }]);
         expect(await llmRows(trx, emailId)).toHaveLength(0);
         const lines = warnSpy.mock.calls.map((call) => String(call[1]));
-        expect(lines).toContain(`triage ${emailId}: llm.call audit write failed: Error`);
+        expect(lines).toContain(
+          `llm_audit_failed org_id=${ctx.orgId} mailbox_id=${mailbox.id} email_id=${emailId} error=Error`
+        );
       } finally {
         warnSpy.mockRestore();
       }

@@ -6,8 +6,8 @@ import { unitCost } from "./m7";
 function week() {
   return [
     ...Array.from({ length: 1000 }, () => llmCallRow()),
-    llmCallRow({ model: "gpt-6.1-terra" }),
-    llmCallRow({ model: "gpt-6.1-terra" }),
+    llmCallRow({ model: "gpt-6.1-sol" }),
+    llmCallRow({ model: "gpt-6.1-sol" }),
     llmCallRow({ tokensIn: null, tokensOut: null }),
   ];
 }
