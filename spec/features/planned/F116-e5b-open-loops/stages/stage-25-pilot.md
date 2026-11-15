@@ -5,7 +5,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (production, real mail, sending to
 ## Step 0 — Gate G1 (second pass)
 
 - **Input:** the first E3a weekly report on the pilot (due loops per day, median reply time, replies that only promise) and the E2b live week result (`docs/product/stage-2/epics/E05-discovery-notes.md` §5).
-- **Rules:** PD-119: the median answer comes after day 3 → set the default `loop_wait_days` to 4 or 5 (one constant and the migration default stay; the per-mailbox value is set by the route). PD-120: ≤ 3 due Waiting loops per day and the follow-up template passes the E2a draft judge → `auto_follow_up` on by default for new mailboxes (a code change: one small job before step 1). PD-122: ≥ 20% of replies in Waiting threads only promise → a new ticket, not this stage.
+- **Rules:** PD-119: the median answer comes after day 3 → set the pilot mailbox's wait to 4 or 5 with the route; a new default for new mailboxes is a new ticket line (it needs a migration). PD-120: ≤ 3 due Waiting loops per day and the follow-up template passes the E2a draft judge → `auto_follow_up` on by default for new mailboxes (a code change: one small job before step 1). PD-122: ≥ 20% of replies in Waiting threads only promise → a new ticket, not this stage.
 - **Who:** the coordinator decides on these rules and the defaults and writes an owner-decisions entry. Missing data (no weekly report yet) → keep the defaults and say so.
 
 ## Step 1 — Lab first
