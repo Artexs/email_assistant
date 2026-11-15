@@ -417,3 +417,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the plan follows E8b; open questions are in `questions.md` (Q1–Q6 important).
 - Undo: cut stages 05–09; the alert job stays off with no `OPERATOR_TELEGRAM_CHAT_ID`.
 - Source: `spec/features/planned/F114-e8b-alerts-and-releases-incl-the-restore-drill/questions.md`, `plan.md`, `plan-review-1.md`. Owner steps: U1 `age` identity file on the PC (only for the stage 09 drill), U2 Healthchecks.io "backup" check URL in `BACKUP_PING_URL`, U3 "EA operator" Telegram group, U4 read five test notices; gate PD-055.
+
+### 2026-11-15 · F116 plan refresh: consent version after a same-day bump (F116) · privacy · new
+- Choice: F109 stage 06 already set `TELEGRAM_CONSENT_VERSION = "2026-11-15"`. F116 stage 17 must set a version greater than that (land date, or `<date>.2` on a day with a bump). This breaks the code-patterns same-day rule for this stage only; option: land stage 17 on a later day.
+- Why: a consent to the F109 text must not count as consent to loop data (the F109 text has no loop sentence).
+- Undo: none needed; a later version only asks again.
+- Source: `spec/features/active/F116-e5b-open-loops/plan-refresh-1.md`, `questions.md` item 20.
