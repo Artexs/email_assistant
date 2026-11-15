@@ -1,12 +1,12 @@
-import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
 import { SoftError } from "../../platform/errors";
+import { dnsLookupAll, isLocalAddress, type LookupAll } from "../../platform/net-address";
 
-import { isLocalAddress, isLocalMailHost } from "./host-check";
+import { isLocalMailHost } from "./host-check";
 import { HostNotAllowedError } from "./port";
 
-export type LookupAll = (host: string) => Promise<{ address: string; family: number }[]>;
+export { dnsLookupAll, type LookupAll };
 
 export interface MailHostPolicy {
   allowLocal: boolean;
@@ -18,8 +18,6 @@ export interface MailTarget {
   host: string;
   servername?: string;
 }
-
-export const dnsLookupAll: LookupAll = (host) => lookup(host, { all: true, verbatim: true });
 
 export const DEFAULT_MAIL_HOST_POLICY: Readonly<MailHostPolicy> = Object.freeze({
   allowLocal: false,

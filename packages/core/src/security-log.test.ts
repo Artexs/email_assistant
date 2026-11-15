@@ -13,6 +13,7 @@ describe("security log registry", () => {
   test("securityKindOf maps registry codes and refuses the rest", () => {
     expect(securityKindOf("web.login")).toBe("sign_in");
     expect(securityKindOf("web.two_factor_locked")).toBe("two_factor_locked");
+    expect(securityKindOf("web.two_factor_refused")).toBe("two_factor_refused");
     expect(securityKindOf("org.break_glass_set")).toBe("break_glass_set");
     expect(securityKindOf("org.exported")).toBe("data_exported");
     expect(securityKindOf("org.delete_refused")).toBe("delete_refused");

@@ -57,6 +57,7 @@ export {
   type MessageMeta,
   type MoveResult,
   type SendResult,
+  type SentFolderReader,
   type SmtpStage,
   SmtpSendError,
   type MailSender,

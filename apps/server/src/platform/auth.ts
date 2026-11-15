@@ -26,7 +26,15 @@ import {
   type HookContext,
   type SignInOverride,
 } from "./auth-sso-required";
-import { signInAuditPlugin, twoFactorPlugin, TWO_FACTOR_ALLOWED_PATHS } from "./auth-two-factor";
+import {
+  requireSecondFactorCode,
+  secondFactorActionOf,
+  signInAuditPlugin,
+  twoFactorOn,
+  twoFactorPlugin,
+  TWO_FACTOR_ALLOWED_PATHS,
+  type CodeApi,
+} from "./auth-two-factor";
 import type { DB, Db } from "./db";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
@@ -45,7 +53,8 @@ export type AuthEventKind =
   | "two_factor_disabled"
   | "backup_codes_generated"
   | "backup_code_used"
-  | "two_factor_locked";
+  | "two_factor_locked"
+  | "two_factor_refused";
 
 export interface AuthDeps {
   databaseUrl: string;
@@ -285,7 +294,10 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     now,
   });
 
-  return betterAuth({
+  // The plugin's verify endpoints, for the F128 check in `hooks.before`. Set below; a request cannot arrive before it.
+  let codeApi: CodeApi | null = null;
+
+  const instance = betterAuth({
     appName: "Email Assistant",
     baseURL: deps.baseUrl,
     basePath: "/api/auth",
@@ -417,9 +429,10 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         if (NEW_PASSWORD_PATHS.has(ctx.path) && deps.pwnedCheck) {
           await rejectLeakedPassword(ctx, deps.pwnedCheck);
         }
-        if (ctx.path === TWO_FACTOR_DISABLE_PATH && deps.keepsTwoFactor) {
+        const secondFactorAction = secondFactorActionOf(ctx.path);
+        if (secondFactorAction) {
           // `getSessionFromCtx` returns null when the session read fails, so null must not pass (fail closed).
-          // A request with no session cannot turn TOTP off anyway.
+          // A request with no session cannot turn TOTP off or make codes anyway.
           const session = await getSessionFromCtx(ctx);
           if (!session) {
             throw APIError.from("UNAUTHORIZED", {
@@ -427,10 +440,24 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
               message: "A signed-in session is required.",
             });
           }
-          if (await deps.keepsTwoFactor(session.user.id)) {
+          if (
+            ctx.path === TWO_FACTOR_DISABLE_PATH &&
+            deps.keepsTwoFactor &&
+            (await deps.keepsTwoFactor(session.user.id))
+          ) {
             throw APIError.from("FORBIDDEN", {
               code: "BREAK_GLASS_NEEDS_TWO_FACTOR",
               message: "The break-glass owner keeps two-factor sign-in.",
+            });
+          }
+          // F128 (replaces F105 D28): the password is not enough, the second factor must prove itself too.
+          if (twoFactorOn(session.user)) {
+            await requireSecondFactorCode(ctx, {
+              userId: session.user.id,
+              action: secondFactorAction,
+              api: codeApi,
+              report,
+              now,
             });
           }
         }
@@ -510,6 +537,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       },
     },
   });
+  codeApi = instance.api;
+  return instance;
 }
 
 // F6: one row of a user's live sessions. The session token is never copied.
