@@ -1,0 +1,208 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-holdout",
+  "batch": "batch-007",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "s-0183",
+      "expectsReply": false,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "d899527978491f5b641b18fbdcf0e1445140adb039b1b422ce92112cc7a40e20"
+    },
+    {
+      "id": "s-0184",
+      "expectsReply": true,
+      "promise": true,
+      "due": "2027-02-12",
+      "promiseDue": "2027-01-31",
+      "blindHash": "27191dcbea194b5dbed80b2da61ea47a41645409f1bdf471e5a8d484b39dff25"
+    },
+    {
+      "id": "s-0186",
+      "expectsReply": true,
+      "promise": true,
+      "due": "2027-02-01",
+      "promiseDue": "2027-02-12",
+      "blindHash": "9310c41f868970bc0b0d8cdc2824b24f28833e82f3ed86b31dcc4a3e52f9735e"
+    },
+    {
+      "id": "s-0187",
+      "expectsReply": false,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "c89b75316ac1573ff9b7e999daed050708b1bb2fc442b667e524aa725b0d21ba"
+    },
+    {
+      "id": "s-0188",
+      "expectsReply": true,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-02-05",
+      "blindHash": "614199d632e5ba9f846d09cb28ab589a2f2269e6bd6a6a0636a28be73c29730b"
+    },
+    {
+      "id": "s-0189",
+      "expectsReply": true,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "ec5e169534036adf607d52015ee61ec2ac9fa7194fa64935fc94a5d28b0ceb3d"
+    },
+    {
+      "id": "s-0190",
+      "expectsReply": false,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-02-06",
+      "blindHash": "5ff847f6675961732ed1b3c3946007937090bc45d8fbda5c9b1042c5a189a7ef"
+    },
+    {
+      "id": "s-0192",
+      "expectsReply": false,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "ba72beb42b696b6c79b66db7edc50fe41abe77a2c7f7f758c694f2b6e10d6f83"
+    },
+    {
+      "id": "s-0193",
+      "expectsReply": false,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-02-15",
+      "blindHash": "1d100ec9398399e9721db6fcd7a7cc42058076d7fa43da065367b59b60385d1a"
+    },
+    {
+      "id": "s-0194",
+      "expectsReply": false,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-02-01",
+      "blindHash": "641adc892c77e42a6ce1301988ff9d243679445ce396aa949266b06c586168d9"
+    },
+    {
+      "id": "s-0195",
+      "expectsReply": false,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "3e1809f71ac2b7e9554e30c4bc17b07105ee1fb2128bd98e1a132204844a2989"
+    },
+    {
+      "id": "s-0196",
+      "expectsReply": false,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "aaff252121c13993820e2ebfa7ffce9d9f3475fbceb1958ceb62f4e9ead580fb"
+    },
+    {
+      "id": "s-0197",
+      "expectsReply": true,
+      "promise": false,
+      "due": "2027-02-08",
+      "promiseDue": null,
+      "blindHash": "87c2354b5df80f383b588b945789b874fd3148287686e72f5adcf151b94c2d3b"
+    },
+    {
+      "id": "s-0198",
+      "expectsReply": true,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-02-15",
+      "blindHash": "1377cee1cbd0703f09fa4a35cc7838caa4f5d1472edb980e8f3be902a535dd02"
+    },
+    {
+      "id": "s-0200",
+      "expectsReply": false,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "1e850f47133968ee2f530ef58e78bef3fb6647d5028dfbf52d703af931d74d96"
+    },
+    {
+      "id": "s-0201",
+      "expectsReply": false,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "d6b1a797464c83bdff11f5a902a9e4b398ca4c4aeefa53d7055e0e2311252349"
+    },
+    {
+      "id": "s-0202",
+      "expectsReply": false,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-01-29",
+      "blindHash": "29a0559468298eb4b31e34fd6a481a9ae3f4a4a0d2d5984626d47e7483a02f45"
+    },
+    {
+      "id": "s-0204",
+      "expectsReply": false,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-02-22",
+      "blindHash": "d889712f1cfd9252974847d63434b3550f726912c2453b99ca37139e637d52a7"
+    },
+    {
+      "id": "s-0206",
+      "expectsReply": true,
+      "promise": false,
+      "due": "2027-01-27",
+      "promiseDue": null,
+      "blindHash": "0a71acaa33fa9191c3b8ed0d41ed21ca9f710f5856d31991749246f32f461792"
+    },
+    {
+      "id": "s-0207",
+      "expectsReply": true,
+      "promise": true,
+      "due": "2027-02-12",
+      "promiseDue": "2027-02-18",
+      "blindHash": "2a05df6e4f244abca0e8b5cbed1cf7eccb5ad67265ed689bc1dfff95b135e596"
+    },
+    {
+      "id": "s-0208",
+      "expectsReply": true,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "559756f8d85ff0af34538a08f2ad33f79b701fe7dbcfa9ec389b766e21414712"
+    },
+    {
+      "id": "s-0209",
+      "expectsReply": true,
+      "promise": true,
+      "due": null,
+      "promiseDue": "2027-02-03",
+      "blindHash": "f80a0c12d66dbdb13a0e7fa14196379557261be3d330290facf8e85e9742d266"
+    },
+    {
+      "id": "sh-cnd-01",
+      "expectsReply": true,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "ecf7514531b3cf3b7d3f10db3c9862a0bab9dae2dc12e1de696f2941f4bfed8e"
+    },
+    {
+      "id": "sh-cnd-02",
+      "expectsReply": true,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "1fd125502e84768284058a417e98b61363390deb97fc06251a69272d0587f9f9"
+    },
+    {
+      "id": "sh-cnd-04",
+      "expectsReply": true,
+      "promise": false,
+      "due": null,
+      "promiseDue": null,
+      "blindHash": "e593fb8cb32a285c5ab9bccc100b6d2360d0f408a7d5a7c180b460c79acde8c4"
+    }
+  ]
+}

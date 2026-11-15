@@ -175,6 +175,21 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
       expect(parseEvalArgs([...sim, "--suspicious", "--escalate"])).toBeUndefined();
     });
 
+    // Stage 13 carry-over: the second call always uses the classifier-v2 text.
+    test("--escalate with classifier-v3 or --prompt-parts is a usage error; classifier-v2 parses", () => {
+      expect(parseEvalArgs([...sim, "--escalate", "--prompt-version", "classifier-v3"])).toBeUndefined();
+      expect(
+        parseEvalArgs([...sim, "--escalate", "--prompt-version", "classifier-v3", "--prompt-parts", "list"])
+      ).toBeUndefined();
+      expect(parseEvalArgs([...sim, "--escalate", "--prompt-parts", "list"])).toBeUndefined();
+      expect(parseEvalArgs([...sim, "--escalate", "--prompt-version", "classifier-v2"])).toMatchObject({
+        escalate: true,
+        prompt: { version: "classifier-v2" },
+      });
+      // Without --escalate the v3 run is unchanged.
+      expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "list"])).toBeDefined();
+    });
+
     test("--escalate takes no prompt flag away: v2 stays the production prompt", () => {
       expect(parseEvalArgs([...sim, "--escalate"])?.prompt).toEqual(productionClassifierChoice());
     });

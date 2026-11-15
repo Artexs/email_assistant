@@ -242,7 +242,7 @@ describe("actions logs", () => {
         for (const reverse of reverseRows) {
           expect(output).toContain(`action_applied action_id=${reverse.id} action_type=${reverse.type}`);
         }
-        expect(output).toContain(`returned ${mailboxId}: processed 1`);
+        expect(output).toContain(`returned_done mailbox_id=${mailboxId} count=1`);
         expect(output).toContain(`notice_queued kind=action_failed outbox_id=${outbox[0]?.id}`);
       });
     } finally {

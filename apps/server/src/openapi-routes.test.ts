@@ -289,6 +289,26 @@ describe("the real app", () => {
     expect(operation.responses?.["409"]?.description).toContain("not_rejected");
   });
 
+  test("the three approval writes are described: owner only, a body, and the 409 codes", async () => {
+    const paths = (await openApiSpec(realApp())).paths;
+    for (const [route, operationId, conflict] of [
+      ["approve", "approveApproval", "draft_not_ready"],
+      ["reject", "rejectApproval", "changed"],
+      ["edit", "editApproval", "drafts_off"],
+    ] as const) {
+      const operation = paths?.[`/api/approvals/{id}/${route}`]?.post as {
+        operationId?: string;
+        requestBody?: unknown;
+        responses?: Record<string, { description?: string } | undefined>;
+      };
+      expect(operation.operationId).toBe(operationId);
+      expect(operation.requestBody).toBeDefined();
+      expect(operation.responses?.["403"]?.description).toContain("owner_only");
+      expect(operation.responses?.["404"]?.description).toContain("not_found");
+      expect(operation.responses?.["409"]?.description).toContain(conflict);
+    }
+  });
+
   test("the middleware entries are no route keys", () => {
     const app = realApp();
     // The app has middleware entries under /api (the guards, the 404 catch-all); none of them is a key.

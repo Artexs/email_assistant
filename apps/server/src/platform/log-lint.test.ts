@@ -288,6 +288,20 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
+    "an old-form line in triage fails",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/triage/__log-fixture.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
     "an event line in platform passes",
     async () => {
       expect(

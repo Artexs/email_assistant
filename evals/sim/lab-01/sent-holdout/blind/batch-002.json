@@ -1,0 +1,339 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-holdout",
+  "batch": "batch-002",
+  "cases": [
+    {
+      "id": "s-0029",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Eksport i odprawy celne – po rozmowie z brokerem",
+      "sentAt": "2027-01-27T12:57:00.000Z",
+      "body": "Oliver,\n\nquick note after the call with the Gdańsk broker. He confirmed that the Rotterdam clearance went through on Monday and that the delay on the Hamburg lane came from a missing certificate, not from customs. Nothing else is open on his side. Our export team keeps the lane on the normal schedule, and the two held loads are on the road again since this morning. I put the broker's summary in the export folder, in case the client asks about it.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": [
+        "Eksport i odprawy celne",
+        "Re: Eksport i odprawy celne",
+        "Re: Eksport i odprawy celne"
+      ]
+    },
+    {
+      "id": "s-0030",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg sieci Zielona Hurtownia – dokumenty",
+      "sentAt": "2027-01-26T08:56:00.000Z",
+      "body": "Szanowna Pani Genowefo,\n\ninformuję, że nasza oferta do przetargu sieci Zielona Hurtownia została złożona zgodnie z regulaminem. Komplet dokumentów, razem z certyfikatami i próbkami, dotarł do Państwa biura we wtorek rano.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0031",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "tomasz.brzezinski@meblodrew.test"
+      ],
+      "cc": [
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "subject": "Reklamacje i uszkodzone dostawy – nowa procedura",
+      "sentAt": "2027-01-29T07:39:00.000Z",
+      "body": "Szanowni Państwo,\n\ninformuję, że od 1 lutego obowiązuje nowa procedura zgłaszania reklamacji. Zgłoszenia przyjmuje formularz na portalu klienta, a decyzję wydajemy w ciągu pięciu dni roboczych.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0032",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacje i uszkodzone dostawy – zgłoszenie z grudnia",
+      "sentAt": "2027-01-29T08:29:00.000Z",
+      "body": "Szanowna Pani Genowefo,\n\ndziękuję za zgłoszenie dotyczące uszkodzonych kartonów w dostawie z końca grudnia. Nasz dział jakości przeanalizował zdjęcia i dokumenty przewozowe. Uszkodzenia powstały podczas przeładunku u przewoźnika, a nie w naszym magazynie, dlatego koszty pokryje ubezpieczenie transportowe.\n\nKorekta faktury została wystawiona w piątek i jest dostępna na Państwa koncie. Wartość reklamacji wynosi 6 400 zł netto, a towar z dostawy został w całości zastąpiony nową partią, która dotarła do Państwa magazynu we wtorek.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0033",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "z.orlowicz@rada-kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenie rady nadzorczej",
+      "sentAt": "2027-01-26T13:18:00.000Z",
+      "body": "Szanowny Panie Przewodniczący,\n\ndziękuję za pytania dotyczące przygotowań do posiedzenia rady. Część z nich wymaga danych od księgowości, które będą gotowe dopiero po zamknięciu miesiąca, dlatego wolę nie odpowiadać w pośpiechu.\n\nZadzwonię do Pana w sprawie posiedzenia rady do końca tygodnia. Przedstawię wtedy porządek obrad i wstępne liczby.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0034",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Eksport i odprawy celne",
+      "sentAt": "2027-01-25T14:45:00.000Z",
+      "body": "Oliver,\n\nquick one on the Rotterdam lane: did the broker accept the new document set, or did he flag missing papers again? Your last mail did not say. I will share my decision on the export and customs set-up for that lane by 28 January, so I want this detail before I close it.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0035",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "ewelina.marszalek@paliwa-flota.test"
+      ],
+      "cc": [],
+      "subject": "Re: Karty paliwowe i ceny paliw",
+      "sentAt": "2027-01-31T16:37:00.000Z",
+      "body": "Dear Ewelina,\n\nthank you for the revised price list and for the explanation of how the monthly adjustment works. My finance team went through your proposal together with our own fuel data for the last two quarters. The numbers are close to what we expected, and the new surcharge on the highway network is the only item that stands out from the earlier offer.\n\nI also checked the usage of the cards by our long-distance drivers. A third of the cards were used less than twice a month, which is one of the reasons why we want to look at the pricing tiers once more before we decide on the number of cards for the second half of the year. Halina Strzemecka from operations reviews the same data from the side of the routes.\n\nI will call you back about the fuel card prices by 8 February, after the next meeting of our management board. Until then, nothing changes in the current contract, and the existing cards stay active as before.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": [
+        "Karty paliwowe i ceny paliw",
+        "Re: Karty paliwowe i ceny paliw"
+      ]
+    },
+    {
+      "id": "s-0036",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "karin.lindqvist@nordicfoods-trade.test"
+      ],
+      "cc": [],
+      "subject": "Terminy dostaw i okna rozładunku",
+      "sentAt": "2027-01-25T06:54:00.000Z",
+      "body": "Dear Karin,\n\nthank you for your note about the unloading windows. I will call you back about the delivery windows by 8 February, once our operations team has the full schedule for the quarter.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0037",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "daniel.hargreaves@baltic-freight-partners.test"
+      ],
+      "cc": [
+        "tomasz.brzezinski@meblodrew.test"
+      ],
+      "subject": "Wspólne przetargi z Baltic Freight Partners",
+      "sentAt": "2027-01-25T15:28:00.000Z",
+      "body": "Dear Daniel,\n\nI am writing with a short update on the joint tenders. The shared price sheet is complete, and both sides have agreed the layout of the offer. Your team covers the sea and rail legs, and our warehouses handle the road distribution inside Poland.\n\nI copy Tomasz Brzezinski from Meblodrew, because the second tender includes his pallet lanes to the north of Poland. This way he sees how the work is divided.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0038",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "rafal.kwiecinski@kordelan.test",
+        "z.orlowicz@rada-kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Rekrutacje i obsada magazynów",
+      "sentAt": "2027-01-29T13:06:00.000Z",
+      "body": "Cześć Rafał, cześć Zbigniew,\n\ninformuję, że z rekrutacją magazynierów jesteśmy na dobrej drodze. Dziewięć stanowisk w Gdańsku jest obsadzonych.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nWiktor napisał:\n> Rafał, dzięki za listę kandydatów.\n\nRafał napisał:\n> Wiktor, mamy w tym tygodniu dziewięć rozmów w Gdańsku.",
+      "threadSubjects": [
+        "Rekrutacje i obsada magazynow",
+        "Re: Rekrutacje i obsada magazynow"
+      ]
+    },
+    {
+      "id": "s-0039",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "karin.lindqvist@nordicfoods-trade.test"
+      ],
+      "cc": [],
+      "subject": "Umowa ramowa z Nordic Foods Trade – model płatności",
+      "sentAt": "2027-01-31T14:03:00.000Z",
+      "body": "Dear Karin,\n\nfor the framework agreement we have two options for the payment model: a fixed annual price with quarterly indexation, or a price list per shipment with a volume discount. Please tell which option fits best for Nordic Foods Trade by 8 February.",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0040",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "z.orlowicz@rada-kordelan.test",
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz zarządu – liczby na kwartał",
+      "sentAt": "2027-01-29T14:51:00.000Z",
+      "body": "Szanowny Panie Przewodniczący, szanowna Pani Halino,\n\nprzygotowałem projekt kalendarza zarządu na pierwszy kwartał. Zawiera sześć posiedzeń zarządu, trzy wyjazdy zagraniczne i łącznie 24 dni podróży służbowych. Proszę o potwierdzenie tych liczb, bo na ich podstawie asystentka rezerwuje terminy i budżet delegacji.\n\nZaktualizowaną propozycję kalendarza zarządu wyślę do środy, z uwzględnieniem Państwa uwag.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0041",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [
+        "rafal.kwiecinski@kordelan.test"
+      ],
+      "subject": "Re: Umowa ramowa z Nordic Foods Trade",
+      "sentAt": "2027-01-31T13:26:00.000Z",
+      "body": "Oliver, Rafał,\n\na short note on the framework agreement with Nordic Foods Trade. Legal finished the review on Friday and agreed the changes in the payment and indexation clauses. Karin's team already has the new version. Rafał is copied because the agreement includes a clause on staffing for the Gdańsk warehouse during peak weeks, and HR is the owner of that part.",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0042",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "tomasz.brzezinski@meblodrew.test"
+      ],
+      "cc": [],
+      "subject": "Re: Reklamacje i uszkodzone dostawy",
+      "sentAt": "2027-01-28T13:59:00.000Z",
+      "body": "Szanowny Panie Tomaszu,\n\ndziękuję za szczegółowy opis problemów z dostawami do Państwa magazynu. Po poprzedniej wymianie wiadomości przeprowadziliśmy dokładne postępowanie wyjaśniające i chciałbym opisać jego wyniki, żeby obie strony miały taki sam obraz sytuacji.\n\nZ dokumentacji wynika, że uszkodzenia dotyczą głównie dwóch kursów z grudnia. W obu przypadkach palety były nieprawidłowo zabezpieczone folią, a protokół załadunku nie został podpisany przez kierowcę. Przewoźnik przyznał, że naruszył procedurę i objął sprawę swoim ubezpieczeniem. Pozostałe zgłoszone szkody dotyczyły dostaw, które odbyły się według planu, więc ich przyczyny wykraczają poza nasz transport.\n\nWartość uznanych roszczeń wynosi 18 300 zł netto. Kwota została już uwzględniona w korekcie faktury za grudzień, którą Państwa dział księgowości znajdzie na koncie klienta. Towar, który nie nadawał się do sprzedaży, został zutylizowany zgodnie z Państwa wytycznymi, a protokół utylizacji jest załączony do sprawy.\n\nZmieniliśmy też zasady załadunku. Od początku lutego każdy kierowca podpisuje protokół z numerem plomby, a magazyn robi zdjęcia palet przed wyjazdem.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja\n\nTomasz napisał:\n> Panie Prezesie, w załączeniu zdjęcia uszkodzonych palet i dokumenty przewozowe z trzech dostaw.\n\nWiktor napisał:\n> Panie Tomaszu, dziękuję za zgłoszenie, sprawa trafiła do działu jakości.",
+      "threadSubjects": [
+        "Reklamacje i uszkodzone dostawy",
+        "Re: Reklamacje i uszkodzone dostawy"
+      ]
+    },
+    {
+      "id": "s-0044",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "dorota.wilczynska@kordelan.test",
+        "karin.lindqvist@nordicfoods-trade.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenie rady – kolacja",
+      "sentAt": "2027-01-29T13:52:00.000Z",
+      "body": "Dorota, Karin,\n\none question on the board meeting week: will Nordic Foods join the Wednesday afternoon session as a guest? Please answer by 3 February, so that Dorota can book the room.",
+      "threadSubjects": [
+        "Posiedzenie rady nadzorczej i budzet"
+      ]
+    },
+    {
+      "id": "s-0045",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "z.orlowicz@rada-kordelan.test",
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenie rady – termin i porządek",
+      "sentAt": "2027-01-31T16:09:00.000Z",
+      "body": "Szanowni Państwo,\n\ninformuję, że termin posiedzenia rady został potwierdzony. Przetarg sieci Zielona Hurtownia będzie omawiany jako drugi punkt obrad, zaraz po sprawozdaniu finansowym.\n\nPani Genowefa otrzymuje tę wiadomość do wiadomości, ponieważ rada zna jej firmę z poprzedniego kwartału i pytała o stan rozmów.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0046",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "dorota.wilczynska@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz zarządu – plan",
+      "sentAt": "2027-01-30T08:12:00.000Z",
+      "body": "Cześć Dorota,\n\nczy plan kalendarza zarządu na luty jest już zatwierdzony przez Zbigniewa? W poniedziałek widziałem jeszcze wersję z jego uwagami, a od tego zależą rezerwacje biletów na wyjazd do Gdańska. Jeśli plan został zatwierdzony, powiedz mi to jednym zdaniem, bo bez tego nie zamawiam przelotów.",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0047",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Eksport i odprawy celne – oferta",
+      "sentAt": "2027-01-27T15:10:00.000Z",
+      "body": "Oliver,\n\nI went through the export numbers for the first quarter with Halina and we have two ways to reorganise the lanes to the Nordic countries. The first keeps the weekly consolidated trucks from Gdańsk and adds one extra run in the busy weeks. The second moves everything to a twice-weekly rail connection through a partner terminal, which is cheaper per pallet but slower by about one day.\n\nBoth options hold the customs process as it is, so you do not need to change anything with the broker. The main difference is the risk with the cold chain: rail needs a reefer wagon, and we have no confirmed capacity for that yet. On the other hand, the road option is more expensive and our fuel costs are going up.\n\nPlease tell which option for the export lanes fits best. You know the clients and the broker better than I do, and I want your view before it goes to the board. I will send the updated export offer by 11 February, with the chosen option and the new prices for the lanes.\n\nThanks for your help with this.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0048",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zakup naczep i serwis floty",
+      "sentAt": "2027-01-25T07:05:00.000Z",
+      "body": "Cześć Halina,\n\nwypisz proszę otwarte punkty dotyczące zakupu naczep i serwisu. Decyzję w sprawie zakupu naczep przekażę Ci do 12 lutego.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0050",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacje i obsada magazynów",
+      "sentAt": "2027-01-29T14:41:00.000Z",
+      "body": "Cześć Halina,\n\njedno pytanie o rekrutację: czy zmianę nocną w Poznaniu obsadzamy na etatach, czy przez agencję pracy tymczasowej? Od tego zależy, jak rozmawiamy z Rafałem o budżecie na wynagrodzenia i czy wchodzimy w ten kwartał z gotowym planem. Znasz tamten magazyn lepiej niż ktokolwiek z nas, więc napisz, jak to widzisz.",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0051",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "rafal.kwiecinski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacje i obsada magazynów – podsumowanie tygodnia",
+      "sentAt": "2027-01-30T10:38:00.000Z",
+      "body": "Cześć Rafał,\n\nchcę podziękować za tempo, w jakim zespół HR prowadzi rekrutacje do magazynów. Dwanaście umów podpisanych w tym tygodniu to wynik, jakiego nie mieliśmy od roku. Szkolenia wstępne ruszają w poniedziałek, a dział operacyjny już ustawił grafiki dla nowych osób.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0052",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "g.jastrzebska@hurtownia-zielona.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg sieci Zielona Hurtownia – plan współpracy",
+      "sentAt": "2027-01-29T12:50:00.000Z",
+      "body": "Szanowna Pani Genowefo,\n\nw nawiązaniu do naszej rozmowy przesyłam plan współpracy na pierwszy rok kontraktu: harmonogram dostaw, zasady rozliczeń i pierwsze propozycje rabatów. Proszę o informację, czy plan współpracy jest przez Panią zatwierdzony, czy wymaga zmian po Państwa stronie.\n\nSzczegółowe liczby dla przetargu przekażę Pani do 11 lutego, razem z kalkulacją kosztów dla każdej grupy produktów.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    },
+    {
+      "id": "s-0054",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "tomasz.brzezinski@meblodrew.test",
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Reklamacje i uszkodzone dostawy",
+      "sentAt": "2027-01-31T14:26:00.000Z",
+      "body": "Szanowni Panowie,\n\ninformuję, że postępowanie reklamacyjne zostało zamknięte. Szczegóły są w poprzedniej korespondencji poniżej.\n\nTomasz napisał:\n> Panie Prezesie, zdjęcia uszkodzonych palet są w załączniku.\n\nWiktor napisał:\n> Panie Tomaszu, sprawa trafiła do działu jakości.",
+      "threadSubjects": [
+        "Reklamacje i uszkodzone dostawy",
+        "Re: Reklamacje i uszkodzone dostawy"
+      ]
+    },
+    {
+      "id": "s-0055",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "tomasz.brzezinski@meblodrew.test"
+      ],
+      "cc": [],
+      "subject": "Re: Umowy i cenniki sprzedaży",
+      "sentAt": "2027-01-28T13:35:00.000Z",
+      "body": "Szanowny Panie Tomaszu,\n\ndziękuję za przesłane uwagi do cennika. Zmiany w grupie mebli kuchennych zostały wprowadzone, a rabat progresywny został przeliczony dla trzech progów zamówień. Został jeden punkt, który zależy od Państwa decyzji. Czy zamierzają Państwo zamawiać w tym roku więcej niż 800 palet, tak jak zakładał Pański wstępny plan? Proszę o odpowiedź na to pytanie, bo od tego zależy próg rabatu.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": [
+        "Umowy i cenniki sprzedazy",
+        "Re: Umowy i cenniki sprzedazy"
+      ]
+    },
+    {
+      "id": "s-0056",
+      "from": "Wiktor Szalewski <wiktor.szalewski@kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacje i uszkodzone dostawy – dalsze kroki",
+      "sentAt": "2027-01-26T07:57:00.000Z",
+      "body": "Cześć Halina,\n\nprzejrzałem raport z reklamacji za ostatni tydzień. Liczba zgłoszeń spadła, a koszty są niższe niż w zeszłym miesiącu. Decyzję w sprawie reklamacji z grudnia, które wciąż czekają na rozstrzygnięcie, przekażę Ci do wtorku. Do tego czasu sprawy są wstrzymane po stronie finansowej.\n\nPozdrawiam | Wiktor Szalewski | Prezes Zarzadu | Kordelan Dystrybucja",
+      "threadSubjects": []
+    }
+  ]
+}

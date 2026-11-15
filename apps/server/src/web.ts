@@ -4,7 +4,7 @@ import { onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { orgPlanHooks, settingsDeps } from "./composition";
+import { orgPlanHooks, settingsDeps, uidplusOf } from "./composition";
 import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
@@ -15,6 +15,7 @@ import {
   queueMailboxRemovedNotices,
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
+import { delegationHooks } from "./modules/delegation";
 import {
   createMailOAuthClients,
   getSentSyncView,
@@ -363,7 +364,10 @@ export function apiRouters(
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
-    api.route("/", approvalRoutes({ db, now, sendScope: extras.sendScope }));
+    api.route(
+      "/",
+      approvalRoutes({ db, now, sendScope: extras.sendScope, hooks: delegationHooks({ db }), uidplus: uidplusOf(db) })
+    );
   };
 }
 

@@ -107,6 +107,7 @@ export {
   expireSentTexts,
   insertSentEmails,
   listPendingSentTexts,
+  listSentMessageIds,
   writeSentText,
   type NewSentEmail,
   type SentContent,
