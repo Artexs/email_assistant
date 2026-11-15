@@ -26,7 +26,7 @@ Owner (PD-030, 2026-11-13): "we can't rely on users to confirm any values there,
 - **D4** `n` = acted-on mails in the sample, `k` = those the category would move. `n < 50` → `no_result`; upper ≤ 0.02 → `pass`; `k/n > 0.02` → `fail`; else `inconclusive`. Only `fail` blocks: at `k = 0` the upper bound needs `n ≥ 189`, so P3 alone would block most mailboxes, against P1 (Q2).
 - **D5** Eligible = non-provisional global `go`, history not `fail`, no active trip, real-label gate not `no-go` at ≥ 30 labels. Recommended = eligible and D3. "Set anyway" stays (`forced`). With `trust_ladder` off, the old gate stays.
 - **D6** Acted-on = `\Answered` or `\Flagged`, or feedback with true category `urgent`/`needs_reply`. Sent signals wait for E5a.
-- **D7** Each `auto` on stores a `CategoryGrant`. Triage uses `effectiveAutoFor`: a key mismatch is `auto` off at once. A pre-F110 grant counts as `openai/gpt-6-luna/none/classifier-v2/standard` (stage 04 checks).
+- **D7** Each `auto` on stores a `CategoryGrant`. Triage uses `effectiveAutoFor`: a key mismatch is `auto` off at once. A pre-F110 `auto` has no grant: it counts as matching until the first re-gate run stamps the running key (`legacy`), so the deploy changes nothing.
 - **D8** Re-gate job (always on): on a mismatch, eligible under the new key → grant `regate`; else `auto` off, trip `model_switch`, one notice. `forced` grants are never re-granted. Queue a history check; a stale `fail` blocks until a newer check ends.
 - **D9** Correction = feedback `wrong` (any source) on a mail whose `move` for that category applied after the grant. Trip at ≥ 2 in 7 days, or 1 with true category `urgent`/`needs_reply` (Q3). A trip turns `auto` off until the user turns it on.
 - **D10** History backfill stores mail `skipped` / `history_check`: no digest, action, daily cap or requeue. INBOX only. Reuse the newest `triage_results`; else classify with the triage hard rules, classifier and thresholds.
@@ -98,7 +98,7 @@ Web stages (13, 14, 15, 18, 20, 22) add before `echo`: `&& bun run web:build > /
 - 04 [Grant and gate](stages/stage-04-grant-and-gate.md) `[risky]`; needs 02, 03
 - 05 [History backfill](stages/stage-05-history-backfill.md) `[risky]`; needs 03
 - 06 [History job](stages/stage-06-history-job.md) `[risky]`; needs 05
-- 07 [History classify](stages/stage-07-history-classify.md) `[risky]`; needs 02, 06
+- 07 [History classify](stages/stage-07-history-classify.md) `[risky]`; needs 02, 06, 10
 - 08 [Re-gate](stages/stage-08-regate.md) `[risky]`; needs 04, 07, 10
 - 09 [Tripwire](stages/stage-09-tripwire.md) `[risky]`; needs 04, 10
 - 10 [Trust notices](stages/stage-10-trust-notices.md); needs 03
@@ -121,7 +121,7 @@ Web stages (13, 14, 15, 18, 20, 22) add before `echo`: `&& bun run web:build > /
 ## How to run (coordinator)
 
 - Worker `claude-sonnet-5-5`, `--prepare 'bash scripts/limen-prepare.sh'`, ticket in `active/` first.
-- Lanes after 01: {02}, {03→05→06→07}, {16→17}, {20}; then by "Needs". Never build 03 or 21 next to another migration.
+- Lanes after 01: {02}, {03→10→05→06→07}, {16→17}, {20}; then by "Needs". Never build 03 or 21 next to another migration.
 - Land with the `spec/build.md` land check; drop job DBs. Stage 25: the coordinator. 21–23 can be cut.
 
 ## Planning progress
