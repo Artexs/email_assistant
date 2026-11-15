@@ -55,7 +55,7 @@ flowchart LR
     A3 --> J5
 ```
 
-Small jobs (not in the picture): `actions.expiry` (hourly, S4), `platform.retention` (daily at 02:40, S6a; composed in `apps/server/src/retention.ts`), `channels.operator` (hourly at minute 13, S6a), `platform.heartbeat` (every 5 min).
+Small jobs (not in the picture): `actions.expiry` (hourly, S4), `platform.retention` (daily at 02:40, S6a; composed in `apps/server/src/retention.ts`), `channels.operator` (hourly at minute 13, S6a), `ops.slo` (every 5 min at second 30, F114; `modules/operator`, [operations.md](capabilities/operations.md)), `platform.heartbeat` (every 5 min).
 
 Why:
 
