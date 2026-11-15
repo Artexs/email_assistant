@@ -1,5 +1,5 @@
 // Row reader of the urgent notice time (M5). Every table is joined with its own `org_id` filter; no subject, no text.
-import type { UrgentNoticeRow, WeekQuery } from "@ea/core";
+import { quietHoursOf, type QuietHours, type UrgentNoticeRow, type WeekQuery } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -55,7 +55,14 @@ export interface UrgentCandidate {
   // The first sent `urgent` notice of the mail.
   noticeAt: Date | null;
   timeZone: string;
+  // The quiet hours that count for the wait (F110 stage 18, Q18). With a sent notice: the hours of the user of the sent
+  // row that gave `noticeAt`. Without one: the hours of the user of each pending or sending urgent row (an empty list:
+  // no row yet, so the default applies). A user with no hours of their own gives the default. The caller turns the
+  // flag `user_quiet_hours` off per organization by using the default for all.
+  quiet: QuietHours[];
 }
+
+const quietSchema = z.object({ start: z.string().nullable(), end: z.string().nullable() });
 
 const candidateSchema = z.object({
   email_id: z.string(),
@@ -64,6 +71,8 @@ const candidateSchema = z.object({
   start_at: z.date(),
   notice_at: z.date().nullable(),
   time_zone: z.string(),
+  notice_quiet: quietSchema.nullable(),
+  pending_quiet: z.array(quietSchema),
 });
 
 /**
@@ -84,7 +93,22 @@ export async function listUrgentCandidates(
         SELECT MIN(o.sent_at) FROM outbox o
         WHERE o.org_id = emails.org_id AND o.email_id = emails.id AND o.kind = 'urgent' AND o.status = 'sent'
       ) AS notice_at,
-      organizations.timezone AS time_zone
+      organizations.timezone AS time_zone,
+      (
+        SELECT jsonb_build_object('start', m.quiet_start, 'end', m.quiet_end)
+        FROM outbox o
+        LEFT JOIN memberships m ON m.org_id = o.org_id AND m.user_id = o.user_id
+        WHERE o.org_id = emails.org_id AND o.email_id = emails.id AND o.kind = 'urgent' AND o.status = 'sent'
+        ORDER BY o.sent_at, o.id
+        LIMIT 1
+      ) AS notice_quiet,
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object('start', m.quiet_start, 'end', m.quiet_end) ORDER BY o.created_at, o.id)
+        FROM outbox o
+        LEFT JOIN memberships m ON m.org_id = o.org_id AND m.user_id = o.user_id
+        WHERE o.org_id = emails.org_id AND o.email_id = emails.id AND o.kind = 'urgent'
+          AND o.status IN ('pending', 'sending')
+      ), '[]'::jsonb) AS pending_quiet
     FROM emails
     JOIN mailboxes ON mailboxes.id = emails.mailbox_id AND mailboxes.org_id = emails.org_id
     JOIN organizations ON organizations.id = emails.org_id
@@ -123,6 +147,9 @@ export async function listUrgentCandidates(
       startAt: row.start_at,
       noticeAt: row.notice_at,
       timeZone: row.time_zone,
+      quiet: (row.notice_at === null ? row.pending_quiet : row.notice_quiet === null ? [] : [row.notice_quiet]).map(
+        (hours) => quietHoursOf(hours.start, hours.end)
+      ),
     };
   });
 }

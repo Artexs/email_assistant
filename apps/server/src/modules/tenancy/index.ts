@@ -1,6 +1,7 @@
 export { configureFeatures, featureSettings, featureStates, featureStatesOfAll, isFeatureOn } from "./features";
 export {
   getBreakGlassUserId,
+  getMemberNotify,
   getMembership,
   getOrganization,
   getOrgFeature,
@@ -18,10 +19,14 @@ export {
   listOrganizations,
   listOrgFeatureRows,
   listOrgFeatureRowsOfAll,
+  listQuietHoursOf,
   setDigestTimes,
+  setMemberQuietHours,
+  setMemberReportChannel,
   setUserLocale,
   setUserTerms,
   upsertOrgFeature,
+  type MemberNotify,
   type MembershipWithUser,
   type OrganizationRow,
   type OrgPlanState,

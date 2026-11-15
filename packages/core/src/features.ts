@@ -133,6 +133,18 @@ export const featureFlags = {
     epic: "E4-B",
     removeBy: "2027-03-01",
   },
+  user_quiet_hours: {
+    default: false,
+    description: "Each member sets their own quiet hours: their notices wait until those hours end.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
+  report_mail: {
+    default: false,
+    description: "A member can get the digest and the trust reports by mail in their own inbox.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

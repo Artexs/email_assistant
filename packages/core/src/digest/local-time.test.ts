@@ -10,6 +10,7 @@ import {
   localToInstant,
   QUIET_HOURS,
   quietEnd,
+  quietHoursOf,
 } from "./local-time";
 
 const TZ = "Europe/Warsaw";
@@ -159,5 +160,60 @@ describe("lateMin", () => {
     expect(lateMin(new Date("2026-10-24T18:00:00Z"), new Date("2026-10-25T07:00:00Z"), TZ)).toBe(180);
     // A range that crosses the repeated local hour (02:00 to 03:00 happens twice) lies inside the night: all quiet.
     expect(lateMin(new Date("2026-10-25T00:30:00Z"), new Date("2026-10-25T02:30:00Z"), TZ)).toBe(0);
+  });
+});
+
+// F110 stage 18: the quiet hours of one member (tests 1 to 4 of the stage).
+describe("own quiet hours", () => {
+  const night = { start: "23:00", end: "06:00" };
+  // 2026-11-06 is CET (UTC+1): local HH:MM = UTC HH:MM + 1 h.
+  const at = (utc: string): Date => new Date(`2026-11-06T${utc}:00Z`);
+
+  test("1. hours 23:00–06:00: 22:30 is not quiet, 23:30 is, and the end is 06:00 the next day", () => {
+    expect(isQuietTime(at("21:30"), TZ, night)).toBe(false); // 22:30
+    expect(isQuietTime(at("22:30"), TZ, night)).toBe(true); // 23:30
+    expect(iso(quietEnd(at("22:30"), TZ, night))).toBe("2026-11-07T05:00:00.000Z"); // 06:00 on the 7th
+    // The default holds the 22:30 notice that the own hours let through.
+    expect(isQuietTime(at("21:30"), TZ)).toBe(true);
+  });
+
+  test("2. hours 09:00–17:00 (day quiet): 12:00 is quiet, 18:00 is not", () => {
+    const day = { start: "09:00", end: "17:00" };
+    expect(isQuietTime(at("11:00"), TZ, day)).toBe(true); // 12:00
+    expect(isQuietTime(at("17:00"), TZ, day)).toBe(false); // 18:00
+    expect(iso(quietEnd(at("11:00"), TZ, day))).toBe("2026-11-06T16:00:00.000Z"); // 17:00 the same day
+  });
+
+  test("3. start equal to end is never quiet", () => {
+    const none = { start: "10:00", end: "10:00" };
+    for (const utc of ["00:00", "09:00", "12:00", "23:59"]) expect(isQuietTime(at(utc), TZ, none)).toBe(false);
+    expect(lateMin(at("00:00"), at("12:00"), TZ, none)).toBe(720);
+  });
+
+  test("4. DST: the end of the default hours from 01:30 local is 07:00 local on the day of each change", () => {
+    // 2026-03-29 spring forward: 01:30 CET (00:30Z) to 07:00 CEST (05:00Z) is 4 h 30 min of real time.
+    const spring = new Date("2026-03-29T00:30:00Z");
+    expect(localDateTime(spring, TZ).time).toBe("01:30");
+    expect(iso(quietEnd(spring, TZ))).toBe("2026-03-29T05:00:00.000Z");
+    expect(quietEnd(spring, TZ).getTime() - spring.getTime()).toBe(270 * 60_000);
+    // 2026-10-25 fall back: the first 01:30 is CEST (23:30Z the day before); 07:00 CET is 06:00Z: 6 h 30 min.
+    const autumn = new Date("2026-10-24T23:30:00Z");
+    expect(localDateTime(autumn, TZ).time).toBe("01:30");
+    expect(iso(quietEnd(autumn, TZ))).toBe("2026-10-25T06:00:00.000Z");
+    expect(quietEnd(autumn, TZ).getTime() - autumn.getTime()).toBe(390 * 60_000);
+  });
+
+  test("lateMin takes the own hours: the same wait is late for 22:00–07:00 and not for 21:00–08:00", () => {
+    // Mail at 21:30 local (20:30Z), notice at 08:00 local (07:00Z).
+    const from = at("20:30");
+    const to = new Date("2026-11-07T07:00:00Z");
+    expect(lateMin(from, to, TZ, { start: "21:00", end: "08:00" })).toBe(0);
+    expect(lateMin(from, to, TZ)).toBe(30 + 60);
+  });
+
+  test("quietHoursOf: both null is the default; a pair is taken as it is", () => {
+    expect(quietHoursOf(null, null)).toBe(QUIET_HOURS);
+    expect(quietHoursOf("23:00", "06:00")).toEqual(night);
+    expect(quietHoursOf("10:00", "10:00")).toEqual({ start: "10:00", end: "10:00" });
   });
 });

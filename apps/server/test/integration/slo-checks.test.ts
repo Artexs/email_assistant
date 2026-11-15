@@ -3,6 +3,7 @@ import type { Transaction } from "kysely";
 
 import { recordLlmCall } from "../../src/modules/audit";
 import { checkLlmErrors, checkSyncLag, checkUrgentLatency } from "../../src/modules/operator";
+import { upsertOrgFeature } from "../../src/modules/tenancy";
 import { loadConfig, sloThresholds } from "../../src/platform/config";
 import type { DB } from "../../src/platform/db";
 
@@ -198,7 +199,7 @@ async function sentNotice(
   org: { orgId: string; userId: string },
   emailId: string,
   sentAt: Date,
-  opts: { kind?: string; status?: string; userId?: string } = {}
+  opts: { kind?: string; status?: string; userId?: string; key?: string } = {}
 ) {
   await trx
     .insertInto("outbox")
@@ -206,7 +207,7 @@ async function sentNotice(
       org_id: org.orgId,
       user_id: opts.userId ?? org.userId,
       kind: opts.kind ?? "urgent",
-      dedup_key: `${opts.kind ?? "urgent"}:${emailId}`,
+      dedup_key: `${opts.kind ?? "urgent"}:${emailId}${opts.key === undefined ? "" : `:${opts.key}`}`,
       email_id: emailId,
       text: "Urgent",
       buttons: "[]",
@@ -630,6 +631,107 @@ describe("LLM errors", () => {
       const reading = await checkLlmErrors(trx, NOW, cfg);
       expect(reading.check.facts.quota_orgs).toBe(0);
       expect(reading.check.state).toBe("clear");
+    });
+  });
+});
+
+// F110 stage 18 (Q18): with `user_quiet_hours` on, the wait leaves out the own quiet hours of the user of the notice.
+// 2026-11-19 is CET (UTC+1): local time is UTC + 1 h.
+describe("urgent latency with own quiet hours", () => {
+  const LONG_NIGHT = { quiet_start: "21:00", quiet_end: "08:00" };
+  const DAY_BEFORE = "2026-11-19";
+
+  async function setHours(trx: Trx, orgId: string, userId: string, hours: typeof LONG_NIGHT | null) {
+    await trx
+      .updateTable("memberships")
+      .set(hours ?? { quiet_start: null, quiet_end: null })
+      .where("org_id", "=", orgId)
+      .where("user_id", "=", userId)
+      .execute();
+  }
+
+  async function flag(trx: Trx, org: { orgId: string; userId: string }, enabled: boolean) {
+    await upsertOrgFeature(
+      trx,
+      { orgId: org.orgId },
+      { flag: "user_quiet_hours", enabled, setBy: org.userId, setAt: NOW }
+    );
+  }
+
+  // Urgent mail at 21:30 local (20:30Z the day before NOW), on an organization whose mailbox changed before it.
+  async function lateMail(trx: Trx) {
+    const org = await urgentOrg(trx);
+    await setMailbox(trx, org.mailboxId, { status_changed_at: at("08:00", "2026-11-18") });
+    const emailId = await urgentMail(trx, org, { receivedAt: at("20:30", DAY_BEFORE) });
+    return { org, emailId };
+  }
+
+  const NOW_0730 = at("07:30", "2026-11-20");
+  const started = at("00:00", DAY_BEFORE);
+  const check = (trx: Trx) => checkUrgentLatency(trx, NOW_0730, cfg, started, noTestMail);
+
+  test("6. hours 21:00–08:00 and a notice at 08:00 local: 0 minutes late, clear; the flag off: 90 minutes, firing", async () => {
+    await inRollback(async (trx) => {
+      const { org, emailId } = await lateMail(trx);
+      await setHours(trx, org.orgId, org.userId, LONG_NIGHT);
+      await sentNotice(trx, org, emailId, at("07:00", "2026-11-20"));
+      await flag(trx, org, true);
+      expect((await check(trx)).check).toEqual({
+        kind: "slo_urgent_latency",
+        state: "clear",
+        facts: { mails: 0, max_wait_min: 0 },
+      });
+      await flag(trx, org, false);
+      const off = await check(trx);
+      expect(off.check.state).toBe("firing");
+      expect(off.check.facts).toEqual({ mails: 1, max_wait_min: 90 });
+    });
+  });
+
+  test("6b. two pending rows (users 21:00–08:00 and default), no sent row, now 08:30 local: the smaller wait counts", async () => {
+    await inRollback(async (trx) => {
+      const { org, emailId } = await lateMail(trx);
+      await setHours(trx, org.orgId, org.userId, LONG_NIGHT);
+      const otherId = await addMember(trx, org.orgId);
+      await flag(trx, org, true);
+      await sentNotice(trx, org, emailId, at("20:31", DAY_BEFORE), { status: "pending" });
+      await sentNotice(trx, org, emailId, at("20:31", DAY_BEFORE), {
+        status: "pending",
+        userId: otherId,
+        key: "other",
+      });
+      const reading = await check(trx);
+      // Own hours: 08:00 to 08:30 is 30 minutes. The default hours would give 30 + 90 = 120.
+      expect(reading.check.state).toBe("firing");
+      expect(reading.check.facts).toEqual({ mails: 1, max_wait_min: 30 });
+      await flag(trx, org, false);
+      expect((await check(trx)).check.facts).toEqual({ mails: 1, max_wait_min: 120 });
+    });
+  });
+
+  test("6c. the user of the sent row gives the hours, not another member's pending row", async () => {
+    await inRollback(async (trx) => {
+      const { org, emailId } = await lateMail(trx);
+      const otherId = await addMember(trx, org.orgId);
+      await setHours(trx, org.orgId, otherId, LONG_NIGHT);
+      await flag(trx, org, true);
+      // The owner (default hours) got the notice at 08:00 local; the other member has a pending row with long hours.
+      await sentNotice(trx, org, emailId, at("07:00", "2026-11-20"));
+      await sentNotice(trx, org, emailId, at("20:31", DAY_BEFORE), {
+        status: "pending",
+        userId: otherId,
+        key: "other",
+      });
+      expect((await check(trx)).check.facts).toEqual({ mails: 1, max_wait_min: 90 });
+    });
+  });
+
+  test("6d. no outbox row yet: the default hours count, also with the flag on", async () => {
+    await inRollback(async (trx) => {
+      const { org } = await lateMail(trx);
+      await setHours(trx, org.orgId, org.userId, LONG_NIGHT);
+      await flag(trx, org, true);
+      expect((await check(trx)).check.facts).toEqual({ mails: 1, max_wait_min: 120 });
     });
   });
 });

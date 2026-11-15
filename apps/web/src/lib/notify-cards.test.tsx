@@ -1,0 +1,101 @@
+/// <reference types="bun" />
+import type { Me, NotifyView } from "@ea/core/web";
+import { describe, expect, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
+
+import { QuietHoursCard, ReportChannelCard } from "../components/settings/NotifyCards";
+import { MeContext } from "../components/shell/MeProvider";
+import { setLocaleForTest, t } from "../i18n";
+
+// Only `organization` matters to the cards (`canWrite`).
+const me = { organization: { plan: "active" } } as unknown as Me;
+const MAILBOX = "0190f5a0-0000-7000-8000-000000000003";
+
+const view = (over: Partial<NotifyView> = {}): NotifyView => ({
+  quietStart: null,
+  quietEnd: null,
+  reportChannel: "telegram",
+  reportMailboxId: null,
+  mailboxes: [{ id: MAILBOX, address: "boss@x.test" }],
+  telegramLinked: true,
+  ...over,
+});
+
+function render(node: React.ReactNode): string {
+  const value = { me, error: null, loading: false, reload: () => undefined };
+  return renderToStaticMarkup(<MeContext.Provider value={value}>{node}</MeContext.Provider>);
+}
+
+describe("QuietHoursCard", () => {
+  setLocaleForTest("en");
+
+  test("no own hours: the default times and the default note", () => {
+    const html = render(<QuietHoursCard view={view()} timeZone="Europe/Warsaw" onSaved={() => undefined} />);
+    expect(html).toContain('data-card="quiet-hours"');
+    expect(html).toContain('value="22:00"');
+    expect(html).toContain('value="07:00"');
+    expect(html).toContain(t("notify_quiet_default_note"));
+    // Nothing changed and nothing own to reset: both buttons are off.
+    expect(html.match(/<button[^>]*disabled=""/g)).toHaveLength(2);
+  });
+
+  test("own hours show as they are, without the default note; the reset button is on", () => {
+    const html = render(
+      <QuietHoursCard
+        view={view({ quietStart: "23:00", quietEnd: "06:00" })}
+        timeZone="UTC"
+        onSaved={() => undefined}
+      />
+    );
+    expect(html).toContain('value="23:00"');
+    expect(html).toContain('value="06:00"');
+    expect(html).not.toContain(t("notify_quiet_default_note"));
+    expect(html.match(/<button[^>]*disabled=""/g)).toHaveLength(1);
+  });
+
+  test("equal times show the no-quiet-hours note", () => {
+    const html = render(
+      <QuietHoursCard
+        view={view({ quietStart: "10:00", quietEnd: "10:00" })}
+        timeZone="UTC"
+        onSaved={() => undefined}
+      />
+    );
+    expect(html).toContain(t("notify_quiet_same_note"));
+  });
+});
+
+describe("ReportChannelCard", () => {
+  setLocaleForTest("en");
+
+  test("telegram only: no mailbox list, no warning when Telegram is linked", () => {
+    const html = render(<ReportChannelCard view={view()} onSaved={() => undefined} />);
+    expect(html).toContain('data-card="report-channel"');
+    expect(html).not.toContain('id="report-mailbox"');
+    expect(html).not.toContain(t("notify_telegram_unlinked"));
+  });
+
+  test("mail with a mailbox shows the list with the stored mailbox and no Telegram warning", () => {
+    const html = render(
+      <ReportChannelCard
+        view={view({ reportChannel: "mail", reportMailboxId: MAILBOX, telegramLinked: false })}
+        onSaved={() => undefined}
+      />
+    );
+    expect(html).toContain('id="report-mailbox"');
+    expect(html).toContain("boss@x.test");
+    expect(html).not.toContain(t("notify_telegram_unlinked"));
+  });
+
+  test("both without a linked chat warns; mail with no active mailbox shows the alert", () => {
+    const both = render(
+      <ReportChannelCard view={view({ reportChannel: "both", telegramLinked: false })} onSaved={() => undefined} />
+    );
+    expect(both).toContain(t("notify_telegram_unlinked"));
+    const none = render(
+      <ReportChannelCard view={view({ reportChannel: "mail", mailboxes: [] })} onSaved={() => undefined} />
+    );
+    expect(none).toContain(t("notify_no_mailbox"));
+    expect(none).not.toContain('id="report-mailbox"');
+  });
+});

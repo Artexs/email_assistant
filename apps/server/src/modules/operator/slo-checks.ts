@@ -1,4 +1,4 @@
-import { lateMin, type SloCheck, type SloKind, type SloThresholds } from "@ea/core";
+import { lateMin, QUIET_HOURS, type QuietHours, type SloCheck, type SloKind, type SloThresholds } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -8,7 +8,7 @@ import { createLog, type Log } from "../../platform/log";
 import { countLlmCallOutcomesSince, latestLlmPause } from "../audit";
 import { listUrgentCandidates } from "../channels";
 import { listLaggingMailboxes, type TestMailRule } from "../mail";
-import { listOrganizations } from "../tenancy";
+import { isFeatureOn, listOrganizations } from "../tenancy";
 
 // F114 stage 02: the service-level checks that read the database. They read every organization that is not `suspended` and
 // return numbers and ids only. A reading holds no address, subject or text; the ids are UUIDs of mailboxes, mails or
@@ -75,12 +75,24 @@ export async function checkUrgentLatency(
   });
   const late: { emailId: string; waitMin: number }[] = [];
   const badZoneOrgs = new Set<string>();
+  const ownHours = new Map<string, boolean>();
+  // F110 stage 18 (Q18): with `user_quiet_hours` on, the wait leaves out the quiet hours of the user of the notice. With
+  // several pending rows (no notice yet) the smallest wait counts: one user may already have got the notice.
+  const hoursOf = async (mail: (typeof candidates)[number]): Promise<QuietHours[]> => {
+    let on = ownHours.get(mail.orgId);
+    if (on === undefined) {
+      on = await isFeatureOn(db, { orgId: mail.orgId }, "user_quiet_hours");
+      ownHours.set(mail.orgId, on);
+    }
+    return on && mail.quiet.length > 0 ? mail.quiet : [QUIET_HOURS];
+  };
   for (const mail of candidates) {
     if (badZoneOrgs.has(mail.orgId)) continue;
     if (mail.noticeAt !== null && mail.noticeAt.getTime() < now.getTime() - SLO_URGENT_LATE_MEMORY_MS) continue;
     let waitMin: number;
     try {
-      waitMin = lateMin(mail.startAt, mail.noticeAt ?? now, mail.timeZone);
+      const end = mail.noticeAt ?? now;
+      waitMin = Math.min(...(await hoursOf(mail)).map((hours) => lateMin(mail.startAt, end, mail.timeZone, hours)));
     } catch {
       // `Intl` throws a RangeError for a time zone it does not know. One organization must not fail the whole reading.
       badZoneOrgs.add(mail.orgId);

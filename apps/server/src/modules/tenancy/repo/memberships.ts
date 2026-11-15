@@ -1,4 +1,4 @@
-import { membershipRoleSchema, type MembershipRole } from "@ea/core";
+import { membershipRoleSchema, reportChannelSchema, type MembershipRole } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
@@ -98,4 +98,80 @@ export async function setDigestTimes(
     .where("user_id", "=", userId)
     .executeTakeFirst();
   return result.numUpdatedRows === 1n;
+}
+
+export interface MemberNotify {
+  quiet_start: string | null;
+  quiet_end: string | null;
+  report_channel: "telegram" | "mail" | "both";
+  report_mailbox_id: string | null;
+}
+
+export async function getMemberNotify(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string
+): Promise<MemberNotify | undefined> {
+  const row = await db
+    .selectFrom("memberships")
+    .select(["quiet_start", "quiet_end", "report_channel", "report_mailbox_id"])
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  return row && { ...row, report_channel: reportChannelSchema.parse(row.report_channel) };
+}
+
+// The row of the caller only: the user id comes from the session, never from a body.
+export async function setMemberQuietHours(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  hours: { start: string; end: string } | null
+): Promise<boolean> {
+  const result = await db
+    .updateTable("memberships")
+    .set({ quiet_start: hours?.start ?? null, quiet_end: hours?.end ?? null })
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+export async function setMemberReportChannel(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  input: { channel: "telegram" | "mail" | "both"; mailboxId: string | null }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("memberships")
+    .set({ report_channel: input.channel, report_mailbox_id: input.mailboxId })
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+// The sender reads the quiet hours of the users of one claimed batch with one query (stage 18). It walks all
+// organizations, as `claimDueOutbox` does; the pair `(org_id, user_id)` is the key. A user without a row is not in the map.
+export async function listQuietHoursOf(
+  db: Db | Transaction<DB>,
+  pairs: readonly { orgId: string; userId: string }[]
+): Promise<Map<string, { start: string; end: string }>> {
+  const hours = new Map<string, { start: string; end: string }>();
+  if (pairs.length === 0) return hours;
+  const rows = await db
+    .selectFrom("memberships")
+    .select(["org_id", "user_id", "quiet_start", "quiet_end"])
+    .where("user_id", "in", [...new Set(pairs.map((pair) => pair.userId))])
+    .where("org_id", "in", [...new Set(pairs.map((pair) => pair.orgId))])
+    .where("quiet_start", "is not", null)
+    .where("quiet_end", "is not", null)
+    .execute();
+  for (const row of rows) {
+    if (row.quiet_start !== null && row.quiet_end !== null) {
+      hours.set(`${row.org_id}:${row.user_id}`, { start: row.quiet_start, end: row.quiet_end });
+    }
+  }
+  return hours;
 }

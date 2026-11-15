@@ -19,6 +19,11 @@ export interface QuietHours {
 // P4: no notices from 22:00 to 07:00 in the organization time zone. A change is a code change.
 export const QUIET_HOURS: QuietHours = { start: "22:00", end: "07:00" };
 
+// The quiet hours of a member row (F110 P5): both columns null means the default; equal start and end means none.
+export function quietHoursOf(start: string | null, end: string | null): QuietHours {
+  return start === null || end === null ? QUIET_HOURS : { start, end };
+}
+
 interface LocalParts {
   year: number;
   month: number;

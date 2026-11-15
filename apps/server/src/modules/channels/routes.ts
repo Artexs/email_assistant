@@ -1,4 +1,5 @@
 import {
+  notifyPatchSchema,
   TELEGRAM_CONSENT_VERSION,
   telegramConsentBodySchema,
   telegramLinkBodySchema,
@@ -15,6 +16,7 @@ import { auditEvents, recordAudit } from "../audit";
 
 import { channelDocs } from "./api-docs";
 import { createLinkToken, unlinkUser } from "./linking";
+import { changeNotify, notifyViewOf } from "./notify-settings";
 import { getChatLinkForUser } from "./repo";
 import { telegramErrorFields } from "./telegram/errors";
 
@@ -103,6 +105,23 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     const { userId } = c.get("session");
     await unlinkUser(deps.db, ctx, userId, deps.now(), { actor: userId });
     return c.body(null, 204);
+  });
+
+  // F110 stage 18: the own quiet hours and report channel. The row is the one of the session user: no body names another.
+  app.get("/me/notify", channelDocs.getNotify, async (c) => {
+    const view = await notifyViewOf(deps.db, c.get("ctx"), c.get("session").userId);
+    if (view === undefined) return c.json({ error: "not_found" }, 404);
+    return c.json(view);
+  });
+
+  // A group of keys needs its flag: quiet hours `user_quiet_hours`, the channel `report_mail`; with the flag off a write is a 404.
+  app.patch("/me/notify", channelDocs.patchNotify, async (c) => {
+    const ctx = c.get("ctx");
+    const { userId } = c.get("session");
+    const body = await parseBody(c, notifyPatchSchema);
+    const result = await changeNotify(deps.db, ctx, userId, body, deps.now());
+    if (result.kind !== "ok") return c.json({ error: result.kind }, result.kind === "no_mailbox" ? 409 : 404);
+    return c.json(result.view);
   });
 
   return app;
