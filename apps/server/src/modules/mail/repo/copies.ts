@@ -157,3 +157,33 @@ export async function listMoveCandidates(
   }
   return result;
 }
+
+/** A stored row at a UID of one folder: the identity fields the caller compares. */
+export interface FolderRowAtUid {
+  id: string;
+  uid: number;
+  message_id_header: string | null;
+  content_hash: string;
+  from_address: string | null;
+  received_at: Date;
+}
+
+// The rows that hold one of `uids` in `folder`, of any identity (the caller compares). [] for an empty list (no query).
+export async function listFolderRowsAtUids(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  folder: string,
+  uids: readonly number[]
+): Promise<FolderRowAtUid[]> {
+  if (uids.length === 0) return [];
+  const rows = await db
+    .selectFrom("emails")
+    .select(["id", "uid", "message_id_header", "content_hash", "from_address", "received_at"])
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("folder", "=", folder)
+    .where("uid", "in", [...uids])
+    .execute();
+  return rows.map((row) => ({ ...row, uid: Number(row.uid) }));
+}

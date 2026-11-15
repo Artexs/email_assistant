@@ -35,9 +35,11 @@ export {
 export { getCredentials, insertCredentials, updateCredentials } from "./credentials";
 export {
   findCopies,
+  listFolderRowsAtUids,
   listFolderUids,
   listMoveCandidates,
   listRecentlyMoved,
+  type FolderRowAtUid,
   type MoveCandidateRow,
   type MovedRow,
 } from "./copies";

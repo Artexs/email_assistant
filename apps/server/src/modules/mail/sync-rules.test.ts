@@ -1,13 +1,15 @@
 import { describe, expect, test } from "bun:test";
 
 import type { FolderMessageMeta, MessageMeta } from "./port";
-import type { MoveCandidateRow, MovedRow } from "./repo";
+import type { FolderRowAtUid, MoveCandidateRow, MovedRow } from "./repo";
 import {
   baseDedupKey,
   CHECK_FOLDER_MAX_CANDIDATES,
   contentHash,
   copyDedupKey,
+  decideBelowCursorCopy,
   decideIncoming,
+  dropHeldMetas,
   filterAboveCursor,
   isDeleted,
   matchMoved,
@@ -641,5 +643,108 @@ describe("matchMoved", () => {
     const noId = meta({ messageId: null });
     const row = goneRow("e1", 10, { message_id_header: null, content_hash: contentHash(noId) });
     expect(matchMoved([withFlags({ uid: 10, messageId: null })], [row])).toEqual([{ emailId: "e1", uid: 10 }]);
+  });
+});
+
+describe("decideBelowCursorCopy", () => {
+  const NOW = new Date("2026-11-10T12:00:00Z");
+  const none = new Map<string, string>();
+  const r1 = copy({ id: "r1", key: BASE, folder: "AI/Info", uid: 40 });
+  const decide = (copies: KnownCopy[], matched: ReadonlyMap<string, string> = none) =>
+    decideBelowCursorCopy({ folder: "INBOX", uid: 10, rowId: "r1", baseKey: BASE, copies, matched, now: NOW });
+
+  test("1.1 one moved row gives store with copy number 2", () => {
+    expect(decide([r1])).toEqual({ kind: "store", dedupKey: `${BASE}#2` });
+  });
+
+  test("1.2 the copy number counts every known copy", () => {
+    const copies = [
+      r1,
+      copy({ id: "r2", key: `${BASE}#2`, folder: "AI/Spam", uid: 41 }),
+      copy({ id: "r3", key: `${BASE}#3`, folder: "Oferty", uid: 42 }),
+    ];
+    expect(decide(copies)).toEqual({ kind: "store", dedupKey: `${BASE}#4` });
+  });
+
+  test("1.3 a fresh move marker gives move_in_flight; an old one is a leftover", () => {
+    const withMarker = (ageMs: number) => [
+      r1,
+      copy({
+        id: "r2",
+        key: `${BASE}#2`,
+        folder: "AI/Spam",
+        uid: 41,
+        movePendingAt: new Date(NOW.getTime() - ageMs),
+      }),
+    ];
+    expect(decide(withMarker(3_600_000))).toEqual({ kind: "move_in_flight", emailId: "r2" });
+    expect(decide(withMarker(25 * 3_600_000))).toEqual({ kind: "store", dedupKey: `${BASE}#3` });
+  });
+
+  test("1.4 another row at the hit uid in any folder is held; the moved row itself is not", () => {
+    const other = copy({ id: "r2", key: `${BASE}#2`, folder: "Oferty", uid: 10 });
+    expect(decide([r1, other])).toEqual({ kind: "held", emailId: "r2" });
+    expect(decide([copy({ id: "r1", key: BASE, folder: "AI/Info", uid: 10 })])).toEqual({
+      kind: "store",
+      dedupKey: `${BASE}#2`,
+    });
+  });
+
+  test("1.5 a copy matched in another folder is a cross_copy; in S it is not", () => {
+    const r2 = copy({ id: "r2", key: `${BASE}#2`, folder: "AI/Spam", uid: 41 });
+    expect(decide([r1, r2], new Map([["r2", "Oferty"]]))).toEqual({ kind: "cross_copy", emailId: "r2" });
+    expect(decide([r1, r2], new Map([["r2", "INBOX"]]))).toEqual({ kind: "store", dedupKey: `${BASE}#3` });
+    const run = copy({ id: `run:${BASE}#2`, key: `${BASE}#2`, folder: "INBOX", uid: 50 });
+    expect(decide([r1, run], new Map([[run.id, "Oferty"]]))).toEqual({ kind: "cross_copy", emailId: run.id });
+  });
+
+  test("1.6 a fresh marker wins over held", () => {
+    const r2 = copy({
+      id: "r2",
+      key: `${BASE}#2`,
+      folder: "Oferty",
+      uid: 10,
+      movePendingAt: new Date(NOW.getTime() - 3_600_000),
+    });
+    expect(decide([r1, r2])).toEqual({ kind: "move_in_flight", emailId: "r2" });
+  });
+
+  test("held wins over cross_copy", () => {
+    const r2 = copy({ id: "r2", key: `${BASE}#2`, folder: "Oferty", uid: 10 });
+    expect(decide([r1, r2], new Map([["r2", "Oferty"]]))).toEqual({ kind: "held", emailId: "r2" });
+  });
+});
+
+describe("dropHeldMetas", () => {
+  const metas = [10, 11, 12].map((uid) => meta({ uid }));
+  const heldRow = (uid: number, overrides: Partial<FolderRowAtUid> = {}): FolderRowAtUid => ({
+    id: "h1",
+    uid,
+    message_id_header: "<a1@example.test>",
+    content_hash: contentHash(meta()),
+    from_address: "boss@example.test",
+    received_at: new Date("2026-11-03T10:05:00Z"),
+    ...overrides,
+  });
+  const uids = (list: readonly MessageMeta[]) => list.map((m) => m.uid);
+
+  test("1.7 drops a meta that a row of the same identity holds at its uid", () => {
+    expect(uids(dropHeldMetas(metas, [heldRow(11)]))).toEqual([10, 12]);
+  });
+
+  test("keeps a meta when the row at its uid has another Message-ID", () => {
+    expect(uids(dropHeldMetas(metas, [heldRow(11, { message_id_header: "<other@example.test>" })]))).toEqual([
+      10, 11, 12,
+    ]);
+  });
+
+  test("keeps all metas when the row holds another uid", () => {
+    expect(uids(dropHeldMetas(metas, [heldRow(13)]))).toEqual([10, 11, 12]);
+  });
+
+  test("keeps the order and gives a new array when nothing is held", () => {
+    const result = dropHeldMetas(metas, []);
+    expect(uids(result)).toEqual([10, 11, 12]);
+    expect(result).not.toBe(metas);
   });
 });
