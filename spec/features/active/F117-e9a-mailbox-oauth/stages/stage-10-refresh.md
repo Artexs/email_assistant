@@ -62,3 +62,11 @@ Part of [`../plan.md`](../plan.md). `[risky]` (data integrity, auth). Needs stag
 - An SMTP 421 to AUTH becomes `MailAuthError` (nodemailer raises EAUTH for any non-2xx reply to AUTH). Do not turn a temporary 421 into `protocol_disabled` or `oauth_revoked`: check the reply code before you set a reason.
 - nodemailer sends a second AUTH with the same token after a 334 challenge, so one refused login counts as two failures at the provider. Refresh the token before you open the sender.
 - imapflow prefers OAUTHBEARER over XOAUTH2 when the server offers both.
+
+## Carry-over from the F117 stage 09 review
+
+Source: `review-9.md` (N5, N6).
+
+- **Lock order.** Reconnect (`apply.ts`) takes the advisory lock first (`withMailboxOAuthLock`), then the row lock (`lockMailbox`, FOR UPDATE). The refresh must take them in the same order: advisory lock, then the row. A refresh that takes the row first can deadlock with a Reconnect. Add a two-connection test that runs both at once.
+- **Token cache.** `apiPublicRouters` (`web.ts`) passes no `oauthTokens`, so a Reconnect drops no cached access token. Wire the real cache `drop` through `WebExtras.mailOAuthLogin.oauthTokens`, and add a test that a Reconnect drops the cache.
+- **Optional hardening (decide in this stage).** Reconnect tests the login at the hosts stored on the mailbox row. No code path changes those hosts after the insert, so today they equal `client.spec`. Decide: check that the stored hosts equal the `client.spec` hosts at Reconnect (refuse with `oauth_failed` if not), or keep the stored hosts and write why.
