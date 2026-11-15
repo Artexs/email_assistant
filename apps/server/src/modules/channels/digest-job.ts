@@ -78,8 +78,36 @@ async function scheduleForLink(
   if (slot === null) return;
 
   const periodStart = await digestPeriodStart(db, ctx, { userId, linkedAt }, now);
-  const periodEnd = now;
+  const outboxId = await queueDigest(db, link, {
+    slot,
+    periodStart,
+    now,
+    timeZone,
+    testMail,
+    webBaseUrl,
+  });
+  if (outboxId === null) return;
+  log.info("digest_queued", { slot: slot.key, user_id: userId, outbox_id: outboxId });
+}
 
+// The queue transaction of one digest: the digest row (one per member and slot), the text, the outbox row and the marks of the
+// loops that the text named. null = the slot has a row already. Exported for the race tests of the brief.
+export async function queueDigest(
+  db: Db | Transaction<DB>,
+  link: LinkedChat,
+  input: {
+    slot: { key: string; date: string; time: string };
+    periodStart: Date;
+    now: Date;
+    timeZone: string;
+    testMail: TestMailRule;
+    webBaseUrl: string | undefined;
+  }
+): Promise<string | null> {
+  const { orgId, userId } = link;
+  const ctx = { orgId };
+  const { slot, periodStart, now, timeZone, testMail, webBaseUrl } = input;
+  const periodEnd = now;
   const queue = async (trx: Transaction<DB>): Promise<string | null> => {
     const digestId = await insertDigest(trx, ctx, { userId, slotKey: slot.key, periodStart, periodEnd });
     if (digestId === null) return null;
@@ -118,9 +146,7 @@ async function scheduleForLink(
     await markBriefShown(trx, ctx, { ...shown, at: now });
     return outboxId;
   };
-  const outboxId = await (db.isTransaction ? queue(db as Transaction<DB>) : db.transaction().execute(queue));
-  if (outboxId === null) return;
-  log.info("digest_queued", { slot: slot.key, user_id: userId, outbox_id: outboxId });
+  return db.isTransaction ? queue(db as Transaction<DB>) : db.transaction().execute(queue);
 }
 
 // Never throws. One member that fails does not stop the next one.
