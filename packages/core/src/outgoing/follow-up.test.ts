@@ -1,7 +1,7 @@
 // F116 stage 10 step 1: the follow-up kind, its template and its message.
 import { describe, expect, test } from "bun:test";
 
-import { draftPayloadSchema, sendPayloadFor, type DraftPayload } from "../triage/payloads";
+import { draftPayloadSchema, sendPayloadFor, sendRecipients, type DraftPayload } from "../triage/payloads";
 
 import { buildOutgoingMessage, FOLLOW_UP_REFERENCES_MAX, type BuildInput } from "./message";
 import { formatSentDate, QUOTE_MAX_CHARS, quoteSent } from "./quote";
@@ -146,5 +146,14 @@ describe("follow-up message", () => {
       cc: ["jan@example.test", "ewa@example.test"],
       loop_id: LOOP,
     });
+  });
+
+  test("everyone who gets the mail is the To, then the Cc, each address once", () => {
+    expect(sendRecipients({ to: ["a@x.test"] })).toEqual(["a@x.test"]);
+    expect(sendRecipients({ to: ["a@x.test", "b@x.test"], cc: ["c@x.test", "B@X.test", "a@x.test"] })).toEqual([
+      "a@x.test",
+      "b@x.test",
+      "c@x.test",
+    ]);
   });
 });

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -29,10 +31,11 @@ import {
   type ClaimFilter,
 } from "../../src/modules/actions";
 import { countApprovals, listAwaitingSendIds, listUnseenApprovalSends } from "../../src/modules/actions/repo";
+import { insertMailbox } from "../../src/modules/mail/repo";
 import { findOpenActions } from "../../src/modules/privacy/dsr-match";
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
+import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 
@@ -98,6 +101,32 @@ describe("a loop-anchored pair is invisible to the readers of mail", () => {
       const forB = await claimActions(trx, b.ctx, b.mailboxId, { ...CLAIM, limit: 50 });
       expect(forB.map((row) => row.id).sort()).toEqual([theirLoop.draftId, theirs.draftId].sort());
       expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "none" } })).toBe(1);
+    });
+  });
+
+  test("claim (stage 10): a loop of another mailbox of the same organization is not claimed", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await side(trx);
+      const siblingId = randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: siblingId,
+        address: `sibling-${siblingId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: { drafts: "Drafts" },
+      });
+      const mineLoop = await insertLoopRow(trx, a, a.mailboxId);
+      const siblingLoop = await insertLoopRow(trx, a, siblingId);
+      const mine = await insertLoopActionPair(trx, a, mineLoop, { createdAt: ago(HOUR) });
+      const sibling = await insertLoopActionPair(trx, a, siblingLoop, { createdAt: ago(HOUR) });
+      const claimed = await claimActions(trx, a.ctx, a.mailboxId, { ...CLAIM, limit: 50 });
+      expect(claimed.map((row) => row.id)).toEqual([mine.draftId]);
+      expect((await countClaimable(trx, a.ctx, siblingId, CLAIM)).total).toBe(1);
+      const forSibling = await claimActions(trx, a.ctx, siblingId, { ...CLAIM, limit: 50 });
+      expect(forSibling.map((row) => row.id)).toEqual([sibling.draftId]);
     });
   });
 

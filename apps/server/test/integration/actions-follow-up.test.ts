@@ -15,7 +15,9 @@ import {
   type ClaimedAction,
   type SendLimitHit,
 } from "../../src/modules/actions";
-import { sentOriginOf } from "../../src/modules/actions";
+import { isOwnActionId, sentOriginOf } from "../../src/modules/actions";
+import { heldReason, type HeldReasonDeps } from "../../src/modules/channels";
+import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
 import { loopHooks } from "../../src/modules/loops";
 import { composeMessage, setSentSync } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
@@ -27,7 +29,7 @@ import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { captureLogs, logProblems } from "../log-capture";
 
-import { createOrgWithMailbox, pauseOtherMailboxes } from "./fixtures";
+import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 import { depsOf as sentDepsOf, newOrg, put } from "./mail-sent-fixtures";
@@ -526,10 +528,14 @@ describe("T9 the Sent copy of a follow-up is the system's own mail", () => {
       expect(await sentOriginOf(trx, s.ctx, s.mailboxId, done.draftId)).toBe("system");
       expect(await sentOriginOf(trx, s.ctx, s.mailboxId, done.sendId)).toBe("system");
       expect(await sentOriginOf(trx, s.ctx, s.mailboxId, waiting.draftId)).toBe("draft");
+      // The header of a Sent copy names the draft: it is an own action of this mailbox only.
+      expect(await isOwnActionId(trx, s.ctx, s.mailboxId, done.draftId)).toBe(true);
       // Another mailbox, another organization: null.
       const other = await createOrgWithMailbox(trx);
       expect(await sentOriginOf(trx, { orgId: other.orgId }, other.mailboxId, done.draftId)).toBeNull();
       expect(await sentOriginOf(trx, s.ctx, other.mailboxId, done.draftId)).toBeNull();
+      expect(await isOwnActionId(trx, s.ctx, other.mailboxId, done.draftId)).toBe(false);
+      expect(await isOwnActionId(trx, { orgId: other.orgId }, s.mailboxId, done.draftId)).toBe(false);
     });
   });
 
@@ -681,6 +687,66 @@ describe("the recipients come from the loop only, and the scope covers the Cc", 
     });
   });
 
+  test("an approved send to an address outside the loop ends bad_payload even when its draft is applied", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await prepare(trx);
+      const p = await followUp(trx, s, { draftStatus: "applied", sendStatus: "approved" });
+      const stranger = { ...p.draftPayload, to: ["stranger@x.test"], cc: [] };
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify(stranger) })
+        .where("id", "=", p.draftId)
+        .execute();
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify(sendPayloadFor(stranger)) })
+        .where("id", "=", p.sendId)
+        .execute();
+      await committerOf(trx, s, { now: NOW }).run();
+      expect(s.sender.sent).toHaveLength(0);
+      expect(await row(trx, p.sendId)).toMatchObject({ status: "failed", status_reason: "bad_payload" });
+    });
+  });
+
+  test("SEND_SCOPE self: a payload with a Cc that is not a list is never claimed and does not break the claim", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await prepare(trx);
+      const p = await followUp(trx, s, { draftStatus: "applied", sendStatus: "approved" });
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ kind: "follow_up", to: [MARKERS.anna], cc: MARKERS.jan, loop_id: p.loopId }) })
+        .where("id", "=", p.sendId)
+        .execute();
+      const claimed = await claimActions(trx, s.ctx, s.mailboxId, {
+        now: NOW,
+        limit: 20,
+        staleBefore: new Date(NOW.getTime() - 10 * MINUTE),
+        filter: { mailbox: { kind: "all" }, send: { kind: "self", addresses: [MARKERS.anna, MARKERS.jan] } },
+      });
+      expect(claimed.map((entry) => entry.id)).toEqual([]);
+    });
+  });
+
+  test("the held reason of a send names the scope when a Cc is outside the list", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const mail = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
+        sendStatus: "approved",
+        approved: { userId: s.userId, at: at(-1) },
+        to: MARKERS.anna,
+      });
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ kind: "delegation", to: [MARKERS.anna], cc: [MARKERS.jan] }) })
+        .where("id", "=", mail.sendId)
+        .execute();
+      const only: HeldReasonDeps = { db: trx, sendScope: { kind: "self", addresses: [MARKERS.anna] } };
+      expect(await heldReason(only, s.ctx, mail.sendId)).toBe("scope");
+      const both: HeldReasonDeps = { db: trx, sendScope: { kind: "self", addresses: [MARKERS.anna, MARKERS.jan] } };
+      expect(await heldReason(both, s.ctx, mail.sendId)).toBeUndefined();
+    });
+  });
+
   test("SEND_SCOPE self: a Cc outside the list holds the follow-up; with every address listed it goes out", async () => {
     await withRollback(db, async (trx) => {
       const s = await prepare(trx);
@@ -716,6 +782,41 @@ describe("onFollowUpSent", () => {
         at: NOW,
       });
       expect((await loopOf(trx, p.loopId)).follow_ups_sent).toBe(2);
+    });
+  });
+
+  test("a short wait setting never makes the next follow-up due before 3 working days", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await insertDefaultSettings(trx, s.ctx, s.mailboxId);
+      await trx
+        .updateTable("mailbox_settings")
+        .set({ loop_wait_days: 1 })
+        .where("mailbox_id", "=", s.mailboxId)
+        .execute();
+      expect((await getMailboxSettings(trx, s.ctx, s.mailboxId))?.loop_wait_days).toBe(1);
+      const p = await followUp(trx, s);
+      await loopHooks().onFollowUpSent(trx, s.ctx, {
+        loopId: p.loopId,
+        sendId: p.sendId,
+        messageId: "<f@x.test>",
+        at: NOW,
+      });
+      expect((await loopOf(trx, p.loopId)).due_at.toISOString()).toBe("2026-11-25T16:00:00.000Z");
+      // A long setting wins: 5 working days after Friday 20 Nov is Friday 27 Nov.
+      await trx
+        .updateTable("mailbox_settings")
+        .set({ loop_wait_days: 5 })
+        .where("mailbox_id", "=", s.mailboxId)
+        .execute();
+      const q = await followUp(trx, s);
+      await loopHooks().onFollowUpSent(trx, s.ctx, {
+        loopId: q.loopId,
+        sendId: q.sendId,
+        messageId: "<g@x.test>",
+        at: NOW,
+      });
+      expect((await loopOf(trx, q.loopId)).due_at.toISOString()).toBe("2026-11-27T16:00:00.000Z");
     });
   });
 
