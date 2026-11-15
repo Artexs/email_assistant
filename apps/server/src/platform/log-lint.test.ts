@@ -137,6 +137,16 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
+    "a template literal in scripts fails",
+    async () => {
+      expect(
+        await logEventSeverities("apps/server/src/scripts/__log-fixture.ts", "log.info(`x ${y}`);", "../platform/log")
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
     "an old-form line in main.ts fails",
     async () => {
       expect(

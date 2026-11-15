@@ -246,10 +246,10 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
   Create a long-lived timer, interval, socket or pool at start, outside any context: it keeps the context it was created in.
 - Format: the server prints `json` by default (its config) and the VPS pins `LOG_FORMAT: json` (`deploy/compose.yaml`). `text` prints `[module] event key=value …` (dev, `.env.example`).
   A process that does not load the config (a CLI, a test) prints `text` unless `LOG_FORMAT=json`. Tests run in `text` (the test preload).
-- Lint: `no-restricted-syntax` in `eslint.config.js` (`logEventSelectors`) warns on any other log call in `apps/server/src`, and fails in the converted files (`platform/`, `main.ts`).
+- Lint: `no-restricted-syntax` in `eslint.config.js` (`logEventSelectors`) warns on any other log call in `apps/server/src`, and fails in the converted files (`platform/`, `main.ts`, `scripts/`).
   E8a converts the modules one by one, moves each to the `error` block, and flips the rest at the end. A new log line in any file is an event from now on.
 - `docs/known-alerts.md` keys the entries of event lines by the event code.
-- CLI scripts (`apps/server/src/scripts/`) print to the operator's terminal through `createCliOutput(name)` (`platform/cli.ts`): `print` to stdout, `fail` to stderr, `[name] text`, always text. It is not a log line. Only scripts import it.
+- CLI scripts (`apps/server/src/scripts/`) print to the operator's terminal through `createCliOutput(name)` (`platform/cli.ts`): `print` to stdout, `fail` to stderr, `[name] text`, always text. It is not a log line. Only scripts import it. `scripts/` is at lint error for old-form lines. A script may log a failure as an event line (`org_delete_refused`); free text goes through `createCliOutput`.
 
 ## Style
 
