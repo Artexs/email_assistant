@@ -1,12 +1,12 @@
 import { parseArgs } from "node:util";
 
 import { createOrganizationWithOwner } from "../modules/tenancy";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
-const log = createLog("org-create");
+const out = createCliOutput("org-create");
 
 const usage =
   "usage: bun run org:create --org-name <name> --email <email> --display-name <name> [--timezone <tz, default Europe/Warsaw>] [--plan trial|active, default trial] [--trial-days N, default 30, trial only]";
@@ -57,7 +57,7 @@ function isUniqueViolation(error: unknown): boolean {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -67,13 +67,13 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     const { orgId, userId } = await createOrganizationWithOwner(db, options);
     const trialEndsAt = options.plan.kind === "trial" ? options.plan.endsAt.toISOString() : "-";
-    log.info(`created org ${orgId} user ${userId} plan ${options.plan.kind} trial_ends_at ${trialEndsAt}`);
+    out.print(`created org ${orgId} user ${userId} plan ${options.plan.kind} trial_ends_at ${trialEndsAt}`);
     return 0;
   } catch (error) {
     if (isUniqueViolation(error)) {
-      log.error("user with this email already exists");
+      out.fail("user with this email already exists");
     } else {
-      log.error(`failed: ${describeError(error)}`);
+      out.fail(`failed: ${describeError(error)}`);
     }
     return 1;
   } finally {
@@ -84,6 +84,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

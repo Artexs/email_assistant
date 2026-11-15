@@ -30,6 +30,7 @@ export {
 export { resolveSsoMember } from "./sso-resolve";
 export {
   getSsoState,
+  normalizeMailDomain,
   removeSsoProvider,
   setSsoProvider,
   type RemoveSsoProviderResult,

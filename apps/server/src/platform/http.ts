@@ -16,6 +16,7 @@ import { isAllowedAuthPath } from "./auth";
 import { type Db, type TenantContext, withoutTenantScope, withTenantScope } from "./db";
 import { errorFields } from "./errors";
 import { createLog, withLogContext } from "./log";
+import { OPENAPI_PATH, openApiSpec } from "./openapi";
 
 const log = createLog("http");
 
@@ -391,6 +392,9 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   api.use("/operator/*", requireOperator);
   api.use("*", refuseSuspendedWrites);
   web.routers?.(api);
+  // Inside the session and tenant guards. The file is built once, from the whole app, at the first request.
+  let spec: ReturnType<typeof openApiSpec> | undefined;
+  api.get(OPENAPI_PATH.slice("/api".length), async (c) => c.json(await (spec ??= openApiSpec(app))));
   api.all("*", (c) => c.json({ error: "not_found" }, 404));
   app.route("/api", api);
 

@@ -343,3 +343,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the numbers show a real gap, but production change needs a measured win.
 - Undo: `spec/features/planned/F109-e3b-improve/questions.md` Q1, Q4–Q9, Q18 give the other option and its change.
 - Source: `spec/features/planned/F109-e3b-improve/questions.md`.
+
+### 2026-11-15 · Phishing flag stays off: the sim holdout misses the non-phishing flag-rate target by definition (F109) · scope · new
+- Choice: the first measurement of the suspicious-mail rules on the sim holdout (one run, rules unchanged) gives recall 21 of 21, 0 of 315 whitelisted cases flagged, and 67 of 1392 (4.8%) non-phishing cases flagged against the target of at most 2%. All 67 are plain spam from the one phishing persona (`billing@paliwa-fiota.test`) with a look-alike domain, so they count as non-phishing only because their slot has no `phishing_*` tag. By persona, 0 of 1325 other senders are flagged. Per the Q4 rule the `suspicious_mail` flag stays off. No second holdout run is made.
+- Why: the written target is missed, and the sim has one phishing persona, so recall mostly tests one rule (`lookalike_domain`).
+- Undo: change the definition of "phishing" in `eval-suspicious.ts` to the persona group and rerun the dev part only; a flag turn-on for the pilot organization is a later owner decision after real mail shows the rate.
+- Source: `notes/2026-11-15-f109-s05-suspicious-measurement.md`, `evals/results/2026-11-15-sim-lab-01-holdout-suspicious.md`, `spec/features/active/F109-e3b-improve/questions.md` Q4.
+
+### 2026-11-15 · Private model: one endpoint per deployment, own model on the owner's PC, https rule (F111) · privacy · new
+- Choice: one LLM endpoint per deployment, set by the operator in env, not one per organization; the VPS pilot keeps the US API. This differs from the wording of ADR 0035 decision 1 and the E11 epic page ("EU default for every org except the pilot"), but follows PD-101; stage 06 rewrites the ADR to match (Q1). The own-model runs use the owner's PC (AMD RX 6950 XT, 16 GB), which needs `sudo pacman -S ollama-rocm` (owner step O2); fallback is a rented GPU for at most $5 (Q2). The endpoint URL must be `https`; plain `http` only to loopback or a one-label container host; a remote host counts as an own server only with `OPENAI_ENDPOINT_KIND=own`; hosted compatible APIs (Azure, OpenRouter) are refused (Q5). The second candidate model is `gemma3:12b` (Q3). If OpenAI does not answer, stage 07 waits and the coordinator asks again 30 days after O1 (Q4).
+- Why: one endpoint per deployment is the smallest safe design; the PC GPU is free; a strict URL rule stops a stray env var from redirecting mail text.
+- Undo: `spec/features/planned/F111-e11b-private-model-option/questions.md` Q1–Q5; a per-organization endpoint needs a stage before 07 after the PD-110 second pass.
+- Source: `spec/features/planned/F111-e11b-private-model-option/questions.md`.

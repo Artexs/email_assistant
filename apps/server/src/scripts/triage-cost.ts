@@ -4,12 +4,12 @@ import { costPerMail, DEFAULT_MAILS_PER_DAY, llmPrices, monthlyCost } from "@ea/
 import { z } from "zod";
 
 import { listUsageSince, type MailKind, type UsageRow } from "../modules/triage";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 
-const log = createLog("triage-cost");
+const cli = createCliOutput("triage-cost");
 
 const usage = "usage: bun run triage:cost --org-id <uuid> --mailbox-id <uuid> [--days 7] [--mail real|synthetic]";
 
@@ -108,7 +108,7 @@ function reportModel(model: string, rows: UsageRow[], days: number): void {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    cli.fail(usage);
     return 1;
   }
 
@@ -133,7 +133,7 @@ async function main(): Promise<number> {
     out("Rows without a model (blocklist, triage_error, llm_blocked) are not counted.");
     return 0;
   } catch (error) {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -143,6 +143,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", describeError(error));
+    cli.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });

@@ -6,27 +6,37 @@ opened: 2026-11-13
 
 ## Outcome
 
-E11b Private model option: the Stage 2 ticket in row 17 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 5 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E11-contacts-and-context.md` and its discovery notes `docs/product/stage-2/epics/E11-discovery-notes.md`; the planning job turns them into stages.
+An operator can send the LLM calls to the OpenAI EU endpoint or to an own OpenAI-compatible model server with one setting, and every call is priced by where it ran. Two open models have published holdout numbers and an install guide, so the privacy claims of the product rest on evidence (vision: "EU location before any outside user's mail"). Row 17 of `docs/product/stage-2/05-execution-plan.md` §2.1; the epic is `docs/product/stage-2/epics/E11-contacts-and-context.md`.
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- `OPENAI_BASE_URL` with a start check and an endpoint kind (`standard`, `eu`, `own`) for the `openai` provider; hosted third-party APIs are refused.
+- The endpoint in `llm.call` rows, in the cost readers, and in the gate files of the E2a holdout.
+- A spike on a real Ollama server, and a chat-completions path only if the spike fails.
+- Holdout runs of two own models on the owner's PC, the install guide, and ADR 0035 accepted.
+- The EU check and run after OpenAI answers, or the recorded fallback.
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- A per-organization endpoint (plan P1, Q1).
+- The Vertex AI adapter (F076, the fallback ticket).
+- Any change to the VPS env or a deploy.
+- The security page and the legal sub-processor texts (E10, F107): only the seam.
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- See `plan.md` § Done when (4 checks); each stage file has its own tests and Proof.
+
+## Slices
+
+One worker job per stage, in order: 01 → 02 → 03 → 04 (only if 01 fails) → 05 → 06 → 07. Stage 01 may run next to stage 02. No migration, no `bun.lock` change. Owner stops: before 05 (O2) and before 07 (O1, O3). Detail: `plan.md` § How to run.
 
 ## Sequenced
 
 - Plan after: none (planning may run ahead of the build).
-- Build after: E2a (landed, in `spec/features/done/`).
-- Gate: Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage
+- Build after: F097 (E2a Offline lab, in `spec/features/done/`).
+- Gate: Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage (stage 07). Owner step O2 (`ollama-rocm` or a rented GPU) before stage 05.
 
 ## Notes
 
-Source row: §2.1 # 17. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+Source row: §2.1 # 17. Defaults: `questions.md`. Scout packets: `scouts.md`.
