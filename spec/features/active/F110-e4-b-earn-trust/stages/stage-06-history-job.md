@@ -54,3 +54,7 @@ Part of [`../plan.md`](../plan.md). Risk: exactly-once, crash and repeat, two ru
 ## Out of scope
 
 The classify step and the result (stage 07).
+
+## Carry-over from stage 05 review
+
+- N5: historyRefusalBeforeOpen does not check the mailbox status; decide whether a paused, auth_error or host_blocked mailbox stops the history read; pass oauthTokens to backfillMailbox; CursorMovedError is a retry that costs no attempt (review-5.md).
