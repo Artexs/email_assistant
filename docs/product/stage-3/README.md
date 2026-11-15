@@ -34,3 +34,27 @@ Questions:
 - Assistant agent with voice in Telegram and the mobile app: `docs/product/stage-2/02-inventory-and-roadmap.md` §14.
 - The EA (assistant) role with its own flow and review: `docs/product/stage-2/03-product-frame.md` and `04-review-result.md` R8.
 - Calendar and meetings, native mobile app: `03-product-frame.md` non-goals.
+
+## 3. Support and help agent (owner, 2026-11-16)
+
+Status: wishlist. Needs a product decision and a planning session before any ticket.
+
+Problem: the owner does not know if the product has a support contact, documentation or tutorials. A user has no place to ask "how does this work?".
+
+Idea:
+
+1. A pipeline gathers documentation from the codebase (`docs/capabilities/`, `docs/product-brief.md`, ADRs, UI text) into one help corpus. It rebuilds when the code or docs change.
+2. One help agent runs in the background. It reads only that corpus and answers user questions.
+3. The same agent serves every surface: the web app, the website, and Telegram (text messages and voice notes).
+
+Questions for the planning session:
+
+- Which docs are user-facing, and which stay internal? The corpus must not leak internal decisions, secrets or other organizations' data.
+- Retrieval method: full-text search, embeddings, or the docs in the model context (the corpus may be small enough).
+- What happens when the agent does not know? Options: a support contact, a ticket, or a hand-off to the owner.
+- Voice notes: reuse the voice path of the assistant agent (§2, first item).
+- Cost and limits: does a help question count against `LLM_DAILY_CAP` or a tier (§1)?
+- Language: the answer follows the language of the question.
+- Does the web app also need static tutorials and a support contact page, apart from the agent?
+
+Related: §2 (assistant agent with voice), `docs/capabilities/`.
