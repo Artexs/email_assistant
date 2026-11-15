@@ -199,6 +199,32 @@ describe("not_triaged detector (F109 stage 15)", () => {
     });
   });
 
+  test("TG1: a VIP sender with one pending and one triaged mail: only the pending mail gets a notice", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await vip(trx, o);
+      const waiting = await pending(trx, o);
+      await pending(trx, o, { status: "triaged" });
+      await tick(trx, NOW, { pause: trippedPause(NOW, 3 * MINUTE), scope: allMail });
+      const rows = await notTriagedRows(trx, o.orgId);
+      expect(rows).toHaveLength(2);
+      expect(new Set(rows.map((row) => row.email_id))).toEqual(new Set([waiting]));
+    });
+  });
+
+  test("TG2: a sender on a whitelist and a blocklist rule gets a notice (the whitelist wins)", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await vip(trx, o, CEO, "whitelist");
+      await insertSenderRule(trx, o.ctx, { mailboxId: null, pattern: "corp.test", kind: "blocklist" });
+      await pending(trx, o);
+      await tick(trx, NOW, { pause: trippedPause(NOW, 3 * MINUTE), scope: allMail });
+      expect(await notTriagedRows(trx, o.orgId)).toHaveLength(2);
+    });
+  });
+
   test("(4) no pause: no row; two trips (5 then 10 min) 14 min ago: still paused, since = the first trip", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
