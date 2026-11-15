@@ -42,6 +42,7 @@ export {
   unlinkUser,
   type ConsumeResult,
 } from "./linking";
+export { consentVersionsOf } from "./consent";
 export { channelRoutes, type ChannelRouteDeps } from "./routes";
 export { approvalRoutes, type ApprovalRouteDeps } from "./approval-routes";
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";

@@ -1,3 +1,4 @@
+import { OPEN_LOOPS_CONSENT_SINCE, TELEGRAM_CONSENT_VERSION } from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { en, enPlurals, type PluralKey, type TextKey } from "./en";
@@ -135,5 +136,23 @@ describe("the Telegram consent text", () => {
   test("names the attachments in both languages", () => {
     expect(en.tg_consent_text).toContain("names (or file types) and sizes of their attachments");
     expect(pl.tg_consent_text).toContain("nazwy (lub typy plików) i rozmiary ich załączników");
+  });
+
+  // Loop lines and follow-up cards carry recipients, the ask and the promise (F116 stage 17): the text ends with a sentence about them.
+  test("T6 ends with the open-loops sentence in both languages", () => {
+    expect(en.tg_consent_text).toEndWith(
+      "If you turn on open loops: who you wait for (addresses from your sent mail), a short line of what you asked or promised, and follow-up drafts with their recipients."
+    );
+    expect(pl.tg_consent_text).toEndWith(
+      "Jeśli włączysz otwarte sprawy: na kogo czekasz (adresy z wysłanej poczty), krótką linię o tym, o co prosisz lub co obiecujesz, oraz szkice przypomnień z ich adresatami."
+    );
+  });
+
+  test("T7 the current version is not older than the open-loops version", () => {
+    expect(TELEGRAM_CONSENT_VERSION >= OPEN_LOOPS_CONSENT_SINCE).toBe(true);
+  });
+
+  test("T7b the open-loops version is newer than the F109 attachment version", () => {
+    expect(OPEN_LOOPS_CONSENT_SINCE > "2026-11-15").toBe(true);
   });
 });
