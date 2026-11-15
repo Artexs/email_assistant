@@ -1,6 +1,6 @@
 # F109 stage 09 — `classifier-v3` dev experiments `[risky]`
 
-Part of [`../plan.md`](../plan.md). Decisions P3, D11, D12. Needs stage 08. LLM spend: **cap $2.00 for the stage**, at most 14 runs, each run `--budget-usd 0.30`. Review before the land.
+Part of [`../plan.md`](../plan.md). Decisions P3, D11, D12. Needs stage 08. LLM spend: **cap $2.00 for the stage**, at most 11 runs (9 in the table, 2 rewrite runs), each `--budget-usd 0.15` (a dev run of v2 costs about $0.08). A run starts only when the spend so far plus its budget stays within the stage cap. Review before the land.
 
 ## Step 1 — Ablation on the dev set
 
@@ -11,13 +11,13 @@ Part of [`../plan.md`](../plan.md). Decisions P3, D11, D12. Needs stage 08. LLM 
 | # | Variant | Times |
 | --- | --- | --- |
 | R1 | `--prompt-version classifier-v2` | 2 |
-| R2 | `classifier-v3`, parts `[]` (attachments only) | 2 |
+| R2 | `classifier-v3`, `--prompt-parts none` (attachments only) | 2 |
 | R3 | `classifier-v3`, `urgency` | 1 |
 | R4 | `classifier-v3`, `history` | 1 |
 | R5 | `classifier-v3`, `list` | 1 |
 | R6 | `classifier-v3`, all winners of R3–R5 | 2 |
 
-Up to 4 more runs for D12 rewrites. Before each run read the month spend ledger; if the run could pass the $20 month cap or the stage cap, stop and report.
+Before each run read the month spend ledger; if the run could pass the $20 month cap or the stage cap, stop and report.
 
 **Decisions (D12, default, owner to confirm, Q5).**
 
@@ -27,7 +27,7 @@ Up to 4 more runs for D12 rewrites. Before each run read the month spend ledger;
 - A part wins when `K(variant)` ≤ mean `K(R2)` − max(4, 2s), and no category loses more than 3 true positives or gains more than 3 false positives against mean R2, and injection passes are not fewer, and the whitelist rule stays all correct.
 - A part that loses may get one rewrite of its rule lines (not of its input section) and one more run; at most 2 rewrites in the stage. A rewrite changes only the part's own text.
 - R6 confirms: mean `K(R6)` must also meet the win margin against mean R2. If R6 fails while single parts won, choose the one part with the lowest `K`.
-- No part wins → the chosen list is `[]` (attachments only).
+- No part wins → `Chosen parts: none` (attachments only).
 - Never read `evals/sim/lab-01/holdout/` and never run `--part holdout` in this stage.
 
 **Output.**

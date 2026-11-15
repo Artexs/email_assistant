@@ -30,11 +30,11 @@ Part of [`../plan.md`](../plan.md). Decisions D5, D9, D17. The only migration of
 4. Insert an outbox row of kind `not_triaged` → ok; kind `xyz` → error.
 5. Migrate down, then up again on the job DB: no error (run once by hand; write the commands in the final message).
 6. The equality test of the code list and the SQL list.
-7. `EXPLAIN` of a count by `mailbox_id` and `from_address` over 90 days uses the new index (assert the plan text names it).
+7. `pg_indexes` holds `emails_mailbox_sender_idx` with the columns above (no `EXPLAIN` assert: a small test DB picks a seq scan).
 
 **Check.** `bun run db:migrate` on the job DB, the new tests, the export-map test, then the Proof.
 
-**Done when.** Tests 1–6 pass; `schema.ts` types match; Proof `PROOF_OK`.
+**Done when.** Tests 1–7 pass; `schema.ts` types match; Proof `PROOF_OK`.
 
 **Out of scope.** Code that writes the columns (stages 03, 07, 15).
 

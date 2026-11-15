@@ -25,16 +25,16 @@ Suspicious mail gets a warning and no delegation draft, attachments show in the 
 
 ## Acceptance
 
-- A sim report of the suspicious-mail rules shows recall ≥ 90% on the planted phishing cases and 0 flags on whitelisted mail of the holdout.
+- A committed holdout report gives the phishing recall, the whitelisted flags and the other-mail flag rate of the rules against the targets of `plan.md` stage 05.
 - With the flag `suspicious_mail` on, a flagged `delegation` mail gets no draft and its notice shows the warning (integration test).
 - A dev report per `classifier-v3` part and one holdout report decide the production prompt; the registry names the prompt that the rule of `plan.md` D13 picked.
 - The escalation dev report states "ship" or "no ship" by `plan.md` D16; escalation runs in triage only after "ship" and with the flag `escalation` on.
 - During an LLM pause, a VIP mail gets one "not triaged yet" notice with the sender only (integration test).
-- All checks of `plan.md` § Done when (8 items) hold.
+- All checks of `plan.md` § Done when (6 items) hold.
 
 ## Slices
 
-16 stages, one worker job each, in the order and lanes of `plan.md` § How to run. Stage 02 is the only migration. Stages 09, 11, 13 and 14 are `[risky]` (LLM spend or production prompt change). Stage 14 builds only when stage 13 says "ship". No owner checkpoint stops the build.
+16 stages, one worker job each, in the order and lanes of `plan.md` § How to run. Stage 02 (the only migration), 09, 11, 13 and 14 are `[risky]` (migration, LLM spend or production prompt change). Stage 14 builds only when stage 13 says "ship". No owner checkpoint stops the build.
 
 ## Sequenced
 

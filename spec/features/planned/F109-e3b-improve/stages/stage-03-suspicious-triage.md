@@ -6,21 +6,22 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 
 **Goal.** One reader gives the `assessSuspicious` context of one mailbox, once per mailbox batch.
 
-**Files.** New `apps/server/src/modules/triage/suspicious-context.ts`; a free-mail list in core next to `suspicious.ts`; config key `MAIL_TRUSTED_AUTHSERV_IDS` (comma list, empty default, lower case) in `platform/config.ts` and `.env.example`.
+**Files.** New `apps/server/src/modules/triage/suspicious-context.ts`; config key `MAIL_TRUSTED_AUTHSERV_IDS` (comma list, empty default, lower case) in `platform/config.ts` and `.env.example`.
 
 **Interface.** `loadSuspiciousContext(db, ctx, mailbox): Promise<SuspiciousContext>` with `isKnown(address): boolean`, `knownDomains`, `protectedNames`, `trustedAuthservIds`.
 
 **Decisions (D4).**
 
-- Known addresses: the organization's mailbox addresses, active delegates, exact-address `whitelist` and `vip` rules (mailbox and organization rules), and frequent senders: an address with ≥ 3 mails in this mailbox in the last 90 days whose latest triage category is not `spam`.
-- Known by domain: the domains of the organization's mailbox addresses, of delegates and of domain rules (`@corp.test` patterns), except free-mail domains (built-in list, at least `gmail.com googlemail.com outlook.com hotmail.com live.com yahoo.com icloud.com interia.pl interia.eu poczta.fm wp.pl o2.pl onet.pl op.pl gazeta.pl tlen.pl proton.me protonmail.com gmx.de gmx.net web.de`). A free-mail domain never makes a sender known; it stays in `knownDomains`, so `gmai1.com` still counts as a look-alike.
-- `knownDomains`: the registrable domains of all known addresses and domain rules.
-- `protectedNames`: delegate names, and the newest `email_headers.from_name` of each exact `vip` address from the last 90 days.
+- Known addresses: the organization's mailbox addresses, active delegates, exact-address `whitelist` and `vip` rules (mailbox and organization), and frequent senders: an address with at least 3 mails in this mailbox in the last 90 days that each have `suspicious_reasons = '{}'` and a newest category other than `spam` (review N1, N15: flagged mail never makes its sender known).
+- Known by domain: the domains of the organization's mailbox addresses, delegates and domain rules (`@corp.test`), except `freeMailDomains` (stage 01).
+- `knownDomains`: the registrable domains of the known addresses and domain rules, but not of frequent senders (a frequent sender's domain never silences `lookalike_domain` for others).
+- `protectedNames`: delegate names, organization member names, and the newest `email_headers.from_name` of each exact `vip` address in the last 90 days (review N16: CEO-fraud names).
+- Accepted limit (stage 16 writes it): mail that forges an own address or own domain counts as known; only `auth_fail` catches it.
 - `trustedAuthservIds`: the registrable domain of the mailbox IMAP host, plus `MAIL_TRUSTED_AUTHSERV_IDS` (D2).
 
 ## Step 2 — Reasons on every triage result
 
-**Goal.** Each `triage_results` row written by the classify path or the blocklist path carries `suspicious_reasons`.
+**Goal.** Each `triage_results` row of the classify or blocklist path carries `suspicious_reasons`, computed before the LLM call (stages 10 and 14 read them).
 
 **Decisions.**
 
@@ -40,22 +41,22 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P8, D2, D4, D5, D6. Needs stag
 - Flag on and reasons not empty and final category `delegation` → no delegation input, an empty plan, no `delegations` row. The category stays `delegation`; the mail stays in INBOX.
 - Other categories keep their plan (a flagged `urgent` mail keeps its notice; warning: stage 04).
 - Flag off → reasons are stored, the plan is unchanged.
-- Whitelist and VIP: the allowed categories do not change (rules of stage 01 give such senders only `auth_fail` or `risky_attachment`).
+- Whitelist and VIP keep their allowed categories.
 
 **Test (integration, fake LLM, fixed values).**
 
-1. Sender `billing@paliwa-fiota.test`, known delegate domain `paliwa-flota.test`, fake answer `delegation`, flag off → reasons `{lookalike_domain}`, delegation draft and row as today.
+1. Sender `billing@paliwa-fiota.test`, delegate domain `paliwa-flota.test`, answer `delegation`, flag off → `{lookalike_domain}`, draft and row as today.
 2. Same with flag on → category `delegation`, no actions, no `delegations` row, mail in INBOX.
 3. Whitelisted sender, attachment `run.exe`, flag on, fake answer `urgent` → reasons `{risky_attachment}`, urgent plan unchanged.
 4. Mail without an `email_headers` row from an unknown sender on a known-domain look-alike → `{lookalike_domain}`; from a plain unknown domain → `{}`.
 5. Blocklisted sender with a `Reply-To` on another domain → spam, `{reply_to_mismatch}`, no LLM call.
-6. Sender with 3 earlier `info` mails in 90 days and a `Reply-To` mismatch → `{}` (known). With 3 earlier `spam` mails → `{reply_to_mismatch}`.
+6. Sender with 3 earlier unflagged `info` mails and a `Reply-To` mismatch → `{}` (known). 3 `spam` then 1 `info` → `{reply_to_mismatch}`. 3 earlier `info` mails each with `{lookalike_domain}` → the 4th still `{lookalike_domain}`.
 7. Mailbox IMAP host `imap.corp.test`, header `mx.corp.test; dmarc=fail` → `{auth_fail}`; header `evil.test; dmarc=fail` → `{}`; with `MAIL_TRUSTED_AUTHSERV_IDS=evil.test` → `{auth_fail}`.
 8. Sender `x@gmai1.com` with known `a@gmail.com` → `{lookalike_domain}`; sender `new@gmail.com` → not known, `{}`.
 9. Org B rules and delegates never reach org A's context.
 
 **Check.** The changed triage tests, then the Proof.
 
-**Done when.** Tests 1–9 pass; for each guard (flag check, `org_id` scope, the known-sender check) the worker removes it, sees its test fail, restores it, and lists it; Proof `PROOF_OK`.
+**Done when.** Tests 1–9 pass; each guard (flag, `org_id` scope, known-sender check) removed once makes its test fail (listed); Proof `PROOF_OK`.
 
 **Out of scope.** Notice texts (stage 04), the sim (stage 05), reply and follow-up drafts (E6a, E5b).

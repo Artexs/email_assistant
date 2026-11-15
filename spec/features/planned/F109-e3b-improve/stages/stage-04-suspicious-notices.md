@@ -4,13 +4,15 @@ Part of [`../plan.md`](../plan.md). Decisions P1, D5, D6. Needs stage 03.
 
 ## Step 1 — `suspiciousReasonsOf`
 
-**Goal.** One reader that E5b (follow-ups), E6a (reply drafts) and E4-B (unsubscribe) call before they draft or act.
+**Goal.** Readers that E5b (follow-ups), E6a (reply drafts) and E4-B (unsubscribe) call before they draft or act.
 
 **Files.** New `apps/server/src/modules/triage/suspicious-repo.ts`, exported through the triage module's public entry (module borders, F086).
 
 **Interface (other tickets use it; keep it).** `suspiciousReasonsOf(db, ctx, emailIds: string[]): Promise<Map<string, SuspiciousReason[]>>` — the reasons of the newest `triage_results` row of each mail; a mail with no row or `{}` is absent from the map. It ignores the flag: callers that block a draft block it with the flag off too (P1 is a safety rule; only the warning text is a flagged UI change).
 
-**Test.** 1. Two rows for one mail, newest `{link_mismatch}` → that list. 2. A mail of org B is absent for org A. 3. Empty input → empty map, no query.
+`suspiciousThreadKeysOf(db, ctx, mailboxId, threadKeys: string[]): Promise<Set<string>>` — the thread keys in which at least one incoming mail's newest result has reasons (E5b's rule is per thread, PD-128).
+
+**Test.** 1. Two rows for one mail, newest `{link_mismatch}` → that list. 2. A mail of org B is absent for org A. 3. Empty input → empty map, no query. 3a. A thread of three mails, only the second flagged → its key is in the set; a thread with an older flagged row but a newest `{}` row on that mail → not in the set.
 
 ## Step 2 — Warning line in Telegram notices
 
@@ -32,16 +34,16 @@ Part of [`../plan.md`](../plan.md). Decisions P1, D5, D6. Needs stage 03.
 6. Integration: flag on, a flagged urgent mail → the queued urgent view holds the codes; flag off → `[]`.
 7. Digest with a flagged `delegation` item → the `no draft` line, no draft line.
 
-## Step 3 — Activity API and panel row
+## Step 3 — Activity API field
 
-**Goal.** The panel's activity row shows the same warning.
+**Goal.** The panel can show the warning later (E4 builds the row; review N21 keeps this stage to one job).
 
-**Decisions.** The activity item of the API gets `suspicious: SuspiciousReason[]` (same flag rule); the web activity row prints the warning with i18n keys for the six codes (texts as in step 2). Add the field to the API schema in `packages/core/src/web/`.
+**Decisions.** The activity item of the API gets `suspicious: SuspiciousReason[]` (same flag rule), in the API schema in `packages/core/src/web/`. No web change in F109.
 
-**Test.** 8. The activity route returns the codes for a flagged mail with the flag on, `[]` with it off. 9. The view helper of the activity row returns the en and pl line for test 4's codes.
+**Test.** 8. The activity route returns the codes for a flagged mail with the flag on, `[]` with it off.
 
 **Check.** The changed unit and integration tests, then the Proof.
 
-**Done when.** Tests 1–9 pass; Proof `PROOF_OK`.
+**Done when.** Tests 1–8 pass; Proof `PROOF_OK`.
 
-**Out of scope.** Attachment line (stage 06), any draft kind other than delegation, unsubscribe (E4-B).
+**Out of scope.** Attachment line (stage 06), the web activity row (E4), other draft kinds, unsubscribe (E4-B).

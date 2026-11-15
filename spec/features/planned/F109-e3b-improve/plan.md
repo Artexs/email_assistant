@@ -11,26 +11,26 @@ Product (owner, "in default values", 2026-11-13; `docs/product/stage-2/decisions
 - **P1 PD-063** Code rules; the flag warns, never moves mail or overrides whitelist or VIP; flagged mail gets no delegation, reply or follow-up draft, no unsubscribe.
 - **P2 PD-064** Attachment name, type, size into the prompt (untrusted) and the summary line; never content.
 - **P3 PD-061** Each work-list item is a `classifier-v3` experiment on the dev set; only what wins and passes the holdout ships.
-- **P4 PD-062** Sender history: counts only; no other mail's text in a prompt.
+- **P4 PD-062** Sender history: counts only, no other mail's text.
 - **P5 PD-060** A stronger model checks only before a hide of a person's mail or on `unsure`; no user setting; only if it closes the gap on the dev set.
 - **P6 PD-067** LLM pause: VIP and whitelisted mail gets "not triaged yet" (sender only).
 - **P7 PD-017** Urgency profile shape from E2a (`urgencyProfileSchema`); E3b stores it and adds the command; E4-B builds the editor.
-- **P8 PD-045, PD-068** New user-visible behaviour ships behind a flag, default off. **P9 PD-030** Labels never unlock `auto`.
+- **P8 PD-045** New user-visible behaviour behind a flag, default off. **P9 PD-030** Labels never unlock `auto`.
 - **P10 Second pass (default, owner to confirm, Q1).** Holdout: `urgent` false-negative rate 14.1%, `needs_reply` 6.2%, M1 target < 2% (`03-product-frame.md` §5). So the PD-060 condition holds: the escalation experiment is built (stages 12–13); stage 14 only on "ship".
 
 Design (detail in the stages):
 
 - **D1 Rules** `assessSuspicious` in core (stage 01), six reason codes; a known sender gets only `auth_fail` and `risky_attachment`. Rejected: an LLM phishing judgement (cost, injection surface).
-- **D2 Trusted `Authentication-Results`** only when its `authserv-id` matches the registrable domain of the mailbox IMAP host or an entry of `MAIL_TRUSTED_AUTHSERV_IDS` (Q2). Rejected: any topmost header (a sender writes one when the host adds none).
+- **D2 Trusted `Authentication-Results`**: its `authserv-id` matches the IMAP host's registrable domain or `MAIL_TRUSTED_AUTHSERV_IDS` (Q2). Rejected: any topmost header (a sender writes one when the host adds none).
 - **D3 Registrable domain** by a built-in two-level suffix list. Rejected: a public-suffix library (dependency, upkeep).
-- **D4 Known sender** (stage 03): own addresses, delegates, whitelist and VIP rules, senders with ≥ 3 non-`spam` mails in 90 days; never by a free-mail domain.
+- **D4 Known sender** (stage 03): own addresses, delegates, whitelist and VIP rules, senders with ≥ 3 unflagged non-`spam` mails in 90 days; never by a free-mail domain.
 - **D5 Storage** `triage_results.suspicious_reasons text[]` (codes only, no retention clear). Reader `suspiciousReasonsOf` for E5b and E6a.
-- **D6 Effects** behind flag `suspicious_mail`: warning line in the urgent notice, digest and activity row; a flagged `delegation` mail plans no actions. The category never changes.
+- **D6 Effects** behind flag `suspicious_mail`: a warning in the urgent notice and digest (API field for the panel); a flagged `delegation` mail plans nothing. The category never changes.
 - **D7** Phishing measurement without LLM (stage 05). **D8** Attachment line, flag `attachment_line` (stage 06).
 - **D9 Urgency profile** in `mailbox_settings.urgency_profile` (bumps the settings version); API `PUT /api/settings/:mailboxId/urgency` (owner) and CLI (stage 07). Rejected: own table (one row per mailbox anyway).
-- **D10** `ClassifierExtras` (stage 08): `attachments`, `isList`, `senderHistory`, `urgency`; v2 ignores it.
+- **D10** `ClassifierExtras` (stage 08): `attachments`, `isList`, `senderHistory` (received and corrections only, none for flagged mail), `urgency`; v2 ignores it.
 - **D11 Prompt parts** of `classifier-v3`: `attachments` (always, P2), `urgency`, `history`, `list`; eval flags `--prompt-version`, `--prompt-parts`; production has one fixed list (a change is `classifier-v4`).
-- **D12** Dev win rule (stage 09). **D13** Holdout ship rule (stage 11): no regression against v2; ≤ 2 holdout runs.
+- **D12** Dev win rule (stage 09). **D13** Holdout ship rule (stage 11): v3 better than v2 by a margin, no proven loss; one holdout run per decision (stages 05, 11, 13).
 - **D14 Out of v3** (Q3): folder hint F061 (no folder in the sim case) and the cold-mail reason code (no truth label).
 - **D15 Escalation** (stages 12, 14): role `escalation`, prompt `escalation-v1`, an independent second classification that wins; trigger independent of mode (shadow is the ADR 0028 evidence path). **D16** Escalation ship rule (stage 13).
 - **D17** Degraded notice: kind `not_triaged`, flag `degraded_notice` (stage 15). **D18** PD-044 send-limit re-check: an offline count of the week part (stage 16). **D19** Logs: codes and counts only.
@@ -38,11 +38,11 @@ Design (detail in the stages):
 ## Facts checked (2026-11-15, at b9261659)
 
 - F1 Holdout v2: `info → spam` 38 of 243 is the main `spam` precision loss (confusion matrix).
-- F2 `email_headers` holds display name, `Reply-To`, topmost `Authentication-Results`, list headers, `Auto-Submitted`, attachments, links `{host, textHost}`; retention clears the texts (`sync.md` rule 18).
+- F2 `email_headers` holds display name, `Reply-To`, topmost `Authentication-Results`, list headers, `Auto-Submitted`, attachments, links `{host, textHost}` (`sync.md` rule 18).
 - F3 Sim cases carry `sim.senderHistory`, `sim.urgencyProfile`, `sim.headers` (list headers and `Auto-Submitted` only), attachment names and a display name; no folder, no `Authentication-Results`, no `Reply-To` (scouts 1, 2).
-- F4 Dev: 389 cases (57 `urgent`); the phishing persona `paliwa-fiota.test` mimics vendor `paliwa-flota.test`.
+- F4 Dev: 389 cases (57 `urgent`); phishing persona `paliwa-fiota.test` mimics `paliwa-flota.test`.
 - F5 Role `escalation` and `LLM_ESCALATION_*` exist; no prompt; no `gpt-6.1-terra` price.
-- F6 Run cap $1 (`--budget-usd`), month cap $20. F7 Outbox kinds are a CHECK constraint (migration `20261114140001`).
+- F6 Run cap $1 (`--budget-usd`), month cap $20. F7 Outbox kinds are a CHECK. F9 The notice job and the triage pause live in one process (`main.ts`).
 - F8 `urgencyProfileSchema` exists in core; only sim and eval use it (scout 4).
 
 ## Not verified
@@ -52,27 +52,25 @@ Design (detail in the stages):
 
 ## Done when
 
-1. Stage 05 report: phishing recall ≥ 90%, 0 whitelisted flags, non-phishing flag rate ≤ 2% on the holdout, or the stage 05 stop report.
-2. Flagged `delegation` mail: no draft, warning shown (stage 03, 04 tests).
-3. Attachment line in notices (stage 06 tests).
-4. Urgency command round trip by API and CLI (stage 07 tests).
-5. Dev reports per part and the D13 holdout decision committed in `evals/results/` (stages 09, 11).
-6. Escalation decision report (stage 13); stage 14 built or marked skipped.
-7. `not_triaged` notice (stage 15 tests).
-8. Capability pages true for HEAD (stage 16).
+1. Stage 05 holdout report against its three targets.
+2. Tests of stages 03, 04, 06, 07: flagged delegation mail, warning, attachment line, urgency command.
+3. Dev reports and the D13 decision in `evals/results/` (stages 09, 11).
+4. Escalation decision (stage 13); stage 14 built or marked skipped.
+5. `not_triaged` notice tests (stage 15).
+6. Capability pages true for HEAD (stage 16).
 
 ## Rules for every stage
 
-- A gap or a deviation from a decision is a question in the final message, not a choice.
-- Format and lint only the stage's files. Never the repo-wide formatter.
+- A gap or deviation is a question in the final message, not a choice.
+- Format only the stage's files, never the whole repo.
 - No address, display name, subject, host, attachment name or mail text in a log line, error text, test name or CLI output.
 - Never open `evals/sim/lab-01/holdout/` for prompt work; only stages 05, 11 and 13 run the holdout.
-- LLM spend: only stages 09, 11, 13. Each run passes `--budget-usd`; read the month ledger first; if the stage cap or the month cap would pass, stop and report.
-- Every query filters `org_id`. New user data goes into the DSR export map.
+- LLM spend: only stages 09, 11, 13. A run starts only when spend so far plus its `--budget-usd` stays within the stage cap and the month ledger's $20; else stop and report.
+- Every query filters `org_id`; new user data joins the DSR export map.
 
 ## Proof
 
-One bash call after the last commit, nothing after it; read the logs in a separate call.
+One bash call after the last commit, nothing after it.
 
 ```
 mkdir -p /tmp/f109-sNN && bun run lint > /tmp/f109-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f109-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f109-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f109-sNN/int.log 2>&1 && echo PROOF_OK
@@ -84,7 +82,7 @@ mkdir -p /tmp/f109-sNN && bun run lint > /tmp/f109-sNN/lint.log 2>&1 && bun run 
 | --- | --- | --- |
 | O1 | `bun run db:migrate` on the shared dev DB and the VPS | after stage 02 lands |
 | O2 | Set `LLM_ESCALATION_MODEL` (and its key) on the VPS | only if stage 14 builds |
-| O3 | Turn the new flags on for the pilot | when the owner wants it |
+| O3 | Turn the new flags on for the pilot | owner's choice |
 
 ## Review
 
@@ -114,7 +112,7 @@ Opus review before the land: stages 02, 03, 09, 11, 13, 14, 15. No owner checkpo
 ## How to run (coordinator)
 
 1. Move the ticket to `active/`, commit, then spawn.
-2. Lanes: A 01 → 03 → 04 → 05 (03 needs 02). B 02 → 07 → 15. C 06 after 04 (same notice files). D 08 → 09 → 10 → 11 → 12 → 13 → 14. 08 may start at once; 10 needs 02 and 07. 14 runs only if the stage 13 report says "ship"; else mark it skipped in § Log. 16 last.
+2. Lanes: A 01 → 05 → 03 → 04 (03 needs 02). B 02 → 07 → 15. C 06 after 04. D 08 (after 05) → 09 → 10 → 11 → 12 → 13 → 14; 10 needs 03 and 07. 14 runs only if the stage 13 report says "ship"; else mark it skipped in § Log. 16 last.
 3. Never two of 03, 10, 14 at once (triage service), nor two of 04, 06, 15 (notice renderers). 02 never next to another migration.
 4. Spawn with the standing worker route, `--prepare 'bash scripts/limen-prepare.sh'`, `--timeout 90m`. Stages 09, 11, 13 use the OpenAI key of the copied `.env`. Drop the job DB after the land.
 
@@ -125,8 +123,8 @@ Opus review before the land: stages 02, 03, 09, 11, 13, 14, 15. No owner checkpo
 
 ## Cold review
 
-Model `claude-opus-5-5`, thinking high: the plan has `[risky]` stages (LLM spend, a production prompt switch) and a migration. Result: pending.
+Model `claude-opus-5-5`, thinking high: `[risky]` stages (LLM spend, a production prompt switch) and a migration. Result (`plan-review-1.md`): PASS, 0 blocking, 23 notes; each fixed in its stage (own-domain forgery and the one-persona corpus are stated limits; N6 needs edits outside this folder).
 
 ## Log
 
-- 2026-11-15 written.
+- 2026-11-15 written; review 1 fixed.

@@ -36,12 +36,12 @@ export function escalationRecord(first: { category: Category; confidence: number
 
 **Decisions.**
 
-- `bun run eval --sim … --escalate [--escalation-model <id>]`: after each first answer, `shouldEscalate` with the sim signals (`noreply` from the case, `isList`, `Auto-Submitted`, `Precedence` from `sim.headers`); a triggered case gets one call with the role `escalation` (provider and model from the role row, or `--escalation-model`); that answer is the case's final answer.
+- `bun run eval --sim … --escalate [--escalation-model <id>] [--escalation-reasoning-effort <level>]` (review N13: without the flag the role row's effort applies, which falls back to the classifier's): after each first answer, `shouldEscalate` with the sim signals (`noreply` from the case, `isList`, `Auto-Submitted`, `Precedence` from `sim.headers`); a triggered case gets one call with the role `escalation` (provider and model from the role row, or `--escalation-model`); that answer is the case's final answer.
 - Both calls count in the run cap and the month ledger; an escalation error stops the run like a classifier error; a resumed run keeps both answers in the state.
 - Report section `## Escalation`: triggered count and share, changed answers (from → to counts), cost split (classifier, escalation), `K` (stage 09 definition) and `H` = truth `urgent`, `needs_reply` or `delegation` with a final `info`, `notification` or `spam`, each for the first answers alone and for the cascade. The main tables show the cascade.
 - `--escalate` with a model without a price refuses to start.
 
-**Test.** 5. Fake LLM, three cases (a person mail answered `spam` then `needs_reply`; a list mail answered `notification`; an `urgent`) → one escalation call, the first case final `needs_reply`, `H` first 1, cascade 0. 6. Args: `--escalation-model` without `--escalate` → usage error. 7. A resumed state does not repeat a stored escalation call.
+**Test.** 5. Fake LLM, three cases (a person mail answered `spam` then `needs_reply`; a list mail answered `notification`; an `urgent`) → one escalation call, the first case final `needs_reply`, `H` first 1, cascade 0. 6. Args: `--escalation-model` or `--escalation-reasoning-effort` without `--escalate` → usage error. 7. A resumed state does not repeat a stored escalation call.
 
 **Check.** The new unit tests, then the Proof.
 

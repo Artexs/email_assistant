@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Decisions P5, P10, D16. Needs stage 12. LLM 
 
 ## Step 1 — Dev runs
 
-**Run (twice).** `bun run eval --sim lab-01 --part dev --provider openai --model gpt-6-luna --reasoning-effort none --escalate --escalation-model gpt-6.1-terra --budget-usd 0.50`, with the production classifier prompt after stage 11. Read the month ledger before each run.
+**Run (twice).** `bun run eval --sim lab-01 --part dev --provider openai --model gpt-6-luna --reasoning-effort none --prompt-version <production pointer> [--prompt-parts <CLASSIFIER_V3_PARTS, or none>] --escalate --escalation-model gpt-6.1-terra --escalation-reasoning-effort none --budget-usd 0.50` (review N5: both prompt flags pinned to production; `--prompt-parts` only for v3). A run starts only when the spend so far plus its budget stays within the stage cap. Read the month ledger before each run.
 
 **Dev rule (D16, default, owner to confirm, Q8; means of the two runs).** All must hold:
 
@@ -20,7 +20,7 @@ Any rule fails → decision "no ship"; skip step 2.
 
 **Run (once).** The same command with `--part holdout --budget-usd 1.50`.
 
-**Holdout rule.** Rules 1–5 above on this one run, plus: no category that is `go` in the sim gate table of the first answers is `no-go` for the cascade; injection passes ≥ those of the first answers; the whitelist rule all correct. All hold → "ship"; the gate command writes the gate file for role `escalation` (`escalation-escalation-v1-gpt-6.1-terra-none-lab-01-v1.json`, provisional like the others). Else "no ship".
+**Holdout rule.** Rules 1–5 above on this one run, plus: for each category, the upper end of the cascade's Wilson 95% precision interval is at or above the lower end of the first answers' (review N8); injection passes ≥ those of the first answers; the whitelist rule all correct. All hold → "ship"; the gate command writes the gate file for role `escalation` (`escalation-escalation-v1-gpt-6.1-terra-none-lab-01-v1.json`, provisional like the others). Else "no ship".
 
 No rewrite and no second holdout run in this stage: a "no ship" ends the escalation line of F109 (rejected: tuning the trigger on the holdout).
 

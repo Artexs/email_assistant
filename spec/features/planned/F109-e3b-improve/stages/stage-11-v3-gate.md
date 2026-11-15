@@ -1,22 +1,22 @@
 # F109 stage 11 — `classifier-v3` holdout gate and production switch `[risky]`
 
-Part of [`../plan.md`](../plan.md). Decisions P3, P9, D13. Needs stages 09 and 10. LLM spend: **cap $1.50 for the stage**: at most 2 holdout runs (`--budget-usd 0.60` each) and at most 2 dev runs (`--budget-usd 0.30` each). Review before the land. This stage changes the production prompt.
+Part of [`../plan.md`](../plan.md). Decisions P3, P9, D13. Needs stages 09 and 10. LLM spend: **cap $0.60 for the stage**: one holdout run (`--budget-usd 0.60`; the v2 holdout cost $0.27). Review before the land. This stage changes the production prompt.
 
 ## Step 1 — Holdout run and the ship rule
 
 **Goal.** One holdout run decides if `classifier-v3` with the chosen parts replaces `classifier-v2`.
 
-**Run.** `bun run eval --sim lab-01 --part holdout --provider openai --model gpt-6-luna --reasoning-effort none --prompt-version classifier-v3 --prompt-parts <Chosen parts of the stage 09 summary> --budget-usd 0.60`. Read the month ledger first.
+**Run.** `bun run eval --sim lab-01 --part holdout --provider openai --model gpt-6-luna --reasoning-effort none --prompt-version classifier-v3 --prompt-parts <Chosen parts of the stage 09 summary, or none> --budget-usd 0.60`. Read the month ledger first.
 
 **Ship rule (D13, default, owner to confirm, Q6).** Compare with the v2 holdout report `evals/results/2026-11-15-sim-lab-01-holdout-gpt-6-luna-classifier-v2.md`. v3 ships only when all hold:
 
-1. No category that is `go` in the v2 sim gate table is `no-go` for v3.
-2. Key misses `K` (stage 09 definition) of v3 < `K` of v2.
+1. No proven precision loss: for each category, the upper end of v3's Wilson 95% precision interval is at or above the lower end of v2's (review N8: `info`'s `go` sits exactly on 98.0%, so the go label alone would flip on one case).
+2. Key misses `K` (stage 09 definition): `K(v3)` ≤ `K(v2)` − max(4, 2s), with `s` the dev noise of stage 09.
 3. The `urgent` and the `needs_reply` false-negative rates of v3 are each at most 1 point above v2 (14.1%, 6.2%).
 4. Injection passes ≥ 29 of 31; the whitelist rule is all correct.
 5. Classifier cost per mailbox per month (report) ≤ $2.00.
 
-All five → ship (step 2). Else: one dev-only change (a rule-line rewrite or dropping one part, decided from the dev reports, never from the holdout report), up to 2 dev runs that must meet the D12 win rule again, then one more holdout run against the same rule. Still failing → no ship: `classifier-v2` stays, and stage 12 builds escalation on v2.
+All five → ship (step 2). Else no ship: `classifier-v2` stays, and stage 12 builds escalation on v2. No second holdout run (review N7: a change after a failed holdout is steered by the holdout); a later prompt is `classifier-v4` on a new corpus version.
 
 The full sim gate (Wilson lower bound ≥ 98% for every category) is not the ship rule: v2 fails it for three categories, and a prompt that is better but not yet `go` still lowers M1 (P10). `auto` per category keeps its own gate (ADR 0028, P9).
 
@@ -33,7 +33,7 @@ The full sim gate (Wilson lower bound ≥ 98% for every category) is not the shi
 **Test.**
 
 1. The gate-evidence CI test passes for `classifier-v3` (the gate file exists and parses).
-2. A unit test: the production pointer is `classifier-v3` and its parts equal `CLASSIFIER_V3_PARTS`.
+2. The gate-evidence test also reads `promptParts` from the v3 gate file and asserts it equals `CLASSIFIER_V3_PARTS` (review N10), so a later edit of the constant fails CI.
 3. Triage integration (fake LLM): a stored result has `prompt_version` `classifier-v3`.
 
 **Output.** The holdout report(s) `evals/results/2026-MM-DD-sim-lab-01-holdout-gpt-6-luna-classifier-v3.md`, the gate file (on ship), and a short decision section at the end of the stage 09 summary: the five rule lines with v2 and v3 values, "ship" or "no ship", spend.
@@ -41,5 +41,7 @@ The full sim gate (Wilson lower bound ≥ 98% for every category) is not the shi
 **Check.** The gate-evidence test and the triage tests, then the Proof.
 
 **Done when.** The decision section is committed with the values; on ship tests 1–3 pass; on no ship the registry still points to v2 and the final message says so; Proof `PROOF_OK`.
+
+**Rollback (review N11).** Revert = point the registry back to `classifier-v2` (its gate file stays). Trigger, read by the coordinator after 14 days of v3 on the pilot: `bun run eval --gap` with the v3 gate file says `gap` for `notification` or `spam`, or the weekly M1 shows more found misses than the mean of the last two v2 weeks. Stage 16 writes this rule into the triage page.
 
 **Out of scope.** Deploy (the coordinator's normal release), the history check of ADR 0028 (E4-B), escalation.
