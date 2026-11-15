@@ -115,6 +115,7 @@ export async function insertLoopActionPair(
     setId?: string;
     // Real payloads (a follow-up that the committer builds): replace the placeholders.
     payloads?: { draft: object; send: object };
+    draft?: Partial<Insertable<DB["actions"]>>;
     send?: Partial<Insertable<DB["actions"]>>;
   } = {}
 ): Promise<{ draftId: string; sendId: string }> {
@@ -137,6 +138,7 @@ export async function insertLoopActionPair(
       idempotency_key: `test:${randomUUID()}`,
       created_at: createdAt,
       applied_at: appliedAtOf(opts.draftStatus, createdAt),
+      ...opts.draft,
     })
     .returning("id")
     .executeTakeFirstOrThrow();

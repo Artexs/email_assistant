@@ -265,6 +265,10 @@ export async function applyDraft(
   const payload = draftPayloadSchema.safeParse(action.payload);
   if (!payload.success) return failDraft(deps, ctx, action, "bad_payload");
   const kind = payload.data.kind;
+  // A follow-up hangs on a loop and every other kind on a mail: the other pair is a bad payload, never a draft.
+  if ((payload.data.kind === "follow_up") !== (action.loop_id !== null)) {
+    return failDraft(deps, ctx, action, "bad_payload");
+  }
   if (payload.data.kind === "follow_up") {
     let anchor: LoopAnchor | undefined;
     try {
