@@ -377,4 +377,63 @@ describe("runSend", () => {
     expect(list.stoppedBy).toBe("auth");
     expect(fake.sent).toHaveLength(0);
   });
+
+  describe("log events", () => {
+    /** Every console line while `body` runs: the writer has already dropped a bad field, so `dropped_fields` must stay absent. */
+    async function lines(body: () => Promise<void>): Promise<string> {
+      const spies = (["log", "warn", "error"] as const).map((method) => spyOn(console, method));
+      const seen: string[] = [];
+      for (const spy of spies) {
+        spy.mockImplementation((...args: unknown[]): void => {
+          seen.push(args.join(" "));
+        });
+      }
+      try {
+        await body();
+      } finally {
+        for (const spy of spies) spy.mockRestore();
+      }
+      const output = seen.join("\n");
+      expect(output).not.toContain("dropped_fields");
+      for (const secret of ["Subjectword", "Bodyword", "Anna", apiKey, to]) {
+        expect(output).not.toContain(secret);
+      }
+      return output;
+    }
+
+    test("a sent case and a failed case write testmail_sent and testmail_send_failed with codes", async () => {
+      fake.failNext("send", { status: 409, body: { name: "IdempotencyKeyConflictError" } });
+      const output = await lines(async () => {
+        await run();
+      });
+      expect(output).toContain(`testmail_send_failed batch=${batchId} case_id=a code=idempotency_conflict`);
+      expect(output).toContain(`testmail_sent batch=${batchId} case_id=c attempts=1`);
+    });
+
+    test("a 429 writes testmail_wait with the wait and the status, then testmail_stopped", async () => {
+      fake.failNext("send", { status: 429, body: { name: "RateLimitError" } }, 4);
+      const output = await lines(async () => {
+        await run();
+      });
+      expect(output).toContain("testmail_wait wait_ms=1000 code=429");
+      expect(output).toContain("testmail_wait wait_ms=4000 code=429");
+      expect(output).toContain("testmail_stopped reason=rate_limit");
+    });
+
+    test("a lost response writes testmail_wait with code=network", async () => {
+      fake.holdResponseNext("send", 1000);
+      const output = await lines(async () => {
+        await run({ batch: makeBatch([makeCase("a", "anna")]) });
+      });
+      expect(output).toContain("testmail_wait wait_ms=5000 code=network");
+    });
+
+    test("a recovery by label writes testmail_recovered", async () => {
+      await preSend("a");
+      const output = await lines(async () => {
+        await run({ lines: [intentLine("a", hashOf("a"), 13 * hour)], batch: makeBatch([caseOf("a")]) });
+      });
+      expect(output).toContain(`testmail_recovered batch=${batchId} case_id=a`);
+    });
+  });
 });

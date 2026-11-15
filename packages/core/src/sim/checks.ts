@@ -83,9 +83,14 @@ function allParts(text: CaseText): string[] {
   return [text.subject, text.body, text.html ?? "", ...text.thread.map((t) => t.body)];
 }
 
-function checkLength(slot: Slot, words: number): boolean {
-  const limit: { min?: number; max?: number } = lengthLimits[slot.style.length];
+// A word count fits a length bucket (the sent bank uses the same limits).
+export function fitsLength(bucket: (typeof lengthBuckets)[number], words: number): boolean {
+  const limit: { min?: number; max?: number } = lengthLimits[bucket];
   return (limit.min === undefined || words >= limit.min) && (limit.max === undefined || words <= limit.max);
+}
+
+function checkLength(slot: Slot, words: number): boolean {
+  return fitsLength(slot.style.length, words);
 }
 
 export function checkCase(slot: Slot, text: CaseText, scenario: Scenario): CaseIssue[] {

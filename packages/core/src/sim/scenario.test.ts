@@ -19,6 +19,20 @@ describe("validateScenario", () => {
     expect(validateScenario(miniScenario)).toEqual([]);
   });
 
+  test("the executive voice and signature are optional and default to none", () => {
+    // An older scenario file has neither field.
+    const older: Record<string, unknown> = { ...miniScenario.executive };
+    delete older.voice;
+    delete older.signature;
+    const parsed = scenarioSchema.parse({ ...miniScenario, executive: older });
+    expect(parsed.executive.voice).toBe("");
+    expect(parsed.executive.signature).toBe("");
+    expect(scenarioSchema.parse(miniScenario).executive.signature).toBe("Pozdrawiam, Szef");
+    expect(
+      scenarioSchema.safeParse({ ...miniScenario, executive: { ...miniScenario.executive, tone: "x" } }).success
+    ).toBe(false);
+  });
+
   test("two personas with the same address give one duplicate_address naming keys only", () => {
     const s = structuredClone(miniScenario);
     at(s.personas, 1).address = at(s.personas, 0).address;

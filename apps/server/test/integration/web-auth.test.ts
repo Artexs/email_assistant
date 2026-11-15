@@ -240,7 +240,9 @@ describe("web auth", () => {
     try {
       await setPassword(email, PASSWORD);
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.some((line) => line.includes(`web: no organization for user ${userId}`))).toBe(true);
+      expect(lines.some((line) => line.includes("web_no_organization") && line.includes(`user_id=${userId}`))).toBe(
+        true
+      );
     } finally {
       errorSpy.mockRestore();
     }

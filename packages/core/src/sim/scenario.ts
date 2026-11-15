@@ -57,6 +57,10 @@ export const scenarioSchema = z
         address: z.string(),
         lang: z.enum(["pl", "en"]),
         timeZone: z.literal("Europe/Warsaw"),
+        // The voice and the signature line of the executive's own mail (the sent bank, F116). "" means none, so an
+        // older scenario file stays valid.
+        voice: z.string().max(500).default(""),
+        signature: z.string().max(200).default(""),
       })
       .strict(),
     personas: z.array(simPersonaSchema).min(10).max(25),

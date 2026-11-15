@@ -157,7 +157,10 @@ export async function runSend(deps: SendDeps, input: SendRunInput): Promise<Send
           throw new StopRun(rateLimited ? "rate_limit" : "network");
         }
         const seconds = rateLimited ? Math.min(60, (error as AgentMailError).retryAfterSec ?? 1) * 2 ** n : 5 * 2 ** n;
-        log.info(`waiting ${seconds * 1000} ms (${error instanceof AgentMailError ? error.status : "network"})`);
+        log.info("testmail_wait", {
+          wait_ms: seconds * 1000,
+          code: error instanceof AgentMailError ? error.status : "network",
+        });
         await sleep(seconds * 1000);
       }
     }
@@ -192,7 +195,7 @@ export async function runSend(deps: SendDeps, input: SendRunInput): Promise<Send
 
   function markFailed(caseId: string, attempt: number, key: string, code: string): void {
     append({ type: "failed", batch: batch.batch, case: caseId, attempt, key, code, at: now().toISOString() });
-    log.info(`failed ${batch.batch}/${caseId} ${code}`);
+    log.info("testmail_send_failed", { batch: batch.batch, case_id: caseId, code });
   }
 
   async function sendCase(caseId: string, attempt: number, key: string): Promise<void> {
@@ -239,7 +242,7 @@ export async function runSend(deps: SendDeps, input: SendRunInput): Promise<Send
       via: "send",
       at: now().toISOString(),
     });
-    log.info(`sent ${batch.batch}/${caseId} attempt ${attempt}`);
+    log.info("testmail_sent", { batch: batch.batch, case_id: caseId, attempts: attempt });
     sent.push(caseId);
     sentInLast24h += 1;
     needPace = true;
@@ -289,7 +292,7 @@ export async function runSend(deps: SendDeps, input: SendRunInput): Promise<Send
         via: "label",
         at: now().toISOString(),
       });
-      log.info(`recovered ${batch.batch}/${action.caseId} by label`);
+      log.info("testmail_recovered", { batch: batch.batch, case_id: action.caseId });
       recovered.push(action.caseId);
       return;
     }
@@ -323,7 +326,7 @@ export async function runSend(deps: SendDeps, input: SendRunInput): Promise<Send
     stoppedBy = error.reason;
   }
   if (stoppedBy !== null) {
-    log.info(`stopped: ${stoppedBy}`);
+    log.info("testmail_stopped", { reason: stoppedBy });
   }
 
   const states = caseStates(batch.batch, caseIds, lines);
