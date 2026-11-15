@@ -7,7 +7,7 @@ import { movingCategories, tripReasons } from "../trust";
 import { encodeNoticeView, NoticeViewError } from "./encode";
 import type { NoticeRenderOptions } from "./kinds";
 import { renderNotice } from "./render";
-import { noticeViewSchemas } from "./views";
+import { noticeViewSchemas, trustReportUrlSchema, trustSettingsUrlSchema } from "./views";
 
 // F110 stage 10: the two trust notice kinds (D15: category names, counts and fixed phrases only).
 const mailboxId = "22222222-2222-4222-8222-222222222222";
@@ -222,6 +222,8 @@ describe("pinned texts", () => {
 describe("the links of a trust notice (TG1)", () => {
   const good = (value: string) =>
     noticeViewSchemas.trust_report_ready.safeParse({ ...ready, reportUrl: value }).success;
+  // The link schema alone: the view check of the mailbox id must not be the only guard.
+  const schemaGood = (value: string) => trustReportUrlSchema.safeParse(value).success;
   const goodSettings = (value: string) =>
     noticeViewSchemas.autonomy_paused.safeParse(paused("corrections", { settingsUrl: value })).success;
 
@@ -255,6 +257,16 @@ describe("the links of a trust notice (TG1)", () => {
 
   test.each(bad)("report link refused: %s", (_name, value) => {
     expect(good(value)).toBe(false);
+    expect(schemaGood(value)).toBe(false);
+  });
+
+  test.each([
+    ["zero width space in the host", `https://app\u200b.example.test/report?mailbox=${mailboxId}`],
+    ["right-to-left override in the host", `https://app\u202e.example.test/report?mailbox=${mailboxId}`],
+    ["isolate in the host", `https://app\u2066.example.test/settings`],
+  ])("a format character in the host is refused: %s", (_name, value) => {
+    expect(schemaGood(value)).toBe(false);
+    expect(trustSettingsUrlSchema.safeParse(value).success).toBe(false);
   });
 
   test.each([
@@ -278,9 +290,9 @@ describe("the links of a trust notice (TG1)", () => {
 
 describe("hardening of the views", () => {
   test("a mailbox id that is not a uuid is refused (an address cannot ride in it)", () => {
-    expect(noticeViewSchemas.trust_report_ready.safeParse({ ...ready, mailboxId: "boss@corp.test" }).success).toBe(
-      false
-    );
+    expect(
+      noticeViewSchemas.trust_report_ready.safeParse({ ...ready, mailboxId: "boss@corp.test", reportUrl: null }).success
+    ).toBe(false);
     expect(
       noticeViewSchemas.autonomy_paused.safeParse(paused("corrections", { mailboxId: "boss@corp.test" })).success
     ).toBe(false);
