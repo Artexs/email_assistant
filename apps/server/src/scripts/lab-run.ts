@@ -1,15 +1,20 @@
 import type { LiveRunPlan } from "@ea/core";
 
 import {
+  DEMO_TABLES,
+  DemoSeedError,
   labEnvIssues,
   LabResetError,
   LabScoreError,
   LabSeedError,
   LAB_TARGETS,
+  type DemoSeed,
+  type ImportResult,
   type LabCorpus,
   type LabEvent,
   type LabModel,
   type LabOrg,
+  type LabRun,
   type LabState,
   previewReset,
   resetDemo,
@@ -21,6 +26,8 @@ import {
   type SeedTarget,
   type StartDeps,
   LabMailError,
+  parseDemoSeed,
+  serializeDemoSeed,
   startLabRun,
   stopLabRun,
 } from "../modules/lab";
@@ -45,6 +52,20 @@ export interface LabDeps {
   spendOf(runId: string): Promise<RunSpend>;
   // Scores one run and writes the report files into `out`, or into the default folder when `out` is undefined.
   score(runId: string, out: string | undefined): Promise<{ markdown: string; json: string; partial: boolean }>;
+  // The demo seed: what the two commands need from the database and the disk, so a test fills it with fakes.
+  demo: {
+    // The seed of the demo org `orgId` at the end of run day `day`.
+    exportSeed(orgId: string, run: LabRun, day: number): Promise<DemoSeed>;
+    // Loads a seed as a new organization in the database of this process.
+    importSeed(
+      seed: DemoSeed,
+      opts: { ownerEmail: string; replace: boolean; sendScope: string }
+    ): Promise<ImportResult>;
+    // Throws `DemoSeedError("out_exists")` when the file exists: an export never overwrites.
+    writeNewFile(path: string, text: string): void;
+    // Returns undefined when the file cannot be read.
+    readFile(path: string): string | undefined;
+  };
   // The heartbeat file of the serve process, if it wrote one.
   serveStatus(): ServeStatus | undefined;
   // The serve loop: runs until a signal; returns the exit code.
@@ -53,9 +74,6 @@ export interface LabDeps {
   hex4(): string;
   cli: CliOutput;
 }
-
-// A later stage fills each of these; until then the command exits 1.
-const NOT_BUILT: readonly LabCommand["kind"][] = ["demo-export", "demo-import"];
 
 const usdText = (spend: RunSpend): string =>
   spend.kind === "unpriced"
@@ -152,6 +170,78 @@ async function runReset(
   }
 }
 
+const rowsText = (rows: Record<string, number>): string =>
+  DEMO_TABLES.map((table) => `${table} ${rows[table] ?? 0}`).join(" ");
+
+// The newest run of the demo org: the later start date, then the later run id.
+function newestDemoRun(state: LabState): LabRun | undefined {
+  const runs = state
+    .listRuns()
+    .map((runId) => state.readRun(runId))
+    .filter((run) => run.org === "demo")
+    .sort((a, b) => `${a.plan.startDate}${a.plan.runId}`.localeCompare(`${b.plan.startDate}${b.plan.runId}`));
+  return runs.at(-1);
+}
+
+// `demo-export` writes a file of lab data only. It reads the demo org of `orgs.json` and nothing else; a non-test
+// address or host in the data stops it before the file is written.
+async function runDemoExport(command: Extract<LabCommand, { kind: "demo-export" }>, deps: LabDeps): Promise<number> {
+  const { cli, state } = deps;
+  const entry = state.readOrgs().demo;
+  if (entry === undefined) {
+    cli.fail("refused: no_demo_org");
+    return 1;
+  }
+  const run = newestDemoRun(state);
+  if (run === undefined) {
+    cli.fail("refused: no_demo_run");
+    return 1;
+  }
+  try {
+    const seed = await deps.demo.exportSeed(entry.orgId, run, command.day);
+    deps.demo.writeNewFile(command.out, serializeDemoSeed(seed));
+    cli.print(
+      `demo-export: run ${run.plan.runId} day ${command.day} file ${command.out} rows ${rowsText(countRows(seed))}`
+    );
+    return 0;
+  } catch (error) {
+    if (error instanceof DemoSeedError) {
+      cli.fail(`refused: ${error.detail}`);
+      return 1;
+    }
+    throw error;
+  }
+}
+
+const countRows = (seed: DemoSeed): Record<string, number> =>
+  Object.fromEntries(DEMO_TABLES.map((table) => [table, seed.tables[table].length]));
+
+// `demo-import` runs on a dev machine, so it has its own guard instead of the sim env check: `importDemo` refuses
+// `SEND_SCOPE=all`. It makes a new org and never changes an existing one.
+async function runDemoImport(command: Extract<LabCommand, { kind: "demo-import" }>, deps: LabDeps): Promise<number> {
+  const { cli } = deps;
+  const text = deps.demo.readFile(command.file);
+  if (text === undefined) {
+    cli.fail("refused: file_unreadable");
+    return 1;
+  }
+  try {
+    const result = await deps.demo.importSeed(parseDemoSeed(text), {
+      ownerEmail: command.email,
+      replace: command.replace,
+      sendScope: deps.env.SEND_SCOPE ?? "off",
+    });
+    cli.print(`demo-import: org ${result.orgId} rows ${rowsText(result.rows)}`);
+    return 0;
+  } catch (error) {
+    if (error instanceof DemoSeedError) {
+      cli.fail(`refused: ${error.detail}`);
+      return 1;
+    }
+    throw error;
+  }
+}
+
 // Returns the exit code: 0 ok, 1 refusal or failure. It prints ids, codes and counts only.
 export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise<number> {
   const { cli, state } = deps;
@@ -162,10 +252,6 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
       cli.fail(`refused: env is not the sim stack: ${issues.join(", ")}`);
       return 1;
     }
-  }
-  if (NOT_BUILT.includes(command.kind)) {
-    cli.fail(`${command.kind}: not built`);
-    return 1;
   }
 
   switch (command.kind) {
@@ -252,6 +338,10 @@ export async function runLabCommand(command: LabCommand, deps: LabDeps): Promise
     case "reset":
     case "demo-reset":
       return runReset(command, deps);
+    case "demo-export":
+      return runDemoExport(command, deps);
+    case "demo-import":
+      return runDemoImport(command, deps);
     case "serve":
       return deps.serve();
     default:

@@ -7,11 +7,15 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:te
 
 import {
   createLabState,
+  DemoSeedError,
   labAddresses,
   LAB_MAILBOXES,
   loadLabCorpus,
+  serializeDemoSeed,
   LabScoreError,
   LabSeedError,
+  type DemoSeed,
+  type ImportResult,
   type LabCorpus,
   type LabModel,
   type LabOrg,
@@ -72,8 +76,18 @@ describe("lab command", () => {
   let emptied: string[] = [];
   let mailCount = 0;
   let seedWrites = false;
+  let exportCalls: [string, string, number][] = [];
+  let exportResult: DemoSeed | Error;
+  let importCalls: { ownerEmail: string; replace: boolean; sendScope: string; orgName: string }[] = [];
+  let importResult: ImportResult | Error;
+  let written: Record<string, string> = {};
 
   beforeEach(() => {
+    exportCalls = [];
+    exportResult = emptySeed();
+    importCalls = [];
+    importResult = { orgId: "o-import", rows: emptyCounts() };
+    written = {};
     seedCalls = [];
     seedResult = {
       org: { orgId: "o-new", mailboxId: "m-new", address: LAB_MAILBOXES.lab, chatId: 5550001 },
@@ -149,6 +163,23 @@ describe("lab command", () => {
       if (scoreResult instanceof Error) throw scoreResult;
       return scoreResult;
     },
+    demo: {
+      exportSeed: async (orgId, run, day) => {
+        exportCalls.push([orgId, run.plan.runId, day]);
+        if (exportResult instanceof Error) throw exportResult;
+        return exportResult;
+      },
+      importSeed: async (seed, opts) => {
+        importCalls.push({ ...opts, orgName: String(seed.tables.organizations[0]?.name) });
+        if (importResult instanceof Error) throw importResult;
+        return importResult;
+      },
+      writeNewFile: (path, text) => {
+        if (path in written) throw new DemoSeedError("out_exists");
+        written[path] = text;
+      },
+      readFile: (path) => written[path],
+    },
     serveStatus: () => serveStatus,
     serve: async () => {
       serveCalls += 1;
@@ -203,20 +234,84 @@ describe("lab command", () => {
       expect(await run(argv)).toBe(1);
       expect(failed.join("\n")).toContain("not_sim_stack");
     }
+    // `demo-import` runs on a dev machine: the sim env check does not apply; it reaches the file step.
     failed = [];
     expect(await run(["demo-import", "--file", "x", "--email", "a@dev.test"])).toBe(1);
-    expect(failed.join("\n")).toBe("demo-import: not built");
+    expect(failed).toEqual(["refused: file_unreadable"]);
   });
 
-  test("commands of later stages exit 1 with not built", async () => {
-    for (const argv of [
-      ["demo-export", "--day", "4", "--out", "/tmp/x.json"],
-      ["demo-import", "--file", "/tmp/x.json", "--email", "a@dev.test"],
-    ]) {
+  describe("demo-export and demo-import (stage 15)", () => {
+    const startDemoRun = async (date: string) => {
+      expect(await run(["start", "--mode", "week", "--date", date, "--org", "demo"])).toBe(0);
+      printed = [];
+    };
+
+    test("demo-export without a demo org or a demo run exits 1 and writes no file", async () => {
+      expect(await run(["demo-export", "--day", "4", "--out", "/tmp/a.json"])).toBe(1);
+      seedOrgs();
+      expect(await run(["demo-export", "--day", "4", "--out", "/tmp/a.json"])).toBe(1);
+      expect(failed).toEqual(["refused: no_demo_org", "refused: no_demo_run"]);
+      expect(exportCalls).toEqual([]);
+      expect(written).toEqual({});
+    });
+
+    test("demo-export reads the demo org with the newest demo run, writes one file and prints counts only", async () => {
+      seedOrgs();
+      await startDemoRun("2026-11-23");
+      // One active run per org: the first one stops before the second starts.
+      expect(await run(["stop", "--run", "week-20261123-aaaa"])).toBe(0);
+      hexes = ["bbbb"];
+      await startDemoRun("2026-11-30");
+      expect(await run(["demo-export", "--day", "4", "--out", "/tmp/a.json"])).toBe(0);
+      expect(exportCalls).toEqual([["o-demo", "week-20261130-bbbb", 4]]);
+      expect(Object.keys(written)).toEqual(["/tmp/a.json"]);
+      expect(printed).toHaveLength(1);
+      expect(printed[0]).toContain("day 4 file /tmp/a.json rows organizations 1 mailboxes 0");
+      // Never the lab organization.
+      expect(exportCalls.every(([orgId]) => orgId !== "o-lab")).toBe(true);
+    });
+
+    test("demo-export with a non-test address exits 1 with the table and column and writes no file; an existing file is not overwritten", async () => {
+      seedOrgs();
+      await startDemoRun("2026-11-23");
+      exportResult = new DemoSeedError("non_test_address", "emails", "to_addresses");
+      expect(await run(["demo-export", "--day", "7", "--out", "/tmp/a.json"])).toBe(1);
+      expect(failed).toEqual(["refused: non_test_address (emails.to_addresses)"]);
+      expect(written).toEqual({});
+      exportResult = emptySeed();
+      expect(await run(["demo-export", "--day", "7", "--out", "/tmp/a.json"])).toBe(0);
       failed = [];
-      expect(await run(argv)).toBe(1);
-      expect(failed.join("\n")).toContain("not built");
-    }
+      expect(await run(["demo-export", "--day", "7", "--out", "/tmp/a.json"])).toBe(1);
+      expect(failed).toEqual(["refused: out_exists"]);
+    });
+
+    test("demo-import reads the file, passes the owner, replace and the SEND_SCOPE of the env, and prints the new org", async () => {
+      written["/tmp/s.json"] = serializeDemoSeed(emptySeed());
+      env = { SEND_SCOPE: "self" };
+      expect(await run(["demo-import", "--file", "/tmp/s.json", "--email", "dev@dev.test", "--replace"])).toBe(0);
+      expect(importCalls).toEqual([
+        { ownerEmail: "dev@dev.test", replace: true, sendScope: "self", orgName: "Kordelan demo" },
+      ]);
+      expect(printed[0]).toContain("demo-import: org o-import rows organizations 0");
+      env = {};
+      expect(await run(["demo-import", "--file", "/tmp/s.json", "--email", "dev@dev.test"])).toBe(0);
+      expect(importCalls[1]?.sendScope).toBe("off");
+    });
+
+    test("demo-import refusals exit 1 with the code: bad file, a refusal of the import", async () => {
+      written["/tmp/bad.json"] = "{ not json";
+      expect(await run(["demo-import", "--file", "/tmp/bad.json", "--email", "dev@dev.test"])).toBe(1);
+      written["/tmp/s.json"] = serializeDemoSeed(emptySeed());
+      importResult = new DemoSeedError("import_needs_safe_send_scope");
+      expect(await run(["demo-import", "--file", "/tmp/s.json", "--email", "dev@dev.test"])).toBe(1);
+      importResult = new DemoSeedError("org_id_exists", "organizations", "id");
+      expect(await run(["demo-import", "--file", "/tmp/s.json", "--email", "dev@dev.test"])).toBe(1);
+      expect(failed).toEqual([
+        "refused: bad_format",
+        "refused: import_needs_safe_send_scope",
+        "refused: org_id_exists (organizations.id)",
+      ]);
+    });
   });
 
   test("reset without --yes prints what it would delete and exits 1 with confirm_needed; nothing changes", async () => {
@@ -547,3 +642,51 @@ describe("lab command", () => {
     expect(await run(["status", "--run", "day-20261123-zzzz"])).toBe(1);
   });
 });
+
+const TABLES = [
+  "organizations",
+  "mailboxes",
+  "mailbox_settings",
+  "sender_rules",
+  "delegates",
+  "emails",
+  "email_headers",
+  "triage_results",
+  "triage_feedback",
+  "actions",
+  "delegations",
+  "outbox",
+  "audit_log",
+] as const;
+
+function emptyCounts(): Record<(typeof TABLES)[number], number> {
+  return Object.fromEntries(TABLES.map((table) => [table, 0])) as Record<(typeof TABLES)[number], number>;
+}
+
+// A seed with one organization row and no other row: enough for the commands, which do not look inside.
+function emptySeed(): DemoSeed {
+  const tables = Object.fromEntries(TABLES.map((table) => [table, []])) as unknown as DemoSeed["tables"];
+  tables.organizations = [
+    {
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "Kordelan demo",
+      timezone: "Europe/Warsaw",
+      data_retention_days: 90,
+      style_text: null,
+      created_at: "2026-11-20T08:00:00.000Z",
+      plan: "active",
+      trial_ends_at: null,
+      max_mailboxes: 1,
+      resumed_at: null,
+      sso_required: false,
+    },
+  ];
+  return {
+    format: "ea-demo-seed/1",
+    scenario: "lab-01",
+    runId: "week-20261123-aaaa",
+    day: 4,
+    exportedAt: NOW.toISOString(),
+    tables,
+  };
+}

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
 import { llmRoles } from "@ea/core";
@@ -11,6 +11,9 @@ import {
   createOrgLookup,
   createLabState,
   createServeMailClient,
+  DemoSeedError,
+  exportDemo,
+  importDemo,
   labEnvIssues,
   loadLabCorpus,
   orgHasMail,
@@ -140,6 +143,26 @@ async function main(): Promise<number> {
         const dir =
           out === undefined ? (existsSync(RESULTS_DIR) ? RESULTS_DIR : join(stateDir, "results")) : resolve(out);
         return { ...writeLabReport(score, dir), partial: score.header.partial };
+      },
+      // `demo-export` reads one org (the demo org of `orgs.json`); `demo-import` makes a new org in this database.
+      demo: {
+        exportSeed: (orgId, run, day) => exportDemo(db, { orgId }, run, day, { scenario: SCENARIO }),
+        importSeed: (seed, opts) => importDemo(db, seed, opts),
+        writeNewFile: (path, text) => {
+          try {
+            writeFileSync(resolve(path), text, { flag: "wx" });
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new DemoSeedError("out_exists");
+            throw error;
+          }
+        },
+        readFile: (path) => {
+          try {
+            return readFileSync(resolve(path), "utf8");
+          } catch {
+            return undefined;
+          }
+        },
       },
       serveStatus: () => readServeStatus(stateDir),
       serve: () => {

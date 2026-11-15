@@ -22,6 +22,23 @@ export {
   type ExecutiveDeps,
   type ExecutiveTickResult,
 } from "./executive";
+export {
+  checkDemoSeed,
+  DEMO_SEED_FORMAT,
+  DEMO_TABLES,
+  DemoSeedError,
+  dayCut,
+  exportDemo,
+  IMPORT_ORG_NAME,
+  importDemo,
+  parseDemoSeed,
+  serializeDemoSeed,
+  type DemoSeed,
+  type DemoSeedErrorCode,
+  type DemoTable,
+  type ImportOptions,
+  type ImportResult,
+} from "./demo-seed";
 export { orgHasMail } from "./org-mail";
 export {
   createOrgLookup,
