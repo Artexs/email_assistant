@@ -556,8 +556,7 @@ export const en = {
   err_rule_limit: "You have reached the limit of 1000 rules.",
   // F110: the urgency card on the Rules page
   urg_title: "What is urgent for me",
-  urg_help:
-    "Tell the assistant what counts as urgent in this mailbox: topics and deadlines. It uses them when it decides whether a mail is urgent.",
+  urg_help: "Topics and deadlines for this mailbox. They count when the urgent-mail check uses them.",
   urg_mailbox_label: "Mailbox",
   urg_topics_title: "Topics",
   urg_topics_help:
@@ -569,7 +568,7 @@ export const en = {
   urg_topic_add: "Add a topic",
   urg_deadlines_title: "Deadlines",
   urg_deadlines_help:
-    "The assistant uses a deadline from 30 days before its date until the day after. An ended deadline stays in the list until you remove it.",
+    "A deadline counts from 30 days before its date until the day after. An ended deadline stays in the list until you remove it.",
   urg_deadlines_empty: "No deadlines yet.",
   urg_deadline_name_label: "Deadline {n}: name",
   urg_deadline_date_label: "Deadline {n}: date",
@@ -584,6 +583,8 @@ export const en = {
   urg_saved_toast: "Saved.",
   urg_cleared_toast: "Cleared.",
   urg_err_topic_label: "Topic {n}: the name needs 1 to 80 characters.",
+  urg_err_topic_nul: "Topic {n}: the text has a character that is not allowed.",
+  urg_err_deadline_nul: "Deadline {n}: the text has a character that is not allowed.",
   urg_err_keyword: "Topic {n}: each keyword needs 1 to 40 characters.",
   urg_err_keywords_many: "Topic {n}: use at most 10 keywords.",
   urg_err_deadline_label: "Deadline {n}: the name needs 1 to 80 characters.",

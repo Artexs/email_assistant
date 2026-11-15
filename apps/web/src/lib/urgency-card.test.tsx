@@ -79,8 +79,13 @@ describe("urgency texts", () => {
   test("Polish", () => {
     setLocaleForTest("pl");
     expect(t("urg_help")).toBe(
-      "Wskaż asystentowi, co w tej skrzynce jest pilne: tematy i terminy. Asystent bierze je pod uwagę, gdy ocenia, czy wiadomość jest pilna."
+      "Tematy i terminy dla tej skrzynki. Liczą się, gdy kontrola pilnych wiadomości z nich korzysta."
     );
+    expect(t("urg_deadlines_help")).toBe(
+      "Termin liczy się od 30 dni przed jego datą do dnia po niej. Termin, który minął, zostaje na liście, dopóki go nie usuniesz."
+    );
+    expect(t("urg_err_topic_nul", { n: 1 })).toBe("Temat 1: tekst zawiera niedozwolony znak.");
+    expect(t("urg_err_deadline_nul", { n: 2 })).toBe("Termin 2: tekst zawiera niedozwolony znak.");
     expect(t("urg_topics_help")).toContain("(najwyżej 10 na temat)");
     expect(t("urg_vip_text")).toBe("Osoby VIP ustawiasz w regułach VIP dla nadawców.");
     expect(t("urg_clear_title")).toBe("Usunąć wszystkie tematy i terminy?");
@@ -95,8 +100,13 @@ describe("urgency texts", () => {
   test("English", () => {
     setLocaleForTest("en");
     expect(t("urg_help")).toBe(
-      "Tell the assistant what counts as urgent in this mailbox: topics and deadlines. It uses them when it decides whether a mail is urgent."
+      "Topics and deadlines for this mailbox. They count when the urgent-mail check uses them."
     );
+    expect(t("urg_deadlines_help")).toBe(
+      "A deadline counts from 30 days before its date until the day after. An ended deadline stays in the list until you remove it."
+    );
+    expect(t("urg_err_topic_nul", { n: 1 })).toBe("Topic 1: the text has a character that is not allowed.");
+    expect(t("urg_err_deadline_nul", { n: 2 })).toBe("Deadline 2: the text has a character that is not allowed.");
     expect(t("urg_topics_help")).toContain("(up to 10 per topic)");
     expect(t("urg_err_topics_many")).toBe("You can add at most 20 topics.");
     expect(t("urg_err_deadlines_many")).toBe("You can add at most 20 deadlines.");

@@ -160,6 +160,28 @@ test("R4: a keyword error marks the keywords field invalid and sends nothing", a
   expect(errors).toEqual([]);
 });
 
+test("R6: after Clear all the focus is not on the page body; Cancel gives it back to Clear all", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  await openCard(page, "empty");
+  const form = card(page);
+  const dialog = page.getByRole("dialog", { name: en.urg_clear_title });
+  await form.getByRole("button", { name: en.urg_clear }).click();
+  await dialog.getByRole("button", { name: en.cancel }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(form.getByRole("button", { name: en.urg_clear })).toBeFocused();
+
+  await form.getByRole("button", { name: en.urg_clear }).click();
+  await dialog.getByRole("button", { name: en.urg_clear }).click();
+  await expect(page.getByText(en.urg_cleared_toast)).toBeVisible();
+  await expect(form.getByRole("button", { name: en.urg_clear })).toHaveCount(0);
+  await expect(form.getByRole("button", { name: en.urg_topic_add })).toBeFocused();
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
 test("R5: a member session cannot PUT the profile; the markup of a label shows as text", async ({ context, page }) => {
   const errors = await startSession(context, page, org().member);
   const response = await page.request.put(`/api/settings/${org().empty.id}/urgency`, {

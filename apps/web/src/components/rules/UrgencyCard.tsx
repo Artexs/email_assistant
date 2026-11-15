@@ -1,6 +1,6 @@
 import { settingsViewSchema, type MailboxView, type SettingsWebView, type UrgencyProfile } from "@ea/core/web";
 import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { t } from "../../i18n";
@@ -44,6 +44,8 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
   const [error, setError] = useState<UrgencyError | null>(null);
   const [pending, setPending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // After "Clear all" the Clear button unmounts: the focus goes to the Add button, which stays.
+  const focusAddAfterClose = useRef(false);
   // The id of the element that takes the focus after the next render (a new row, or the add button after a removal).
   const [focusId, setFocusId] = useState<string | null>(null);
   const value = draft.value;
@@ -87,6 +89,7 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
   };
 
   const clearAll = async () => {
+    focusAddAfterClose.current = true;
     setConfirmOpen(false);
     await send(null, "urg_cleared_toast");
   };
@@ -276,7 +279,14 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
       </div>
 
       <Dialog open={confirmOpen} onOpenChange={(open) => !pending && setConfirmOpen(open)}>
-        <DialogContent>
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            if (!focusAddAfterClose.current) return;
+            focusAddAfterClose.current = false;
+            event.preventDefault();
+            document.getElementById("urg-topic-add")?.focus();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{t("urg_clear_title")}</DialogTitle>
             <DialogDescription>{t("urg_clear_text", { address })}</DialogDescription>

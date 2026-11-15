@@ -1,4 +1,10 @@
-import { localDateTime, URGENCY_MAX_ITEMS, urgencyProfileSchema, type UrgencyProfile } from "@ea/core/web";
+import {
+  localDateTime,
+  URGENCY_MAX_ITEMS,
+  URGENCY_NUL_MESSAGE,
+  urgencyProfileSchema,
+  type UrgencyProfile,
+} from "@ea/core/web";
 
 import type { TextKey } from "../i18n";
 
@@ -28,10 +34,16 @@ export function draftFromProfile(profile: UrgencyProfile | null): UrgencyDraft {
 
 // The keywords as the schema wants them: split on commas, trimmed, empty pieces dropped.
 export function splitKeywords(text: string): string[] {
-  return text
-    .split(",")
-    .map((keyword) => keyword.trim())
-    .filter((keyword) => keyword.length > 0);
+  const seen = new Set<string>();
+  const keywords: string[] = [];
+  for (const piece of text.split(",")) {
+    const keyword = piece.trim();
+    const key = keyword.toLowerCase();
+    if (keyword.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    keywords.push(keyword);
+  }
+  return keywords;
 }
 
 export interface UrgencyError {
@@ -50,22 +62,25 @@ export function profileFromDraft(draft: UrgencyDraft): UrgencyResult {
     topics: draft.topics.map((topic) => ({ label: topic.label, keywords: splitKeywords(topic.keywords) })),
     deadlines: draft.deadlines.map((deadline) => ({ label: deadline.label, due: deadline.due })),
   });
-  if (!parsed.success) return { ok: false, error: errorOf(parsed.error.issues[0]?.path ?? []) };
+  if (!parsed.success) return { ok: false, error: errorOf(parsed.error.issues[0] ?? { path: [], message: "" }) };
   const { topics, deadlines } = parsed.data;
   return { ok: true, profile: topics.length === 0 && deadlines.length === 0 ? null : parsed.data };
 }
 
-function errorOf(path: readonly PropertyKey[]): UrgencyError {
+function errorOf({ path, message }: { path: readonly PropertyKey[]; message: string }): UrgencyError {
+  const nul = message === URGENCY_NUL_MESSAGE;
   const [list, index, field, keywordIndex] = path;
   const n = typeof index === "number" ? index + 1 : 0;
   if (list === "topics") {
     // `topics.<i>.keywords` is too many keywords; `topics.<i>.keywords.<j>` is one keyword with a bad length.
+    if (nul && (field === "keywords" || field === "label")) return { key: "urg_err_topic_nul", n };
     if (field === "keywords")
       return { key: keywordIndex === undefined ? "urg_err_keywords_many" : "urg_err_keyword", n };
     if (field === "label") return { key: "urg_err_topic_label", n };
     return { key: "urg_err_topics_many", n: 0 };
   }
   if (list === "deadlines") {
+    if (nul && field === "label") return { key: "urg_err_deadline_nul", n };
     if (field === "label") return { key: "urg_err_deadline_label", n };
     if (field === "due") return { key: "urg_err_deadline_date", n };
     return { key: "urg_err_deadlines_many", n: 0 };

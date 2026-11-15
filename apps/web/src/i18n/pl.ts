@@ -570,8 +570,7 @@ export const pl: Record<TextKey, string> = {
   err_rule_limit: "Osiągnięto limit reguł: 1000.",
   // F110: the urgency card on the Rules page
   urg_title: "Co jest dla mnie pilne",
-  urg_help:
-    "Wskaż asystentowi, co w tej skrzynce jest pilne: tematy i terminy. Asystent bierze je pod uwagę, gdy ocenia, czy wiadomość jest pilna.",
+  urg_help: "Tematy i terminy dla tej skrzynki. Liczą się, gdy kontrola pilnych wiadomości z nich korzysta.",
   urg_mailbox_label: "Skrzynka",
   urg_topics_title: "Tematy",
   urg_topics_help:
@@ -583,7 +582,7 @@ export const pl: Record<TextKey, string> = {
   urg_topic_add: "Dodaj temat",
   urg_deadlines_title: "Terminy",
   urg_deadlines_help:
-    "Asystent uwzględnia termin od 30 dni przed jego datą do dnia po niej. Termin, który minął, zostaje na liście, dopóki go nie usuniesz.",
+    "Termin liczy się od 30 dni przed jego datą do dnia po niej. Termin, który minął, zostaje na liście, dopóki go nie usuniesz.",
   urg_deadlines_empty: "Nie ma jeszcze terminów.",
   urg_deadline_name_label: "Termin {n}: nazwa",
   urg_deadline_date_label: "Termin {n}: data",
@@ -598,6 +597,8 @@ export const pl: Record<TextKey, string> = {
   urg_saved_toast: "Zapisano.",
   urg_cleared_toast: "Wyczyszczono.",
   urg_err_topic_label: "Temat {n}: nazwa musi mieć od 1 do 80 znaków.",
+  urg_err_topic_nul: "Temat {n}: tekst zawiera niedozwolony znak.",
+  urg_err_deadline_nul: "Termin {n}: tekst zawiera niedozwolony znak.",
   urg_err_keyword: "Temat {n}: każde słowo kluczowe musi mieć od 1 do 40 znaków.",
   urg_err_keywords_many: "Temat {n}: podaj najwyżej 10 słów kluczowych.",
   urg_err_deadline_label: "Termin {n}: nazwa musi mieć od 1 do 80 znaków.",

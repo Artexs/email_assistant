@@ -78,6 +78,16 @@ describe("urgency route values", () => {
     expect(await storedLabel(app, id)).toBe("x".repeat(80));
   });
 
+  test("a NUL character in a label or a keyword gives 400 and changes nothing", async () => {
+    const { app, id } = await setup();
+    expect((await put(app, id, "owner", one("kept"))).status).toBe(200);
+    expect((await put(app, id, "owner", one("a\u0000b"))).status).toBe(400);
+    expect((await put(app, id, "owner", one("t", ["k\u0000"]))).status).toBe(400);
+    const deadline = { profile: { topics: [], deadlines: [{ label: "\u0000", due: "2026-12-01" }] } };
+    expect((await put(app, id, "owner", deadline)).status).toBe(400);
+    expect(await storedLabel(app, id)).toBe("kept");
+  });
+
   test("markup in a label is stored as typed text", async () => {
     const { app, id } = await setup();
     const label = "<img src=x onerror=alert(1)> **bold**";

@@ -18,6 +18,11 @@ describe("splitKeywords", () => {
     expect(splitKeywords(" audit , tax,, ,  ")).toEqual(["audit", "tax"]);
     expect(splitKeywords("")).toEqual([]);
   });
+
+  test("drops a repeated keyword, ignoring case, and keeps the first spelling", () => {
+    expect(splitKeywords("a, a, A")).toEqual(["a"]);
+    expect(splitKeywords("Audit, tax, AUDIT, Tax ,x")).toEqual(["Audit", "tax", "x"]);
+  });
 });
 
 describe("draftFromProfile", () => {
@@ -90,6 +95,27 @@ describe("profileFromDraft", () => {
     });
     const ten = Array.from({ length: 10 }, () => "k".repeat(40)).join(",");
     expect(profileFromDraft(draft({ topics: [{ label: "a", keywords: ten }] })).ok).toBe(true);
+  });
+
+  test("a NUL character in a label or a keyword gives the text error of its row", () => {
+    expect(profileFromDraft(draft({ topics: [{ label: "a\u0000b", keywords: "" }] }))).toEqual({
+      ok: false,
+      error: { key: "urg_err_topic_nul", n: 1 },
+    });
+    expect(
+      profileFromDraft(
+        draft({
+          topics: [
+            { label: "ok", keywords: "x" },
+            { label: "ok", keywords: "y, z\u0000" },
+          ],
+        })
+      )
+    ).toEqual({ ok: false, error: { key: "urg_err_topic_nul", n: 2 } });
+    expect(profileFromDraft(draft({ deadlines: [{ label: "d\u0000", due: "2026-12-01" }] }))).toEqual({
+      ok: false,
+      error: { key: "urg_err_deadline_nul", n: 1 },
+    });
   });
 
   test("a deadline needs a real date", () => {
