@@ -2,6 +2,7 @@ import { MAILBOX_ACTION_TYPES, type ActionType, type ExpireFilter } from "@ea/co
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
+import { emailIdOf } from "../anchor";
 
 import { CLAIM_MAX_AGE_MS } from "./claims";
 import { actionTypeSchema, type DbOrTrx } from "./shared";
@@ -25,9 +26,9 @@ export async function expireStaleReady(
     .where("email_id", "in", (eb) =>
       eb.selectFrom("emails").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
     )
-    .returning(["id", "email_id", "type"])
+    .returning(["id", "email_id", "loop_id", "type"])
     .execute();
-  return rows.map((row) => ({ id: row.id, emailId: row.email_id, type: actionTypeSchema.parse(row.type) }));
+  return rows.map((row) => ({ id: row.id, emailId: emailIdOf(row), type: actionTypeSchema.parse(row.type) }));
 }
 // `ready` originals of the mailbox-changing types. Above 0 after an expire only while a committer run holds a row.
 export async function countReadyOriginals(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<number> {
@@ -79,7 +80,7 @@ export async function expireReadyOriginals(
     .$if(category !== undefined && "not" in category, (qb) =>
       qb.where(latestCategory, "<>", (category as { not: string }).not)
     )
-    .returning(["id", "email_id", "type"])
+    .returning(["id", "email_id", "loop_id", "type"])
     .execute();
-  return rows.map((row) => ({ id: row.id, emailId: row.email_id, type: actionTypeSchema.parse(row.type) }));
+  return rows.map((row) => ({ id: row.id, emailId: emailIdOf(row), type: actionTypeSchema.parse(row.type) }));
 }

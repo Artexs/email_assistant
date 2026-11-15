@@ -2,24 +2,39 @@ import {
   delegateAddBodySchema,
   delegatePatchBodySchema,
   delegateSchema,
+  delegationActionBodySchema,
+  delegationListQuerySchema,
   DELEGATE_LIST_MAX,
   z,
   type Delegate,
   type DelegateList,
+  type DelegationCancelAnswer,
+  type DelegationDoneAnswer,
 } from "@ea/core";
 import { Hono, type MiddlewareHandler } from "hono";
 
-import type { Db } from "../../platform/db";
-import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
+import type { Db, TenantContext } from "../../platform/db";
+import { parseBody, parseQuery, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
+import type { ApprovalHooks, DelegationHooks } from "../actions";
 import { isFeatureOn } from "../tenancy";
 
-import { delegateDocs } from "./api-docs";
+import { delegateDocs, delegationDocs } from "./api-docs";
+import { decodeDelegationCursor, listDelegationItems } from "./list";
 import { getDelegate, listDelegates, type DelegateRow } from "./repo";
-import { addDelegate, updateDelegate } from "./service";
+import { addDelegate, cancelByUser, closeDelegation, delegationHooks, updateDelegate } from "./service";
 
 export interface DelegateRouteDeps {
   db: Db;
   now(): Date;
+}
+
+export interface DelegationRouteDeps extends DelegateRouteDeps {
+  // What a decision does for the cards of other channels: the real hook is built in `channels` (a layer above this module), so
+  // the composition root passes it in. The Telegram cards follow a cancel from the panel.
+  approvalHooks: ApprovalHooks;
+  uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
+  // Test seam: the delegation hooks (default: `delegationHooks`).
+  hooks?: DelegationHooks;
 }
 
 const idSchema = z.uuid();
@@ -107,6 +122,81 @@ export function delegateRoutes(deps: DelegateRouteDeps): Hono<ApiEnv> {
         if (row === undefined) return c.json({ error: "not_found" }, 404);
         return c.json<Delegate>(toDelegate(row));
       }
+    }
+  });
+
+  return app;
+}
+
+// F102 stage 15: the routes of the delegations page. Any member reads and marks a delegation done; the cancel is owner
+// only. The flag comes first, as for the delegates: with it off every route is a 404, for every role and with a bad id.
+// Every write passes `via: "web"` and the user as actor.
+export function delegationRoutes(deps: DelegationRouteDeps): Hono<ApiEnv> {
+  const app = new Hono<ApiEnv>();
+
+  const flagFirst: MiddlewareHandler<ApiEnv> = async (c, next) => {
+    if (!(await isFeatureOn(deps.db, c.get("ctx"), "delegation_pages"))) return c.json({ error: "not_found" }, 404);
+    await next();
+  };
+
+  app.get("/delegations", flagFirst, delegationDocs.listDelegations, async (c) => {
+    const q = parseQuery(c, delegationListQuerySchema);
+    const cursor = q.before === undefined ? undefined : decodeDelegationCursor(q.before);
+    if (cursor === null) {
+      throw new ValidationError([{ path: "before", code: "invalid_cursor", message: "invalid cursor" }]);
+    }
+    return c.json(
+      await listDelegationItems(deps.db, c.get("ctx"), {
+        ...(q.filter === undefined ? {} : { filter: q.filter }),
+        ...(cursor === undefined ? {} : { cursor }),
+        ...(q.limit === undefined ? {} : { limit: q.limit }),
+      })
+    );
+  });
+
+  app.post("/delegations/:id/done", flagFirst, delegationDocs.markDelegationDone, async (c) => {
+    const ctx = c.get("ctx");
+    const id = idOf(c.req.param("id"));
+    await parseBody(c, delegationActionBodySchema);
+    const result = await deps.db
+      .transaction()
+      .execute((trx) => closeDelegation(trx, ctx, id, { actor: c.get("session").userId, at: deps.now(), via: "web" }));
+    switch (result.kind) {
+      case "done":
+        return c.json<DelegationDoneAnswer>({ status: "done" });
+      case "already":
+        return c.json({ error: "already" }, 409);
+      case "not_closable":
+        return c.json({ error: "not_closable" }, 409);
+      case "not_found":
+        return c.json({ error: "not_found" }, 404);
+    }
+  });
+
+  app.post("/delegations/:id/cancel", flagFirst, requireOwner, delegationDocs.cancelDelegation, async (c) => {
+    const ctx = c.get("ctx");
+    const id = idOf(c.req.param("id"));
+    await parseBody(c, delegationActionBodySchema);
+    const result = await cancelByUser(
+      {
+        db: deps.db,
+        hooks: deps.hooks ?? delegationHooks({ db: deps.db }),
+        approvalHooks: deps.approvalHooks,
+        uidplus: deps.uidplus,
+      },
+      ctx,
+      id,
+      { userId: c.get("session").userId, via: "web", now: deps.now() }
+    );
+    switch (result.kind) {
+      case "cancelled":
+        return c.json<DelegationCancelAnswer>({ status: "cancelled" });
+      case "not_open":
+        return c.json({ error: "not_open" }, 409);
+      case "sending":
+        return c.json({ error: "sending" }, 409);
+      case "not_found":
+        return c.json({ error: "not_found" }, 404);
     }
   });
 

@@ -60,7 +60,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-15 (F114 stage 04; not seen live)
 - **Source:** job `ops.slo` (`checkDisk`, stage 04). Line 2 shows the free percent and the free gigabytes of the volume `SLO_DISK_PATH`.
 - **Cause:** The free space is below `SLO_DISK_FREE_PCT` percent (default 15) or below `SLO_DISK_FREE_GB` gigabytes (default 2). It closes at 5 points and 0.5 GB above those values.
-- **Fix:** Free space on the VPS: old backups (`BACKUP_DIR`), Docker images and build cache (`docker system df`), logs. Never delete the database volume. `deploy/README.md` § Update has the disk check.
+- **Fix:** Free space on the VPS: old backups (`BACKUP_DIR`), Docker images and build cache (`docker system df`), logs. Never delete the database volume. `deploy/README.md` § Release (the script `deploy/release.sh`) has the disk check.
 - **Status:** won't fix (expected behaviour)
 
 ### `slo_backup_age` (operator alert text `ALERT slo_backup_age`)

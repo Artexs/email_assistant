@@ -47,8 +47,8 @@ export interface TableSpec {
   json: readonly string[];
   /** Text columns that can hold an id of a row (`ap:<id>`, a dedup key): the import maps each id in them. */
   idText?: readonly string[];
-  /** A row with a value in this column is not exported: its parent table (`digests`) is not in the file. */
-  unexportable?: string;
+  /** A row with a value in one of these columns is not exported: the parent table (`digests`, `open_loops`) is not in the file. */
+  unexportable?: readonly string[];
   /** Columns of the file that the import does not insert (the database makes them). */
   dropOnImport?: readonly string[];
 }
@@ -90,6 +90,7 @@ export const TABLE_SPECS: Readonly<Record<DemoTable, TableSpec>> = {
     sort: "id",
     time: "created_at",
     refs: { email_id: "emails" },
+    unexportable: ["loop_id"],
     selfRefs: ["depends_on_action_id", "reverses_action_id", "supersedes_action_id"],
     userRefs: ["approved_by"],
     json: ["payload", "provider_result"],
@@ -119,7 +120,7 @@ export const TABLE_SPECS: Readonly<Record<DemoTable, TableSpec>> = {
     userRefs: ["user_id"],
     json: ["buttons", "view"],
     idText: ["dedup_key"],
-    unexportable: "digest_id",
+    unexportable: ["digest_id", "loop_id"],
   },
   audit_log: {
     sort: "id",

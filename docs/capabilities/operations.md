@@ -1,6 +1,6 @@
 # Operations
 
-> Checked against the code at `4a53454e`, 2026-11-15.
+> Checked against the code at `255e8ab5`, 2026-11-15.
 
 ## What it does now
 
@@ -30,6 +30,17 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 8. **The text.** Line 1: `ALERT <kind>`, `STILL OPEN <kind> (since <ISO time>)`, `RESOLVED <kind> (open <N> min)` or `TEST <kind>`. Line 2: the facts in words. Line 3 (not for resolved): up to five ids of mailboxes, mails or organizations, then `+N more`. Last line: `Runbook: docs/known-alerts.md#<kind>`. In Polish the words change (`ALARM`, `Instrukcja:`) and the decimal separator is a comma.
 9. **No real send outside the operator chat.** Dev and sim leave `OPERATOR_TELEGRAM_CHAT_ID` empty and send nothing real.
 
+### Releases
+
+1. **Every VPS deploy is a release.** A release is a tag `v<x.y.z>` (SemVer, `0.y.z` for now) on a commit of `origin/master`. The version in the root `package.json` must be the tag without `v`. A patch version is fine. The steps before the deploy are in `docs/release-checklist.md`.
+2. **`bun run release:prepare <x.y.z>`** sets `version` in `package.json` and moves the items under `## [Unreleased]` of `CHANGELOG.md` to `## [x.y.z] - <UTC date>`, with an empty `[Unreleased]` left. It runs no git command; it prints the next commands. It refuses with exit 2 and no change for a version that is not `x.y.z`, not greater than the current one, or an `[Unreleased]` with no item.
+3. **`deploy/release.sh v<x.y.z>`** (on the VPS) refuses a dirty tree or a tag that is not on `origin/master`. Then it runs the backup, the disk check, writes the state file `state` in the folder `deploy/release-state/` with `pending`, keeps the running image as `ea-server:<current>`, checks out the tag, builds the image once with the build arg `EA_RELEASE`, runs `db:migrate`, starts with `up -d --no-build --wait`, checks `/health` and the `EA_RELEASE` of the running server, and then moves `current` to `previous`. The last line is `release ok <tag> previous <old>`. It never rolls back by itself: a failed migration needs a human choice (a forward fix or a restore).
+4. **`deploy/rollback.sh`** goes back with no rebuild and never changes the database. With `pending` set it returns to `current` (the release that broke); else it goes to `previous`. With no target it refuses. A second run with no `pending` swaps `current` and `previous`.
+5. **Release identity.** The image holds `EA_RELEASE` (default `dev`); every log line has the field `release`. `/health` stays `{status, db}`. A plain `up -d --build` stamps `dev`.
+6. **Images.** `ea-server:latest` is the running release. `ea-server:<tag>` stays for `current` and `previous`; the prune after a release removes every other `ea-server:v*` and `ea-server:pre-*` tag, including a manual `pre-<ticket>` image.
+7. **A failed release** leaves `pending` set. `release.sh` refuses to run again until `deploy/rollback.sh` ran. After a release or a rollback the VPS checkout is detached; run `git checkout master` before a `git merge --ff-only`.
+8. **Migration rule.** Migrations are forward only and follow expand and contract (`docs/code-patterns.md` § Migrations). CI runs `bun run db:check-migrations`: a migration newer than the cutoff `CONTRACT_CHECK_AFTER` (`apps/server/src/scripts/check-migrations-rules.ts`) that holds a contract statement (drop, rename, type change, `SET NOT NULL`, `TRUNCATE`, `REVOKE`, a new constraint on an old table) fails unless the file has a line `-- contract: v<x.y.z>`. The check does not see a replace that narrows a CHECK list; a reviewer must.
+
 ## Entry points
 
 | Kind     | Name                                                                                                                       | Where                                            |
@@ -41,6 +52,9 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 | function | `nextAlertStep`                                                                                                            | `packages/core/src/ops/alert-step.ts`            |
 | CLI      | `bun run ops:alerts [--days 7]`: one line per incident of the last days (kind, opened, notices, resolved or `open`, facts) | `apps/server/src/scripts/ops-alerts.ts`          |
 | CLI      | `bun run ops:alert-test (--kind <kind> \| --all)`: sends the `TEST` text through the real path, writes no row              | `apps/server/src/scripts/ops-alert-test.ts`      |
+| CLI      | `bun run release:prepare <x.y.z>`: version and changelog for a release                                                     | `apps/server/src/scripts/release-prepare.ts`     |
+| CLI      | `bun run db:check-migrations`: contract statements in new migrations (CI)                                                  | `apps/server/src/scripts/check-migrations.ts`    |
+| script   | `deploy/release.sh <tag>`, `deploy/rollback.sh`                                                                            | `deploy/release.sh`, `deploy/rollback.sh`        |
 | config   | `SLO_*`, `BACKUP_STATUS_FILE`, `OPERATOR_TELEGRAM_CHAT_ID`, `OPERATOR_LOCALE`                                              | `apps/server/src/platform/config.ts`             |
 
 ## Data
@@ -54,7 +68,8 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 - No alert for a server or database that is down: Healthchecks.io stays the dead-man (`platform.heartbeat`).
 - The alert text is one language per server (`OPERATOR_LOCALE`), not one per reader.
 - The operator console list of alerts is F081.
-- Releases, rollback and the restore drill: F114 stages 05 to 09.
+- The release and rollback scripts are not run on the VPS yet (F114 stage 09), and there is no `v0.1.0` tag yet. `deploy/test/` runs them with stub commands only.
+- The restore drill: F114 stages 07 to 09.
 
 ## Decisions
 
@@ -69,4 +84,9 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 - `apps/server/src/modules/operator/slo-texts.test.ts`
 - `apps/server/src/modules/operator/slo-host-checks.test.ts`
 - `deploy/test/backup.test.ts`
+- `deploy/test/release.test.ts`
+- `deploy/test/rollback.test.ts`
+- `deploy/test/release-identity.test.ts`
+- `apps/server/src/scripts/check-migrations.test.ts`
+- `apps/server/src/scripts/release-prepare.test.ts`
 - `packages/core/src/ops/alert-step.test.ts`

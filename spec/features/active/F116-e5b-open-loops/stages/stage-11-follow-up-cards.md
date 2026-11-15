@@ -37,3 +37,7 @@ T1–T8 pass; the Proof of `plan.md` prints `PROOF_OK` (`/tmp/f116-s11`).
 ## Out of scope
 
 Planning a follow-up (14, 15), the loop lines in the digest (18).
+
+## Carry-over from stage 09 (worker, 2026-11-15)
+
+The `outbox` mail-kind checks accept `email_id` or `loop_id` (stage 09 migration) for `urgent`, `action_failed`, `approval`, `approval_set`, `send_result`, `delegation_answered` and `approval_edit`. No check limits `outbox.loop_id` to the follow-up kinds; the card code does. The card detectors and the approval list leave loop rows out until stage 10/11 (`stage-10-follow-up-kind.md` § Carry-over from stage 09 lists each reader). A card edit (F102 `approval_edit`) of a loop card reads `outbox.loop_id`; `edit_of_outbox_id` stays the link to the sent card.

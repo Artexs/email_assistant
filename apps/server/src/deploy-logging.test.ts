@@ -163,22 +163,39 @@ describe("deploy/check-logging.sh --drill (restore drill file set, F114 stage 07
 });
 
 // Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
+// The `server` service has `env_file: ../.env`. The CI checkout has no .env, and the Compose of the runner checks that this file
+// exists even with --no-env-resolution. So the file goes to a throwaway project folder with an empty .env, and the repo stays clean.
+const project = mkdtempSync(join(tmpdir(), "f103-s18-"));
+mkdirSync(join(project, "deploy"));
+writeFileSync(join(project, ".env"), "");
+writeFileSync(join(project, "deploy", "compose.yaml"), readFileSync(join(repoRoot, "deploy", "compose.yaml")));
+afterAll(() => rmSync(project, { recursive: true, force: true }));
+
+// Fails loud: a Compose error stops the test with its stderr text, never an empty stdout that JSON.parse reads.
 const composeConfig = (profile: string | null) => {
   const result = Bun.spawnSync(
     [
       "docker",
       "compose",
       "-f",
-      "deploy/compose.yaml",
+      join(project, "deploy", "compose.yaml"),
       ...(profile === null ? [] : ["--profile", profile]),
       "config",
       "--no-env-resolution",
       "--format",
       "json",
     ],
-    { cwd: repoRoot, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
+    { cwd: project, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
   );
-  return result;
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `docker compose config (profile ${profile ?? "none"}) exited ${result.exitCode}: ${result.stderr.toString()}`
+    );
+  }
+  return {
+    exitCode: result.exitCode,
+    services: (JSON.parse(result.stdout.toString()) as { services: Record<string, unknown> }).services,
+  };
 };
 
 interface OpsService {
@@ -194,7 +211,7 @@ interface OpsService {
 
 describe("deploy/compose.yaml profile ops (the log store)", () => {
   const withOps = composeConfig("ops");
-  const services = (JSON.parse(withOps.stdout.toString()) as { services: Record<string, OpsService> }).services;
+  const services = withOps.services as Record<string, OpsService>;
   const store = services.victorialogs;
   const agent = services.vlagent;
 
@@ -248,7 +265,7 @@ describe("deploy/compose.yaml profile ops (the log store)", () => {
   test("without the profile the config lists neither service", () => {
     const plain = composeConfig(null);
     expect(plain.exitCode).toBe(0);
-    const names = Object.keys((JSON.parse(plain.stdout.toString()) as { services: object }).services);
+    const names = Object.keys(plain.services);
     expect(names).not.toContain("victorialogs");
     expect(names).not.toContain("vlagent");
     expect(names).toContain("server");
@@ -264,7 +281,7 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     healthcheck?: { disable?: boolean };
     profiles?: string[];
   }
-  const services = (JSON.parse(result.stdout.toString()) as { services: Record<string, Service> }).services;
+  const services = result.services as Record<string, Service>;
 
   test("server writes json-file, db and cli write local, all 10m x 5", () => {
     expect(result.exitCode).toBe(0);

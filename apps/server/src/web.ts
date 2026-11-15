@@ -9,13 +9,14 @@ import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope 
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
   approvalRoutes,
+  cardEditHooks,
   channelRoutes,
   getChatLinkForUser,
   listUrgentNoticeTimes,
   queueMailboxRemovedNotices,
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
-import { delegateRoutes, delegationHooks } from "./modules/delegation";
+import { delegateRoutes, delegationHooks, delegationRoutes } from "./modules/delegation";
 import {
   createMailOAuthClients,
   getSentSyncView,
@@ -375,6 +376,15 @@ export function apiRouters(
       approvalRoutes({ db, now, sendScope: extras.sendScope, hooks: delegationHooks({ db }), uidplus: uidplusOf(db) })
     );
     api.route("/", delegateRoutes({ db, now }));
+    api.route(
+      "/",
+      delegationRoutes({
+        db,
+        now,
+        approvalHooks: cardEditHooks({ sendScope: extras.sendScope }),
+        uidplus: uidplusOf(db),
+      })
+    );
   };
 }
 

@@ -44,11 +44,12 @@ export interface Actions {
   attempts: Generated<number>;
   created_at: Generated<Timestamp>;
   depends_on_action_id: string | null;
-  email_id: string;
+  email_id: string | null;
   id: Generated<string>;
   idempotency_key: string;
   last_error: string | null;
   locked_at: Timestamp | null;
+  loop_id: string | null;
   next_attempt_at: Timestamp | null;
   notified_at: Timestamp | null;
   org_id: string;
@@ -455,6 +456,7 @@ export interface Outbox {
   kind: string;
   locale: Generated<string>;
   locked_at: Timestamp | null;
+  loop_id: string | null;
   mailbox_id: string | null;
   next_attempt_at: Timestamp;
   org_id: string;
