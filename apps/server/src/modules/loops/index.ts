@@ -4,14 +4,14 @@ export {
   closeLoop,
   getLoop,
   insertLoop,
-  laterLoop,
   lockLoop,
   markAutoReply,
   MAX_LATER,
-  reopenLoop,
+  reopenLoopRow,
   restartLoop,
+  setLoopLater,
 } from "./repo";
-export type { LoopCloseReason, LoopKind, LoopRow, NewLoop, ReopenResult } from "./repo";
+export type { LoopCloseReason, LoopKind, LoopRow, LoopVia, NewLoop, ReopenResult } from "./repo";
 export { FOLLOW_UP_MIN_WAIT_DAYS, loopHooks } from "./hooks";
 export { clearLoopTexts } from "./retention";
 export { expireFollowUpSends } from "./follow-up-expiry";
@@ -49,3 +49,7 @@ export { createLoopJobs, createLoopMatchJob } from "./jobs";
 export type { LoopJobDeps, LoopJobs, LoopMatchJob, LoopMatchJobDeps } from "./jobs";
 export { matchReplies } from "./match";
 export type { MatchResult } from "./match";
+export { draftFollowUp, oneLineSubject, recipientsOf } from "./follow-up-draft";
+export type { DraftFollowUpResult } from "./follow-up-draft";
+export { doneLoop, dropLoop, laterLoop, reopenLoop, untrackLoop, LATER_WORKING_DAYS } from "./loop-commands";
+export type { LaterAnswer, LoopAnswer, LoopCommandDeps, LoopCommandInput } from "./loop-commands";

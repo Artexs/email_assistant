@@ -73,6 +73,7 @@ export const auditEvents = {
   loopReopened: "loop.reopened", // data: loop_id, kind
   loopLater: "loop.later", // data: loop_id, kind, later_count
   loopRestarted: "loop.restarted", // data: loop_id, kind
+  loopWouldDraft: "loop.would_draft", // data: loop_id, kind, via; shadow mode: a follow-up tap that planned nothing
   webLogin: "web.login",
   webPasswordSet: "web.password_set",
   webPasswordChanged: "web.password_changed",
