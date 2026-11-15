@@ -33,6 +33,11 @@ const AT = new Date("2026-11-20T10:00:00Z");
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
+// `toMatchObject` does not compare the value of a Date: compare the time in ms.
+function ms(value: Date | null | undefined): number | undefined {
+  return value?.getTime();
+}
+
 interface Org {
   ctx: TenantContext;
   mailboxId: string;
@@ -185,23 +190,21 @@ describe("sent sync state", () => {
       expect(
         await updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 7, lastUid: 42 }, { firstPassAt: AT })
       ).toBe(true);
-      expect(await getSentSyncState(trx, org.ctx, org.mailboxId)).toMatchObject({
-        uidValidity: 7,
-        lastUid: 42,
-        firstPassAt: AT,
-      });
+      const state = await getSentSyncState(trx, org.ctx, org.mailboxId);
+      expect(state).toMatchObject({ uidValidity: 7, lastUid: 42 });
+      expect(ms(state?.firstPassAt)).toBe(AT.getTime());
       const later = new Date(AT.getTime() + HOUR);
       expect(
         await updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 7, lastUid: 43 }, { firstPassAt: later })
       ).toBe(true);
-      expect(await getSentSyncState(trx, org.ctx, org.mailboxId)).toMatchObject({ lastUid: 43, firstPassAt: AT });
+      const kept = await getSentSyncState(trx, org.ctx, org.mailboxId);
+      expect(kept?.lastUid).toBe(43);
+      expect(ms(kept?.firstPassAt)).toBe(AT.getTime());
       // No first pass time given: the stored time stays.
       expect(await updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 8, lastUid: 1 })).toBe(true);
-      expect(await getSentSyncState(trx, org.ctx, org.mailboxId)).toMatchObject({
-        uidValidity: 8,
-        lastUid: 1,
-        firstPassAt: AT,
-      });
+      const last = await getSentSyncState(trx, org.ctx, org.mailboxId);
+      expect(last).toMatchObject({ uidValidity: 8, lastUid: 1 });
+      expect(ms(last?.firstPassAt)).toBe(AT.getTime());
 
       await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: false });
       expect(await updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 7, lastUid: 5 })).toBe(false);
@@ -214,10 +217,9 @@ describe("sent sync state", () => {
       const org = await newOrg(trx);
       await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: true, at: AT });
       expect(await markSentPass(trx, org.ctx, org.mailboxId, { at: AT, errorCode: "no_folder" })).toBe(true);
-      expect(await getSentSyncState(trx, org.ctx, org.mailboxId)).toMatchObject({
-        lastPassAt: AT,
-        lastErrorCode: "no_folder",
-      });
+      const pass = await getSentSyncState(trx, org.ctx, org.mailboxId);
+      expect(pass?.lastErrorCode).toBe("no_folder");
+      expect(ms(pass?.lastPassAt)).toBe(AT.getTime());
       expect(await markSentPass(trx, org.ctx, org.mailboxId, { at: AT, errorCode: null })).toBe(true);
       expect((await getSentSyncState(trx, org.ctx, org.mailboxId))?.lastErrorCode).toBeNull();
 
@@ -276,6 +278,8 @@ describe("sent mail rows", () => {
       expect(stored).toHaveLength(2);
       for (const [i, expected] of input.entries()) {
         const got = stored[i];
+        expect(ms(got?.sent_at)).toBe(expected.sentAt.getTime());
+        expect(ms(got?.internal_date)).toBe(expected.internalDate.getTime());
         expect(got).toMatchObject({
           org_id: org.ctx.orgId,
           mailbox_id: expected.mailboxId,
@@ -291,8 +295,6 @@ describe("sent mail rows", () => {
           to_addresses: expected.toAddresses,
           cc_addresses: expected.ccAddresses,
           subject: expected.subject,
-          sent_at: expected.sentAt,
-          internal_date: expected.internalDate,
           origin: expected.origin,
           action_id: expected.actionId,
           content: expected.content,
@@ -318,9 +320,9 @@ describe("sent mail rows", () => {
         subject: before.subject,
         to_addresses: before.to_addresses,
         content: before.content,
-        internal_date: before.internal_date,
-        created_at: before.created_at,
       });
+      expect(ms(after.internal_date)).toBe(ms(before.internal_date));
+      expect(ms(after.created_at)).toBe(ms(before.created_at));
       expect(await rowsOf(trx, org)).toHaveLength(2);
       // A new key next to a known key counts once.
       expect(await insertSentEmails(trx, org.ctx, [row(org, 1), row(org, 3)])).toBe(1);
