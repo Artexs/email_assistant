@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import {
@@ -189,6 +190,41 @@ describe("deliverTestMail", () => {
       expect(second.map((item) => item.result)).toEqual(["duplicate_removed"]);
       expect(await ids(fake, OFFERS)).toEqual([]);
       expect(await ids(fake, INBOX)).toEqual(["<a@t.test>"]);
+    });
+  });
+
+  test("a run writes deliver_done with the organization, the mailbox and the five counts, never a subject", async () => {
+    await withRollback(db, async (trx) => {
+      const { run, fake, ctx, mailboxId } = await setup(trx);
+      await fake.ensureFolder(OFFERS);
+      for (const id of ["a", "b"]) {
+        await insertEmail(trx, ctx, {
+          mailbox_id: mailboxId,
+          dedup_key: `mid:${id}`,
+          message_id_header: `<${id}@t.test>`,
+          content_hash: `h${id}`,
+          uid: 1,
+          source_folder: INBOX,
+          thread_key: `<${id}@t.test>`,
+          from_address: SENDER,
+          subject: "MARKER-SUBJECT canary-77ab",
+          received_at: NOW,
+        });
+      }
+      fake.deliver(INBOX, mail("a"));
+      fake.deliver(OFFERS, mail("a"));
+      fake.deliver(OFFERS, mail("b"));
+      const lines: string[] = [];
+      const spy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+      try {
+        await run({ wanted: want("a", "b", "missing") });
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(lines).toEqual([
+        `[mail] deliver_done org_id=${ctx.orgId} mailbox_id=${mailboxId} moved=0 in_inbox=0 duplicates_removed=0 synced=2 not_found=1`,
+      ]);
     });
   });
 

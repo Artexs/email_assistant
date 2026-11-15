@@ -1,10 +1,19 @@
-import { describe, expect, test } from "bun:test";
+import { format } from "node:util";
+
+import { describe, expect, spyOn, test } from "bun:test";
 import type { ImapFlow } from "imapflow";
 
 import { HardError, SoftError } from "../../../platform/errors";
 import { MailAuthError } from "../port";
 
-import { createImapMailProvider, imapFlowOptions, isLoopbackHost, matchFolder, toMailError } from "./client";
+import {
+  createImapMailProvider,
+  imapFlowOptions,
+  isLoopbackHost,
+  logConnectionError,
+  matchFolder,
+  toMailError,
+} from "./client";
 
 const creds = { user: "me@interia.pl", auth: { kind: "password", password: "pw-secret-1" } } as const;
 
@@ -349,5 +358,29 @@ describe("IMAP adapter writes (stub client)", () => {
     await expect(provider.setFlags("INBOX", 5, { add: ["\\Seen"] })).rejects.toThrow(
       new HardError("flag store refused")
     );
+  });
+});
+
+describe("logConnectionError", () => {
+  function linesOf(error: Error): string[] {
+    const lines: string[] = [];
+    const spy = spyOn(console, "error").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    try {
+      logConnectionError(error);
+    } finally {
+      spy.mockRestore();
+    }
+    return lines;
+  }
+
+  test("a system code is the only field; the server text with an address never reaches the line", () => {
+    const error = Object.assign(new Error("NO [AUTHENTICATIONFAILED] MARKER-ADDR@x.test"), { code: "ECONNRESET" });
+    expect(linesOf(error)).toEqual(["[mail] imap_connection_error code=ECONNRESET"]);
+  });
+
+  test("no code gives unknown; a code that holds an address is dropped and counted", () => {
+    expect(linesOf(new Error("MARKER-ADDR@x.test"))).toEqual(["[mail] imap_connection_error code=unknown"]);
+    const odd = Object.assign(new Error("x"), { code: "MARKER-ADDR@x.test" });
+    expect(linesOf(odd)).toEqual(["[mail] imap_connection_error dropped_fields=1"]);
   });
 });

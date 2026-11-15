@@ -26,6 +26,8 @@ export interface ConnectDialogProps {
   open: boolean;
   onOpenChange(open: boolean): void;
   onConnected(): void;
+  // The organization has the flag `sent_sync`: the dialog says that the assistant reads Sent.
+  sentSyncLine: boolean;
 }
 
 type FieldErrors = ReturnType<typeof fieldErrorKeys>;
@@ -87,7 +89,12 @@ function Field({ id, label, value, error, disabled, onChange, type, autoComplete
   );
 }
 
-export function ConnectDialog({ open, onOpenChange, onConnected }: ConnectDialogProps) {
+// The one plain line at connect: shown only while the organization has the flag `sent_sync`.
+export function SentSyncLine({ show }: { show: boolean }) {
+  return show ? <p className="text-sm text-muted-foreground">{t("sent_line")}</p> : null;
+}
+
+export function ConnectDialog({ open, onOpenChange, onConnected, sentSyncLine }: ConnectDialogProps) {
   const [form, setForm] = useState<ConnectFormState>(initialConnectForm);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<TextKey | null>(null);
@@ -253,6 +260,7 @@ export function ConnectDialog({ open, onOpenChange, onConnected }: ConnectDialog
             </p>
           )}
           <p className="text-sm text-muted-foreground">{t("connect_consent")}</p>
+          <SentSyncLine show={sentSyncLine} />
           <DialogFooter>
             <Button type="button" variant="outline" disabled={pending} onClick={() => changeOpen(false)}>
               {t("cancel")}

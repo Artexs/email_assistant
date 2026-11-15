@@ -275,6 +275,19 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
+    "an old-form line in mail fails, also in its imap/ folder",
+    async () => {
+      for (const file of ["__log-fixture.ts", "imap/__log-fixture.ts"]) {
+        const importPath = file.includes("/") ? "../../../platform/log" : "../../platform/log";
+        expect(
+          await logEventSeverities(`apps/server/src/modules/mail/${file}`, "log.info(`x ${y}`);", importPath)
+        ).toEqual([2]);
+      }
+    },
+    TIMEOUT
+  );
+
+  test(
     "an event line in platform passes",
     async () => {
       expect(
