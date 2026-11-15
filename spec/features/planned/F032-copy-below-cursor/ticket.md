@@ -31,7 +31,7 @@ A copy of a system-moved mail that sits in the mail's source folder below that f
 
 ## Slices
 
-Two worker jobs in order (`plan.md` § Stages, § How to run): 01 pure rules and the repository read; 02 `[risky]` the store in the sync, tests and docs. No owner checkpoint, no owner step.
+Three worker jobs in order (`plan.md` § Stages, § How to run): 01 pure rules and the repository read; 02 `[risky]` the store in the sync, core tests and docs; 03 the edge-case tests. No owner checkpoint, no owner step.
 
 ## Sequenced
 

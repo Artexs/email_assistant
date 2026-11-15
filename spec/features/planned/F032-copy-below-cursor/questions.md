@@ -17,3 +17,11 @@ When this run already matched or stored the same mail in another synced folder, 
 ## Q4 — A copy of old mail is stored but not sent to the LLM `[minor]`
 
 The copy keeps the INTERNALDATE of the mail. When that is older than 7 days, the triage worker skips it as `too_old`, as for any stored mail (D8). **Default:** no exception.
+
+## Q5 — On a server with per-folder UIDs, a rare copy stays unstored `[minor]`
+
+A copy is not stored when another row of the same mail holds the same UID number in any folder (D2 `held`). With one UID counter (Interia) that row's mail is the one in the folder, so a store would duplicate it. With per-folder UIDs (RFC servers, GreenMail) an equal number can be chance; the copy then stays counted and unstored, as today. Copies below the cursor are rare on such servers, because a copy there gets a new UID above the cursor (cold review 1, M4). **Default:** accept. **Option:** a per-mailbox "one UID counter" flag from the capability check, a new ticket.
+
+## Q6 — A copy is stored only when the moved mail is at its own UID `[minor]`
+
+When the folder check finds the moved mail only at another UID (by search), the hit may be the user's move back while an untracked twin stays in the system folder. Such a copy stays counted and unstored, as today (D11, cold review 1, M5). **Default:** accept; the post-deploy count shows how often it happens.
