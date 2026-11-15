@@ -1,0 +1,37 @@
+---
+title: Change the language
+description: Set the language of the panel and of the Telegram messages, and learn what decides it.
+capabilities:
+  - web-panel
+  - digest-and-notices
+---
+
+import UiText from "../../../components/UiText.astro";
+
+Each member has one language setting. It covers the panel, the Telegram messages and the e-mails of your account. You can choose Polish or English.
+
+## Steps
+
+1. Open the page **<UiText k="nav_settings" />**.
+2. In the card **<UiText k="acct_title" />**, open the list **<UiText k="acct_language_label" />**.
+3. Choose **<UiText k="acct_language_pl" />** or **<UiText k="acct_language_en" />**.
+
+The panel shows this text and switches at once:
+
+> <UiText k="acct_language_saved" />
+
+The card says what the setting covers:
+
+> <UiText k="acct_language_help" />
+
+## What decides the language
+
+- The panel uses the language that you saved. Without a saved language it uses the language of your browser. Polish browsers get Polish. All others get English.
+- Telegram uses the language that you saved. Without a saved language it uses Polish.
+- The setting belongs to you, not to the device. Each sign-in on any device uses it.
+- The setting works also when your operator has paused the account.
+
+## What happens next
+
+New messages from the bot come in the new language. Messages that the bot already sent do not change.
+The AI line of a mail in the panel and in Telegram follows the same language setting.

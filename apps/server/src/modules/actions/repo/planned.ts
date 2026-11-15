@@ -111,6 +111,25 @@ export async function createPlanned(
   emailId: string,
   items: PlannedActionInput[]
 ): Promise<CreatedAction[]> {
+  return insertPlanned(db, ctx, { emailId }, items);
+}
+// The same for a follow-up: the items hang on an open loop (`loop_id`), not on a mail. Keys: `<loop id>:create_draft:…` and
+// `<loop id>:send:…` (the rule of `createPlanned` with the loop id in place of the email id).
+export async function createPlannedForLoop(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  loopId: string,
+  items: PlannedActionInput[]
+): Promise<CreatedAction[]> {
+  return insertPlanned(db, ctx, { loopId }, items);
+}
+async function insertPlanned(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  anchor: { emailId: string } | { loopId: string },
+  items: PlannedActionInput[]
+): Promise<CreatedAction[]> {
+  const anchorId = "emailId" in anchor ? anchor.emailId : anchor.loopId;
   const created: CreatedAction[] = [];
   let draftId: string | undefined;
   for (const item of items) {
@@ -124,7 +143,7 @@ export async function createPlanned(
             .selectFrom("actions")
             .select("id")
             .where("org_id", "=", ctx.orgId)
-            .where("idempotency_key", "=", draftKeyOf(emailId, item.idempotencyKey))
+            .where("idempotency_key", "=", draftKeyOf(anchorId, item.idempotencyKey))
             .where("type", "=", "create_draft")
             .executeTakeFirst()
         )?.id;
@@ -137,7 +156,8 @@ export async function createPlanned(
       .insertInto("actions")
       .values({
         org_id: ctx.orgId,
-        email_id: emailId,
+        email_id: "emailId" in anchor ? anchor.emailId : null,
+        loop_id: "loopId" in anchor ? anchor.loopId : null,
         type: item.type,
         payload: JSON.stringify(item.payload),
         status: item.status,

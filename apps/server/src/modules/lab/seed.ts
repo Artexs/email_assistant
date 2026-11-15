@@ -40,7 +40,7 @@ export const LAB_TARGETS: Record<LabOrgKey, SeedTarget> = {
 };
 
 // Every key of `packages/core/src/features.ts` is in exactly one list. `mistake_capture` is on: the executive needs the
-// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on. `trust_ladder` stays off until the evidence stages of the same epic are built; the pilot turns it on. `urgency_editor` is on: its server side exists, and the lab run writes the profile the card shows.
+// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on. `trust_ladder` stays off until the evidence stages of the same epic are built; the pilot turns it on. `why_lines` stays off until the owner asks (F110 stage 26). `docs_links` stays off until the docs site is live. `user_quiet_hours` and `report_mail` stay off: the lab run has fixed notice times and no report mail, and the pilot turns them on per member. `urgency_editor` is on: its server side exists, and the lab run writes the profile the card shows.
 export const LAB_FLAGS_OFF = [
   "org_delete",
   "sso_sign_in",
@@ -49,6 +49,10 @@ export const LAB_FLAGS_OFF = [
   "open_loops",
   "delegate_button",
   "trust_ladder",
+  "why_lines",
+  "docs_links",
+  "user_quiet_hours",
+  "report_mail",
 ] as const satisfies readonly FeatureKey[];
 export const LAB_FLAGS_ON = [
   "stats_page",

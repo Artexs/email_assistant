@@ -34,6 +34,8 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   loop_consent: "no_mail", // a fixed line and the panel link: no recipient, no text
   weekly_report: "no_mail", // counts and category names only (`renderWeeklyReport`)
   approval_edit: "one_mail", // `queueCardEdits` sets `emailId` of the target card (F102); its view keeps the card text
+  trust_report_ready: "no_mail", // category names and a count (`renderTrustReportReadyNotice`)
+  autonomy_paused: "no_mail", // a category, a fixed reason and a count (`renderAutonomyPausedNotice`)
   not_triaged: "one_mail", // the detector sets `emailId`; the view holds the sender address of that mail
 };
 

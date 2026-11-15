@@ -1,11 +1,11 @@
-import { isQuietTime, quietEnd, renderNotice, type OutMessage } from "@ea/core";
+import { isQuietTime, QUIET_HOURS, quietEnd, renderNotice, type OutMessage, type QuietHours } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { markDigestSent } from "../reports";
-import { getOrganization } from "../tenancy";
+import { getOrganization, isFeatureOn, listQuietHoursOf } from "../tenancy";
 
 import { checkCardEdit } from "./card-edit-check";
 import { ChannelError, type ChatChannel } from "./port";
@@ -28,6 +28,7 @@ export const SOFT_BACKOFF_MAX_MS = 15 * 60_000;
 export const CONFIG_PAUSE_MS = 10 * 60_000;
 export const MAX_OTHER_ERRORS = 5;
 
+const MIN_HOLD_MS = 60_000;
 const DEFAULT_BATCH_SIZE = 20;
 const DEFAULT_PER_USER_LIMIT = 3;
 
@@ -101,6 +102,25 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
       return org.timezone;
     }
 
+    // F110 stage 18: the quiet hours of the users of this batch, read once. An organization with the flag off, or a user
+    // with no hours of their own, gets the default. A row that quiet hours never hold (digest, edit) needs no hours.
+    let quietOfUsers: Map<string, QuietHours> | undefined;
+    const flagged = new Map<string, boolean>();
+
+    async function quietOf(row: ClaimedOutbox): Promise<QuietHours> {
+      let on = flagged.get(row.orgId);
+      if (on === undefined) {
+        on = await isFeatureOn(db, { orgId: row.orgId }, "user_quiet_hours");
+        flagged.set(row.orgId, on);
+      }
+      if (!on) return QUIET_HOURS;
+      quietOfUsers ??= await listQuietHoursOf(
+        db,
+        claimed.map((claim) => ({ orgId: claim.orgId, userId: claim.userId }))
+      );
+      return quietOfUsers.get(`${row.orgId}:${row.userId}`) ?? QUIET_HOURS;
+    }
+
     for (const [index, row] of claimed.entries()) {
       const ctx = { orgId: row.orgId };
       const outboxLog = log.with({ outbox_id: row.id });
@@ -146,9 +166,14 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           }
         }
         const timezone = await timezoneOf(ctx);
-        if (row.kind !== "digest" && !isEdit && isQuietTime(now, timezone)) {
-          await release(row, quietEnd(now, timezone), false);
-          continue;
+        if (row.kind !== "digest" && !isEdit) {
+          const quiet = await quietOf(row);
+          if (isQuietTime(now, timezone, quiet)) {
+            // At least one minute ahead: a row never goes back to the queue with a time that has passed.
+            const end = quietEnd(now, timezone, quiet);
+            await release(row, new Date(Math.max(end.getTime(), now.getTime() + MIN_HOLD_MS)), false);
+            continue;
+          }
         }
         const userKey = `${row.orgId}:${row.userId}`;
         const sentCount = sentPerUser.get(userKey) ?? 0;

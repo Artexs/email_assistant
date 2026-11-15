@@ -18,11 +18,21 @@ import { HardError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
 import { compareFolderWithDb, type AuditCounts } from "./audit";
+import { refreshFlags, type FlagsRefreshResult } from "./flags";
 import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { assertTestAddress } from "./imap/probe-move";
 import { appendRaw } from "./imap/tools";
 import { LOCATE_CHUNK } from "./locate";
-import { INBOX, MailFolderMissingError, MailNotFoundError, type MailProvider, type MessageMeta } from "./port";
+import { openMailboxProvider } from "./open";
+import {
+  INBOX,
+  MailAuthError,
+  MailFolderMissingError,
+  MailNotFoundError,
+  type MailProvider,
+  type MessageMeta,
+  type OAuthTokens,
+} from "./port";
 import {
   getCredentials,
   getMailbox,
@@ -32,7 +42,15 @@ import {
   type MailboxRow,
 } from "./repo";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
-import { backfillInbox, fetchSince, type SyncDeps, type SyncResult } from "./sync";
+import {
+  backfillInbox,
+  fetchSince,
+  historyRefusalBeforeOpen,
+  type BackfillPurpose,
+  type HistoryBackfillOutcome,
+  type SyncDeps,
+  type SyncResult,
+} from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
 // Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`, `mailbox:signals`, `testmail-target deliver`).
@@ -254,16 +272,40 @@ export async function signalsOfMailbox(
   return signals;
 }
 
-/** One-off, read-only: stores INBOX mail of the last `days` days that the regular sync missed (`backfilled_at`). */
+export interface BackfillDeps extends ToolDeps {
+  openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider>;
+  isOwnActionId: SyncDeps["isOwnActionId"];
+  /** The access tokens of OAuth mailboxes. The composition root wires them; the `history` purpose needs them for an OAuth mailbox. */
+  oauthTokens?: OAuthTokens;
+}
+
+/**
+ * One-off, read-only: stores INBOX mail of the last `days` days that the regular sync missed (`backfilled_at`).
+ *
+ * `purpose` `backfill` (default, the operator CLI) opens the mailbox with its stored password and throws a refusal.
+ * `purpose` `history` (the history check) stores the mail as `skipped` / `history_check` and returns every refusal as a value. It opens the mailbox
+ * through `openMailboxProvider`, so an OAuth mailbox logs in with its access token; a refused login is the refusal `auth_refused`.
+ */
 export async function backfillMailbox(
-  deps: ToolDeps & {
-    openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider>;
-    isOwnActionId: SyncDeps["isOwnActionId"];
-  },
+  deps: BackfillDeps,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { days: number; now: Date }
-): Promise<SyncResult> {
+  opts: { days: number; now: Date; purpose?: "backfill" }
+): Promise<SyncResult>;
+export async function backfillMailbox(
+  deps: BackfillDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { days: number; now: Date; purpose: "history" }
+): Promise<HistoryBackfillOutcome>;
+export async function backfillMailbox(
+  deps: BackfillDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { days: number; now: Date; purpose?: BackfillPurpose }
+): Promise<SyncResult | HistoryBackfillOutcome> {
+  const since = new Date(opts.now.getTime() - opts.days * 24 * 3_600_000);
+  if (opts.purpose === "history") return backfillHistory(deps, ctx, mailboxId, since, opts.now);
   const imap = await loadImapOptions(deps, ctx, mailboxId, await getMailboxOrThrow(deps, ctx, mailboxId));
   const provider = await (deps.openProvider ?? openImapProvider)(imap);
   try {
@@ -271,7 +313,74 @@ export async function backfillMailbox(
       { db: deps.db, provider, isOwnActionId: deps.isOwnActionId, now: () => opts.now },
       ctx,
       mailboxId,
-      { since: new Date(opts.now.getTime() - opts.days * 24 * 3_600_000) }
+      { since }
+    );
+  } finally {
+    await provider.close();
+  }
+}
+
+/**
+ * One flag refresh of a mailbox on its own connection (the history check does not wait for the 10-minute sync cadence). The mailbox
+ * opens through `openMailboxProvider`, so an OAuth mailbox logs in with its access token. A refused login throws `MailAuthError`.
+ */
+export async function refreshFlagsOfMailbox(
+  deps: BackfillDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: () => Date
+): Promise<FlagsRefreshResult> {
+  const { provider } = await openMailboxProvider(
+    {
+      db: deps.db,
+      secrets: deps.secrets,
+      openProvider: deps.openProvider ?? openImapProvider,
+      ...(deps.oauthTokens === undefined ? {} : { oauthTokens: deps.oauthTokens }),
+    },
+    ctx,
+    mailboxId
+  );
+  try {
+    return await refreshFlags({ db: deps.db, provider, now }, ctx, mailboxId);
+  } finally {
+    await provider.close().catch(() => undefined);
+  }
+}
+
+async function backfillHistory(
+  deps: BackfillDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date,
+  now: Date
+): Promise<HistoryBackfillOutcome> {
+  // Refusals that need no login come first: a refused run opens no connection and asks no token.
+  const early = await historyRefusalBeforeOpen(deps.db, ctx, mailboxId, { since, now });
+  if (early !== null) return { kind: "refused", reason: early };
+  let provider: MailProvider;
+  try {
+    ({ provider } = await openMailboxProvider(
+      {
+        db: deps.db,
+        secrets: deps.secrets,
+        openProvider: deps.openProvider ?? openImapProvider,
+        ...(deps.oauthTokens === undefined ? {} : { oauthTokens: deps.oauthTokens }),
+      },
+      ctx,
+      mailboxId
+    ));
+  } catch (error) {
+    // A refused login (a password that no longer works, an OAuth grant that the provider blocks) ends the check at once; a network
+    // or storage fault stays an error, so the job counts an attempt.
+    if (error instanceof MailAuthError) return { kind: "refused", reason: "auth_refused" };
+    throw error;
+  }
+  try {
+    return await backfillInbox(
+      { db: deps.db, provider, isOwnActionId: deps.isOwnActionId, now: () => now },
+      ctx,
+      mailboxId,
+      { since, purpose: "history" }
     );
   } finally {
     await provider.close();

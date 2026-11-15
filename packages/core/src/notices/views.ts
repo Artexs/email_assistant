@@ -6,9 +6,12 @@ import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
 import { approvalViewSchema, panelUrlSchema } from "../outgoing/view-schema";
 import { sendLimitKinds } from "../send-limits";
+import { barCategories } from "../triage/metrics";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
+import { senderRuleKinds } from "../triage/rules";
 import { suspiciousReasons } from "../triage/suspicious";
+import { movingCategories, tripReasons } from "../trust";
 import { authErrorReasons, mailOAuthProviderKeys, removeAccessPages } from "../web/mail-oauth";
 import { weekStatsSchema } from "../web/stats";
 
@@ -109,6 +112,10 @@ const urgentView = z.strictObject({
   suspicious: z.array(z.enum(suspiciousReasons)).optional(),
   // Optional on read, written only when the flag `attachment_line` is on and the mail has an attachment to show (F109 stage 06).
   attachments: attachmentFactSchema.optional(),
+  // Optional on read, written only when the flag `why_lines` is on (F110 stage 16): the model confidence (null: no model mark)
+  // and the sender rule that shaped the result.
+  confidence: z.number().min(0).max(1).nullable().optional(),
+  rule: z.enum(senderRuleKinds).nullable().optional(),
   now: isoDate,
   timeZone,
 });
@@ -275,6 +282,52 @@ const loopConsentView = z.strictObject({
   panelUrl: panelUrlSchema.optional(),
 });
 
+// The history check of a mailbox is ready (F110 stage 10, D15). Counts and category names only: no address, sender, subject or domain.
+// `blocked`: the moving categories that the evidence does not support (a count; the Telegram text prints no number for it).
+// `reportUrl`: `<WEB_BASE_URL>/report?mailbox=<id>`, null when `WEB_BASE_URL` is not set.
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+// The link of a trust notice is the panel page and nothing else (F110 stage 10 review, D15): http or https, no user info
+// (`https://app.test@evil.test/` has the host evil.test), no control, format or bidi character, a fixed path, and no query
+// but the mailbox id. An address, a subject or a name cannot ride in the link.
+const trustUrl = (path: string, mailbox: "required" | "none") =>
+  panelUrlSchema.refine((value) => {
+    if (/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u.test(value)) return false;
+    let url: URL;
+    try {
+      url = new URL(value);
+    } catch {
+      return false;
+    }
+    if (url.username !== "" || url.password !== "" || url.hash !== "" || url.pathname !== path) return false;
+    if (mailbox === "none") return url.search === "";
+    return /^\?mailbox=[0-9a-f-]{36}$/.test(url.search) && uuidPattern.test(url.search.slice(9));
+  });
+export const trustReportUrlSchema = trustUrl("/report", "required");
+export const trustSettingsUrlSchema = trustUrl("/settings", "none");
+
+const trustReportReadyView = z
+  .strictObject({
+    mailboxId: z.string().regex(uuidPattern),
+    recommended: z
+      .array(z.enum(movingCategories))
+      .max(movingCategories.length)
+      .refine((list) => new Set(list).size === list.length),
+    blocked: z.number().int().min(0),
+    checked: z.number().int().min(0),
+    reportUrl: trustReportUrlSchema.nullable(),
+  })
+  .refine((view) => view.reportUrl === null || view.reportUrl.endsWith(`?mailbox=${view.mailboxId}`));
+
+// A category lost its `auto` (F110 stage 10, D15). The category and a fixed reason only: no mail data. `corrections` is the count
+// that the `corrections` reason prints. `settingsUrl`: `<WEB_BASE_URL>/settings`, null when `WEB_BASE_URL` is not set.
+const autonomyPausedView = z.strictObject({
+  mailboxId: z.string().regex(uuidPattern),
+  category: z.enum(barCategories),
+  reason: z.enum(tripReasons),
+  corrections: z.number().int().min(0),
+  settingsUrl: trustSettingsUrlSchema.nullable(),
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -294,6 +347,8 @@ export const noticeViewSchemas = {
   not_triaged: notTriagedView,
   sent_missing: sentMissingView,
   loop_consent: loopConsentView,
+  trust_report_ready: trustReportReadyView,
+  autonomy_paused: autonomyPausedView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;

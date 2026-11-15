@@ -19,6 +19,11 @@ export interface QuietHours {
 // P4: no notices from 22:00 to 07:00 in the organization time zone. A change is a code change.
 export const QUIET_HOURS: QuietHours = { start: "22:00", end: "07:00" };
 
+// The quiet hours of a member row (F110 P5): both columns null means the default; equal start and end means none.
+export function quietHoursOf(start: string | null, end: string | null): QuietHours {
+  return start === null || end === null ? QUIET_HOURS : { start, end };
+}
+
 interface LocalParts {
   year: number;
   month: number;
@@ -91,9 +96,19 @@ export function nextLocalDate(date: string): string {
   return dateText(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
 }
 
-// The instant of a local date and time. An ambiguous time (autumn change) gives the later instant.
-// A time in the spring gap gives the instant one hour later on the wall clock (02:30 → 03:30).
-export function localToInstant(date: string, time: string, timeZone: string): Date {
+const DAY_MS = 86_400_000;
+
+interface LocalInstants {
+  // The instants at which the wall clock reads the time, oldest first; in a gap the one instant after the change.
+  instants: number[];
+  // The instant of the change itself when the time falls in a spring gap, else null.
+  change: number | null;
+}
+
+// The instants at which the wall clock of the zone reads `date` `time`: one on a normal day, two in the autumn hour that
+// repeats. In the spring gap the time never shows: the instant is the first one after the change, on the same side of UTC for
+// every zone (02:30 → 03:30 in Warsaw and in New York).
+function localInstants(date: string, time: string, timeZone: string): LocalInstants {
   const naive = Date.UTC(
     Number(date.slice(0, 4)),
     Number(date.slice(5, 7)) - 1,
@@ -101,10 +116,34 @@ export function localToInstant(date: string, time: string, timeZone: string): Da
     Number(time.slice(0, 2)),
     Number(time.slice(3, 5))
   );
-  const naiveOffset = offsetMs(naive, timeZone);
-  const first = naive - naiveOffset;
-  const firstOffset = offsetMs(first, timeZone);
-  return new Date(firstOffset === naiveOffset ? first : naive - firstOffset);
+  // The offsets on both sides of a change near this date. A candidate counts only when the zone has that offset at the candidate.
+  const before = offsetMs(naive - DAY_MS, timeZone);
+  const after = offsetMs(naive + DAY_MS, timeZone);
+  const found = new Set<number>();
+  for (const offset of [before, after]) {
+    const candidate = naive - offset;
+    if (offsetMs(candidate, timeZone) === offset) found.add(candidate);
+  }
+  if (found.size > 0) return { instants: [...found].sort((a, b) => a - b), change: null };
+  // A gap: the smaller offset is the one before the change, so `naive - smaller` is just after it. The change lies between
+  // `naive - larger` (still the old offset) and that instant; a search by the minute finds it.
+  const [old, current] = before < after ? [before, after] : [after, before];
+  let low = naive - current;
+  let high = naive - old;
+  while (high - low > 60_000) {
+    const mid = low + Math.floor((high - low) / 2 / 60_000) * 60_000;
+    if (mid <= low) break;
+    if (offsetMs(mid, timeZone) === old) low = mid;
+    else high = mid;
+  }
+  return { instants: [naive - old], change: high };
+}
+
+// The instant of a local date and time. An ambiguous time (autumn change) gives the later instant.
+// A time in the spring gap gives the instant one hour later on the wall clock (02:30 → 03:30).
+export function localToInstant(date: string, time: string, timeZone: string): Date {
+  const { instants } = localInstants(date, time, timeZone);
+  return new Date(instants[instants.length - 1] as number);
 }
 
 export function formatClock(at: Date, timeZone: string, now: Date, locale: UserLocale): string {
@@ -129,14 +168,17 @@ export function isQuietTime(at: Date, timeZone: string, quiet: QuietHours = QUIE
   return time >= quiet.start || time < quiet.end;
 }
 
-// The instant when the quiet hours end. Outside the quiet hours it returns `at`.
+// The instant when the quiet hours end. Outside the quiet hours it returns `at`. The end is the first instant after `at` at
+// which the wall clock reads the end time: in the autumn hour that repeats it can be the second one, and an end time in the
+// spring gap is the instant of the change (the wall clock jumps over it). The result is always after `at`.
 export function quietEnd(at: Date, timeZone: string, quiet: QuietHours = QUIET_HOURS): Date {
   if (!isQuietTime(at, timeZone, quiet)) return at;
   const { date, time } = localDateTime(at, timeZone);
-  if (quiet.start > quiet.end && time >= quiet.start) {
-    return localToInstant(nextLocalDate(date), quiet.end, timeZone);
-  }
-  return localToInstant(date, quiet.end, timeZone);
+  const endDate = quiet.start > quiet.end && time >= quiet.start ? nextLocalDate(date) : date;
+  const { instants, change } = localInstants(endDate, quiet.end, timeZone);
+  const next = (change === null ? instants : [change]).find((instant) => instant > at.getTime());
+  // No instant is left on that date (a zone that changed its rules twice in 2 days): wait one minute and ask again.
+  return new Date(next ?? at.getTime() + 60_000);
 }
 
 // Minutes from `from` to `to` that lie outside the quiet hours of the time zone (F114 urgent check). The sender holds

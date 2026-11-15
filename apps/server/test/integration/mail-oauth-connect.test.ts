@@ -579,6 +579,77 @@ describe("Connect", () => {
   });
 });
 
+describe("the history check at an OAuth connect", () => {
+  const checks = () =>
+    db
+      .selectFrom("history_checks")
+      .select(["mailbox_id", "status", "reason"])
+      .where("org_id", "=", org.orgId)
+      .execute();
+  const trustOn = () =>
+    setOrgFeature(db, ctxA(), { flag: "trust_ladder", enabled: true, actor: org.ownerId, now: new Date() });
+
+  test("5. a new mailbox with the flag on: one queued check with the reason connect", async () => {
+    await enable("google");
+    await trustOn();
+    const address = addressOf("trust");
+    const { query } = await signIn("google", { address });
+    expect(resultOf(await callback(appOf(), "owner", "google", query)).get("oauth")).toBe("connected");
+    const [row] = await mailboxRows(address);
+    expect(await checks()).toEqual([{ mailbox_id: row?.id ?? "", status: "queued", reason: "connect" }]);
+  });
+
+  test("5b. the flag off: no check", async () => {
+    await enable("google");
+    const { query } = await signIn("google", { address: addressOf("notrust") });
+    expect(resultOf(await callback(appOf(), "owner", "google", query)).get("oauth")).toBe("connected");
+    expect(await checks()).toEqual([]);
+  });
+
+  test("5c. a Reconnect of an existing mailbox queues nothing", async () => {
+    await trustOn();
+    const box = await seedMailbox({ status: "auth_error", reason: "oauth_expired" });
+    const { query } = await signIn("google", { address: box.address, mailboxId: box.id });
+    expect(resultOf(await callback(appOf(), "owner", "google", query)).get("oauth")).toBe("reconnected");
+    expect(await checks()).toEqual([]);
+  });
+
+  test("5d. two states of one address at once with the flag on: one mailbox, one check", async () => {
+    await enable("google");
+    await trustOn();
+    const address = addressOf("trustrace");
+    const one = await signIn("google", { address });
+    const two = await signIn("google", { address });
+    const app = appOf();
+    const results = await Promise.all([
+      callback(app, "owner", "google", one.query),
+      callback(app, "owner", "google", two.query),
+    ]);
+    expect(results.map((res) => resultOf(res).get("oauth")).sort()).toEqual(["connected", "mailbox_exists"]);
+    expect(await checks()).toHaveLength(1);
+  });
+
+  test("5e. a hook that throws: the Connect still succeeds, the mailbox exists, one warning without the address", async () => {
+    await enable("google");
+    const address = addressOf("hookfail");
+    const result = await applyOAuthGrant(
+      {
+        ...depsOf(),
+        onConnected: async () => {
+          throw new Error(`detail of ${address}`);
+        },
+      },
+      ctxA(),
+      grantOf("google", address, null),
+      org.ownerId
+    );
+    expect(result).toMatchObject({ ok: true, code: "connected" });
+    expect(await mailboxRows(address)).toHaveLength(1);
+    expect(logLines.filter((line) => line.includes("connect_hook_failed"))).toHaveLength(1);
+    expect(logLines.join("\n")).not.toContain(address);
+  });
+});
+
 /** A grant for `applyOAuthGrant` called by hand (no route). */
 function grantOf(
   provider: MailOAuthProvider,

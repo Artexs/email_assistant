@@ -2,7 +2,27 @@
 
 All notable changes to the email assistant. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow SemVer in the `0.y.z` range. `bun run release:prepare <x.y.z>` moves the items under `[Unreleased]` to a new version heading (`docs/release-checklist.md`). Items are in product words.
 
+<!--
+The group "For users" is optional. It holds what a user of the web panel can see. The changelog page of the docs site
+shows only this group, per release. Every other group is operator text and stays private.
+One item is two lines: the English text, then the Polish text indented by two spaces. Example (indented, not a real heading):
+
+    ### For users
+
+    - en: Short sentence about what changed for the user.
+      pl: Krótkie zdanie o tym, co zmieniło się dla użytkownika.
+
+A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run release:prepare" keeps the group.
+-->
+
 ## [Unreleased]
+
+## [0.2.0] - 2026-11-15
+
+### For users
+
+- en: A public docs site with guides and this list of changes.
+  pl: Publiczna strona z dokumentacją: poradniki i ta lista zmian.
 
 ## [0.1.0] - 2026-11-15
 

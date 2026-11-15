@@ -16,6 +16,7 @@ import { z } from "zod";
 import type { Db, TenantContext } from "../../platform/db";
 import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { listDelegateNames, listLatestDelegationsByEmailIds } from "../delegation";
+import { isFeatureOn } from "../tenancy";
 import { listActivityRows, listLatestFeedbackByEmailIds, suspiciousReasonsToShow } from "../triage";
 
 const DAY_MS = 24 * 3_600_000;
@@ -60,7 +61,7 @@ export function decodeActivityCursor(text: string): ActivityCursor | null {
 }
 
 // One page of the activity list: the latest result of each mail with its actions, feedback and delegation.
-// A fixed number of queries per page (at most 9), whatever the number of rows.
+// A fixed number of queries per page (at most 9; the flag read of `why_lines` makes it 10, and only when a row holds a rule), whatever the number of rows.
 export async function listActivity(
   db: Db,
   ctx: TenantContext,
@@ -94,6 +95,8 @@ export async function listActivity(
   const feedback = await listLatestFeedbackByEmailIds(db, ctx, ids);
   const delegations = await listLatestDelegationsByEmailIds(db, ctx, ids);
   const suspicious = await suspiciousReasonsToShow(db, ctx, ids);
+  // F110 stage 16: the rule shows only while the flag is on. A page without a rule needs no flag read.
+  const whyOn = rows.some((row) => row.rule !== null) && (await isFeatureOn(db, ctx, "why_lines"));
 
   const delegateIds = new Set<string>();
   for (const list of actions.values()) {
@@ -159,6 +162,7 @@ export async function listActivity(
               dueAt: delegation.due_at?.toISOString() ?? null,
             },
       suspicious: suspicious.get(row.email_id) ?? [],
+      rule: whyOn ? row.rule : null,
     };
   });
 

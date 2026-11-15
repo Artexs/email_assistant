@@ -81,9 +81,7 @@ describe("urgency texts", () => {
     expect(t("urg_help")).toBe(
       "Tematy i terminy dla tej skrzynki. Liczą się, gdy kontrola pilnych wiadomości z nich korzysta."
     );
-    expect(t("urg_deadlines_help")).toBe(
-      "Termin liczy się od 30 dni przed jego datą do dnia po niej. Termin, który minął, zostaje na liście, dopóki go nie usuniesz."
-    );
+    expect(t("urg_deadlines_help")).toBe("Termin, który minął, zostaje na liście, dopóki go nie usuniesz.");
     expect(t("urg_err_topic_nul", { n: 1 })).toBe("Temat 1: tekst zawiera niedozwolony znak.");
     expect(t("urg_err_deadline_nul", { n: 2 })).toBe("Termin 2: tekst zawiera niedozwolony znak.");
     expect(t("urg_topics_help")).toContain("(najwyżej 10 na temat)");
@@ -102,9 +100,7 @@ describe("urgency texts", () => {
     expect(t("urg_help")).toBe(
       "Topics and deadlines for this mailbox. They count when the urgent-mail check uses them."
     );
-    expect(t("urg_deadlines_help")).toBe(
-      "A deadline counts from 30 days before its date until the day after. An ended deadline stays in the list until you remove it."
-    );
+    expect(t("urg_deadlines_help")).toBe("An ended deadline stays in the list until you remove it.");
     expect(t("urg_err_topic_nul", { n: 1 })).toBe("Topic 1: the text has a character that is not allowed.");
     expect(t("urg_err_deadline_nul", { n: 2 })).toBe("Deadline 2: the text has a character that is not allowed.");
     expect(t("urg_topics_help")).toContain("(up to 10 per topic)");

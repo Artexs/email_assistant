@@ -73,6 +73,7 @@ export const auditEvents = {
   loopReopened: "loop.reopened", // data: loop_id, kind
   loopLater: "loop.later", // data: loop_id, kind, later_count
   loopRestarted: "loop.restarted", // data: loop_id, kind
+  loopWouldDraft: "loop.would_draft", // data: loop_id, kind, via; shadow mode: a follow-up tap that planned nothing
   webLogin: "web.login",
   webPasswordSet: "web.password_set",
   webPasswordChanged: "web.password_changed",
@@ -103,6 +104,7 @@ export const auditEvents = {
   ssoDomainAttested: "sso.domain_attested", // actor: cli; data: provider_id, domain (the attestation of a test organization)
   ssoRequiredChanged: "sso.required_changed", // actor: cli; data: from, to, sessions_ended
   ssoUnlinked: "sso.unlinked", // actor: cli; data: user_id, sessions_ended
+  memberNotifyChanged: "member.notify_changed", // F110 s18. actor: the user; data: via, keys (the changed keys in one string, comma between); never a value
   orgMemberAdded: "org.member_added", // actor: cli; data: user_id, role
   webMemberSessionsEnded: "web.member_sessions_ended", // actor: cli; data: user_id, count, only_sso
 } as const;

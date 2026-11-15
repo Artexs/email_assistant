@@ -133,6 +133,31 @@ export const featureFlags = {
     epic: "E4-B",
     removeBy: "2027-03-01",
   },
+  why_lines: {
+    default: false,
+    description:
+      "The digest, the urgent notice and the Activity page show how sure the system was and which sender rule hit.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
+  docs_links: {
+    default: false,
+    description: "The Help link and the What is new card in the panel.",
+    epic: "E10a",
+    removeBy: "2027-06-01",
+  },
+  user_quiet_hours: {
+    default: false,
+    description: "Each member sets their own quiet hours: their notices wait until those hours end.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
+  report_mail: {
+    default: false,
+    description: "A member can get the digest and the trust reports by mail in their own inbox.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
   urgency_editor: {
     default: false,
     description: 'The "What is urgent for me" card on the Rules page: topics and deadlines per mailbox.',

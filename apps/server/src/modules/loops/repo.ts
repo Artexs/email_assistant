@@ -29,6 +29,10 @@ export const MAX_LATER = 3;
 
 export const SYSTEM = "system";
 
+// Who started a command (stage 14). It goes into the audit row of the command: a code, never text.
+export type LoopVia = "web" | "telegram" | "cli";
+const viaData = (via: LoopVia | undefined): { via?: LoopVia } => (via === undefined ? {} : { via });
+
 export interface LoopRow {
   id: string;
   org_id: string;
@@ -172,7 +176,7 @@ export async function lockLoop(trx: Transaction<DB>, ctx: TenantContext, loopId:
 export async function closeLoop(
   trx: Transaction<DB>,
   ctx: TenantContext,
-  input: { loopId: string; reason: LoopCloseReason; emailId?: string; userId?: string; at: Date }
+  input: { loopId: string; reason: LoopCloseReason; emailId?: string; userId?: string; via?: LoopVia; at: Date }
 ): Promise<"closed" | "already"> {
   const closed = await trx
     .updateTable("open_loops")
@@ -193,7 +197,7 @@ export async function closeLoop(
   await recordAudit(trx, ctx, {
     actor: input.userId ?? SYSTEM,
     event: auditEvents.loopClosed,
-    data: { loop_id: input.loopId, kind: closed.kind, reason: input.reason },
+    data: { loop_id: input.loopId, kind: closed.kind, reason: input.reason, ...viaData(input.via) },
     at: input.at,
   });
   return "closed";
@@ -203,10 +207,10 @@ export type ReopenResult = "ok" | "already" | "not_allowed" | "not_found";
 
 // The caller holds the lock. The loop keeps `due_at`, `later_count` and `follow_ups_sent`; the close fields go back to
 // null. A loop whose texts are cleared (also every `sent_off` loop) cannot reopen: it has nothing left to show.
-export async function reopenLoop(
+export async function reopenLoopRow(
   trx: Transaction<DB>,
   ctx: TenantContext,
-  input: { loopId: string; userId?: string; at: Date }
+  input: { loopId: string; userId?: string; via?: LoopVia; waitFromAt?: Date; at: Date }
 ): Promise<ReopenResult> {
   const reopened = await trx
     .updateTable("open_loops")
@@ -216,6 +220,8 @@ export async function reopenLoop(
       closed_at: null,
       closed_by_email_id: null,
       closed_by_user_id: null,
+      // A command starts the wait again from now: a reply that closed the loop must not close it a second time.
+      ...(input.waitFromAt === undefined ? {} : { wait_from_at: input.waitFromAt }),
       updated_at: input.at,
     })
     .where("org_id", "=", ctx.orgId)
@@ -237,17 +243,17 @@ export async function reopenLoop(
   await recordAudit(trx, ctx, {
     actor: input.userId ?? SYSTEM,
     event: auditEvents.loopReopened,
-    data: { loop_id: input.loopId, kind: reopened.kind },
+    data: { loop_id: input.loopId, kind: reopened.kind, ...viaData(input.via) },
     at: input.at,
   });
   return "ok";
 }
 
 // The caller holds the lock. A Later tap: the new due date and one more use of the three.
-export async function laterLoop(
+export async function setLoopLater(
   trx: Transaction<DB>,
   ctx: TenantContext,
-  input: { loopId: string; dueAt: Date; userId?: string; at: Date }
+  input: { loopId: string; dueAt: Date; userId?: string; via?: LoopVia; at: Date }
 ): Promise<"ok" | "limit_reached" | "closed"> {
   const row = await trx
     .selectFrom("open_loops")
@@ -266,7 +272,7 @@ export async function laterLoop(
   await recordAudit(trx, ctx, {
     actor: input.userId ?? SYSTEM,
     event: auditEvents.loopLater,
-    data: { loop_id: input.loopId, kind: row.kind, later_count: row.later_count + 1 },
+    data: { loop_id: input.loopId, kind: row.kind, later_count: row.later_count + 1, ...viaData(input.via) },
     at: input.at,
   });
   return "ok";

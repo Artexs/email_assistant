@@ -1,4 +1,31 @@
 export {
+  createHistoryJob,
+  HISTORY_CURSOR_RETRIES,
+  HISTORY_FLAGS_POLL_MS,
+  HISTORY_FLAGS_WAIT_MS,
+  type HistoryJobDeps,
+} from "./history-job";
+export {
+  claimNextCheck,
+  endCheck,
+  failStep,
+  HISTORY_LOCK_STALE_MS,
+  HISTORY_MAX_ATTEMPTS,
+  HISTORY_RETRY_MS,
+  HISTORY_STEP_STATUSES,
+  HISTORY_WINDOW_DAYS,
+  listMailboxesWithoutCheck,
+  listOrgsWithDueChecks,
+  markBackfilled,
+  markStatus,
+  queueFlagOnCheck,
+  releaseCheck,
+  type ClaimedCheck,
+  type ClaimResult,
+} from "./history-queue";
+export { queueHistoryCheckOnConnect } from "./connect-hook";
+export { queueHistoryCheckByOperator, type OperatorQueueResult } from "./operator";
+export {
   setCategoryAutoWithEvidence,
   type CategoryEvidence,
   type EvidenceGateDeps,

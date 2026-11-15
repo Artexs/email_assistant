@@ -1,0 +1,157 @@
+---
+title: Start
+description: Follow one path from your invite link to your first digest in Telegram.
+capabilities:
+  - web-panel
+  - sync
+  - digest-and-notices
+  - tenancy-and-plans
+---
+
+import UiText from "../../../components/UiText.astro";
+
+This tutorial teaches one path. You start with your invite link. You end with your first digest in Telegram.
+Do the steps in order. Each step says what you see and what the system does.
+
+## 1. What you need
+
+- An invite link from your operator. The link works one time and for 24 hours.
+- The address and the password of the mailbox that the assistant must read.
+- Telegram on your phone.
+- A device that can open the panel. The panel opens only through the private network of your operator. Ask your operator how to join it.
+
+The password of your account is new. You set it in step 2. It is not the password of your mailbox.
+
+## 2. Set your password and accept the terms
+
+1. Open the invite link. The page `/setup` opens. Its title is **<UiText k="setup_title" />**.
+2. Type your e-mail address in the field **<UiText k="email_label" />**.
+3. Type a new password twice. It needs 12 to 128 characters. A passphrase of a few words works well.
+4. The system checks the password against a list of leaked passwords. It sends only the first 5 characters of a hash of the password, never the password. A leaked password is refused. If the check cannot run, the system refuses the password too. Try again later.
+5. Tick the box with this text. The links under the box open the three documents in a new tab.
+
+   > <UiText k="setup_terms_label" />
+
+6. Press **<UiText k="set_password" />**.
+
+The system saves your password and your acceptance of the terms. Then it tries to sign you in and opens the panel.
+The invite link is now used. It does not work a second time. If it expired, the page says so. Ask your operator for a new link.
+
+## 3. Sign in
+
+Next time, open the panel and sign in on the page **<UiText k="login_title" />**. Use your e-mail address and your password.
+After 10 wrong passwords in 15 minutes, the system locks your account for 15 minutes.
+
+Two-factor sign-in is optional. When you turn it on, the panel asks for a code from your authenticator app after the password.
+You turn it on in **<UiText k="nav_settings" />**, in the Account card. See [Turn on two-factor sign-in](../how-to/two-factor/).
+
+## 4. Do the Onboarding checklist
+
+After the first sign-in the panel opens the page **<UiText k="nav_onboarding" />**. It shows a checklist.
+The checklist is done when you have a mailbox, a Telegram link and a chosen mode. The last item is optional. The Telegram link counts only when the server has a Telegram bot.
+When it is done, the panel shows this text and opens Activity at each next sign-in:
+
+> <UiText k="ob_all_set" />
+
+### Connect a mailbox
+
+Only an owner can connect a mailbox. Other members see this text:
+
+> <UiText k="ob_mailbox_assistant" />
+
+1. Press **<UiText k="mb_connect" />**.
+2. Choose your provider. The list holds **<UiText k="preset_interia" />**, **<UiText k="preset_gmail" />**, **<UiText k="preset_onet" />**, **<UiText k="preset_wp" />**, **<UiText k="preset_o2" />** and **<UiText k="preset_icloud" />**. Choose **<UiText k="preset_other" />** to type the IMAP and SMTP servers yourself.
+3. Type the address and the password of the mailbox. Gmail and iCloud need an app password.
+4. Read the note in the dialog.
+
+   > <UiText k="connect_consent" />
+
+5. Press **<UiText k="connect_submit" />**.
+
+The system tests the IMAP login and the SMTP login. This can take up to one minute. If a login fails, the system stores nothing.
+If both logins work, the system stores the password in encrypted form. The first sync runs within a few minutes.
+Connect changes nothing in your mailbox.
+
+The badge **<UiText k="status_host_blocked" />** means that the system refused the mail server.
+The name of the server points to a private or local network address, so the system does not connect.
+The system checks the name again at each sync. When the name is right, it starts the mailbox by itself.
+If the badge stays, check the host names that you typed. If the names are right, tell your operator.
+
+### Link Telegram
+
+Each member links their own Telegram chat.
+
+1. In the checklist item **<UiText k="ob_telegram_title" />**, read the text **<UiText k="tg_consent_title" />**. It lists what the bot sends to Telegram.
+2. Tick the box with this text.
+
+   > <UiText k="tg_consent_label" />
+
+3. Press **<UiText k="tg_link" />**. The panel shows a link. The link works one time and for 15 minutes.
+4. Press **<UiText k="tg_open" />** on the phone that has Telegram. Press Start in the chat with the bot.
+
+The bot answers `✅ This chat is linked. Digests and urgent notices come here.` and shows the list of commands.
+If the server has no Telegram bot, the panel shows this text and the checklist does not need the item:
+
+> <UiText k="tg_off" />
+
+### Choose the mode
+
+A new mailbox starts in shadow mode. For an owner, the checklist item says:
+
+> <UiText k="ob_mode_open" />
+
+Press **<UiText k="ob_keep_shadow" />** to stay in shadow mode. You can switch a mailbox to assist mode later, in Settings.
+
+### Add sender rules
+
+This item is optional. You can add VIP, whitelist and blocklist senders on the page **<UiText k="nav_rules" />**. You can do it later.
+
+## 5. Shadow mode
+
+In shadow mode the system reads and sorts your mail, and it reports what it would do. It changes nothing in your mailbox.
+It does not move, flag or mark mail. It does not make drafts and it sends no mail.
+
+You see the result in two places:
+
+- The page **<UiText k="nav_activity" />** lists each mail with its category and the reason. The line about the action says what the system would do.
+- The digest in Telegram ends with the line `Shadow mode: the system changed nothing in your mailbox.`
+
+The digest shows this line when it lists mail and every mailbox is in shadow mode.
+
+## 6. Your first digest
+
+By default the system sends a digest at 08:00 and at 16:00. It uses the time zone of your organization.
+You can change the times in **<UiText k="nav_settings" />**, in the card **<UiText k="digest_title" />**.
+The first digest comes at the next digest time after you link Telegram. It looks back 24 hours before the link.
+
+A digest has these parts:
+
+- A header, for example `📬 Digest 08:00`, and a line with the number of mails.
+- One line for each mailbox with the time of its last sync.
+- The section `NEEDS ACTION` with urgent mail, mail that needs a reply, mail for a delegate and unsure mail.
+- The section `OTHER MAIL` with info, notifications and spam.
+
+Each mail has a number, a category, the sender and the subject. It also has a short line from the AI and a line that starts with `→`.
+In shadow mode that line says what the system would do, for example `would move to AI/Info`.
+
+Under the digest you find two buttons for each mail:
+
+- `✅ n` tells the assistant that the category is right.
+- `✏️ n` shows the other categories. Choose the right one.
+
+The system records your answers. Settings uses them to check if a category is ready for automatic moves. A third button, `↩️ n`, comes only after the system changed something in your mailbox.
+
+To get a digest now, send `/digest` to the bot. The header then reads `📬 Digest now`.
+If no mail came, the digest says `No new mail since` and the time.
+
+## 7. Next steps
+
+- Watch Activity and the digests for a few days. Press `✅ n` or `✏️ n` when the category is wrong. See [Confirm or correct a category](../how-to/correct-a-category/).
+- Open **<UiText k="nav_settings" />** and switch a mailbox to assist mode when the reports look right. In assist mode the system moves, marks and flags mail by your switches. Nothing is sent without your approval. See [Switch from shadow mode to assist mode](../how-to/mode-and-switches/).
+- Add VIP, whitelist and blocklist senders on the page **<UiText k="nav_rules" />**. See [Set sender rules](../how-to/sender-rules/).
+- Turn on two-factor sign-in in the Account card. See [Turn on two-factor sign-in](../how-to/two-factor/).
+- Read the FAQ for short answers to the questions of the first week.
+- Look up facts in the reference: [categories](../reference/categories/), [Telegram](../reference/telegram/), [settings](../reference/settings/) and [limits](../reference/limits/).
+- Read why the system works this way: [how a mail is sorted](../explanation/how-a-mail-is-sorted/), [the assistant never sends alone](../explanation/never-sends-alone/) and [shadow mode and assist mode](../explanation/shadow-and-assist/).
+
+The how-to guides, the reference and the explanations are on this site. Use them when you need a task, a fact or a reason.

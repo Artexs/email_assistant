@@ -33,6 +33,7 @@ const WRITE_ROUTES = [
   "DELETE /api/rules/:id",
   "PATCH /api/delegates/:id",
   "PATCH /api/me/digest-times",
+  "PATCH /api/me/notify",
   "PATCH /api/organization",
   "PATCH /api/settings/:mailboxId/auto/:category",
   "PATCH /api/settings/:mailboxId/mode",
