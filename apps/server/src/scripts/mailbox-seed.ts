@@ -1,18 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { parseArgs } from "node:util";
+import { format, parseArgs } from "node:util";
 
 import { type EvalCase, evalCaseSchema, selectCases, splitAddress } from "@ea/core";
 import { z } from "zod";
 
 import { configureMailHosts, seedMailbox, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-seed");
+const out = createCliOutput("mailbox-seed");
 
 const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
 const evalSets = ["synthetic", "injection", "delegation", "all"] as const;
@@ -77,7 +77,7 @@ function toSeedMessage(evalCase: EvalCase, to: string): SeedMessage {
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -105,10 +105,10 @@ async function main(): Promise<number> {
       messages,
       folder: options.folder,
     });
-    log.info(`appended ${appended}`);
+    out.print(`appended ${appended}`);
     return 0;
   } catch (error) {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -118,6 +118,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     process.exit(1);
   });

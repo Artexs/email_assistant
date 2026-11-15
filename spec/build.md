@@ -24,7 +24,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
 - `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
 - `F103-e8a-logs` (🟠 ACTIVE): E8a Logs
-- `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
 - `F032-copy-below-cursor` (🟠 ACTIVE): Store and triage a copy that lands below the UID cursor
@@ -54,10 +53,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, plan landed, 12 stages): E7-T3 Account data (delete, export, DSR); stage 01 the only migration, stage 05 the only `bun.lock` change; build after F082, F098 (closed); gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, plan landed, 8 stages): E7-T4 Papers and cost; legal drafts (pl, en), internal papers, claims list, cost model v1; sequenced after F106 (build after F106 is in `done/`); gate —; stage 07 is the VPS deploy (coordinator), stage 08 the cost model.
 - `F108-e7-t5-production-on-the-vps` (🔴 PLANNED, needs plan): E7-T5 Production on the VPS; sequenced after E7-T1 … T4; the E8b drill proves its restore; gate —.
-- `F109-e3b-improve` (🔴 PLANNED, needs plan): E3b Improve; sequenced after E2a, E3a; gate Second pass after the first E2a holdout report (PD-060, PD-061).
+- `F109-e3b-improve` (🔴 PLANNED, plan landed, 16 stages, plan base b9261659, no drift): E3b Improve (suspicious-mail rules, classifier-v3, escalation experiment, degraded-mode notice); build after E2a, E3a (closed); second pass taken on defaults (Q1); stage 02 the only migration; stages 09, 11, 13 spend real LLM money (caps in plan); escalation stage 14 builds only on a 'ship' decision.
 - `F110-e4-b-earn-trust` (🔴 PLANNED, needs plan): E4-B Earn trust; sequenced after E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command; gate —.
 - `F111-e11b-private-model-option` (🔴 PLANNED, needs plan): E11b Private model option; sequenced after E2a; gate Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage.
-- `F112-e10a-docs-site` (🔴 PLANNED, needs plan): E10a Docs site; sequenced after E1, Astro 7; gate —.
+- `F112-e10a-docs-site` (🔴 PLANNED, plan landed, 16 stages, plan base 116efb17, no drift): public docs site on GitHub Pages; build after F095, F101 closed (F101 stages 01–03 are on master; stage 01 and 06 change `bun.lock`); gate —; stage 16 needs owner step O1 (Pages source, `v*` tags in the `github-pages` environment, first deploy on master).
 - `F113-e2b-live-lab` (🔴 PLANNED, needs plan): E2b Live lab; sequenced after E2a; gate Owner: grow the VPS root volume (PD-055).
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🔴 PLANNED, needs plan): E8b Alerts and releases (incl. the restore drill); sequenced after E8a; gate Owner: grow the VPS root volume (PD-055).
 - `F115-e6a-reply-drafts` (🔴 PLANNED, needs plan): E6a Reply drafts; sequenced after E2a, E3a, E4-A, E5a, E7-T2; gate Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages.
@@ -74,7 +73,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F071-limen-transition` (🟠 ACTIVE): the agent workflow moves to Limen; epic none; sequenced after —; gate —.
 - `F023-gemini-billing-budget-alert` (🔴 PLANNED, plan landed): a Gemini Cloud Billing budget alert; `parked`: only if a paid Gemini project exists for the E2a judge (PD-067); epic E3.
 - `F029-sync-return-of-a-later-copy` (🟠 ACTIVE, plan landed, 5 stages, F029 + F064, no migration): sync returns a later copy when two copies are in one folder; `keep`: one sync ticket, plan together with F032 and F064 (F091 landed, so its gate on `modules/mail/` is open); epic none.
-- `F032-copy-below-cursor` (🔴 PLANNED, plan landed 2026-11-15, 3 stages, no migration; build after F029 stages 01–04 (landed); F029 stage 05 does not block): a copy that lands below the UID cursor is stored and triaged; `keep`: one sync ticket, plan together with F029 and F064 (F091 landed); epic none.
+- `F032-copy-below-cursor` (🟠 ACTIVE, plan landed 2026-11-15, stages 01–02 landed, 3 stages, no migration; build after F029 stages 01–04 (landed); F029 stage 05 does not block): a copy that lands below the UID cursor is stored and triaged; `keep`: one sync ticket, plan together with F029 and F064 (F091 landed); epic none.
 - `F037-s3-assist-week-result` (🔴 PLANNED, plan landed): the S3 one-week assist result; `folded into F095` (E1 stage 09 runs it; the coordinator closes it); epic E1.
 - `F047-s4-pilot-week` (🔴 PLANNED, plan landed): S4 pilot week with real-mail checks of drafts, approvals, delegation; `folded into F095` (E1 stage 10 runs it; the coordinator closes it); epic E1.
 - `F055-web-live-updates` (🔴 PLANNED, plan landed): live updates in the web panel; `parked`: polling is enough (`epics/E04-discovery-notes.md` §5); look again after F101 and F102; epic none.
@@ -92,6 +91,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
+- `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
 - `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
 - `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
@@ -100,5 +100,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟢 PROVEN): E7-T2 Platform controls (send limits, feature flags, operator console, security log); landed 2026-11-14
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🟢 PROVEN): E7-T1 Polish UI (i18n frame first); landed 2026-11-14
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
-- `F095-e1-close-the-mvp` (🟢 PROVEN): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets); landed 2026-11-14
-- 2026-11: 72 landed. spec/features/done/2026-11/
+- 2026-11: 73 landed. spec/features/done/2026-11/

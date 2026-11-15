@@ -1,0 +1,7 @@
+import { createHash } from "node:crypto";
+const html = await Bun.file(process.argv[2]).text();
+const csp = /script-src ([^;"]*)/.exec(html)![1];
+for (const m of html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)) {
+  const h = `'sha256-${createHash("sha256").update(m[2]).digest("base64")}'`;
+  console.log(csp.includes(h) ? "HASHED  " : "MISSING ", m[1].trim(), m[2].slice(0, 90).replace(/\s+/g, " "));
+}

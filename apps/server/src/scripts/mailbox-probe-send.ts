@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { parseArgs } from "node:util";
+import { format, parseArgs } from "node:util";
 
 import { z } from "zod";
 
@@ -10,10 +10,10 @@ import {
   probeSend,
   type ProbeSendReport,
 } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { mailAllowLocalFromEnv } from "../platform/config";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-probe-send");
+const out = createCliOutput("mailbox-probe-send");
 
 const usage = [
   "usage: printf '%s' \"$PASSWORD\" | TEST_MAILBOX_ADDRESS=<address> SEND_TEST_ADDRESSES=<address,…> bun run mailbox:probe-send --host <imap host> --port <port> --smtp-host <host> --smtp-port <port> --address <address> --to <address>",
@@ -90,28 +90,28 @@ async function main(): Promise<number> {
   const options = readOptions();
   const password = options && (await readPassword());
   if (!options || password === undefined) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
   configureMailHosts({ allowLocal: mailAllowLocalFromEnv(process.env) });
   // Read here, not through loadConfig: the probe needs no DB and no other key (the config key comes in S4 stage 18).
   assertTestAddress(options.address, process.env.TEST_MAILBOX_ADDRESS);
   if (!isAllowedRecipient(options.to, options.address, process.env.SEND_TEST_ADDRESSES)) {
-    log.error("refused: --to is not a test address");
+    out.fail("refused: --to is not a test address");
     return 1;
   }
   const report = await probeSend(
     { host: options.host, port: options.port, user: options.address, password },
     { host: options.smtpHost, port: options.smtpPort, user: options.address, password },
-    { address: options.address, to: options.to, probeId: randomUUID(), now: new Date(), log: (line) => log.info(line) }
+    { address: options.address, to: options.to, probeId: randomUUID(), now: new Date(), log: (line) => out.print(line) }
   );
-  for (const line of reportLines(report)) log.info(line);
+  for (const line of reportLines(report)) out.print(line);
   return 0;
 }
 
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     process.exit(1);
   });

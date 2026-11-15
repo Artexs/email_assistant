@@ -1,4 +1,4 @@
-import { parseArgs } from "node:util";
+import { format, parseArgs } from "node:util";
 
 import { z } from "zod";
 
@@ -9,12 +9,12 @@ import {
   type MailCapabilities,
   type MailboxInspection,
 } from "../modules/mail";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLog } from "../platform/log";
 
-const log = createLog("mailbox-check");
+const out = createCliOutput("mailbox-check");
 
 const usage = [
   "usage: bun run mailbox:check --org-id <uuid> --mailbox-id <uuid> [--probe]",
@@ -83,7 +83,7 @@ function inspectionLines(inspection: MailboxInspection): { lines: string[]; code
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
-    log.error(usage);
+    out.fail(usage);
     return 1;
   }
 
@@ -98,10 +98,10 @@ async function main(): Promise<number> {
       probe: options.probe,
     });
     const { lines, code } = inspectionLines(inspection);
-    for (const line of lines) log.info(line);
+    for (const line of lines) out.print(line);
     return code;
   } catch (error) {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     return 1;
   } finally {
     await db.destroy();
@@ -111,6 +111,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error("failed:", error instanceof Error ? error.message : error);
+    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
     process.exit(1);
   });
