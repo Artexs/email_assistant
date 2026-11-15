@@ -34,6 +34,17 @@ export const numberFieldNames = [
   // telegram
   "update_id",
   "bot_id",
+  // committer and expiry job
+  "applied",
+  "failed",
+  "retry",
+  "closed",
+  "sent",
+  "expired_timeout",
+  "expired_draft_missing",
+  "expired_not_notified",
+  "expired_not_seen",
+  "expired_held_timeout",
   // delegation chaser
   "due",
   "overdue",

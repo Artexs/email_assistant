@@ -28,6 +28,8 @@ function simFile(notification = row(200, 0, 0), spam = row(100, 2, 3)): GateFile
     part: "holdout",
     date: "2026-11-14",
     role: "classifier",
+    endpoint: "standard",
+    host: null,
     provider: "gemini",
     model: "m",
     reasoningEffort: null,

@@ -1,4 +1,4 @@
-import { costPerMail } from "@ea/core";
+import { costPerMail, type LlmEndpointKind } from "@ea/core";
 
 import type { CaseUsage } from "./eval";
 
@@ -22,8 +22,10 @@ export const BUDGET_STOP_REASON = "budget cap reached: resume after the cap allo
 const FIRST_ESTIMATE_TOKENS = { in: 2000, out: 300 };
 
 // The price of the first-call estimate, or null when the model has no price or the price gives no usable estimate.
-export function firstEstimateUsd(model: string, at: Date): number | null {
-  const usd = costPerMail(model, FIRST_ESTIMATE_TOKENS.in, FIRST_ESTIMATE_TOKENS.out, at);
+// An `own` endpoint always gives null (its cost is 0): an own run takes no budget at all, so it never asks for an
+// estimate. A `standard` or `eu` run with a zero or missing price stays refused: that guard stops an uncapped paid run.
+export function firstEstimateUsd(model: string, at: Date, endpoint: LlmEndpointKind = "standard"): number | null {
+  const usd = costPerMail(model, FIRST_ESTIMATE_TOKENS.in, FIRST_ESTIMATE_TOKENS.out, at, endpoint);
   return usd !== null && Number.isFinite(usd) && usd > 0 ? usd : null;
 }
 

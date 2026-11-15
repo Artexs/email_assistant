@@ -227,6 +227,29 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
+    "an old-form line in actions/committer.ts and actions/expiry.ts fails; another actions file only warns",
+    async () => {
+      for (const file of ["committer.ts", "expiry.ts"]) {
+        expect(
+          await logEventSeverities(
+            `apps/server/src/modules/actions/${file}`,
+            "log.info(`x ${y}`);",
+            "../../platform/log"
+          )
+        ).toEqual([2]);
+      }
+      expect(
+        await logEventSeverities(
+          "apps/server/src/modules/actions/apply.ts",
+          "log.info(`x ${y}`);",
+          "../../platform/log"
+        )
+      ).toEqual([1]);
+    },
+    TIMEOUT
+  );
+
+  test(
     "an old-form line in delegation fails",
     async () => {
       expect(

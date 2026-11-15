@@ -246,6 +246,8 @@ export default tseslint.config(
       "apps/server/src/platform/**/*.ts",
       "apps/server/src/main.ts",
       "apps/server/src/scripts/**/*.ts",
+      "apps/server/src/modules/actions/committer.ts",
+      "apps/server/src/modules/actions/expiry.ts",
       "apps/server/src/modules/channels/**/*.ts",
       "apps/server/src/modules/delegation/**/*.ts",
       "apps/server/src/modules/tenancy/**/*.ts",

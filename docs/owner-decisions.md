@@ -374,3 +374,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the line holds only fixed phrases for enum codes (DB CHECK, view schema and text map all limit them). No sender, domain or subject can reach it.
 - Undo: bump the version in `packages/core` and the consent text, and re-ask consent; one stage of work.
 - Source: review of job `2026-11-15-f109-review-s04-opus-polish-warn-5a6f80d7` (N2), `docs/code-patterns.md` section "The consent version".
+
+### 2026-11-15 · The attachment line in Telegram stays off for orgs with linked chats until consent can be asked again (F109) · privacy · new
+- Choice: flag `attachment_line` (attachment names in the urgent notice and digest) is built and its consent version is bumped to `2026-11-15`. But the version gate blocks only NEW chat links (`POST /channels/telegram/link` answers 409 for an old version). Chats that are already linked are not asked again, and the senders never read the version. So the flag stays OFF for every org with a linked chat. The owner's own pilot chat is such a chat: do not turn the flag on there until a re-ask exists or you accept the gap.
+- Why: with the flag on, a linked user would receive attachment names they never agreed to (proven by an Opus review scratch test: rows with the line were queued for chats with consent `2026-11-14`).
+- Options: (a) a send-side gate (a consent version per chat link; mail-derived fields only for the current version, or a bot message that asks again): about one stage of work; (b) accept that a bump affects new links only and say so in `docs/code-patterns.md`.
+- Undo: not needed (flag off). To go live choose (a) or (b).
+- Source: review of job `2026-11-15-f109-review-s06-opus-attachment-02ea93d9` (N1), `docs/code-patterns.md` section "The consent version".

@@ -55,3 +55,7 @@ After the next `mail.sync` run (every `MAIL_SYNC_EVERY_MIN`, default 2 minutes):
 - The Sent pass has no wall-clock budget. imapflow keeps its default 5-minute socket inactivity timeout, so a slow server can hold one mailbox for a long time (30-day header fetch, then up to 100 text fetches of up to 5 MB in sequence); the scheduler skips the next ticks while a run is active (`job_skipped`, debug). Before the pilot switch goes on: add a time budget per pass (or a short socket timeout for the Sent stage only) and a test, and read the pilot's run times.
 - In `initial` and `rescan` mode a pass that fails on every run repeats the full 30-day SEARCH every tick (2 minutes): check this in the pilot logs. Each enabled mailbox logs one `sent_sync_done` line per tick.
 - Pilot facts still unproven: the Interia Sent folder name (`Wysłane`, modified UTF-7), Gmail `[Gmail]/Sent Mail`, PEEK on real servers, the size of a real Sent folder.
+
+## Carry-over from the stage 08 review (F104)
+
+Before step 11 (pilot flag on) check that no non-lab org has `sent_sync` on earlier than stage 10 (review-8.md N5).

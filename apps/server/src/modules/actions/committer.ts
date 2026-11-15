@@ -3,7 +3,7 @@ import type { Transaction } from "kysely";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError, HardError, SoftError } from "../../platform/errors";
+import { errorFields, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import {
@@ -173,7 +173,13 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     });
     if (held.mailboxChanging > 0) {
       warnedOff.add(mailboxId);
-      log.info(`committer: ACTIONS_SCOPE=off, ${held.mailboxChanging} mailbox actions wait in mailbox ${mailboxId}`);
+      log.info("committer_actions_held", {
+        org_id: ctx.orgId,
+        mailbox_id: mailboxId,
+        count: held.mailboxChanging,
+        scope: "off",
+        config_key: "ACTIONS_SCOPE",
+      });
     }
   }
 
@@ -188,7 +194,13 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     const held = await countHeldSends(deps.db, ctx, mailboxId, { send });
     if (held > 0) {
       warnedHeld.add(mailboxId);
-      log.info(`committer ${mailboxId}: SEND_SCOPE=${sendScope.kind}, ${held} approved sends wait`);
+      log.info("committer_sends_held", {
+        org_id: ctx.orgId,
+        mailbox_id: mailboxId,
+        count: held,
+        scope: sendScope.kind,
+        config_key: "SEND_SCOPE",
+      });
     }
   }
 
@@ -199,19 +211,20 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     now: Date,
     withSender: boolean
   ) {
+    const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
     try {
       return await openMailboxProvider(deps, ctx, mailboxId, { withSender });
     } catch (error) {
       await release(ctx, batch, now);
       if (error instanceof MailAuthError) {
         await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", now);
-        log.warn(`committer ${mailboxId}: login failed, status is now auth_error`);
+        mailboxLog.warn("committer_auth_error");
       } else if (error instanceof HostNotAllowedError) {
         await markHostBlocked(deps.db, ctx, mailboxId, { now, source: "committer" });
       } else if (error instanceof SoftError) {
-        log.warn(`committer ${mailboxId}: ${describeError(error)}; the next tick tries again`);
+        mailboxLog.warn("committer_soft_error", errorFields(error));
       } else {
-        log.error(`committer ${mailboxId}: open failed: ${describeError(error)}`);
+        mailboxLog.error("committer_open_failed", errorFields(error));
       }
       return null;
     }
@@ -250,6 +263,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     appendFolders: ReadonlySet<string>
   ): Promise<void> {
     const mailboxId = mailbox.id;
+    const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
     const counts = { applied: 0, failed: 0, retry: 0, closed: 0, sent: 0 };
     const folders: FolderResolver =
       provider === null
@@ -291,7 +305,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
         else if (outcome.kind === "retry") counts.retry += 1;
         if (outcome.kind === "auth_error") {
           await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", now);
-          log.warn(`committer ${mailboxId}: login failed, status is now auth_error`);
+          mailboxLog.warn("committer_auth_error");
           await release(ctx, batch.slice(index), now);
           index = batch.length;
         } else if (outcome.kind === "retry" && outcome.soft) {
@@ -304,16 +318,12 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       try {
         await release(ctx, batch.slice(index + 1), now);
       } catch (releaseError) {
-        log.error(`committer ${mailboxId}: release failed: ${describeError(releaseError)}`);
+        mailboxLog.error("committer_release_failed", errorFields(releaseError));
       }
       throw error;
     } finally {
       if (counts.applied + counts.failed + counts.retry + counts.closed > 0) {
-        const closed = counts.closed > 0 ? `, closed ${counts.closed}` : "";
-        const sent = counts.sent > 0 ? `, sent ${counts.sent}` : "";
-        log.info(
-          `committer ${mailboxId}: applied ${counts.applied}, failed ${counts.failed}, retry ${counts.retry}${closed}${sent}`
-        );
+        mailboxLog.info("committer_done", counts);
       }
     }
   }
@@ -321,11 +331,12 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
   async function processMailbox(ctx: TenantContext, mailboxId: string, facts: Map<string, TenantFacts>): Promise<void> {
     const mailbox = await getMailbox(deps.db, ctx, mailboxId);
     if (mailbox === undefined) return;
+    const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
     const now = deps.now();
     const staleBefore = new Date(now.getTime() - STALE_AFTER_MS);
 
     const expired = await expireStale(deps, ctx, mailboxId, now);
-    if (expired > 0) log.warn(`committer ${mailboxId}: expired ${expired} stale actions`);
+    if (expired > 0) mailboxLog.warn("committer_stale_expired", { count: expired });
 
     const sendScope = deps.sendScope ?? { kind: "off" };
     const filter = {
@@ -347,9 +358,9 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
         const rows = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: false });
         appendFolders = new Set(rows.filter((row) => row.role === "sort").map((row) => row.path));
       } catch (error) {
-        log.error(`committer ${mailboxId}: sync folders failed: ${describeError(error)}`);
+        mailboxLog.error("committer_folders_failed", errorFields(error));
         await release(ctx, batch, now).catch((releaseError: unknown) => {
-          log.error(`committer ${mailboxId}: release failed: ${describeError(releaseError)}`);
+          mailboxLog.error("committer_release_failed", errorFields(releaseError));
         });
         return;
       }
@@ -372,9 +383,9 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
         try {
           tenantFacts = await loadFacts(ctx, mailbox, facts);
         } catch (error) {
-          log.error(`committer ${mailboxId}: facts failed: ${describeError(error)}`);
+          mailboxLog.error("committer_facts_failed", errorFields(error));
           await release(ctx, batch, now).catch((releaseError: unknown) => {
-            log.error(`committer ${mailboxId}: release failed: ${describeError(releaseError)}`);
+            mailboxLog.error("committer_release_failed", errorFields(releaseError));
           });
           return;
         }
@@ -383,7 +394,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     } finally {
       for (const connection of [provider, sender]) {
         await connection?.close().catch((error: unknown) => {
-          log.warn(`committer ${mailboxId}: close failed: ${describeError(error)}`);
+          mailboxLog.warn("committer_close_failed", errorFields(error));
         });
       }
     }
@@ -399,7 +410,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
           if (await isOrgSuspended(deps.db, { orgId })) continue;
           await processMailbox({ orgId }, mailboxId, facts);
         } catch (error) {
-          log.error(`committer ${mailboxId} failed: ${describeError(error)}`);
+          log.error("committer_failed", { org_id: orgId, mailbox_id: mailboxId, ...errorFields(error) });
         }
       }
     },

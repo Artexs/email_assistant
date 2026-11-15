@@ -97,6 +97,7 @@ describe("operator reads (F099 D14, D17, D18)", () => {
           role: "classifier",
           promptVersion: "p1",
           model,
+          endpoint: "standard",
           outcome: "ok",
           tokensIn: tokens === null ? null : tokens,
           tokensOut: tokens === null ? null : tokens / 5,
@@ -111,8 +112,8 @@ describe("operator reads (F099 D14, D17, D18)", () => {
       await call("gpt-6-luna", "2026-11-20T07:59:00Z", 100_000);
       const since = new Date("2026-11-20T08:00:00Z");
       expect(await sumLlmCallsByModelSince(trx, ctxA, since)).toEqual([
-        { model: "gpt-6-luna", calls: 3, tokensIn: 300_000, tokensOut: 60_000 },
-        { model: "unknown-model", calls: 2, tokensIn: 0, tokensOut: 0 },
+        { model: "gpt-6-luna", endpoint: "standard", calls: 3, tokensIn: 300_000, tokensOut: 60_000 },
+        { model: "unknown-model", endpoint: "standard", calls: 2, tokensIn: 0, tokensOut: 0 },
       ]);
       expect(await sumLlmCallsByModelSince(trx, ctxB, since)).toEqual([]);
     });

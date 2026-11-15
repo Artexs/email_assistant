@@ -98,12 +98,13 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
     const { orgId, ...input } = options;
-    const { mailboxId, info } = await connectMailbox(
+    const { mailboxId, info, sentSync } = await connectMailbox(
       { db, secrets, openProvider: openImapProvider, verifySmtp: verifySmtpLogin },
       { orgId },
       { ...input, password }
     );
     out.print(`connected mailbox ${mailboxId}`);
+    if (sentSync) out.print("sent mail: tracked, read only");
     for (const [key, label] of CAPABILITY_LABELS) {
       out.print(`${label}=${info.capabilities[key] ? "yes" : "no"}`);
     }

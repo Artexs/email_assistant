@@ -46,3 +46,18 @@ export {
   type StartRefusal,
   type StartResult,
 } from "./start";
+export {
+  LATE_AFTER_SEC,
+  MAX_ERRORS_PER_SLOT,
+  MAX_PER_TICK,
+  runInjectorTick,
+  type InjectorDeps,
+  type InjectorTick,
+} from "./injector";
+export {
+  createGreenMailClient,
+  LabMailError,
+  type GreenMailOptions,
+  type LabMailClient,
+  type LabMailErrorCode,
+} from "./mail-client";

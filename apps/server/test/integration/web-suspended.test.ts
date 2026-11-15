@@ -45,6 +45,7 @@ const WRITE_ROUTES = [
   "POST /api/mailboxes/:id/password",
   "POST /api/mailboxes/:id/pause",
   "POST /api/mailboxes/:id/resume",
+  "POST /api/mailboxes/oauth/:provider/start",
   "POST /api/onboarding/keep-mode",
   "POST /api/rules",
   "PUT /api/settings/:mailboxId/urgency",
