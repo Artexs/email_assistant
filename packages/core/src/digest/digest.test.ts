@@ -40,6 +40,48 @@ function item(n: number, category: Category, extra: Partial<DigestItem> = {}): D
   };
 }
 
+describe("suspicious warning", () => {
+  test("a flagged item shows the warning after the AI line; a flagged delegation shows no draft instead of the would-do line", () => {
+    const items = [
+      item(1, "urgent", { suspicious: ["lookalike_domain", "risky_attachment"] }),
+      item(2, "delegation", { suspicious: ["link_mismatch"], wouldDo: "would draft a delegation to Anna" }),
+    ];
+    const lines = renderDigest(input({ counts: { urgent: 1, delegation: 1 }, items }), textTables.en).text.split("\n");
+    const first = lines.indexOf("💬 AI text 1");
+    expect(lines.slice(first, first + 3)).toEqual([
+      "💬 AI text 1",
+      "⚠ Suspicious: look-alike domain, risky attachment",
+      "→ would flag",
+    ]);
+    const second = lines.indexOf("💬 AI text 2");
+    expect(lines.slice(second, second + 3)).toEqual([
+      "💬 AI text 2",
+      "⚠ Suspicious: link goes elsewhere",
+      "→ no draft: suspicious mail",
+    ]);
+    expect(lines.join("\n")).not.toContain("draft a delegation");
+    const pl = renderDigest(input({ counts: { delegation: 1 }, items: [items[1] as DigestItem] }), textTables.pl).text;
+    expect(pl).toContain("⚠ Podejrzana wiadomość: link prowadzi gdzie indziej\n→ bez szkicu: podejrzana wiadomość");
+  });
+
+  test("an item without the field, or with an empty list, renders as before", () => {
+    const plain = [item(1, "urgent"), item(2, "delegation")];
+    const before = renderDigest(input({ counts: { urgent: 1, delegation: 1 }, items: plain }), textTables.en);
+    const empty = plain.map((one) => ({ ...one, suspicious: [] }));
+    expect(renderDigest(input({ counts: { urgent: 1, delegation: 1 }, items: empty }), textTables.en)).toEqual(before);
+    expect(before.text).not.toContain("⚠");
+    expect(before.text).not.toContain("no draft");
+  });
+
+  test("a flagged item of another category keeps its would-do line", () => {
+    const text = renderDigest(
+      input({ counts: { info: 1 }, items: [item(1, "info", { suspicious: ["auth_fail"] })] }),
+      textTables.en
+    ).text;
+    expect(text).toContain("⚠ Suspicious: sender check failed\n→ would flag");
+  });
+});
+
 function input(extra: Partial<DigestInput> = {}): DigestInput {
   return {
     kind: "scheduled",

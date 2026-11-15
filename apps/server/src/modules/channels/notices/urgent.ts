@@ -2,7 +2,7 @@ import { type TenantContext } from "../../../platform/db";
 import { listActionsForEmails } from "../../actions";
 import { listDelegateNames } from "../../delegation";
 import { getJunkFolderPath, INBOX, isSyntheticMessageId } from "../../mail";
-import { listTriagedBetween } from "../../triage";
+import { listTriagedBetween, suspiciousReasonsToShow } from "../../triage";
 import { type LinkedChat } from "../port";
 
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
@@ -45,6 +45,11 @@ async function detectUrgent(
     ctx,
     rows.map((row) => row.email_id),
     now
+  );
+  const suspicious = await suspiciousReasonsToShow(
+    db,
+    ctx,
+    rows.map((row) => row.email_id)
   );
   const delegateIds = new Set<string>();
   for (const list of actions.values()) {
@@ -94,6 +99,7 @@ async function detectUrgent(
               actions: rowActions,
               delegateNames,
               stayFolder: row.folder,
+              suspicious: suspicious.get(row.email_id) ?? [],
               now,
               timeZone,
             },

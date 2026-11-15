@@ -1,12 +1,13 @@
 import type { CoreTexts } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
+import type { SuspiciousReason } from "../triage/suspicious";
 import type { MailboxStatus } from "../web/mailboxes";
 
 import { categoryTag } from "./labels";
 import { llmPauseLine, type LlmPause } from "./llm-pause";
 import { formatClock, formatDay, localDateTime, localToInstant } from "./local-time";
 import { MESSAGE_MAX_CHARS, type OutButton, type OutMessage } from "./message";
-import { feedbackButtons } from "./notices";
+import { feedbackButtons, suspiciousLine } from "./notices";
 import { cleanSubject, cutText, senderLabel } from "./text";
 import { rateText } from "./weekly";
 
@@ -38,6 +39,8 @@ export interface DigestItem {
   aiText: string | null;
   wouldDo: string;
   undoable: boolean;
+  // Set only while the flag `suspicious_mail` is on. Absent reads as none.
+  suspicious?: readonly SuspiciousReason[];
 }
 
 export interface DigestHandled {
@@ -120,7 +123,10 @@ function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {
     cleanSubject(item.subject, texts),
   ];
   if (item.aiText !== null && item.aiText !== "") lines.push(`💬 ${cutText(item.aiText, 120)}`);
-  lines.push(`→ ${item.wouldDo}`);
+  const warning = suspiciousLine(item.suspicious, texts);
+  if (warning !== null) lines.push(warning);
+  // A flagged delegation mail gets no draft: that line replaces the "would do" line.
+  lines.push(`→ ${warning !== null && item.category === "delegation" ? texts.suspicious.noDraft : item.wouldDo}`);
   return lines;
 }
 

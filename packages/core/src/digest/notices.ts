@@ -1,6 +1,7 @@
 import type { SendLimitKind } from "../send-limits";
 import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
+import { suspiciousReasons, type SuspiciousReason } from "../triage/suspicious";
 
 import { encodeCallback, isLabelCategory } from "./callback";
 import { formatClock } from "./local-time";
@@ -19,6 +20,13 @@ export function feedbackButtons(
   return [{ text: texts.right, data: encodeCallback({ kind: "right", category, emailId }) }, edit, ...undo];
 }
 
+// The warning line of a suspicious mail, or null when the list is empty. The names follow the order of `suspiciousReasons`.
+export function suspiciousLine(reasons: readonly SuspiciousReason[] | undefined, texts: CoreTexts): string | null {
+  if (reasons === undefined || reasons.length === 0) return null;
+  const names = suspiciousReasons.filter((code) => reasons.includes(code)).map((code) => texts.suspicious.reason[code]);
+  return texts.suspicious.line(names.join(", "));
+}
+
 export function renderUrgentNotice(
   input: {
     emailId: string;
@@ -29,6 +37,8 @@ export function renderUrgentNotice(
     synthetic: boolean;
     folderTag: string | null;
     wouldDo: string;
+    // Old views have no field: they render as before.
+    suspicious?: readonly SuspiciousReason[];
     now: Date;
     timeZone: string;
   },
@@ -40,6 +50,8 @@ export function renderUrgentNotice(
     `${texts.common.subject}: ${cleanSubject(input.subject, texts)}`,
   ];
   if (input.aiText !== null) lines.push(`💬 ${cutText(input.aiText, 200)}`);
+  const warning = suspiciousLine(input.suspicious, texts);
+  if (warning !== null) lines.push(warning);
   lines.push(
     texts.notices.received(formatClock(input.receivedAt, input.timeZone, input.now, texts.locale)),
     `→ ${input.wouldDo}`
