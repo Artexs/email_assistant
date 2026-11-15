@@ -109,7 +109,7 @@ Review job before the land (`claude-opus-5-5`, high): stages 01, 02, 05, 10, 13,
 - 13 [Panel Help link and card](stages/stage-13-panel-card.md).
 - 14 [First publication](stages/stage-14-publication.md) `[risky]` outside publication; owner O1.
 
-Order: 01 → 06 in order. Then 07, 11, 12 may run in parallel; 08 and 09 after 07; 10 after 07–09; 13 after 12; 14 last. 06 waits while another `bun.lock` change builds.
+Order: 01 → 07 in order; 08 and 09 after 07 (in parallel); 10 after 08 and 09; 11 after 10. 12 after 06, next to 07–11; 13 after 12; 14 last. 06 waits while another `bun.lock` change builds.
 
 ## How to run (coordinator)
 
