@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import type { EvidenceKey } from "@ea/core";
+import type { EvidenceKey, GlobalEvidence } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { uniformRoleTable } from "../../platform/llm";
@@ -218,7 +218,7 @@ describe("runningEvidenceKey", () => {
   });
 });
 
-const noEvidence = {
+const noEvidence: GlobalEvidence = {
   decision: "none",
   provisional: false,
   precision: null,
