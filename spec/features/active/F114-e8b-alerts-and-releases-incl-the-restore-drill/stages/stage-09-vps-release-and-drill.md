@@ -48,3 +48,7 @@ A failed drill: `--down`, record the finding, open a ticket; F114 stays open unt
 ## Carry-over from stage 04 review
 
 Read `review-4.md`. Step 4 (V1): compare the container `statfs("/")` with `df -B1 /` on the host and set `SLO_DISK_PATH` when they differ. The drill server (stage 07 override) inherits the backup status mount and sends `slo_backup_age` because the clone has no status file: expect it. Run the new `backup.sh` before the new server starts.
+
+## Carry-over from stage 05 review
+
+- On the VPS confirm: `run --rm -T cli` runs the just-built image; `up -d --no-build` recreates `server` after `docker tag`; `printenv EA_RELEASE`; the rollback target checkout matches its image (review-5.md N1).

@@ -40,3 +40,7 @@ SLO alerts and release scripts (E8b). Growing the disk (PD-055).
 ## Carry-over from stage 16 review
 
 Read `review-16.md` (TG3): list the real paths with mail data that the canary does not drive as a standing limit of the logs capability page, or drive some of them (Telegram inbound updates, delegation chaser, Sent sync, permanent send failures, OAuth refresh errors, the HTTP error handler).
+
+## Carry-over from stage 18 review
+
+- Serve only `/select/` of VictoriaLogs through Tailscale (the port also takes `/insert/*` with no auth). Replace the `docker ps -a` hint by `docker ps -aq | xargs docker inspect --format "{{.Name}} {{.HostConfig.LogConfig.Type}}"` (vlagent reads every `json-file` container of the host). Pull the stage 17 compose file on the VPS before `testmail:remote` runs (`cli` service). See review-18.md.

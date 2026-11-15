@@ -43,3 +43,7 @@ Part of [`../plan.md`](../plan.md). Decisions P4, P5, D14, D15. Needs stage 05 (
 Tests 1–16 pass; CI config runs the check; the Proof of `plan.md` prints `PROOF_OK`.
 
 Out of scope: the first tag and release (09); old migrations.
+
+## Carry-over from stage 05 review
+
+- Runbook: a second `rollback.sh` with no pending state swaps current and previous; a plain `up -d --build` stamps `EA_RELEASE=dev`; the prune removes every `ea-server:pre-*` tag except current and previous (manual pre-<ticket> images go); the checkout is detached after a release or rollback (`git checkout master` first); a failed release needs `rollback.sh` before the next `release.sh` (review-5.md N2).

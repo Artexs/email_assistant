@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -103,16 +103,15 @@ describe("deploy/check-logging.sh", () => {
   });
 });
 
-describe("deploy/compose.yaml drivers and the cli service", () => {
-  // Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
+// Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
+const composeConfig = (profile: string | null) => {
   const result = Bun.spawnSync(
     [
       "docker",
       "compose",
       "-f",
       "deploy/compose.yaml",
-      "--profile",
-      "cli",
+      ...(profile === null ? [] : ["--profile", profile]),
       "config",
       "--no-env-resolution",
       "--format",
@@ -120,6 +119,85 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     ],
     { cwd: repoRoot, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
   );
+  return result;
+};
+
+interface OpsService {
+  command?: string[];
+  mem_limit?: string;
+  ports?: { host_ip?: string; target?: number; published?: string }[];
+  volumes?: Record<string, unknown>[];
+  network_mode?: string | null;
+  networks?: Record<string, unknown> | null;
+  logging?: { driver: string };
+  profiles?: string[];
+}
+
+describe("deploy/compose.yaml profile ops (the log store)", () => {
+  const withOps = composeConfig("ops");
+  const services = (JSON.parse(withOps.stdout.toString()) as { services: Record<string, OpsService> }).services;
+  const store = services.victorialogs;
+  const agent = services.vlagent;
+
+  test("victorialogs keeps 30 days and 1 GiB, 256 MB, and listens on loopback only", () => {
+    expect(withOps.exitCode).toBe(0);
+    expect(store?.command).toContain("-retentionPeriod=30d");
+    expect(store?.command).toContain("-retention.maxDiskSpaceUsageBytes=1GiB");
+    expect(store?.mem_limit).toBe("268435456");
+    expect(store?.ports).toHaveLength(1);
+    expect(store?.ports?.[0]?.host_ip).toBe("127.0.0.1");
+    expect(store?.ports?.[0]?.target).toBe(9428);
+    expect(store?.logging?.driver).toBe("local");
+  });
+
+  test("vlagent reads the Docker logs read-only, has no ports and 64 MB", () => {
+    expect(agent?.mem_limit).toBe("67108864");
+    expect(agent?.ports).toBeUndefined();
+    // Only the container logs (read-only) and its own volume: no Docker socket, no other host path.
+    expect(agent?.volumes).toEqual([
+      {
+        type: "bind",
+        source: "/var/lib/docker/containers",
+        target: "/var/lib/docker/containers",
+        read_only: true,
+        bind: {},
+      },
+      { type: "volume", source: "vlagent-data", target: "/vlagent", volume: {} },
+    ]);
+    expect(agent?.command).toContain("-fileCollector.glob=/var/lib/docker/containers/*/*-json.log");
+    expect(agent?.logging?.driver).toBe("local");
+  });
+
+  test("vlagent sends to victorialogs only and caps its disk buffer", () => {
+    const urls = agent?.command?.filter((a) => a.startsWith("-remoteWrite.url=")) ?? [];
+    expect(urls).toEqual(["-remoteWrite.url=http://victorialogs:9428/internal/insert"]);
+    expect(agent?.command).toContain("-remoteWrite.maxDiskUsagePerURL=500MB");
+  });
+
+  test("neither service sets network_mode or joins a network but the default one", () => {
+    for (const service of [store, agent]) {
+      expect(service?.network_mode ?? null).toBeNull();
+      expect(Object.keys(service?.networks ?? {})).toEqual(["default"]);
+    }
+  });
+
+  test("both services are behind the profile", () => {
+    expect(store?.profiles).toEqual(["ops"]);
+    expect(agent?.profiles).toEqual(["ops"]);
+  });
+
+  test("without the profile the config lists neither service", () => {
+    const plain = composeConfig(null);
+    expect(plain.exitCode).toBe(0);
+    const names = Object.keys((JSON.parse(plain.stdout.toString()) as { services: object }).services);
+    expect(names).not.toContain("victorialogs");
+    expect(names).not.toContain("vlagent");
+    expect(names).toContain("server");
+  });
+});
+
+describe("deploy/compose.yaml drivers and the cli service", () => {
+  const result = composeConfig("cli");
   interface Service {
     logging?: { driver: string; options: Record<string, string> };
     environment?: Record<string, string>;
@@ -143,5 +221,61 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     expect(services.cli?.healthcheck?.disable).toBe(true);
     expect(services.cli?.profiles).toEqual(["cli"]);
     expect(services.server?.profiles).toBeUndefined();
+  });
+});
+
+describe("deploy/check-logging.sh rules for the log store services", () => {
+  const base = readFileSync(join(repoRoot, "deploy", "compose.yaml"), "utf8");
+  const mutated = (name: string, from: string, to: string): string => {
+    expect(base).toContain(from);
+    // Relative paths (env_file, build context) must still resolve: write next to the real file.
+    const path = join(repoRoot, "deploy", `compose.${name}.tmp.yaml`);
+    writeFileSync(path, base.replace(from, to));
+    tmpFiles.push(path);
+    return path;
+  };
+  const tmpFiles: string[] = [];
+  afterAll(() => {
+    for (const f of tmpFiles) rmSync(f, { force: true });
+  });
+  const env = { APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" };
+
+  test("fails on a Docker socket mount, an external remoteWrite URL and network_mode host", () => {
+    const socket = check(
+      [
+        mutated(
+          "socket",
+          "      - vlagent-data:/vlagent\n",
+          "      - vlagent-data:/vlagent\n      - /var/run/docker.sock:/var/run/docker.sock\n"
+        ),
+      ],
+      env
+    );
+    expect(socket.code).toBe(1);
+    expect(socket.err).toContain("vlagent volumes must be the read-only container-log mount");
+    const url = check(
+      [mutated("url", "http://victorialogs:9428/internal/insert", "https://logs.example.test/insert")],
+      env
+    );
+    expect(url.code).toBe(1);
+    expect(url.err).toContain("vlagent must send only to http://victorialogs:9428/");
+    const host = check([mutated("host", "    mem_limit: 64m\n", "    mem_limit: 64m\n    network_mode: host\n")], env);
+    expect(host.code).toBe(1);
+    expect(host.err).toContain("vlagent must not set network_mode");
+  });
+
+  test("fails on a writable container-log mount", () => {
+    const rw = check(
+      [
+        mutated(
+          "rw",
+          "/var/lib/docker/containers:/var/lib/docker/containers:ro",
+          "/var/lib/docker/containers:/var/lib/docker/containers"
+        ),
+      ],
+      env
+    );
+    expect(rw.code).toBe(1);
+    expect(rw.err).toContain("vlagent volumes must be the read-only container-log mount");
   });
 });

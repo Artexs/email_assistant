@@ -11,10 +11,12 @@ import {
   createDelegation,
   delegationHooks,
   detectReply,
+  getDelegate,
   getDelegation,
   listDelegates,
   markAnswered,
   setDelegateState,
+  updateDelegate,
 } from "../../src/modules/delegation";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -91,7 +93,7 @@ async function reminderPair(trx: Transaction<DB>, ctx: TenantContext, emailId: s
 }
 
 describe("addDelegate / setDelegateState", () => {
-  const base = { name: "Anna", email: "anna@x.test", tags: [], actor: "cli", now };
+  const base = { name: "Anna", email: "anna@x.test", tags: [], actor: "cli", via: "cli" as const, now };
 
   test("validation and the mailbox address", async () => {
     await withRollback(db, async (trx) => {
@@ -149,6 +151,109 @@ describe("addDelegate / setDelegateState", () => {
       const audit = await auditRows(trx, s.ctx, "delegate.changed");
       expect(audit).toHaveLength(1);
       expect(audit[0]).toMatchObject({ actor: "cli", data: { delegate_id: id, active: false } });
+    });
+  });
+});
+
+describe("updateDelegate", () => {
+  const web = { actor: "user-1", via: "web" as const, now };
+
+  async function anna(trx: Transaction<DB>, ctx: TenantContext) {
+    const result = await addDelegate(trx, ctx, {
+      name: "Anna",
+      email: "anna@example.com",
+      tags: ["finance"],
+      actor: "cli",
+      via: "cli",
+      now,
+    });
+    if (result.kind !== "added") throw new Error("anna not added");
+    return result.id;
+  }
+
+  test("T1: name and tags change; one audit row with the field names and via, never the values", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const id = await anna(trx, s.ctx);
+      const input = { ...web, id, name: "Anna Nowak-Lis", tags: ["finance", "Budget "] };
+      expect(await updateDelegate(trx, s.ctx, input)).toEqual({ kind: "changed" });
+      expect((await getDelegate(trx, s.ctx, id))?.competence_tags).toEqual(["finance", "budget"]);
+      const audit = await auditRows(trx, s.ctx, "delegate.changed");
+      expect(audit).toHaveLength(1);
+      expect(audit[0]?.actor).toBe("user-1");
+      expect(audit[0]?.data).toEqual({ delegate_id: id, fields: "name,tags", via: "web" });
+    });
+  });
+
+  test("T2: the same values again are `same`, with no audit row", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const id = await anna(trx, s.ctx);
+      const input = { ...web, id, name: "Anna Nowak-Lis", tags: ["finance", "Budget "] };
+      await updateDelegate(trx, s.ctx, input);
+      expect(await updateDelegate(trx, s.ctx, input)).toEqual({ kind: "same" });
+      expect(await updateDelegate(trx, s.ctx, { ...web, id })).toEqual({ kind: "same" });
+      expect(await auditRows(trx, s.ctx, "delegate.changed")).toHaveLength(1);
+    });
+  });
+
+  test("T3: a name of 101 characters and 11 tags are invalid; nothing is stored", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const id = await anna(trx, s.ctx);
+      expect(await updateDelegate(trx, s.ctx, { ...web, id, name: "x".repeat(101) })).toEqual({
+        kind: "invalid",
+        field: "name",
+      });
+      expect(await updateDelegate(trx, s.ctx, { ...web, id, name: "  " })).toEqual({ kind: "invalid", field: "name" });
+      const tags = Array.from({ length: 11 }, (_, i) => `t${i}`);
+      expect(await updateDelegate(trx, s.ctx, { ...web, id, tags })).toEqual({ kind: "invalid", field: "tags" });
+      // A valid active change next to an invalid name still changes nothing.
+      expect(await updateDelegate(trx, s.ctx, { ...web, id, name: "x".repeat(101), active: false })).toEqual({
+        kind: "invalid",
+        field: "name",
+      });
+      expect(await getDelegate(trx, s.ctx, id)).toMatchObject({ name: "Anna", active: true });
+      expect(await auditRows(trx, s.ctx, "delegate.changed")).toEqual([]);
+    });
+  });
+
+  test("T4: active false leaves the CLI list; the address never changes; the row says so in the audit", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const id = await anna(trx, s.ctx);
+      expect(await updateDelegate(trx, s.ctx, { ...web, id, active: false })).toEqual({ kind: "changed" });
+      expect(await listDelegates(trx, s.ctx, { activeOnly: true })).toEqual([]);
+      const all = await listDelegates(trx, s.ctx);
+      expect(all.map((row) => row.email)).toEqual(["anna@example.com"]);
+      const audit = await auditRows(trx, s.ctx, "delegate.changed");
+      expect(audit[0]?.data).toEqual({ delegate_id: id, fields: "active", active: false, via: "web" });
+    });
+  });
+
+  test("T5: an id of another organization is not found and nothing changes there", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const other = await setup(trx);
+      const theirs = await anna(trx, other.ctx);
+      expect(await updateDelegate(trx, s.ctx, { ...web, id: theirs, name: "Taken", active: false })).toEqual({
+        kind: "not_found",
+      });
+      expect(await getDelegate(trx, other.ctx, theirs)).toMatchObject({ name: "Anna", active: true });
+      expect(await updateDelegate(trx, s.ctx, { ...web, id: randomUUID(), active: false })).toEqual({
+        kind: "not_found",
+      });
+      expect(await auditRows(trx, other.ctx, "delegate.changed")).toEqual([]);
+    });
+  });
+
+  test("a disabled delegate keeps its open delegation", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const delegateId = await insertDelegate(trx, s.ctx);
+      const d = await delegationWithPair(trx, s.ctx, s.mailboxId, "drafted", delegateId);
+      expect(await updateDelegate(trx, s.ctx, { ...web, id: delegateId, active: false })).toEqual({ kind: "changed" });
+      expect((await getDelegation(trx, s.ctx, d.id))?.status).toBe("drafted");
     });
   });
 });

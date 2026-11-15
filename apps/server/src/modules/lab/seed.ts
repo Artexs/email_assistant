@@ -52,6 +52,7 @@ export const LAB_FLAGS_OFF = [
 export const LAB_FLAGS_ON = [
   "stats_page",
   "approvals_page",
+  "delegation_pages",
   "sent_sync",
   "security_log",
   "review_command",
@@ -185,6 +186,7 @@ export async function seedLabOrg(deps: SeedDeps, scenario: Scenario, target: See
       email: address,
       tags: [...tags],
       actor: ACTOR,
+      via: "cli",
       now: deps.now(),
     });
     if (result.kind === "added") added.delegates += 1;
