@@ -21,6 +21,9 @@ async function viewOf(db: Db, ctx: TenantContext, row: MailboxSummary, env: Scop
     mode: settings ? modeSchema.parse(settings.mode) : null,
     movesSupported,
     secretKind: credentials?.secret_kind === "app_password" ? "app_password" : "password",
+    authMethod: row.oauth_provider === null ? "password" : "oauth",
+    oauthProvider: row.oauth_provider,
+    authReason: row.auth_reason,
     scopes: mailboxScopeBadges(env),
   };
 }

@@ -31,6 +31,7 @@ export interface BotTexts {
     stateActive: string;
     statePaused: (since: string) => string;
     stateAuthError: (since: string) => string;
+    stateAuthErrorOAuth: (since: string) => string;
     stateHostBlocked: (since: string) => string;
     lastSync: (when: string | null, late: boolean) => string;
     llmCalls: (since: string, calls: number, cap: number) => string;
@@ -57,6 +58,7 @@ export interface BotTexts {
     alreadyPaused: (address: string) => string;
     alreadyActive: (address: string) => string;
     loginError: (address: string) => string;
+    loginErrorOAuth: (address: string) => string;
     hostBlocked: (address: string) => string;
     pausedHeader: (list: string) => string;
     pausedExplain: string;
@@ -207,6 +209,7 @@ export const botTexts = {
       stateActive: "active",
       statePaused: (since) => `paused since ${since}`,
       stateAuthError: (since) => `login error since ${since} (run mailbox:password)`,
+      stateAuthErrorOAuth: (since) => `sign-in error since ${since} (Reconnect in the panel)`,
       stateHostBlocked: (since) => `mail server not allowed since ${since} (checked again at each sync)`,
       lastSync: (when, late) => `Last sync: ${when === null ? "never" : `${when}${late ? " (late)" : ""}`}`,
       llmCalls: (since, calls, cap) => `LLM calls since ${since}: ${calls} of ${cap}`,
@@ -235,6 +238,7 @@ export const botTexts = {
       alreadyPaused: (address) => `${address} was paused already.`,
       alreadyActive: (address) => `${address} was active already.`,
       loginError: (address) => `❌ ${address} has a login error: run mailbox:password first.`,
+      loginErrorOAuth: (address) => `❌ ${address} has a sign-in error: tap Reconnect in the panel first.`,
       hostBlocked: (address) =>
         `⛔ ${address}: its mail server is not allowed; the system checks it again at each sync.`,
       pausedHeader: (list) => `⏸ Paused: ${list}`,
@@ -331,6 +335,7 @@ export const botTexts = {
       stateActive: "aktywna",
       statePaused: (since) => `wstrzymana od ${since}`,
       stateAuthError: (since) => `błąd logowania od ${since} (uruchom mailbox:password)`,
+      stateAuthErrorOAuth: (since) => `błąd logowania od ${since} (połącz ponownie w panelu)`,
       stateHostBlocked: (since) => `serwer poczty niedozwolony od ${since} (sprawdzany przy każdej synchronizacji)`,
       lastSync: (when, late) =>
         `Ostatnia synchronizacja: ${when === null ? "nigdy" : `${when}${late ? " (spóźniona)" : ""}`}`,
@@ -360,6 +365,7 @@ export const botTexts = {
       alreadyPaused: (address) => `${address}: już wstrzymana.`,
       alreadyActive: (address) => `${address}: już aktywna.`,
       loginError: (address) => `❌ ${address}: błąd logowania. Najpierw uruchom mailbox:password.`,
+      loginErrorOAuth: (address) => `❌ ${address} ma błąd logowania: najpierw stuknij „Połącz ponownie” w panelu.`,
       hostBlocked: (address) =>
         `⛔ ${address}: serwer poczty jest niedozwolony; system sprawdza go przy każdej synchronizacji.`,
       pausedHeader: (list) => `⏸ Wstrzymano: ${list}`,

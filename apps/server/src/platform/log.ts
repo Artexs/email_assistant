@@ -138,28 +138,43 @@ function writeLine(
   out(prefix, `${event}${rest}`);
 }
 
+/** While the console guard is on, the writer sends its lines here, not to console.*. */
+let guardSink: { log: (...args: unknown[]) => void; error: (...args: unknown[]) => void } | undefined;
+
+function sinkFor(level: LogLevel): (...args: unknown[]) => void {
+  const toError = level === "warn" || level === "error";
+  if (guardSink !== undefined) {
+    return toError ? guardSink.error : guardSink.log;
+  }
+  // eslint-disable-next-line no-console
+  return toError ? console.error : console.log;
+}
+
+/** One line of context fields and dropped_fields 1, for a call shape that is not the event form and for library console output. It writes no argument. */
+function writeDropOnly(level: LogLevel, module: string, event: string): void {
+  const line: Pair[] = [
+    ["time", new Date().toISOString()],
+    ["level", level],
+    ["module", module],
+    ["event", event],
+    ["msg", event],
+  ];
+  const dropped = addFields(line, [contextFields()]) + 1;
+  line.push(["dropped_fields", dropped]);
+  droppedTotal += dropped;
+  writeLine(sinkFor(level), `[${module}]`, event, line, resolveFormat() === "json");
+}
+
 function write(level: LogLevel, module: string, childFields: readonly FieldSource[], args: readonly unknown[]): void {
   if (levelOrder[level] < levelOrder[currentLevel]) {
     return;
   }
-  // eslint-disable-next-line no-console
-  const out = level === "warn" || level === "error" ? console.error : console.log;
+  const out = sinkFor(level);
   const prefix = `[${module}]`;
   const asJson = resolveFormat() === "json";
 
   if (!isEventForm(args)) {
-    // D9: any other call shape writes no argument. One line of context fields says that a call was invalid.
-    const line: Pair[] = [
-      ["time", new Date().toISOString()],
-      ["level", level],
-      ["module", module],
-      ["event", "log_call_invalid"],
-      ["msg", "log_call_invalid"],
-    ];
-    const dropped = addFields(line, [contextFields()]) + 1;
-    line.push(["dropped_fields", dropped]);
-    droppedTotal += dropped;
-    writeLine(out, prefix, "log_call_invalid", line, asJson);
+    writeDropOnly(level, module, "log_call_invalid");
     return;
   }
 
@@ -194,3 +209,44 @@ function makeLog(module: string, childFields: readonly FieldSource[]): Log {
 export function createLog(module: string): Log {
   return makeLog(module, []);
 }
+
+/* eslint-disable no-console -- the guard is the one place that reads and replaces console. */
+const guardedMethods = ["log", "info", "debug", "warn", "error", "trace"] as const;
+
+/**
+ * JSON format only (main.ts). Saves the current console.log and console.error as the writer's sink, then replaces
+ * console.log, info, debug, warn, error and trace with a function that writes the event console_output (level warn)
+ * with the context fields and dropped_fields 1, and never its arguments. Returns a function that restores console.
+ */
+export function installConsoleGuard(): () => void {
+  if (guardSink !== undefined) {
+    throw new Error("console guard is on");
+  }
+  const saved = Object.fromEntries(guardedMethods.map((method) => [method, console[method]])) as Record<
+    (typeof guardedMethods)[number],
+    (...args: unknown[]) => void
+  >;
+  const sink = { log: saved.log, error: saved.error };
+  guardSink = sink;
+  // The guarded function reads no argument: a getter on an argument can throw or print.
+  const guarded = (): void => {
+    try {
+      writeDropOnly("warn", "console", "console_output");
+    } catch {
+      // A guard must never throw into the code that called console.
+    }
+  };
+  for (const method of guardedMethods) {
+    console[method] = guarded;
+  }
+  return () => {
+    if (guardSink !== sink) {
+      return;
+    }
+    for (const method of guardedMethods) {
+      console[method] = saved[method];
+    }
+    guardSink = undefined;
+  };
+}
+/* eslint-enable no-console */

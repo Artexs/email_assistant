@@ -46,3 +46,7 @@ Two steps in `apps/web`.
 
 - After an edit answer `{ id, version }`, load the detail of `id` (the new send, `waiting`). An edit of a held send answers `409 closed` with `state` `held`: the page reads `heldBy` from the detail and offers Reject only.
 - `409 closed` `state` is one of `approvalClosedStates` or an edit code (`payload_gone`, `draft_gone`, `delegation_closed`); show one text for each. `400` codes: `not_editable`, `unchanged`, `delegate_inactive`, `validation`.
+
+## Carry-over from stage 12 review
+
+Read `review-12.md`. After Approve or Reject the focused button unmounts and focus falls to the body: in the keyboard test (T7) move focus to the result line or the next item and test it; run axe on the page after an answer (notice shown, reason select open).

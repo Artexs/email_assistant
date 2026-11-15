@@ -36,7 +36,8 @@ import { errorFields } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
 import { createLlmClient, llmEndpointFields, type LlmProviderId } from "./platform/llm";
-import { createLog, setLogFormat, setLogLevel } from "./platform/log";
+import { createLog, installConsoleGuard, setLogFormat, setLogLevel } from "./platform/log";
+import { installProcessGuard } from "./platform/process-guard";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
 import { webDeps } from "./web";
@@ -74,6 +75,9 @@ function triageScope(config: Config, provider: LlmProviderId): TriageScope | nul
 const config = loadConfigOrExit();
 setLogLevel(config.LOG_LEVEL);
 setLogFormat(config.LOG_FORMAT);
+// JSON format (production): text from a library never reaches the log. Text format (dev) keeps the console.
+if (config.LOG_FORMAT === "json") installConsoleGuard();
+installProcessGuard(log);
 configureMailHosts({ allowLocal: mailAllowLocal(config) });
 const featuresOffList = featuresOff(config);
 configureFeatures({ off: featuresOffList });

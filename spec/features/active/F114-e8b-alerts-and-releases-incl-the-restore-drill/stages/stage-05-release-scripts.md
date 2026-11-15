@@ -57,3 +57,7 @@ Part of [`../plan.md`](../plan.md). Decisions P4, P5, D10–D14. Not next to 04 
 Tests 1–16 pass; `bash -n` (and `shellcheck` if installed) clean; the Proof prints `PROOF_OK`.
 
 Out of scope: changelog, checklist, README (06); the first real release (09).
+
+## Carry-over from stage 04 review
+
+Read `review-4.md`. `release.sh` must read the stdout of `backup.sh` only (the `backup ok` last line): a failed ping prints `backup ping failed` on stderr after it. `compose-backup-status.test.ts` pins the server `volumes` with `toEqual`: update it if you add a volume.

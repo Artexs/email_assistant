@@ -509,11 +509,27 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check the `onEvent` wiring in `apps/server/src/web.ts`. `auditWebEvent` must return without a throw; an audit miss must never fail a login.
 - **Status:** investigating
 
+### `process_uncaught_exception` and `process_unhandled_rejection` (fields `error`, `error_code`)
+
+- **First seen:** 2026-11-15 (F103 stage 14; before it Bun printed the message and the source line, and the process exited 1 as well)
+- **Source:** `apps/server/src/platform/process-guard.ts`, installed in `main.ts`. The server process writes the event and exits with code 1; Compose restarts the container.
+- **Cause:** A bug: code threw outside any `try`, or a promise rejected and nobody handled it. The event carries the error name and code only, never the message.
+- **Fix:** Read `error` and `error_code`, then the lines of the same `run_id` or `request_id` just before it (a job run or a request). The container restarted, so check that `server_listening` follows. Fix the missing `catch` at the site.
+- **Status:** investigating
+
+### `console_output` (field `dropped_fields`=1; context fields `job`, `run_id`, `request_id` when set)
+
+- **First seen:** 2026-11-15 (F103 stage 14)
+- **Source:** `installConsoleGuard()` in `apps/server/src/platform/log.ts`, installed in `main.ts` when `LOG_FORMAT=json`. A library or other code called `console.log`, `info`, `debug`, `warn`, `error` or `trace`. The guard drops the text, so it can hold no database value or mail text.
+- **Cause:** A library prints on its own (for example `better-call` prints `# SERVER_ERROR: …`). One `console_output` line stands for one call.
+- **Fix:** Find the library by the `run_id` or `request_id` and the time: read our own lines around it (for example `better_auth_error`). Run the server in text format (dev) to read the text. An own call to `console.*` is a lint error: use the logger.
+- **Status:** investigating
+
 ### `# SERVER_ERROR: <message and stack>`
 
 - **First seen:** 2026-11-09 (S5a code, stage 3 fix review; not seen live)
 - **Source:** `better-call` `router.mjs` (`console.error`), not our logger. It follows our own `better_auth_error` or `better_auth_log` line.
-- **Cause:** An error that is not a `better-call` `APIError` was thrown inside Better Auth, for example a database error. The line holds the full message and stack, so it can hold database text. `onAuthError` cannot suppress it.
+- **Cause:** An error that is not a `better-call` `APIError` was thrown inside Better Auth, for example a database error. The line holds the full message and stack, so it can hold database text. `onAuthError` cannot suppress it. In JSON format the console guard replaces the line with one `console_output` event (see the entry above); the text exists only in text format (dev).
 - **Fix:** Read our own `better_auth_error` or `better_auth_log` line first (name and code only); use this line for the stack. A database label: check the DB. Cut database text before you paste the line into a task file or a ticket.
 - **Status:** investigating
 

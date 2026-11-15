@@ -39,7 +39,8 @@ test("connect, pause, resume, change the password, remove", async ({ page }, tes
   await expect(page.getByText(en.status_active, { exact: true })).toBeVisible();
   await expect(page.getByText(en.badge_triage_off)).toBeVisible();
   await expect(page.getByText(en.badge_actions_synthetic)).toBeVisible();
-  await expect(page.getByText(en.badge_send_off)).toBeVisible();
+  // The e2e server has SEND_SCOPE=self (the approvals spec sends one mail to a test address): see `e2e/env.ts`.
+  await expect(page.getByText(en.badge_send_self)).toBeVisible();
   await expectNoA11yViolations(page);
 
   await page.getByRole("button", { name: en.mb_pause }).click();

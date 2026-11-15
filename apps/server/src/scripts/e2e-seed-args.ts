@@ -61,6 +61,41 @@ export const E2E_PAUSED_OWNER_EMAIL = "e2e-paused-owner@x.test";
 export const E2E_STATS_ORG_NAME = "E2E Stats";
 export const E2E_STATS_OWNER_EMAIL = "e2e-stats-owner@x.test";
 
+// F102 stage 12: one organization per project for the approvals spec (it approves and rejects, so each project needs its own). The
+// flags `approvals_page`, `stats_page` and `mistake_capture` are on. The organization holds a waiting send (draft applied) to the
+// first delegate and a held send to the second one: the e2e server has SEND_SCOPE=self with the first address only, so the first
+// send goes out through the GreenMail of the dev stack after the approval and the second stays held by the scope.
+export const E2E_APPROVALS_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-approvals-owner-mobile@x.test",
+  desktop: "e2e-approvals-owner-desktop@x.test",
+};
+export const E2E_APPROVALS_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-approvals-member-mobile@x.test",
+  desktop: "e2e-approvals-member-desktop@x.test",
+};
+export const e2eApprovalsOrgName = (project: E2eProject): string => `E2E Approvals ${project}`;
+export const e2eApprovalsMailbox = (project: E2eProject): string => `e2e-approvals-${project}@e2e.test`;
+// The only address that SEND_SCOPE=self lets through in the e2e server (the first delegate of the approvals organizations).
+export const E2E_SEND_TEST_ADDRESS = "anna@example.com";
+export const E2E_APPROVALS = {
+  waiting: {
+    delegateName: "Anna Nowak",
+    delegateEmail: E2E_SEND_TEST_ADDRESS,
+    subject: "E2E budget plan",
+    from: "boss@example.net",
+    body: "E2E original request: please review the budget plan.",
+    task: "Review the budget plan",
+  },
+  held: {
+    delegateName: "Piotr Kowalski",
+    delegateEmail: "piotr@example.com",
+    subject: "E2E vendor contract",
+    from: "vendor@example.net",
+    body: "E2E original request: please check the vendor contract.",
+    task: "Check the vendor contract",
+  },
+} as const;
+
 export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-activity-mobile@x.test",
   desktop: "e2e-activity-desktop@x.test",
@@ -98,6 +133,16 @@ export interface SeedFile {
   trialOwner: { userId: string; email: string; password: string; orgId: string; trialEndsAt: string };
   pausedOwner: { userId: string; email: string; password: string; orgId: string; mailboxId: string };
   statsOwner: { userId: string; email: string; password: string; orgId: string };
+  approvalsOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      member: { userId: string; email: string; password: string };
+      waitingSendId: string;
+      heldSendId: string;
+    }
+  >;
 }
 
 // Reads the name the way `pg` does, so the guard and the connection agree. No connection is opened.

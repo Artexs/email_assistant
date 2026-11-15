@@ -193,6 +193,39 @@ describe("mailbox routes", () => {
     expect(first?.secretKind).toBe("password");
   });
 
+  test("GET shows authMethod, oauthProvider and authReason for an OAuth and a password mailbox", async () => {
+    const { org, app, m1, m2, other } = await setup();
+    await db
+      .updateTable("mailboxes")
+      .set({ oauth_provider: "google", status: "auth_error", auth_reason: "oauth_expired" })
+      .where("id", "=", m2)
+      .execute();
+    // Another organization's OAuth mailbox never shows up here.
+    await db
+      .updateTable("mailboxes")
+      .set({ oauth_provider: "microsoft", status: "auth_error", auth_reason: "protocol_disabled" })
+      .where("id", "=", other)
+      .execute();
+
+    const res = await app.request("/api/mailboxes", as("owner"));
+    expect(res.status).toBe(200);
+    const views = mailboxListSchema.parse(await res.json());
+    expect(views.map((v) => v.id)).toEqual([m1, m2]);
+    const [password, oauth] = views;
+    expect(password).toMatchObject({ authMethod: "password", oauthProvider: null, authReason: null });
+    expect(oauth).toMatchObject({ authMethod: "oauth", oauthProvider: "google", authReason: "oauth_expired" });
+    expect(oauth?.status).toBe("auth_error");
+    expect(JSON.stringify(views)).not.toContain("protocol_disabled");
+    expect(org.otherOrgId).not.toBe(org.orgId);
+  });
+
+  test("an OAuth mailbox after Reconnect: reason null, status active", async () => {
+    const { app, m1 } = await setup();
+    await db.updateTable("mailboxes").set({ oauth_provider: "microsoft" }).where("id", "=", m1).execute();
+    const [view] = mailboxListSchema.parse(await (await app.request("/api/mailboxes", as("owner"))).json());
+    expect(view).toMatchObject({ status: "active", authMethod: "oauth", oauthProvider: "microsoft", authReason: null });
+  });
+
   test("pause and resume write one audit row each and are idempotent", async () => {
     const { org, app, m1 } = await setup();
     const pause = () => app.request(`/api/mailboxes/${m1}/pause`, as("owner", { method: "POST" }));
@@ -497,6 +530,49 @@ describe("mailbox routes", () => {
     const [row] = await auditOf(org.orgId, "mailbox.password_changed");
     expect(row?.actor).toBe(org.ownerId);
     expect(row?.data).toEqual({ mailbox_id: m2, reactivated: true });
+  });
+
+  test("password on an OAuth mailbox: 409 oauth_mailbox, no login, nothing changes", async () => {
+    const { org, app, m2, other, imapCalls, smtpCalls } = await setup();
+    await db
+      .updateTable("mailboxes")
+      .set({ oauth_provider: "google", status: "auth_error", auth_reason: "oauth_expired" })
+      .where("id", "=", m2)
+      .execute();
+    await db.updateTable("mailboxes").set({ oauth_provider: "google" }).where("id", "=", other).execute();
+    const readRow = async (id: string) => ({
+      mailbox: await db.selectFrom("mailboxes").selectAll().where("id", "=", id).executeTakeFirstOrThrow(),
+      credentials: await db
+        .selectFrom("mailbox_credentials")
+        .selectAll()
+        .where("mailbox_id", "=", id)
+        .executeTakeFirstOrThrow(),
+    });
+    const before = await readRow(m2);
+
+    const res = await app.request(
+      `/api/mailboxes/${m2}/password`,
+      as("owner", { method: "POST", body: { password: "new secret", secretKind: "password" } })
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "oauth_mailbox" });
+    expect(imapCalls).toHaveLength(0);
+    expect(smtpCalls).toHaveLength(0);
+    expect(await readRow(m2)).toEqual(before);
+    expect(await auditOf(org.orgId, "mailbox.password_changed")).toHaveLength(0);
+
+    // The assistant is refused before the check; an unknown mailbox of another organization is a 404, not a 409.
+    const asAssistant = await app.request(
+      `/api/mailboxes/${m2}/password`,
+      as("assistant", { method: "POST", body: { password: "new secret", secretKind: "password" } })
+    );
+    expect(asAssistant.status).toBe(403);
+    const foreign = await app.request(
+      `/api/mailboxes/${other}/password`,
+      as("owner", { method: "POST", body: { password: "new secret", secretKind: "password" } })
+    );
+    expect(foreign.status).toBe(404);
+    expect(await foreign.json()).toEqual({ error: "not_found" });
   });
 
   test("no log line holds the password, the address or a host", async () => {

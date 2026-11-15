@@ -81,6 +81,7 @@ export {
   MailboxExistsError,
   MailboxLimitError,
   MailboxNotFoundError,
+  MailboxOAuthError,
   MailFolderMissingError,
   MailNotFoundError,
   CAPTURE_LIMITS,

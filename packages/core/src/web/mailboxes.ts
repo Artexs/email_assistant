@@ -1,6 +1,7 @@
 import { presetKeys, smtpSecurities, type PresetKey, type SmtpSecurity } from "../mail/providers";
 import { mailboxModes } from "../triage/categories";
 
+import { authErrorReasons, mailOAuthProviderKeys } from "./mail-oauth";
 import { z } from "./zod";
 
 const secretKindSchema = z.enum(["password", "app_password"]);
@@ -114,6 +115,11 @@ export const mailboxViewSchema = z.object({
   mode: z.enum(mailboxModes).nullable(),
   movesSupported: z.boolean(),
   secretKind: secretKindSchema,
+  /** `oauth`: the mailbox signs in with a provider; the panel offers Reconnect, never a password (F117). */
+  authMethod: z.enum(["password", "oauth"]),
+  oauthProvider: z.enum(mailOAuthProviderKeys).nullable(),
+  /** Why the OAuth login fails; set only while the status is `auth_error` on an `oauth` mailbox. */
+  authReason: z.enum(authErrorReasons).nullable(),
   scopes: z.object({ triage: scopeBadgeSchema, actions: scopeBadgeSchema, send: scopeBadgeSchema }),
 });
 export type MailboxView = z.infer<typeof mailboxViewSchema>;

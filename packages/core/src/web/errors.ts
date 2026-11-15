@@ -12,6 +12,7 @@ export const apiErrorCodes = [
   "not_found",
   "mailbox_exists",
   "mailbox_limit",
+  "oauth_mailbox",
   "rule_exists",
   "rule_limit",
   "wrong_status",

@@ -246,7 +246,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
     The value rule does not stop a secret that looks like a code: never add a field for a token, a password or a key value, and never pass one in a code field.
 - Errors: `...errorFields(error)` (`error` = the error name, `error_code`). In Telegram code: `...telegramErrorFields(error)` (`error`, `error_code`, `method`). Never `error.message`, `payload` or `description`, a mail text, an address, a URL or a token. The lint fails on `.message` inside a log call.
 - Context: the scheduler gives every line of a job tick `job` and `run_id` (`runJobTick`). Every Telegram update runs in `withLogContext({ job: "telegram.update", run_id })` (the first bot middleware), so its lines carry a `run_id` too. The HTTP layer gives every line of a request `request_id` and sets the `x-request-id` header.
-  Per-item ids come from a child logger: `const mailboxLog = log.with({ org_id, mailbox_id })`. Name a child logger `<thing>Log` (the lint finds it by that name). A call on a chain (`log.with({ … }).info(…)`) is checked too.
+  Per-item ids come from a child logger: `const mailboxLog = log.with({ org_id, mailbox_id })`. Name a child logger `<thing>Log` (the lint finds it by that name). A call on a chain (`log.with({ … }).info(…)`) and a call on a member logger (`this.log.info(…)`) are checked too.
   Inside a run or a request, never pass `job`, `run_id` or `request_id` by hand (the context value wins and the call value is dropped).
   Only a line outside any context names a job with `job` (`job_scheduled`, `job_skipped`).
   Create a long-lived timer, interval, socket or pool at start, outside any context: it keeps the context it was created in.
@@ -255,6 +255,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - `Log` has only the event signature. A call of another shape (a free text, a second argument that is not an object, three arguments) writes one `log_call_invalid` line with the context fields only and `dropped_fields: 1`, and never prints the argument.
 - Lint: in `apps/server/src` (tests excepted) `no-restricted-syntax` and `no-console` are at `error` (`eslint.config.js`, `logEventSelectors`). It fails on a first argument that is not a snake_case literal, a call with no or more than two arguments, a second argument that is not an object literal or a call of `errorFields` / `telegramErrorFields`, a `.message` in the fields, and a call on a chain with any of these. A new log line in any file is an event.
 - CLI scripts (`apps/server/src/scripts/`) print to the operator's terminal through `createCliOutput(name)` (`platform/cli.ts`): `print` to stdout, `fail` to stderr, `[name] text`, always text. It is not a log line and never enters the log store. Only scripts import it (a lint border). A script that must stay silent on its machine output uses `process.stdout.write`, and may log a failure as an event line (`org_delete_refused`); free text goes through `createCliOutput`. An existing `error.message` print in a script stays; a new one only in a mail-connection script, never for a Telegram error.
+- Guards (server process, `main.ts`): in JSON format `installConsoleGuard()` turns a call of `console.log`, `info`, `debug`, `warn`, `error` or `trace` that does not come from `platform/log.ts` into one text-free `console_output` event. Other console methods (`dir`, `table`, `assert`) stay out of scope and still print. `installProcessGuard(log)` turns an uncaught exception and an unhandled rejection into `process_uncaught_exception` / `process_unhandled_rejection` with `errorFields`, then exits 1. Scripts install neither. Text format (dev) keeps the normal console. Bun's own output before `main.ts` runs is out of scope.
 - `docs/known-alerts.md` keys the entries of event lines by the event code.
 - What each part does and where it lives: `docs/capabilities/logs.md`.
 
@@ -282,7 +283,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 ## Metrics
 
 - A Stage 2 metric has one definition: a pure function in `packages/core/src/metrics/` over plain rows, a field in `weekStatsSchema`, and a reader in the module that owns its table. The weekly report, the stats route, `stats:week` and the E2b week scorer call the same function. A new metric or a new source of rows (E5 loops, E6 drafts) adds to these three places; it never computes a metric in a route, a renderer or a script.
-- `apps/server/src/modules/reports/metrics.ts` (`weekStats`, `recentWeekStats`) is the only service that joins the readers. The page cells (`apps/web/src/lib/stats-view.ts`) only format numbers.
+- `apps/server/src/modules/reports/metrics.ts` (`weekStats`, `recentWeekStats`, and `rangeMetrics` for a window that is not a week, such as an E2b lab run) is the only service that joins the readers. The page cells (`apps/web/src/lib/stats-view.ts`) only format numbers.
 
 ## Capability map (PD-009)
 

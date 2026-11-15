@@ -11,10 +11,11 @@ Every server log line is an event: a constant code, such as `sync_folder_done`, 
 1. **Event form.** `log.<level>("<event_code>", { fields })`. The code matches `^[a-z][a-z0-9_]{0,63}$`; `msg` equals it. `Log` has only this signature. A call of another shape writes one `log_call_invalid` line (context fields only, `dropped_fields: 1`, one drop counted) and never prints its argument.
 2. **Field kinds.** `uuidFieldNames` take a lower-case UUID or `null`; `numberFieldNames` take a finite number or `null`; `codeFieldNames` take a number, a boolean, `null` or a code of at most 64 characters from `A–Z a–z 0–9 _ . : / * -` without `://`. A wrong name or kind is dropped and counted.
 3. **Errors.** `...errorFields(error)` gives `error` (the error name) and `error_code`. `...telegramErrorFields(error)` adds `method`. A log call never reads `.message`.
-4. **Context.** A job tick gives `job` and `run_id`; a Telegram update gives `job: "telegram.update"` and a `run_id`; an HTTP request gives `request_id`. A child logger (`const mailboxLog = log.with({ org_id, mailbox_id })`) adds per-item ids. A call on a chain is checked by the lint like a call on `log`.
+4. **Context.** A job tick gives `job` and `run_id`; a Telegram update gives `job: "telegram.update"` and a `run_id`; an HTTP request gives `request_id`. A child logger (`const mailboxLog = log.with({ org_id, mailbox_id })`) adds per-item ids. A call on a chain, and a call on a member logger (`this.log.info`, `deps.mailboxLog.info`), is checked by the lint like a call on `log`.
 5. **Lint.** In `apps/server/src` (tests excepted), `no-restricted-syntax` (`logEventSelectors` in `eslint.config.js`) and `no-console` are at `error`. The selectors fail on a first argument that is not a snake_case literal, no argument, more than two arguments, a second argument that is not an object literal or a call of `errorFields` / `telegramErrorFields`, and a `.message` inside the fields. `platform/log.ts` and `platform/cli.ts` keep a disable comment for `no-console`.
 6. **CLI output.** `createCliOutput(name)` gives `print` (stdout) and `fail` (stderr), each as `[name] text`, in text only. Only `apps/server/src/scripts/` imports it (an `import/no-restricted-paths` border). A script may also log a failure as an event line.
 7. **Format.** `LOG_FORMAT=json` prints JSON; any other value, or none, prints `[module] event key=value …`. The server config sets JSON by default and the VPS pins it.
+8. **Guards (JSON format, `main.ts`).** `installConsoleGuard()` (`platform/log.ts`) replaces `console.log`, `info`, `debug`, `warn`, `error` and `trace` with a function that writes one `console_output` line (level `warn`, context fields, `dropped_fields: 1`) and never reads its arguments; the writer prints through the saved console. A second install while one is on throws. `installProcessGuard(log)` (`platform/process-guard.ts`) turns an uncaught exception into `process_uncaught_exception` and an unhandled rejection into `process_unhandled_rejection` (field `error`, `error_code` from `errorFields`), then exits 1 as Bun does. Text format (dev) and scripts keep the normal console.
 
 ## Entry points
 
@@ -35,9 +36,9 @@ None. Lines go to stdout and stderr of the process; Docker keeps them (`deploy/c
 
 ## Limits
 
-- The log store, the Docker log drivers, the `cli` Compose service and the canary test come with F103 stages 14–19. Today `docker compose logs` is the only reader.
-- A library that prints to the console, and a crash print of the runtime, bypass the event writer until the guards of F103 stage 14 land.
-- The lint rules read the code shape only. They do not catch a logger under another name (an alias, a destructured method, `log['info']`, `this.log`, a logger variable without the `Log` suffix), `.message` reached through a variable, or `console` through an alias or `globalThis`. A review catches these; the runtime turns a free-text event into `log_call_invalid`.
+- The log store, the Docker log drivers, the `cli` Compose service and the canary test come with F103 stages 15–19. Today `docker compose logs` is the only reader.
+- Bun's own output before `main.ts` runs (a syntax or an import error at start) prints as today. A library that prints in text format (dev) is not guarded.
+- The lint rules read the code shape only. They do not catch a logger under another name (an alias, a destructured method, `log['info']`, a logger variable without the `Log` suffix), `.message` reached through a variable, or `console` through an alias or `globalThis`. A review catches these; the runtime turns a free-text event into `log_call_invalid`.
 - The value rule does not stop a secret that looks like a code. Never log a token, a password or a key.
 - Alerts on log lines: E8b (F114).
 

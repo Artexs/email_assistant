@@ -52,3 +52,30 @@ export async function listLlmCallRows(
     };
   });
 }
+
+const countSchema = z.object({ value: z.string().nullable(), count: z.number() });
+
+/**
+ * The rows of one event in the range, counted by one string key of their `data` (for example the `limit` of
+ * `action.send_limited`). `mailboxId` filters `data.mailbox_id`. A row with no such key counts under `""`.
+ */
+export async function countEventsByDataKey(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  q: { event: string; key: string; range: { start: Date; end: Date }; mailboxId: string }
+): Promise<Map<string, number>> {
+  const { rows } = await sql<unknown>`
+    SELECT data->>${q.key} AS value, count(*)::int AS count
+    FROM audit_log
+    WHERE org_id = ${ctx.orgId} AND event = ${q.event}
+      AND created_at >= ${q.range.start} AND created_at < ${q.range.end}
+      AND data->>'mailbox_id' = ${q.mailboxId}
+    GROUP BY 1
+  `.execute(db);
+  const counts = new Map<string, number>();
+  for (const raw of rows) {
+    const row = countSchema.parse(raw);
+    counts.set(row.value ?? "", row.count);
+  }
+  return counts;
+}
