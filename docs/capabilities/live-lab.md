@@ -1,6 +1,6 @@
 # Live lab
 
-> Checked against the code at the F113 stage 12 branch, 2026-11-15.
+> Checked against the code at `1103a257`, 2026-11-15.
 
 ## What it does now
 
