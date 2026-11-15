@@ -41,7 +41,7 @@ import { renderSeedMessage, type ConnectDeps } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { deleteOrganization } from "../../src/modules/privacy";
-import { createOrganizationWithOwner } from "../../src/modules/tenancy";
+import { addMember, createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createSecretBox } from "../../src/platform/crypto";
 
 import {
@@ -158,9 +158,9 @@ function world(): World {
     lookupOrg: createOrgLookup(db),
     state,
     mail,
-    deleteOrg: async ({ orgId, confirmName }) => {
+    deleteOrg: async ({ orgId, confirmName, expect }) => {
       deleteCalls.push(orgId);
-      const result = await deleteOrganization(db, { orgId, confirmName, via: "cli" });
+      const result = await deleteOrganization(db, { orgId, confirmName, expect, via: "cli" });
       if (crashAfterDelete.on) throw new Error("crash after the delete");
       return result;
     },
@@ -530,8 +530,9 @@ describe("the guards of the reset (F113 stage 14): each alone refuses, and nothi
     await resetDemo(w.deps, {});
     const demo = orgOf(w, "demo");
     const outside = `${MARK}-outside-${randomUUID()}@realcompany.example`;
-    // The three org guards pass for the target `outside` (name, entry address and mailbox row); only the mail client refuses.
+    // The four org guards pass for the target `outside` (name, entry address, mailbox row and member email); only the mail client refuses.
     await db.updateTable("mailboxes").set({ address: outside }).where("id", "=", demo.mailboxId).execute();
+    await db.updateTable("users").set({ email: outside }).where("email", "=", w.targets.demo.mailbox).execute();
     w.state.writeOrgs({ ...w.state.readOrgs(), demo: { ...demo, address: outside } });
     const bad: ResetDeps = { ...w.deps, targets: { ...w.targets, demo: { ...w.targets.demo, mailbox: outside } } };
     await expect(resetOrg(bad, "demo")).rejects.toMatchObject({ code: "address_refused" });
@@ -541,6 +542,104 @@ describe("the guards of the reset (F113 stage 14): each alone refuses, and nothi
     // The client itself refuses both mailbox calls.
     await expect(w.mail.emptyMailbox(outside)).rejects.toMatchObject({ code: "address_refused" });
     await expect(w.mail.countMessages(outside)).rejects.toMatchObject({ code: "address_refused" });
+  });
+
+  // The member email of the org must be the demo mailbox address (stage 14 review, N1).
+  async function addOtherMember(orgId: string): Promise<void> {
+    const added = await addMember(
+      db,
+      { orgId },
+      {
+        email: `${MARK}-member-${randomUUID()}@x.test`,
+        displayName: "Other Member",
+        role: "assistant",
+        locale: "en",
+        actor: "test",
+        now: NOW,
+      }
+    );
+    expect(added.kind).toBe("added");
+  }
+
+  test("5e: guard 4 (members): a member with another email refuses, also for an org with no mailbox row", async () => {
+    const w = world();
+    const first = await resetDemo(w.deps, {});
+    await fill(w, w.targets.demo.mailbox, 2, 1);
+    const demo = orgOf(w, "demo");
+    await addOtherMember(demo.orgId);
+    let before = await rowCounts(demo.orgId);
+    const orgsBefore = readFileSync(join(w.dir, "orgs.json"), "utf8");
+    const check = async () => {
+      await expect(resetOrg(w.deps, "demo")).rejects.toMatchObject({ code: "org_mismatch" });
+      await expect(previewReset(w.deps, "demo")).rejects.toMatchObject({ code: "org_mismatch" });
+      expect(w.deleteCalls).toEqual([]);
+      expect(await rowCounts(demo.orgId)).toEqual(before);
+      expect(w.state.activeRuns()).toEqual([first.runId]);
+      expect(await w.mail.countMessages(w.targets.demo.mailbox)).toBe(3);
+      expect(readFileSync(join(w.dir, "orgs.json"), "utf8")).toBe(orgsBefore);
+    };
+    await check();
+    // The repair case (no mailbox row) does not skip the member check.
+    await db.deleteFrom("mailboxes").where("id", "=", demo.mailboxId).execute();
+    before = await rowCounts(demo.orgId);
+    expect(before.mailboxes).toBe(0);
+    await check();
+  });
+
+  // The guards ran before the delete transaction; a row that commits in the window must not be deleted with the org
+  // (stage 14 review, N2). `lookupOrg` is the last read of the pre-check: the hook adds the row right after it.
+  async function lateInsert(add: (orgId: string) => Promise<void>) {
+    const w = world();
+    const first = await resetDemo(w.deps, {});
+    await fill(w, w.targets.demo.mailbox, 2, 1);
+    const demo = orgOf(w, "demo");
+    let armed = true;
+    const late: ResetDeps = {
+      ...w.deps,
+      lookupOrg: async (orgId) => {
+        const row = await w.deps.lookupOrg(orgId);
+        if (armed) {
+          armed = false;
+          await add(orgId);
+        }
+        return row;
+      },
+    };
+    const orgsBefore = readFileSync(join(w.dir, "orgs.json"), "utf8");
+    await expect(resetOrg(late, "demo")).rejects.toMatchObject({ code: "org_mismatch" });
+    // The delete function was asked and refused inside its transaction: the org and all its rows are there.
+    expect(w.deleteCalls).toEqual([demo.orgId]);
+    expect((await rowCounts(demo.orgId)).organizations).toBe(1);
+    expect((await rowCounts(demo.orgId)).emails).toBe(0);
+    expect(await w.mail.countMessages(w.targets.demo.mailbox)).toBe(3);
+    expect(readFileSync(join(w.dir, "orgs.json"), "utf8")).toBe(orgsBefore);
+    return { w, first, demo };
+  }
+
+  test("5f: a mailbox row that commits after the pre-check is not deleted: the delete refuses inside its transaction", async () => {
+    const { demo } = await lateInsert(async (orgId) => {
+      const id = randomUUID();
+      await insertMailbox(
+        db,
+        { orgId },
+        {
+          id,
+          address: `ceo-${randomUUID()}@realcompany.example`,
+          imapHost: "imap.x.test",
+          imapPort: 993,
+          smtpHost: "smtp.x.test",
+          smtpPort: 465,
+          capabilities: testCapabilities,
+          folderMap: {},
+        }
+      );
+    });
+    expect((await rowCounts(demo.orgId)).mailboxes).toBe(2);
+  });
+
+  test("5g: a member that commits after the pre-check is not deleted: the delete refuses inside its transaction", async () => {
+    const { demo } = await lateInsert(addOtherMember);
+    expect((await rowCounts(demo.orgId)).memberships).toBe(2);
   });
 
   test("6: an org with no mailbox row passes guard 3 (a repair case): the reset deletes it", async () => {

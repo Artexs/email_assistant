@@ -20,7 +20,7 @@ const pilotTarget: RemoteTarget = {
 };
 const runId = "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d";
 const bundlePath = remoteBundlePath(runId);
-const base = `cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env run --rm -T -v ${bundlePath}:${bundlePath}:ro server bun ${bundlePath}`;
+const base = `cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env run --rm -T -v ${bundlePath}:${bundlePath}:ro cli bun ${bundlePath}`;
 const ids = `--org-id ${pilotTarget.orgId} --mailbox-id ${pilotTarget.mailboxId}`;
 const tail = `; code=$?; rm -f ${bundlePath}; exit $code`;
 

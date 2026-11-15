@@ -19,6 +19,12 @@ export const featureFlags = {
     epic: "E4-A",
     removeBy: "2027-03-01",
   },
+  delegation_pages: {
+    default: false,
+    description: "The delegates and delegations pages in the panel.",
+    epic: "E4-A",
+    removeBy: "2027-03-01",
+  },
   sent_sync: {
     default: false,
     description: "Read the Sent folder of a mailbox (read only).",

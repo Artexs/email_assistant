@@ -20,6 +20,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### Log store: vlagent reads no lines
+
+- **First seen:** 2026-11-15 (the store is new, F103 stage 18)
+- **Source:** the log store UI (`/select/vmui/`) shows no `server` lines, or `$C --profile ops logs vlagent` shows no file read. The store itself is healthy.
+- **Cause:** `vlagent` reads `/var/lib/docker/containers/*/*-json.log` and nothing else. It finds no file when the Docker root directory is not `/var/lib/docker`, or when the `server` container does not use the `json-file` driver (a `local` log has another path and format).
+- **Fix:** check `docker info --format '{{.DockerRootDir}}'` and `docker inspect --format '{{.HostConfig.LogConfig.Type}}' $($C ps -q server)`. The root must be `/var/lib/docker` and the type `json-file`; if not, fix the driver (`bash deploy/check-logging.sh`, then `$C up -d --force-recreate --wait server`) or change the `vlagent` mount and glob in `deploy/compose.yaml`. Then run `$C --profile ops up -d --force-recreate vlagent`.
+- **Status:** workaround
+
 ### `slo_sync_lag` (operator alert text `ALERT slo_sync_lag`; also `STILL OPEN`, `RESOLVED`, `TEST`)
 
 - **First seen:** 2026-11-15 (F114 stage 03; not seen live)
@@ -182,7 +190,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-14 (F105 stage 08; not seen live)
 - **Source:** `apps/server/src/platform/auth-two-factor.ts` (`backupCodesLeft`, called by `GET /api/me/two-factor`). Level `warn`. The line holds the user id and the error fields only.
 - **Cause:** the user has two-factor sign-in on, but the `auth_two_factors` row is missing or its backup codes do not decrypt. The usual case is a changed `WEB_AUTH_SECRET`. The panel then shows that the number of backup codes is unknown.
-- **Fix:** `$C run --rm server bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>` for that user, after the check of who asks (`deploy/README.md` § Two-factor sign-in). The user turns the second factor on again.
+- **Fix:** `$C run --rm cli bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>` for that user, after the check of who asks (`deploy/README.md` § Two-factor sign-in). The user turns the second factor on again.
 - **Status:** workaround
 
 ### `user_moves_failed`

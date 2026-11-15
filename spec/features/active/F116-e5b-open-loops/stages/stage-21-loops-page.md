@@ -27,3 +27,7 @@ T1–T12 pass; the Proof with the web tail prints `PROOF_OK` (`/tmp/f116-s21`); 
 ## Out of scope
 
 The Delegate action on mail rows and the settings card (22).
+
+## Carry-over from stage 08 review
+
+- Same as stage 20: `listLoops` shape (`now`, decoded cursor, encoded `next`) and the midnight edge between `listLoops` and `briefLoopsOf` (review-8.md N3).

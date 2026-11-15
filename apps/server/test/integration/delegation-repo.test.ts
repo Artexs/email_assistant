@@ -24,10 +24,11 @@ import {
 } from "../../src/modules/delegation";
 import {
   insertDelegate,
-  setDelegateActive,
+  lockDelegate,
   markDelegationAnswered,
   markDelegationCancelled,
   markDelegationDone,
+  updateDelegateFields,
 } from "../../src/modules/delegation/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -101,7 +102,7 @@ describe("delegates", () => {
     });
   });
 
-  test("list functions, names, addresses, setDelegateActive", async () => {
+  test("list functions, names, addresses, updateDelegateFields", async () => {
     await withRollback(db, async (trx) => {
       const { ctxA } = await twoOrgs(trx);
       const zed = await fixtureDelegate(trx, ctxA, { name: "Zed", email: "zed@x.test" });
@@ -123,8 +124,7 @@ describe("delegates", () => {
       expect((await listDelegateNames(trx, ctxA, [])).size).toBe(0);
       expect((await getDelegate(trx, ctxA, ann))?.email).toBe("ann@x.test");
 
-      expect(await setDelegateActive(trx, ctxA, off, true, now)).toBe(true);
-      expect(await setDelegateActive(trx, ctxA, off, true, now)).toBe(false);
+      await updateDelegateFields(trx, ctxA, off, { active: true }, now);
       expect((await getDelegate(trx, ctxA, off))?.active).toBe(true);
     });
   });
@@ -397,7 +397,9 @@ describe("tenant filter", () => {
       expect(await getDelegate(trx, ctxB, delegateId)).toBeUndefined();
       expect((await listDelegateNames(trx, ctxB, [delegateId])).size).toBe(0);
       expect(await listDelegateAddresses(trx, ctxB)).toEqual([]);
-      expect(await setDelegateActive(trx, ctxB, delegateId, false, now)).toBe(false);
+      await updateDelegateFields(trx, ctxB, delegateId, { active: false, name: "Other" }, now);
+      expect((await getDelegate(trx, ctxA, delegateId))?.active).toBe(true);
+      expect(await lockDelegate(trx, ctxB, delegateId)).toBeUndefined();
       expect(await getDelegation(trx, ctxB, d.id)).toBeUndefined();
       expect(await lockDelegation(trx, ctxB, d.id)).toBeUndefined();
       expect(await findDelegationBySendAction(trx, ctxB, d.sendId)).toBeUndefined();

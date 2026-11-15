@@ -2,8 +2,14 @@ name: ea-sim
 
 # The sim stack of the live lab (F113). It shares nothing with deploy/compose.yaml: other project name, network, volumes and ports.
 # Start it with `bun run sim:up` (deploy/sim.env, made from deploy/sim.env.example). apps/server/src/scripts/sim-compose-check.ts checks the rules below in CI.
-x-logging: &logging
+# Log drivers as in deploy/compose.yaml: only `server` writes json-file, every other service `local`.
+x-logging-collected: &logging-collected
   driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+x-logging-local: &logging-local
+  driver: local
   options:
     max-size: 10m
     max-file: "5"
@@ -18,7 +24,7 @@ x-sim-build: &sim-build
 services:
   db:
     image: postgres:17
-    logging: *logging
+    logging: *logging-local
     restart: unless-stopped
     mem_limit: 256m
     environment:
@@ -42,7 +48,7 @@ services:
   # The injector and the delegate bots of the lab (later stages) run in the `lab` container, in the same namespace.
   greenmail:
     image: greenmail/standalone:2.1.15
-    logging: *logging
+    logging: *logging-local
     restart: unless-stopped
     mem_limit: 384m
     network_mode: service:fake-telegram
@@ -59,7 +65,7 @@ services:
   fake-telegram:
     build: *sim-build
     image: ea-sim-server
-    logging: *logging
+    logging: *logging-local
     restart: unless-stopped
     # 256m: the env guard (bun run, corpus load) peaks at 154 MB RSS before the fake starts (review N1).
     mem_limit: 256m
@@ -78,7 +84,7 @@ services:
   server:
     build: *sim-build
     image: ea-sim-server
-    logging: *logging
+    logging: *logging-collected
     restart: unless-stopped
     mem_limit: 512m
     stop_grace_period: 45s
@@ -111,7 +117,7 @@ services:
   lab:
     build: *sim-build
     image: ea-sim-server
-    logging: *logging
+    logging: *logging-local
     restart: unless-stopped
     mem_limit: 256m
     network_mode: service:fake-telegram

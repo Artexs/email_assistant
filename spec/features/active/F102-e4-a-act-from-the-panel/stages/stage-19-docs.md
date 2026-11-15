@@ -43,3 +43,7 @@ mkdir -p /tmp/f102-s19 && bunx prettier --check <the nine files> > /tmp/f102-s19
 ## Carry-over from stage 10 review
 
 - `docs/capabilities/tenancy-and-plans.md` line 32 says `approvals_page` has one reader, the panel link on the approval card. Now the approvals read routes and the `/api/me` badge read it too. Update the line.
+
+## Carry-over from stage 14 review
+
+- Document the three `/api/delegates` routes and the `delegation_pages` flag in `docs/capabilities/delegation.md` and `tenancy-and-plans.md`. `delegate.changed` audit data holds `fields` as a comma string (flat audit data); the CLI enable/disable audit row now has `fields:"active"` and `via:"cli"` (see review-14.md).

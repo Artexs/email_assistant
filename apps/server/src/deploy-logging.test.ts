@@ -1,0 +1,281 @@
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterAll, describe, expect, test } from "bun:test";
+
+// F103 stage 17: deploy/check-logging.sh wants `server` on json-file (the files the log store reads), every other service on
+// `local`, and no document line that runs a one-off command in `server`. The script needs the `docker compose` CLI and jq, no daemon.
+
+const repoRoot = join(import.meta.dir, "..", "..", "..");
+const script = join(repoRoot, "deploy", "check-logging.sh");
+const dir = mkdtempSync(join(tmpdir(), "f103-s17-"));
+afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+const block = (driver: string): string =>
+  `    logging: { driver: ${driver}, options: { max-size: 10m, max-file: "5" } }`;
+const compose = (services: Record<string, string>): string =>
+  `services:\n${Object.entries(services)
+    .map(([name, logging]) => `  ${name}:\n    image: x\n${logging}\n`)
+    .join("")}`;
+const write = (name: string, content: string): string => {
+  const path = join(dir, name);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path, content);
+  return path;
+};
+const check = (args: string[], env: Record<string, string> = {}) => {
+  const result = Bun.spawnSync(["bash", script, ...args], { cwd: repoRoot, env: { ...process.env, ...env } });
+  return { code: result.exitCode, out: result.stdout.toString(), err: result.stderr.toString() };
+};
+const passing = (): string => write("pass.yaml", compose({ server: block("json-file"), db: block("local") }));
+
+describe("deploy/check-logging.sh", () => {
+  test("passes on the compose files of the repo", () => {
+    const result = check([]);
+    expect(result.err).toBe("");
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("logging ok: server json-file; local: ");
+  });
+
+  test("fails when server is on local", () => {
+    const path = write("server-local.yaml", compose({ server: block("local"), db: block("local") }));
+    const result = check([path]);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("server must be json-file");
+  });
+
+  test("fails when db is on json-file", () => {
+    const path = write("db-json.yaml", compose({ server: block("json-file"), db: block("json-file") }));
+    const result = check([path]);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("db must be local");
+  });
+
+  test("fails when a service has no logging key", () => {
+    const path = write("none.yaml", `services:\n  server:\n    image: x\n${block("json-file")}\n  db:\n    image: x\n`);
+    const result = check([path]);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("db must be local");
+  });
+
+  test("fails when a document line runs a one-off command in server, and prints the line number but not the line", () => {
+    const docs = write("bad.md", "$C run -e KEY=val server bun run x\n");
+    const result = check([passing()], { CHECK_LOGGING_DOCS: docs });
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(`${docs}:1:`);
+    expect(result.err).not.toContain("KEY=val");
+  });
+
+  test("fails on an entrypoint form and on a command continued after a backslash", () => {
+    const docs = write(
+      "forms.md",
+      "text\n$C run --rm --entrypoint bun server run x\n\n$C run --rm -T \\\n  server \\\n  bun run y\n"
+    );
+    const result = check([passing()], { CHECK_LOGGING_DOCS: docs });
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(`${docs}:2:`);
+    expect(result.err).toContain(`${docs}:4:`);
+  });
+
+  test("passes on a continued cli command", () => {
+    const docs = write("cont.md", "$C run --rm \\\n  cli \\\n  bun run y\n");
+    expect(check([passing()], { CHECK_LOGGING_DOCS: docs }).code).toBe(0);
+  });
+
+  test("fails when cli has no profile, or its healthcheck is on", () => {
+    const withCli = (name: string, extra: string): string =>
+      write(name, compose({ server: block("json-file"), cli: block("local") }).replace("  cli:\n", `  cli:\n${extra}`));
+    const noProfile = check([withCli("cli-a.yaml", "    healthcheck: { disable: true }\n")]);
+    expect(noProfile.code).toBe(1);
+    expect(noProfile.err).toContain("cli must have profiles [cli]");
+    const healthy = check([withCli("cli-b.yaml", "    profiles: [cli]\n")]);
+    expect(healthy.code).toBe(1);
+    expect(healthy.err).toContain("cli healthcheck must be disabled");
+    expect(check([withCli("cli-c.yaml", "    profiles: [cli]\n    healthcheck: { disable: true }\n")]).code).toBe(0);
+  });
+
+  test("passes when documents use cli, or exec in server", () => {
+    const docs = write("good.md", "$C run --rm cli bun run x\n$C exec server bun run x\nthe server runs a job\n");
+    const result = check([passing()], { CHECK_LOGGING_DOCS: docs });
+    expect(result.err).toBe("");
+    expect(result.code).toBe(0);
+  });
+});
+
+// Not --no-interpolate: it ignores profiles. The missing ${...:?} variables get dummy values. No daemon needed.
+const composeConfig = (profile: string | null) => {
+  const result = Bun.spawnSync(
+    [
+      "docker",
+      "compose",
+      "-f",
+      "deploy/compose.yaml",
+      ...(profile === null ? [] : ["--profile", profile]),
+      "config",
+      "--no-env-resolution",
+      "--format",
+      "json",
+    ],
+    { cwd: repoRoot, env: { ...process.env, APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" } }
+  );
+  return result;
+};
+
+interface OpsService {
+  command?: string[];
+  mem_limit?: string;
+  ports?: { host_ip?: string; target?: number; published?: string }[];
+  volumes?: Record<string, unknown>[];
+  network_mode?: string | null;
+  networks?: Record<string, unknown> | null;
+  logging?: { driver: string };
+  profiles?: string[];
+}
+
+describe("deploy/compose.yaml profile ops (the log store)", () => {
+  const withOps = composeConfig("ops");
+  const services = (JSON.parse(withOps.stdout.toString()) as { services: Record<string, OpsService> }).services;
+  const store = services.victorialogs;
+  const agent = services.vlagent;
+
+  test("victorialogs keeps 30 days and 1 GiB, 256 MB, and listens on loopback only", () => {
+    expect(withOps.exitCode).toBe(0);
+    expect(store?.command).toContain("-retentionPeriod=30d");
+    expect(store?.command).toContain("-retention.maxDiskSpaceUsageBytes=1GiB");
+    expect(store?.mem_limit).toBe("268435456");
+    expect(store?.ports).toHaveLength(1);
+    expect(store?.ports?.[0]?.host_ip).toBe("127.0.0.1");
+    expect(store?.ports?.[0]?.target).toBe(9428);
+    expect(store?.logging?.driver).toBe("local");
+  });
+
+  test("vlagent reads the Docker logs read-only, has no ports and 64 MB", () => {
+    expect(agent?.mem_limit).toBe("67108864");
+    expect(agent?.ports).toBeUndefined();
+    // Only the container logs (read-only) and its own volume: no Docker socket, no other host path.
+    expect(agent?.volumes).toEqual([
+      {
+        type: "bind",
+        source: "/var/lib/docker/containers",
+        target: "/var/lib/docker/containers",
+        read_only: true,
+        bind: {},
+      },
+      { type: "volume", source: "vlagent-data", target: "/vlagent", volume: {} },
+    ]);
+    expect(agent?.command).toContain("-fileCollector.glob=/var/lib/docker/containers/*/*-json.log");
+    expect(agent?.logging?.driver).toBe("local");
+  });
+
+  test("vlagent sends to victorialogs only and caps its disk buffer", () => {
+    const urls = agent?.command?.filter((a) => a.startsWith("-remoteWrite.url=")) ?? [];
+    expect(urls).toEqual(["-remoteWrite.url=http://victorialogs:9428/internal/insert"]);
+    expect(agent?.command).toContain("-remoteWrite.maxDiskUsagePerURL=500MB");
+  });
+
+  test("neither service sets network_mode or joins a network but the default one", () => {
+    for (const service of [store, agent]) {
+      expect(service?.network_mode ?? null).toBeNull();
+      expect(Object.keys(service?.networks ?? {})).toEqual(["default"]);
+    }
+  });
+
+  test("both services are behind the profile", () => {
+    expect(store?.profiles).toEqual(["ops"]);
+    expect(agent?.profiles).toEqual(["ops"]);
+  });
+
+  test("without the profile the config lists neither service", () => {
+    const plain = composeConfig(null);
+    expect(plain.exitCode).toBe(0);
+    const names = Object.keys((JSON.parse(plain.stdout.toString()) as { services: object }).services);
+    expect(names).not.toContain("victorialogs");
+    expect(names).not.toContain("vlagent");
+    expect(names).toContain("server");
+  });
+});
+
+describe("deploy/compose.yaml drivers and the cli service", () => {
+  const result = composeConfig("cli");
+  interface Service {
+    logging?: { driver: string; options: Record<string, string> };
+    environment?: Record<string, string>;
+    restart?: string;
+    healthcheck?: { disable?: boolean };
+    profiles?: string[];
+  }
+  const services = (JSON.parse(result.stdout.toString()) as { services: Record<string, Service> }).services;
+
+  test("server writes json-file, db and cli write local, all 10m x 5", () => {
+    expect(result.exitCode).toBe(0);
+    expect(services.server?.logging).toEqual({ driver: "json-file", options: { "max-size": "10m", "max-file": "5" } });
+    expect(services.db?.logging).toEqual({ driver: "local", options: { "max-size": "10m", "max-file": "5" } });
+    expect(services.cli?.logging).toEqual({ driver: "local", options: { "max-size": "10m", "max-file": "5" } });
+  });
+
+  test("cli prints text, never restarts and has no healthcheck", () => {
+    expect(services.cli?.environment?.LOG_FORMAT).toBe("text");
+    expect(services.server?.environment?.LOG_FORMAT).toBe("json");
+    expect(services.cli?.restart).toBe("no");
+    expect(services.cli?.healthcheck?.disable).toBe(true);
+    expect(services.cli?.profiles).toEqual(["cli"]);
+    expect(services.server?.profiles).toBeUndefined();
+  });
+});
+
+describe("deploy/check-logging.sh rules for the log store services", () => {
+  const base = readFileSync(join(repoRoot, "deploy", "compose.yaml"), "utf8");
+  const mutated = (name: string, from: string, to: string): string => {
+    expect(base).toContain(from);
+    // Relative paths (env_file, build context) must still resolve: write next to the real file.
+    const path = join(repoRoot, "deploy", `compose.${name}.tmp.yaml`);
+    writeFileSync(path, base.replace(from, to));
+    tmpFiles.push(path);
+    return path;
+  };
+  const tmpFiles: string[] = [];
+  afterAll(() => {
+    for (const f of tmpFiles) rmSync(f, { force: true });
+  });
+  const env = { APP_PASSWORD: "x", MIGRATOR_PASSWORD: "x", POSTGRES_PASSWORD: "x" };
+
+  test("fails on a Docker socket mount, an external remoteWrite URL and network_mode host", () => {
+    const socket = check(
+      [
+        mutated(
+          "socket",
+          "      - vlagent-data:/vlagent\n",
+          "      - vlagent-data:/vlagent\n      - /var/run/docker.sock:/var/run/docker.sock\n"
+        ),
+      ],
+      env
+    );
+    expect(socket.code).toBe(1);
+    expect(socket.err).toContain("vlagent volumes must be the read-only container-log mount");
+    const url = check(
+      [mutated("url", "http://victorialogs:9428/internal/insert", "https://logs.example.test/insert")],
+      env
+    );
+    expect(url.code).toBe(1);
+    expect(url.err).toContain("vlagent must send only to http://victorialogs:9428/");
+    const host = check([mutated("host", "    mem_limit: 64m\n", "    mem_limit: 64m\n    network_mode: host\n")], env);
+    expect(host.code).toBe(1);
+    expect(host.err).toContain("vlagent must not set network_mode");
+  });
+
+  test("fails on a writable container-log mount", () => {
+    const rw = check(
+      [
+        mutated(
+          "rw",
+          "/var/lib/docker/containers:/var/lib/docker/containers:ro",
+          "/var/lib/docker/containers:/var/lib/docker/containers"
+        ),
+      ],
+      env
+    );
+    expect(rw.code).toBe(1);
+    expect(rw.err).toContain("vlagent volumes must be the read-only container-log mount");
+  });
+});

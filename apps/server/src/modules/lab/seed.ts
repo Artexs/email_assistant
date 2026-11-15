@@ -40,7 +40,7 @@ export const LAB_TARGETS: Record<LabOrgKey, SeedTarget> = {
 };
 
 // Every key of `packages/core/src/features.ts` is in exactly one list. `mistake_capture` is on: the executive needs the
-// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab never deletes its org, has no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on.
+// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on.
 export const LAB_FLAGS_OFF = [
   "org_delete",
   "sso_sign_in",
@@ -52,6 +52,7 @@ export const LAB_FLAGS_OFF = [
 export const LAB_FLAGS_ON = [
   "stats_page",
   "approvals_page",
+  "delegation_pages",
   "sent_sync",
   "security_log",
   "review_command",
@@ -185,6 +186,7 @@ export async function seedLabOrg(deps: SeedDeps, scenario: Scenario, target: See
       email: address,
       tags: [...tags],
       actor: ACTOR,
+      via: "cli",
       now: deps.now(),
     });
     if (result.kind === "added") added.delegates += 1;

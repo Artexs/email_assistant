@@ -274,6 +274,23 @@ export const pl: Record<TextKey, string> = {
   err_port: "Wpisz port od 1 do 65535.",
   err_host: "Wpisz nazwę serwera bez spacji.",
   connected_toast: "Skrzynka połączona. Pierwsza synchronizacja zacznie się w ciągu 5 minut.",
+  // mailbox OAuth sign-in (F117)
+  oauth_btn_microsoft: "Zaloguj się przez Microsoft",
+  oauth_btn_google: "Zaloguj się przez Google",
+  oauth_or_password: "Albo połącz hasłem",
+  oauth_google_hint:
+    "Dopóki aplikacja jest w trybie testowym Google, Google co 7 dni prosi o ponowne zalogowanie. Hasło aplikacji nie wygasa.",
+  oauth_ok_connected: "Skrzynka połączona. Pierwsza synchronizacja ruszy w ciągu kilku minut.",
+  oauth_ok_reconnected: "Skrzynka połączona ponownie. Synchronizacja ruszy w ciągu kilku minut.",
+  oauth_err_cancelled: "Logowanie przerwane. Nic się nie zmieniło.",
+  oauth_err_state: "Link logowania jest już nieważny. Zacznij od nowa.",
+  oauth_err_failed: "Logowanie się nie udało. Spróbuj ponownie.",
+  oauth_err_scope:
+    "Skrzynka potrzebuje wszystkich uprawnień ze strony logowania. Zacznij od nowa i zezwól na wszystkie.",
+  oauth_err_wrong_account: "Zalogowano się na inne konto. Zaloguj się adresem tej skrzynki.",
+  oauth_err_admin: "Najpierw administrator musi zatwierdzić tę aplikację. Wyślij administratorowi poniższy link.",
+  oauth_err_protocol: "Administrator wyłączył IMAP lub SMTP dla tej skrzynki. Poproś o włączenie.",
+  oauth_err_unavailable: "Logowanie przez tego dostawcę nie jest tu dostępne.",
   // password and remove
   password_title: "Zmień hasło",
   mb_new_password_label: "Nowe hasło",
