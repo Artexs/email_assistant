@@ -11,7 +11,7 @@ import { upsertOrgFeature } from "../../src/modules/tenancy";
 import type { Db } from "../../src/platform/db";
 import type { ApiEnv } from "../../src/platform/http";
 
-import { linkChat, randomChatId, testCapabilities } from "./fixtures";
+import { randomChatId, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
@@ -287,7 +287,16 @@ describe("PATCH /api/me/notify: review fixes", () => {
     const { org, ctx, app } = await setup();
     const read = async () => notifyViewSchema.parse(await (await app.request("/api/me/notify", as("owner"))).json());
     expect((await read()).telegramLinked).toBe(false);
-    await linkChat(db, ctx, org.ownerId, randomChatId(), NOW);
+    await db
+      .insertInto("chat_links")
+      .values({
+        org_id: ctx.orgId,
+        user_id: org.ownerId,
+        channel: "telegram",
+        external_chat_id: randomChatId(),
+        linked_at: NOW,
+      })
+      .execute();
     expect((await read()).telegramLinked).toBe(true);
     // The chat of the owner is not the chat of the assistant.
     const other = notifyViewSchema.parse(await (await app.request("/api/me/notify", as("assistant"))).json());
