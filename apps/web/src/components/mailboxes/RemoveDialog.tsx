@@ -1,7 +1,6 @@
-import { sameAddress, type MailboxView } from "@ea/core/web";
+import { removeMailboxResultSchema, sameAddress, type MailboxView } from "@ea/core/web";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { t } from "../../i18n";
 import { api } from "../../lib/api";
@@ -38,7 +37,10 @@ export function RemoveDialog({ mailbox, open, onOpenChange, onRemoved }: RemoveD
     setFailed(false);
     setPending(true);
     try {
-      await api(`/api/mailboxes/${mailbox.id}`, z.undefined(), { method: "DELETE", body: { confirmAddress: typed } });
+      await api(`/api/mailboxes/${mailbox.id}`, removeMailboxResultSchema, {
+        method: "DELETE",
+        body: { confirmAddress: typed },
+      });
       toast.success(t("removed_toast"));
       setTyped("");
       onOpenChange(false);

@@ -40,6 +40,8 @@ export interface MailRouteDeps {
   connect: ConnectDeps; // with timeouts: WEB_MAIL_TIMEOUTS
   allowLocalHosts: boolean;
   onRemoved: RemoveDeps["onRemoved"];
+  /** The secrets, clients and token cache a Remove of an OAuth mailbox needs. */
+  oauth?: RemoveDeps["oauth"];
 }
 
 // B11: the status and code of a connect or password failure; null for an unknown error (the route rethrows: 500).
@@ -133,14 +135,19 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
     const id = mailboxIdOf(c);
     if (id === null) return c.json({ error: "not_found" }, 404);
     const { confirmAddress } = await parseBody(c, removeMailboxBodySchema);
-    const result = await removeMailbox({ db, onRemoved: deps.onRemoved }, c.get("ctx"), id, {
-      userId: c.get("session").userId,
-      confirmAddress,
-      now: deps.now(),
-    });
+    const result = await removeMailbox(
+      { db, onRemoved: deps.onRemoved, ...(deps.oauth === undefined ? {} : { oauth: deps.oauth }) },
+      c.get("ctx"),
+      id,
+      {
+        userId: c.get("session").userId,
+        confirmAddress,
+        now: deps.now(),
+      }
+    );
     if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
     if (result.kind === "confirm_mismatch") return c.json({ error: "confirm_mismatch" }, 400);
-    return c.body(null, 204);
+    return c.json(result.outcome, 200);
   });
 
   return app;
