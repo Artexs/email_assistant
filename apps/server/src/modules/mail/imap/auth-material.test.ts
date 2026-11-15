@@ -153,15 +153,14 @@ async function startImap(): Promise<{ port: number; lines: string[] }> {
   return { port, lines };
 }
 
+// The token as a client sends it (base64 of the XOAUTH2 line): a careless server echoes this in its refusal text.
+const ENCODED = Buffer.from(`user=${USER}\x01auth=Bearer ${TOKEN}\x01\x01`).toString("base64");
+
 function expectNoToken(error: unknown): void {
   expect(error).toBeInstanceOf(Error);
-  expect(String(error)).not.toContain(TOKEN);
-  expect((error as Error).message).not.toContain(TOKEN);
-  expect(String((error as Error).stack ?? "")).not.toContain(TOKEN);
-  const everything = logLines.join("\n");
-  expect(everything).not.toContain(TOKEN);
-  const encoded = Buffer.from(`user=${USER}\x01auth=Bearer ${TOKEN}\x01\x01`).toString("base64");
-  expect(everything).not.toContain(encoded);
+  const shown = [String(error), (error as Error).message, String((error as Error).stack ?? ""), ...logLines].join("\n");
+  expect(shown).not.toContain(TOKEN);
+  expect(shown).not.toContain(ENCODED);
 }
 
 describe("imapFlowOptions with AuthMaterial", () => {
