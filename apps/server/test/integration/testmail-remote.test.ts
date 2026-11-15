@@ -395,7 +395,9 @@ describe("buildReviewedBundle", () => {
           { repoRoot: root, outDir: join(root, "out"), cacheDir }
         );
         expect(result.sha).toBe(sha);
-        expect(warn.mock.calls.flat().join(" ")).toContain(`could not remove old bundle worktree ${other}`);
+        const output = warn.mock.calls.flat().join(" ");
+        expect(output).toContain("testmail_bundle_remove_failed");
+        expect(output).not.toContain(other);
       } finally {
         warn.mockRestore();
       }
