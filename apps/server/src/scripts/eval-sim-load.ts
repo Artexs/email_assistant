@@ -6,8 +6,7 @@ import { type CaseText, type EvalCase, type SimPart, type Slot, toEvalCase } fro
 import { z } from "zod";
 
 import { bodyTextFromSource, renderSeedMessage } from "../modules/mail";
-
-import { corpusDir, readScenario, readSlots, readTexts } from "./sim-files";
+import { corpusDir, readScenario, readSlots, readTexts } from "../platform/sim-files";
 
 export const HOLDOUT_NEEDS_FREEZE = "holdout needs a frozen corpus: run sim freeze";
 const MAX_PARENTS = 3;

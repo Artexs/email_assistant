@@ -28,8 +28,6 @@ import {
 import { z } from "zod";
 
 import { bodyTextFromSource, renderSeedMessage } from "../modules/mail";
-
-import type { SimCommand } from "./sim-args";
 import {
   auditPaths,
   batchName,
@@ -56,7 +54,9 @@ import {
   writeSlots,
   writeText,
   type LabelEntry,
-} from "./sim-files";
+} from "../platform/sim-files";
+
+import type { SimCommand } from "./sim-args";
 
 // A command returns its output lines and an exit code; the script prints them. Lines hold counts, ids and codes, never mail text.
 export interface SimResult {

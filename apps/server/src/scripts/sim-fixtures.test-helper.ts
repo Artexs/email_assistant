@@ -5,10 +5,10 @@ import { join, resolve } from "node:path";
 import { miniPlanSpec, miniScenario, simParts, type CaseText, type Scenario, type Slot } from "@ea/core";
 
 import { describeError } from "../platform/errors";
+import { listBatches, readSlots, writeJson } from "../platform/sim-files";
 
 import { parseSimArgs, usage } from "./sim-args";
 import { runSim } from "./sim-commands";
-import { listBatches, readSlots, writeJson } from "./sim-files";
 
 // Test helper of `bun run sim`: a corpus folder in a temp dir, planned from miniScenario and a small spec.
 
