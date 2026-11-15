@@ -41,3 +41,7 @@ Two steps in `apps/web`.
 ## Done when (stage)
 
 - Steps 1 and 2 hold. The web Proof of `plan.md` prints `PROOF_OK` (`/tmp/f102-s18`); `web.log` shows `csp checked in <n> page(s)` with n one more than on `master` before the stage; the final message names both.
+
+## Carry-over from stage 15 review
+
+- A panel approve of a timed-out send answers `expired` but queues no card edit, so the Telegram cards stay live (review-9 N3, review-11 N3, review-15 N1). Queue the card edit on that path, with a test. Also judge review-9 N1 (`newerEditSent` ordering window of the web cancel and approve).

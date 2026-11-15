@@ -128,14 +128,16 @@ export async function closeDraftOfSend(
 }
 
 // D6: a delegation that is answered, done or cancelled sends no more reminders. Every open reminder send closes with its draft.
-// The caller holds the delegation lock (lock order, D6). An `applying` reminder finishes.
+// The caller holds the delegation lock (lock order: the delegation, then its sends). An `applying` reminder finishes. `sendIds` are the sends that this call
+// closed (a caller that edits their cards queues the edits itself; this function calls no approval hook).
 export async function expireReminderActions(
   trx: Transaction<DB>,
   ctx: TenantContext,
   delegationId: string,
   opts: { now: Date; uidplus: boolean; actor: string }
-): Promise<{ sends: number }> {
+): Promise<{ sends: number; sendIds: string[] }> {
   const ids = await listOpenReminderSends(trx, ctx, delegationId);
+  const sendIds: string[] = [];
   let sends = 0;
   for (const id of ids) {
     const closed = await expireSend(trx, ctx, id, {
@@ -145,9 +147,12 @@ export async function expireReminderActions(
       hooks: noDelegationHooks,
       uidplus: opts.uidplus,
     });
-    if (closed) sends += 1;
+    if (closed) {
+      sends += 1;
+      sendIds.push(id);
+    }
   }
-  return { sends };
+  return { sends, sendIds };
 }
 
 export { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS };
