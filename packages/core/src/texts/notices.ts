@@ -1,6 +1,7 @@
 import type { SendLimitKind } from "../send-limits";
 import type { UserLocale } from "../tenancy";
 import type { BarCategory } from "../triage/metrics";
+import type { AuthErrorReason } from "../web/mail-oauth";
 
 import { pluralCategory } from "./locale";
 
@@ -10,7 +11,13 @@ type FailedAction = "move" | "flag" | "mark_read" | "create_draft";
 export interface NoticeTexts {
   urgentTitle: string;
   received: (clock: string) => string;
-  authError: { first: (address: string, since: string) => string; noRead: string; fix: (mailboxId: string) => string };
+  authError: {
+    first: (address: string, since: string) => string;
+    noRead: string;
+    fix: (mailboxId: string) => string;
+    // For an OAuth mailbox: replaces `fix`. `provider` is the display name; `reason` null is a refusal with no known cause.
+    fixOAuth: (provider: string, reason: AuthErrorReason | null) => string;
+  };
   hostBlocked: { first: (address: string, since: string) => string; why: string; noRead: string; recheck: string };
   syncStale: { first: (address: string) => string; last: (last: string) => string; status: string; never: string };
   syncOk: (address: string, last: string) => string;
@@ -102,6 +109,20 @@ export const noticeTexts = {
       noRead: "The system does not read this mailbox now. No mail is lost: it stays on the mail server.",
       fix: (mailboxId) =>
         `To fix it: check the password, then run mailbox:password for mailbox ${mailboxId} (runbook: deploy/README.md).`,
+      fixOAuth: (provider, reason) => {
+        switch (reason) {
+          case "oauth_expired":
+            return `The sign-in to ${provider} expired. Open the panel, Mailboxes, and tap Reconnect.`;
+          case "oauth_revoked":
+            return `Access to the mailbox was withdrawn at ${provider}. Open the panel, Mailboxes, and tap Reconnect.`;
+          case "admin_consent_required":
+            return `${provider} needs approval for this app, from you or from your administrator. Open the panel, Mailboxes: tap Reconnect, or use the approval link there.`;
+          case "protocol_disabled":
+            return "Your administrator turned off IMAP or SMTP for this mailbox. Ask them to turn it on, then tap Reconnect in the panel.";
+          case null:
+            return `The sign-in to ${provider} fails. Open the panel, Mailboxes, and tap Reconnect.`;
+        }
+      },
     },
     hostBlocked: {
       first: (address, since) => `⛔ The system stopped connecting to the mail server of ${address} at ${since}.`,
@@ -186,6 +207,20 @@ export const noticeTexts = {
       noRead: "System nie czyta teraz tej skrzynki. Żadna wiadomość nie ginie: zostaje na serwerze poczty.",
       fix: (mailboxId) =>
         `Aby to naprawić, sprawdź hasło i uruchom mailbox:password dla skrzynki ${mailboxId} (instrukcja: deploy/README.md).`,
+      fixOAuth: (provider, reason) => {
+        switch (reason) {
+          case "oauth_expired":
+            return `Logowanie do ${provider} wygasło. Otwórz panel, Skrzynki, i stuknij „Połącz ponownie”.`;
+          case "oauth_revoked":
+            return `Dostęp do skrzynki cofnięto po stronie ${provider}. Otwórz panel, Skrzynki, i stuknij „Połącz ponownie”.`;
+          case "admin_consent_required":
+            return `Ta aplikacja wymaga zatwierdzenia w ${provider}: przez Ciebie lub przez Twojego administratora. Otwórz panel, Skrzynki: stuknij „Połącz ponownie” albo użyj tam linku do zatwierdzenia.`;
+          case "protocol_disabled":
+            return "Administrator wyłączył IMAP lub SMTP dla tej skrzynki. Poproś o włączenie, potem stuknij „Połącz ponownie” w panelu.";
+          case null:
+            return `Logowanie do ${provider} nie działa. Otwórz panel, Skrzynki, i stuknij „Połącz ponownie”.`;
+        }
+      },
     },
     hostBlocked: {
       first: (address, since) => `⛔ System przestał łączyć się z serwerem poczty skrzynki ${address} (od ${since}).`,

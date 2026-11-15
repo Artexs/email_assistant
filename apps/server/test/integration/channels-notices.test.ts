@@ -9,6 +9,7 @@ import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices } from "../../src/modules/channels";
 import { insertSenderRule } from "../../src/modules/config";
 import { ensureSyncFolders, NO_TEST_SENDERS } from "../../src/modules/mail";
+import type { AuthErrorReason } from "../../src/modules/mail";
 import { insertMailbox, markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
@@ -417,6 +418,108 @@ describe("auth_error notices", () => {
       expect(found).toHaveLength(1);
       expect(found[0]?.status).toBe("failed");
       expect(found[0]?.error_code).toBe("outdated");
+    });
+  });
+});
+
+// An OAuth mailbox in `auth_error`: the provider and the reason go with the status (the table CHECK).
+async function setOAuthError(
+  trx: Transaction<DB>,
+  mailboxId: string,
+  provider: "microsoft" | "google",
+  reason: AuthErrorReason | null,
+  changedAt: Date
+): Promise<void> {
+  await trx
+    .updateTable("mailboxes")
+    .set({ oauth_provider: provider, status: "auth_error", auth_reason: reason, status_changed_at: changedAt })
+    .where("id", "=", mailboxId)
+    .execute();
+}
+
+describe("auth_error notices of an OAuth mailbox", () => {
+  test("one row; the view holds the provider and the reason; the text names Reconnect, not mailbox:password", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setOAuthError(trx, o.mailboxId, "google", "oauth_expired", at(-20 * MINUTE));
+
+      await run(trx);
+
+      const found = await rows(trx, o.orgId, "auth_error");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.view).toMatchObject({ oauth: { provider: "google", reason: "oauth_expired" } });
+      expect(found[0]?.text).toContain("The sign-in to Google expired. Open the panel, Mailboxes, and tap Reconnect.");
+      expect(found[0]?.text).not.toContain("mailbox:password");
+    });
+  });
+
+  test("a password mailbox: the view has no oauth key and the text is today's", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setStatus(trx, o, "auth_error", at(-20 * MINUTE));
+
+      await run(trx);
+
+      const [row] = await rows(trx, o.orgId, "auth_error");
+      expect(Object.keys(row?.view as object)).not.toContain("oauth");
+      expect(row?.text).toContain(`run mailbox:password for mailbox ${o.mailboxId}`);
+    });
+  });
+
+  test("a reason that changes after a Reconnect gives a new row and the old pending row becomes outdated", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const s = at(-20 * MINUTE);
+      const s2 = at(-2 * MINUTE);
+      await setOAuthError(trx, o.mailboxId, "microsoft", "oauth_expired", s);
+      await run(trx);
+      // A Reconnect clears the reason with the status (the table CHECK).
+      await trx
+        .updateTable("mailboxes")
+        .set({ status: "active", auth_reason: null })
+        .where("id", "=", o.mailboxId)
+        .execute();
+      await setOAuthError(trx, o.mailboxId, "microsoft", "protocol_disabled", s2);
+      await run(trx);
+
+      const found = await rows(trx, o.orgId, "auth_error");
+      expect(found).toHaveLength(2);
+      const first = found.find((r) => r.dedup_key === `auth_error:${o.mailboxId}:${s.getTime()}`);
+      const second = found.find((r) => r.dedup_key === `auth_error:${o.mailboxId}:${s2.getTime()}`);
+      expect(first?.status).toBe("failed");
+      expect(first?.error_code).toBe("outdated");
+      expect(first?.view).toMatchObject({ oauth: { reason: "oauth_expired" } });
+      expect(second?.status).toBe("pending");
+      expect(second?.view).toMatchObject({ oauth: { provider: "microsoft", reason: "protocol_disabled" } });
+      expect(second?.text).toContain("Your administrator turned off IMAP or SMTP");
+    });
+  });
+
+  test("a second organization: each organization gets its own rows with its own provider and reason", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      await setOAuthError(trx, a.mailboxId, "google", "oauth_revoked", at(-20 * MINUTE));
+      await setOAuthError(trx, b.mailboxId, "microsoft", null, at(-20 * MINUTE));
+
+      await run(trx);
+
+      const rowsA = await rows(trx, a.orgId, "auth_error");
+      const rowsB = await rows(trx, b.orgId, "auth_error");
+      expect(rowsA).toHaveLength(1);
+      expect(rowsB).toHaveLength(1);
+      expect(rowsA[0]?.view).toMatchObject({
+        mailboxId: a.mailboxId,
+        oauth: { provider: "google", reason: "oauth_revoked" },
+      });
+      expect(rowsB[0]?.view).toMatchObject({ mailboxId: b.mailboxId, oauth: { provider: "microsoft", reason: null } });
+      expect(rowsA[0]?.text).toContain("Google");
+      expect(rowsA[0]?.text).not.toContain("Microsoft");
+      expect(rowsB[0]?.text).toContain("The sign-in to Microsoft fails.");
     });
   });
 });

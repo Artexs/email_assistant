@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { textTables } from "../texts";
+import type { AuthErrorReason } from "../web/mail-oauth";
 
 import { MESSAGE_MAX_CHARS } from "./message";
 import {
@@ -145,6 +146,101 @@ describe("other notices", () => {
     expect(message.text).toContain("mb-1");
     expect(message.text).toContain("at 07:40");
     expect(message.buttons).toEqual([]);
+  });
+
+  test("auth_error without oauth keeps today's text, byte for byte", () => {
+    const input = {
+      address: "me@firma.test",
+      mailboxId: "mb-1",
+      since: new Date("2026-11-06T06:40:00Z"),
+      now,
+      timeZone,
+    };
+    expect(renderAuthErrorNotice(input, textTables.en).text).toBe(
+      [
+        "❌ Login to me@firma.test failed at 07:40.",
+        "The system does not read this mailbox now. No mail is lost: it stays on the mail server.",
+        "To fix it: check the password, then run mailbox:password for mailbox mb-1 (runbook: deploy/README.md).",
+      ].join("\n")
+    );
+    expect(renderAuthErrorNotice(input, textTables.pl).text).toBe(
+      [
+        "❌ Nie udało się zalogować do skrzynki: me@firma.test. Błąd trwa od 07:40.",
+        "System nie czyta teraz tej skrzynki. Żadna wiadomość nie ginie: zostaje na serwerze poczty.",
+        "Aby to naprawić, sprawdź hasło i uruchom mailbox:password dla skrzynki mb-1 (instrukcja: deploy/README.md).",
+      ].join("\n")
+    );
+  });
+
+  describe("auth_error of an OAuth mailbox", () => {
+    const input = {
+      address: "me@firma.test",
+      mailboxId: "mb-1",
+      since: new Date("2026-11-06T06:40:00Z"),
+      now,
+      timeZone,
+    };
+    const fixOf = (locale: "en" | "pl", provider: "microsoft" | "google", reason: AuthErrorReason | null) =>
+      renderAuthErrorNotice({ ...input, oauth: { provider, reason } }, textTables[locale]).text.split("\n")[2];
+
+    const expected = [
+      [
+        "oauth_expired",
+        "The sign-in to Google expired. Open the panel, Mailboxes, and tap Reconnect.",
+        "Logowanie do Google wygasło. Otwórz panel, Skrzynki, i stuknij „Połącz ponownie”.",
+      ],
+      [
+        "oauth_revoked",
+        "Access to the mailbox was withdrawn at Google. Open the panel, Mailboxes, and tap Reconnect.",
+        "Dostęp do skrzynki cofnięto po stronie Google. Otwórz panel, Skrzynki, i stuknij „Połącz ponownie”.",
+      ],
+      [
+        "admin_consent_required",
+        "Google needs approval for this app, from you or from your administrator. Open the panel, Mailboxes: tap Reconnect, or use the approval link there.",
+        "Ta aplikacja wymaga zatwierdzenia w Google: przez Ciebie lub przez Twojego administratora. Otwórz panel, Skrzynki: stuknij „Połącz ponownie” albo użyj tam linku do zatwierdzenia.",
+      ],
+      [
+        "protocol_disabled",
+        "Your administrator turned off IMAP or SMTP for this mailbox. Ask them to turn it on, then tap Reconnect in the panel.",
+        "Administrator wyłączył IMAP lub SMTP dla tej skrzynki. Poproś o włączenie, potem stuknij „Połącz ponownie” w panelu.",
+      ],
+      [
+        null,
+        "The sign-in to Google fails. Open the panel, Mailboxes, and tap Reconnect.",
+        "Logowanie do Google nie działa. Otwórz panel, Skrzynki, i stuknij „Połącz ponownie”.",
+      ],
+    ] as const;
+
+    for (const [reason, en, pl] of expected) {
+      test(`the fix line for ${reason ?? "no reason"} in en and pl`, () => {
+        expect(fixOf("en", "google", reason)).toBe(en);
+        expect(fixOf("pl", "google", reason)).toBe(pl);
+        for (const locale of ["en", "pl"] as const) {
+          const text = renderAuthErrorNotice({ ...input, oauth: { provider: "google", reason } }, textTables[locale]);
+          expect(text.text).not.toContain("mailbox:password");
+          expect(text.text).not.toContain("mb-1");
+          expect(text.text.split("\n")).toHaveLength(3);
+        }
+      });
+    }
+
+    test("the provider name is Microsoft or Google", () => {
+      expect(fixOf("en", "microsoft", "oauth_expired")).toContain("Microsoft");
+      expect(fixOf("pl", "microsoft", null)).toContain("Microsoft");
+      expect(fixOf("en", "microsoft", "admin_consent_required")).toContain("Microsoft");
+      expect(fixOf("en", "google", "oauth_revoked")).toContain("Google");
+    });
+
+    test("the admin consent text also fits a user who must approve the app", () => {
+      expect(fixOf("en", "microsoft", "admin_consent_required")).toContain("from you or from your administrator");
+      expect(fixOf("pl", "microsoft", "admin_consent_required")).toContain(
+        "przez Ciebie lub przez Twojego administratora"
+      );
+    });
+
+    test("no en text equals its pl text", () => {
+      for (const [reason] of expected) expect(fixOf("en", "google", reason)).not.toBe(fixOf("pl", "google", reason));
+    });
   });
 
   test("host_blocked: four lines, no button, no host name and no address", () => {

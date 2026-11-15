@@ -222,8 +222,29 @@ export interface MailboxSummary {
   last_synced_at: Date | null;
   status_changed_at: Date;
   created_at: Date;
+  /** Null for a password mailbox. */
+  oauth_provider: "microsoft" | "google" | null;
+  /** Why the OAuth login was refused; null for a password mailbox and outside `auth_error`. */
+  auth_reason: AuthErrorReason | null;
 }
-const summaryColumns = ["id", "address", "status", "last_synced_at", "status_changed_at", "created_at"] as const;
+const summaryColumns = [
+  "id",
+  "address",
+  "status",
+  "last_synced_at",
+  "status_changed_at",
+  "created_at",
+  "oauth_provider",
+  "auth_reason",
+] as const;
+function toSummary(row: Pick<Selectable<DB["mailboxes"]>, (typeof summaryColumns)[number]>): MailboxSummary {
+  return {
+    ...row,
+    status: mailboxStatusSchema.parse(row.status),
+    oauth_provider: row.oauth_provider === "microsoft" || row.oauth_provider === "google" ? row.oauth_provider : null,
+    auth_reason: toAuthReason(row.auth_reason),
+  };
+}
 export async function getMailboxSummary(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -235,7 +256,7 @@ export async function getMailboxSummary(
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
     .executeTakeFirst();
-  return row && { ...row, status: mailboxStatusSchema.parse(row.status) };
+  return row && toSummary(row);
 }
 export async function listMailboxes(db: DbOrTrx, ctx: TenantContext): Promise<MailboxSummary[]> {
   const rows = await db
@@ -245,7 +266,7 @@ export async function listMailboxes(db: DbOrTrx, ctx: TenantContext): Promise<Ma
     .orderBy("created_at")
     .orderBy("id")
     .execute();
-  return rows.map((row) => ({ ...row, status: mailboxStatusSchema.parse(row.status) }));
+  return rows.map(toSummary);
 }
 // The draft removal needs UIDPLUS (D13). An unknown mailbox counts as no UIDPLUS.
 export async function mailboxHasUidplus(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {

@@ -6,6 +6,21 @@ import { z } from "./zod";
 export const mailOAuthProviderKeys = ["microsoft", "google"] as const;
 export type MailOAuthProviderKey = (typeof mailOAuthProviderKeys)[number];
 
+/** Display name of a provider in a user text. A name never gets a case ending. */
+export const mailOAuthProviderNames: Readonly<Record<MailOAuthProviderKey, string>> = {
+  microsoft: "Microsoft",
+  google: "Google",
+};
+
+/** Why an OAuth login was refused (ADR 0031 point 6). A password mailbox has no reason. */
+export const authErrorReasons = [
+  "oauth_expired",
+  "oauth_revoked",
+  "admin_consent_required",
+  "protocol_disabled",
+] as const;
+export type AuthErrorReason = (typeof authErrorReasons)[number];
+
 export const mailOAuthProviderParamsSchema = z.object({ provider: z.enum(mailOAuthProviderKeys) });
 
 /** `mailboxId` is set for a Reconnect of an OAuth mailbox; left out it starts a new connect. */
