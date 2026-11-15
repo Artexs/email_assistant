@@ -123,9 +123,9 @@ describe("ApprovalDetailPanel", () => {
 
   test("shows the body and the full quote as plain text with the note and the actions", () => {
     const html = render();
-    expect(html).toContain("Line one\nLine two");
-    expect(html).toContain("whitespace-pre-wrap");
-    expect(html).toContain("Full quote text");
+    // Line breaks stay: each text sits in a paragraph that keeps white space.
+    expect(html).toMatch(/whitespace-pre-wrap[^"]*">Line one\nLine two<\/p>/);
+    expect(html).toMatch(/whitespace-pre-wrap[^"]*">From: Boss\n\nFull quote text<\/p>/);
     expect(html).not.toContain("&gt; quoted");
     expect(html).toContain("The system sends it after your approval. Do not send the draft from your mail client.");
     expect(html).toContain("Mailbox: box@x.test");
