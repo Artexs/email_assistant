@@ -4,6 +4,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { analyzeSent } from "../../src/modules/loops";
+import { listSentCandidates } from "../../src/modules/loops/analysis-repo";
+import { applyRules } from "../../src/modules/loops/analyze-rules";
 import { writeSentSwitch } from "../../src/modules/mail/repo";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
@@ -235,6 +237,17 @@ describe("the candidates", () => {
     });
   });
 
+  test("the candidate reader filters the organization itself: a mailbox id of another organization gives nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const other = await loopsOrg(trx);
+      await sentMail(trx, other);
+      const opts = { now: RUN_AT, limit: 20, testOnly: null };
+      expect(await listSentCandidates(trx, org.ctx, other.mailboxId, opts)).toHaveLength(0);
+      expect(await listSentCandidates(trx, other.ctx, other.mailboxId, opts)).toHaveLength(1);
+    });
+  });
+
   test("a due retry (pending, time passed) is a candidate; one that is not due is not", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
@@ -274,6 +287,33 @@ describe("the candidates", () => {
       await run(trx, org, fake);
       expect(await analysisOf(trx, id)).toMatchObject({ status: "skipped", skip_reason: "too_old" });
       expect(fake.requests).toHaveLength(0);
+    });
+  });
+});
+
+describe("the rules with the switch off", () => {
+  test("the rules write nothing when the switch went off after the candidates were read", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const promise = await insertLoopRow(trx, org.ctx, org.mailboxId, {
+        kind: "promised",
+        counterpart: "anna@example.test",
+        wait_from_at: new Date("2026-11-16T10:00:00Z"),
+      });
+      const id = await sentMail(trx, org, { to: ["anna@example.test"], listId: "<l.example.test>" });
+      const [row] = await listSentCandidates(trx, org.ctx, org.mailboxId, { now: RUN_AT, limit: 20, testOnly: null });
+      await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: false });
+      const env = {
+        mailboxId: org.mailboxId,
+        ownAddresses: [],
+        timeZone: "Europe/Warsaw",
+        waitDays: 3,
+        delegates: [],
+        now: RUN_AT,
+      };
+      expect(await applyRules(trx, org.ctx, env, row as NonNullable<typeof row>)).toEqual({ kind: "off" });
+      expect(await analysisOf(trx, id)).toBeUndefined();
+      expect((await loopRow(trx, promise)).status).toBe("open");
     });
   });
 });

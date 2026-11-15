@@ -199,6 +199,20 @@ describe("a hand forward to a delegate", () => {
     });
   });
 
+  test("a delegate address in capital letters in the Sent row still matches", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const delegateId = await insertDelegate(trx, org.ctx, { email: "dana@team.test" });
+      await sentMail(trx, org, { to: ["Boss@Example.test", "DANA@Team.test"] });
+      await run(trx, org, ASK);
+      expect((await loopsOf(trx, org))[0]).toMatchObject({
+        kind: "delegated",
+        delegate_id: delegateId,
+        counterpart: "dana@team.test",
+      });
+    });
+  });
+
   test("an inactive delegate, a delegate in Cc only and a delegate of another organization give a waiting loop", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
