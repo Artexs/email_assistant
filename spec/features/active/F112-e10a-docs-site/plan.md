@@ -4,7 +4,8 @@
 
 ## Planning progress
 
-- [x] Decisions; stages 01–16 [written]; cold review 1 [fixed]; refresh 1 [done] (review 2: see § Cold review).
+- [x] Decisions; stages 01–16 [written]; review 1 [fixed]; refresh 1 [done]; review 2 [fixed].
+- `wc -w` after review 2 fixes: plan 1494; 01 655, 02 691, 03 545, 04 635, 05 700, 06 586, 07 700, 08 535, 09 519, 10 433, 11 576, 12 386, 13 654, 14 310, 15 589, 16 469.
 
 ## Input
 
@@ -13,7 +14,7 @@ Binding: E10 decisions 1–18 (PD-096–PD-103, owner "Go with defaults.", 2026-
 ### Product decisions
 
 - **P1 Scope.** The docs app, checks, CI, deploy, operator docs in place, user docs for what exists, the changelog, the panel Help link and card, the first publication. Home, security, pricing, demo video and cold read are F121 (E10b). Source: decision 1, notes §7.
-- **P2 Truth.** A user page describes only behaviour that the code at `HEAD` has. No page, sentence, button or line about anything a default-off flag (`packages/core/src/features.ts`) gates, also inside an unflagged feature, until the flag defaults on. When a capability page and the code disagree, the code wins and the conflict is a question. Env scopes (`ACTIONS_SCOPE`, `SEND_SCOPE`) are operator setup. Rejected: "ask your operator" asides. Default (Q1).
+- **P2 Truth.** A user page describes only behaviour that the code at `HEAD` has. No page, sentence, button or line about anything a default-off flag (`packages/core/src/features.ts`) gates, also inside an unflagged feature, until the flag defaults on. When a capability page and the code disagree, the code wins and the conflict is a question. Env scopes (`ACTIONS_SCOPE`, `SEND_SCOPE`) are operator setup. The changelog page shows only the "For users" items with version and date headings; operator groups are not published (stage 13). Rejected: "ask your operator" asides. Default (Q1).
 - **P3** API reference (F102 OpenAPI file) and autonomy-evidence reference (F110) move to F121. Rejected: guessing F102's interface. Default (Q2).
 - **P4** Help link and card behind one flag `docs_links` (default off). Default (Q7).
 - **P5** Screenshots from the e2e seed (synthetic, F9); F121 moves them to the E2b fixture. Default (Q3).
@@ -36,7 +37,7 @@ Binding: E10 decisions 1–18 (PD-096–PD-103, owner "Go with defaults.", 2026-
 - **D10 CI and deploy** (stage 05): job `docs` in `ci.yml`; `.github/workflows/docs-deploy.yml` (P7): the gate `deployDecision` skips a pushed tag that is not the newest, fails a tag without its changelog release; Pages permissions only on the `deploy` job; `docs:stale --strict` and (stage 12) the browser check before the upload. No secret.
 - **D11 Browser check** (stage 06): Playwright, port 8093, flock.
 - **D12 Changelog** (stage 13): F114's `CHANGELOG.md` (Keep a Changelog 1.1, `release:prepare`) gains the "For users" form; `parseChangelog` in `@ea/core`.
-- **D13 Image** (F11): no `apps/docs` source; install `--filter "!@ea/docs"` (stage 01); `CHANGELOG.md` for the card (stage 15).
+- **D13 Image**: no `apps/docs` source; install `--filter "!@ea/docs"`; `CHANGELOG.md` for the card (stage 15).
 
 ### Edge cases (answered)
 
@@ -122,11 +123,11 @@ Land each with `limen land <id> --yes --keep-open`; drop the job DB. Stage 16 is
 
 Model: `claude-opus-5-5`: `[risky]` stages; deploy and Polish text are TRACK risk areas.
 
-Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 4 blocking, 14 notes. All fixed: B1 P2 per sentence; B2 code wins; B3 gate `event`; B4 `<Shot>` lines out of `bodyHash`; N11 split stages 11 and 13. N6 F114 edits: final message.
+Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 4 blocking, 14 notes; all fixed.
 
-`wc -w` after review 1: plan 1496; stages 01 621, 02 691, 03 518, 04 634, 05 700, 06 545, 07 695, 08 535, 09 519, 10 433, 11 527, 12 386, 13 656, 14 310, 15 523, 16 426.
+Review 2 of refresh 1 ([plan-review-2.md](plan-review-2.md)): FAIL, 2 blocking, 6 notes; fixed per the coordinator ([plan-refresh-1.md](plan-refresh-1.md) § Review 2 fixes).
 
 ## Log
 
-- 2026-11-15: planned (Opus 5.5, thinking medium); review 1 fixed.
+- 2026-11-15: planned; review 1 fixed.
 - 2026-11-15: stage 01 landed. Refresh 1 to `17b2a369`: stages 03, 04, 06, 11, 13, 15, 16 ([plan-refresh-1.md](plan-refresh-1.md)).

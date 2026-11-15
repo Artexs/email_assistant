@@ -1,19 +1,16 @@
 # F112 stage 13 — Changelog
 
-Part of [`../plan.md`](../plan.md). Read D5, D10, D12, discovery notes §4.6. Needs stage 06. May run next to stages 07–12 (one id in `site-map.test.ts`, one gate check in stage 05's workflow: the later land merges).
-
-Two steps. Interface for stages 14–15 and F114's `release:prepare` (landed; F114 made `CHANGELOG.md` and tag `v0.1.0`).
+Part of [`../plan.md`](../plan.md). Read P2, D5, D10, D12. Needs stage 06. May run next to stages 07–12 (the later land merges). Two steps. Interface for stages 14–15; fits F114's landed `release:prepare`.
 
 ## Step 1 — `CHANGELOG.md` and `parseChangelog`
 
-- **Goal:** one changelog format for the site, the card and `release:prepare`.
 - **Files:** `CHANGELOG.md` (exists), `packages/core/src/changelog.ts` (new, `@ea/core`) and test, `docs/release-checklist.md`, one test beside `apps/server/src/scripts/release-prepare.test.ts`.
-- **Format** (Keep a Changelog 1.1, as F114 writes it; an HTML comment below the header paragraph states the "For users" form. Its examples are indented, and none is `## [Unreleased]` after trim: `prepareRelease` finds that heading by `line.trim()`):
+- **Format** (Keep a Changelog 1.1, as F114 writes it; an HTML comment below the header states the "For users" form, with indented examples, none `## [Unreleased]` after trim: `prepareRelease` matches `line.trim()`):
   - Heading `## [x.y.z] - YYYY-MM-DD`, plain SemVer (no pre-release or build part); the first may be `## [Unreleased]`. Newest first. Tag `v<x.y.z>`.
-  - Optional section `### For users`: each item is `- en: <text>`, next line `  pl: <text>` (two spaces). Other `###` sections (`Added`, `Changed`, `Fixed`, `Removed`, `Security`) are free text.
+  - Optional `### For users`: item `- en: <text>`, next line `  pl: <text>`. Other `###` groups are free operator text.
   - The parser skips HTML comments and link lines (`[x.y.z]: <url>`) at the end.
-  - Keep F114's text and `0.1.0` unchanged. Add the comment and, under `## [Unreleased]`, one "For users" item about the docs site. `0.1.0` has no "For users" lines: the card never shows it (P9).
-  - `docs/release-checklist.md`: step 2 gains the optional group `For users` (`- en:` / `  pl:` pairs); a new check before step 7: `bun run docs:stale --strict` passes (decision 6; review 1 N6; F114 landed without it).
+  - Keep F114's text and `0.1.0`. Add the comment and one "For users" item (the docs site) under `Unreleased`.
+  - `docs/release-checklist.md`: step 2 gains the optional group `For users`; a new check before step 7: `bun run docs:stale --strict` passes (decision 6).
 - **Interfaces:**
   ```ts
   export interface ChangelogRelease { version: string; date: string | null; forUsers: { en: string; pl: string }[] }
@@ -30,23 +27,22 @@ Two steps. Interface for stages 14–15 and F114's `release:prepare` (landed; F1
   - T5: `## [0.2] - 2026-12-01` and `## [0.2.0-rc.1] - 2026-12-01` → `changelog_heading`; `## [0.2.0] - 2026-13-01` → `changelog_date`.
   - T6: `compareSemver("0.10.0", "0.9.0") > 0`; `compareSemver("1.0.0", "1.0.0") === 0`; `compareSemver("1.0.0-rc.1", "1.0.0")` throws.
   - T7: a comment with an indented example heading, two end link lines → ignored.
-  - T8: the real `CHANGELOG.md` parses: `Unreleased`, then `0.1.0` (`2026-11-15`, `forUsers: []`).
-  - T8b: `prepareRelease` to `0.2.0` on a fixture whose `Unreleased` holds one `Added` line and one "For users" pair → `parseChangelog` gives `0.2.0` with that pair and an empty `Unreleased`.
+  - T8: the real `CHANGELOG.md` parses; first entry `Unreleased`; `0.1.0` present with `forUsers: []` (no exact list).
+  - T8b: `prepareRelease` to `0.2.0` on an `Unreleased` with one `Added` line and one pair → `parseChangelog` gives `0.2.0` with that pair, empty `Unreleased`.
 - **Done when:** T1–T8b pass.
 
 ## Step 2 — Site page and deploy check
 
-- **Goal:** the changelog page, read in place; a tag without its release fails the deploy.
-- **Files:** `apps/docs/src/in-place.ts` (entry `{ id: "changelog", path: "CHANGELOG.md", transform }`), its test, `site-map.test.ts`, `apps/docs/scripts/deploy-gate.ts` and `.github/workflows/docs-deploy.yml` (stage 05).
+- **Files:** `apps/docs/src/in-place.ts` (entry `{ id: "changelog", path: "CHANGELOG.md", transform }`) and test, `site-map.test.ts`, `deploy-gate.ts`, `docs-deploy.yml` (stage 05).
 - **Interfaces:**
-  - `IN_PLACE_PAGES` entries get an optional `transform?: (markdown: string) => string`, applied before `rewriteLinks`. The changelog transform calls `parseChangelog` (a bad file fails the build), then replaces each "For users" item with its `en` text only (the page is English, P6).
+  - `IN_PLACE_PAGES` entries get an optional `transform?: (markdown: string) => string`, applied before `rewriteLinks`. The changelog transform builds the page from `parseChangelog` only (a bad file fails the build; P2): `# Changelog`, then per release `## <x.y.z> - <date>` and its "For users" items as `- <en text>` (P6). Not published: `Unreleased`, the header, comments, every other `###` group (operator text). A release without items keeps its heading only.
   - `deployDecision` gets the parsed release versions as one more input; a pushed tag `vX` with no release `X` → `{ deploy: false, error: "changelog_missing X" }`; the workflow fails (not a skip). The gate uses `compareSemver`.
 - **Test:**
-  - T9: the transform of a T1 fixture keeps the headings; items are `- <en text>`, no `en:`/`pl:` marks.
-  - T10: `bun run docs:build` builds `dist/changelog/index.html`; `site-map.test.ts` has `changelog`.
+  - T9: T1 fixture plus an `### Added` line and an `Unreleased` item → both headings and `- <en text>` items; no `en:`/`pl:`, `Added` text or `Unreleased`.
+  - T10: `bun run docs:build` builds `dist/changelog/index.html`: heading `0.1.0`, no `Offline quality lab` (its `Added` text), no `FLAGGED_TEXT` string (stage 07); `site-map.test.ts` has `changelog`.
   - T11: `deployDecision` on push of `v0.2.0` with releases `[0.1.0]` → error `changelog_missing 0.2.0`; with `[0.2.0, 0.1.0]` → deploy.
 - **Done when:** T9–T11 hold.
-- **Out of scope:** release scripts, tags, the version in `package.json` (F114); `isGreaterVersion` of `release-prepare-lib.ts` stays.
+- **Out of scope:** release scripts, tags, `package.json` version (F114); F114's `isGreaterVersion` stays.
 
 ## Proof
 

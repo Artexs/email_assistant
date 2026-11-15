@@ -120,3 +120,18 @@ commits after the base that touch the named paths:
       558 stages/stage-15-panel-ui.md
       468 stages/stage-16-publication.md
     10467 total
+
+## Review 2 fixes (2026-11-15)
+
+Review: [plan-review-2.md](plan-review-2.md) (Opus 5.5, high): FAIL, B1, B2, N1–N6. Fixed as the coordinator decided; no new review.
+
+- **B1** (coordinator decision): the public changelog page renders only the version and date headings and the "For users" items (en). `Unreleased`, the header, comments and the `Added`/`Changed`/`Fixed`/… groups are not published. Stage 13 transform, T9 and T10 (T10: no `Offline quality lab`, no `FLAGGED_TEXT` string in `dist/changelog/index.html`). plan.md P2 states it. Stage 15 link `whats_new_all` text: "All changes for users".
+- **B2**: stage 07 names `operate/release-checklist` in the `IN_PLACE_PAGES` ids and in T2; stage 16 C2 curls `…/operate/release-checklist/`.
+- **N1**: stage 13 T8: parse OK, first entry `Unreleased`, `0.1.0` present with `forUsers: []`; no exact list.
+- **N2**: stage 07: `flagged-text.test.ts` scans `src/content/docs` only; in-place sources stay unchanged.
+- **N3**: stage 15 e2e turns `docs_links` on and off with `org-flag.ts` in `beforeAll` / `afterAll` (as `mailbox-oauth.spec.ts`); never in the e2e seed.
+- **N4**: stage 11: the enabled list of `/api/me` `features` is empty (no `docs_links`); other specs may write `off` rows.
+- **N5**: no change (confirms the comment rule of stage 13).
+- **N6**: word counts now in plan.md § Planning progress. To fit 1,500 words, plan.md lost the review 1 fix list (it is in plan-review-1.md) and two short phrases.
+
+Word counts after the fixes: plan 1494; 07 700, 11 576, 13 654, 15 589, 16 469 (03 545, 04 635, 06 586 unchanged).

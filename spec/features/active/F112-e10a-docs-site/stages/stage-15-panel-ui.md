@@ -12,7 +12,7 @@ Two steps.
   - Releases are parsed at build time from `CHANGELOG.md` (`parseChangelog`); the island gets only the released versions with their "For users" lines (no raw Markdown in the bundle). A bad changelog fails `web:build`. No env or file switch for another changelog (a test input in a production build is a risk).
   - The flag comes from `/api/me` `features`, as for `stats_page`. Flag off: no link, no card, no storage read.
   - Help link: text key `help_link` (Polish text by the translator rule of `docs/code-patterns.md`), `href = docsUrl("/", locale)`, `target="_blank"`, `rel="noopener noreferrer"`.
-  - Card: title key `whats_new_title`, one list item per line in the panel locale, a link `whats_new_all` to `docsUrl("/changelog/", "en")`, a close button `whats_new_dismiss` (keyboard reachable, `aria-label`). It uses stage 14 `whatsNew`, `readSeen`, `writeSeen` with the `/api/me` user id. It shows once per page load; dismiss hides it and writes storage; `"unavailable"` → no card.
+  - Card: title key `whats_new_title`, one list item per line in the panel locale, a link `whats_new_all` ("All changes for users"; the page holds only "For users" items, stage 13) to `docsUrl("/changelog/", "en")`, a close button `whats_new_dismiss` (keyboard reachable, `aria-label`). It uses stage 14 `whatsNew`, `readSeen`, `writeSeen` with the `/api/me` user id. It shows once per page load; dismiss hides it and writes storage; `"unavailable"` → no card.
   - No new API, no migration, no CSP change.
 - **Test:**
   - T1: the i18n tests pass with the four new keys in `en.ts` and `pl.ts`.
@@ -23,7 +23,7 @@ Two steps.
 ## Step 2 — e2e
 
 - **Goal:** the real panel shows the link and follows the flag.
-- **Files:** one new spec in `apps/web/e2e/tests/`; the e2e seed only if no existing helper turns the flag on for the seeded organization.
+- **Files:** one new spec in `apps/web/e2e/tests/`. It turns `docs_links` on and off for the main organization with `org-flag.ts` in `beforeAll` / `afterAll`, as `mailbox-oauth.spec.ts` does. Never in the e2e seed (stage 11 needs the main organization with no flag on).
 - **Test** (the built panel holds the real `CHANGELOG.md`; at refresh 1 its only release `0.1.0` has no "For users" lines; T2 proves the card):
   - T5: flag off → no Help link, no card.
   - T6: flag on → Help link `href` = `https://artexs.github.io/email_assistant/`, and `…/email_assistant/pl/` after the switch to Polish.

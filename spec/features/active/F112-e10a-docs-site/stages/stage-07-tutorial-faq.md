@@ -11,8 +11,8 @@ Two steps. Markdown about 350 lines.
 - Plain English, short sentences, "you". No date, version or person.
 - **Flags per sentence (P2):** no button, digest line, field, command or route that a default-off flag gates, also inside an unflagged feature (for example the `mistake_capture` button, the `handled_share` and `llm_pause_line` digest lines, the `answered_check` block).
 - **Code wins (P2):** when a capability page and the code disagree, write what the code does and name the conflict in the final message.
-- `apps/docs/src/site-map.test.ts` (new in this stage) lists the source page ids (`src/content/docs` files and `IN_PLACE_PAGES`), not the built pages: Starlight's `/pl/` fallback pages (F7) are not in it. It fails on a missing or extra id. Each content stage adds its ids.
-- `apps/docs/src/flagged-text.test.ts` (new in this stage): `FLAGGED_TEXT: { flag: string; text: string }[]`, the user-visible strings of every default-off flag (from `features.ts`, the capability pages and the texts in `packages/core/src/texts` and `apps/web/src/i18n`, en and pl). The test fails when a doc page holds one while its flag defaults off. A stage that meets a new flagged string adds it.
+- `apps/docs/src/site-map.test.ts` (new in this stage) lists the source page ids (`src/content/docs` files and `IN_PLACE_PAGES`: `operate/install-and-run`, `operate/release-checklist`), not built pages (no `/pl/` fallbacks, F7). It fails on a missing or extra id. Each content stage adds its ids.
+- `apps/docs/src/flagged-text.test.ts` (new in this stage): `FLAGGED_TEXT: { flag: string; text: string }[]`, the user-visible strings of every default-off flag (from `features.ts`, the capability pages and the texts in `packages/core/src/texts` and `apps/web/src/i18n`, en and pl). It fails when a page under `src/content/docs` holds one while its flag defaults off; in-place sources are out of scope (operator text). A stage that meets a new flagged string adds it.
 
 ## Step 1 — Tutorial `start`
 
@@ -29,7 +29,7 @@ Two steps. Markdown about 350 lines.
 - **capabilities:** `web-panel`, `sync`, `digest-and-notices`, `tenancy-and-plans`.
 - **Test:**
   - T1: `bun run docs:build` passes (front matter, links, public content).
-  - T2: `site-map.test.ts` passes with `index`, `pl/index`, `start`, `operate/install-and-run`; `flagged-text.test.ts` passes and holds at least one string per default-off flag that a user can see.
+  - T2: `site-map.test.ts` passes with `index`, `pl/index`, `start`, `operate/install-and-run`, `operate/release-checklist`; `flagged-text.test.ts` passes and holds at least one string per default-off flag that a user can see.
   - T3: `bun run docs:stale` exits 0 (`POLISH_SET` stays `["index"]`; stage 10 adds the Polish set, so CI stays green).
 - **Done when:** T1–T3 hold.
 
