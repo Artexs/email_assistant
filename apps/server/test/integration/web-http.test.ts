@@ -60,12 +60,13 @@ function makeWeb(overrides: Partial<WebDeps> = {}): WebDeps {
         }),
       getSession: async (h) =>
         h.get("cookie") === "ea.session_token=good"
-          ? { userId: "u1", sessionId: "s1", twoFactorEnabled: true }
+          ? { userId: "u1", sessionId: "s1", twoFactorEnabled: true, signInMethod: "password" }
           : h.get("cookie") === "ea.session_token=refresh"
             ? {
                 userId: "u1",
                 sessionId: "s1",
                 twoFactorEnabled: true,
+                signInMethod: "password",
                 setCookie: ["ea.session_token=new; Path=/; HttpOnly"],
               }
             : null,
@@ -199,7 +200,7 @@ describe("api", () => {
       const mounted = appWith({
         auth: {
           handler: async () => new Response(),
-          getSession: async () => ({ userId, sessionId: "s-test", twoFactorEnabled: true }),
+          getSession: async () => ({ userId, sessionId: "s-test", twoFactorEnabled: true, signInMethod: "password" }),
         },
         listMembershipsOfUser: async () => [{ org_id: orgId, role: "owner" }],
         routers: (api) =>

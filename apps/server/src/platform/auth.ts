@@ -11,6 +11,7 @@ import {
   isAllowedSsoPath,
   rejectUnknownSsoBodyKeys,
   ssoPlugins,
+  ssoSessionData,
   SSO_SIGN_IN_PATH,
   withoutIdpTokens,
   type SsoEvent,
@@ -362,6 +363,18 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       },
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24,
+      // How the session was made, and when the IdP sign-in was. The trigger `auth_sessions_sso_cap` ends an SSO session
+      // 12 h after `sso_started_at`, also at each refresh. A client never sets either field.
+      additionalFields: {
+        signInMethod: {
+          type: "string",
+          fieldName: "sign_in_method",
+          input: false,
+          required: false,
+          defaultValue: "password",
+        },
+        ssoStartedAt: { type: "date", fieldName: "sso_started_at", input: false, required: false },
+      },
     },
     account: {
       modelName: "auth_accounts",
@@ -465,6 +478,19 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       signInAuditPlugin(report),
     ],
     databaseHooks: {
+      session: {
+        create: {
+          // `ctx.context.session` is the session of the request: set only for an endpoint that needs one.
+          before: async (session, ctx) => {
+            const extra = ssoSessionData({
+              path: ctx?.path,
+              current: ctx?.context.session?.session ?? null,
+              now: now(),
+            });
+            return extra === undefined ? undefined : { data: { ...session, ...extra } };
+          },
+        },
+      },
       account: {
         // No IdP token is stored (an `id_token` holds the IdP e-mail in clear).
         create: { before: async (account) => withoutIdpTokens(account) },

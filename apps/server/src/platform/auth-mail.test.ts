@@ -20,7 +20,8 @@ const settings: AuthMailSettings = {
   from: "noreply@x.test",
 };
 const LINK = "https://x.test/link";
-const mail: AuthMail = { kind: "reset", userId: "user-1", to: "who@x.test", locale: "en", url: LINK };
+const USER_ID = "5c1d9a40-7b2e-4f63-8a1d-2e9f0b3c4d5a";
+const mail: AuthMail = { kind: "reset", userId: USER_ID, to: "who@x.test", locale: "en", url: LINK };
 
 describe("authMailTransportOptions", () => {
   test("a loopback host connects without TLS", () => {
@@ -129,7 +130,7 @@ describe("createAuthMailer", () => {
     expect(closed).toBe(1);
     const warns = lines.filter((line) => line.level === "error");
     expect(warns).toHaveLength(1);
-    expect(warns[0]?.text).toContain("user-1");
+    expect(warns[0]?.text).toContain(USER_ID);
     expect(warns[0]?.text).toContain("EAUTH");
     expect(lines.some((line) => line.text.includes("x.test") || line.text.includes("secret"))).toBe(false);
   });
@@ -166,7 +167,7 @@ describe("createAuthMailer", () => {
 });
 
 describe("createAuthMailTasks", () => {
-  const input = { kind: "reset", userId: "user-1", to: "who@x.test", url: LINK } as const;
+  const input = { kind: "reset", userId: USER_ID, to: "who@x.test", url: LINK } as const;
 
   test("start returns at once; idle waits for the send; the mail gets the locale", async () => {
     const sent: AuthMail[] = [];
@@ -215,7 +216,7 @@ describe("createAuthMailTasks", () => {
     });
     tasks.start(input);
     await tasks.idle();
-    expect(failed).toEqual([["user-1", "reset", "EAUTH"]]);
+    expect(failed).toEqual([[USER_ID, "reset", "EAUTH"]]);
   });
 
   test("a throwing mailer or callback never rejects and logs no address", async () => {
@@ -233,7 +234,7 @@ describe("createAuthMailTasks", () => {
       tasks.start(input);
       await tasks.idle();
       const text = errorSpy.mock.calls.map((call) => call.join(" ")).join("\n");
-      expect(text).toContain("user-1");
+      expect(text).toContain(USER_ID);
       expect(text).not.toContain("who@x.test");
       expect(text).not.toContain(LINK);
     } finally {
