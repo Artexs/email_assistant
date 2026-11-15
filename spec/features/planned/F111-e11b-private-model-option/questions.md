@@ -1,0 +1,7 @@
+# F111 questions (defaults taken; none blocks stages 01–05)
+
+1. **[important: privacy] Q1 — One endpoint per deployment, or per organization?** Default: per deployment (plan P1). The VPS keeps the US API for the owner's pilot; a new install sets the EU URL. PD-110 says "EU default for every organization except the owner's pilot": on one deployment that needs a per-org route (a migration plus a route per call). No outside organization exists, and PD-101 says EU is "not the default of this install". If the owner wants per org, the PD-110 second pass adds a stage before stage 06.
+2. **[important: money] Q2 — Own-model hardware.** Default: the owner's PC (plan P3). PD-112's rule says "unless the owner's PC has a GPU with at least 12 GB memory", and this PC has an AMD RX 6950 XT with 16 GB. It needs owner step O2, `sudo pacman -S ollama-rocm`, because only `ollama-cuda` is installed. Other option: a rented GPU, at most $5 (two models of about 1,400 cases each can take more than one hour).
+3. **[important: security] Q5 — http to an own server.** Default (plan D2): `https` always, or `http` only to loopback or a one-label container host. A model server on a LAN address over plain http is refused, because mail text would cross the network unencrypted. Other option: also allow http to private ranges.
+4. **[minor] Q3 — Second candidate model.** Default: `gemma3:12b` as "one general open model of similar size" (plan P4).
+5. **[minor] Q4 — No answer from OpenAI.** Default: stage 06 waits. The coordinator asks the owner again 30 days after O1 (plan P6).
