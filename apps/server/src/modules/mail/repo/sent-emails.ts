@@ -169,3 +169,26 @@ export async function deleteSentEmails(trx: Transaction<DB>, ctx: TenantContext,
     .executeTakeFirst();
   return Number(result.numDeletedRows);
 }
+
+const SENT_ID_CHUNK = 500;
+
+// Which of the Message-IDs have a row in the Sent store of the mailbox (any origin, any folder path). The ids come back as stored.
+export async function listSentMessageIds(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  messageIds: readonly string[]
+): Promise<Set<string>> {
+  const found = new Set<string>();
+  for (let start = 0; start < messageIds.length; start += SENT_ID_CHUNK) {
+    const rows = await db
+      .selectFrom("sent_emails")
+      .select("message_id")
+      .where("org_id", "=", ctx.orgId)
+      .where("mailbox_id", "=", mailboxId)
+      .where("message_id", "in", messageIds.slice(start, start + SENT_ID_CHUNK))
+      .execute();
+    for (const row of rows) if (row.message_id !== null) found.add(row.message_id);
+  }
+  return found;
+}
