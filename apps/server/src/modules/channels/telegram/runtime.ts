@@ -7,7 +7,7 @@ import type { ActionsScope, DelegationHooks, SendScope } from "../../actions";
 import type { TestMailRule } from "../../mail";
 import { createUpdateHandlers } from "../commands";
 import { scheduleDigests } from "../digest-job";
-import { detectNotices } from "../notices";
+import { detectNotices, type NoticeDeps } from "../notices";
 import { createOutboxSender } from "../sender";
 
 import { createTelegramChannel } from "./api";
@@ -58,6 +58,9 @@ export interface TelegramRuntimeDeps {
   syncEveryMin: number;
   // `WEB_BASE_URL`; the approval card links to the panel only when it is set and `approvals_page` is on.
   webBaseUrl?: string;
+  // The LLM pause and the scope of the triage worker of this process: the `not_triaged` notice reads them (F109 stage 15).
+  // Absent when the worker is off.
+  degraded?: NoticeDeps["degraded"];
   // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
   // Only for tests.
@@ -111,6 +114,7 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
         now,
         startedAt,
         testMail: deps.testMail,
+        ...(deps.degraded === undefined ? {} : { degraded: deps.degraded }),
         ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
       });
       await sender.run();

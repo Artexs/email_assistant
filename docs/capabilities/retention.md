@@ -1,6 +1,6 @@
 # Retention
 
-> Checked against the code at `f64c7256`, 2026-11-15.
+> Checked against the code at `d331192b`, 2026-11-15.
 
 ## What it does now
 
@@ -36,6 +36,13 @@ The system keeps mail text only for a limited time. Once a day the job `platform
 7. **Crash safety.** Most clear functions work in batches of 1 000 rows, selected by id with `FOR UPDATE SKIP LOCKED`. Two do not: `deleteExpiredVerifications` is one delete with no batch and no lock, and `deleteOldLinkTokens` selects by `token_hash`. There is no transaction around the whole run. A row that another job holds waits for the next day. Every rule excludes rows that are already cleared, so a run that stopped in the middle is safe to repeat and a second run changes nothing.
 8. **The log.** Per organization one event `retention_org_done` with `org_id` and the counts `body_rows`, `header_rows`, `sent_body_rows`, `sent_header_rows`, `captured_header_rows`, `triage_rows`, `payload_rows`, `error_rows`, `task_rows`, `outbox_rows`, `token_rows` (`token_rows` adds the Telegram link tokens and the OAuth sign-in states), written only when the sum is above 0, and one event `retention_done` (`org_count`, `count`) per run. The lines hold counts and the organization id only: no text and no mail id. The expired `auth_verifications` rows go once per run, not per organization; the log line `retention_auth_verifications_deleted` holds the count. A failure there (`retention_auth_verifications_failed`) never stops the run; the rows wait for the next day.
 
+9. **Data of F109 (suspicious-mail rules, attachment line, urgency profile, `not_triaged` notice).**
+   - `triage_results.suspicious_reasons` holds reason codes only (a fixed list of six; a CHECK enforces it). It holds no text, so `clearTriageTexts` leaves it and the codes stay as long as the row.
+   - `mailbox_settings.urgency_profile` (the owner's topics, keywords and deadlines) follows the settings row of the mailbox. No retention function clears it; it goes when the mailbox or the organization is deleted, and `org:export` lists it. A mail address typed in a topic stays in it (the privacy map says "open").
+   - `emails.from_address_lower` is a generated copy of `from_address`. When `clearMailHeaders` clears the address, the database recomputes the copy, so it goes with it.
+   - **Attachment names in a notice outlive the capture.** The urgent view (`outbox.view`) and the rendered `outbox.text` can hold up to 3 attachment names (cut to 40 characters, with type and size) while the flag `attachment_line` is on. `clearOutboxTexts` clears them after `RETENTION_TEXT_DAYS` (90 days), but `email_headers.attachments` goes after the `data_retention_days` of the organization (default 30, minimum 1). So these names can stay up to 90 days, longer than the captured list (30 days by default). The subject in the view lives as long.
+   - A `not_triaged` row holds the sender address in `outbox.view` and `outbox.text`; `clearOutboxTexts` clears both after 90 days, and the erase of the mail removes the row (kind `one_mail`).
+
 ## Entry points
 
 | Kind     | Name                                                       | Where                                               |
@@ -63,6 +70,7 @@ The job writes these columns and no others: `emails` (`body_text`, `subject`, `f
 - Retention is not the erase: it clears texts by age and keeps the rows. A tombstone (`dsr_tombstones`) has no expiry and no retention job clears it.
 - No route or CLI changes `data_retention_days`; the value changes only in the database.
 - No alert when the job fails or does not run. The log line is the only sign.
+- A cut attachment name in a notice stays up to 90 days, longer than the captured list when `data_retention_days` is below 90 (rule 9).
 
 ## Decisions
 

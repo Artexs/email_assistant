@@ -2,12 +2,14 @@ import { describe, expect, test } from "bun:test";
 
 import { textTables } from "../texts";
 
+import { formatClock } from "./local-time";
 import { MESSAGE_MAX_CHARS } from "./message";
 import {
   feedbackButtons,
   renderActionFailedNotice,
   renderAuthErrorNotice,
   renderHostBlockedNotice,
+  renderSentMissingNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
@@ -177,6 +179,29 @@ describe("other notices", () => {
     expect(earlier.text.split("\n")[0]).toEndWith("at 5 Nov 14:00.");
     const address = `${"a".repeat(80)}@firma.test`;
     const long = renderHostBlockedNotice({ address, since: now, now, timeZone }, textTables.en).text;
+    expect(long).toContain(cutText(address, 60));
+    expect(long).not.toContain("a".repeat(61));
+  });
+
+  test("sent_missing: two lines, no button; a long address is cut", () => {
+    const sentNow = new Date("2026-11-20T10:00:00Z");
+    const since = new Date("2026-11-12T09:00:00Z");
+    const input = { address: "boss@x.test", since, now: sentNow, timeZone: "Europe/Warsaw" };
+    const day = formatClock(since, "Europe/Warsaw", sentNow, "en");
+    const message = renderSentMissingNotice(input, textTables.en);
+    expect(message.text).toBe(
+      [
+        `📭 No sent mail seen for boss@x.test since ${day}.`,
+        "Does your mail app keep a copy in Sent? The assistant needs it to see what you wait for.",
+      ].join("\n")
+    );
+    expect(message.buttons).toEqual([]);
+    const polish = renderSentMissingNotice(input, textTables.pl).text.split("\n");
+    expect(polish).toHaveLength(2);
+    expect(polish[0]).toStartWith("📭 Brak wysłanej poczty dla boss@x.test od ");
+    expect(polish[1]).toStartWith("Czy Twój program pocztowy");
+    const address = `${"a".repeat(80)}@firma.test`;
+    const long = renderSentMissingNotice({ ...input, address }, textTables.en).text;
     expect(long).toContain(cutText(address, 60));
     expect(long).not.toContain("a".repeat(61));
   });

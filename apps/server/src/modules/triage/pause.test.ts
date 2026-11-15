@@ -39,6 +39,22 @@ describe("createLlmPause", () => {
     expect(minutes(t0, pause.trip("soft", "http_429", t0))).toBe(5);
   });
 
+  test("pausedSince is the first trip of the run; only reset clears it (F109 stage 15)", () => {
+    const pause = createLlmPause();
+    expect(pause.pausedSince()).toBeNull();
+    const second = new Date(t0.getTime() + 5 * 60_000);
+    pause.trip("soft", "http_429", t0);
+    pause.trip("soft", "http_429", second);
+    expect(pause.pausedSince()).toEqual(t0);
+    // The pause ended and nothing was reset: the run goes on.
+    expect(pause.isPaused(new Date(t0.getTime() + 3_600_000))).toBe(false);
+    expect(pause.pausedSince()).toEqual(t0);
+    pause.reset();
+    expect(pause.pausedSince()).toBeNull();
+    pause.trip("soft", "http_429", second);
+    expect(pause.pausedSince()).toEqual(second);
+  });
+
   test("options change the base and the maximum", () => {
     const pause = createLlmPause({ baseMs: 1000, maxMs: 3000 });
     const lengths = [1, 2, 3, 4].map(() => pause.trip("soft", "timeout", t0).getTime() - t0.getTime());

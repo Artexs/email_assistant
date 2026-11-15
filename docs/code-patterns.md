@@ -131,7 +131,7 @@ Every text that a user reads has an English and a Polish version, from the first
 - A name or an address (sender, delegate, mailbox, folder) never takes a Polish case ending. Put it after a fixed word, as in "zostaje w INBOX".
 - A placeholder for an unknown value that is stored in a view (`"(unknown sender)"`) maps to a text of the locale at render time (`texts.common.unknownSender`): the stored English value is a key, not a text.
 
-**The consent version.** `TELEGRAM_CONSENT_VERSION` (`packages/core/src/web/telegram.ts`) names the consent text of the Telegram link step. When the content that goes to Telegram changes (a new field of a notice, a new kind that carries mail text), change the consent text and bump the version in one commit. An old version gets 409 `telegram_consent_outdated`. The gate blocks only NEW links (`POST /channels/telegram/link`). Chats that are already linked are not asked again, and the senders never read the version. So a feature flag that adds a new kind of mail data to Telegram stays OFF for every org with linked chats until a re-ask exists or the owner accepts the gap (owner decision of 2026-11-15 in `docs/owner-decisions.md`).
+**The consent version.** `TELEGRAM_CONSENT_VERSION` (`packages/core/src/web/telegram.ts`) names the consent text of the Telegram link step. When a new kind of mail-derived data reaches Telegram (addresses, names, domains, subject, body, attachment names or types, link hosts), change the consent text and bump the version in one commit. Fixed phrases that our own code picks from our own codes (the suspicious warning line, category tags, would-do phrases) do not bump: they hold no mail-derived data. A new field of a notice bumps only when it carries a new kind of mail-derived data. An old version gets 409 `telegram_consent_outdated`. The gate blocks only NEW links (`POST /channels/telegram/link`). Chats that are already linked are not asked again, and the senders never read the version. So a feature flag that adds a new kind of mail data to Telegram stays OFF for every org with linked chats until a re-ask exists or the owner accepts the gap (owner decision of 2026-11-15 in `docs/owner-decisions.md`).
 
 **Old cards.** A Telegram card keeps the text that was sent. The edit after a tap adds one status line in the row's locale and never renders the card again. A card that was queued before a language switch keeps its old text, and the status line follows the new one. The buttons Gotowe, Wysłano and "To był błąd" work for 7 days, and the approval buttons for 48 h, so a mixed card can show for up to 7 days. A new text change must plan for this.
 
@@ -237,31 +237,34 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 
 ## Logs (ADR 0024)
 
-- A log line is an event: `log.<level>("<event_code>", { <fields> })`. The code is a snake_case literal of at most 64 characters, constant, and names what happened (`auth_mail_failed`). `msg` equals the code. One code for one kind of line.
-- Fields come only from `logFieldNames` in `apps/server/src/platform/log-fields.ts`. A value is a number, a boolean, `null`, or a code of at most 64 characters from `A–Z a–z 0–9 _ . : / * -` without `://` (ids and route patterns are codes; the code fields include `provider`, `model` and `role`).
-  The writer drops any other field or value and counts it in `dropped_fields`. A line with `dropped_fields` is a bug to fix.
-  A change that logs a new field name adds it to the list. The review checks that its values are ids, codes, counts or times.
-  The value rule does not stop a secret that looks like a code: never add a field for a token, a password or a key value, and never pass one in a code field.
-- Errors: `...errorFields(error)` (name and code). Never `error.message`, a mail text, an address, a URL or a token.
-- Context: the scheduler gives every line of a job tick `job` and `run_id` (`runJobTick`). The HTTP layer gives every line of a request `request_id` and sets the `x-request-id` header.
-  Per-item ids come from a child logger: `const mailboxLog = log.with({ org_id, mailbox_id })`. Name a child logger `<thing>Log` (the lint finds it by that name).
+- A log line is an event: `log.<level>("<event_code>", { <fields> })`. The code is a snake_case literal of at most 64 characters, constant, and names what happened (`auth_mail_failed`): the thing, then what happened. `msg` equals the code. One code for one kind of line. A number or an id is a field, never part of the code.
+- Fields come only from the three kind lists in `apps/server/src/platform/log-fields.ts`; `logFieldNames` joins them, and `LogFields` types each name by its kind.
+  - `uuidFieldNames`: a lower-case UUID or `null` (`org_id`, `mailbox_id`, `run_id`). The writer drops any other string, so a non-UUID id vanishes.
+  - `numberFieldNames`: a finite number or `null` (counts, times, durations). A new number name is free.
+  - `codeFieldNames`: a number, a boolean, `null`, or a code of at most 64 characters from `A–Z a–z 0–9 _ . : / * -` without `://`. A code value comes from a closed set: a union, a constant, a config value, a route pattern, an error name or code. Never mail text, a user value or any text from outside the server. A new UUID or code name needs a reason in the change that adds it.
+    The writer drops a wrong name or a wrong kind and counts it in `dropped_fields`. A line with `dropped_fields` is a bug to fix. `log.info("x", { count: "a" })` and a name that is on no list fail the typecheck. Never widen a kind to make a call compile.
+    The value rule does not stop a secret that looks like a code: never add a field for a token, a password or a key value, and never pass one in a code field.
+- Errors: `...errorFields(error)` (`error` = the error name, `error_code`). In Telegram code: `...telegramErrorFields(error)` (`error`, `error_code`, `method`). Never `error.message`, `payload` or `description`, a mail text, an address, a URL or a token. The lint fails on `.message` inside a log call.
+- Context: the scheduler gives every line of a job tick `job` and `run_id` (`runJobTick`). Every Telegram update runs in `withLogContext({ job: "telegram.update", run_id })` (the first bot middleware), so its lines carry a `run_id` too. The HTTP layer gives every line of a request `request_id` and sets the `x-request-id` header.
+  Per-item ids come from a child logger: `const mailboxLog = log.with({ org_id, mailbox_id })`. Name a child logger `<thing>Log` (the lint finds it by that name). A call on a chain (`log.with({ … }).info(…)`) is checked too.
   Inside a run or a request, never pass `job`, `run_id` or `request_id` by hand (the context value wins and the call value is dropped).
   Only a line outside any context names a job with `job` (`job_scheduled`, `job_skipped`).
   Create a long-lived timer, interval, socket or pool at start, outside any context: it keeps the context it was created in.
 - Format: the server prints `json` by default (its config) and the VPS pins `LOG_FORMAT: json` (`deploy/compose.yaml`). `text` prints `[module] event key=value …` (dev, `.env.example`).
   A process that does not load the config (a CLI, a test) prints `text` unless `LOG_FORMAT=json`. Tests run in `text` (the test preload).
-- Lint: `no-restricted-syntax` in `eslint.config.js` (`logEventSelectors`) warns on any other log call in `apps/server/src`, and fails in the converted files (`platform/`, `main.ts`, `scripts/`).
-  E8a converts the modules one by one, moves each to the `error` block, and flips the rest at the end. A new log line in any file is an event from now on.
+- `Log` has only the event signature. A call of another shape (a free text, a second argument that is not an object, three arguments) writes one `log_call_invalid` line with the context fields only and `dropped_fields: 1`, and never prints the argument.
+- Lint: in `apps/server/src` (tests excepted) `no-restricted-syntax` and `no-console` are at `error` (`eslint.config.js`, `logEventSelectors`). It fails on a first argument that is not a snake_case literal, a call with no or more than two arguments, a second argument that is not an object literal or a call of `errorFields` / `telegramErrorFields`, a `.message` in the fields, and a call on a chain with any of these. A new log line in any file is an event.
+- CLI scripts (`apps/server/src/scripts/`) print to the operator's terminal through `createCliOutput(name)` (`platform/cli.ts`): `print` to stdout, `fail` to stderr, `[name] text`, always text. It is not a log line and never enters the log store. Only scripts import it (a lint border). A script that must stay silent on its machine output uses `process.stdout.write`, and may log a failure as an event line (`org_delete_refused`); free text goes through `createCliOutput`. An existing `error.message` print in a script stays; a new one only in a mail-connection script, never for a Telegram error.
 - `docs/known-alerts.md` keys the entries of event lines by the event code.
-- CLI scripts (`apps/server/src/scripts/`) print to the operator's terminal through `createCliOutput(name)` (`platform/cli.ts`): `print` to stdout, `fail` to stderr, `[name] text`, always text. It is not a log line. Only scripts import it. `scripts/` is at lint error for old-form lines. A script may log a failure as an event line (`org_delete_refused`); free text goes through `createCliOutput`.
+- What each part does and where it lives: `docs/capabilities/logs.md`.
 
 ## Style
 
 - TypeScript strict. `const` / `let` only, never `var`.
 - Template literals for strings with variables, never `+` concatenation.
-- Use the `log` util (`platform/log`), never `console.log`. The rules are in § Logs.
+- Use the `log` util (`platform/log`), never `console.log` (`no-console` is at error in `apps/server/src`). The rules are in § Logs.
 - Folder keys in logs and audit rows, never paths from mail data or user input.
-- Telegram errors: in an event line use `...telegramErrorFields(error)` (`error`, `error_code`, `method`); `telegramErrorLabel(error)` only in an old-form line that E8a has not converted yet. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `errorFields(error)` in an event line, `describeError(error)` only in an old-form line that E8a has not converted yet.
+- Telegram errors: `...telegramErrorFields(error)` (`error`, `error_code`, `method`). Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `...errorFields(error)`. `describeError(error)` only in CLI output and in DB error texts (a label in a row), never in a log line.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
 - A comment states the rule in one sentence. If it needs a source, it names an ADR (`ADR 0014`) or a ticket folder path (`spec/features/done/2026-11/F083-…/`). No bare stage or decision codes (`S3`, `D29`, `U11`, `A23`, `F079`): their plan files move, and no reader can resolve them. Fix the codes of a comment when you change its code; no mass edit.
 

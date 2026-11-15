@@ -31,6 +31,7 @@ export {
 } from "./secret-store";
 export { parseIdTokenClaims, type IdTokenClaims } from "./id-token";
 export { createMailOAuthClients, type MailOAuthClientsDeps } from "./clients";
+export { createOAuthTokens, TOKEN_MIN_LEFT_MS, type OAuthTokensDeps } from "./tokens";
 export {
   mailOAuthFlag,
   mailOAuthProviders,

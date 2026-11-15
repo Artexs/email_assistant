@@ -1,11 +1,11 @@
-import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition";
+import { actionsScope, committerDeps, mailOAuthRuntime, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
 import { checkLlmErrors, checkSyncLag, checkUrgentLatency, runSloTick, type SloCheckEntry } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
-import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
+import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
 import {
   ConfigError,
   featuresOff,
@@ -93,10 +93,12 @@ try {
 }
 
 const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+const mailOAuth = mailOAuthRuntime(config, db, secrets);
 const mailSync = createMailSyncJob({
   db,
   secrets,
   openProvider: openImapProvider,
+  oauthTokens: mailOAuth.tokens,
   isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
   sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(db, ctx, mailboxId, actionId),
   now: () => new Date(),
@@ -170,16 +172,20 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
+// One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
+let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
 const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
-  log.info("llm_settings", llmEndpointFields(llmTable, "classifier"));
+  log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
   const llm = createLlmClient({ table: llmTable });
+  const pause = createLlmPause();
+  degraded = { pause, scope };
   const triage = createTriageJob({
     db,
     llm,
-    pause: createLlmPause(),
+    pause,
     scope,
     testMail: testMailRule(config),
     batchSize: 5,
@@ -214,6 +220,7 @@ const committer = createCommitterJob(
   committerDeps({
     db,
     secrets,
+    oauthTokens: mailOAuth.tokens,
     scope: scopeOfActions,
     sendScope: scopeOfSends,
     sendLimits: limitsOfSends,
@@ -274,6 +281,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     uidplus,
     sendScope: scopeOfSends,
     testMail: testMailRule(config),
+    ...(degraded === undefined ? {} : { degraded }),
     operatorContact: config.OPERATOR_CONTACT ?? null,
     syncEveryMin: Number(config.MAIL_SYNC_EVERY_MIN),
     ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
@@ -296,6 +304,8 @@ const web = webDeps(config, db, {
   actionsScope: scopeOfActions,
   sendScope: scopeOfSends,
   botUsername: telegram ? () => telegram.botUsername() : null,
+  mailOAuthClients: mailOAuth.clients,
+  mailOAuthLogin: { oauthTokens: mailOAuth.tokens },
   onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });
 const app = createApp({ checkDb: () => checkDb(db), web });
