@@ -51,13 +51,13 @@ export const pl: Record<TextKey, string> = {
   login_sso_submit: "Dalej",
   login_sso_back: "Wróć do logowania hasłem",
   login_sso_error_no_provider: "Logowanie kontem firmowym nie jest ustawione dla tego adresu. Zaloguj się hasłem.",
-  login_sso_error_rate: "Za dużo prób. Odczekaj minutę i spróbuj ponownie.",
+  login_sso_error_rate: "Zbyt wiele prób. Poczekaj minutę i spróbuj ponownie.",
   login_sso_error_not_member: "To konto firmowe nie ma dostępu. Poproś operatora o dostęp.",
   login_sso_error_domain: "To konto firmowe ma inną domenę. Użyj służbowego adresu e-mail.",
   login_sso_error_identity: "Twoje konto firmowe się zmieniło. Poproś operatora o odłączenie starego.",
   login_sso_error_off:
     "Logowanie kontem firmowym jest wyłączone w Twojej organizacji. Zaloguj się hasłem albo napisz do operatora.",
-  login_sso_error_generic: "Logowanie kontem firmowym nie udało się. Spróbuj ponownie albo napisz do operatora.",
+  login_sso_error_generic: "Logowanie kontem firmowym nie powiodło się. Spróbuj ponownie albo napisz do operatora.",
   // two-factor code step
   tf_code_title: "Logowanie dwuetapowe",
   tf_code_label: "Kod z aplikacji uwierzytelniającej",

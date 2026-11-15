@@ -21,7 +21,7 @@ function nextTarget(): string {
   return safeNextPath(new URLSearchParams(location.search).get("next"));
 }
 
-export default function LoginPage() {
+export default function LoginPage({ initialOptions = null }: { initialOptions?: SignInOptions | null }) {
   useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,12 +38,14 @@ export default function LoginPage() {
   const [restartNotice, setRestartNotice] = useState<TextKey | null>(null);
   const [deletedNotice, setDeletedNotice] = useState<DeletedNotice | null>(null);
   // `null` until the read ends; a failed read is `{ sso: false }` (the password form stays).
-  const [signInOptions, setSignInOptions] = useState<SignInOptions | null>(null);
-  const [ssoReturn, setSsoReturn] = useState<TextKey | null>(null);
+  const [signInOptions, setSignInOptions] = useState<SignInOptions | null>(initialOptions);
+  // The return from the callback is in the address at the first render (the page runs on the client only).
+  const [ssoReturn] = useState<TextKey | null>(() =>
+    typeof location === "undefined" ? null : ssoReturnError(location.search)
+  );
 
   useEffect(() => {
     setSetupDone(new URLSearchParams(location.search).get("setup") === "done");
-    setSsoReturn(ssoReturnError(location.search));
     // The read removes the key; the first notice stays (the effect may run twice in development).
     let store: Storage | undefined;
     try {

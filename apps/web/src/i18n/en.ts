@@ -47,7 +47,7 @@ export const en = {
   login_sso_submit: "Continue",
   login_sso_back: "Back to password sign-in",
   login_sso_error_no_provider: "Company sign-in is not set up for this address. Sign in with your password.",
-  login_sso_error_rate: "Too many tries. Wait a minute and try again.",
+  login_sso_error_rate: "Too many attempts. Wait a minute and try again.",
   login_sso_error_not_member: "This company account has no access. Ask the operator to add you.",
   login_sso_error_domain: "This company account uses another domain. Use your work e-mail.",
   login_sso_error_identity: "Your company account changed. Ask the operator to unlink the old one.",
