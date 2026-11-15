@@ -3,6 +3,11 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
+import { committerDeps } from "./composition";
+import type { OAuthTokens } from "./modules/mail";
+import type { SecretBox } from "./platform/crypto";
+import type { Db } from "./platform/db";
+
 // F117 stage 10: every composition root that opens mailboxes (the sync job, the committer, the web Reconnect) gets the token store.
 // A call without it would fail every OAuth mailbox with "oauth not wired", or leave a Reconnect without a cache drop. The
 // composition roots run at start, so the test reads their source: the text between the parentheses of each call.
@@ -59,5 +64,20 @@ describe("the token store is wired into every composition root", () => {
         "scripts/job-run.ts",
       ]);
     })();
+  });
+});
+
+describe("committerDeps", () => {
+  test("passes the token store on to the committer", () => {
+    const oauthTokens: OAuthTokens = { accessToken: async () => "token", drop: () => undefined };
+    const deps = committerDeps({
+      db: {} as Db,
+      secrets: {} as SecretBox,
+      oauthTokens,
+      scope: { kind: "off" },
+      sendScope: { kind: "off" },
+      sendLimits: { mailboxHour: 1, mailboxDay: 1, recipientDay: 1 },
+    });
+    expect(deps.oauthTokens).toBe(oauthTokens);
   });
 });

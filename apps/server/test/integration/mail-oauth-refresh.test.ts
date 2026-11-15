@@ -598,6 +598,14 @@ describe("every status writer clears the reason in its own statement", () => {
     });
   }
 
+  test("24b. a reason passed with a status other than auth_error is ignored: NULL, no CHECK failure", async () => {
+    const box = await seedMailbox();
+    await setMailboxStatus(db, ctxA(), box.id, "active", now(), "oauth_expired");
+    expect(await mailboxOf(box.id)).toMatchObject({ status: "active", auth_reason: null });
+    await setMailboxStatus(db, ctxA(), box.id, "paused", now(), "oauth_expired");
+    expect(await mailboxOf(box.id)).toMatchObject({ status: "paused", auth_reason: null });
+  });
+
   test("25. setMailboxStatus auth_error writes the status and the reason in ONE UPDATE", async () => {
     const box = await seedMailbox();
     const statements: string[] = [];
