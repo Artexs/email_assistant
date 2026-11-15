@@ -583,6 +583,16 @@ describe("createChaserJob log", () => {
     });
   });
 
+  test("(8d2) an already overdue delegation counts as due and reminded, not as newly overdue", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await openDelegation(trx, s, { status: "overdue", remindersSent: 0, lastReminderAt: null });
+      await openDelegation(trx, s, { status: "overdue", remindersSent: 2 });
+      const lines = await captured(() => createChaserJob({ db: trx, now: () => at0730 }).run());
+      expect(lines).toEqual([`[delegation] chaser_done mailbox_id=${s.mailboxId} due=1 overdue=0 reminders=1`]);
+    });
+  });
+
   test("(8e) a mailbox that fails logs chaser_failed with the error name only; the next one still runs", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
