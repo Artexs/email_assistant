@@ -1,6 +1,6 @@
 # 0030 — Public docs site: a static Starlight site on GitHub Pages, synthetic content only
 
-- Status: proposed (E10 discovery, 2026-11-13). The ticket that lands the docs site (E10a) sets "accepted".
+- Status: accepted (2026-11-15, E10a, F112 stage 05). Proposed 2026-11-13 (E10 discovery).
 - Date: 2026-11-13
 
 ## Context
@@ -32,3 +32,12 @@ This is the first surface of the product that is outside the owner's server and 
 - Bad: the panel must move from Astro 5 to Astro 7 first (its own small ticket), or the workspace holds two Astro majors.
 - If the product is ever sold, the Pages terms no longer fit: move the same static build to another static host. Only the deploy workflow changes.
 - The docs deploy becomes a release-checklist step (E8).
+
+## Built (E10a, F112)
+
+- **Versions:** Starlight 0.43.1 on Astro 7.4.12, both exact, in the workspace `apps/docs` (`@ea/docs`). The panel is on the same Astro major.
+- **CSP (point 4):** the build gives every page a meta CSP. Astro hashes its own scripts and styles; a post-build pass (`apps/docs/integrations/csp-finalize.ts`) hashes Starlight's inline scripts and a page check (`docsCspProblem` in `packages/core/src/web/`) fails the build on any page that breaks the policy. Two limits are accepted for a static site with no login and no form: `style-src` holds `'unsafe-inline'` (Starlight sets `style` attributes, as the panel does, ADR 0016), and a meta CSP cannot set `frame-ancestors`, so another site can frame the docs (GitHub Pages sets no headers).
+- **Build checks:** `bun run docs:build` runs the CSP check, the public-content check (no mail address that is not an example, no real host or tailnet name, no external asset; an allow list names each exception with its reason) and the link check, and logs one line for each. The operator docs are read in place from `deploy/` and `docs/release-checklist.md`; their sources never change.
+- **Polish pages (point 5):** `bun run docs:stale` lists Polish pages whose English source changed. `--strict` fails on a stale public page.
+- **CI and deploy (point 2):** the CI job `docs` builds the site and runs `docs:stale` on every push and pull request. The workflow `.github/workflows/docs-deploy.yml` runs on a pushed `v*` tag and by hand. Its gate (`apps/docs/scripts/deploy-gate.ts`) lets a pushed tag deploy only when it is the newest plain `v<x.y.z>` tag; a tag such as `v1`, `vtest` or `v0.2.0-rc.1` never deploys. A manual run deploys the chosen ref, also an old tag (a rollback). The build job has read access only; the Pages permissions belong to the `deploy` job. The build runs `docs:stale --strict` before it publishes. No secret and no `.env` take part.
+- **First deploy:** the owner does it, after the Pages settings are changed (source "GitHub Actions"; `v*` tags allowed in the `github-pages` environment). No agent runs the workflow.
