@@ -401,3 +401,142 @@ describe("the provider service (F119 stage 07)", () => {
     }
   });
 });
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// A promise that has not settled after `ms` milliseconds.
+async function stillPending(promise: Promise<unknown>, ms: number): Promise<boolean> {
+  let settled = false;
+  void promise.then(
+    () => (settled = true),
+    () => (settled = true)
+  );
+  await sleep(ms);
+  return !settled;
+}
+
+describe("review gaps of stage 07 (TG1 to TG4)", () => {
+  test("TG1: removing the provider of org A leaves org B's row, link, SSO session and requirement", async () => {
+    const a = await seedOrg();
+    const b = await seedOrg();
+    expect(await setFor(a, await configOf(fakeA))).toEqual({ kind: "new" });
+    expect(await setFor(b, await configOf(fakeB))).toEqual({ kind: "new" });
+    await linkAnn(b);
+    await setRequired(b.orgId, true);
+
+    expect(await removeSsoProvider(db, { orgId: a.orgId }, { actor: "cli", now: NOW })).toEqual({
+      kind: "removed",
+      linksRemoved: 0,
+      sessionsEnded: 0,
+    });
+    expect(await providerRows(a.orgId)).toHaveLength(0);
+    const rows = await providerRows(b.orgId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ provider_id: b.orgId, issuer: fakeB.issuer, domain: b.domain });
+    expect(await annState(b)).toEqual({ links: 1, sso: 1, password: 1 });
+    expect(await requiredOf(b.orgId)).toBe(true);
+    expect(await auditRows(b.orgId, auditEvents.ssoProviderRemoved)).toHaveLength(0);
+  });
+
+  test("TG2: the jwks and userinfo hosts of a discovery document get the DNS check", async () => {
+    let origin = "";
+    const server = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      fetch: (req) => {
+        if (new URL(req.url).pathname !== "/.well-known/openid-configuration")
+          return new Response("no", { status: 404 });
+        return Response.json({
+          issuer: origin,
+          authorization_endpoint: `${origin}/authorize`,
+          token_endpoint: `${origin}/token`,
+          jwks_uri: "https://keys.x.test/jwks",
+          userinfo_endpoint: "https://ui.x.test/userinfo",
+        });
+      },
+    });
+    origin = `http://127.0.0.1:${server.port}`;
+    try {
+      const lookupFor = (privateHost: string) => async (host: string) => [
+        { address: host === privateHost ? "10.0.0.1" : "93.184.215.14", family: 4 },
+      ];
+      const options = { allowOrigins: [origin], timeoutMs: 2000 };
+      for (const host of ["keys.x.test", "ui.x.test"]) {
+        expect(await discoverProviderConfig(origin, { ...options, lookup: lookupFor(host) })).toEqual({
+          kind: "failed",
+          code: "discovery_private_host",
+        });
+      }
+      expect((await discoverProviderConfig(origin, { ...options, lookup: lookupFor("none.x.test") })).kind).toBe("ok");
+    } finally {
+      void server.stop(true);
+    }
+  });
+
+  test("TG3: a domain race on a new row: the loser gets domain_taken, no row and no audit row", async () => {
+    const a = await seedOrg();
+    const b = await seedOrg();
+    const domain = freshDomain();
+    const configA = await configOf(fakeA);
+    const configB = await configOf(fakeB);
+
+    const loser = await db.transaction().execute(async (trx) => {
+      expect(await setSsoProvider(trx, { orgId: a.orgId }, { ...configA, domain, actor: "cli", now: NOW })).toEqual({
+        kind: "new",
+      });
+      const pending = setFor(b, configB, domain);
+      expect(await stillPending(pending, 500)).toBe(true);
+      return { pending };
+    });
+    expect(await loser.pending).toEqual({ kind: "domain_taken" });
+    expect(await providerRows(b.orgId)).toHaveLength(0);
+    expect(await auditRows(b.orgId, auditEvents.ssoProviderSet)).toHaveLength(0);
+    expect((await providerRows(a.orgId))[0]?.domain).toBe(domain);
+  });
+
+  test("TG3a: a domain race on an existing row: the loser gets domain_taken and keeps its row", async () => {
+    const a = await seedOrg();
+    const b = await seedOrg();
+    const domain = freshDomain();
+    const configA = await configOf(fakeA);
+    const configB = await configOf(fakeB);
+    expect(await setFor(b, configB)).toEqual({ kind: "new" });
+
+    const loser = await db.transaction().execute(async (trx) => {
+      expect(await setSsoProvider(trx, { orgId: a.orgId }, { ...configA, domain, actor: "cli", now: NOW })).toEqual({
+        kind: "new",
+      });
+      const pending = setFor(b, configB, domain);
+      expect(await stillPending(pending, 500)).toBe(true);
+      return { pending };
+    });
+    expect(await loser.pending).toEqual({ kind: "domain_taken" });
+    const rows = await providerRows(b.orgId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.domain).toBe(b.domain);
+    expect(await auditRows(b.orgId, auditEvents.ssoProviderSet)).toHaveLength(1);
+  });
+
+  test("TG4: a removal waits for a callback in flight, then ends the link and the session it made", async () => {
+    const org = await seedOrg();
+    expect(await setFor(org, await configOf(fakeA))).toEqual({ kind: "new" });
+
+    const held = await db.transaction().execute(async (trx) => {
+      // The plugin holds the provider row like this during a callback.
+      await sql`UPDATE sso_providers SET provider_id = provider_id WHERE org_id = ${org.orgId}::uuid`.execute(trx);
+      const removal = removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW });
+      expect(await stillPending(removal, 500)).toBe(true);
+      await sql`INSERT INTO auth_accounts (account_id, provider_id, user_id) VALUES (${`sub-${org.userId}`}, ${org.orgId}, ${org.userId}::uuid)`.execute(
+        trx
+      );
+      await sql`INSERT INTO auth_sessions (token, user_id, expires_at, sign_in_method, sso_started_at)
+        VALUES (${randomBytes(16).toString("hex")}, ${org.userId}::uuid, now() + interval '1 hour', 'sso', now())`.execute(
+        trx
+      );
+      return { removal };
+    });
+    expect(await held.removal).toEqual({ kind: "removed", linksRemoved: 1, sessionsEnded: 1 });
+    expect(await providerRows(org.orgId)).toHaveLength(0);
+    expect((await annState(org)).links).toBe(0);
+  });
+});
