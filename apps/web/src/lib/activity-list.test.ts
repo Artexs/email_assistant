@@ -37,6 +37,7 @@ function item(n: string, minute: number): ActivityItem {
     undoPending: false,
     feedback: null,
     delegation: null,
+    suspicious: [],
   };
 }
 

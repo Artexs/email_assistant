@@ -22,6 +22,7 @@ export {
 } from "./memberships";
 export {
   getUserAuthProfile,
+  hasPasswordCredential,
   insertSsoUserOnce,
   insertUser,
   setUserLocale,
@@ -33,6 +34,7 @@ export { getOrgFeature, listOrgFeatureRows, listOrgFeatureRowsOfAll, upsertOrgFe
 export {
   getSsoLinkUserId,
   getSsoProviderByProviderId,
+  existsProvedSsoProviderWithFlagOn,
   getUserIdByEmail,
   hasOtherSsoAccount,
   isPasswordSignInRefused,

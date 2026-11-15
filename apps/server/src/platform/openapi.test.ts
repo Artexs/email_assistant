@@ -71,7 +71,8 @@ describe("GET /api/openapi.json", () => {
       },
     });
     const doc = (await (await app.request("/api/openapi.json")).json()) as Doc;
-    expect(Object.keys(doc.paths)).toEqual(["/api/shown"]);
+    // The public sign-in route (F119 stage 11) is in the file; the operator route is not.
+    expect(Object.keys(doc.paths).sort()).toEqual(["/api/shown", "/api/sign-in-options"]);
     expect(Object.keys(doc.paths).filter((path) => path.startsWith("/api/operator"))).toEqual([]);
   });
 

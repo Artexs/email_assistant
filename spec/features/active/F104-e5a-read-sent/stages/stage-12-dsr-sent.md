@@ -46,3 +46,7 @@ Added by refresh 1: F106 landed first, so this ticket adds the sent columns (E5 
 ## Done when
 
 Steps 1–2 done; the Proof passes (`/tmp/f104-s12`).
+
+## Carry-over (from the stage 07 review)
+
+After retention (`clearSentBodies`) a kept `stored` sent row has `body_text` null with `content = 'stored'`. The export of such a row shows `body_text: null`, and the erase of it (other parties remain) must expect and handle null, not assume a text to replace with `[removed]`. Tests for the erase and the export need a case with a retention-cleared row (`review-7.md`).

@@ -368,3 +368,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the stage rule has no clean answer for an integer count against a mean; the holdout rule 4 has its own injection bar (at least 29 of 31) and a whitelist rule.
 - Undo: choose "none" and skip stage 11 (v2 stays).
 - Source: `evals/results/2026-11-15-f109-v3-dev-summary.md`, `spec/features/active/F109-e3b-improve/stages/stage-09-*.md`, review of job `2026-11-15-f109-review-s09-opus-v3-dev-expe-e7219c3c`.
+
+### 2026-11-15 · No Telegram consent-version bump for the suspicious-mail warning line (F109) · scope · new
+- Choice: the warning line in the urgent notice and the digest does not bump `TELEGRAM_CONSENT_VERSION`. Rule applied: bump when a new kind of mail-derived data (address, name, domain, subject, body, attachment name, link host) reaches Telegram. Do not bump for fixed phrases that our code picks from its own rule codes. A stage that sends attachment names or link hosts (F109 stage 06) does need a bump.
+- Why: the line holds only fixed phrases for enum codes (DB CHECK, view schema and text map all limit them). No sender, domain or subject can reach it.
+- Undo: bump the version in `packages/core` and the consent text, and re-ask consent; one stage of work.
+- Source: review of job `2026-11-15-f109-review-s04-opus-polish-warn-5a6f80d7` (N2), `docs/code-patterns.md` section "The consent version".

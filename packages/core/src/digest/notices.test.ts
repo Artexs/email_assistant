@@ -68,6 +68,30 @@ describe("renderUrgentNotice", () => {
     ).toBe("🔴 Urgent mail · 📁 Oferty · 🧪 test");
   });
 
+  test("prints the warning line after the AI line, in both languages", () => {
+    const suspicious = ["lookalike_domain", "risky_attachment"] as const;
+    const en = renderUrgentNotice({ ...urgent, suspicious }, textTables.en).text.split("\n");
+    expect(en[3]).toBe("💬 The server is down.");
+    expect(en[4]).toBe("⚠ Suspicious: look-alike domain, risky attachment");
+    expect(en[5]).toBe("Received 07:42");
+    const pl = renderUrgentNotice({ ...urgent, suspicious }, textTables.pl).text.split("\n");
+    expect(pl[4]).toBe("⚠ Podejrzana wiadomość: domena podobna do znanej, ryzykowny załącznik");
+  });
+
+  test("lists the reasons in the order of the rules, whatever the order of the view", () => {
+    const text = renderUrgentNotice({ ...urgent, suspicious: ["risky_attachment", "auth_fail"] }, textTables.en).text;
+    expect(text).toContain("⚠ Suspicious: sender check failed, risky attachment");
+  });
+
+  test("an old view, or an empty list, renders as before", () => {
+    const before = renderUrgentNotice(urgent, textTables.en);
+    expect(renderUrgentNotice({ ...urgent, suspicious: [] }, textTables.en)).toEqual(before);
+    expect(before.text).not.toContain("⚠");
+    expect(before.text).toBe(
+      "🔴 Urgent mail\nFrom: Ann <ann@firma.test>\nSubject: Server down\n💬 The server is down.\nReceived 07:42\n→ would flag"
+    );
+  });
+
   test("stays short for very long mail fields", () => {
     const long = "x".repeat(10_000);
     const message = renderUrgentNotice({ ...urgent, from: long, subject: long, aiText: long }, textTables.en);

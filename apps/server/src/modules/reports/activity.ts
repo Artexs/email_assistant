@@ -16,7 +16,7 @@ import { z } from "zod";
 import type { Db, TenantContext } from "../../platform/db";
 import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { listDelegateNames, listLatestDelegationsByEmailIds } from "../delegation";
-import { listActivityRows, listLatestFeedbackByEmailIds } from "../triage";
+import { listActivityRows, listLatestFeedbackByEmailIds, suspiciousReasonsToShow } from "../triage";
 
 const DAY_MS = 24 * 3_600_000;
 const KEY_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
@@ -60,7 +60,7 @@ export function decodeActivityCursor(text: string): ActivityCursor | null {
 }
 
 // One page of the activity list: the latest result of each mail with its actions, feedback and delegation.
-// A fixed number of queries per page (at most 7), whatever the number of rows.
+// A fixed number of queries per page (at most 9), whatever the number of rows.
 export async function listActivity(
   db: Db,
   ctx: TenantContext,
@@ -93,6 +93,7 @@ export async function listActivity(
   const tasks = delegationIds.length === 0 ? new Map<string, string>() : await listDraftTasks(db, ctx, delegationIds);
   const feedback = await listLatestFeedbackByEmailIds(db, ctx, ids);
   const delegations = await listLatestDelegationsByEmailIds(db, ctx, ids);
+  const suspicious = await suspiciousReasonsToShow(db, ctx, ids);
 
   const delegateIds = new Set<string>();
   for (const list of actions.values()) {
@@ -157,6 +158,7 @@ export async function listActivity(
               status: delegation.status,
               dueAt: delegation.due_at?.toISOString() ?? null,
             },
+      suspicious: suspicious.get(row.email_id) ?? [],
     };
   });
 

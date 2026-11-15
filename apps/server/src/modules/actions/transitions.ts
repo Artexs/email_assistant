@@ -31,6 +31,7 @@ export type ActionWriter =
   | "createPlanned"
   | "insertReverse"
   | "insertSendAgain"
+  | "insertEditedPair"
   | "markApplying"
   | "finishAction"
   | "releaseAction"
@@ -116,6 +117,9 @@ export const ACTION_ENTRIES: readonly ActionEntry[] = [
   },
   // "Send again" on a failed send: a new `approved` send row (key `<id>:again`) with `approved_at`.
   { status: "approved", types: ["send"], writer: "insertSendAgain", callers: ["approvals.ts"] },
+  // A panel edit: a new draft (`ready`) and a new send (`awaiting_approval`), each with `supersedes_action_id` and the key `<old id>:edit`.
+  { status: "ready", types: ["create_draft"], writer: "insertEditedPair", callers: ["edit.ts"] },
+  { status: "awaiting_approval", types: ["send"], writer: "insertEditedPair", callers: ["edit.ts"] },
 ];
 
 // --- Edges that callers use ------------------------------------------------------------------------------------
@@ -303,8 +307,16 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     to: "expired",
     types: ["send"],
     writer: "setExpired",
-    reasons: ["timeout", "draft_missing", "not_notified", "not_seen", "policy_changed", "delegation_closed"],
-    callers: ["expiry.ts"], // through `expireSend`: approvals.ts, drafts.ts, expire.ts, expiry.ts
+    reasons: [
+      "timeout",
+      "draft_missing",
+      "not_notified",
+      "not_seen",
+      "policy_changed",
+      "delegation_closed",
+      "superseded",
+    ],
+    callers: ["expiry.ts", "edit.ts"], // through `expireSend`: approvals.ts, drafts.ts, expire.ts, expiry.ts; `superseded`: edit.ts
   },
   {
     id: "E19",

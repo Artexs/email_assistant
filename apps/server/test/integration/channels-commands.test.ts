@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { format } from "node:util";
 
 import { textTables } from "@ea/core";
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { noDelegationHooks } from "../../src/modules/actions";
@@ -673,6 +674,29 @@ describe("commands of a suspended organization", () => {
       expect(await auditRows(trx, a.orgId, auditEvents.mailboxPaused)).toEqual([]);
       expect(await handlers.command(link, "help")).toEqual(helpMessage(link));
     });
+  });
+
+  test("a refused command and a refused tap each log one event with the organization id and the command name", async () => {
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]) => void lines.push(format(...args)));
+    try {
+      await withRollback(db, async (trx) => {
+        const { a, link } = await setup(trx);
+        await suspendOrg(trx, a.orgId);
+        const handlers = createUpdateHandlers(depsAt(trx, T, { operatorContact: CONTACT }));
+
+        await handlers.command(link, "digest");
+        await handlers.command(link, "help");
+        await handlers.callback(link, `ap:${randomUUID()}`);
+
+        expect(lines).toEqual([
+          `[channels] command_refused_suspended org_id=${a.orgId} command=digest`,
+          `[channels] tap_refused_suspended org_id=${a.orgId}`,
+        ]);
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   test("without a contact the text names the operator", async () => {

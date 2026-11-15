@@ -79,6 +79,15 @@ function parseAddressList(value: string | undefined): string[] {
   return [...new Set(items.filter((item) => item !== ""))];
 }
 
+// The providers of mailbox OAuth (F117). The mail module has the same union (`MailOAuthProvider`): `platform` does not import `modules`.
+export const mailOAuthProviderIds = ["microsoft", "google"] as const;
+export type MailOAuthProviderId = (typeof mailOAuthProviderIds)[number];
+
+const mailOAuthKeys = {
+  microsoft: ["MAIL_OAUTH_MICROSOFT_CLIENT_ID", "MAIL_OAUTH_MICROSOFT_CLIENT_SECRET"],
+  google: ["MAIL_OAUTH_GOOGLE_CLIENT_ID", "MAIL_OAUTH_GOOGLE_CLIENT_SECRET"],
+} as const;
+
 const baseSchema = z.object({
   DATABASE_URL: z.string().url(),
   PORT: z.coerce.number().int().positive().default(8080),
@@ -190,6 +199,11 @@ const baseSchema = z.object({
   AUTH_MAIL_FROM: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
   // on = a new password is checked against the Have I Been Pwned list; off = tests only.
   AUTH_PWNED_CHECK: z.preprocess(emptyAsUndefined, z.enum(["on", "off"]).default("on")),
+  // Mailbox OAuth apps (F117, D7). Each client id is set with its secret. Secrets: never print or log them.
+  MAIL_OAUTH_MICROSOFT_CLIENT_ID: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
+  MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
+  MAIL_OAUTH_GOOGLE_CLIENT_ID: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
+  MAIL_OAUTH_GOOGLE_CLIENT_SECRET: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   ...roleKeyShape,
 });
 
@@ -323,6 +337,21 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
           message: "AUTH_SMTP_HOST, AUTH_SMTP_USER, AUTH_SMTP_PASSWORD and AUTH_MAIL_FROM are set together",
         });
       }
+    }
+  }
+  // D7: both keys of a provider or none; a provider that is set needs WEB_BASE_URL (the redirect URI). A message never holds a value.
+  for (const provider of mailOAuthProviderIds) {
+    const [idKey, secretKey] = mailOAuthKeys[provider];
+    const idSet = config[idKey] !== undefined;
+    const secretSet = config[secretKey] !== undefined;
+    if (idSet !== secretSet) {
+      ctx.addIssue({
+        code: "custom",
+        path: [idSet ? secretKey : idKey],
+        message: `${idKey} and ${secretKey} are set together`,
+      });
+    } else if (idSet && config.WEB_BASE_URL === undefined) {
+      ctx.addIssue({ code: "custom", path: ["WEB_BASE_URL"], message: `needed by ${idKey}` });
     }
   }
   if (!parseList(config.WEB_TRUSTED_ORIGINS).every(isOrigin)) {
@@ -476,6 +505,22 @@ export function sendLimits(config: Config): SendLimits {
 /** `MAIL_TRUSTED_AUTHSERV_IDS`: lower case, unique, no empty entry. */
 export function mailTrustedAuthservIds(config: Config): string[] {
   return parseAddressList(config.MAIL_TRUSTED_AUTHSERV_IDS);
+}
+
+/** The OAuth app of a provider, or null while it is not configured: both keys and `WEB_BASE_URL` (the redirect URI). `clientSecret` is a secret: never print or log it. */
+export function mailOAuthApp(
+  config: Config,
+  provider: MailOAuthProviderId
+): { clientId: string; clientSecret: string; redirectUri: string } | null {
+  const [idKey, secretKey] = mailOAuthKeys[provider];
+  const clientId = config[idKey];
+  const clientSecret = config[secretKey];
+  if (clientId === undefined || clientSecret === undefined || config.WEB_BASE_URL === undefined) return null;
+  return { clientId, clientSecret, redirectUri: `${config.WEB_BASE_URL}/api/mailboxes/oauth/${provider}/callback` };
+}
+
+export function mailOAuthConfigured(config: Config, provider: MailOAuthProviderId): boolean {
+  return mailOAuthApp(config, provider) !== null;
 }
 
 /** The cron expression of the `mail.sync` job: every `MAIL_SYNC_EVERY_MIN` minutes. */

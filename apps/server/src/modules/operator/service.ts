@@ -19,6 +19,7 @@ import { lastDigestSentAt } from "../reports";
 import {
   featureStates,
   getOrgPlan,
+  getSsoState,
   listMemberships,
   listOrganizations,
   setOrgFeature,
@@ -108,7 +109,7 @@ export async function getOperatorOrg(
   const since = new Date(now.getTime() - DAY_MS);
   const plan = await getOrgPlan(db, ctx);
   if (!plan) return { kind: "not_found" };
-  const [mailboxes, sends, outbox, llm, flags, triage, digest, send, notice] = await Promise.all([
+  const [mailboxes, sends, outbox, llm, flags, triage, digest, send, notice, sso] = await Promise.all([
     listMailboxes(db, ctx),
     countFailedSendsSince(db, ctx, since),
     countFailedOutboxSince(db, ctx, since),
@@ -118,6 +119,7 @@ export async function getOperatorOrg(
     lastDigestSentAt(db, ctx),
     lastSendAppliedAt(db, ctx),
     lastOutboxSentAt(db, ctx),
+    getSsoState(db, ctx),
   ]);
   const synced = mailboxes.flatMap((mailbox) => (mailbox.last_synced_at ? [mailbox.last_synced_at.getTime()] : []));
   return {
@@ -142,6 +144,16 @@ export async function getOperatorOrg(
     failures24h: { sends, outbox },
     llmToday: llm,
     flags,
+    // PD-047: the domain, the proof, counts and two booleans. Never the issuer, the client id, a secret or a member id.
+    sso: sso
+      ? {
+          domain: sso.domain,
+          proof: sso.proof,
+          required: sso.required,
+          linkedMembers: sso.linkedMembers,
+          breakGlassReady: sso.breakGlassReady,
+        }
+      : null,
     at: now.toISOString(),
   };
 }

@@ -54,6 +54,7 @@ const urgentView: NoticeView<"urgent"> = {
   actions,
   delegateNames: { [id2]: "Anna Nowak" },
   stayFolder: "INBOX",
+  suspicious: ["link_mismatch"],
   now,
   timeZone,
 };
@@ -130,6 +131,7 @@ const cases: Case[] = [
           synthetic: false,
           folderTag: null,
           wouldDo: describeActions(actions, names, { stayFolder: "INBOX" }, texts),
+          suspicious: ["link_mismatch"],
           now,
           timeZone,
         },
@@ -437,6 +439,18 @@ describe("renderNotice", () => {
     ]);
     const without = renderNotice("send_result", { ...old, result: sent }, opts);
     expect(without.ok && without.message.buttons).toEqual([]);
+  });
+
+  test("an urgent view queued before F109 has no suspicious field and renders without a warning", () => {
+    const old: NoticeView<"urgent"> = { ...urgentView };
+    delete old.suspicious;
+    const encoded = encodeNoticeView("urgent", old);
+    expect("suspicious" in encoded).toBe(false);
+    const rendered = renderNotice("urgent", encoded, opts);
+    expect(rendered.ok && rendered.message.text).not.toContain("⚠");
+    const withField = renderNotice("urgent", encodeNoticeView("urgent", urgentView), opts);
+    expect(withField.ok && withField.message.text).toContain("⚠");
+    expect(noticeViewSchemas.urgent.safeParse({ ...encoded, suspicious: ["bogus"] }).success).toBe(false);
   });
 
   test("a renderer that throws gives ok: false", () => {

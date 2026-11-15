@@ -9,7 +9,7 @@ import { auditEvents, recordAudit } from "../audit";
 import { channelDocs } from "./api-docs";
 import { createLinkToken, unlinkUser } from "./linking";
 import { getChatLinkForUser } from "./repo";
-import { telegramErrorLabel } from "./telegram/errors";
+import { telegramErrorFields } from "./telegram/errors";
 
 const log = createLog("channels");
 
@@ -49,7 +49,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     try {
       username = await deps.botUsername();
     } catch (error) {
-      log.warn(`web: telegram getMe failed: ${telegramErrorLabel(error)}`);
+      log.warn("telegram_get_me_failed", { ...telegramErrorFields(error) });
       return c.json({ error: "telegram_unreachable" }, 502);
     }
     // The consent row and the token go together: no token without the row.
@@ -63,7 +63,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
       });
       return createLinkToken(trx, ctx, userId, now);
     });
-    log.info(`web: telegram link made for user ${userId}`);
+    log.info("telegram_link_made", { user_id: userId });
     c.header("Cache-Control", "no-store");
     const linkAnswer: TelegramLink = {
       url: `https://t.me/${username}?start=${token}`,
