@@ -16,7 +16,7 @@ import { insertUser } from "../../src/modules/tenancy/repo";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { createApp } from "../../src/platform/http";
-import { countMailboxes, onboardingDeps, webDeps } from "../../src/web";
+import { approvalsWaiting, countMailboxes, onboardingDeps, webDeps } from "../../src/web";
 
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
@@ -87,6 +87,7 @@ function appFor(
           now: () => new Date(),
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          approvalsWaiting: approvalsWaiting(db),
           operatorContact,
           sessions: async () => [],
           backupCodesLeft: noBackupCodes,
@@ -283,6 +284,7 @@ describe("real webDeps getSession", () => {
       {
         secrets: createSecretBox(randomBytes(32).toString("base64"), 1),
         actionsScope: { kind: "off" },
+        sendScope: { kind: "off" },
         botUsername: null,
       }
     );
