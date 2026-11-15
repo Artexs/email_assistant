@@ -70,6 +70,9 @@ const CANARY = {
   reason: `CANARY-REASON-${run}`,
   task: `CANARY-TASK-${run}`,
   imapError: `CANARY-IMAP-${run} canary-from-${run}@x.test`,
+  // A text-like `error.code` of an IMAP error: errorFields passes a string code on as `error_code`.
+  imapCode: `CANARY-CODE-${run}`,
+  messageIdLocal: `canary-${run}`,
   smtpReply: `550 CANARY-SMTP-${run}`,
   telegramDescription: `Bad Request: CANARY-TG-${run}`,
   llmErrorBody: `CANARY-LLMERR-${run}`,
@@ -188,7 +191,7 @@ describe("log canary", () => {
         mailFake.deliver(
           INBOX,
           {
-            messageId: `<canary-${run}@ea-seed.test>`,
+            messageId: `<${CANARY.messageIdLocal}@ea-seed.test>`,
             from: `${CANARY.senderName} <${CANARY.senderAddress}>`,
             to: [CANARY.mailboxAddress],
             subject: CANARY.subject,
@@ -200,7 +203,7 @@ describe("log canary", () => {
         let mode: "ok" | "soft" | "hard" | "auth" = "ok";
         const openProvider = async (_opts: ImapConnectOptions): Promise<FakeMailProvider> => {
           if (mode === "auth") throw new MailAuthError(CANARY.imapError);
-          if (mode === "hard") throw new Error(CANARY.imapError);
+          if (mode === "hard") throw Object.assign(new Error(CANARY.imapError), { code: CANARY.imapCode });
           if (mode === "soft") {
             const broken = createFakeMailProvider({ uidValidity: 7 });
             broken.failOn("folderStatus", new SoftError(CANARY.imapError));
