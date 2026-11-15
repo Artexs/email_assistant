@@ -60,3 +60,23 @@ export async function getUserIdByEmail(db: Db | Transaction<DB>, email: string):
   const row = await db.selectFrom("users").select("id").where("email", "=", email).executeTakeFirst();
   return row?.id;
 }
+
+// True when the user belongs to an organization with `sso_required` and is not its break-glass owner with TOTP on
+// (the user's own `two_factor_enabled`). One such organization is enough: a user in two organizations is refused.
+// No TenantContext: the user gives the rows; RLS shows every row inside `/api/auth/*` (like `isBreakGlassOwner`).
+// The flag `sso_sign_in` is not read: switching it off does not reopen passwords (only the operator does).
+export async function isPasswordSignInRefused(db: Db | Transaction<DB>, userId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("memberships")
+    .innerJoin("organizations", "organizations.id", "memberships.org_id")
+    .innerJoin("users", "users.id", "memberships.user_id")
+    .select("memberships.user_id")
+    .where("memberships.user_id", "=", userId)
+    .where("organizations.sso_required", "=", true)
+    .where((eb) =>
+      eb.not(eb.and([eb("memberships.break_glass", "=", true), eb("users.two_factor_enabled", "=", true)]))
+    )
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}

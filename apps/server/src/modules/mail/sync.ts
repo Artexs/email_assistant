@@ -621,7 +621,11 @@ function selectMode(folder: SyncFolderRow, status: FolderStatus): SyncResult["mo
 }
 
 // Mail of `folder` with INTERNALDATE at or after `since`. IMAP SINCE is by day, so filter again by the time.
-export async function fetchSince(provider: MailProvider, folder: string, since: Date): Promise<MessageMeta[]> {
+export async function fetchSince(
+  provider: Pick<MailProvider, "searchSinceIn" | "fetchByUidsIn">,
+  folder: string,
+  since: Date
+): Promise<MessageMeta[]> {
   // SINCE is a date in the server's time zone, but imapflow sends the UTC date: search one day earlier.
   const uids = await provider.searchSinceIn(folder, new Date(since.getTime() - DAY_MS));
   const metas: MessageMeta[] = [];
