@@ -5,7 +5,16 @@ import { t } from "../../i18n";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Skeleton } from "../ui/skeleton";
-import { navItems, ONBOARDING_ITEM, OPERATOR_ITEM, type NavItem, type NavKey } from "./nav-items";
+import {
+  approvalsBadge,
+  navItems,
+  ONBOARDING_ITEM,
+  OPERATOR_ITEM,
+  phoneOverflow,
+  phoneTabs,
+  type NavItem,
+  type NavKey,
+} from "./nav-items";
 import { UserMenu } from "./UserMenu";
 
 export interface NavMenuProps {
@@ -13,6 +22,8 @@ export interface NavMenuProps {
   onboardingOpen: boolean;
   operator: boolean;
   features: readonly string[];
+  // `me.approvalsWaiting`: the count on the badge of the approvals item.
+  approvalsWaiting: number;
   email: string | null;
   loading: boolean;
   onLogOut: () => void;
@@ -21,8 +32,33 @@ export interface NavMenuProps {
 // Fixed class names: Tailwind builds only the names that appear whole in the source.
 const TAB_COLUMNS: Record<number, string> = { 4: "grid-cols-4", 5: "grid-cols-5" };
 
-export function BottomTabs({ active, features }: { active: NavKey; features: readonly string[] }) {
-  const items = navItems(features);
+// The count of the approvals item: the number is for the eye, the text for a screen reader. Nothing at 0.
+function Badge({ item, count, className }: { item: NavItem; count: number; className: string }) {
+  const text = item.key === "approvals" ? approvalsBadge(count) : null;
+  if (text === null) return null;
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className={cn("rounded-full bg-primary px-1.5 text-[0.7rem] leading-4 text-primary-foreground", className)}
+      >
+        {text}
+      </span>
+      <span className="sr-only">{t("nav_approvals_badge", { n: text })}</span>
+    </>
+  );
+}
+
+export function BottomTabs({
+  active,
+  features,
+  approvalsWaiting,
+}: {
+  active: NavKey;
+  features: readonly string[];
+  approvalsWaiting: number;
+}) {
+  const items = phoneTabs(features);
   return (
     <nav
       aria-label={t("nav_main")}
@@ -41,7 +77,10 @@ export function BottomTabs({ active, features }: { active: NavKey; features: rea
             item.key === active ? "font-semibold text-foreground" : "text-muted-foreground"
           )}
         >
-          <item.icon className="size-5" aria-hidden="true" />
+          <span className="relative">
+            <item.icon className="size-5" aria-hidden="true" />
+            <Badge item={item} count={approvalsWaiting} className="absolute -top-1.5 left-3" />
+          </span>
           <span>{t(item.label)}</span>
         </a>
       ))}
@@ -49,7 +88,7 @@ export function BottomTabs({ active, features }: { active: NavKey; features: rea
   );
 }
 
-function SidebarLink({ item, active }: { item: NavItem; active: NavKey }) {
+function SidebarLink({ item, active, approvalsWaiting }: { item: NavItem; active: NavKey; approvalsWaiting: number }) {
   return (
     <a
       href={item.href}
@@ -61,11 +100,21 @@ function SidebarLink({ item, active }: { item: NavItem; active: NavKey }) {
     >
       <item.icon className="size-4" aria-hidden="true" />
       <span>{t(item.label)}</span>
+      <Badge item={item} count={approvalsWaiting} className="ml-auto" />
     </a>
   );
 }
 
-export function Sidebar({ active, onboardingOpen, operator, features, email, loading, onLogOut }: NavMenuProps) {
+export function Sidebar({
+  active,
+  onboardingOpen,
+  operator,
+  features,
+  approvalsWaiting,
+  email,
+  loading,
+  onLogOut,
+}: NavMenuProps) {
   const base = navItems(features);
   const tabs = onboardingOpen ? [ONBOARDING_ITEM, ...base] : base;
   const items = operator ? [...tabs, OPERATOR_ITEM] : tabs;
@@ -74,7 +123,7 @@ export function Sidebar({ active, onboardingOpen, operator, features, email, loa
       <p className="px-6 py-4 text-lg font-semibold">{t("brand")}</p>
       <nav aria-label={t("nav_main")} className="flex flex-1 flex-col gap-1 px-3">
         {items.map((item) => (
-          <SidebarLink key={item.key} item={item} active={active} />
+          <SidebarLink key={item.key} item={item} active={active} approvalsWaiting={approvalsWaiting} />
         ))}
       </nav>
       <div className="border-t p-3">
@@ -92,7 +141,17 @@ export function Sidebar({ active, onboardingOpen, operator, features, email, loa
   );
 }
 
-export function MenuSheet({ active, onboardingOpen, operator, email, loading, onLogOut }: NavMenuProps) {
+// On a phone the menu also holds the items that do not fit in the tab bar.
+export function MenuSheet({
+  active,
+  onboardingOpen,
+  operator,
+  features,
+  approvalsWaiting,
+  email,
+  loading,
+  onLogOut,
+}: NavMenuProps) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -106,8 +165,11 @@ export function MenuSheet({ active, onboardingOpen, operator, email, loading, on
           <SheetDescription className="sr-only">{t("nav_main")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-4 px-4 pb-4">
-          {onboardingOpen && <SidebarLink item={ONBOARDING_ITEM} active={active} />}
-          {operator && <SidebarLink item={OPERATOR_ITEM} active={active} />}
+          {onboardingOpen && <SidebarLink item={ONBOARDING_ITEM} active={active} approvalsWaiting={0} />}
+          {phoneOverflow(features).map((item) => (
+            <SidebarLink key={item.key} item={item} active={active} approvalsWaiting={approvalsWaiting} />
+          ))}
+          {operator && <SidebarLink item={OPERATOR_ITEM} active={active} approvalsWaiting={0} />}
           <div className="mt-auto flex flex-col gap-3">
             {email !== null ? (
               <p className="truncate text-sm" title={email}>
