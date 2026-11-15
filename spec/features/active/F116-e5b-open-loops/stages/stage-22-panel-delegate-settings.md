@@ -37,3 +37,7 @@ M2 (23), docs (24).
 ## Carry-over from stage 17 review
 
 - N4: the re-ask of linked users (Step 3) must treat an unlink as a withdrawal; N6: stages 11 and 18 may land before this stage: open_loops stays off until it lands (review-17.md).
+
+## Carry-over from stage 11 review
+
+- TG-4: the Playwright case S11 (loop closes while Edit is open) of review-11.md, if stage 21 did not add it.

@@ -31,3 +31,7 @@ The Delegate action on mail rows and the settings card (22).
 ## Carry-over from stage 08 review
 
 - Same as stage 20: `listLoops` shape (`now`, decoded cursor, encoded `next`) and the midnight edge between `listLoops` and `briefLoopsOf` (review-8.md N3).
+
+## Carry-over from stage 11 review
+
+- N5: a follow-up card refused by the 2,400 rule retries every run (limit 50 starves newer cards); TG-4: add the Playwright case S11 of review-11.md.

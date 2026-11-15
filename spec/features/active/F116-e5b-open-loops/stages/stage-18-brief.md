@@ -47,3 +47,7 @@ Buttons on these lines (19).
 ## Carry-over from stage 17 review
 
 - N5: the digest reads the gate per member through the choke point of stage 11 and passes loopConsent into buildDigestMessage; N4: count only consent rows newer than the last chat.unlinked row (review-17.md).
+
+## Carry-over from stage 11 review
+
+- N8: add the digest sender to the consent-gate source scan on purpose (review-11.md).
