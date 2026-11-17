@@ -36,3 +36,9 @@ The panel (21, 22).
 ## Carry-over from stage 08 review
 
 - `listLoops` takes `now` and a decoded `before: LoopCursor`; `due` is `due_at <= now`: pass the end-of-local-day instant as `now`. `briefLoopsOf` uses `< dayEnd`; the two differ at exactly midnight (review-8.md N3).
+
+## Carry-over from the stage 19 review
+
+- N3 and N4: pass the role into `briefKeyboard` and `delegable` and hide Draft, Drop, Reopen and 👥 for members; assign the ⌛ line to owners first (or show it to owners only). One decision for both.
+- N8: `endOfLocalDay` uses `localToInstant` for the next midnight; use `localInstants` (F110 stage 18).
+- N7, N9: notes only (see review-19.md).

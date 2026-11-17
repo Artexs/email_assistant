@@ -543,3 +543,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: with Pages on, the v0.2.0 tag push would publish a half-built public site.
 - Undo: `gh api -X POST repos/Artexs/email_assistant/pages -f build_type=workflow`.
 - Source: F112 `stages/stage-16-publication.md` § Step 1.
+
+### 2026-11-17 · F110 history check: failed model calls count against the $0.25 cap; the check stops after 5 failures in a row (F110) · money · new
+- Choice: a failed call counts at the cost of its tokens, or at a fixed estimate of 0.002 USD when the cost is unknown. After 5 failed calls in a row the check ends as `no_result`. Before, a failed call counted 0 and a broken prompt could spend more than the cap.
+- Why: the cap is a money limit (owner cap $1 per run); a failing prompt on 500 mails must not exceed it.
+- Undo: remove the estimate and the failure counter in `trust/history-classify.ts`.
+- Source: job `2026-11-17-f110-review-s07-opus-llm-on-hist-d8b9cd1e`, finding N1.
+
+### 2026-11-17 · F110 history check: under the synthetic LLM scope a check with 0 classified mails sends no "report ready" notice (F110) · user-visible · new
+- Choice: such a check ends `no_result` with no notice, so the one notice is saved for a real check.
+- Why: before, an empty check used up the single `trust_report_ready` notice, and a later real check queued none.
+- Undo: queue the notice for every first ended check, as in the worker's first version.
+- Source: job `2026-11-17-f110-review-s07-opus-llm-on-hist-d8b9cd1e`, finding N3.
