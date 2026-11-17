@@ -165,6 +165,36 @@ describe("2. a result of another model is not reused", () => {
     });
   });
 
+  test("a stored result of a VIP sender would not be moved; the same result of another sender would", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      const [vip, plain] = await seedMails(db, box, [{}, {}]);
+      await db
+        .insertInto("triage_results")
+        .values(
+          [vip, plain].map((emailId, index) => ({
+            org_id: box.orgId,
+            email_id: emailId as string,
+            category: "info",
+            confidence: 0.9,
+            reason_code: "stored",
+            model: MODEL,
+            prompt_version: RUNNING_KEY.promptVersion,
+            vip: index === 0,
+          }))
+        )
+        .execute();
+      const llm = fakeLlm(box);
+      await jobOf(db, box, { llm }).run();
+      expect(llm.calls).toHaveLength(0);
+      const items = await itemsOf(db, checkId);
+      expect(items.find((item) => item.email_id === vip)).toMatchObject({ source: "triage_result", would_move: false });
+      expect(items.find((item) => item.email_id === plain)).toMatchObject({
+        source: "triage_result",
+        would_move: true,
+      });
+    });
+  });
+
   test("a sender on the blocklist is spam from the rule with no call", async () => {
     await withClassifyBox(db, {}, async (box, checkId) => {
       await db
