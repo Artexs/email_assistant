@@ -11,7 +11,7 @@ import { Toaster } from "../ui/sonner";
 import { AuthErrorBanner } from "./AuthErrorBanner";
 import { useMe, MeProvider } from "./MeProvider";
 import { BottomTabs, MenuSheet, Sidebar } from "./Nav";
-import type { NavKey } from "./nav-items";
+import { pageTitle, type NavKey } from "./nav-items";
 import { PausedBanner } from "./PausedBanner";
 import { TermsDialog } from "./TermsDialog";
 import { TrialLine } from "./TrialLine";
@@ -46,6 +46,14 @@ function Frame({ active, title, children }: AppShellProps) {
     setLocale(resolveLocale(userLocale, navigator.language));
   }, [userLocale]);
 
+  // The Delegations page is "Open loops" while that flag is on; the shell knows the flags only after `me` came.
+  const locale = useLocale();
+  const features = me?.features ?? [];
+  const heading = pageTitle(active, title, features);
+  useEffect(() => {
+    document.title = `${t(heading)} · ${t("brand")}`;
+  }, [heading, locale]);
+
   if (error instanceof ApiError && error.code === "no_organization") {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-6">
@@ -59,7 +67,6 @@ function Frame({ active, title, children }: AppShellProps) {
   const email = me?.user.email ?? null;
   const onboardingOpen = me === null || !me.onboarding.done;
   const operator = me?.operator === true;
-  const features = me?.features ?? [];
   const approvalsWaiting = me?.approvalsWaiting ?? 0;
   const navProps = { active, onboardingOpen, operator, features, approvalsWaiting, email, loading, onLogOut };
 
@@ -88,7 +95,7 @@ function Frame({ active, title, children }: AppShellProps) {
       <Sidebar {...navProps} />
       <div className="flex min-w-0 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background px-4 py-3 lg:hidden">
-          <h1 className="text-lg font-semibold">{t(title)}</h1>
+          <h1 className="text-lg font-semibold">{t(heading)}</h1>
           <MenuSheet {...navProps} />
         </header>
         <AuthErrorBanner count={me?.mailboxesInAuthError ?? 0} />
@@ -103,7 +110,7 @@ function Frame({ active, title, children }: AppShellProps) {
           <WhatsNewSlot features={features} releases={RELEASES} userId={me.user.id} getStorage={browserStorage} />
         )}
         <main className="px-4 py-4 pb-24 lg:pb-8">
-          <h1 className="mb-4 hidden text-xl font-semibold lg:block">{t(title)}</h1>
+          <h1 className="mb-4 hidden text-xl font-semibold lg:block">{t(heading)}</h1>
           {content}
         </main>
       </div>

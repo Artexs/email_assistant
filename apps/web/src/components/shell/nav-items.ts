@@ -31,26 +31,45 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
+const OPEN_LOOPS_FLAG = "open_loops";
+
 // The order of the panel (F102 stages 12 and 18): Activity, Approvals, Delegations, Mailboxes, Settings, Rules, Stats.
-// An item with a `flag` shows only while the organization has that feature on (`/api/me` field `features`). The desktop sidebar shows all of them.
-const ORDER: { item: NavItem; flag: string | null }[] = [
-  { item: { key: "activity", href: "/activity", label: "nav_activity", icon: Activity }, flag: null },
-  { item: { key: "approvals", href: "/approvals", label: "nav_approvals", icon: FileCheck }, flag: "approvals_page" },
+// An item with flags shows only while the organization has one of them on (`/api/me` field `features`). The desktop sidebar shows all
+// of them. While the flag `open_loops` is on, the Delegations item is the "Open loops" page (F116 stage 21): same address, new label;
+// the flag alone also shows it (its tabs Waiting and Promised need no F102 flag).
+const ORDER: { item: NavItem; flags: readonly string[] | null }[] = [
+  { item: { key: "activity", href: "/activity", label: "nav_activity", icon: Activity }, flags: null },
+  {
+    item: { key: "approvals", href: "/approvals", label: "nav_approvals", icon: FileCheck },
+    flags: ["approvals_page"],
+  },
   {
     item: { key: "delegations", href: "/delegations", label: "nav_delegations", icon: Users },
-    flag: "delegation_pages",
+    flags: ["delegation_pages", OPEN_LOOPS_FLAG],
   },
-  { item: { key: "mailboxes", href: "/mailboxes", label: "nav_mailboxes", icon: Inbox }, flag: null },
-  { item: { key: "settings", href: "/settings", label: "nav_settings", icon: Settings }, flag: null },
-  { item: { key: "rules", href: "/rules", label: "nav_rules", icon: ListFilter }, flag: null },
-  { item: { key: "stats", href: "/stats", label: "nav_stats", icon: BarChart3 }, flag: "stats_page" },
+  { item: { key: "mailboxes", href: "/mailboxes", label: "nav_mailboxes", icon: Inbox }, flags: null },
+  { item: { key: "settings", href: "/settings", label: "nav_settings", icon: Settings }, flags: null },
+  { item: { key: "rules", href: "/rules", label: "nav_rules", icon: ListFilter }, flags: null },
+  { item: { key: "stats", href: "/stats", label: "nav_stats", icon: BarChart3 }, flags: ["stats_page"] },
 ];
 
 // The bottom tab bar of a phone holds at most this many items (its grid has 4 or 5 columns); the rest go to the menu.
 export const PHONE_TAB_LIMIT = 5;
 
+// The label of the Delegations item and the title of its page change with the flag `open_loops`.
+function labelFor(item: NavItem, features: readonly string[]): TextKey {
+  return item.key === "delegations" && features.includes(OPEN_LOOPS_FLAG) ? "nav_open_loops" : item.label;
+}
+
 export function navItems(features: readonly string[]): NavItem[] {
-  return ORDER.filter((entry) => entry.flag === null || features.includes(entry.flag)).map((entry) => entry.item);
+  return ORDER.filter((entry) => entry.flags === null || entry.flags.some((flag) => features.includes(flag))).map(
+    (entry) => ({ ...entry.item, label: labelFor(entry.item, features) })
+  );
+}
+
+// The heading of a page: the Delegations page is "Open loops" while the flag is on.
+export function pageTitle(active: NavKey, title: TextKey, features: readonly string[]): TextKey {
+  return active === "delegations" && features.includes(OPEN_LOOPS_FLAG) ? "title_open_loops" : title;
 }
 
 export function phoneTabs(features: readonly string[]): NavItem[] {

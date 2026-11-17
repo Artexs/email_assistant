@@ -1,17 +1,25 @@
 import { describe, expect, test } from "bun:test";
 
-import { approvalsBadge, navItems, phoneOverflow, phoneTabs, PHONE_TAB_LIMIT } from "../components/shell/nav-items";
+import {
+  approvalsBadge,
+  navItems,
+  pageTitle,
+  phoneOverflow,
+  phoneTabs,
+  PHONE_TAB_LIMIT,
+} from "../components/shell/nav-items";
 
 const keys = (items: { key: string }[]) => items.map((item) => item.key);
 
 describe("navItems", () => {
-  // T1: the order and the 5-tab limit for each combination of `approvals_page`, `delegation_pages` and `stats_page`.
+  // T1: the order and the 5-tab limit for each combination of `approvals_page`, `delegation_pages`, `stats_page` and `open_loops`.
   const base = ["activity", "mailboxes", "settings", "rules"];
-  const flags = ["approvals_page", "delegation_pages", "stats_page"] as const;
+  const flags = ["approvals_page", "delegation_pages", "stats_page", "open_loops"] as const;
   const expectedAll = (features: readonly string[]): string[] => [
     "activity",
     ...(features.includes("approvals_page") ? ["approvals"] : []),
-    ...(features.includes("delegation_pages") ? ["delegations"] : []),
+    // The F102 flag or the flag of the open loops shows the item.
+    ...(features.includes("delegation_pages") || features.includes("open_loops") ? ["delegations"] : []),
     "mailboxes",
     "settings",
     "rules",
@@ -44,13 +52,37 @@ describe("navItems", () => {
     expect(keys(phoneOverflow([...flags]))).toEqual(["rules", "stats"]);
   });
 
+  // T3: the label of the Delegations item with the flag open_loops on and off.
+  test("the Delegations item is Open loops while the flag open_loops is on, and Delegations otherwise", () => {
+    const label = (features: string[]) => navItems(features).find((item) => item.key === "delegations")?.label;
+    expect(label(["delegation_pages"])).toBe("nav_delegations");
+    expect(label(["delegation_pages", "open_loops"])).toBe("nav_open_loops");
+    expect(label(["open_loops"])).toBe("nav_open_loops");
+    expect(label([])).toBeUndefined();
+    // The address stays the F102 page, and no other item changes its label.
+    expect(navItems(["delegation_pages", "open_loops"]).find((item) => item.key === "delegations")?.href).toBe(
+      "/delegations"
+    );
+    expect(navItems(["open_loops"]).map((item) => item.label)).not.toContain("nav_delegations");
+    expect(navItems(["delegation_pages"]).map((item) => item.label)).not.toContain("nav_open_loops");
+  });
+
   test("another feature adds nothing", () => {
     expect(navItems(["security_log"])).toHaveLength(4);
   });
 
   test("each item links to its own page", () => {
-    for (const item of navItems(["stats_page", "approvals_page", "delegation_pages"]))
+    for (const item of navItems(["stats_page", "approvals_page", "delegation_pages", "open_loops"]))
       expect(item.href).toBe(`/${item.key}`);
+  });
+});
+
+describe("pageTitle", () => {
+  test("only the Delegations page changes its title, and only with the flag open_loops", () => {
+    expect(pageTitle("delegations", "title_delegations", [])).toBe("title_delegations");
+    expect(pageTitle("delegations", "title_delegations", ["delegation_pages"])).toBe("title_delegations");
+    expect(pageTitle("delegations", "title_delegations", ["open_loops"])).toBe("title_open_loops");
+    expect(pageTitle("approvals", "title_approvals", ["open_loops"])).toBe("title_approvals");
   });
 });
 
