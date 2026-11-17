@@ -63,3 +63,7 @@ Part of [`../plan.md`](../plan.md). Decisions P2, P5, D5, D9, E2. Needs stage 05
 - Mode name: the terms say "tryb asystenta" (`mb_mode_assist`), the privacy text "tryb asysty": align them.
 - The DPA has no section on sub-processor duties, DPIA help or proof of compliance: decide whether to add them.
 - Three stage 04 guards were not removed-and-tested: the "no table on the terms" test, the privacy-link test and the pl `klient` test.
+
+## Carry-over from stage 05
+
+- Weak claims (notes/2026-11-17-f107-s05-internal-papers-sources.md): the 72 hours, UODO, Art. 34, the roles of controller and processor, the 24-hour target. Verify each.
