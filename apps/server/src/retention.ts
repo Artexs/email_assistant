@@ -13,6 +13,7 @@ import {
   deleteOldOAuthStates,
   PENDING_BODY_DAYS,
 } from "./modules/mail";
+import { clearReplyTexts } from "./modules/replies";
 import { listOrganizations } from "./modules/tenancy";
 import { clearTriageTexts } from "./modules/triage";
 import { deleteExpiredVerifications } from "./platform/auth";
@@ -45,6 +46,7 @@ export interface RetentionCounts {
   tasks: number;
   outbox: number;
   loops: number;
+  replyTexts: number;
   tokens: number;
 }
 
@@ -60,6 +62,7 @@ export interface Clearers {
   clearDelegationTasks: typeof clearDelegationTasks;
   clearOutboxTexts: typeof clearOutboxTexts;
   clearLoopTexts: typeof clearLoopTexts;
+  clearReplyTexts: typeof clearReplyTexts;
   deleteOldLinkTokens: typeof deleteOldLinkTokens;
   deleteOldOAuthStates: typeof deleteOldOAuthStates;
   deleteExpiredVerifications: typeof deleteExpiredVerifications;
@@ -96,6 +99,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     clearDelegationTasks,
     clearOutboxTexts,
     clearLoopTexts,
+    clearReplyTexts,
     deleteOldLinkTokens,
     deleteOldOAuthStates,
     deleteExpiredVerifications,
@@ -123,6 +127,8 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     const outbox = await clearers.clearOutboxTexts(db, ctx, { before: textsBefore });
     // The loop texts go 90 days after the loop closed; an open loop keeps them.
     const loops = await clearers.clearLoopTexts(db, ctx, { before: textsBefore, now });
+    // The reply instruction and the sample text go after the text period (not the organization's), counted from `created_at`.
+    const replyTexts = await clearers.clearReplyTexts(db, ctx, { before: textsBefore, now });
     // The `tokens` count holds the link tokens and the OAuth sign-in states.
     const tokens =
       (await clearers.deleteOldLinkTokens(db, ctx, { before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS) })) +
@@ -139,6 +145,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
       tasks,
       outbox,
       loops,
+      replyTexts,
       tokens,
     };
     if (sumOf(counts) > 0) {
@@ -155,6 +162,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
         task_rows: tasks,
         outbox_rows: outbox,
         loop_rows: loops,
+        reply_text_rows: replyTexts,
         token_rows: tokens,
       });
     }

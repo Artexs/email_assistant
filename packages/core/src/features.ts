@@ -170,6 +170,12 @@ export const featureFlags = {
     epic: "E4-B",
     removeBy: "2027-03-01",
   },
+  reply_drafts: {
+    default: false,
+    description: "Reply drafts: the assistant writes a reply for mail that needs one and asks you to approve it.",
+    epic: "E6a",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

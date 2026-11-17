@@ -13,7 +13,7 @@ export interface SettingsViewDeps {
   getSentSync(ctx: TenantContext, mailboxId: string): Promise<SettingsWebView["sentSync"]>;
 }
 
-// Five reads, no write. The switch `auto_follow_up` is in the list only while the flag `open_loops` is on. Throws `SettingsNotFoundError` when the mailbox has no settings row.
+// Five reads, no write. The switch `auto_follow_up` is in the list only while the flag `open_loops` is on, and `reply_drafts` only while the flag `reply_drafts` is on. Throws `SettingsNotFoundError` when the mailbox has no settings row.
 export async function buildSettingsView(
   deps: SettingsViewDeps,
   ctx: TenantContext,
@@ -23,12 +23,17 @@ export async function buildSettingsView(
   const gates = await deps.goNoGo(ctx, mailboxId, deps.settings.now());
   const syncFolders = await deps.listSyncFolders(ctx, mailboxId);
   const sentSync = await deps.getSentSync(ctx, mailboxId);
-  const { auto_follow_up: autoFollowUp, ...toolSwitches } = view.toolSwitches;
+  const { auto_follow_up: autoFollowUp, reply_drafts: replyDrafts, ...toolSwitches } = view.toolSwitches;
   const loopsOn = await isFeatureOn(deps.settings.db, ctx, "open_loops");
+  const repliesOn = await isFeatureOn(deps.settings.db, ctx, "reply_drafts");
   return {
     mailboxId,
     mode: view.mode,
-    toolSwitches: loopsOn ? { ...toolSwitches, auto_follow_up: autoFollowUp } : toolSwitches,
+    toolSwitches: {
+      ...toolSwitches,
+      ...(loopsOn ? { auto_follow_up: autoFollowUp } : {}),
+      ...(repliesOn ? { reply_drafts: replyDrafts } : {}),
+    },
     movesSupported: view.movesSupported,
     categories: barCategories.map((category) => ({
       category,
