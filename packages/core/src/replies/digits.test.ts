@@ -192,14 +192,14 @@ describe("the digit budget: known numbers (typed by the user, or of the quoted m
     expect(failuresOf(say("faktura 2026110100001"), ["faktura 2026110100001"])).toEqual([]);
   });
 
-  test("quoted mail: a number of 9 to 26 digits is known; a longer one, a number of less than 9 digits in groups, and an IBAN are not", () => {
+  test("quoted mail: a number of 9 to 26 digits is known; a longer one, a number of less than 9 digits in groups, and an IBAN written with its country letters are not", () => {
     const mail = ["Proszę o odpowiedź w sprawie zamówienia 123456789012 oraz 98765432101. Konto: 4111 1111 1111 1111."];
     expect(failuresOf(say("zamówienie 123456789012"), [], mail)).toEqual([]);
     expect(failuresOf(say("zamówienie 98765432101"), [], mail)).toEqual([]);
     expect(failuresOf(say("zamówienie 123456789012"))).toEqual(["account_number"]);
     // The card of the mail, as a whole: the user answers that mail and approves the draft.
     expect(failuresOf(say("konto 4111 1111 1111 1111"), [], mail)).toEqual([]);
-    // A number of more than 26 digits, and an IBAN of the mail, are never known.
+    // A number of more than 26 digits is never known; an IBAN of the mail is not known in its IBAN form (country letters).
     const long = ["konto 1234567890123 oraz NL91 ABNA 0417 1643 00 oraz 1234 5678 9012 3456 7890 1234 5678"];
     expect(failuresOf(say("konto 1234567890123"), [], long)).toEqual([]);
     expect(failuresOf(say("konto 1234 5678 9012 3456 7890 1234 5678"), [], long)).toEqual(["account_number"]);
@@ -834,7 +834,7 @@ describe("pins: the IBAN scan", () => {
     expect(ibansOf("pln NL / 91 / ABNA / 0417 / 1643 / 00")).toEqual(["NL91ABNA0417164300"]);
   });
 
-  test("a typed IBAN is allowed in the body, in any form; the same IBAN in the mail is not", () => {
+  test("a typed IBAN is allowed in the body, in any form; the same IBAN with its country letters in the mail is not", () => {
     expect(failuresOf(say("konto NL 91 ABNA 0417 1643 00"), ["Konto NL91ABNA0417164300"])).toEqual([]);
     expect(failuresOf(say("konto NL 91 ABNA 0417 1643 00"), [], ["Konto NL91ABNA0417164300"])).toEqual([
       "account_number",
@@ -955,5 +955,43 @@ describe("the long sequence: 12 digits or more that nobody typed (owner answer, 
     // The groups of a mail number joined by a dot: the last group is added to the number, not put in its place.
     expect(failuresOf(say("sprawa 1234 5678 9012"), [], ["nr 1234.5678.9012"])).toEqual([]);
     expect(failuresOf(say("sprawa 5678 9012"), [], ["nr 1234.5678.9012"])).toEqual([]);
+  });
+
+  test("a card or a 12-digit number with a group that has the shape of a year fails (it is no date)", () => {
+    const year = ["2024", "1999", "2100", "1900", "2199"];
+    for (const group of year) {
+      for (const body of [
+        `9071 ${group} 1111 1111`,
+        `${group} 0337 1901 4893`,
+        `9071 0337 ${group} 4893`,
+        `9071 0337 1901 ${group}`,
+        `9071-${group}-1111-1111`,
+        `9071-0337-${group}-4893`,
+        `9071 ${group} 1111`,
+        `${group} 0337 4893`,
+        `9071 0337 ${group}`,
+        `9071-${group}-4893`,
+        `9071.${group}.4893`,
+      ]) {
+        expect({ body, failures: failuresOf(say(`karta ${body}`)) }).toEqual({ body, failures: ["account_number"] });
+      }
+    }
+  });
+
+  test("a year of a date still ends the sequence: a date range of 16 digits and a number with a date in it", () => {
+    expect(failuresOf(say("kod 15.11.2026-30.11.2026"))).toEqual([]);
+    expect(failuresOf(say("kod 4111 15.11.2026 4111"))).toEqual([]);
+    expect(failuresOf(say("kod 2024 oraz 1999 oraz 2100"))).toEqual([]);
+  });
+
+  test("a PL IBAN of the mail repeated as the domestic number (no country letters) passes, by design", () => {
+    const mail = ["Proszę o wpłatę na PL61 1090 1014 0000 0712 1981 2874."];
+    // The IBAN form is never known: its letters make it an IBAN that nobody typed.
+    expect(failuresOf(say("konto PL61 1090 1014 0000 0712 1981 2874"), [], mail)).toEqual(["account_number"]);
+    // The same account as the 26 digits of the domestic form is a number of the mail: the user answers that mail.
+    expect(failuresOf(say("konto 61 1090 1014 0000 0712 1981 2874"), [], mail)).toEqual([]);
+    expect(failuresOf(say("konto 61109010140000071219812874"), [], mail)).toEqual([]);
+    // Another number is not.
+    expect(failuresOf(say("konto 61 1090 1014 0000 0712 1981 2875"), [], mail)).toEqual(["account_number"]);
   });
 });

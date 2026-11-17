@@ -354,7 +354,7 @@ function freeRuns(view: string, runs: readonly Run[], known: (digits: string) =>
 
 /**
  * The digits of the longest sequence of runs that follow each other with one `[ .-]` between them. A run that a date, a
- * time, money, an amount and the like explains ends a sequence; a run that the user typed or the mail holds stays in it,
+ * time, money, an amount and the like explains ends a sequence (a year-shaped group of 4 digits that is no part of a date does not); a run that the user typed or the mail holds stays in it,
  * so that a number that mixes typed groups and new groups is a new number.
  */
 function longestSequence(
@@ -363,10 +363,14 @@ function longestSequence(
   free: readonly boolean[],
   knownRun: readonly boolean[]
 ): string {
+  const dated = dateTimePlaces(view);
   let longest = "";
   let current = "";
   runs.forEach((run, i) => {
-    if (free[i] && !knownRun[i]) {
+    // A group that only has the shape of a year ("2024" in "9071 2024 1111 1111") does not end the sequence: a card
+    // number has no date in it. A year of a date ends it.
+    const yearShape = /^(19|20|21)\d{2}$/.test(run.digits) && !dated.has(run.start);
+    if (free[i] && !knownRun[i] && !yearShape) {
       current = "";
       return;
     }
