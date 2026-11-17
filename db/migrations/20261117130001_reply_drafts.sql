@@ -19,7 +19,7 @@ CREATE TABLE reply_requests (
   trigger text NOT NULL CHECK (trigger IN ('auto', 'tap', 'redraft', 'sample')),
   status text NOT NULL DEFAULT 'pending' CHECK (status IN (
     'pending', 'drafting', 'done', 'no_draft', 'failed', 'cancelled', 'superseded')),
-  reason_code text CHECK (char_length(reason_code) <= 40),
+  reason_code text CHECK (reason_code ~ '^[a-z0-9_]{1,40}$'),
   instruction text CHECK (char_length(instruction) <= 300),
   requested_by uuid REFERENCES users (id) ON DELETE SET NULL,
   previous_send_id uuid,
@@ -38,8 +38,10 @@ CREATE TABLE reply_requests (
 
 -- A mail gets at most one automatic request: a repeat of the scan cannot double it. Taps, redrafts and samples repeat.
 CREATE UNIQUE INDEX reply_requests_auto_key ON reply_requests (org_id, email_id) WHERE trigger = 'auto';
--- The claim of the drafter reads the open requests by due time.
-CREATE INDEX reply_requests_queue_idx ON reply_requests (org_id, status, next_attempt_at);
+-- The claim of the drafter reads the open requests of one mailbox by due time. Only `pending` and `drafting` rows are
+-- claimed, so the index holds only those (as `sent_analyses_pending_idx` does); finished rows do not grow it.
+CREATE INDEX reply_requests_queue_idx ON reply_requests (mailbox_id, next_attempt_at)
+  WHERE status IN ('pending', 'drafting');
 -- The foreign keys: a delete in the parent table finds its requests by index (the list by mail uses the first one too).
 CREATE INDEX reply_requests_email_idx ON reply_requests (org_id, email_id);
 CREATE INDEX reply_requests_mailbox_idx ON reply_requests (mailbox_id);

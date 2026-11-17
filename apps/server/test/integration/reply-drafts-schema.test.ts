@@ -85,7 +85,7 @@ describe("reply_requests: constraints", () => {
     });
   });
 
-  test("3: the instruction holds at most 300 characters, the sample body 2000, the reason code 40, attempts are not negative", async () => {
+  test("3: the instruction holds at most 300 characters, the sample body 2000, attempts are not negative", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       const emailId = await mailOf(trx, o);
@@ -104,14 +104,39 @@ describe("reply_requests: constraints", () => {
       );
       await expectSqlState(
         trx,
-        () => insertReplyRequest(trx, o, o.mailboxId, emailId, { ...tap, reason_code: "r".repeat(41) }),
-        CHECK
-      );
-      await expectSqlState(
-        trx,
         () => insertReplyRequest(trx, o, o.mailboxId, emailId, { ...tap, attempts: -1 }),
         CHECK
       );
+    });
+  });
+
+  test("3b: the reason code is a code: lower-case letters, digits and underscore, 1 to 40 characters; a text reason is refused", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const emailId = await mailOf(trx, o);
+      const tap = { trigger: "tap" };
+      for (const code of ["needs_facts", "llm_cap", "r".repeat(40), "a", "oauth_mailbox", "k3"]) {
+        await insertReplyRequest(trx, o, o.mailboxId, emailId, { ...tap, reason_code: code });
+      }
+      await insertReplyRequest(trx, o, o.mailboxId, emailId, { ...tap, reason_code: null });
+      const refused = [
+        "r".repeat(41),
+        "",
+        "The customer asks for a quote",
+        "needs facts",
+        "Needs_facts",
+        "needs-facts",
+        "needs_facts\n",
+        "żądanie",
+        "jan@firma.test",
+      ];
+      for (const code of refused) {
+        await expectSqlState(
+          trx,
+          () => insertReplyRequest(trx, o, o.mailboxId, emailId, { ...tap, reason_code: code }),
+          CHECK
+        );
+      }
     });
   });
 
@@ -240,6 +265,35 @@ describe("reply_requests and mailbox_profiles: keys", () => {
         .executeTakeFirstOrThrow();
       expect(profile.updated_by).toBeNull();
     });
+  });
+});
+
+describe("reply_requests: indexes", () => {
+  const indexes = async () => {
+    const { rows } = await sql<{ name: string; def: string }>`
+      select indexname as name, indexdef as def from pg_indexes
+      where schemaname = 'public' and tablename = 'reply_requests'`.execute(db);
+    return new Map(rows.map((row) => [row.name, row.def]));
+  };
+
+  test("5b: the queue index is partial: one mailbox by due time, only pending and drafting rows", async () => {
+    const def = (await indexes()).get("reply_requests_queue_idx");
+    expect(def).toBeDefined();
+    expect(def).toContain("USING btree (mailbox_id, next_attempt_at)");
+    expect(def).toMatch(/WHERE \(status = ANY \(ARRAY\['pending'::text, 'drafting'::text\]\)\)$/);
+    expect(def).not.toContain("org_id");
+  });
+
+  test("5c: the table has exactly these indexes (no org-level queue index, no other partial one)", async () => {
+    expect([...(await indexes()).keys()].sort()).toEqual([
+      "reply_requests_auto_key",
+      "reply_requests_email_idx",
+      "reply_requests_mailbox_idx",
+      "reply_requests_pkey",
+      "reply_requests_previous_send_idx",
+      "reply_requests_queue_idx",
+      "reply_requests_send_action_idx",
+    ]);
   });
 });
 
