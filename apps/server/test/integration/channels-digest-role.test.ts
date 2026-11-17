@@ -1,14 +1,17 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { detectNotices } from "../../src/modules/channels";
+import { noDelegationHooks } from "../../src/modules/actions";
+import { detectNotices, digestNowMessage, scheduleDigests, type CommandDeps } from "../../src/modules/channels";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { buildDigest } from "../../src/modules/reports";
-import { setOrgFeature } from "../../src/modules/tenancy";
+import { setDigestTimes, setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
 import { EIGHT, loopRow, ready, waitingLoop, type BriefOrg } from "./channels-digest-brief-fixtures";
+import { linkOf } from "./channels-loop-taps-fixtures";
 import { addMember, insertDelegate, insertTriaged, linkChat, randomChatId, renderedOf } from "./fixtures";
+import { consentRow, CURRENT_CONSENT } from "./follow-up-fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopRow } from "./loops-fixtures";
 
@@ -146,6 +149,69 @@ describe("the Delegate button of the urgent notice by role", () => {
         rows.find((row) => row.user_id === userId) as NonNullable<(typeof rows)[number]>;
       expect(prefixes(renderedOf(rowOf(org.userId)).buttons)).toContain("dg:");
       expect(prefixes(renderedOf(rowOf(memberId)).buttons)).not.toContain("dg:");
+    });
+  });
+});
+
+describe("the role reaches the digest through the job and the /digest command", () => {
+  test("the scheduled digest of a member has no owner button and no ⌛ line; the owner's has both", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, stale } = await world(trx);
+      const memberId = await addMember(trx, org.ctx.orgId);
+      await linkChat(trx, org.ctx, memberId, randomChatId(), new Date("2026-11-05T20:00:00Z"));
+      await setDigestTimes(trx, org.ctx, memberId, ["08:00"]);
+      // The member has the consent too: only the role keeps the owner buttons away.
+      await consentRow(trx, org.ctx.orgId, memberId, CURRENT_CONSENT, new Date("2026-11-05T21:00:00Z"));
+      await scheduleDigests({ db: trx, now: () => new Date(EIGHT), testMail: NO_TEST_SENDERS });
+      const rows = await trx
+        .selectFrom("outbox")
+        .select(["user_id", "kind", "view", "channel", "detail", "locale", "text", "buttons"])
+        .where("org_id", "=", org.ctx.orgId)
+        .where("kind", "=", "digest")
+        .execute();
+      expect(rows.map((row) => row.user_id).sort()).toEqual([org.userId, memberId].sort());
+      const rowOf = (userId: string) => renderedOf(rows.find((row) => row.user_id === userId) as (typeof rows)[number]);
+      expect(prefixes(rowOf(org.userId).buttons)).toEqual(expect.arrayContaining(["lf:", "lx:"]));
+      expect(prefixes(rowOf(memberId).buttons)).toEqual(expect.arrayContaining(["ll:", "lc:"]));
+      expect(prefixes(rowOf(memberId).buttons)).not.toContain("lf:");
+      expect(prefixes(rowOf(memberId).buttons)).not.toContain("lx:");
+      expect(rowOf(memberId).text).not.toContain("Old offer");
+      expect(rowOf(org.userId).text).toContain("Old offer");
+      expect((await loopRow(trx, stale)).stale_notified_at).not.toBeNull();
+    });
+  });
+
+  test("/digest of a member has no 👥, /digest of an owner has it", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const now = new Date(EIGHT);
+      await setOrgFeature(trx, org.ctx, { flag: "delegate_button", enabled: true, actor: "cli", now });
+      await insertDelegate(trx, org.ctx, { name: "Anna" });
+      await insertTriaged(trx, org.ctx, org.mailboxId, {
+        category: "needs_reply",
+        createdAt: new Date(now.getTime() - 3_600_000),
+        subject: "Budget question",
+        from: "boss@y.test",
+        fields: { language: "en" },
+      });
+      const deps: CommandDeps = {
+        db: trx,
+        now: () => now,
+        llmDailyCap: 300,
+        triageScope: "all",
+        actionsScope: { kind: "off" },
+        llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
+        hooks: noDelegationHooks,
+        uidplus: async () => true,
+        sendScope: { kind: "off" },
+        testMail: NO_TEST_SENDERS,
+        operatorContact: null,
+        syncEveryMin: 2,
+      };
+      const owner = await digestNowMessage(deps, linkOf(org));
+      const member = await digestNowMessage(deps, linkOf(org, { role: "assistant" }));
+      expect(prefixes(owner.buttons)).toContain("dg:");
+      expect(prefixes(member.buttons)).not.toContain("dg:");
     });
   });
 });

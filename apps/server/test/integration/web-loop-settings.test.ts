@@ -147,7 +147,7 @@ describe("T10 who may change it", () => {
 });
 
 describe("T9 the switch auto_follow_up", () => {
-  test("it is off by default; on, the chaser plans a waiting follow-up; off again, it plans none", async () => {
+  test("it is off by default and the chaser plans nothing; on, the chaser plans a waiting follow-up", async () => {
     const { app, mailboxId, world } = await setup();
     const loop = await db.transaction().execute((trx) => dueLoop(trx, world.a));
     const get = await call(app, "owner", "GET", `/settings/${mailboxId}`);

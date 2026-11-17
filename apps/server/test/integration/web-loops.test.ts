@@ -67,7 +67,12 @@ describe("T1 GET /loops", () => {
   test("the item holds the reason code, the later count and the texts of the row", async () => {
     const { app, make } = await setup();
     const waiting = await make({ later_count: 1, auto_reply_at: FRIDAY, follow_ups_sent: 1 });
-    const done = await make({ status: "closed", close_reason: "replied_subject", closed_at: FRIDAY });
+    const done = await make({
+      status: "closed",
+      close_reason: "replied_subject",
+      closed_at: FRIDAY,
+      auto_reply_at: FRIDAY,
+    });
     const delegated = await make({ kind: "delegated" });
     const promised = await make({ kind: "promised" });
     const cleared = await make({
@@ -128,6 +133,19 @@ describe("T1 GET /loops", () => {
     const planned = await call(app, "owner", "POST", `/loops/${loop.id}/follow-up`, {});
     const list = loopListSchema.parse((await call(app, "member", "GET", "/loops?kind=waiting")).body);
     expect(list.items[0]).toMatchObject({ followUpWaiting: true, sendId: planned.body.sendId });
+  });
+
+  test("a rejected follow-up does not wait: followUpWaiting is false and the send id is null", async () => {
+    const { app, make } = await setup();
+    const loop = await make();
+    const planned = await call(app, "owner", "POST", `/loops/${loop.id}/follow-up`, {});
+    await db
+      .updateTable("actions")
+      .set({ status: "rejected" })
+      .where("id", "=", planned.body.sendId as string)
+      .execute();
+    const list = loopListSchema.parse((await call(app, "member", "GET", "/loops?kind=waiting")).body);
+    expect(list.items[0]).toMatchObject({ followUpWaiting: false, sendId: null });
   });
 
   test("401 without a session; 400 for a missing kind, a bad filter, a bad limit and a bad cursor", async () => {
@@ -211,6 +229,19 @@ describe("T3 and T4 the follow-up", () => {
     expect(planned.map((row) => row.data)).toEqual(
       expect.arrayContaining([expect.objectContaining({ loop_id: loop.id, via: "web" })])
     );
+  });
+
+  test("in shadow mode the answer is would_draft (200) and nothing is planned", async () => {
+    const { world, app, make } = await setup();
+    await db
+      .updateTable("mailbox_settings")
+      .set({ mode: "shadow" })
+      .where("mailbox_id", "=", world.a.mailboxId)
+      .execute();
+    const loop = await make();
+    const res = await call(app, "owner", "POST", `/loops/${loop.id}/follow-up`, {});
+    expect([res.status, res.body]).toEqual([200, { status: "would_draft" }]);
+    expect(await actionsOfLoop(db, loop.id)).toEqual([]);
   });
 
   test("a promised loop has no follow-up: 409 not_allowed; an unknown id: 404", async () => {
@@ -326,6 +357,9 @@ describe("T6 POST /emails/:id/delegate", () => {
     const { world, app } = await setup();
     const member = await call(app, "member", "POST", `/emails/${world.emailId}/delegate`, body(world));
     expect([member.status, member.body]).toEqual([403, { error: "owner_only" }]);
+    // The role comes before any query: a member gets 403 also for an unknown mail.
+    const unknown = await call(app, "member", "POST", `/emails/${UNKNOWN}/delegate`, body(world));
+    expect([unknown.status, unknown.body]).toEqual([403, { error: "owner_only" }]);
     await db.updateTable("delegates").set({ active: false }).where("id", "=", world.delegateId).execute();
     const inactive = await call(app, "owner", "POST", `/emails/${world.emailId}/delegate`, body(world));
     expect([inactive.status, inactive.body]).toEqual([409, { error: "delegate_inactive" }]);
