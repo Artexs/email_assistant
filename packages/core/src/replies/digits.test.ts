@@ -931,6 +931,8 @@ describe("the long sequence: 12 digits or more that nobody typed (owner answer, 
     expect(failuresOf(say("konto 1234,5678,9012"))).toEqual([]);
     expect(failuresOf(say("konto 123456789012 oraz 12"))).toEqual(["account_number"]);
     expect(failuresOf(say("konto 12 oraz 123456789012 oraz 12"))).toEqual(["account_number"]);
+    // A typed run after the long one costs nothing: only the sequence rule can find the 12 digits.
+    expect(failuresOf(say("konto 123456789012 oraz 111"), ["tel 111"])).toEqual(["account_number"]);
   });
 
   test("a part of a typed number is typed, at the start, in the middle or at the end", () => {
