@@ -1,0 +1,159 @@
+---
+title: Start
+description: Przejdź jedną ścieżką od linku z zaproszeniem do pierwszego podsumowania w Telegramie.
+source: start
+sourceHash: "58727127b3be4109"
+capabilities:
+  - web-panel
+  - sync
+  - digest-and-notices
+  - tenancy-and-plans
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Ten samouczek uczy jednej ścieżki. Zaczynasz od linku z zaproszeniem. Kończysz na pierwszym podsumowaniu w Telegramie.
+Wykonuj kroki po kolei. Każdy krok mówi, co widzisz i co robi system.
+
+## 1. Co jest potrzebne
+
+- Link z zaproszeniem od Twojego operatora. Link działa jeden raz i przez 24 godziny.
+- Adres i hasło skrzynki, którą asystent ma czytać.
+- Telegram na telefonie.
+- Urządzenie, które otworzy panel. Panel otwiera się tylko przez sieć prywatną Twojego operatora. Zapytaj operatora, jak do niej dołączyć.
+
+Hasło Twojego konta jest nowe. Ustawisz je w kroku 2. To nie jest hasło do skrzynki.
+
+## 2. Ustaw hasło i zaakceptuj regulamin
+
+1. Otwórz link z zaproszeniem. Otworzy się strona `/setup`. Jej tytuł to **<UiText k="setup_title" />**.
+2. Wpisz swój adres e-mail w polu **<UiText k="email_label" />**.
+3. Wpisz nowe hasło dwa razy. Musi mieć od 12 do 128 znaków. Dobrze sprawdza się fraza z kilku słów.
+4. System porównuje hasło z listą haseł, które wyciekły. Wysyła tylko pierwsze 5 znaków skrótu hasła, nigdy samo hasło. Hasło, które wyciekło, jest odrzucane. Gdy sprawdzenie nie działa, system też odrzuca hasło. Spróbuj później.
+5. Zaznacz pole z tym tekstem. Linki pod polem otwierają trzy dokumenty w nowej karcie.
+
+   > <UiText k="setup_terms_label" />
+
+6. Naciśnij **<UiText k="set_password" />**.
+
+System zapisuje Twoje hasło i akceptację regulaminu. Potem próbuje Cię zalogować i otwiera panel.
+Link z zaproszeniem jest już użyty. Drugi raz nie działa. Jeśli wygasł, strona o tym mówi. Poproś operatora o nowy link.
+
+## 3. Zaloguj się
+
+Następnym razem otwórz panel i zaloguj się na stronie **<UiText k="login_title" />**. Użyj adresu e-mail i hasła.
+Po 10 błędnych hasłach w 15 minut system blokuje Twoje konto na 15 minut.
+
+Logowanie dwuetapowe jest opcjonalne. Gdy je włączysz, panel po haśle pyta o kod z aplikacji uwierzytelniającej.
+Włączasz je w **<UiText k="nav_settings" />**, w karcie Konto. Zobacz [Włącz logowanie dwuetapowe](../how-to/two-factor/).
+
+## 4. Przejdź listę startową
+
+Po pierwszym logowaniu panel otwiera stronę **<UiText k="nav_onboarding" />**. Pokazuje listę startową.
+Lista jest gotowa, gdy masz skrzynkę, połączony Telegram i wybrany tryb. Ostatnia pozycja jest opcjonalna. Połączenie z Telegramem liczy się tylko wtedy, gdy serwer ma bota Telegrama.
+Gdy lista jest gotowa, panel pokazuje ten tekst i przy każdym następnym logowaniu otwiera Aktywność:
+
+> <UiText k="ob_all_set" />
+
+### Połącz skrzynkę
+
+Skrzynkę może połączyć tylko właściciel. Inni członkowie widzą ten tekst:
+
+> <UiText k="ob_mailbox_assistant" />
+
+1. Naciśnij **<UiText k="mb_connect" />**.
+2. Wybierz swojego dostawcę. Lista zawiera **<UiText k="preset_interia" />**, **<UiText k="preset_gmail" />**, **<UiText k="preset_onet" />**, **<UiText k="preset_wp" />**, **<UiText k="preset_o2" />** i **<UiText k="preset_icloud" />**. Wybierz **<UiText k="preset_other" />**, aby samemu wpisać serwery IMAP i SMTP.
+3. Wpisz adres i hasło skrzynki. Gmail i iCloud wymagają hasła aplikacji.
+4. Przeczytaj informację w oknie.
+
+   > <UiText k="connect_consent" />
+
+5. Naciśnij **<UiText k="connect_submit" />**.
+
+System testuje logowanie IMAP i logowanie SMTP. To może trwać do minuty. Jeśli któreś logowanie się nie uda, system niczego nie zapisuje.
+Jeśli oba logowania działają, system zapisuje hasło w postaci zaszyfrowanej. Pierwsza synchronizacja rusza w ciągu kilku minut.
+Połączenie niczego nie zmienia w Twojej skrzynce.
+
+Plakietka **<UiText k="status_host_blocked" />** oznacza, że system odrzucił serwer poczty.
+Nazwa serwera wskazuje adres w sieci prywatnej lub lokalnej, więc system się nie łączy.
+System sprawdza nazwę ponownie przy każdej synchronizacji. Gdy nazwa jest poprawna, sam uruchamia skrzynkę.
+Jeśli plakietka zostaje, sprawdź wpisane nazwy serwerów. Jeśli są poprawne, powiedz o tym operatorowi.
+
+### Połącz Telegram
+
+Każdy członek łączy własny czat w Telegramie.
+
+1. W pozycji listy **<UiText k="ob_telegram_title" />** przeczytaj tekst **<UiText k="tg_consent_title" />**. Wymienia, co bot wysyła do Telegrama.
+2. Zaznacz pole z tym tekstem.
+
+   > <UiText k="tg_consent_label" />
+
+3. Naciśnij **<UiText k="tg_link" />**. Panel pokazuje link. Link działa jeden raz i przez 15 minut.
+4. Naciśnij **<UiText k="tg_open" />** na telefonie z Telegramem. Naciśnij Start w czacie z botem.
+
+Bot odpowiada `✅ Ten czat jest połączony. Tu przychodzą podsumowania i pilne komunikaty.` i pokazuje listę poleceń.
+Jeśli serwer nie ma bota Telegrama, panel pokazuje ten tekst, a lista nie wymaga tej pozycji:
+
+> <UiText k="tg_off" />
+
+### Wybierz tryb
+
+Nowa skrzynka zaczyna w trybie podglądu. Dla właściciela pozycja listy mówi:
+
+> <UiText k="ob_mode_open" />
+
+Naciśnij **<UiText k="ob_keep_shadow" />**, aby zostać w trybie podglądu. Skrzynkę możesz później przełączyć na tryb asystenta w Ustawieniach.
+
+### Dodaj reguły nadawców
+
+Ta pozycja jest opcjonalna. Na stronie **<UiText k="nav_rules" />** możesz dodać nadawców VIP, z listy dozwolonych i z listy blokowanych. Możesz to zrobić później.
+
+## 5. Tryb podglądu
+
+W trybie podglądu system czyta i sortuje Twoje wiadomości oraz zgłasza, co by zrobił. Niczego nie zmienia w Twojej skrzynce.
+Nie przenosi, nie oznacza flagą i nie oznacza jako przeczytanych. Nie tworzy szkiców i nie wysyła wiadomości.
+
+Wynik widzisz w dwóch miejscach:
+
+- Strona **<UiText k="nav_activity" />** pokazuje każdą wiadomość z jej kategorią i powodem. Wiersz o działaniu mówi, co system by zrobił.
+- Podsumowanie w Telegramie kończy się wierszem `Tryb podglądu: system niczego nie zmienił w Twojej skrzynce.`
+
+Podsumowanie pokazuje ten wiersz, gdy wymienia wiadomości, a każda skrzynka jest w trybie podglądu.
+
+## 6. Pierwsze podsumowanie
+
+Domyślnie system wysyła podsumowanie o 08:00 i o 16:00. Używa strefy czasowej Twojej organizacji.
+Godziny możesz zmienić w **<UiText k="nav_settings" />**, w karcie **<UiText k="digest_title" />**.
+Pierwsze podsumowanie przychodzi o najbliższej godzinie podsumowania po połączeniu Telegrama. Obejmuje 24 godziny przed połączeniem.
+
+Podsumowanie ma takie części:
+
+- Nagłówek, na przykład `📬 Podsumowanie 08:00`, i wiersz z liczbą wiadomości.
+- Jeden wiersz dla każdej skrzynki z czasem jej ostatniej synchronizacji.
+- Sekcję `WYMAGA DZIAŁANIA` z pilnymi wiadomościami, wiadomościami do odpowiedzi, wiadomościami dla wykonawcy i niepewnymi wiadomościami.
+- Sekcję `POZOSTAŁE` z wiadomościami informacyjnymi, powiadomieniami i spamem.
+
+Każda wiadomość ma numer, kategorię, nadawcę i temat. Ma też krótki wiersz od AI i wiersz, który zaczyna się od `→`.
+W trybie podglądu ten wiersz mówi, co system by zrobił, na przykład `zrobiłby – przenieść do AI/Info`.
+
+Pod podsumowaniem są dwa przyciski dla każdej wiadomości:
+
+- `✅ n` mówi asystentowi, że kategoria jest dobra.
+- `✏️ n` pokazuje inne kategorie. Wybierz właściwą.
+
+System zapisuje Twoje odpowiedzi. Ustawienia używają ich do sprawdzenia, czy kategoria jest gotowa na automatyczne przenoszenie. Trzeci przycisk, `↩️ n`, pojawia się dopiero po tym, gdy system coś zmienił w Twojej skrzynce.
+
+Aby dostać podsumowanie teraz, wyślij botowi `/digest`. Nagłówek brzmi wtedy `📬 Podsumowanie teraz`.
+Jeśli nie przyszła żadna wiadomość, podsumowanie mówi `Brak nowych wiadomości od` i podaje godzinę.
+
+## 7. Następne kroki
+
+- Obserwuj Aktywność i podsumowania przez kilka dni. Naciśnij `✅ n` albo `✏️ n`, gdy kategoria jest zła. Zobacz [Potwierdź lub popraw kategorię](../how-to/correct-a-category/).
+- Otwórz **<UiText k="nav_settings" />** i przełącz skrzynkę na tryb asystenta, gdy raporty wyglądają dobrze. W trybie asystenta system przenosi, oznacza i flaguje wiadomości według Twoich przełączników. Nic nie jest wysyłane bez Twojego zatwierdzenia. Zobacz [Przełącz z trybu podglądu na tryb asystenta](../how-to/mode-and-switches/).
+- Dodaj nadawców VIP, z listy dozwolonych i z listy blokowanych na stronie **<UiText k="nav_rules" />**. Zobacz [Ustaw reguły nadawców](../how-to/sender-rules/).
+- Włącz logowanie dwuetapowe w karcie Konto. Zobacz [Włącz logowanie dwuetapowe](../how-to/two-factor/).
+- Przeczytaj FAQ: krótkie odpowiedzi na pytania z pierwszego tygodnia.
+- Sprawdź fakty w opisie działania (po angielsku): [kategorie](../reference/categories/), [Telegram](../reference/telegram/), [ustawienia](../reference/settings/) i [limity](../reference/limits/).
+- Przeczytaj, dlaczego system działa tak, a nie inaczej: [jak system sortuje wiadomość](../explanation/how-a-mail-is-sorted/), [asystent nigdy nie wysyła sam](../explanation/never-sends-alone/) i [tryb podglądu i tryb asystenta](../explanation/shadow-and-assist/).
+
+Poradniki, opis działania i wyjaśnienia są na tej stronie. Używaj ich, gdy potrzebujesz zadania, faktu lub powodu.
