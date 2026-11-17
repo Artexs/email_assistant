@@ -11,6 +11,7 @@ import { checkCardEdit } from "./card-edit-check";
 import { ChannelError, type ChatChannel } from "./port";
 import {
   claimDueOutbox,
+  expireOldMailOutbox,
   failOutbox,
   getChatLinkForUser,
   markOutboxSent,
@@ -76,6 +77,13 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
 
   async function run(): Promise<void> {
     const now = deps.now();
+    // F110 stage 19: this sender never claims a mail row; a mail row that nobody sends within the life of a row expires here.
+    try {
+      const expired = await expireOldMailOutbox(db, { before: new Date(now.getTime() - OUTBOX_MAX_AGE_MS) });
+      if (expired > 0) log.warn("outbox_mail_expired", { count: expired });
+    } catch (error) {
+      log.error("outbox_mail_expire_failed", { ...errorFields(error) });
+    }
     if (pausedUntil !== null && now < pausedUntil) return;
 
     let claimed: ClaimedOutbox[];

@@ -244,6 +244,8 @@ export interface NewOutboxRow {
   editOfOutboxId?: string;
   view: Record<string, unknown>;
   locale: UserLocale;
+  // Absent = `telegram`. A `mail` row is the report mail of F110 stage 19 (`mailboxId` names the mailbox it goes into).
+  channel?: NoticeChannel;
   createdAt: Date;
   nextAttemptAt: Date;
 }
@@ -264,6 +266,7 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       edit_of_outbox_id: row.editOfOutboxId ?? null,
       view: JSON.stringify(row.view),
       locale: row.locale,
+      channel: row.channel ?? "telegram",
       status: "pending",
       attempts: 0,
       created_at: row.createdAt,
@@ -344,6 +347,7 @@ export interface ClaimedOutbox {
 }
 
 // Scheduler entry point (D18): it walks all organizations. `orgIds` is for tests only.
+// Only `telegram` rows: a `mail` row waits for the report mail sender (F110 stage 20) and is never sent to a chat.
 // `lockedAt` is the JS `now` value; it is the token for markOutboxSent, releaseOutbox and failOutbox, so it must survive
 // the round trip exactly. The claim does not change `attempts`.
 export async function claimDueOutbox(
@@ -358,6 +362,7 @@ export async function claimDueOutbox(
       let query = qb
         .selectFrom("outbox")
         .select((eb) => ["id", eb("status", "=", "sending").as("was_stale")])
+        .where("channel", "=", "telegram")
         .where((eb) =>
           eb.or([
             eb.and([eb("status", "=", "pending"), eb("next_attempt_at", "<=", opts.now)]),
@@ -422,6 +427,20 @@ export async function claimDueOutbox(
       wasStale: Boolean(row.was_stale),
     }))
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+// A `mail` row older than `before` (the caller passes now − 24 h) that is still open becomes `failed` / `expired`, as the
+// Telegram sender does with its rows. Until the report mail sender exists (F110 stage 20) nothing else touches a mail row, so a
+// gap between the stages ends as expired rows. Returns the count.
+export async function expireOldMailOutbox(db: DbOrTrx, opts: { before: Date }): Promise<number> {
+  const result = await db
+    .updateTable("outbox")
+    .set({ status: "failed", error_code: "expired", locked_at: null })
+    .where("channel", "=", "mail")
+    .where("status", "in", ["pending", "sending"])
+    .where("created_at", "<", opts.before)
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows);
 }
 
 export async function markOutboxSent(

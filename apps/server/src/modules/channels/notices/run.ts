@@ -8,6 +8,7 @@ import { type MailboxSummary, type TestMailRule } from "../../mail";
 import { type LlmPause, type TriageScope } from "../../triage";
 import { queueNotice, type QueueNoticeInput } from "../notice-queue";
 import { type LinkedChat } from "../port";
+import { type ReportMember } from "../report-members";
 
 export const log = createLog("channels");
 
@@ -38,6 +39,8 @@ export interface OrgRun {
   resumedAt: Date | null;
   members: LinkedChat[];
   owners: LinkedChat[];
+  // The members of the organization that a report goes to: a linked chat, or a mail channel with a report mailbox (F110 stage 19).
+  reportMembers: ReportMember[];
   mailboxes: MailboxSummary[];
   pausedMailboxIds: Set<string>;
 }
