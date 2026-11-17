@@ -44,6 +44,50 @@ function request(v: ApprovalView) {
   return renderApprovalRequest({ actionId: ID, view: v, now: NOW, timeZone: TZ }, textTables.en);
 }
 
+describe("renderApprovalRequest, a reply (F115)", () => {
+  const reply = (overrides: Partial<ApprovalView> = {}) =>
+    view({
+      kind: "reply",
+      recipient: { name: null, address: "jan@client.test" },
+      subject: "Re: Offer",
+      dueDate: null,
+      to: ["jan@client.test"],
+      cc: [],
+      ...overrides,
+    });
+
+  test("the title is the reply mark and the address; en and pl", () => {
+    expect(request(reply()).text.split("\n")[0]).toBe("✍️ Reply to jan@client.test");
+    const pl = renderApprovalRequest({ actionId: ID, view: reply(), now: NOW, timeZone: TZ }, textTables.pl);
+    expect(pl.text.split("\n")[0]).toBe("✍️ Odpowiedź do jan@client.test");
+  });
+
+  test("a Cc is spelled out whole, a reply with none has no Cc line", () => {
+    expect(request(reply()).text).not.toContain("Cc:");
+    const text = request(reply({ cc: ["b@y.test", "c@y.test"] })).text;
+    expect(text).toContain("\nCc: b@y.test, c@y.test\n");
+    expect(text).not.toContain("\nTo:");
+  });
+
+  test("the result lines of a reply have no closing line", () => {
+    const sent = renderSendResult(
+      {
+        actionId: ID,
+        sendKind: "reply",
+        result: { kind: "sent", sentCopy: "appended", draftRemoved: true },
+        recipient: { name: null, address: "jan@client.test" },
+        subject: "Re: Offer",
+        synthetic: false,
+      },
+      textTables.en
+    );
+    expect(sent.text).toContain("Re: Offer");
+    expect(sent.text).not.toContain("delegation");
+    expect(sent.text).not.toContain("undefined");
+    expect(sent.text).not.toContain("stays open");
+  });
+});
+
 describe("renderApprovalRequest", () => {
   test("delegation with an external sender", () => {
     const message = request(view());
@@ -408,12 +452,13 @@ describe("renderApprovalSetRequest in Polish", () => {
 });
 
 type SendKind = DraftPayload["kind"];
-const sendKinds: SendKind[] = ["delegation", "clarification", "reminder"];
+const sendKinds: SendKind[] = ["delegation", "clarification", "reminder", "reply"];
 const closings: Record<SendKind, string> = {
   delegation: "The delegation was cancelled.",
   clarification: "",
   reminder: "The delegation stays open.",
   follow_up: "",
+  reply: "",
 };
 const recipient = { name: "Anna Nowak", address: "anna@example.com" };
 

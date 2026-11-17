@@ -8,6 +8,7 @@ export type { DrafterOutput, NoDraftReason } from "./schema";
 export { normalizeDraftText } from "./text";
 export { cutChars, DRAFTER_MAIL_BODY_MAX, DRAFTER_NAME_MAX, DRAFTER_SUBJECT_MAX } from "./input";
 export type { DrafterInput } from "./input";
+export { QUOTE_NAME_MAX_CHARS, quoteReply } from "./quote";
 export { draftCopyKey } from "./copy-key";
 export type { DraftCopy } from "./copy-key";
 export { DIGIT_BUDGET, digitVerdict, IBAN_LENGTHS, ibansOf, LONG_SEQUENCE_DIGITS } from "./digits";

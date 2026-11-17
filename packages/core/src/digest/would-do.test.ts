@@ -80,7 +80,14 @@ describe("describeActions for drafts and sends", () => {
     );
     expect(describeActions([draft("ready", "reminder")], names, {}, EN)).toBe("will draft a reminder to Anna Nowak");
     expect(describeActions([draft("ready")], new Map(), {}, EN)).toBe("will draft a delegation to a delegate");
-    expect(describeActions([draft("ready")], new Map(), {}, EN)).toBe("will draft a delegation to a delegate");
+  });
+
+  test("a reply draft (F115): no delegate in the phrase", () => {
+    const reply = (status: string) => ({ ...draft(status, "reply"), delegateId: null });
+    expect(describeActions([reply("ready")], names, {}, EN)).toBe("will draft a reply");
+    expect(describeActions([reply("applied")], names, {}, EN)).toBe("done: reply drafted");
+    expect(describeActions([reply("ready")], names, {}, PL)).toBe("zrobi – przygotować szkic odpowiedzi");
+    expect(describeActions([reply("applied")], names, {}, PL)).toBe("zrobione – szkic odpowiedzi");
   });
 
   test.each<[string, string]>([
