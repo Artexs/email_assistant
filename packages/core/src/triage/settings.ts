@@ -14,8 +14,9 @@ export const toolSwitchesSchema = z.object({
   create_draft: z.boolean().default(false),
   move_unsure: z.boolean().default(false),
   // Open loops (E5b): the daily chaser plans a follow-up card for a waiting loop. Off until the owner turns it on; every
-  // follow-up still waits for a tap. It sits in the schema so that a settings write does not drop the stored key.
-  auto_follow_up: z.boolean().default(false),
+  // follow-up still waits for a tap. It sits in the schema so that a settings write does not drop the stored key. Only a JSON
+  // `true` is on: another stored value reads as off and does not fail the parse of the other switches (triage reads them all).
+  auto_follow_up: z.boolean().default(false).catch(false),
 });
 export type ToolSwitches = z.infer<typeof toolSwitchesSchema>;
 // What a writer may pass: a key that is left out takes its default.
