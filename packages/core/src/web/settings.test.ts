@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import { barCategories, noGoBodySchema, sentSyncBodySchema, settingsViewSchema, urgencyBodySchema } from "./settings";
+import {
+  barCategories,
+  noGoBodySchema,
+  sentSyncBodySchema,
+  sentTrackingOf,
+  settingsViewSchema,
+  urgencyBodySchema,
+  type SentSyncView,
+} from "./settings";
 
 const gate = { decision: "go", precision: 0.99, kept: 40, atConfidence: 0.8, threshold: 0.8 } as const;
 
@@ -17,6 +25,8 @@ function fixture() {
     ],
     urgencyProfile: null,
     sentSync: null,
+    sentTracking: "flag_off",
+    loopWaitDays: 3,
     bar: 0.98,
     minKept: 30,
   };
@@ -39,6 +49,45 @@ describe("settingsViewSchema", () => {
     expect(settingsViewSchema.safeParse(rest).success).toBe(false);
     const profile = { topics: [{ label: "a", keywords: [] }], deadlines: [] };
     expect(settingsViewSchema.safeParse({ ...fixture(), urgencyProfile: profile }).success).toBe(true);
+  });
+});
+
+describe("the open-loops fields of the settings view", () => {
+  test("loopWaitDays is 1 to 10 and whole; sentTracking is one of three codes", () => {
+    for (const loopWaitDays of [1, 10]) {
+      expect(settingsViewSchema.safeParse({ ...fixture(), loopWaitDays }).success).toBe(true);
+    }
+    for (const loopWaitDays of [0, 11, 2.5, "3"]) {
+      expect(settingsViewSchema.safeParse({ ...fixture(), loopWaitDays }).success).toBe(false);
+    }
+    for (const sentTracking of ["on", "off", "flag_off"]) {
+      expect(settingsViewSchema.safeParse({ ...fixture(), sentTracking }).success).toBe(true);
+    }
+    expect(settingsViewSchema.safeParse({ ...fixture(), sentTracking: "paused" }).success).toBe(false);
+  });
+
+  test("the switch auto_follow_up is optional in the list: it shows only while the flag is on", () => {
+    const toolSwitches = { ...fixture().toolSwitches, auto_follow_up: true };
+    expect(settingsViewSchema.safeParse({ ...fixture(), toolSwitches }).success).toBe(true);
+    expect(settingsViewSchema.safeParse({ ...fixture(), toolSwitches: { ...toolSwitches, other: true } }).success).toBe(
+      false
+    );
+  });
+
+  test("sentTrackingOf: no view or a paused one is flag_off; else the switch", () => {
+    const view = (flagOn: boolean, enabled: boolean): SentSyncView => ({
+      flagOn,
+      enabled,
+      folder: null,
+      firstPassDone: false,
+      lastSentAt: null,
+      storedCount: 0,
+      errorCode: null,
+    });
+    expect(sentTrackingOf(null)).toBe("flag_off");
+    expect(sentTrackingOf(view(false, true))).toBe("flag_off");
+    expect(sentTrackingOf(view(true, true))).toBe("on");
+    expect(sentTrackingOf(view(true, false))).toBe("off");
   });
 });
 

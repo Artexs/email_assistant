@@ -1,0 +1,151 @@
+import { afterAll, describe, expect, test } from "bun:test";
+import type { Transaction } from "kysely";
+
+import { detectNotices } from "../../src/modules/channels";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
+import { buildDigest } from "../../src/modules/reports";
+import { setOrgFeature } from "../../src/modules/tenancy";
+import type { DB } from "../../src/platform/db";
+
+import { EIGHT, loopRow, ready, waitingLoop, type BriefOrg } from "./channels-digest-brief-fixtures";
+import { addMember, insertDelegate, insertTriaged, linkChat, randomChatId, renderedOf } from "./fixtures";
+import { testDb, withRollback } from "./helpers";
+import { insertLoopRow } from "./loops-fixtures";
+
+// F116 stage 20, carry-over of the stage 19 review (N3, N4): Draft, Drop, Reopen and Delegate are owner only, so the digest of a
+// member has no such button, and the ⌛ line (one button, Reopen) goes to owners only and is not marked by a member's digest.
+const db = testDb();
+
+afterAll(async () => {
+  await db.destroy();
+});
+
+const request = (role: "owner" | "assistant") => ({
+  kind: "scheduled" as const,
+  periodStart: new Date("2026-11-19T00:00:00Z"),
+  periodEnd: new Date(EIGHT),
+  slot: { date: "2026-11-20", time: "08:00", late: false },
+  now: new Date(EIGHT),
+  locale: "en" as const,
+  role,
+  testMail: NO_TEST_SENDERS,
+  loops: { firstOfDay: true, loopConsent: true },
+});
+
+const prefixes = (buttons: { data?: string }[][]) => buttons.flat().map((button) => (button.data ?? "").slice(0, 3));
+
+async function world(
+  trx: Transaction<DB>
+): Promise<{ org: BriefOrg; waiting: string; promised: string; stale: string }> {
+  const org = await ready(trx);
+  const waiting = await waitingLoop(trx, org);
+  const promised = await waitingLoop(trx, org, { kind: "promised", subject: "Promised budget" });
+  const stale = await insertLoopRow(trx, org.ctx, org.mailboxId, {
+    status: "closed",
+    close_reason: "stale",
+    closed_at: new Date("2026-11-19T10:00:00Z"),
+    subject: "Old offer",
+  });
+  return { org, waiting, promised, stale };
+}
+
+describe("the keyboard of the brief by role", () => {
+  test("an owner gets Draft, Later, Done, Drop and Reopen", async () => {
+    await withRollback(db, async (trx) => {
+      const { org } = await world(trx);
+      const built = await buildDigest(trx, org.ctx, request("owner"));
+      const found = prefixes(built.message.buttons);
+      for (const prefix of ["lf:", "ll:", "lc:", "lx:", "lr:"]) expect(found).toContain(prefix);
+      expect(built.message.text).toContain("Old offer");
+    });
+  });
+
+  test("a member gets Later and Done only: no Draft, Drop or Reopen, no ⌛ line and no mark on the stale loop", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, stale, waiting } = await world(trx);
+      const built = await buildDigest(trx, org.ctx, request("assistant"));
+      const found = new Set(prefixes(built.message.buttons));
+      expect([...found].sort()).toEqual(["ll:", "lc:"].sort());
+      expect(built.message.text).not.toContain("Old offer");
+      expect(built.shown.stale).toEqual([]);
+      // The lines of the open loops stay: a member may mark them done or move them.
+      expect(built.shown.surfaced).toContain(waiting);
+      expect((await loopRow(trx, stale)).stale_notified_at).toBeNull();
+    });
+  });
+
+  test("the promised line of a member has Done and no Drop", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, promised } = await world(trx);
+      const member = await buildDigest(trx, org.ctx, request("assistant"));
+      const owner = await buildDigest(trx, org.ctx, request("owner"));
+      expect(member.shown.surfaced).toContain(promised);
+      expect(owner.shown.surfaced).toContain(promised);
+      expect(prefixes(member.message.buttons)).not.toContain("lx:");
+      expect(prefixes(owner.message.buttons)).toContain("lx:");
+    });
+  });
+});
+
+describe("the Delegate button by role", () => {
+  test("a triaged mail shows 👥 to an owner and not to a member", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      await setOrgFeature(trx, org.ctx, { flag: "delegate_button", enabled: true, actor: "cli", now: new Date(EIGHT) });
+      await insertDelegate(trx, org.ctx, { name: "Anna" });
+      await insertTriaged(trx, org.ctx, org.mailboxId, {
+        category: "needs_reply",
+        createdAt: new Date("2026-11-20T06:00:00Z"),
+        subject: "Budget question",
+        from: "boss@y.test",
+        fields: { language: "en" },
+      });
+      const owner = await buildDigest(trx, org.ctx, request("owner"));
+      const member = await buildDigest(trx, org.ctx, request("assistant"));
+      expect(prefixes(owner.message.buttons)).toContain("dg:");
+      expect(prefixes(member.message.buttons)).not.toContain("dg:");
+      // The on-demand digest follows the same rule.
+      const onDemand = { ...request("assistant"), kind: "on_demand" as const, slot: null };
+      expect(prefixes((await buildDigest(trx, org.ctx, onDemand)).message.buttons)).not.toContain("dg:");
+      expect(prefixes((await buildDigest(trx, org.ctx, { ...onDemand, role: "owner" })).message.buttons)).toContain(
+        "dg:"
+      );
+    });
+  });
+});
+
+describe("the Delegate button of the urgent notice by role", () => {
+  test("the owner's notice has it, the notice of a member of the same organization has not", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const now = new Date(EIGHT);
+      await setOrgFeature(trx, org.ctx, { flag: "delegate_button", enabled: true, actor: "cli", now });
+      await insertDelegate(trx, org.ctx, { name: "Anna" });
+      const memberId = await addMember(trx, org.ctx.orgId);
+      await linkChat(trx, org.ctx, memberId, randomChatId(), new Date("2026-11-05T20:00:00Z"));
+      await insertTriaged(trx, org.ctx, org.mailboxId, {
+        category: "urgent",
+        createdAt: new Date(now.getTime() - 600_000),
+        subject: "Offer for the autumn campaign",
+        fields: { language: "en" },
+      });
+      await detectNotices({
+        db: trx,
+        now: () => now,
+        startedAt: new Date(now.getTime() - 3_600_000),
+        testMail: NO_TEST_SENDERS,
+      });
+      const rows = await trx
+        .selectFrom("outbox")
+        .select(["user_id", "kind", "view", "channel", "detail", "locale", "text", "buttons"])
+        .where("org_id", "=", org.ctx.orgId)
+        .where("kind", "=", "urgent")
+        .execute();
+      expect(rows.map((row) => row.user_id).sort()).toEqual([org.userId, memberId].sort());
+      const rowOf = (userId: string) =>
+        rows.find((row) => row.user_id === userId) as NonNullable<(typeof rows)[number]>;
+      expect(prefixes(renderedOf(rowOf(org.userId)).buttons)).toContain("dg:");
+      expect(prefixes(renderedOf(rowOf(memberId)).buttons)).not.toContain("dg:");
+    });
+  });
+});

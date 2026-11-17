@@ -47,6 +47,7 @@ export const auditEvents = {
   mailboxSwitchChanged: "mailbox.switch_changed",
   mailboxSentSyncChanged: "mailbox.sent_sync_changed", // data: mailbox_id, enabled, count (sent rows deleted)
   settingsUrgencySet: "settings.urgency_set", // data: mailbox_id, topics, deadlines (counts), via
+  settingsChanged: "settings.changed", // data: mailbox_id, field (loop_wait_days), from, to, via
   mailboxSyncFolderAdded: "mailbox.sync_folder_added", // data: mailbox_id, folder_key, role
   mailboxSyncFolderChanged: "mailbox.sync_folder_changed", // data: mailbox_id, folder_key, enabled
   ruleAdded: "rule.added", // data: rule_id, kind, scope, mailbox_id when scope is "mailbox"

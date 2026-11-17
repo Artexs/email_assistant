@@ -18,7 +18,7 @@ import {
   type PlannedAction,
   type SenderRule,
   type SuspiciousReason,
-  type ToolSwitches,
+  type MailToolSwitches,
   type UrgencyProfile,
 } from "@ea/core";
 import type { Transaction } from "kysely";
@@ -53,7 +53,7 @@ export interface TriageMailbox {
   // `mailbox_settings.updated_at` (as text) at the read of this snapshot; `saveTriage` compares it under a lock.
   settingsVersion: string;
   mode: MailboxMode;
-  toolSwitches: ToolSwitches;
+  toolSwitches: MailToolSwitches;
   policy: CategoryPolicy;
   // The key of the classifier that runs now (the job gets it from the composition root). `auto` counts only under it.
   runningKey: EvidenceKey;

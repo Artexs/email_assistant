@@ -7,7 +7,7 @@ import {
   decidePolicy,
   planActions,
   type Category,
-  type ToolSwitches,
+  type MailToolSwitches,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -54,7 +54,7 @@ export interface StoredClassification {
 
 // The plan in `assist` mode with the default switches of the mode change and `auto` on for the category (the question of the history
 // check: would this category have moved the mail?). A VIP mail is never moved; the mailbox's move support does not count.
-const WOULD_DO_SWITCHES: ToolSwitches = {
+const WOULD_DO_SWITCHES: MailToolSwitches = {
   move: false,
   mark_read: false,
   flag: false,

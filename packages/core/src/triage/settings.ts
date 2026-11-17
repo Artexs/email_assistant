@@ -13,8 +13,15 @@ export const toolSwitchesSchema = z.object({
   flag: z.boolean().default(false),
   create_draft: z.boolean().default(false),
   move_unsure: z.boolean().default(false),
+  // Open loops (E5b): the daily chaser plans a follow-up card for a waiting loop. Off until the owner turns it on; every
+  // follow-up still waits for a tap. It sits in the schema so that a settings write does not drop the stored key.
+  auto_follow_up: z.boolean().default(false),
 });
 export type ToolSwitches = z.infer<typeof toolSwitchesSchema>;
+// What a writer may pass: a key that is left out takes its default.
+export type ToolSwitchesInput = z.input<typeof toolSwitchesSchema>;
+// The switches of the mailbox tools: what the triage policy reads. `auto_follow_up` belongs to the open loops.
+export type MailToolSwitches = Omit<ToolSwitches, "auto_follow_up">;
 
 export function parseToolSwitches(json: unknown): ToolSwitches {
   return toolSwitchesSchema.parse(json);
@@ -73,6 +80,9 @@ export const toolSwitchNames = [
   "create_draft",
   "move_unsure",
 ] as const satisfies readonly (keyof ToolSwitches)[];
+
+// The switches that exist only while the flag `open_loops` is on.
+export const loopSwitchNames = ["auto_follow_up"] as const satisfies readonly (keyof ToolSwitches)[];
 
 // P3: the switches that the mode change to `assist` sets. `create_draft` stays as it is (S4).
 export const ASSIST_DEFAULT_SWITCHES: Partial<ToolSwitches> = {

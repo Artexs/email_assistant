@@ -19,7 +19,12 @@ describe("parseToolSwitches", () => {
       flag: false,
       create_draft: false,
       move_unsure: false,
+      auto_follow_up: false,
     });
+  });
+
+  test("keeps the open-loops switch through a parse", () => {
+    expect(parseToolSwitches({ auto_follow_up: true }).auto_follow_up).toBe(true);
   });
 
   test("drops an unknown key", () => {

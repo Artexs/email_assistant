@@ -1,6 +1,8 @@
 import {
   autoBodySchema,
   barCategories,
+  loopSwitchNames,
+  loopWaitBodySchema,
   modeBodySchema,
   noGoBodySchema,
   ruleBodySchema,
@@ -46,9 +48,10 @@ export const settingsDocs = {
   }),
   patchSettingsSwitch: apiDoc({
     operationId: "patchSettingsSwitch",
-    summary: "Turn a tool switch of a mailbox on or off (owner only).",
+    summary:
+      "Turn a tool switch of a mailbox on or off (owner only). `auto_follow_up` exists only while the flag `open_loops` is on: else the answer is 404.",
     tags: ["settings"],
-    params: z.object({ mailboxId, name: z.enum(toolSwitchNames) }),
+    params: z.object({ mailboxId, name: z.enum([...toolSwitchNames, ...loopSwitchNames]) }),
     body: switchBodySchema,
     ok: { status: 200, schema: settingsChangeSchema },
     errors: [ownerOnly, notFound],
@@ -89,6 +92,16 @@ export const settingsDocs = {
     tags: ["settings"],
     params: z.object({ mailboxId }),
     body: sentSyncBodySchema,
+    ok: { status: 200, schema: settingsChangeSchema },
+    errors: [ownerOnly, notFound],
+  }),
+  patchSettingsLoopWait: apiDoc({
+    operationId: "patchSettingsLoopWait",
+    summary:
+      "Set the wait of the open loops of a mailbox, 1 to 10 working days (owner only). It changes the due date of loops opened later only. The answer is 404 while the flag `open_loops` is off.",
+    tags: ["settings"],
+    params: z.object({ mailboxId }),
+    body: loopWaitBodySchema,
     ok: { status: 200, schema: settingsChangeSchema },
     errors: [ownerOnly, notFound],
   }),

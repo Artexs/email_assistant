@@ -125,6 +125,7 @@ export async function queueDigest(
       slot: { date: slot.date, time: slot.time, late: isLateSlot(slot, now, timeZone) },
       now,
       locale: link.locale,
+      role: link.role,
       testMail,
       ...(loops === undefined ? {} : { loops }),
     });
