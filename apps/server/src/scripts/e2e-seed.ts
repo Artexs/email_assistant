@@ -27,6 +27,7 @@ import { auditWebEvent, termsAcceptedHandler } from "../web";
 import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
 import { seedApprovalsRows } from "./e2e-approvals-rows";
 import { seedDelegationsRows } from "./e2e-delegations-rows";
+import { seedLoopsRows } from "./e2e-loops-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_APPROVALS_MEMBER_EMAILS,
@@ -42,6 +43,11 @@ import {
   E2E_DELEGATIONS_MEMBER_EMAILS,
   E2E_DELEGATIONS_OWNER_EMAILS,
   e2eApprovalsOrgName,
+  E2E_LOOPS_CHAT_IDS,
+  E2E_LOOPS_MEMBER_EMAILS,
+  E2E_LOOPS_OWNER_EMAILS,
+  e2eLoopsMailbox,
+  e2eLoopsOrgName,
   E2E_URGENCY_MEMBER_EMAILS,
   E2E_URGENCY_OWNER_EMAILS,
   e2eUrgencyMailbox,
@@ -140,6 +146,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eDelegatesOrgName),
         ...E2E_PROJECTS.map(e2eDelegationsOrgName),
         ...E2E_PROJECTS.map(e2eUrgencyOrgName),
+        ...E2E_PROJECTS.map(e2eLoopsOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -165,6 +172,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_DELEGATIONS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_LOOPS_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_LOOPS_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -463,6 +472,49 @@ async function main(): Promise<number> {
         };
       }
 
+      // F116 stage 22: one organization per project for the loops spec. The flags `open_loops`, `delegate_button`, `delegation_pages`,
+      // `sent_sync` and `approvals_page` are on; one active delegate; a mailbox in assist mode with drafts on that tracks Sent; the owner is linked to
+      // Telegram with a consent of an old version. See `e2e-loops-rows.ts`.
+      const loopsIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; mailboxId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const loopsOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eLoopsOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_LOOPS_OWNER_EMAILS[project],
+          displayName: `E2E Loops owner ${project}`,
+        });
+        const ctx = { orgId: loopsOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_LOOPS_MEMBER_EMAILS[project],
+          displayName: `E2E Loops member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        for (const flag of [
+          "open_loops",
+          "delegate_button",
+          "delegation_pages",
+          "sent_sync",
+          "approvals_page",
+        ] as const) {
+          await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: loopsOwner.userId, setAt: new Date() });
+        }
+        await db
+          .insertInto("delegates")
+          .values({
+            org_id: ctx.orgId,
+            name: E2E_DELEGATES_ANNA.name,
+            email: E2E_DELEGATES_ANNA.email,
+            competence_tags: [...E2E_DELEGATES_ANNA.tags],
+          })
+          .execute();
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eLoopsMailbox(project));
+        await seedLoopsRows(db, ctx, mailboxId, loopsOwner.userId, E2E_LOOPS_CHAT_IDS[project], new Date());
+        loopsIds[project] = { orgId: loopsOwner.orgId, ownerId: loopsOwner.userId, memberId: member.id, mailboxId };
+      }
+
       // The organization of the isolation checks: one mail that the E2E organization must never see.
       const other = await createOrganizationWithOwner(db, {
         orgName: E2E_OTHER_ORG_NAME,
@@ -677,6 +729,21 @@ async function main(): Promise<number> {
         };
       }
 
+      const loopsOrgs = {} as SeedFile["loopsOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_LOOPS_OWNER_EMAILS[project];
+        const memberEmail = E2E_LOOPS_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = loopsIds[project];
+        loopsOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          mailboxId: ids.mailboxId,
+        };
+      }
+
       // The reset stores the current terms; the terms owners then go back to an old version.
       const termsOwners = {} as SeedFile["termsOwners"];
       for (const project of E2E_PROJECTS) {
@@ -729,6 +796,7 @@ async function main(): Promise<number> {
         delegationsOrgs,
         urgencyOrgs,
         approvalsOrgs,
+        loopsOrgs,
       };
       const path = seedFilePath(repoRoot);
       await mkdir(dirname(path), { recursive: true });

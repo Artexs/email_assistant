@@ -79,6 +79,7 @@ describe("telegram routes", () => {
       linked: false,
       linkedAt: null,
       botUsername: "fake_ea_bot",
+      consentVersion: null,
     });
   });
 
@@ -140,7 +141,7 @@ describe("telegram routes", () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "telegram_off" });
     const state = telegramStateSchema.parse(await (await app.request("/api/channels/telegram", as("owner"))).json());
-    expect(state).toEqual({ available: false, linked: false, linkedAt: null, botUsername: null });
+    expect(state).toEqual({ available: false, linked: false, linkedAt: null, botUsername: null, consentVersion: null });
     expect(await tokenRows(org.orgId)).toHaveLength(0);
   });
 
@@ -164,6 +165,7 @@ describe("telegram routes", () => {
       linked: false,
       linkedAt: null,
       botUsername: null,
+      consentVersion: null,
     });
   });
 
