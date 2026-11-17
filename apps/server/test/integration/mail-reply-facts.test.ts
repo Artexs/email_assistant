@@ -216,8 +216,16 @@ describe("replyFactsOf", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       const real = await insertTestEmail(trx, org.ctx, org.mailboxId);
-      const ids = [real, ...Array.from({ length: 600 }, () => randomUUID())];
-      expect([...(await replyFactsOf(trx, org.ctx, ids)).keys()]).toEqual([real]);
+      const unknown = (count: number) => Array.from({ length: count }, () => randomUUID());
+      const queriesFor = async (ids: string[]): Promise<number> => {
+        const { counter, plugin } = countingPlugin();
+        expect([...(await replyFactsOf(trx.withPlugin(plugin), org.ctx, ids)).keys()]).toEqual([real]);
+        return counter.count;
+      };
+      // 500 ids are one chunk; one more id makes a second chunk, which costs one more query (the mails of an empty chunk).
+      const one = await queriesFor([real, ...unknown(499)]);
+      const two = await queriesFor([real, ...unknown(500)]);
+      expect(two).toBe(one + 1);
       const { counter, plugin } = countingPlugin();
       expect((await replyFactsOf(trx.withPlugin(plugin), org.ctx, [])).size).toBe(0);
       expect(counter.count).toBe(0);

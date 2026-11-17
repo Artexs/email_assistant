@@ -46,7 +46,7 @@ export async function loadReplyFacts(
       facts: {
         triaged: result !== undefined,
         category: result?.category ?? null,
-        language: result === undefined ? "other" : languageOf(result.fields),
+        language: languageOf(result?.fields),
         fromJunk: mail.fromJunk,
         fromAddress: mail.fromAddress,
         ownAddresses: mail.ownAddresses,
