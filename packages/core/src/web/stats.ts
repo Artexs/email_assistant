@@ -10,6 +10,15 @@ export { EVIDENCE_MIN_LABELS };
 const count = z.number().int().min(0);
 const rate = z.number().min(0).max(1).nullable();
 
+/** The kinds of loop (`open_loops.kind`). */
+export const LOOP_KINDS = ["waiting", "promised", "delegated"] as const;
+export type LoopKind = (typeof LOOP_KINDS)[number];
+/** The kinds of the M2 split: the delegations of F4 and the three kinds of loop. */
+export const M2_KINDS = ["delegation", ...LOOP_KINDS] as const;
+export type M2Kind = (typeof M2_KINDS)[number];
+
+const m2Tally = z.strictObject({ due: count, closedOnTime: count, surfacedOnTime: count, pending: count });
+
 export const weekStatsSchema = z.strictObject({
   weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   mailboxId: z.uuid().nullable(), // null = all mailboxes of the organization
@@ -19,7 +28,10 @@ export const weekStatsSchema = z.strictObject({
     missesBySource: z.strictObject({ correction: count, review: count, moved_back: count, answered_check: count }),
     sample: z.strictObject({ labelled: count, important: count, misses: count, missRateUpper: rate }),
   }),
-  m2: z.strictObject({ due: count, closedOnTime: count, surfacedOnTime: count, pending: count }),
+  m2: m2Tally.extend({
+    // The split by kind. Present only when the organization has the flag `open_loops` on: the totals then hold the loops.
+    byKind: z.strictObject({ delegation: m2Tally, waiting: m2Tally, promised: m2Tally, delegated: m2Tally }).optional(),
+  }),
   m3: z.strictObject({
     hiddenImportant: count,
     wrongPerson: count,

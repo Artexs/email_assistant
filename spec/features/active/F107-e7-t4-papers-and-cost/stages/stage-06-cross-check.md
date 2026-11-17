@@ -55,3 +55,11 @@ Part of [`../plan.md`](../plan.md). Decisions P2, P5, D5, D9, E2. Needs stage 05
 - Verify the weak sources of the privacy text (`notes/2026-11-17-f107-s03-privacy-sources.md`): controller and processor roles, "UODO", the OpenAI terms (ADR 0015, 2026-11-06), "panel only through Tailscale" and "this install uses OpenAI" (home VPS only), the Art. 12(3) one-month rule.
 - Registry placeholders without a check: `<B2 region>`, `<SMTP provider>`, `<to confirm: ...>` in `legalPlaceholders`; every `termsUrl` is unverified.
 - Decide whether the text names mailbox OAuth (today only registry rows) and whether read-Sent (built, off by default) stays named as optional.
+
+## Carry-over from stage 04
+
+- Sources: `notes/2026-11-17-f107-s04-terms-dpa-sources.md` lists nine weak statements (roles from a plan decision; "only the operator has access"; "without undue delay" and "general written authorisation" not read in a law text; "no service level"; "AI can be wrong"; breach procedure depends on stage 05). Verify each.
+- Doc conflict: `docs/capabilities/tenancy-and-plans.md` rule 2 says there is no row-level security; `docs/architecture.md` §5 says there is (F092 shipped it). The texts follow the architecture. Fix the capability page (coordinator decision: the code is the truth; check `db/migrations` for the policies).
+- Mode name: the terms say "tryb asystenta" (`mb_mode_assist`), the privacy text "tryb asysty": align them.
+- The DPA has no section on sub-processor duties, DPIA help or proof of compliance: decide whether to add them.
+- Three stage 04 guards were not removed-and-tested: the "no table on the terms" test, the privacy-link test and the pl `klient` test.

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { EVIDENCE_MIN_LABELS, type WeekStats } from "@ea/core";
+import { EVIDENCE_MIN_LABELS, M2_KINDS, type WeekStats } from "@ea/core";
 import { z } from "zod";
 
 export const usage = "usage: bun run stats:week --org-id <uuid> [--mailbox-id <uuid>] [--week YYYY-MM-DD]";
@@ -55,6 +55,14 @@ export function statsLines(stats: WeekStats): string[] {
     `m1_sources correction ${sources.correction} review ${sources.review} moved_back ${sources.moved_back} answered_check ${sources.answered_check}`,
     `m2_open_loops due ${m2.due} closed_on_time ${share(m2.closedOnTime, m2.due - m2.pending)}` +
       ` surfaced_on_time ${share(m2.surfacedOnTime, m2.due - m2.pending)} pending ${m2.pending}`,
+    ...M2_KINDS.flatMap((kind) => {
+      const tally = m2.byKind?.[kind];
+      return tally === undefined
+        ? []
+        : [
+            `m2_${kind} due ${tally.due} closed ${tally.closedOnTime} surfaced ${tally.surfacedOnTime} pending ${tally.pending}`,
+          ];
+    }),
     `m3_total ${m3.total} hidden ${m3.hiddenImportant} wrong_person ${m3.wrongPerson} wrong_content ${m3.wrongContent}` +
       ` sent_mistake ${m3.sentMistake} not_needed ${m3.notNeeded} no_reason ${m3.noReason}`,
     `m4_handled ${share(m4.handled, m4.triaged)} would_handle ${m4.wouldHandle}`,

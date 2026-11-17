@@ -15,9 +15,12 @@ export function renderNotice(kind: NoticeKind, view: unknown, opts: NoticeRender
   const renderer: NoticeRenderer<z.ZodType> = noticeRenderers[kind];
   const parsed = renderer.schema.safeParse(view);
   if (!parsed.success) return { ok: false };
+  // A channel with no renderer (mail, before F110 stage 20) never renders: the caller treats it as a bad view.
+  const render = renderer[opts.channel]?.[opts.detail];
+  if (render === undefined) return { ok: false };
   let message: OutMessage;
   try {
-    message = renderer[opts.channel][opts.detail](parsed.data, opts);
+    message = render(parsed.data, opts);
   } catch {
     return { ok: false };
   }
@@ -30,11 +33,15 @@ export type NoticeEditInput = Parameters<typeof approvalEdit>[0];
 
 export const noticeEditRenderers: {
   telegram: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
+  mail?: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
 } = {
   telegram: { full: (input, opts) => approvalEdit(input, textsFor(opts.locale)) },
 };
 
-// The edited message after a tap: the stored text of the card plus one status line. Throws like approvalEdit.
+// The edited message after a tap: the stored text of the card plus one status line. Throws like approvalEdit, and for a
+// channel that has no cards (mail).
 export function renderNoticeEdit(input: NoticeEditInput, opts: NoticeRenderOptions): OutMessage {
-  return noticeEditRenderers[opts.channel][opts.detail](input, opts);
+  const render = noticeEditRenderers[opts.channel]?.[opts.detail];
+  if (render === undefined) throw new Error(`no card edit for channel ${opts.channel}`);
+  return render(input, opts);
 }
