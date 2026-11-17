@@ -323,8 +323,9 @@ describe("the log line of a finished check", () => {
 });
 
 describe("no done or no_result row keeps finished_at empty", () => {
-  test("the claim that takes a stale lock the third time ends the check with finished_at", async () => {
+  test("the claim that takes a stale lock the third time ends the check with finished_at and queues the notice", async () => {
     await withClassifyBox(db, {}, async (box, checkId) => {
+      await linkOwners(box);
       await db
         .updateTable("history_checks")
         .set({ attempts: 2, locked_at: new Date(box.clock.now.getTime() - 3_600_000) })
@@ -334,6 +335,8 @@ describe("no done or no_result row keeps finished_at empty", () => {
       const check = await checkOf(db, checkId);
       expect(check).toMatchObject({ status: "no_result", no_result_reason: "stopped" });
       expectFinishedTogether(check);
+      // TG5: the stop of the claim queues the report notice in its transaction, one row per owner.
+      expect(await noticeRows(box.orgId)).toHaveLength(2);
     });
   });
 });

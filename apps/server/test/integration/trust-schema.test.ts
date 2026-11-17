@@ -121,6 +121,7 @@ describe("history_checks", () => {
         "stopped",
         "key_changed",
         "auth_refused",
+        "model_failing",
       ] as const) {
         await insertCheckRow(trx, o, o.mailboxId, { status: "no_result", no_result_reason: why });
       }

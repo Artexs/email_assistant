@@ -92,7 +92,7 @@ type Gate =
 type StepEnd =
   | { kind: "advance"; at: Date; status: "waiting_flags" | "classifying" }
   | { kind: "wait"; at: Date; reason: string }
-  | { kind: "end"; reason: NoResultReason }
+  | { kind: "end"; reason: NoResultReason; quiet?: true }
   // The running key is not the key of the check: the check ends and a `model_switch` check starts.
   | { kind: "key_changed" }
   // The step wrote its own rows, the lock is already released or lost.
@@ -208,7 +208,8 @@ async function classifyStepOf(
   ctx: TenantContext,
   check: ClaimedCheck,
   checkLog: ReturnType<typeof log.with>,
-  deadline: Date
+  deadline: Date,
+  failures: Map<string, number>
 ): Promise<StepEnd> {
   const end = await classifyStep(
     {
@@ -222,6 +223,7 @@ async function classifyStepOf(
       ...(deps.prompt === undefined ? {} : { prompt: deps.prompt }),
       now: deps.now,
       onEnded: endedHookOf(deps),
+      failures,
       ...(deps.hooks?.afterCall === undefined ? {} : { hooks: { afterCall: deps.hooks.afterCall } }),
     },
     ctx,
@@ -245,9 +247,10 @@ async function runStep(
   ctx: TenantContext,
   check: ClaimedCheck,
   checkLog: ReturnType<typeof log.with>,
-  deadline: Date
+  deadline: Date,
+  failures: Map<string, number>
 ): Promise<StepEnd> {
-  if (check.status === "classifying") return classifyStepOf(deps, ctx, check, checkLog, deadline);
+  if (check.status === "classifying") return classifyStepOf(deps, ctx, check, checkLog, deadline, failures);
   if (check.status === "waiting_flags") return flagsStep(deps, ctx, check);
   return backfillStep(deps, ctx, check);
 }
@@ -257,7 +260,8 @@ async function processCheck(
   ctx: TenantContext,
   check: ClaimedCheck,
   cursorRetries: Map<string, number>,
-  deadline: Date
+  deadline: Date,
+  failures: Map<string, number>
 ): Promise<void> {
   const checkLog = log.with({ org_id: ctx.orgId, mailbox_id: check.mailboxId, check_id: check.id });
   const now = deps.now();
@@ -265,7 +269,7 @@ async function processCheck(
     const gate = await gateOf(deps, ctx, check);
     if (gate.kind === "gone") return;
     let end: StepEnd;
-    if (gate.kind === "go") end = await runStep(deps, ctx, check, checkLog, deadline);
+    if (gate.kind === "go") end = await runStep(deps, ctx, check, checkLog, deadline, failures);
     else if (gate.kind === "wait") end = { kind: "wait", at: after(now, HISTORY_RETRY_MS), reason: gate.reason };
     else end = { kind: "end", reason: gate.reason };
     await finish(deps, ctx, check, end, checkLog);
@@ -304,7 +308,7 @@ async function finish(
   if (end.kind === "done") return;
   const now = deps.now();
   if (end.kind === "end") {
-    if (await endCheck(deps.db, ctx, check, end.reason, now, endedHookOf(deps))) {
+    if (await endCheck(deps.db, ctx, check, end.reason, now, end.quiet === true ? undefined : endedHookOf(deps))) {
       checkLog.info("history_check_ended", { status: "no_result", reason: end.reason });
     }
     return;
@@ -352,6 +356,8 @@ async function queueFlagOnChecks(deps: HistoryJobDeps): Promise<void> {
 export function createHistoryJob(deps: HistoryJobDeps): { run(): Promise<void> } {
   // Moved-cursor retries per check in this process.
   const cursorRetries = new Map<string, number>();
+  // Failed model calls in a row per check in this process (a restart starts the count again; the cost cap still holds).
+  const failures = new Map<string, number>();
   return {
     async run() {
       try {
@@ -368,7 +374,7 @@ export function createHistoryJob(deps: HistoryJobDeps): { run(): Promise<void> }
         const ctx = { orgId };
         try {
           const claim = await claimNextCheck(deps.db, ctx, deps.now(), endedHookOf(deps));
-          if (claim.kind === "claimed") await processCheck(deps, ctx, claim.check, cursorRetries, deadline);
+          if (claim.kind === "claimed") await processCheck(deps, ctx, claim.check, cursorRetries, deadline, failures);
           else if (claim.kind === "stopped") {
             log
               .with({ org_id: orgId, mailbox_id: claim.mailboxId, check_id: claim.checkId })

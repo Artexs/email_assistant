@@ -9,6 +9,7 @@ import { recordItem } from "../../src/modules/trust/history-items";
 import { SoftError } from "../../src/platform/errors";
 import { LlmBlockedError } from "../../src/platform/llm";
 
+import { linkChat, randomChatId } from "./fixtures";
 import { testDb } from "./helpers";
 import { addMailbox } from "./trust-fixtures";
 import {
@@ -20,6 +21,7 @@ import {
   llmCallRows,
   MODEL,
   priceFixture,
+  seedClassifying,
   seedMails,
   withClassifyBox,
 } from "./trust-history-classify-helpers";
@@ -669,6 +671,223 @@ describe("classifyStored refuses a mail of another mailbox", () => {
         )
       ).rejects.toThrow("history mail not found");
       expect(llm.calls).toHaveLength(0);
+    });
+  });
+});
+
+describe("the review gaps of stage 07", () => {
+  test("TG1: a VIP sender with a model answer of info would not be moved; another sender would", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await db
+        .insertInto("sender_rules")
+        .values({ org_id: box.orgId, mailbox_id: box.mailboxId, kind: "vip", pattern: "boss@x.test" })
+        .execute();
+      const [vip, plain] = await seedMails(db, box, [{ from: "boss@x.test" }, { from: "other@x.test" }]);
+      await jobOf(db, box, { llm: fakeLlm(box, { tokens: 100 }) }).run();
+      const items = await itemsOf(db, checkId);
+      expect(items.find((item) => item.email_id === vip)).toMatchObject({
+        source: "classified",
+        category: "info",
+        would_move: false,
+      });
+      expect(items.find((item) => item.email_id === plain)).toMatchObject({
+        source: "classified",
+        category: "info",
+        would_move: true,
+      });
+    });
+  });
+
+  test("TG2: a spam answer for a whitelisted sender is refused: an unsure item that is not moved, counted at its tokens", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await db
+        .insertInto("sender_rules")
+        .values({ org_id: box.orgId, mailbox_id: box.mailboxId, kind: "whitelist", pattern: "friend.test" })
+        .execute();
+      await seedMails(db, box, [{ from: "a@friend.test", category: "spam" }]);
+      await jobOf(db, box, { llm: fakeLlm(box, { raw: true }) }).run();
+      const check = await checkOf(db, checkId);
+      expect(await itemsOf(db, checkId)).toMatchObject([
+        { category: "unsure", reason_code: "classify_error", would_move: false, acted_on: false, cost_usd: "0.01" },
+      ]);
+      expect(Number(check.cost_usd)).toBe(0.01);
+      // The row of the call names the tokens that the answer used.
+      expect((await llmCallRows(db, box.orgId))[0]?.data).toMatchObject({
+        tokens_in: CENT_TOKENS,
+        historyCheckId: checkId,
+      });
+    });
+  });
+
+  test("TG3: a model that answers without a price ends the check no_result / cost_unknown: no item, the call row stays", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await seedMails(db, box, [{}, {}]);
+      const llm = fakeLlm(box, { usageModel: "model-price-lost" });
+      await jobOf(db, box, { llm }).run();
+      expect(llm.calls).toHaveLength(1);
+      const check = await checkOf(db, checkId);
+      expect(check).toMatchObject({ status: "no_result", no_result_reason: "cost_unknown", locked_at: null });
+      expectFinishedTogether(check);
+      expect(await itemsOf(db, checkId)).toHaveLength(0);
+      expect(await llmCallRows(db, box.orgId)).toHaveLength(1);
+    });
+  });
+
+  test("TG4: a mail with two stored results reuses the newest", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      const [id] = await seedMails(db, box, [{}]);
+      const row = (category: string, createdAt: Date) => ({
+        org_id: box.orgId,
+        email_id: id as string,
+        category,
+        confidence: 0.9,
+        reason_code: "stored",
+        model: MODEL,
+        prompt_version: RUNNING_KEY.promptVersion,
+        created_at: createdAt,
+      });
+      await db
+        .insertInto("triage_results")
+        .values([
+          row("urgent", new Date(box.clock.now.getTime() - 2 * 3_600_000)),
+          row("notification", new Date(box.clock.now.getTime() - 3_600_000)),
+          row("spam", new Date(box.clock.now.getTime() - 3 * 3_600_000)),
+        ])
+        .execute();
+      const llm = fakeLlm(box);
+      await jobOf(db, box, { llm }).run();
+      expect(llm.calls).toHaveLength(0);
+      expect(await itemsOf(db, checkId)).toMatchObject([{ source: "triage_result", category: "notification" }]);
+    });
+  });
+});
+
+describe("N1: failed calls count against the cap, and a broken prompt ends the check", () => {
+  const broken = () => new Error("the answer does not fit the schema");
+
+  test("every call fails: the check ends after 5 failed calls as no_result / model_failing, each counted at 0.002", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await seedMails(
+        db,
+        box,
+        Array.from({ length: 30 }, () => ({}))
+      );
+      const llm = fakeLlm(box, { fail: broken });
+      await jobOf(db, box, { llm }).run();
+      expect(llm.calls).toHaveLength(5);
+      const check = await checkOf(db, checkId);
+      expect(check).toMatchObject({ status: "no_result", no_result_reason: "model_failing", locked_at: null });
+      expectFinishedTogether(check);
+      expect(Number(check.cost_usd)).toBeCloseTo(0.01, 10);
+      const items = await itemsOf(db, checkId);
+      expect(items).toHaveLength(5);
+      expect(items.every((item) => item.category === "unsure" && item.reason_code === "classify_error")).toBe(true);
+      expect(items.every((item) => Number(item.cost_usd) === 0.002)).toBe(true);
+      expect(await llmCallRows(db, box.orgId)).toHaveLength(5);
+    });
+  });
+
+  test("the streak lives across runs of one job: 3 failures in one run and 2 in the next end the check", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await seedMails(
+        db,
+        box,
+        Array.from({ length: 30 }, () => ({}))
+      );
+      const llm = fakeLlm(box, { fail: broken });
+      let calls = 0;
+      const job = jobOf(db, box, {
+        llm,
+        // The deadline stops the first run after 3 mails: each call moves the clock by 5 s.
+      });
+      llm.generate = new Proxy(llm.generate, {
+        apply(target, self, args) {
+          calls += 1;
+          if (calls <= 3) advance(box, 4_100);
+          return Reflect.apply(target, self, args);
+        },
+      });
+      await job.run();
+      expect((await itemsOf(db, checkId)).length).toBeLessThan(5);
+      expect((await checkOf(db, checkId)).status).toBe("classifying");
+      advance(box, RUN_MS);
+      await job.run();
+      expect(await checkOf(db, checkId)).toMatchObject({ status: "no_result", no_result_reason: "model_failing" });
+      expect(llm.calls).toHaveLength(5);
+    });
+  });
+
+  test("a success resets the streak: four failures, a success, four failures, a success finish the check", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await seedMails(
+        db,
+        box,
+        Array.from({ length: 10 }, () => ({}))
+      );
+      const llm = fakeLlm(box, { fail: (n) => (n % 5 === 0 ? undefined : broken()) });
+      await jobOf(db, box, { llm }).run();
+      const check = await checkOf(db, checkId);
+      expect(check.status).toBe("done");
+      expect(llm.calls).toHaveLength(10);
+      // 8 failures at 0.002 and 2 successes at 0.01.
+      expect(Number(check.cost_usd)).toBeCloseTo(0.036, 10);
+    });
+  });
+
+  test("a failed call with known tokens counts at its price: failures and successes together reach the cap at 25 calls", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await db
+        .insertInto("sender_rules")
+        .values({ org_id: box.orgId, mailbox_id: box.mailboxId, kind: "whitelist", pattern: "friend.test" })
+        .execute();
+      // Every mail is whitelisted. The model answers spam on odd calls (refused: a failed call of 1 cent) and info on even calls (1 cent).
+      await seedMails(
+        db,
+        box,
+        Array.from({ length: 60 }, (_, index) => ({ from: `a${index}@friend.test` }))
+      );
+      const llm = fakeLlm(box, { raw: true, answer: (n) => (n % 2 === 1 ? "spam" : "info") });
+      const job = jobOf(db, box, { llm });
+      for (let run = 0; run < 6 && (await checkOf(db, checkId)).status === "classifying"; run += 1) {
+        await job.run();
+        advance(box, RUN_MS);
+      }
+      const check = await checkOf(db, checkId);
+      expect(check).toMatchObject({ status: "done", capped: true });
+      expect(Number(check.cost_usd)).toBe(0.25);
+      expect(llm.calls).toHaveLength(25);
+      const items = await itemsOf(db, checkId);
+      expect(items.filter((item) => item.reason_code === "classify_error")).toHaveLength(13);
+    });
+  });
+});
+
+describe("N3: the synthetic scope with no test mail", () => {
+  test("a check that classified 0 mails ends no_result / no_history and queues no notice; the same check under the scope all does", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await seedMails(db, box, [{}, {}]);
+      const owner = box.userId;
+      await db.transaction().execute((trx) => linkChat(trx, box, owner, randomChatId(), box.clock.now));
+      const llm = fakeLlm(box);
+      await jobOf(db, box, { llm, scope: { kind: "synthetic", testMail: { senders: [] } } }).run();
+      const check = await checkOf(db, checkId);
+      expect(check).toMatchObject({ status: "no_result", no_result_reason: "no_history" });
+      expectFinishedTogether(check);
+      expect(llm.calls).toHaveLength(0);
+      const outbox = () =>
+        db
+          .selectFrom("outbox")
+          .select("id")
+          .where("org_id", "=", box.orgId)
+          .where("kind", "=", "trust_report_ready")
+          .execute();
+      expect(await outbox()).toEqual([]);
+
+      // The scope becomes `all`: the next check still has its notice to send.
+      const next = await seedClassifying(db, box);
+      await jobOf(db, box, { llm: fakeLlm(box, { tokens: 100 }) }).run();
+      expect((await checkOf(db, next)).status).toBe("done");
+      expect(await outbox()).toHaveLength(1);
     });
   });
 });

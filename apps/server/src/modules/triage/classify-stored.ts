@@ -105,9 +105,21 @@ export async function classifyStored(
   const suspiciousReasons = await assessEmail(deps.db, ctx, mailbox.suspicious, email);
   const { choice, classifierEmail, extras } = await buildClassifierInput(deps, ctx, mailbox, email, suspiciousReasons);
   const start = Date.now();
+  // A call that answered but whose answer `classifyEmail` refused (the answer names a category that the sender rules forbid) has real
+  // usage that the error does not carry. The wrapper keeps it, so the failed call is recorded and counted at its tokens.
+  const answered: { usage: LlmUsage | null } = { usage: null };
+  const llm: LlmClient = {
+    modelOf: (role) => deps.llm.modelOf(role),
+    endpointOf: (role) => deps.llm.endpointOf(role),
+    async generate(call) {
+      const reply = await deps.llm.generate(call);
+      answered.usage = reply.usage;
+      return reply;
+    },
+  };
   let result: Awaited<ReturnType<typeof classifyEmail>>;
   try {
-    result = await classifyEmail(deps.llm, {
+    result = await classifyEmail(llm, {
       email: classifierEmail,
       sender: { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
       allowed: rules.allowed,
@@ -120,11 +132,11 @@ export async function classifyStored(
       await deps.onCall?.({
         role: "classifier",
         promptVersion: choice.version,
-        model: deps.llm.modelOf("classifier"),
-        endpoint: deps.llm.endpointOf("classifier"),
+        model: answered.usage?.model ?? deps.llm.modelOf("classifier"),
+        endpoint: answered.usage?.endpoint ?? deps.llm.endpointOf("classifier"),
         outcome: llmErrorCode(error),
-        tokensIn: null,
-        tokensOut: null,
+        tokensIn: answered.usage?.tokensIn ?? null,
+        tokensOut: answered.usage?.tokensOut ?? null,
         latencyMs: Date.now() - start,
         at: deps.now(),
       });

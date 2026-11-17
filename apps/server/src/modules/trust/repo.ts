@@ -34,6 +34,7 @@ export const noResultReasonSchema = z.enum([
   "stopped",
   "key_changed",
   "auth_refused",
+  "model_failing",
 ]);
 export type NoResultReason = z.infer<typeof noResultReasonSchema>;
 
@@ -287,7 +288,7 @@ function toCheckRow(row: {
 
 /**
  * How many other checks of the mailbox ended already, as `done` or as `no_result` for a reason other than `key_changed`: a check that a
- * model switch cut short is not "the first check" of the report notice (F110 D16).
+ * model switch cut short is not "the first check" of the report notice (F110 D16). A quiet end (see below) does not count either.
  */
 export async function countEarlierEndedChecks(
   db: DbOrTrx,
@@ -303,6 +304,15 @@ export async function countEarlierEndedChecks(
     .where("id", "!=", exceptCheckId)
     .where("status", "in", ["done", "no_result"])
     .where((eb) => eb.or([eb("no_result_reason", "is", null), eb("no_result_reason", "!=", "key_changed")]))
+    // A check that reached the classify step and found no mail to classify (the synthetic scope with no test mail) queued no notice: the
+    // backfill had ended (`backfill_done_at`), which a `no_history` end of the backfill step never has. It must not use up the notice.
+    .where((eb) =>
+      eb.or([
+        eb("no_result_reason", "is", null),
+        eb("no_result_reason", "!=", "no_history"),
+        eb("backfill_done_at", "is", null),
+      ])
+    )
     .executeTakeFirstOrThrow();
   return Number(row.n);
 }

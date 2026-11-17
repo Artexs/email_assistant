@@ -125,7 +125,18 @@ export interface FakeLlm extends LlmClient {
  */
 export function fakeLlm(
   box: HistoryBox,
-  opts: { tokens?: number; delayMs?: number; model?: string; fail?: (n: number) => Error | undefined } = {}
+  opts: {
+    tokens?: number;
+    delayMs?: number;
+    model?: string;
+    /** The model that the usage names (default: the model of the client). A test of a price that vanishes sets another one. */
+    usageModel?: string;
+    fail?: (n: number) => Error | undefined;
+    /** Hand back the answer without the schema check of the client: a refused answer (a forbidden category) is then refused by the classifier, after the call. */
+    raw?: boolean;
+    /** The category for call number n (counted from 1), instead of the one in the subject. */
+    answer?: (n: number) => Category;
+  } = {}
 ): FakeLlm {
   const calls: { prompt: string }[] = [];
   return {
@@ -137,9 +148,9 @@ export function fakeLlm(
       const failure = opts.fail?.(calls.length);
       if (failure !== undefined) throw failure;
       if (opts.delayMs !== undefined) advance(box, opts.delayMs);
-      const category = /CAT:([a-z_]+)/.exec(req.prompt)?.[1] ?? "info";
+      const category = opts.answer?.(calls.length) ?? /CAT:([a-z_]+)/.exec(req.prompt)?.[1] ?? "info";
       return {
-        data: req.schema.parse({
+        data: (opts.raw === true ? (x: unknown) => x : req.schema.parse.bind(req.schema))({
           category,
           confidence: 0.9,
           reason_code: "newsletter",
@@ -150,7 +161,7 @@ export function fakeLlm(
         usage: {
           role: req.role,
           promptVersion: req.promptVersion,
-          model: opts.model ?? MODEL,
+          model: opts.usageModel ?? opts.model ?? MODEL,
           tokensIn: opts.tokens ?? CENT_TOKENS,
           tokensOut: 0,
           latencyMs: opts.delayMs ?? 1,

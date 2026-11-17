@@ -18,6 +18,7 @@ import {
   wouldMoveOf,
   type ClassifierPromptChoice,
   type LlmPause,
+  type StoredCall,
   type StoredClassification,
   type StoredResultRow,
   type TriageMailbox,
@@ -38,6 +39,10 @@ export const HISTORY_RUN_MAILS = 20;
 export const HISTORY_RUN_MS = 12_000;
 /** The spend of one check: before a call at or over this, the check stops and evaluates what it has. */
 export const HISTORY_COST_CAP_USD = 0.25;
+/** What a failed call counts when its tokens are not known: a failed call still costs money, so the cap must see it. */
+export const HISTORY_FAILED_CALL_USD = 0.002;
+/** The check ends `model_failing` after this many failed calls in a row (a broken prompt or schema fails every call). */
+export const HISTORY_MAX_FAILED_IN_ROW = 5;
 
 export interface ClassifyDeps {
   db: Db;
@@ -53,6 +58,8 @@ export interface ClassifyDeps {
   now(): Date;
   /** The end of a check queues the report notice in its transaction. */
   onEnded: EndedHook;
+  /** Failed calls in a row per check in this process: the job owns it, so a streak survives from one run to the next. */
+  failures: Map<string, number>;
   /** Test seams: a hook that throws simulates a crash after the call and before the item commits. */
   hooks?: { afterCall?: () => void | Promise<void> };
 }
@@ -61,7 +68,8 @@ export interface ClassifyDeps {
 export type ClassifyEnd =
   | { kind: "advance"; at: Date }
   | { kind: "wait"; at: Date; reason: string }
-  | { kind: "end"; reason: NoResultReason }
+  // `quiet`: the end queues no report notice (a check that classified nothing under the synthetic scope).
+  | { kind: "end"; reason: NoResultReason; quiet?: true }
   | { kind: "key_changed" }
   | { kind: "done" };
 
@@ -120,7 +128,7 @@ function itemOfClassified(emailId: string, result: StoredClassification, actedOn
 
 // A mail that the model could not judge (a blocked or invalid answer): an `unsure` item, not acted on, so it neither counts in the
 // moved share nor is asked again. Without it the same mail would cost a call in every run.
-function itemOfFailure(emailId: string, error: unknown): NewItem {
+function itemOfFailure(emailId: string, error: unknown, costUsd: number): NewItem {
   return {
     emailId,
     category: "unsure",
@@ -129,8 +137,19 @@ function itemOfFailure(emailId: string, error: unknown): NewItem {
     wouldMove: false,
     actedOn: false,
     source: "classified",
-    costUsd: 0,
+    costUsd,
   };
+}
+
+// A failed call still used tokens. Known tokens are priced; unknown tokens (a blocked answer, a bad body) count a fixed estimate, so the
+// cap sees the spend. No call at all (the mail failed before the model): nothing to count.
+function failedCallCost(call: StoredCall | undefined, now: Date): number {
+  if (call === undefined) return 0;
+  if (call.tokensIn !== null && call.tokensOut !== null) {
+    const priced = costPerMail(call.model, call.tokensIn, call.tokensOut, now, call.endpoint);
+    if (priced !== null) return priced;
+  }
+  return HISTORY_FAILED_CALL_USD;
 }
 
 /** The sample mail without an item, in order. */
@@ -164,6 +183,7 @@ async function finalize(
 ): Promise<ClassifyEnd> {
   const items = await listItems(deps.db, ctx, check.id);
   const result = historyResultOf(items);
+  deps.failures.delete(check.id);
   const completed = await completeCheck(deps.db, ctx, check, { result, capped, now: deps.now() }, deps.onEnded);
   if (!completed) return { kind: "done" };
   const answered = await countAnswered(
@@ -206,7 +226,12 @@ export async function classifyStep(
   if (windowStart === null) throw new Error("check classifies without a backfill window");
 
   const { pending, acted, itemCount } = await pendingSample(deps, ctx, check, windowStart);
-  if (pending.length === 0 || itemCount >= HISTORY_SAMPLE_SIZE) return finalize(deps, ctx, check, false, checkLog);
+  if (pending.length === 0 || itemCount >= HISTORY_SAMPLE_SIZE) {
+    // Under the synthetic scope only test mail is classified, so a mailbox with none ends here with nothing checked. That is no result, and
+    // it must not use up the one report notice of the mailbox: a later check under the scope `all` still has it to send.
+    if (itemCount === 0 && deps.scope.kind === "synthetic") return { kind: "end", reason: "no_history", quiet: true };
+    return finalize(deps, ctx, check, false, checkLog);
+  }
 
   const batch = pending.slice(0, HISTORY_RUN_MAILS);
   const stored = await listNewestResultsOf(deps.db, ctx, batch);
@@ -249,6 +274,7 @@ export async function classifyStep(
       mailbox = snapshot.mailbox;
     }
     let result: StoredClassification;
+    const lastCall: { call?: StoredCall } = {};
     try {
       result = await classifyStored(
         {
@@ -258,8 +284,15 @@ export async function classifyStep(
           ...(deps.prompt === undefined ? {} : { prompt: deps.prompt }),
           mailbox,
           now: deps.now,
-          onCall: (call) =>
-            recordLlmCall(deps.db, ctx, { ...call, emailId, mailboxId: check.mailboxId, historyCheckId: check.id }),
+          onCall: (call) => {
+            lastCall.call = call;
+            return recordLlmCall(deps.db, ctx, {
+              ...call,
+              emailId,
+              mailboxId: check.mailboxId,
+              historyCheckId: check.id,
+            });
+          },
         },
         ctx,
         emailId
@@ -271,9 +304,20 @@ export async function classifyStep(
         return { kind: "wait", at: until, reason: "llm_paused" };
       }
       checkLog.warn("history_mail_failed", { ...errorFields(error) });
-      if (!(await commit(itemOfFailure(emailId, error)))) return { kind: "done" };
+      if (!(await commit(itemOfFailure(emailId, error, failedCallCost(lastCall.call, deps.now())))))
+        return { kind: "done" };
+      // Only a call that was made counts in the streak; the cost is in the item, so the cap at the top of the loop sees it.
+      if (lastCall.call !== undefined) {
+        const failed = (deps.failures.get(check.id) ?? 0) + 1;
+        if (failed >= HISTORY_MAX_FAILED_IN_ROW) {
+          deps.failures.delete(check.id);
+          return { kind: "end", reason: "model_failing" };
+        }
+        deps.failures.set(check.id, failed);
+      }
       continue;
     }
+    deps.failures.delete(check.id);
     deps.pause.reset();
     let callCost = 0;
     if (result.usage !== null) {
