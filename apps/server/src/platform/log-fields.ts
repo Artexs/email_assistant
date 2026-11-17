@@ -48,6 +48,7 @@ export const numberFieldNames = [
   "task_rows",
   "outbox_rows",
   "loop_rows",
+  "reply_text_rows",
   "token_rows",
   // telegram
   "update_id",

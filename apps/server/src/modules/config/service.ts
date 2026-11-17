@@ -116,6 +116,9 @@ export function closedBy(
     // A follow-up that waits for a tap stays valid: the owner decides at the card.
     case "auto_follow_up":
       return null;
+    // Stage 10 closes the open replies of the mailbox when this switch goes off.
+    case "reply_drafts":
+      return null;
   }
 }
 

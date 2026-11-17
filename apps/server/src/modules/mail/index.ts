@@ -157,6 +157,7 @@ export {
   listWaitingFromSenders,
   listWaitingSenders,
   mailboxHasUidplus,
+  mailboxProfileOf,
   mailKindFilter,
   deleteSentEmails,
   expireSentTexts,
@@ -182,6 +183,7 @@ export {
   setUndoPending,
   touchEmailFlags,
   updateEmailLocation,
+  upsertMailboxProfile,
   writeEmailFlags,
 } from "./repo";
 export type {
@@ -192,6 +194,8 @@ export type {
   FlagRead,
   FlagTarget,
   EmailMeta,
+  MailboxProfile,
+  MailboxProfileFields,
   MailKind,
   NewSentEmail,
   SentContent,

@@ -253,7 +253,8 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["reply_requests.instruction", "reply_requests.sample_body"],
     subjects: ["users", "others"],
-    // The same period as the other AI texts: `clearActionPayloads` and the reply text clear use one cut-off (retention job).
+    // The text period of the retention job (`RETENTION_TEXT_DAYS`, the same for every organization), counted from `reply_requests.created_at`
+    // (`clearReplyTexts`, `docs/architecture.md` §7). `legal-retention.test.ts` ties the number and the column to the job and the papers.
     kept: { kind: "days", days: 90 },
   },
   {
