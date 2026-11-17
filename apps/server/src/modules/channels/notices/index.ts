@@ -53,6 +53,10 @@ export const queuedBy = {
   approval_edit: "channels/card-edits.ts",
   // The one line for an owner whose consent does not cover open-loop data: queued by the approval and send-result detectors.
   loop_consent: "channels/notices/loop-consent.ts",
+  // F115: the replies module queues these (stages 12 and 13 create the files; the entry is a name only).
+  replies_ready: "replies/notices.ts",
+  reply_prompt: "replies/telegram.ts",
+  reply_result: "replies/telegram.ts",
   // F110: the trust module calls `queueTrustNotice` inside its own transaction (history check end, re-gate, tripwire).
   trust_report_ready: "trust (through channels/notices/trust.ts)",
   autonomy_paused: "trust (through channels/notices/trust.ts)",

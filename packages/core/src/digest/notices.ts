@@ -178,6 +178,23 @@ export function renderLoopConsentNotice(
   return { text: lines.join("\n"), buttons: [] };
 }
 
+// Reply drafts (F115 stage 03). One fixed line each and no button: the review stages replace them. No mail text, no address.
+export function renderRepliesReadyNotice(
+  input: { count: number; now: Date; timeZone: string },
+  texts: CoreTexts
+): OutMessage {
+  const clock = formatClock(input.now, input.timeZone, input.now, texts.locale);
+  return { text: texts.notices.replyDrafts.ready(input.count, clock), buttons: [] };
+}
+
+export function renderReplyPromptNotice(texts: CoreTexts): OutMessage {
+  return { text: texts.notices.replyDrafts.prompt, buttons: [] };
+}
+
+export function renderReplyResultNotice(texts: CoreTexts): OutMessage {
+  return { text: texts.notices.replyDrafts.result, buttons: [] };
+}
+
 // The check of the last 30 days is ready (F110 D15): a count, category names and the report link. No mail data.
 export function renderTrustReportReadyNotice(
   input: { checked: number; recommended: readonly MovingCategory[]; reportUrl: string | null },

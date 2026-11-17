@@ -32,6 +32,9 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   host_blocked: "no_mail", // mailbox address
   sent_missing: "no_mail", // mailbox address
   loop_consent: "no_mail", // a fixed line and the panel link: no recipient, no text
+  replies_ready: "no_mail", // a count and a clock (`renderRepliesReadyNotice`)
+  reply_prompt: "one_mail", // `emailId` set; the view holds the id only (stage 13 queues it)
+  reply_result: "one_mail", // `emailId` set; the view holds the id and a code (stage 13 queues it)
   weekly_report: "no_mail", // counts and category names only (`renderWeeklyReport`)
   approval_edit: "one_mail", // `queueCardEdits` sets `emailId` of the target card (F102); its view keeps the card text
   trust_report_ready: "no_mail", // category names and a count (`renderTrustReportReadyNotice`)

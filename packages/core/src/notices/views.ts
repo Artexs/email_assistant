@@ -287,6 +287,17 @@ const loopConsentView = z.strictObject({
   panelUrl: panelUrlSchema.optional(),
 });
 
+// Reply drafts (F115 stage 03; the review stages replace these views). `replies_ready`: a count and the queue time.
+// `reply_prompt` and `reply_result` name the mail only by id, as the outbox row does; `reason` is a lower-case code
+// (a reply block reason or a request status), never a text.
+const repliesReadyView = z.strictObject({
+  count: z.number().int().min(1),
+  now: isoDate,
+  timeZone,
+});
+const replyPromptView = z.strictObject({ emailId: id });
+const replyResultView = z.strictObject({ emailId: id, reason: z.string().regex(/^[a-z_]{1,40}$/) });
+
 // The history check of a mailbox is ready (F110 stage 10, D15). Counts and category names only: no address, sender, subject or domain.
 // `blocked`: the moving categories that the evidence does not support (a count; the Telegram text prints no number for it).
 // `reportUrl`: `<WEB_BASE_URL>/report?mailbox=<id>`, null when `WEB_BASE_URL` is not set.
@@ -352,6 +363,9 @@ export const noticeViewSchemas = {
   not_triaged: notTriagedView,
   sent_missing: sentMissingView,
   loop_consent: loopConsentView,
+  replies_ready: repliesReadyView,
+  reply_prompt: replyPromptView,
+  reply_result: replyResultView,
   trust_report_ready: trustReportReadyView,
   autonomy_paused: autonomyPausedView,
 } satisfies Record<NoticeKind, z.ZodType>;

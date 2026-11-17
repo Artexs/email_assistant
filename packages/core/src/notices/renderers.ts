@@ -16,6 +16,9 @@ import {
   renderHostBlockedNotice,
   renderNotTriagedNotice,
   renderLoopConsentNotice,
+  renderRepliesReadyNotice,
+  renderReplyPromptNotice,
+  renderReplyResultNotice,
   renderSentMissingNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
@@ -177,6 +180,18 @@ export const noticeRenderers = {
   loop_consent: defineRenderer({
     schema: noticeViewSchemas.loop_consent,
     telegram: { full: (view, opts) => renderLoopConsentNotice(view, textsFor(opts.locale)) },
+  }),
+  replies_ready: defineRenderer({
+    schema: noticeViewSchemas.replies_ready,
+    telegram: { full: (view, opts) => renderRepliesReadyNotice(view, textsFor(opts.locale)) },
+  }),
+  reply_prompt: defineRenderer({
+    schema: noticeViewSchemas.reply_prompt,
+    telegram: { full: (_view, opts) => renderReplyPromptNotice(textsFor(opts.locale)) },
+  }),
+  reply_result: defineRenderer({
+    schema: noticeViewSchemas.reply_result,
+    telegram: { full: (_view, opts) => renderReplyResultNotice(textsFor(opts.locale)) },
   }),
   trust_report_ready: defineRenderer({
     schema: noticeViewSchemas.trust_report_ready,
