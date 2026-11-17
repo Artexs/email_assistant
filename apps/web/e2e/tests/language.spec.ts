@@ -44,3 +44,26 @@ test("the Account choice switches the panel at once, keeps typed text and surviv
   await page.getByRole("option", { name: en.acct_language_en }).click();
   await expect(page.getByRole("heading", { name: en.title_settings })).toBeVisible();
 });
+
+test("the Account card links the three legal documents in the chosen language, each in a new tab", async ({ page }) => {
+  await page.goto("/settings");
+  await page.getByRole("combobox", { name: en.acct_language_label }).click();
+  await page.getByRole("option", { name: pl.acct_language_pl }).click();
+  await expect(page.getByText(pl.acct_title, { exact: true })).toBeVisible();
+
+  const links = page
+    .locator('[data-card="account"]')
+    .getByRole("navigation", { name: pl.docs_links_label })
+    .getByRole("link");
+  await expect(links).toHaveText([pl.legal_terms_title, pl.legal_privacy_title, pl.legal_dpa_title]);
+  expect(await links.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")))).toEqual([
+    "/legal/pl/terms",
+    "/legal/pl/privacy",
+    "/legal/pl/dpa",
+  ]);
+  expect(
+    await links.evaluateAll((nodes) =>
+      nodes.map((node) => `${node.getAttribute("target")} ${node.getAttribute("rel")}`)
+    )
+  ).toEqual(Array(3).fill("_blank noopener noreferrer"));
+});

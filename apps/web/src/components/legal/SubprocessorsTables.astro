@@ -1,0 +1,50 @@
+---
+import { subprocessors, type Subprocessor } from "@ea/core/web";
+
+import { en } from "../../i18n/en";
+import { pl } from "../../i18n/pl";
+import { usedWhenText } from "../../lib/legal-tables";
+import LegalTable from "./LegalTable.astro";
+
+interface Props {
+  lang: "pl" | "en";
+  // The DPA prints the list as its Annex 2.
+  title: "subprocessors" | "annex2";
+}
+
+const { lang, title } = Astro.props;
+const texts = lang === "pl" ? pl : en;
+const columns = [
+  texts.legal_col_name,
+  texts.legal_col_purpose,
+  texts.legal_col_data,
+  texts.legal_col_location,
+  texts.legal_col_used_when,
+];
+const rowOf = (row: Subprocessor) => [
+  row.name,
+  row.purpose[lang],
+  row.dataReceived[lang],
+  row.location[lang],
+  usedWhenText(texts, row, row.activeWhen),
+];
+const withData = subprocessors.filter((row) => row.personalData).map(rowOf);
+const withoutData = subprocessors.filter((row) => !row.personalData).map(rowOf);
+---
+
+<LegalTable
+  id="legal-subprocessors"
+  title={title === "annex2" ? texts.legal_annex2_title : texts.legal_subprocessors_title}
+  columns={columns}
+  rows={withData}
+/>
+{
+  withoutData.length === 0 ? null : (
+    <LegalTable
+      id="legal-subprocessors-none"
+      title={texts.legal_subprocessors_none_title}
+      columns={columns}
+      rows={withoutData}
+    />
+  )
+}

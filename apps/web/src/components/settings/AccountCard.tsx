@@ -10,6 +10,7 @@ import { errorText } from "../../lib/errors";
 import { saveLocale } from "../../lib/locale-api";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
 import { useResource } from "../../lib/use-resource";
+import { LegalLinks } from "../legal/LegalLinks";
 import { useMe } from "../shell/MeProvider";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -303,6 +304,10 @@ export function AccountCard() {
             <SecurityLog timeZone={me.organization.timezone} />
           </div>
         ) : null}
+        <div data-section="legal" className="flex flex-col gap-2 border-t pt-4">
+          <h3 className="text-sm font-medium">{t("docs_links_label")}</h3>
+          <LegalLinks newTab />
+        </div>
         {sections.deleteBlock ? (
           <div className="border-t pt-4">
             <DeleteOrganization />
