@@ -22,6 +22,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopRow } from "./loops-fixtures";
+import { insertReplyRequest } from "./reply-fixtures";
 
 const db = testDb();
 
@@ -216,6 +217,13 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
     subject: text,
     text,
   });
+  // A reply request made over 90 days ago: its instruction and sample text go; the row stays.
+  await insertReplyRequest(trx, ctx, org.mailboxId, fresh, {
+    trigger: "tap",
+    instruction: text,
+    sample_body: text,
+    created_at: over90,
+  });
   await trx
     .insertInto("chat_link_tokens")
     .values({
@@ -240,6 +248,7 @@ const ZERO: RetentionCounts = {
   tasks: 0,
   outbox: 0,
   loops: 0,
+  replyTexts: 0,
   tokens: 0,
 };
 
@@ -263,6 +272,7 @@ describe("retention job: runOrg", () => {
         tasks: 1,
         outbox: 1,
         loops: 1,
+        replyTexts: 1,
         tokens: 1,
       });
       expect(await job.runOrg(org, NOW)).toEqual(ZERO);
@@ -492,6 +502,7 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
           tasks: 1,
           outbox: 1,
           loops: 0,
+          replyTexts: 0,
           tokens: 1,
         });
         expect(await body(trx, doneOld)).toBeNull();
@@ -533,6 +544,7 @@ describe("retention job: log", () => {
         "task_rows",
         "outbox_rows",
         "loop_rows",
+        "reply_text_rows",
         "token_rows",
       ]) {
         expect(done[0]).toContain(`${key}=1`);

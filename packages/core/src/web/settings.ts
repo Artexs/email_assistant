@@ -59,13 +59,14 @@ export const sentSyncViewSchema = z.object({
 });
 export type SentSyncView = z.infer<typeof sentSyncViewSchema>;
 
-// The switches of the mailbox tools. `auto_follow_up` is in the list only while the flag `open_loops` is on.
+// The switches of the mailbox tools. `auto_follow_up` is in the list only while the flag `open_loops` is on, `reply_drafts` only while the flag `reply_drafts` is on.
 const toolSwitchesViewSchema = z.strictObject({
   ...(Object.fromEntries(toolSwitchNames.map((name) => [name, z.boolean()])) as Record<
     (typeof toolSwitchNames)[number],
     z.ZodBoolean
   >),
   auto_follow_up: z.boolean().optional(),
+  reply_drafts: z.boolean().optional(),
 });
 
 // The state of "Track my sent mail" for the loop settings card: `flag_off` while the organization flag is off (also when

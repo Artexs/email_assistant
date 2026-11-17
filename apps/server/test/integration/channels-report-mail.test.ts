@@ -513,6 +513,7 @@ describe("urgent and the other kinds stay on Telegram (test 5)", () => {
   });
 });
 
+// The 24 h expiry of a mail row moved to the report mail sender (F110 stage 20): `channels-report-mail-append.test.ts` covers it.
 describe("the Telegram sender and mail rows (step 2, test 7)", () => {
   const T = new Date("2026-11-06T10:00:00Z");
 
@@ -591,36 +592,6 @@ describe("the Telegram sender and mail rows (step 2, test 7)", () => {
       await createOutboxSender({ db: trx, channel, now: () => T }).run();
       expect(channel.sent).toHaveLength(0);
       expect(await stateOf(trx, mail)).toMatchObject({ status: "pending", error_code: null });
-    });
-  });
-
-  test("the mail expiry leaves a Telegram row alone (a suspended organization's row waits)", async () => {
-    await withRollback(db, async (trx) => {
-      const o = await org(trx, { chat: true, channel: "both" });
-      const row = await insertOutbox(trx, o.ctx, {
-        userId: o.ownerId,
-        kind: "weekly_report",
-        dedupKey: "weekly_report:old-telegram",
-        mailboxId: o.mailboxId,
-        view: {},
-        locale: "en",
-        createdAt: new Date(T.getTime() - 25 * HOUR),
-        nextAttemptAt: T,
-      });
-      await suspendOrg(trx, o.orgId);
-      await createOutboxSender({ db: trx, channel: createFakeChannel(), now: () => T }).run();
-      expect(await stateOf(trx, row ?? "")).toMatchObject({ status: "pending", error_code: null });
-    });
-  });
-
-  test("a mail row older than 24 h expires; a younger one stays pending", async () => {
-    await withRollback(db, async (trx) => {
-      const o = await org(trx, { chat: false, channel: "mail" });
-      const old = await mailRow(trx, o, new Date(T.getTime() - 25 * HOUR));
-      const young = await mailRow(trx, o, new Date(T.getTime() - 23 * HOUR));
-      await createOutboxSender({ db: trx, channel: createFakeChannel(), now: () => T }).run();
-      expect(await stateOf(trx, old)).toMatchObject({ status: "failed", error_code: "expired", locked_at: null });
-      expect(await stateOf(trx, young)).toMatchObject({ status: "pending", error_code: null });
     });
   });
 });

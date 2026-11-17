@@ -6,6 +6,7 @@ import type { Transaction } from "kysely";
 import {
   expireReady,
   expireUnseenApprovals,
+  isOwnActionId,
   type ActionsScope,
   type CommitterDeps,
   type SendScope,
@@ -14,6 +15,7 @@ import {
   cancelPendingApprovalRequestsOfClosedSends,
   cancelPendingOutboxOfOrg,
   clearLoopCards,
+  isOwnReportMail,
   SENDER_STALE_MS,
 } from "./modules/channels";
 import type { SettingsChange, SettingsDeps } from "./modules/config";
@@ -84,6 +86,16 @@ export function sendScope(config: Config): SendScope {
   }
   log.warn("send_scope", { config_key: "SEND_SCOPE", scope: "all" });
   return { kind: "all" };
+}
+
+// The one own-mail check of every sync, backfill and history run (ADR 0022 point 2): a draft or a send of the system (`X-EA-Action-Id` =
+// an action id), or a report mail that the system appended (`X-EA-Action-Id` = an outbox id of channel `mail`). Every composition root
+// that builds a sync, a backfill or a history deps passes this, never `isOwnActionId` alone (`composition.test.ts` scans for it).
+export function isOwnMailOf(
+  db: Db | Transaction<DB>
+): (ctx: TenantContext, mailboxId: string, id: string) => Promise<boolean> {
+  return async (ctx, mailboxId, id) =>
+    (await isOwnActionId(db, ctx, mailboxId, id)) || (await isOwnReportMail(db, ctx, mailboxId, id));
 }
 
 export function uidplusOf(db: Db): (ctx: TenantContext, mailboxId: string) => Promise<boolean> {

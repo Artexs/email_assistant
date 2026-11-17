@@ -71,7 +71,7 @@ export {
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe-move";
 export { isAllowedRecipient, probeSend, type ProbeSendReport } from "./imap/probe-send";
-export { composeMessage } from "./imap/compose";
+export { composeMessage, composeReportMail } from "./imap/compose";
 export { bodyTextFromSource } from "./imap/mapper";
 export { linkPairsOfHtml } from "./imap/capture";
 export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
@@ -158,6 +158,7 @@ export {
   listWaitingFromSenders,
   listWaitingSenders,
   mailboxHasUidplus,
+  mailboxProfileOf,
   mailKindFilter,
   deleteSentEmails,
   expireSentTexts,
@@ -183,6 +184,7 @@ export {
   setUndoPending,
   touchEmailFlags,
   updateEmailLocation,
+  upsertMailboxProfile,
   writeEmailFlags,
 } from "./repo";
 export type {
@@ -194,6 +196,8 @@ export type {
   FlagRead,
   FlagTarget,
   EmailMeta,
+  MailboxProfile,
+  MailboxProfileFields,
   MailKind,
   NewSentEmail,
   SentContent,
@@ -261,6 +265,7 @@ export {
 } from "./tools";
 export {
   locateByActionId,
+  locateByMessageId,
   locateKeyOf,
   locateMessage,
   LOCATE_CHUNK,

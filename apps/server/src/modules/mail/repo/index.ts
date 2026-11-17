@@ -160,3 +160,4 @@ export {
   type SentSummary,
   type UserAnswer,
 } from "./sent-readers";
+export { mailboxProfileOf, upsertMailboxProfile, type MailboxProfile, type MailboxProfileFields } from "./profiles";

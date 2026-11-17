@@ -16,7 +16,7 @@ Three ways to deliver a mail to the user:
 ## Decision
 
 1. The system may put its own report mail (digest, shadow report, later the E5 brief) into the INBOX of a mailbox the user connected, by IMAP APPEND (or the provider's "create a message in a folder" call for OAuth adapters, E9). It never sends report mail by SMTP and never through a relay.
-2. Each such message carries the header `X-EA-Action-Id` with the id of an action row (type for report mail, decided in planning), so the sync recognizes it as own mail and does not triage it (the check in `mail/sync.ts` exists).
+2. Each such message carries the header `X-EA-Action-Id` with the id of an outbox row of the channel `mail` (decided in planning, F110 stage 20), so the sync recognizes it as own mail and does not triage it (the check in `mail/sync.ts` exists).
 3. From is the mailbox address with the display name of the product; the subject has a fixed prefix; links point only to `WEB_BASE_URL`; the mail has no buttons and no form.
 4. The channel is a user choice per member: Telegram, mail, or both. Urgent notices and approval requests stay on Telegram (and later web push, E9).
 5. The `MailProvider` port already has `appendMessage(folder, raw, flags, internalDate)` (`apps/server/src/modules/mail/port.ts:103`, used for drafts). Report mail uses it with INBOX. The OAuth adapters (E9) must implement it too.

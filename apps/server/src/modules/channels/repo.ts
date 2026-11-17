@@ -230,6 +230,8 @@ export const outboxFailCodes = [
   "stale_edit",
   "no_target",
   "edit_failed",
+  // Report mail (F110 stage 20): the mail server refused the APPEND into the INBOX.
+  "append_refused",
 ] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];
 
@@ -334,6 +336,8 @@ export interface ClaimedOutbox {
   kind: OutboxKind;
   view: unknown;
   channel: NoticeChannel;
+  // The mailbox of a `mail` row (the report mailbox); null for a row that names none.
+  mailboxId: string | null;
   detail: NoticeDetail;
   locale: UserLocale;
   // null: the row holds facts only and the sender renders it (ADR 0032 point 5).
@@ -349,12 +353,13 @@ export interface ClaimedOutbox {
 }
 
 // Scheduler entry point (D18): it walks all organizations. `orgIds` is for tests only.
-// Only `telegram` rows: a `mail` row waits for the report mail sender (F110 stage 20) and is never sent to a chat.
+// One channel per claim, `telegram` by default: the Telegram sender never claims a `mail` row, so it is never sent to a chat; the report mail sender
+// (F110 stage 20) claims `mail` rows only.
 // `lockedAt` is the JS `now` value; it is the token for markOutboxSent, releaseOutbox and failOutbox, so it must survive
 // the round trip exactly. The claim does not change `attempts`.
 export async function claimDueOutbox(
   db: DbOrTrx,
-  opts: { now: Date; limit: number; staleBefore: Date; orgIds?: readonly string[] }
+  opts: { now: Date; limit: number; staleBefore: Date; orgIds?: readonly string[]; channel?: NoticeChannel }
 ): Promise<ClaimedOutbox[]> {
   const { orgIds } = opts;
   // An empty list means no org, not all orgs.
@@ -364,7 +369,7 @@ export async function claimDueOutbox(
       let query = qb
         .selectFrom("outbox")
         .select((eb) => ["id", eb("status", "=", "sending").as("was_stale")])
-        .where("channel", "=", "telegram")
+        .where("channel", "=", opts.channel ?? "telegram")
         .where((eb) =>
           eb.or([
             eb.and([eb("status", "=", "pending"), eb("next_attempt_at", "<=", opts.now)]),
@@ -397,6 +402,7 @@ export async function claimDueOutbox(
       "o.kind",
       "o.view",
       "o.channel",
+      "o.mailbox_id",
       "o.detail",
       "o.locale",
       "o.text",
@@ -417,6 +423,7 @@ export async function claimDueOutbox(
       kind: noticeKindSchema.parse(row.kind),
       view: row.view,
       channel: z.enum(noticeChannels).parse(row.channel),
+      mailboxId: row.mailbox_id,
       detail: z.enum(noticeDetails).parse(row.detail),
       locale: userLocaleSchema.parse(row.locale),
       text: row.text,
@@ -432,8 +439,8 @@ export async function claimDueOutbox(
 }
 
 // A `mail` row older than `before` (the caller passes now − 24 h) that is still open becomes `failed` / `expired`, as the
-// Telegram sender does with its rows. Until the report mail sender exists (F110 stage 20) nothing else touches a mail row, so a
-// gap between the stages ends as expired rows. Returns the count.
+// Telegram sender does with its rows. The report mail sender runs this at each tick, so a row that no run could send ends as
+// `expired` (a mailbox that stays paused, a sender that is down). Returns the count.
 export async function expireOldMailOutbox(db: DbOrTrx, opts: { before: Date }): Promise<number> {
   const result = await db
     .updateTable("outbox")
@@ -450,7 +457,8 @@ export async function markOutboxSent(
   ctx: TenantContext,
   id: string,
   lockedAt: Date,
-  sent: { messageId: number; at: Date; message: OutMessage }
+  // `messageId` is the Telegram message id; a report mail has none (null).
+  sent: { messageId: number | null; at: Date; message: OutMessage }
 ): Promise<boolean> {
   const result = await db
     .updateTable("outbox")
@@ -487,6 +495,25 @@ export async function releaseOutbox(
       next_attempt_at: opts.nextAttemptAt,
       attempts: opts.countAttempt ? eb("attempts", "+", 1) : eb.ref("attempts"),
     }))
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", id)
+    .where("status", "=", "sending")
+    .where("locked_at", "=", lockedAt)
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows) === 1;
+}
+
+// A claim that took a row over from a dead run (`wasStale`) counts one attempt of that row, so a row that keeps crashing its sender ends
+// as `too_many_errors` (F110 stage 20). The token compare-and-set is the one of `releaseOutbox`.
+export async function countOutboxAttempt(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  id: string,
+  lockedAt: Date
+): Promise<boolean> {
+  const result = await db
+    .updateTable("outbox")
+    .set((eb) => ({ attempts: eb("attempts", "+", 1) }))
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", id)
     .where("status", "=", "sending")

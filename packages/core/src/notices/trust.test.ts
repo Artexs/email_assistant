@@ -174,7 +174,7 @@ describe("autonomy_paused", () => {
 
 // Review of stage 10 (P1-P7, TG1-TG3): every text is pinned in en and pl, and the links are strict.
 describe("pinned texts", () => {
-  const plPrefix = "⏸ Automatyczne przenoszenie wiadomości z kategorii „Powiadomienie” zostało wyłączone";
+  const plPrefix = "⏸ Automatyczne przenoszenie wiadomości z kategorii „Powiadomienie” zostało wstrzymane";
   const plTail = `\nWłącz je ponownie w Ustawieniach.\nUstawienia: ${settingsUrl}`;
   const enPrefix = "⏸ Automatic moves for Notification are off";
   const enTail = `\nTurn them on again in Settings.\nSettings: ${settingsUrl}`;

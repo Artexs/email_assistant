@@ -33,8 +33,8 @@ import { textsFor } from "../texts";
 import { type NoticeKind, type NoticeRenderOptions } from "./kinds";
 import { noticeViewSchemas } from "./views";
 
-// One renderer per kind. A channel key holds one function per detail level. `mail` is optional: F110 stage 19 queues mail
-// rows, stage 20 adds the mail renderers; until then `renderNotice` answers `{ ok: false }` for a mail row.
+// One renderer per kind. A channel key holds one function per detail level. `mail` is optional: only the four kinds of
+// `reportMailKinds` have one (F110 stage 20); for every other kind `renderNotice` answers `{ ok: false }` for a mail row.
 export interface NoticeRenderer<S extends z.ZodType> {
   schema: S;
   telegram: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
@@ -45,10 +45,31 @@ function defineRenderer<S extends z.ZodType>(renderer: NoticeRenderer<S>): Notic
   return renderer;
 }
 
+// The report mail shows the facts of the Telegram notice: the same text, no buttons (a mail has no taps). Links stay in the text.
+function mailOf<View>(telegram: { full: (view: View, opts: NoticeRenderOptions) => OutMessage }): {
+  full: (view: View, opts: NoticeRenderOptions) => OutMessage;
+} {
+  return { full: (view, opts) => ({ text: telegram.full(view, opts).text, buttons: [] }) };
+}
+
+// The four report kinds: one Telegram renderer each; the mail renderer derives from it (`mailOf`).
+const reportTelegram = {
+  digest: { full: (view) => ({ text: view.text, buttons: view.buttons }) },
+  weekly_report: { full: (view, opts) => renderWeeklyReport(view, textsFor(opts.locale)) },
+  trust_report_ready: { full: (view, opts) => renderTrustReportReadyNotice(view, textsFor(opts.locale)) },
+  autonomy_paused: { full: (view, opts) => renderAutonomyPausedNotice(view, textsFor(opts.locale)) },
+} satisfies {
+  digest: NoticeRenderer<(typeof noticeViewSchemas)["digest"]>["telegram"];
+  weekly_report: NoticeRenderer<(typeof noticeViewSchemas)["weekly_report"]>["telegram"];
+  trust_report_ready: NoticeRenderer<(typeof noticeViewSchemas)["trust_report_ready"]>["telegram"];
+  autonomy_paused: NoticeRenderer<(typeof noticeViewSchemas)["autonomy_paused"]>["telegram"];
+};
+
 export const noticeRenderers = {
   digest: defineRenderer({
     schema: noticeViewSchemas.digest,
-    telegram: { full: (view) => ({ text: view.text, buttons: view.buttons }) },
+    telegram: reportTelegram.digest,
+    mail: mailOf(reportTelegram.digest),
   }),
   urgent: defineRenderer({
     schema: noticeViewSchemas.urgent,
@@ -162,7 +183,8 @@ export const noticeRenderers = {
   }),
   weekly_report: defineRenderer({
     schema: noticeViewSchemas.weekly_report,
-    telegram: { full: (view, opts) => renderWeeklyReport(view, textsFor(opts.locale)) },
+    telegram: reportTelegram.weekly_report,
+    mail: mailOf(reportTelegram.weekly_report),
   }),
   host_blocked: defineRenderer({
     schema: noticeViewSchemas.host_blocked,
@@ -198,10 +220,12 @@ export const noticeRenderers = {
   }),
   trust_report_ready: defineRenderer({
     schema: noticeViewSchemas.trust_report_ready,
-    telegram: { full: (view, opts) => renderTrustReportReadyNotice(view, textsFor(opts.locale)) },
+    telegram: reportTelegram.trust_report_ready,
+    mail: mailOf(reportTelegram.trust_report_ready),
   }),
   autonomy_paused: defineRenderer({
     schema: noticeViewSchemas.autonomy_paused,
-    telegram: { full: (view, opts) => renderAutonomyPausedNotice(view, textsFor(opts.locale)) },
+    telegram: reportTelegram.autonomy_paused,
+    mail: mailOf(reportTelegram.autonomy_paused),
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;
