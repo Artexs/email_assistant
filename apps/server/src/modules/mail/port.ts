@@ -104,6 +104,8 @@ export interface CapturedHeaders {
   /** The topmost Authentication-Results value. */
   authResults: string | null;
   listUnsubscribe: string | null;
+  /** RFC 8058: the topmost `List-Unsubscribe-Post` value is `List-Unsubscribe=One-Click` (trimmed, any case). */
+  listUnsubscribePost: boolean;
   listId: string | null;
   /** A token: lower case, `^[a-z0-9-]{1,40}$`, else "other". */
   autoSubmitted: string | null;

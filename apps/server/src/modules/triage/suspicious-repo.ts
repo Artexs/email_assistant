@@ -43,6 +43,37 @@ export async function listFrequentSenders(
   return rows.map((row) => row.sender);
 }
 
+// The senders (of `sendersLower`, lower case) with at least one mail in this mailbox since `since` whose newest result has
+// reasons (F110 stage 22; PD-063: bulk unsubscribe never touches a flagged sender). The rule is per sender: one flagged mail
+// puts the sender in the set, an older flagged row under a clean newest row does not (the pattern of `listFrequentSenders`).
+// Queries `from_address_lower` (index `emails_mailbox_sender_idx`): never `lower(from_address)`. Mail with no result does not count.
+export async function suspiciousSendersOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  sendersLower: readonly string[],
+  since: Date
+): Promise<Set<string>> {
+  if (sendersLower.length === 0) return new Set();
+  const { rows } = await sql<{ sender: string }>`
+    SELECT DISTINCT e.from_address_lower AS sender
+    FROM emails e
+    JOIN LATERAL (
+      SELECT tr.suspicious_reasons
+      FROM triage_results tr
+      WHERE tr.org_id = e.org_id AND tr.email_id = e.id
+      ORDER BY tr.created_at DESC, tr.id DESC
+      LIMIT 1
+    ) latest ON true
+    WHERE e.org_id = ${ctx.orgId}
+      AND e.mailbox_id = ${mailboxId}
+      AND e.from_address_lower = ANY(${sendersLower as string[]}::text[])
+      AND e.received_at >= ${since}
+      AND cardinality(latest.suspicious_reasons) > 0
+  `.execute(db);
+  return new Set(rows.map((row) => row.sender));
+}
+
 // The newest non-empty `from_name` of mail from each address in this mailbox in the window (the display names of VIPs).
 export async function listNewestFromNames(
   db: DbOrTrx,

@@ -151,6 +151,20 @@ export async function fillMailbox(
     })
     .execute();
 
+  // One request to unsubscribe from a sender (F110 stage 22): it goes with the mailbox.
+  await trx
+    .insertInto("unsubscribe_requests")
+    .values({
+      org_id: ctx.orgId,
+      mailbox_id: mailboxId,
+      sender_lower: `news-${randomUUID()}@list.x.test`,
+      sender_domain: "list.x.test",
+      method: "one_click",
+      status: "requested",
+      created_at: now,
+    })
+    .execute();
+
   // One history check with one item (the item goes with the mail and with the check) and one trip (F110): all go with the mailbox.
   const checkId = await insertCheckRow(trx, ctx, mailboxId, { status: "done", finished_at: now });
   await insertCheckItemRow(trx, ctx, checkId, triaged.emailId);
@@ -235,7 +249,15 @@ export async function countMailboxRows(
     return Number(row.n);
   };
   const single = async (
-    table: "emails" | "delegations" | "sender_rules" | "sent_emails" | "open_loops" | "sent_analyses" | "reply_requests"
+    table:
+      | "emails"
+      | "delegations"
+      | "sender_rules"
+      | "sent_emails"
+      | "open_loops"
+      | "sent_analyses"
+      | "reply_requests"
+      | "unsubscribe_requests"
   ) => {
     const row = await trx
       .selectFrom(table)
@@ -288,6 +310,7 @@ export async function countMailboxRows(
     mailbox_oauth_states: await byMailbox("mailbox_oauth_states"),
     mailbox_profiles: await byMailbox("mailbox_profiles"),
     reply_requests: await single("reply_requests"),
+    unsubscribe_requests: await single("unsubscribe_requests"),
     audit_log_by_email: await audit("email_id"),
     audit_log_by_action: await audit("action_id"),
     audit_log_by_mailbox: await audit("mailbox"),

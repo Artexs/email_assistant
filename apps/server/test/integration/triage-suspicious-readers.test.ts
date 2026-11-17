@@ -4,7 +4,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
-import { suspiciousReasonsOf, suspiciousThreadKeysOf } from "../../src/modules/triage";
+import { suspiciousReasonsOf, suspiciousSendersOf, suspiciousThreadKeysOf } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
@@ -180,6 +180,82 @@ describe("suspiciousThreadKeysOf", () => {
       const { counter, plugin } = countingPlugin();
       expect((await suspiciousThreadKeysOf(trx.withPlugin(plugin), ctxA, a.mailboxId, [])).size).toBe(0);
       expect(counter.count).toBe(0);
+    });
+  });
+});
+
+// F110 stage 22: the per-sender reader of bulk unsubscribe (tests 4 and 5 of the stage file).
+describe("suspiciousSendersOf", () => {
+  const SINCE = new Date(NOW.getTime() - 30 * 24 * HOUR);
+
+  test("4: a sender with one flagged mail among clean ones is in the set; a clean sender and an unknown one are not", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const mail = (from: string, reasons: string[], at: Date) =>
+        insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: at, from, suspiciousReasons: reasons });
+      await mail("A@News.test", ["lookalike_domain"], ago(2 * HOUR));
+      await mail("a@news.test", [], ago(1 * HOUR));
+      await mail("b@news.test", [], ago(1 * HOUR));
+      // A flagged mail older than the window does not count.
+      await mail("old@news.test", ["auth_fail"], new Date(SINCE.getTime() - HOUR));
+
+      const set = await suspiciousSendersOf(
+        trx,
+        ctxA,
+        a.mailboxId,
+        ["a@news.test", "b@news.test", "old@news.test", "none@news.test"],
+        SINCE
+      );
+      expect([...set]).toEqual(["a@news.test"]);
+    });
+  });
+
+  test("4b: only the newest result of a mail counts: a flagged row under a clean newest row does not flag the sender", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const id = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(3 * HOUR),
+        from: "c@news.test",
+        suspiciousReasons: ["auth_fail"],
+      });
+      await insertRow(trx, ctxA, id, [], ago(1 * HOUR));
+      expect((await suspiciousSendersOf(trx, ctxA, a.mailboxId, ["c@news.test"], SINCE)).size).toBe(0);
+      await insertRow(trx, ctxA, id, ["auth_fail"], ago(30 * 60_000));
+      expect([...(await suspiciousSendersOf(trx, ctxA, a.mailboxId, ["c@news.test"], SINCE))]).toEqual(["c@news.test"]);
+    });
+  });
+
+  test("5: another organization's mail never counts, and another mailbox of the same organization does not either; empty input gives the empty set", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, ctxA, ctxB } = await setup(trx);
+      const secondId = randomUUID();
+      await insertMailbox(trx, ctxA, {
+        id: secondId,
+        address: `second-${secondId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await insertTriaged(trx, ctxB, b.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        from: "x@news.test",
+        suspiciousReasons: ["auth_fail"],
+      });
+      await insertTriaged(trx, ctxA, secondId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        from: "y@news.test",
+        suspiciousReasons: ["auth_fail"],
+      });
+      const asked = ["x@news.test", "y@news.test"];
+      expect((await suspiciousSendersOf(trx, ctxA, a.mailboxId, asked, SINCE)).size).toBe(0);
+      expect([...(await suspiciousSendersOf(trx, ctxB, b.mailboxId, asked, SINCE))]).toEqual(["x@news.test"]);
+      expect((await suspiciousSendersOf(trx, ctxA, a.mailboxId, [], SINCE)).size).toBe(0);
     });
   });
 });

@@ -269,6 +269,18 @@ export const dataCategories: readonly DataCategory[] = [
     kept: untilDelete,
   },
   {
+    id: "unsubscribe-data",
+    label: { en: "Unsubscribe requests", pl: "Prośby o wypisanie z list" },
+    purpose: {
+      en: "The address and the domain of a mailing-list sender that you asked to unsubscribe from, and the result of the request",
+      pl: "Adres i domena nadawcy listy mailingowej, z której poprosiłeś o wypisanie, oraz wynik tej prośby",
+    },
+    columns: ["unsubscribe_requests.*"],
+    // The sender is a third party. A data-request erase of the sender deletes the row (`address-map.ts`, rule `delete`).
+    subjects: ["others"],
+    kept: untilDelete,
+  },
+  {
     id: "chat-links",
     label: { en: "Chat links", pl: "Powiązania z czatem" },
     purpose: {

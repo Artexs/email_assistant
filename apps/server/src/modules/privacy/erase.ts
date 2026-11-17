@@ -152,6 +152,13 @@ async function scrubMentions(
       const condition = rowCondition(rule, column, patterns);
       if (condition === null) continue;
       const key = `${table}.${column}`;
+      if (rule === "delete") {
+        const removed = await sql`
+          delete from ${sql.table(table)} as t where t.org_id = ${orgId}::uuid and ${condition}`.execute(trx);
+        const gone = Number(removed.numAffectedRows ?? 0n);
+        if (gone > 0) scrubbed[key] = (scrubbed[key] ?? 0) + gone;
+        continue;
+      }
       const value = cleanedValue(rule, key, column, patterns, nullable[key] === true);
       const result = await sql`
         update ${sql.table(table)} as t set ${sql.id(column)} = ${value}

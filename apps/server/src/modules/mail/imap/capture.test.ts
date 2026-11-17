@@ -16,6 +16,7 @@ const F1_HEADERS = [
   "Subject: Invoice",
   "Reply-To: other@else.test",
   "List-Unsubscribe: <https://u.test/x>, <mailto:u@u.test>",
+  "List-Unsubscribe-Post: List-Unsubscribe=One-Click",
   "List-Id: News <news.list.test>",
   "Auto-Submitted: auto-replied",
   "Precedence: bulk",
@@ -79,6 +80,7 @@ describe("captureFromParsed", () => {
       fromName: "Jan Kowalski <ceo@corp.test>",
       replyTo: ["other@else.test"],
       listUnsubscribe: "<https://u.test/x>, <mailto:u@u.test>",
+      listUnsubscribePost: true,
       listId: "News <news.list.test>",
       autoSubmitted: "auto-replied",
       precedence: "bulk",
@@ -154,6 +156,28 @@ describe("captureFromParsed", () => {
     expect(long.replyTo).toHaveLength(5);
   });
 
+  test("5b: List-Unsubscribe-Post is true only for the exact RFC 8058 value (trimmed, any case)", async () => {
+    const postOf = async (...extra: string[]) => (await captureOf(simple(extra))).listUnsubscribePost;
+    const link = "List-Unsubscribe: <https://u.test/x>";
+    expect(await postOf(link, "List-Unsubscribe-Post: List-Unsubscribe=One-Click")).toBe(true);
+    expect(await postOf(link, "List-Unsubscribe-Post:   list-unsubscribe=one-click  ")).toBe(true);
+    expect(await postOf(link, "list-unsubscribe-post: LIST-UNSUBSCRIBE=ONE-CLICK")).toBe(true);
+    // A folded header line is one value.
+    expect(await postOf(link, "List-Unsubscribe-Post:", " List-Unsubscribe=One-Click")).toBe(true);
+    // Only the List-Unsubscribe header, an empty value, another value and a near miss are false.
+    expect(await postOf(link)).toBe(false);
+    expect(await postOf(link, "List-Unsubscribe-Post:")).toBe(false);
+    expect(await postOf(link, "List-Unsubscribe-Post: List-Unsubscribe=One-Click-Not")).toBe(false);
+    expect(await postOf(link, "List-Unsubscribe-Post: yes; List-Unsubscribe=One-Click")).toBe(false);
+    // The topmost line counts: a lower line cannot turn the flag on, and cannot turn it off.
+    expect(await postOf(link, "List-Unsubscribe-Post: no", "List-Unsubscribe-Post: List-Unsubscribe=One-Click")).toBe(
+      false
+    );
+    expect(await postOf(link, "List-Unsubscribe-Post: List-Unsubscribe=One-Click", "List-Unsubscribe-Post: no")).toBe(
+      true
+    );
+  });
+
   test("5: a mail without the headers gives null and empty values", async () => {
     expect(await captureOf(simple([]))).toEqual({
       fromName: null,
@@ -161,6 +185,7 @@ describe("captureFromParsed", () => {
       returnPath: null,
       authResults: null,
       listUnsubscribe: null,
+      listUnsubscribePost: false,
       listId: null,
       autoSubmitted: null,
       precedence: null,
