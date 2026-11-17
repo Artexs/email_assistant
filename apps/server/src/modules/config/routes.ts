@@ -1,6 +1,8 @@
 import {
   autoBodySchema,
   barCategories,
+  loopSwitchNames,
+  loopWaitBodySchema,
   modeBodySchema,
   ruleBodySchema,
   rulesQuerySchema,
@@ -23,11 +25,19 @@ import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
 import { parseBody, parseQuery, requireOwner, type ApiEnv } from "../../platform/http";
+import { isFeatureOn } from "../tenancy";
 
 import { rulesDocs, settingsDocs } from "./api-docs";
 import { getMailboxSettings, listSenderRuleRows, type SenderRuleRow } from "./repo";
 import { addSenderRule, removeSenderRule } from "./rules";
-import { setMode, setToolSwitch, setUrgencyProfile, SettingsNotFoundError, type SettingsChange } from "./service";
+import {
+  setLoopWaitDays,
+  setMode,
+  setToolSwitch,
+  setUrgencyProfile,
+  SettingsNotFoundError,
+  type SettingsChange,
+} from "./service";
 import { buildSettingsView, type SettingsViewDeps } from "./view";
 
 // `blocks`: why the evidence gate refused (flag `trust_ladder` on); absent when the real-label gate refused.
@@ -116,8 +126,11 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
 
   app.patch("/settings/:mailboxId/switches/:name", requireOwner, settingsDocs.patchSettingsSwitch, async (c) => {
     const id = mailboxIdOf(c);
-    const name = member(toolSwitchNames, c.req.param("name"));
+    const name = member([...toolSwitchNames, ...loopSwitchNames], c.req.param("name"));
     if (!id || !name || !(await ensureSettings(c, id))) return notFound(c);
+    // A switch of the open loops is hidden with the flag: it looks like an unknown switch.
+    const loopSwitch = member(loopSwitchNames, name) !== null;
+    if (loopSwitch && !(await isFeatureOn(deps.db, c.get("ctx"), "open_loops"))) return notFound(c);
     const body = await parseBody(c, switchBodySchema);
     return guarded(c, async () => {
       const change = await setToolSwitch(deps.settings, c.get("ctx"), id, {
@@ -126,6 +139,22 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
         actor: c.get("session").userId,
       });
       return respond(c, id, change);
+    });
+  });
+
+  // The wait of the open loops. A hidden feature (flag off) looks absent. The owner only; a member gets 403 before any query.
+  app.patch("/settings/:mailboxId/loop-wait", requireOwner, settingsDocs.patchSettingsLoopWait, async (c) => {
+    const id = mailboxIdOf(c);
+    if (!id || !(await isFeatureOn(deps.db, c.get("ctx"), "open_loops")) || !(await ensureSettings(c, id))) {
+      return notFound(c);
+    }
+    const body = await parseBody(c, loopWaitBodySchema);
+    return guarded(c, async () => {
+      const result = await setLoopWaitDays(deps.settings.db, c.get("ctx"), id, body.days, {
+        userId: c.get("session").userId,
+        via: "web",
+      });
+      return respond(c, id, { changed: result.changed, expired: 0 });
     });
   });
 

@@ -40,8 +40,8 @@ const delegation = (n: number, over: Partial<BriefDelegation> = {}): BriefDelega
   ...over,
 });
 
-const rowsOf = (input: BriefInput, texts = en, consent = true) =>
-  briefKeyboard(loopSections(input), texts, { consent }).map((row) => row.map((button) => button.data));
+const rowsOf = (input: BriefInput, texts = en, consent = true, owner = true) =>
+  briefKeyboard(loopSections(input), texts, { consent, owner }).map((row) => row.map((button) => button.data));
 
 describe("the rows of the brief keyboard", () => {
   test("one row per loop line: waiting Draft, Later, Done; promised Done, Drop; stale Reopen; an overdue delegation Done", () => {
@@ -67,6 +67,31 @@ describe("the rows of the brief keyboard", () => {
     ]);
   });
 
+  test("a member has no Draft, Drop or Reopen: waiting Later, Done; promised Done; stale no row; a delegation Done (review 19 N3)", () => {
+    const waiting = loop(1);
+    const delegated = loop(2, { kind: "delegated" });
+    const promised = loop(3, { kind: "promised" });
+    const rows = rowsOf(
+      briefInput({
+        waitingLoops: part([waiting, delegated]),
+        waitingDelegations: part([delegation(1)]),
+        promised: part([promised]),
+        stale: part([{ id: uuid(400), subject: "Old offer" }]),
+      }),
+      en,
+      true,
+      false
+    );
+    const code = (kind: Parameters<typeof encodeCallback>[0]["kind"], id: string) =>
+      encodeCallback({ kind, loopId: id } as Parameters<typeof encodeCallback>[0]);
+    expect(rows).toEqual([
+      [code("loop_later", waiting.id), code("loop_done", waiting.id)],
+      [code("loop_later", delegated.id), code("loop_done", delegated.id)],
+      [encodeCallback({ kind: "delegation_done", delegationId: uuid(301) })],
+      [code("loop_done", promised.id)],
+    ]);
+  });
+
   test("the Draft button needs canDraft; the Later button goes after the third use; a sent delegation has no button", () => {
     const rows = rowsOf(
       briefInput({
@@ -85,12 +110,12 @@ describe("the rows of the brief keyboard", () => {
     const sections = loopSections(
       briefInput({ waitingLoops: part([loop(1)]), promised: part([loop(2, { kind: "promised" })]) })
     );
-    expect(briefKeyboard(sections, en, { consent: true })).toHaveLength(2);
-    expect(briefKeyboard(sections, en, { consent: false })).toEqual([]);
+    expect(briefKeyboard(sections, en, { consent: true, owner: true })).toHaveLength(2);
+    expect(briefKeyboard(sections, en, { consent: false, owner: true })).toEqual([]);
     // The sections of an uncovered user hold counts only: the keyboard is empty on its own too.
     expect(rowsOf(briefInput({ waitingLoops: part([loop(1)]) }), en, false)).toEqual([]);
     const uncovered = loopSections(briefInput({ consent: false, waitingLoops: part([loop(1)]) }));
-    expect(briefKeyboard(uncovered, en, { consent: true })).toEqual([]);
+    expect(briefKeyboard(uncovered, en, { consent: true, owner: true })).toEqual([]);
   });
 
   test("the urgent and the reply lines have no button", () => {
@@ -104,6 +129,7 @@ describe("the rows of the brief keyboard", () => {
         texts,
         {
           consent: true,
+          owner: true,
         }
       )
         .flat()
@@ -130,7 +156,13 @@ describe("the keyboard inside the digest", () => {
       digestInput({
         items,
         counts: { needs_reply: 15 },
-        brief: { sections: loopSections(fullBrief()), loopConsent: true, urgentEmailIds: [], openLoops: null },
+        brief: {
+          sections: loopSections(fullBrief()),
+          loopConsent: true,
+          owner: true,
+          urgentEmailIds: [],
+          openLoops: null,
+        },
       }),
       en
     );
@@ -165,7 +197,7 @@ describe("the keyboard inside the digest", () => {
   test("lineOf names the line of each loop and delegation of the text; a line that the 4096 cut dropped is not named", () => {
     const sections = loopSections(fullBrief());
     const { message, shown } = renderDigestWithBrief(
-      digestInput({ brief: { sections, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      digestInput({ brief: { sections, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null } }),
       en
     );
     const lines = message.text.split("\n");
@@ -179,7 +211,9 @@ describe("the keyboard inside the digest", () => {
     // The 4096 cut moves the last line into "+n more" (`dropLastLine`): its id and its buttons go with it.
     const shorter = dropLastLine(sections) as BriefSections;
     const cut = renderDigestWithBrief(
-      digestInput({ brief: { sections: shorter, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      digestInput({
+        brief: { sections: shorter, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null },
+      }),
       en
     );
     expect(Object.keys(cut.shown.lineOf)).toHaveLength(ids.length - 1);
@@ -189,7 +223,7 @@ describe("the keyboard inside the digest", () => {
 
   test("lineOf and the keyboard stay right with the spam review line present and absent (F110 stage 17)", () => {
     const sections = loopSections(fullBrief());
-    const brief = { sections, loopConsent: true, urgentEmailIds: [], openLoops: null };
+    const brief = { sections, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null };
     const base = { brief, items: [digestItem(1, "info")], counts: { info: 1 } };
     const without = renderDigestWithBrief(digestInput(base), en);
     const spamReview = { moved: 2, wouldMove: 0, url: null };
@@ -231,7 +265,7 @@ describe("the keyboard inside the digest", () => {
       })
     );
     const { message, shown } = renderDigestWithBrief(
-      digestInput({ brief: { sections, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      digestInput({ brief: { sections, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null } }),
       en
     );
     const lines = message.text.split("\n");
@@ -244,7 +278,7 @@ describe("the keyboard inside the digest", () => {
       briefInput({ waitingLoops: part([loop(1, { counterpart: "anna\u001b[31m@example.test", text: "send it" })]) })
     );
     const { message } = renderDigestWithBrief(
-      digestInput({ brief: { sections, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      digestInput({ brief: { sections, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null } }),
       en
     );
     const line = message.text.split("\n").find((text) => text.startsWith("⏳")) ?? "";
@@ -259,7 +293,13 @@ describe("the keyboard inside the digest", () => {
     const later = renderDigestWithBrief(
       {
         ...input,
-        brief: { sections: null, loopConsent: true, urgentEmailIds: [], openLoops: { waiting: 1, promised: 0 } },
+        brief: {
+          sections: null,
+          loopConsent: true,
+          owner: true,
+          urgentEmailIds: [],
+          openLoops: { waiting: 1, promised: 0 },
+        },
       },
       en
     );

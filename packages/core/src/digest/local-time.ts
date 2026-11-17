@@ -146,6 +146,14 @@ export function localToInstant(date: string, time: string, timeZone: string): Da
   return new Date(instants[instants.length - 1] as number);
 }
 
+// The first instant of a local date: the earliest time the wall clock reads 00:00, and when the zone skips midnight (a
+// spring change at 00:00, as in Havana or Santiago) the instant of the change itself. `localToInstant` would give the later
+// instant, one hour into the day, which moves a "by the end of the day" window by one hour.
+export function startOfLocalDay(date: string, timeZone: string): Date {
+  const { instants, change } = localInstants(date, "00:00", timeZone);
+  return new Date(change ?? (instants[0] as number));
+}
+
 export function formatClock(at: Date, timeZone: string, now: Date, locale: UserLocale): string {
   const local = localParts(at, timeZone);
   const today = localParts(now, timeZone);

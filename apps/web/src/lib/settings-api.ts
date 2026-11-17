@@ -22,7 +22,7 @@ export function selectedMailboxId(list: readonly { id: string }[], query: string
 export function switchesAfterAssist(
   current: SettingsWebView["toolSwitches"],
   keep: boolean
-): (keyof SettingsWebView["toolSwitches"])[] {
+): (typeof toolSwitchNames)[number][] {
   return toolSwitchNames.filter((name) => (keep ? current[name] : (ASSIST_DEFAULT_SWITCHES[name] ?? current[name])));
 }
 
