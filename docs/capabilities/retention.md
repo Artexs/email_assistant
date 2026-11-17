@@ -87,3 +87,5 @@ The job writes these columns and no others: `emails` (`body_text`, `subject`, `f
 - `apps/server/test/integration/retention-job.test.ts`
 - `apps/server/test/integration/retention-clear.test.ts`
 - `apps/server/test/integration/retention-clear-sent-concurrent.test.ts`
+- `apps/server/test/integration/replies-retention.test.ts` (reply texts: `created_at`, the 90-day text period for every organization)
+- `apps/server/src/legal-retention.test.ts` (the reply-text period and column agree with the category and the papers)

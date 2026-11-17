@@ -106,6 +106,41 @@ describe("claimReplyRequests", () => {
     }
   });
 
+  test("a row that another open transaction holds locked is skipped, not waited for; it is claimed after that transaction ends", async () => {
+    const org = await db.transaction().execute(async (trx) => {
+      const created = await newOrg(trx);
+      const held = await request(trx, created, { next_attempt_at: ago(MIN_MS), created_at: ago(3 * MIN_MS) });
+      const free = await request(trx, created, { next_attempt_at: ago(MIN_MS), created_at: ago(2 * MIN_MS) });
+      return { ...created, held: held.id, free: free.id };
+    });
+    try {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      let locked!: () => void;
+      const hasLock = new Promise<void>((resolve) => {
+        locked = resolve;
+      });
+      const holder = db.transaction().execute(async (trx) => {
+        await trx.selectFrom("reply_requests").select("id").where("id", "=", org.held).forUpdate().execute();
+        locked();
+        await gate;
+      });
+      await hasLock;
+      // Without SKIP LOCKED this call waits for the holder, and the holder waits for this call: the test times out.
+      const claimed = await claimReplyRequests(db, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 10 });
+      expect(claimed.map((row) => row.id)).toEqual([org.free]);
+      release();
+      await holder;
+      const next = await claimReplyRequests(db, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 10 });
+      expect(next.map((row) => row.id)).toEqual([org.held]);
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", org.orgId).execute();
+      await db.deleteFrom("users").where("id", "=", org.userId).execute();
+    }
+  });
+
   test("2. a drafting row locked 6 min ago is claimed again with attempts + 1; one locked 4 min ago is not", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
@@ -200,6 +235,32 @@ describe("finishReplyRequest and releaseReplyRequest", () => {
       expect(
         await releaseReplyRequest(trx, org.ctx, a.id, NOW, { nextAttemptAt: next, countAttempt: true, now: NOW })
       ).toBe(false);
+    });
+  });
+
+  test("a worker that lost its claim to a stale take-back can neither finish nor release the row", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const { id } = await request(trx, org, { next_attempt_at: ago(10 * MIN_MS) });
+      const [first] = await claimReplyRequests(trx, org.ctx, {
+        mailboxId: org.mailboxId,
+        now: ago(7 * MIN_MS),
+        limit: 1,
+      });
+      const oldToken = first?.locked_at ?? NOW;
+      // 7 minutes later the claim is stale: a second worker takes the row back.
+      const [second] = await claimReplyRequests(trx, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 1 });
+      expect(second).toMatchObject({ id, attempts: 1 });
+
+      expect(await finishReplyRequest(trx, org.ctx, id, oldToken, { status: "done", now: NOW })).toBe(false);
+      expect(
+        await releaseReplyRequest(trx, org.ctx, id, oldToken, { nextAttemptAt: NOW, countAttempt: true, now: NOW })
+      ).toBe(false);
+      const row = await rowOf(trx, id);
+      expect(row).toMatchObject({ status: "drafting", attempts: 1 });
+      expect(row.locked_at?.getTime()).toBe(NOW.getTime());
+      // The holder of the new claim can still end it.
+      expect(await finishReplyRequest(trx, org.ctx, id, NOW, { status: "done", now: NOW })).toBe(true);
     });
   });
 
