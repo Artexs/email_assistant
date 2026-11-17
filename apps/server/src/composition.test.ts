@@ -50,6 +50,62 @@ describe("the history job is wired in main.ts", () => {
   });
 });
 
+// F110 stage 20 (ADR 0022 point 2): report mail is the system's own mail, so every caller of the sync, the backfill and the history run
+// passes the composed own-mail check. A root that passed `isOwnActionId` alone would store, triage and sample the report mail.
+describe("the own-mail check is composed in every root (F110 stage 20)", () => {
+  test("main.ts: the sync job and the history job get isOwnMailOf; the CLI backfill too", () => {
+    const main = read("main.ts");
+    expect(callOf(main, "createMailSyncJob")).toContain("isOwnActionId: isOwnMailOf(db)");
+    expect(callOf(main, "createHistoryJob")).toContain("isOwnActionId: isOwnMailOf(db)");
+    expect(callOf(read("scripts/mailbox-backfill.ts"), "backfillMailbox")).toContain("isOwnActionId: isOwnMailOf(db)");
+  });
+
+  test("no file outside the modules passes a sync dependency that is not the composed check", () => {
+    return (async () => {
+      const found: string[] = [];
+      for await (const file of new Bun.Glob("**/*.ts").scan({ cwd: import.meta.dir })) {
+        if (file.endsWith(".test.ts") || file.startsWith("modules/")) continue;
+        const text = read(file);
+        for (const match of text.matchAll(/isOwnActionId:\s*([^\n,}]*)/g)) {
+          found.push(`${file}: ${match[1]?.trim()}`);
+        }
+      }
+      expect(found.sort()).toEqual([
+        "main.ts: isOwnMailOf(db)",
+        "main.ts: isOwnMailOf(db)",
+        "scripts/mailbox-backfill.ts: isOwnMailOf(db)",
+      ]);
+    })();
+  });
+
+  test("isOwnMailOf is the draft check or the report mail check", () => {
+    const text = read("composition.ts");
+    expect(text).toContain(
+      "(await isOwnActionId(db, ctx, mailboxId, id)) || (await isOwnReportMail(db, ctx, mailboxId, id))"
+    );
+  });
+});
+
+describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
+  const main = read("main.ts");
+
+  test("it is scheduled every 15 seconds, once, outside the Telegram block, and the shutdown waits for its run", () => {
+    expect(main.split('scheduler.add("channels.report_mail", "*/15 * * * * *"')).toHaveLength(2);
+    expect(main).toContain("reportMailRun = reportMail.run();");
+    const start = main.indexOf("Promise.allSettled([");
+    expect(main.slice(start, main.indexOf("])", start))).toContain("reportMailRun");
+    // Not inside `if (config.TELEGRAM_BOT_TOKEN === undefined) { ... } else { ... }`: a mail-only member needs no bot.
+    const telegramBlock = main.indexOf("if (config.TELEGRAM_BOT_TOKEN === undefined) {");
+    expect(main.indexOf('scheduler.add("channels.report_mail"')).toBeLessThan(telegramBlock);
+  });
+
+  test("the sender gets the IMAP adapter with the shared tokens and no SMTP sender", () => {
+    const call = callOf(main, "createImapReportMailbox");
+    expect(call).toContain("oauthTokens: mailOAuth.tokens");
+    expect(call).not.toMatch(/smtp|openSender|Graph/i);
+  });
+});
+
 describe("the token store is wired into every composition root", () => {
   const main = read("main.ts");
 
@@ -94,6 +150,8 @@ describe("the token store is wired into every composition root", () => {
         "composition.ts",
         "main.ts",
         "modules/actions/committer.ts",
+        // The report mail adapter opens the mailbox for an APPEND into its INBOX (F110 stage 20); it passes no sender.
+        "modules/channels/report-mailbox-imap.ts",
         "modules/mail/jobs.ts",
         "modules/mail/open.ts",
         // `backfillMailbox` with the purpose `history`: its caller (the history job) passes `oauthTokens` from its composition root.

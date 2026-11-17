@@ -60,6 +60,10 @@ export {
   type OperatorNotices,
 } from "./operator";
 export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
+export { createReportMailSender, REPORT_MAIL_WAIT_MS, type ReportMailSenderDeps } from "./report-mail-sender";
+export { ReportMailError, type ReportMailbox, type ReportMailErrorKind } from "./report-mailbox";
+export { createImapReportMailbox, type ImapReportMailboxDeps } from "./report-mailbox-imap";
+export { isOwnReportMail } from "./own-report-mail";
 export { queueNotice, type QueueNoticeInput } from "./notice-queue";
 export { cardEditHooks, queueCardEdits, type CardEdit, type CardEditOutcome, type CardEditResult } from "./card-edits";
 export {

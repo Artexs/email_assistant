@@ -1,4 +1,4 @@
-import type { OutgoingAddress, OutgoingMessage } from "@ea/core";
+import type { OutgoingAddress, OutgoingMessage, ReportMailMessage } from "@ea/core";
 import MailComposer from "nodemailer/lib/mail-composer";
 
 function toAddress(address: OutgoingAddress): { name?: string; address: string } {
@@ -18,6 +18,24 @@ export async function composeMessage(message: OutgoingMessage): Promise<Buffer> 
     date: message.date,
     inReplyTo: message.inReplyTo ?? undefined,
     references: message.references.length > 0 ? message.references.join(" ") : undefined,
+    headers: message.headers,
+  });
+  return composer.compile().build();
+}
+
+/**
+ * The MIME bytes of a report mail (F110 stage 20): `multipart/alternative` with a text and an HTML part, UTF-8. It is a message for an
+ * APPEND into the own INBOX, never for an SMTP send. The same message always gives the same bytes.
+ */
+export async function composeReportMail(message: ReportMailMessage): Promise<Buffer> {
+  const composer = new MailComposer({
+    from: toAddress(message.from),
+    to: message.to.map(toAddress),
+    subject: message.subject,
+    text: message.text.replace(/\r?\n/g, "\r\n"),
+    html: message.html,
+    messageId: message.messageId,
+    date: message.date,
     headers: message.headers,
   });
   return composer.compile().build();
