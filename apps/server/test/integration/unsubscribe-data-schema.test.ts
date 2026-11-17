@@ -51,7 +51,10 @@ async function scopeLocal(trx: Trx, orgId: string): Promise<void> {
   await sql`select set_config('app.org_id', ${orgId}, true)`.execute(trx);
 }
 
-type Org = { orgId: string; mailboxId: string };
+interface Org {
+  orgId: string;
+  mailboxId: string;
+}
 
 const request = (
   trx: Trx,
