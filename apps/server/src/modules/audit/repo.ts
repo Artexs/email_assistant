@@ -296,6 +296,26 @@ export async function countLlmCallsSince(
   return Number(row.count);
 }
 
+// The `llm.call` rows of the history checks of one mailbox, written at or after `since`: the calls that `countLlmCallsSince` leaves out.
+// The operator reads them next to the daily count, because the daily cap does not hold them (a check has its own cap).
+export async function countHistoryLlmCallsSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date
+): Promise<number> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", auditEvents.llmCall)
+    .where(sql<string>`data->>'mailbox_id'`, "=", mailboxId)
+    .where(sql<string | null>`data->>${sql.lit(HISTORY_CHECK_KEY)}`, "is not", null)
+    .where("created_at", ">=", since)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 // SLO job entry point (F114): no TenantContext. The `llm.call` rows of all organizations that are not `suspended`, written at or
 // after `since`: how many, and how many with an outcome other than `ok`. Counts only; no id, no text. The name differs from
 // `countLlmCallsSince` (one mailbox) on purpose.

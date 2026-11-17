@@ -52,7 +52,7 @@ import {
   type TenancyRouteDeps,
 } from "./modules/tenancy";
 import { goNoGoFor, triageRoutes } from "./modules/triage";
-import { queueHistoryCheckOnConnect } from "./modules/trust";
+import { queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
 import {
   createAuth,
   expiredSessionCookie,
@@ -378,6 +378,7 @@ export function apiRouters(
       })
     );
     api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config), extras.gate)));
+    api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes({ db, now, urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }));
