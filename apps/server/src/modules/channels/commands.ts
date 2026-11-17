@@ -58,6 +58,8 @@ export interface CommandDeps {
   operatorContact: string | null;
   // Minutes between two mail syncs (MAIL_SYNC_EVERY_MIN), for the /resume text.
   syncEveryMin: number;
+  // The base URL of the panel (`WEB_BASE_URL`): the picker of the Delegate button links to the delegates page.
+  webBaseUrl?: string;
 }
 
 const log = createLog("channels");
@@ -364,7 +366,7 @@ export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
       }
       return runCommand(deps, link, name);
     },
-    callback: async (link, data) => {
+    callback: async (link, data, source) => {
       if (await isOrgSuspended(deps.db, { orgId: link.orgId })) {
         log.info("tap_refused_suspended", { org_id: link.orgId });
         return { answer: textsFor(link.locale).bot.accountPaused(deps.operatorContact) };
@@ -377,9 +379,11 @@ export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
           hooks: deps.hooks,
           uidplus: deps.uidplus,
           sendScope: deps.sendScope,
+          ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
         },
         link,
-        data
+        data,
+        source
       );
     },
   };
