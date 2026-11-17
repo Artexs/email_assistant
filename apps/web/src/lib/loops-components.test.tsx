@@ -65,10 +65,10 @@ describe("a loop row", () => {
   test("an owner gets named buttons in the order of the rules; ids let the page return the focus", () => {
     const html = row(loop());
     const labels = [
-      "Draft follow-up: client@example.com",
-      "Later: client@example.com",
-      "Done: client@example.com",
-      "Drop: client@example.com",
+      "Draft follow-up: client@example.com, Send the offer",
+      "Later: client@example.com, Send the offer",
+      "Done: client@example.com, Send the offer",
+      "Drop: client@example.com, Send the offer",
     ];
     let at = 0;
     for (const label of labels) {
@@ -83,8 +83,8 @@ describe("a loop row", () => {
 
   test("a member sees Later and Done only", () => {
     const html = row(loop(), { owner: false });
-    expect(html).toContain('aria-label="Later: client@example.com"');
-    expect(html).toContain('aria-label="Done: client@example.com"');
+    expect(html).toContain('aria-label="Later: client@example.com, Send the offer"');
+    expect(html).toContain('aria-label="Done: client@example.com, Send the offer"');
     expect(html).not.toContain("Draft follow-up");
     expect(html).not.toContain('aria-label="Drop');
   });
@@ -107,7 +107,7 @@ describe("a loop row", () => {
   test("two follow-ups sent: the button is off with the reason on screen", () => {
     const html = row(loop({ followUpsSent: 2 }));
     expect(html).toContain("Follow-ups: 2 of 2");
-    expect(html).toMatch(/aria-label="Draft follow-up: client@example.com"[^>]*aria-disabled="true"/);
+    expect(html).toMatch(/aria-label="Draft follow-up: client@example.com, Send the offer"[^>]*aria-disabled="true"/);
     expect(html).toContain("Two follow-ups were drafted already: no more.");
     expect(html).toContain("aria-describedby=");
   });
@@ -117,7 +117,7 @@ describe("a loop row", () => {
     expect(html).toContain("You promised this in your sent mail.");
     expect(html).not.toContain("Follow-ups:");
     expect(html).not.toContain('aria-label="Later');
-    expect(html).toContain('aria-label="Drop: client@example.com"');
+    expect(html).toContain('aria-label="Drop: client@example.com, Send the offer"');
   });
 
   test("a delegated row names the delegate, shows the address, and an owner can stop tracking", () => {
@@ -132,7 +132,7 @@ describe("a loop row", () => {
     expect(html).toContain("Anna Nowak");
     expect(html).toContain("anna@example.com");
     expect(html).toContain("You forwarded this to a delegate; no answer for 4 working days.");
-    expect(html).toContain('aria-label="Stop tracking: Anna Nowak"');
+    expect(html).toContain('aria-label="Stop tracking: Anna Nowak, Send the offer"');
   });
 
   test("a closed row says how it ended; a matched-by-subject row and an auto-reply-only row say so", () => {
@@ -140,7 +140,7 @@ describe("a loop row", () => {
     expect(closed).toContain("Closed: a reply came in another thread.");
     expect(closed).toContain("Matched by subject");
     expect(closed).toContain(">Closed<");
-    expect(closed).toContain('aria-label="Reopen: client@example.com"');
+    expect(closed).toContain('aria-label="Reopen: client@example.com, Send the offer"');
     expect(closed).not.toContain("Done:");
     const auto = row(loop({ autoReplyOnly: true }));
     expect(auto).toContain("Auto-reply only");
@@ -164,10 +164,10 @@ describe("a loop row", () => {
       "Pytanie bez odpowiedzi. Czas oczekiwania: 4 dni robocze.",
       "Termin: 20 lis 2026 (podany w wiadomości)",
       "Przypomnienia o odpowiedzi: 1 z 2",
-      'aria-label="Przygotuj przypomnienie: client@example.com"',
-      'aria-label="Później: client@example.com"',
-      'aria-label="Gotowe: client@example.com"',
-      'aria-label="Porzuć: client@example.com"',
+      'aria-label="Przygotuj przypomnienie: client@example.com, Send the offer"',
+      'aria-label="Później: client@example.com, Send the offer"',
+      'aria-label="Gotowe: client@example.com, Send the offer"',
+      'aria-label="Porzuć: client@example.com, Send the offer"',
     ]) {
       expect(html).toContain(text);
     }

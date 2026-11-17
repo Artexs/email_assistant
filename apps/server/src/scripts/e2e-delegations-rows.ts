@@ -16,7 +16,7 @@ type Plan = (typeof E2E_DELEGATIONS)[keyof typeof E2E_DELEGATIONS];
 
 // One delegation with its mail, delegate, applied `create_draft` and `send`. A `drafted` delegation has a send that waits for an
 // approval; every other state has a send that went out (`applied`). The mail is test mail (its Message-ID ends in `@ea-seed.test`).
-async function seedDelegation(
+export async function seedDelegation(
   trx: Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,

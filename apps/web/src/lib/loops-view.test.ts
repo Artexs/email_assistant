@@ -291,10 +291,12 @@ describe("reasonText", () => {
 });
 
 describe("names and pages", () => {
-  test("the name is the delegate, else the counterpart, else the text, else the subject, else a word", () => {
+  test("the name is who it is about and what it is about; each part may be missing", () => {
     const delegate = { id: "0190f5a0-0000-7000-8000-0000000000d1", name: "Anna Nowak" };
-    expect(loopName(loop({ delegate }))).toBe("Anna Nowak");
-    expect(loopName(loop())).toBe("client@example.com");
+    expect(loopName(loop({ delegate }))).toBe("Anna Nowak, Send the offer");
+    expect(loopName(loop())).toBe("client@example.com, Send the offer");
+    expect(loopName(loop({ text: null }))).toBe("client@example.com, Offer");
+    expect(loopName(loop({ text: null, subject: null }))).toBe("client@example.com");
     expect(loopName(loop({ counterpart: null }))).toBe("Send the offer");
     expect(loopName(loop({ counterpart: null, text: null }))).toBe("Offer");
     expect(loopName(loop({ counterpart: null, text: null, subject: null }))).toBe("this loop");

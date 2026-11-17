@@ -178,9 +178,13 @@ export function reasonText(item: LoopItem, now: Date, timeZone: string): string 
   return t(item.reason === "forwarded_to_delegate" ? "lp_reason_forwarded" : "lp_reason_asked", { days });
 }
 
-// The name that the buttons of a row carry for a screen reader: the delegate, else the counterpart, else the text.
+// The name that the buttons of a row carry for a screen reader: who it is about (the delegate, else the counterpart) and what it is
+// about (the text, else the subject). The same person often has several loops, so the person alone would give equal button names.
 export function loopName(item: Pick<LoopItem, "delegate" | "counterpart" | "text" | "subject">): string {
-  return item.delegate?.name ?? item.counterpart ?? item.text ?? item.subject ?? t("lp_unnamed");
+  const parts = [item.delegate?.name ?? item.counterpart, item.text ?? item.subject].filter(
+    (part): part is string => part !== null
+  );
+  return parts.length === 0 ? t("lp_unnamed") : parts.join(", ");
 }
 
 // Adds the next page to the loaded ones. A loop that moved between the pages shows once.

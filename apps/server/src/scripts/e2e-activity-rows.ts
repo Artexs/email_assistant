@@ -86,7 +86,9 @@ export async function insertMails(
 }
 
 export interface ActionInput {
-  emailId: string;
+  // A follow-up is anchored on a loop, not on a mail (F116): `emailId` null and `loopId` set.
+  emailId: string | null;
+  loopId?: string;
   type: "move" | "mark_read" | "flag" | "create_draft" | "send";
   status: "applied" | "awaiting_approval" | "approved";
   payload?: Record<string, unknown>;
@@ -104,6 +106,7 @@ export async function insertAction(trx: Transaction<DB>, ctx: TenantContext, inp
     .values({
       org_id: ctx.orgId,
       email_id: input.emailId,
+      loop_id: input.loopId ?? null,
       type: input.type,
       status: input.status,
       payload: JSON.stringify(input.payload ?? {}),

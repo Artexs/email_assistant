@@ -27,6 +27,7 @@ import { auditWebEvent, termsAcceptedHandler } from "../web";
 import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
 import { seedApprovalsRows } from "./e2e-approvals-rows";
 import { seedDelegationsRows } from "./e2e-delegations-rows";
+import { seedLoopsRows } from "./e2e-loops-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_APPROVALS_MEMBER_EMAILS,
@@ -41,6 +42,10 @@ import {
   e2eDelegationsOrgName,
   E2E_DELEGATIONS_MEMBER_EMAILS,
   E2E_DELEGATIONS_OWNER_EMAILS,
+  e2eLoopsMailbox,
+  e2eLoopsOrgName,
+  E2E_LOOPS_MEMBER_EMAILS,
+  E2E_LOOPS_OWNER_EMAILS,
   e2eApprovalsOrgName,
   E2E_URGENCY_MEMBER_EMAILS,
   E2E_URGENCY_OWNER_EMAILS,
@@ -139,6 +144,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eApprovalsOrgName),
         ...E2E_PROJECTS.map(e2eDelegatesOrgName),
         ...E2E_PROJECTS.map(e2eDelegationsOrgName),
+        ...E2E_PROJECTS.map(e2eLoopsOrgName),
         ...E2E_PROJECTS.map(e2eUrgencyOrgName),
       ],
     ]);
@@ -163,6 +169,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_DELEGATES_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELEGATIONS_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_DELEGATIONS_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_LOOPS_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_LOOPS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_MEMBER_EMAILS[project]),
       ],
@@ -426,6 +434,33 @@ async function main(): Promise<number> {
         };
       }
 
+      // F116 stage 21: one organization per project for the open loops spec. The flags `open_loops`, `delegation_pages` and
+      // `approvals_page` are on; the mailbox is in assist mode with drafts on. See `e2e-loops-rows.ts`.
+      const loopsIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; rows: Awaited<ReturnType<typeof seedLoopsRows>> }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const loopsOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eLoopsOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_LOOPS_OWNER_EMAILS[project],
+          displayName: `E2E Loops owner ${project}`,
+        });
+        const ctx = { orgId: loopsOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_LOOPS_MEMBER_EMAILS[project],
+          displayName: `E2E Loops member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        for (const flag of ["open_loops", "delegation_pages", "approvals_page"] as const) {
+          await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: loopsOwner.userId, setAt: new Date() });
+        }
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eLoopsMailbox(project));
+        const rows = await seedLoopsRows(db, ctx, mailboxId, loopsOwner.userId, new Date());
+        loopsIds[project] = { orgId: loopsOwner.orgId, ownerId: loopsOwner.userId, memberId: member.id, rows };
+      }
+
       // F110 stage 21: one organization per project for the urgency editor spec. The flag `urgency_editor` is on; two mailboxes, one
       // with a profile (a topic, a deadline of yesterday, a deadline in ten days) and one without.
       const urgencyIds = {} as Record<
@@ -661,6 +696,21 @@ async function main(): Promise<number> {
         };
       }
 
+      const loopsOrgs = {} as SeedFile["loopsOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_LOOPS_OWNER_EMAILS[project];
+        const memberEmail = E2E_LOOPS_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = loopsIds[project];
+        loopsOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          ...ids.rows,
+        };
+      }
+
       const urgencyOrgs = {} as SeedFile["urgencyOrgs"];
       for (const project of E2E_PROJECTS) {
         const ownerEmail = E2E_URGENCY_OWNER_EMAILS[project];
@@ -727,6 +777,7 @@ async function main(): Promise<number> {
         },
         delegatesOrgs,
         delegationsOrgs,
+        loopsOrgs,
         urgencyOrgs,
         approvalsOrgs,
       };
