@@ -104,18 +104,18 @@ describe("draftReply", () => {
     expect(out).toMatchObject({ kind: "failed", reason: "checks", failures: ["address"] });
   });
 
-  test("the mail is quoted for the digit budget: its order number passes, a grouped account number in it does not", async () => {
+  test("the mail is quoted for the digit budget: its numbers pass, a number of 27 digits or more does not", async () => {
     const mail = {
       ...input,
       mail: {
         ...input.mail,
         subject: "Re: zamówienie 987654321098",
-        body: "Dzień dobry, numer zamówienia 123456789012. Nowe konto 4111 1111 1111 1111.",
+        body: "Dzień dobry, numer zamówienia 123456789012. Nowe konto 4111 1111 1111 1111 oraz 1234 5678 9012 3456 7890 1234 5678.",
       },
     };
     const order = { ...clean, body: "Dzień dobry, tak, zamówienie 123456789012 oraz 987654321098 jest w drodze." };
     expect(await draftReply(fake([order]).llm, mail)).toMatchObject({ kind: "draft" });
-    const card = { ...clean, body: "Dzień dobry, tak, konto 4111 1111 1111 1111 jest dobre." };
+    const card = { ...clean, body: "Dzień dobry, tak, konto 1234 5678 9012 3456 7890 1234 5678 jest dobre." };
     expect(await draftReply(fake([card]).llm, mail)).toMatchObject({
       kind: "failed",
       reason: "checks",

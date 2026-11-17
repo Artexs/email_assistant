@@ -192,16 +192,17 @@ describe("the digit budget: known numbers (typed by the user, or of the quoted m
     expect(failuresOf(say("faktura 2026110100001"), ["faktura 2026110100001"])).toEqual([]);
   });
 
-  test("quoted mail: a number of 9 to 12 digits is known; a longer one, and groups of a number, are not", () => {
+  test("quoted mail: a number of 9 to 26 digits is known; a longer one, a number of less than 9 digits in groups, and an IBAN are not", () => {
     const mail = ["Proszę o odpowiedź w sprawie zamówienia 123456789012 oraz 98765432101. Konto: 4111 1111 1111 1111."];
     expect(failuresOf(say("zamówienie 123456789012"), [], mail)).toEqual([]);
     expect(failuresOf(say("zamówienie 98765432101"), [], mail)).toEqual([]);
     expect(failuresOf(say("zamówienie 123456789012"))).toEqual(["account_number"]);
-    // The groups of the card in the mail are runs of 4 digits: they are not known.
-    expect(failuresOf(say("konto 4111 1111 1111 1111"), [], mail)).toEqual(["account_number"]);
-    // A run of 13 digits or more is never known, nor an IBAN of the mail.
-    const long = ["konto 1234567890123 oraz NL91 ABNA 0417 1643 00"];
-    expect(failuresOf(say("konto 1234567890123"), [], long)).toEqual(["account_number"]);
+    // The card of the mail, as a whole: the user answers that mail and approves the draft.
+    expect(failuresOf(say("konto 4111 1111 1111 1111"), [], mail)).toEqual([]);
+    // A number of more than 26 digits, and an IBAN of the mail, are never known.
+    const long = ["konto 1234567890123 oraz NL91 ABNA 0417 1643 00 oraz 1234 5678 9012 3456 7890 1234 5678"];
+    expect(failuresOf(say("konto 1234567890123"), [], long)).toEqual([]);
+    expect(failuresOf(say("konto 1234 5678 9012 3456 7890 1234 5678"), [], long)).toEqual(["account_number"]);
     expect(failuresOf(say("konto NL91ABNA0417164300"), [], long)).toEqual(["account_number"]);
     // The subject counts as quoted mail.
     expect(failuresOf(say("zamówienie 12345678901"), [], ["Re: 12345678901"])).toEqual([]);
@@ -513,12 +514,14 @@ const letterIban = (country: string): string => {
 };
 
 describe("pins: the quoted mail", () => {
-  test("a number of the mail is known from 9 to 12 digits", () => {
+  test("a number of the mail is known from 9 to 26 digits", () => {
     for (const [digits, passes] of [
       ["12345678", false],
       ["123456789", true],
       ["123456789012", true],
-      ["1234567890123", false],
+      ["1234567890123", true],
+      ["12345678901234567890123456", true],
+      ["123456789012345678901234567", false],
     ] as const) {
       const failures = failuresOf(say(`zamówienie ${repeat(digits, 2)}`), [], [`numer ${digits}`]);
       expect({ digits, failures }).toEqual({ digits, failures: passes ? [] : [expect.any(String)] });
@@ -899,7 +902,7 @@ describe("the long sequence: 12 digits or more that nobody typed (owner answer, 
     expect(failuresOf(say("numer 1234 5678 9012 3456"), typed)).toEqual(["account_number"]);
   });
 
-  test("a number of the mail that the draft answers is allowed up to 12 digits, in one run or in groups; a longer one is not", () => {
+  test("a number of the mail that the draft answers is allowed up to 26 digits, in one run or in groups; a longer one is not", () => {
     const mail = [
       "Proszę o odpowiedź w sprawie nr 1234 5678 9012 oraz faktury 987654321098 oraz karty 4111 1111 1111 1111.",
     ];
@@ -907,8 +910,9 @@ describe("the long sequence: 12 digits or more that nobody typed (owner answer, 
     expect(failuresOf(say("sprawa 123456789012"), [], mail)).toEqual([]);
     expect(failuresOf(say("faktura 987654321098"), [], mail)).toEqual([]);
     expect(failuresOf(say("faktura 9876 5432 1098"), [], mail)).toEqual([]);
-    expect(failuresOf(say("karta 4111 1111 1111 1111"), [], mail)).toEqual(["account_number"]);
-    expect(failuresOf(say("karta 4111 1111 1111"), [], mail)).toEqual(["account_number"]);
+    expect(failuresOf(say("karta 4111 1111 1111 1111"), [], mail)).toEqual([]);
+    expect(failuresOf(say("karta 4111 1111 1111"), [], mail)).toEqual([]);
+    expect(failuresOf(say("karta 4111 1111 1111 1112"), [], mail)).toEqual(["account_number"]);
     expect(failuresOf(say("sprawa 1234 5678 9013"), [], mail)).toEqual(["account_number"]);
   });
 

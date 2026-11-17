@@ -3,7 +3,7 @@
 // separators can find it. The check counts digits instead. The body is folded (`views.ts`), every maximal run of digits
 // is taken, and each run is
 //   - KNOWN: its digits (3 or more) are a substring of a number that the user typed (instruction, signature, writing
-//     style), or of a number of 9 to 12 digits in the quoted mail (an order number; never a longer run);
+//     style), or of a number of 9 to 26 digits in the quoted mail (the user answers that mail and approves the draft);
 //   - FREE: it lies inside a valid date or time, or inside a number of the form of money, a percentage, a rate, a postal
 //     code or a year, or inside an amount of at most 9 integer digits next to a currency;
 //   - or it costs its digits.
@@ -27,9 +27,9 @@ export const LONG_SEQUENCE_DIGITS = 12;
 export const PHONE_DIGITS = 9;
 /** A run shorter than this is never KNOWN: one digit of a typed number would make every digit free. */
 export const KNOWN_MIN_DIGITS = 3;
-/** The runs of the quoted mail that are KNOWN have 9 to 12 digits. */
+/** The numbers of the quoted mail that are KNOWN have 9 to 26 digits (an order number, a parcel number, an NRB). */
 export const MAIL_KNOWN_MIN_DIGITS = 9;
-export const MAIL_KNOWN_MAX_DIGITS = 12;
+export const MAIL_KNOWN_MAX_DIGITS = 26;
 /** A cut leaves this text: no run of digits joins across it. */
 const SEPARATOR = " ; ";
 
@@ -216,7 +216,7 @@ function typedKeysOf(texts: readonly string[]): string[] {
   return texts.flatMap((text) => numberKeys(plainView(text)));
 }
 
-// The numbers of the quoted mail that an order number may be: 9 to 12 digits in one run, or in runs that follow each
+// The numbers of the quoted mail that the draft may repeat: 9 to 26 digits in one run, or in runs that follow each
 // other with one space, dot or dash between them ("1234 5678 9012").
 function mailKeysOf(texts: readonly string[]): string[] {
   const keys: string[] = [];
