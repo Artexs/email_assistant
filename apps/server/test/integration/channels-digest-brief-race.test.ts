@@ -112,8 +112,7 @@ describe.each(pairs)("the first digest of the day is one (%s)", (_name, connA, c
           conn.transaction().execute(async (trx) => {
             const first = await isFirstDigestOfDay(trx, org.ctx, {
               userId: org.userId,
-              timeZone: "Europe/Warsaw",
-              now: new Date(at),
+              slotDate: key.slice(0, 10),
             });
             // The window between the decision and the outbox row: without the lock the other transaction decides here too.
             await sleep(25);

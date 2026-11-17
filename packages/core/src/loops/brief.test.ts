@@ -38,6 +38,7 @@ const delegation = (n: number, over: Partial<BriefDelegation> = {}): BriefDelega
   subject: "Umowa najmu",
   sentAt: new Date("2026-11-17T09:00:00Z"),
   dueAt: new Date("2026-11-19T09:00:00Z"),
+  closable: true,
   ...over,
 });
 
