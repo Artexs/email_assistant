@@ -18,6 +18,7 @@ export {
   getSettingsView,
   parseUrgencyProfile,
   setCategoryAuto,
+  setCategoryGrants,
   setMode,
   setToolSwitch,
   setUrgencyProfile,

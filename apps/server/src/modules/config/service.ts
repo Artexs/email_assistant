@@ -4,6 +4,7 @@ import {
   effectiveAutoFor,
   parseCategoryPolicy,
   parseToolSwitches,
+  sameKey,
   thresholdFor,
   type ActionType,
   type BarCategory,
@@ -308,6 +309,58 @@ export async function setCategoryAuto(
         to: input.auto,
         thresholdRaised: wasAuto && input.auto && threshold > oldThreshold,
       },
+      warnings: [],
+    };
+  });
+}
+
+// The re-gate (F110 stage 08) writes a grant without changing `auto`: `legacy` stamps the running key on `auto` that was on before the
+// ladder (one audit row for all the categories of the mailbox), `regate` moves a grant to the running key (one row per call, with the
+// old key). A category that is not `auto` is skipped. The row moves `updated_at`, so a triage batch that read the old settings writes
+// nothing. Ready moves stay: `auto` stays on, and the old key had evidence when the grant was made (stage 04 N2).
+export async function setCategoryGrants(
+  deps: SettingsDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  input: { categories: BarCategory[]; by: "legacy" | "regate"; from?: CategoryGrant["key"]; actor: string }
+): Promise<SettingsChange> {
+  return applyChange(deps, ctx, mailboxId, input.actor, (before) => {
+    const runningKey = deps.gate.runningKey;
+    const at = deps.now().toISOString();
+    // Only `auto` that has no grant (`legacy`) or a grant on another key (`regate`) takes the write: a second run finds nothing to do.
+    const stamped = input.categories.filter((category) => {
+      if (!autoFor(before.categoryPolicy, category)) return false;
+      const grant = before.categoryPolicy[category]?.grant;
+      return input.by === "legacy" ? grant === undefined : grant !== undefined && !sameKey(grant.key, runningKey);
+    });
+    const categoryPolicy: CategoryPolicy = { ...before.categoryPolicy };
+    for (const category of stamped) {
+      categoryPolicy[category] = { ...before.categoryPolicy[category], grant: { key: runningKey, by: input.by, at } };
+    }
+    return {
+      patch: { categoryPolicy },
+      changed: stamped.length > 0,
+      event: auditEvents.mailboxPolicyChanged,
+      data: {
+        field: "grant",
+        categories: stamped.join(","),
+        grant_by: input.by,
+        grant_provider: runningKey.provider,
+        grant_model: runningKey.model,
+        grant_effort: runningKey.reasoningEffort,
+        grant_prompt: runningKey.promptVersion,
+        grant_endpoint: runningKey.endpoint,
+        ...(input.from
+          ? {
+              from_provider: input.from.provider,
+              from_model: input.from.model,
+              from_effort: input.from.reasoningEffort,
+              from_prompt: input.from.promptVersion,
+              from_endpoint: input.from.endpoint,
+            }
+          : {}),
+      },
+      close: null,
       warnings: [],
     };
   });
