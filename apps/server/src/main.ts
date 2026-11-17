@@ -210,7 +210,7 @@ const classifierRow = llmTable.roles.classifier;
 // The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
 const gate = gateEvidenceOf(config, { table: llmTable });
 const scope = triageScope(config, classifierRow.provider);
-// The re-gate of `auto` (F110 stage 08, rule 16): it runs once here, before the triage worker and the committer exist, so a `ready` move that
+// The re-gate of `auto` (ADR 0028, rule 16 of the product rules): it runs once here, before the triage worker and the committer exist, so a `ready` move that
 // was planned under the old model meets the new policy. A failure of the whole run (the database) stops the start: the container restarts.
 // A mailbox that fails alone is logged and left to the job below. It always runs: the global evidence belongs to the model, not to a flag.
 const regateDeps: Omit<RegateDeps, "run"> = {

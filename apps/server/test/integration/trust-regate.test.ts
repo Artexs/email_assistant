@@ -15,7 +15,7 @@ import { sql, type Transaction } from "kysely";
 
 import { settingsDeps } from "../../src/composition";
 import { listActionsForEmail } from "../../src/modules/actions";
-import { insertDefaultSettings, lockMailboxSettings, setMode } from "../../src/modules/config";
+import { insertDefaultSettings, lockMailboxSettings, setCategoryGrants, setMode } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { configureFeatures, setOrgFeature } from "../../src/modules/tenancy";
 import { createLlmPause, createTriageJob } from "../../src/modules/triage";
@@ -37,7 +37,7 @@ import { captureLogs, eventLines, logProblems } from "../log-capture";
 import { testDb, withRollback } from "./helpers";
 import { insertCheckRow, insertTripRow } from "./trust-fixtures";
 
-// The re-gate of `auto` (F110 stage 08, D7, D8, rule 16). Most tests run in a rolled-back transaction: `regateAll` takes a transaction as
+// The re-gate of `auto` (ADR 0028). Most tests run in a rolled-back transaction: `regateAll` takes a transaction as
 // its database and runs its mailbox steps inside it. Tests 5 and 6 need two connections and commit their rows.
 const db = testDb();
 const NOW = new Date("2026-11-16T12:00:00.000Z");
@@ -410,7 +410,7 @@ describe("regateAll", () => {
         reason: "corrections",
       });
       const result = await regateAll(depsOf(trx, gateOf(KEY_B)), NOW);
-      expect(result.paused).toBe(0);
+      expect(result.paused).toBe(1);
       expect((await policyOf(trx, box.mailboxId)).notification?.auto).toBe(false);
       expect(await tripsOf(trx, box.mailboxId)).toHaveLength(1);
       expect(await noticesOf(trx, box.orgId)).toHaveLength(0);
@@ -493,6 +493,36 @@ describe("regateAll", () => {
       expect(result).toEqual({ stamped: 0, regranted: 0, paused: 0 });
       expect(await policyOf(trx, box.mailboxId)).toEqual(before);
       expect(await tripsOf(trx, box.mailboxId)).toHaveLength(0);
+    });
+  });
+
+  test("8c: a provisional no-go file for the key does not withdraw an evidence grant", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await setup(trx, { notification: on(KEY_A, "evidence") });
+      const gate = gateOf(KEY_A, gateFile(KEY_A, { provisional: true, noGo: true }));
+      expect(await regateAll(depsOf(trx, gate), NOW)).toEqual({ stamped: 0, regranted: 0, paused: 0 });
+      expect((await policyOf(trx, box.mailboxId)).notification?.auto).toBe(true);
+      expect(await tripsOf(trx, box.mailboxId)).toHaveLength(0);
+    });
+  });
+
+  test("the grant setter writes once: a second call for the same categories changes nothing and adds no audit row", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await setup(trx, { info: on(null), notification: on(KEY_A) });
+      const settings = settingsDeps(trx, () => NOW, gateOf(KEY_B));
+      const legacy = { categories: ["info" as const], by: "legacy" as const, actor: "system" };
+      const regate = { categories: ["notification" as const], by: "regate" as const, from: KEY_A, actor: "system" };
+      expect((await setCategoryGrants(settings, box.ctx, box.mailboxId, legacy)).changed).toBe(true);
+      expect((await setCategoryGrants(settings, box.ctx, box.mailboxId, legacy)).changed).toBe(false);
+      expect((await setCategoryGrants(settings, box.ctx, box.mailboxId, regate)).changed).toBe(true);
+      expect((await setCategoryGrants(settings, box.ctx, box.mailboxId, regate)).changed).toBe(false);
+      // A category that is not on is skipped.
+      const off = { categories: ["spam" as const], by: "legacy" as const, actor: "system" };
+      expect((await setCategoryGrants(settings, box.ctx, box.mailboxId, off)).changed).toBe(false);
+      const audit = (await policyAudit(trx, box.orgId)).filter(
+        (row) => (row.data as { field: string }).field === "grant"
+      );
+      expect(audit).toHaveLength(2);
     });
   });
 

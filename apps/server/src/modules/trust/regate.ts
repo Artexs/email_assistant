@@ -1,4 +1,4 @@
-// The re-gate of `auto` (F110 stage 08, D7, D8, rule 16): after a switch of model, prompt or endpoint, `auto` stays on only where the
+// The re-gate of `auto` (ADR 0028, rule 16 of the product rules): after a switch of model, prompt or endpoint, `auto` stays on only where the
 // running key has evidence. It runs once at start, before the triage worker and the committer exist (a `ready` move planned under the
 // old key meets the new policy), and every 5 minutes as a safety net. Always on: the global evidence belongs to the model, not to the
 // flag `trust_ladder`. Every mailbox is one transaction under the settings lock; ids, codes and counts only in the logs.
@@ -62,7 +62,7 @@ export interface RegateResult {
 const ACTOR = "system";
 
 // A grant that the evidence made (not the user's force, not the old state): a newer no-go file for the same key withdraws it.
-// `legacy`, `forced` and `real_labels` grants never had a global file behind them (review 2 N1).
+// `legacy`, `forced` and `real_labels` grants never had a global file behind them.
 const EVIDENCE_GRANTS: readonly CategoryGrant["by"][] = ["evidence", "recommended", "regate"];
 
 type Decision =
@@ -133,25 +133,25 @@ async function regateMailbox(
     }
     const stamps = decisions.filter((decision) => decision.kind === "stamp");
     if (stamps.length > 0) {
-      const change = await setCategoryGrants(settings, ctx, mailboxId, {
+      await setCategoryGrants(settings, ctx, mailboxId, {
         categories: stamps.map((decision) => decision.category),
         by: "legacy",
         actor: ACTOR,
       });
-      if (change.changed) total.stamped += stamps.length;
+      total.stamped += stamps.length;
     }
     for (const decision of decisions) {
       if (decision.kind === "regrant") {
-        const change = await setCategoryGrants(settings, ctx, mailboxId, {
+        await setCategoryGrants(settings, ctx, mailboxId, {
           categories: [decision.category],
           by: "regate",
           from: decision.from.key,
           actor: ACTOR,
         });
-        if (change.changed) total.regranted += 1;
+        total.regranted += 1;
       } else if (decision.kind === "pause") {
-        const paused = await pauseCategory(trx, deps, settings, ctx, mailboxId, decision, now);
-        if (paused) total.paused += 1;
+        await pauseCategory(trx, deps, settings, ctx, mailboxId, decision, now);
+        total.paused += 1;
       }
     }
     // The history result belongs to the old key: a new check for the new key (a stale `fail` blocks until a newer check ends).
@@ -165,7 +165,7 @@ async function regateMailbox(
 
 // `auto` off (the ready moves and mark-reads of the category expire as `policy_changed`), the trip and the notice, in one transaction.
 // The unique key of the trip is `(mailbox, category, granted_at)`: a trip that exists already means another process paused it, so no
-// second notice. Returns false for that case.
+// second notice.
 async function pauseCategory(
   trx: Transaction<DB>,
   deps: RegateDeps,
@@ -174,8 +174,7 @@ async function pauseCategory(
   mailboxId: string,
   decision: Extract<Decision, { kind: "pause" }>,
   now: Date
-): Promise<boolean> {
-  let queued = false;
+): Promise<void> {
   await setCategoryAuto(settings, ctx, mailboxId, {
     category: decision.category,
     auto: false,
@@ -192,7 +191,6 @@ async function pauseCategory(
         counts: {},
       });
       if (tripId === null) return;
-      queued = true;
       await queueTrustNotice(inner, ctx, {
         kind: "autonomy_paused",
         mailboxId,
@@ -208,7 +206,6 @@ async function pauseCategory(
       });
     },
   });
-  return queued;
 }
 
 /**
