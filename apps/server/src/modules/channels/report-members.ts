@@ -1,4 +1,11 @@
-import { membershipRoleSchema, userLocaleSchema, type MembershipRole, type UserLocale } from "@ea/core";
+import {
+  membershipRoleSchema,
+  reportMailKinds,
+  userLocaleSchema,
+  type MembershipRole,
+  type ReportMailKind,
+  type UserLocale,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -6,9 +13,10 @@ import type { DB, Db } from "../../platform/db";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-// F110 stage 19 (D14, P4): the report kinds that also go by mail. Every other kind goes to Telegram only.
-export const mailReportKinds = ["digest", "weekly_report", "trust_report_ready", "autonomy_paused"] as const;
-export type MailReportKind = (typeof mailReportKinds)[number];
+// F110 stage 19 (D14, P4): the report kinds that also go by mail. Every other kind goes to Telegram only. The list lives in core,
+// next to the mail renderers of these kinds (F110 stage 20).
+export const mailReportKinds = reportMailKinds;
+export type MailReportKind = ReportMailKind;
 
 const reportChannelSchema = z.enum(["telegram", "mail", "both"]);
 

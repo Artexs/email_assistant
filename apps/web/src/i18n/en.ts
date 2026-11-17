@@ -1059,6 +1059,32 @@ export const en = {
   title_approvals: "Approvals",
   title_delegates: "Delegates",
   title_delegations: "Delegations",
+  // F116 stage 22: the Delegate action on a mail row, the open-loop settings and the new Telegram terms
+  dla_button: "Delegate",
+  dla_title: "Delegate this mail",
+  dla_text: "Pick a delegate. The assistant writes a draft to this person. Nothing goes out before you approve it.",
+  dla_select_label: "Delegate",
+  dla_select_placeholder: "Pick a delegate",
+  dla_submit: "Delegate",
+  dla_done: "Delegation drafted. Approve it to send.",
+  dla_done_link: "Open the approval",
+  dla_exists: "This mail already has a delegation.",
+  dla_exists_link: "Open the delegation",
+  dla_inactive: "This delegate is off. Pick another delegate.",
+  dla_drafts_off: "Delegation needs assist mode with drafts on.",
+  dla_not_delegable: "This mail cannot be delegated.",
+  lset_title: "Open loops",
+  lset_needs_sent: "Turn on 'Track my sent mail' to use open loops.",
+  lset_wait_label: "Wait before a follow-up",
+  lset_wait_help: "Counted on working days (Monday to Friday).",
+  lset_wait_toast: "The wait before a follow-up is saved.",
+  lset_auto_label: "Draft follow-ups automatically",
+  lset_auto_help: "Drafts still wait for your tap before they go out.",
+  lset_auto_on_toast: "Follow-ups are drafted automatically.",
+  lset_auto_off_toast: "Follow-ups are not drafted automatically.",
+  tgc_title: "New Telegram terms: open loops",
+  tgc_confirm: "Confirm",
+  tgc_confirmed_toast: "The new Telegram terms are confirmed.",
 } as const;
 
 export type TextKey = keyof typeof en;
@@ -1070,6 +1096,8 @@ export const enPlurals = {
   ob_rules: { one: "1 rule", other: "{count} rules" },
   op_sso_linked: { one: "{count} linked member", other: "{count} linked members" },
   expired_suffix: { one: "1 planned action was cancelled.", other: "{count} planned actions were cancelled." },
+  // F116 stage 22
+  lset_wait_days: { one: "1 working day", other: "{count} working days" },
 } as const;
 
 export type PluralKey = keyof typeof enPlurals;

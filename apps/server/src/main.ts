@@ -4,13 +4,19 @@ import {
   actionsScope,
   committerDeps,
   gateEvidenceOf,
+  isOwnMailOf,
   mailOAuthRuntime,
   sendScope,
   settingsDeps,
   uidplusOf,
 } from "./composition";
-import { createCommitterJob, createExpiryJob, isOwnActionId, sentOriginOf } from "./modules/actions";
-import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
+import { createCommitterJob, createExpiryJob, sentOriginOf } from "./modules/actions";
+import {
+  createImapReportMailbox,
+  createOperatorNotices,
+  createReportMailSender,
+  createTelegramRuntime,
+} from "./modules/channels";
 import { delegationHooks } from "./modules/delegation";
 import { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "./modules/loops";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
@@ -124,7 +130,7 @@ const mailSync = createMailSyncJob({
   secrets,
   openProvider: openImapProvider,
   oauthTokens: mailOAuth.tokens,
-  isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
+  isOwnActionId: isOwnMailOf(db),
   sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(db, ctx, mailboxId, actionId),
   now: () => new Date(),
 });
@@ -262,7 +268,7 @@ if (scope !== null) {
     secrets,
     openProvider: openImapProvider,
     oauthTokens: mailOAuth.tokens,
-    isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
+    isOwnActionId: isOwnMailOf(db),
     runningKey: gate.runningKey,
     gateIndex: gate.index,
     llm,
@@ -370,6 +376,27 @@ log.info("job_scheduled", { job: "platform.retention" });
 // The runs of the notifier and the digest job that are going now. Shutdown waits for them.
 let channelRun: Promise<void> = Promise.resolve();
 let digestRun: Promise<void> = Promise.resolve();
+let reportMailRun: Promise<void> = Promise.resolve();
+// The report mail sender (F110 stage 20, ADR 0022): it APPENDs the `mail` rows into the user's own INBOX. It runs with or without the
+// Telegram runtime, because a mail-only member needs no bot. It never sends: no SMTP sender is built for it. Rows exist only when the flag
+// `report_mail` is on, and the sender checks the flag again before each APPEND.
+const reportMail = createReportMailSender({
+  db,
+  mailbox: createImapReportMailbox({
+    db,
+    secrets,
+    openProvider: openImapProvider,
+    oauthTokens: mailOAuth.tokens,
+    now: () => new Date(),
+  }),
+  now: () => new Date(),
+  ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
+});
+scheduler.add("channels.report_mail", "*/15 * * * * *", () => {
+  reportMailRun = reportMail.run();
+  return reportMailRun;
+});
+log.info("job_scheduled", { job: "channels.report_mail" });
 if (config.TELEGRAM_BOT_TOKEN === undefined) {
   log.info("telegram_off");
 } else {
@@ -453,6 +480,7 @@ async function shutdown(): Promise<void> {
       chaserRun,
       channelRun,
       digestRun,
+      reportMailRun,
       operatorRun,
       sloRun,
       retentionRun,

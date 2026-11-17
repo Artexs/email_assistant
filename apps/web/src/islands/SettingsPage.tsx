@@ -18,6 +18,7 @@ import { AccountCard } from "../components/settings/AccountCard";
 import { CategoriesCard } from "../components/settings/CategoriesCard";
 import { DigestTimesCard } from "../components/settings/DigestTimesCard";
 import { NotifySection } from "../components/settings/NotifyCards";
+import { LoopSettingsCard } from "../components/settings/LoopSettingsCard";
 import { ModeCard } from "../components/settings/ModeCard";
 import { SentMailCard } from "../components/settings/SentMailCard";
 import { SignatureCard } from "../components/settings/SignatureCard";
@@ -90,6 +91,7 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
           onMissing={reloadMailboxes}
         />
       )}
+      <LoopSettingsCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
     </>
   );
 }

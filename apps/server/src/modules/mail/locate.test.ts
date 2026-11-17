@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { createFakeMailProvider } from "./fake";
 import {
   locateByActionId,
+  locateByMessageId,
   locateKeyOf,
   locateMessage,
   LOCATE_CHUNK,
@@ -241,5 +242,42 @@ describe("locateByActionId", () => {
     const fake = createFakeMailProvider();
     const uid = fake.deliver(DRAFTS, draft(1, ACTION_A, "x-ea-action-id"), opts);
     expect((await locateByActionId(fake, DRAFTS, actionKey(ACTION_A)))?.uid).toBe(uid);
+  });
+});
+
+describe("locateByMessageId (F110 stage 20)", () => {
+  const SINCE = new Date("2026-11-03T10:00:00Z");
+
+  test("finds the message by its Message-ID with or without brackets and any case; leaves other mail alone", async () => {
+    const fake = createFakeMailProvider();
+    for (let n = 1; n <= 3; n += 1) fake.deliver("INBOX", mail(n), { internalDate: RECEIVED });
+    const found = await locateByMessageId(fake, "INBOX", { messageId: "<LOC-2@example.test>", since: SINCE });
+    expect(found?.subject).toBe("Loc 2");
+    expect((await locateByMessageId(fake, "INBOX", { messageId: "loc-3@example.test", since: SINCE }))?.subject).toBe(
+      "Loc 3"
+    );
+    expect(await locateByMessageId(fake, "INBOX", { messageId: "<loc-9@example.test>", since: SINCE })).toBeNull();
+  });
+
+  test("a message flagged \\Deleted does not count; a missing folder gives null", async () => {
+    const fake = createFakeMailProvider();
+    const uid = fake.deliver("INBOX", mail(1), { internalDate: RECEIVED });
+    await fake.setFlags("INBOX", uid, { add: ["\\Deleted"] });
+    expect(await locateByMessageId(fake, "INBOX", { messageId: "<loc-1@example.test>", since: SINCE })).toBeNull();
+    expect(await locateByMessageId(fake, "Nope", { messageId: "<loc-1@example.test>", since: SINCE })).toBeNull();
+  });
+
+  test("reads newest first and stops at the first hit; it only reads", async () => {
+    const fake = createFakeMailProvider();
+    for (let n = 1; n <= LOCATE_NEWEST_FIRST_CHUNK + 5; n += 1) {
+      fake.deliver("INBOX", mail(n), { internalDate: RECEIVED });
+    }
+    const last = LOCATE_NEWEST_FIRST_CHUNK + 5;
+    const before = fake.calls.length;
+    const found = await locateByMessageId(fake, "INBOX", { messageId: `<loc-${last}@example.test>`, since: SINCE });
+    expect(found?.subject).toBe(`Loc ${last}`);
+    const used = fake.calls.slice(before);
+    expect(used.filter((call) => call === "fetchByUidsIn")).toHaveLength(1);
+    expect(used.every((call) => call === "searchSinceIn" || call === "fetchByUidsIn")).toBe(true);
   });
 });

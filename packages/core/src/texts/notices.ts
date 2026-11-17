@@ -397,15 +397,15 @@ export const noticeTexts = {
     },
     autonomyPaused: {
       corrections: (category, count) =>
-        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: w ciągu 7 dni poprawiono ${count} z tych przeniesień.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wstrzymane: w ciągu 7 dni poprawiono ${count} z tych przeniesień.`,
       importantHidden: (category) =>
-        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: jedno z przeniesień ukryło wiadomość, która była Ci potrzebna.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wstrzymane: jedno z przeniesień ukryło wiadomość, która była Ci potrzebna.`,
       modelSwitch: (category) =>
-        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: zmienił się model AI, a nowy model nie ma jeszcze potwierdzonych wyników dla tej kategorii.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wstrzymane: zmienił się model AI, a nowy model nie ma jeszcze potwierdzonych wyników dla tej kategorii.`,
       evidenceChanged: (category) =>
-        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: nowe wyniki testów już go nie uzasadniają.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wstrzymane: nowe wyniki testów już go nie uzasadniają.`,
       historyFail: (category) =>
-        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wyłączone: sprawdzenie poczty z ostatnich 30 dni wykryło wśród przeniesionych wiadomości takie, które były Ci potrzebne.`,
+        `⏸ Automatyczne przenoszenie wiadomości z kategorii „${category}” zostało wstrzymane: sprawdzenie poczty z ostatnich 30 dni wykryło wśród przeniesionych wiadomości takie, które były Ci potrzebne.`,
       again: "Włącz je ponownie w Ustawieniach.",
       link: (url) => `Ustawienia: ${url}`,
     },

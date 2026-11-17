@@ -10,6 +10,7 @@ import { canWrite } from "../../lib/can-write";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { CategoryPicker } from "./CategoryPicker";
+import { DelegateAction } from "./DelegateAction";
 
 export interface ActionButtonsProps {
   item: ActivityItem;
@@ -104,6 +105,7 @@ export function ActionButtons({ item, onPatch, onGone }: ActionButtonsProps) {
           {t("act_icon_undo")}
         </Button>
       )}
+      <DelegateAction item={item} onGone={onGone} />
       <CategoryPicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}

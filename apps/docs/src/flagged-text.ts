@@ -72,6 +72,14 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
   ],
   open_loops: ["📝 Follow-up", "Open loops on time", "A follow-up waits for your approval in the panel."],
   sent_sync: ["No sent mail seen for"],
+  report_mail: [
+    "[Email assistant]",
+    "[Asystent poczty]",
+    "Mailbox check ready",
+    "Sprawdzenie poczty gotowe",
+    "Automatic moves paused",
+    "Automatyczne przenoszenie wstrzymane",
+  ],
 };
 
 // A default-off flag with no text that a user can see yet. The reason names where the flag is read.

@@ -2,6 +2,7 @@ import { formatClock, mailboxListSchema } from "@ea/core/web";
 import { useCallback, useState } from "react";
 
 import { ActivityFilterBar } from "../components/activity/ActivityFilterBar";
+import { DelegateHintProvider } from "../components/activity/DelegateHintProvider";
 import { ActivityList, ActivitySkeleton } from "../components/activity/ActivityList";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
@@ -45,33 +46,35 @@ function Activity() {
   const addressOf = (id: string) => list.find((mailbox) => mailbox.id === id)?.address ?? null;
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <ActivityFilterBar filters={effective} mailboxes={list} onChange={onChange} />
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground">
-            {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now, getLocale()) })}
-          </p>
-          <Button variant="outline" onClick={() => setRefreshSignal((n) => n + 1)}>
-            {t("refresh")}
-          </Button>
+    <DelegateHintProvider mailboxes={mailboxes.data}>
+      <div className="flex max-w-3xl flex-col gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <ActivityFilterBar filters={effective} mailboxes={list} onChange={onChange} />
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now, getLocale()) })}
+            </p>
+            <Button variant="outline" onClick={() => setRefreshSignal((n) => n + 1)}>
+              {t("refresh")}
+            </Button>
+          </div>
         </div>
+        {waitingForMailboxes ? (
+          <ActivitySkeleton />
+        ) : (
+          <ActivityList
+            key={filtersToSearch(effective)}
+            filters={effective}
+            timeZone={timeZone}
+            showMailbox={list.length >= 2}
+            mailboxAddress={addressOf}
+            hasMailbox={me.mailboxCount > 0}
+            onLoaded={onLoaded}
+            refreshSignal={refreshSignal}
+          />
+        )}
       </div>
-      {waitingForMailboxes ? (
-        <ActivitySkeleton />
-      ) : (
-        <ActivityList
-          key={filtersToSearch(effective)}
-          filters={effective}
-          timeZone={timeZone}
-          showMailbox={list.length >= 2}
-          mailboxAddress={addressOf}
-          hasMailbox={me.mailboxCount > 0}
-          onLoaded={onLoaded}
-          refreshSignal={refreshSignal}
-        />
-      )}
-    </div>
+    </DelegateHintProvider>
   );
 }
 
