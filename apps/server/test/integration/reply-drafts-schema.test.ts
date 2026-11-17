@@ -392,7 +392,14 @@ describe("the style text copy and the Down and Up sections", () => {
         select count(*)::int as n from pg_indexes where indexname = 'emails_thread_received_idx'`.execute(trx);
       expect(index.rows[0]?.n).toBe(1);
       await expectSqlState(trx, () => row("replies_ready", false), CHECK);
+      const mailKindCheck = () =>
+        sql<{ def: string }>`
+          select pg_get_constraintdef(oid) as def from pg_constraint where conname = 'outbox_email_kind_check'`.execute(
+          trx
+        );
+      expect((await mailKindCheck()).rows[0]?.def).not.toContain("reply_prompt");
       await sql.raw(up).execute(trx);
+      expect((await mailKindCheck()).rows[0]?.def).toContain("reply_prompt");
       await row("replies_ready", false);
       const again = await sql<{ n: number }>`
         select count(*)::int as n from pg_indexes where indexname = 'emails_thread_received_idx'`.execute(trx);
