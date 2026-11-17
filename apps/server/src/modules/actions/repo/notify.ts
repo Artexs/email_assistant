@@ -127,11 +127,7 @@ export async function listSendsToNotify(
     sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`
   );
   if (opts.skip !== undefined && opts.skip.length > 0) query = query.where("actions.id", "not in", [...opts.skip]);
-  const rows = await query
-    .orderBy("actions.created_at")
-    .orderBy("actions.id")
-    .limit(opts.limit)
-    .execute();
+  const rows = await query.orderBy("actions.created_at").orderBy("actions.id").limit(opts.limit).execute();
   return rows.map(toSendRow);
 }
 // A set is listed whole, and only when none of its sends waits for a draft (D21).

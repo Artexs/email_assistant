@@ -3,8 +3,8 @@
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { forgetRefusedCards } from "../../src/modules/channels/notices/approval";
 import { detectNotices } from "../../src/modules/channels";
+import { forgetRefusedCards } from "../../src/modules/channels/notices/approval";
 import { APPROVAL_LIMIT } from "../../src/modules/channels/notices/run";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
