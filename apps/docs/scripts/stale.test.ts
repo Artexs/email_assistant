@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { POLISH_SET } from "../src/front-matter";
 import { bodyHash, checkStale, frontMatterValue, runStale, stampFile } from "./stale";
 
 const STALE_SCRIPT = join(import.meta.dir, "stale.ts");
@@ -15,10 +16,13 @@ const put = (path: string, text: string) => {
 };
 const polish = (hash: string, source = "start") =>
   `---\ntitle: Start\nsource: ${source}\nsourceHash: "${hash}"\n---\nTekst\n`;
-// The real POLISH_SET is `index`: a process run needs that pair.
+// A process run uses the real POLISH_SET: it needs a current pair for each id. A test that puts the same file again overrides it.
 const putIndex = () => {
-  put("index.mdx", "---\ntitle: I\n---\nx\n");
-  put("pl/index.mdx", polish(bodyHash("---\ntitle: I\n---\nx\n"), "index"));
+  for (const id of POLISH_SET) {
+    const english = "---\ntitle: I\n---\nx\n";
+    put(id === "index" ? "index.mdx" : `${id}.md`, english);
+    put(`pl/${id}.mdx`, polish(bodyHash(english), id));
+  }
 };
 // Runs the script as a process: the exit code and the two streams.
 const run = (...args: string[]) => {
@@ -143,10 +147,10 @@ describe("docs:stale", () => {
     const result = checkStale({ contentDir: dir, polishSet: ["start"] });
     expect(result.exitCode).toBe(1);
     expect(result.errors).toEqual(["missing pl/start"]);
-    // The real script: its POLISH_SET is `index`.
+    // The real script: it names each id of the real POLISH_SET that has no Polish page.
     const process = run();
     expect(process.code).toBe(1);
-    expect(process.err).toContain("missing pl/index");
+    for (const id of POLISH_SET) expect(process.err).toContain(`missing pl/${id}`);
   });
   test("a Polish page with no source, no sourceHash, or a missing source page is an error", () => {
     put("pl/a.mdx", "---\ntitle: A\n---\nx\n");
@@ -172,15 +176,30 @@ describe("docs:stale", () => {
     put("pl/how-to/x.md", polish("0000000000000000", "how-to/x"));
     expect(checkStale({ contentDir: dir, polishSet: [] }).stale).toEqual(["stale pl/how-to/x (source how-to/x)"]);
   });
+  test("a folder page `x/index.mdx` is the source `x`, and `pl/x/index.mdx` is the page `pl/x`", () => {
+    putIndex();
+    put("start/index.mdx", "---\ntitle: S\n---\nHello\n");
+    put("pl/start/index.mdx", "---\ntitle: Start\nsource: start\n---\nTekst\n");
+    rmSync(join(dir, "pl/start.mdx"));
+    rmSync(join(dir, "start.md"));
+    const file = join(dir, "pl/start/index.mdx");
+    // Not stamped yet: the page stands in the Polish set under its id `pl/start`, with no hash.
+    expect(checkStale({ contentDir: dir }).errors).toEqual(["pl/start has no source or sourceHash"]);
+    expect(run("--stamp", file).code).toBe(0);
+    expect(readFileSync(file, "utf8")).toContain(`sourceHash: "${bodyHash("---\ntitle: S\n---\nHello\n")}"`);
+    expect(checkStale({ contentDir: dir })).toEqual({ errors: [], stale: [], exitCode: 0 });
+    put("start/index.mdx", "---\ntitle: S\n---\nHello again\n");
+    expect(checkStale({ contentDir: dir }).stale).toEqual(["stale pl/start (source start)"]);
+  });
   test("a source can be an .mdx page", () => {
     put("start.mdx", "---\ntitle: S\n---\nHello\n");
     put("pl/start.mdx", polish(bodyHash("---\ntitle: S\n---\nHello\n")));
     expect(checkStale({ contentDir: dir, polishSet: [] })).toEqual({ errors: [], stale: [], exitCode: 0 });
   });
   test("T7 --stamp writes the hash and nothing else; then T4 holds", () => {
+    putIndex();
     put("start.md", "---\ntitle: S\n---\nHello\n");
     put("pl/start.mdx", "---\ntitle: Start\nsource: start\n---\nTekst\n");
-    putIndex();
     const file = join(dir, "pl/start.mdx");
     const result = run("--stamp", file);
     expect(result.code).toBe(0);
@@ -225,7 +244,7 @@ describe("docs:stale", () => {
       print: (text: string) => void lines.push(`P ${text}`),
       fail: (text: string) => void lines.push(`F ${text}`),
     };
-    expect(runStale(["--strict"], dir, out)).toBe(1);
+    expect(runStale(["--strict"], dir, out, ["index"])).toBe(1);
     expect(lines).toEqual([
       "P stale pl/start (source start)",
       "F pl/start is stale and its source start is public",

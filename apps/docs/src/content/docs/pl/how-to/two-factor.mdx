@@ -1,0 +1,49 @@
+---
+title: Włącz logowanie dwuetapowe
+description: Dodaj do logowania kod z aplikacji uwierzytelniającej, zapisz kody zapasowe i odzyskaj dostęp po utracie telefonu.
+source: how-to/two-factor
+sourceHash: "773e51f0720bfabf"
+capabilities:
+  - web-panel
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Logowanie dwuetapowe po haśle prosi o kod z aplikacji na telefonie. Jest opcjonalne.
+
+## Zanim zaczniesz
+
+- Zainstaluj na telefonie aplikację uwierzytelniającą, na przykład Google Authenticator, Microsoft Authenticator lub Aegis.
+- Miej pod ręką swoje hasło.
+- Członek, który nie ma hasła, nie może użyć tej funkcji.
+
+## Włącz
+
+1. Otwórz stronę **<UiText k="nav_settings" />**. Przejdź do karty **<UiText k="acct_title" />**, sekcja **<UiText k="tf_title" />**.
+2. Naciśnij **<UiText k="tf_turn_on" />** i wpisz swoje hasło.
+3. Zeskanuj kod QR aplikacją. Albo wpisz klucz, który pokazuje strona.
+4. Wpisz 6-cyfrowy kod z aplikacji i naciśnij **<UiText k="tf_verify" />**.
+5. Strona pokazuje Twoje 10 kodów zapasowych. Każdy kod działa jeden raz. Widzisz je tylko teraz. Zapisz je w bezpiecznym miejscu, na przykład w menedżerze haseł. Potem naciśnij **<UiText k="tf_codes_done" />**.
+
+> <UiText k="tf_on_toast" />
+
+Włączenie wylogowuje Cię na innych urządzeniach.
+
+## Zaloguj się z nim
+
+1. Zaloguj się hasłem. Strona prosi wtedy o kod z aplikacji.
+2. Wpisz 6 cyfr i naciśnij **<UiText k="tf_verify" />**.
+3. Aby pominąć kod na własnym urządzeniu, najpierw włącz **<UiText k="tf_trust_device" />**. Po 30 dniach strona znowu prosi o kod.
+
+Jeśli telefonu nie ma pod ręką, naciśnij **<UiText k="tf_use_backup" />** i wpisz jeden kod zapasowy w postaci `abcde-12345`. Wielkość liter ma znaczenie.
+
+## Gdy stracisz telefon
+
+1. Zaloguj się kodem zapasowym.
+2. W tej samej sekcji Ustawień naciśnij **<UiText k="tf_new_codes" />**. Potrzebujesz hasła i kodu. Stare kody zapasowe przestają działać.
+3. Jeśli nie masz telefonu ani kodu zapasowego, poproś operatora. Operator sprawdza, kim jesteś, poza systemem i wykonuje reset. Reset kończy wszystkie Twoje sesje i zaufane urządzenia. Potem logujesz się hasłem i możesz znowu włączyć logowanie dwuetapowe. Zobacz [przewodnik operatora](../../operate/install-and-run/).
+
+## Co dzieje się dalej
+
+Po 5 błędnych kodach krok logowania się kończy. Po 10 błędnych kodach krok z kodem jest zablokowany na 15 minut.
+Aby je wyłączyć, naciśnij **<UiText k="tf_turn_off" />** w tej samej sekcji. Potrzebujesz hasła i kodu z aplikacji albo kodu zapasowego.

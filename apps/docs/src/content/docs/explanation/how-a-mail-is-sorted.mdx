@@ -5,6 +5,8 @@ capabilities:
   - triage
 ---
 
+import UiText from "../../../components/UiText.astro";
+
 The system sorts each new mail in a fixed order. Your rules come first. The AI comes second.
 This page explains the steps and the reasons for them. For the list of categories, see [Categories](../../reference/categories/).
 
@@ -51,7 +53,7 @@ The fixed code and your rules decide this.
 
 ## How you correct the result
 
-You can rate each sorted mail with `✅ n` and `✏️ n` in the digest, or on the page **Activity**.
+You can rate each sorted mail with `✅ n` and `✏️ n` in the digest, or on the page **<UiText k="nav_activity" />**.
 If you move a mail that the system moved back to its old folder by hand, the system sees it and records that the sort was wrong.
 The system also records an Undo as a correction.
 

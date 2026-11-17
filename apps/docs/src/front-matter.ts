@@ -10,8 +10,24 @@ import { repoRoot } from "./in-place";
 // A page whose id starts with one of these (also under `pl/`) is a user page.
 export const USER_SECTIONS = ["start", "how-to", "reference", "explanation", "faq"] as const;
 
-// The English page ids that need a Polish page (plan P6). Stage 10 adds the pages of P6.
-export const POLISH_SET: readonly string[] = ["index"];
+// The English page ids that need a Polish page (plan P6): the landing page, the tutorial, every how-to guide, the FAQ and
+// "How a mail is sorted". The reference and the operator pages stay English only (Starlight fallback).
+export const POLISH_SET: readonly string[] = [
+  "index",
+  "start",
+  "how-to/approve-a-send",
+  "how-to/correct-a-category",
+  "how-to/delegate-and-follow-up",
+  "how-to/digest-times",
+  "how-to/language",
+  "how-to/mode-and-switches",
+  "how-to/pause",
+  "how-to/sender-rules",
+  "how-to/two-factor",
+  "how-to/undo-a-move",
+  "faq",
+  "explanation/how-a-mail-is-sorted",
+];
 
 export const SOURCE_HASH_SHAPE = /^[0-9a-f]{16}$/;
 

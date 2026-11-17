@@ -75,8 +75,23 @@ describe("front matter capabilities", () => {
     expect(isUserPage("pl/faq")).toBe(true);
     expect(isUserPage("pl/index")).toBe(false);
   });
-  test("POLISH_SET holds the home page for now", () => {
-    expect([...POLISH_SET]).toEqual(["index"]);
+  test("POLISH_SET is the home page, the tutorial, every how-to guide, the FAQ and how a mail is sorted (plan P6)", () => {
+    expect([...POLISH_SET]).toEqual([
+      "index",
+      "start",
+      "how-to/approve-a-send",
+      "how-to/correct-a-category",
+      "how-to/delegate-and-follow-up",
+      "how-to/digest-times",
+      "how-to/language",
+      "how-to/mode-and-switches",
+      "how-to/pause",
+      "how-to/sender-rules",
+      "how-to/two-factor",
+      "how-to/undo-a-move",
+      "faq",
+      "explanation/how-a-mail-is-sorted",
+    ]);
   });
 });
 

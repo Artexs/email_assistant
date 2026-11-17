@@ -1,0 +1,53 @@
+---
+title: Cofnij to, co asystent zrobił z wiadomością
+description: Przywróć wiadomość po tym, jak asystent ją przeniósł, oznaczył flagą lub jako przeczytaną, w Telegramie albo w Aktywności.
+source: how-to/undo-a-move
+sourceHash: "0a41d4a63644a0bb"
+capabilities:
+  - actions-and-undo
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Użyj tego poradnika, gdy asystent przeniósł, oznaczył flagą lub oznaczył jako przeczytaną wiadomość, a Ty chcesz ją z powrotem taką, jaka była.
+
+## Zanim zaczniesz
+
+- Asystent zmienia skrzynkę tylko w trybie asystenta. W trybie podglądu nie ma czego cofać.
+- Cofnąć możesz w ciągu 7 dni od zmiany.
+
+## Cofnij w Telegramie
+
+1. Otwórz podsumowanie. Każda wiadomość ma numer, na przykład 3.
+2. Stuknij `↩️ 3` pod podsumowaniem. Przycisk pokazuje się tylko wtedy, gdy cofnięcie tej wiadomości jest możliwe.
+3. Bot odpowiada `↩️ Cofanie rozpoczęte: wiadomość wróci w ciągu minuty.`
+
+## Cofnij w Aktywności
+
+1. Otwórz stronę **<UiText k="nav_activity" />**.
+2. Znajdź wiadomość. Użyj filtrów, jeśli ich potrzebujesz.
+3. Naciśnij **<UiText k="act_btn_undo" />** (przycisk z `↩️`). Przycisk pokazuje się tylko wtedy, gdy cofnięcie jest możliwe.
+4. Panel pokazuje ten tekst i oznacza wiadomość plakietką **<UiText k="act_undo_pending" />**:
+
+   > <UiText k="undo_started" />
+
+Jeśli nie możesz cofnąć, panel lub bot mówi dlaczego. Na przykład:
+
+> <UiText k="undo_held" />
+
+## Co przywraca cofnięcie
+
+Cofnięcie odwraca te zmiany:
+
+- Przeniesienie. Wiadomość wraca do folderu, z którego przyszła.
+- Flagę. System ją zdejmuje.
+- Oznaczenie jako przeczytanej. System oznacza wiadomość jako nieprzeczytaną.
+
+Cofnięcie nie przywraca wiadomości, którą wysłał system, i nie działa po 7 dniach.
+Jeśli wiadomość wróciła do folderu po ręcznym przeniesieniu, nie ma już czego cofać. System widzi to przy następnej synchronizacji.
+
+## Co dzieje się dalej
+
+System zapisuje cofnięcie jako ocenę: kategoria była zła. Jeśli AI było niepewne co do wiadomości, system niczego nie zapisuje.
+Przeniesienie, które trwało w chwili Twojego stuknięcia, może się jeszcze zakończyć. Wiadomość znów pokazuje wtedy `↩️`. Stuknij go jeszcze raz.
+Gdy ręcznie przeniesiesz wiadomość z powrotem, system także zapisuje, że kategoria była zła. Pomija to, gdy AI było niepewne albo gdy kategoria jest już ustawiona ręcznie.
