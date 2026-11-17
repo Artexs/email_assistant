@@ -3,12 +3,13 @@ import { defineConfig } from "astro/config";
 
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
+import changelogReleases from "./integrations/changelog-releases";
 import cspStyleSrc from "./integrations/csp-style-src";
 
 // https://astro.build/config
 export default defineConfig({
   output: "static",
-  integrations: [react(), cspStyleSrc()],
+  integrations: [react(), changelogReleases(), cspStyleSrc()],
   build: { inlineStylesheets: "never" },
   // No Markdown in the panel; Shiki inline styles clash with the CSP (ticket F101-panel-to-astro-7).
   markdown: { syntaxHighlight: false },
