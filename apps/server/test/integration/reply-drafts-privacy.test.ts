@@ -73,6 +73,9 @@ const seedRequest = (w: World, emailId: string, over: Parameters<typeof insertRe
 
 const requestRow = (id: string) => db.selectFrom("reply_requests").selectAll().where("id", "=", id).executeTakeFirst();
 
+const profileRow = (mailboxId: string) =>
+  db.selectFrom("mailbox_profiles").selectAll().where("mailbox_id", "=", mailboxId).executeTakeFirstOrThrow();
+
 const match = (w: World, address = w.person) => db.transaction().execute((trx) => matchSubject(trx, w.orgId, address));
 
 const erase = (w: World, address = w.person) =>
@@ -122,7 +125,7 @@ describe("reply requests and profiles in a data request", () => {
     expect((await requestRow(named))?.instruction).toBe("tell [removed] that we agree");
     expect((await requestRow(sample))?.sample_body).toBe("Hello [removed]");
     expect(await requestRow(untouched)).toEqual(before);
-    const profile = await db.selectFrom("mailbox_profiles").selectAll().executeTakeFirstOrThrow();
+    const profile = await profileRow(w.mailboxId);
     expect(profile.signature).toBe("Jan, [removed]");
     expect(profile.display_name).toBe("Jan");
     expect(profile.writing_style).toBe("short");
@@ -157,7 +160,7 @@ describe("reply requests and profiles in a data request", () => {
     expect(result.kind).toBe("erased");
     expect((await requestRow(a))?.instruction).toHaveLength(300);
     expect((await requestRow(b))?.sample_body).toHaveLength(2000);
-    const profile = await db.selectFrom("mailbox_profiles").selectAll().executeTakeFirstOrThrow();
+    const profile = await profileRow(w.mailboxId);
     expect(profile.signature).toHaveLength(1000);
     expect(profile.display_name).toHaveLength(100);
     expect(profile.writing_style).toHaveLength(1000);

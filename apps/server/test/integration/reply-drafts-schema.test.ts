@@ -233,7 +233,11 @@ describe("reply_requests and mailbox_profiles: keys", () => {
       await trx.deleteFrom("users").where("id", "=", member.userId).execute();
       const row = await trx.selectFrom("reply_requests").select("requested_by").where("id", "=", id).executeTakeFirst();
       expect(row?.requested_by).toBeNull();
-      const profile = await trx.selectFrom("mailbox_profiles").select("updated_by").executeTakeFirstOrThrow();
+      const profile = await trx
+        .selectFrom("mailbox_profiles")
+        .select("updated_by")
+        .where("mailbox_id", "=", o.mailboxId)
+        .executeTakeFirstOrThrow();
       expect(profile.updated_by).toBeNull();
     });
   });
