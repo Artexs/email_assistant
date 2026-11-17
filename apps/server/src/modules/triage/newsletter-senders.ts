@@ -1,4 +1,5 @@
-// The newsletter senders of one mailbox (F110 stage 22, D17, PD-063). A reader only: it never fetches a URL and never writes.
+// The newsletter senders of one mailbox (F110 stage 22, D17, PD-063). It lives in `triage`, next to the readers of the results
+// that it reads (`trust` may not name the table `triage_results`). A reader only: it never fetches a URL and never writes.
 // A link in a mail is untrusted text. This module reads two facts from the stored headers (is there an `https` link, does the
 // header allow one-click) and returns flags. The URL itself does not leave the headers; stage 24 reads it again and checks it
 // before any request.
@@ -6,7 +7,8 @@ import { hasTrustedAlignedDkimPass } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { suspiciousSendersOf } from "../triage";
+
+import { suspiciousSendersOf } from "./suspicious-repo";
 
 export const NEWSLETTER_WINDOW_DAYS = 30;
 export const NEWSLETTER_MAX_SENDERS = 200;

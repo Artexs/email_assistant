@@ -70,10 +70,3 @@ export {
   type NewTrip,
   type NoResultReason,
 } from "./repo";
-export {
-  hasHttpsUnsubscribeLink,
-  listNewsletterSenders,
-  NEWSLETTER_MAX_SENDERS,
-  NEWSLETTER_WINDOW_DAYS,
-  type NewsletterSender,
-} from "./newsletters";

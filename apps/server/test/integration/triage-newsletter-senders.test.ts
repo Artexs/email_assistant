@@ -6,7 +6,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
-import { hasHttpsUnsubscribeLink, listNewsletterSenders, NEWSLETTER_MAX_SENDERS } from "../../src/modules/trust";
+import { hasHttpsUnsubscribeLink, listNewsletterSenders, NEWSLETTER_MAX_SENDERS } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
@@ -255,7 +255,7 @@ describe("a link in a mail is data, never an action", () => {
       globalThis.fetch = real;
     }
     expect(calls).toEqual([]);
-    const source = readFileSync(join(import.meta.dir, "../../src/modules/trust/newsletters.ts"), "utf8");
+    const source = readFileSync(join(import.meta.dir, "../../src/modules/triage/newsletter-senders.ts"), "utf8");
     expect(source).not.toMatch(
       /\bfetch\s*\(|node:https?|node:net|node:dns|from "undici"|XMLHttpRequest|\bBun\.connect/
     );
