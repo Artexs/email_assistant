@@ -170,6 +170,39 @@ describe("digest spam review line (F110 stage 17)", () => {
     });
   });
 
+  test("the window of logged moves has the same bounds: after the start, up to the end, at most 24 h back", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await orgOn(trx, "shadow");
+      const start = at(-3 * HOUR);
+      const logged = { status: "logged" };
+      await moveMail(trx, a.ctx, a.mailboxId, start, logged); // not after the start
+      await moveMail(trx, a.ctx, a.mailboxId, new Date(start.getTime() + 1), logged);
+      await moveMail(trx, a.ctx, a.mailboxId, T, logged);
+      await moveMail(trx, a.ctx, a.mailboxId, new Date(T.getTime() + 1), logged); // after the end
+      expect(spamLines((await buildDigestMessage(trx, a.ctx, request)).text)).toEqual([
+        "🗑 2 would have gone to spam · check them in the panel",
+      ]);
+      const wide = { ...request, periodStart: at(-3 * DAY) };
+      await moveMail(trx, a.ctx, a.mailboxId, at(-25 * HOUR), logged);
+      expect(spamLines((await buildDigestMessage(trx, a.ctx, wide)).text)).toEqual([
+        "🗑 3 would have gone to spam · check them in the panel",
+      ]);
+    });
+  });
+
+  test("a mailbox without settings is not a shadow mailbox: its applied move counts, a logged one does not", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await setOrgFeature(trx, ctx, { flag: "spam_review_line", enabled: true, actor: "cli", now: T });
+      await moveMail(trx, ctx, a.mailboxId, at(-2 * HOUR));
+      await moveMail(trx, ctx, a.mailboxId, at(-1 * HOUR), { status: "logged" });
+      expect(spamLines((await buildDigestMessage(trx, ctx, request)).text)).toEqual([
+        "🗑 1 went to spam · check them in the panel",
+      ]);
+    });
+  });
+
   test("a mail counts once; an undone move, a reverse action and a move to another folder do not count", async () => {
     await withRollback(db, async (trx) => {
       const a = await orgOn(trx, "assist");
