@@ -43,6 +43,7 @@ import {
   listHandledRows,
   listTriagedBetween,
   listWaitingOnYou,
+  suspiciousReasonsOf,
   suspiciousReasonsToShow,
 } from "../triage";
 
@@ -276,6 +277,14 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
   // F116 stage 19: the Delegate button needs the flag and an active delegate (organization), then a mailbox that drafts, a category
   // of the action section and no suspicion (row).
   const delegateOn = await delegateButtonOn(db, ctx);
+  // The reasons that `delegateMail` refuses (PD-063), flag or no flag: the button is hidden for the same mails.
+  const suspiciousAny = delegateOn
+    ? await suspiciousReasonsOf(
+        db,
+        ctx,
+        rows.map((row) => row.email_id)
+      )
+    : new Map<string, string[]>();
 
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
@@ -309,7 +318,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
     ...(delegateOn &&
     draftMailboxIds.has(row.mailbox_id) &&
     delegableCategory(row.category) &&
-    (suspicious.get(row.email_id) ?? []).length === 0
+    (suspiciousAny.get(row.email_id) ?? []).length === 0
       ? { delegable: true }
       : {}),
     ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
