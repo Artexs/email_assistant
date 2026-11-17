@@ -125,7 +125,8 @@ describe("digest rows by mail (steps 1, tests 1 to 3 and 6)", () => {
       ]);
       const digests = await trx.selectFrom("digests").select("id").where("org_id", "=", o.orgId).execute();
       expect(digests).toHaveLength(1);
-      expect(rows.map((row) => row.digest_id)).toEqual([digests[0]?.id, digests[0]?.id]);
+      const digestId = digests[0]?.id ?? "";
+      expect(rows.map((row) => row.digest_id)).toEqual([digestId, digestId]);
       expect(rows[0]?.view).toEqual(rows[1]?.view);
       // A repeat adds nothing, and the next slot adds a pair.
       await digest(trx, new Date(SLOT_NOW.getTime() + 60_000));
