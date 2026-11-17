@@ -1,3 +1,4 @@
+import type { ReplyTrigger } from "@ea/core";
 import type { Selectable, Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
@@ -5,7 +6,7 @@ import type { DB, Db, TenantContext } from "../../../platform/db";
 type DbOrTrx = Db | Transaction<DB>;
 
 export type ReplyRequestRow = Selectable<DB["reply_requests"]>;
-export type ReplyTrigger = "auto" | "tap" | "redraft" | "sample";
+export type { ReplyTrigger };
 export type ReplyRequestEnd = "done" | "no_draft" | "failed" | "cancelled" | "superseded";
 
 // A `drafting` row whose claim is older than this is taken back (the worker that held it died). D2: the claim is `locked_at`.
