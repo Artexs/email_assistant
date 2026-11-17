@@ -3,7 +3,13 @@ import { resolve } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 
-import { MailAuthError, refreshFlagsOfMailbox, type MailProvider, type OAuthTokens } from "../../src/modules/mail";
+import {
+  MailAuthError,
+  refreshFlags,
+  refreshFlagsOfMailbox,
+  type MailProvider,
+  type OAuthTokens,
+} from "../../src/modules/mail";
 import { protocolDisabled } from "../../src/modules/mail/oauth/login";
 import { setMailboxStatus, updateCursor } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
@@ -725,6 +731,33 @@ describe("TG4. refreshFlagsOfMailbox closes its connection", () => {
         SoftError
       );
       expect(box.fake.closed).toBe(true);
+    });
+  });
+});
+
+describe("N6. the history flag refresh leaves gone mail to the regular refresh", () => {
+  test("mail that the server no longer returns gets no checked_at from the history refresh, and does from the regular one", async () => {
+    await withHistoryBox(db, {}, async (box) => {
+      const goneId = await db
+        .transaction()
+        .execute((trx) =>
+          insertTestEmail(trx, box, box.mailboxId, { folder: "INBOX", uid: 931, received_at: box.clock.now })
+        );
+      const flagsOf = () =>
+        db.selectFrom("email_flags").select("checked_at").where("email_id", "=", goneId).executeTakeFirst();
+      const deps = {
+        db,
+        secrets: historySecrets,
+        isOwnActionId: async () => false,
+        openProvider: async () => box.fake,
+      };
+      const result = await refreshFlagsOfMailbox(deps, box, box.mailboxId, () => box.clock.now);
+      expect(result.gone.map((target) => target.emailId)).toEqual([goneId]);
+      expect(await flagsOf()).toBeUndefined();
+      // The regular refresh (the sync job's own) still marks it as tried: its move finder reads the gone mail of its run.
+      const regular = await refreshFlags({ db, provider: box.fake, now: () => box.clock.now }, box, box.mailboxId);
+      expect(regular.gone.map((target) => target.emailId)).toEqual([goneId]);
+      expect((await flagsOf())?.checked_at).toEqual(box.clock.now);
     });
   });
 });

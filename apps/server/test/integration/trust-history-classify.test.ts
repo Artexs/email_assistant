@@ -1,7 +1,11 @@
+import { createHash } from "node:crypto";
+
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { countLlmCallsSince, recordLlmCall } from "../../src/modules/audit";
 import { createLlmPause } from "../../src/modules/triage";
+import { claimNextCheck } from "../../src/modules/trust";
+import { recordItem } from "../../src/modules/trust/history-items";
 import { SoftError } from "../../src/platform/errors";
 import { LlmBlockedError } from "../../src/platform/llm";
 
@@ -18,7 +22,7 @@ import {
   seedMails,
   withClassifyBox,
 } from "./trust-history-classify-helpers";
-import { advance, jobOf, MINUTE_MS, RUNNING_KEY, theCheck } from "./trust-history-helpers";
+import { advance, jobOf, MINUTE_MS, RUNNING_KEY, theCheck, type HistoryBox } from "./trust-history-helpers";
 
 // F110 stage 07, step 1: the classify step. The box holds a check in `classifying` and mail rows that the test places; the model is
 // a fake with a fixed price (one cent per 10,000 tokens). The backfill and the flags steps are tested in trust-history-job.test.ts.
@@ -435,32 +439,36 @@ describe("the scope of the model", () => {
 
 describe("the time budget of a run", () => {
   test("a slow organization does not hold the next one: it starts the next run, the longest-waiting first", async () => {
-    await withClassifyBox(db, {}, async (first, firstCheck) => {
-      await withClassifyBox(db, {}, async (second, secondCheck) => {
-        await seedMails(db, first, [{}, {}, {}]);
-        await seedMails(db, second, [{}]);
-        // The first check waited longer.
+    await withClassifyBox(db, {}, async (one, oneCheck) => {
+      await withClassifyBox(db, {}, async (two, twoCheck) => {
+        // The organization that waited longer has the LARGER id, so a listing by id alone would pick the wrong one first.
+        const [slow, fast] = one.orgId > two.orgId ? [one, two] : [two, one];
+        const [slowCheck, fastCheck] = one.orgId > two.orgId ? [oneCheck, twoCheck] : [twoCheck, oneCheck];
+        await seedMails(db, slow, [{}, {}, {}]);
+        await seedMails(db, fast, [{}]);
+        const waited = (box: HistoryBox, ms: number) => new Date(box.clock.now.getTime() - ms);
         await db
           .updateTable("history_checks")
-          .set({ next_attempt_at: new Date(first.clock.now.getTime() - 10 * MINUTE_MS) })
-          .where("id", "=", firstCheck)
+          .set({ next_attempt_at: waited(slow, 10 * MINUTE_MS) })
+          .where("id", "=", slowCheck)
           .execute();
         await db
           .updateTable("history_checks")
-          .set({ next_attempt_at: new Date(first.clock.now.getTime() - 5 * MINUTE_MS) })
-          .where("id", "=", secondCheck)
+          .set({ next_attempt_at: waited(slow, 5 * MINUTE_MS) })
+          .where("id", "=", fastCheck)
           .execute();
         // Each call takes 13 s of the clock: the first mail runs, then the 12 s budget of the run is gone.
-        const llm = fakeLlm(first, { delayMs: 13_000 });
-        const job = jobOf(db, first, { llm });
+        const llm = fakeLlm(slow, { delayMs: 13_000 });
+        const job = jobOf(db, slow, { llm });
         await job.run();
-        expect(await itemsOf(db, firstCheck)).toHaveLength(1);
-        expect(await itemsOf(db, secondCheck)).toHaveLength(0);
-        expect(await checkOf(db, secondCheck)).toMatchObject({ attempts: 0, locked_at: null });
-        // The next run starts with the second organization: it waited longer now.
-        advance(first, RUN_MS);
+        expect(await itemsOf(db, slowCheck)).toHaveLength(1);
+        expect(await itemsOf(db, fastCheck)).toHaveLength(0);
+        expect(await checkOf(db, fastCheck)).toMatchObject({ attempts: 0, locked_at: null });
+        // The next run starts with the organization that was left out: it waited longer now.
+        advance(slow, RUN_MS);
         await job.run();
-        expect(await itemsOf(db, secondCheck)).toHaveLength(1);
+        expect(await itemsOf(db, fastCheck)).toHaveLength(1);
+        expect(fast.orgId).not.toBe(slow.orgId);
       });
     });
   });
@@ -476,6 +484,71 @@ describe("no mail text, subject or address in an item row", () => {
       expect(text).not.toContain("canary-person");
       expect(text).not.toContain("Body of mail");
       expect(text).not.toContain("item 0");
+    });
+  });
+});
+
+describe("the sample order and the lock", () => {
+  test("the fill follows md5(check id || mail id)", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      const ids = await seedMails(
+        db,
+        box,
+        Array.from({ length: 60 }, () => ({}))
+      );
+      await jobOf(db, box, { llm: fakeLlm(box, { tokens: 100 }) }).run();
+      const expected = [...ids]
+        .map((id) => ({ id, hash: createHash("md5").update(`${checkId}${id}`).digest("hex") }))
+        .sort((a, b) => (a.hash < b.hash ? -1 : 1))
+        .slice(0, 20)
+        .map((entry) => entry.id)
+        .sort();
+      expect((await itemsOf(db, checkId)).map((item) => item.email_id)).toEqual(expected);
+    });
+  });
+
+  test("a run whose lock was taken back writes no item and adds no cost", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await seedMails(db, box, [{}, {}]);
+      const llm = fakeLlm(box);
+      await jobOf(db, box, {
+        llm,
+        hooks: {
+          // Another run takes the check back after 10 minutes while this one is between its call and its commit.
+          afterCall: async () => {
+            await db
+              .updateTable("history_checks")
+              .set({ locked_at: new Date(box.clock.now.getTime() + 3_600_000) })
+              .where("id", "=", checkId)
+              .execute();
+          },
+        },
+      }).run();
+      expect(llm.calls).toHaveLength(1);
+      expect(await itemsOf(db, checkId)).toHaveLength(0);
+      expect(Number((await checkOf(db, checkId)).cost_usd)).toBe(0);
+    });
+  });
+
+  test("recordItem writes one item per mail: a second write of the same mail changes nothing", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      const [id] = await seedMails(db, box, [{}]);
+      const claim = await claimNextCheck(db, box, box.clock.now);
+      if (claim.kind !== "claimed") throw new Error("not claimed");
+      const item = {
+        emailId: id as string,
+        category: "info" as const,
+        confidence: 0.9,
+        reasonCode: "x",
+        wouldMove: true,
+        actedOn: false,
+        source: "classified" as const,
+        costUsd: 0.01,
+      };
+      expect(await recordItem(db, box, claim.check, item)).toBe(0.01);
+      expect(await recordItem(db, box, claim.check, item)).toBeNull();
+      expect(Number((await checkOf(db, checkId)).cost_usd)).toBe(0.01);
+      expect(await itemsOf(db, checkId)).toHaveLength(1);
     });
   });
 });
