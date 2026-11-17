@@ -38,6 +38,9 @@ export {
   type EndedHook,
 } from "./history-queue";
 export { createTripwireJob, runTripwire, type TripwireDeps } from "./tripwire";
+export { trustRoutes, type TrustRouteDeps } from "./routes";
+export { turnOnRecommended, type RecommendedResult } from "./recommended";
+export { checkViewOf, trustViewFor, type TrustViewDeps } from "./view";
 export { queueHistoryCheckOnConnect } from "./connect-hook";
 export { queueHistoryCheckByOperator, type OperatorQueueResult } from "./operator";
 export {

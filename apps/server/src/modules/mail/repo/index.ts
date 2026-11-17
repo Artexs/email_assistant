@@ -114,7 +114,9 @@ export {
   listAnsweredOrFlagged,
   listFromAddresses,
   listHistoryCandidates,
+  listMailExamples,
   type HistoryCandidate,
+  type MailExampleFacts,
   type StoredEmail,
 } from "./history";
 export {

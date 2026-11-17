@@ -157,10 +157,10 @@ export async function newestDoneCheck(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string
-): Promise<{ result: HistoryResult | null; finishedAt: Date | null } | null> {
+): Promise<{ id: string; result: HistoryResult | null; finishedAt: Date | null } | null> {
   const row = await db
     .selectFrom("history_checks")
-    .select(["result", "finished_at"])
+    .select(["id", "result", "finished_at"])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("status", "=", "done")
@@ -170,7 +170,11 @@ export async function newestDoneCheck(
     .limit(1)
     .executeTakeFirst();
   if (row === undefined) return null;
-  return { result: row.result == null ? null : historyResultSchema.parse(row.result), finishedAt: row.finished_at };
+  return {
+    id: row.id,
+    result: row.result == null ? null : historyResultSchema.parse(row.result),
+    finishedAt: row.finished_at,
+  };
 }
 
 /**

@@ -222,7 +222,8 @@ export async function setMode(
   deps: SettingsDeps,
   ctx: TenantContext,
   mailboxId: string,
-  input: { mode: MailboxMode; keepSwitches: boolean; actor: string }
+  // `auditData`: extra flat audit fields (the trust path adds `via`).
+  input: { mode: MailboxMode; keepSwitches: boolean; actor: string; auditData?: AuditData }
 ): Promise<SettingsChange> {
   return applyChange(deps, ctx, mailboxId, input.actor, (before) => {
     const setSwitches = input.mode === "assist" && !input.keepSwitches;
@@ -244,6 +245,7 @@ export async function setMode(
         from: before.mode,
         to: input.mode,
         ...(setSwitches ? { switches_set: true } : {}),
+        ...input.auditData,
       },
       close: { field: "mode", to: input.mode },
       alsoClose: switchesOff.map((name) => ({ field: "switch", name, to: false })),
