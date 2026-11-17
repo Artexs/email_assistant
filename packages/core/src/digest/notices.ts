@@ -49,6 +49,8 @@ export function renderUrgentNotice(
     // The `why_lines` keys (F110 stage 16): absent in a view queued with the flag off.
     confidence?: number | null | undefined;
     rule?: SenderRuleKind | null | undefined;
+    // The Delegate button shows (F116 stage 19). Absent: the keyboard of today.
+    delegable?: boolean;
     now: Date;
     timeZone: string;
   },
@@ -74,9 +76,20 @@ export function renderUrgentNotice(
     texts.notices.received(formatClock(input.receivedAt, input.timeZone, input.now, texts.locale)),
     `→ ${input.wouldDo}`
   );
+  const own = feedbackButtons(input.emailId, "urgent", { right: texts.common.right, edit: texts.common.change });
   return {
     text: lines.join("\n"),
-    buttons: [feedbackButtons(input.emailId, "urgent", { right: texts.common.right, edit: texts.common.change })],
+    buttons: [
+      input.delegable === true
+        ? [
+            ...own,
+            {
+              text: texts.loopTaps.buttons.delegate,
+              data: encodeCallback({ kind: "delegate_open", emailId: input.emailId }),
+            },
+          ]
+        : own,
+    ],
   };
 }
 

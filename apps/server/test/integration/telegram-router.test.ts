@@ -346,6 +346,22 @@ describe("telegram router", () => {
     });
   });
 
+  test("a result with a keyboard only edits the buttons of the tapped message, never its text (review 19 N2)", async () => {
+    await withRollback(db, async (trx) => {
+      const { fake, calls, tap } = setup(trx);
+      const linked = await linkedMember(trx);
+      fake.state.callback = () => ({ answer: "Done.", keyboard: [[{ text: "Btn", data: "x:1" }]] });
+      await tap(linked.chatId, "lc:abc", 56);
+      expect(calls.map((call) => call.method)).toEqual(["answerCallbackQuery", "editMessageReplyMarkup"]);
+      expect(calls[1]?.payload).toMatchObject({
+        chat_id: linked.chatId,
+        message_id: 56,
+        reply_markup: { inline_keyboard: [[{ text: "Btn", callback_data: "x:1" }]] },
+      });
+      expect("text" in (calls[1]?.payload ?? {})).toBe(false);
+    });
+  });
+
   test("a failing callback handler answers ERROR_TEXT and logs without the message", async () => {
     await withRollback(db, async (trx) => {
       const { fake, calls, tap } = setup(trx);

@@ -573,6 +573,7 @@ export interface BriefDelegationRow {
   subject: string | null;
   sent_at: Date;
   due_at: Date;
+  status: "sent" | "overdue";
 }
 
 // The open delegations (`sent`, `overdue`) with a due date before `dueBefore`, oldest due first: the ⏳ lines of the brief (F116 stage 18).
@@ -597,7 +598,7 @@ export async function listDelegationsDueBy(
   const [rows, count] = await Promise.all([
     scope()
       .leftJoin("emails as e", (join) => join.onRef("e.id", "=", "d.email_id").onRef("e.org_id", "=", "d.org_id"))
-      .select(["d.id", "g.name as delegate_name", "e.subject", "d.sent_at", "d.created_at", "d.due_at"])
+      .select(["d.id", "g.name as delegate_name", "e.subject", "d.sent_at", "d.created_at", "d.due_at", "d.status"])
       .orderBy("d.due_at")
       .orderBy("d.id")
       .limit(opts.limit)
@@ -613,6 +614,7 @@ export async function listDelegationsDueBy(
       subject: row.subject,
       sent_at: row.sent_at ?? row.created_at,
       due_at: row.due_at as Date,
+      status: row.status === "overdue" ? "overdue" : "sent",
     })),
     total: Number(count.n),
   };

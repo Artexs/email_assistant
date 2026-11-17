@@ -1,4 +1,11 @@
-import { dropLastLine, renderBrief, shownIds, type BriefRenderOptions, type BriefSections } from "../loops/brief";
+import {
+  briefKeyboard,
+  dropLastLine,
+  renderBriefLines,
+  shownIds,
+  type BriefRenderOptions,
+  type BriefSections,
+} from "../loops/brief";
 import type { CoreTexts } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
 import type { SenderRuleKind } from "../triage/rules";
@@ -6,6 +13,7 @@ import type { SuspiciousReason } from "../triage/suspicious";
 import type { MailboxStatus } from "../web/mailboxes";
 
 import { attachmentLine, type AttachmentLineInput } from "./attachment-line";
+import { encodeCallback } from "./callback";
 import { categoryTag } from "./labels";
 import { llmPauseLine, type LlmPause } from "./llm-pause";
 import { formatClock, formatDay, localDateTime, localToInstant } from "./local-time";
@@ -49,6 +57,9 @@ export interface DigestItem {
   attachments?: AttachmentLineInput;
   // A draft exists or is planned for the mail (an original `create_draft` action). A flagged delegation shows "no draft" only without one.
   hasDraft?: boolean;
+  // The Delegate button shows on this row (F116 stage 19): flag `delegate_button` on, an active delegate, the mailbox in `assist`
+  // with drafts on, a category of the action section and no suspicion. Set by the reader; absent reads as no button.
+  delegable?: boolean;
   // Set only while the flag `why_lines` is on (F110 stage 16). Absent reads as no mark: the item renders as before.
   confidence?: number | null;
   rule?: SenderRuleKind | null;
@@ -74,6 +85,8 @@ export interface DigestHandled {
 export interface DigestBrief {
   // The first digest of the local day: the "needs you today" block. Null: a later digest.
   sections: BriefSections | null;
+  // `loopConsentOf` of the member: false gives no loop button (D17, review 17 N5). The sections already hold counts only then.
+  loopConsent: boolean;
   // The mails that the 🔴 lines show: they leave the normal list.
   urgentEmailIds: readonly string[];
   links?: BriefRenderOptions["links"];
@@ -109,6 +122,9 @@ export interface DigestInput {
 export interface DigestShown {
   surfaced: string[];
   stale: string[];
+  // The line number (in the lines of the text) of each loop or delegation that a brief line names: the tap on its buttons edits
+  // that line. A line of the 4096 cut that dropped is not here.
+  lineOf: Record<string, number>;
 }
 
 export interface RenderedDigest {
@@ -203,7 +219,7 @@ function renderListed(
   briefSections: BriefSections | null,
   texts: CoreTexts,
   withSpamReview: boolean
-): OutMessage {
+): { message: OutMessage; lineOf: Record<string, number> } {
   const { counts } = input;
   const removed = removedByBrief(input);
   const total = sumCounts(counts, CATEGORY_ORDER);
@@ -212,8 +228,17 @@ function renderListed(
     headerLine(input, texts),
     total > 0 ? texts.digest.since(since, total, sumCounts(counts, ACTION_CATEGORIES)) : texts.digest.noMail(since),
   ];
-  const block = briefSections === null ? [] : renderBrief(briefSections, texts, briefOptions(input));
-  if (block.length > 0) lines.splice(1, 0, "", ...block, "");
+  const rendered =
+    briefSections === null ? { lines: [], ids: [] } : renderBriefLines(briefSections, texts, briefOptions(input));
+  const block = rendered.lines;
+  const lineOf: Record<string, number> = {};
+  if (block.length > 0) {
+    lines.splice(1, 0, "", ...block, "");
+    // The brief block starts at line 2 of the text (after the header and one empty line).
+    rendered.ids.forEach((id, index) => {
+      if (id !== null) lineOf[id] = 2 + index;
+    });
+  }
   if (input.mailboxes.length === 0) lines.push(texts.digest.noMailbox);
   for (const mailbox of input.mailboxes) lines.push(mailboxLine(input, mailbox, texts));
 
@@ -272,18 +297,34 @@ function renderListed(
   }
   if (footer.length > 0) lines.push("", ...footer);
 
-  const buttons: OutButton[][] = [];
+  // The loop rows come first, as their lines do; then two mail rows share one keyboard line (at most 8 buttons).
+  const buttons: OutButton[][] =
+    briefSections === null || input.brief === undefined
+      ? []
+      : briefKeyboard(briefSections, texts, { consent: input.brief.loopConsent });
+  const mailRows: OutButton[][] = [];
   listed.forEach((item, index) => {
     const n = index + 1;
-    const own = feedbackButtons(item.emailId, item.category, {
-      right: `✅ ${n}`,
-      edit: `✏️ ${n}`,
-      ...(item.undoable ? { undo: `↩️ ${n}` } : {}),
-    });
-    if (index % 2 === 0) buttons.push(own);
-    else buttons[buttons.length - 1]?.push(...own);
+    const own = [
+      ...feedbackButtons(item.emailId, item.category, {
+        right: `✅ ${n}`,
+        edit: `✏️ ${n}`,
+        ...(item.undoable ? { undo: `↩️ ${n}` } : {}),
+      }),
+      ...(item.delegable === true
+        ? [
+            {
+              text: texts.loopTaps.buttons.delegateRow(n),
+              data: encodeCallback({ kind: "delegate_open", emailId: item.emailId }),
+            },
+          ]
+        : []),
+    ];
+    if (index % 2 === 0) mailRows.push(own);
+    else mailRows[mailRows.length - 1]?.push(...own);
   });
-  return { text: lines.join("\n"), buttons };
+  buttons.push(...mailRows);
+  return { message: { text: lines.join("\n"), buttons }, lineOf };
 }
 
 function cutToLimit(text: string): string {
@@ -304,9 +345,12 @@ export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): Ren
   // The spam review lines go before any item row when the text is too long (F110 stage 17).
   let withSpamReview = true;
   for (;;) {
-    const message = renderListed(input, listed, sections, texts, withSpamReview);
+    const { message, lineOf } = renderListed(input, listed, sections, texts, withSpamReview);
     if (message.text.length <= MESSAGE_MAX_CHARS) {
-      return { message, shown: sections === null ? { surfaced: [], stale: [] } : shownIds(sections) };
+      return {
+        message,
+        shown: sections === null ? { surfaced: [], stale: [], lineOf } : { ...shownIds(sections), lineOf },
+      };
     }
     // The spam review lines go first, then the normal rows, then the lines of the brief from the bottom section up.
     if (withSpamReview && input.spamReview !== undefined) {
@@ -322,7 +366,10 @@ export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): Ren
       sections = shorter;
       continue;
     }
-    return { message: { text: cutToLimit(message.text), buttons: [] }, shown: { surfaced: [], stale: [] } };
+    return {
+      message: { text: cutToLimit(message.text), buttons: [] },
+      shown: { surfaced: [], stale: [], lineOf: {} },
+    };
   }
 }
 

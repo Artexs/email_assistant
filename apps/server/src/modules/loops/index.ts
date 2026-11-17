@@ -1,5 +1,5 @@
 export { briefLoopsOf, decodeLoopCursor, encodeLoopCursor, endOfLocalDay, listLoops, openLoopsByThread } from "./list";
-export { loadLoopBrief, markBriefShown } from "./brief";
+export { loadLoopBrief, markBriefShown, releaseBriefMarks } from "./brief";
 export type { LoopBrief } from "./brief";
 export type { BriefLoopSection, BriefLoops, LoopCursor, LoopFilter } from "./list";
 export {
@@ -73,3 +73,4 @@ export {
 export type { DraftFollowUpResult } from "./follow-up-draft";
 export { doneLoop, dropLoop, laterLoop, reopenLoop, untrackLoop, LATER_WORKING_DAYS } from "./loop-commands";
 export type { LaterAnswer, LoopAnswer, LoopCommandDeps, LoopCommandInput } from "./loop-commands";
+export { delegableCategory, delegateButtonOn, draftsAvailable } from "./delegate-button";
