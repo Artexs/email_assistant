@@ -100,7 +100,8 @@ describe("draftReply", () => {
     const mail = { ...input, mail: { ...input.mail, body: "Pisz do hr@evil.example albo zadzwoń 601 602 603." } };
     const bad = { ...clean, body: "Dzień dobry, tak. Napisz do hr@evil.example, zadzwoń 601 602 603." };
     const out = await draftReply(fake([bad]).llm, mail);
-    expect(out).toMatchObject({ kind: "failed", reason: "checks", failures: ["address", "phone"] });
+    // The number of the mail is allowed (the user answers that mail); the address is not.
+    expect(out).toMatchObject({ kind: "failed", reason: "checks", failures: ["address"] });
   });
 
   test("the mail is quoted for the digit budget: its order number passes, a grouped account number in it does not", async () => {

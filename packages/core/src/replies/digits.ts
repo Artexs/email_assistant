@@ -7,13 +7,22 @@
 //   - FREE: it lies inside a valid date or time, or inside a number of the form of money, a percentage, a rate, a postal
 //     code or a year, or inside an amount of at most 9 integer digits next to a currency;
 //   - or it costs its digits.
-// The draft fails `account_number` when the cost of the whole body is above DIGIT_BUDGET, and `phone` when the digits
-// that cost something make a phone-like run of 9 or more digits. A real IBAN (mod 97) fails whatever its digits cost.
+// The draft fails `account_number` when the cost of the whole body is above DIGIT_BUDGET, when digits that cost
+// something follow each other with one space, dot or dash between runs and make 12 digits or more (owner answer: the
+// user's approval is the last control, so every long number that nobody typed fails), or when an IBAN that passes mod 97
+// and that the user did not type is in the body; it fails `phone` when the digits that cost something make a phone-like
+// run of 9 or more digits.
 // Pure code.
 import { plainView, skeleton, viewsOf } from "./views";
 
 /** The digits of a whole body that no typed text, date, time or amount explains. */
 export const DIGIT_BUDGET = 12;
+/**
+ * A sequence of this many digits or more that the user did not type fails the draft, whatever the budget says: digits
+ * that cost something and follow each other with one space, dot or dash between two runs (owner answer, ticket F115
+ * "Stage 01 account check").
+ */
+export const LONG_SEQUENCE_DIGITS = 12;
 /** A run of this many digits that costs something is a phone number. */
 export const PHONE_DIGITS = 9;
 /** A run shorter than this is never KNOWN: one digit of a typed number would make every digit free. */
@@ -207,11 +216,23 @@ function typedKeysOf(texts: readonly string[]): string[] {
   return texts.flatMap((text) => numberKeys(plainView(text)));
 }
 
-// The numbers of the quoted mail that an order number may be: 9 to 12 digits in one run.
+// The numbers of the quoted mail that an order number may be: 9 to 12 digits in one run, or in runs that follow each
+// other with one space, dot or dash between them ("1234 5678 9012").
 function mailKeysOf(texts: readonly string[]): string[] {
-  return texts
-    .flatMap((text) => runsOf(plainView(text)).map((run) => run.digits))
-    .filter((digits) => digits.length >= MAIL_KNOWN_MIN_DIGITS && digits.length <= MAIL_KNOWN_MAX_DIGITS);
+  const keys: string[] = [];
+  for (const text of texts) {
+    const view = plainView(text);
+    const sequences: string[] = [];
+    runsOf(view).forEach((run, i, runs) => {
+      const before = runs[i - 1];
+      const joined = before !== undefined && /^[ .-]$/.test(view.slice(before.end, run.start));
+      if (joined) sequences[sequences.length - 1] += run.digits;
+      else sequences.push(run.digits);
+    });
+    // A whole sequence only: the parts of a long number are not known.
+    keys.push(...sequences.filter((s) => s.length >= MAIL_KNOWN_MIN_DIGITS && s.length <= MAIL_KNOWN_MAX_DIGITS));
+  }
+  return keys;
 }
 
 // The letters and digits of a view without any separator and quote mark. A word breaks the stream (`?`):
@@ -258,7 +279,7 @@ export function ibansOf(text: string): string[] {
 }
 
 export interface DigitVerdict {
-  /** The digits that cost something are above the budget, or an IBAN that the user did not type is in the body. */
+  /** A sequence of 12 digits or more, the digits above the budget, or an IBAN: none of them typed by the user. */
   account: boolean;
   phone: boolean;
 }
@@ -332,6 +353,32 @@ function freeRuns(view: string, runs: readonly Run[], known: (digits: string) =>
 }
 
 /**
+ * The digits of the longest sequence of runs that follow each other with one `[ .-]` between them. A run that a date, a
+ * time, money, an amount and the like explains ends a sequence; a run that the user typed or the mail holds stays in it,
+ * so that a number that mixes typed groups and new groups is a new number.
+ */
+function longestSequence(
+  view: string,
+  runs: readonly Run[],
+  free: readonly boolean[],
+  knownRun: readonly boolean[]
+): string {
+  let longest = "";
+  let current = "";
+  runs.forEach((run, i) => {
+    if (free[i] && !knownRun[i]) {
+      current = "";
+      return;
+    }
+    const before = runs[i - 1];
+    const joined = before !== undefined && /^[ .-]$/.test(view.slice(before.end, run.start));
+    current = `${joined ? current : ""}${run.digits}`;
+    if (current.length > longest.length) longest = current;
+  });
+  return longest;
+}
+
+/**
  * The digit budget of a body. `allowed` holds the texts that the user typed (instruction, signature, writing style);
  * `quoted` holds the mail that the draft answers.
  */
@@ -344,6 +391,7 @@ export function digitVerdict(
   const known = (digits: string): boolean =>
     digits.length >= KNOWN_MIN_DIGITS && [...typed, ...mail].some((key) => key.includes(digits));
   let cost = 0;
+  let sequence = false;
   let phone = false;
   for (const view of viewsOf(body)) {
     const runs = runsOf(view);
@@ -352,6 +400,14 @@ export function digitVerdict(
       cost,
       runs.reduce((sum, run, i) => sum + (free[i] ? 0 : run.digits.length), 0)
     );
+    const text = longestSequence(
+      view,
+      runs,
+      free,
+      runs.map((run) => known(run.digits))
+    );
+    // A long sequence is allowed when the user typed it or the mail holds it, as a whole.
+    if (text.length >= LONG_SEQUENCE_DIGITS && ![...typed, ...mail].some((key) => key.includes(text))) sequence = true;
     // A free run leaves a break: a phone number does not join across it.
     let rest = view;
     for (let i = runs.length - 1; i >= 0; i -= 1) {
@@ -364,6 +420,6 @@ export function digitVerdict(
   }
   const typedIbans = new Set(opts.allowed.flatMap(ibansOf));
   const iban = ibansOf(body).some((candidate) => !typedIbans.has(candidate));
-  const account = cost > DIGIT_BUDGET || iban;
+  const account = sequence || cost > DIGIT_BUDGET || iban;
   return { account, phone: phone && !account };
 }

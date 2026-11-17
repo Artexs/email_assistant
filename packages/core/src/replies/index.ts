@@ -10,5 +10,5 @@ export { cutChars, DRAFTER_MAIL_BODY_MAX, DRAFTER_NAME_MAX, DRAFTER_SUBJECT_MAX 
 export type { DrafterInput } from "./input";
 export { draftCopyKey } from "./copy-key";
 export type { DraftCopy } from "./copy-key";
-export { DIGIT_BUDGET, digitVerdict, IBAN_LENGTHS, ibansOf } from "./digits";
+export { DIGIT_BUDGET, digitVerdict, IBAN_LENGTHS, ibansOf, LONG_SEQUENCE_DIGITS } from "./digits";
 export type { DigitVerdict } from "./digits";

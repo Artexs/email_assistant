@@ -195,10 +195,11 @@ describe("checkReplyBody: quoted, encoded and lookalike forms", () => {
     expect(failuresOf("Tak, www.x.zzzz")).toEqual(["link"]);
   });
 
-  test("digit counts: 8 digits pass, 9 are a phone; 12 are a phone, 13 an account number", () => {
+  test("digit counts: 8 digits pass, 9 to 11 are a phone, 12 or more an account number", () => {
     expect(failuresOf("Tak, 12345678")).toEqual([]);
     expect(failuresOf("Tak, 123456789")).toEqual(["phone"]);
-    expect(failuresOf("Tak, 123456789012")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 12345678901")).toEqual(["phone"]);
+    expect(failuresOf("Tak, 123456789012")).toEqual(["account_number"]);
     expect(failuresOf("Tak, 1234567890123")).toEqual(["account_number"]);
   });
 

@@ -8,7 +8,15 @@ import {
   WORDS_QUOTES_AND_SHAPES,
 } from "./reviewer-cases.test-helper";
 
-import { checkReplyBody, DIGIT_BUDGET, digitVerdict, IBAN_LENGTHS, ibansOf, type ReplyCheckCode } from "./index";
+import {
+  checkReplyBody,
+  DIGIT_BUDGET,
+  digitVerdict,
+  IBAN_LENGTHS,
+  ibansOf,
+  LONG_SEQUENCE_DIGITS,
+  type ReplyCheckCode,
+} from "./index";
 
 function failuresOf(body: string, allowed: string[] = [], quoted: string[] = []): ReplyCheckCode[] {
   const result = checkReplyBody(body, { language: "pl", allowed, quoted });
@@ -96,9 +104,10 @@ describe("the digit budget: the budget and the phone rule", () => {
     expect(failuresOf(say("tel. 600 oraz 100 oraz 200"))).toEqual([]);
   });
 
-  test("a number of 13 digits or more is an account number, not a phone number", () => {
+  test("a number of 12 digits or more is an account number, not a phone number", () => {
     expect(failuresOf(say("numer 1234567890123"))).toEqual(["account_number"]);
-    expect(failuresOf(say("numer 123456789012"))).toEqual(["phone"]);
+    expect(failuresOf(say("numer 123456789012"))).toEqual(["account_number"]);
+    expect(failuresOf(say("numer 12345678901"))).toEqual(["phone"]);
   });
 
   test("the digit key of a typed phone number: typed in any form, written in any form", () => {
@@ -187,7 +196,7 @@ describe("the digit budget: known numbers (typed by the user, or of the quoted m
     const mail = ["Proszę o odpowiedź w sprawie zamówienia 123456789012 oraz 98765432101. Konto: 4111 1111 1111 1111."];
     expect(failuresOf(say("zamówienie 123456789012"), [], mail)).toEqual([]);
     expect(failuresOf(say("zamówienie 98765432101"), [], mail)).toEqual([]);
-    expect(failuresOf(say("zamówienie 123456789012"))).toEqual(["phone"]);
+    expect(failuresOf(say("zamówienie 123456789012"))).toEqual(["account_number"]);
     // The groups of the card in the mail are runs of 4 digits: they are not known.
     expect(failuresOf(say("konto 4111 1111 1111 1111"), [], mail)).toEqual(["account_number"]);
     // A run of 13 digits or more is never known, nor an IBAN of the mail.
@@ -740,9 +749,9 @@ describe("pins: typed numbers", () => {
 
 describe("pins: the views of the body", () => {
   test("the plain view and the decoded view are both counted; the cost of the larger one counts", () => {
-    // Plain: 111, 20222, 20333 and 20444 are 18 digits. Decoded: 111 222 333 444 are 12 digits and a phone number.
-    expect(failuresOf(say("tel 111%20222%20333%20444"))).toEqual(["account_number"]);
-    expect(failuresOf(say("tel 111 222 333 444"))).toEqual(["phone"]);
+    // Plain: 6, 20000, 20111 and 20222 are 16 digits. Decoded: 6 000 111 222 are 10 digits and a phone number.
+    expect(failuresOf(say("tel 6%20000%20111%20222"))).toEqual(["account_number"]);
+    expect(failuresOf(say("tel 6 000 111 222"))).toEqual(["phone"]);
     expect(failuresOf(say("tel &#54;&#48;&#48; &#49;&#48;&#48; &#50;&#48;&#48;"))).toEqual(["account_number"]);
   });
 });
@@ -839,5 +848,78 @@ describe("pins: the folds of the views", () => {
         found: ["NL91ABNA0417164300"],
       });
     }
+  });
+});
+
+describe("the long sequence: 12 digits or more that nobody typed (owner answer, F115 stage 01 account check)", () => {
+  test("12 digits fail, 11 digits are a phone number: in one run and with one space, dot or dash between runs", () => {
+    expect(LONG_SEQUENCE_DIGITS).toBe(12);
+    for (const body of [
+      "123456789012",
+      "1234 5678 9012",
+      "1234.5678.9012",
+      "1234-5678-9012",
+      "12 34 56 78 90 12",
+      "1-2-3-4-5-6-7-8-9-0-1-2",
+      "123 456 789 012",
+      "1234 5678-9012",
+      "+48 123 456 789 012",
+    ]) {
+      expect({ body, failures: failuresOf(say(`konto ${body}`)) }).toEqual({ body, failures: ["account_number"] });
+    }
+    expect(failuresOf(say("konto 12345678901"))).toEqual(["phone"]);
+    expect(failuresOf(say("konto 1234 5678 901"))).toEqual(["phone"]);
+    expect(failuresOf(say("konto 123-456-789-01"))).toEqual(["phone"]);
+    // Two characters between runs end the sequence but the phone rule still sees the digits.
+    expect(failuresOf(say("konto 1234 - 5678 - 9012"))).toEqual(["phone"]);
+    expect(failuresOf(say("konto 1234  5678  9012"))).toEqual(["phone"]);
+  });
+
+  test("the sequence needs a single separator of the list; a word, a comma or two characters end it", () => {
+    for (const body of ["1234 abc 5678 abc 9012", "1234, 5678, 9012", "1234/5678/9012", "1234 5678\n9012"]) {
+      expect({ body, failures: failuresOf(say(`konto ${body}`)) }).toEqual({ body, failures: [] });
+    }
+  });
+
+  test("a date, a time, an amount or a typed number ends the sequence: no sequence of 12 is made across it", () => {
+    expect(failuresOf(say("kod 123456 16.07.2026 123456"))).toEqual([]);
+    expect(failuresOf(say("kod 123456 zł 123456"))).toEqual([]);
+    expect(failuresOf(say("kod 15.11.2026-30.11.2026 oraz 15.11.2026 - 30.11.2026"))).toEqual([]);
+    // A typed number inside a longer number does not make the longer number typed.
+    expect(failuresOf(say("kod 123456 111222 123456"), ["tel 111222"])).toEqual(["account_number"]);
+    expect(failuresOf(say("kod 123456 111 222 123456"), ["tel 111 222"])).toEqual(["account_number"]);
+    expect(failuresOf(say("kod 111222 oraz 111 222"), ["tel 111222"])).toEqual([]);
+  });
+
+  test("a typed number is allowed whatever its length; another long number is not", () => {
+    const typed = ["Nasz numer NIP-EU 1234 5678 9012 oraz konto 61 1090 1014 0000 0712 1981 2874"];
+    expect(failuresOf(say("numer 1234 5678 9012"), typed)).toEqual([]);
+    expect(failuresOf(say("numer 123456789012"), typed)).toEqual([]);
+    expect(failuresOf(say("numer 1234 5678 9013"), typed)).toEqual(["account_number"]);
+    expect(failuresOf(say("numer 1234 5678 9012 3456"), typed)).toEqual(["account_number"]);
+  });
+
+  test("a number of the mail that the draft answers is allowed up to 12 digits, in one run or in groups; a longer one is not", () => {
+    const mail = [
+      "Proszę o odpowiedź w sprawie nr 1234 5678 9012 oraz faktury 987654321098 oraz karty 4111 1111 1111 1111.",
+    ];
+    expect(failuresOf(say("sprawa 1234 5678 9012"), [], mail)).toEqual([]);
+    expect(failuresOf(say("sprawa 123456789012"), [], mail)).toEqual([]);
+    expect(failuresOf(say("faktura 987654321098"), [], mail)).toEqual([]);
+    expect(failuresOf(say("faktura 9876 5432 1098"), [], mail)).toEqual([]);
+    expect(failuresOf(say("karta 4111 1111 1111 1111"), [], mail)).toEqual(["account_number"]);
+    expect(failuresOf(say("karta 4111 1111 1111"), [], mail)).toEqual(["account_number"]);
+    expect(failuresOf(say("sprawa 1234 5678 9013"), [], mail)).toEqual(["account_number"]);
+  });
+
+  test("a mail number made of parts that do not join is not one number: groups with a word between", () => {
+    const mail = ["nr 1234 oraz 5678 oraz 9012"];
+    expect(failuresOf(say("sprawa 1234 5678 9012"), [], mail)).toEqual(["account_number"]);
+  });
+
+  test("a 12-digit sequence in a quoted block or markup is found: the budget layer stays under it", () => {
+    expect(failuresOf(say("> 1234 5678 9012"))).toEqual(["account_number"]);
+    expect(failuresOf(say("**1234 5678 9012**"))).toEqual(["account_number"]);
+    expect(failuresOf(say("1234\u{FE0F} 5678\u{FE0F} 9012"))).toContain("account_number");
   });
 });
