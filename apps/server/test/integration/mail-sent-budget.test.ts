@@ -102,7 +102,7 @@ describe("the timer of a call", () => {
       expect(await deadline.call(async () => 7)).toBe(7);
       const timer = set.mock.results.map((r) => r.value).find((v) => v !== undefined);
       expect(timer).toBeDefined();
-      expect(clear.mock.calls.map((c) => c[0])).toContain(timer);
+      expect(clear.mock.calls.map((c) => c[0] as unknown)).toContain(timer as unknown);
     } finally {
       set.mockRestore();
       clear.mockRestore();
