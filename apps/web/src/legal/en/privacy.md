@@ -11,9 +11,9 @@ This page says what the mail assistant does with personal data. It describes the
 
 The table "What we store" at the end of this page lists each kind of data, about whom it is, why we keep it and for how long.
 
-- **Mail.** The assistant stores the mail of the connected mailboxes: the text, the subject, the addresses and facts from the headers (sender name, Reply-To, Return-Path, spam and authentication results, list data, attachment names and sizes, link hosts). This includes data of people who are not members: the senders and recipients of that mail.
+- **Mail.** The assistant stores the mail of the connected mailboxes: the text, the subject, the addresses and facts from the headers (sender name, Reply-To, Return-Path, authentication results, list data, attachment names and sizes, link hosts). This includes data of people who are not members: the senders and recipients of that mail.
 - **Sent mail.** The assistant can read the Sent folder of a mailbox. It never changes that folder. This is off by default. It runs only when the operator turns the feature on for the organization and a member turns on the switch "Track my sent mail" for the mailbox.
-- **AI results.** The AI writes a short reason, extracted fields, summaries and draft texts for each mail. The system stores them.
+- **AI results.** The AI writes a short reason, extracted fields (such as the task or the question of a draft) and summaries for each mail. The system builds each draft from a fixed text and these fields. The system stores all of them.
 - **Members.** The system stores the name, the e-mail address, the language, the password (as a hash), the sessions (device, network address and last day of use), the optional second factor, the version of the terms that the member accepted, and the Telegram chat that the member linked.
 - **Mailbox secret.** The password or token of a mailbox is stored encrypted.
 - **What the system did.** An audit log keeps who decided what and when. It holds ids, codes and numbers, never mail text.
@@ -42,19 +42,19 @@ The assistant uses the data for these purposes. For each purpose the legal basis
 ## Who receives data
 
 - The table "Sub-processors" at the end of this page lists each outside service that gets data, what it gets, where it works and when it is in use. A second table lists the services that get no personal data.
-- **AI model.** This install uses OpenAI. The assistant sends the text, the subject and the sender of a mail, the delegates, and up to three earlier mails of the same thread as context. It does not send mail older than 7 days. According to the paid API terms that apply to this service, OpenAI does not train on API data. The assistant asks OpenAI not to store the data (`store: false`). OpenAI keeps abuse logs for up to 30 days. OpenAI has no EU location for this use. The terms were last checked on \<to confirm: OpenAI terms check date>. An install can use Google Gemini instead. The column "Used when" shows the condition.
+- **AI model.** This install uses OpenAI. The assistant sends the text, the subject and the sender of a mail, the delegates, and up to three earlier mails of the same thread as context. It does not send mail older than 7 days, unless the operator loads old mail once (a backfill). According to the paid API terms that apply to this service, OpenAI does not train on API data. The assistant asks OpenAI not to store the data (`store: false`). OpenAI keeps abuse logs for up to 30 days. This install uses no EU region of OpenAI. The public data-controls page of OpenAI was last checked on 2026-11-17. An install can use Google Gemini instead. The column "Used when" shows the condition.
 - **Telegram.** Telegram gets only what the consent text of the panel names, after the member consents: the sender and subject of mails, the names (or file types) and sizes of attachments, the short reason or summary of the AI, the texts of drafts that wait for approval with the quoted part of the original mail, the names of delegates and the addresses of the mailboxes. If the member turns on open loops, Telegram also gets who the member waits for, a short description of what was asked or promised, the due date, the subject, and follow-up drafts with their recipients. Chats with a bot are not end-to-end encrypted.
-- **Transfers outside the EEA.** OpenAI has no EU location for this use, and Telegram can process data outside the European Economic Area. Transfer mechanism: \<to confirm: transfer mechanism>.
+- **Transfers outside the EEA.** This install uses no EU region of OpenAI. OpenAI and Telegram can process data outside the European Economic Area. Transfer mechanism: \<to confirm: transfer mechanism>.
 - **Backup.** A backup is encrypted with `age` before it leaves the server. The key to decrypt it is not on the server.
 - **Mail provider.** When an owner approves a draft, the mail leaves from the mailbox of the owner through the mail provider of that mailbox.
 
 ## AI and decisions
 
-- The AI sorts mail, writes short reasons and summaries, and drafts texts for tasks and questions.
+- The AI sorts mail, writes short reasons and summaries, and gives the task or the question that goes into a draft.
 - The assistant never sends a mail on its own. A send needs an owner to approve the exact text, in Telegram or in the panel. Without approval the send ends after 48 hours.
 - The AI cannot choose a recipient. The system takes recipients from the mail and from the delegates that the organization added.
-- A new mailbox is in shadow mode: nothing changes in the mailbox. In assist mode, a move happens only for a category that the owner set to run by itself and that passed the quality gate.
-- Each automatic move has a reason in the audit log. The member can reverse it with Undo for 7 days, in Telegram or in the panel.
+- A new mailbox is in shadow mode: nothing changes in the mailbox. In assist mode, a move happens only for a category that the owner set to run by itself and that passed the quality gate. Mail that the assistant is unsure about moves only when the owner turns on a separate switch for it.
+- Each sorting decision has a reason code in the audit log. The member can reverse an automatic move with Undo for 7 days, in Telegram or in the panel.
 - The assistant only sorts, flags, moves and drafts. Whether this is a decision with legal effect: \<to confirm: assessment of automated decisions>.
 
 ## Your rights
@@ -81,7 +81,7 @@ The assistant uses the data for these purposes. For each purpose the legal basis
 - **Panel.** The panel is reachable only through Tailscale, by members of the private network. It has no public address.
 - **Backups** are encrypted before upload.
 - **Sign-in.** Ten failed sign-ins in 15 minutes lock the account for 15 minutes. A new password is checked against known leaks; only 5 characters of its hash leave the server. A member can turn on a second factor (TOTP).
-- **Separation.** Each organization sees only its own data. The code filters every query by organization, and the database adds row-level security as a second barrier.
+- **Separation.** Each organization sees only its own data. The code filters every query by organization, and for web requests the database adds row-level security as a second barrier.
 - **Logs** hold no mail text.
 
 ## Changes

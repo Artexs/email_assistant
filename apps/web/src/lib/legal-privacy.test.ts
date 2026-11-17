@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { TERMS_VERSION } from "@ea/core/web";
 
 import { isAllowedPlaceholder, legalLangs, legalPlaceholders, type LegalLang } from "./legal";
 import { findPlaceholders, headingTitles, readLegalSource } from "./legal-checks";
@@ -67,8 +66,4 @@ describe("the privacy policy sources", () => {
       expect(source).not.toMatch(plannedFeatures);
     });
   }
-
-  test("4. TERMS_VERSION stays: stage 06 makes the one bump", () => {
-    expect(TERMS_VERSION).toBe("2026-11-12");
-  });
 });

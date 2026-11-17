@@ -41,7 +41,7 @@ Załącznik 1. Podmiot przetwarzający stosuje te środki:
 - Panel jest dostępny tylko przez Tailscale, dla członków sieci prywatnej. Nie ma publicznego adresu.
 - Kopie zapasowe są szyfrowane narzędziem `age` przed wysłaniem. Klucza do ich odszyfrowania nie ma na serwerze.
 - Dziesięć nieudanych logowań w 15 minut blokuje konto na 15 minut. Nowe hasło jest sprawdzane w bazie znanych wycieków, a z serwera wychodzi tylko 5 znaków jego skrótu. Członek może włączyć drugi składnik (TOTP).
-- Każda organizacja widzi tylko swoje dane. Kod filtruje każde zapytanie według organizacji, a baza danych dodaje zabezpieczenie na poziomie wierszy jako drugą barierę.
+- Każda organizacja widzi tylko swoje dane. Kod filtruje każde zapytanie według organizacji, a dla żądań z panelu baza danych dodaje zabezpieczenie na poziomie wierszy jako drugą barierę.
 - Logi zawierają identyfikatory, liczby, kody i czasy. Nie zawierają treści wiadomości, adresów ani haseł.
 
 ## Podprocesorzy
@@ -49,12 +49,14 @@ Załącznik 1. Podmiot przetwarzający stosuje te środki:
 - Administrator udziela podmiotowi przetwarzającemu ogólnej pisemnej zgody na korzystanie z podprocesorów z Załącznika 2. Załącznik 2 to tabela na końcu tej strony. Podaje każdą usługę, jakie dane dostaje, gdzie działa i kiedy jest używana.
 - Gdy Załącznik 2 dostaje nowy wiersz, zmienia się wersja tego tekstu. Każdy członek widzi wtedy okno przy następnym logowaniu.
 - Termin na sprzeciw wobec nowego podprocesora: \<to confirm: objection period>.
+- Obowiązki każdego podprocesora (art. 28 ust. 4 RODO): \<to confirm: sub-processor contracts>.
 
 ## Pomoc przy żądaniach
 
 - Podmiot przetwarzający informuje administratora o żądaniu, które otrzyma od osoby, której dane dotyczą. Nie odpowiada na to żądanie sam, chyba że administrator go do tego upoważni.
 - Na pisemne polecenie właściciela organizacji podmiot przetwarzający znajduje dane jednej osoby i je usuwa. Informuje administratora, jakie dane znalazł, aby administrator mógł odpowiedzieć.
 - Administrator odpowiada na żądanie w ciągu jednego miesiąca (art. 12 ust. 3 RODO).
+- Pomoc w obowiązkach administratora dotyczących bezpieczeństwa, zawiadamiania o naruszeniach i oceny skutków (art. 32–36 RODO): \<to confirm: help with Articles 32 to 36>.
 
 ## Naruszenia
 
@@ -70,4 +72,5 @@ Załącznik 1. Podmiot przetwarzający stosuje te środki:
 
 ## Audyty
 
-Prawa administratora do audytu: \<to confirm: audit rights>.
+- Prawa administratora do audytu: \<to confirm: audit rights>.
+- Informacje wykazujące zgodność z art. 28 RODO: \<to confirm: proof of compliance>.

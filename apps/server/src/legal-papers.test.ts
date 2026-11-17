@@ -98,6 +98,33 @@ const papers = readdirSync(LEGAL_DIR)
   .sort();
 const text = (name: string): string => readFileSync(path.join(LEGAL_DIR, name), "utf8");
 const records = text("records-of-processing.md");
+const claims = text("claims.md");
+
+interface ClaimRow {
+  id: string;
+  claim: string;
+  source: string;
+  condition: string;
+}
+
+/** The rows of the claims list: the table lines whose first cell is `C` and three digits. */
+function claimRows(markdown: string): ClaimRow[] {
+  return markdown
+    .split("\n")
+    .filter((line) => /^\| C\d{3} \|/.test(line))
+    .map((line) => {
+      const cells = line
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim());
+      return { id: cells[0] ?? "", claim: cells[1] ?? "", source: cells[2] ?? "", condition: cells[3] ?? "" };
+    });
+}
+
+/** The ADR numbers (`ADR 0015`) of a source cell. */
+function adrNumbers(source: string): string[] {
+  return [...source.matchAll(/\bADR (\d{4})\b/g)].map((match) => match[1] ?? "");
+}
 
 describe("legal papers helpers", () => {
   test("missingIds names an id that no backticked token holds", () => {
@@ -130,6 +157,15 @@ describe("legal papers helpers", () => {
   test("rowOf finds the row of an id and not a row that only mentions it", () => {
     expect(rowOf("a", "| `a` | x |\n| `b` | `a` |")).toBe("| `a` | x |");
     expect(rowOf("c", "| `a` | `c` |")).toBeUndefined();
+  });
+
+  test("claimRows reads the table rows and adrNumbers reads the ADR numbers of a source", () => {
+    const rows = claimRows("| # | Claim |\n| C001 | a claim | `docs/a.md`, ADR 0015 | — |\n| C002 | b | s | c |");
+    expect(rows).toEqual([
+      { id: "C001", claim: "a claim", source: "`docs/a.md`, ADR 0015", condition: "—" },
+      { id: "C002", claim: "b", source: "s", condition: "c" },
+    ]);
+    expect(adrNumbers("ADR 0015 and ADR 0009; ADR 12")).toEqual(["0015", "0009"]);
   });
 
   test("the allowed placeholder list is read from apps/web/src/lib/legal.ts", () => {
@@ -177,7 +213,7 @@ describe("docs/legal", () => {
   });
 
   test("4. every repo path in backticks exists", () => {
-    expect(papers).toEqual(["README.md", "breach-procedure.md", "dpia.md", "records-of-processing.md"]);
+    expect(papers).toEqual(["README.md", "breach-procedure.md", "claims.md", "dpia.md", "records-of-processing.md"]);
     for (const file of papers) {
       for (const token of pathTokens(text(file))) {
         const exists = existsSync(path.join(ROOT, token));
@@ -200,6 +236,78 @@ describe("docs/legal", () => {
       expect({ risk: index, levels: /\|\s*(low|medium|high)\s*\|\s*(low|medium|high)\s*\|$/.test(row ?? "") }).toEqual({
         risk: index,
         levels: true,
+      });
+    }
+  });
+});
+
+describe("docs/legal/claims.md", () => {
+  const rows = claimRows(claims);
+
+  test("5. every row has a claim, a source and a condition; ids are C001, C002, … in order, with no gap", () => {
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.map((row) => row.id)).toEqual(rows.map((_, index) => `C${String(index + 1).padStart(3, "0")}`));
+    for (const row of rows) {
+      expect({ id: row.id, claim: row.claim.length > 0 }).toEqual({ id: row.id, claim: true });
+      expect({ id: row.id, source: row.source.length > 0 }).toEqual({ id: row.id, source: true });
+      expect({ id: row.id, condition: row.condition.length > 0 }).toEqual({ id: row.id, condition: true });
+    }
+  });
+
+  test("5. every repo path in the Source column exists", () => {
+    for (const row of rows) {
+      for (const token of pathTokens(row.source)) {
+        const exists = existsSync(path.join(ROOT, token));
+        expect({ id: row.id, token, exists }).toEqual({ id: row.id, token, exists: true });
+      }
+    }
+  });
+
+  test("6. every ADR number in the Source column is a file in docs/decisions", () => {
+    const files = readdirSync(path.join(ROOT, "docs/decisions"));
+    for (const row of rows) {
+      for (const number of adrNumbers(row.source)) {
+        const found = files.some((file) => file.startsWith(`${number}-`) && file.endsWith(".md"));
+        expect({ id: row.id, adr: number, found }).toEqual({ id: row.id, adr: number, found: true });
+      }
+    }
+  });
+
+  test("each public URL in the Source column is followed by the date it was read", () => {
+    for (const row of rows) {
+      const urls = [...row.source.matchAll(/https?:\/\/[^\s),;]+/g)];
+      for (const [index, url] of urls.entries()) {
+        const from = (url.index ?? 0) + url[0].length;
+        const to = urls[index + 1]?.index ?? row.source.length;
+        const dated = /read \d{4}-\d{2}-\d{2}/.test(row.source.slice(from, to));
+        expect({ id: row.id, url: url[0], dated }).toEqual({ id: row.id, url: url[0], dated: true });
+      }
+    }
+  });
+
+  test("the counts at the top match the rows: the total, and each paper", () => {
+    const total = /\| Total\s+\|\s+(\d+)\s+\|\s+(\d+)\s+\|\s+(\d+)\s+\|/.exec(claims);
+    expect(Number(total?.[1])).toBe(rows.length);
+    expect(Number(total?.[2])).toBe(rows.filter((row) => row.source.startsWith("gap")).length);
+    expect(Number(total?.[3])).toBe(rows.filter((row) => row.source.includes("unverified")).length);
+  });
+
+  test("each sub-processor id of the registry has a row that starts with `Row` and its id", () => {
+    for (const service of subprocessors) {
+      const has = rows.some((row) => row.claim.startsWith(`Row \`${service.id}\`:`));
+      expect({ id: service.id, has }).toEqual({ id: service.id, has: true });
+    }
+  });
+
+  test("each termsUrl of the sub-processor registry is named in a row of its own service", () => {
+    for (const service of subprocessors.filter((entry) => entry.termsUrl.startsWith("http"))) {
+      const named = rows.some(
+        (row) => row.claim.startsWith(`Row \`${service.id}\`:`) && row.claim.includes(service.termsUrl)
+      );
+      expect({ id: service.id, url: service.termsUrl, named }).toEqual({
+        id: service.id,
+        url: service.termsUrl,
+        named: true,
       });
     }
   });

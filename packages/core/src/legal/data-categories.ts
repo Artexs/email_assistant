@@ -106,8 +106,8 @@ export const dataCategories: readonly DataCategory[] = [
     id: "captured-headers",
     label: { en: "Captured headers", pl: "Zapisane nagłówki" },
     purpose: {
-      en: "Header facts of a mail: sender name, reply-to, return path, verdicts, list data, attachments and links",
-      pl: "Dane z nagłówków wiadomości: nazwa nadawcy, reply-to, return-path, werdykty, dane listy, załączniki i linki",
+      en: "Header facts of a mail: sender name, reply-to, return path, authentication results, list data, attachments and links",
+      pl: "Dane z nagłówków wiadomości: nazwa nadawcy, reply-to, return-path, wyniki uwierzytelnienia, dane listy, załączniki i linki",
     },
     columns: ["email_headers.*"],
     subjects: ["users", "others"],
@@ -161,8 +161,8 @@ export const dataCategories: readonly DataCategory[] = [
     id: "ai-results",
     label: { en: "AI texts", pl: "Teksty AI" },
     purpose: {
-      en: "The AI's reasons, extracted fields, summaries, draft texts and error text",
-      pl: "Uzasadnienia AI, wyciągnięte pola, podsumowania, treść szkiców i tekst błędów",
+      en: "The AI's reasons, extracted fields and summaries, the draft texts that the system builds from them, and error text",
+      pl: "Uzasadnienia, wyciągnięte pola i podsumowania AI, szkice budowane z nich przez system oraz tekst błędów",
     },
     columns: ["triage_results.reason", "triage_results.fields", "actions.payload", "actions.last_error"],
     subjects: ["users", "others"],

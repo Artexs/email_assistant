@@ -1,6 +1,12 @@
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { dataCategories, subprocessors } from "@ea/core/web";
+
+import { en } from "../i18n/en";
+import { pl } from "../i18n/pl";
 
 import { isAllowedPlaceholder, legalDocs, legalLangs, type LegalDoc, type LegalLang } from "./legal";
 
@@ -50,4 +56,30 @@ export function strayLegalFiles(): string[] {
   return legalLangs
     .flatMap((lang) => readdirSync(join(legalSourceRoot, lang)).map((file) => `${lang}/${file}`))
     .filter((file) => !expected.has(file));
+}
+
+// SHA-256 (hex) of the parts, in the given order. A part is read with LF line ends, so a checkout with CRLF gives the same
+// digest. A zero byte ends each part, so ["ab"] and ["a", "b"] differ.
+export function legalTextsDigest(parts: readonly string[]): string {
+  const hash = createHash("sha256");
+  for (const part of parts) {
+    hash.update(part.replace(/\r\n/g, "\n"));
+    hash.update("\0");
+  }
+  return hash.digest("hex");
+}
+
+// The texts that the version guard covers, in a fixed order: the six Markdown files (languages, then documents, as in
+// `legalLangs` and `legalDocs`), both registries as JSON, then the `en` and `pl` value of every `legal_*` key (sorted by
+// key) and of `tg_consent_text`.
+export function legalTextParts(): string[] {
+  const keys = [...Object.keys(en).filter((key) => key.startsWith("legal_")), "tg_consent_text"].sort();
+  const texts = (table: Record<string, string>) => keys.map((key) => `${key}=${table[key] ?? ""}`);
+  return [
+    ...legalLangs.flatMap((lang) => legalDocs.map((doc) => readLegalSource(lang, doc))),
+    JSON.stringify(subprocessors),
+    JSON.stringify(dataCategories),
+    ...texts(en),
+    ...texts(pl),
+  ];
 }
