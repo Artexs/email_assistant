@@ -326,3 +326,20 @@ export async function countEarlierEndedChecks(
     .executeTakeFirstOrThrow();
   return Number(row.n);
 }
+
+/**
+ * The mailboxes of the organizations that are not suspended, whose policy has at least one category with `auto` on (any org, no tenant
+ * scope: the re-gate lists work across tenants). The caller reads each policy again under the settings lock.
+ */
+export async function listMailboxesWithAuto(db: DbOrTrx): Promise<{ orgId: string; mailboxId: string }[]> {
+  const rows = await db
+    .selectFrom("mailbox_settings as s")
+    .innerJoin("organizations as o", "o.id", "s.org_id")
+    .select(["s.org_id", "s.mailbox_id"])
+    .where("o.plan", "!=", "suspended")
+    .where(sql<boolean>`exists (select 1 from jsonb_each(s.category_policy) as e where e.value ->> 'auto' = 'true')`)
+    .orderBy("s.org_id")
+    .orderBy("s.mailbox_id")
+    .execute();
+  return rows.map((row) => ({ orgId: row.org_id, mailboxId: row.mailbox_id }));
+}
