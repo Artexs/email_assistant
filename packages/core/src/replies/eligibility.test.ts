@@ -36,7 +36,7 @@ function run(change: Partial<ReplyFacts>, trigger: ReplyTrigger = "auto") {
   return replyEligibility({ ...clean, ...change }, { trigger, now: NOW });
 }
 
-const block = (reason: ReplyBlockReason) => ({ ok: false, reason });
+const block = (reason: ReplyBlockReason) => ({ ok: false as const, reason });
 
 describe("replyEligibility", () => {
   test("1: a clean person mail, needs_reply, pl, 2 days old is ok in pl", () => {
