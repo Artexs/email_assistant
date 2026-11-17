@@ -982,6 +982,8 @@ describe("the long sequence: 12 digits or more that nobody typed (owner answer, 
     expect(failuresOf(say("kod 15.11.2026-30.11.2026"))).toEqual([]);
     expect(failuresOf(say("kod 4111 15.11.2026 4111"))).toEqual([]);
     expect(failuresOf(say("kod 2024 oraz 1999 oraz 2100"))).toEqual([]);
+    // The year of a date ends the sequence.
+    expect(failuresOf(say("kod 4111 4111 2026-11-15"))).toEqual([]);
   });
 
   test("a PL IBAN of the mail repeated as the domestic number (no country letters) passes, by design", () => {
