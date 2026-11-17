@@ -33,7 +33,7 @@ import { loopHooks } from "../loops";
 import { getOrganization, isFeatureOn } from "../tenancy";
 
 import { handleMistakeTap, handleReasonTap } from "./action-feedback-taps";
-import { editBriefLine } from "./brief-line-edit";
+import { editBriefLine, lineEditResult } from "./brief-line-edit";
 import { cardEditHooks } from "./card-edits";
 import { heldReason } from "./held-reason";
 import type { CallbackResult, LinkedChat, TapSource } from "./port";
@@ -286,15 +286,11 @@ export async function handleApprovalCallback(
             });
       switch (result.kind) {
         case "done":
-          return {
-            answer: taps.done,
-            edit: digest.digest ? digest.edit : await edit(`delegation_answered:${callback.delegationId}`, "done"),
-          };
+          return digest.digest
+            ? { answer: taps.done, ...lineEditResult(digest) }
+            : { answer: taps.done, edit: await edit(`delegation_answered:${callback.delegationId}`, "done") };
         case "already":
-          return {
-            answer: taps.doneAlready,
-            ...(digest.digest && digest.edit !== undefined ? { edit: digest.edit } : {}),
-          };
+          return { answer: taps.doneAlready, ...lineEditResult(digest) };
         case "not_closable":
           return { answer: taps.doneNotClosable };
         case "not_found":

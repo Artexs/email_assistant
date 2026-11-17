@@ -109,7 +109,7 @@ export const loopTapTexts = {
     notFound: "Tej pozycji nie ma na Twoim koncie.",
     draft: {
       planned: "Przypomnienie gotowe. Sprawdź kartę.",
-      wouldDraft: "Tryb cieniowy: bez szkicu.",
+      wouldDraft: "Tryb podglądu: bez szkicu.",
       waiting: "Przypomnienie już czeka na Twoje zatwierdzenie.",
       limitReached: "Dwa przypomnienia już przygotowano: więcej nie będzie.",
       tooSoon: "Na przypomnienie jest jeszcze za wcześnie.",

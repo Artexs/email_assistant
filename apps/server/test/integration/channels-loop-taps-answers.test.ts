@@ -144,6 +144,14 @@ describe("the answers of Draft follow-up", () => {
       expect((await tap(trx, pl, loopData("lf", loop.id))).answer).toBe("Przypomnienie gotowe. Sprawdź kartę.");
       expect((await tap(trx, pl, loopData("lc", loop.id))).answer).toBe("Gotowe.");
       expect((await tap(trx, pl, loopData("lc", loop.id))).answer).toBe("Ta sprawa jest już zamknięta.");
+      // Shadow mode is "Tryb podglądu" in every Polish text (review 19 N6).
+      const shadow = await briefLoop(trx, org);
+      await trx
+        .updateTable("mailbox_settings")
+        .set({ mode: "shadow" })
+        .where("mailbox_id", "=", org.mailboxId)
+        .execute();
+      expect((await tap(trx, pl, loopData("lf", shadow.id))).answer).toBe("Tryb podglądu: bez szkicu.");
     });
   });
 });

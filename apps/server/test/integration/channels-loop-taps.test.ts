@@ -1,4 +1,4 @@
-import { encodeCallback } from "@ea/core";
+import { encodeCallback, type OutMessage } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -203,6 +203,21 @@ describe("the edit of the tapped line", () => {
     });
   });
 
+  test("Later on a loop that was moved three times: only the Later button goes, Draft and Done stay (review 19 TG3)", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const loop = await briefLoop(trx, org);
+      const { messageId, message } = await deliverDigest(trx);
+      expect(dataOf(message)).toEqual([lf(loop.id), ll(loop.id), lc(loop.id)]);
+      // The client still shows Later, but the loop was moved three times elsewhere.
+      await trx.updateTable("open_loops").set({ later_count: 3 }).where("id", "=", loop.id).execute();
+      const result = await tap(trx, linkOf(org), ll(loop.id), messageId);
+      expect(result.answer).toBe("This loop was moved 3 times already.");
+      expect(result.edit?.text).toBe(message.text);
+      expect(result.edit && dataOf(result.edit)).toEqual([lf(loop.id), lc(loop.id)]);
+    });
+  });
+
   test("a stale button that is tapped again does not mark the line twice", async () => {
     await withRollback(db, async (trx) => {
       const org = await ready(trx);
@@ -259,6 +274,7 @@ describe("the edit of the tapped line", () => {
       const org = await ready(trx);
       const first = await briefLoop(trx, org);
       const second = await briefLoop(trx, org);
+      const third = await briefLoop(trx, org);
       const { messageId, message } = await deliverDigest(trx);
       await trx
         .updateTable("open_loops")
@@ -268,8 +284,12 @@ describe("the edit of the tapped line", () => {
       const already = await tap(trx, linkOf(org), lc(first.id), messageId);
       expect(already.answer).toBe("This loop is closed already.");
       expect(already.edit?.text).toBe(message.text);
-      expect(already.edit && dataOf(already.edit)).toEqual([lf(second.id), ll(second.id), lc(second.id)]);
-      // Retention or an erase blanked the stored message: no line to mark, the answer stands.
+      // The brief lists loops with equal dates by id: compare as sets.
+      expect([...dataOf(already.edit as OutMessage)].sort()).toEqual(
+        [lf(second.id), ll(second.id), lc(second.id), lf(third.id), ll(third.id), lc(third.id)].sort()
+      );
+      // Retention, the Sent switch or an erase blanked the stored message (review 19 N2): the chat keeps its old text, so the tap edits
+      // the keyboard only. The blank marker must never replace the text of the chat message.
       await trx
         .updateTable("outbox")
         .set({ text: "[removed]", view: JSON.stringify({}) })
@@ -277,7 +297,11 @@ describe("the edit of the tapped line", () => {
         .execute();
       const cleared = await tap(trx, linkOf(org), lc(second.id), messageId);
       expect(cleared.answer).toBe("Done.");
-      expect(cleared.edit?.text).toBe("[removed]");
+      expect(cleared.edit).toBeUndefined();
+      expect(cleared.keyboard?.flat().map((button) => button.data)).toEqual([lf(third.id), ll(third.id), lc(third.id)]);
+      const stored = await outboxOf(trx, org.ctx.orgId);
+      expect(stored.text).toBe("[removed]");
+      expect(stored.buttons).toEqual(cleared.keyboard ?? []);
     });
   });
 

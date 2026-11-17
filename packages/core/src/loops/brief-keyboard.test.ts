@@ -203,6 +203,20 @@ describe("the keyboard inside the digest", () => {
     expect(lines.filter((line) => /^(⏳|🤝) /u.test(line))).toHaveLength(3);
   });
 
+  test("the address of a loop line loses the remains of an escape sequence (review 19 TG2)", () => {
+    const sections = loopSections(
+      briefInput({ waitingLoops: part([loop(1, { counterpart: "anna\u001b[31m@example.test", text: "send it" })]) })
+    );
+    const { message } = renderDigestWithBrief(
+      digestInput({ brief: { sections, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      en
+    );
+    const line = message.text.split("\n").find((text) => text.startsWith("⏳")) ?? "";
+    expect(line).toContain("No answer from anna@example.test since");
+    expect(line).not.toContain("[31m");
+    expect(line).not.toContain("\u001b");
+  });
+
   test("no brief, no consent, a later digest: no loop row and no lineOf", () => {
     const input = digestInput({ items: [digestItem(1, "info")], counts: { info: 1 } });
     expect(renderDigestWithBrief(input, en).shown.lineOf).toEqual({});

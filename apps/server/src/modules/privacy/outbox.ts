@@ -2,7 +2,7 @@ import { noticeKinds, type NoticeKind } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB } from "../../platform/db";
-import { closeWaitingApprovalSetsSince, SENDER_STALE_MS } from "../channels";
+import { closeWaitingApprovalSetsSince, releaseMarksOfUndeliveredDigests, SENDER_STALE_MS } from "../channels";
 
 import type { EraseStep } from "./erase";
 
@@ -89,6 +89,8 @@ async function closeWaitingSets(trx: Transaction<DB>, orgId: string, since: Date
 }
 
 async function drop(trx: Transaction<DB>, orgId: string, since: Date): Promise<{ outbox_dropped: number }> {
+  // The pending digests go undelivered: the marks of the loops that they name go back first (review 19 N1).
+  await releaseMarksOfUndeliveredDigests(trx, { orgId }, { since });
   const result = await sql`
     delete from outbox
     where org_id = ${orgId}::uuid and kind = 'digest' and status in ('pending', 'sending') and created_at >= ${since}`.execute(
@@ -113,6 +115,8 @@ export async function blankDigestsNamingLoops(
   const blanked = await sql`
     update outbox set text = ${REMOVED}, view = '{}'::jsonb
     where org_id = ${orgId}::uuid and kind = 'digest' and status in ('sent', 'failed') and ${names}`.execute(trx);
+  // The pending digests that name a cleared loop are deleted: the marks of their other loops go back first (review 19 N1).
+  await releaseMarksOfUndeliveredDigests(trx, { orgId }, { named: loopIds, except: loopIds });
   const dropped = await sql`
     delete from outbox
     where org_id = ${orgId}::uuid and kind = 'digest' and status in ('pending', 'sending') and ${names}`.execute(trx);

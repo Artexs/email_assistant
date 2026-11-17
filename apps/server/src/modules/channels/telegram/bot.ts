@@ -158,6 +158,18 @@ export function createTelegramBot(
         }
       }
     }
+    if (result.keyboard) {
+      // Only the buttons: the chat message keeps its text (a blanked digest, review 19 N2).
+      try {
+        await ctx.editMessageReplyMarkup({
+          reply_markup: messageOptions(result.keyboard, { clearKeyboard: true }).reply_markup,
+        });
+      } catch (error) {
+        if (!isNotModified(error)) {
+          log.warn("message_edit_failed", telegramErrorFields(error));
+        }
+      }
+    }
     if (result.send) {
       await ctx.reply(result.send.text, messageOptions(result.send.buttons, { clearKeyboard: false }));
     }

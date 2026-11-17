@@ -148,6 +148,16 @@ describe("T10 the picker", () => {
     });
   });
 
+  test("a delegate name with the remains of an escape sequence is cleaned in the picker button (review 19 TG2)", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await delegateOrg(trx, { delegates: 0 });
+      await insertDelegate(trx, org.ctx, { name: "\u001b[31mAnna\u001b[0m [31mKowalska" });
+      const result = await tap(trx, org, open(org.emailId));
+      const names = result.send?.buttons.flat().map((button) => button.text);
+      expect(names).toEqual(["Anna Kowalska"]);
+    });
+  });
+
   test("a member, no delegate, the flag off, an unknown mail and a mail of another organization answer with a fixed text", async () => {
     await withRollback(db, async (trx) => {
       const org = await delegateOrg(trx);

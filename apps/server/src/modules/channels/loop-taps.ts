@@ -1,4 +1,4 @@
-import { encodeCallback, formatDayNumeric, type CoreTexts, type LoopCallback, type OutMessage } from "@ea/core";
+import { encodeCallback, formatDayNumeric, type CoreTexts, type LoopCallback } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 import { createLog } from "../../platform/log";
@@ -6,7 +6,7 @@ import { doneLoop, draftFollowUp, dropLoop, laterLoop, reopenLoop } from "../loo
 import { getOrganization } from "../tenancy";
 
 import type { CallbackDeps } from "./approval-taps";
-import { editBriefLine } from "./brief-line-edit";
+import { editBriefLine, lineEditResult } from "./brief-line-edit";
 import type { CallbackResult, LinkedChat, TapSource } from "./port";
 
 const log = createLog("channels");
@@ -35,15 +35,11 @@ export async function handleLoopCallback(
   const edited = async (
     mark: string | null,
     drop: "all" | readonly string[] = "all"
-  ): Promise<OutMessage | undefined> => {
-    if (source.messageId === undefined) return undefined;
-    const result = await editBriefLine(deps.db, ctx, link, {
-      messageId: source.messageId,
-      id: callback.loopId,
-      mark,
-      drop,
-    });
-    return result.digest ? result.edit : undefined;
+  ): Promise<Pick<CallbackResult, "edit" | "keyboard">> => {
+    if (source.messageId === undefined) return {};
+    return lineEditResult(
+      await editBriefLine(deps.db, ctx, link, { messageId: source.messageId, id: callback.loopId, mark, drop })
+    );
   };
 
   switch (callback.kind) {
@@ -54,7 +50,7 @@ export async function handleLoopCallback(
           // The card comes from the detector; the line keeps its other buttons, only Draft goes (a second tap would answer `waiting`).
           return {
             answer: t.draft.planned,
-            edit: await edited(null, [encodeCallback({ kind: "loop_follow_up", loopId: callback.loopId })]),
+            ...(await edited(null, [encodeCallback({ kind: "loop_follow_up", loopId: callback.loopId })])),
           };
         case "would_draft":
           return { answer: t.draft.wouldDraft };
@@ -65,7 +61,7 @@ export async function handleLoopCallback(
         case "too_soon":
           return { answer: t.draft.tooSoon };
         case "closed":
-          return { answer: t.draft.closed, edit: await edited(null) };
+          return { answer: t.draft.closed, ...(await edited(null)) };
         case "suspicious":
           return { answer: t.draft.suspicious };
         case "drafts_off":
@@ -85,16 +81,16 @@ export async function handleLoopCallback(
         case "ok": {
           const organization = await getOrganization(deps.db, ctx);
           const date = formatDayNumeric(result.dueAt, organization?.timezone ?? "UTC", texts.locale);
-          return { answer: t.later.ok(date), edit: await edited(t.marks.later) };
+          return { answer: t.later.ok(date), ...(await edited(t.marks.later)) };
         }
         case "limit_reached":
           // The line keeps Draft and Done; only Later goes.
           return {
             answer: t.later.limitReached,
-            edit: await edited(null, [encodeCallback({ kind: "loop_later", loopId: callback.loopId })]),
+            ...(await edited(null, [encodeCallback({ kind: "loop_later", loopId: callback.loopId })])),
           };
         case "closed":
-          return { answer: t.later.closed, edit: await edited(null) };
+          return { answer: t.later.closed, ...(await edited(null)) };
         case "not_allowed":
           return { answer: t.later.notAllowed };
         case "feature_off":
@@ -111,9 +107,9 @@ export async function handleLoopCallback(
       const result = await (done ? doneLoop : dropLoop)(commandDeps, ctx, input);
       switch (result.kind) {
         case "ok":
-          return { answer: answers.ok, edit: await edited(done ? t.marks.done : t.marks.drop) };
+          return { answer: answers.ok, ...(await edited(done ? t.marks.done : t.marks.drop)) };
         case "already":
-          return { answer: answers.already, edit: await edited(null) };
+          return { answer: answers.already, ...(await edited(null)) };
         case "not_allowed":
           // Done is for any member (the user left the organization since the link); Drop is for owners.
           return { answer: done ? t.notFound : t.ownerOnly };
@@ -127,13 +123,13 @@ export async function handleLoopCallback(
       const result = await reopenLoop(commandDeps, ctx, input);
       switch (result.kind) {
         case "ok":
-          return { answer: t.reopen.ok, edit: await edited(t.marks.reopen) };
+          return { answer: t.reopen.ok, ...(await edited(t.marks.reopen)) };
         case "already":
-          return { answer: t.reopen.already, edit: await edited(null) };
+          return { answer: t.reopen.already, ...(await edited(null)) };
         case "limit_reached":
         case "not_allowed":
           // The owner check came first, so this is a loop that has no text left or whose Sent tracking is off.
-          return { answer: t.reopen.notAllowed, edit: await edited(null) };
+          return { answer: t.reopen.notAllowed, ...(await edited(null)) };
         case "not_found":
           return { answer: t.notFound };
       }
