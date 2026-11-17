@@ -6,7 +6,13 @@ import { sql, type Transaction, type UpdateObject } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
-import type { HistoryCheckReason, HistoryCheckStatus, NoResultReason } from "./repo";
+import {
+  queueHistoryCheck,
+  type HistoryCheckReason,
+  type HistoryCheckStatus,
+  type HistoryResult,
+  type NoResultReason,
+} from "./repo";
 
 /** The window of the check: the last 30 days of INBOX mail. */
 export const HISTORY_WINDOW_DAYS = 30;
@@ -17,11 +23,12 @@ export const HISTORY_RETRY_MS = 5 * 60_000;
 /** The third attempt ends the check as `no_result` / `stopped`. */
 export const HISTORY_MAX_ATTEMPTS = 3;
 
-/** The statuses that the job moves in this stage. `classifying` is the classify step of a later stage. */
+/** The statuses that the job moves: every open status. */
 export const HISTORY_STEP_STATUSES = [
   "queued",
   "backfilling",
   "waiting_flags",
+  "classifying",
 ] as const satisfies readonly HistoryCheckStatus[];
 export type HistoryStepStatus = (typeof HISTORY_STEP_STATUSES)[number];
 
@@ -34,9 +41,20 @@ export interface ClaimedCheck {
   /** Null until the backfill has read the mailbox: the window is the window of that read. */
   windowStart: Date | null;
   backfillDoneAt: Date | null;
+  /** The evidence key of the backfill (stored by `markBackfilled`); null before it. The classify step compares it with the running key. */
+  key: unknown;
+  /** The spend of this check so far (the sum of its item costs). */
+  costUsd: number;
   /** The lock value of this claim: the guard of every later write. */
   lockedAt: Date;
 }
+
+/** What a check that ends (a result or no result) tells the job: it runs inside the transaction of the end, so the notice commits with it. */
+export type EndedHook = (
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  ended: { checkId: string; mailboxId: string; reason: NoResultReason | null }
+) => Promise<void>;
 
 /** What the claim did with the oldest due check of an organization. */
 export type ClaimResult =
@@ -49,15 +67,19 @@ type Conn = Db | Transaction<DB>;
 
 const staleBefore = (now: Date): Date => new Date(now.getTime() - HISTORY_LOCK_STALE_MS);
 
-/** The organizations with a due check (any org, no tenant scope: the job lists work across tenants). */
+/**
+ * The organizations with a due check (any org, no tenant scope: the job lists work across tenants), the one that waited longest first:
+ * a run that stops at its time budget leaves the later organizations for the next run, and none of them waits for ever.
+ */
 export async function listOrgsWithDueChecks(db: Conn, now: Date): Promise<string[]> {
   const rows = await db
     .selectFrom("history_checks")
     .select("org_id")
-    .distinct()
     .where("status", "in", HISTORY_STEP_STATUSES)
     .where("next_attempt_at", "<=", now)
     .where((eb) => eb.or([eb("locked_at", "is", null), eb("locked_at", "<", staleBefore(now))]))
+    .groupBy("org_id")
+    .orderBy(sql`min(next_attempt_at)`)
     .orderBy("org_id")
     .execute();
   return rows.map((row) => row.org_id);
@@ -68,11 +90,22 @@ export async function listOrgsWithDueChecks(db: Conn, now: Date): Promise<string
  * never claim the same row. A stale lock is taken back
  * and counts one attempt.
  */
-export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date): Promise<ClaimResult> {
+export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date, onEnded?: EndedHook): Promise<ClaimResult> {
   return db.transaction().execute(async (trx): Promise<ClaimResult> => {
     const row = await trx
       .selectFrom("history_checks")
-      .select(["id", "mailbox_id", "status", "reason", "attempts", "window_start", "backfill_done_at", "locked_at"])
+      .select([
+        "id",
+        "mailbox_id",
+        "status",
+        "reason",
+        "attempts",
+        "window_start",
+        "backfill_done_at",
+        "locked_at",
+        "key",
+        "cost_usd",
+      ])
       .where("org_id", "=", ctx.orgId)
       .where("status", "in", HISTORY_STEP_STATUSES)
       .where("next_attempt_at", "<=", now)
@@ -93,6 +126,7 @@ export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date): Pro
         .where("id", "=", row.id)
         .where("org_id", "=", ctx.orgId)
         .execute();
+      await onEnded?.(trx, ctx, { checkId: row.id, mailboxId: row.mailbox_id, reason: "stopped" });
       return { kind: "stopped", checkId: row.id, mailboxId: row.mailbox_id };
     }
     await trx
@@ -111,6 +145,8 @@ export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date): Pro
         attempts,
         windowStart: row.window_start,
         backfillDoneAt: row.backfill_done_at,
+        key: row.key,
+        costUsd: Number(row.cost_usd),
         lockedAt: now,
       },
     };
@@ -179,19 +215,62 @@ export function releaseCheck(
   });
 }
 
-/** Ends the check without a result. `finished_at` is written with the status. */
-export function endCheck(
-  db: Conn,
+/** Ends the check without a result. `finished_at` is written with the status. The hook runs in the same transaction. */
+export async function endCheck(
+  db: Db,
   ctx: TenantContext,
   check: ClaimedCheck,
   reason: NoResultReason,
-  now: Date
+  now: Date,
+  onEnded?: EndedHook
 ): Promise<boolean> {
-  return guardedUpdate(db, ctx, check, {
-    status: "no_result",
-    no_result_reason: reason,
-    finished_at: now,
-    locked_at: null,
+  return db.transaction().execute(async (trx) => {
+    const ended = await guardedUpdate(trx, ctx, check, {
+      status: "no_result",
+      no_result_reason: reason,
+      finished_at: now,
+      locked_at: null,
+    });
+    if (ended) await onEnded?.(trx, ctx, { checkId: check.id, mailboxId: check.mailboxId, reason });
+    return ended;
+  });
+}
+
+/**
+ * The running key is not the key of the check: the check ends `no_result` / `key_changed` and a new check with the reason
+ * `model_switch` is queued, in one transaction (the old row must end first: one open check per mailbox).
+ */
+export async function endCheckKeyChanged(db: Db, ctx: TenantContext, check: ClaimedCheck, now: Date): Promise<boolean> {
+  return db.transaction().execute(async (trx) => {
+    const ended = await guardedUpdate(trx, ctx, check, {
+      status: "no_result",
+      no_result_reason: "key_changed",
+      finished_at: now,
+      locked_at: null,
+    });
+    if (ended) await queueHistoryCheck(trx, ctx, check.mailboxId, "model_switch");
+    return ended;
+  });
+}
+
+/** The classify step finished: the result per moving category, `done` and `finished_at` together. The hook runs in the same transaction. */
+export async function completeCheck(
+  db: Db,
+  ctx: TenantContext,
+  check: ClaimedCheck,
+  done: { result: Required<HistoryResult>; capped: boolean; now: Date },
+  onEnded?: EndedHook
+): Promise<boolean> {
+  return db.transaction().execute(async (trx) => {
+    const completed = await guardedUpdate(trx, ctx, check, {
+      status: "done",
+      result: JSON.stringify(done.result),
+      capped: done.capped,
+      finished_at: done.now,
+      locked_at: null,
+    });
+    if (completed) await onEnded?.(trx, ctx, { checkId: check.id, mailboxId: check.mailboxId, reason: null });
+    return completed;
   });
 }
 
@@ -201,28 +280,34 @@ export function endCheck(
  * Returns the new state, or null when the lock is lost.
  */
 export async function failStep(
-  db: Conn,
+  db: Db,
   ctx: TenantContext,
   check: ClaimedCheck,
-  now: Date
+  now: Date,
+  onEnded?: EndedHook
 ): Promise<{ attempts: number; stopped: boolean } | null> {
-  const row = await db
-    .updateTable("history_checks")
-    .set({
-      attempts: sql`attempts + 1`,
-      status: sql`case when attempts + 1 >= ${HISTORY_MAX_ATTEMPTS} then 'no_result' else status end`,
-      no_result_reason: sql`case when attempts + 1 >= ${HISTORY_MAX_ATTEMPTS} then 'stopped' else no_result_reason end`,
-      finished_at: sql`case when attempts + 1 >= ${HISTORY_MAX_ATTEMPTS} then ${now}::timestamptz else finished_at end`,
-      next_attempt_at: new Date(now.getTime() + HISTORY_RETRY_MS),
-      locked_at: null,
-    })
-    .where("id", "=", check.id)
-    .where("org_id", "=", ctx.orgId)
-    .where("locked_at", "=", check.lockedAt)
-    .where("status", "in", HISTORY_STEP_STATUSES)
-    .returning(["attempts", "status"])
-    .executeTakeFirst();
-  return row === undefined ? null : { attempts: row.attempts, stopped: row.status === "no_result" };
+  return db.transaction().execute(async (trx) => {
+    const row = await trx
+      .updateTable("history_checks")
+      .set({
+        attempts: sql`attempts + 1`,
+        status: sql`case when attempts + 1 >= ${HISTORY_MAX_ATTEMPTS} then 'no_result' else status end`,
+        no_result_reason: sql`case when attempts + 1 >= ${HISTORY_MAX_ATTEMPTS} then 'stopped' else no_result_reason end`,
+        finished_at: sql`case when attempts + 1 >= ${HISTORY_MAX_ATTEMPTS} then ${now}::timestamptz else finished_at end`,
+        next_attempt_at: new Date(now.getTime() + HISTORY_RETRY_MS),
+        locked_at: null,
+      })
+      .where("id", "=", check.id)
+      .where("org_id", "=", ctx.orgId)
+      .where("locked_at", "=", check.lockedAt)
+      .where("status", "in", HISTORY_STEP_STATUSES)
+      .returning(["attempts", "status"])
+      .executeTakeFirst();
+    if (row === undefined) return null;
+    const stopped = row.status === "no_result";
+    if (stopped) await onEnded?.(trx, ctx, { checkId: check.id, mailboxId: check.mailboxId, reason: "stopped" });
+    return { attempts: row.attempts, stopped };
+  });
 }
 
 /** The mailboxes of the list that have no `history_checks` row at all (a cheap read before the locked insert of `queueFlagOnCheck`). */

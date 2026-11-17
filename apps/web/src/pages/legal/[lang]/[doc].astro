@@ -1,12 +1,21 @@
 ---
+import { TERMS_VERSION } from "@ea/core/web";
+import type { MarkdownInstance } from "astro";
+
+import DataCategoriesTable from "../../../components/legal/DataCategoriesTable.astro";
+import SubprocessorsTables from "../../../components/legal/SubprocessorsTables.astro";
 import Public from "../../../layouts/Public.astro";
 import { en } from "../../../i18n/en";
 import { pl } from "../../../i18n/pl";
-import { legalDocs, legalLangs, type LegalDoc } from "../../../lib/legal";
+import { fillSlots, legalDocs, legalLangs, type LegalDoc } from "../../../lib/legal";
 
 export function getStaticPaths() {
   return legalLangs.flatMap((lang) => legalDocs.map((doc) => ({ params: { lang, doc } })));
 }
+
+// The text of each page is Markdown in `src/legal/<lang>/<doc>.md`. The frame (draft line, version, tables) is here, so a
+// text stage writes text only. The frame reads no env value (E3).
+const sources = import.meta.glob<MarkdownInstance<Record<string, unknown>>>("../../../legal/*/*.md", { eager: true });
 
 const { lang, doc } = Astro.params as { lang: "pl" | "en"; doc: LegalDoc };
 const texts = lang === "pl" ? pl : en;
@@ -16,10 +25,20 @@ const titles = {
   dpa: texts.legal_dpa_title,
 } as const satisfies Record<LegalDoc, string>;
 const title = titles[doc];
+const source = sources[`../../../legal/${lang}/${doc}.md`];
+if (source === undefined) throw new Error(`The legal source src/legal/${lang}/${doc}.md is missing`);
+const { Content } = source;
 ---
 
-<Public title={title} lang={lang}>
+<Public title={title} lang={lang} reading>
   <h1 class="text-2xl font-semibold">{title}</h1>
-  <p>{texts.legal_stub_text}</p>
+  <p role="note" data-legal="draft" class="legal-draft">{texts.legal_draft_line}</p>
+  <p data-legal="version" class="text-muted-foreground text-sm">
+    {fillSlots(texts.legal_version, { version: TERMS_VERSION })}
+  </p>
+  <div class="legal-body"><Content /></div>
+  {doc === "privacy" ? <DataCategoriesTable lang={lang} /> : null}
+  {doc === "privacy" ? <SubprocessorsTables lang={lang} title="subprocessors" /> : null}
+  {doc === "dpa" ? <SubprocessorsTables lang={lang} title="annex2" /> : null}
   <a href="/login" class="underline">{texts.go_to_sign_in}</a>
 </Public>

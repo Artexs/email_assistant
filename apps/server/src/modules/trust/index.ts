@@ -6,8 +6,20 @@ export {
   type HistoryJobDeps,
 } from "./history-job";
 export {
+  classifyStep,
+  HISTORY_COST_CAP_USD,
+  HISTORY_RUN_MAILS,
+  HISTORY_RUN_MS,
+  HISTORY_SAMPLE_SIZE,
+  orderSample,
+} from "./history-classify";
+export { historyActedOn } from "./acted-on";
+export { historyResultOf } from "./history-result";
+export {
   claimNextCheck,
+  completeCheck,
   endCheck,
+  endCheckKeyChanged,
   failStep,
   HISTORY_LOCK_STALE_MS,
   HISTORY_MAX_ATTEMPTS,

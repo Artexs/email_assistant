@@ -95,4 +95,13 @@ describe("createLlmPause", () => {
     pause.trip("soft", "http_503", t0);
     expect(String(errorSpy.mock.calls[0]?.[1])).toContain("wait_ms=600000");
   });
+
+  test("pausedUntil is the end of the pause that runs, and null before and after it (the history check waits for it)", () => {
+    const pause = createLlmPause();
+    expect(pause.pausedUntil(t0)).toBeNull();
+    const until = pause.trip("soft", "http_503", t0);
+    expect(pause.pausedUntil(t0)).toEqual(until);
+    expect(pause.pausedUntil(new Date(until.getTime() - 1))).toEqual(until);
+    expect(pause.pausedUntil(until)).toBeNull();
+  });
 });

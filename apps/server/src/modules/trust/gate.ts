@@ -4,12 +4,14 @@ import {
   autoEvidence,
   type AutoEvidenceResult,
   type BarCategory,
+  type GateEvidenceDeps,
   type GateView,
   type GlobalEvidence,
   type TripState,
 } from "@ea/core";
+import type { Transaction } from "kysely";
 
-import type { TenantContext } from "../../platform/db";
+import type { DB, Db, TenantContext } from "../../platform/db";
 import { setCategoryAuto, type SettingsChange, type SettingsDeps } from "../config";
 import type { TestMailRule } from "../mail";
 import { globalEvidenceFor, goNoGoFor } from "../triage";
@@ -42,6 +44,33 @@ export type EvidenceGateResult =
 
 const NO_TRIP: TripState = { tripped: false, reason: null, at: null };
 
+// The three evidence sources and the real labels for one category: the one reader of the gate and of the history check's notice.
+export async function readCategoryEvidence(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  category: BarCategory,
+  opts: { gate: GateEvidenceDeps; testMail: TestMailRule; now: Date }
+): Promise<{ gate: GateView; result: AutoEvidenceResult; global: GlobalEvidence }> {
+  const gate = (await goNoGoFor(db, ctx, mailboxId, opts.now, opts.testMail))[category];
+  const global = globalEvidenceFor(opts.gate.index, opts.gate.runningKey)[category];
+  // Only the moving categories have a history result; the others read `undefined`.
+  const historyRows: Partial<Record<BarCategory, HistoryCategoryResult | null>> = await historyResultFor(
+    db,
+    ctx,
+    mailboxId
+  );
+  const trip = (await activeTripsOf(db, ctx, mailboxId)).get(category) ?? NO_TRIP;
+  const result = autoEvidence({
+    category,
+    global,
+    history: historyRows[category] ?? null,
+    trip,
+    realLabels: { kept: gate.kept, decision: gate.decision === "no-go: too few" ? "too-few" : gate.decision },
+  });
+  return { gate, result, global };
+}
+
 // The reads happen outside the settings lock, as in `setCategoryAutoWithGate`: a label, a check or a trip that lands
 // meanwhile shows in the next read. The write is one transaction: the policy row, its audit row and the clear of the trips.
 export async function setCategoryAutoWithEvidence(
@@ -62,22 +91,10 @@ export async function setCategoryAutoWithEvidence(
     });
     return { kind: "changed", change, gate: null, evidence: null };
   }
-  const now = settings.now();
-  const gate = (await goNoGoFor(settings.db, ctx, mailboxId, now, deps.testMail))[input.category];
-  const global = globalEvidenceFor(settings.gate.index, settings.gate.runningKey)[input.category];
-  // Only the moving categories have a history result; the others read `undefined`.
-  const historyRows: Partial<Record<BarCategory, HistoryCategoryResult | null>> = await historyResultFor(
-    settings.db,
-    ctx,
-    mailboxId
-  );
-  const trip = (await activeTripsOf(settings.db, ctx, mailboxId)).get(input.category) ?? NO_TRIP;
-  const result = autoEvidence({
-    category: input.category,
-    global,
-    history: historyRows[input.category] ?? null,
-    trip,
-    realLabels: { kept: gate.kept, decision: gate.decision === "no-go: too few" ? "too-few" : gate.decision },
+  const { gate, result, global } = await readCategoryEvidence(settings.db, ctx, mailboxId, input.category, {
+    gate: settings.gate,
+    testMail: deps.testMail,
+    now: settings.now(),
   });
   const evidence: CategoryEvidence = { ...result, global };
   if (!result.eligible && !input.force) {

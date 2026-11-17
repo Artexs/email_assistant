@@ -150,6 +150,38 @@ export const subprocessors: readonly Subprocessor[] = [
     activeWhen: { kind: "env", key: "AUTH_PWNED_CHECK", unless: "off" },
   },
   {
+    id: "microsoft-oauth",
+    name: "Microsoft (mailbox sign-in)",
+    purpose: {
+      en: "Sign-in to a Microsoft 365 mailbox with OAuth, instead of a password",
+      pl: "Logowanie do skrzynki Microsoft 365 przez OAuth, zamiast hasłem",
+    },
+    dataReceived: {
+      en: "the OAuth sign-in and token requests of the connection; the assistant then reads and sends mail of the mailbox through the provider",
+      pl: "żądania logowania OAuth i tokenów przy połączeniu; asystent następnie czyta i wysyła pocztę ze skrzynki przez dostawcę",
+    },
+    location: toConfirmLocation,
+    termsUrl: "https://privacy.microsoft.com/privacystatement",
+    personalData: true,
+    activeWhen: { kind: "env", key: "MAIL_OAUTH_MICROSOFT_CLIENT_ID" },
+  },
+  {
+    id: "google-oauth",
+    name: "Google (mailbox sign-in)",
+    purpose: {
+      en: "Sign-in to a Gmail mailbox with OAuth, instead of a password",
+      pl: "Logowanie do skrzynki Gmail przez OAuth, zamiast hasłem",
+    },
+    dataReceived: {
+      en: "the OAuth sign-in and token requests of the connection; the assistant then reads and sends mail of the mailbox through the provider",
+      pl: "żądania logowania OAuth i tokenów przy połączeniu; asystent następnie czyta i wysyła pocztę ze skrzynki przez dostawcę",
+    },
+    location: toConfirmLocation,
+    termsUrl: "https://policies.google.com/privacy",
+    personalData: true,
+    activeWhen: { kind: "env", key: "MAIL_OAUTH_GOOGLE_CLIENT_ID" },
+  },
+  {
     id: "auth-smtp",
     name: "<SMTP provider>",
     purpose: {

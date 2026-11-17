@@ -1,0 +1,34 @@
+---
+// One generated table of a legal page: a heading, a scroll region that a keyboard can reach, the table. The columns are
+// plain texts; the page language is chosen by the caller.
+interface Props {
+  id: string;
+  title: string;
+  columns: readonly string[];
+  rows: readonly (readonly string[])[];
+}
+
+const { id, title, columns, rows } = Astro.props;
+---
+
+<section class="flex flex-col gap-2">
+  <h2 id={`${id}-title`} class="text-lg font-semibold">{title}</h2>
+  <div class="legal-table" role="region" aria-labelledby={`${id}-title`} tabindex="0">
+    <table id={id}>
+      <thead>
+        <tr>{columns.map((column) => <th scope="col">{column}</th>)}</tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((row) => (
+            <tr>
+              {row.map((cell) => (
+                <td>{cell}</td>
+              ))}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
