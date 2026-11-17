@@ -16,12 +16,14 @@ import {
   type NewSentEmail,
   type SentSyncState,
 } from "./repo";
+import { budgetedReader, SentBudgetError, startDeadline, type SentBudgetDeps, type SentDeadline } from "./sent-budget";
 import {
   firstPerDedupKey,
   sentModeOf,
   sentTextWindowMs,
   SENT_CHUNK_SIZE,
   SENT_HEADER_WINDOW_MS,
+  SENT_PASS_BUDGET_MS,
   toNewSentEmail,
   type SentMode,
   type SentOrigin,
@@ -33,7 +35,7 @@ import { filterAboveCursor } from "./sync-rules";
 // The Sent read: the header pass, then the text step (`sent-texts.ts`). It takes a `SentFolderReader`: the type has no write method, so the pass cannot change the folder.
 // It writes no log line, and an error text holds no path, subject or address.
 
-export interface SentSyncDeps {
+export interface SentSyncDeps extends SentBudgetDeps {
   db: Db | Transaction<DB>;
   provider: SentFolderReader;
   /** Injected: `mail` may not import `actions`. */
@@ -42,7 +44,9 @@ export interface SentSyncDeps {
   chunkSize?: number;
 }
 
-export type SentPassStatus = "flag_off" | "off" | "no_folder" | "folder_missing" | "cursor_moved" | "done";
+// `budget`: the time budget of the pass was used up (`sent-budget.ts`). The rows written so far stay; the next pass goes on. It is not an error.
+
+export type SentPassStatus = "flag_off" | "off" | "no_folder" | "folder_missing" | "cursor_moved" | "budget" | "done";
 
 export interface SentHeaderResult {
   status: SentPassStatus;
@@ -93,7 +97,8 @@ async function writeGuarded(
 export async function syncSentHeaders(
   deps: SentSyncDeps,
   ctx: TenantContext,
-  mailboxId: string
+  mailboxId: string,
+  deadline: SentDeadline = startDeadline(deps, SENT_PASS_BUDGET_MS)
 ): Promise<SentHeaderResult> {
   const now = deps.now();
   const result: SentHeaderResult = { status: "done", mode: null, fetched: 0, stored: 0, system: 0, tooOld: 0 };
@@ -127,16 +132,17 @@ export async function syncSentHeaders(
   const textWindowMs = sentTextWindowMs(organization.data_retention_days);
   const chunkSize = deps.chunkSize ?? SENT_CHUNK_SIZE;
 
+  const reader = budgetedReader(deps.provider, deadline);
   try {
-    const status = await deps.provider.folderStatus(path);
+    const status = await reader.folderStatus(path);
     const mode = sentModeOf(state, status);
     result.mode = mode;
 
     let kept: MessageMeta[];
     if (mode === "incremental") {
-      kept = filterAboveCursor(await deps.provider.fetchAbove(path, state.lastUid ?? 0), state.lastUid ?? 0).kept;
+      kept = filterAboveCursor(await reader.fetchAbove(path, state.lastUid ?? 0), state.lastUid ?? 0).kept;
     } else {
-      kept = await fetchSince(deps.provider, path, new Date(now.getTime() - SENT_HEADER_WINDOW_MS));
+      kept = await fetchSince(reader, path, new Date(now.getTime() - SENT_HEADER_WINDOW_MS));
     }
     result.fetched = kept.length;
 
@@ -144,6 +150,7 @@ export async function syncSentHeaders(
     let expected: SentSyncState = state;
     const seen = new Set<string>();
     for (let offset = 0; offset < kept.length; offset += chunkSize) {
+      deadline.check();
       const chunk = kept.slice(offset, offset + chunkSize);
       const planned: NewSentEmail[] = [];
       for (const meta of chunk) {
@@ -186,6 +193,7 @@ export async function syncSentHeaders(
       if (!moved) return finish("cursor_moved", null);
     }
   } catch (error) {
+    if (error instanceof SentBudgetError) return finish("budget", null);
     if (error instanceof MailFolderMissingError) return finish("folder_missing", "folder_missing");
     throw error;
   }
@@ -203,7 +211,8 @@ export async function syncSentFolder(
   ctx: TenantContext,
   mailboxId: string
 ): Promise<SentPassResult> {
-  const header = await syncSentHeaders(deps, ctx, mailboxId);
+  const deadline = startDeadline(deps, SENT_PASS_BUDGET_MS);
+  const header = await syncSentHeaders(deps, ctx, mailboxId, deadline);
   const texts: SentTextResult = { stored: 0, gone: 0, expired: 0 };
   if (header.status !== "done") return { ...header, texts };
 
@@ -217,6 +226,8 @@ export async function syncSentFolder(
     path: state.path,
     uidValidity: state.uidValidity,
     textWindowMs: sentTextWindowMs(organization.data_retention_days),
+    deadline,
   });
-  return { ...header, texts: done };
+  // The text step ran out of time: the pass status is `budget`, the rest of the pending rows wait for the next pass.
+  return { ...header, status: done.budget === true ? "budget" : header.status, texts: done };
 }

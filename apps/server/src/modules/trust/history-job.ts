@@ -1,12 +1,13 @@
 // The history check job (F110 D13): one check per organization per run moves through `queued` → `backfilling` → `waiting_flags` →
-// `classifying`. The classify step and the result are a later stage; this job leaves a `classifying` check alone.
-// Steps are idempotent (mail dedup), a claim holds a lock, and a step error costs one attempt. The job makes no model call.
+// `classifying` → `done`. Steps are idempotent (mail dedup, one item per mail), a claim holds a lock, and a step error costs one
+// attempt. Only the classify step calls the model (`history-classify.ts`); a run stops starting organizations after its time budget.
 // Logs carry the check id, the mailbox id, a status and a code: never a mail value, an address or a token.
-import type { EvidenceKey } from "@ea/core";
+import type { EvidenceKey, GateIndex } from "@ea/core";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { Db, TenantContext } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
+import type { LlmClient } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import {
   backfillMailbox,
@@ -21,12 +22,17 @@ import {
   type ImapConnectOptions,
   type MailProvider,
   type OAuthTokens,
+  type TestMailRule,
 } from "../mail";
 import { isFeatureOn, isOrgSuspended, listOrganizations } from "../tenancy";
+import type { ClassifierPromptChoice, LlmPause, TriageScope } from "../triage";
 
+import { classifyStep, HISTORY_RUN_MS } from "./history-classify";
+import { reportNoticeOnEnd } from "./history-ended";
 import {
   claimNextCheck,
   endCheck,
+  endCheckKeyChanged,
   failStep,
   listMailboxesWithoutCheck,
   listOrgsWithDueChecks,
@@ -58,9 +64,21 @@ export interface HistoryJobDeps {
   isOwnActionId: BackfillDeps["isOwnActionId"];
   /** The evidence key of the running classifier; stored on the check when its backfill ends. */
   runningKey: EvidenceKey;
+  /** The gate files of the image: the notice of the first check names the categories that they recommend. */
+  gateIndex: GateIndex;
+  /** The model client of the triage worker, its pause and its scope (`TRIAGE_LLM_SCOPE`): the history job follows them. */
+  llm: LlmClient;
+  pause: LlmPause;
+  scope: TriageScope;
+  testMail: TestMailRule;
+  trustedAuthservIds?: readonly string[];
+  /** Absent: the production prompt. */
+  prompt?: ClassifierPromptChoice;
+  /** `WEB_BASE_URL`: the report link of the first notice. */
+  webBaseUrl?: string;
   now(): Date;
   /** Test seams: a hook that throws simulates a crash at that point. */
-  hooks?: { afterBackfill?: () => void | Promise<void> };
+  hooks?: { afterBackfill?: () => void | Promise<void>; afterCall?: () => void | Promise<void> };
 }
 
 // What the checks before a step decided.
@@ -74,7 +92,9 @@ type Gate =
 type StepEnd =
   | { kind: "advance"; at: Date; status: "waiting_flags" | "classifying" }
   | { kind: "wait"; at: Date; reason: string }
-  | { kind: "end"; reason: NoResultReason }
+  | { kind: "end"; reason: NoResultReason; quiet?: true }
+  // The running key is not the key of the check: the check ends and a `model_switch` check starts.
+  | { kind: "key_changed" }
   // The step wrote its own rows, the lock is already released or lost.
   | { kind: "done" };
 
@@ -183,7 +203,54 @@ async function flagsStep(deps: HistoryJobDeps, ctx: TenantContext, check: Claime
   return { kind: "wait", at: after(now, HISTORY_FLAGS_POLL_MS), reason: "flags_unknown" };
 }
 
-async function runStep(deps: HistoryJobDeps, ctx: TenantContext, check: ClaimedCheck): Promise<StepEnd> {
+async function classifyStepOf(
+  deps: HistoryJobDeps,
+  ctx: TenantContext,
+  check: ClaimedCheck,
+  checkLog: ReturnType<typeof log.with>,
+  deadline: Date,
+  failures: Map<string, number>
+): Promise<StepEnd> {
+  const end = await classifyStep(
+    {
+      db: deps.db,
+      llm: deps.llm,
+      pause: deps.pause,
+      scope: deps.scope,
+      testMail: deps.testMail,
+      runningKey: deps.runningKey,
+      ...(deps.trustedAuthservIds === undefined ? {} : { trustedAuthservIds: deps.trustedAuthservIds }),
+      ...(deps.prompt === undefined ? {} : { prompt: deps.prompt }),
+      now: deps.now,
+      onEnded: endedHookOf(deps),
+      failures,
+      ...(deps.hooks?.afterCall === undefined ? {} : { hooks: { afterCall: deps.hooks.afterCall } }),
+    },
+    ctx,
+    check,
+    checkLog,
+    deadline
+  );
+  return end.kind === "advance" ? { kind: "advance", at: end.at, status: "classifying" } : end;
+}
+
+const endedHookOf = (deps: HistoryJobDeps) =>
+  reportNoticeOnEnd({
+    gate: { index: deps.gateIndex, runningKey: deps.runningKey },
+    testMail: deps.testMail,
+    ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
+    now: deps.now,
+  });
+
+async function runStep(
+  deps: HistoryJobDeps,
+  ctx: TenantContext,
+  check: ClaimedCheck,
+  checkLog: ReturnType<typeof log.with>,
+  deadline: Date,
+  failures: Map<string, number>
+): Promise<StepEnd> {
+  if (check.status === "classifying") return classifyStepOf(deps, ctx, check, checkLog, deadline, failures);
   if (check.status === "waiting_flags") return flagsStep(deps, ctx, check);
   return backfillStep(deps, ctx, check);
 }
@@ -192,7 +259,9 @@ async function processCheck(
   deps: HistoryJobDeps,
   ctx: TenantContext,
   check: ClaimedCheck,
-  cursorRetries: Map<string, number>
+  cursorRetries: Map<string, number>,
+  deadline: Date,
+  failures: Map<string, number>
 ): Promise<void> {
   const checkLog = log.with({ org_id: ctx.orgId, mailbox_id: check.mailboxId, check_id: check.id });
   const now = deps.now();
@@ -200,7 +269,7 @@ async function processCheck(
     const gate = await gateOf(deps, ctx, check);
     if (gate.kind === "gone") return;
     let end: StepEnd;
-    if (gate.kind === "go") end = await runStep(deps, ctx, check);
+    if (gate.kind === "go") end = await runStep(deps, ctx, check, checkLog, deadline, failures);
     else if (gate.kind === "wait") end = { kind: "wait", at: after(now, HISTORY_RETRY_MS), reason: gate.reason };
     else end = { kind: "end", reason: gate.reason };
     await finish(deps, ctx, check, end, checkLog);
@@ -219,7 +288,7 @@ async function processCheck(
       }
       cursorRetries.delete(check.id);
     }
-    const failed = await failStep(deps.db, ctx, check, deps.now());
+    const failed = await failStep(deps.db, ctx, check, deps.now(), endedHookOf(deps));
     checkLog.warn("history_step_failed", {
       ...errorFields(error),
       status: check.status,
@@ -239,8 +308,14 @@ async function finish(
   if (end.kind === "done") return;
   const now = deps.now();
   if (end.kind === "end") {
-    if (await endCheck(deps.db, ctx, check, end.reason, now)) {
+    if (await endCheck(deps.db, ctx, check, end.reason, now, end.quiet === true ? undefined : endedHookOf(deps))) {
       checkLog.info("history_check_ended", { status: "no_result", reason: end.reason });
+    }
+    return;
+  }
+  if (end.kind === "key_changed") {
+    if (await endCheckKeyChanged(deps.db, ctx, check, now)) {
+      checkLog.info("history_check_ended", { status: "no_result", reason: "key_changed" });
     }
     return;
   }
@@ -281,6 +356,8 @@ async function queueFlagOnChecks(deps: HistoryJobDeps): Promise<void> {
 export function createHistoryJob(deps: HistoryJobDeps): { run(): Promise<void> } {
   // Moved-cursor retries per check in this process.
   const cursorRetries = new Map<string, number>();
+  // Failed model calls in a row per check in this process (a restart starts the count again; the cost cap still holds).
+  const failures = new Map<string, number>();
   return {
     async run() {
       try {
@@ -288,11 +365,16 @@ export function createHistoryJob(deps: HistoryJobDeps): { run(): Promise<void> }
       } catch (error) {
         log.warn("history_flag_on_failed", { ...errorFields(error) });
       }
-      for (const orgId of await listOrgsWithDueChecks(deps.db, deps.now())) {
+      // The time budget of one run: a long backfill or a slow model of one organization must not hold up the others for many runs. No new
+      // organization starts after it; the organizations are listed longest-waiting first, so the next run starts with the ones left out.
+      const startedAt = deps.now();
+      const deadline = new Date(startedAt.getTime() + HISTORY_RUN_MS);
+      for (const orgId of await listOrgsWithDueChecks(deps.db, startedAt)) {
+        if (deps.now().getTime() >= deadline.getTime()) break;
         const ctx = { orgId };
         try {
-          const claim = await claimNextCheck(deps.db, ctx, deps.now());
-          if (claim.kind === "claimed") await processCheck(deps, ctx, claim.check, cursorRetries);
+          const claim = await claimNextCheck(deps.db, ctx, deps.now(), endedHookOf(deps));
+          if (claim.kind === "claimed") await processCheck(deps, ctx, claim.check, cursorRetries, deadline, failures);
           else if (claim.kind === "stopped") {
             log
               .with({ org_id: orgId, mailbox_id: claim.mailboxId, check_id: claim.checkId })

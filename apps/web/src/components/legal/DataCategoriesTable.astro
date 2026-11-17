@@ -1,0 +1,26 @@
+---
+import { dataCategories } from "@ea/core/web";
+
+import { en } from "../../i18n/en";
+import { pl } from "../../i18n/pl";
+import { keptText } from "../../lib/legal-tables";
+import LegalTable from "./LegalTable.astro";
+
+interface Props {
+  lang: "pl" | "en";
+}
+
+const { lang } = Astro.props;
+const texts = lang === "pl" ? pl : en;
+const columns = [texts.legal_col_category, texts.legal_col_subjects, texts.legal_col_purpose, texts.legal_col_kept];
+const rows = dataCategories.map((category) => [
+  category.label[lang],
+  category.subjects
+    .map((subject) => (subject === "users" ? texts.legal_subjects_users : texts.legal_subjects_others))
+    .join(", "),
+  category.purpose[lang],
+  keptText(texts, category.kept),
+]);
+---
+
+<LegalTable id="legal-categories" title={texts.legal_categories_title} columns={columns} rows={rows} />

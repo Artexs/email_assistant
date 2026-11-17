@@ -2,6 +2,7 @@ import { fieldErrors as toFieldErrors, loginFormSchema, safeNextPath, type SignI
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
+import { LegalLinks } from "../components/legal/LegalLinks";
 import { SsoSignIn } from "../components/login/SsoSignIn";
 import { Alert } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
@@ -299,6 +300,7 @@ export default function LoginPage({ initialOptions = null }: { initialOptions?: 
         <summary className="cursor-pointer text-sm">{t("login_help_summary")}</summary>
         <p className="text-muted-foreground mt-2 text-sm">{t("login_help_text")}</p>
       </details>
+      <LegalLinks />
     </AuthCard>
   );
 }

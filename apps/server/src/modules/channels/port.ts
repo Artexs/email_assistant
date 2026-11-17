@@ -1,4 +1,4 @@
-import type { MembershipRole, OutMessage, UserLocale } from "@ea/core";
+import type { MembershipRole, OutButton, OutMessage, UserLocale } from "@ea/core";
 
 export type ChannelErrorKind = "soft" | "rate_limited" | "config" | "blocked" | "bad_request" | "other";
 
@@ -36,11 +36,19 @@ export type CommandName = (typeof commandNames)[number];
 export interface CallbackResult {
   answer: string;
   edit?: OutMessage;
+  // Replace only the keyboard of the tapped message; its text stays. For a stored message that retention, the Sent switch or an erase
+  // blanked: the chat still shows the old text, and the tap must not replace it with the blank marker (F116 stage 19 review, N2).
+  keyboard?: OutButton[][];
   send?: OutMessage;
+}
+
+/** Where a tap came from: the message that holds the button. Absent when the channel does not say (the message is not available). */
+export interface TapSource {
+  messageId: number | undefined;
 }
 
 /** Channel-neutral handlers. The tenant comes from the `LinkedChat`, never from the update. */
 export interface UpdateHandlers {
   command(link: LinkedChat, name: CommandName): Promise<OutMessage>;
-  callback(link: LinkedChat, data: string): Promise<CallbackResult>;
+  callback(link: LinkedChat, data: string, source?: TapSource): Promise<CallbackResult>;
 }

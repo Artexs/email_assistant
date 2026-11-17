@@ -19,6 +19,7 @@ export {
   clearOutboxTexts,
   deleteOldLinkTokens,
   failOutbox,
+  releaseMarksOfUndeliveredDigests,
   findChatLink,
   getChatLinkForUser,
   insertOutbox,

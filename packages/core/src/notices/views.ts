@@ -86,6 +86,9 @@ const digestView = z.strictObject({
   // The loops that the brief lines of this digest name (F116 stage 18): ids only. They let the switch-off of Sent tracking and the
   // erase of a person find the stored copy of a loop line. Absent: no loop line.
   loopIds: z.array(z.string().regex(loopIdPattern)).max(40).optional(),
+  // The line number of each loop or delegation that a brief line names (F116 stage 19): the tap on its buttons edits that line.
+  // Numbers only, no text. Absent: no loop line.
+  lineOf: z.record(z.string().regex(loopIdPattern), z.number().int().min(0).max(200)).optional(),
 });
 
 const attachmentFactSchema = z.strictObject({
@@ -121,6 +124,9 @@ const urgentView = z.strictObject({
   // and the sender rule that shaped the result.
   confidence: z.number().min(0).max(1).nullable().optional(),
   rule: z.enum(senderRuleKinds).nullable().optional(),
+  // Optional on read, written (true) only when the Delegate button shows (F116 stage 19): the flag `delegate_button` is on, the
+  // organization has an active delegate and the mailbox is in `assist` with drafts on. A view without it renders as before.
+  delegable: z.literal(true).optional(),
   now: isoDate,
   timeZone,
 });

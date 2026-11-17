@@ -31,9 +31,24 @@ export type FeedbackCallback =
 // The Yes and No buttons of the answered check in /review. They name a mail, but they are not feedback taps.
 export type AnsweredCallback = { kind: "answered_yes"; emailId: string } | { kind: "answered_no"; emailId: string };
 
+// The taps on the loop lines of the brief (F116 stage 19): the loop is named by its id. The tenant and the user come from the chat link.
+export type LoopCallback =
+  | { kind: "loop_follow_up"; loopId: string }
+  | { kind: "loop_later"; loopId: string }
+  | { kind: "loop_done"; loopId: string }
+  | { kind: "loop_drop"; loopId: string }
+  | { kind: "loop_reopen"; loopId: string };
+
+// The Delegate button of a mail row and the pick of a delegate in the picker (F116 stage 19). They name a mail, but they are not feedback taps.
+export type DelegateCallback =
+  | { kind: "delegate_open"; emailId: string }
+  | { kind: "delegate_pick"; emailId: string; delegateId: string };
+
 export type Callback =
   | FeedbackCallback
   | AnsweredCallback
+  | LoopCallback
+  | DelegateCallback
   | { kind: "approve"; actionId: string }
   | { kind: "reject"; actionId: string }
   | { kind: "approve_set"; setId: string }
@@ -49,8 +64,22 @@ export function isAnsweredCallback(callback: Callback): callback is AnsweredCall
   return callback.kind === "answered_yes" || callback.kind === "answered_no";
 }
 
+export function isLoopCallback(callback: Callback): callback is LoopCallback {
+  return (
+    callback.kind === "loop_follow_up" ||
+    callback.kind === "loop_later" ||
+    callback.kind === "loop_done" ||
+    callback.kind === "loop_drop" ||
+    callback.kind === "loop_reopen"
+  );
+}
+
+export function isDelegateCallback(callback: Callback): callback is DelegateCallback {
+  return callback.kind === "delegate_open" || callback.kind === "delegate_pick";
+}
+
 export function isFeedbackCallback(callback: Callback): callback is FeedbackCallback {
-  return "emailId" in callback && !isAnsweredCallback(callback);
+  return "emailId" in callback && !isAnsweredCallback(callback) && !isDelegateCallback(callback);
 }
 
 export function isReviewCallback(callback: Callback): boolean {
@@ -80,6 +109,11 @@ const WITH_CODE = new RegExp(`^(fr|fc):([urins]):(${UUID})$|^(vr|vc):([urinsd]):
 const WITHOUT_CODE = new RegExp(`^(fe|fx|fu|ve|vx):(${UUID})$`);
 const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|gw|dd|mk):(${UUID})$`);
 const ANSWERED = new RegExp(`^(ay|an):(${UUID})$`);
+const LOOP = new RegExp(`^(lf|ll|lc|lx|lr):(${UUID})$`);
+const DELEGATE_OPEN = new RegExp(`^dg:(${UUID})$`);
+// `dp:<mail>:<delegate>`: each UUID as 22 characters of base64url (16 bytes, no padding), so the data is 48 bytes (F116 stage 19).
+const B64_UUID = "[A-Za-z0-9_-]{22}";
+const DELEGATE_PICK = new RegExp(`^dp:(${B64_UUID}):(${B64_UUID})$`);
 const REASON = new RegExp(`^rw:([pcn]):(${UUID})$`);
 const REASON_CODES: Record<RejectReason, string> = { wrong_person: "p", wrong_content: "c", not_needed: "n" };
 const CODE_TO_REASON = Object.fromEntries(rejectReasons.map((reason) => [REASON_CODES[reason], reason])) as Record<
@@ -87,7 +121,30 @@ const CODE_TO_REASON = Object.fromEntries(rejectReasons.map((reason) => [REASON_
   RejectReason
 >;
 
-// Button data is at most 64 bytes (Telegram); the longest value here is 41.
+// A UUID as 22 characters of base64url. The caller checked the UUID form.
+function uuidToBase64Url(id: string): string {
+  const hex = id.replaceAll("-", "");
+  let binary = "";
+  for (let i = 0; i < 32; i += 2) binary += String.fromCharCode(Number.parseInt(hex.slice(i, i + 2), 16));
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+}
+
+// The UUID of 22 characters of base64url, or null. A value that is not the one canonical form of its 16 bytes gives null.
+function base64UrlToUuid(value: string): string | null {
+  if (!new RegExp(`^${B64_UUID}$`).test(value)) return null;
+  let binary: string;
+  try {
+    binary = atob(`${value.replaceAll("-", "+").replaceAll("_", "/")}==`);
+  } catch {
+    return null;
+  }
+  if (binary.length !== 16) return null;
+  const hex = [...binary].map((char) => char.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+  const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  return uuidToBase64Url(id) === value ? id : null;
+}
+
+// Button data is at most 64 bytes (Telegram); the longest value here is `dp:` with 48.
 export function encodeCallback(callback: Callback): string {
   switch (callback.kind) {
     case "approve":
@@ -112,6 +169,20 @@ export function encodeCallback(callback: Callback): string {
       return `ay:${checkedId(callback.emailId)}`;
     case "answered_no":
       return `an:${checkedId(callback.emailId)}`;
+    case "loop_follow_up":
+      return `lf:${checkedId(callback.loopId)}`;
+    case "loop_later":
+      return `ll:${checkedId(callback.loopId)}`;
+    case "loop_done":
+      return `lc:${checkedId(callback.loopId)}`;
+    case "loop_drop":
+      return `lx:${checkedId(callback.loopId)}`;
+    case "loop_reopen":
+      return `lr:${checkedId(callback.loopId)}`;
+    case "delegate_open":
+      return `dg:${checkedId(callback.emailId)}`;
+    case "delegate_pick":
+      return `dp:${uuidToBase64Url(checkedId(callback.emailId))}:${uuidToBase64Url(checkedId(callback.delegateId))}`;
     default:
       return encodeFeedback(callback);
   }
@@ -174,6 +245,30 @@ export function parseCallback(data: string): Callback | null {
   if (answered !== null) {
     const emailId = answered[2] as string;
     return answered[1] === "ay" ? { kind: "answered_yes", emailId } : { kind: "answered_no", emailId };
+  }
+  const loop = LOOP.exec(data);
+  if (loop !== null) {
+    const loopId = loop[2] as string;
+    switch (loop[1]) {
+      case "lf":
+        return { kind: "loop_follow_up", loopId };
+      case "ll":
+        return { kind: "loop_later", loopId };
+      case "lc":
+        return { kind: "loop_done", loopId };
+      case "lx":
+        return { kind: "loop_drop", loopId };
+      default:
+        return { kind: "loop_reopen", loopId };
+    }
+  }
+  const open = DELEGATE_OPEN.exec(data);
+  if (open !== null) return { kind: "delegate_open", emailId: open[1] as string };
+  const pick = DELEGATE_PICK.exec(data);
+  if (pick !== null) {
+    const emailId = base64UrlToUuid(pick[1] as string);
+    const delegateId = base64UrlToUuid(pick[2] as string);
+    return emailId === null || delegateId === null ? null : { kind: "delegate_pick", emailId, delegateId };
   }
   const reason = REASON.exec(data);
   if (reason !== null) {
