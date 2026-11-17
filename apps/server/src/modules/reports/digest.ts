@@ -27,7 +27,7 @@ import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions"
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames, listDelegateTags, listDelegationsDueBy } from "../delegation";
-import { endOfLocalDay, loadLoopBrief } from "../loops";
+import { delegableCategory, delegateButtonOn, draftsAvailable, endOfLocalDay, loadLoopBrief } from "../loops";
 import {
   attachmentFactsToShow,
   countWaiting,
@@ -128,23 +128,25 @@ async function loadBrief(
     timeZone: string;
     mailboxes: readonly DigestMailbox[];
     items: readonly DigestItem[];
+    draftMailboxIds: ReadonlySet<string>;
   }
 ): Promise<DigestBrief | null> {
   if (!(await isFeatureOn(db, ctx, "open_loops"))) return null;
   const { loops } = request;
-  const { timeZone, mailboxes, items } = parts;
+  const { timeZone, mailboxes, items, draftMailboxIds } = parts;
   const mailboxIds = mailboxes.map((mailbox) => mailbox.id);
   const modes = new Map<string, MailboxMode | "none">(mailboxes.map((mailbox) => [mailbox.id, mailbox.mode]));
   const dayEnd = endOfLocalDay(request.now, timeZone);
   // The lines that this digest shows name loops: it locks them until its transaction ends (`briefLoopsOf`).
   const lock = loops.firstOfDay && loops.loopConsent;
   const [loopBrief, delegations] = await Promise.all([
-    loadLoopBrief(db, ctx, mailboxIds, { now: request.now, timeZone, modes, lock }),
+    loadLoopBrief(db, ctx, mailboxIds, { now: request.now, timeZone, modes, draftMailboxIds, lock }),
     listDelegationsDueBy(db, ctx, mailboxIds, { dueBefore: dayEnd, limit: BRIEF_DELEGATION_LINES }),
   ]);
   if (!loops.firstOfDay) {
     return {
       sections: null,
+      loopConsent: loops.loopConsent,
       urgentEmailIds: [],
       openLoops: { waiting: loopBrief.waiting.total + delegations.total, promised: loopBrief.promised.total },
     };
@@ -187,6 +189,7 @@ async function loadBrief(
         subject: row.subject,
         sentAt: row.sent_at,
         dueAt: row.due_at,
+        closable: row.status === "overdue",
       })),
       total: delegations.total,
     },
@@ -196,6 +199,7 @@ async function loadBrief(
   const links = panelLinks(loops.panelBase);
   return {
     sections: loopSections(input),
+    loopConsent: loops.loopConsent,
     urgentEmailIds: urgent.map((item) => item.emailId),
     openLoops: null,
     ...(links === undefined ? {} : { links }),
@@ -209,8 +213,11 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
   const texts = textsFor(request.locale);
   const mailboxRows = await listMailboxes(db, ctx);
   const mailboxes: DigestMailbox[] = [];
+  // The mailboxes that plan a draft for a tap: the Draft and the Delegate buttons show for their mail only (F116 stage 19).
+  const draftMailboxIds = new Set<string>();
   for (const row of mailboxRows) {
     const settings = await getMailboxSettings(db, ctx, row.id);
+    if (draftsAvailable(settings)) draftMailboxIds.add(row.id);
     mailboxes.push({
       id: row.id,
       address: row.address,
@@ -266,6 +273,10 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
   const whyOn = await isFeatureOn(db, ctx, "why_lines");
   const delegateTags = whyOn ? await listDelegateTags(db, ctx, [...delegateIds]) : new Map<string, string[]>();
 
+  // F116 stage 19: the Delegate button needs the flag and an active delegate (organization), then a mailbox that drafts, a category
+  // of the action section and no suspicion (row).
+  const delegateOn = await delegateButtonOn(db, ctx);
+
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
     category: row.category,
@@ -295,6 +306,12 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
     ),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
     suspicious: suspicious.get(row.email_id) ?? [],
+    ...(delegateOn &&
+    draftMailboxIds.has(row.mailbox_id) &&
+    delegableCategory(row.category) &&
+    (suspicious.get(row.email_id) ?? []).length === 0
+      ? { delegable: true }
+      : {}),
     ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
     hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
     ...(whyOn
@@ -334,6 +351,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
             timeZone: organization.timezone,
             mailboxes,
             items,
+            draftMailboxIds,
           }
         );
 

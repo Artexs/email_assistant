@@ -5,8 +5,10 @@ import {
   type ApprovalEditOutcome,
   type Callback,
   type CoreTexts,
+  type DelegateCallback,
   type FeedbackCallback,
   type HeldBy,
+  type LoopCallback,
   type OutMessage,
   type RejectReason,
 } from "@ea/core";
@@ -31,9 +33,10 @@ import { loopHooks } from "../loops";
 import { getOrganization, isFeatureOn } from "../tenancy";
 
 import { handleMistakeTap, handleReasonTap } from "./action-feedback-taps";
+import { editBriefLine } from "./brief-line-edit";
 import { cardEditHooks } from "./card-edits";
 import { heldReason } from "./held-reason";
-import type { CallbackResult, LinkedChat } from "./port";
+import type { CallbackResult, LinkedChat, TapSource } from "./port";
 import { findOutboxByDedup } from "./repo";
 
 const log = createLog("channels");
@@ -45,10 +48,12 @@ export interface CallbackDeps {
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
+  // The base URL of the panel (`WEB_BASE_URL`): the picker of the Delegate button links to the delegates page.
+  webBaseUrl?: string;
 }
 
 // The answered check taps have their own handler (`answered-taps.ts`); `handleCallback` routes them first.
-type ApprovalCallback = Exclude<Callback, FeedbackCallback | AnsweredCallback>;
+type ApprovalCallback = Exclude<Callback, FeedbackCallback | AnsweredCallback | LoopCallback | DelegateCallback>;
 
 function statusText(taps: CoreTexts["bot"]["taps"], status: string): string | undefined {
   const texts: Record<string, string> = {
@@ -73,7 +78,8 @@ export async function handleApprovalCallback(
   link: LinkedChat,
   ctx: TenantContext,
   callback: ApprovalCallback,
-  texts: CoreTexts
+  texts: CoreTexts,
+  source: TapSource = { messageId: undefined }
 ): Promise<CallbackResult> {
   const taps = texts.bot.taps;
   if (callback.kind !== "delegation_done" && link.role !== "owner") return { answer: taps.ownerOnly };
@@ -267,14 +273,28 @@ export async function handleApprovalCallback(
       const result = await inTransaction(deps.db, (trx) =>
         closeDelegation(trx, ctx, callback.delegationId, { actor: link.userId, at: now })
       );
+      // The button also sits on a ⏳ line of the digest (F116 stage 19): the tapped message is then the digest, and its edit is that line.
+      // The edit of the "delegation answered" notice must never go to a digest message: its text would replace the digest.
+      const digest =
+        source.messageId === undefined || (result.kind !== "done" && result.kind !== "already")
+          ? ({ digest: false } as const)
+          : await editBriefLine(deps.db, ctx, link, {
+              messageId: source.messageId,
+              id: callback.delegationId,
+              mark: result.kind === "done" ? texts.loopTaps.marks.done : null,
+              drop: "all",
+            });
       switch (result.kind) {
         case "done":
           return {
             answer: taps.done,
-            edit: await edit(`delegation_answered:${callback.delegationId}`, "done"),
+            edit: digest.digest ? digest.edit : await edit(`delegation_answered:${callback.delegationId}`, "done"),
           };
         case "already":
-          return { answer: taps.doneAlready };
+          return {
+            answer: taps.doneAlready,
+            ...(digest.digest && digest.edit !== undefined ? { edit: digest.edit } : {}),
+          };
         case "not_closable":
           return { answer: taps.doneNotClosable };
         case "not_found":

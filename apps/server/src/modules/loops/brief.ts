@@ -20,7 +20,14 @@ export async function loadLoopBrief(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxIds: readonly string[],
-  opts: { now: Date; timeZone: string; modes: ReadonlyMap<string, MailboxMode | "none">; lock: boolean }
+  opts: {
+    now: Date;
+    timeZone: string;
+    modes: ReadonlyMap<string, MailboxMode | "none">;
+    // The mailboxes that plan a draft for a tap (`draftsAvailable`): the Draft button shows for their loops only.
+    draftMailboxIds: ReadonlySet<string>;
+    lock: boolean;
+  }
 ): Promise<LoopBrief> {
   const brief = await briefLoopsOf(db, ctx, mailboxIds, {
     now: opts.now,
@@ -50,6 +57,12 @@ export async function loadLoopBrief(
     dueAt: row.due_at,
     sinceAt: row.wait_from_at,
     autoReplyOnly: row.auto_reply_at !== null,
+    laterCount: row.later_count,
+    canDraft:
+      row.kind !== "promised" &&
+      !waitingForTap.has(row.id) &&
+      row.follow_ups_sent < FOLLOW_UP_LIMIT &&
+      opts.draftMailboxIds.has(row.mailbox_id),
     followUp: waitingForTap.has(row.id)
       ? "approval"
       : opts.modes.get(row.mailbox_id) === "shadow" &&

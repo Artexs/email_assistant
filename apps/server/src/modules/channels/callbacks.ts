@@ -6,7 +6,9 @@ import {
   cleanSubject,
   encodeCallback,
   isAnsweredCallback,
+  isDelegateCallback,
   isFeedbackCallback,
+  isLoopCallback,
   labelCategories,
   parseCallback,
   textsFor,
@@ -20,7 +22,9 @@ import { getLabelTarget, recordFeedback, undoWithFeedback } from "../triage";
 
 import { handleAnsweredTap } from "./answered-taps";
 import { handleApprovalCallback, type CallbackDeps } from "./approval-taps";
-import type { CallbackResult, LinkedChat } from "./port";
+import { handleDelegateCallback } from "./delegate-taps";
+import { handleLoopCallback } from "./loop-taps";
+import type { CallbackResult, LinkedChat, TapSource } from "./port";
 import { feedbackTap, reviewPickerMessage } from "./review-taps";
 
 export type { CallbackDeps } from "./approval-taps";
@@ -46,7 +50,12 @@ export function pickerMessage(
 }
 
 // The tenant comes from the link. An unknown mail id and a mail of another organization give the same answer.
-export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data: string): Promise<CallbackResult> {
+export async function handleCallback(
+  deps: CallbackDeps,
+  link: LinkedChat,
+  data: string,
+  tapSource: TapSource = { messageId: undefined }
+): Promise<CallbackResult> {
   const callback = parseCallback(data);
   const texts = textsFor(link.locale);
   const taps = texts.bot.taps;
@@ -54,7 +63,9 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
   const ctx = { orgId: link.orgId, userId: link.userId };
   if (isAnsweredCallback(callback))
     return handleAnsweredTap({ db: deps.db, ctx, link, now: deps.now(), texts }, callback);
-  if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts);
+  if (isLoopCallback(callback)) return handleLoopCallback(deps, link, ctx, callback, texts, tapSource);
+  if (isDelegateCallback(callback)) return handleDelegateCallback(deps, link, ctx, callback, texts);
+  if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts, tapSource);
   const { tap, source } = feedbackTap(callback);
   if (tap.kind === "cancel") return { answer: "", edit: { text: taps.cancelled, buttons: [] } };
   if (tap.kind === "undo") {

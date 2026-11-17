@@ -49,7 +49,7 @@ describe("the guards under the brief", () => {
       const built = await buildDigest(trx, org.ctx, request({ loops: { firstOfDay: true, loopConsent: true } }));
       expect(built.message.text).not.toContain("NEEDS YOU TODAY");
       expect(built.message.text).not.toContain("anna@example.test");
-      expect(built.shown).toEqual({ surfaced: [], stale: [] });
+      expect(built.shown).toEqual({ surfaced: [], stale: [], lineOf: {} });
       const on = await ready(trx);
       await waitingLoop(trx, on);
       const shown = await buildDigest(trx, on.ctx, request({ loops: { firstOfDay: true, loopConsent: true } }));

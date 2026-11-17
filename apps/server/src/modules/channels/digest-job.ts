@@ -131,13 +131,20 @@ export async function queueDigest(
     });
     const { message, shown } = built;
     const loopIds = [...shown.surfaced, ...shown.stale];
+    // The line of each loop (and delegation) that a brief line names: the taps on its buttons edit that line (stage 19).
+    const hasLines = Object.keys(shown.lineOf).length > 0;
     const outboxId = await queueNotice(trx, ctx, {
       userId,
       locale: link.locale,
       kind: "digest",
       dedupKey: `digest:${slot.key}`,
       digestId,
-      view: { text: message.text, buttons: message.buttons, ...(loopIds.length === 0 ? {} : { loopIds }) },
+      view: {
+        text: message.text,
+        buttons: message.buttons,
+        ...(loopIds.length === 0 ? {} : { loopIds }),
+        ...(hasLines ? { lineOf: shown.lineOf } : {}),
+      },
       now,
     });
     // The rollback keeps a digest row from staying without its message, also when the view does not render.

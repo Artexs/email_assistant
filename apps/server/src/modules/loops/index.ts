@@ -73,3 +73,4 @@ export {
 export type { DraftFollowUpResult } from "./follow-up-draft";
 export { doneLoop, dropLoop, laterLoop, reopenLoop, untrackLoop, LATER_WORKING_DAYS } from "./loop-commands";
 export type { LaterAnswer, LoopAnswer, LoopCommandDeps, LoopCommandInput } from "./loop-commands";
+export { delegableCategory, delegateButtonOn, draftsAvailable } from "./delegate-button";

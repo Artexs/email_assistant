@@ -39,8 +39,13 @@ export interface CallbackResult {
   send?: OutMessage;
 }
 
+/** Where a tap came from: the message that holds the button. Absent when the channel does not say (the message is not available). */
+export interface TapSource {
+  messageId: number | undefined;
+}
+
 /** Channel-neutral handlers. The tenant comes from the `LinkedChat`, never from the update. */
 export interface UpdateHandlers {
   command(link: LinkedChat, name: CommandName): Promise<OutMessage>;
-  callback(link: LinkedChat, data: string): Promise<CallbackResult>;
+  callback(link: LinkedChat, data: string, source?: TapSource): Promise<CallbackResult>;
 }

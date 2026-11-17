@@ -137,7 +137,9 @@ export function createTelegramBot(
     const link = linkOf(ctx);
     let result;
     try {
-      result = await handlers.callback(link, ctx.callbackQuery.data);
+      result = await handlers.callback(link, ctx.callbackQuery.data, {
+        messageId: ctx.callbackQuery.message?.message_id,
+      });
     } catch (error) {
       log.error("callback_failed", telegramErrorFields(error));
       result = { answer: textsFor(link.locale).bot.error };
