@@ -11,7 +11,7 @@ import type { Db, DB } from "../../src/platform/db";
 import type { ApiEnv } from "../../src/platform/http";
 import { setLogLevel } from "../../src/platform/log";
 
-import { createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
+import { createOrgWithMailbox, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
@@ -231,21 +231,33 @@ describe("POST /api/telegram/consent", () => {
 
 describe("GET /api/channels/telegram consentVersion (F116 stage 22)", () => {
   const STATE = "/api/channels/telegram";
+  // `linkChat` takes a transaction; the route reads committed rows, so the chat link is written on the connection of the test.
+  const link = async (orgId: string, userId: string, linkedAt: Date): Promise<void> => {
+    await db
+      .insertInto("chat_links")
+      .values({
+        org_id: orgId,
+        user_id: userId,
+        channel: "telegram",
+        external_chat_id: randomChatId(),
+        linked_at: linkedAt,
+      })
+      .execute();
+  };
   const stateOf = async (app: Awaited<ReturnType<typeof setup>>["app"], who: "owner" | "assistant") =>
     (await (await app.request(STATE, as(who))).json()) as { linked: boolean; consentVersion: string | null };
 
   test("T4 an old version, the confirmed version, no row, an unlink and a CLI link", async () => {
     const { org, app } = await setup();
-    const ctx = { orgId: org.orgId };
     // Not linked: null, also with a consent row.
     await consentRow(db, org.orgId, org.ownerId, F109_VERSION, OLD_AT);
     expect(await stateOf(app, "owner")).toMatchObject({ linked: false, consentVersion: null });
 
     // Linked with the old row: the old version shows.
-    await linkChat(db, ctx, org.ownerId, randomChatId(), OLD_AT);
+    await link(org.orgId, org.ownerId, OLD_AT);
     expect(await stateOf(app, "owner")).toMatchObject({ linked: true, consentVersion: F109_VERSION });
     // A user linked by the CLI has no consent row: null.
-    await linkChat(db, ctx, org.assistantId, randomChatId(), OLD_AT);
+    await link(org.orgId, org.assistantId, OLD_AT);
     expect(await stateOf(app, "assistant")).toMatchObject({ linked: true, consentVersion: null });
 
     // The confirm route moves the owner to the current version and leaves the other user alone.
@@ -259,7 +271,7 @@ describe("GET /api/channels/telegram consentVersion (F116 stage 22)", () => {
 
     // An unlink withdraws the consent: after a CLI link the old row does not count (review 17, N4).
     expect((await app.request("/api/channels/telegram/link", as("owner", { method: "DELETE" }))).status).toBe(204);
-    await linkChat(db, ctx, org.ownerId, randomChatId(), new Date(NOW.getTime() + 60_000));
+    await link(org.orgId, org.ownerId, new Date(NOW.getTime() + 60_000));
     expect(await stateOf(app, "owner")).toMatchObject({ linked: true, consentVersion: null });
   });
 });
