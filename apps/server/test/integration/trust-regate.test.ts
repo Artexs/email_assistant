@@ -574,6 +574,166 @@ describe("regateAll", () => {
       expect((await moveOf(trx, box, emailId))?.status).toBe("ready");
     });
   });
+
+  test("a final too-few file for the running key withdraws an evidence grant with evidence_changed", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await setup(trx, { notification: on(KEY_A, "evidence") });
+      const file = gateFile(KEY_A);
+      file.categories.notification = { ...file.categories.notification, decision: "too-few" };
+      expect(await regateAll(depsOf(trx, gateOf(KEY_A, file)), NOW)).toMatchObject({ paused: 1 });
+      expect((await tripsOf(trx, box.mailboxId))[0]?.reason).toBe("evidence_changed");
+      expect((await policyOf(trx, box.mailboxId)).notification?.auto).toBe(false);
+    });
+  });
+
+  test("two organizations: each mailbox runs under its own org; trips, notices and audit rows stay in their org", async () => {
+    await withRollback(db, async (trx) => {
+      // X has no evidence under key B (paused); Y has a go file for `info` (re-granted) and a forced grant (paused).
+      const x = await setup(trx, { notification: on(KEY_A) });
+      const y = await setup(trx, { notification: on(KEY_A, "forced"), info: on(KEY_A) });
+      const result = await regateAll(depsOf(trx, gateOf(KEY_B, gateFile(KEY_B, { go: ["info"] }))), NOW);
+      expect(result).toMatchObject({ stamped: 0, regranted: 1, paused: 2 });
+      const forX = await noticesOf(trx, x.orgId);
+      const forY = await noticesOf(trx, y.orgId);
+      expect(forX.map((row) => row.user_id).sort()).toEqual([x.userId, x.owner2].sort());
+      expect(forY.map((row) => row.user_id).sort()).toEqual([y.userId, y.owner2].sort());
+      for (const row of forX) expect((row.view as { mailboxId: string }).mailboxId).toBe(x.mailboxId);
+      for (const row of forY) expect((row.view as { mailboxId: string }).mailboxId).toBe(y.mailboxId);
+      expect((await tripsOf(trx, x.mailboxId)).every((trip) => trip.org_id === x.orgId)).toBe(true);
+      expect((await tripsOf(trx, y.mailboxId)).every((trip) => trip.org_id === y.orgId)).toBe(true);
+      expect((await policyOf(trx, y.mailboxId)).info?.grant?.by).toBe("regate");
+      expect(await policyAudit(trx, x.orgId)).toHaveLength(1);
+      expect(await policyAudit(trx, y.orgId)).toHaveLength(2);
+    });
+  });
+
+  describe("a mailbox that fails alone", () => {
+    // The seam throws after the settings lock for one mailbox; the other mailbox must still be re-gated.
+    async function failingRun(trx: Transaction<DB>, run: "start" | "job", over: Partial<RegateDeps> = {}) {
+      const bad = await setup(trx, { notification: on(KEY_A) });
+      // The second box must not pause the first one (it keeps its mailbox active for the triage run).
+      const good = await setup(trx, { notification: on(KEY_A) }, { committed: true });
+      const emailId = await insertTestEmail(trx, bad.ctx, bad.mailboxId, {
+        received_at: new Date(NOW.getTime() - 600_000),
+      });
+      await triageOf(trx, KEY_A, llmOf()).run();
+      expect((await moveOf(trx, bad, emailId))?.status).toBe("ready");
+      const gate = gateOf(KEY_B);
+      const result = await regateAll(
+        depsOf(trx, gate, {
+          run,
+          hooks: {
+            afterLock: (_ctx, mailboxId) => {
+              if (mailboxId === bad.mailboxId) throw new Error("one mailbox fails");
+            },
+          },
+          ...over,
+        }),
+        NOW
+      );
+      return { bad, good, emailId, result };
+    }
+
+    test("the others still run, the failure is logged and counted, and the failed mailbox is left as it was", async () => {
+      const capture = captureLogs();
+      let outcome: Awaited<ReturnType<typeof failingRun>> | undefined;
+      let badGrantKey: unknown;
+      let goodAuto: boolean | undefined;
+      try {
+        await withRollback(db, async (trx) => {
+          outcome = await failingRun(trx, "job");
+          badGrantKey = (await policyOf(trx, outcome.bad.mailboxId)).notification?.grant?.key;
+          goodAuto = (await policyOf(trx, outcome.good.mailboxId)).notification?.auto;
+        });
+      } finally {
+        capture.stop();
+      }
+      expect(outcome?.result).toMatchObject({ paused: 1 });
+      expect(goodAuto).toBe(false);
+      expect(badGrantKey).toEqual(KEY_A);
+      const failures = eventLines(capture.lines, "trust_regate_mailbox_failed");
+      expect(failures).toHaveLength(1);
+      expect(failures[0]).toMatchObject({ level: "error", mailbox_id: outcome?.bad.mailboxId });
+      expect(eventLines(capture.lines, "trust_regate_done")[0]).toMatchObject({ failed: 1, paused: 1 });
+    });
+
+    test("the job run leaves the ready move of the failed mailbox for the next run", async () => {
+      await withRollback(db, async (trx) => {
+        const { bad, emailId } = await failingRun(trx, "job");
+        expect((await moveOf(trx, bad, emailId))?.status).toBe("ready");
+      });
+    });
+
+    test("the start run expires the ready move and mark-read rows of the failed mailbox, and the others still run", async () => {
+      const capture = captureLogs();
+      let state: { status: string | undefined; reason: string | null; goodAuto: boolean | undefined } | undefined;
+      let grantKey: unknown;
+      try {
+        await withRollback(db, async (trx) => {
+          const { bad, good, emailId, result } = await failingRun(trx, "start");
+          expect(result).toMatchObject({ paused: 1 });
+          const row = await trx
+            .selectFrom("actions")
+            .select(["status", "status_reason"])
+            .where("email_id", "=", emailId)
+            .where("type", "in", ["move", "mark_read"])
+            .execute();
+          // The notification plan holds a move and a mark-read: both are ready before the run and expired after it.
+          state = {
+            status: [...new Set(row.map((r) => r.status))].join(","),
+            reason: [...new Set(row.map((r) => r.status_reason))].join(","),
+            goodAuto: (await policyOf(trx, good.mailboxId)).notification?.auto,
+          };
+          // The failed mailbox keeps its old grant: only the ready rows are closed.
+          grantKey = (await policyOf(trx, bad.mailboxId)).notification?.grant?.key;
+        });
+      } finally {
+        capture.stop();
+      }
+      expect(state).toEqual({ status: "expired", reason: "policy_changed", goodAuto: false });
+      expect(grantKey).toEqual(KEY_A);
+      expect(eventLines(capture.lines, "trust_regate_start_expired")[0]).toMatchObject({ count: 2 });
+      expect(eventLines(capture.lines, "trust_regate_done")[0]).toMatchObject({ run: "start", failed: 1 });
+    });
+
+    test("the start run: when the expiry fails too, it is logged and the others still run", async () => {
+      const capture = captureLogs();
+      let current = "";
+      let goodAuto: boolean | undefined;
+      let result: { paused: number } | undefined;
+      try {
+        await withRollback(db, async (trx) => {
+          const bad = await setup(trx, { notification: on(KEY_A) });
+          const good = await setup(trx, { notification: on(KEY_A) });
+          const gate = gateOf(KEY_B);
+          result = await regateAll(
+            depsOf(trx, gate, {
+              run: "start",
+              hooks: {
+                afterLock: (_ctx, mailboxId) => {
+                  current = mailboxId;
+                  if (mailboxId === bad.mailboxId) throw new Error("one mailbox fails");
+                },
+              },
+              // The expiry of the failed mailbox cannot build its setters either.
+              settingsOf: (inner) => {
+                if (current === bad.mailboxId) throw new Error("the expiry fails too");
+                return settingsDeps(inner, () => NOW, gate);
+              },
+            }),
+            NOW
+          );
+          goodAuto = (await policyOf(trx, good.mailboxId)).notification?.auto;
+        });
+      } finally {
+        capture.stop();
+      }
+      expect(result).toMatchObject({ paused: 1 });
+      expect(goodAuto).toBe(false);
+      expect(eventLines(capture.lines, "trust_regate_start_expire_failed")).toHaveLength(1);
+      expect(eventLines(capture.lines, "trust_regate_done")[0]).toMatchObject({ failed: 1 });
+    });
+  });
 });
 
 // Tests 5 and 6: two connections and committed rows. Each test removes its organization and its user.
@@ -687,14 +847,27 @@ describe("regateAll with two connections", () => {
 });
 
 describe("the start run", () => {
-  test("main.ts runs the re-gate before the triage worker and the committer exist", () => {
-    const main = readFileSync(path.resolve(import.meta.dir, "../../src/main.ts"), "utf8");
-    const start = main.indexOf('regateAll({ ...regateDeps, run: "start" }');
+  const main = readFileSync(path.resolve(import.meta.dir, "../../src/main.ts"), "utf8");
+  const call = 'regateAll({ ...regateDeps, run: "start" }';
+
+  test("main.ts awaits the re-gate before the triage worker and the committer exist", () => {
+    const start = main.indexOf(call);
     expect(start).toBeGreaterThan(0);
+    // The call is awaited: a start run that is not awaited races the committer.
+    expect(main.slice(start - "await ".length, start)).toBe("await ");
     expect(start).toBeLessThan(main.indexOf("createTriageJob("));
     expect(start).toBeLessThan(main.indexOf("createCommitterJob("));
     expect(start).toBeLessThan(main.indexOf('scheduler.add("triage.worker"'));
     expect(start).toBeLessThan(main.indexOf('scheduler.add("actions.committer"'));
     expect(main).toContain('scheduler.add("trust.regate", "20 */5 * * * *"');
+  });
+
+  test("a failure of the whole start run stops the server before the workers start", () => {
+    const start = main.indexOf(call);
+    const rest = main.slice(start);
+    const handler = rest.slice(rest.indexOf("} catch (error) {"), rest.indexOf("} catch (error) {") + 220);
+    expect(handler).toContain('log.error("trust_regate_failed"');
+    expect(handler).toContain("process.exit(1);");
+    expect(handler.indexOf("process.exit(1);")).toBeGreaterThan(handler.indexOf("db.destroy()"));
   });
 });

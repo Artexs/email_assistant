@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { sql } from "kysely";
 
 import { claimNextCheck, HISTORY_LOCK_STALE_MS, HISTORY_MAX_ATTEMPTS, type EndedHook } from "../../src/modules/trust";
 import { captureLogs, eventLines } from "../log-capture";
@@ -31,6 +32,11 @@ afterAll(async () => {
 const RETRY_MS = 5 * MINUTE_MS;
 const failing: EndedHook = async () => {
   throw new Error("the hook fails every time");
+};
+
+// A hook that fails with an SQL error aborts the transaction: only the savepoint lets the check end.
+const sqlFailing: EndedHook = async (trx) => {
+  await sql`select 1 / 0`.execute(trx);
 };
 
 describe("an end hook that throws every time", () => {
@@ -74,6 +80,24 @@ describe("an end hook that throws every time", () => {
         .where("id", "=", checkId)
         .execute();
       const claim = await claimNextCheck(db, box, box.clock.now, failing);
+      expect(claim).toMatchObject({ kind: "stopped", checkId });
+      const check = await checkOf(db, checkId);
+      expect(check).toMatchObject({ status: "no_result", no_result_reason: "stopped", locked_at: null });
+      expectFinishedTogether(check);
+    });
+  });
+
+  test("a hook that fails with an SQL error (an aborted transaction) still lets the check end stopped", async () => {
+    await withClassifyBox(db, {}, async (box, checkId) => {
+      await db
+        .updateTable("history_checks")
+        .set({
+          attempts: HISTORY_MAX_ATTEMPTS - 1,
+          locked_at: new Date(box.clock.now.getTime() - 2 * HISTORY_LOCK_STALE_MS),
+        })
+        .where("id", "=", checkId)
+        .execute();
+      const claim = await claimNextCheck(db, box, box.clock.now, sqlFailing);
       expect(claim).toMatchObject({ kind: "stopped", checkId });
       const check = await checkOf(db, checkId);
       expect(check).toMatchObject({ status: "no_result", no_result_reason: "stopped", locked_at: null });

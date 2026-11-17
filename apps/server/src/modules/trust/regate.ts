@@ -208,9 +208,38 @@ async function pauseCategory(
   });
 }
 
+// The start run of a mailbox failed, and the committer is about to start: the committer applies a `ready` row with no policy check of its
+// own, so a `move` or `mark_read` that was planned under the old key could apply before the next job run. Expire those rows in a
+// transaction of their own (the failed mailbox transaction is rolled back). A failure here is logged: the other mailboxes still run.
+async function expireAfterFailedStart(
+  deps: RegateDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: Date,
+  mailboxLog: ReturnType<typeof log.with>
+): Promise<void> {
+  try {
+    const body = (trx: Transaction<DB>) =>
+      deps
+        .settingsOf(trx)
+        .expireReady(
+          trx,
+          ctx,
+          { mailboxId, types: ["move", "mark_read"] },
+          { now, reason: "policy_changed", actor: ACTOR }
+        );
+    const expired = await (deps.db.isTransaction
+      ? body(deps.db as Transaction<DB>)
+      : deps.db.transaction().execute(body));
+    mailboxLog.warn("trust_regate_start_expired", { count: expired.length });
+  } catch (error) {
+    mailboxLog.error("trust_regate_start_expire_failed", { ...errorFields(error) });
+  }
+}
+
 /**
  * Runs the re-gate over every mailbox of every organization that is not suspended. A mailbox that fails is logged and left for the next
- * run; the others go on. Two runs at once give one trip and one notice per category: the second waits for the settings lock and then
+ * run; the others go on. In the start run a failed mailbox also has its `ready` moves and mark-reads expired. Two runs at once give one trip and one notice per category: the second waits for the settings lock and then
  * finds `auto` off (and the unique key of the trip stops a double notice).
  */
 export async function regateAll(deps: RegateDeps, now: Date): Promise<RegateResult> {
@@ -225,9 +254,9 @@ export async function regateAll(deps: RegateDeps, now: Date): Promise<RegateResu
       total.paused += one.paused;
     } catch (error) {
       failed += 1;
-      log
-        .with({ org_id: target.orgId, mailbox_id: target.mailboxId })
-        .error("trust_regate_mailbox_failed", { ...errorFields(error) });
+      const mailboxLog = log.with({ org_id: target.orgId, mailbox_id: target.mailboxId });
+      mailboxLog.error("trust_regate_mailbox_failed", { ...errorFields(error) });
+      if (deps.run === "start") await expireAfterFailedStart(deps, ctx, target.mailboxId, now, mailboxLog);
     }
   }
   log.info("trust_regate_done", { ...total, run: deps.run, failed });
