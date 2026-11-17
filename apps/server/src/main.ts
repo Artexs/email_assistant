@@ -25,7 +25,7 @@ import {
 } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
-import { createHistoryJob, createTripwireJob } from "./modules/trust";
+import { createHistoryJob, createTripwireJob, regateAll, type RegateDeps } from "./modules/trust";
 import {
   ConfigError,
   featuresOff,
@@ -211,6 +211,29 @@ const classifierRow = llmTable.roles.classifier;
 // The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
 const gate = gateEvidenceOf(config, { table: llmTable });
 const scope = triageScope(config, classifierRow.provider);
+// The re-gate of `auto` (ADR 0028, rule 16 of the product rules): it runs once here, before the triage worker and the committer exist, so a `ready` move that
+// was planned under the old model meets the new policy. A failure of the whole run (the database) stops the start: the container restarts.
+// A mailbox that fails alone is logged and left to the job below. It always runs: the global evidence belongs to the model, not to a flag.
+const regateDeps: Omit<RegateDeps, "run"> = {
+  db,
+  gate,
+  testMail: testMailRule(config),
+  settingsOf: (trx) => settingsDeps(trx, () => new Date(), gate),
+  ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
+};
+try {
+  await regateAll({ ...regateDeps, run: "start" }, new Date());
+} catch (error) {
+  log.error("trust_regate_failed", { ...errorFields(error) });
+  await db.destroy().catch(() => undefined);
+  process.exit(1);
+}
+let regateRun: Promise<void> = Promise.resolve();
+scheduler.add("trust.regate", "20 */5 * * * *", () => {
+  regateRun = regateAll({ ...regateDeps, run: "job" }, new Date()).then(() => undefined);
+  return regateRun;
+});
+log.info("job_scheduled", { job: "trust.regate" });
 if (scope !== null) {
   log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
   const llm = createLlmClient({ table: llmTable });
@@ -421,6 +444,7 @@ async function shutdown(): Promise<void> {
       triageRun,
       loopsAnalyzeRun,
       historyRun,
+      regateRun,
       tripwireRun,
       loopsMatchRun,
       committerRun,

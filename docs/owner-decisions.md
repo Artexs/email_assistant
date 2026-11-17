@@ -567,3 +567,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: no move should apply under an unproven key. The committer has no policy re-check.
 - Undo: remove the expiry in the start catch.
 - Source: same job, finding N1.
+
+### 2026-11-17 · F110 re-gate: pausing a non-moving category (urgent, needs_reply) after a model switch writes a trip and no notice (F110) · user-visible · new
+- Choice: when the re-gate pauses `urgent` or `needs_reply` it records the trip and sends no `autonomy_paused` notice, because the notice type covers moving categories only (stage 09 narrowed it).
+- Why: a notice for a category that never moves mail would confuse the user.
+- Undo: widen the notice category type and queue the notice in `trust/regate.ts`.
+- Source: job `2026-11-17-f110-s08-regate-risky-automatic-c3bab87b`.

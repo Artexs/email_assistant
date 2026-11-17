@@ -5,6 +5,8 @@ import type { EvidenceKey } from "@ea/core";
 import { sql, type Transaction, type UpdateObject } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { errorFields } from "../../platform/errors";
+import { createLog } from "../../platform/log";
 
 import {
   queueHistoryCheck,
@@ -13,6 +15,8 @@ import {
   type HistoryResult,
   type NoResultReason,
 } from "./repo";
+
+const log = createLog("trust");
 
 /** The window of the check: the last 30 days of INBOX mail. */
 export const HISTORY_WINDOW_DAYS = 30;
@@ -55,6 +59,30 @@ export type EndedHook = (
   ctx: TenantContext,
   ended: { checkId: string; mailboxId: string; reason: NoResultReason | null }
 ) => Promise<void>;
+
+/**
+ * The hook of a check that ends because it ran out of attempts (`stopped`). A hook that throws every time must not keep such a check open:
+ * the hook runs under a savepoint, a failure rolls back the hook alone and is logged, and the check still ends (without its notice).
+ * The other ends let the hook fail the step, which costs an attempt: three attempts later the check ends here.
+ */
+async function endedOrLogged(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  onEnded: EndedHook | undefined,
+  ended: Parameters<EndedHook>[2]
+): Promise<void> {
+  if (onEnded === undefined) return;
+  await sql`savepoint ended_hook`.execute(trx);
+  try {
+    await onEnded(trx, ctx, ended);
+    await sql`release savepoint ended_hook`.execute(trx);
+  } catch (error) {
+    await sql`rollback to savepoint ended_hook`.execute(trx);
+    log
+      .with({ org_id: ctx.orgId, mailbox_id: ended.mailboxId, check_id: ended.checkId })
+      .warn("history_ended_hook_failed", { ...errorFields(error) });
+  }
+}
 
 /** What the claim did with the oldest due check of an organization. */
 export type ClaimResult =
@@ -126,7 +154,7 @@ export async function claimNextCheck(db: Db, ctx: TenantContext, now: Date, onEn
         .where("id", "=", row.id)
         .where("org_id", "=", ctx.orgId)
         .execute();
-      await onEnded?.(trx, ctx, { checkId: row.id, mailboxId: row.mailbox_id, reason: "stopped" });
+      await endedOrLogged(trx, ctx, onEnded, { checkId: row.id, mailboxId: row.mailbox_id, reason: "stopped" });
       return { kind: "stopped", checkId: row.id, mailboxId: row.mailbox_id };
     }
     await trx
@@ -305,7 +333,9 @@ export async function failStep(
       .executeTakeFirst();
     if (row === undefined) return null;
     const stopped = row.status === "no_result";
-    if (stopped) await onEnded?.(trx, ctx, { checkId: check.id, mailboxId: check.mailboxId, reason: "stopped" });
+    if (stopped) {
+      await endedOrLogged(trx, ctx, onEnded, { checkId: check.id, mailboxId: check.mailboxId, reason: "stopped" });
+    }
     return { attempts: row.attempts, stopped };
   });
 }
