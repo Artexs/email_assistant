@@ -35,6 +35,7 @@ export {
   releaseCheck,
   type ClaimedCheck,
   type ClaimResult,
+  type EndedHook,
 } from "./history-queue";
 export { queueHistoryCheckOnConnect } from "./connect-hook";
 export { queueHistoryCheckByOperator, type OperatorQueueResult } from "./operator";
