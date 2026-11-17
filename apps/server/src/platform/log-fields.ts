@@ -87,6 +87,12 @@ export const numberFieldNames = [
   "synced",
   "not_found",
   "failed_runs",
+  // history check result: acted-on mails, the share of `\Answered` mail in percent, the acted-on mails that a category would move
+  "acted",
+  "answered_pct",
+  "info_moved",
+  "notification_moved",
+  "spam_moved",
 ] as const;
 /** Code fields: the F089 D7 rule (D1, D2). Values come from closed sets, never from mail, users or outside text. */
 export const codeFieldNames = [
@@ -134,6 +140,11 @@ export const codeFieldNames = [
   "day_start",
   // a gate file name (`classifier-…json`, from the image, never user text)
   "file",
+  // history check result: the check hit its cost cap, and the outcome per moving category (pass, fail, inconclusive, no_result)
+  "capped",
+  "info_outcome",
+  "notification_outcome",
+  "spam_outcome",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

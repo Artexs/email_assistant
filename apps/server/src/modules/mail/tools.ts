@@ -341,7 +341,8 @@ export async function refreshFlagsOfMailbox(
     mailboxId
   );
   try {
-    return await refreshFlags({ db: deps.db, provider, now }, ctx, mailboxId);
+    // The caller of this one-off read does not look for moved mail: it leaves the gone mail to the regular refresh.
+    return await refreshFlags({ db: deps.db, provider, now, touchGone: false }, ctx, mailboxId);
   } finally {
     await provider.close().catch(() => undefined);
   }

@@ -284,3 +284,25 @@ function toCheckRow(row: {
     finishedAt: row.finished_at,
   };
 }
+
+/**
+ * How many other checks of the mailbox ended already, as `done` or as `no_result` for a reason other than `key_changed`: a check that a
+ * model switch cut short is not "the first check" of the report notice (F110 D16).
+ */
+export async function countEarlierEndedChecks(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  exceptCheckId: string
+): Promise<number> {
+  const row = await db
+    .selectFrom("history_checks")
+    .select(sql<string>`count(*)`.as("n"))
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("id", "!=", exceptCheckId)
+    .where("status", "in", ["done", "no_result"])
+    .where((eb) => eb.or([eb("no_result_reason", "is", null), eb("no_result_reason", "!=", "key_changed")]))
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
+}

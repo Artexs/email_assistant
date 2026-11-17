@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
@@ -700,17 +700,6 @@ describe("step 3: the flags wait", () => {
       expect((await theCheck(db, box)).status).toBe("classifying");
     });
   });
-
-  test("a classifying check is not claimed by this job: the classify step is a later stage", async () => {
-    await withHistoryBox(db, {}, async (box) => {
-      const id = await queue(box);
-      await db.updateTable("history_checks").set({ status: "classifying" }).where("id", "=", id).execute();
-      await jobOf(db, box).run();
-      expect(box.opens.count).toBe(0);
-      expect(await theCheck(db, box)).toMatchObject({ status: "classifying", attempts: 0 });
-      expect((await theCheck(db, box)).locked_at).toBeNull();
-    });
-  });
 });
 
 describe("TG4. refreshFlagsOfMailbox closes its connection", () => {
@@ -740,7 +729,7 @@ describe("TG4. refreshFlagsOfMailbox closes its connection", () => {
   });
 });
 
-describe("TG6. the job files reach no triage code and no model client, also through their imports", () => {
+describe("TG6. the queue side reaches no triage code and no model client, also through its imports", () => {
   const srcRoot = resolve(import.meta.dir, "../../src");
 
   // The files that a start file imports, found through relative imports (`from "./x"`, `from "../mail"`), with `index.ts` and `.ts` resolved.
@@ -763,10 +752,11 @@ describe("TG6. the job files reach no triage code and no model client, also thro
   }
 
   test("no file of the closure is in the triage module, and none calls a model or records a model call", () => {
+    // `history-classify.ts` (the classify step) is the one trust file that reaches the model, through `classifyStored`.
     const closure = reachable(
-      ["modules/trust/history-job.ts", "modules/trust/history-queue.ts"].map((file) => resolve(srcRoot, file))
+      ["modules/trust/history-queue.ts", "modules/trust/history-items.ts"].map((file) => resolve(srcRoot, file))
     );
-    expect(closure.size).toBeGreaterThan(20);
+    expect(closure.size).toBeGreaterThan(5);
     expect([...closure].filter((file) => file.includes("/modules/triage/"))).toEqual([]);
     // The model client and the call record live in platform/llm and audit; nothing else of the closure may use them.
     const callers = [...closure]
@@ -776,18 +766,18 @@ describe("TG6. the job files reach no triage code and no model client, also thro
   });
 });
 
-describe("the job makes no model call and writes no triage row", () => {
+describe("only the classify step calls the model, and no trust file writes a triage row", () => {
   const dir = resolve(import.meta.dir, "../../src/modules/trust");
-  const files = ["history-job.ts", "history-queue.ts"];
 
-  test("its sources name no model client and no triage_results table", () => {
-    for (const file of files) {
+  test("no trust source names the triage_results table or calls the client directly; recordLlmCall only in the classify step", () => {
+    for (const file of readdirSync(dir).filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))) {
       const source = readFileSync(resolve(dir, file), "utf8");
-      expect(source, file).not.toMatch(/triage_results|LlmClient|generate\(|llm\.|recordLlmCall/);
+      expect(source, file).not.toMatch(/triage_results|generate\(|createLlmClient\(|insertTriageResult/);
+      if (file !== "history-classify.ts") expect(source, file).not.toMatch(/recordLlmCall/);
     }
   });
 
-  test("the job has no model client in its deps: the log of a full run holds no llm.call row", async () => {
+  test("the backfill and flags steps record no llm.call row (the default client of the helper throws)", async () => {
     await withHistoryBox(db, {}, async (box) => {
       await queue(box);
       const job = jobOf(db, box);

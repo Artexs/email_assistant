@@ -1018,6 +1018,7 @@ function fakeLlm(answer: Record<string, unknown>): LlmClient {
 const pause = {
   trip: (_kind: string, _code: string, time: Date) => new Date(time.getTime() + 5 * MINUTE),
   isPaused: () => false,
+  pausedUntil: () => null,
   pausedSince: () => null,
   reset: () => undefined,
 };

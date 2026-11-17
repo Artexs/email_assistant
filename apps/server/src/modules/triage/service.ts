@@ -31,21 +31,13 @@ import { createPlanned, setDelegationId, type CreatedAction, type PlannedActionI
 import { auditEvents, countLlmCallsSince, recordAudit, recordLlmCall } from "../audit";
 import { lockSettingsForShare } from "../config";
 import { createDelegation, detectReply, markAnswered } from "../delegation";
-import {
-  finishEmail,
-  isTestMail,
-  listThreadContext,
-  PENDING_BODY_DAYS,
-  releaseEmail,
-  type ClaimedEmail,
-  type TestMailRule,
-} from "../mail";
+import { finishEmail, PENDING_BODY_DAYS, releaseEmail, type ClaimedEmail, type TestMailRule } from "../mail";
 import { isFeatureOn } from "../tenancy";
 
-import { classifyEmail, type ClassifierEmail } from "./classifier";
-import { loadClassifierExtras } from "./extras-reader";
+import { classifyEmail } from "./classifier";
+import { buildClassifierInput } from "./classify-input";
 import type { LlmPause } from "./pause";
-import { type ClassifierPromptChoice, productionClassifierChoice } from "./prompts";
+import type { ClassifierPromptChoice } from "./prompts";
 import { insertTriageResult } from "./repo";
 import { assessEmail, type SuspiciousContext } from "./suspicious-context";
 
@@ -521,41 +513,7 @@ export async function triageOne(
     return released ? { kind: "capped", until, dayStart } : { kind: "lost" };
   }
 
-  const threadRows = await listThreadContext(deps.db, ctx, mailbox.id, email.thread_key, email.received_at, email.id, {
-    syntheticOnly: isTestMail(
-      { messageIdHeader: email.message_id_header, fromAddress: email.from_address },
-      deps.testMail
-    )
-      ? { testMail: deps.testMail }
-      : false,
-  });
-  const choice = deps.prompt ?? productionClassifierChoice();
-  // Only a v3 prompt reads the user's data: v2 triage runs no new query. The part list is the one of the prompt.
-  const extras =
-    choice.version === "classifier-v2"
-      ? undefined
-      : await loadClassifierExtras(deps.db, ctx, {
-          mailbox: { id: mailbox.id, urgencyProfile: mailbox.urgencyProfile },
-          email,
-          parts: choice.parts,
-          timezone: mailbox.timezone,
-          testMail: deps.testMail,
-          suspicious: suspiciousReasons,
-        });
-  const classifierEmail: ClassifierEmail = {
-    from: email.from_address,
-    to: email.to_addresses,
-    cc: email.cc_addresses,
-    subject: email.subject,
-    receivedAt: email.received_at,
-    bodyText: email.body_text,
-    thread: threadRows.reverse().map((row) => ({
-      from: row.from_address,
-      subject: row.subject,
-      receivedAt: row.received_at,
-      bodyExcerpt: row.body_excerpt,
-    })),
-  };
+  const { choice, classifierEmail, extras } = await buildClassifierInput(deps, ctx, mailbox, email, suspiciousReasons);
 
   const start = Date.now();
   let result: Awaited<ReturnType<typeof classifyEmail>>;

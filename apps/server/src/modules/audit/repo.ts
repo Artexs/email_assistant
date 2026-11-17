@@ -202,7 +202,12 @@ export interface LlmCallRecord {
   tokensOut: number | null;
   latencyMs: number;
   at: Date;
+  /** The call belongs to a history check (F110): the daily cap leaves it out, the cost reports count it. */
+  historyCheckId?: string;
 }
+
+// The key of `llm.call` data that marks a call of a history check.
+export const HISTORY_CHECK_KEY = "historyCheckId";
 
 // Every LLM call writes one `llm.call` row here: the daily cap and the cost per role read these rows.
 export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCallRecord): Promise<void> {
@@ -220,6 +225,7 @@ export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCa
       tokens_in: call.tokensIn,
       tokens_out: call.tokensOut,
       latency_ms: call.latencyMs,
+      ...(call.historyCheckId === undefined ? {} : { [HISTORY_CHECK_KEY]: call.historyCheckId }),
     },
     at: call.at,
   });
@@ -261,6 +267,7 @@ export async function sumLlmCallsByModelSince(
 
 // One `llm.call` row per LLM call attempt; the mailbox id is in `data`, so no join to `emails`.
 // With a role: rows of that role; rows without a role count as classifier rows (written before roles existed).
+// The calls of history checks are not counted: the daily cap holds triage and the loop analysis, and a check has its own cap (F110).
 export async function countLlmCallsSince(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -274,6 +281,7 @@ export async function countLlmCallsSince(
     .where("org_id", "=", ctx.orgId)
     .where("event", "=", auditEvents.llmCall)
     .where(sql<string>`data->>'mailbox_id'`, "=", mailboxId)
+    .where(sql<string | null>`data->>${sql.lit(HISTORY_CHECK_KEY)}`, "is", null)
     .where("created_at", ">=", since);
   const { role } = opts;
   if (role === "classifier") {

@@ -18,6 +18,11 @@ export interface FlagsRefreshDeps {
   now(): Date;
   /** Mail per run; default `FLAGS_RUN_LIMIT`. A test sets it small. */
   runLimit?: number;
+  /**
+   * Default true: mail that the server did not return is moved to the back of the queue (`checked_at` = now). The history check passes
+   * false: it drops the gone mail, so it must not push it behind the regular refresh, whose move finder reads the gone mail of its own run.
+   */
+  touchGone?: boolean;
 }
 
 export interface FlagsRefreshResult {
@@ -78,7 +83,7 @@ export async function refreshFlags(
         if (found === undefined) {
           result.notFound += 1;
           result.gone.push(target);
-          unread.push(target);
+          if (deps.touchGone !== false) unread.push(target);
         } else if (!sameMail(target, found)) {
           result.mismatch += 1;
           unread.push(target);
