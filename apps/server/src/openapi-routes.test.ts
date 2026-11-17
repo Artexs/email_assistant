@@ -361,6 +361,85 @@ describe("the real app", () => {
     }
   });
 
+  test("the loop routes are described: each operation id, its schemas, who may call it and the codes of the 409", async () => {
+    const paths = (await openApiSpec(realApp())).paths;
+    interface Operation {
+      operationId?: string;
+      tags?: string[];
+      parameters?: { name: string; in: string; required?: boolean }[];
+      requestBody?: unknown;
+      responses?: Record<string, { description?: string; content?: Record<string, { schema?: unknown }> } | undefined>;
+    }
+    const at = (path: string, method: string) => paths?.[path]?.[method as "get"] as Operation | undefined;
+    const routes: {
+      path: string;
+      method: "get" | "post" | "patch";
+      id: string;
+      owner: boolean;
+      conflicts: string[];
+    }[] = [
+      { path: "/api/loops", method: "get", id: "listLoops", owner: false, conflicts: [] },
+      {
+        path: "/api/loops/{id}/follow-up",
+        method: "post",
+        id: "followUpLoop",
+        owner: true,
+        conflicts: ["waiting", "closed", "limit_reached", "too_soon", "suspicious", "drafts_off", "not_allowed"],
+      },
+      {
+        path: "/api/loops/{id}/later",
+        method: "post",
+        id: "laterLoop",
+        owner: false,
+        conflicts: ["closed", "limit_reached", "not_allowed"],
+      },
+      { path: "/api/loops/{id}/done", method: "post", id: "doneLoop", owner: false, conflicts: ["already"] },
+      { path: "/api/loops/{id}/drop", method: "post", id: "dropLoop", owner: true, conflicts: ["already"] },
+      { path: "/api/loops/{id}/reopen", method: "post", id: "reopenLoop", owner: true, conflicts: ["already"] },
+      {
+        path: "/api/loops/{id}/untrack",
+        method: "post",
+        id: "untrackLoop",
+        owner: true,
+        conflicts: ["already", "not_allowed"],
+      },
+      {
+        path: "/api/emails/{id}/delegate",
+        method: "post",
+        id: "delegateMail",
+        owner: true,
+        conflicts: ["exists", "delegate_inactive", "drafts_off", "not_delegable"],
+      },
+      {
+        path: "/api/settings/{mailboxId}/loop-wait",
+        method: "patch",
+        id: "patchSettingsLoopWait",
+        owner: true,
+        conflicts: [],
+      },
+    ];
+    for (const route of routes) {
+      const operation = at(route.path, route.method);
+      expect([route.path, operation?.operationId]).toEqual([route.path, route.id]);
+      expect(operation?.responses?.["200"]?.content?.["application/json"]?.schema).toBeDefined();
+      expect(operation?.responses?.["404"]?.description).toContain("not_found");
+      expect(operation?.responses?.["403"]?.description?.includes("owner_only")).toBe(route.owner);
+      expect(operation?.requestBody !== undefined).toBe(route.method !== "get");
+      for (const code of route.conflicts) expect(operation?.responses?.["409"]?.description).toContain(code);
+    }
+    // `kind` is the one required query parameter of the list.
+    const query = at("/api/loops", "get")?.parameters?.filter((parameter) => parameter.in === "query") ?? [];
+    expect(query.map((parameter) => [parameter.name, parameter.required])).toEqual([
+      ["kind", true],
+      ["filter", false],
+      ["before", false],
+      ["limit", false],
+    ]);
+    // The switch route takes the switch of the loops too.
+    const switchParams = at("/api/settings/{mailboxId}/switches/{name}", "patch")?.parameters ?? [];
+    expect(JSON.stringify(switchParams)).toContain("auto_follow_up");
+  });
+
   test("F110 s18: GET and PATCH /api/me/notify are described, the patch has a body and the 409 no_mailbox", async () => {
     const path = (await openApiSpec(realApp())).paths?.["/api/me/notify"] as
       | Record<

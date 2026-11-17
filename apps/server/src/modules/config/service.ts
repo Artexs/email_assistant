@@ -65,6 +65,8 @@ export interface SettingsView {
   categoryPolicy: CategoryPolicy;
   // null: none set.
   urgencyProfile: UrgencyProfile | null;
+  // Working days before a waiting loop is due.
+  loopWaitDays: number;
   movesSupported: boolean;
 }
 
@@ -111,6 +113,9 @@ export function closedBy(
       return { types: ["flag"] };
     case "create_draft":
       return { types: [], sends: true };
+    // A follow-up that waits for a tap stays valid: the owner decides at the card.
+    case "auto_follow_up":
+      return null;
   }
 }
 
@@ -120,6 +125,7 @@ function toView(row: MailboxSettingsRow, movesSupported: boolean): SettingsView 
     toolSwitches: parseToolSwitches(row.tool_switches),
     categoryPolicy: parseCategoryPolicy(row.category_policy),
     urgencyProfile: parseUrgencyProfile(row.urgency_profile),
+    loopWaitDays: row.loop_wait_days,
     movesSupported,
   };
 }
@@ -380,6 +386,34 @@ export async function setToolSwitch(
     close: { field: "switch", name: input.name, to: input.value },
     warnings: [],
   }));
+}
+
+// The wait of the open loops: working days before a waiting loop is due. A change moves the due date of loops opened
+// later only. The write takes the settings row lock and sets `updated_at`, so a chaser run that read the old settings
+// retries (it skips once). One `settings.changed` audit row holds the numbers and `via`.
+export async function setLoopWaitDays(
+  db: SettingsDeps["db"],
+  ctx: TenantContext,
+  mailboxId: string,
+  days: number,
+  by: { userId: string; via: "web" }
+): Promise<{ changed: boolean; days: number }> {
+  return inTransaction(db, async (trx) => {
+    const row = await lockMailboxSettings(trx, ctx, mailboxId);
+    if (!row) {
+      throw new SettingsNotFoundError();
+    }
+    if (row.loop_wait_days === days) {
+      return { changed: false, days };
+    }
+    await updateMailboxSettings(trx, ctx, mailboxId, { loopWaitDays: days });
+    await recordAudit(trx, ctx, {
+      actor: by.userId,
+      event: auditEvents.settingsChanged,
+      data: { mailbox_id: mailboxId, field: "loop_wait_days", from: row.loop_wait_days, to: days, via: by.via },
+    });
+    return { changed: true, days };
+  });
 }
 
 // Who sets the profile. `web` carries the signed-in user; `cli` is the operator.

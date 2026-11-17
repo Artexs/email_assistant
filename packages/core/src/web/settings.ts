@@ -8,7 +8,7 @@ import { evidenceBlocks } from "../trust/evidence";
 import { z } from "./zod";
 
 export { barCategories, type BarCategory } from "../triage/metrics";
-export { toolSwitchNames, ASSIST_DEFAULT_SWITCHES } from "../triage/settings";
+export { toolSwitchNames, loopSwitchNames, ASSIST_DEFAULT_SWITCHES } from "../triage/settings";
 
 export const GATE_BAR = 0.98;
 export const GATE_MIN_KEPT = 30;
@@ -59,12 +59,24 @@ export const sentSyncViewSchema = z.object({
 });
 export type SentSyncView = z.infer<typeof sentSyncViewSchema>;
 
-const toolSwitchesViewSchema = z.strictObject(
-  Object.fromEntries(toolSwitchNames.map((name) => [name, z.boolean()])) as Record<
+// The switches of the mailbox tools. `auto_follow_up` is in the list only while the flag `open_loops` is on.
+const toolSwitchesViewSchema = z.strictObject({
+  ...(Object.fromEntries(toolSwitchNames.map((name) => [name, z.boolean()])) as Record<
     (typeof toolSwitchNames)[number],
     z.ZodBoolean
-  >
-);
+  >),
+  auto_follow_up: z.boolean().optional(),
+});
+
+// The state of "Track my sent mail" for the loop settings card: `flag_off` while the organization flag is off (also when
+// the switch is still on: the sync is paused).
+export const sentTrackingStates = ["on", "off", "flag_off"] as const;
+export type SentTracking = (typeof sentTrackingStates)[number];
+
+export function sentTrackingOf(sentSync: SentSyncView | null): SentTracking {
+  if (sentSync === null || !sentSync.flagOn) return "flag_off";
+  return sentSync.enabled ? "on" : "off";
+}
 
 export const settingsViewSchema = z.object({
   mailboxId: z.uuid(),
@@ -76,6 +88,9 @@ export const settingsViewSchema = z.object({
   // null: no profile set. An empty profile is stored as null.
   urgencyProfile: urgencyProfileSchema.nullable(),
   sentSync: sentSyncViewSchema.nullable(),
+  sentTracking: z.enum(sentTrackingStates),
+  // Working days before a waiting loop is due (1–10, default 3).
+  loopWaitDays: z.number().int().min(1).max(10),
   bar: z.number(),
   minKept: z.number().int(),
 });

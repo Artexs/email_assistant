@@ -61,7 +61,8 @@ async function newOrg(opts: { members?: number } = {}): Promise<BriefOrg & { mem
     const created = await briefOrg(trx);
     const memberIds: string[] = [];
     for (let i = 0; i < (opts.members ?? 0); i += 1) {
-      const id = await addMember(trx, created.ctx.orgId);
+      // Owners: only an owner gets the ⌛ line, and this test is about two digests that both may take it.
+      const id = await addMember(trx, created.ctx.orgId, "owner");
       await linkChat(trx, created.ctx, id, randomChatId(), new Date("2026-11-05T20:00:00Z"));
       await consentRow(trx, created.ctx.orgId, id, CURRENT_CONSENT, new Date("2026-11-06T00:00:00Z"));
       memberIds.push(id);
@@ -76,7 +77,7 @@ async function newOrg(opts: { members?: number } = {}): Promise<BriefOrg & { mem
 const linkOf = (org: BriefOrg, userId: string) => ({
   orgId: org.ctx.orgId,
   userId,
-  role: "assistant" as const,
+  role: "owner" as const,
   chatId: org.chatId,
   linkedAt: new Date("2026-11-05T20:00:00Z"),
   locale: "en" as const,
@@ -112,8 +113,7 @@ describe.each(pairs)("the first digest of the day is one (%s)", (_name, connA, c
           conn.transaction().execute(async (trx) => {
             const first = await isFirstDigestOfDay(trx, org.ctx, {
               userId: org.userId,
-              timeZone: "Europe/Warsaw",
-              now: new Date(at),
+              slotDate: key.slice(0, 10),
             });
             // The window between the decision and the outbox row: without the lock the other transaction decides here too.
             await sleep(25);

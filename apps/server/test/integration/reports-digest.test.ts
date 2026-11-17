@@ -131,6 +131,7 @@ describe("buildDigestMessage", () => {
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
   };
 
@@ -394,6 +395,7 @@ describe("buildDigestMessage with delegations", () => {
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
   };
 
@@ -478,6 +480,7 @@ describe("buildDigestMessage with the handled share", () => {
     slot: null,
     now: new Date("2026-11-21T08:00:00Z"),
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
   };
 
@@ -502,6 +505,7 @@ describe("buildDigestMessage: suspicious mail", () => {
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
   };
 
@@ -576,6 +580,7 @@ describe("digest attachment line (F109 stage 06)", () => {
     slot: null,
     now: T,
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
   };
   const pdf = { name: "faktura.pdf", type: "application/pdf", size: 122880, inline: false };
@@ -636,6 +641,7 @@ describe("digest why lines (F110 stage 16)", () => {
     slot: null,
     now: T,
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
   };
 

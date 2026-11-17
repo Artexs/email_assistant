@@ -19,6 +19,7 @@ export {
   parseUrgencyProfile,
   setCategoryAuto,
   setCategoryGrants,
+  setLoopWaitDays,
   setMode,
   setToolSwitch,
   setUrgencyProfile,

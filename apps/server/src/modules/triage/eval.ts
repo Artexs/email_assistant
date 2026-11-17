@@ -29,7 +29,7 @@ import {
   splitAddress,
   textIsClean,
   thresholdSweep,
-  type ToolSwitches,
+  type MailToolSwitches,
   type TriageAnalysis,
 } from "@ea/core";
 import { z } from "zod";
@@ -86,7 +86,7 @@ const DELEGATE_ADDRESS_DOMAIN = "delegates.test";
 type DraftKind = "delegation" | "clarification" | "none";
 
 // Worst case for the policy: assist mode, every switch on, every category auto.
-const WORST_CASE_SWITCHES: ToolSwitches = {
+const WORST_CASE_SWITCHES: MailToolSwitches = {
   move: true,
   mark_read: true,
   flag: true,

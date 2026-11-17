@@ -12,6 +12,7 @@ import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
 import { digestTexts, type DigestTexts } from "./digest";
 import { followUpTexts, type FollowUpTexts } from "./follow-up";
+import { loopTapTexts, type LoopTapTexts } from "./loop-taps";
 import { noticeTexts, type NoticeTexts } from "./notices";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { suspiciousTexts, type SuspiciousTexts } from "./suspicious";
@@ -33,6 +34,7 @@ export type {
   CommonTexts,
   DigestTexts,
   FollowUpTexts,
+  LoopTapTexts,
   NoticeTexts,
   ReviewTexts,
   SuspiciousTexts,
@@ -54,6 +56,7 @@ export interface CoreTexts {
   review: ReviewTexts;
   digest: DigestTexts;
   brief: BriefTexts;
+  loopTaps: LoopTapTexts;
   followUp: FollowUpTexts;
   suspicious: SuspiciousTexts;
   why: WhyTexts;
@@ -75,6 +78,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     review: reviewTexts.en,
     digest: digestTexts.en,
     brief: briefTexts.en,
+    loopTaps: loopTapTexts.en,
     followUp: followUpTexts.en,
     suspicious: suspiciousTexts.en,
     why: whyTexts.en,
@@ -94,6 +98,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     review: reviewTexts.pl,
     digest: digestTexts.pl,
     brief: briefTexts.pl,
+    loopTaps: loopTapTexts.pl,
     followUp: followUpTexts.pl,
     suspicious: suspiciousTexts.pl,
     why: whyTexts.pl,

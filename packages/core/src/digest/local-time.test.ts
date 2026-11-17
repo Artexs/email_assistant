@@ -11,6 +11,7 @@ import {
   QUIET_HOURS,
   quietEnd,
   quietHoursOf,
+  startOfLocalDay,
 } from "./local-time";
 
 const TZ = "Europe/Warsaw";
@@ -41,6 +42,17 @@ describe("localToInstant", () => {
 
   test("an ambiguous time in autumn gives the later instant", () => {
     expect(iso(localToInstant("2026-10-25", "02:30", TZ))).toBe("2026-10-25T01:30:00.000Z");
+  });
+});
+
+describe("startOfLocalDay", () => {
+  test.each([
+    ["a normal day", "2026-11-20", "Europe/Warsaw", "2026-11-19T23:00:00.000Z"],
+    ["midnight repeats in autumn: the first one", "2026-11-01", "America/Havana", "2026-11-01T04:00:00.000Z"],
+    ["midnight is skipped in spring: the change", "2026-03-08", "America/Havana", "2026-03-08T05:00:00.000Z"],
+    ["the same in Santiago", "2026-09-06", "America/Santiago", "2026-09-06T04:00:00.000Z"],
+  ])("%s", (_name, date, zone, start) => {
+    expect(startOfLocalDay(date, zone).toISOString()).toBe(start);
   });
 });
 

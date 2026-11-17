@@ -9,6 +9,7 @@ export {
 } from "./planned";
 export {
   countActionsSince,
+  countSpamMoves,
   listActionsForEmail,
   listActionsForEmails,
   listDraftTasks,

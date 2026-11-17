@@ -5,6 +5,7 @@ import { getMembership, isFeatureOn } from "../../tenancy";
 import { countAnsweredWaiting } from "../../triage";
 import { listUrgentNoticeTimes } from "../metrics-repo";
 import { findOutboxByDedup } from "../repo";
+import { mailDedupKey, reportRoutesOf } from "../report-members";
 
 import { queue, warnSkipped, type Detector, type OrgRun } from "./run";
 
@@ -27,6 +28,8 @@ const failedAt = new Map<string, number>();
 export const failedAttemptKeys = (): string[] => [...failedAt.keys()];
 
 // On Monday, every linked member gets the numbers of the last finished week at the member's own slot (F100 plan, weekly report).
+// F110 stage 19: with the flag `report_mail`, a member whose report channel is `mail` or `both` also gets a mail row (dedup key
+// `weekly_report:<week>:mail`), and a `mail` member with no chat gets that row only.
 async function detectWeeklyReport(run: OrgRun): Promise<void> {
   const { db, ctx, now, timeZone } = run;
   const weekStart = lastFinishedWeek(now, timeZone);
@@ -42,14 +45,22 @@ async function detectWeeklyReport(run: OrgRun): Promise<void> {
 
   const dedupKey = `weekly_report:${weekStart}`;
   try {
+    const mailOn = await isFeatureOn(db, ctx, "report_mail");
     const due = [];
-    for (const member of run.members) {
+    for (const member of run.reportMembers) {
+      const routes = reportRoutesOf(member, mailOn);
+      if (!routes.telegram && routes.mailboxId === null) continue;
       const membership = await getMembership(db, ctx, member.userId);
       if (membership === undefined) continue;
       const slot = weeklySlot(parseDigestTimes(membership.digest_times));
       if (localToInstant(today.date, slot, timeZone).getTime() > now.getTime()) continue;
-      if ((await findOutboxByDedup(db, ctx, member.userId, dedupKey)) !== undefined) continue;
-      due.push(member);
+      const telegram = routes.telegram && (await findOutboxByDedup(db, ctx, member.userId, dedupKey)) === undefined;
+      const mailboxId =
+        routes.mailboxId !== null &&
+        (await findOutboxByDedup(db, ctx, member.userId, mailDedupKey(dedupKey))) === undefined
+          ? routes.mailboxId
+          : null;
+      if (telegram || mailboxId !== null) due.push({ member, telegram, mailboxId });
     }
     if (due.length > 0) {
       const { testMail } = run.deps;
@@ -65,19 +76,32 @@ async function detectWeeklyReport(run: OrgRun): Promise<void> {
         since: new Date(now.getTime() - ANSWERED_WAITING_MS),
         testMail,
       });
-      for (const member of due) {
-        await queue(
-          db,
-          ctx,
-          {
-            userId: member.userId,
-            locale: member.locale,
-            kind: "weekly_report",
-            dedupKey,
-            view: { week, timeZone, answeredWaiting },
-          },
-          now
-        );
+      for (const { member, telegram, mailboxId } of due) {
+        const view = { week, timeZone, answeredWaiting };
+        if (telegram) {
+          await queue(
+            db,
+            ctx,
+            { userId: member.userId, locale: member.locale, kind: "weekly_report", dedupKey, view },
+            now
+          );
+        }
+        if (mailboxId !== null) {
+          await queue(
+            db,
+            ctx,
+            {
+              userId: member.userId,
+              locale: member.locale,
+              kind: "weekly_report",
+              dedupKey: mailDedupKey(dedupKey),
+              view,
+              channel: "mail",
+              mailboxId,
+            },
+            now
+          );
+        }
       }
     }
     failedAt.delete(key);

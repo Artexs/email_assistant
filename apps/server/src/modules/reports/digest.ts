@@ -15,7 +15,9 @@ import {
   type DigestItem,
   type DigestMailbox,
   type DigestShown,
+  type DigestSpamReview,
   type MailboxMode,
+  type MembershipRole,
   type OutMessage,
   type UserLocale,
 } from "@ea/core";
@@ -23,11 +25,11 @@ import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
-import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
+import { countSpamMoves, listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames, listDelegateTags, listDelegationsDueBy } from "../delegation";
-import { endOfLocalDay, loadLoopBrief } from "../loops";
+import { delegableCategory, delegateButtonOn, draftsAvailable, endOfLocalDay, loadLoopBrief } from "../loops";
 import {
   attachmentFactsToShow,
   countWaiting,
@@ -43,6 +45,7 @@ import {
   listHandledRows,
   listTriagedBetween,
   listWaitingOnYou,
+  suspiciousReasonsOf,
   suspiciousReasonsToShow,
 } from "../triage";
 
@@ -54,6 +57,8 @@ export const DIGEST_MAX_PERIOD_MS = 7 * 24 * 3_600_000;
 export const FIRST_DIGEST_LOOKBACK_MS = 24 * 3_600_000;
 export const WAITING_WINDOW_MS = 7 * 24 * 3_600_000;
 const HANDLED_WINDOW_MS = 7 * 24 * 3_600_000;
+// The spam review line counts at most one day back, as far as the default range of the Activity page that it links to.
+export const SPAM_REVIEW_MAX_PERIOD_MS = 24 * 3_600_000;
 
 const modeSchema = z.enum(mailboxModes);
 
@@ -74,8 +79,13 @@ export interface DigestRequest {
   slot: { date: string; time: string; late: boolean } | null;
   now: Date;
   locale: UserLocale;
+  // The role of the member that gets the digest. Draft, Drop, Reopen and Delegate are owner only: a member gets no such button and no
+  // ⌛ line (its one button is Reopen), so the line stays for an owner (review 19 N3 and N4).
+  role: MembershipRole;
   testMail: TestMailRule;
   loops?: DigestLoops;
+  // The base URL of the panel (`WEB_BASE_URL`): the spam review line links to the Activity list with it. Unset: no link.
+  panelBase?: string;
 }
 
 // What the digest named of the loops: the queue transaction marks these (`markBriefShown`).
@@ -100,6 +110,30 @@ export async function digestPeriodStart(
 // The digest is the same for every member of the organization; only the period depends on the member.
 export async function buildDigestMessage(db: Db, ctx: TenantContext, request: DigestRequest): Promise<OutMessage> {
   return (await buildDigest(db, ctx, request)).message;
+}
+
+// The Activity list filtered to spam (the page reads `category` from its URL): a fixed URL, no mail data (F110 D15).
+export function spamReviewUrlOf(base: string | undefined): string | null {
+  return base === undefined ? null : `${base.replace(/\/+$/, "")}/activity?category=spam`;
+}
+
+// The spam review line: flag `spam_review_line`. Null: flag off. The renderer prints a line only for a count above 0.
+async function loadSpamReview(
+  db: Db,
+  ctx: TenantContext,
+  request: DigestRequest,
+  mailboxes: readonly DigestMailbox[]
+): Promise<DigestSpamReview | null> {
+  if (!(await isFeatureOn(db, ctx, "spam_review_line"))) return null;
+  const after = new Date(
+    Math.max(request.periodStart.getTime(), request.periodEnd.getTime() - SPAM_REVIEW_MAX_PERIOD_MS)
+  );
+  const { moved, wouldMove } = await countSpamMoves(db, ctx, {
+    after,
+    until: request.periodEnd,
+    shadowMailboxIds: mailboxes.filter((mailbox) => mailbox.mode === "shadow").map((mailbox) => mailbox.id),
+  });
+  return { moved, wouldMove, url: spamReviewUrlOf(request.panelBase) };
 }
 
 const BRIEF_REPLY_LINES = 5;
@@ -128,23 +162,26 @@ async function loadBrief(
     timeZone: string;
     mailboxes: readonly DigestMailbox[];
     items: readonly DigestItem[];
+    draftMailboxIds: ReadonlySet<string>;
   }
 ): Promise<DigestBrief | null> {
   if (!(await isFeatureOn(db, ctx, "open_loops"))) return null;
   const { loops } = request;
-  const { timeZone, mailboxes, items } = parts;
+  const { timeZone, mailboxes, items, draftMailboxIds } = parts;
   const mailboxIds = mailboxes.map((mailbox) => mailbox.id);
   const modes = new Map<string, MailboxMode | "none">(mailboxes.map((mailbox) => [mailbox.id, mailbox.mode]));
   const dayEnd = endOfLocalDay(request.now, timeZone);
   // The lines that this digest shows name loops: it locks them until its transaction ends (`briefLoopsOf`).
   const lock = loops.firstOfDay && loops.loopConsent;
   const [loopBrief, delegations] = await Promise.all([
-    loadLoopBrief(db, ctx, mailboxIds, { now: request.now, timeZone, modes, lock }),
+    loadLoopBrief(db, ctx, mailboxIds, { now: request.now, timeZone, modes, draftMailboxIds, lock }),
     listDelegationsDueBy(db, ctx, mailboxIds, { dueBefore: dayEnd, limit: BRIEF_DELEGATION_LINES }),
   ]);
   if (!loops.firstOfDay) {
     return {
       sections: null,
+      loopConsent: loops.loopConsent,
+      owner: request.role === "owner",
       urgentEmailIds: [],
       openLoops: { waiting: loopBrief.waiting.total + delegations.total, promised: loopBrief.promised.total },
     };
@@ -187,15 +224,19 @@ async function loadBrief(
         subject: row.subject,
         sentAt: row.sent_at,
         dueAt: row.due_at,
+        closable: row.status === "overdue",
       })),
       total: delegations.total,
     },
     promised: loopBrief.promised,
-    stale: loopBrief.stale,
+    // A ⌛ line has one button, Reopen, which only an owner may tap: a member's digest does not show it and does not mark it.
+    stale: request.role === "owner" ? loopBrief.stale : { rows: [], total: 0 },
   };
   const links = panelLinks(loops.panelBase);
   return {
     sections: loopSections(input),
+    loopConsent: loops.loopConsent,
+    owner: request.role === "owner",
     urgentEmailIds: urgent.map((item) => item.emailId),
     openLoops: null,
     ...(links === undefined ? {} : { links }),
@@ -209,8 +250,11 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
   const texts = textsFor(request.locale);
   const mailboxRows = await listMailboxes(db, ctx);
   const mailboxes: DigestMailbox[] = [];
+  // The mailboxes that plan a draft for a tap: the Draft and the Delegate buttons show for their mail only (F116 stage 19).
+  const draftMailboxIds = new Set<string>();
   for (const row of mailboxRows) {
     const settings = await getMailboxSettings(db, ctx, row.id);
+    if (draftsAvailable(settings)) draftMailboxIds.add(row.id);
     mailboxes.push({
       id: row.id,
       address: row.address,
@@ -266,6 +310,18 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
   const whyOn = await isFeatureOn(db, ctx, "why_lines");
   const delegateTags = whyOn ? await listDelegateTags(db, ctx, [...delegateIds]) : new Map<string, string[]>();
 
+  // F116 stage 19: the Delegate button needs the flag and an active delegate (organization), then a mailbox that drafts, a category
+  // of the action section and no suspicion (row).
+  const delegateOn = await delegateButtonOn(db, ctx);
+  // The reasons that `delegateMail` refuses (PD-063), flag or no flag: the button is hidden for the same mails.
+  const suspiciousAny = delegateOn
+    ? await suspiciousReasonsOf(
+        db,
+        ctx,
+        rows.map((row) => row.email_id)
+      )
+    : new Map<string, string[]>();
+
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
     category: row.category,
@@ -295,6 +351,13 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
     ),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
     suspicious: suspicious.get(row.email_id) ?? [],
+    ...(delegateOn &&
+    request.role === "owner" &&
+    draftMailboxIds.has(row.mailbox_id) &&
+    delegableCategory(row.category) &&
+    (suspiciousAny.get(row.email_id) ?? []).length === 0
+      ? { delegable: true }
+      : {}),
     ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
     hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
     ...(whyOn
@@ -323,6 +386,8 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
       )
     : null;
 
+  const spamReview = await loadSpamReview(db, ctx, request, mailboxes);
+
   const brief =
     request.loops === undefined
       ? null
@@ -334,6 +399,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
             timeZone: organization.timezone,
             mailboxes,
             items,
+            draftMailboxIds,
           }
         );
 
@@ -355,6 +421,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
       ...(handled === null
         ? {}
         : { handled: { ...handled, shadowOnly: mailboxes.every((mailbox) => mailbox.mode === "shadow") } }),
+      ...(spamReview === null ? {} : { spamReview }),
       ...(brief === null ? {} : { brief }),
     },
     texts

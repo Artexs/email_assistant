@@ -2,10 +2,12 @@ import { hasModelMark } from "@ea/core";
 
 import { type TenantContext } from "../../../platform/db";
 import { listActionsForEmails } from "../../actions";
+import { getMailboxSettings } from "../../config";
 import { listDelegateNames } from "../../delegation";
+import { delegateButtonOn, draftsAvailable } from "../../loops";
 import { attachmentFactsToShow, getJunkFolderPath, INBOX, isSyntheticMessageId } from "../../mail";
 import { isFeatureOn } from "../../tenancy";
-import { listTriagedBetween, suspiciousReasonsToShow } from "../../triage";
+import { listTriagedBetween, suspiciousReasonsOf, suspiciousReasonsToShow } from "../../triage";
 import { type LinkedChat } from "../port";
 
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
@@ -68,6 +70,23 @@ async function detectUrgent(
     }
   }
   const names = await listDelegateNames(db, ctx, [...delegateIds]);
+  // The Delegate button (F116 stage 19): the flag and an active delegate (once), then a mailbox that drafts (per mailbox) and no
+  // suspicion (per mail).
+  const delegateOn = await delegateButtonOn(db, ctx);
+  const drafting = new Map<string, boolean>();
+  // The reasons that `delegateMail` refuses (PD-063), flag or no flag: the button is hidden for the same mails.
+  const suspiciousAny = delegateOn
+    ? await suspiciousReasonsOf(
+        db,
+        ctx,
+        rows.map((row) => row.email_id)
+      )
+    : new Map<string, string[]>();
+  if (delegateOn) {
+    for (const mailboxId of new Set(rows.map((row) => row.mailbox_id))) {
+      drafting.set(mailboxId, draftsAvailable(await getMailboxSettings(db, ctx, mailboxId)));
+    }
+  }
   for (const member of members) {
     const since = sinceOf(member);
     for (const row of rows) {
@@ -117,6 +136,13 @@ async function detectUrgent(
               ...(attachmentFact === undefined ? {} : { attachments: attachmentFact }),
               // The same rule for the why line: no keys with the flag off. A rule result carries no model mark.
               ...(whyOn ? { confidence: hasModelMark(row.reason_code) ? row.confidence : null, rule: row.rule } : {}),
+              // The Delegate button: no field unless it shows, so a view without it renders as before.
+              ...(delegateOn &&
+              member.role === "owner" &&
+              drafting.get(row.mailbox_id) === true &&
+              (suspiciousAny.get(row.email_id) ?? []).length === 0
+                ? { delegable: true as const }
+                : {}),
               now,
               timeZone,
             },

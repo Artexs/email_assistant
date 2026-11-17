@@ -38,6 +38,7 @@ describe("the guards under the brief", () => {
     slot: { date: "2026-11-20", time: "08:00", late: false },
     now: new Date(EIGHT),
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
     ...over,
   });
@@ -49,7 +50,7 @@ describe("the guards under the brief", () => {
       const built = await buildDigest(trx, org.ctx, request({ loops: { firstOfDay: true, loopConsent: true } }));
       expect(built.message.text).not.toContain("NEEDS YOU TODAY");
       expect(built.message.text).not.toContain("anna@example.test");
-      expect(built.shown).toEqual({ surfaced: [], stale: [] });
+      expect(built.shown).toEqual({ surfaced: [], stale: [], lineOf: {} });
       const on = await ready(trx);
       await waitingLoop(trx, on);
       const shown = await buildDigest(trx, on.ctx, request({ loops: { firstOfDay: true, loopConsent: true } }));
@@ -159,30 +160,37 @@ describe("the local day of the member", () => {
       })
       .execute();
   }
-  const first = (trx: Transaction<DB>, org: BriefOrg, at: string) =>
-    isFirstDigestOfDay(trx, org.ctx, { userId: org.userId, timeZone: "Europe/Warsaw", now: new Date(at) });
+  // The day is the date of the slot (review 18 N5), not the clock time at which the job runs.
+  const first = (trx: Transaction<DB>, org: BriefOrg, slotDate: string) =>
+    isFirstDigestOfDay(trx, org.ctx, { userId: org.userId, slotDate });
 
-  test("the day is the day in the organization zone: 23:45 and 00:30 local are two days, in winter and summer time", async () => {
+  test("the day is the date of the slot: a 23:30 slot and the 00:30 slot of the next date are two days, in winter and summer time", async () => {
     await withRollback(db, async (trx) => {
       const org = await ready(trx);
-      // 2026-11-20 22:30Z is 23:30 in Warsaw (UTC+1).
       await queued(trx, org, "2026-11-20T23:30", "2026-11-20T22:30:00Z");
-      expect(await first(trx, org, "2026-11-20T22:45:00Z")).toBe(false);
-      expect(await first(trx, org, "2026-11-20T23:30:00Z")).toBe(true);
-      // Summer time (UTC+2): 2026-07-10 21:30Z is 23:30 local; 22:30Z is 00:30 of the next day.
+      expect(await first(trx, org, "2026-11-20")).toBe(false);
+      expect(await first(trx, org, "2026-11-21")).toBe(true);
       await queued(trx, org, "2026-07-10T23:30", "2026-07-10T21:30:00Z");
-      expect(await first(trx, org, "2026-07-10T21:45:00Z")).toBe(false);
-      expect(await first(trx, org, "2026-07-10T22:30:00Z")).toBe(true);
+      expect(await first(trx, org, "2026-07-10")).toBe(false);
+      expect(await first(trx, org, "2026-07-11")).toBe(true);
     });
   });
 
-  test("the day of the change back to winter time has 25 hours: a digest at 00:30 and one at 23:45 local are the same day", async () => {
+  test("a late run does not change the day: the 20:00 slot that runs at 01:00 of the next date is not the first digest of its day", async () => {
     await withRollback(db, async (trx) => {
       const org = await ready(trx);
-      // 2026-10-25: summer time ends at 03:00 local. 00:30 local = 2026-10-24T22:30Z; 23:45 local = 2026-10-25T22:45Z (UTC+1).
+      await queued(trx, org, "2026-11-20T08:00", "2026-11-20T07:00:00Z");
+      // The job runs at 2026-11-21 01:00 local: the slot key keeps the date of the slot, 2026-11-20.
+      expect(await first(trx, org, "2026-11-20")).toBe(false);
+    });
+  });
+
+  test("the day of the change back to winter time has 25 hours: a digest of the 00:30 slot and the 23:45 slot are the same day", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
       await queued(trx, org, "2026-10-25T00:30", "2026-10-24T22:30:00Z");
-      expect(await first(trx, org, "2026-10-25T22:45:00Z")).toBe(false);
-      expect(await first(trx, org, "2026-10-25T23:30:00Z")).toBe(true);
+      expect(await first(trx, org, "2026-10-25")).toBe(false);
+      expect(await first(trx, org, "2026-10-26")).toBe(true);
     });
   });
 
@@ -197,13 +205,13 @@ describe("the local day of the member", () => {
         .set({ status: "failed", error_code: "blocked" })
         .where("org_id", "=", org.ctx.orgId)
         .execute();
-      expect(await first(trx, org, "2026-11-20T15:00:00Z")).toBe(true);
+      expect(await first(trx, org, "2026-11-20")).toBe(true);
       await trx
         .updateTable("outbox")
         .set({ status: "sent", error_code: null, sent_at: new Date("2026-11-20T07:00:05Z") })
         .where("org_id", "=", org.ctx.orgId)
         .execute();
-      expect(await first(trx, org, "2026-11-20T15:00:00Z")).toBe(false);
+      expect(await first(trx, org, "2026-11-20")).toBe(false);
     });
   });
 });
