@@ -1,0 +1,63 @@
+---
+title: Jak system sortuje wiadomość
+description: Dowiedz się, dlaczego system wkłada każdą wiadomość do kategorii i dlaczego czasem mówi, że jest niepewny.
+source: explanation/how-a-mail-is-sorted
+sourceHash: "40a32959de9dfc35"
+capabilities:
+  - triage
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+System sortuje każdą nową wiadomość w stałej kolejności. Najpierw działają Twoje reguły. Potem działa AI.
+Ta strona wyjaśnia kroki i powody, dla których są takie. Listę kategorii znajdziesz w [Kategoriach](../../reference/categories/) (po angielsku).
+
+## Kroki
+
+1. **Sprawdzenie wieku.** System nie sortuje wiadomości starszych niż 7 dni. Pomija też wiadomości, które przyszły ponad 24 godziny przed wznowieniem Twojego konta po wstrzymaniu.
+2. **Twoje reguły nadawców.** System porównuje nadawcę z Twoją listą blokowanych, listą dozwolonych i listą VIP.
+3. **AI.** Jeśli reguły nie rozstrzygają, wiadomość czyta AI. Odpowiada kategorią, pewnością i krótkim powodem.
+4. **Sprawdzenie pewności.** Jeśli pewność jest za niska, kategoria staje się Niepewne.
+5. **Plan.** Stała tabela zamienia kategorię w plan: na przykład flagę, przeniesienie albo szkic.
+6. **Tryb.** Tryb i przełączniki skrzynki decydują, czy system wykonuje plan, czy tylko go zapisuje. Zobacz [Tryb podglądu i tryb asystenta](../shadow-and-assist/).
+
+## Dlaczego Twoje reguły są pierwsze
+
+Nadawca z listy blokowanych od razu dostaje kategorię Spam. System nie wywołuje AI dla tej wiadomości.
+Reguła to Twoja decyzja. AI nie może jej zmienić.
+
+Nadawca z listy dozwolonych nigdy nie dostaje kategorii Spam. AI nie może wybrać tej kategorii dla tego nadawcy.
+Nadawca VIP jest też na liście dozwolonych. System nigdy nie przenosi wiadomości VIP i nigdy nie oznacza jej jako przeczytanej.
+Jeśli nadawca jest na liście blokowanych i na liście dozwolonych, wygrywa lista dozwolonych.
+
+## Dlaczego system mówi, że jest niepewny
+
+AI podaje pewność przy każdej odpowiedzi. Każda kategoria ma próg. Początkowy próg to 0,7.
+Jeśli pewność jest poniżej progu, system nie ufa odpowiedzi. Ustawia kategorię Niepewne.
+
+System ustawia Niepewne także wtedy, gdy AI trzy razy zawodzi przy jednej wiadomości albo gdy AI odmawia przeczytania wiadomości z powodu bezpieczeństwa.
+Niepewna wiadomość zostaje w INBOX. Podsumowanie wymienia ją w sekcji `WYMAGA DZIAŁANIA`. Decydujesz Ty.
+Powód jest prosty. Błędne przeniesienie ukrywa wiadomość przed Tobą. Wiadomość, która zostaje w INBOX, kosztuje Cię krótkie spojrzenie.
+
+## Co AI może rozstrzygać, a czego nie
+
+AI zwraca tylko dane: kategorię, pewność, powód i kilka szczegółów. Niczego więcej nie rozstrzyga.
+
+- **Nigdy nie wybiera odbiorcy.** Przy zleceniu AI może wskazać wykonawcę z Twojej listy. System sprawdza, czy wykonawca jest na liście.
+  Id spoza listy liczy się jako brak wykonawcy. Odbiorcą szkicu jest adres zapisany dla wykonawcy. Przy pytaniu jest to adres nadawcy.
+- **Nigdy nie wybiera folderu.** Folder wynika z kategorii, przez stałą tabelę w kodzie.
+- **Nigdy nie dostaje niedozwolonej kategorii.** Kategoria Przekaż istnieje tylko wtedy, gdy masz wykonawcę. Nadawca z listy dozwolonych nigdy nie dostaje kategorii Spam.
+- **Jej tekst to dane.** System oznacza tekst wiadomości jako dane z zewnątrz, gdy wysyła wiadomość do AI.
+  AI zwraca stały format. Odpowiedź, która nie pasuje do formatu, jest błędem. System jej nie używa.
+
+Ten podział ma jeden cel. Tekst w wiadomości nie może decydować, dokąd trafia wiadomość ani kto dostaje wiadomość.
+Decyduje o tym stały kod i Twoje reguły.
+
+## Jak poprawiasz wynik
+
+Każdą posortowaną wiadomość możesz ocenić przyciskami `✅ n` i `✏️ n` w podsumowaniu albo na stronie **<UiText k="nav_activity" />**.
+Jeśli ręcznie przeniesiesz z powrotem do dawnego folderu wiadomość, którą przeniósł system, system to widzi i zapisuje, że sortowanie było błędne.
+System zapisuje też cofnięcie jako poprawkę.
+
+System nie sortuje wiadomości ponownie po tym, jak posortował ją raz.
+System używa Twoich ocen, aby sprawdzić, czy kategoria jest gotowa na automatyczne przenoszenie. Przeczytaj [Tryb podglądu i tryb asystenta](../shadow-and-assist/).

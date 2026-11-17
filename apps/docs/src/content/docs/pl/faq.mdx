@@ -1,0 +1,105 @@
+---
+title: FAQ
+description: Krótkie odpowiedzi na pytania, które nowi użytkownicy zadają w pierwszym tygodniu.
+source: faq
+sourceHash: "9cd0543e8fc286a9"
+capabilities:
+  - triage
+  - actions-and-undo
+  - drafts-and-send
+  - digest-and-notices
+  - sync
+---
+
+import UiText from "../../../components/UiText.astro";
+
+Każda odpowiedź jest krótka. Link na końcu odpowiedzi prowadzi do strony ze szczegółami.
+
+## Które usługi pocztowe działają?
+
+Asystent czyta skrzynkę przez IMAP z hasłem. Wysyła przez SMTP. Przy łączeniu skrzynki testuje oba logowania.
+Panel ma gotowe ustawienia dla Interii, Gmaila, Onetu, WP, o2 i iCloud. Gmail i iCloud wymagają hasła aplikacji.
+Dla innego dostawcy wybierz **<UiText k="preset_other" />** i wpisz serwery IMAP i SMTP.
+IMAP musi używać SSL/TLS. SMTP używa SSL/TLS albo STARTTLS. System zawsze sprawdza certyfikat serwera.
+System łączy się tylko z publicznymi serwerami poczty. Nazwa serwera, która wskazuje adres w sieci lokalnej lub prywatnej, jest odrzucana.
+Szczegóły: [Start](../start/).
+
+## Czy system kiedykolwiek wysyła wiadomość beze mnie?
+
+Nie. System wysyła wiadomość dopiero wtedy, gdy właściciel stuknie `📤 Wyślij` pod prośbą o zatwierdzenie w Telegramie.
+Bez stuknięcia nic nie jest wysyłane. Prośba wygasa po 48 godzinach.
+Dotyczy to zleceń, pytań do nadawcy i przypomnień.
+Szczegóły: [Start](../start/).
+
+## Co otrzymuje Telegram?
+
+Podsumowanie i komunikaty pokazują nadawcę, temat i krótki wiersz od AI. Nie zawierają treści wiadomości.
+Prośba o zatwierdzenie zawiera szkic i krótki cytat z oryginalnej wiadomości.
+Zanim połączysz Telegram, panel pokazuje pełny tekst pod **<UiText k="tg_consent_title" />**. Łączysz dopiero po zaznaczeniu pola.
+Telegram możesz odłączyć w każdej chwili. Podsumowania, komunikaty i zatwierdzenia wtedy ustają.
+Szczegóły: [Start](../start/).
+
+## Co się dzieje w trybie podglądu?
+
+System czyta i sortuje Twoje wiadomości i zgłasza, co by zrobił. Niczego nie zmienia w Twojej skrzynce i niczego nie wysyła.
+Nowa skrzynka zaczyna w trybie podglądu. Właściciel przełącza skrzynkę na tryb asystenta w **<UiText k="nav_settings" />**.
+W trybie asystenta system przenosi, oznacza i flaguje wiadomości według Twoich przełączników. Nic nie jest wysyłane bez Twojego zatwierdzenia.
+Szczegóły: [Start](../start/).
+
+## Jak cofnąć przeniesienie?
+
+Stuknij `↩️ n` pod wierszem wiadomości w podsumowaniu. Albo naciśnij **<UiText k="act_btn_undo" />** na stronie **<UiText k="nav_activity" />**.
+Cofnąć można w ciągu 7 dni. System przenosi wiadomość z powrotem i zapisuje cofnięcie jako ocenę kategorii.
+Możesz też sam przenieść wiadomość z powrotem. System to także widzi.
+Szczegóły: [Start](../start/).
+
+## Dlaczego wiadomość ma status Niepewne?
+
+AI nie było dość pewne kategorii. Początkowy próg to 0,7 dla każdej kategorii.
+Wiadomość jest też niepewna, gdy usługa AI trzy razy zawiedzie przy tej wiadomości.
+Niepewna wiadomość zostaje w INBOX. Podsumowanie wymienia ją w sekcji `WYMAGA DZIAŁANIA`.
+Stuknij `✏️ n` i wybierz właściwą kategorię.
+Szczegóły: [Start](../start/).
+
+## Kiedy dostaję wiadomości w Telegramie?
+
+Podsumowanie przychodzi o Twoich godzinach podsumowań. Domyślnie to 08:00 i 16:00 w strefie czasowej Twojej organizacji.
+Godziny możesz zmienić w **<UiText k="nav_settings" />**. Możesz ustawić do 6 godzin.
+Wyślij `/digest`, aby dostać podsumowanie od razu.
+Pilna wiadomość dostaje własny komunikat. Komunikaty czekają między 22:00 a 07:00 i przychodzą o 07:00. Podsumowania nie czekają.
+Szczegóły: [Start](../start/).
+
+## Czy mogę używać systemu po polsku?
+
+Tak. Ustaw język w **<UiText k="nav_settings" />**, w karcie Konto. Ustawienie dotyczy panelu, Telegrama i e-maili o koncie.
+Ta strona ma polskie wersje strony głównej, samouczka, poradników, FAQ i wyjaśnienia „Jak system sortuje wiadomość”. Opis działania i dokumentacja operatora są tylko po angielsku.
+Szczegóły: [Start](../start/).
+
+## Jak zatrzymać asystenta na jakiś czas?
+
+Właściciel naciska **<UiText k="mb_pause" />** na stronie **<UiText k="nav_mailboxes" />**. Właściciel może też wysłać botowi `/pause`.
+Polecenie wstrzymuje każdą skrzynkę organizacji. System wtedy nie czyta ani nie sortuje wiadomości i nie wysyła pilnych komunikatów. Podsumowania nadal przychodzą.
+Naciśnij **<UiText k="mb_resume" />** albo wyślij `/resume`, aby ruszyć ponownie. System czyta wtedy wiadomości, które przyszły w czasie wstrzymania. Nie sortuje wiadomości starszych niż 7 dni.
+Szczegóły: [Start](../start/).
+
+## Co się dzieje, gdy konto jest wstrzymane?
+
+Twój operator może wstrzymać całe konto. System wtedy nie czyta wiadomości, nie sortuje ich i nie wysyła podsumowań ani komunikatów.
+Telegram odpowiada `⏸ To konto jest wstrzymane.` na każde polecenie oprócz `/help`.
+Panel pokazuje baner. Pokazuje Twoje dane i odrzuca zmiany. Baner mówi:
+
+> <UiText k="paused_banner_no_contact" />
+
+Gdy operator wznowi konto, system pomija wiadomości, które przyszły ponad 24 godziny przed wznowieniem.
+Podsumowanie liczy je w wierszu `📭 Nieprzetworzone (z czasu wstrzymania konta)`.
+Szczegóły: [Start](../start/).
+
+## Dlaczego skrzynka pokazuje Serwer niedozwolony albo Błąd logowania?
+
+**<UiText k="status_host_blocked" />** oznacza, że nazwa serwera poczty wskazuje adres w sieci prywatnej lub lokalnej.
+System sprawdza ponownie przy każdej synchronizacji i sam uruchamia skrzynkę, gdy nazwa jest poprawna.
+**<UiText k="status_auth_error" />** oznacza, że serwer poczty odrzucił logowanie. Panel mówi:
+
+> <UiText k="mb_auth_error_hint" />
+
+Szczegóły: [Start](../start/).

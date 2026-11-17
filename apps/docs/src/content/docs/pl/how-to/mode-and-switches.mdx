@@ -1,0 +1,53 @@
+---
+title: Przełącz z trybu podglądu na tryb asystenta
+description: Pozwól asystentowi działać na skrzynce, wybierz przełączniki i zrozum, dlaczego automatyczne przenoszenie może być zablokowane.
+source: how-to/mode-and-switches
+sourceHash: "ca67281eab6ccb4d"
+capabilities:
+  - actions-and-undo
+  - triage
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Nowa skrzynka zaczyna w trybie podglądu. Asystent czyta i sortuje, zgłasza, co by zrobił, i niczego nie zmienia.
+W trybie asystenta działa na skrzynce według przełączników, które wybierzesz. Nadal niczego nie wysyła bez Twojego zatwierdzenia.
+
+## Zanim zaczniesz
+
+- Tryb i przełączniki może zmienić tylko właściciel organizacji. Inni członkowie je widzą.
+- Najpierw pozwól asystentowi działać w trybie podglądu przez kilka dni. Sprawdź raporty w Aktywności i w podsumowaniu.
+
+## Przełącz na tryb asystenta
+
+1. Otwórz stronę **<UiText k="nav_settings" />**. Wybierz skrzynkę z listy na górze.
+2. W karcie **<UiText k="mode_title" />** naciśnij **<UiText k="mode_to_assist" />**.
+3. W oknie **<UiText k="assist_title" />** wybierz jeden przycisk:
+   - **<UiText k="assist_usual" />**: włączają się przełączniki przenoszenia, oznaczania jako przeczytane i flagowania. Przełącznik dla niepewnych wiadomości się wyłącza. Przełącznik szkiców zostaje, jak jest.
+   - **<UiText k="assist_keep" />**: przełączniki zostają, jak są.
+
+Aby wrócić, naciśnij **<UiText k="mode_to_shadow" />**. Działania, które czekają na wykonanie, wygasają.
+
+## Przełączniki
+
+W nowej skrzynce wszystkie przełączniki są wyłączone. Każdy jest w tej samej karcie.
+
+- **<UiText k="switch_move" />**
+- **<UiText k="switch_mark_read" />**
+- **<UiText k="switch_flag" />**
+- **<UiText k="switch_create_draft" />**
+- **<UiText k="switch_move_unsure" />**
+
+System nigdy nie przenosi wiadomości nadawcy VIP i nigdy nie oznacza ich jako przeczytanych.
+Plakietki w oknie pokazują, na co pozwala serwer. Na przykład plakietka **<UiText k="badge_actions_off" />** oznacza, że serwer wstrzymuje wszystkie zmiany w skrzynce. Twoje przełączniki nie mają wtedy skutku, dopóki operator nie zmieni serwera.
+
+## Dlaczego automatyczne przenoszenie może być zablokowane
+
+Przełącznik kategorii w karcie **<UiText k="cat_title" />** to jej automat. Przeniesienie albo oznaczenie jako przeczytane wymaga głównego przełącznika i automatu dla kategorii.
+Kategoria przechodzi sprawdzenie, gdy 98% lub więcej jej wiadomości jest trafnych. Sprawdzenie liczy co najmniej 30 ocenionych wiadomości tej skrzynki. Oceniaj wiadomości jak w [Potwierdź lub popraw kategorię](../correct-a-category/).
+Pod każdym przełącznikiem panel pokazuje, jak daleko kategoria jest od progu. Właściciel może od razu włączyć automat, gdy kategoria przeszła sprawdzenie.
+Jeśli nie przeszła, panel pyta **<UiText k="anyway_title" />** Naciśnij **<UiText k="anyway_submit" />** tylko wtedy, gdy godzisz się na ryzyko. Każde przeniesienie możesz cofnąć przez 7 dni. Zobacz [Cofnij to, co asystent zrobił z wiadomością](../undo-a-move/).
+
+## Co dzieje się dalej
+
+W trybie asystenta asystent przenosi, oznacza i flaguje nowe wiadomości według przełączników. Wiadomości, które posortował w trybie podglądu, zostają tam, gdzie są.
