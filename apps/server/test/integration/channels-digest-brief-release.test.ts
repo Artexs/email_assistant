@@ -3,7 +3,11 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { sentSwitchHooks } from "../../src/composition";
-import { cancelPendingOutboxOfOrg, createOutboxSender } from "../../src/modules/channels";
+import {
+  cancelPendingOutboxOfOrg,
+  createOutboxSender,
+  releaseMarksOfUndeliveredDigests,
+} from "../../src/modules/channels";
 import { createFakeChannel } from "../../src/modules/channels/fake/channel";
 import { setSentSync } from "../../src/modules/mail";
 import { eraseManyMailOutbox } from "../../src/modules/privacy";
@@ -134,6 +138,24 @@ describe("N1 the paths that blank or delete a pending digest give back the marks
       await createOutboxSender({ db: trx, channel: createFakeChannel(), now: () => new Date(EIGHT) }).run();
       expect(await blankDigestsNamingLoops(trx, org.ctx.orgId, [erased])).toEqual({ blanked: 1, dropped: 0 });
       expect((await loopRow(trx, kept)).surfaced_at).toEqual(new Date(EIGHT));
+    });
+  });
+
+  test("a digest that was delivered (sent) keeps the marks of its loops: the release reads pending and sending rows only", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const loop = await waitingLoop(trx, org);
+      await runDigests(trx, EIGHT);
+      await createOutboxSender({ db: trx, channel: createFakeChannel(), now: () => new Date(EIGHT) }).run();
+      const row = await trx
+        .selectFrom("outbox")
+        .select("status")
+        .where("org_id", "=", org.ctx.orgId)
+        .executeTakeFirstOrThrow();
+      expect(row.status).toBe("sent");
+      await releaseMarksOfUndeliveredDigests(trx, org.ctx, { named: [loop] });
+      await releaseMarksOfUndeliveredDigests(trx, org.ctx, { since: new Date("2026-11-01T00:00:00Z") });
+      expect((await loopRow(trx, loop)).surfaced_at).toEqual(new Date(EIGHT));
     });
   });
 
