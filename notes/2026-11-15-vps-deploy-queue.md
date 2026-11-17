@@ -52,3 +52,8 @@ Rule: back up first, tag `ea-server:pre-<ticket>`, deploy a CI-checked pinned co
 ## F116 stage 19 (Telegram taps): rollback
 
 - The digest view gains the key `lineOf` and the urgent view the key `delegable` (strict schemas). The code before stage 19 refuses a pending row with either key: the sender ends it `failed` / `bad_view`. On a rollback drain the outbox first (let the pending digests and urgent notices send), or accept the loss of one slot. Rows that were sent are not affected (their text is stored). Stage 18's `loopIds` has the same shape. No migration.
+
+## Release v0.2.1 (2026-11-17)
+
+- CHANGELOG entries written, `Release v0.2.1` = `a1d7b054`, CI green on it, tag `v0.2.1` pushed (19:5x CET). Contents: Sent-pass 60 s budget (stage 13a), legal page drafts, Polish docs pages, plus flagged-off code of F107, F110, F112, F115, F116. Migration `20261117120001_history_model_failing.sql` (contract v0.1.0, deployed). Master later got F115 stage 03's migration `20261117130001`; it is NOT in v0.2.1 (not landed yet).
+- NOT DEPLOYED: `ssh home_vm` fails with "No route to host" (192.168.1.198, ping 100 % loss) at ~20:00 CET. Retry; run `nohup bash -c "deploy/release.sh v0.2.1; echo RELEASE_RC=\$?" > /tmp/release-v0.2.1.log 2>&1 &` in `~/email_assistant`; the script backs up and keeps `previous` (v0.2.0) as the rollback target. Then the 30-minute watch (`docs/release-checklist.md` step 10). `sent_sync` stays off until the owner says so.
