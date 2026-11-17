@@ -9,7 +9,7 @@ import { pl } from "../../src/i18n/pl";
 import { whatsNew } from "../../src/lib/whats-new";
 import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, nextAddress, signIn } from "../helpers";
-import { E2E_BASE_URL, e2eEnv, repoRoot } from "../env";
+import { e2eEnv, repoRoot } from "../env";
 import { readSeed } from "../seed";
 
 // F112 stage 15: the Help link and the "What is new" card of the real panel follow the flag `docs_links`.
@@ -36,25 +36,22 @@ test.afterAll(() => setFlag(false));
 
 let errors: string[] = [];
 
-// The API wants the `origin` of the panel on a write.
-async function setLocale(page: Page, locale: "en" | "pl"): Promise<void> {
-  const answer = await page.request.patch("/api/me/locale", { headers: { origin: E2E_BASE_URL }, data: { locale } });
-  expect(answer.ok()).toBe(true);
-}
-
 test.beforeEach(async ({ context, page }, testInfo) => {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": nextAddress(testInfo.project.name === "mobile" ? 40 : 140) });
   errors = await cspErrors(page);
-  const { owner } = readSeed();
-  await signIn(page, owner.email, owner.password);
-  await expect(page).toHaveURL(/\/onboarding$/);
 });
 
-test.afterEach(async ({ page }) => {
-  // An English browser shows English for en and for null alike (the language spec does the same).
-  await setLocale(page, "en");
+test.afterEach(() => {
   expect(errors).toEqual([]);
 });
+
+// The owner keeps `users.locale` null in every test: the panel language comes from the browser (the Polish test sets the browser
+// language), so `polish.spec.ts`, which runs after this file, still finds an owner with no stored language.
+async function signInOwner(page: Page, texts: typeof en | typeof pl = en): Promise<void> {
+  const { owner } = readSeed();
+  await signIn(page, owner.email, owner.password, texts);
+  await expect(page).toHaveURL(/\/onboarding$/);
+}
 
 // The link is in the sidebar on a desktop and in the menu sheet on a phone.
 async function openMenuOnPhone(page: Page, project: string, menuLabel: string = en.menu_open): Promise<void> {
@@ -71,6 +68,7 @@ async function helpLinkOf(page: Page, project: string, name: string, menuLabel: 
 const realCard = () => whatsNew(panelReleases(readFileSync(`${repoRoot}/CHANGELOG.md`, "utf8")), null);
 
 test("T5 flag off: no Help link and no card", async ({ page }, testInfo) => {
+  await signInOwner(page);
   await page.goto("/settings");
   await expect(page.getByText(en.acct_title, { exact: true })).toBeVisible();
   expect(await page.getByRole("link", { name: en.help_link }).count()).toBe(0);
@@ -84,23 +82,32 @@ test("T5 flag off: no Help link and no card", async ({ page }, testInfo) => {
 
 test("T6 flag on: the Help link goes to the docs of the panel language, in a new tab", async ({ page }, testInfo) => {
   setFlag(true);
+  await signInOwner(page);
   await page.goto("/settings");
   const link = await helpLinkOf(page, testInfo.project.name, en.help_link);
   await expect(link).toBeVisible();
   await expect(link).toHaveAttribute("href", DOCS);
   await expect(link).toHaveAttribute("target", "_blank");
   await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+});
 
-  await setLocale(page, "pl");
-  await page.reload();
-  const plLink = await helpLinkOf(page, testInfo.project.name, pl.help_link, pl.menu_open);
-  await expect(plLink).toHaveAttribute("href", `${DOCS}pl/`);
+test.describe("Polish browser", () => {
+  test.use({ locale: "pl-PL" });
+
+  test("T6 flag on, Polish panel: the Help link goes to the Polish docs", async ({ page }, testInfo) => {
+    setFlag(true);
+    await signInOwner(page, pl);
+    await page.goto("/settings");
+    const link = await helpLinkOf(page, testInfo.project.name, pl.help_link, pl.menu_open);
+    await expect(link).toHaveAttribute("href", `${DOCS}pl/`);
+  });
 });
 
 test("T7 flag on, empty storage: the card state equals whatsNew(real changelog, null); Close hides it for good", async ({
   page,
 }) => {
   setFlag(true);
+  await signInOwner(page);
   await page.goto("/settings");
   await expect(page.getByText(en.acct_title, { exact: true })).toBeVisible();
   const { show, newest } = realCard();
