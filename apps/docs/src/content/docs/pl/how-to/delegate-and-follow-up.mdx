@@ -1,0 +1,49 @@
+---
+title: Przekaż zadanie i dopilnuj odpowiedzi
+description: Przekaż zadanie z wiadomości wykonawcy, zatwierdź przypomnienia i zamknij zlecenie.
+source: how-to/delegate-and-follow-up
+sourceHash: "9814eca975defcea"
+capabilities:
+  - delegation
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Zlecenie to zadanie z jednej z Twoich wiadomości, które przekazujesz wykonawcy. System pisze do wykonawcy i śledzi odpowiedź.
+Ten poradnik pokazuje całe życie zlecenia.
+
+## Kim są wykonawcy
+
+Wykonawcy to osoby z listy. Każdy ma imię i nazwisko, adres e-mail i tagi tematów. Listę prowadzi dziś Twój operator. W panelu nie możesz dodać wykonawcy.
+AI może uznać wiadomość za `Przekaż` tylko wtedy, gdy lista ma aktywnego wykonawcę. Adres wykonawcy nigdy nie jest jedną z Twoich skrzynek.
+
+## Zanim zaczniesz
+
+- Jesteś właścicielem organizacji. Tylko właściciel może zatwierdzić wysyłkę.
+- Skrzynka jest w trybie asystenta, a przełącznik **<UiText k="switch_create_draft" />** jest włączony. Zobacz [Tryb i przełączniki](../mode-and-switches/).
+- Twój czat w Telegramie jest połączony.
+
+## Kroki
+
+1. Przychodzi wiadomość. AI sortuje ją jako `Przekaż`, wybiera jednego wykonawcę z listy i pisze krótkie zadanie. Podsumowanie pokazuje wiadomość w sekcji `WYMAGA DZIAŁANIA`.
+2. System zapisuje szkic w Twoim folderze Drafts. Bot wysyła `📤 Wysłać? Zlecenie: …` do każdego właściciela. Zatwierdź lub odrzuć je jak w [Zatwierdź lub odrzuć szkic](../approve-a-send/).
+3. Po wysyłce zlecenie czeka na odpowiedź. Termin to data, którą podaje wiadomość, o 17:00 w strefie czasowej Twojej organizacji. Jeśli wiadomość nie podaje daty, termin wypada 3 dni po wysyłce.
+4. Wykonawca odpowiada z tego samego adresu, w tym samym wątku. Odpowiedź z innego adresu się nie liczy.
+5. Każdy połączony członek dostaje wiadomość `📩 Odpowiedź od: imię i nazwisko · temat` i przycisk `✅ Gotowe`. Stuknij `✅ Gotowe`, gdy zadanie jest zamknięte. Wiadomość mówi wtedy `✅ Gotowe HH:MM.` Może to stuknąć każdy połączony członek.
+
+## Gdy odpowiedź nie przychodzi
+
+Po terminie system planuje przypomnienie. Sprawdza raz dziennie, od 07:30 w strefie czasowej Twojej organizacji.
+Bot wysyła jedną wiadomość, na przykład `📤 Wysłać 2 przypomnienia?`. Wymienia każdego wykonawcę, temat i zadanie.
+
+- Stuknij `📤 Wyślij wszystkie`, aby wysłać przypomnienia, które pokazuje wiadomość.
+- Stuknij `✖️ Pomiń wszystkie`, aby nie wysłać żadnego. Zlecenie zostaje otwarte. System może zaplanować nowe przypomnienie po 3 dniach.
+
+Te przyciski może stuknąć tylko właściciel. Przypomnienie używa stałego tekstu z zadaniem. Niczego nie cytuje.
+System wysyła najwyżej 2 przypomnienia dla jednego zlecenia, co 3 dni. Jedna wiadomość zawiera do 10 przypomnień.
+
+## Co dzieje się dalej
+
+Podsumowanie pokazuje wiersz `👥 Zlecenia: n czeka na odpowiedź, n po terminie`, dopóki są otwarte zlecenia.
+Po wysłaniu drugiego przypomnienia system nie planuje następnych. Zlecenie zostaje po terminie. Twój operator może je zamknąć.
+Jeśli wysyłka zlecenia zostanie odrzucona, nie uda się albo wygaśnie, zlecenie jest anulowane. Mówi o tym wiadomość z wynikiem. Nieudane przypomnienie go nie anuluje.

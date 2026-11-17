@@ -50,16 +50,22 @@ function* pageFiles(dir: string): Generator<string> {
   }
 }
 
+// The page id of a file: a folder page `x/index.mdx` has the id `x`, as in the Astro collection. The home page keeps `pl/index`.
 function pageId(contentDir: string, file: string): string {
-  return relative(contentDir, file)
+  const id = relative(contentDir, file)
     .replaceAll("\\", "/")
     .replace(/\.mdx?$/, "");
+  if (id === "index" || id === "pl/index" || !id.endsWith("/index")) return id;
+  return id.slice(0, -"/index".length);
 }
 
+// The English file of an id: `x.mdx`, or `x/index.mdx` for a folder page such as `start`.
 function sourceFile(contentDir: string, id: string): string | null {
-  for (const extension of [".mdx", ".md"]) {
-    const file = join(contentDir, `${id}${extension}`);
-    if (existsSync(file)) return file;
+  for (const name of [id, `${id}/index`]) {
+    for (const extension of [".mdx", ".md"]) {
+      const file = join(contentDir, `${name}${extension}`);
+      if (existsSync(file)) return file;
+    }
   }
   return null;
 }
@@ -138,7 +144,12 @@ export function stampFile(file: string, contentDir: string): string {
 
 export const STALE_USAGE = "usage: bun run docs:stale [--strict] [--stamp <pl file>]";
 
-export function runStale(args: readonly string[], contentDir: string, out: CliOutput): number {
+export function runStale(
+  args: readonly string[],
+  contentDir: string,
+  out: CliOutput,
+  polishSet: readonly string[] = POLISH_SET
+): number {
   let strict = false;
   let stamp: string | null = null;
   for (let i = 0; i < args.length; i += 1) {
@@ -161,7 +172,7 @@ export function runStale(args: readonly string[], contentDir: string, out: CliOu
       return EXIT_FINDINGS;
     }
   }
-  const result = checkStale({ contentDir, strict });
+  const result = checkStale({ contentDir, strict, polishSet });
   for (const line of result.stale) out.print(line);
   for (const error of result.errors) out.fail(error);
   out.print(`stale: ${result.stale.length}`);

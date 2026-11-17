@@ -1,0 +1,43 @@
+---
+title: Zatwierdź lub odrzuć szkic
+description: Zatwierdź lub odrzuć szkic, który czeka na Ciebie w Telegramie, i obsłuż nieudaną wysyłkę.
+source: how-to/approve-a-send
+sourceHash: "655478b5cade5bac"
+capabilities:
+  - drafts-and-send
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Użyj tego poradnika, gdy bot wyśle Ci wiadomość, która zaczyna się od `📤 Wysłać?`. System niczego nie wysyła, dopóki nie stukniesz `📤 Wyślij`.
+
+## Zanim zaczniesz
+
+- Jesteś właścicielem organizacji. Tylko właściciel może zatwierdzić, odrzucić lub wysłać ponownie. Jeśli inny członek stuknie przycisk, bot odpowiada `Tylko właściciel może zatwierdzić lub odrzucić wysyłkę.`
+- Skrzynka jest w trybie asystenta, a przełącznik **<UiText k="switch_create_draft" />** jest włączony. W trybie podglądu system nie tworzy szkiców. Zobacz [Tryb i przełączniki](../mode-and-switches/).
+- Twój czat w Telegramie jest połączony.
+
+## Kroki
+
+1. Otwórz wiadomość. Jej pierwszy wiersz to `📤 Wysłać? Zlecenie: …`, `📤 Wysłać? Pytanie do nadawcy: …` albo `📤 Wysłać? Przypomnienie: …`.
+2. Przeczytaj wiadomość. Pokazuje nadawcę oryginalnej wiadomości, temat, tekst szkicu pod `Szkic:` i cytat pod `Cytowany oryginał:`. Cytat ma najwyżej 1500 znaków. Zlecenie pokazuje też `Termin:`, gdy wiadomość podaje datę. Wiersz nadawcy mówi `⚠️ nadawca zewnętrzny` dla nadawcy, którego system nie zna. Znani nadawcy to Twoje skrzynki, wykonawcy, nadawcy z listy dozwolonych i nadawcy VIP.
+3. Stuknij `📤 Wyślij`, aby zatwierdzić szkic. Stuknij `✖️ Odrzuć`, aby go odrzucić.
+
+Ten sam szkic jest w folderze Drafts Twojej skrzynki. System wysyła zatwierdzony tekst. Nie wysyłaj szkicu z programu pocztowego. Zmiany, które tam zrobisz w szkicu, nie liczą się.
+
+## Co dzieje się dalej
+
+Po `📤 Wyślij` bot odpowiada `⏳ Wysyłanie w ciągu minuty.` i dopisuje do prośby `⏳ Zatwierdzono HH:MM, trwa wysyłanie.` Potem przychodzi nowa wiadomość: `✅ Wysłano do: …`. System zapisuje też kopię w folderze Sent. Jeśli nie może, wiadomość mówi `Brak kopii w folderze Sent`.
+Po `✖️ Odrzuć` prośba mówi `✖️ Odrzucono HH:MM.` System usuwa szkic z folderu Drafts, gdy serwer poczty na to pozwala.
+Bez stuknięcia prośba wygasa 48 godzin po tym, jak przyszła. Bot wysyła `⌛ Nie wysłano: zatwierdzenie wygasło (48 h)`.
+
+## Warto wiedzieć
+
+- Prośba, która jest gotowa między 22:00 a 07:00, przychodzi o 07:00.
+- Jeśli wysyłka nie może teraz wyjść, prośba mówi dlaczego. Na przykład skrzynka jest wstrzymana albo jej logowanie nie działa. Prośba zachowuje `✖️ Odrzuć`. Zatwierdzenie wygasa 48 godzin po Twoim stuknięciu.
+
+## Gdy wysyłka się nie uda
+
+- `❌ Nie wysłano do: …` z przyciskiem `📤 Wyślij ponownie`: stuknij go. To nowe zatwierdzenie tego samego szkicu. Możesz go stuknąć jeden raz dla każdej nieudanej wiadomości.
+- `❌ Nie wysłano do: …` bez przycisku: serwer poczty odrzucił adres lub wiadomość. Poproś operatora o pomoc.
+- `⚠️ Nie wiadomo, czy wiadomość wyszła do: …`: połączenie przerwało się po tym, jak system wysłał treść. Najpierw sprawdź folder Sent albo zapytaj odbiorcę. Jeśli wiadomość wyszła, stuknij `✅ Wysłano`. System traktuje wtedy zlecenie jako wysłane i nie wysyła nowej wiadomości. Jeśli wiadomość nie wyszła, stuknij `📤 Wyślij ponownie`. Zlecenie pokazuje oba przyciski. Pytanie lub przypomnienie pokazuje tylko `📤 Wyślij ponownie`.
