@@ -59,3 +59,9 @@ export async function loopConsentOf(db: DbOrTrx, ctx: TenantContext, userIds: re
     [...versions].filter(([, version]) => consentCovers(version, OPEN_LOOPS_CONSENT_SINCE)).map(([id]) => id)
   );
 }
+
+// The own consent version of one user, for the panel (`GET /channels/telegram`, F116 stage 22): the panel shows the "New Telegram
+// terms" block when it is older than the current text. It decides nothing about what Telegram receives: that is `loopConsentOf`.
+export async function ownConsentVersion(db: DbOrTrx, ctx: TenantContext, userId: string): Promise<string | null> {
+  return (await consentVersionsOf(db, ctx, [userId])).get(userId) ?? null;
+}

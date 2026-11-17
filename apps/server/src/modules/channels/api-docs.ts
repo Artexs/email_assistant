@@ -36,7 +36,8 @@ export const channelDocs = {
   }),
   getTelegram: apiDoc({
     operationId: "getTelegram",
-    summary: "Whether Telegram is on, and whether the user linked a chat.",
+    summary:
+      "Whether Telegram is on, and whether the user linked a chat. `consentVersion` is the consent of the user that an unlink did not withdraw (null: none, or not linked).",
     tags,
     ok: { status: 200, schema: telegramStateSchema },
   }),
