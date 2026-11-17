@@ -926,4 +926,32 @@ describe("the long sequence: 12 digits or more that nobody typed (owner answer, 
     expect(failuresOf(say("**1234 5678 9012**"))).toEqual(["account_number"]);
     expect(failuresOf(say("1234\u{FE0F} 5678\u{FE0F} 9012"))).toContain("account_number");
   });
+
+  test("one comma between runs does not join them; the longest sequence of the body counts, not the last", () => {
+    expect(failuresOf(say("konto 1234,5678,9012"))).toEqual([]);
+    expect(failuresOf(say("konto 123456789012 oraz 12"))).toEqual(["account_number"]);
+    expect(failuresOf(say("konto 12 oraz 123456789012 oraz 12"))).toEqual(["account_number"]);
+  });
+
+  test("a part of a typed number is typed, at the start, in the middle or at the end", () => {
+    const typed = ["konto 1234 5678 9012 3456"];
+    expect(failuresOf(say("numer 1234 5678 9012"), typed)).toEqual([]);
+    expect(failuresOf(say("numer 5678 9012 3456"), typed)).toEqual([]);
+    expect(failuresOf(say("numer 2345 6789 0123"), typed)).toEqual([]);
+    expect(failuresOf(say("numer 2345 6789 0124"), typed)).toEqual(["account_number"]);
+  });
+
+  test("a mail number: a dot or a dash joins its groups; two characters or a longer number do not", () => {
+    for (const mail of ["nr 1234.5678.9012", "nr 1234-5678-9012", "nr 1234 5678 9012"]) {
+      expect({ mail, failures: failuresOf(say("sprawa 1234 5678 9012"), [], [mail]) }).toEqual({ mail, failures: [] });
+    }
+    expect(failuresOf(say("sprawa 1234 5678 9012"), [], ["nr 1234 - 5678 - 9012"])).toEqual(["account_number"]);
+    expect(failuresOf(say("sprawa 1234 5678 9012"), [], ["nr 1234, 5678, 9012"])).toEqual(["account_number"]);
+    // A part of a mail number of 27 digits or more is not known.
+    const long = ["nr 1234 5678 9012 3456 7890 1234 5678"];
+    expect(failuresOf(say("sprawa 1234 5678 9012 3456"), [], long)).toEqual(["account_number"]);
+    // The groups of a mail number joined by a dot: the last group is added to the number, not put in its place.
+    expect(failuresOf(say("sprawa 1234 5678 9012"), [], ["nr 1234.5678.9012"])).toEqual([]);
+    expect(failuresOf(say("sprawa 5678 9012"), [], ["nr 1234.5678.9012"])).toEqual([]);
+  });
 });
