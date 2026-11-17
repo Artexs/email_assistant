@@ -191,7 +191,7 @@ describe("POST /api/trust/:mailboxId/recommended", () => {
     expect(await stateOf()).toEqual(after);
   });
 
-  test("7: a member gets 403 owner_only and nothing changes; so does the first read of a bad id", async () => {
+  test("7: a member gets 403 owner_only, also with a bad id, and nothing changes", async () => {
     await addDoneCheck(db, box.org.orgId, box.mailboxId, { info: "pass" });
     const before = await stateOf();
     for (const id of [box.mailboxId, "not-a-uuid"]) {

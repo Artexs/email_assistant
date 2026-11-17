@@ -105,12 +105,12 @@ export async function trustViewFor(
     const gate = inputs.gates[category];
     const auto = effectiveAutoFor(view.categoryPolicy, category, settings.gate.runningKey);
     const trip = inputs.trips.get(category);
-    const moving = (movingCategories as readonly string[]).includes(category);
     categories[category] = {
       auto,
       grantBy: auto ? (view.categoryPolicy[category]?.grant?.by ?? null) : null,
       global: inputs.globals[category],
-      history: moving ? (inputs.history[category as MovingCategory] ?? null) : null,
+      // Only the moving categories have a history result; the others read `undefined`.
+      history: inputs.history[category] ?? null,
       trip: { tripped: trip?.tripped ?? false, reason: trip?.reason ?? null, at: iso(trip?.at ?? null) },
       realLabels: { kept: gate.kept, precision: gate.precision, decision: gate.decision },
       evidence: judgeCategory(inputs, category),
