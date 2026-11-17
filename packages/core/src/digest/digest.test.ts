@@ -636,14 +636,16 @@ describe("spam review line (F110 stage 17)", () => {
     expect(both).toContain(`🗑 2 would have gone to spam · review: ${url}`);
   });
 
-  test("6. the Polish texts", () => {
-    expect(lines(input({ spamReview: spam() }), textTables.pl)).toContain(`🗑 Do spamu trafiło: 3 · sprawdź: ${url}`);
-    expect(lines(input({ spamReview: spam({ url: null }) }), textTables.pl)).toContain(
-      "🗑 Do spamu trafiło: 3 · sprawdź w panelu"
-    );
-    expect(lines(input({ spamReview: spam({ moved: 0, wouldMove: 2 }) }), textTables.pl)).toContain(
-      `🗑 Do spamu trafiłoby: 2 · sprawdź: ${url}`
-    );
+  test("6. the Polish texts follow the number", () => {
+    const pl = (extra: Partial<NonNullable<DigestInput["spamReview"]>>): string[] =>
+      lines(input({ spamReview: spam(extra) }), textTables.pl);
+    expect(pl({ moved: 1 })).toContain(`🗑 1 wiadomość trafiła do spamu · sprawdź: ${url}`);
+    expect(pl({ moved: 3 })).toContain(`🗑 3 wiadomości trafiły do spamu · sprawdź: ${url}`);
+    expect(pl({ moved: 5 })).toContain(`🗑 5 wiadomości trafiło do spamu · sprawdź: ${url}`);
+    expect(pl({ moved: 3, url: null })).toContain("🗑 3 wiadomości trafiły do spamu · sprawdź w panelu");
+    expect(pl({ moved: 0, wouldMove: 1 })).toContain(`🗑 1 wiadomość trafiłaby do spamu · sprawdź: ${url}`);
+    expect(pl({ moved: 0, wouldMove: 2 })).toContain(`🗑 2 wiadomości trafiłyby do spamu · sprawdź: ${url}`);
+    expect(pl({ moved: 0, wouldMove: 7 })).toContain(`🗑 7 wiadomości trafiłoby do spamu · sprawdź: ${url}`);
   });
 
   test("the line is a footer line: after the shadow line, before the handled share", () => {

@@ -147,7 +147,9 @@ describe("digest spam review line (F110 stage 17)", () => {
       const a = await orgOn(trx, "assist");
       await moveMail(trx, a.ctx, a.mailboxId, at(-2 * HOUR));
       const text = (await buildDigestMessage(trx, a.ctx, { ...request, locale: "pl", panelBase: BASE })).text;
-      expect(spamLines(text)).toEqual(["🗑 Do spamu trafiło: 1 · sprawdź: https://panel.test/activity?category=spam"]);
+      expect(spamLines(text)).toEqual([
+        "🗑 1 wiadomość trafiła do spamu · sprawdź: https://panel.test/activity?category=spam",
+      ]);
     });
   });
 

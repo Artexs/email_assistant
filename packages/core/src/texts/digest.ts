@@ -47,6 +47,18 @@ export interface DigestTexts {
 
 const PL_MAILS = { one: "wiadomość", few: "wiadomości", many: "wiadomości", other: "wiadomości" } as const;
 const PL_NEED = { one: "wymaga", few: "wymagają", many: "wymaga", other: "wymaga" } as const;
+const PL_TO_SPAM = {
+  one: "wiadomość trafiła",
+  few: "wiadomości trafiły",
+  many: "wiadomości trafiło",
+  other: "wiadomości trafiło",
+} as const;
+const PL_WOULD_TO_SPAM = {
+  one: "wiadomość trafiłaby",
+  few: "wiadomości trafiłyby",
+  many: "wiadomości trafiłoby",
+  other: "wiadomości trafiłoby",
+} as const;
 const PL_WAIT = { one: "czeka", few: "czekają", many: "czeka", other: "czeka" } as const;
 
 // A name with one form for every count.
@@ -145,9 +157,10 @@ export const digestTexts = {
       `👥 Zlecenia: ${open} ${PL_WAIT[pluralCategory("pl", open)]} na odpowiedź, ${overdue} po terminie`,
     shadow: "Tryb podglądu: system niczego nie zmienił w Twojej skrzynce.",
     spamReview: {
-      moved: (count, url) => `🗑 Do spamu trafiło: ${count} · ${url === null ? "sprawdź w panelu" : `sprawdź: ${url}`}`,
+      moved: (count, url) =>
+        `🗑 ${count} ${PL_TO_SPAM[pluralCategory("pl", count)]} do spamu · ${url === null ? "sprawdź w panelu" : `sprawdź: ${url}`}`,
       would: (count, url) =>
-        `🗑 Do spamu trafiłoby: ${count} · ${url === null ? "sprawdź w panelu" : `sprawdź: ${url}`}`,
+        `🗑 ${count} ${PL_WOULD_TO_SPAM[pluralCategory("pl", count)]} do spamu · ${url === null ? "sprawdź w panelu" : `sprawdź: ${url}`}`,
     },
     llmPause: {
       quota: (since, code) =>

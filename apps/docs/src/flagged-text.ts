@@ -48,7 +48,16 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
     "bez szkicu: podejrzana wiadomość",
   ],
   attachment_line: ["📎"],
-  spam_review_line: ["went to spam", "would have gone to spam", "Do spamu trafiło", "Do spamu trafiłoby"],
+  spam_review_line: [
+    "went to spam",
+    "would have gone to spam",
+    "wiadomość trafiła",
+    "wiadomości trafiły",
+    "wiadomości trafiło",
+    "wiadomość trafiłaby",
+    "wiadomości trafiłyby",
+    "wiadomości trafiłoby",
+  ],
   why_lines: [
     "rule: VIP sender",
     "rule: whitelisted sender",
