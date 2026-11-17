@@ -225,55 +225,71 @@ describe("T11 the pick", () => {
 });
 
 describe("T12 the urgent notice", () => {
-  test("an urgent notice has the Delegate button; without the conditions it has the keyboard of today", async () => {
+  const urgentRow = async (trx: Transaction<DB>, org: BriefOrg & { emailId: string }) => {
+    const now = new Date(EIGHT);
+    await trx
+      .updateTable("triage_results")
+      .set({ created_at: new Date(now.getTime() - 600_000) })
+      .where("email_id", "=", org.emailId)
+      .execute();
+    await detectNotices({
+      db: trx,
+      now: () => now,
+      startedAt: new Date(now.getTime() - 3_600_000),
+      testMail: NO_TEST_SENDERS,
+    });
+    const [row] = await trx
+      .selectFrom("outbox")
+      .select(["kind", "view", "channel", "detail", "locale", "text", "buttons"])
+      .where("org_id", "=", org.ctx.orgId)
+      .where("kind", "=", "urgent")
+      .execute();
+    return row as NonNullable<typeof row>;
+  };
+
+  test("an urgent notice has the Delegate button", async () => {
     await withRollback(db, async (trx) => {
       const org = await delegateOrg(trx, { category: "urgent" });
-      const now = new Date(EIGHT);
-      await trx
-        .updateTable("triage_results")
-        .set({ created_at: new Date(now.getTime() - 600_000) })
-        .where("email_id", "=", org.emailId)
-        .execute();
-      await detectNotices({
-        db: trx,
-        now: () => now,
-        startedAt: new Date(now.getTime() - 3_600_000),
-        testMail: NO_TEST_SENDERS,
-      });
-      const [row] = await trx
-        .selectFrom("outbox")
-        .select(["kind", "view", "channel", "detail", "locale", "text", "buttons"])
-        .where("org_id", "=", org.ctx.orgId)
-        .where("kind", "=", "urgent")
-        .execute();
-      const message = renderedOf(row as NonNullable<typeof row>);
+      const row = await urgentRow(trx, org);
+      const message = renderedOf(row);
       expect(message.buttons[0]?.map((button) => button.text)).toEqual(["✅ Right", "✏️ Change", "👥 Delegate"]);
       expect(message.buttons[0]?.at(-1)?.data).toBe(open(org.emailId));
-      expect((row?.view as { delegable?: boolean }).delegable).toBe(true);
+      expect((row.view as { delegable?: boolean }).delegable).toBe(true);
     });
-    await withRollback(db, async (trx) => {
-      const org = await delegateOrg(trx, { category: "urgent" });
-      await trx.updateTable("delegates").set({ active: false }).where("org_id", "=", org.ctx.orgId).execute();
-      const now = new Date(EIGHT);
-      await trx
-        .updateTable("triage_results")
-        .set({ created_at: new Date(now.getTime() - 600_000) })
-        .where("email_id", "=", org.emailId)
-        .execute();
-      await detectNotices({
-        db: trx,
-        now: () => now,
-        startedAt: new Date(now.getTime() - 3_600_000),
-        testMail: NO_TEST_SENDERS,
+  });
+
+  test("without an active delegate, with a suspicious mail, with drafts off or the flag off: the keyboard of today", async () => {
+    const variants: ((trx: Transaction<DB>, org: BriefOrg & { emailId: string }) => Promise<void>)[] = [
+      async (trx, org) => {
+        await trx.updateTable("delegates").set({ active: false }).where("org_id", "=", org.ctx.orgId).execute();
+      },
+      async (trx, org) => {
+        await trx
+          .updateTable("triage_results")
+          .set({ suspicious_reasons: ["lookalike_domain"] })
+          .where("email_id", "=", org.emailId)
+          .execute();
+      },
+      async (trx, org) => {
+        await trx
+          .updateTable("mailbox_settings")
+          .set({ mode: "shadow" })
+          .where("mailbox_id", "=", org.mailboxId)
+          .execute();
+      },
+      async (trx, org) => {
+        await setOrgFeature(trx, org.ctx, { flag: "delegate_button", enabled: false, actor: "cli", now: MESSAGE_AT });
+      },
+    ];
+    for (const prepare of variants) {
+      await withRollback(db, async (trx) => {
+        const org = await delegateOrg(trx, { category: "urgent" });
+        await prepare(trx, org);
+        const row = await urgentRow(trx, org);
+        // No field at all: a view without it also renders in the code before stage 19.
+        expect("delegable" in (row.view as object)).toBe(false);
+        expect(renderedOf(row).buttons[0]).toHaveLength(2);
       });
-      const [row] = await trx
-        .selectFrom("outbox")
-        .select(["kind", "view", "channel", "detail", "locale", "text", "buttons"])
-        .where("org_id", "=", org.ctx.orgId)
-        .where("kind", "=", "urgent")
-        .execute();
-      expect("delegable" in ((row?.view as object) ?? {})).toBe(false);
-      expect(renderedOf(row as NonNullable<typeof row>).buttons[0]).toHaveLength(2);
-    });
+    }
   });
 });

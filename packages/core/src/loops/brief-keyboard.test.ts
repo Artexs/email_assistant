@@ -187,6 +187,22 @@ describe("the keyboard inside the digest", () => {
     expect(cut.message.buttons.flat().some((button) => button.data.endsWith(shown.stale.at(-1) as string))).toBe(false);
   });
 
+  test("a loop text with a line break cannot move the line numbers: one line per loop", () => {
+    const sections = loopSections(
+      briefInput({
+        waitingLoops: part([loop(1, { text: "first\nsecond", counterpart: "anna\n@example.test" }), loop(2)]),
+        promised: part([loop(3, { kind: "promised", text: "third\r\nfourth" })]),
+      })
+    );
+    const { message, shown } = renderDigestWithBrief(
+      digestInput({ brief: { sections, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      en
+    );
+    const lines = message.text.split("\n");
+    for (const at of Object.values(shown.lineOf)) expect(lines[at]).toMatch(/^(⏳|🤝) /u);
+    expect(lines.filter((line) => /^(⏳|🤝) /u.test(line))).toHaveLength(3);
+  });
+
   test("no brief, no consent, a later digest: no loop row and no lineOf", () => {
     const input = digestInput({ items: [digestItem(1, "info")], counts: { info: 1 } });
     expect(renderDigestWithBrief(input, en).shown.lineOf).toEqual({});

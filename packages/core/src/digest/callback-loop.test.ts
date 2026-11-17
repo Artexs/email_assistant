@@ -116,6 +116,9 @@ describe("delegate callback data", () => {
     expect(parseCallback(`dp:${mail}:${(delegate as string).slice(1)}`)).toBeNull();
     expect(parseCallback(`dp:${mail}a:${delegate}`)).toBeNull();
     expect(parseCallback(`dp:${mail}:${delegate}:x`)).toBeNull();
+    // 20 characters are valid base64 once padded, but they hold 15 bytes, not a UUID.
+    expect(parseCallback(`dp:${(mail as string).slice(2)}:${delegate}`)).toBeNull();
+    expect(parseCallback(`dp:${mail}:${(delegate as string).slice(2)}`)).toBeNull();
     expect(parseCallback(`dp:${mail}`)).toBeNull();
   });
 

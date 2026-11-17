@@ -233,13 +233,12 @@ const countLine = (key: BriefSectionKey, count: number, texts: CoreTexts): strin
 
 // The block of the brief: the title, each section (lines, "+n more", or a count line) and, once, the consent ask. No
 // section → no lines at all. `ids` runs parallel to `lines`: the id of the loop (or the delegation) that a line names, else null.
-// A line never holds a line break: a line number of the text is the index in `lines`.
+// A line never holds a line break (`cutText`, `cleanSubject` and `senderLabel` end all white space to one space; a test plants breaks): a
+// line number of the text is the index in `lines`.
 export interface RenderedBrief {
   lines: string[];
   ids: (string | null)[];
 }
-
-const oneLine = (text: string): string => text.replaceAll(/[\r\n]+/g, " ");
 
 function lineId(line: BriefLine): string | null {
   if ("mail" in line) return null;
@@ -253,7 +252,7 @@ export function renderBriefLines(sections: BriefSections, texts: CoreTexts, opts
   let hidden = false;
   for (const key of briefSectionKeys) {
     const part = sections[key];
-    const lines = part.lines.map((line) => ({ text: oneLine(lineText(line, texts, opts)), id: lineId(line) }));
+    const lines = part.lines.map((line) => ({ text: lineText(line, texts, opts), id: lineId(line) }));
     if (part.more > 0) lines.push({ text: texts.brief.more(part.more, opts.links?.[key] ?? null), id: null });
     if (part.hidden > 0) {
       lines.push({ text: countLine(key, part.hidden, texts), id: null });
