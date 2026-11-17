@@ -13,3 +13,12 @@ export { draftCopyKey } from "./copy-key";
 export type { DraftCopy } from "./copy-key";
 export { DIGIT_BUDGET, digitVerdict, IBAN_LENGTHS, ibansOf, LONG_SEQUENCE_DIGITS } from "./digits";
 export type { DigitVerdict } from "./digits";
+export { isAutoSubmitted, REPLY_AUTO_MAX_AGE_MS, REPLY_BLOCK_REASONS, replyEligibility } from "./eligibility";
+export type {
+  ReplyBlockReason,
+  ReplyEligibility,
+  ReplyFacts,
+  ReplyHeaderFacts,
+  ReplyLanguage,
+  ReplyTrigger,
+} from "./eligibility";

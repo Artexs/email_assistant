@@ -21,7 +21,7 @@ Part of [`../plan.md`](../plan.md).
 - **Goal:** one tap turns on every recommended category (P2, ADR 0028 point 4).
 - **Files:** `trust/recommended.ts`; routes `POST /api/trust/:mailboxId/recommended` and `POST /api/trust/:mailboxId/history-check` (owner only, `apiDoc`).
 - **Decisions:**
-  - One transaction under the settings share-lock: mode `assist` when it is `shadow` (with `ASSIST_DEFAULT_SWITCHES`, as `setMode`), then for each category with `recommended` true and `auto` false: `auto` on, grant `by: "recommended"`, threshold from the gate file. A tripped category is never recommended (stage 01), so this path clears no trip. One audit row per change, `via: "web"`.
+  - One transaction under the `FOR UPDATE` lock of the settings row (the share lock deadlocks with the setters; stage 09 review): mode `assist` when it is `shadow` (with `ASSIST_DEFAULT_SWITCHES`, as `setMode`), then for each category with `recommended` true and `auto` false: `auto` on, grant `by: "recommended"`, threshold from the gate file. A tripped category is never recommended (stage 01), so this path clears no trip. One audit row per change, `via: "web"`.
   - The evidence is computed inside the transaction (no stale read). Nothing recommended → 409 `nothing_recommended`, no change (the mode stays).
   - Answer: `{ turnedOn: BarCategory[], mode }` plus the new `TrustView`.
   - `history-check`: queues a check with reason `web`. Answers 202 with the check, or 409 `check_running` when one is open.

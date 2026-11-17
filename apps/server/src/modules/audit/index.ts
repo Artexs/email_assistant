@@ -3,6 +3,7 @@ export { latestLlmPause, type LlmPauseRead } from "./llm-pause";
 export {
   auditEvents,
   countEventsBetween,
+  countHistoryLlmCallsSince,
   countLlmCallOutcomesSince,
   countLlmCallsSince,
   sumLlmCallsByModelSince,

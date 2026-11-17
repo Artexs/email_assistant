@@ -201,6 +201,15 @@ describe("orgStatusLines", () => {
           at,
         });
       }
+      // Two history calls today and one yesterday: they show in `history_calls_today`, apart from the daily count.
+      for (const at of [now, now, yesterday]) {
+        await recordAudit(trx, ctx, {
+          actor: "system",
+          event: auditEvents.llmCall,
+          data: { mailbox_id: a.mailboxId, historyCheckId: crypto.randomUUID() },
+          at,
+        });
+      }
       await linkChat(trx, ctx, a.userId, randomChatId(), now);
     });
     await db.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", b.orgId).execute();
@@ -213,7 +222,7 @@ describe("orgStatusLines", () => {
     expect(lines?.[1]).toMatch(
       /^ {2}mailboxes total=2 active=1 paused=0 auth_error=1 host_blocked=0 last_sync=(never|\S+)$/
     );
-    expect(lines?.[2]).toBe("  llm_calls_today=2 telegram_chats=1");
+    expect(lines?.[2]).toBe("  llm_calls_today=2 history_calls_today=2 telegram_chats=1");
     expect(lines).toHaveLength(3);
 
     const text = (await orgStatusLines(db, { now }))?.join("\n") ?? "";

@@ -380,4 +380,10 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
   test("the web passes the gate to the one settings deps builder", () => {
     expect(callOf(read("web.ts"), "settingsDeps")).toContain("gate");
   });
+
+  test("the web mounts the trust routes with the settings deps of the same gate and the test mail rule", () => {
+    const call = callOf(read("web.ts"), "trustRoutes");
+    expect(call).toContain("settingsDeps(db, now, extras.gate)");
+    expect(call).toContain("testMail: testMailRule(config)");
+  });
 });
