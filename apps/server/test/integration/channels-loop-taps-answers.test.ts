@@ -2,7 +2,7 @@ import { encodeCallback } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { handleCallback } from "../../src/modules/channels";
+import { handleCallback, insertOutbox } from "../../src/modules/channels";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
@@ -165,13 +165,13 @@ async function delegationOf(
   org: BriefOrg,
   status: "sent" | "overdue",
   dueAt: Date
-): Promise<string> {
+): Promise<{ id: string; emailId: string }> {
   const delegate = await insertDelegate(trx, org.ctx, { name: "Marta" });
   const row = await insertDraftAndSend(trx, org.ctx, org.mailboxId, {
     delegateId: delegate,
     subject: "DELEGATION-SUBJECT",
   });
-  return insertDelegation(trx, org.ctx, {
+  const id = await insertDelegation(trx, org.ctx, {
     mailboxId: org.mailboxId,
     emailId: row.emailId,
     delegateId: delegate,
@@ -181,15 +181,32 @@ async function delegationOf(
     dueAt,
     sentAt: new Date("2026-11-10T09:00:00Z"),
   });
+  return { id, emailId: row.emailId };
 }
 
 describe("a delegation line", () => {
   test("Done on an overdue delegation edits that line of the digest, never with the text of another message", async () => {
     await withRollback(db, async (trx) => {
       const org = await ready(trx);
-      const id = await delegationOf(trx, org, "overdue", new Date("2026-11-19T09:00:00Z"));
+      const { id, emailId } = await delegationOf(trx, org, "overdue", new Date("2026-11-19T09:00:00Z"));
       const { messageId, message } = await deliverDigest(trx);
       const data = encodeCallback({ kind: "delegation_done", delegationId: id });
+      // The "delegation answered" notice of the same delegation exists too: its stored text must never replace the digest.
+      await insertOutbox(trx, org.ctx, {
+        userId: org.userId,
+        kind: "delegation_answered",
+        dedupKey: `delegation_answered:${id}`,
+        emailId,
+        view: {},
+        locale: "en",
+        createdAt: MESSAGE_AT,
+        nextAttemptAt: MESSAGE_AT,
+      });
+      await trx
+        .updateTable("outbox")
+        .set({ text: "NOTICE-TEXT", status: "sent", sent_at: MESSAGE_AT, external_message_id: "5000" })
+        .where("dedup_key", "=", `delegation_answered:${id}`)
+        .execute();
       // The mail of the delegation shows as a row of the normal list too: its ✏️ button stays.
       expect(message.buttons.flat().map((button) => button.data)).toContain(data);
       const result = await handleCallback(tapDeps(trx), linkOf(org), data, { messageId });
@@ -197,6 +214,7 @@ describe("a delegation line", () => {
       expect(result.edit?.text).toContain("✓ ⏳ No answer from Marta");
       expect(result.edit?.buttons.flat().map((button) => button.data)).not.toContain(data);
       expect(result.edit?.buttons.flat().some((button) => button.text === "✏️ 1")).toBe(true);
+      expect(result.edit?.text).not.toContain("NOTICE-TEXT");
       expect(result.edit?.text.split("\n")[0]).toBe(message.text.split("\n")[0]);
     });
   });

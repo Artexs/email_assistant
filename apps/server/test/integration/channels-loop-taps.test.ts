@@ -3,6 +3,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { handleCallback } from "../../src/modules/channels";
+import { draftFollowUp } from "../../src/modules/loops";
 import type { DB } from "../../src/platform/db";
 
 import { ready } from "./channels-digest-brief-fixtures";
@@ -87,6 +88,32 @@ describe("the keyboard of the brief lines", () => {
       const { message } = await deliverDigest(trx);
       expect(message.text).toContain("Confirm the new Telegram terms");
       expect(message.buttons).toEqual([]);
+    });
+  });
+});
+
+describe("the Draft button of a waiting line", () => {
+  test("no Draft button while a follow-up waits for a tap, and none after two follow-ups", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const waiting = await briefLoop(trx, org);
+      const twice = await briefLoop(trx, org, {
+        follow_ups_sent: 2,
+        last_follow_up_at: new Date("2026-11-01T09:00:00Z"),
+      });
+      const open = await briefLoop(trx, org);
+      const planned = await draftFollowUp({ db: trx, now: () => MESSAGE_AT }, org.ctx, {
+        loopId: waiting.id,
+        userId: org.userId,
+        via: "cli",
+      });
+      expect(planned.kind).toBe("planned");
+      const { message } = await deliverDigest(trx);
+      expect(message.text).toContain("follow-up waits for your approval");
+      const rows = message.buttons.map((row) => row.map((button) => button.data));
+      expect(rows).toContainEqual([ll(waiting.id), lc(waiting.id)]);
+      expect(rows).toContainEqual([ll(twice.id), lc(twice.id)]);
+      expect(rows).toContainEqual([lf(open.id), ll(open.id), lc(open.id)]);
     });
   });
 });
@@ -176,6 +203,20 @@ describe("the edit of the tapped line", () => {
     });
   });
 
+  test("a stale button that is tapped again does not mark the line twice", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const loop = await briefLoop(trx, org);
+      const { messageId } = await deliverDigest(trx);
+      const first = await tap(trx, linkOf(org), ll(loop.id), messageId);
+      expect(first.edit?.text).toContain("⏰ ⏳ No answer");
+      // A client that still shows the old keyboard taps Later again.
+      const second = await tap(trx, linkOf(org), ll(loop.id), messageId);
+      expect(second.answer).toMatch(/^Moved to /);
+      expect(second.edit?.text).toBe(first.edit?.text);
+    });
+  });
+
   test("a tap with no message, or from another message, still acts and edits nothing", async () => {
     await withRollback(db, async (trx) => {
       const org = await ready(trx);
@@ -186,6 +227,18 @@ describe("the edit of the tapped line", () => {
       expect(noMessage).toEqual({ answer: "Done." });
       const other = await tap(trx, linkOf(org), lc(second.id), messageId + 1);
       expect(other).toEqual({ answer: "Done." });
+      expect((await outboxOf(trx, org.ctx.orgId)).text).toBe(message.text);
+    });
+  });
+
+  test("the message id of another user's digest is not edited: the stored row of that user stays", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const loop = await briefLoop(trx, org);
+      const { messageId, message } = await deliverDigest(trx);
+      const member = linkOf(org, { userId: org.memberId, role: "assistant" });
+      const result = await tap(trx, member, lc(loop.id), messageId);
+      expect(result).toEqual({ answer: "Done." });
       expect((await outboxOf(trx, org.ctx.orgId)).text).toBe(message.text);
     });
   });

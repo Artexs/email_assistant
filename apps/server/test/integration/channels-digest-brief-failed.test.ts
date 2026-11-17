@@ -118,6 +118,24 @@ describe("N4 a failed digest gives its marks back", () => {
   });
 });
 
+describe("N4 a mark of an earlier digest stays", () => {
+  test("a loop that an earlier day showed keeps that time when the digest of the next day fails", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      const earlier = new Date("2026-11-19T07:00:00Z");
+      const loopId = await waitingLoop(trx, org, { surfaced_at: earlier });
+      await runDigests(trx, EIGHT);
+      expect((await loopRow(trx, loopId)).surfaced_at).toEqual(earlier);
+      await trx.deleteFrom("chat_links").where("org_id", "=", org.ctx.orgId).execute();
+      await createOutboxSender({ db: trx, channel: createFakeChannel(), now: () => new Date(EIGHT) }).run();
+      expect(
+        await trx.selectFrom("outbox").select("status").where("org_id", "=", org.ctx.orgId).executeTakeFirstOrThrow()
+      ).toEqual({ status: "failed" });
+      expect((await loopRow(trx, loopId)).surfaced_at).toEqual(earlier);
+    });
+  });
+});
+
 describe("N5 the day of a late slot", () => {
   test("the 20:00 slot that runs at 01:00 of the next date gets the count line, not a second brief", async () => {
     await withRollback(db, async (trx) => {
