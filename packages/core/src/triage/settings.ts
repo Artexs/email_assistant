@@ -35,7 +35,7 @@ export type CategoryGrantBy = (typeof categoryGrantBy)[number];
 export const categoryGrantSchema = z.object({
   key: evidenceKeySchema,
   by: z.enum(categoryGrantBy),
-  at: z.string(),
+  at: z.iso.datetime(),
 });
 export type CategoryGrant = z.infer<typeof categoryGrantSchema>;
 

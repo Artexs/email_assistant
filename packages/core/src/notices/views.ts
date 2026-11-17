@@ -6,7 +6,6 @@ import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
 import { approvalViewSchema, panelUrlSchema } from "../outgoing/view-schema";
 import { sendLimitKinds } from "../send-limits";
-import { barCategories } from "../triage/metrics";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
 import { senderRuleKinds } from "../triage/rules";
@@ -344,7 +343,7 @@ const trustReportReadyView = z
 // that the `corrections` reason prints. `settingsUrl`: `<WEB_BASE_URL>/settings`, null when `WEB_BASE_URL` is not set.
 const autonomyPausedView = z.strictObject({
   mailboxId: z.string().regex(uuidPattern),
-  category: z.enum(barCategories),
+  category: z.enum(movingCategories),
   reason: z.enum(tripReasons),
   corrections: z.number().int().min(0),
   settingsUrl: trustSettingsUrlSchema.nullable(),
