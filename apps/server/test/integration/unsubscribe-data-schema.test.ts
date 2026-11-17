@@ -192,7 +192,22 @@ describe("unsubscribe_requests: row-level security", () => {
       await scopeLocal(trx, b.orgId);
       const rows = await trx.selectFrom("unsubscribe_requests").select("org_id").execute();
       expect(rows.map((row) => row.org_id)).toEqual([b.orgId]);
-      await expectSqlState(trx, () => request(trx, a, { sender_lower: "x@list.test" }), RLS);
+      // No RETURNING: it would also need the SELECT side of the policy, and hide a missing WITH CHECK.
+      await expectSqlState(
+        trx,
+        () =>
+          trx
+            .insertInto("unsubscribe_requests")
+            .values({
+              org_id: a.orgId,
+              mailbox_id: a.mailboxId,
+              sender_lower: "x@list.test",
+              sender_domain: "list.test",
+              method: "one_click",
+            })
+            .execute(),
+        RLS
+      );
       const changed = await trx
         .updateTable("unsubscribe_requests")
         .set({ status: "done" })
