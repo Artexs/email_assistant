@@ -131,7 +131,7 @@ export interface Move {
   category: Category;
   /** When the move took effect; the triage result is one minute older. Default `applied` 2026-11-02T09:00Z. */
   appliedAt?: string;
-  status?: "applied" | "undone" | "logged";
+  status?: "applied" | "undone" | "logged" | "ready" | "failed" | "expired";
   from?: string;
   /** The triage result is older than the grant by default; `createdAt` moves it. */
   createdAt?: string;
@@ -187,16 +187,17 @@ export async function addCorrected(conn: Db, box: TripBox, move: Move, feedback:
   return emailId;
 }
 
-/** A `done` history check that ended at `finishedAt` with `outcome` (default `fail`) for the listed categories. */
-export async function addFailedCheck(
+/** A `done` history check that ended at `finishedAt` with one outcome per listed category. */
+export async function addCheck(
   conn: Db,
   box: TripBox,
   finishedAt: string,
-  categories: Grant["category"][],
-  outcome: "fail" | "pass" | "inconclusive" = "fail"
+  outcomes: Partial<Record<Grant["category"], "fail" | "pass" | "inconclusive">>
 ): Promise<void> {
-  const entry = { outcome, acted: 12, moved: 3, upper: 0.5, total: 100, wouldMove: 40 };
-  const result = Object.fromEntries(categories.map((category) => [category, entry]));
+  const entry = { acted: 12, moved: 3, upper: 0.5, total: 100, wouldMove: 40 };
+  const result = Object.fromEntries(
+    Object.entries(outcomes).map(([category, outcome]) => [category, { ...entry, outcome }])
+  );
   await conn.transaction().execute((trx) =>
     insertCheckRow(trx, box, box.mailboxId, {
       status: "done",
@@ -205,6 +206,16 @@ export async function addFailedCheck(
     })
   );
 }
+
+/** A `done` history check that ended at `finishedAt` with `outcome` (default `fail`) for the listed categories. */
+export const addFailedCheck = (
+  conn: Db,
+  box: TripBox,
+  finishedAt: string,
+  categories: Grant["category"][],
+  outcome: "fail" | "pass" | "inconclusive" = "fail"
+): Promise<void> =>
+  addCheck(conn, box, finishedAt, Object.fromEntries(categories.map((category) => [category, outcome])));
 
 export const tripsOf = (conn: Db, box: TripBox) =>
   conn

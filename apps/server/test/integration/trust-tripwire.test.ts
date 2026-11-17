@@ -13,6 +13,7 @@ import { testDb } from "./helpers";
 import { addMailbox } from "./trust-fixtures";
 import {
   addCorrected,
+  addCheck,
   addFailedCheck,
   addFeedback,
   addMove,
@@ -132,6 +133,17 @@ describe("corrections (D9)", () => {
     });
   });
 
+  test("4b. a verdict given before the grant on a move that took effect after it does not count", async () => {
+    await withTripBox(db, { grants: [{ category: "info", at: "2026-11-05T10:00:00.000Z" }] }, async (box) => {
+      const move = { category: "info", appliedAt: "2026-11-06T09:00:00Z" } as const;
+      await addCorrected(db, box, move, { at: "2026-11-07T10:00:00Z" });
+      // Inside the 7 days, but before the grant.
+      await addCorrected(db, box, move, { at: "2026-11-03T10:00:00Z" });
+      await run();
+      expect(await tripsOf(db, box)).toHaveLength(0);
+    });
+  });
+
   test("5. two corrections of one mail (Undo, then the pencil) count once: no trip", async () => {
     await withTripBox(db, { grants: [{ category: "info" }] }, async (box) => {
       const emailId = await addCorrected(db, box, { category: "info" }, { at: "2026-11-03T10:00:00Z", source: "undo" });
@@ -173,6 +185,17 @@ describe("corrections (D9)", () => {
     await withTripBox(db, { grants: [{ category: "info" }] }, async (box) => {
       await addCorrected(db, box, { category: "info" }, { at: "2026-11-03T10:00:00Z" });
       await addCorrected(db, box, { category: "info", status: "logged" }, { at: "2026-11-04T10:00:00Z" });
+      await run();
+      expect(await tripsOf(db, box)).toHaveLength(0);
+    });
+  });
+
+  test("6a. a move that did not take effect (ready, failed, expired) is not counted, whatever its time", async () => {
+    await withTripBox(db, { grants: [{ category: "info" }] }, async (box) => {
+      await addCorrected(db, box, { category: "info" }, { at: "2026-11-03T10:00:00Z" });
+      for (const status of ["ready", "failed", "expired"] as const) {
+        await addCorrected(db, box, { category: "info", status }, { at: "2026-11-04T10:00:00Z" });
+      }
       await run();
       expect(await tripsOf(db, box)).toHaveLength(0);
     });
@@ -449,6 +472,12 @@ describe("history fail", () => {
     });
     await withTripBox(db, { grants: [{ category: "spam", by: "evidence" }] }, async (box) => {
       await addFailedCheck(db, box, "2026-11-01T12:00:00Z", ["spam"], "inconclusive");
+      await run();
+      expect(await tripsOf(db, box)).toHaveLength(0);
+    });
+    // The result of the granted category decides, not the result of another category of the same check.
+    await withTripBox(db, { grants: [{ category: "spam", by: "evidence" }] }, async (box) => {
+      await addCheck(db, box, "2026-11-01T12:00:00Z", { info: "fail", notification: "fail", spam: "pass" });
       await run();
       expect(await tripsOf(db, box)).toHaveLength(0);
     });

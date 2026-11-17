@@ -64,8 +64,8 @@ const correctionRowSchema = z.object({
  * The corrections of one organization since `since`, in one query. A correction is a mail whose newest feedback row has the
  * verdict `wrong` (any source: several rows of one mail count once, the newest wins, as `listLabeledResults`), that has an original
  * `move` action which took effect (`applied`, or `undone` later), and the category of the triage result that planned that move.
- * Only real mail counts. `true_category` is the newest category the user named for the mail: an Undo row has none, so a ✏️ row before it
- * still tells that the user needed the mail.
+ * Only real mail counts. `true_category` is the newest category that the user named in a `wrong` row of the mail: an Undo row has none, so a
+ * pencil row before it still tells that the user needed the mail.
  */
 async function listCorrections(
   db: Db,
@@ -75,12 +75,11 @@ async function listCorrections(
 ): Promise<CorrectionRow[]> {
   const { rows } = await sql<unknown>`
     WITH latest AS (
-      SELECT DISTINCT ON (tf.email_id) tf.email_id, tf.verdict, tf.created_at,
-        COALESCE(tf.true_category, (
-          SELECT w.true_category FROM triage_feedback w
-          WHERE w.org_id = ${ctx.orgId} AND w.email_id = tf.email_id AND w.verdict = 'wrong' AND w.true_category IS NOT NULL
-          ORDER BY w.created_at DESC, w.id DESC LIMIT 1
-        )) AS true_category
+      SELECT DISTINCT ON (tf.email_id) tf.email_id, tf.verdict, tf.created_at, (
+        SELECT w.true_category FROM triage_feedback w
+        WHERE w.org_id = ${ctx.orgId} AND w.email_id = tf.email_id AND w.verdict = 'wrong' AND w.true_category IS NOT NULL
+        ORDER BY w.created_at DESC, w.id DESC LIMIT 1
+      ) AS true_category
       FROM triage_feedback tf
       WHERE tf.org_id = ${ctx.orgId}
         AND tf.email_id IN (
