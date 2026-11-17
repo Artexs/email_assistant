@@ -66,7 +66,8 @@ export function createReportMailSender(deps: ReportMailSenderDeps): { run(): Pro
 
   async function run(): Promise<void> {
     const now = deps.now();
-    // A mail row that no run could send within the life of a row ends as `failed` / `expired`, as a Telegram row does.
+    // A mail row that no run could send within the life of a row ends as `failed` / `expired`, as a Telegram row does. The sweep runs
+    // before the claim with the same cut, so a claimed row is never older than the life of a row.
     try {
       const expired = await expireOldMailOutbox(db, { before: new Date(now.getTime() - OUTBOX_MAX_AGE_MS) });
       if (expired > 0) log.warn("outbox_mail_expired", { count: expired });
@@ -107,11 +108,6 @@ export function createReportMailSender(deps: ReportMailSenderDeps): { run(): Pro
       let appended = false;
       try {
         if (row.wasStale) outboxLog.warn("outbox_mail_resent_after_stale");
-        if (now.getTime() - row.createdAt.getTime() > OUTBOX_MAX_AGE_MS) {
-          await fail(row, "expired");
-          outboxLog.warn("outbox_expired");
-          continue;
-        }
         // A mail row names its mailbox and one of the four report kinds; a row that does not is a bad row, never a message.
         if (row.mailboxId === null || !isReportMailKind(row.kind)) {
           await fail(row, "bad_view");

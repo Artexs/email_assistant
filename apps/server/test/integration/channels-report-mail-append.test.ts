@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
-import { simpleParser } from "mailparser";
+import { simpleParser, type AddressObject } from "mailparser";
 
 import {
   createImapReportMailbox,
@@ -175,6 +175,11 @@ async function mailRow(
   return id;
 }
 
+function addressesOf(field: AddressObject | AddressObject[] | undefined): (string | undefined)[] {
+  const objects = field === undefined ? [] : Array.isArray(field) ? field : [field];
+  return objects.flatMap((object) => object.value.map((entry) => entry.address));
+}
+
 const stateOf = (trx: Transaction<DB>, id: string) =>
   trx
     .selectFrom("outbox")
@@ -198,15 +203,15 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
       expect(parsed.headers.get("x-ea-action-id")).toBe(id);
       expect(parsed.messageId).toBe(`<ea-report-${id}@x.test>`);
       // The only address in the headers is the mailbox itself.
-      expect(parsed.to?.value.map((entry) => entry.address)).toEqual([b.address]);
-      expect(parsed.from?.value.map((entry) => entry.address)).toEqual([b.address]);
+      expect(addressesOf(parsed.to)).toEqual([b.address]);
+      expect(addressesOf(parsed.from)).toEqual([b.address]);
       expect(parsed.cc).toBeUndefined();
       expect(parsed.bcc).toBeUndefined();
       const headerBlock = first.raw.toString("utf8").split("\r\n\r\n")[0] ?? "";
       expect(headerBlock).not.toContain("attacker");
       // Text and HTML parts; the HTML has no form and every link starts with the base.
       expect(parsed.text).toContain("1 mail needs action.");
-      const html = parsed.html === false ? "" : parsed.html;
+      const html = parsed.html === false ? "" : (parsed.html ?? "");
       expect(html).not.toContain("<form");
       const hrefs = [...html.matchAll(/href="([^"]*)"/g)].map((match) => match[1]);
       expect(hrefs).toEqual([`${BASE}/activity?category=spam`]);
@@ -334,6 +339,14 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
       await setMemberReportChannel(trx, b.ctx, b.userId, { channel: "telegram", mailboxId: null });
       await sender(trx, b).run();
       expect(await stateOf(trx, back)).toMatchObject({ status: "failed", error_code: "outdated" });
+
+      // The channel is `telegram` again but the mailbox is still stored: no mail either.
+      const t = await box(trx);
+      const kept = await mailRow(trx, t);
+      await setMemberReportChannel(trx, t.ctx, t.userId, { channel: "telegram", mailboxId: t.mailboxId });
+      await sender(trx, t).run();
+      expect(await stateOf(trx, kept)).toMatchObject({ status: "failed", error_code: "outdated" });
+      expect(t.appended).toHaveLength(0);
 
       const c = await box(trx);
       const other = await mailRow(trx, c);
