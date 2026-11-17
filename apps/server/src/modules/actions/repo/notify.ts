@@ -116,10 +116,18 @@ function notifiableSends(db: DbOrTrx, ctx: TenantContext) {
     .where("actions.status", "=", "awaiting_approval")
     .where("actions.notified_at", "is", null);
 }
-export async function listSendsToNotify(db: DbOrTrx, ctx: TenantContext, opts: { limit: number }): Promise<SendRow[]> {
+// `skip`: ids that the caller knows it cannot make a card for (a card that the renderer refuses): they must not fill the limit.
+export async function listSendsToNotify(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { limit: number; skip?: readonly string[] }
+): Promise<SendRow[]> {
   // A follow-up is one card, whatever its payload says about a set.
-  const rows = await notifiableSends(db, ctx)
-    .where(sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`)
+  let query = notifiableSends(db, ctx).where(
+    sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`
+  );
+  if (opts.skip !== undefined && opts.skip.length > 0) query = query.where("actions.id", "not in", [...opts.skip]);
+  const rows = await query
     .orderBy("actions.created_at")
     .orderBy("actions.id")
     .limit(opts.limit)

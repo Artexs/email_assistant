@@ -5,6 +5,7 @@ import {
   draftVersion,
   isExternalSender,
   matchSender,
+  NoticeViewError,
   panelUrlSchema,
   type ApprovalView,
   type OriginalMail,
@@ -114,6 +115,19 @@ export async function approvalViewFor(
   return { view, subject: message.subject, quote: message.parts.quote };
 }
 
+// A card that the renderer refuses (a follow-up whose To and Cc do not fit one message, rule 2,400 characters) is refused again at
+// every run. The same rows would fill the limit of `listSendsToNotify` and hold back newer cards (review 11 N5). The process remembers
+// their ids and lists the others; a restart tries each once more. Nothing is written: the send stays `awaiting_approval` with
+// `notified_at` null, so the panel shows it and the 7-day limit of an unnotified send applies. Only a refusal of the renderer
+// counts: another error (a lost connection) may pass at the next run.
+const refusedCards = new Set<string>();
+const REFUSED_CARDS_MAX = 1000;
+
+// Tests only: the memory of the refused cards is process-wide.
+export function forgetRefusedCards(): void {
+  refusedCards.clear();
+}
+
 // D19: one request per owner for each send that waits, after its draft is applied. No owner: nothing is queued or marked.
 async function detectApprovals(
   db: DbOrTrx,
@@ -124,7 +138,7 @@ async function detectApprovals(
   webBaseUrl: string | undefined
 ): Promise<void> {
   if (owners.length === 0) return;
-  const rows = await listSendsToNotify(db, ctx, { limit: APPROVAL_LIMIT });
+  const rows = await listSendsToNotify(db, ctx, { limit: APPROVAL_LIMIT, skip: [...refusedCards] });
   if (rows.length === 0) return;
   // Read once per run. The link goes on the card only when the panel page is on and the base URL is set.
   const panelBase = webBaseUrl !== undefined && (await isFeatureOn(db, ctx, "approvals_page")) ? webBaseUrl : undefined;
@@ -168,6 +182,10 @@ async function detectApprovals(
         await markNotified(trx, ctx, row.id, now);
       });
     } catch (error) {
+      if (error instanceof NoticeViewError) {
+        if (refusedCards.size >= REFUSED_CARDS_MAX) refusedCards.clear();
+        refusedCards.add(row.id);
+      }
       warnSkipped("approval", row.id, error);
     }
   }
