@@ -57,13 +57,13 @@ test.afterEach(async ({ page }) => {
 });
 
 // The link is in the sidebar on a desktop and in the menu sheet on a phone.
-async function openMenuOnPhone(page: Page, project: string, menuLabel = en.menu_open): Promise<void> {
+async function openMenuOnPhone(page: Page, project: string, menuLabel: string = en.menu_open): Promise<void> {
   if (project !== "mobile") return;
   await page.getByRole("button", { name: menuLabel }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 }
 
-async function helpLinkOf(page: Page, project: string, name: string, menuLabel = en.menu_open) {
+async function helpLinkOf(page: Page, project: string, name: string, menuLabel: string = en.menu_open) {
   await openMenuOnPhone(page, project, menuLabel);
   return page.getByRole("link", { name, exact: true });
 }
