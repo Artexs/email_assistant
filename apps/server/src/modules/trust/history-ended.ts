@@ -1,4 +1,5 @@
-// What a check that ends tells the owner (F110 D16): the first check of a mailbox that ends `done` or `no_result` queues the
+// What a check that ends tells the owner (F110 D16): the first check of a mailbox that ends `done` or `no_result` (a check cut short by a
+// model switch does not count: it ends through `endCheckKeyChanged`, which has no hook, and `countEarlierEndedChecks` skips it) queues the
 // `trust_report_ready` notice, in the transaction of the end. Later checks queue nothing. The view holds counts and category names only.
 import { movingCategories, type GateEvidenceDeps, type MovingCategory } from "@ea/core";
 
@@ -21,7 +22,6 @@ export interface EndedDeps {
 
 export function reportNoticeOnEnd(deps: EndedDeps): EndedHook {
   return async (trx, ctx, ended) => {
-    if (ended.reason === "key_changed") return;
     if (!(await isFeatureOn(trx, ctx, "trust_ladder"))) return;
     if ((await countEarlierEndedChecks(trx, ctx, ended.mailboxId, ended.checkId)) > 0) return;
     const now = deps.now();

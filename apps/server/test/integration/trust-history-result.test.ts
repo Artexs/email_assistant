@@ -245,6 +245,20 @@ describe("11. the report-ready notice", () => {
         .where("status", "=", "queued")
         .executeTakeFirstOrThrow();
       expect(next.id).not.toBe(checkId);
+      // The new check ends `done`: the cut-short check does not count as the first, so the notice goes out now.
+      await db
+        .updateTable("history_checks")
+        .set({
+          status: "classifying",
+          key: JSON.stringify(RUNNING_KEY),
+          window_start: new Date(box.clock.now.getTime() - 30 * 86_400_000),
+          backfill_done_at: box.clock.now,
+        })
+        .where("id", "=", next.id)
+        .execute();
+      await runToEnd(box, next.id);
+      expect((await checkOf(db, next.id)).status).toBe("done");
+      expect(await noticeRows(box.orgId)).toHaveLength(2);
     });
   });
 

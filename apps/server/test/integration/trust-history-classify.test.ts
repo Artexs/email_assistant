@@ -1,15 +1,16 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { countLlmCallsSince, recordLlmCall } from "../../src/modules/audit";
-import { createLlmPause } from "../../src/modules/triage";
-import { claimNextCheck } from "../../src/modules/trust";
+import { classifyStored, createLlmPause, loadTriageMailbox } from "../../src/modules/triage";
+import { claimNextCheck, historyActedOn } from "../../src/modules/trust";
 import { recordItem } from "../../src/modules/trust/history-items";
 import { SoftError } from "../../src/platform/errors";
 import { LlmBlockedError } from "../../src/platform/llm";
 
 import { testDb } from "./helpers";
+import { addMailbox } from "./trust-fixtures";
 import {
   CENT_TOKENS,
   checkOf,
@@ -549,6 +550,95 @@ describe("the sample order and the lock", () => {
       expect(await recordItem(db, box, claim.check, item)).toBeNull();
       expect(Number((await checkOf(db, checkId)).cost_usd)).toBe(0.01);
       expect(await itemsOf(db, checkId)).toHaveLength(1);
+    });
+  });
+});
+
+describe("acted on (the seam of the sent signals)", () => {
+  test("\\Answered, \\Flagged, or feedback with the true category urgent or needs_reply; no other mail", async () => {
+    await withClassifyBox(db, {}, async (box) => {
+      const ids = await seedMails(db, box, [{ acted: true }, {}, {}, {}, {}, {}, {}]);
+      const [answered, flagged, urgent, needsReply, info, plain, other] = ids as [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+      ];
+      await db
+        .updateTable("email_flags")
+        .set({ answered: false, flagged: true })
+        .where("email_id", "=", answered)
+        .execute();
+      await db
+        .insertInto("email_flags")
+        .values({
+          email_id: flagged,
+          org_id: box.orgId,
+          seen: true,
+          answered: true,
+          flagged: false,
+          checked_at: box.clock.now,
+        })
+        .execute();
+      const feedback = (emailId: string, trueCategory: string) =>
+        db
+          .insertInto("triage_feedback")
+          .values({
+            org_id: box.orgId,
+            email_id: emailId,
+            verdict: "wrong",
+            true_category: trueCategory,
+            source: "web",
+          })
+          .execute();
+      await feedback(urgent, "urgent");
+      await feedback(needsReply, "needs_reply");
+      await feedback(info, "info");
+      // An unknown mail of another organization never counts.
+      const acted = await historyActedOn(db, box, [...ids, other]);
+      expect([...acted].sort()).toEqual([answered, flagged, urgent, needsReply].sort());
+      expect(acted.has(plain)).toBe(false);
+    });
+  });
+});
+
+describe("classifyStored refuses a mail of another mailbox", () => {
+  test("the snapshot of one mailbox never judges the mail of a second mailbox of the organization", async () => {
+    await withClassifyBox(db, {}, async (box) => {
+      const second = await db.transaction().execute((trx) => addMailbox(trx, box));
+      const [theirs] = await db
+        .insertInto("emails")
+        .values({
+          org_id: box.orgId,
+          mailbox_id: second,
+          dedup_key: `test:${randomUUID()}`,
+          thread_key: "t",
+          content_hash: "h",
+          uid: 1,
+          received_at: box.clock.now,
+          body_text: "x",
+        })
+        .returning("id")
+        .execute();
+      const snapshot = await loadTriageMailbox(db, box, {
+        mailboxId: box.mailboxId,
+        runningKey: RUNNING_KEY,
+        senders: [],
+        now: box.clock.now,
+      });
+      if (snapshot.kind !== "ok") throw new Error("no snapshot");
+      const llm = fakeLlm(box);
+      await expect(
+        classifyStored(
+          { db, llm, testMail: { senders: [] }, mailbox: snapshot.mailbox, now: () => box.clock.now },
+          box,
+          theirs?.id as string
+        )
+      ).rejects.toThrow("history mail not found");
+      expect(llm.calls).toHaveLength(0);
     });
   });
 });
