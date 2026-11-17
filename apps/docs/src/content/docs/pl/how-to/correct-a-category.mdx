@@ -1,0 +1,38 @@
+---
+title: Potwierdź lub popraw kategorię
+description: Powiedz asystentowi, że kategoria jest dobra lub zła, w Telegramie albo w Aktywności.
+source: how-to/correct-a-category
+sourceHash: "d609ffc4b2e6ad4d"
+capabilities:
+  - triage
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Asystent daje każdej wiadomości jedną kategorię: Pilne, Odpowiedz, Przekaż, Info, Powiadomienie, Spam lub Niepewne.
+Użyj tego poradnika, aby potwierdzić kategorię albo ją poprawić.
+
+## Potwierdź lub popraw w Telegramie
+
+1. Znajdź wiadomość w podsumowaniu. Każda wiadomość ma numer, na przykład 2.
+2. Stuknij `✅ 2`, gdy kategoria jest dobra.
+3. Stuknij `✏️ 2`, gdy jest zła. Bot pokazuje listę: Pilne, Odpowiedz, Info, Powiadomienie i Spam. Stuknij właściwą. Stuknij `✖️ Anuluj`, aby przerwać.
+
+Bot odpowiada na przykład `✅ Zapisano kategorię Info – dobrze.` albo `✏️ Zapisano kategorię Spam (propozycja AI: Info).`
+Wiadomość z kategorią Niepewne lub Przekaż ma tylko `✏️ 2`. Tych dwóch kategorii nie można potwierdzić.
+Komunikat o pilnej wiadomości ma przyciski `✅ Dobrze` i `✏️ Zmień`. Działają tak samo.
+
+## Potwierdź lub popraw w Aktywności
+
+1. Otwórz stronę **<UiText k="nav_activity" />**.
+2. Znajdź wiadomość. Filtr **<UiText k="act_not_rated" />** pokazuje wiadomości bez Twojej oceny.
+3. Naciśnij przycisk z `✅`, gdy kategoria jest dobra. Naciśnij przycisk z `✏️`, aby ją poprawić. Wiadomość z kategorią Niepewne lub Przekaż nie ma przycisku `✅`.
+4. W oknie **<UiText k="act_pick_title" />** naciśnij właściwą kategorię.
+
+Panel pokazuje krótki komunikat. Otwórz wiadomość, aby zobaczyć swoją odpowiedź pod **<UiText k="act_section_feedback" />**.
+
+## Co dzieje się dalej
+
+- System zapisuje Twoją odpowiedź. Jeśli odpowiesz tak samo dwa razy, mówi `Już zapisano.` Liczy się Twoja ostatnia odpowiedź.
+- System nie przenosi wiadomości i nie sortuje jej ponownie.
+- Twoje odpowiedzi pokazują, jak często każda kategoria jest dobra. Właściciel używa tego, aby włączyć automatyczne przenoszenie. Kategoria potrzebuje co najmniej 98% trafnych odpowiedzi w co najmniej 30 ocenionych wiadomościach. Zobacz [Tryb i przełączniki](../mode-and-switches/).

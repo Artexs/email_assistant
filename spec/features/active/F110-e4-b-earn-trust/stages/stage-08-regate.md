@@ -43,3 +43,8 @@ The tripwire on corrections (stage 09). A re-run of the global eval (E2a tooling
 ## Carry-over from stage 04 review
 
 - N2: decide what happens to ready move and mark_read rows written under the old key after a model or prompt change (review-4.md).
+
+## Carry-over from the stage 07 review
+
+- N5: a history end hook (`readCategoryEvidence`, `queueTrustNotice`) that throws every time keeps the check open and re-claimed every 10 minutes (no model calls): add a retry counter or an end with an error reason.
+- N2: `llm_calls_today` (org-status-lines, Telegram /status) leaves history calls out; show a separate history count if the operator needs it.

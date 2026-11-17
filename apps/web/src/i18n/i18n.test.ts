@@ -191,4 +191,19 @@ describe("the texts of the quiet hours and report channel cards", () => {
     expect(en.quiet_too_long).toContain("18");
     expect(pl.quiet_too_long).toContain("18");
   });
+
+  test("the Help link and the What is new card texts have a fixed value in both languages (F112 stage 15)", () => {
+    expect([en.help_link, en.whats_new_title, en.whats_new_all, en.whats_new_dismiss]).toEqual([
+      "Help and guides",
+      "What is new",
+      "All changes for users",
+      "Close the list of new features",
+    ]);
+    expect([pl.help_link, pl.whats_new_title, pl.whats_new_all, pl.whats_new_dismiss]).toEqual([
+      "Pomoc i poradniki",
+      "Co nowego",
+      "Wszystkie zmiany dla użytkowników",
+      "Zamknij listę nowości",
+    ]);
+  });
 });

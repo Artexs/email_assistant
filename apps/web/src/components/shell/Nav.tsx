@@ -16,6 +16,7 @@ import {
   type NavKey,
 } from "./nav-items";
 import { UserMenu } from "./UserMenu";
+import { HelpLink } from "./WhatsNew";
 
 export interface NavMenuProps {
   active: NavKey;
@@ -135,7 +136,10 @@ export function Sidebar({
           <SidebarLink key={item.key} item={item} active={active} approvalsWaiting={approvalsWaiting} />
         ))}
       </nav>
-      <div className="border-t p-3">
+      <div className="flex flex-col gap-1 border-t p-3">
+        {features.includes("docs_links") && (
+          <HelpLink className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent" />
+        )}
         {email !== null ? (
           <UserMenu email={email} onLogOut={onLogOut} />
         ) : loading ? (
@@ -180,6 +184,7 @@ export function MenuSheet({
           ))}
           {operator && <SidebarLink item={OPERATOR_ITEM} active={active} approvalsWaiting={0} />}
           <div className="mt-auto flex flex-col gap-3">
+            {features.includes("docs_links") && <HelpLink className="text-sm underline" />}
             {email !== null ? (
               <p className="truncate text-sm" title={email}>
                 {email}
