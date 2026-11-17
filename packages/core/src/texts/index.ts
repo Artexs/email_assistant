@@ -6,6 +6,7 @@ import { answerTexts, type AnswerTexts } from "./answers";
 import { approvalTexts, type ApprovalTexts } from "./approvals";
 import { attachmentTexts, type AttachmentTexts } from "./attachments";
 import { botTexts, type BotCommandName, type BotTexts } from "./bot";
+import { briefTexts, type BriefTexts } from "./brief";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
@@ -14,6 +15,7 @@ import { followUpTexts, type FollowUpTexts } from "./follow-up";
 import { noticeTexts, type NoticeTexts } from "./notices";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { suspiciousTexts, type SuspiciousTexts } from "./suspicious";
+import { whyTexts, type WhyTexts } from "./why";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
 
 export { botCommandNames } from "./bot";
@@ -25,6 +27,7 @@ export type {
   AttachmentTexts,
   BotCommandName,
   BotTexts,
+  BriefTexts,
   CategoryTexts,
   ClockTexts,
   CommonTexts,
@@ -33,6 +36,7 @@ export type {
   NoticeTexts,
   ReviewTexts,
   SuspiciousTexts,
+  WhyTexts,
   WouldDoTexts,
 };
 
@@ -49,8 +53,10 @@ export interface CoreTexts {
   approvals: ApprovalTexts;
   review: ReviewTexts;
   digest: DigestTexts;
+  brief: BriefTexts;
   followUp: FollowUpTexts;
   suspicious: SuspiciousTexts;
+  why: WhyTexts;
   bot: BotTexts;
 }
 
@@ -68,8 +74,10 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.en,
     review: reviewTexts.en,
     digest: digestTexts.en,
+    brief: briefTexts.en,
     followUp: followUpTexts.en,
     suspicious: suspiciousTexts.en,
+    why: whyTexts.en,
     bot: botTexts.en,
   },
   pl: {
@@ -85,8 +93,10 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
     digest: digestTexts.pl,
+    brief: briefTexts.pl,
     followUp: followUpTexts.pl,
     suspicious: suspiciousTexts.pl,
+    why: whyTexts.pl,
     bot: botTexts.pl,
   },
 };

@@ -142,9 +142,11 @@ const reactConfig = tseslint.config({
   },
 });
 
+// The docs app has .astro components too (apps/docs): the plugin must be registered for them, or its `**/*.astro` configs fail.
+const astroFiles = [...webFiles, "apps/docs/**/*.astro"];
 const astroConfig = eslintPluginAstro.configs["flat/recommended"].map((config) => ({
   ...config,
-  files: config.files ?? webFiles,
+  files: config.files ?? astroFiles,
 }));
 
 const nodeConfig = tseslint.config({

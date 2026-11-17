@@ -211,6 +211,8 @@ const baseSchema = z.object({
   SLO_BACKUP_MAX_AGE_H: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(720).default(26)),
   // The status file that deploy/backup.sh writes (mounted read-only). Empty = the backup check is off.
   BACKUP_STATUS_FILE: z.preprocess(emptyAsUndefined, z.string().startsWith("/", "must be an absolute path").optional()),
+  // The folder of the gate files (`classifier-*.json`) that the server reads at start (F110 D1). Empty = `evals/results/gate` of the image.
+  GATE_EVIDENCE_DIR: z.preprocess(emptyAsUndefined, z.string().startsWith("/", "must be an absolute path").optional()),
   // Comma list of flag keys (packages/core/src/features.ts) that read off for every organization. Empty = none.
   FEATURES_OFF: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Comma list of user ids (users.id, UUID) who may use /api/operator/*. Empty = no operator. Never log the ids.

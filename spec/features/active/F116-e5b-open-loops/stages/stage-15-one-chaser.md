@@ -35,3 +35,22 @@ T1–T11 pass; `docs/capabilities/delegation.md` § Entry points names the new j
 ## Out of scope
 
 Brief lines (18), routes (20).
+
+## Carry-over from stage 11 (worker, 2026-11-15)
+
+- One card per follow-up: a follow-up never joins an approval set (the set readers are mail-only and the send payload refuses `set_id`). The chaser queues no set for loops.
+- Cards go only to owners whose consent covers loop data (`loopConsentOf`); an uncovered owner gets one `loop_consent` line per day. Details: `notes/2026-11-15-f116-stage-11-follow-up-cards.md`.
+
+## Carry-over from the review of stage 14 (worker, 2026-11-15)
+
+- N3 (performance): `sentFromAddressesOf` in `loops/match.ts` runs a GROUP BY over every `sent_emails` row of the mailbox on each `matchReplies` run (every 2 minutes) and on each `isOpen`, which runs in the committer and draft transactions while they hold the loop lock. No index covers `(mailbox_id, from_address)`. The chaser must not add more calls. Options for this stage or a later one: read the aliases once per run and pass them in; or add an index `sent_emails (mailbox_id, lower(from_address))` in a migration (the next free timestamp after `20261115190001`); or cache the alias set per mailbox for a few minutes.
+- N6: a `failed` follow-up send whose outcome is unknown (`outcome_unknown`) does not count as waiting in `draftFollowUp`, so a new tap or the chaser can plan a second follow-up to the same people. The user approves each card, so no mail goes out unseen. Decide here whether the chaser skips a loop whose newest follow-up failed with an unknown outcome, or says so on the card.
+- The chaser has no user: `draftFollowUp` needs an owner and writes the user as actor of the `action.planned` rows (see the stage 14 carry-over).
+
+## Carry-over from the stage 14 re-review (PASS d9c7a3e7)
+
+- NOTE A (before the flag goes on): after "Track my sent mail" goes off, a Telegram follow-up card that was already delivered keeps its Send and Reject buttons: `clearLoopCards` sets the text to `[removed]` and `queueCardEdits` skips such a card. The send is `expired`, so a tap is refused and nothing goes out, but the buttons stay: queue an edit with a fixed text and no original (no quote, To, Cc or subject). Add a test that calls `setSentSync(off)` then `detectNotices` (the stage 11 test only sets `expired` by hand).
+- NOTE B: the comment of `clearLoopSentCopies` (`actions/repo/retention.ts`) says an `applying` send fails as a bad payload; that is false when the switch-off commits after `markApplying` (the mail goes out from the payload in memory: the accepted "applying finishes" rule). Fix the comment.
+- TEST GAPS: a loop with an own MAILBOX address in To or Cc: a mail from it must not close the loop (mutation m7); a mixed-case recipient must still close the loop (mutation m8).
+- Open questions (D): a loop closed before the switch-off keeps subject, To, Cc, counterpart and ask until 90 days after the close; `sent_at` stays in the draft payload (decide with the retention note).
+- NOTE E: the own-alias rule can close a loop when the user Cc's an own alias that is not a mailbox address and writes from it (accepted in the owner decision).

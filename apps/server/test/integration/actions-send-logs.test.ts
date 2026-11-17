@@ -6,7 +6,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { createCommitterJob, createExpiryJob } from "../../src/modules/actions";
 import { detectNotices, handleCallback, type CallbackDeps, type LinkedChat } from "../../src/modules/channels";
 import { getMailboxSettings, insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
-import { createChaserJob, delegationHooks } from "../../src/modules/delegation";
+import { delegationHooks } from "../../src/modules/delegation";
+import { createLoopChaserJob } from "../../src/modules/loops";
 import { composeMessage, SmtpSendError } from "../../src/modules/mail";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
@@ -234,7 +235,7 @@ describe("send logs", () => {
           .where("id", "=", stale.sendId)
           .executeTakeFirstOrThrow();
         expect(staleRow.status).toBe("expired");
-        await createChaserJob({ db: trx, now: () => clock }).run();
+        await createLoopChaserJob({ db: trx, now: () => clock }).run();
         await notices();
 
         const lines = capture.lines;

@@ -27,6 +27,7 @@ import {
   type SendScope,
 } from "../actions";
 import { closeDelegation } from "../delegation";
+import { loopHooks } from "../loops";
 import { getOrganization, isFeatureOn } from "../tenancy";
 
 import { handleMistakeTap, handleReasonTap } from "./action-feedback-taps";
@@ -92,6 +93,7 @@ export async function handleApprovalCallback(
     db: deps.db,
     hooks: deps.hooks,
     approvalHooks: cardEditHooks({ sendScope: deps.sendScope }),
+    loopHooks: loopHooks(),
     uidplus: deps.uidplus,
   };
   const input = { userId: link.userId, via: "telegram" as const, now };

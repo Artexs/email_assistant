@@ -1,0 +1,51 @@
+---
+title: Undo what the assistant did to a mail
+description: Bring a mail back after the assistant moved, flagged or marked it, in Telegram or in Activity.
+capabilities:
+  - actions-and-undo
+---
+
+import UiText from "../../../components/UiText.astro";
+
+Use this guide when the assistant moved, flagged or marked a mail and you want it back as it was.
+
+## Before you start
+
+- The assistant changes a mailbox only in assist mode. In shadow mode there is nothing to undo.
+- You can undo for 7 days after the change.
+
+## Undo in Telegram
+
+1. Open the digest. Each mail has a number, for example 3.
+2. Tap `↩️ 3` under the digest. The button shows only while an undo is possible for that mail.
+3. The bot answers `↩️ Undo started: the mail goes back within a minute.`
+
+## Undo in Activity
+
+1. Open the page **<UiText k="nav_activity" />**.
+2. Find the mail. Use the filters if you need them.
+3. Press **<UiText k="act_btn_undo" />** (the button with `↩️`). The button shows only while an undo is possible.
+4. The panel shows this text and marks the mail with **<UiText k="act_undo_pending" />**:
+
+   > <UiText k="undo_started" />
+
+If you cannot undo, the panel or the bot says why. For example:
+
+> <UiText k="undo_held" />
+
+## What Undo brings back
+
+Undo reverses these changes:
+
+- A move. The mail goes back to the folder it came from.
+- A flag. The system removes it.
+- A mark as read. The system marks the mail as unread.
+
+Undo does not bring back a mail that the system sent, and it does not work after 7 days.
+If you moved the mail back by hand, there is nothing left to undo. The system sees this at the next sync.
+
+## What happens next
+
+The system records the Undo as feedback: the category was wrong. If the AI was unsure about the mail, the system records nothing.
+A move that was running at the moment of your tap can still finish. The mail then shows `↩️` again. Tap it again.
+When you move a mail back by hand, the system also records that the category was wrong. It skips this when the AI was unsure or when you already set a category yourself.

@@ -610,17 +610,25 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `chaser_skipped_settings` (fields `org_id`, `mailbox_id`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and process start). The same file writes `chaser_skipped` with `reason` `gate` once, when the first tick comes before 07:30 local time or after the run of the day.
-- **Cause:** The mailbox is not in mode `assist`, or its switch `create_draft` is off, or the settings changed during the run (the chaser compares the settings version). The chaser makes no reminder for this mailbox.
+- **Source:** `apps/server/src/modules/loops/jobs.ts` (`[loops]`, level `info`; once per mailbox and process start; the job `loops.chaser` replaced `delegation.chaser` in F116 stage 15). The same file writes `chaser_skipped` with `reason` `gate` once, when the first tick comes before 07:30 local time or after the run of the day.
+- **Cause:** The mailbox is not in mode `assist` (or its switch `create_draft` is off) and the organization has the flag `open_loops` off, or the settings changed during the run (the chaser compares the settings version). The chaser does nothing for this mailbox. With the flag on and no `assist`, the chaser still closes stale and expired loops.
 - **Fix:** No action if you want no reminders. To get them: `mailbox:settings mode --mode assist` and `mailbox:settings switch --name create_draft --value on` (`deploy/README.md`, "Assist mode"). `chaser_skipped` with `reason` `gate` is normal. `chaser_forced` (same fields) shows a run with `--force`.
 - **Status:** won't fix (expected behaviour)
 
 ### `chaser_done` (fields `mailbox_id`, `due`, `overdue`, `reminders`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and day, only when `due` > 0).
+- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and day, only when `due` > 0; written by the job `loops.chaser`).
 - **Cause:** The daily chaser run found `due` delegations past their due date (a count). It marked `overdue` of them `overdue` and planned `reminders` reminders (draft + send, `awaiting_approval`). The owners get one approval message for the set.
 - **Fix:** No action. Tap 📤 Send all or ✖️ Skip all in Telegram. A reminder never goes out without a tap.
+- **Status:** won't fix (expected behaviour)
+
+### `loops_chaser_done` (fields `mailbox_id`, `count`, optional `kind`)
+
+- **First seen:** 2026-11-15 (F116 stage 15; not seen live)
+- **Source:** `apps/server/src/modules/loops/chaser.ts` (`[loops]`, level `info`; once per mailbox and day, one line for each part that has a count above 0).
+- **Cause:** The daily chaser run planned `count` follow-up cards (no `kind`), closed `count` loops as `stale` (`kind` `stale`: two follow-ups and 14 days, or 30 days after the due date) or closed `count` promised loops as `expired` (`kind` `expired`: 7 days after the due date).
+- **Fix:** No action. A follow-up never goes out without a tap. At most 10 sends (reminders and follow-ups together) are planned per mailbox and run; the rest comes the next day.
 - **Status:** won't fix (expected behaviour)
 
 ### `notice_skipped` (fields `kind`, `item_id`, `error`)

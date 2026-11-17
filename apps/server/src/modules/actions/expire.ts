@@ -23,15 +23,20 @@ export async function expireReady(
     actor: string;
     sendClose?: { hooks: DelegationHooks; uidplus: boolean };
   }
-): Promise<{ id: string; emailId: string; type: ActionType }[]> {
+): Promise<{ id: string; emailId: string | null; type: ActionType }[]> {
   if (filter.sends && opts.sendClose === undefined) {
     throw new HardError("expireReady: filter.sends needs opts.sendClose");
   }
-  const expired = await expireReadyOriginals(trx, ctx, filter, {
-    now: opts.now,
-    staleBefore: new Date(opts.now.getTime() - STALE_AFTER_MS),
-    reason: opts.reason,
-  });
+  const expired: { id: string; emailId: string | null; type: ActionType }[] = await expireReadyOriginals(
+    trx,
+    ctx,
+    filter,
+    {
+      now: opts.now,
+      staleBefore: new Date(opts.now.getTime() - STALE_AFTER_MS),
+      reason: opts.reason,
+    }
+  );
   for (const row of expired) {
     await recordAudit(trx, ctx, {
       emailId: row.emailId,

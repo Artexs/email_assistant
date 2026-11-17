@@ -1,0 +1,36 @@
+---
+title: Confirm or correct a category
+description: Tell the assistant that a category is right or wrong, in Telegram or in Activity.
+capabilities:
+  - triage
+---
+
+import UiText from "../../../components/UiText.astro";
+
+The assistant gives each mail one category: Urgent, Reply, Delegate, Info, Notification, Spam or Unsure.
+Use this guide to confirm a category or to correct it.
+
+## Confirm or correct in Telegram
+
+1. Find the mail in the digest. Each mail has a number, for example 2.
+2. Tap `✅ 2` when the category is right.
+3. Tap `✏️ 2` when it is wrong. The bot shows the list Urgent, Reply, Info, Notification and Spam. Tap the right one. Tap `✖️ Cancel` to stop.
+
+The bot answers, for example, `✅ Saved: Info is right.` or `✏️ Saved: Spam (AI said Info).`
+A mail in the category Unsure or Delegate has only `✏️ 2`. You cannot confirm these two categories.
+The notice for an urgent mail has the buttons `✅ Right` and `✏️ Change`. They work the same way.
+
+## Confirm or correct in Activity
+
+1. Open the page **<UiText k="nav_activity" />**.
+2. Find the mail. The filter **<UiText k="act_not_rated" />** shows the mails that you did not rate.
+3. Press the button with `✅` when the category is right. Press the button with `✏️` to correct it. A mail in the category Unsure or Delegate has no `✅` button.
+4. In the dialog **<UiText k="act_pick_title" />**, press the right category.
+
+The panel shows a short message. Open the mail to see your answer under **<UiText k="act_section_feedback" />**.
+
+## What happens next
+
+- The system saves your answer. If you answer the same way twice, it says `Already saved.` Your latest answer counts.
+- The system does not move the mail and does not sort it again.
+- Your answers show how often each category is right. An owner uses this to switch on automatic moves. A category needs at least 98% right on at least 30 rated mails. See [Mode and switches](../mode-and-switches/).

@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
-import { createLlmPause, createTriageJob } from "../../src/modules/triage";
+import { createLlmPause, createTriageJob, noGateEvidence } from "../../src/modules/triage";
 import type { GenerateFn } from "../../src/platform/llm";
 import { createFixedLlmClient } from "../../src/platform/llm/testing";
 import { captureLogs, eventLines, logProblems } from "../log-capture";
@@ -84,6 +84,7 @@ describe("triage logs", () => {
 
         const clock = { at: now };
         const triage = createTriageJob({
+          runningKey: noGateEvidence.runningKey,
           db: trx,
           llm: createFixedLlmClient(generate, {
             model: "fake-model",

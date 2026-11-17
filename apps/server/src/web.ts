@@ -1,10 +1,10 @@
 import { resolve } from "node:path";
 
-import { onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
+import { type GateEvidenceDeps, onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { orgPlanHooks, sentSwitchHooks, settingsDeps, uidplusOf } from "./composition";
+import { autoSetter, orgPlanHooks, sentSwitchHooks, settingsDeps, uidplusOf } from "./composition";
 import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
@@ -50,7 +50,8 @@ import {
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";
-import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
+import { goNoGoFor, triageRoutes } from "./modules/triage";
+import { queueHistoryCheckOnConnect } from "./modules/trust";
 import {
   createAuth,
   expiredSessionCookie,
@@ -251,16 +252,24 @@ export function homePathOf(
 }
 
 // D8, D16: the web calls the same setters as the CLI, with the one `settingsDeps` builder.
-export function settingsRouteDeps(db: Db, now: () => Date, testMail: TestMailRule): SettingsRouteDeps {
-  const settings = settingsDeps(db, now);
+export function settingsRouteDeps(
+  db: Db,
+  now: () => Date,
+  testMail: TestMailRule,
+  gate?: GateEvidenceDeps
+): SettingsRouteDeps {
+  const settings = settingsDeps(db, now, gate);
+  const setAuto = autoSetter(settings, testMail);
   return {
     db,
     now,
     settings,
     goNoGo: (ctx, id, at) => goNoGoFor(db, ctx, id, at, testMail),
     setAuto: async (ctx, id, input) => {
-      const result = await setCategoryAutoWithGate(settings, ctx, id, input, testMail);
-      return result.kind === "refused" ? result : { kind: "changed", change: result.change };
+      const result = await setAuto(ctx, id, input);
+      return result.kind === "refused"
+        ? { kind: "refused", gate: result.gate, ...(result.evidence ? { blocks: result.evidence.blocks } : {}) }
+        : { kind: "changed", change: result.change };
     },
     listSyncFolders: async (ctx, id) =>
       (await listSyncFolders(db, ctx, id, { enabledOnly: false })).map(({ key, role, path, enabled }) => ({
@@ -301,6 +310,8 @@ export interface WebExtras {
   /** Default: the IMAP and SMTP adapters. A test passes a login that refuses (the callback tests). `oauthTokens` is the cache the Reconnect drops. */
   mailOAuthLogin?: Partial<Pick<ApplyGrantDeps, "openProvider" | "verifySmtp" | "oauthTokens">>;
   onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
+  /** The global evidence of the running classifier, built once at start. Default: none (a closed gate; tests). */
+  gate?: GateEvidenceDeps;
 }
 
 export function apiRouters(
@@ -343,6 +354,7 @@ export function apiRouters(
           openProvider: openImapProvider,
           verifySmtp: verifySmtpLogin,
           timeouts: WEB_MAIL_TIMEOUTS,
+          onConnected: queueHistoryCheckOnConnect(db),
         },
         allowLocalHosts,
         onRemoved: async (trx, ctx, input) => {
@@ -364,7 +376,7 @@ export function apiRouters(
         clients: extras.mailOAuthClients ?? createMailOAuthClients(config),
       })
     );
-    api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config))));
+    api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes({ db, now, urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }));
@@ -407,6 +419,7 @@ export function apiPublicRouters(
         openProvider: openImapProvider,
         verifySmtp: verifySmtpLogin,
         timeouts: WEB_MAIL_TIMEOUTS,
+        onConnected: queueHistoryCheckOnConnect(db),
         ...extras.mailOAuthLogin,
       })
     );

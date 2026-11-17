@@ -34,3 +34,17 @@ Rule: back up first, tag `ea-server:pre-<ticket>`, deploy a CI-checked pinned co
 - Open, owner steps (need sudo on the VPS): (1) `sudo tailscale serve --bg --https=9443 --set-path /select http://127.0.0.1:9428/select` (only the `/select/` path, never the whole port); then open `https://email-assistant.tail40d9cf.ts.net:9443/select/vmui/` from a tailnet device. (2) `sudo apt install jq`: `deploy/logs.sh` and the README search steps need `jq` and the VPS has none.
 - Finding: `astro-app-container` (another site on this host) uses `json-file`, so vlagent ships its lines too (48 lines in 10 minutes). The store is local, kept 30 days. Say so if the owner does not want it.
 - Next: F114 stage 09 (drill on the VPS: Compose 2.40.2 checks of the carry-over, then `restore.sh`), F103 close after the owner does the tailnet step. Remove `ea-server:pre-v0.1.0` only after the next release is checked.
+
+## Deployed 2026-11-15 22:44 UTC (batch 4, release v0.2.0)
+- VPS now at tag `v0.2.0` = `3e60a7f5` (green CI run 43768979219). Before: `v0.1.0` = `c461a394`. State file: `current=v0.2.0`, `previous=v0.1.0`, `pending=` empty. Rollback target: `v0.1.0` (`deploy/rollback.sh`; never the migrations). Backup `ea-20261115T223641Z.dump.age` (536924 bytes). The prune removed `ea-server:pre-v0.1.0`.
+- Pre-checks at `3e60a7f5`: `db:check-migrations` ok; `docs:stale --strict` 0; no prompt file changed since v0.1.0 (no E2 report needed); contract lines name `v0.1.0` (deployed, the rollback target).
+- Migrations applied: `20261115180001_trust_ladder`, `20261115190001_outbox_loop_consent`.
+- Sim stack files changed (`deploy/Dockerfile.sim`, `deploy/sim.env.example`), but no `ea-sim` project runs on the VPS: nothing to rebuild (checklist step 4).
+- Checks (server start 22:44:12Z, read at 23:01Z): health 200; `EA_RELEASE=v0.2.0`; 0 `error` lines in 91; 8 `sync_done` lines, last 23:00:00Z; 0 `log_call_invalid`/`dropped_fields`/`console_output`; only the 5 startup config warnings; `ops:alerts` "no alerts in the last 7 days"; log drivers `server` json-file 10m 5, others local 10m 5; disk 22 GB free; `jq` present.
+- Closed after the deploy: F103, F105 (U1 declined, `outcome.md`), F106, F128. F112 stage 08 was already in master and in v0.2.0.
+
+### Open for the main coordinator (hand-over from the release session, 2026-11-16)
+1. Watch end: at or after 23:14Z repeat the counts above since 22:44:12Z (0 `error`, `sync_done` still rising, `ops:alerts` none). On trouble: `deploy/rollback.sh`.
+2. F104 stage 13a (time budget of the Sent pass): job `2026-11-15-f104-s13a-sent-budget-risky-sync-8890e7df` runs. When done: Opus 5.5 review (risky: sync of the pilot mailbox) with the TRACK sort line, land check, land.
+3. Then release v0.2.1 (`docs/release-checklist.md`). Do NOT turn on `sent_sync` yet: the owner wants to decide it in a later session (owner, 2026-11-16; `notes/owner-later.md` item 4). On the owner's word: F104 stage 13 steps 10–12 and its checks, pilot org only (check N5 first).
+4. After v0.2.1 is checked: no extra image to remove (the release script prunes).

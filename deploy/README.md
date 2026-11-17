@@ -47,7 +47,7 @@ Rule: every VPS deploy is a release (a patch version is fine). Do not deploy a b
 1. Run the release: `deploy/release.sh v<x.y.z>`. The tag must exist on `origin/master` and CI must be green on it (`docs/release-checklist.md`).
 2. The script does these steps and stops at the first failure: refuse a dirty tree or a tag that is not on `origin/master`; run `deploy/backup.sh` (the last stdout line must be `backup ok ...`); check the disk (stop under 3 GB free, after `docker builder prune -f`); write the state file `deploy/release-state/state` with `pending`; keep the running image as `ea-server:<current>`; check out the tag; build the image once with `EA_RELEASE=<tag>`; run `db:migrate`; start with `up -d --no-build --wait`; check `/health` and the `EA_RELEASE` of the running server; then update the state file (`current`, `previous`) and remove old images.
 3. The last output line is `release ok <tag> previous <old>`. Any other end is a failed release. A failed release before the `pending` mark prints "nothing changed, no rollback needed". After the mark it prints "roll back with deploy/rollback.sh".
-4. Watch for 30 minutes (`docs/release-checklist.md` step 9). On trouble run `deploy/rollback.sh` (§ Roll back a release).
+4. Watch for 30 minutes (`docs/release-checklist.md` step 10). On trouble run `deploy/rollback.sh` (§ Roll back a release).
 
 The first release on a host has no `current`: the running image becomes `ea-server:pre-<tag>`, so a rollback has a target from then on.
 
@@ -555,7 +555,7 @@ Run one job once, with the same settings as the server. Add `--force` only to th
 
 ```sh
 $C run --rm cli bun run job:run --name actions.expiry
-$C run --rm cli bun run job:run --name delegation.chaser [--force]
+$C run --rm cli bun run job:run --name loops.chaser [--force]
 $C run --rm cli bun run job:run --name channels.notifier
 $C run --rm cli bun run job:run --name platform.retention
 ```
@@ -899,10 +899,10 @@ L="$S exec -T lab bun run lab"
 ### Runbook
 
 1. **Release.** The sim files (`deploy/compose.sim.yaml`, `deploy/Dockerfile.sim`, `deploy/sim.env.example`) and the sim code ship in a release (`docs/release-checklist.md` step 4).
-   - If a sim file or the lab code changed since the last release, make a new release first: steps 1 to 8 of `docs/release-checklist.md`, then `deploy/release.sh v<x.y.z>` (§ Release). It runs the backup (step 3), checks the disk and leaves the checkout at the tag.
+   - If a sim file or the lab code changed since the last release, make a new release first: steps 1 to 9 of `docs/release-checklist.md`, then `deploy/release.sh v<x.y.z>` (§ Release). It runs the backup (step 3), checks the disk and leaves the checkout at the tag.
    - If nothing changed, check that the checkout is at the running release: `git describe --tags --exact-match` must print the tag in the line `current=` of `deploy/release-state/state`. If it does not, run `git checkout --detach <tag>` for that tag, or make a release.
    - Set the tag once: `T=$(git describe --tags --exact-match)`.
-2. **Disk.** `df -h /`. A live day needs at least 2 GB free. The live week waits for owner step O1 (the VPS root volume grows first: PD-055). Check again after the build.
+2. **Disk.** `df -h /`. Under 5 GB free: stop and tell the owner (owner rule 2026-11-15; the owner grows the root volume, PD-055). Check again after the build.
 3. **Backup first.** If step 1 ran `deploy/release.sh`, the backup is done (its last stdout line is `backup ok ...`). Else run `deploy/backup.sh` now. The sim stack never touches production rows, but the backup is the rollback point.
 4. **Build.** At the release tag:
    ```sh

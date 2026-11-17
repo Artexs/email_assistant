@@ -1,17 +1,19 @@
 import {
   actionStatusFor,
   applyHardRules,
-  autoFor,
   decideCategory,
   decidePolicy,
   delegationInputOf,
+  effectiveAutoFor,
   nextQuotaDayStart,
   planActions,
   QUOTA_TIMEZONE,
   quotaDayStart,
+  senderRuleOf,
   type Category,
   type CategoryPolicy,
   type DelegationInput,
+  type EvidenceKey,
   type MailboxMode,
   type PlannedAction,
   type SenderRule,
@@ -61,6 +63,8 @@ export interface TriageMailbox {
   mode: MailboxMode;
   toolSwitches: ToolSwitches;
   policy: CategoryPolicy;
+  // The key of the classifier that runs now (the job gets it from the composition root). `auto` counts only under it.
+  runningKey: EvidenceKey;
   rules: readonly SenderRule[];
   movesSupported: boolean;
   // The active delegates of the organization, read once per mailbox run.
@@ -209,7 +213,9 @@ export async function saveTriage(
   now: Date
 ): Promise<TriageOutcome> {
   const emailLog = emailLogOf(ctx, email);
-  const categoryAuto = autoFor(mailbox.policy, decision.finalCategory);
+  const categoryAuto = effectiveAutoFor(mailbox.policy, decision.finalCategory, mailbox.runningKey);
+  // Which sender rule shaped the result, from the same rules snapshot as the decision. The pattern is never stored.
+  const ruleHit = senderRuleOf(applyHardRules(email.from_address, mailbox.rules));
   const items: PlannedActionInput[] = planActions(
     decision.finalCategory,
     decision.summary,
@@ -256,10 +262,12 @@ export async function saveTriage(
       confidence: decision.confidence,
       reasonCode: decision.reasonCode,
       reason: decision.reason,
-      fields:
-        decision.modelCategory === null
-          ? decision.fields
-          : { ...decision.fields, model_category: decision.modelCategory },
+      // The `rule` key is last: no model field can set it (F110 stage 16). An old row has no key and reads null.
+      fields: {
+        ...decision.fields,
+        ...(decision.modelCategory === null ? {} : { model_category: decision.modelCategory }),
+        rule: ruleHit,
+      },
       model: decision.model,
       promptVersion: decision.promptVersion,
       tokensIn: decision.usage?.tokensIn ?? null,

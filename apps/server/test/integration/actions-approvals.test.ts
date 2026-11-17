@@ -519,7 +519,7 @@ describe("notice queries", () => {
 
       const rows = await listSendsToNotify(trx, s.ctx, { limit: 10 });
       expect(rows.map((r) => r.id)).toEqual([listed.sendId]);
-      expect(rows[0]?.email.subject).toBeDefined();
+      expect(rows[0]?.email?.subject).toBeDefined();
       expect(await listSendsToNotify(trx, paused.ctx, { limit: 10 })).toEqual([]);
     });
   });

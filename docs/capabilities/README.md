@@ -1,10 +1,10 @@
 # Capability map
 
-> Agent-facing reference of what the system does now: one page per capability, with rules, entry points, data, limits and decisions. It is not on the public docs site (PD-100). User docs come with E10a.
+> Agent-facing reference of what the system does now: one page per capability, with rules, entry points, data, limits and decisions. It is not on the public docs site (PD-100). The user docs are in `apps/docs/`.
 
 ## Rules
 
-- A landed feature updates its capability page in the same change (PD-009). Once the docs site of E10a exists, a landed user-visible feature also updates its user doc page (en) in the same change (PD-100).
+- A landed feature updates its capability page in the same change (PD-009). A landed user-visible feature also updates its user doc page (en) in `apps/docs/src/content/docs/` in the same change (PD-100; `docs/code-patterns.md` § Docs site).
 - A page states the code at the commit on its "Checked against" line. Plans and gaps go only to "Limits", with the ticket folder or F-number.
 - Behaviour detail lives here. `docs/architecture.md` keeps goals, context, layout, module rules, ports, invariants, data model, security and deployment, and links here.
 - A new capability adds a page and an index row in the same change.

@@ -1,10 +1,12 @@
 import { MAILBOX_ACTION_TYPES, MOVE_TARGET_NAMES, type NoticeView } from "@ea/core";
 
 import { type Db, type TenantContext } from "../../../platform/db";
-import { listFailedUnnotified, markNotified } from "../../actions";
+import { listFailedFollowUps, listFailedUnnotified, markNotified, markResultNotified } from "../../actions";
 import { isSyntheticMessageId } from "../../mail";
+import { isFeatureOn } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
+import { panelListUrlOf } from "./approval";
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 
 export const ACTION_FAILED_LOOKBACK_MS = 24 * 3_600_000;
@@ -71,8 +73,56 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
   }
 }
 
+// A follow-up that failed (open loops stage 11, review G13): one fixed `action_failed` notice per owner, no recipient, no text,
+// so the consent gate has nothing to withhold. A send that may have gone out (`outcome_unknown`) says so. The mark is
+// `result_notified_at` (the send's own `notified_at` marks its approval card). There is no "Send again": a new follow-up is drafted
+// from its loop.
+async function detectFailedFollowUps(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  owners: LinkedChat[],
+  now: Date,
+  webBaseUrl: string | undefined
+): Promise<void> {
+  if (owners.length === 0) return;
+  const failed = await listFailedFollowUps(db, ctx, { limit: ACTION_FAILED_LIMIT });
+  if (failed.length === 0) return;
+  const panelBase = webBaseUrl !== undefined && (await isFeatureOn(db, ctx, "approvals_page")) ? webBaseUrl : undefined;
+  const panelUrl = panelBase === undefined ? undefined : panelListUrlOf(panelBase);
+  for (const send of failed) {
+    const run = async (trx: DbOrTrx) => {
+      for (const owner of owners) {
+        await queue(
+          trx,
+          ctx,
+          {
+            userId: owner.userId,
+            locale: owner.locale,
+            kind: "action_failed",
+            dedupKey: `action_failed:${send.id}`,
+            loopId: send.loopId,
+            view: {
+              followUp: { cause: send.unknown ? "unknown" : "failed", ...(panelUrl === undefined ? {} : { panelUrl }) },
+            },
+          },
+          now
+        );
+      }
+      await markResultNotified(trx, ctx, send.id, now);
+    };
+    try {
+      await (db.isTransaction ? run(db) : (db as Db).transaction().execute(run));
+    } catch (error) {
+      warnSkipped("action_failed", send.id, error);
+    }
+  }
+}
+
 export const actionFailedDetector: Detector = {
   name: "action-failed",
   kinds: ["action_failed"],
-  detect: (run) => detectActionFailed(run.db, run.ctx, run.owners, run.now),
+  async detect(run) {
+    await detectActionFailed(run.db, run.ctx, run.owners, run.now);
+    await detectFailedFollowUps(run.db, run.ctx, run.owners, run.now, run.deps.webBaseUrl);
+  },
 };

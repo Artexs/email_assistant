@@ -94,7 +94,7 @@ Order: 01 → 02 → 03 → 04; 05 → 06; 07 → 08. 04, 05, 07 touch Compose f
 
 ## How to run (coordinator)
 
-1. Gate PD-055 done; move to `active/`, commit.
+1. (Done.) PD-055 is no gate since 2026-11-15 (owner); stage 09 checks the disk itself.
 2. Spawn per stage: `limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --prepare 'bash scripts/limen-prepare.sh' --label "F114-sNN <slug> · F114" "Implement F114 stage NN (spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/: ticket.md, plan.md, stages/stage-NN-<slug>.md). Run the Proof after the last commit; claim only what a saved log shows."`
 3. TRACK land check, `limen land --keep-open`, drop the job DB. After 01: `bun run db:migrate` on the dev DB.
 4. Stage 09: a coordinator run.

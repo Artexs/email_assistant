@@ -11,6 +11,7 @@ import { approvalDetector } from "./approval";
 import { approvalSetDetector } from "./approval-set";
 import { authErrorDetector } from "./auth-error";
 import { delegationAnsweredDetector } from "./delegation-answered";
+import { followUpClosedDetector } from "./follow-up-closed";
 import { hostBlockedDetector } from "./host-blocked";
 import { notTriagedDetector } from "./not-triaged";
 import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
@@ -22,6 +23,7 @@ import { urgentDetector } from "./urgent";
 import { weeklyReportDetector } from "./weekly-report";
 
 export { queueMailboxRemovedNotices } from "./mailbox-removed";
+export { queueTrustNotice, trustReportUrlOf, trustSettingsUrlOf, type TrustNoticeInput } from "./trust";
 export { SYNC_LATE_MS };
 export type { NoticeDeps };
 
@@ -37,6 +39,7 @@ export const detectors: readonly Detector[] = [
   approvalDetector,
   approvalSetDetector,
   sendResultDetector,
+  followUpClosedDetector,
   sendHeldDetector,
   delegationAnsweredDetector,
   weeklyReportDetector,
@@ -48,6 +51,11 @@ export const queuedBy = {
   digest: "channels/digest-job.ts",
   mailbox_removed: "channels/notices/mailbox-removed.ts",
   approval_edit: "channels/card-edits.ts",
+  // The one line for an owner whose consent does not cover open-loop data: queued by the approval and send-result detectors.
+  loop_consent: "channels/notices/loop-consent.ts",
+  // F110: the trust module calls `queueTrustNotice` inside its own transaction (history check end, re-gate, tripwire).
+  trust_report_ready: "trust (through channels/notices/trust.ts)",
+  autonomy_paused: "trust (through channels/notices/trust.ts)",
 } as const satisfies Partial<Record<NoticeKind, string>>;
 
 async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat[], now: Date): Promise<void> {
@@ -68,7 +76,14 @@ async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat
     mailboxes,
     pausedMailboxIds: new Set(mailboxes.filter((mailbox) => mailbox.status === "paused").map((mailbox) => mailbox.id)),
   };
-  for (const detector of detectors) await detector.detect(run);
+  // One detector that fails (a view that does not render, a database error) does not stop the later ones of the organization.
+  for (const detector of detectors) {
+    try {
+      await detector.detect(run);
+    } catch (error) {
+      log.error("notice_detector_failed", { kind: detector.name, org_id: orgId, ...errorFields(error) });
+    }
+  }
 }
 
 // Never throws. One organization that fails does not stop the next one.

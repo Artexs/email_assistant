@@ -5,6 +5,8 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import type { LoopAnchor, LoopHooks } from "../actions";
 import { auditEvents, recordAudit } from "../audit";
 
+import { ownAddressesFor, ownAddressSetsOf } from "./match";
+import { readReplyDecision } from "./reply-read";
 import { lockLoop, SYSTEM } from "./repo";
 
 // A follow-up never leaves the next one due before this many working days: the next Draft is not `too_soon`.
@@ -60,7 +62,16 @@ export function loopHooks(): LoopHooks {
 
     async isOpen(trx: Transaction<DB>, ctx: TenantContext, loopId: string): Promise<boolean> {
       const loop = await lockLoop(trx, ctx, loopId);
-      return loop?.status === "open";
+      if (loop?.status !== "open") return false;
+      if (loop.kind === "promised") return true;
+      // A reply that came since the last run of `loops.match` also stops the follow-up. The job closes the loop later.
+      const decision = await readReplyDecision(
+        trx,
+        ctx,
+        loop,
+        ownAddressesFor(await ownAddressSetsOf(trx, ctx, loop.mailbox_id), loop)
+      );
+      return decision.first === null;
     },
 
     async onFollowUpSent(trx, ctx, input) {

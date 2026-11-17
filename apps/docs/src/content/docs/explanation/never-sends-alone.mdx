@@ -1,0 +1,63 @@
+---
+title: The assistant never sends alone
+description: Learn why every mail that the assistant sends needs your tap, and what the word sent means.
+capabilities:
+  - drafts-and-send
+---
+
+The assistant writes drafts. It never sends a mail by itself. Each send needs the tap of an owner on the exact text.
+This page explains the steps and the reasons.
+
+## From a draft to a send
+
+1. The system finds a task in a mail. It plans a draft and a send for it.
+   The draft kinds are a delegation to a delegate, a question to the sender, and a reminder to a delegate.
+2. The system saves the draft in the folder Drafts of your mailbox. This needs assist mode and the switch for drafts. See [Settings](../../reference/settings/).
+3. After the draft exists, the bot sends an approval request to each owner in Telegram.
+   The request shows the recipient, the full text of the draft and a quote of the original mail.
+4. An owner taps `📤 Send`. The tap is the approval. A member who is not an owner cannot tap it.
+5. The system sends the mail through your mail server and saves a copy in Sent.
+6. The bot sends you the result.
+
+In shadow mode the system plans the draft and the send but logs both. It makes no draft and sends nothing.
+
+## Why a tap on the exact text
+
+The request shows the text that goes out. The system builds the request and the mail from the same draft.
+You approve what you read. If you change the draft in your mail client, the system still sends the approved text.
+Do not send the draft from your mail client.
+
+The recipient comes from your delegate list or from the sender of the mail. It never comes from text that the AI wrote.
+The system sends to one recipient only.
+
+## What happens without a tap
+
+- If nobody taps within 48 hours, the send expires. The system does not send it. You get a notice with the reason.
+- If you tap `✖️ Reject`, the send ends. The system removes the draft from Drafts when your mail server allows it.
+- Reminders follow the same rules. A reminder needs a tap, alone or in a set. One tap on `📤 Send all` approves a set. `✖️ Skip all` skips it.
+
+Your operator can switch sending off for the whole server. Then your tap is saved, but the send waits.
+If it cannot go out within 48 hours after your tap, it ends and you get a notice.
+
+The system also holds a send when a limit is reached: 20 sends an hour and 100 sends in 24 hours for one mailbox, and 5 sends to one recipient in 24 hours.
+You get the notice **Sends held**. The held sends go out when the limit allows. The numbers are in [Limits](../../reference/limits/).
+
+## What "sent" means
+
+The notice `✅ Sent to …` means that your mail server accepted the mail. The server answered with success after it got the full message.
+It does not mean that the recipient got it or read it. The recipient's server can still refuse it.
+
+The system saves a copy in your folder Sent. If that fails, the notice says "No copy in Sent". The mail is still sent.
+
+If the mail server refuses the mail, the notice says `❌ Not sent` and why. The draft stays in Drafts, so you can read it.
+
+## When the outcome is unknown
+
+Sometimes the connection breaks after the system sent the text. The system cannot know if the server took the mail.
+The system never tries again by itself in this case. A second try could send the mail twice.
+
+The notice `⚠️ Unknown whether the mail … went out` tells you to check your folder Sent or to ask the recipient.
+Then you decide: tap `📤 Send again` to send once more, or `✅ It went out` if you know that the mail left.
+The second button exists for delegations. It changes only the state of the delegation. It sends nothing.
+
+For the numbers, see [Limits](../../reference/limits/). For the buttons and the notices, see [Telegram](../../reference/telegram/).

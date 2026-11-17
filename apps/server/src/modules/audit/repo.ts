@@ -59,7 +59,7 @@ export const auditEvents = {
   orgBreakGlassCleared: "org.break_glass_cleared", // data: user_id, reason ("cli" | "replaced" | "two_factor_reset")
   delegateAdded: "delegate.added", // data: delegate_id, via
   delegateChanged: "delegate.changed", // data: delegate_id, fields (the names of the changed fields in one string, comma between), active (when it changed), via; never a name or a tag
-  delegationCreated: "delegation.created",
+  delegationCreated: "delegation.created", // data: delegation_id, delegate_id, send_action_id, due, source (triage | button), via (button only: web | telegram | cli)
   delegationSent: "delegation.sent",
   delegationAnswered: "delegation.answered",
   delegationOverdue: "delegation.overdue",
@@ -67,12 +67,15 @@ export const auditEvents = {
   delegationDone: "delegation.done",
   delegationRemindRequested: "delegation.remind_requested", // data: delegation_id, reminder (1 or 2), via; the actor is the user
   delegationChaserRun: "delegation.chaser_run",
+  // F116 stage 15: the loop part of the chaser ran for a mailbox. Flat; data: mailbox_id, follow_ups, stale, expired, forced (counts and ids only).
+  loopsChaserRun: "loops.chaser_run",
   // F116. Flat; ids and codes only, never the subject, the ask or an address of a loop. The actor is a user id or "system".
   loopOpened: "loop.opened", // data: loop_id, kind
   loopClosed: "loop.closed", // data: loop_id, kind, reason
   loopReopened: "loop.reopened", // data: loop_id, kind
   loopLater: "loop.later", // data: loop_id, kind, later_count
   loopRestarted: "loop.restarted", // data: loop_id, kind
+  loopWouldDraft: "loop.would_draft", // data: loop_id, kind, via; shadow mode: a follow-up tap that planned nothing
   webLogin: "web.login",
   webPasswordSet: "web.password_set",
   webPasswordChanged: "web.password_changed",
@@ -103,6 +106,7 @@ export const auditEvents = {
   ssoDomainAttested: "sso.domain_attested", // actor: cli; data: provider_id, domain (the attestation of a test organization)
   ssoRequiredChanged: "sso.required_changed", // actor: cli; data: from, to, sessions_ended
   ssoUnlinked: "sso.unlinked", // actor: cli; data: user_id, sessions_ended
+  memberNotifyChanged: "member.notify_changed", // F110 s18. actor: the user; data: via, keys (the changed keys in one string, comma between); never a value
   orgMemberAdded: "org.member_added", // actor: cli; data: user_id, role
   webMemberSessionsEnded: "web.member_sessions_ended", // actor: cli; data: user_id, count, only_sso
 } as const;

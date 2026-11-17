@@ -21,7 +21,7 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   approval_set: "many_mails", // `emailId` of its first mail only; lists the subjects of several
   urgent: "one_mail", // one queue path, `emailId` set
   action_failed: "one_mail", // one queue path, `emailId` set
-  approval: "one_mail", // one queue path, `emailId` set
+  approval: "one_mail", // `emailId` set; a follow-up card sets `loopId` instead and goes with its loop (foreign key cascade)
   send_result: "one_mail", // one queue path, `emailId` set
   delegation_answered: "one_mail", // one queue path, `emailId` set
   auth_error: "no_mail", // mailbox address
@@ -31,8 +31,11 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   send_held: "no_mail", // mailbox address, limit, counts
   host_blocked: "no_mail", // mailbox address
   sent_missing: "no_mail", // mailbox address
+  loop_consent: "no_mail", // a fixed line and the panel link: no recipient, no text
   weekly_report: "no_mail", // counts and category names only (`renderWeeklyReport`)
   approval_edit: "one_mail", // `queueCardEdits` sets `emailId` of the target card (F102); its view keeps the card text
+  trust_report_ready: "no_mail", // category names and a count (`renderTrustReportReadyNotice`)
+  autonomy_paused: "no_mail", // a category, a fixed reason and a count (`renderAutonomyPausedNotice`)
   not_triaged: "one_mail", // the detector sets `emailId`; the view holds the sender address of that mail
 };
 
@@ -92,4 +95,26 @@ async function drop(trx: Transaction<DB>, orgId: string, since: Date): Promise<{
     trx
   );
   return { outbox_dropped: Number(result.numAffectedRows ?? 0n) };
+}
+
+// A loop that an erase cleared (its ask and subject) may be named in the brief lines of stored digests: `view.loopIds` holds
+// the ids of the loops that a digest named (F116 stage 18). Such a digest loses its text and view, whatever else it listed: the
+// address scrub of the erase would leave the ask and the subject in the line. A `sent` or `failed` row is blanked as `blank` does;
+// a `pending` or `sending` digest is deleted (the next slot covers the period, as `drop` does). A delivered message stays in the
+// chat: nothing here can recall it. Returns the rows blanked and the rows deleted.
+export async function blankDigestsNamingLoops(
+  trx: Transaction<DB>,
+  orgId: string,
+  loopIds: readonly string[]
+): Promise<{ blanked: number; dropped: number }> {
+  if (loopIds.length === 0) return { blanked: 0, dropped: 0 };
+  const names = sql`jsonb_typeof(view->'loopIds') = 'array' and exists (
+    select 1 from unnest(${[...loopIds]}::text[]) as l(id) where jsonb_exists(view->'loopIds', l.id))`;
+  const blanked = await sql`
+    update outbox set text = ${REMOVED}, view = '{}'::jsonb
+    where org_id = ${orgId}::uuid and kind = 'digest' and status in ('sent', 'failed') and ${names}`.execute(trx);
+  const dropped = await sql`
+    delete from outbox
+    where org_id = ${orgId}::uuid and kind = 'digest' and status in ('pending', 'sending') and ${names}`.execute(trx);
+  return { blanked: Number(blanked.numAffectedRows ?? 0n), dropped: Number(dropped.numAffectedRows ?? 0n) };
 }

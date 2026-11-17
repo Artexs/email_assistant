@@ -83,9 +83,9 @@ Web stages (16–18): add `&& bun run web:build > /tmp/f117-sNN/web.log 2>&1` be
 
 ## Owner steps and gates
 
-- **U1 (before stage 02; money, secrets):** stage 01 § Owner runbook; the coordinator commits the result files. Stages 03–13, 16, 20 do not wait.
-- **G1 (after stage 02):** M3 FAIL → hold 14, 17–19, 21; ask the owner (PD-086 fallback, about +15 stages), then a refresh job. G2 FAIL → hold 15, 19, 21 likewise (PD-087). Other FAILs → a refresh job for the stages `spike.md` names.
-- **U2 (stage 21; secrets, browser):** stage 21 § Owner runbook.
+- **U1 (before stage 02; money, secrets):** stage 01 § Owner runbook; the coordinator commits the result files. Stages 03–13, 16, 20 do not wait. **Skipped (2026-11-15).** Owner, 2026-11-15: "if that's not necessary explicitly important ... we should skip the tests there and just proceed with the rest of the implementation." Stage 02 runs without result files (stage 02 § No live run).
+- **G1 (after stage 02):** since 2026-11-15 G1 passes on the defaults (M3 and G2 assumed PASS, not proven live); the rest of this line applies only after a later live run. M3 FAIL → hold 14, 17–19, 21; ask the owner (PD-086 fallback, about +15 stages), then a refresh job. G2 FAIL → hold 15, 19, 21 likewise (PD-087). Other FAILs → a refresh job for the stages `spike.md` names.
+- **U2 (stage 21; secrets, browser):** stage 21 § Owner runbook. **Skipped (2026-11-15)** with U1: stage 21 does not run; the flags stay off; "not proven live".
 - After stage 03 lands: `bun run db:migrate` (main checkout).
 
 ## Review

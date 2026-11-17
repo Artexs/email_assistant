@@ -1,0 +1,47 @@
+---
+title: Turn on two-factor sign-in
+description: Add a code from an authenticator app to your sign-in, save backup codes and recover when you lose your phone.
+capabilities:
+  - web-panel
+---
+
+import UiText from "../../../components/UiText.astro";
+
+Two-factor sign-in asks for a code from an app on your phone after your password. It is optional.
+
+## Before you start
+
+- Install an authenticator app on your phone, for example Google Authenticator, Microsoft Authenticator or Aegis.
+- Have your password ready.
+- A member who has no password cannot use this feature.
+
+## Turn it on
+
+1. Open the page **<UiText k="nav_settings" />**. Go to the card **<UiText k="acct_title" />**, section **<UiText k="tf_title" />**.
+2. Press **<UiText k="tf_turn_on" />** and type your password.
+3. Scan the QR code with the app. Or type the key that the page shows.
+4. Type the 6-digit code that the app shows and press **<UiText k="tf_verify" />**.
+5. The page shows your 10 backup codes. Each code works one time. You see them only now. Save them in a safe place, for example a password manager. Then press **<UiText k="tf_codes_done" />**.
+
+> <UiText k="tf_on_toast" />
+
+Turning it on signs you out on your other devices.
+
+## Sign in with it
+
+1. Sign in with your password. The page then asks for a code from your app.
+2. Type the 6 digits and press **<UiText k="tf_verify" />**.
+3. To skip the code on your own device, turn on **<UiText k="tf_trust_device" />** first. After 30 days the page asks for a code again.
+
+If your phone is not at hand, press **<UiText k="tf_use_backup" />** and type one backup code, in the form `abcde-12345`. Case matters.
+
+## If you lose your phone
+
+1. Sign in with a backup code.
+2. In the same section of Settings, press **<UiText k="tf_new_codes" />**. You need your password and a code. The old backup codes stop working.
+3. If you have no phone and no backup code, ask your operator. The operator checks who you are outside the system and runs a reset. The reset ends all your sessions and trusted devices. You then sign in with your password and can turn two-factor sign-in on again. See the [operator guide](../../operate/install-and-run/).
+
+## What happens next
+
+After 5 wrong codes the sign-in step ends. After 10 wrong codes the code step is locked for 15 minutes.
+To turn it off, press **<UiText k="tf_turn_off" />** in the same section. You need your password and a code from your app or a backup code.

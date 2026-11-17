@@ -8,7 +8,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## TRACK
 
-- Standing models (owner, 2026-11-14), all `--engine pi --provider claude-bridge --thinking high` with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen), except: planner `claude-opus-5-5` with `--thinking medium` (owner, 2026-11-15: plan and refresh jobs; the planner's own cold review stays `high`, because it checks the decisions); worker `claude-sonnet-5-5`; review of a plan or a stage `claude-opus-5-5` when it is `[risky]` or touches security, auth, privacy, tenant isolation, money or LLM spend, a migration, data delete, sync or dedup, sending to people, deploy or the VPS, or new user-facing Polish text; else `claude-sonnet-5-5`; a mechanical check list (count, compare, verify files) `claude-haiku-5-5`; scout (`--role scout`, started by planners, up to 4 per plan, owner 2026-11-15) `claude-sonnet-5-5` with `--thinking medium`. The review task names the model and the reason. Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job). Log lint (E8a): all of `apps/server/src` is at error since F103 stage 13 (0 `no-restricted-syntax` warnings).
+- Standing models (owner, 2026-11-14), all `--engine pi --provider claude-bridge --thinking high` with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen), except: planner `claude-opus-5-5` with `--thinking medium` (owner, 2026-11-15: plan and refresh jobs; the planner's own cold review stays `high`, because it checks the decisions); worker `claude-sonnet-5-5`; review of a plan or a stage `claude-opus-5-5` when it is `[risky]` or touches security, auth, privacy, tenant isolation, money or LLM spend, a migration, data delete, sync or dedup, sending to people, deploy or the VPS, or new user-facing Polish text; else `claude-sonnet-5-5`; a mechanical check list (count, compare, verify files) `claude-haiku-5-5`; scout (`--role scout`, started by planners, up to 4 per plan, owner 2026-11-15) `claude-sonnet-5-5` with `--thinking medium`; quality pass (`--role quality --detached`, owner 2026-11-15) `claude-sonnet-5-5`, started by the coordinator without a prompt after every 10 landings since the newest `spec/quality/` file (with no file, after the next landing); the task says to skip test files, because the test audit (F125) owns them; findings become planned tickets, and a drop of a user feature waits for the owner. The review task names the model and the reason. Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job). Log lint (E8a): all of `apps/server/src` is at error since F103 stage 13 (0 `no-restricted-syntax` warnings).
 - Now: S6 pre-sale moves to Limen segment by segment (S6a = F077). The S6 master plan and `s6b`–`s6f` still sit in `tasks/` until `plan-task` plans them here; the old `run-task` flow is removed.
 - CI on `master`: red several times on 2026-11-14 from two flaky tests that failed without a code change; F123 (`main-start-log`) is fixed and landed; F126 (`mail-folders-cli`) is fixed and landed; no test is quarantined now. Last known all-green run before that: 2026-11-13 (run 43449221495). Bun pin `.bun-version` 1.4.4. Land check (owner, 2026-11-14, until Limen `land` runs it): before each `limen land`, in the job worktree run `git merge --no-edit master && bun run typecheck && bun run test:unit:ci` (about 1 min); land only on exit 0, else continue the job with the error. Each branch passed alone, but two merges broke master on 2026-11-14 (`989a1b18`: F099 s05 after F098 s06). After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
 - Review findings (owner, 2026-11-15): every stage review task ends with this line: "After the first line, sort every finding into BLOCKING (a proven break of an acceptance bullet; needs a code change), TEST GAP (only tests are missing; name each case with its values) or NOTE (anything else)." The coordinator files the whole review as `review-<n>.md` in the feature folder (Limen manual step 6), then: NOTE → no repair job; land; a ticket line only when it widens the scope. TEST GAP → one continue on `claude-sonnet-5-5` `--thinking medium` that adds only those tests; no re-review; before the land, the land check and the lane of the new tests (`bun run test:int:ci` for integration tests) pass. BLOCKING → repair as before. A worker task for a stage that gets a review adds: "For each guard this stage adds (auth or role check, org_id scope, input rule), remove it, run its test, see the test fail, and restore it. List each guard and the failing test in your result."
@@ -17,18 +17,16 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟠 ACTIVE): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
 - `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
+- `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟠 ACTIVE): E8b Alerts and releases (incl. the restore drill)
 - `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
 - `F112-e10a-docs-site` (🟠 ACTIVE): E10a Docs site
 - `F111-e11b-private-model-option` (🟠 ACTIVE): E11b Private model option
-- `F106-e7-t3-account-data-delete-export-dsr` (🟠 ACTIVE): E7-T3 Account data (delete, export, DSR)
-- `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
+- `F110-e4-b-earn-trust` (🟠 ACTIVE): E4-B Earn trust
 - `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
-- `F103-e8a-logs` (🟠 ACTIVE): E8a Logs
 - `F102-e4-a-act-from-the-panel` (🟠 ACTIVE): E4-A Act from the panel
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
@@ -53,7 +51,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F101-panel-to-astro-7` (plan refreshed 2026-11-15 (plan-refresh-1.md), base 560e74e7, 4 stages): Panel to Astro 7; sequenced after E1; gate —.
 - `F102-e4-a-act-from-the-panel` (🔴 PLANNED, plan landed, 20 stages, plan base 5e07cdf2; refresh needed before stage 01, drift in apps/web/package.json): owners approve, edit and reject drafts and manage delegates and delegations in the panel; every `/api` route in OpenAPI; build after F095, F098 (closed); F101 in `done/` before stages 07, 12, 13, 17, 18; stage 06 the only migration; stages 01 and 07 the only `bun.lock` changes; gate —.
 - `F103-e8a-logs` (plan refreshed 2026-11-15 (plan-refresh-1.md), base 560e74e7, 19 stages, active): every log line an event, CLI output apart, log store on the tailnet; sequenced after E1; gate —.
-- `F104-e5a-read-sent` (plan refreshed 2026-11-15 at 560e74e7, review 2 PASS, 13 stages): E5a Read Sent; F095 and F099 closed; stage 12 adds the F106 data-request rule for sent mail; gate —.
+- `F104-e5a-read-sent` (plan refreshed 2026-11-15 at 560e74e7, review 2 PASS, 14 stages with 13a): E5a Read Sent; stage 13a (Sent pass time budget) runs as job `2026-11-15-f104-s13a-sent-budget-risky-sync-8890e7df`, then Opus review, land, release v0.2.1; stage 13 (`sent_sync` on for the pilot) waits for the owner's word (`notes/owner-later.md` item 4); steps in `notes/2026-11-15-vps-deploy-queue.md` § batch 4 hand-over.
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (plan landed, 15 stages): E7-T6 Identity A (TOTP, backup codes, break-glass); stage 01 the only migration, stage 10 changes `bun.lock`; sequenced after F082 (closed); gate —.
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, plan landed, 12 stages): E7-T3 Account data (delete, export, DSR); stage 01 the only migration, stage 05 the only `bun.lock` change; build after F082, F098 (closed); gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, plan landed, 8 stages): E7-T4 Papers and cost; legal drafts (pl, en), internal papers, claims list, cost model v1; sequenced after F106 (build after F106 is in `done/`); gate —; stage 07 is the VPS deploy (coordinator), stage 08 the cost model.
@@ -90,18 +88,22 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F076-vertex-ai-eu` (🔴 PLANNED, plan landed): the LLM calls run on Vertex AI in an EU region; `parked`: fallback of PD-110 only if OpenAI refuses the EU project (F111 gate); epic none.
 - `F085-a-mailbox-whose-host-the-guard-refuses-gets-a-status-and-a-notice` (🟠 ACTIVE, plan landed, 7 stages, stage 02 the only migration): a mailbox whose host the guard refuses gets a status and a notice; `keep`: F088 landed (detector registry, outbox migration), so plan now; epic none.
 
+## PARKED
+
+- `F129-every-command-line-tool-follows-one-standard-and-agents-find-each-tool-its-risk-and-its-exit-codes-in-one-generated-list` (🔴 PLANNED, parked: starts only when the owner moves this line to NEXT or names F129; then it needs a plan; no migration expected): one CLI standard (`docs/cli.md`), an inventory stage that merges or removes overlapping tools, a generated `cli:list`; design input `notes/2026-11-15-cli-standard.md`; owner decisions in `ticket.md` § Notes; sequenced after F103 stage 04 (landed); gate —.
+
 ## PROVEN
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
 - `F109-e3b-improve` (🟢 PROVEN): E3b Improve; landed 2026-11-15
+- `F106-e7-t3-account-data-delete-export-dsr` (🟢 PROVEN): E7-T3 Account data (delete, export, DSR); landed 2026-11-15
+- `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟢 PROVEN): E7-T6 Identity A (TOTP, backup codes, break-glass); landed 2026-11-15
+- `F103-e8a-logs` (🟢 PROVEN): E8a Logs; landed 2026-11-15
 - `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
 - `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
 - `F032-copy-below-cursor` (🟢 PROVEN): Store and triage a copy that lands below the UID cursor; landed 2026-11-15
-- `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
-- `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
-- `F100-e3a-measure` (🟢 PROVEN): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes; landed 2026-11-14
-- `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟢 PROVEN): E7-T2 Platform controls (send limits, feature flags, operator console, security log); landed 2026-11-14
-- 2026-11: 75 landed. spec/features/done/2026-11/
+- 2026-11: 79 landed. spec/features/done/2026-11/

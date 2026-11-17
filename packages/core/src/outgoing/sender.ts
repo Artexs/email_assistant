@@ -26,6 +26,10 @@ export interface ApprovalView {
   body: string; // parts.body
   quote: { text: string; cut: boolean } | null;
   synthetic: boolean;
+  // A follow-up only (see `approvalViewSchema`).
+  to?: string[];
+  cc?: string[];
+  followUpNumber?: 1 | 2;
   version?: number; // the edit version of the send, from 2 on (stage 08 sets it)
   panelUrl?: string; // the panel page of this send (stage 09 sets it)
 }
@@ -58,5 +62,12 @@ export function approvalViewOf(
     body: message.parts.body,
     quote: message.parts.quote === null ? null : quoteCut(message.parts.quote),
     synthetic: input.synthetic,
+    ...(draft.kind === "follow_up"
+      ? {
+          to: message.to.map((entry) => entry.address),
+          cc: message.cc.map((entry) => entry.address),
+          followUpNumber: draft.n,
+        }
+      : {}),
   };
 }

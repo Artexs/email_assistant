@@ -1,4 +1,4 @@
-import { expressionBuilder, sql, type Expression, type Insertable, type SqlBool } from "kysely";
+import { expressionBuilder, sql, type Expression, type Insertable, type SqlBool, type Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
 import { SYNTHETIC_MESSAGE_ID_LIKE, type TestMailRule } from "../seed";
@@ -29,7 +29,9 @@ export type NewEmail = Omit<
   Insertable<DB["emails"]>,
   "id" | "org_id" | "status" | "attempts" | "created_at" | "source_folder" | "from_address_lower"
 > & { source_folder: string };
-export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail): Promise<boolean> {
+// `status` is `pending` (the default) except for the history backfill, which stores `skipped` with `skip_reason` `history_check`.
+export type InsertableEmail = NewEmail & { status?: "skipped" };
+export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: InsertableEmail): Promise<boolean> {
   const result = await db
     .insertInto("emails")
     .values({ ...row, inbox_uid: row.uid, org_id: ctx.orgId })
@@ -172,6 +174,18 @@ export interface EmailMeta {
   in_reply_to: string | null;
   references_header: string | null;
   received_at: Date;
+}
+// Locks the row of one mail until the end of the transaction: two writers that plan work for the same mail run one after
+// the other. Take it after the settings lock (`saveTriage` order). false = no such mail in this organization.
+export async function lockEmail(trx: Transaction<DB>, ctx: TenantContext, emailId: string): Promise<boolean> {
+  const row = await trx
+    .selectFrom("emails")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .forUpdate()
+    .executeTakeFirst();
+  return row !== undefined;
 }
 // Header facts of one mail, for other modules (the reminder thread). `undefined` = no such mail in this organization.
 export async function getEmailMeta(db: DbOrTrx, ctx: TenantContext, emailId: string): Promise<EmailMeta | undefined> {

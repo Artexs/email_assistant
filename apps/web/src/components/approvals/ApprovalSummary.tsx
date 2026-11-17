@@ -61,7 +61,14 @@ export function ApprovalSummary({ item, now, titleAs: Title = "p" }: ApprovalSum
           )}
         </p>
       )}
+      {view.to !== undefined && <p className="break-words text-sm">{`${t("appr_to")}: ${view.to.join(", ")}`}</p>}
+      {view.cc !== undefined && view.cc.length > 0 && (
+        <p className="break-words text-sm">{`${t("appr_cc")}: ${view.cc.join(", ")}`}</p>
+      )}
       <p className="break-words text-sm">{`${t("appr_subject")}: ${view.subject}`}</p>
+      {view.followUpNumber !== undefined && (
+        <p className="text-sm">{t("appr_follow_up_number", { n: view.followUpNumber })}</p>
+      )}
       {view.dueDate !== null && <p className="text-sm">{`${t("appr_due")}: ${view.dueDate}`}</p>}
       {version >= 2 && <p className="text-sm">{t("appr_version", { n: version })}</p>}
       <p className="text-sm text-muted-foreground">{stateParts.join(" · ")}</p>

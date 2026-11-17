@@ -3,6 +3,7 @@ import {
   changePasswordFormSchema,
   digestTimesBodySchema,
   MAX_DIGEST_TIMES,
+  notifyPatchSchema,
   organizationPatchSchema,
   ruleBodySchema,
   STYLE_TEXT_MAX,
@@ -31,6 +32,10 @@ describe("keys for the messages of the core schemas", () => {
         digestTimesBodySchema.safeParse({ times: ["01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00"] })
       ),
       ...messages(digestTimesBodySchema.safeParse({ times: ["08:00", "08:00"] })),
+      // F110 stage 18: the two messages that the quiet hours form can show.
+      ...messages(notifyPatchSchema.safeParse({ quietStart: "25:00", quietEnd: "06:00" })),
+      ...messages(notifyPatchSchema.safeParse({ quietStart: "23:00" })),
+      ...messages(notifyPatchSchema.safeParse({ quietStart: "05:00", quietEnd: "00:00" })),
       ...messages(changePasswordFormSchema.safeParse({ current: "", password: "short", repeat: "other" })),
     ];
     expect(emitted.length).toBeGreaterThan(8);

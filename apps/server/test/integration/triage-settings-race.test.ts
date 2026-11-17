@@ -10,7 +10,8 @@ import {
   type SettingsDeps,
 } from "../../src/modules/config";
 import { claimEmails } from "../../src/modules/mail";
-import { saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
+import { noGateEvidence, saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
+import { clearTrips } from "../../src/modules/trust";
 
 import { createOrgWithMailbox, insertTestEmail, noSuspiciousContext } from "./fixtures";
 import { testDb } from "./helpers";
@@ -46,7 +47,7 @@ async function committedSetup() {
   const ctx = { orgId: created.orgId };
   try {
     await insertDefaultSettings(db, ctx, created.mailboxId);
-    await setToolSwitch({ db, now: () => now, expireReady }, ctx, created.mailboxId, {
+    await setToolSwitch({ db, now: () => now, gate: noGateEvidence, clearTrips, expireReady }, ctx, created.mailboxId, {
       name: "move",
       value: true,
       actor: "test",
@@ -66,6 +67,7 @@ async function committedSetup() {
       settingsVersion: settings.version,
       mode: "assist",
       toolSwitches: { move: true, mark_read: true, flag: true, create_draft: false, move_unsure: true },
+      runningKey: noGateEvidence.runningKey,
       policy: { info: { auto: true } },
       rules: [],
       movesSupported: true,
@@ -92,7 +94,7 @@ describe("saveTriage with changed settings", () => {
   test("a setter that commits after the snapshot: no action rows, mail free, no attempt counted", async () => {
     const s = await committedSetup();
     try {
-      const deps: SettingsDeps = { db, now: () => now, expireReady };
+      const deps: SettingsDeps = { db, now: () => now, gate: noGateEvidence, clearTrips, expireReady };
       await setToolSwitch(deps, s.ctx, s.created.mailboxId, { name: "move", value: false, actor: "test" });
 
       expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision, now)).toEqual({ kind: "settings_changed" });
@@ -129,7 +131,7 @@ describe("saveTriage and a setter on two connections", () => {
   test("triage holds the share lock: the setter waits, then expires the move row", async () => {
     const s = await committedSetup();
     try {
-      const deps: SettingsDeps = { db, now: () => now, expireReady };
+      const deps: SettingsDeps = { db, now: () => now, gate: noGateEvidence, clearTrips, expireReady };
       let setter: ReturnType<typeof setToolSwitch> | undefined;
       let setterDone = false;
       await db.transaction().execute(async (trx) => {

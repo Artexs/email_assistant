@@ -17,6 +17,8 @@ COPY apps/web apps/web
 COPY packages/core packages/core
 COPY db db
 COPY evals/cases evals/cases
+# The server reads the gate files at start (F110 D1); a missing folder is only a warning, so keep this line.
+COPY evals/results/gate evals/results/gate
 COPY tsconfig.base.json ./
 # The web build writes into apps/web/dist, so it runs as root before USER bun
 RUN bun run web:build

@@ -29,6 +29,7 @@ flowchart BT
   subgraph group5["Layer 5"]
     operator
     privacy
+    trust
   end
   subgraph group6["Layer 6"]
     lab
@@ -41,6 +42,7 @@ flowchart BT
   channels --> audit
   channels --> config
   channels --> delegation
+  channels --> loops
   channels --> mail
   channels --> reports
   channels --> tenancy
@@ -86,6 +88,7 @@ flowchart BT
   reports --> audit
   reports --> config
   reports --> delegation
+  reports --> loops
   reports --> mail
   reports --> tenancy
   reports --> triage
@@ -96,4 +99,8 @@ flowchart BT
   triage --> delegation
   triage --> mail
   triage --> tenancy
+  trust --> config
+  trust --> mail
+  trust --> tenancy
+  trust --> triage
 ```

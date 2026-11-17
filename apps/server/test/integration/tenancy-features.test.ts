@@ -186,6 +186,12 @@ describe("org_features", () => {
         { flag: "mail_oauth_google", enabled: false, source: "default" },
         { flag: "open_loops", enabled: false, source: "default" },
         { flag: "delegate_button", enabled: false, source: "default" },
+        { flag: "trust_ladder", enabled: false, source: "default" },
+        { flag: "why_lines", enabled: false, source: "default" },
+        { flag: "docs_links", enabled: false, source: "default" },
+        { flag: "user_quiet_hours", enabled: false, source: "default" },
+        { flag: "report_mail", enabled: false, source: "default" },
+        { flag: "urgency_editor", enabled: false, source: "default" },
       ]);
     });
   });

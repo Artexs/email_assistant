@@ -15,7 +15,8 @@
     "reports",
     "tenancy",
     "testmail",
-    "triage"
+    "triage",
+    "trust"
   ],
   "edges": [
     ["actions", "audit"],
@@ -26,6 +27,7 @@
     ["channels", "audit"],
     ["channels", "config"],
     ["channels", "delegation"],
+    ["channels", "loops"],
     ["channels", "mail"],
     ["channels", "reports"],
     ["channels", "tenancy"],
@@ -71,6 +73,7 @@
     ["reports", "audit"],
     ["reports", "config"],
     ["reports", "delegation"],
+    ["reports", "loops"],
     ["reports", "mail"],
     ["reports", "tenancy"],
     ["reports", "triage"],
@@ -80,6 +83,10 @@
     ["triage", "config"],
     ["triage", "delegation"],
     ["triage", "mail"],
-    ["triage", "tenancy"]
+    ["triage", "tenancy"],
+    ["trust", "config"],
+    ["trust", "mail"],
+    ["trust", "tenancy"],
+    ["trust", "triage"]
   ]
 }

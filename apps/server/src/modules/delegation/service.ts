@@ -22,6 +22,7 @@ import {
   moveDelegationToVersion,
   updateDelegateFields,
   USER_CANCELLED,
+  type DelegationSource,
   type DelegationStatus,
 } from "./repo";
 
@@ -170,6 +171,10 @@ export async function createDelegation(
     dueDate: string | null;
     timezone: string;
     now: Date;
+    // The Delegate command (F116) sets all three; triage sets none: `source` is `triage` and the actor is the system.
+    source?: DelegationSource;
+    via?: "web" | "telegram" | "cli";
+    actor?: string;
   }
 ): Promise<string> {
   const dueAt = dueInstant(input.dueDate, input.timezone);
@@ -182,13 +187,21 @@ export async function createDelegation(
     taskSummary: input.task,
     dueAt,
     createdAt: input.now,
+    ...(input.source === undefined ? {} : { source: input.source }),
   });
   await recordAudit(trx, ctx, {
     emailId: input.emailId,
     actionId: input.sendActionId,
-    actor: "system",
+    actor: input.actor ?? "system",
     event: auditEvents.delegationCreated,
-    data: { delegation_id: id, delegate_id: input.delegateId, send_action_id: input.sendActionId, due: dueAt !== null },
+    data: {
+      delegation_id: id,
+      delegate_id: input.delegateId,
+      send_action_id: input.sendActionId,
+      due: dueAt !== null,
+      source: input.source ?? "triage",
+      ...(input.via === undefined ? {} : { via: input.via }),
+    },
     at: input.now,
   });
   return id;

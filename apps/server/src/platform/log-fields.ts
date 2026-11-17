@@ -3,9 +3,11 @@
 export const uuidFieldNames = [
   "org_id",
   "mailbox_id",
+  "check_id",
   "email_id",
   "action_id",
   "delegation_id",
+  "loop_id",
   "outbox_id",
   "approval_set_id",
   "item_id",
@@ -115,6 +117,8 @@ export const codeFieldNames = [
   "to_plan",
   "enabled",
   "actor",
+  // who started a loop command: web, telegram or cli
+  "via",
   // the sync mode of one folder run: initial, incremental or rescan
   "sync_mode",
   // actions: the action type (a closed set of six) and the stage of a failed send (`connect`, `login`, `envelope`, `content`, `compose`, `payload`, `unknown`)
@@ -128,6 +132,8 @@ export const codeFieldNames = [
   "feedback",
   "until",
   "day_start",
+  // a gate file name (`classifier-…json`, from the image, never user text)
+  "file",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

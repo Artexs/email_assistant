@@ -44,3 +44,11 @@ Part of [`../plan.md`](../plan.md). Risk: LLM spend, LLM use on real mail, exact
 ## Out of scope
 
 Sent signals (E5a: `historyActedOn` is the seam). Pausing a granted category on `fail` (stage 09). The report page (stage 14).
+
+## Carry-over from stage 03 review
+
+- no done or no_result check keeps finished_at NULL (write both together; review-3.md).
+
+## Carry-over from stage 06 review
+
+- N8: decide whether `TRIAGE_LLM_SCOPE=synthetic` runs the history backfill at all, or only for test mailboxes; N6: the history refresh touches `checked_at` of gone mail (delays move detection in a mailbox over 3000 mails); N7: process each org with a time budget (review-6.md).

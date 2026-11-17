@@ -5,7 +5,7 @@
     ["config", "mail"],
     ["triage", "actions", "delegation", "loops", "replies"],
     ["reports", "channels", "testmail"],
-    ["operator", "privacy"],
+    ["operator", "privacy", "trust"],
     ["lab"]
   ],
   "sameLayerEdges": [

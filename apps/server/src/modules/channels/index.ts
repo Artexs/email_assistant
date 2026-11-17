@@ -42,7 +42,7 @@ export {
   unlinkUser,
   type ConsumeResult,
 } from "./linking";
-export { consentVersionsOf } from "./consent";
+export { consentVersionsOf, loopConsentOf } from "./consent";
 export { channelRoutes, type ChannelRouteDeps } from "./routes";
 export { approvalRoutes, type ApprovalRouteDeps } from "./approval-routes";
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";
@@ -61,8 +61,16 @@ export {
 export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
 export { queueNotice, type QueueNoticeInput } from "./notice-queue";
 export { cardEditHooks, queueCardEdits, type CardEdit, type CardEditOutcome, type CardEditResult } from "./card-edits";
-export { detectNotices, queueMailboxRemovedNotices, type NoticeDeps } from "./notices";
-export { scheduleDigests, type DigestJobDeps } from "./digest-job";
+export {
+  detectNotices,
+  queueMailboxRemovedNotices,
+  queueTrustNotice,
+  trustReportUrlOf,
+  trustSettingsUrlOf,
+  type NoticeDeps,
+  type TrustNoticeInput,
+} from "./notices";
+export { isFirstDigestOfDay, queueDigest, scheduleDigests, type DigestJobDeps } from "./digest-job";
 export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";
 export {
   createUpdateHandlers,
@@ -77,3 +85,4 @@ export {
 } from "./commands";
 export { listUrgentCandidates, listUrgentNoticeTimes, type UrgentCandidate } from "./metrics-repo";
 export { heldReason, type HeldReasonDeps } from "./held-reason";
+export { clearLoopCards } from "./loop-cards";

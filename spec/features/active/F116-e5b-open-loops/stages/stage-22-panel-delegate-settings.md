@@ -37,3 +37,16 @@ M2 (23), docs (24).
 ## Carry-over from stage 17 review
 
 - N4: the re-ask of linked users (Step 3) must treat an unlink as a withdrawal; N6: stages 11 and 18 may land before this stage: open_loops stays off until it lands (review-17.md).
+
+## Carry-over from stage 11 (worker, 2026-11-15)
+
+- Until the panel "Confirm" button exists, an owner linked by the CLI has no consent that counts (an unlink withdraws it): that owner gets the `loop_consent` line and reads follow-ups in the panel. Keep `open_loops` off until this stage lands (N6).
+- The approvals page already shows To, Cc and the number of a follow-up and lets an owner edit it (stage 11). A Playwright case for "a reload removes the row while the Edit dialog is open" was not written (see the notes file).
+
+## Carry-over from stage 11 review
+
+- TG-4: the Playwright case S11 (loop closes while Edit is open) of review-11.md, if stage 21 did not add it.
+
+## Carry-over from stage 15 review
+
+- Add `auto_follow_up` to `toolSwitchesSchema`: a switch or mode change through the service drops the raw key today (review-15.md).

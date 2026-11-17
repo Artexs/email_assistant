@@ -21,7 +21,7 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | roots | the composition roots `apps/server/src/*.ts` (`main.ts`, `web.ts`, `composition.ts`, `retention.ts`) and `apps/server/src/scripts/` |
 | 6     | `lab` (a leaf: `main.ts` never starts it)                                                                                           |
-| 5     | `operator`                                                                                                                          |
+| 5     | `operator`, `privacy`, `trust`                                                                                                      |
 | 4     | `reports`, `channels`, `testmail`                                                                                                   |
 | 3     | `triage`, `actions`, `delegation`                                                                                                   |
 | 2     | `config`, `mail`                                                                                                                    |
@@ -75,6 +75,20 @@ A new draft kind, in this order:
 | 3   | The planner or the job that creates it (`core/triage/planners.ts`, `delegation/chaser.ts`)                                                                                                                                                                                                                                                | its own tests                                                                                                                                                             |
 | 4   | The lines that branch on `kind` and fall through to a default: `core/outgoing/message.ts` (quote, `In-Reply-To`), `core/outgoing/sender.ts` (sender label), `core/digest/approvals.ts` (card title), `core/digest/would-do.ts` (`draftPhrase`), `actions/approvals.ts`, `actions/expiry.ts`, `delegation/service.ts`, `channels/notices/` | no test: read each hit of `grep -rnE '(kind\|\.kind) (===\|!==) "(delegation\|clarification\|reminder)"\|"reminder" in' packages/core/src apps/server/src --include=*.ts` |
 | 5   | A prompt or model change for it                                                                                                                                                                                                                                                                                                           | the sim gate run and its gate file (§ Side effects)                                                                                                                       |
+
+A draft that waits for approval is never edited in place. An edit is a superseding row: `editApproval` (`actions/edit.ts`) adds a new `create_draft` and a new `send`, each with `supersedes_action_id` set to the old row, and ends the old send as `expired` / `superseded`, in one transaction. The version, the Drafts copy and the new tap all need new rows; a changed payload would need rules for each of them.
+
+### Add a user command
+
+A user command is an HTTP route plus one service function (ADR 0023). In this order:
+
+1. The service function in the module (`approve`, `editApproval`, `remindNow`, `cancelByUser`, `updateDelegate`). It takes `via` (`web`, `telegram` or `cli`) and writes it to the audit row (and to `approved_via` for a send). It takes no request object, runs in one transaction in the lock order of its module, and makes no outside call inside it.
+2. The schemas in `packages/core/src/web/` (a strict body, the answer, the error codes). The route and the page import the same ones. The raw limits of a body are wider than the limits of the service: the service decides and answers `400 validation` with the field.
+3. The route in the module's `routes.ts` with its `apiDoc` in `api-docs.ts` (§ HTTP routes). It parses with `parseBody`, checks a path id with a UUID schema (a bad id is `400 validation`), and lists every error code that it can answer.
+4. The role check: `requireOwner` for an owner command, none for a read or a command of every member. While the feature is new, a flag middleware runs before the role check, so every role gets `404 not_found` while the flag is off. The flag is in `featureFlags` (`packages/core/src/features.ts`) with its epic and remove-by date, default off.
+5. A command that decides a send (approve, reject, edit, a cancel that rejects a send) calls `ApprovalHooks.onDecided` in the same transaction, with the real hook `cardEditHooks` from the composition root (`web.ts`), so the Telegram cards follow. The hook never changes the decision: its failure is logged and undone to a savepoint.
+6. Tests: the route test (401, 403 for a role that may not, 404 for a foreign id and for the flag off, 400 for a bad body or id), a race test on two connections when the command changes state (`web-approvals-races.test.ts` is the model), `openapi-routes.test.ts`, and for a page the e2e spec with `expectNoA11yViolations`. The texts of the page go into `en.ts` and `pl.ts`; the texts of a notice go into `packages/core/src/texts/`.
+7. The docs: the rules in the capability page, the router row in `docs/capabilities/web-panel.md` rule 7, and `docs/modules.md` §3.10.
 
 ## Notices are facts
 
@@ -301,6 +315,18 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - A change that lands a feature or changes behaviour updates `docs/capabilities/<capability>.md` in the same change; once E10a exists, a user-visible change also updates its user doc page (en) (PD-100).
 - Behaviour rules go to the capability page, not to `docs/architecture.md`. A plan that names a section of `architecture.md` that now holds a link line writes to the page it links.
 - The page template and the index: `docs/capabilities/README.md`; `apps/server/src/capability-map.test.ts` checks paths, scripts and ADR numbers.
+
+## Docs site
+
+- The public site is `apps/docs` (ADR 0030). A user page goes to `apps/docs/src/content/docs/<section>/` with the sections `start`, `how-to`, `reference`, `explanation` and `faq`; its Polish twin is `pl/<same path>`. The operator pages are the sources named in `apps/docs/src/in-place.ts`: edit the source, never a copy.
+- A user page names the capability pages it describes in front matter: `capabilities: [triage]` (file names in `docs/capabilities/` without `.md`). The build fails on an unknown name or a user page without one.
+- A UI label on a page is `<UiText k="…" />`, never typed text: it reads the panel's text for the page language, and an unknown key fails the build.
+- A Polish page holds `source` and `sourceHash`. After you change the English page, translate the change, then run `bun run docs:stale --stamp <the Polish file>`. `bun run docs:stale` lists stale pages; `--strict` (the deploy workflow) fails on a stale public page.
+- An entry of `apps/docs/public-content-allow.txt` needs a reason and an exact string. An unused entry fails the build.
+- Two lists guard the user pages. `apps/docs/src/site-map.test.ts` holds `EXPECTED_PAGE_IDS`, the source page ids (a folder page `x/index.mdx` is `x`; `index` and `pl/index` keep their names); a content stage adds its ids there and its sidebar item to `astro.config.mjs`. `apps/docs/src/flagged-text.ts` holds the user-visible strings of every default-off flag (`FLAGGED_TEXT`); `flagged-text.test.ts` fails when a page under `src/content/docs` holds one, also through `<UiText k="…" />`, and when a new flag has neither strings nor a reason in `NO_VISIBLE_TEXT`.
+- PD-009 extension (PD-100): a landed user-visible feature updates its user page (en) in the same change. A page describes only what the code does now; a feature behind a default-off flag gets no page until its flag defaults on.
+- The browser check of the built site is `bun run docs:test` (`apps/docs/e2e/`, Chromium, port 8093; build first with `bun run docs:build`; run it under `flock /tmp/email-assistant-shared-tests.lock`). It checks every built page for CSP violations and page errors and for axe WCAG 2.2 AA violations, the search, the page language and the 404 page. A new page needs no entry: the page list comes from `dist`. A violation in Starlight's own markup that config or CSS cannot fix is a question to the owner; never turn an axe rule off.
+- The CI job `docs` and the deploy workflow are only written down and read by tests (`apps/docs/scripts/workflows.test.ts`): never start the deploy workflow to test a change. A workflow gets a `permissions` block, actions pinned to a major, no secret and no `.env`.
 
 ## Tests
 

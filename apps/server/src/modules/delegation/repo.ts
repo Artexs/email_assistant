@@ -9,6 +9,7 @@ type DbOrTrx = Db | Transaction<DB>;
 
 const delegationStatusSchema = z.enum(["drafted", "sent", "answered", "overdue", "done", "cancelled"]);
 export type DelegationStatus = z.infer<typeof delegationStatusSchema>;
+export type DelegationSource = "triage" | "button";
 
 // The reason of a cancel by the user (F102 stage 15). It is final.
 export const USER_CANCELLED = "user_cancelled";
@@ -133,6 +134,22 @@ export async function listDelegateNames(
   return new Map(rows.map((row) => [row.id, row.name]));
 }
 
+// The competence tags of delegates (F110 stage 16): words the organization wrote, never mail text.
+export async function listDelegateTags(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  ids: readonly string[]
+): Promise<Map<string, string[]>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .selectFrom("delegates")
+    .select(["id", "competence_tags"])
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "in", [...ids])
+    .execute();
+  return new Map(rows.map((row) => [row.id, row.competence_tags]));
+}
+
 // For `isExternalSender` (D8). Lower case by the column check.
 export async function listDelegateAddresses(
   db: DbOrTrx,
@@ -187,6 +204,8 @@ export async function insertDelegation(
     taskSummary: string;
     dueAt: Date | null;
     createdAt: Date;
+    // `triage` (the default of the column) or `button` (the Delegate command, F116).
+    source?: DelegationSource;
   }
 ): Promise<string> {
   const row = await trx
@@ -202,10 +221,48 @@ export async function insertDelegation(
       due_at: input.dueAt,
       created_at: input.createdAt,
       updated_at: input.createdAt,
+      ...(input.source === undefined ? {} : { source: input.source }),
     })
     .returning("id")
     .executeTakeFirstOrThrow();
   return row.id;
+}
+
+// The Delegate command of a mail (F116 stage 16) asks two questions about the delegations of one mail.
+// A delegation that still waits for the delegate: the draft waits, the task is out, or it is overdue.
+export async function findOpenDelegationOfEmail(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("delegations")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", emailId)
+    .where("status", "in", ["drafted", "sent", "overdue"])
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.id;
+}
+
+// How many delegations of this source the mail has had, in any state (the attempt number of the Delegate keys).
+export async function countDelegationsOfEmail(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  source: DelegationSource
+): Promise<number> {
+  const row = await db
+    .selectFrom("delegations")
+    .select((eb) => eb.fn.countAll<string>().as("n"))
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", emailId)
+    .where("source", "=", source)
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
 }
 
 export async function getDelegation(db: DbOrTrx, ctx: TenantContext, id: string): Promise<DelegationRow | undefined> {
@@ -508,6 +565,57 @@ export async function countOpenDelegations(
     .execute();
   const count = (status: string) => Number(rows.find((row) => row.status === status)?.count ?? 0);
   return { open: count("sent"), overdue: count("overdue") };
+}
+
+export interface BriefDelegationRow {
+  id: string;
+  delegate_name: string;
+  subject: string | null;
+  sent_at: Date;
+  due_at: Date;
+}
+
+// The open delegations (`sent`, `overdue`) with a due date before `dueBefore`, oldest due first: the ⏳ lines of the brief (F116 stage 18).
+// `total` counts all of them, `rows` holds at most `limit`. Only the organization of `ctx` and the given mailboxes.
+export async function listDelegationsDueBy(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxIds: readonly string[],
+  opts: { dueBefore: Date; limit: number }
+): Promise<{ rows: BriefDelegationRow[]; total: number }> {
+  if (mailboxIds.length === 0) return { rows: [], total: 0 };
+  const scope = () =>
+    db
+      .selectFrom("delegations as d")
+      .innerJoin("delegates as g", (join) =>
+        join.onRef("g.id", "=", "d.delegate_id").onRef("g.org_id", "=", "d.org_id")
+      )
+      .where("d.org_id", "=", ctx.orgId)
+      .where("d.mailbox_id", "in", [...mailboxIds])
+      .where("d.status", "in", ["sent", "overdue"])
+      .where("d.due_at", "<", opts.dueBefore);
+  const [rows, count] = await Promise.all([
+    scope()
+      .leftJoin("emails as e", (join) => join.onRef("e.id", "=", "d.email_id").onRef("e.org_id", "=", "d.org_id"))
+      .select(["d.id", "g.name as delegate_name", "e.subject", "d.sent_at", "d.created_at", "d.due_at"])
+      .orderBy("d.due_at")
+      .orderBy("d.id")
+      .limit(opts.limit)
+      .execute(),
+    scope()
+      .select((eb) => eb.fn.countAll<string>().as("n"))
+      .executeTakeFirstOrThrow(),
+  ]);
+  return {
+    rows: rows.map((row) => ({
+      id: row.id,
+      delegate_name: row.delegate_name,
+      subject: row.subject,
+      sent_at: row.sent_at ?? row.created_at,
+      due_at: row.due_at as Date,
+    })),
+    total: Number(count.n),
+  };
 }
 
 type WithNames = DelegationRow & { delegate_name: string; subject: string | null };

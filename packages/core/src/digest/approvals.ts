@@ -9,7 +9,7 @@ import { mistakeButton, reasonButtons, rejectReasonText } from "./action-feedbac
 import { encodeCallback } from "./callback";
 import { formatClock, formatDay, localDateTime } from "./local-time";
 import { MESSAGE_MAX_CHARS, type OutMessage } from "./message";
-import { cleanSubject, cutText } from "./text";
+import { cleanSubject, cutText, withoutEscapeRemains } from "./text";
 
 export const APPROVAL_QUOTE_CHARS = 1500;
 export const CHASER_SET_LIMIT = 10;
@@ -71,6 +71,22 @@ function recipientLabel(recipient: { name: string | null; address: string }): st
   return name === "" ? address : `${name} ${address}`;
 }
 
+// The address lines of a follow-up card: every address of To and Cc whole, never cut (the recipients are the risk the owner
+// decides on). A list that cannot fit one message is refused: the card does not go out, the panel still shows it.
+export const FOLLOW_UP_RECIPIENTS_MAX_CHARS = 2400;
+
+function followUpRecipientLines(view: ApprovalView, texts: CoreTexts): string[] {
+  const t = texts.approvals.followUp;
+  const to = view.to ?? [view.recipient.address];
+  const cc = view.cc ?? [];
+  const lines = [`${t.to} ${to.join(", ")}`];
+  if (cc.length > 0) lines.push(`${t.cc} ${cc.join(", ")}`);
+  if (lines.join("\n").length > FOLLOW_UP_RECIPIENTS_MAX_CHARS) {
+    throw new RangeError("the recipients of a follow-up do not fit a card");
+  }
+  return lines;
+}
+
 export function renderApprovalRequest(
   input: {
     actionId: string;
@@ -82,16 +98,17 @@ export function renderApprovalRequest(
 ): OutMessage {
   const { view, actionId } = input;
   const t = texts.approvals;
+  const followUp = view.kind === "follow_up";
   const address = cutText(view.recipient.address, FIELD_MAX_CHARS);
   const name = view.recipient.name === null ? "" : cutText(view.recipient.name, FIELD_MAX_CHARS);
   const nameText = name === "" ? "" : `${name}${view.recipientInactive ? ` ${t.inactive}` : ""} `;
-  // The card of a follow-up comes with open loops stage 11. Until then it does not render: no wrong title goes out.
-  if (view.kind === "follow_up") throw new RangeError("the approval card of a follow-up is not built yet");
   let title = t.title.delegation(`${nameText}${address}`);
   if (view.kind === "clarification") title = t.title.clarification(address);
   if (view.kind === "reminder") title = t.title.reminder(`${nameText}${address}`);
+  if (followUp) title = t.followUp.title;
   const head = [view.synthetic ? `${title} · ${texts.common.test}` : title];
   if (view.version !== undefined && view.version >= 2) head.push(t.versionLine(view.version));
+  if (followUp) head.push(...followUpRecipientLines(view, texts));
   if (view.sender !== null) {
     // The view stores the English placeholder (plan D19); the renderer prints it in the row's language.
     const stored =
@@ -101,8 +118,12 @@ export function renderApprovalRequest(
       view.sender.external ? `${texts.common.from}: ${label} · ${t.externalSender}` : `${texts.common.from}: ${label}`
     );
   }
-  head.push(`${texts.common.subject}: ${cleanSubject(view.subject, texts)}`);
+  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped (review 12, N6).
+  head.push(
+    `${texts.common.subject}: ${cleanSubject(followUp && view.subject !== null ? withoutEscapeRemains(view.subject) : view.subject, texts)}`
+  );
   if (view.dueDate !== null) head.push(`${t.due}: ${view.dueDate}`);
+  if (followUp && view.followUpNumber !== undefined) head.push(t.followUp.number(view.followUpNumber));
 
   const build = (body: string, bodyNote: boolean, quote: { text: string; replaced: boolean; cut: boolean } | null) => {
     const lines = [...head, "", t.draft, body];
@@ -121,7 +142,7 @@ export function renderApprovalRequest(
     if (view.quote === null) return null;
     const cut = quoteCut(view.quote.text, max);
     const shown = chatQuoteText(cut.text);
-    return { ...shown, cut: view.quote.cut || cut.cut };
+    return { ...shown, text: followUp ? withoutEscapeRemains(shown.text) : shown.text, cut: view.quote.cut || cut.cut };
   };
 
   let body = view.body;
@@ -147,6 +168,8 @@ export function renderApprovalRequest(
     text = build(body, bodyNote, quote);
     if (text.length > MESSAGE_MAX_CHARS) text = build(body, bodyNote, quote === null ? null : { ...quote, text: "" });
   }
+  // The recipients never shrink (the owner decides on them), so a card that cannot hold them does not render at all.
+  if (text.length > MESSAGE_MAX_CHARS) throw new RangeError("the approval card does not fit one message");
   return {
     text,
     buttons: [
@@ -233,7 +256,8 @@ export type SendResultKind =
         | "not_seen"
         | "held_timeout"
         | "delegation_closed"
-        | "policy_changed";
+        | "policy_changed"
+        | "loop_closed";
       draftRemoved: boolean;
     }
   | { kind: "rejected"; byName: string | null; draftRemoved: boolean };
@@ -259,6 +283,36 @@ function causeLine(result: Extract<SendResultKind, { kind: "failed" }>, texts: C
   }
 }
 
+// The result line of a follow-up (open loops): sent, rejected or expired. It names the first recipient (a sent mail) and no
+// subject or text. A failed send is not a result line: the owner gets the fixed `action_failed` notice of a follow-up.
+function renderFollowUpResult(
+  input: {
+    sendKind: DraftPayload["kind"];
+    result: SendResultKind;
+    recipient: { name: string | null; address: string };
+    synthetic: boolean;
+  },
+  texts: CoreTexts
+): OutMessage {
+  const t = texts.approvals.followUp;
+  const { result } = input;
+  let line: string;
+  switch (result.kind) {
+    case "sent":
+      line = t.sent(cutText(input.recipient.address, FIELD_MAX_CHARS));
+      break;
+    case "rejected":
+      line = t.rejected(result.byName === null ? null : cutText(result.byName, FIELD_MAX_CHARS));
+      break;
+    case "expired":
+      line = t.expired[result.reason];
+      break;
+    default:
+      throw new RangeError("a failed follow-up has no result line");
+  }
+  return { text: input.synthetic ? `${line} · ${texts.common.test}` : line, buttons: [] };
+}
+
 export function renderSendResult(
   input: {
     actionId: string;
@@ -273,9 +327,10 @@ export function renderSendResult(
 ): OutMessage {
   const { actionId, sendKind, result, recipient } = input;
   const t = texts.approvals;
+  if (sendKind === "follow_up") return renderFollowUpResult(input, texts);
   const to = recipientLabel(recipient);
   const subject = cleanSubject(input.subject, texts);
-  const closing = sendKind === "clarification" || sendKind === "follow_up" ? "" : t.closings[sendKind];
+  const closing = sendKind === "clarification" ? "" : t.closings[sendKind];
   const sendAgain: OutMessage["buttons"] = [
     [{ text: t.buttons.sendAgain, data: encodeCallback({ kind: "send_again", actionId }) }],
   ];

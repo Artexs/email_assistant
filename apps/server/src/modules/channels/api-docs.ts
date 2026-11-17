@@ -1,4 +1,6 @@
 import {
+  notifyPatchSchema,
+  notifyViewSchema,
   telegramConsentBodySchema,
   telegramConsentSchema,
   telegramLinkBodySchema,
@@ -13,6 +15,25 @@ import { apiDoc } from "../../platform/openapi";
 const tags = ["channels"];
 
 export const channelDocs = {
+  getNotify: apiDoc({
+    operationId: "getNotify",
+    summary: "The own quiet hours and report channel, with the active mailboxes that can get the report mail.",
+    tags,
+    ok: { status: 200, schema: notifyViewSchema },
+    errors: [{ status: 404, codes: ["not_found"] }],
+  }),
+  patchNotify: apiDoc({
+    operationId: "patchNotify",
+    summary:
+      "Change the own quiet hours (both times, or both null to reset) or the own report channel (telegram, mail or both). Each needs its flag.",
+    tags,
+    body: notifyPatchSchema,
+    ok: { status: 200, schema: notifyViewSchema },
+    errors: [
+      { status: 404, codes: ["not_found"] },
+      { status: 409, codes: ["no_mailbox"] },
+    ],
+  }),
   getTelegram: apiDoc({
     operationId: "getTelegram",
     summary: "Whether Telegram is on, and whether the user linked a chat.",

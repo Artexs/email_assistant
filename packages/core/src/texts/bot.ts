@@ -52,6 +52,7 @@ export interface BotTexts {
     noDigestTimes: string;
     nextDigest: (time: string) => string;
     quietHours: (start: string, end: string) => string;
+    noQuietHours: string;
   };
   switch: {
     ownerOnly: string;
@@ -232,6 +233,7 @@ export const botTexts = {
       noDigestTimes: "No digest times set (bun run digest:times)",
       nextDigest: (time) => `Next digest: ${time}`,
       quietHours: (start, end) => `Quiet hours: ${start}–${end} (notices wait until ${end})`,
+      noQuietHours: "Quiet hours: none (notices come at any time)",
     },
     switch: {
       ownerOnly: "Only the owner can pause or resume the mailboxes.",
@@ -358,7 +360,8 @@ export const botTexts = {
       llm: (provider, model) => `Model AI: ${provider} · ${model}`,
       noDigestTimes: "Brak godzin podsumowań (bun run digest:times)",
       nextDigest: (time) => `Następne podsumowanie: ${time}`,
-      quietHours: (start, end) => `Cisza nocna: ${start}–${end} (komunikaty czekają do ${end})`,
+      quietHours: (start, end) => `Godziny ciszy: ${start}–${end} (komunikaty czekają do ${end})`,
+      noQuietHours: "Godziny ciszy: brak (komunikaty przychodzą o każdej porze)",
     },
     switch: {
       ownerOnly: "Tylko właściciel może wstrzymać lub wznowić skrzynki.",

@@ -119,7 +119,13 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
       });
       await sender.run();
     },
-    scheduleDigests: () => scheduleDigests({ db, now, testMail: deps.testMail }),
+    scheduleDigests: () =>
+      scheduleDigests({
+        db,
+        now,
+        testMail: deps.testMail,
+        ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
+      }),
     startPolling() {
       polling ??= startPolling(bot);
     },

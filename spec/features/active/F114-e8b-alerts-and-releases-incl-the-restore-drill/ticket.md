@@ -37,7 +37,7 @@ Nine stages, one worker job each; stage 09 is a coordinator run on the VPS. Orde
 
 - Plan after: F103 (E8a Logs: the logger, field kinds and the one-off `cli` service; it has `stages/`).
 - Build after: F103 (E8a Logs) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 20). E8 discovery notes §8 allow stages 01–07 after F103 stage 01 (landed); the coordinator decides.
-- Gate: Owner: grow the VPS root volume (PD-055); stage 09 needs it.
+- Gate: — (PD-055 dropped as a gate: Owner, 2026-11-15: "22 gigabytes ... enough ... when it has 5, 4 or 2 GB I will perform action." The VPS had 22 GB free on 2026-11-15.) Disk rule: stage 09 runs `df -h /` on the VPS first; under 5 GB free, stop and tell the owner.
 
 ## Notes
 

@@ -1,0 +1,41 @@
+---
+title: Approve or reject a draft
+description: Approve or reject a draft that waits for you in Telegram, and handle a send that failed.
+capabilities:
+  - drafts-and-send
+---
+
+import UiText from "../../../components/UiText.astro";
+
+Use this guide when the bot sends you a message that starts with `📤 Send?`. The system sends nothing until you tap `📤 Send`.
+
+## Before you start
+
+- You are an owner of the organization. Only the owner can approve, reject or send again. If another member taps a button, the bot answers `Only an owner can approve or reject a send.`
+- The mailbox is in assist mode, and the switch **<UiText k="switch_create_draft" />** is on. In shadow mode the system makes no draft. See [Mode and switches](../mode-and-switches/).
+- Your Telegram chat is linked.
+
+## Steps
+
+1. Open the message. Its first line is `📤 Send? Delegation to …`, `📤 Send? Question to the sender …` or `📤 Send? Reminder to …`.
+2. Read the message. It shows the sender of the original mail, the subject, the draft text under `Draft:` and a quote under `Quoted original:`. The quote holds at most 1500 characters. A delegation also shows `Due:` when the mail names a date. The sender line says `⚠️ external sender` for a sender that the system does not know. Known senders are your mailboxes, delegates, whitelisted senders and VIP senders.
+3. Tap `📤 Send` to approve the draft. Tap `✖️ Reject` to refuse it.
+
+The same draft is in the Drafts folder of your mailbox. The system sends the text that you approved. Do not send the draft from your mail client. Changes that you make to the draft there do not count.
+
+## What happens next
+
+After `📤 Send` the bot answers `⏳ Sending within a minute.` and adds `⏳ Approved HH:MM, sending.` to the request. A new message follows: `✅ Sent to …`. The system also saves a copy in your Sent folder. If it cannot, the message says `No copy in Sent`.
+After `✖️ Reject` the request says `✖️ Rejected HH:MM.` The system removes the draft from your Drafts folder when the mail server allows it.
+With no tap, the request ends 48 hours after it came. The bot sends `⌛ Not sent: the approval expired (48 h)`.
+
+## Good to know
+
+- A request that is ready between 22:00 and 07:00 comes at 07:00.
+- If the send cannot go out now, the request says why. For example, the mailbox is paused or its login fails. It keeps `✖️ Reject`. The approval ends 48 hours after your tap.
+
+## If a send fails
+
+- `❌ Not sent to …` with the button `📤 Send again`: tap it. This is a new approval of the same draft. You can tap it one time for each failed message.
+- `❌ Not sent to …` with no button: the mail server refused the address or the mail. Ask your operator for help.
+- `⚠️ Unknown whether the mail to … went out`: the connection broke after the system sent the text. Check your Sent folder or ask the recipient first. If the mail went out, tap `✅ It went out`. The system then treats the delegation as sent and sends no new mail. If the mail did not go out, tap `📤 Send again`. A delegation shows both buttons. A question or a reminder shows only `📤 Send again`.

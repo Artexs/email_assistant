@@ -465,3 +465,81 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: `vlagent` has no filter by container; filtering would need a second log driver on the astro container or a change of the agent's input. Its lines may hold visitor IP addresses.
 - Undo: stop the store (`$C --profile ops stop victorialogs vlagent`), or set `logging: driver: local` on `astro-app-container` in its own Compose file and recreate it.
 - Source: `notes/2026-11-15-vps-deploy-queue.md` (batch 3), F103 stage 19 step 6.
+
+### 2026-11-15 · F116 loops: Sent tracking off also clears follow-up copies (F116) · privacy · new
+- Choice: when "Track my sent mail" goes off, the copies of the Sent mail in loop-anchored follow-up actions (`actions.payload` quote, To and Cc) and in their outbox cards (`outbox.view`, `outbox.text`) are cleared with the loop texts.
+- Why: switching tracking off withdraws consent for the Sent mail copy; the review of stage 14 found the opening mail body left in an expired draft payload until the payload retention.
+- Undo: remove the clear step in `onSentOff` (loops module); the copies then follow the normal payload retention.
+- Source: job `2026-11-15-f116-review-s14-opus-sending-to-83298456`, stage 14 review N1.
+
+### 2026-11-15 · F116 loops: the loop's own recipients never count as the user's own addresses (F116) · product · new
+- Choice: the own-address set built from the mailbox's Sent rows excludes the loop's counterpart and recipients, so their real reply closes the loop.
+- Why: a person who also sends as the user (send-as or delegate access) would otherwise never close the loop, and the chaser would ask the user to chase someone who already answered.
+- Undo: use the plain Sent-row address set again in `sentFromAddressesOf`.
+- Source: job `2026-11-15-f116-review-s14-opus-sending-to-83298456`, stage 14 review N2.
+
+### 2026-11-15 · F112 docs site: the Ctrl K hint of the search button is hidden by CSS (F112) · product · new
+- Choice: Starlight 0.43.1 has an axe violation on every page at desktop width (`label-content-name-mismatch`: the search button label is "Search", its visible text is "Ctrl K"). `apps/docs/src/styles/custom.css` hides `site-search kbd`. The Ctrl+K shortcut still works. No axe rule is disabled.
+- Why: the docs site must pass axe with no disabled rule; the hint costs nothing in function.
+- Undo: remove the CSS rule and override Starlight's `Search` component so the visible text contains the label.
+- Source: job `2026-11-15-f112-s06-browser-check-906ad293`, stage 06.
+
+### 2026-11-15 · F115 reply drafts: account numbers are checked by a digit budget, not by separator patterns (F115) · product · new
+- Choice: after two failed reviews of the separator-pattern scanner (marks between digits, a typed account followed by a fake one, a split account, a currency word glued to an IBAN), the account check of a reply draft changes design. The body is folded (NFKC, marks and default-ignorable characters removed, confusables mapped, ASCII digits). Every digit run costs its digits, unless it is a digit substring of a number the user typed (instruction, signature, style), a whole valid date or time, or an amount of at most 9 integer digits next to a currency. The draft fails when the total cost is above 12 or one run has 9 or more digits. Runs from the quoted mail count as known only up to 12 digits. Never a 13+ digit or IBAN-shaped run from the mail.
+- Why: words, markup, quote prefixes and invisible marks between groups no longer change the result, and dates, times and amounts become free, so the false positive rate falls (the reviewer measured 18.6 % on business text with the old scanner). The mail itself may carry the fraud account, so long runs from the mail are never trusted.
+- Undo: restore the account view in `packages/core/src/replies/entities.ts` (commit 1cd06cd2); the stage 02 prototype run tunes the budget N.
+- Source: job `2026-11-15-f115-re-review-2-s01-opus-narrow-225f3f83`, stage 01 re-review 2.
+
+### 2026-11-15 · F115 reply drafts: the account-number check cannot reach zero misses; stage 01 is not landed (F115) · product · new
+- Choice: after the third repair the digit budget still passes 6,704 of 77,000 adversarial forms and about 11 % of random 13-19 digit numbers. I did not land stage 01 and did not start a third re-review. The branch stays.
+- Why: a pattern check cannot give zero misses on hostile text. The real choice: (1) forbid every digit run of 12 or more in a draft, plus mod 97 for IBAN; (2) keep the budget as one layer and rely on the user approving each draft; (3) accept the residual for the stage 02 prototype only.
+- Undo: nothing landed. To resume, follow `notes/2026-11-15-f115-s01-account-check-open.md`.
+- Source: job `2026-11-15-f115-s01-drafter-core-risky-llm-e4a702ce`, branch head `3e48aeec`.
+
+### 2026-11-15 · F116 digest brief: the delegation footer stays in the first digest of the day when no delegation line is shown (F116) · product · new
+- Choice: the first digest of the day drops the delegation footer only when the ⏳ section shows a delegation line. Before the fix the footer was dropped always.
+- Why: delegations due later would appear nowhere in the morning digest, and a user without loop consent lost the "Delegations: n open, m overdue" footer they had with the flag off. Delegations are not loop data.
+- Undo: restore the unconditional drop in the digest renderer (`renderDigestWithBrief`).
+- Source: job `2026-11-15-f116-review-s18-opus-privacy-row-4a8c4b84`, finding N3.
+
+### 2026-11-15 · Release v0.2.0 deployed to the VPS (F114) · production · new
+- Choice: the coordinator tagged `v0.2.0` on `3e60a7f5` (green CI run 43768979219) and ran `deploy/release.sh v0.2.0`. Two migrations applied: `20261115180001_trust_ladder`, `20261115190001_outbox_loop_consent` (both `-- contract: v0.1.0`, additive).
+- Why: owner pre-approval of VPS deploys (owner decision 2026-11-13) and the owner's order to deploy all prepared changes. The release changes no prompt file since v0.1.0, so no E2 holdout report was needed.
+- Undo: `deploy/rollback.sh` on the VPS (target `v0.1.0`; the migrations stay). Backup `ea-20261115T223641Z.dump.age`.
+- Source: `notes/2026-11-15-vps-deploy-queue.md` § batch 4.
+
+### 2026-11-15 · Pilot flag `sent_sync` waits for a time budget of the Sent pass (F104) · production · new
+- Choice: the coordinator did not turn on `sent_sync` for the pilot org yet. It added stage 13a (a 60 s budget per Sent pass, and `duration_ms` in the log) and started a worker job. After stage 13a is released, the flag waits for the owner's word (owner, 2026-11-16: decide in a later session; `notes/owner-later.md` item 4).
+- Why: the stage 13 runbook asks for this budget before the pilot switch. Without it, a slow Sent folder can hold the INBOX sync of the pilot for minutes (5-minute socket timeout, up to 100 text fetches per pass).
+- Undo: tell the coordinator to turn the flag on now (`org:flag --org-id <pilot org> --flag sent_sync --on`).
+- Source: `spec/features/active/F104-e5a-read-sent/stages/stage-13a-sent-time-budget.md`; job `2026-11-15-f104-s13a-sent-budget-risky-sync-8890e7df`.
+
+### 2026-11-15 · F105 closed without owner step U1: two-factor sign-in stays off by the owner's choice (F105) · scope · new
+- Choice: F105 moved to done. The stage 15 checks after U1 were not run.
+- Why: the owner turned two-factor sign-in on once, then off by choice. `/operator` redirects to the settings page until it is on again; that is the designed rule.
+- Undo: turn two-factor sign-in on in Settings → Account; the operator console opens with no code change.
+- Source: `spec/features/done/2026-11/F105-e7-t6-identity-a-totp-backup-codes-break-glass/outcome.md`.
+
+### 2026-11-15 · Reply drafts: block long numbers the user did not type; approval is the final control (F115) · security · new
+- Choice: a draft fails on any run of 12+ digits (separators allowed) not typed by the user and on any mod-97-valid IBAN; the digit budget stays as a second layer; zero misses on hostile text is no longer a goal.
+- Why: no pattern check reaches zero misses; the user approves the exact version before any send (ADR 0033 §5). Owner answer to the question: "idk".
+- Undo: tell the coordinator another rule before the stage 01 re-review.
+- Source: `spec/features/active/F115-e6a-reply-drafts/ticket.md` § Notes; `notes/2026-11-15-f115-s01-account-check-open.md`.
+
+### 2026-11-15 · Reply drafts: gate G1 passes on defaults; the model stays open (F115) · scope · new
+- Choice: stages 03+ build before the stage 02 prototype run; PD-071 and PD-083 keep their defaults; PD-072 (model) is a config value set when the owner's new provider key exists.
+- Why: the owner wants another provider (for example DeepSeek) and has no key yet; nothing else in stages 03+ depends on the model.
+- Undo: hold stages 03+ until stage 02 runs.
+- Source: F115 `ticket.md` § Notes; `notes/owner-later.md` item 2.
+
+### 2026-11-15 · Mailbox OAuth: gate G1 passes on defaults without a live spike; `openid` added to the Microsoft redeem (F117) · scope · new
+- Choice: `spike.md` records every row as not run; M3 and G2 assumed PASS; stage 14 adds `openid` to the Microsoft code-redeem scope so an ID token surely returns; OAuth flags stay off.
+- Why: owner answer 2026-11-15 (skip the live checks); `openid` is the fix the stage 08 review named for the unknown case.
+- Undo: run the stage 01 kit live and refresh stages 14–15 from its facts.
+- Source: F117 `plan.md` § Owner steps; `stages/stage-02-spike-report.md` § No live run.
+
+### 2026-11-15 · Docs site: GitHub Pages stays off until stages 10–15 land (F112) · production · new
+- Choice: the `github-pages` environment allows `master` and `v*` tags now; the Pages source (GitHub Actions) and the `v*` tag ruleset are set at stage 16.
+- Why: with Pages on, the v0.2.0 tag push would publish a half-built public site.
+- Undo: `gh api -X POST repos/Artexs/email_assistant/pages -f build_type=workflow`.
+- Source: F112 `stages/stage-16-publication.md` § Step 1.

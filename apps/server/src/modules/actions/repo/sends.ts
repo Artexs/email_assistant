@@ -2,13 +2,26 @@ import type { RecentSend } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
-import { ActionAnchorError, anchorOfRow, emailIdOf } from "../anchor";
+import { ActionAnchorError, anchorOfRow } from "../anchor";
 
 import type { DbOrTrx } from "./shared";
 
+// A send of an incoming mail (`email_id`, `email` set) or of an open loop (a follow-up: `loop_id`, `email` null). `mailbox_id` comes
+// from the mail, or from the loop for a follow-up. A reader that needs the mail checks `email` first; the compiler makes it.
+export interface SendMail {
+  subject: string | null;
+  from_address: string | null;
+  message_id_header: string | null;
+  received_at: Date;
+  references_header: string | null;
+  in_reply_to: string | null;
+  body_text: string | null;
+}
 export interface SendRow {
   id: string;
-  email_id: string;
+  email_id: string | null;
+  loop_id: string | null;
+  mailbox_id: string;
   status: string;
   status_reason: string | null;
   payload: Record<string, unknown>;
@@ -25,24 +38,19 @@ export interface SendRow {
   attempts: number;
   last_error: string | null;
   locked_at: Date | null;
-  email: {
-    mailbox_id: string;
-    subject: string | null;
-    from_address: string | null;
-    message_id_header: string | null;
-    received_at: Date;
-    references_header: string | null;
-    in_reply_to: string | null;
-    body_text: string | null;
-  };
+  email: SendMail | null;
 }
-// Mail sends only: the readers of cards, lists and notices need the mail behind the send. A loop send (a follow-up) has none;
-// those readers get it with open loops stage 11. The committer side reads both kinds with `lockAnySend` and `getAnySend`.
+// Every send of an organization, a mail send or a follow-up (open loops stage 11). Mail sends and loop sends each join their own
+// anchor (the database CHECK says exactly one); a send whose anchor row is gone has no `mailbox_id` and is not listed.
+// `listSetSends` and `getSetSend` stay mail-only on purpose: a follow-up never joins an approval set.
 export function sendBase(db: DbOrTrx, ctx: TenantContext) {
   return db
     .selectFrom("actions")
-    .innerJoin("emails", (join) =>
+    .leftJoin("emails", (join) =>
       join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+    )
+    .leftJoin("open_loops", (join) =>
+      join.onRef("open_loops.id", "=", "actions.loop_id").onRef("open_loops.org_id", "=", "actions.org_id")
     )
     .select([
       "actions.id",
@@ -64,7 +72,7 @@ export function sendBase(db: DbOrTrx, ctx: TenantContext) {
       "actions.attempts",
       "actions.last_error",
       "actions.locked_at",
-      "emails.mailbox_id",
+      sql<string | null>`coalesce(emails.mailbox_id, open_loops.mailbox_id)`.as("mailbox_id"),
       "emails.subject",
       "emails.from_address",
       "emails.message_id_header",
@@ -74,28 +82,34 @@ export function sendBase(db: DbOrTrx, ctx: TenantContext) {
       "emails.body_text",
     ])
     .where("actions.org_id", "=", ctx.orgId)
-    .where("emails.org_id", "=", ctx.orgId)
-    .where("actions.email_id", "is not", null)
-    .where("actions.type", "=", "send");
+    .where("actions.type", "=", "send")
+    .where(sql<boolean>`coalesce(emails.mailbox_id, open_loops.mailbox_id) is not null`);
 }
 function sendQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
   return sendBase(db, ctx).where("actions.id", "=", id);
 }
 type SendQueryRow = NonNullable<Awaited<ReturnType<ReturnType<typeof sendQuery>["executeTakeFirst"]>>>;
 export function toSendRow(row: SendQueryRow): SendRow {
-  const {
-    mailbox_id,
-    subject,
-    from_address,
-    message_id_header,
-    received_at,
-    references_header,
-    in_reply_to,
-    body_text,
-  } = row;
+  anchorOfRow(row); // exactly one anchor (the database CHECK says so too)
+  if (row.mailbox_id === null) throw new ActionAnchorError("invalid_anchor");
+  let email: SendMail | null = null;
+  if (row.email_id !== null) {
+    if (row.received_at === null) throw new ActionAnchorError("invalid_anchor");
+    email = {
+      subject: row.subject,
+      from_address: row.from_address,
+      message_id_header: row.message_id_header,
+      received_at: row.received_at,
+      references_header: row.references_header,
+      in_reply_to: row.in_reply_to,
+      body_text: row.body_text,
+    };
+  }
   return {
     id: row.id,
-    email_id: emailIdOf(row),
+    email_id: row.email_id,
+    loop_id: row.loop_id,
+    mailbox_id: row.mailbox_id,
     status: row.status,
     status_reason: row.status_reason,
     payload: row.payload as Record<string, unknown>,
@@ -112,16 +126,7 @@ export function toSendRow(row: SendQueryRow): SendRow {
     attempts: row.attempts,
     last_error: row.last_error,
     locked_at: row.locked_at,
-    email: {
-      mailbox_id,
-      subject,
-      from_address,
-      message_id_header,
-      received_at,
-      references_header,
-      in_reply_to,
-      body_text,
-    },
+    email,
   };
 }
 // A send of a mail or of a loop, with the few fields that the close and fail paths of the committer side need.
@@ -293,6 +298,7 @@ export async function setRejected(
 // The sends of one reminder set, locked FOR UPDATE (the action rows only).
 export async function listSetSends(trx: Transaction<DB>, ctx: TenantContext, setId: string): Promise<SendRow[]> {
   const rows = await sendBase(trx, ctx)
+    .where("actions.email_id", "is not", null)
     .where(sql<string>`actions.payload->>'set_id'`, "=", setId)
     .orderBy("actions.created_at")
     .orderBy("actions.id")
@@ -303,6 +309,7 @@ export async function listSetSends(trx: Transaction<DB>, ctx: TenantContext, set
 // The oldest send of a reminder set, for a reader that needs the mail behind the set. `undefined` = no such set in this organization.
 export async function getSetSend(db: DbOrTrx, ctx: TenantContext, setId: string): Promise<SendRow | undefined> {
   const row = await sendBase(db, ctx)
+    .where("actions.email_id", "is not", null)
     .where(sql<string>`actions.payload->>'set_id'`, "=", setId)
     .orderBy("actions.created_at")
     .orderBy("actions.id")

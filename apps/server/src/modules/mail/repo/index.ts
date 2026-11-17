@@ -63,6 +63,7 @@ export {
   getEmailMailbox,
   getEmailMeta,
   insertEmail,
+  lockEmail,
   listReturned,
   mailKindFilter,
   markEmailRelocated,
@@ -72,6 +73,7 @@ export {
   updateEmailUid,
   type EmailMeta,
   type MailKind,
+  type InsertableEmail,
   type NewEmail,
 } from "./emails";
 export {
@@ -107,6 +109,7 @@ export {
   type EmailHeadersRow,
 } from "./headers";
 export {
+  countInboxMailWithoutFreshFlags,
   getEmailFlags,
   listFlagTargets,
   setAnsweredCheck,

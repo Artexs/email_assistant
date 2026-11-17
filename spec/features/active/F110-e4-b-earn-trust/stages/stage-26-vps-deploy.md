@@ -41,3 +41,7 @@ When the release fails or check 1, 3 or 5 fails:
 
 - Write the result into `plan.md` § Log (date, commit, check outputs, no ids); `limen ticket done`.
 - U2 to the owner in one line: "On the phone (Tailscale on), open `/report`, read the result, and tap 'Turn on recommended' only if you agree."
+
+## Carry-over from stage 03 review
+
+- rollback step 0 fails new-kind and channel mail rows with status in (pending, sending) and locked_at null (as deploy/README.md:169); name the stuck claim batch of the old claimDueOutbox (review-3.md).

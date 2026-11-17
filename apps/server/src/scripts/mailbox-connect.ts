@@ -11,6 +11,7 @@ import {
   verifySmtpLogin,
   type MailCapabilities,
 } from "../modules/mail";
+import { queueHistoryCheckOnConnect } from "../modules/trust";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
@@ -99,7 +100,13 @@ async function main(): Promise<number> {
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
     const { orgId, ...input } = options;
     const { mailboxId, info, sentSync } = await connectMailbox(
-      { db, secrets, openProvider: openImapProvider, verifySmtp: verifySmtpLogin },
+      {
+        db,
+        secrets,
+        openProvider: openImapProvider,
+        verifySmtp: verifySmtpLogin,
+        onConnected: queueHistoryCheckOnConnect(db),
+      },
       { orgId },
       { ...input, password }
     );

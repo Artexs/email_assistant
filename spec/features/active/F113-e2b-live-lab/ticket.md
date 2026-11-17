@@ -39,8 +39,10 @@ The frozen lab-01 week of made-up mail runs in real time through the real pipeli
 
 - Plan after: none (F097 landed; it is the only ticket whose interfaces this plan uses).
 - Build after: F097 (E2a, in `spec/features/done/`).
-- Gate: Owner: grow the VPS root volume (PD-055) before the live week (owner step O1; it does not stop the code stages).
+- Gate: — (owner step O1, PD-055, is dropped: Owner, 2026-11-15: "22 gigabytes ... enough ... when it has 5, 4 or 2 GB I will perform action." The VPS had 22 GB free on 2026-11-15.) Disk rule: C1 and C4 run `df -h /` first; under 5 GB free, stop and tell the owner.
 
 ## Notes
+
+- Owner, 2026-11-15: the week run (C4) may spend its $5 cap ("Yes ... Proceed with it").
 
 §2.1 row 19. The old AgentMail delegate ticket (F066) is already dropped; GreenMail bots replace it. The "delegate answers from another address" case (F040) is planted and reported.

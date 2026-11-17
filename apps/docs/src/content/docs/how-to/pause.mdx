@@ -1,0 +1,58 @@
+---
+title: Pause and resume
+description: Stop the assistant for a while in Telegram or in the panel, and learn what a paused account means.
+capabilities:
+  - digest-and-notices
+  - sync
+  - tenancy-and-plans
+---
+
+import UiText from "../../../components/UiText.astro";
+
+Use this guide to stop the assistant for a while, for example during a holiday.
+
+## Before you start
+
+Only the owner of the organization can pause or resume a mailbox. If another member sends `/pause`, the bot answers `Only the owner can pause or resume the mailboxes.`
+
+## Pause in Telegram
+
+1. Send `/pause` to the bot.
+2. The bot pauses every mailbox of your organization. It answers `⏸ Paused:` and the list of the addresses.
+3. To start again, send `/resume`. The bot answers `▶️ Resumed:` and the list.
+
+The command skips a mailbox that shows a login error or **<UiText k="status_host_blocked" />**. The bot says so.
+
+## Pause one mailbox in the panel
+
+1. Open the page **<UiText k="nav_mailboxes" />**.
+2. On the card of the mailbox, press **<UiText k="mb_pause" />**. The panel says:
+
+   > <UiText k="mb_paused_toast" />
+
+3. To start again, press **<UiText k="mb_resume" />**. The panel says:
+
+   > <UiText k="mb_resumed_toast" />
+
+## What a paused mailbox does
+
+- The system does not read or sort its mail. It sends no urgent notice for it.
+- Digests still come. The digest has a line `⏸ Paused since …` for the mailbox.
+- A send that you approved waits until you resume. It ends 48 hours after your tap if the mailbox is still paused. Undo does not work while the mailbox is paused.
+
+## What happens next
+
+After you resume, the next sync reads the mail that came during the pause. The system does not sort mail that is older than 7 days.
+
+## When your operator pauses the account
+
+Your operator can pause the whole account. You cannot resume it yourself. Only the operator can.
+
+- The system reads no mail, sorts no mail and sends no digests or notices.
+- Telegram answers `⏸ This account is paused.` to every command except `/help`.
+- The panel shows a banner like this one and refuses changes. You can still read your data, set your language and accept the terms.
+
+  > <UiText k="paused_banner_no_contact" />
+
+After the operator resumes the account, the system skips mail that came more than 24 hours before the resume.
+The digest counts it on the line `📭 Not processed (from the account pause)`.

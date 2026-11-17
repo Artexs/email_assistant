@@ -1,13 +1,17 @@
 import {
   ASSIST_DEFAULT_SWITCHES,
   autoFor,
+  effectiveAutoFor,
   parseCategoryPolicy,
   parseToolSwitches,
   thresholdFor,
   type ActionType,
   type BarCategory,
+  type CategoryGrant,
+  type CategoryGrantBy,
   type CategoryPolicy,
   type ExpireFilter,
+  type GateEvidenceDeps,
   type GoDecision,
   type MailboxActionType,
   type MailboxMode,
@@ -34,13 +38,24 @@ export class SettingsNotFoundError extends HardError {
 export interface SettingsDeps {
   db: Db | Transaction<DB>;
   now(): Date;
+  // The global evidence of the running classifier, built once at start (F110 stage 02). The setter reads its running key.
+  gate: GateEvidenceDeps;
+  // Ends the active trips of a category in the caller's transaction (the `trust` repository, injected by the composition
+  // root: `config` sits below `trust`). Turning `auto` on calls it.
+  clearTrips(
+    trx: Transaction<DB>,
+    ctx: TenantContext,
+    mailboxId: string,
+    category: BarCategory,
+    at: Date
+  ): Promise<number>;
   // Required, so typecheck stops a caller that forgets it (the CLI now, the S5 page later).
   expireReady(
     trx: Transaction<DB>,
     ctx: TenantContext,
     filter: ExpireFilter,
     opts: { now: Date; reason: "policy_changed" | "undo" | "manual"; actor: string }
-  ): Promise<{ id: string; emailId: string; type: ActionType }[]>;
+  ): Promise<{ id: string; emailId: string | null; type: ActionType }[]>;
 }
 
 export interface SettingsView {
@@ -144,6 +159,8 @@ interface Computed {
   // More gates that the change closes, for example a switch that `mode assist` turns off.
   alsoClose?: Change[];
   warnings: string[];
+  // Runs in the same transaction after the settings row lock and the policy write, also when nothing changed (the clear of the trips).
+  inTransaction?: (trx: Transaction<DB>) => Promise<void>;
 }
 
 // One transaction: lock, compute, update, audit, expire the rows that the change closes.
@@ -162,6 +179,7 @@ async function applyChange(
     const before = toView(row, await getMovesSupported(trx, ctx, mailboxId));
     const result = compute(before);
     if (!result.changed) {
+      await result.inTransaction?.(trx);
       return { changed: false, before, after: before, warnings: result.warnings, expired: 0, closedGate: false };
     }
     await updateMailboxSettings(trx, ctx, mailboxId, result.patch);
@@ -185,6 +203,7 @@ async function applyChange(
       );
       expired += rows.length;
     }
+    await result.inTransaction?.(trx);
     return { changed: true, before, after, warnings: result.warnings, expired, closedGate };
   });
 }
@@ -231,24 +250,38 @@ export async function setCategoryAuto(
     category: BarCategory;
     auto: boolean;
     threshold?: number;
-    gate: { decision: GoDecision | "skipped"; precision: number | null; kept: number; forced: boolean };
+    gate: { decision: GoDecision | "skipped" | "evidence"; precision: number | null; kept: number; forced: boolean };
+    // Who turns `auto` on. The grant takes the running key of `deps.gate`; `auto: false` removes the grant.
+    grantBy: CategoryGrantBy;
+    // Extra flat audit fields (the block list of a forced grant).
+    auditData?: AuditData;
+    // Runs in the settings transaction after the lock (the clear of the trips of the category).
+    inTransaction?: (trx: Transaction<DB>) => Promise<void>;
     actor: string;
   }
 ): Promise<SettingsChange> {
-  if (input.auto && input.gate.decision !== "go" && !input.gate.forced) {
+  // `evidence`: the caller (`trust`) judged the three evidence sources; the real-label view is only recorded.
+  if (input.auto && input.gate.decision !== "go" && input.gate.decision !== "evidence" && !input.gate.forced) {
     throw new HardError("category did not pass go/no-go");
   }
   return applyChange(deps, ctx, mailboxId, input.actor, (before) => {
     const wasAuto = autoFor(before.categoryPolicy, input.category);
     const oldThreshold = thresholdFor(before.categoryPolicy, input.category);
     const threshold = input.threshold ?? oldThreshold;
+    const runningKey = deps.gate.runningKey;
+    const grant: CategoryGrant | undefined = input.auto
+      ? { key: runningKey, by: input.grantBy, at: deps.now().toISOString() }
+      : undefined;
+    // `auto` that is on under another key is off for triage: turning it on again is a change (a new grant).
+    const regrant = input.auto && !effectiveAutoFor(before.categoryPolicy, input.category, runningKey);
     const categoryPolicy: CategoryPolicy = {
       ...before.categoryPolicy,
-      [input.category]: { auto: input.auto, threshold },
+      [input.category]: { auto: input.auto, threshold, ...(grant ? { grant } : {}) },
     };
     return {
       patch: { categoryPolicy },
-      changed: wasAuto !== input.auto || oldThreshold !== threshold,
+      changed: wasAuto !== input.auto || oldThreshold !== threshold || regrant,
+      ...(input.inTransaction ? { inTransaction: input.inTransaction } : {}),
       event: auditEvents.mailboxPolicyChanged,
       data: {
         field: `auto.${input.category}`,
@@ -257,6 +290,17 @@ export async function setCategoryAuto(
         threshold_from: oldThreshold,
         threshold_to: threshold,
         forced: input.gate.forced,
+        ...(grant
+          ? {
+              grant_by: grant.by,
+              grant_provider: grant.key.provider,
+              grant_model: grant.key.model,
+              grant_effort: grant.key.reasoningEffort,
+              grant_prompt: grant.key.promptVersion,
+              grant_endpoint: grant.key.endpoint,
+            }
+          : {}),
+        ...input.auditData,
       },
       close: {
         field: "auto",

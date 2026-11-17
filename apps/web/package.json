@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "version": "0.0.1",
+  "exports": {
+    "./i18n/en": "./src/i18n/en.ts",
+    "./i18n/pl": "./src/i18n/pl.ts"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

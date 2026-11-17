@@ -1,4 +1,4 @@
-import { sql, type Expression, type ExpressionBuilder, type SqlBool } from "kysely";
+import { sql, type Transaction, type Expression, type ExpressionBuilder, type SqlBool } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
 
@@ -57,6 +57,42 @@ export async function clearActionPayloads(
     total += changed;
     if (changed === 0) return total;
   }
+}
+// The keys of a follow-up payload that copy the Sent mail: its text (`quote`), its recipients and its subject.
+const SENT_COPY_KEYS = ["quote", "to", "cc", "subject"];
+
+// "Track my sent mail" went off: the copies of the Sent mail in the `create_draft` and `send` rows of every loop of the
+// mailbox (a panel edit's successor included) lose these keys. The row, its status and the other keys stay (`kind`,
+// `loop_id`: the reverse of a draft in the Drafts folder reads them). A send that was approved and not yet claimed ended
+// `expired` before this call (`expireFollowUpSends`), so it sends nothing. A send that the committer already holds
+// (`applying`) finishes: the mail goes out from the payload that the committer holds in memory, which is the accepted rule
+// "an applying send finishes". Only a claim that reads the payload after this commit meets a payload with no recipient and
+// fails as a bad payload. The caller holds the transaction of the switch; the loops are locked before (loop first, then
+// sends). Returns the row count.
+export async function clearLoopSentCopies(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  input: { mailboxId: string }
+): Promise<number> {
+  const result = await trx
+    .updateTable("actions")
+    .set({ payload: sql`payload - ${sql.raw(SENT_COPY_KEYS.map((key) => `'${key}'`).join(" - "))}` })
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "in", ["create_draft", "send"])
+    .where(
+      "loop_id",
+      "in",
+      trx
+        .selectFrom("open_loops")
+        .select("id")
+        .where("org_id", "=", ctx.orgId)
+        .where("mailbox_id", "=", input.mailboxId)
+    )
+    .where(
+      sql<boolean>`jsonb_exists_any(payload, ${sql.raw(`array[${SENT_COPY_KEYS.map((key) => `'${key}'`).join(",")}]`)})`
+    )
+    .executeTakeFirstOrThrow();
+  return Number(result.numUpdatedRows);
 }
 // Retention (A23): the error text goes 90 days after the last change. Status and `updated_at` stay.
 export async function clearActionErrors(

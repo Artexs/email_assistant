@@ -20,6 +20,8 @@ Two steps.
   - T3: `bun run web:build` logs `csp checked in <n> page(s)` with the page count of `master`.
   - T4: the server image builds (Docker if available, else the CI `image` job) and holds `/app/CHANGELOG.md`.
 
+- **Flagged-text list:** in `apps/docs/src/flagged-text.ts` delete the `docs_links` entry of `NO_VISIBLE_TEXT` and put the four new keys in `FLAGGED_PANEL_KEYS.docs_links` (stage 14 left a reason there; never both).
+
 ## Step 2 — e2e
 
 - **Goal:** the real panel shows the link and follows the flag.

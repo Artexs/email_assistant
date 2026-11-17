@@ -19,7 +19,7 @@ export async function heldReason(
   sendId: string
 ): Promise<HeldBy | undefined> {
   const send = await getSend(deps.db, ctx, sendId);
-  const mailbox = send === undefined ? undefined : await getMailbox(deps.db, ctx, send.email.mailbox_id);
+  const mailbox = send === undefined ? undefined : await getMailbox(deps.db, ctx, send.mailbox_id);
   if (send === undefined || mailbox === undefined) return "scope";
   const listOf = (value: unknown): string[] =>
     Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];

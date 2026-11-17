@@ -87,7 +87,7 @@ interface Built {
 async function build(deps: ApprovalReadDeps, ctx: TenantContext, send: SendRow, now: Date): Promise<Built | undefined> {
   const state = stateOf(send, now);
   if (state === undefined) return undefined;
-  const mailbox = await getMailbox(deps.db, ctx, send.email.mailbox_id);
+  const mailbox = await getMailbox(deps.db, ctx, send.mailbox_id);
   if (mailbox === undefined) return undefined;
   const payload = sendPayloadSchema.safeParse(send.payload);
   const draft =
@@ -115,6 +115,7 @@ function common(b: Built) {
     createdAt: b.send.created_at.toISOString(),
     delegationId: b.payload?.delegation_id ?? null,
     setId: b.payload?.set_id ?? null,
+    ...(b.send.loop_id === null ? {} : { loopId: b.send.loop_id }),
     draftReady: b.draft?.status === "applied",
     heldBy: b.heldBy,
   };
@@ -170,7 +171,7 @@ export async function getApprovalDetail(
     kind: b.payload?.kind ?? null,
     expiresAt: expiresAtOf(send, b.state)?.toISOString() ?? null,
     view: b.view,
-    draftRemovable: await mailboxHasUidplus(deps.db, ctx, send.email.mailbox_id),
+    draftRemovable: await mailboxHasUidplus(deps.db, ctx, send.mailbox_id),
     currentId: b.state === "superseded" ? await newestVersionOf(deps.db, ctx, send.id) : null,
     quote: b.quote,
     delegates,

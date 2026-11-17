@@ -1,6 +1,6 @@
 # 0023 — Every user action is a typed HTTP command described in OpenAPI
 
-- Status: proposed (E4 discovery, 2026-11-13; waits for the owner's answer to decision 8 of `docs/product/stage-2/epics/E04-control-surface.md`)
+- Status: accepted (PD-035, F102)
 - Date: 2026-11-13
 
 ## Context
@@ -24,3 +24,15 @@ Later clients need one contract: identity tier 1 (E7) must cover every command, 
 - The command list is one file that E7, E9 and E12 read.
 - The web panel keeps its typed fetch helpers; the OpenAPI file can generate a client later, not now.
 - Route files grow by the `describeRoute` metadata; the route check keeps it complete.
+
+## Amendment (F102, 2026-11-15)
+
+Facts of the build that the first text did not hold.
+
+- **Library.** `hono-openapi` 1.6.0, an exact pin, in `apps/server` only (the first text named 1.5.0).
+- **The helper.** `apiDoc` (`apps/server/src/platform/openapi.ts`) wraps `describeRoute`. A route gives an `operationId`, a summary, tags, the schema of its body, path parameters or query, the 2xx answer and its error codes. The schemas are the ones of the route and the panel (`@ea/core/web`), never a second copy. The codes of the shared guards (400 `validation` for a body, 401, 403, 413) join every operation.
+- **`describeRoute` only.** The `validator` of `hono-openapi` answers a 400 in another shape than `ValidationError`, so no route uses it. Routes keep `parseBody`.
+- **The file.** `GET /api/openapi.json` is OpenAPI 3.1, behind the session and the tenant (any member), with `info.version` `"0"` (point 5), built at the first request. It has one cookie scheme, `session`; a public route (`GET /api/sign-in-options`) sets `security: []` and is in the file, because the route check must see every route.
+- **Hidden routes.** The file leaves out `/api/operator/*` and `/api/auth/*` (E10 publishes the file, and neither group is a customer command), the redirect target of the mailbox OAuth `GET /api/mailboxes/oauth/:provider/callback` (it answers 303, never JSON) and the file itself. `EXCLUDED_PATHS` removes the operator and auth paths even when a route carries an `apiDoc`.
+- **The route test.** `apps/server/src/openapi-routes.test.ts` builds the real app and fails for a route that has no `apiDoc` and no entry with a reason in `HIDDEN_ROUTES`, for a hidden entry that no longer holds, for a repeated `operationId` and for an operation with no 2xx JSON schema. There is no list of gaps: a new route is described in the same change.
+- **`via`.** The panel routes pass `via: "web"` (approve, reject, edit, delegates, delegations); `approved_via` and the audit `data.via` keep it.

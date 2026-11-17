@@ -151,6 +151,8 @@ export async function seedActivityRows(
         confidence: 0.88,
         reasonCode: "direct_request",
         reason: "Anna asks for an answer.",
+        // F110 stage 16: a VIP result, for the rule hit of the Activity row and panel.
+        fields: { rule: "vip" },
       },
       {
         uid: FIRST_UID + 2,

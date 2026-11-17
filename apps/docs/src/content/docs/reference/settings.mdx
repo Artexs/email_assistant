@@ -1,0 +1,110 @@
+---
+title: Settings
+description: Look up each setting of the panel, who can change it and what its default is.
+capabilities:
+  - actions-and-undo
+  - web-panel
+  - sync
+---
+
+import UiText from "../../../components/UiText.astro";
+
+The page **<UiText k="nav_settings" />** has two parts. The first part belongs to one mailbox. Choose the mailbox at the top.
+The second part is the section **<UiText k="set_section_general" />**.
+
+Only an owner can change the settings of a mailbox, the time zone and the signature. Other members see them and cannot change them.
+Each member changes their own digest times and their own account settings.
+While your operator pauses the account, the system refuses most changes. You can still change your language and your password.
+
+## Settings of one mailbox
+
+| Setting             | Card                             | Values                                                           | Default                                  | Who   |
+| ------------------- | -------------------------------- | ---------------------------------------------------------------- | ---------------------------------------- | ----- |
+| Mode                | **<UiText k="mode_title" />**    | **<UiText k="mode_shadow" />** or **<UiText k="mode_assist" />** | Shadow mode for a new mailbox            | Owner |
+| Switches            | **<UiText k="mode_title" />**    | Five switches, each on or off. See the list below.               | All off                                  | Owner |
+| Auto for a category | **<UiText k="cat_title" />**     | On or off for five categories                                    | Off                                      | Owner |
+| Synced folders      | **<UiText k="folders_title" />** | On or off for each folder except INBOX                           | On for each folder that the system finds | Owner |
+
+### Mode
+
+- **<UiText k="mode_shadow" />**: the assistant changes nothing in the mailbox. It reports what it would do.
+- **<UiText k="mode_assist" />**: the assistant moves, marks and flags mail by the switches. Nothing is sent without your approval.
+
+When you press **<UiText k="mode_to_assist" />**, a dialog asks you to choose.
+**<UiText k="assist_usual" />** turns on the switches Move, Mark as read and Flag. It turns off the switch for unsure mail.
+It leaves the switch for drafts as it is. **<UiText k="assist_keep" />** keeps all switches as they are.
+**<UiText k="mode_to_shadow" />** stops all changes at once. Changes that waited for the system are dropped. Sends that waited for your tap are dropped too.
+
+Read more in [Shadow mode and assist mode](../../explanation/shadow-and-assist/).
+
+### Switches
+
+The switches work only in assist mode. In shadow mode the system only logs what it would do.
+
+- **<UiText k="switch_move" />**: the system moves mail to the folders `AI/Info`, `AI/Notifications` and `AI/Spam`.
+- **<UiText k="switch_mark_read" />**: the system marks notifications as read.
+- **<UiText k="switch_flag" />**: the system flags urgent mail. This switch does not need auto.
+- **<UiText k="switch_create_draft" />**: the system writes drafts for delegations, questions and reminders. It never sends them without your tap.
+- **<UiText k="switch_move_unsure" />**: the system moves unsure mail to `AI/Manual`.
+
+A mail server that cannot move mail gets no moves. The card then says so.
+
+### Auto for a category
+
+Auto exists for Urgent, Needs reply, Info, Notifications and Spam. The card shows the confidence limit of each category. You cannot change it here. The start value is 0.7.
+Auto is off for every category at the start. Mail of a category with auto off is not moved or marked as read.
+
+Before you turn auto on, the card checks your ratings of the category. The line under the switch shows one of three results:
+
+- Passed: the precision is at least 98 % on at least 30 mails that you rated.
+- Not passed: the precision is lower than 98 %.
+- Not enough rated mails: fewer than 30 rated mails.
+
+If the check does not pass, the switch refuses. An owner can still choose **<UiText k="anyway_submit" />** in the dialog.
+Then the system moves and marks mail of that category by itself. You can undo each move for 7 days. You can turn auto off at any time.
+Rate mails with `✅` and `✏️` in Telegram, or on the page **<UiText k="nav_activity" />**.
+
+### Synced folders
+
+INBOX is always synced. The other folders show on the card when the mail server lists them.
+The folders are Offers, Social, Bills and Junk. The system finds them by their usual names at the provider.
+When you turn a folder on again, the system starts a new first sync of that folder.
+
+## Settings of the account and the organization
+
+| Setting            | Card                            | Values                              | Default                                      | Who         |
+| ------------------ | ------------------------------- | ----------------------------------- | -------------------------------------------- | ----------- |
+| Digest times       | **<UiText k="digest_title" />** | Up to 6 times of the day            | 08:00 and 16:00                              | Each member |
+| Time zone          | **<UiText k="tz_title" />**     | A time zone from the list           | Set by your operator when the account starts | Owner       |
+| Signature          | **<UiText k="sig_title" />**    | Text of up to 500 characters        | Empty: your display name                     | Owner       |
+| Language           | **<UiText k="acct_title" />**   | Polish or English                   | The panel follows your browser               | Each member |
+| Password           | **<UiText k="acct_title" />**   | 12 to 128 characters                | Set when you accept the invite               | Each member |
+| Two-factor sign-in | **<UiText k="acct_title" />**   | On or off                           | Off                                          | Each member |
+| Sessions           | **<UiText k="acct_title" />**   | End other sessions, or all sessions | Not applicable                               | Each member |
+
+### Digest times
+
+The times follow the time zone of the organization. A new time that passed less than 6 hours ago today sends a digest at once.
+If you remove all times, you get no digests.
+
+### Time zone
+
+The digest times and the quiet hours follow the time zone. A change applies within a minute.
+On the day of the change, digests can be skipped, come later or come at once.
+
+### Signature
+
+The assistant adds the signature at the end of the messages that it writes for you: delegations, questions and reminders.
+A change applies to the messages that the assistant writes from then on.
+
+### Language
+
+The language setting covers the panel, Telegram and the e-mails of your account.
+
+## Other places
+
+- The page **<UiText k="nav_mailboxes" />** connects a mailbox, pauses it, resumes it, changes its password and removes it. Only an owner can do this.
+- The page **<UiText k="nav_rules" />** holds the sender rules: VIP, whitelist and blocklist. Only an owner can change them.
+- The page **<UiText k="nav_activity" />** shows what the system did to each mail. Each member can use Undo and rate mails there.
+
+The numbers of the system are in [Limits](../limits/).

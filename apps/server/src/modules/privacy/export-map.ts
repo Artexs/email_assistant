@@ -62,6 +62,18 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
   auth_sessions: secret("secrets: session tokens"),
   auth_two_factors: secret("secrets: the second factor and its backup codes"),
   auth_verifications: secret("secrets: reset and verification tokens"),
+  // The trust ladder (F110): a pause of `auto` for one category, with the counts that caused it. No mail text.
+  autonomy_trips: byOrg(
+    "id",
+    "org_id",
+    "mailbox_id",
+    "category",
+    "granted_at",
+    "reason",
+    "counts",
+    "tripped_at",
+    "cleared_at"
+  ),
   chat_link_tokens: secret("tokens: one-time link tokens"),
   chat_links: byOrg("id", "org_id", "user_id", "channel", "external_chat_id", "linked_at"),
   delegates: byOrg("id", "org_id", "name", "email", "competence_tags", "active", "created_at", "updated_at"),
@@ -156,6 +168,38 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "undo_pending_at",
     "source_folder"
   ),
+  // The history check of a mailbox and its decision per mail (F110): codes, counts and money only. No mail text.
+  history_check_items: byOrg(
+    "check_id",
+    "org_id",
+    "email_id",
+    "category",
+    "confidence",
+    "reason_code",
+    "would_move",
+    "acted_on",
+    "source",
+    "cost_usd"
+  ),
+  history_checks: byOrg(
+    "id",
+    "org_id",
+    "mailbox_id",
+    "status",
+    "reason",
+    "no_result_reason",
+    "key",
+    "window_start",
+    "backfill_done_at",
+    "cost_usd",
+    "capped",
+    "result",
+    "attempts",
+    "locked_at",
+    "next_attempt_at",
+    "created_at",
+    "finished_at"
+  ),
   mailbox_credentials: secret("credentials: the encrypted mailbox secret"),
   mailbox_folders: byOrg(
     "id",
@@ -217,7 +261,18 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "oauth_provider",
     "auth_reason"
   ),
-  memberships: byOrg("org_id", "user_id", "role", "digest_times", "created_at", "break_glass"),
+  memberships: byOrg(
+    "org_id",
+    "user_id",
+    "role",
+    "digest_times",
+    "created_at",
+    "break_glass",
+    "quiet_start",
+    "quiet_end",
+    "report_channel",
+    "report_mailbox_id"
+  ),
   // What the user waits for, promised or handed on: the text of the mail-derived copy and the state a person understands.
   // The ids and the counters of the chaser stay out (they mean nothing without the database). `org_id` goes out like in
   // every table: the export test checks that no row of another organization is in the file.

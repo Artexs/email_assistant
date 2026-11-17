@@ -1,11 +1,13 @@
 // The browser imports only this file (`@ea/core/web`): no module here may pull a Node module.
 export * from "./actions";
 export * from "./approvals";
+export * from "./csp";
 export * from "./activity";
 export * from "./delegation";
 export * from "./errors";
 export * from "./mail-oauth";
 export * from "./mailboxes";
+export * from "./notify";
 export * from "./me";
 export * from "./next-path";
 export * from "./onboarding";
@@ -13,6 +15,7 @@ export * from "./org-name";
 export * from "./operator";
 export * from "./organization";
 export * from "./password";
+export * from "./public-content";
 export * from "./rules";
 export * from "./security-log";
 export * from "./sessions";
@@ -29,5 +32,11 @@ export { rightAnswer, pickedText, pickAnswer, type UndoAnswerKind } from "../dig
 export { categoryEmoji, categoryTag } from "../digest/labels";
 export { textTables, type CoreTexts } from "../texts";
 export { isLabelCategory, labelCategories, type LabelCategory } from "../digest/callback";
-export { formatClock } from "../digest/local-time";
+export {
+  URGENCY_MAX_ITEMS,
+  URGENCY_NUL_MESSAGE,
+  urgencyProfileSchema,
+  type UrgencyProfile,
+} from "../triage/urgency-profile";
+export { formatClock, localDateTime } from "../digest/local-time";
 export { z } from "./zod";

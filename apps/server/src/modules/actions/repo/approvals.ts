@@ -1,7 +1,6 @@
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
-import { emailIdOf } from "../anchor";
 import { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS } from "../constants";
 
 import { sendFilterExpr, type SendClaimFilter } from "./filters";
@@ -39,12 +38,12 @@ export async function listExpiredApprovals(
             and (a.locked_at is null or a.locked_at < ${opts.staleBefore}) then 'held_timeout'
         end as reason
       from actions a
-      join emails e on e.id = a.email_id and e.org_id = a.org_id
+      left join emails e on e.id = a.email_id and e.org_id = a.org_id
+      left join open_loops l on l.id = a.loop_id and l.org_id = a.org_id
       join organizations o on o.id = a.org_id
       left join actions d on d.id = a.depends_on_action_id and d.org_id = a.org_id
-      -- loop rows: open loops stage 10/11
-      where a.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId} and e.mailbox_id = ${mailboxId}
-        and a.email_id is not null
+      -- A send of a mail belongs to the mailbox of that mail, a follow-up to the mailbox of its loop.
+      where a.org_id = ${ctx.orgId} and coalesce(e.mailbox_id, l.mailbox_id) = ${mailboxId}
         and a.type = 'send' and a.status in ('awaiting_approval', 'approved')
     ) x
     where reason is not null
@@ -63,12 +62,12 @@ export async function listUnseenApprovalSends(
   opts: { before: Date }
 ): Promise<{ id: string; mailboxId: string }[]> {
   const result = await sql<{ id: string; mailbox_id: string }>`
-    select a.id, e.mailbox_id
+    select a.id, coalesce(e.mailbox_id, l.mailbox_id) as mailbox_id
     from actions a
-    join emails e on e.id = a.email_id and e.org_id = a.org_id
-    -- loop rows: open loops stage 10/11
-    where a.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId}
-      and a.email_id is not null
+    left join emails e on e.id = a.email_id and e.org_id = a.org_id
+    left join open_loops l on l.id = a.loop_id and l.org_id = a.org_id
+    where a.org_id = ${ctx.orgId}
+      and coalesce(e.mailbox_id, l.mailbox_id) is not null
       and a.type = 'send' and a.status = 'awaiting_approval'
       and a.notified_at is not null and a.notified_at < ${opts.before}
       and not exists (
@@ -81,13 +80,14 @@ export async function listUnseenApprovalSends(
   `.execute(trx);
   return result.rows.map((row) => ({ id: row.id, mailboxId: row.mailbox_id }));
 }
-// The `awaiting_approval` sends of one mailbox, oldest first. The caller locks each one (`expireSend`).
+// The `awaiting_approval` sends of one mailbox, oldest first: sends of its mail and follow-ups of its loops. The caller locks each
+// one (`expireSend`). `emailId` narrows the list to the sends of one mail (a follow-up has none, so it never matches).
 export async function listAwaitingSendIds(
   trx: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
   opts: { emailId?: string } = {}
-): Promise<{ id: string; emailId: string }[]> {
+): Promise<{ id: string; emailId: string | null }[]> {
   const { emailId } = opts;
   const rows = await trx
     .selectFrom("actions")
@@ -95,16 +95,25 @@ export async function listAwaitingSendIds(
     .where("org_id", "=", ctx.orgId)
     .where("type", "=", "send")
     .where("status", "=", "awaiting_approval")
-    // loop rows: open loops stage 10/11
-    .where("email_id", "is not", null)
-    .where("email_id", "in", (eb) =>
-      eb.selectFrom("emails").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
+    .where((eb) =>
+      eb.or([
+        eb(
+          "email_id",
+          "in",
+          eb.selectFrom("emails").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
+        ),
+        eb(
+          "loop_id",
+          "in",
+          eb.selectFrom("open_loops").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
+        ),
+      ])
     )
     .$if(emailId !== undefined, (qb) => qb.where("email_id", "=", emailId as string))
     .orderBy("created_at")
     .orderBy("id")
     .execute();
-  return rows.map((row) => ({ id: row.id, emailId: emailIdOf(row) }));
+  return rows.map((row) => ({ id: row.id, emailId: row.email_id }));
 }
 // For /status (D16): the whole organization, or one mailbox. `approvedHeld` is the approved sends that `send` does
 // not admit; `approvedSending` is the approved sends that it admits.
@@ -123,16 +132,17 @@ export async function countApprovals(
       sql<string>`count(*) filter (where actions.status = 'approved' and ${admitted})`.as("sending"),
     ])
     .where("actions.org_id", "=", ctx.orgId)
-    // loop rows: open loops stage 10/11
-    .where("actions.email_id", "is not", null)
     .where("actions.type", "=", "send");
   if (opts.mailboxId !== undefined) {
     const mailboxId = opts.mailboxId;
     query = query
-      .innerJoin("emails", (join) =>
+      .leftJoin("emails", (join) =>
         join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
       )
-      .where("emails.mailbox_id", "=", mailboxId);
+      .leftJoin("open_loops", (join) =>
+        join.onRef("open_loops.id", "=", "actions.loop_id").onRef("open_loops.org_id", "=", "actions.org_id")
+      )
+      .where(sql<boolean>`coalesce(emails.mailbox_id, open_loops.mailbox_id) = ${mailboxId}`);
   }
   const row = await query.executeTakeFirstOrThrow();
   return {
