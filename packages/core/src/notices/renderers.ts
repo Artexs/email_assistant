@@ -30,10 +30,12 @@ import { textsFor } from "../texts";
 import { type NoticeKind, type NoticeRenderOptions } from "./kinds";
 import { noticeViewSchemas } from "./views";
 
-// One renderer per kind. A channel key holds one function per detail level.
+// One renderer per kind. A channel key holds one function per detail level. `mail` is optional: F110 stage 19 queues mail
+// rows, stage 20 adds the mail renderers; until then `renderNotice` answers `{ ok: false }` for a mail row.
 export interface NoticeRenderer<S extends z.ZodType> {
   schema: S;
   telegram: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
+  mail?: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
 }
 
 function defineRenderer<S extends z.ZodType>(renderer: NoticeRenderer<S>): NoticeRenderer<S> {

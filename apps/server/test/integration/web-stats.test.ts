@@ -9,6 +9,7 @@ import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 
 import { testDb } from "./helpers";
+import { flagLoops, seedLoops } from "./loops-m2-fixtures";
 import { WEEK, seedWeek, type SeededWeek } from "./metrics-fixtures";
 import { as, webTestApp } from "./web-helpers";
 
@@ -79,6 +80,20 @@ describe("GET /api/stats", () => {
     expect(weeks[0]?.m3.total).toBe(4);
     expect(weeks[0]?.m8).toHaveLength(5);
     expect(weeks.slice(1).every((week) => week.m8.length === 0)).toBe(true);
+  });
+
+  test("m2 carries the split by kind only for an organization with open_loops on", async () => {
+    await flag(true);
+    await db.transaction().execute((trx) => seedLoops(trx, seeded.orgA));
+    const read = async () => {
+      const res = await app().request("/api/stats?weeks=1", as("owner"));
+      return statsResponseSchema.parse(await res.json()).weeks[0]?.m2;
+    };
+    expect((await read())?.byKind).toBeUndefined();
+    await flagLoops(db, seeded.orgA, true);
+    const m2 = await read();
+    expect(m2?.byKind?.waiting).toEqual({ due: 2, closedOnTime: 1, surfacedOnTime: 1, pending: 0 });
+    expect(m2?.due).toBe(6);
   });
 
   test("weeks, mailboxId and the member role", async () => {

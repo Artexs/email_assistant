@@ -2,7 +2,7 @@
 import type { WeekStats } from "../web/stats";
 
 import type { MailTruthRow } from "./m1";
-import type { DelegationDueRow } from "./m2";
+import type { DelegationDueRow, LoopDueRow } from "./m2";
 import type { HiddenMoveRow, MistakeRow, RejectRow } from "./m3";
 import type { HandledRow } from "./m4";
 import type { UrgentNoticeRow } from "./m5";
@@ -22,6 +22,19 @@ export function truthRow(overrides: Partial<MailTruthRow> = {}): MailTruthRow {
     truth: null,
     truthSource: null,
     wrongOnly: false,
+    ...overrides,
+  };
+}
+
+export function loopRow(overrides: Partial<LoopDueRow> = {}): LoopDueRow {
+  return {
+    id: nextId("loop"),
+    kind: "waiting",
+    dueAt: new Date("2026-11-17T09:00:00Z"),
+    surfacedAt: null,
+    closedAt: null,
+    closeReason: null,
+    firstFollowUpAt: null,
     ...overrides,
   };
 }

@@ -1,4 +1,11 @@
-import { barCategories, EVIDENCE_MIN_LABELS, type BarCategory, type WeekStats } from "@ea/core/web";
+import {
+  barCategories,
+  EVIDENCE_MIN_LABELS,
+  M2_KINDS,
+  type BarCategory,
+  type M2Kind,
+  type WeekStats,
+} from "@ea/core/web";
 
 import { dateLocale, t, type TextKey } from "../i18n";
 
@@ -57,17 +64,37 @@ function sampleText(week: WeekStats): string {
   return t("stats_of", { count: misses, total: important });
 }
 
+// One row per kind under M2: the closed and the surfaced rate of the kind in one cell. No due loop: a dash.
+function kindText(week: WeekStats, kind: M2Kind): string {
+  const tally = week.m2.byKind?.[kind];
+  if (tally === undefined || tally.due === 0) return NONE;
+  return t("stats_m2_kind_cell", {
+    closed: rateText(tally.closedOnTime, tally.due),
+    surfaced: rateText(tally.surfacedOnTime, tally.due),
+  });
+}
+
+const KIND_LABELS = {
+  delegation: "stats_m2_kind_delegation",
+  waiting: "stats_m2_kind_waiting",
+  promised: "stats_m2_kind_promised",
+  delegated: "stats_m2_kind_delegated",
+} as const satisfies Record<M2Kind, TextKey>;
+
 // One row per metric, one cell per week, in the order of `weeks` (the API sends the newest first).
 export function statsRows(weeks: readonly WeekStats[]): StatsRow[] {
   const row = (label: TextKey, cell: (week: WeekStats) => string): StatsRow => ({
     label,
     cells: weeks.map((week) => ({ text: cell(week) })),
   });
+  const split = weeks.some((week) => week.m2.byKind !== undefined);
   return [
     row("stats_m1", (w) => rateText(w.m1.misses, w.m1.important)),
     row("stats_m1_sample", sampleText),
-    row("stats_m2_closed", (w) => rateText(w.m2.closedOnTime, w.m2.due)),
-    row("stats_m2_surfaced", (w) => rateText(w.m2.surfacedOnTime, w.m2.due)),
+    // The split is there only for an organization with the flag `open_loops` on; the totals then hold the loops.
+    row(split ? "stats_m2_loops_closed" : "stats_m2_closed", (w) => rateText(w.m2.closedOnTime, w.m2.due)),
+    row(split ? "stats_m2_loops_surfaced" : "stats_m2_surfaced", (w) => rateText(w.m2.surfacedOnTime, w.m2.due)),
+    ...(split ? M2_KINDS.map((kind) => row(KIND_LABELS[kind], (w) => kindText(w, kind))) : []),
     row("stats_m3", (w) => String(w.m3.total)),
     row("stats_m4", (w) => rateText(w.m4.handled, w.m4.triaged)),
     row("stats_m4_would", (w) => rateText(w.m4.wouldHandle, w.m4.triaged)),

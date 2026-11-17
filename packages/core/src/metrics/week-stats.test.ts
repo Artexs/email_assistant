@@ -4,6 +4,7 @@ import { weekStatsSchema } from "../web/stats";
 
 import {
   delegationRow,
+  loopRow,
   gateRow,
   handledRow,
   hiddenMoveRow,
@@ -14,7 +15,7 @@ import {
   urgentRow,
 } from "./fixtures";
 import { missedImportant } from "./m1";
-import { openLoopsOnTime } from "./m2";
+import { openLoopsOnTime, totalsOf } from "./m2";
 import { seriousMistakes } from "./m3";
 import { handledShare } from "./m4";
 import { urgentLatency } from "./m5";
@@ -39,6 +40,7 @@ function rows(): WeekRows {
     delegations: [
       delegationRow({ dueAt: new Date("2026-11-18T09:00:00Z"), answeredAt: new Date("2026-11-18T12:00:00Z") }),
     ],
+    loops: null,
     moves: [hiddenMoveRow({ folder: "ai_info", truth: "urgent" })],
     rejects: [rejectRow({ reason: "wrong_person" }), rejectRow({ reason: "not_needed" })],
     mistakes: [mistakeRow()],
@@ -62,7 +64,9 @@ describe("buildWeekStats", () => {
     expect(stats.weekStart).toBe(weekStart);
     expect(stats.mailboxId).toBe(mailboxId);
     expect(stats.m1).toEqual(missedImportant(input.truth));
-    expect(stats.m2).toEqual(openLoopsOnTime(input.delegations, { range, timeZone, now }));
+    expect(stats.m2).toEqual(
+      totalsOf(openLoopsOnTime({ delegations: input.delegations, loops: [] }, { range, timeZone, now }))
+    );
     expect(stats.m3).toEqual(seriousMistakes(input, range));
     expect(stats.m4).toEqual(handledShare(input.handled));
     expect(stats.m5).toEqual(urgentLatency(input.urgent, { timeZone }));
@@ -71,10 +75,20 @@ describe("buildWeekStats", () => {
     expect(weekStatsSchema.parse(stats)).toEqual(stats);
   });
 
+  test("with loops the split is in m2; the totals hold the loops", () => {
+    const input = { ...rows(), loops: [loopRow({ kind: "promised", dueAt: new Date("2026-11-18T09:00:00Z") })] };
+    const stats = buildWeekStats(input, { weekStart, mailboxId, timeZone, now });
+    expect(stats.m2.due).toBe(2);
+    expect(stats.m2.byKind?.promised).toEqual({ due: 1, closedOnTime: 0, surfacedOnTime: 0, pending: 0 });
+    expect(stats.m2.byKind?.delegation.closedOnTime).toBe(1);
+    expect(weekStatsSchema.parse(stats)).toEqual(stats);
+  });
+
   test("an empty week passes the schema", () => {
     const empty: WeekRows = {
       truth: [],
       delegations: [],
+      loops: null,
       moves: [],
       rejects: [],
       mistakes: [],

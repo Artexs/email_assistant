@@ -28,7 +28,8 @@ export const noticeKinds = [
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);
 
-export const noticeChannels = ["telegram"] as const; // E4-B adds "mail", E9b adds "push"
+// `mail` is the report mail of E4-B (APPEND into the own INBOX, F110 stage 20); E9b adds "push". Only four kinds go by mail.
+export const noticeChannels = ["telegram", "mail"] as const;
 export type NoticeChannel = (typeof noticeChannels)[number];
 
 export const noticeDetails = ["full"] as const; // E9b adds "minimal"

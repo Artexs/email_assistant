@@ -155,4 +155,41 @@ describe("renderWeeklyReport", () => {
     expect(english).toContain("p90 2.5 min");
     expect(english).toContain("$0.41 per mailbox");
   });
+
+  describe("the loops line (F116 stage 23)", () => {
+    const tally = (due: number, closed: number, surfaced: number) => ({
+      due,
+      closedOnTime: closed,
+      surfacedOnTime: surfaced,
+      pending: 0,
+    });
+    const withLoops = (byKind: NonNullable<WeekStats["m2"]["byKind"]>): WeekStats =>
+      weekStatsExample({ m2: { due: 2, closedOnTime: 1, surfacedOnTime: 2, pending: 0, byKind } });
+    const none = tally(0, 0, 0);
+    const lines = (week: WeekStats, texts: typeof en): string[] =>
+      renderWeeklyReport({ week, timeZone, answeredWaiting: 0 }, texts).text.split("\n");
+
+    test("it follows the loops line and sums the three kinds of loop, not the delegations", () => {
+      const week = withLoops({
+        delegation: tally(1, 1, 1),
+        waiting: tally(2, 1, 2),
+        promised: none,
+        delegated: tally(1, 0, 1),
+      });
+      const result = lines(week, en);
+      const at = result.indexOf("Open loops on time: 50% closed (1 of 2), 100% surfaced (2 of 2)");
+      expect(result[at + 1]).toBe("Of which loops: 33% closed (1 of 3), 100% surfaced (3 of 3)");
+    });
+
+    test("Polish text", () => {
+      const week = withLoops({ delegation: none, waiting: tally(2, 1, 2), promised: tally(1, 1, 1), delegated: none });
+      expect(lines(week, pl)).toContain("W tym otwarte sprawy: 67% zamkniętych (2 z 3), 100% zgłoszonych Ci (3 z 3)");
+    });
+
+    test("no line without a split, or when no loop was due", () => {
+      expect(lines(weekStatsExample(), en).some((line) => line.startsWith("Of which loops"))).toBe(false);
+      const quiet = withLoops({ delegation: tally(2, 1, 2), waiting: none, promised: none, delegated: none });
+      expect(lines(quiet, en).some((line) => line.startsWith("Of which loops"))).toBe(false);
+    });
+  });
 });

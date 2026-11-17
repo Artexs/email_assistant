@@ -29,6 +29,12 @@ export interface DigestTexts {
   waiting: (count: number) => string;
   delegations: (open: number, overdue: number) => string;
   shadow: string;
+  // The spam review line of the footer (F110 stage 17, flag `spam_review_line`). `url` null: the panel text instead of the link.
+  // `would` is the shadow-mode form: the moves were only logged.
+  spamReview: {
+    moved: (count: number, url: string | null) => string;
+    would: (count: number, url: string | null) => string;
+  };
   // The LLM pause line of /status and the digest footer (F100 stage 07): the quota case has its own words.
   llmPause: {
     quota: (since: string, code: string) => string;
@@ -41,6 +47,18 @@ export interface DigestTexts {
 
 const PL_MAILS = { one: "wiadomość", few: "wiadomości", many: "wiadomości", other: "wiadomości" } as const;
 const PL_NEED = { one: "wymaga", few: "wymagają", many: "wymaga", other: "wymaga" } as const;
+const PL_TO_SPAM = {
+  one: "wiadomość trafiła",
+  few: "wiadomości trafiły",
+  many: "wiadomości trafiło",
+  other: "wiadomości trafiło",
+} as const;
+const PL_WOULD_TO_SPAM = {
+  one: "wiadomość trafiłaby",
+  few: "wiadomości trafiłyby",
+  many: "wiadomości trafiłoby",
+  other: "wiadomości trafiłoby",
+} as const;
 const PL_WAIT = { one: "czeka", few: "czekają", many: "czeka", other: "czeka" } as const;
 
 // A name with one form for every count.
@@ -89,6 +107,12 @@ export const digestTexts = {
     waiting: (count) => `⏳ Waiting for triage: ${count}`,
     delegations: (open, overdue) => `👥 Delegations: ${open} waiting for a reply, ${overdue} overdue`,
     shadow: "Shadow mode: the system changed nothing in your mailbox.",
+    spamReview: {
+      moved: (count, url) =>
+        `🗑 ${count} went to spam · ${url === null ? "check them in the panel" : `review: ${url}`}`,
+      would: (count, url) =>
+        `🗑 ${count} would have gone to spam · ${url === null ? "check them in the panel" : `review: ${url}`}`,
+    },
     llmPause: {
       quota: (since, code) =>
         `⏸ LLM paused since ${since}: the provider quota or budget is spent (${code}). Triage waits.`,
@@ -132,6 +156,12 @@ export const digestTexts = {
     delegations: (open, overdue) =>
       `👥 Zlecenia: ${open} ${PL_WAIT[pluralCategory("pl", open)]} na odpowiedź, ${overdue} po terminie`,
     shadow: "Tryb podglądu: system niczego nie zmienił w Twojej skrzynce.",
+    spamReview: {
+      moved: (count, url) =>
+        `🗑 ${count} ${PL_TO_SPAM[pluralCategory("pl", count)]} do spamu · ${url === null ? "sprawdź w panelu" : `sprawdź: ${url}`}`,
+      would: (count, url) =>
+        `🗑 ${count} ${PL_WOULD_TO_SPAM[pluralCategory("pl", count)]} do spamu · ${url === null ? "sprawdź w panelu" : `sprawdź: ${url}`}`,
+    },
     llmPause: {
       quota: (since, code) =>
         `⏸ Klasyfikacja AI wstrzymana od ${since}. Wyczerpał się limit lub budżet u dostawcy (${code}). Wiadomości czekają.`,
