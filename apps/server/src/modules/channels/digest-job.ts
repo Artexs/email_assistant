@@ -128,6 +128,7 @@ export async function queueDigest(
       locale: link.locale,
       testMail,
       ...(loops === undefined ? {} : { loops }),
+      ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }),
     });
     const { message, shown } = built;
     const loopIds = [...shown.surfaced, ...shown.stale];

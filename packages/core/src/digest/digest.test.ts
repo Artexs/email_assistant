@@ -603,6 +603,84 @@ describe("delegations footer", () => {
   });
 });
 
+describe("spam review line (F110 stage 17)", () => {
+  const url = "https://panel.test/activity?category=spam";
+  const spam = (extra: Partial<NonNullable<DigestInput["spamReview"]>> = {}): DigestInput["spamReview"] => ({
+    moved: 3,
+    wouldMove: 0,
+    url,
+    ...extra,
+  });
+  const lines = (digest: DigestInput, texts: CoreTexts = textTables.en): string[] =>
+    render(digest, texts).text.split("\n");
+
+  test("1. n = 3 with the URL: the line with the link; without the URL: the panel text", () => {
+    expect(lines(input({ spamReview: spam() }))).toContain(`🗑 3 went to spam · review: ${url}`);
+    expect(lines(input({ spamReview: spam({ url: null }) }))).toContain("🗑 3 went to spam · check them in the panel");
+  });
+
+  test("2. n = 0 or no field: no line", () => {
+    for (const spamReview of [spam({ moved: 0 }), undefined]) {
+      const text = render(input(spamReview === undefined ? {} : { spamReview })).text;
+      expect(text).not.toContain("🗑");
+      expect(text).not.toContain("spam");
+    }
+  });
+
+  test("4. logged moves of a shadow mailbox read 'would have gone to spam'; both counts give both lines", () => {
+    expect(lines(input({ spamReview: spam({ moved: 0, wouldMove: 2 }) }))).toContain(
+      `🗑 2 would have gone to spam · review: ${url}`
+    );
+    const both = lines(input({ spamReview: spam({ moved: 1, wouldMove: 2 }) }));
+    expect(both).toContain(`🗑 1 went to spam · review: ${url}`);
+    expect(both).toContain(`🗑 2 would have gone to spam · review: ${url}`);
+  });
+
+  test("6. the Polish texts", () => {
+    expect(lines(input({ spamReview: spam() }), textTables.pl)).toContain(`🗑 Do spamu trafiło: 3 · sprawdź: ${url}`);
+    expect(lines(input({ spamReview: spam({ url: null }) }), textTables.pl)).toContain(
+      "🗑 Do spamu trafiło: 3 · sprawdź w panelu"
+    );
+    expect(lines(input({ spamReview: spam({ moved: 0, wouldMove: 2 }) }), textTables.pl)).toContain(
+      `🗑 Do spamu trafiłoby: 2 · sprawdź: ${url}`
+    );
+  });
+
+  test("the line is a footer line: after the shadow line, before the handled share", () => {
+    const rows = lines(
+      input({
+        items: [item(1, "info")],
+        counts: { info: 1 },
+        waiting: 2,
+        spamReview: spam(),
+        handled: { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false },
+      })
+    );
+    const at = (part: string): number => rows.findIndex((row) => row.includes(part));
+    expect(at("⏳ Waiting")).toBeLessThan(at("Shadow mode"));
+    expect(at("Shadow mode")).toBeLessThan(at("🗑"));
+    expect(at("🗑")).toBe(at("🤖") - 1);
+    expect(rows.at(-1)).toContain("🤖");
+  });
+
+  test("a full digest drops the line before any item row", () => {
+    // Find an item size at which all 15 rows fit without the line but not with it.
+    let found = false;
+    for (let size = 40; size <= 400 && !found; size += 1) {
+      const items = Array.from({ length: 15 }, (_, i) =>
+        item(i + 1, "urgent", { subject: "s".repeat(size), aiText: "a".repeat(size) })
+      );
+      const plain = render(input({ items, counts: { urgent: 15 } }));
+      const withLine = render(input({ items, counts: { urgent: 15 }, spamReview: spam() }));
+      if (blockStarts(plain.text).length === 15 && !withLine.text.includes("🗑")) {
+        found = true;
+        expect(withLine.text).toBe(plain.text);
+      }
+    }
+    expect(found).toBe(true);
+  });
+});
+
 describe("LLM pause footer line", () => {
   const pause = { code: "http_429_quota", since: new Date("2026-11-06T06:30:00Z") };
   const line = "⏸ LLM paused since 07:30: the provider quota or budget is spent (http_429_quota). Triage waits.";

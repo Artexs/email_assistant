@@ -164,6 +164,12 @@ export const featureFlags = {
     epic: "E4-B",
     removeBy: "2027-03-01",
   },
+  spam_review_line: {
+    default: false,
+    description: "The digest names how many mails went to spam since the last digest and links to the list to review.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

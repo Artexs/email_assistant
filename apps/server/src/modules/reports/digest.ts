@@ -15,6 +15,7 @@ import {
   type DigestItem,
   type DigestMailbox,
   type DigestShown,
+  type DigestSpamReview,
   type MailboxMode,
   type OutMessage,
   type UserLocale,
@@ -23,7 +24,7 @@ import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
-import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
+import { countSpamMoves, listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames, listDelegateTags, listDelegationsDueBy } from "../delegation";
@@ -54,6 +55,8 @@ export const DIGEST_MAX_PERIOD_MS = 7 * 24 * 3_600_000;
 export const FIRST_DIGEST_LOOKBACK_MS = 24 * 3_600_000;
 export const WAITING_WINDOW_MS = 7 * 24 * 3_600_000;
 const HANDLED_WINDOW_MS = 7 * 24 * 3_600_000;
+// The spam review line counts at most one day back, as far as the default range of the Activity page that it links to.
+export const SPAM_REVIEW_MAX_PERIOD_MS = 24 * 3_600_000;
 
 const modeSchema = z.enum(mailboxModes);
 
@@ -76,6 +79,8 @@ export interface DigestRequest {
   locale: UserLocale;
   testMail: TestMailRule;
   loops?: DigestLoops;
+  // The base URL of the panel (`WEB_BASE_URL`): the spam review line links to the Activity list with it. Unset: no link.
+  panelBase?: string;
 }
 
 // What the digest named of the loops: the queue transaction marks these (`markBriefShown`).
@@ -100,6 +105,30 @@ export async function digestPeriodStart(
 // The digest is the same for every member of the organization; only the period depends on the member.
 export async function buildDigestMessage(db: Db, ctx: TenantContext, request: DigestRequest): Promise<OutMessage> {
   return (await buildDigest(db, ctx, request)).message;
+}
+
+// The Activity list filtered to spam (the page reads `category` from its URL): a fixed URL, no mail data (F110 D15).
+export function spamReviewUrlOf(base: string | undefined): string | null {
+  return base === undefined ? null : `${base.replace(/\/+$/, "")}/activity?category=spam`;
+}
+
+// The spam review line: flag `spam_review_line`. Null: flag off. The renderer prints a line only for a count above 0.
+async function loadSpamReview(
+  db: Db,
+  ctx: TenantContext,
+  request: DigestRequest,
+  mailboxes: readonly DigestMailbox[]
+): Promise<DigestSpamReview | null> {
+  if (!(await isFeatureOn(db, ctx, "spam_review_line"))) return null;
+  const after = new Date(
+    Math.max(request.periodStart.getTime(), request.periodEnd.getTime() - SPAM_REVIEW_MAX_PERIOD_MS)
+  );
+  const { moved, wouldMove } = await countSpamMoves(db, ctx, {
+    after,
+    until: request.periodEnd,
+    shadowMailboxIds: mailboxes.filter((mailbox) => mailbox.mode === "shadow").map((mailbox) => mailbox.id),
+  });
+  return { moved, wouldMove, url: spamReviewUrlOf(request.panelBase) };
 }
 
 const BRIEF_REPLY_LINES = 5;
@@ -323,6 +352,8 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
       )
     : null;
 
+  const spamReview = await loadSpamReview(db, ctx, request, mailboxes);
+
   const brief =
     request.loops === undefined
       ? null
@@ -355,6 +386,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
       ...(handled === null
         ? {}
         : { handled: { ...handled, shadowOnly: mailboxes.every((mailbox) => mailbox.mode === "shadow") } }),
+      ...(spamReview === null ? {} : { spamReview }),
       ...(brief === null ? {} : { brief }),
     },
     texts

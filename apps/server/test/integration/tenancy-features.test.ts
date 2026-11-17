@@ -192,6 +192,7 @@ describe("org_features", () => {
         { flag: "user_quiet_hours", enabled: false, source: "default" },
         { flag: "report_mail", enabled: false, source: "default" },
         { flag: "urgency_editor", enabled: false, source: "default" },
+        { flag: "spam_review_line", enabled: false, source: "default" },
       ]);
     });
   });

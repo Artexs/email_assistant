@@ -58,6 +58,8 @@ export interface CommandDeps {
   operatorContact: string | null;
   // Minutes between two mail syncs (MAIL_SYNC_EVERY_MIN), for the /resume text.
   syncEveryMin: number;
+  // `WEB_BASE_URL`: the spam review line of /digest links to the panel with it (F110 stage 17). Unset: the panel text.
+  webBaseUrl?: string;
 }
 
 const log = createLog("channels");
@@ -217,6 +219,7 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
     now,
     locale: link.locale,
     testMail: deps.testMail,
+    ...(deps.webBaseUrl === undefined ? {} : { panelBase: deps.webBaseUrl }),
   });
 }
 
