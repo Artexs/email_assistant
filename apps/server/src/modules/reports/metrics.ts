@@ -9,6 +9,7 @@ import {
   parseCategoryPolicy,
   previousWeekStart,
   seriousMistakes,
+  totalsOf,
   unitCost,
   urgentLatency,
   weekRange,
@@ -31,8 +32,9 @@ import { listHiddenMoveRows, listMistakeRows, listRejectRows } from "../actions"
 import { listLlmCallRows } from "../audit";
 import { getMailboxSettings, listSenderRules } from "../config";
 import { listDelegationDueRows } from "../delegation";
+import { loopDueRows } from "../loops";
 import { listMailboxes, type TestMailRule } from "../mail";
-import { getOrganization } from "../tenancy";
+import { getOrganization, isFeatureOn } from "../tenancy";
 import { listHandledRows, listTruthRows, realGoNoGoRows } from "../triage";
 
 type DbOrTrx = Db | Transaction<DB>;
@@ -105,17 +107,30 @@ async function gateRows(
   return rows;
 }
 
+function delegationsOnTime(
+  delegations: Awaited<ReturnType<typeof listDelegationDueRows>>,
+  range: { start: Date; end: Date },
+  timeZone: string,
+  now: Date
+): OpenLoopsOnTime {
+  return totalsOf(openLoopsOnTime({ delegations, loops: [] }, { range, timeZone, now }));
+}
+
 /** The rows of every reader for one query; `llmRange` (default the query range) is the window of the M7 reader. */
 async function readMetricRows(
   db: DbOrTrx,
   ctx: TenantContext,
   q: WeekQuery,
   deps: WeekStatsDeps,
-  llmRange: { start: Date; end: Date } = q.range
+  opts: { llmRange?: { start: Date; end: Date }; withLoops: boolean }
 ) {
-  const [truth, delegations, moves, rejects, mistakes, handled, urgent, llmCalls] = await Promise.all([
+  const llmRange = opts.llmRange ?? q.range;
+  // Loops are read only for an organization with the flag `open_loops` on: off, the loops are hidden (F116 D18).
+  const loopsOn = opts.withLoops && (await isFeatureOn(db, ctx, "open_loops"));
+  const [truth, delegations, loops, moves, rejects, mistakes, handled, urgent, llmCalls] = await Promise.all([
     listTruthRows(db, ctx, q),
     listDelegationDueRows(db, ctx, q),
+    loopsOn ? loopDueRows(db, ctx, { range: q.range, mailboxId: q.mailboxId, testMail: q.testMail }) : null,
     listHiddenMoveRows(db, ctx, q),
     listRejectRows(db, ctx, q),
     listMistakeRows(db, ctx, q),
@@ -123,7 +138,7 @@ async function readMetricRows(
     deps.urgentNotices(db, ctx, q),
     listLlmCallRows(db, ctx, { range: llmRange, mailboxId: q.mailboxId }),
   ]);
-  return { truth, delegations, moves, rejects, mistakes, handled, urgent, llmCalls };
+  return { truth, delegations, loops, moves, rejects, mistakes, handled, urgent, llmCalls };
 }
 
 /** One week of one organization; `mailboxId` null = all mailboxes. `not_found` when the mailbox is not the organization's. */
@@ -145,12 +160,13 @@ export async function weekStats(
     mailboxId: input.mailboxId,
     testMail: deps.testMail,
   };
-  const rows = await readMetricRows(db, ctx, q, deps);
+  const rows = await readMetricRows(db, ctx, q, deps, { withLoops: true });
   const gates = input.withEvidence === false ? [] : await gateRows(db, ctx, scope, input.now, deps.testMail);
   return buildWeekStats(
     {
       truth: rows.truth,
       delegations: rows.delegations,
+      loops: rows.loops,
       moves: await withWhitelist(db, ctx, rows.moves),
       rejects: rows.rejects,
       mistakes: rows.mistakes,
@@ -210,8 +226,11 @@ export async function rangeMetrics(
   const llmRange = input.llmRange ?? input.range;
   // One read of the whole range; the M7 window is a cut of it, so a call is in exactly one of the two parts.
   const rows = await readMetricRows(db, ctx, q, deps, {
-    start: input.range.start,
-    end: new Date(Math.max(input.range.end.getTime(), llmRange.end.getTime())),
+    llmRange: {
+      start: input.range.start,
+      end: new Date(Math.max(input.range.end.getTime(), llmRange.end.getTime())),
+    },
+    withLoops: false,
   });
   const inWindow = rows.llmCalls.filter(
     (call) => call.at.getTime() >= llmRange.start.getTime() && call.at.getTime() < llmRange.end.getTime()
@@ -225,7 +244,8 @@ export async function rangeMetrics(
   const active = mailboxes.filter((mailbox) => mailbox.status === "active").length;
   const tailCost = input.llmRange === undefined ? null : unitCost(tail, { mailboxes: active });
   return {
-    m2: openLoopsOnTime(rows.delegations, { range: input.range, timeZone, now: input.now }),
+    // The live lab scores delegations: its totals keep the meaning of F4, with no split.
+    m2: delegationsOnTime(rows.delegations, input.range, timeZone, input.now),
     m3: seriousMistakes({ moves, rejects: rows.rejects, mistakes: rows.mistakes }, input.range),
     m4: handledShare(rows.handled),
     m5: urgentLatency(rows.urgent, { timeZone }),
