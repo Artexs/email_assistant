@@ -68,6 +68,8 @@ const WRITE_ROUTES = [
   "POST /api/onboarding/keep-mode",
   "POST /api/rules",
   "POST /api/telegram/consent",
+  "POST /api/trust/:mailboxId/history-check",
+  "POST /api/trust/:mailboxId/recommended",
   "PUT /api/settings/:mailboxId/urgency",
 ];
 
