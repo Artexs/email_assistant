@@ -86,28 +86,20 @@ export function renderWeeklyReport(
     );
   }
 
-  // The split by kind is there only with the flag `open_loops` on. The line names the loops that were due.
-  if (m2.byKind !== undefined) {
-    const loops = LOOP_KINDS.reduce(
-      (sum, kind) => {
-        const tally = m2.byKind?.[kind];
-        return tally === undefined
-          ? sum
-          : {
-              due: sum.due + tally.due,
-              closedOnTime: sum.closedOnTime + tally.closedOnTime,
-              surfacedOnTime: sum.surfacedOnTime + tally.surfacedOnTime,
-            };
-      },
-      { due: 0, closedOnTime: 0, surfacedOnTime: 0 }
+  // The split by kind is there only with the flag `open_loops` on; without it the sums are 0 and no line shows.
+  const loops = { due: 0, closedOnTime: 0, surfacedOnTime: 0 };
+  for (const kind of LOOP_KINDS) {
+    const tally = m2.byKind?.[kind];
+    loops.due += tally?.due ?? 0;
+    loops.closedOnTime += tally?.closedOnTime ?? 0;
+    loops.surfacedOnTime += tally?.surfacedOnTime ?? 0;
+  }
+  if (loops.due > 0) {
+    const closed = ratePieces(loops.closedOnTime, loops.due, of);
+    const surfaced = ratePieces(loops.surfacedOnTime, loops.due, of);
+    lines.push(
+      t.loopsOf(t.loopsClosed(closed.percent, closed.counts), t.loopsSurfaced(surfaced.percent, surfaced.counts))
     );
-    if (loops.due > 0) {
-      const closed = ratePieces(loops.closedOnTime, loops.due, of);
-      const surfaced = ratePieces(loops.surfacedOnTime, loops.due, of);
-      lines.push(
-        t.loopsOf(t.loopsClosed(closed.percent, closed.counts), t.loopsSurfaced(surfaced.percent, surfaced.counts))
-      );
-    }
   }
 
   const { mistakes } = t;

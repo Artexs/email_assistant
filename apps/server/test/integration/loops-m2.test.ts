@@ -1,6 +1,9 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { listUrgentNoticeTimes } from "../../src/modules/channels";
+import { loopDueRows } from "../../src/modules/loops";
 import { weekStats, type WeekStatsDeps } from "../../src/modules/reports";
 
 import { testDb, withRollback } from "./helpers";
@@ -129,6 +132,42 @@ describe("weekStats M2 with loops", () => {
         surfacedOnTime: 1,
         pending: 0,
       });
+    });
+  });
+});
+
+describe("loopDueRows", () => {
+  test("reads the loops of the range, the mailbox and the organization, with the first applied send", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      const { ctx, mailboxId, ownerId } = orgA;
+      const { delegated } = await seedLoops(trx, orgA);
+      const range = { start: new Date("2026-11-15T23:00:00Z"), end: new Date("2026-11-22T23:00:00Z") };
+      const all = await loopDueRows(trx, ctx, { range });
+      // Seeded: 6 loops; the one with a synthetic Message-ID is out.
+      expect(all).toHaveLength(5);
+      const followed = all.find((row) => row.id === delegated);
+      expect(followed?.kind).toBe("delegated");
+      expect(followed?.firstFollowUpAt).toEqual(new Date(DUE.getTime() + 23 * 3_600_000));
+      expect(all.filter((row) => row.firstFollowUpAt !== null)).toHaveLength(1);
+      expect(await loopDueRows(trx, ctx, { range, mailboxId })).toHaveLength(5);
+      expect(await loopDueRows(trx, ctx, { range, mailboxId: randomUUID() })).toEqual([]);
+      // A loop due outside the range is not read.
+      await insertLoopRow(trx, ctx, mailboxId, { due_at: new Date("2026-11-25T09:00:00Z") });
+      expect(await loopDueRows(trx, ctx, { range })).toHaveLength(5);
+      expect(
+        await loopDueRows(trx, ctx, { range: { start: range.end, end: new Date("2026-12-01T00:00:00Z") } })
+      ).toHaveLength(1);
+      // An undone send is no follow-up, even with a time in `applied_at`.
+      const open = await insertLoopRow(trx, ctx, mailboxId, { due_at: DUE });
+      await insertLoopActionPair(trx, ctx, open, {
+        draftStatus: "applied",
+        sendStatus: "undone",
+        createdAt: new Date(DUE.getTime() - 3_600_000),
+        send: { approved_at: DUE, approved_by: ownerId, approved_via: "telegram" },
+      });
+      const row = (await loopDueRows(trx, ctx, { range })).find((r) => r.id === open);
+      expect(row?.firstFollowUpAt).toBeNull();
     });
   });
 });
