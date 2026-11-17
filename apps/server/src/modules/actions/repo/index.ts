@@ -57,6 +57,7 @@ export {
   type SendMail,
   type SendRow,
 } from "./sends";
+export { listMoveCorrections, type MoveCorrection } from "./corrections";
 export { insertEditedPair } from "./edit";
 export { countWaitingApprovals, listApprovalSends } from "./approval-reads";
 export { draftHasReverse, expireReadyDraft, getDraft, listSendsOfDraft, lockDraft, type DraftRow } from "./drafts";

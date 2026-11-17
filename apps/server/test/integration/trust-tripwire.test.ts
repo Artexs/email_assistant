@@ -16,6 +16,7 @@ import {
   addCheck,
   addFailedCheck,
   addFeedback,
+  addLaterResult,
   addMove,
   at,
   GO_GATE,
@@ -224,6 +225,16 @@ describe("corrections (D9)", () => {
       await addCorrected(db, other, { category: "info" }, { at: "2026-11-04T10:00:00Z" });
       await run();
       expect(await tripsOf(db, box)).toHaveLength(0);
+    });
+  });
+
+  test("6e. a move counts for the category of the result that planned it, not for a later result of the mail", async () => {
+    await withTripBox(db, { grants: [{ category: "info" }] }, async (box) => {
+      await addCorrected(db, box, { category: "info" }, { at: "2026-11-03T10:00:00Z" });
+      const second = await addCorrected(db, box, { category: "info" }, { at: "2026-11-04T10:00:00Z" });
+      await addLaterResult(db, box, second, "notification", "2026-11-05T10:00:00Z");
+      await run();
+      expect((await tripsOf(db, box)).map((trip) => trip.category)).toEqual(["info"]);
     });
   });
 

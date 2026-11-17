@@ -11,15 +11,14 @@ import {
   type MovingCategory,
   type TripReason,
 } from "@ea/core";
-import { sql } from "kysely";
-import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
+import { listMoveCorrections, type MoveCorrection } from "../actions";
 import { trustSettingsUrlOf, queueTrustNotice } from "../channels";
 import { listAssistPolicies, lockMailboxSettings, setCategoryAuto, type SettingsDeps } from "../config";
-import { mailKindFilter, type TestMailRule } from "../mail";
+import { type TestMailRule } from "../mail";
 import { isFeatureOn, isOrgSuspended, listOrganizations } from "../tenancy";
 
 import { insertTrip, newestDoneCheck, type HistoryResult } from "./repo";
@@ -27,8 +26,9 @@ import { insertTrip, newestDoneCheck, type HistoryResult } from "./repo";
 const log = createLog("trust");
 
 const DAY_MS = 86_400_000;
-// The true categories of a correction that make it "important": the user needed a mail that the move hid.
-const IMPORTANT_CATEGORIES: readonly string[] = ["urgent", "needs_reply"];
+// A correction is important when the user needed the mail that the move hid.
+const isImportant = (row: MoveCorrection): boolean =>
+  row.trueCategory === "urgent" || row.trueCategory === "needs_reply";
 
 export interface TripwireDeps {
   db: Db;
@@ -39,83 +39,6 @@ export interface TripwireDeps {
   webBaseUrl?: string;
   /** Test seam: runs after the reads and before the write of a trip (a user can change `auto` in between). */
   hooks?: { beforeTrip?: () => void | Promise<void> };
-}
-
-// One mail that the user corrected, with the move of this mail and the category that planned the move.
-interface CorrectionRow {
-  emailId: string;
-  mailboxId: string;
-  category: MovingCategory;
-  appliedAt: Date;
-  correctedAt: Date;
-  important: boolean;
-}
-
-const correctionRowSchema = z.object({
-  email_id: z.string(),
-  mailbox_id: z.string(),
-  category: z.enum(movingCategories),
-  applied_at: z.date(),
-  corrected_at: z.date(),
-  true_category: z.string().nullable(),
-});
-
-/**
- * The corrections of one organization since `since`, in one query. A correction is a mail whose newest feedback row has the
- * verdict `wrong` (any source: several rows of one mail count once, the newest wins, as `listLabeledResults`), that has an original
- * `move` action which took effect (`applied`, or `undone` later), and the category of the triage result that planned that move.
- * Only real mail counts. `true_category` is the newest category that the user named in a `wrong` row of the mail: an Undo row has none, so a
- * pencil row before it still tells that the user needed the mail.
- */
-async function listCorrections(
-  db: Db,
-  ctx: TenantContext,
-  since: Date,
-  testMail: TestMailRule
-): Promise<CorrectionRow[]> {
-  const { rows } = await sql<unknown>`
-    WITH latest AS (
-      SELECT DISTINCT ON (tf.email_id) tf.email_id, tf.verdict, tf.created_at, (
-        SELECT w.true_category FROM triage_feedback w
-        WHERE w.org_id = ${ctx.orgId} AND w.email_id = tf.email_id AND w.verdict = 'wrong' AND w.true_category IS NOT NULL
-        ORDER BY w.created_at DESC, w.id DESC LIMIT 1
-      ) AS true_category
-      FROM triage_feedback tf
-      WHERE tf.org_id = ${ctx.orgId}
-        AND tf.email_id IN (
-          SELECT n.email_id FROM triage_feedback n
-          WHERE n.org_id = ${ctx.orgId} AND n.verdict = 'wrong' AND n.created_at >= ${since}
-        )
-      ORDER BY tf.email_id, tf.created_at DESC, tf.id DESC
-    )
-    SELECT l.email_id, emails.mailbox_id, t.category, a.applied_at, l.created_at AS corrected_at, l.true_category
-    FROM latest l
-    JOIN emails ON emails.id = l.email_id AND emails.org_id = ${ctx.orgId}
-    JOIN actions a ON a.org_id = ${ctx.orgId} AND a.email_id = l.email_id
-      AND a.type = 'move' AND a.reverses_action_id IS NULL AND a.status IN ('applied', 'undone')
-    JOIN LATERAL (
-      SELECT tr.category FROM triage_results tr
-      WHERE tr.org_id = ${ctx.orgId} AND tr.email_id = a.email_id AND tr.created_at <= a.created_at
-      ORDER BY tr.created_at DESC, tr.id DESC LIMIT 1
-    ) t ON true
-    WHERE l.verdict = 'wrong' AND l.created_at >= ${since} AND ${mailKindFilter("real", testMail)}
-    ORDER BY l.created_at, l.email_id
-  `.execute(db);
-  const parsed: CorrectionRow[] = [];
-  for (const raw of rows) {
-    const row = correctionRowSchema.safeParse(raw);
-    // A move of another category (`urgent`: a mail never moves from there) is not a move of a granted category.
-    if (!row.success) continue;
-    parsed.push({
-      emailId: row.data.email_id,
-      mailboxId: row.data.mailbox_id,
-      category: row.data.category,
-      appliedAt: row.data.applied_at,
-      correctedAt: row.data.corrected_at,
-      important: row.data.true_category !== null && IMPORTANT_CATEGORIES.includes(row.data.true_category),
-    });
-  }
-  return parsed;
 }
 
 // A category with `auto` on and a grant, in an `assist` mailbox: the only ones the tripwire watches. A mailbox with `auto` and no
@@ -155,8 +78,8 @@ interface Due {
 }
 
 // The corrections of one granted category: both times (the move and the correction) after the grant, one per mail, in the window.
-function correctionsDue(corrections: readonly CorrectionRow[], watch: Watched, now: Date): Due | null {
-  const counted = new Map<string, CorrectionRow>();
+function correctionsDue(corrections: readonly MoveCorrection[], watch: Watched, now: Date): Due | null {
+  const counted = new Map<string, MoveCorrection>();
   for (const row of corrections) {
     if (row.mailboxId !== watch.mailboxId || row.category !== watch.category) continue;
     if (row.correctedAt.getTime() <= watch.grantedAt.getTime()) continue;
@@ -165,7 +88,7 @@ function correctionsDue(corrections: readonly CorrectionRow[], watch: Watched, n
   }
   const rows = [...counted.values()];
   const reason = tripwireDue({
-    corrections: rows.map((row) => ({ at: row.correctedAt, important: row.important })),
+    corrections: rows.map((row) => ({ at: row.correctedAt, important: isImportant(row) })),
     now,
   });
   if (reason === null) return null;
@@ -173,7 +96,7 @@ function correctionsDue(corrections: readonly CorrectionRow[], watch: Watched, n
   const inWindow = rows.filter(
     (row) => row.correctedAt.getTime() >= from && row.correctedAt.getTime() <= now.getTime()
   );
-  const important = inWindow.filter((row) => row.important).length;
+  const important = inWindow.filter(isImportant).length;
   return { reason, counts: { corrections: inWindow.length, important }, corrections: inWindow.length };
 }
 
@@ -246,7 +169,7 @@ async function runOrg(deps: TripwireDeps, ctx: TenantContext, now: Date): Promis
   const watched = await watchedOf(deps.db, ctx);
   if (watched.length === 0) return 0;
   const since = new Date(now.getTime() - TRIP_WINDOW_DAYS * DAY_MS);
-  const corrections = await listCorrections(deps.db, ctx, since, deps.testMail);
+  const corrections = await listMoveCorrections(deps.db, ctx, since, deps.testMail);
   const checks = new Map<string, Awaited<ReturnType<typeof newestDoneCheck>>>();
   let count = 0;
   for (const watch of watched) {

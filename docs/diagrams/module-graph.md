@@ -99,6 +99,7 @@ flowchart BT
   triage --> delegation
   triage --> mail
   triage --> tenancy
+  trust --> actions
   trust --> audit
   trust --> channels
   trust --> config

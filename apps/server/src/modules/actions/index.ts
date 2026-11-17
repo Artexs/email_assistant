@@ -47,9 +47,11 @@ export { getActionFeedback, type ActionFeedbackKind, type ActionFeedbackRow } fr
 export {
   listExpiredUnapprovedSends,
   listHiddenMoveRows,
+  listMoveCorrections,
   listMistakeRows,
   listRejectRows,
   type HiddenMoveRowWithMail,
+  type MoveCorrection,
 } from "./repo";
 export { ensureMoved, type EnsureExclude, type EnsureResult } from "./move";
 export { MAILBOX_ACTION_TYPES, type MailboxActionType } from "@ea/core";

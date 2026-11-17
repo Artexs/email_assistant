@@ -159,6 +159,22 @@ export async function addMove(conn: Db, box: TripBox, move: Move): Promise<strin
   });
 }
 
+/** A newer triage result of the mail (a later re-triage); the move keeps the category of the result that planned it. */
+export async function addLaterResult(conn: Db, box: TripBox, emailId: string, category: Category, when: string) {
+  await conn
+    .insertInto("triage_results")
+    .values({
+      org_id: box.orgId,
+      email_id: emailId,
+      category,
+      confidence: 0.9,
+      reason_code: "direct_request",
+      fields: "{}",
+      created_at: at(when),
+    })
+    .execute();
+}
+
 export interface Feedback {
   at: string;
   verdict?: "right" | "wrong";
