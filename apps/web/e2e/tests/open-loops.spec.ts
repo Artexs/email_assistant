@@ -123,6 +123,19 @@ test("rows: each kind shows its counterpart, text, reason, due date and counters
   await expect(limit).toContainText(en.lp_c_follow_up_limit);
   await limitButton.focus();
   await expect(limitButton).toBeFocused();
+  // A press on the off button does nothing: no request, no result line.
+  let posted = 0;
+  await page.route("**/api/loops/*/follow-up", (route) => {
+    posted += 1;
+    return route.abort();
+  });
+  await limitButton.click({ force: true });
+  await page.keyboard.press("Enter");
+  expect(posted).toBe(0);
+  await expect(statusOf(waiting)).toHaveText("");
+  await page.unroute("**/api/loops/*/follow-up");
+  // An owner has no note about owner-only actions.
+  await expect(page.getByText(en.lp_owner_only)).toHaveCount(0);
   // Only an auto-reply came.
   await expect(rowOf(waiting, "waitAuto")).toContainText(en.lp_auto_reply_only);
   await expect(view).not.toContainText(en.lp_auto_reply_only);
