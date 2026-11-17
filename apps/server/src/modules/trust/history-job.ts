@@ -43,6 +43,7 @@ import {
   HISTORY_RETRY_MS,
   HISTORY_WINDOW_DAYS,
   type ClaimedCheck,
+  type EndedHook,
 } from "./history-queue";
 import type { NoResultReason } from "./repo";
 
@@ -78,7 +79,12 @@ export interface HistoryJobDeps {
   webBaseUrl?: string;
   now(): Date;
   /** Test seams: a hook that throws simulates a crash at that point. */
-  hooks?: { afterBackfill?: () => void | Promise<void>; afterCall?: () => void | Promise<void> };
+  hooks?: {
+    afterBackfill?: () => void | Promise<void>;
+    afterCall?: () => void | Promise<void>;
+    /** Replaces the hook that runs when a check ends (the report notice). */
+    onEnded?: EndedHook;
+  };
 }
 
 // What the checks before a step decided.
@@ -234,7 +240,8 @@ async function classifyStepOf(
   return end.kind === "advance" ? { kind: "advance", at: end.at, status: "classifying" } : end;
 }
 
-const endedHookOf = (deps: HistoryJobDeps) =>
+const endedHookOf = (deps: HistoryJobDeps): EndedHook =>
+  deps.hooks?.onEnded ??
   reportNoticeOnEnd({
     gate: { index: deps.gateIndex, runningKey: deps.runningKey },
     testMail: deps.testMail,

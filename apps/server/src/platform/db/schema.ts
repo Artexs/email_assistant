@@ -383,6 +383,16 @@ export interface MailboxOauthStates {
   user_id: string;
 }
 
+export interface MailboxProfiles {
+  display_name: string | null;
+  mailbox_id: string;
+  org_id: string;
+  signature: string | null;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  writing_style: string | null;
+}
+
 export interface MailboxSentSync {
   created_at: Generated<Timestamp>;
   enabled: Generated<boolean>;
@@ -517,6 +527,28 @@ export interface Outbox {
   text: string | null;
   user_id: string;
   view: Generated<Json>;
+}
+
+export interface ReplyRequests {
+  attempts: Generated<number>;
+  created_at: Generated<Timestamp>;
+  email_id: string;
+  folder: string;
+  id: Generated<string>;
+  instruction: string | null;
+  locked_at: Timestamp | null;
+  mailbox_id: string;
+  next_attempt_at: Generated<Timestamp>;
+  org_id: string;
+  previous_send_id: string | null;
+  reason_code: string | null;
+  requested_by: string | null;
+  sample_body: string | null;
+  send_action_id: string | null;
+  status: Generated<string>;
+  thread_key: string;
+  trigger: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface SenderRules {
@@ -656,6 +688,7 @@ export interface DB {
   mailbox_credentials: MailboxCredentials;
   mailbox_folders: MailboxFolders;
   mailbox_oauth_states: MailboxOauthStates;
+  mailbox_profiles: MailboxProfiles;
   mailbox_sent_sync: MailboxSentSync;
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
@@ -665,6 +698,7 @@ export interface DB {
   org_features: OrgFeatures;
   organizations: Organizations;
   outbox: Outbox;
+  reply_requests: ReplyRequests;
   sender_rules: SenderRules;
   sent_analyses: SentAnalyses;
   sent_emails: SentEmails;

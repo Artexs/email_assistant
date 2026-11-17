@@ -95,6 +95,10 @@ export const numberFieldNames = [
   "info_moved",
   "notification_moved",
   "spam_moved",
+  // re-gate run (F110 stage 08): the `auto` grants stamped for the running key, moved to it, and paused
+  "stamped",
+  "regranted",
+  "paused",
 ] as const;
 /** Code fields: the F089 D7 rule (D1, D2). Values come from closed sets, never from mail, users or outside text. */
 export const codeFieldNames = [
@@ -147,6 +151,8 @@ export const codeFieldNames = [
   "info_outcome",
   "notification_outcome",
   "spam_outcome",
+  // re-gate run: `start` (once, before the workers) or `job` (every 5 minutes)
+  "run",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

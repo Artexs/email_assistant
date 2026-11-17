@@ -39,6 +39,19 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     subject: "text",
     text: "text",
   },
+  // The instruction of a reply request is the user's own text and can name a person ("tell jan@firma.pl we agree"); a
+  // sample draft is the AI's body for a mail. A request of a mail that goes cascades with the mail; the others are mentions.
+  reply_requests: {
+    instruction: "text",
+    sample_body: "text",
+  },
+  // The name, the signature and the writing style of a mailbox: user text, no mail filter. A signature can name a
+  // colleague's address; the erase replaces it.
+  mailbox_profiles: {
+    display_name: "text",
+    signature: "text",
+    writing_style: "text",
+  },
   email_headers: {
     // The display name can be an address (`"p@x.test" <r@x.test>`), so a kept mail can hold the person's address here.
     from_name: "text",
@@ -75,7 +88,8 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
 };
 
 // Tables that hold one mail's data and go with the mail (`emails` cascades to the rest); the `actions` and `outbox` rows
-// of a loop go with the loop (`open_loops` cascades to them). Every text, array and jsonb
+// of a loop go with the loop (`open_loops` cascades to them). A reply request goes with its mail too, but it is not in
+// this list: its two text columns are in `DSR_ADDRESS_MAP` and the rest is codes. Every text, array and jsonb
 // column of these tables is a candidate column in the completeness test, whatever its name.
 export const MESSAGE_TABLES: readonly string[] = [
   "emails",
@@ -114,6 +128,18 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ...reasons(
     ["open_loops.thread_key", "open_loops.message_id", "open_loops.references_ids"],
     "a Message-ID: random part and the host of the sender's system, no address of a person"
+  ),
+  ...reasons(
+    ["reply_requests.trigger", "reply_requests.status", "reply_requests.reason_code"],
+    "closed list of codes (CHECK constraint), or a reason code of our own drafter"
+  ),
+  ...reasons(
+    ["reply_requests.thread_key"],
+    "a Message-ID: random part and the host of the sender's system, no address of a person"
+  ),
+  ...reasons(
+    ["reply_requests.folder"],
+    "the name of a folder of the mailbox (INBOX, a folder the user made), no address of a person"
   ),
   ...reasons(
     ["sent_analyses.status", "sent_analyses.skip_reason", "sent_analyses.prompt_version"],
