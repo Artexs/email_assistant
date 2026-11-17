@@ -454,6 +454,39 @@ test("T11: every tab, the Closed filter and the confirm question have no axe vio
   await expect(nav.getByRole("link", { name: en.nav_delegations, exact: true })).toHaveCount(0);
 });
 
+test("the flag open_loops alone: the item and the tabs show, the Delegates header and the F102 list do not", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  const flag = (enabled: boolean) =>
+    sql(`update org_features set enabled = ${enabled} where org_id = '${org().orgId}' and flag = 'delegation_pages'`);
+  flag(false);
+  try {
+    await page.goto("/delegations");
+    await expect(page.getByRole("heading", { level: 1, name: en.title_open_loops })).toBeVisible();
+    const nav = page.getByRole("navigation", { name: en.nav_main });
+    await expect(nav.getByRole("link", { name: en.nav_open_loops })).toHaveAttribute("aria-current", "page");
+    // No Delegates header and no F102 list; the Delegated tab holds the tracked loops with their own filters.
+    await expect(page.getByRole("navigation", { name: en.dlg_tabs_label })).toHaveCount(0);
+    await expect(page.getByRole("list", { name: en.dgn_list_label })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: en.dgn_filters_label })).toHaveCount(0);
+    await expect(tabLink(page, en.lp_tab_delegated)).toHaveAttribute("aria-current", "page");
+    const delegated = regionOf(page, "delegated");
+    await expect(rowOf(delegated, "delView")).toBeVisible();
+    await filterLink(page, en.dgn_filter_closed).click();
+    await expect(page).toHaveURL(/filter=closed$/);
+    await expect(rowOf(delegated, "delClosed")).toBeVisible();
+    await expect(rowOf(delegated, "delView")).toHaveCount(0);
+    await page.goto(WAITING);
+    await expect(rowOf(regionOf(page, "waiting"), "waitView")).toBeVisible();
+    await expectNoA11yViolations(page);
+    expect(errors).toEqual([]);
+  } finally {
+    flag(true);
+  }
+});
+
 // The F102 specs of the same project ran before and moved rows, so the Open tab can be empty: the list or the empty text is the page.
 const f102ListOrEmpty = (page: Page) =>
   page.getByRole("list", { name: en.dgn_list_label }).or(page.getByText(en.dgn_empty_open));
