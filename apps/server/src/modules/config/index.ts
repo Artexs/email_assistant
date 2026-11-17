@@ -4,6 +4,7 @@ export {
   getMovesSupported,
   insertDefaultSettings,
   insertSenderRule,
+  listAssistPolicies,
   listSenderRules,
   lockSettingsForShare,
   listSenderRuleRows,

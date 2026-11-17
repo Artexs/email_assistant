@@ -38,6 +38,22 @@ export async function getMailboxSettings(
     .executeTakeFirst();
 }
 
+// The category policy of every mailbox of the organization in `assist` mode (the tripwire reads them; F110 stage 09). The value is
+// unparsed: a row that does not parse must not stop the other mailboxes, so the caller parses each one.
+export async function listAssistPolicies(
+  db: DbOrTrx,
+  ctx: TenantContext
+): Promise<{ mailboxId: string; categoryPolicy: unknown }[]> {
+  const rows = await db
+    .selectFrom("mailbox_settings")
+    .select(["mailbox_id", "category_policy"])
+    .where("org_id", "=", ctx.orgId)
+    .where("mode", "=", "assist")
+    .orderBy("mailbox_id")
+    .execute();
+  return rows.map((row) => ({ mailboxId: row.mailbox_id, categoryPolicy: row.category_policy }));
+}
+
 // Locks the row until the end of the transaction: one setter at a time.
 export async function lockMailboxSettings(
   trx: Transaction<DB>,
