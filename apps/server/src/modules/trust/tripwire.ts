@@ -165,18 +165,28 @@ async function trip(deps: TripwireDeps, ctx: TenantContext, watch: Watched, due:
   return tripped;
 }
 
+// The newest `done` check of a mailbox. A result that does not parse must not stop the other mailboxes of the organization (their
+// corrections still trip): it is a warn line and counts as no check.
+async function readCheck(deps: TripwireDeps, ctx: TenantContext, mailboxId: string) {
+  try {
+    return await newestDoneCheck(deps.db, ctx, mailboxId);
+  } catch (error) {
+    log.with({ org_id: ctx.orgId, mailbox_id: mailboxId }).warn("tripwire_check_unreadable", errorFields(error));
+    return null;
+  }
+}
+
 async function runOrg(deps: TripwireDeps, ctx: TenantContext, now: Date): Promise<number> {
   const watched = await watchedOf(deps.db, ctx);
   if (watched.length === 0) return 0;
   const since = new Date(now.getTime() - TRIP_WINDOW_DAYS * DAY_MS);
   const corrections = await listMoveCorrections(deps.db, ctx, since, deps.testMail);
-  const checks = new Map<string, Awaited<ReturnType<typeof newestDoneCheck>>>();
+  const checks = new Map<string, Awaited<ReturnType<typeof readCheck>>>();
   let count = 0;
   for (const watch of watched) {
     let due = correctionsDue(corrections, watch, now);
     if (due === null && watch.grant.by !== "forced") {
-      if (!checks.has(watch.mailboxId))
-        checks.set(watch.mailboxId, await newestDoneCheck(deps.db, ctx, watch.mailboxId));
+      if (!checks.has(watch.mailboxId)) checks.set(watch.mailboxId, await readCheck(deps, ctx, watch.mailboxId));
       due = historyFailDue(checks.get(watch.mailboxId) ?? null, watch);
     }
     if (due === null) continue;

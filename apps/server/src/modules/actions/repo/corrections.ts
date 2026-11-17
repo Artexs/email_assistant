@@ -34,7 +34,7 @@ const rowSchema = z.object({
 /**
  * The corrections of real mail of one organization since `since`. A correction is a mail whose newest `triage_feedback` row has
  * the verdict `wrong` (any source: several rows of one mail count once, the newest wins, as `listLabeledResults`), that has an
- * original `move` action which took effect (`applied`, or `undone` later), and the category of the newest triage result not newer
+ * original `move` action which took effect (`applied`, or `undone` later; the newest by `applied_at`, then id, when a mail has two), and the category of the newest triage result not newer
  * than that action (the result that planned it: `saveTriage` writes both rows in one transaction). A move of a category that does
  * not move mail is left out. `trueCategory` is the newest category that the user named in a `wrong` row of the mail: an Undo row
  * names none, so a pencil row before it still tells that the user needed the mail.
@@ -63,11 +63,15 @@ export async function listMoveCorrections(
     SELECT l.email_id, emails.mailbox_id, t.category, a.applied_at, l.created_at AS corrected_at, l.true_category
     FROM latest l
     JOIN emails ON emails.id = l.email_id AND emails.org_id = ${ctx.orgId}
-    JOIN actions a ON a.org_id = ${ctx.orgId} AND a.email_id = l.email_id
-      AND a.type = 'move' AND a.reverses_action_id IS NULL AND a.status IN ('applied', 'undone')
+    JOIN LATERAL (
+      SELECT x.applied_at, x.created_at FROM actions x
+      WHERE x.org_id = ${ctx.orgId} AND x.email_id = l.email_id
+        AND x.type = 'move' AND x.reverses_action_id IS NULL AND x.status IN ('applied', 'undone')
+      ORDER BY x.applied_at DESC, x.id DESC LIMIT 1
+    ) a ON true
     JOIN LATERAL (
       SELECT tr.category FROM triage_results tr
-      WHERE tr.org_id = ${ctx.orgId} AND tr.email_id = a.email_id AND tr.created_at <= a.created_at
+      WHERE tr.org_id = ${ctx.orgId} AND tr.email_id = l.email_id AND tr.created_at <= a.created_at
       ORDER BY tr.created_at DESC, tr.id DESC LIMIT 1
     ) t ON true
     WHERE l.verdict = 'wrong' AND l.created_at >= ${since} AND ${mailKindFilter("real", testMail)}

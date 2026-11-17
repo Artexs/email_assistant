@@ -151,7 +151,7 @@ export async function addMove(conn: Db, box: TripBox, move: Move): Promise<strin
           type: "move",
           status,
           payload: { folder: "newsletters" },
-          appliedAt: status === "logged" ? null : appliedAt,
+          appliedAt,
         },
       ],
     });
