@@ -1,5 +1,8 @@
 // "What is new" card rules (F112 stage 14, plan P9). Pure: the panel UI (stage 15) reads and writes the storage.
-import { type ChangelogRelease, compareSemver } from "@ea/core";
+import { type ChangelogRelease, compareSemver } from "@ea/core/web";
+
+/** What the card needs of a release: the panel gets no date. */
+export type CardRelease = Pick<ChangelogRelease, "version" | "forUsers">;
 
 /** At most this many releases show in the card. */
 export const WHATS_NEW_MAX = 5;
@@ -24,10 +27,10 @@ function isVersion(value: string): boolean {
  * `Unreleased` is ignored. A release with no "For users" item never shows. At most 5 show.
  * `newest` is the highest released version (also when it has no item), or null.
  */
-export function whatsNew(
-  releases: readonly ChangelogRelease[],
+export function whatsNew<R extends CardRelease>(
+  releases: readonly R[],
   stored: string | null
-): { show: ChangelogRelease[]; newest: string | null } {
+): { show: R[]; newest: string | null } {
   const released = releases
     .filter((release) => isVersion(release.version)) // `Unreleased` is no `x.y.z`: it drops out here
     .toSorted((a, b) => compareSemver(b.version, a.version));

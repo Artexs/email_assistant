@@ -60,3 +60,8 @@ After the next `mail.sync` run (every `MAIL_SYNC_EVERY_MIN`, default 2 minutes):
 ## Carry-over from the stage 08 review (F104)
 
 Before step 11 (pilot flag on) check that no non-lab org has `sent_sync` on earlier than stage 10 (review-8.md N5).
+
+## Carry-over from the stage 13a review
+
+- N3: if runbook check 10 shows `"status":"budget"` on every tick of the first pass, the header fetch alone is over 60 s: raise the budget by config or fetch in day chunks; do not widen the pilot flag until a pass ends `done`.
+- N2: `sent_sync_failed` has no `duration_ms`; add it only if the owner wants it.

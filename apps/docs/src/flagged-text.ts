@@ -21,6 +21,7 @@ export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>>
   sso_sign_in: ["login_sso_button", "login_sso_hint"],
   mail_oauth_microsoft: ["oauth_btn_microsoft"],
   mail_oauth_google: ["oauth_btn_google", "oauth_google_hint"],
+  docs_links: ["help_link", "whats_new_title", "whats_new_all", "whats_new_dismiss"],
   user_quiet_hours: ["notify_quiet_title", "notify_quiet_use_default"],
   report_mail: ["notify_channel_title", "notify_channel_both"],
   urgency_editor: ["urg_title", "urg_topic_add"],
@@ -67,8 +68,6 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
 export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
   delegate_button:
     "only the server function `delegateMail` (modules/loops/delegate.ts) reads it: no button text exists yet",
-  docs_links:
-    "the Help link and the What is new card texts come in F112 stage 15; stage 15 must replace this reason by their strings in FLAGGED_PANEL_KEYS",
   trust_ladder: "no text: it adds `blocks` codes to the `no_go` API answer and changes the evidence gate",
 };
 

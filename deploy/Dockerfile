@@ -20,6 +20,8 @@ COPY evals/cases evals/cases
 # The server reads the gate files at start (F110 D1); a missing folder is only a warning, so keep this line.
 COPY evals/results/gate evals/results/gate
 COPY tsconfig.base.json ./
+# The web build parses it for the "What is new" card; a missing file stops the build (F112 D13).
+COPY CHANGELOG.md CHANGELOG.md
 # The web build writes into apps/web/dist, so it runs as root before USER bun
 RUN bun run web:build
 ENV WEB_DIST=/app/apps/web/dist

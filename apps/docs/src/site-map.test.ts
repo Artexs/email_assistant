@@ -33,7 +33,7 @@ function sourcePageIds(
   return [...files(contentDir).map((file) => sourcePageId(contentDir, file)), ...inPlace.map((page) => page.id)].sort();
 }
 
-// Each content stage adds its ids here (stage 07: the tutorial and the FAQ; stage 08: the how-to guides).
+// Each content stage adds its ids here (stage 07: the tutorial and the FAQ; stage 08: the how-to guides; stage 10: the `pl/` pages).
 const EXPECTED_PAGE_IDS = [
   "changelog",
   "explanation/how-a-mail-is-sorted",
@@ -53,7 +53,20 @@ const EXPECTED_PAGE_IDS = [
   "index",
   "operate/install-and-run",
   "operate/release-checklist",
+  "pl/explanation/how-a-mail-is-sorted",
+  "pl/faq",
+  "pl/how-to/approve-a-send",
+  "pl/how-to/correct-a-category",
+  "pl/how-to/delegate-and-follow-up",
+  "pl/how-to/digest-times",
+  "pl/how-to/language",
+  "pl/how-to/mode-and-switches",
+  "pl/how-to/pause",
+  "pl/how-to/sender-rules",
+  "pl/how-to/two-factor",
+  "pl/how-to/undo-a-move",
   "pl/index",
+  "pl/start",
   "reference/categories",
   "reference/limits",
   "reference/settings",
