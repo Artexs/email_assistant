@@ -18,6 +18,10 @@ export const en = {
   menu_title: "Menu",
   user_menu: "Account menu",
   user_menu_named: "Account menu: {email}",
+  help_link: "Help and guides",
+  whats_new_title: "What is new",
+  whats_new_all: "All changes for users",
+  whats_new_dismiss: "Close the list of new features",
   log_out: "Log out",
   // shell states
   auth_error_banner_link: "Open Mailboxes",

@@ -27,6 +27,9 @@ export interface MailSyncJobDeps {
   isOwnActionId: SyncDeps["isOwnActionId"];
   sentOriginOf: SentSyncDeps["sentOriginOf"];
   now(): Date;
+  /** Tests: the budget and the monotonic clock of one Sent pass. */
+  sentBudgetMs?: number;
+  sentClock?(): number;
 }
 
 // The Sent pass of one mailbox (ADR 0029). It reads only (the provider goes in as a `SentFolderReader`) and never fails the sync run.
@@ -38,15 +41,29 @@ async function runSentPass(
   provider: MailProvider
 ): Promise<void> {
   const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
+  const clock = deps.sentClock ?? (() => performance.now());
+  const startedAt = clock();
   try {
     // `deps.db`, never a transaction: the pass takes row locks in short writes of its own and must not hold them across IMAP calls.
     const result = await syncSentFolder(
-      { db: deps.db, provider, sentOriginOf: deps.sentOriginOf, now: deps.now },
+      {
+        db: deps.db,
+        provider,
+        sentOriginOf: deps.sentOriginOf,
+        now: deps.now,
+        ...(deps.sentBudgetMs === undefined ? {} : { budgetMs: deps.sentBudgetMs }),
+        clock,
+      },
       ctx,
       mailboxId
     );
     if (result.status === "flag_off" || result.status === "off") return;
-    mailboxLog.info("sent_sync_done", { status: result.status, kind: result.mode, count: result.stored });
+    mailboxLog.info("sent_sync_done", {
+      status: result.status,
+      kind: result.mode,
+      count: result.stored,
+      duration_ms: Math.round(clock() - startedAt),
+    });
     if (result.texts.stored > 0) mailboxLog.info("sent_texts_done", { count: result.texts.stored });
     // A mail that does not parse is marked gone once and not read again.
     if (result.texts.gone > 0) mailboxLog.info("sent_texts_gone", { count: result.texts.gone });

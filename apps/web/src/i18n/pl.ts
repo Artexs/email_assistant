@@ -22,6 +22,10 @@ export const pl: Record<TextKey, string> = {
   menu_title: "Menu",
   user_menu: "Menu konta",
   user_menu_named: "Menu konta: {email}",
+  help_link: "Pomoc i poradniki",
+  whats_new_title: "Co nowego",
+  whats_new_all: "Wszystkie zmiany dla użytkowników",
+  whats_new_dismiss: "Zamknij listę nowości",
   log_out: "Wyloguj się",
   // shell states
   auth_error_banner_link: "Otwórz skrzynki",

@@ -5,6 +5,7 @@ import type { ClassifierEmail, ClassifierExtras, SenderContext } from "../classi
 import * as classifierV2 from "./classifier-v2";
 import * as classifierV3 from "./classifier-v3";
 import { type ClassifierV3Part, optionalParts } from "./classifier-v3";
+import * as drafterV1 from "./drafter-v1";
 import * as escalationV1 from "./escalation-v1";
 import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
@@ -67,6 +68,12 @@ export const prompts = {
     buildSystem: classifierV2.buildSystemPrompt,
     buildUser: classifierV2.buildUserPrompt,
   },
+  drafter: {
+    role: "drafter",
+    version: drafterV1.PROMPT_VERSION,
+    buildSystem: drafterV1.buildSystemPrompt,
+    buildUser: drafterV1.buildUserPrompt,
+  },
   escalation: {
     role: "escalation",
     version: escalationV1.PROMPT_VERSION,
@@ -110,6 +117,4 @@ export function promptLabel(choice: { version: string; parts: readonly Classifie
 }
 
 // Roles with no prompt yet, and the epic that writes it.
-export const rolesWithoutPrompt = {
-  drafter: "E6a",
-} as const satisfies Partial<Record<LlmRole, string>>;
+export const rolesWithoutPrompt = {} as const satisfies Partial<Record<LlmRole, string>>;

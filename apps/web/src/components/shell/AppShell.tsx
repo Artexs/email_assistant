@@ -1,5 +1,6 @@
 import { resolveLocale } from "@ea/core/web";
 import { useEffect, type ReactNode } from "react";
+import { RELEASES } from "virtual:ea-changelog-releases";
 
 import { authClient } from "../../lib/auth-client";
 import { ApiError } from "../../lib/api";
@@ -14,6 +15,7 @@ import type { NavKey } from "./nav-items";
 import { PausedBanner } from "./PausedBanner";
 import { TermsDialog } from "./TermsDialog";
 import { TrialLine } from "./TrialLine";
+import { browserStorage, WhatsNewSlot } from "./WhatsNew";
 
 export interface AppShellProps {
   active: NavKey;
@@ -96,6 +98,9 @@ function Frame({ active, title, children }: AppShellProps) {
         )}
         {me !== null && !me.terms.accepted && (
           <TermsDialog current={me.terms.current} onAccepted={reload} onLogOut={onLogOut} />
+        )}
+        {me !== null && (
+          <WhatsNewSlot features={features} releases={RELEASES} userId={me.user.id} getStorage={browserStorage} />
         )}
         <main className="px-4 py-4 pb-24 lg:pb-8">
           <h1 className="mb-4 hidden text-xl font-semibold lg:block">{t(title)}</h1>
