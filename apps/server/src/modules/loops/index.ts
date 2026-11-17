@@ -1,4 +1,5 @@
 export { briefLoopsOf, decodeLoopCursor, encodeLoopCursor, endOfLocalDay, listLoops, openLoopsByThread } from "./list";
+export { loopDueRows } from "./due-rows";
 export { loadLoopBrief, markBriefShown, releaseBriefMarks } from "./brief";
 export type { LoopBrief } from "./brief";
 export type { BriefLoopSection, BriefLoops, LoopCursor, LoopFilter } from "./list";

@@ -7,6 +7,7 @@ import { statsQuerySchema, statsResponseSchema, weekStatsSchema } from "./stats"
 const empty = {
   truth: [],
   delegations: [],
+  loops: null,
   moves: [],
   rejects: [],
   mistakes: [],
@@ -24,6 +25,17 @@ const stats = buildWeekStats(empty, {
 });
 
 describe("weekStatsSchema", () => {
+  test("m2 has no split without loops; a split with a bad kind or an extra key is refused", () => {
+    expect(stats.m2.byKind).toBeUndefined();
+    const withLoops = buildWeekStats(
+      { ...empty, loops: [] },
+      { weekStart: "2026-11-16", mailboxId: null, timeZone: "Europe/Warsaw", now: new Date("2026-11-25T10:00:00Z") }
+    );
+    expect(weekStatsSchema.safeParse(withLoops).success).toBe(true);
+    const byKind = { ...withLoops.m2.byKind, other: withLoops.m2.byKind?.waiting };
+    expect(weekStatsSchema.safeParse({ ...withLoops, m2: { ...withLoops.m2, byKind } }).success).toBe(false);
+  });
+
   test("refuses an extra key, at the top and inside a metric", () => {
     expect(weekStatsSchema.safeParse({ ...stats, subject: "x" }).success).toBe(false);
     expect(weekStatsSchema.safeParse({ ...stats, m4: { ...stats.m4, subject: "x" } }).success).toBe(false);

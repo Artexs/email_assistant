@@ -157,3 +157,40 @@ export async function countActionsSince(
   const count = (status: string) => Number(rows.find((row) => row.status === status)?.count ?? 0);
   return { applied: count("applied"), failed: count("failed"), undone: count("undone") };
 }
+
+// The spam review line of the digest (F110 stage 17): mails whose original `move` to `ai_spam` became `applied` in the window
+// (`moved`), and mails of the shadow mailboxes whose `move` to `ai_spam` was only `logged` in it (`wouldMove`). A window is
+// `after < t <= until`. One mail counts once. A move that the user undid is `undone`: it does not count. Mail that sat in the
+// spam folder before the system has no move, so it is not counted.
+export async function countSpamMoves(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { after: Date; until: Date; shadowMailboxIds: readonly string[] }
+): Promise<{ moved: number; wouldMove: number }> {
+  const { after, until, shadowMailboxIds } = opts;
+  const base = () =>
+    db
+      .selectFrom("actions")
+      .innerJoin("emails", (join) =>
+        join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+      )
+      .select(sql<string>`count(DISTINCT actions.email_id)`.as("count"))
+      .where("actions.org_id", "=", ctx.orgId)
+      .where("actions.type", "=", "move")
+      .where("actions.reverses_action_id", "is", null)
+      .where(sql<string>`actions.payload->>'folder'`, "=", "ai_spam");
+  const moved = await base()
+    .where("actions.status", "=", "applied")
+    .where("actions.applied_at", ">", after)
+    .where("actions.applied_at", "<=", until)
+    .$if(shadowMailboxIds.length > 0, (qb) => qb.where("emails.mailbox_id", "not in", [...shadowMailboxIds]))
+    .executeTakeFirstOrThrow();
+  if (shadowMailboxIds.length === 0) return { moved: Number(moved.count), wouldMove: 0 };
+  const logged = await base()
+    .where("actions.status", "=", "logged")
+    .where("actions.created_at", ">", after)
+    .where("actions.created_at", "<=", until)
+    .where("emails.mailbox_id", "in", [...shadowMailboxIds])
+    .executeTakeFirstOrThrow();
+  return { moved: Number(moved.count), wouldMove: Number(logged.count) };
+}

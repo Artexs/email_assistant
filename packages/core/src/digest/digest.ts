@@ -65,6 +65,15 @@ export interface DigestItem {
   rule?: SenderRuleKind | null;
 }
 
+// The spam review line (F110 stage 17, flag `spam_review_line`): counts of mails that went to the spam folder since the last digest.
+// `moved`: applied moves. `wouldMove`: logged moves of a shadow mailbox. `url`: the filtered Activity list; null: the panel text.
+// Counts and a fixed URL only (D15). Absent: no line.
+export interface DigestSpamReview {
+  moved: number;
+  wouldMove: number;
+  url: string | null;
+}
+
 export interface DigestHandled {
   handled: number;
   wouldHandle: number;
@@ -104,6 +113,7 @@ export interface DigestInput {
   llmPause?: LlmPause;
   // The handled share of the last 7 days (D24): set only while `handled_share` is on.
   handled?: DigestHandled;
+  spamReview?: DigestSpamReview;
   brief?: DigestBrief;
   maxLines?: number;
 }
@@ -207,7 +217,8 @@ function renderListed(
   input: DigestInput,
   listed: readonly DigestItem[],
   briefSections: BriefSections | null,
-  texts: CoreTexts
+  texts: CoreTexts,
+  withSpamReview: boolean
 ): { message: OutMessage; lineOf: Record<string, number> } {
   const { counts } = input;
   const removed = removedByBrief(input);
@@ -273,7 +284,12 @@ function renderListed(
   if (total > 0 && input.mailboxes.length > 0 && input.mailboxes.every((mailbox) => mailbox.mode === "shadow")) {
     footer.push(texts.digest.shadow);
   }
-  // The handled share is the last footer line, after the pause line (the first line) and the shadow line.
+  // The spam review lines come right after the shadow line; the handled share is the last footer line.
+  if (withSpamReview && input.spamReview !== undefined) {
+    const { moved, wouldMove, url } = input.spamReview;
+    if (moved > 0) footer.push(texts.digest.spamReview.moved(moved, url));
+    if (wouldMove > 0) footer.push(texts.digest.spamReview.would(wouldMove, url));
+  }
   if (input.handled !== undefined && input.handled.triaged > 0) {
     const { handled, wouldHandle, triaged, shadowOnly } = input.handled;
     if (handled > 0 || !shadowOnly) footer.push(texts.digest.handled(rateText(handled, triaged, texts.common.of)));
@@ -326,15 +342,21 @@ export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): Ren
     input.maxLines ?? DIGEST_MAX_LINES
   );
   let sections = input.brief?.sections ?? null;
+  // The spam review lines go before any item row when the text is too long (F110 stage 17).
+  let withSpamReview = true;
   for (;;) {
-    const { message, lineOf } = renderListed(input, listed, sections, texts);
+    const { message, lineOf } = renderListed(input, listed, sections, texts, withSpamReview);
     if (message.text.length <= MESSAGE_MAX_CHARS) {
       return {
         message,
         shown: sections === null ? { surfaced: [], stale: [], lineOf } : { ...shownIds(sections), lineOf },
       };
     }
-    // Normal rows go first, then the lines of the brief from the bottom section up.
+    // The spam review lines go first, then the normal rows, then the lines of the brief from the bottom section up.
+    if (withSpamReview && input.spamReview !== undefined) {
+      withSpamReview = false;
+      continue;
+    }
     if (listed.length > 0) {
       listed.pop();
       continue;
