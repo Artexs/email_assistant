@@ -1,4 +1,10 @@
-import type { ActionType } from "@ea/core";
+import {
+  draftPayloadSchema,
+  replyRecipientsProblem,
+  sameAddresses,
+  sendPayloadSchema,
+  type ActionType,
+} from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";
 
@@ -123,6 +129,40 @@ export async function createPlannedForLoop(
 ): Promise<CreatedAction[]> {
   return insertPlanned(db, ctx, { loopId }, items);
 }
+// The rules of a reply that no schema checks (reply drafts). The recipients are never LLM text: the writer gets them from the stored
+// headers of the mail, and this check refuses a payload whose To or Cc breaks the rules before it is stored. A reply hangs on a
+// mail, never on a loop. The error text holds no address. `drafted` is the To and Cc of the draft of the same call.
+async function checkReplyItem(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  anchor: { emailId: string } | { loopId: string },
+  item: PlannedActionInput,
+  drafted: { to: readonly string[]; cc: readonly string[] } | undefined
+): Promise<{ to: readonly string[]; cc: readonly string[] } | undefined> {
+  if (item.payload.kind !== "reply") return undefined;
+  if (item.type !== "create_draft" && item.type !== "send")
+    throw new HardError("a reply payload is for a draft or a send");
+  if ("loopId" in anchor) throw new HardError("a reply hangs on a mail");
+  const parsed =
+    item.type === "create_draft"
+      ? draftPayloadSchema.safeParse(item.payload)
+      : sendPayloadSchema.safeParse(item.payload);
+  if (!parsed.success || parsed.data.kind !== "reply") throw new HardError("reply payload is invalid");
+  const recipients = { to: parsed.data.to, cc: parsed.data.cc ?? [] };
+  const own = await db.selectFrom("mailboxes").select("address").where("org_id", "=", ctx.orgId).execute();
+  const problem = replyRecipientsProblem(
+    recipients,
+    own.map((row) => row.address)
+  );
+  if (problem !== null) throw new HardError(`reply recipients: ${problem}`);
+  if (
+    drafted !== undefined &&
+    !(sameAddresses(drafted.to, recipients.to) && sameAddresses(drafted.cc, recipients.cc))
+  ) {
+    throw new HardError("reply send and draft name different recipients");
+  }
+  return item.type === "create_draft" ? recipients : drafted;
+}
 async function insertPlanned(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -132,7 +172,9 @@ async function insertPlanned(
   const anchorId = "emailId" in anchor ? anchor.emailId : anchor.loopId;
   const created: CreatedAction[] = [];
   let draftId: string | undefined;
+  let drafted: { to: readonly string[]; cc: readonly string[] } | undefined;
   for (const item of items) {
+    drafted = (await checkReplyItem(db, ctx, anchor, item, drafted)) ?? drafted;
     let dependsOnId: string | null = null;
     if (item.dependsOn === "create_draft") {
       // A call with the send alone (its draft exists from an earlier call) finds the draft by its key.

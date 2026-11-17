@@ -14,6 +14,7 @@ import { digestTexts, type DigestTexts } from "./digest";
 import { followUpTexts, type FollowUpTexts } from "./follow-up";
 import { loopTapTexts, type LoopTapTexts } from "./loop-taps";
 import { noticeTexts, type NoticeTexts } from "./notices";
+import { replyMailTexts, type ReplyMailTexts } from "./reply-mail";
 import { reportMailTexts, type ReportMailTexts } from "./report-mail";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { suspiciousTexts, type SuspiciousTexts } from "./suspicious";
@@ -37,6 +38,7 @@ export type {
   FollowUpTexts,
   LoopTapTexts,
   NoticeTexts,
+  ReplyMailTexts,
   ReportMailTexts,
   ReviewTexts,
   SuspiciousTexts,
@@ -61,6 +63,7 @@ export interface CoreTexts {
   brief: BriefTexts;
   loopTaps: LoopTapTexts;
   followUp: FollowUpTexts;
+  replyMail: ReplyMailTexts;
   suspicious: SuspiciousTexts;
   why: WhyTexts;
   bot: BotTexts;
@@ -84,6 +87,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     brief: briefTexts.en,
     loopTaps: loopTapTexts.en,
     followUp: followUpTexts.en,
+    replyMail: replyMailTexts.en,
     suspicious: suspiciousTexts.en,
     why: whyTexts.en,
     bot: botTexts.en,
@@ -105,6 +109,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     brief: briefTexts.pl,
     loopTaps: loopTapTexts.pl,
     followUp: followUpTexts.pl,
+    replyMail: replyMailTexts.pl,
     suspicious: suspiciousTexts.pl,
     why: whyTexts.pl,
     bot: botTexts.pl,

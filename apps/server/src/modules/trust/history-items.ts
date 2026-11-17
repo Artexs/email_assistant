@@ -105,3 +105,34 @@ export class LockLostError extends Error {
     this.name = "LockLostError";
   }
 }
+
+/** How many mails the check classified so far (its items). */
+export async function countItems(db: Db | Transaction<DB>, ctx: TenantContext, checkId: string): Promise<number> {
+  const row = await db
+    .selectFrom("history_check_items")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("check_id", "=", checkId)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
+/** The mails of one category that the user dealt with and that assist mode would have moved: the report's examples. Ids only. */
+export async function listMovedExampleIds(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  checkId: string,
+  category: Category
+): Promise<string[]> {
+  const rows = await db
+    .selectFrom("history_check_items")
+    .select("email_id")
+    .where("org_id", "=", ctx.orgId)
+    .where("check_id", "=", checkId)
+    .where("category", "=", category)
+    .where("acted_on", "=", true)
+    .where("would_move", "=", true)
+    .orderBy("email_id")
+    .execute();
+  return rows.map((row) => row.email_id);
+}

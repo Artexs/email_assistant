@@ -13,4 +13,5 @@ export {
   type ReplyRequestRow,
   type ReplyTrigger,
 } from "./repo/requests";
+export { loadReplyFacts, type LoadedReplyFacts } from "./facts";
 export { clearReplyTexts } from "./retention";

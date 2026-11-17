@@ -309,6 +309,41 @@ describe("the real app", () => {
     }
   });
 
+  test("the three trust routes are described: operation ids, a uuid path parameter, 202 for the check, owner only on the writes, the 409 codes", async () => {
+    const paths = (await openApiSpec(realApp())).paths;
+    interface Operation {
+      operationId?: string;
+      tags?: string[];
+      parameters?: unknown;
+      requestBody?: unknown;
+      responses?: Record<string, { description?: string } | undefined>;
+    }
+    const read = paths?.["/api/trust/{mailboxId}"]?.get as Operation;
+    const recommended = paths?.["/api/trust/{mailboxId}/recommended"]?.post as Operation;
+    const check = paths?.["/api/trust/{mailboxId}/history-check"]?.post as Operation;
+    expect([read.operationId, recommended.operationId, check.operationId]).toEqual([
+      "getTrust",
+      "postTrustRecommended",
+      "postTrustHistoryCheck",
+    ]);
+    for (const operation of [read, recommended, check]) {
+      expect(operation.tags).toEqual(["trust"]);
+      expect(operation.parameters).toMatchObject([
+        { name: "mailboxId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+      ]);
+      expect(operation.requestBody).toBeUndefined();
+      expect(operation.responses?.["404"]?.description).toContain("not_found");
+    }
+    expect(read.responses?.["403"]?.description).not.toContain("owner_only");
+    for (const operation of [recommended, check])
+      expect(operation.responses?.["403"]?.description).toContain("owner_only");
+    expect(Object.keys(read.responses ?? {})).toContain("200");
+    expect(Object.keys(check.responses ?? {})).toContain("202");
+    expect(Object.keys(check.responses ?? {})).not.toContain("200");
+    expect(recommended.responses?.["409"]?.description).toContain("nothing_recommended");
+    expect(check.responses?.["409"]?.description).toContain("check_running");
+  });
+
   test("T13. the three delegate routes are described: operation ids, owner only on the writes, the codes of the answers", async () => {
     const paths = (await openApiSpec(realApp())).paths;
     interface Operation {

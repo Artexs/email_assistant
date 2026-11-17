@@ -56,6 +56,7 @@ export function buildDraftMessage(deps: ApplyDeps, action: ClaimedAction, anchor
     mailbox: { address: deps.mailbox.address },
     owner: deps.owner,
     organization: deps.organization,
+    profile: deps.profile ?? null,
     original,
   });
 }

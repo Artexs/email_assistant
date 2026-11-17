@@ -395,3 +395,7 @@ export function assessSuspicious(input: SuspiciousInput): SuspiciousReason[] {
   if (input.attachments.some(isRiskyAttachment)) reasons.push("risky_attachment");
   return reasons;
 }
+
+// The three states of the suspicion of one mail (F115 D4, F109 review-4 N3). A mail with no `triage_results` row is NOT clean:
+// it was never checked. `flagged` carries the reasons of the newest row. Readers that block a draft need all three states.
+export type Suspicion = { state: "untriaged" } | { state: "clean" } | { state: "flagged"; reasons: SuspiciousReason[] };

@@ -12,6 +12,7 @@ export interface ApprovalTexts {
     delegation: (to: string) => string; // `to` = "<name> <address>" or "<address>"
     clarification: (address: string) => string;
     reminder: (to: string) => string;
+    reply: (address: string) => string; // a reply draft (F115): the sender's address
   };
   // The card, the result lines and the closing lines of a follow-up (open loops). A follow-up goes to other people, so the card
   // spells out every address; no text here names the loop or its ask.
@@ -144,6 +145,7 @@ export const approvalTexts = {
       delegation: (to) => `📤 Send? Delegation to ${to}`,
       clarification: (address) => `📤 Send? Question to the sender ${address}`,
       reminder: (to) => `📤 Send? Reminder to ${to}`,
+      reply: (address) => `✍️ Reply to ${address}`,
     },
     followUp: {
       title: "📝 Follow-up",
@@ -277,6 +279,7 @@ export const approvalTexts = {
       delegation: (to) => `📤 Wysłać? Zlecenie: ${to}`,
       clarification: (address) => `📤 Wysłać? Pytanie do nadawcy: ${address}`,
       reminder: (to) => `📤 Wysłać? Przypomnienie: ${to}`,
+      reply: (address) => `✍️ Odpowiedź do ${address}`,
     },
     followUp: {
       title: "📝 Przypomnienie o odpowiedzi",

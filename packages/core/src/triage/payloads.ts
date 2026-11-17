@@ -15,12 +15,15 @@ export const addressSchema = z.string().regex(ADDRESS_PATTERN);
 export const draftLanguageSchema = z.enum(["pl", "en"]);
 
 // The kinds of a draft and of its send: one list for the schemas, the templates and every reader.
-export const draftKinds = ["delegation", "clarification", "reminder", "follow_up"] as const;
+export const draftKinds = ["delegation", "clarification", "reminder", "follow_up", "reply"] as const;
 export type DraftKind = (typeof draftKinds)[number];
 
 const recipientSchema = z.array(addressSchema).length(1);
 // A follow-up goes to the To and Cc of the loop (open loops feature): 1 to 10 recipients together.
 export const FOLLOW_UP_RECIPIENTS_MAX = 10;
+// A reply (F115) goes to the sender (To, one address) and, after "Reply all", to at most 10 more recipients (Cc).
+export const REPLY_CC_MAX = 10;
+export const replyRecipientModes = ["from", "reply_to", "all"] as const;
 // `YYYY-MM-DD` or "" for none. The regex checks the shape only.
 const dueDateSchema = z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/);
 
@@ -83,6 +86,20 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
     })
     // To and Cc together are at most 10 (the loop row holds them that way).
     .refine((draft) => draft.to.length + draft.cc.length <= FOLLOW_UP_RECIPIENTS_MAX),
+  // A reply draft (F115 interfaces): the text is `body_text ?? body`. The recipients are never LLM text: the writer sets
+  // `to` and `cc` from the stored headers of the mail (`replyRecipientsProblem` checks the rest).
+  z.object({
+    kind: z.literal("reply"),
+    to: recipientSchema,
+    cc: z.array(addressSchema).max(REPLY_CC_MAX),
+    language: draftLanguageSchema,
+    body: z.string().min(1).max(EDIT_BODY_MAX),
+    request_id: z.string().uuid(),
+    // The folder of the mail when the draft was asked for. A later move of the mail closes the draft.
+    folder: z.string().min(1).max(500),
+    recipients: z.enum(replyRecipientModes),
+    ...editFields,
+  }),
 ]);
 export type DraftPayload = z.infer<typeof draftPayloadSchema>;
 
@@ -94,18 +111,18 @@ export const sendPayloadSchema = z
   .object({
     kind: z.enum(draftKinds),
     to: z.array(addressSchema).min(1).max(FOLLOW_UP_RECIPIENTS_MAX),
-    cc: z
-      .array(addressSchema)
-      .max(FOLLOW_UP_RECIPIENTS_MAX - 1)
-      .optional(),
+    cc: z.array(addressSchema).max(REPLY_CC_MAX).optional(),
     loop_id: z.string().uuid().optional(),
     delegate_id: z.string().uuid().optional(),
     delegation_id: z.string().uuid().optional(),
     reminder: z.union([z.literal(1), z.literal(2)]).optional(),
     set_id: z.string().uuid().optional(),
   })
-  // Only a follow-up has more than one recipient or a Cc (the other kinds write one address).
-  .refine((send) => send.kind === "follow_up" || (send.to.length === 1 && send.cc === undefined))
+  // Only a follow-up has more than one To, and only a follow-up or a reply has a Cc (the other kinds write one address).
+  .refine((send) => send.kind === "follow_up" || send.to.length === 1)
+  .refine((send) => send.cc === undefined || send.kind === "follow_up" || send.kind === "reply")
+  // The loop row holds at most 9 Cc; a reply 0 to 10 (the rule of its draft).
+  .refine((send) => send.kind !== "follow_up" || (send.cc?.length ?? 0) <= FOLLOW_UP_RECIPIENTS_MAX - 1)
   .refine((send) => send.kind !== "follow_up" || send.loop_id !== undefined)
   // A follow-up is one card: it never joins an approval set (a "Send all" tap must not approve it).
   .refine((send) => send.kind !== "follow_up" || send.set_id === undefined);
@@ -120,6 +137,33 @@ export function sendPayloadFor(draft: DraftPayload): SendPayload {
   if ("delegation_id" in draft) send.delegation_id = draft.delegation_id;
   if ("reminder" in draft) send.reminder = draft.reminder;
   return send;
+}
+
+// The same addresses, in any order and letter case, each once (a set compare).
+export function sameAddresses(a: readonly string[], b: readonly string[]): boolean {
+  const keys = (list: readonly string[]) =>
+    [...new Set(list.map((address) => address.toLowerCase()))].sort().join("\n");
+  return keys(a) === keys(b);
+}
+
+export type ReplyRecipientsProblem = "cc_is_to" | "cc_duplicate" | "cc_own_mailbox";
+
+// The rules of the recipients of a reply that a schema cannot check (the writer calls it): no Cc equal to To, no
+// address twice in Cc, and no own mailbox in Cc. `ownAddresses` are the mailboxes of the organization. Lower-case compare.
+export function replyRecipientsProblem(
+  recipients: { to: readonly string[]; cc: readonly string[] },
+  ownAddresses: readonly string[]
+): ReplyRecipientsProblem | null {
+  const own = new Set(ownAddresses.map((address) => address.toLowerCase()));
+  const to = recipients.to.map((address) => address.toLowerCase());
+  const seen = new Set<string>();
+  for (const address of recipients.cc.map((value) => value.toLowerCase())) {
+    if (to.includes(address)) return "cc_is_to";
+    if (seen.has(address)) return "cc_duplicate";
+    if (own.has(address)) return "cc_own_mailbox";
+    seen.add(address);
+  }
+  return null;
 }
 
 // Everyone who gets the mail: To, then Cc, each address once (lower-case compare). The envelope, the send limits and the

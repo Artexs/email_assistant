@@ -4,7 +4,12 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
-import { suspiciousReasonsOf, suspiciousSendersOf, suspiciousThreadKeysOf } from "../../src/modules/triage";
+import {
+  suspiciousReasonsOf,
+  suspiciousSendersOf,
+  suspiciousThreadKeysOf,
+  suspicionOf,
+} from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
@@ -106,6 +111,76 @@ describe("suspiciousReasonsOf", () => {
       const { ctxA } = await setup(trx);
       const { counter, plugin } = countingPlugin();
       expect((await suspiciousReasonsOf(trx.withPlugin(plugin), ctxA, [])).size).toBe(0);
+      expect(counter.count).toBe(0);
+    });
+  });
+});
+
+describe("suspicionOf", () => {
+  test("no row is untriaged, a row with no reason is clean, a row with a reason is flagged", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const noRow = await insertTestEmail(trx, ctxA, a.mailboxId);
+      const clean = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR) });
+      const flagged = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        suspiciousReasons: ["auth_fail"],
+      });
+      const found = await suspicionOf(trx, ctxA, [noRow, clean, flagged]);
+      expect(found.get(noRow)).toEqual({ state: "untriaged" });
+      expect(found.get(clean)).toEqual({ state: "clean" });
+      expect(found.get(flagged)).toEqual({ state: "flagged", reasons: ["auth_fail"] });
+      expect(found.size).toBe(3);
+    });
+  });
+
+  test("the newest row decides: an old flagged row under a newer clean row is clean, and the other way round", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const cleaned = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(3 * HOUR),
+        suspiciousReasons: ["auth_fail"],
+      });
+      await insertRow(trx, ctxA, cleaned, [], ago(HOUR));
+      const flaggedLater = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(3 * HOUR) });
+      await insertRow(trx, ctxA, flaggedLater, ["link_mismatch"], ago(HOUR));
+      const found = await suspicionOf(trx, ctxA, [cleaned, flaggedLater]);
+      expect(found.get(cleaned)).toEqual({ state: "clean" });
+      expect(found.get(flaggedLater)).toEqual({ state: "flagged", reasons: ["link_mismatch"] });
+    });
+  });
+
+  test("an id of another organization reads untriaged (no leak)", async () => {
+    await withRollback(db, async (trx) => {
+      const { b, ctxA } = await setup(trx);
+      const foreign = await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        suspiciousReasons: ["auth_fail"],
+      });
+      expect((await suspicionOf(trx, ctxA, [foreign])).get(foreign)).toEqual({ state: "untriaged" });
+    });
+  });
+
+  test("with the flag suspicious_mail off (the default) it still flags; ids go in chunks of 500; no ids, no query", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const flagged = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        suspiciousReasons: ["auth_fail"],
+      });
+      const ids = [flagged, ...Array.from({ length: 600 }, () => randomUUID())];
+      const { counter, plugin } = countingPlugin();
+      const found = await suspicionOf(trx.withPlugin(plugin), ctxA, ids);
+      expect(found.size).toBe(601);
+      expect(found.get(flagged)).toEqual({ state: "flagged", reasons: ["auth_fail"] });
+      expect(found.get(ids[600] ?? "")).toEqual({ state: "untriaged" });
+      expect(counter.count).toBe(2);
+      counter.count = 0;
+      expect((await suspicionOf(trx.withPlugin(plugin), ctxA, [])).size).toBe(0);
       expect(counter.count).toBe(0);
     });
   });

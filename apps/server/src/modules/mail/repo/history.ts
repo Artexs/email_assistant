@@ -137,3 +137,38 @@ export async function listFromAddresses(
   }
   return out;
 }
+
+export interface MailExampleFacts {
+  receivedAt: Date;
+  /** The display name of the sender; null: none, or the retention cleared it. */
+  fromName: string | null;
+  /** null after the retention cleared the subject. */
+  subject: string | null;
+}
+
+/**
+ * The facts of the trust report's examples (F110 stage 11): when the mail came, the sender's display name and the subject.
+ * The panel shows them behind login; they never go to Telegram. A mail that is gone has no entry. The address is not read.
+ */
+export async function listMailExamples(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, MailExampleFacts>> {
+  const found = new Map<string, MailExampleFacts>();
+  for (let i = 0; i < emailIds.length; i += IN_CHUNK) {
+    const rows = await db
+      .selectFrom("emails")
+      .leftJoin("email_headers", (join) =>
+        join.onRef("email_headers.email_id", "=", "emails.id").onRef("email_headers.org_id", "=", "emails.org_id")
+      )
+      .select(["emails.id", "emails.received_at", "emails.subject", "email_headers.from_name"])
+      .where("emails.org_id", "=", ctx.orgId)
+      .where("emails.id", "in", emailIds.slice(i, i + IN_CHUNK))
+      .execute();
+    for (const row of rows) {
+      found.set(row.id, { receivedAt: row.received_at, fromName: row.from_name, subject: row.subject });
+    }
+  }
+  return found;
+}

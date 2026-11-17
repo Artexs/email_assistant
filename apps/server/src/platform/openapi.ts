@@ -15,7 +15,7 @@ export interface ApiDocSpec {
   body?: ZodType; // the JSON body the route parses with `parseBody`
   params?: ZodType; // an object schema: each key is one path parameter
   query?: ZodType; // an object schema: each key is one query parameter
-  ok: { status: 200 | 201; schema: ZodType } | { status: 204 }; // 204: an empty answer, no body
+  ok: { status: 200 | 201 | 202; schema: ZodType } | { status: 204 }; // 204: an empty answer, no body
   // Every body is `{ error, … }` (`apiErrorSchema`); `schema` is a stricter shape of it, for a body with more fields.
   errors?: readonly { status: ApiErrorStatus; codes: readonly string[]; schema?: ZodType }[];
   public?: true; // the route needs no session: `security: []`

@@ -873,6 +873,7 @@ export const en = {
   appr_title_clarification: "Question to the sender {to}",
   appr_title_reminder: "Reminder to {to}",
   appr_title_follow_up: "Follow-up to {to}",
+  appr_title_reply: "Reply to {to}",
   appr_inactive: "(inactive)",
   appr_test_mail: "Test mail",
   appr_from: "From",

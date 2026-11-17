@@ -5,6 +5,7 @@ import type { DraftPayload } from "../triage/payloads";
 import { buildOutgoingMessage, type OriginalMail } from "./message";
 import { QUOTE_PREVIEW_CHARS } from "./quote";
 import { approvalViewOf, isExternalSender } from "./sender";
+import { approvalViewSchema } from "./view-schema";
 
 const ctx = { internalAddresses: ["b@interia.pl", "jan@firma.pl"], whitelisted: false, vip: false };
 
@@ -119,5 +120,35 @@ describe("approvalViewOf", () => {
     expect(view.quote).toBeNull();
     expect(view.dueDate).toBeNull();
     expect(view.synthetic).toBe(true);
+  });
+
+  test("a reply carries every recipient and the quote line; a view with 10 Cc parses", () => {
+    const cc = Array.from({ length: 10 }, (_, i) => `c${i}@firma.pl`);
+    const reply = {
+      kind: "reply",
+      to: ["klient@firma.pl"],
+      cc,
+      language: "en",
+      body: "Thanks, I will check.",
+      request_id: "44444444-4444-4444-8444-444444444444",
+      folder: "INBOX",
+      recipients: "all",
+    } satisfies DraftPayload;
+    const view = approvalViewOf(build(reply), {
+      draft: reply,
+      original: { ...original, fromName: "Klient" },
+      external: true,
+      synthetic: false,
+      recipientInactive: false,
+    });
+    expect(view.kind).toBe("reply");
+    expect(view.recipient).toEqual({ name: null, address: "klient@firma.pl" });
+    expect(view.to).toEqual(["klient@firma.pl"]);
+    expect(view.cc).toEqual(cc);
+    expect(view.subject).toBe("Re: Oferta");
+    expect(view.dueDate).toBeNull();
+    expect(view.quote?.text).toStartWith("On Fri 6 Nov 10:00, klient@firma.pl wrote:\n> line 0");
+    expect(approvalViewSchema.safeParse(view).success).toBe(true);
+    expect(approvalViewSchema.safeParse({ ...view, cc: [...cc, "x@y.pl"] }).success).toBe(false);
   });
 });

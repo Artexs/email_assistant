@@ -19,10 +19,10 @@ export const approvalViewSchema = z.strictObject({
   body: z.string(),
   quote: z.strictObject({ text: z.string(), cut: z.boolean() }).nullable(),
   synthetic: z.boolean(),
-  // A follow-up only: every address of To and Cc (the card and the panel spell them out; `recipient` is the first To) and its
+  // A follow-up, and a reply with a Cc: every address of To and Cc (the card and the panel spell them out; `recipient` is the first To) and its
   // number. Optional: the other kinds and the views queued before open loops have none.
   to: z.array(z.string()).min(1).max(10).optional(),
-  cc: z.array(z.string()).max(9).optional(),
+  cc: z.array(z.string()).max(10).optional(),
   followUpNumber: z.union([z.literal(1), z.literal(2)]).optional(),
   version: z.number().int().min(1).optional(),
   panelUrl: panelUrlSchema.optional(),
