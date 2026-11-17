@@ -1,4 +1,5 @@
 import type { BriefLoop, BriefPart, MailboxMode } from "@ea/core";
+import { sql } from "kysely";
 
 import type { TenantContext } from "../../platform/db";
 
@@ -20,7 +21,14 @@ export async function loadLoopBrief(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxIds: readonly string[],
-  opts: { now: Date; timeZone: string; modes: ReadonlyMap<string, MailboxMode | "none">; lock: boolean }
+  opts: {
+    now: Date;
+    timeZone: string;
+    modes: ReadonlyMap<string, MailboxMode | "none">;
+    // The mailboxes that plan a draft for a tap (`draftsAvailable`): the Draft button shows for their loops only.
+    draftMailboxIds: ReadonlySet<string>;
+    lock: boolean;
+  }
 ): Promise<LoopBrief> {
   const brief = await briefLoopsOf(db, ctx, mailboxIds, {
     now: opts.now,
@@ -50,6 +58,12 @@ export async function loadLoopBrief(
     dueAt: row.due_at,
     sinceAt: row.wait_from_at,
     autoReplyOnly: row.auto_reply_at !== null,
+    laterCount: row.later_count,
+    canDraft:
+      row.kind !== "promised" &&
+      !waitingForTap.has(row.id) &&
+      row.follow_ups_sent < FOLLOW_UP_LIMIT &&
+      opts.draftMailboxIds.has(row.mailbox_id),
     followUp: waitingForTap.has(row.id)
       ? "approval"
       : opts.modes.get(row.mailbox_id) === "shadow" &&
@@ -97,6 +111,35 @@ export async function markBriefShown(
       .where("id", "in", [...shown.stale])
       .where("stale_notified_at", "is", null)
       .where("status", "=", "closed")
+      .execute();
+  }
+}
+
+// A digest that ended `failed` (never delivered) gives its marks back, so each line is shown once (F116 stage 19, review 18 N4): the loops that
+// it named get `surfaced_at` and `stale_notified_at` null again when the mark is the time of this digest and no other digest that
+// is not `failed` names the loop. A mark from another time (an earlier or a later digest) stays. `digest.at` is the creation time of
+// the outbox row: `markBriefShown` wrote the same time (`queueDigest` passes `now` to both).
+export async function releaseBriefMarks(
+  trx: DbOrTrx,
+  ctx: TenantContext,
+  digest: { outboxId: string; loopIds: readonly string[]; at: Date }
+): Promise<void> {
+  if (digest.loopIds.length === 0) return;
+  const namedElsewhere = sql<boolean>`exists (
+    select 1 from outbox other
+    where other.org_id = open_loops.org_id and other.kind = 'digest' and other.id <> ${digest.outboxId}::uuid
+      and other.status <> 'failed'
+      and jsonb_typeof(other.view->'loopIds') = 'array'
+      and jsonb_exists(other.view->'loopIds', open_loops.id::text)
+  )`;
+  for (const column of ["surfaced_at", "stale_notified_at"] as const) {
+    await trx
+      .updateTable("open_loops")
+      .set({ [column]: null })
+      .where("org_id", "=", ctx.orgId)
+      .where("id", "in", [...digest.loopIds])
+      .where(column, "=", digest.at)
+      .where(sql<boolean>`not ${namedElsewhere}`)
       .execute();
   }
 }

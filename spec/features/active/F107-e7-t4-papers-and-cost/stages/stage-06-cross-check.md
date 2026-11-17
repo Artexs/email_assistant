@@ -49,3 +49,9 @@ Part of [`../plan.md`](../plan.md). Decisions P2, P5, D5, D9, E2. Needs stage 05
 **Done when.** Tests 1–7 pass, each claim has a row or became a placeholder, and the Proof prints `PROOF_OK`. The final message holds: the claim counts, each text fix (paper, old, new), each code gap, each public fact that stays unverified.
 
 **Out of scope.** New sections or new claims; code fixes for a gap (a ticket); the cost model (08).
+
+## Carry-over from stage 03
+
+- Verify the weak sources of the privacy text (`notes/2026-11-17-f107-s03-privacy-sources.md`): controller and processor roles, "UODO", the OpenAI terms (ADR 0015, 2026-11-06), "panel only through Tailscale" and "this install uses OpenAI" (home VPS only), the Art. 12(3) one-month rule.
+- Registry placeholders without a check: `<B2 region>`, `<SMTP provider>`, `<to confirm: ...>` in `legalPlaceholders`; every `termsUrl` is unverified.
+- Decide whether the text names mailbox OAuth (today only registry rows) and whether read-Sent (built, off by default) stays named as optional.

@@ -1,3 +1,4 @@
+import { MAX_LATER_TAPS } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -25,7 +26,7 @@ export type LoopCloseReason = z.infer<typeof loopCloseReasonSchema>;
 const loopStatusSchema = z.enum(["open", "closed"]);
 
 // The most Later taps one loop takes (the `later_count` CHECK of the table).
-export const MAX_LATER = 3;
+export const MAX_LATER = MAX_LATER_TAPS;
 
 export const SYSTEM = "system";
 

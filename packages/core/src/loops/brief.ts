@@ -1,12 +1,17 @@
 // The "needs you today" brief of the first digest of the day (F116 stage 18, D16, D17). Pure: no I/O. `loopSections` picks and
 // caps the lines, `renderBrief` writes them in the language of the user. The digest renderer cuts the block with `dropLastLine`
 // when a message is over 4096 characters (loop lines first from the bottom section up) and reads `shownIds` for what stayed.
+import { encodeCallback } from "../digest/callback";
 import { formatDayNumeric } from "../digest/local-time";
+import type { OutButton } from "../digest/message";
 import { cleanSubject, cutText, senderLabel, withoutEscapeRemains } from "../digest/text";
 import type { CoreTexts } from "../texts";
 import { markUntrustedText } from "../triage/untrusted-text";
 
 export const BRIEF_SECTION_LINES = 5;
+
+// The user may move a loop this many times (`MAX_LATER` of the server): the Later button goes after the last one.
+export const MAX_LATER_TAPS = 3;
 
 export const briefSectionKeys = ["urgent", "reply", "waiting", "promised", "stale"] as const;
 export type BriefSectionKey = (typeof briefSectionKeys)[number];
@@ -29,6 +34,10 @@ export interface BriefLoop {
   // The start of the wait: the Sent mail that the answer is missing for.
   sinceAt: Date;
   autoReplyOnly: boolean;
+  // How many times the user moved the due date (0 to 3): at 3 the Later button goes (D13).
+  laterCount: number;
+  // The Draft button shows: the mailbox is in `assist` with drafts on, no follow-up waits for a tap and fewer than two were sent.
+  canDraft: boolean;
   // `would_draft`: shadow mode, the follow-up would be drafted. `approval`: a follow-up waits for the owner's tap.
   followUp: "would_draft" | "approval" | null;
 }
@@ -40,6 +49,8 @@ export interface BriefDelegation {
   subject: string | null;
   sentAt: Date;
   dueAt: Date;
+  // The Done button shows: only an `overdue` or `answered` delegation closes (`closeDelegation`); a `sent` one answers "not answered yet".
+  closable: boolean;
 }
 
 export interface BriefStale {
@@ -171,7 +182,7 @@ function whatOf(text: string | null, subject: string | null, texts: CoreTexts): 
 }
 
 function whoOf(address: string | null): string | null {
-  const clean = address === null ? "" : cutText(address, 60);
+  const clean = address === null ? "" : cutText(withoutEscapeRemains(address), 60);
   return clean === "" ? null : clean;
 }
 
@@ -221,25 +232,82 @@ const countLine = (key: BriefSectionKey, count: number, texts: CoreTexts): strin
 };
 
 // The block of the brief: the title, each section (lines, "+n more", or a count line) and, once, the consent ask. No
-// section → no lines at all.
-export function renderBrief(sections: BriefSections, texts: CoreTexts, opts: BriefRenderOptions): string[] {
-  const blocks: string[][] = [];
+// section → no lines at all. `ids` runs parallel to `lines`: the id of the loop (or the delegation) that a line names, else null.
+// A line never holds a line break (`cutText`, `cleanSubject` and `senderLabel` end all white space to one space; a test plants breaks): a
+// line number of the text is the index in `lines`.
+export interface RenderedBrief {
+  lines: string[];
+  ids: (string | null)[];
+}
+
+function lineId(line: BriefLine): string | null {
+  if ("mail" in line) return null;
+  if ("stale" in line) return line.stale.id;
+  if ("delegation" in line) return line.delegation.id;
+  return line.loop.id;
+}
+
+export function renderBriefLines(sections: BriefSections, texts: CoreTexts, opts: BriefRenderOptions): RenderedBrief {
+  const blocks: { text: string; id: string | null }[][] = [];
   let hidden = false;
   for (const key of briefSectionKeys) {
     const part = sections[key];
-    const lines = part.lines.map((line) => lineText(line, texts, opts));
-    if (part.more > 0) lines.push(texts.brief.more(part.more, opts.links?.[key] ?? null));
+    const lines = part.lines.map((line) => ({ text: lineText(line, texts, opts), id: lineId(line) }));
+    if (part.more > 0) lines.push({ text: texts.brief.more(part.more, opts.links?.[key] ?? null), id: null });
     if (part.hidden > 0) {
-      lines.push(countLine(key, part.hidden, texts));
+      lines.push({ text: countLine(key, part.hidden, texts), id: null });
       hidden = true;
     }
     if (lines.length > 0) blocks.push(lines);
   }
-  if (blocks.length === 0) return [];
-  const out = [texts.brief.title];
-  blocks.forEach((lines) => out.push("", ...lines));
-  if (hidden) out.push("", texts.brief.consentAsk);
-  return out;
+  if (blocks.length === 0) return { lines: [], ids: [] };
+  const out: { text: string; id: string | null }[] = [{ text: texts.brief.title, id: null }];
+  blocks.forEach((lines) => out.push({ text: "", id: null }, ...lines));
+  if (hidden) out.push({ text: "", id: null }, { text: texts.brief.consentAsk, id: null });
+  return { lines: out.map((row) => row.text), ids: out.map((row) => row.id) };
+}
+
+export function renderBrief(sections: BriefSections, texts: CoreTexts, opts: BriefRenderOptions): string[] {
+  return renderBriefLines(sections, texts, opts).lines;
+}
+
+// The keyboard rows of the brief, one row per line that names a loop or a delegation, in the order of the text (F116 stage 19).
+// `consent` is `loopConsentOf` of the user: false gives no row at all, whatever the sections hold (D17; review 17 N5).
+// Waiting and delegated lines: Draft follow-up (only when `canDraft`), Later (not after the third), Done. Promised: Done, Drop.
+// A delegation: Done (`dd:`). A ⌛ line: Reopen.
+export function briefKeyboard(sections: BriefSections, texts: CoreTexts, opts: { consent: boolean }): OutButton[][] {
+  if (!opts.consent) return [];
+  const b = texts.loopTaps.buttons;
+  const button = (text: string, callback: Parameters<typeof encodeCallback>[0]): OutButton => ({
+    text,
+    data: encodeCallback(callback),
+  });
+  const rows: OutButton[][] = [];
+  for (const key of briefSectionKeys) {
+    for (const line of sections[key].lines) {
+      if ("mail" in line) continue;
+      if ("stale" in line) {
+        rows.push([button(b.reopen, { kind: "loop_reopen", loopId: line.stale.id })]);
+      } else if ("delegation" in line) {
+        if (line.delegation.closable) {
+          rows.push([button(b.done, { kind: "delegation_done", delegationId: line.delegation.id })]);
+        }
+      } else if (line.section === "promised") {
+        rows.push([
+          button(b.done, { kind: "loop_done", loopId: line.loop.id }),
+          button(b.drop, { kind: "loop_drop", loopId: line.loop.id }),
+        ]);
+      } else {
+        const { loop } = line;
+        rows.push([
+          ...(loop.canDraft ? [button(b.draft, { kind: "loop_follow_up", loopId: loop.id })] : []),
+          ...(loop.laterCount < MAX_LATER_TAPS ? [button(b.later, { kind: "loop_later", loopId: loop.id })] : []),
+          button(b.done, { kind: "loop_done", loopId: loop.id }),
+        ]);
+      }
+    }
+  }
+  return rows;
 }
 
 // One loop line less: the last line of the lowest section that has one moves into its "+n more". null: no line left.

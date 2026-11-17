@@ -137,7 +137,9 @@ export function createTelegramBot(
     const link = linkOf(ctx);
     let result;
     try {
-      result = await handlers.callback(link, ctx.callbackQuery.data);
+      result = await handlers.callback(link, ctx.callbackQuery.data, {
+        messageId: ctx.callbackQuery.message?.message_id,
+      });
     } catch (error) {
       log.error("callback_failed", telegramErrorFields(error));
       result = { answer: textsFor(link.locale).bot.error };
@@ -150,6 +152,18 @@ export function createTelegramBot(
     if (result.edit) {
       try {
         await ctx.editMessageText(result.edit.text, messageOptions(result.edit.buttons, { clearKeyboard: true }));
+      } catch (error) {
+        if (!isNotModified(error)) {
+          log.warn("message_edit_failed", telegramErrorFields(error));
+        }
+      }
+    }
+    if (result.keyboard) {
+      // Only the buttons: the chat message keeps its text (a blanked digest, review 19 N2).
+      try {
+        await ctx.editMessageReplyMarkup({
+          reply_markup: messageOptions(result.keyboard, { clearKeyboard: true }).reply_markup,
+        });
       } catch (error) {
         if (!isNotModified(error)) {
           log.warn("message_edit_failed", telegramErrorFields(error));
