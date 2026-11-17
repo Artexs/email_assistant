@@ -71,7 +71,7 @@ describe("showDelegateAction (T1)", () => {
 const meOf = (over: Partial<Pick<Me, "role" | "features">> & { plan?: string } = {}): Me =>
   ({
     role: over.role ?? "owner",
-    features: over.features ?? ["delegate_button"],
+    features: over.features ?? ["delegate_button", "delegation_pages"],
     organization: { plan: over.plan ?? "active" },
   }) as unknown as Me;
 
@@ -80,6 +80,9 @@ describe("delegateHintWanted (T1, roles)", () => {
     expect(delegateHintWanted(meOf())).toBe(true);
     expect(delegateHintWanted(meOf({ role: "assistant" }))).toBe(false);
     expect(delegateHintWanted(meOf({ features: ["open_loops"] }))).toBe(false);
+    // `GET /delegates` needs the flag `delegation_pages`: without it the list is a 404.
+    expect(delegateHintWanted(meOf({ features: ["delegate_button"] }))).toBe(false);
+    expect(delegateHintWanted(meOf({ features: ["delegation_pages"] }))).toBe(false);
     expect(delegateHintWanted(meOf({ plan: "suspended" }))).toBe(false);
     expect(delegateHintWanted(null)).toBe(false);
   });

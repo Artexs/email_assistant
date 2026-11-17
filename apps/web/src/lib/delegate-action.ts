@@ -25,9 +25,16 @@ export interface DelegateHint {
   draftMailboxIds: ReadonlySet<string>;
 }
 
-// The organization part of the rule: an owner of an organization that is not suspended, with the flag `delegate_button` on.
+// The organization part of the rule: an owner of an organization that is not suspended, with the flag `delegate_button` on and the
+// flag `delegation_pages` on (`GET /delegates` is a 404 without it: the list of delegates is the page of the delegates).
 export function delegateHintWanted(me: Pick<Me, "role" | "organization" | "features"> | null): boolean {
-  return me !== null && me.role === "owner" && canWrite(me) && me.features.includes("delegate_button");
+  return (
+    me !== null &&
+    me.role === "owner" &&
+    canWrite(me) &&
+    me.features.includes("delegate_button") &&
+    me.features.includes("delegation_pages")
+  );
 }
 
 const OPEN_DELEGATION = new Set(["drafted", "sent", "overdue"]);
