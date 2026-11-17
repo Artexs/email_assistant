@@ -1,13 +1,13 @@
 import type { Category, MailboxMode } from "./categories";
 import type { PlannedAction } from "./planners";
-import type { ToolSwitches } from "./settings";
+import type { MailToolSwitches } from "./settings";
 
 // Only a `send` gets `await_approval`.
 export type PolicyDecision = "apply" | "await_approval" | "log_only";
 
 export interface PolicyInput {
   mode: MailboxMode;
-  toolSwitches: ToolSwitches;
+  toolSwitches: MailToolSwitches;
   category: Category;
   // The category passed go/no-go and the user turned it on (`autoFor`). The caller computes it.
   categoryAuto: boolean;

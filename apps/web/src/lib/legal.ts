@@ -9,7 +9,13 @@ export function legalPath(lang: LegalLang, doc: LegalDoc): string {
 
 // The placeholders that a legal text may hold (D6, P3): no person, company or address is named in a public repo. A text
 // writes one with a backslash before `<`, so Markdown prints it as text. `<to confirm: …>` is the other allowed form.
-export const legalPlaceholders = ["<provider name>", "<address>", "<contact>"] as const;
+export const legalPlaceholders = [
+  "<provider name>",
+  "<address>",
+  "<contact>",
+  "<backup retention>",
+  "<organization name>",
+] as const;
 
 const toConfirm = /^<to confirm: [^<>\n]+>$/;
 

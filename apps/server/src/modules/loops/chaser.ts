@@ -84,8 +84,8 @@ const skip = (skipped: Exclude<LoopChaserSkip, null>): LoopChaserResult => ({
   expired: 0,
 });
 
-// The raw switch: the core schema of the tool switches does not hold `auto_follow_up` yet (stage 22 adds it to the
-// panel), and its parse drops an unknown key. Only a JSON `true` counts.
+// The raw switch. Only a JSON `true` counts, the same rule as `toolSwitchesSchema` (`catch(false)`): the chaser reads the stored
+// JSON, so a bad value cannot turn it on.
 export function autoFollowUpOn(toolSwitches: unknown): boolean {
   return (
     typeof toolSwitches === "object" &&

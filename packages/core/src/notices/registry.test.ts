@@ -652,6 +652,26 @@ describe("renderNotice", () => {
   });
 });
 
+describe("the mail channel before the mail renderers (F110 stage 19)", () => {
+  // Stage 20 adds the mail renderers and replaces this test. Until then a mail row never renders, so no sender can send it as text.
+  const mail: NoticeRenderOptions = { channel: "mail", detail: "full", locale: "en" };
+
+  test("renderNotice answers { ok: false } for a mail row", () => {
+    expect(renderNotice("digest", { text: "x", buttons: [] }, mail)).toEqual({ ok: false });
+    expect(renderNotice("digest", { text: "x", buttons: [] }, opts).ok).toBe(true);
+  });
+
+  test("renderNoticeEdit throws for a mail row: a card edit has no mail form", () => {
+    const input = {
+      original: "x",
+      outcome: "approved" as const,
+      at: new Date("2026-11-13T10:00:00.000Z"),
+      timeZone: "Europe/Warsaw",
+    };
+    expect(() => renderNoticeEdit(input, mail)).toThrow("no card edit for channel mail");
+  });
+});
+
 describe("renderNoticeEdit", () => {
   test("adds the status line to the stored text", () => {
     const message = renderNoticeEdit(

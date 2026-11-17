@@ -58,7 +58,8 @@ export interface CommandDeps {
   operatorContact: string | null;
   // Minutes between two mail syncs (MAIL_SYNC_EVERY_MIN), for the /resume text.
   syncEveryMin: number;
-  // The base URL of the panel (`WEB_BASE_URL`): the picker of the Delegate button links to the delegates page.
+  // The base URL of the panel (`WEB_BASE_URL`): the picker of the Delegate button links to the delegates page, and the
+  // spam review line of /digest links to the Activity list (F110 stage 17). Unset: no link, the panel text.
   webBaseUrl?: string;
 }
 
@@ -218,7 +219,9 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
     slot: null,
     now,
     locale: link.locale,
+    role: link.role,
     testMail: deps.testMail,
+    ...(deps.webBaseUrl === undefined ? {} : { panelBase: deps.webBaseUrl }),
   });
 }
 

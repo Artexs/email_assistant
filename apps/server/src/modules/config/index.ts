@@ -18,6 +18,7 @@ export {
   getSettingsView,
   parseUrgencyProfile,
   setCategoryAuto,
+  setLoopWaitDays,
   setMode,
   setToolSwitch,
   setUrgencyProfile,

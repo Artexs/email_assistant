@@ -4,7 +4,9 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { usage } from "../../src/scripts/stats-week-args";
 
+import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
+import { flagLoops, seedLoops } from "./loops-m2-fixtures";
 import { WEEK, seedWeek, type SeededWeek } from "./metrics-fixtures";
 
 const db = testDb();
@@ -98,5 +100,43 @@ describe("stats:week CLI", () => {
     expect(m8.find((l) => l.includes(" notification "))).toContain(" auto no kept 0 ");
     expect(result.stdout).not.toContain("@");
     expect(result.stdout).not.toContain(orgA.ids.e1 as string);
+  });
+
+  // The script reads the clock, so the loops are due in a week that is long past: January 2026 (Warsaw, UTC+1).
+  const PAST_WEEK = "2026-01-05";
+  const PAST_DUE = new Date("2026-01-07T09:00:00Z");
+  async function pastOrg(flagOn: boolean) {
+    const org = await db.transaction().execute(async (trx) => {
+      const made = await createOrgWithMailbox(trx);
+      const org = { ctx: { orgId: made.orgId }, mailboxId: made.mailboxId, ownerId: made.userId, ids: {} };
+      if (flagOn) await flagLoops(trx, org, true);
+      await seedLoops(trx, org, PAST_DUE);
+      return org;
+    });
+    seeded = { orgA: org, orgB: { ctx: org.ctx, mailboxId: org.mailboxId } };
+    return org;
+  }
+
+  test("T9. with the flag open_loops on it prints one m2 line per kind, with the totals of the loops and no address", async () => {
+    const org = await pastOrg(true);
+    const result = await run(["--org-id", org.ctx.orgId, "--week", PAST_WEEK]);
+    expect(result.code).toBe(0);
+    const lines = result.stdout.trim().split("\n");
+    expect(lines).toContain("m2_delegation due 0 closed 0 surfaced 0 pending 0");
+    expect(lines).toContain("m2_waiting due 2 closed 1 surfaced 1 pending 0");
+    expect(lines).toContain("m2_promised due 1 closed 0 surfaced 1 pending 0");
+    expect(lines).toContain("m2_delegated due 1 closed 1 surfaced 1 pending 0");
+    expect(lines.find((l) => l.startsWith("m2_open_loops"))).toBe(
+      "m2_open_loops due 4 closed_on_time 2 of 4 (50%) surfaced_on_time 3 of 4 (75%) pending 0"
+    );
+    expect(result.stdout).not.toContain("@");
+  });
+
+  test("T10. with the flag off it prints the m2 total only and no loop line", async () => {
+    const org = await pastOrg(false);
+    const result = await run(["--org-id", org.ctx.orgId, "--week", PAST_WEEK]);
+    expect(result.code).toBe(0);
+    const m2 = result.stdout.split("\n").filter((line) => line.startsWith("m2_"));
+    expect(m2).toEqual(["m2_open_loops due 0 closed_on_time 0 of 0 (-) surfaced_on_time 0 of 0 (-) pending 0"]);
   });
 });

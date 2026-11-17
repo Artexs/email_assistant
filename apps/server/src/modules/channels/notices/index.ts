@@ -4,7 +4,7 @@ import { errorFields } from "../../../platform/errors";
 import { listMailboxes } from "../../mail";
 import { getOrganization } from "../../tenancy";
 import { type LinkedChat } from "../port";
-import { listLinkedChats } from "../repo";
+import { listReportMembers, type ReportMember } from "../report-members";
 
 import { actionFailedDetector } from "./action-failed";
 import { approvalDetector } from "./approval";
@@ -46,6 +46,9 @@ export const detectors: readonly Detector[] = [
   notTriagedDetector,
 ];
 
+// The detectors that also serve an organization with no linked chat (F110 stage 19).
+export const mailOnlyDetectors: readonly Detector[] = [weeklyReportDetector];
+
 // Kinds that a producer outside the detector list queues.
 export const queuedBy = {
   digest: "channels/digest-job.ts",
@@ -62,7 +65,13 @@ export const queuedBy = {
   autonomy_paused: "trust (through channels/notices/trust.ts)",
 } as const satisfies Partial<Record<NoticeKind, string>>;
 
-async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat[], now: Date): Promise<void> {
+async function detectForOrg(
+  deps: NoticeDeps,
+  orgId: string,
+  members: LinkedChat[],
+  reportMembers: ReportMember[],
+  now: Date
+): Promise<void> {
   const { db } = deps;
   const ctx = { orgId };
   const organization = await getOrganization(db, ctx);
@@ -77,11 +86,14 @@ async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat
     resumedAt: organization.resumed_at,
     members,
     owners: members.filter((member) => member.role === "owner"),
+    reportMembers,
     mailboxes,
     pausedMailboxIds: new Set(mailboxes.filter((mailbox) => mailbox.status === "paused").map((mailbox) => mailbox.id)),
   };
-  // One detector that fails (a view that does not render, a database error) does not stop the later ones of the organization.
-  for (const detector of detectors) {
+  // An organization with no linked chat (only report-mail members) runs the weekly report only: the other detectors read the
+  // link times of the members and have nobody to notify. One detector that fails (a view that does not render, a database
+  // error) does not stop the later ones of the organization.
+  for (const detector of members.length === 0 ? mailOnlyDetectors : detectors) {
     try {
       await detector.detect(run);
     } catch (error) {
@@ -94,13 +106,27 @@ async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat
 export async function detectNotices(deps: NoticeDeps): Promise<void> {
   try {
     const now = deps.now();
-    const byOrg = new Map<string, LinkedChat[]>();
-    for (const link of await listLinkedChats(deps.db, { includeSuspended: false })) {
-      byOrg.set(link.orgId, [...(byOrg.get(link.orgId) ?? []), link]);
+    // Every organization with a linked chat is visited. An organization with only report-mail members (no chat) is visited too,
+    // for the weekly report only: with the flag `report_mail` off that detector queues nothing for them (F110 stage 19).
+    const byOrg = new Map<string, { links: LinkedChat[]; members: ReportMember[] }>();
+    for (const member of await listReportMembers(deps.db, { includeSuspended: false })) {
+      const entry = byOrg.get(member.orgId) ?? { links: [], members: [] };
+      entry.members.push(member);
+      if (member.chat !== null) {
+        entry.links.push({
+          orgId: member.orgId,
+          userId: member.userId,
+          role: member.role,
+          chatId: member.chat.chatId,
+          linkedAt: member.chat.linkedAt,
+          locale: member.locale,
+        });
+      }
+      byOrg.set(member.orgId, entry);
     }
-    for (const [orgId, members] of byOrg) {
+    for (const [orgId, { links, members }] of byOrg) {
       try {
-        await detectForOrg(deps, orgId, members, now);
+        await detectForOrg(deps, orgId, links, members, now);
       } catch (error) {
         log.error("notices_org_failed", { org_id: orgId, ...errorFields(error) });
       }

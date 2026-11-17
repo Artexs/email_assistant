@@ -259,6 +259,7 @@ describe("the flag off (T9) and the attachment line (T10)", () => {
         slot: { date: "2026-11-20", time: "08:00", late: false },
         now: new Date(EIGHT),
         locale: "en",
+        role: "owner",
         testMail: NO_TEST_SENDERS,
       });
       expect(texts[0]).toBe(direct.text);

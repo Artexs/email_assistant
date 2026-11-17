@@ -85,6 +85,7 @@ export interface NoticeTexts {
     loopsSurfaced: (percent: string, counts: string) => string;
     loops: (closed: string, surfaced: string, pending: number) => string;
     loopsNone: (pending: number) => string;
+    loopsOf: (closed: string, surfaced: string) => string;
     mistakes: {
       total: (count: number) => string;
       hiddenImportant: (count: number) => string;
@@ -265,6 +266,7 @@ export const noticeTexts = {
       loopsSurfaced: (percent, counts) => `${percent} surfaced ${counts}`,
       loops: (closed, surfaced, pending) =>
         `Open loops on time: ${closed}, ${surfaced}${pending > 0 ? `, ${pending} still open` : ""}`,
+      loopsOf: (closed, surfaced) => `Of which loops: ${closed}, ${surfaced}`,
       loopsNone: (pending) =>
         `Open loops on time: no delegation was due${pending > 0 ? `, ${pending} still open` : ""}`,
       mistakes: {
@@ -426,6 +428,7 @@ export const noticeTexts = {
       loopsSurfaced: (percent, counts) => `${percent} zgłoszonych Ci ${counts}`,
       loops: (closed, surfaced, pending) =>
         `Zlecenia w terminie: ${closed}, ${surfaced}${pending > 0 ? `, ${pending} nadal ${PL_OPEN[pluralCategory("pl", pending)]}` : ""}`,
+      loopsOf: (closed, surfaced) => `W tym otwarte sprawy: ${closed}, ${surfaced}`,
       loopsNone: (pending) =>
         `Zlecenia w terminie: żadne nie miało terminu${pending > 0 ? `, ${pending} nadal ${PL_OPEN[pluralCategory("pl", pending)]}` : ""}`,
       mistakes: {
