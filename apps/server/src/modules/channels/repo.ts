@@ -18,7 +18,6 @@ import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-
 import { releaseBriefMarks } from "../loops";
 
 import type { LinkedChat } from "./port";
