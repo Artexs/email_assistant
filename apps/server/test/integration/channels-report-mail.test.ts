@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { renderDigest, textsFor } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -235,6 +236,65 @@ describe("digest rows by mail (steps 1, tests 1 to 3 and 6)", () => {
       await digest(trx);
       expect((await rowsOf(trx, on.orgId)).map((row) => row.channel)).toEqual(["mail"]);
       expect(await rowsOf(trx, off.orgId)).toHaveLength(0);
+    });
+  });
+});
+
+describe("the digest with the loop and spam review features off", () => {
+  test("the Telegram row (text, buttons, view) equals the pure renderer fixture, with none of the keys of the three features; a mail row carries the same text", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await org(trx, { chat: true, channel: "both" });
+      const box = await trx
+        .selectFrom("mailboxes")
+        .select(["id", "address", "status", "last_synced_at", "status_changed_at"])
+        .where("id", "=", o.mailboxId)
+        .executeTakeFirstOrThrow();
+      await digest(trx);
+      const fixture = renderDigest(
+        {
+          kind: "scheduled",
+          now: SLOT_NOW,
+          timeZone: "Europe/Warsaw",
+          slot: { date: "2026-11-06", time: "08:00", late: false },
+          periodStart: new Date(LINKED.getTime() - 24 * HOUR),
+          mailboxes: [
+            {
+              id: box.id,
+              address: box.address,
+              status: box.status as "active",
+              lastSyncedAt: box.last_synced_at,
+              statusChangedAt: box.status_changed_at,
+              mode: "none",
+            },
+          ],
+          counts: {},
+          items: [],
+          skippedTooOld: 0,
+          skippedBacklog: 0,
+          waiting: 0,
+          delegations: { open: 0, overdue: 0 },
+        },
+        textsFor("en")
+      );
+      const rows = await rowsOf(trx, o.orgId);
+      expect(rows.map((row) => row.channel)).toEqual(["telegram", "mail"]);
+      for (const row of rows) {
+        // Exactly these keys: no `loopIds`, no `lineOf`, nothing of the spam review line.
+        expect(JSON.stringify(row.view)).toBe(JSON.stringify({ text: fixture.text, buttons: fixture.buttons }));
+      }
+    });
+  });
+
+  test("with open_loops and spam_review_line on, a mail row never marks a loop: only the Telegram row builds the brief", async () => {
+    await withRollback(db, async (trx) => {
+      const mailOnly = await org(trx, { chat: false, channel: "mail" });
+      for (const flag of ["open_loops", "spam_review_line"] as const) {
+        await setOrgFeature(trx, mailOnly.ctx, { flag, enabled: true, actor: "cli", now: SLOT_NOW });
+      }
+      await digest(trx);
+      const [row] = await rowsOf(trx, mailOnly.orgId);
+      expect(row?.channel).toBe("mail");
+      expect(Object.keys(row?.view as object).sort()).toEqual(["buttons", "text"]);
     });
   });
 });
