@@ -37,6 +37,8 @@ const log = createLog("mail");
 
 const DEFAULT_BODY_LIMIT_BYTES = 5_000_000;
 const DEFAULT_CONNECTION_TIMEOUT_MS = 30_000;
+/** `close()` waits this long for LOGOUT, then drops the socket. */
+export const CLOSE_LOGOUT_TIMEOUT_MS = 3_000;
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 // Lost connection or timeout (imapflow uses ETIMEOUT, CONNECT_TIMEOUT, GREETING_TIMEOUT for its own timers).
 const SOFT_CODES = new Set([
@@ -553,11 +555,19 @@ class ImapMailProvider implements MailProvider {
     });
   }
 
+  // LOGOUT on a stalled socket never returns: wait for it a short time, then drop the socket.
   async close(): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<"timeout">((resolve) => {
+      timer = setTimeout(() => resolve("timeout"), CLOSE_LOGOUT_TIMEOUT_MS);
+    });
     try {
-      await this.client.logout();
+      const outcome = await Promise.race([this.client.logout().then(() => "ok" as const), timeout]);
+      if (outcome === "timeout") this.client.close();
     } catch {
       this.client.close();
+    } finally {
+      clearTimeout(timer);
     }
   }
 }

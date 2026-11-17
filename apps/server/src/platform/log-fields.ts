@@ -34,6 +34,8 @@ export const numberFieldNames = [
   "recipient_day",
   // outbox sender and testmail send
   "wait_ms",
+  // mail sync: the time of one Sent pass
+  "duration_ms",
   // retention job: rows cleared per kind
   "body_rows",
   "header_rows",

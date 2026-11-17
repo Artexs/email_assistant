@@ -124,3 +124,70 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* The legal pages (F107): Markdown output has no classes, so the reading layout styles the elements. */
+.legal-draft {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  background: var(--muted);
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+}
+
+.legal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  line-height: 1.6;
+}
+
+.legal-body h2 {
+  margin-top: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.legal-body h3 {
+  font-weight: 600;
+}
+
+.legal-body ul,
+.legal-body ol {
+  padding-left: 1.5rem;
+}
+
+.legal-body ul {
+  list-style: disc;
+}
+
+.legal-body ol {
+  list-style: decimal;
+}
+
+.legal-body a {
+  text-decoration: underline;
+}
+
+.legal-table {
+  overflow-x: auto;
+}
+
+.legal-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.legal-table th,
+.legal-table td {
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.legal-table th {
+  background: var(--muted);
+  font-weight: 600;
+}
