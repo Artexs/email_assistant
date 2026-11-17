@@ -17,6 +17,24 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-17
+
+### For users
+
+- en: Draft privacy policy, terms and data processing pages in English and Polish, linked from the sign-in page and the Account card.
+  pl: Robocze wersje polityki prywatności, regulaminu i umowy powierzenia danych po angielsku i po polsku, z linkami na stronie logowania i w karcie Konto.
+- en: The docs site has Polish pages for the start guide, the how-to guides and the FAQ.
+  pl: Strona z dokumentacją ma polskie strony: przewodnik startowy, poradniki i FAQ.
+
+### Added
+
+- Open loops (Waiting and Promised mail, follow-up drafts, Telegram buttons, the M2 split by kind), the trust ladder (history check, re-gate, tripwire, why lines, quiet hours, urgency editor), the reply-draft safety check and the report mail queue. All sit behind flags that stay off.
+- Registries of outside services and of stored data categories, with tests that fail when a table or an outside key has no entry.
+
+### Changed
+
+- One read of the Sent folder stops after 60 seconds, so a slow Sent folder cannot delay the inbox sync. The `sent_sync_done` log line has `duration_ms` and a `budget` status.
+
 ## [0.2.0] - 2026-11-15
 
 ### For users
