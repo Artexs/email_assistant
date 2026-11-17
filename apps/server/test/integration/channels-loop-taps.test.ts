@@ -301,7 +301,7 @@ describe("the edit of the tapped line", () => {
       expect(cleared.keyboard?.flat().map((button) => button.data)).toEqual([lf(third.id), ll(third.id), lc(third.id)]);
       const stored = await outboxOf(trx, org.ctx.orgId);
       expect(stored.text).toBe("[removed]");
-      expect(stored.buttons).toEqual(cleared.keyboard ?? []);
+      expect(stored.buttons).toEqual(JSON.parse(JSON.stringify(cleared.keyboard ?? [])));
     });
   });
 
