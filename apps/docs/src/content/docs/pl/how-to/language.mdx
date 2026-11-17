@@ -1,0 +1,39 @@
+---
+title: Zmień język
+description: Ustaw język panelu i wiadomości w Telegramie i dowiedz się, co o nim decyduje.
+source: how-to/language
+sourceHash: "69ae4ade80ff3447"
+capabilities:
+  - web-panel
+  - digest-and-notices
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Każdy członek ma jedno ustawienie języka. Obejmuje panel, wiadomości w Telegramie i e-maile o Twoim koncie. Możesz wybrać polski lub angielski.
+
+## Kroki
+
+1. Otwórz stronę **<UiText k="nav_settings" />**.
+2. W karcie **<UiText k="acct_title" />** otwórz listę **<UiText k="acct_language_label" />**.
+3. Wybierz **<UiText k="acct_language_pl" />** albo **<UiText k="acct_language_en" />**.
+
+Panel pokazuje ten tekst i od razu przełącza język:
+
+> <UiText k="acct_language_saved" />
+
+Karta mówi, co obejmuje to ustawienie:
+
+> <UiText k="acct_language_help" />
+
+## Co decyduje o języku
+
+- Panel używa zapisanego języka. Bez zapisanego języka używa języka przeglądarki. Polskie przeglądarki dostają polski. Wszystkie inne dostają angielski.
+- Telegram używa zapisanego języka. Bez zapisanego języka używa polskiego.
+- Ustawienie należy do Ciebie, nie do urządzenia. Każde logowanie na każdym urządzeniu go używa.
+- Ustawienie działa także wtedy, gdy Twój operator wstrzymał konto.
+
+## Co dzieje się dalej
+
+Nowe wiadomości od bota przychodzą w nowym języku. Wiadomości, które bot już wysłał, się nie zmieniają.
+Wiersz od AI przy wiadomości w panelu i w Telegramie podąża za tym samym ustawieniem języka.

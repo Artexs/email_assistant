@@ -1,0 +1,49 @@
+---
+title: Zmień godziny podsumowań i strefę czasową
+description: Wybierz, kiedy przychodzi Twoje podsumowanie w Telegramie, i ustaw strefę czasową organizacji.
+source: how-to/digest-times
+sourceHash: "241bf81130d3c51d"
+capabilities:
+  - digest-and-notices
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Domyślnie bot wysyła Ci podsumowanie o 08:00 i o 16:00. Użyj tego poradnika, aby zmienić godziny albo strefę czasową, według której idą.
+
+## Zmień swoje godziny podsumowań
+
+Każdy członek ustawia własne godziny.
+
+1. Otwórz stronę **<UiText k="nav_settings" />**.
+2. W karcie **<UiText k="digest_title" />** zmień godzinę w jej polu.
+3. Aby dodać godzinę, naciśnij **<UiText k="digest_add" />**. Możesz ustawić do 6 godzin. Każdej godziny użyj tylko raz.
+4. Aby usunąć godzinę, naciśnij przycisk usuwania (X) obok niej. Jeśli usuniesz wszystkie godziny, nie dostaniesz podsumowań.
+5. Naciśnij **<UiText k="save" />**.
+
+Nowa godzina, która minęła dziś mniej niż 6 godzin temu, wysyła podsumowanie od razu. Strona mówi:
+
+> <UiText k="digest_new_time_note" />
+
+Aby dostać podsumowanie poza swoimi godzinami, wyślij botowi `/digest`. Wyślij `/status`, aby zobaczyć następną godzinę podsumowania.
+
+## Zmień strefę czasową
+
+Strefa czasowa to jedno ustawienie dla całej organizacji. Zmienić ją może tylko właściciel.
+
+1. Otwórz stronę **<UiText k="nav_settings" />**.
+2. W karcie **<UiText k="tz_title" />** wpisz część nazwy w polu wyszukiwania, na przykład `Warsaw`.
+3. Wybierz strefę z listy.
+4. Naciśnij **<UiText k="save" />**.
+
+Wszystkie godziny podsumowań idą według tej strefy. Zmiana działa w ciągu minuty. W tym dniu podsumowania mogą zostać pominięte, przyjść później albo przyjść od razu.
+
+## Godziny ciszy
+
+Godziny ciszy to 22:00–07:00 w strefie czasowej organizacji. Nie możesz ich zmienić.
+W godzinach ciszy bot wstrzymuje komunikaty, na przykład o pilnej wiadomości albo prośbę o zatwierdzenie. Przychodzą o 07:00.
+Podsumowania nie czekają. Podsumowanie przychodzi o swojej godzinie, także w godzinach ciszy.
+
+## Co dzieje się dalej
+
+Bot wyśle następne podsumowanie o następnej godzinie z Twojej listy, w strefie czasowej organizacji.

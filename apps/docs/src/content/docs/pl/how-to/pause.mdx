@@ -1,0 +1,60 @@
+---
+title: Wstrzymaj i wznów
+description: Zatrzymaj asystenta na jakiś czas w Telegramie albo w panelu i dowiedz się, co znaczy wstrzymane konto.
+source: how-to/pause
+sourceHash: "7dff7060068ac501"
+capabilities:
+  - digest-and-notices
+  - sync
+  - tenancy-and-plans
+---
+
+import UiText from "../../../../components/UiText.astro";
+
+Użyj tego poradnika, aby zatrzymać asystenta na jakiś czas, na przykład na urlop.
+
+## Zanim zaczniesz
+
+Skrzynkę może wstrzymać lub wznowić tylko właściciel organizacji. Jeśli inny członek wyśle `/pause`, bot odpowiada `Tylko właściciel może wstrzymać lub wznowić skrzynki.`
+
+## Wstrzymaj w Telegramie
+
+1. Wyślij botowi `/pause`.
+2. Bot wstrzymuje każdą skrzynkę Twojej organizacji. Odpowiada `⏸ Wstrzymano:` i listą adresów.
+3. Aby ruszyć ponownie, wyślij `/resume`. Bot odpowiada `▶️ Wznowiono:` i listą.
+
+Polecenie pomija skrzynkę, która pokazuje błąd logowania albo **<UiText k="status_host_blocked" />**. Bot o tym mówi.
+
+## Wstrzymaj jedną skrzynkę w panelu
+
+1. Otwórz stronę **<UiText k="nav_mailboxes" />**.
+2. Na karcie skrzynki naciśnij **<UiText k="mb_pause" />**. Panel mówi:
+
+   > <UiText k="mb_paused_toast" />
+
+3. Aby ruszyć ponownie, naciśnij **<UiText k="mb_resume" />**. Panel mówi:
+
+   > <UiText k="mb_resumed_toast" />
+
+## Co robi wstrzymana skrzynka
+
+- System nie czyta ani nie sortuje jej wiadomości. Nie wysyła o niej pilnych komunikatów.
+- Podsumowania nadal przychodzą. Podsumowanie ma dla skrzynki wiersz `⏸ Wstrzymana od …`.
+- Wysyłka, którą zatwierdzono, czeka, aż wznowisz skrzynkę. Jeśli skrzynka nadal jest wstrzymana, wygasa 48 godzin po Twoim stuknięciu. Cofnięcie nie działa, gdy skrzynka jest wstrzymana.
+
+## Co dzieje się dalej
+
+Po wznowieniu następna synchronizacja czyta wiadomości, które przyszły w czasie wstrzymania. System nie sortuje wiadomości starszych niż 7 dni.
+
+## Gdy Twój operator wstrzyma konto
+
+Twój operator może wstrzymać całe konto. Nie możesz go wznowić samodzielnie. Może to zrobić tylko operator.
+
+- System nie czyta wiadomości, nie sortuje ich i nie wysyła podsumowań ani komunikatów.
+- Telegram odpowiada `⏸ To konto jest wstrzymane.` na każde polecenie oprócz `/help`.
+- Panel pokazuje baner taki jak ten i odrzuca zmiany. Nadal możesz czytać swoje dane, ustawić język i zaakceptować regulamin.
+
+  > <UiText k="paused_banner_no_contact" />
+
+Gdy operator wznowi konto, system pomija wiadomości, które przyszły ponad 24 godziny przed wznowieniem.
+Podsumowanie liczy je w wierszu `📭 Nieprzetworzone (z czasu wstrzymania konta)`.

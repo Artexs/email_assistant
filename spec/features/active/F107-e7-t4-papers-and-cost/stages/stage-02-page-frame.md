@@ -49,3 +49,8 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P3, P4, D1, D2, D6, D7, E3. Ne
 **Done when.** Tests 1–7 pass, the existing terms tests pass unchanged, and the Proof with the e2e step prints `PROOF_OK`.
 
 **Out of scope.** The real texts (03–05), the version guard and the bump (06).
+
+## Carry-over from stage 01
+
+- Decide in this stage: `MAIL_OAUTH_*` and `TELEGRAM_API_ROOT` get a row or an exempt entry in `OUTSIDE_SERVICE_KEYS` (the suffix rule does not match them). Coordinator default: a row for the OAuth keys, an exempt entry with a reason for `TELEGRAM_API_ROOT`.
+- The registry lists text, address and retention columns only; the Telegram row text is not tied to `tg_consent_text` until the stage 06 hash guard.
