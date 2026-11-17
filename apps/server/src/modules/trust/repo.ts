@@ -152,6 +152,27 @@ export async function latestHistoryCheck(
   return row === undefined ? null : toCheckRow(row);
 }
 
+/** The newest `done` check of a mailbox with its result and its end time (null: none). Same order as `historyResultFor`. */
+export async function newestDoneCheck(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<{ result: HistoryResult | null; finishedAt: Date | null } | null> {
+  const row = await db
+    .selectFrom("history_checks")
+    .select(["result", "finished_at"])
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("status", "=", "done")
+    .orderBy(sql`finished_at desc nulls last`)
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  if (row === undefined) return null;
+  return { result: row.result == null ? null : historyResultSchema.parse(row.result), finishedAt: row.finished_at };
+}
+
 /**
  * The result of the newest `done` check, per moving category (null: the check has no entry for it). A newer check that
  * ended without a result does not hide it: a `fail` stays until a newer `done` check replaces it.
@@ -161,18 +182,7 @@ export async function historyResultFor(
   ctx: TenantContext,
   mailboxId: string
 ): Promise<Record<MovingCategory, HistoryCategoryResult | null>> {
-  const row = await db
-    .selectFrom("history_checks")
-    .select("result")
-    .where("org_id", "=", ctx.orgId)
-    .where("mailbox_id", "=", mailboxId)
-    .where("status", "=", "done")
-    .orderBy(sql`finished_at desc nulls last`)
-    .orderBy("created_at", "desc")
-    .orderBy("id", "desc")
-    .limit(1)
-    .executeTakeFirst();
-  const result = row?.result == null ? null : historyResultSchema.parse(row.result);
+  const result = (await newestDoneCheck(db, ctx, mailboxId))?.result ?? null;
   return Object.fromEntries(movingCategories.map((category) => [category, result?.[category] ?? null])) as Record<
     MovingCategory,
     HistoryCategoryResult | null

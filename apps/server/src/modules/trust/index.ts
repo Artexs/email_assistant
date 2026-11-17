@@ -35,6 +35,7 @@ export {
   type ClaimedCheck,
   type ClaimResult,
 } from "./history-queue";
+export { createTripwireJob, runTripwire, type TripwireDeps } from "./tripwire";
 export { queueHistoryCheckOnConnect } from "./connect-hook";
 export { queueHistoryCheckByOperator, type OperatorQueueResult } from "./operator";
 export {
@@ -54,6 +55,7 @@ export {
   historyResultSchema,
   insertTrip,
   latestHistoryCheck,
+  newestDoneCheck,
   noResultReasonSchema,
   OPEN_CHECK_STATUSES,
   queueHistoryCheck,
