@@ -109,6 +109,15 @@ export {
   type EmailHeadersRow,
 } from "./headers";
 export {
+  countAnswered,
+  getStoredEmail,
+  listAnsweredOrFlagged,
+  listFromAddresses,
+  listHistoryCandidates,
+  type HistoryCandidate,
+  type StoredEmail,
+} from "./history";
+export {
   countInboxMailWithoutFreshFlags,
   getEmailFlags,
   listFlagTargets,

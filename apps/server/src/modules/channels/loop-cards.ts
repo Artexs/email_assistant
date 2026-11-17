@@ -5,7 +5,7 @@ import type { DB, TenantContext } from "../../platform/db";
 import { getOrganization } from "../tenancy";
 
 import { queueNotice } from "./notice-queue";
-import { OUTBOX_REMOVED_TEXT } from "./repo";
+import { OUTBOX_REMOVED_TEXT, releaseMarksOfUndeliveredDigests } from "./repo";
 
 // "Track my sent mail" went off: the cards of the follow-ups of the mailbox (`outbox.loop_id` names a loop of it) hold the
 // Sent mail in their `view` (recipients, subject, quote) and `text` (what the chat shows). Both go, as retention clears
@@ -63,6 +63,17 @@ async function clearDigestsNamingLoops(
       and jsonb_typeof(outbox.view->'loopIds') = 'array'
       and jsonb_exists(outbox.view->'loopIds', open_loops.id::text)
   )`;
+  // A digest that no sender delivered ends here: the marks of its loops that are NOT being cleared go back first, while its view
+  // still names them (review 19 N1). The loops of this mailbox are being cleared: their marks do not matter any more.
+  const clearing = (
+    await trx
+      .selectFrom("open_loops")
+      .select("id")
+      .where("org_id", "=", ctx.orgId)
+      .where("mailbox_id", "=", input.mailboxId)
+      .execute()
+  ).map((row) => row.id);
+  await releaseMarksOfUndeliveredDigests(trx, ctx, { named: clearing, except: clearing });
   const waiting = await trx
     .updateTable("outbox")
     .set({

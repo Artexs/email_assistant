@@ -151,6 +151,49 @@ export async function latestTriageResult(
   return { ...row, category: categorySchema.parse(row.category) };
 }
 
+/** The newest `triage_results` row of each mail with the fields that the history check reuses (F110): the key of the run and the VIP mark. */
+export interface StoredResultRow {
+  emailId: string;
+  category: Category;
+  confidence: number;
+  reasonCode: string;
+  model: string | null;
+  promptVersion: string | null;
+  vip: boolean;
+}
+
+export async function listNewestResultsOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, StoredResultRow>> {
+  const out = new Map<string, StoredResultRow>();
+  for (let i = 0; i < emailIds.length; i += 500) {
+    const rows = await db
+      .selectFrom("triage_results")
+      .distinctOn("email_id")
+      .select(["email_id", "category", "confidence", "reason_code", "model", "prompt_version", "vip"])
+      .where("org_id", "=", ctx.orgId)
+      .where("email_id", "in", emailIds.slice(i, i + 500))
+      .orderBy("email_id")
+      .orderBy("created_at", "desc")
+      .orderBy("id", "desc")
+      .execute();
+    for (const row of rows) {
+      out.set(row.email_id, {
+        emailId: row.email_id,
+        category: categorySchema.parse(row.category),
+        confidence: row.confidence,
+        reasonCode: row.reason_code,
+        model: row.model,
+        promptVersion: row.prompt_version,
+        vip: row.vip,
+      });
+    }
+  }
+  return out;
+}
+
 // The latest result per email (created_at desc, id desc, as `listLabeledResults`), in chunks of 500 ids.
 export async function listLatestTriageByEmailIds(
   db: DbOrTrx,

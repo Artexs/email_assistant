@@ -79,6 +79,7 @@ export const noticeRenderers = {
             ...(view.attachments === undefined ? {} : { attachments: view.attachments }),
             confidence: view.confidence,
             rule: view.rule,
+            ...(view.delegable === true ? { delegable: true } : {}),
             now: view.now,
             timeZone: view.timeZone,
           },

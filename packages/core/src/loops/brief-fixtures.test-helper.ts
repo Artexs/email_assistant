@@ -28,6 +28,8 @@ export const loop = (n: number, over: Partial<BriefLoop> = {}): BriefLoop => ({
   dueAt: new Date("2026-11-13T09:00:00Z"),
   sinceAt: new Date("2026-11-10T09:00:00Z"),
   autoReplyOnly: false,
+  laterCount: 0,
+  canDraft: true,
   followUp: null,
   ...over,
 });

@@ -6,9 +6,11 @@ import type { SeedMessage } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { insertCredentials, updateCursor } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
+import { createLlmPause } from "../../src/modules/triage";
 import { createHistoryJob, type HistoryJobDeps } from "../../src/modules/trust";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { Db, TenantContext } from "../../src/platform/db";
+import type { LlmClient } from "../../src/platform/llm";
 
 import { createOrgWithMailbox } from "./fixtures";
 
@@ -111,6 +113,13 @@ export async function withHistoryBox(
   }
 }
 
+/** A model client that must not be called: the tests of the backfill and the flags steps make no model call. */
+export const noLlm: LlmClient = {
+  modelOf: () => RUNNING_KEY.model,
+  endpointOf: () => "standard",
+  generate: () => Promise.reject(new Error("the model must not be called")),
+};
+
 /** The job over a box: the opener hands out the fake server and counts the opens. */
 export function jobOf(conn: Db, box: HistoryBox, over: Partial<HistoryJobDeps> = {}) {
   return createHistoryJob({
@@ -122,6 +131,11 @@ export function jobOf(conn: Db, box: HistoryBox, over: Partial<HistoryJobDeps> =
     },
     isOwnActionId: async () => false,
     runningKey: RUNNING_KEY,
+    gateIndex: { files: [] },
+    llm: noLlm,
+    pause: createLlmPause(),
+    scope: { kind: "all" },
+    testMail: { senders: [] },
     now: () => box.clock.now,
     ...over,
   });

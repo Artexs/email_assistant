@@ -98,6 +98,7 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
         testMail: deps.testMail,
         operatorContact: deps.operatorContact,
         syncEveryMin: deps.syncEveryMin,
+        ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
       }),
     },
     { botInfo: deps.botInfo, apiRoot: deps.apiRoot }

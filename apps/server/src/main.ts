@@ -224,7 +224,7 @@ if (scope !== null) {
     triageRun = triage.run();
     return triageRun;
   });
-  // The history check of the trust ladder (F110): it reads mail and writes the checks; it makes no model call in this job step.
+  // The history check of the trust ladder (F110): it reads mail, classifies a sample with the model client and the pause of the triage worker, and writes the checks.
   const history = createHistoryJob({
     db,
     secrets,
@@ -232,6 +232,13 @@ if (scope !== null) {
     oauthTokens: mailOAuth.tokens,
     isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
     runningKey: gate.runningKey,
+    gateIndex: gate.index,
+    llm,
+    pause,
+    scope,
+    testMail: testMailRule(config),
+    trustedAuthservIds: mailTrustedAuthservIds(config),
+    ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
     now: () => new Date(),
   });
   scheduler.add("trust.history", "*/15 * * * * *", () => {

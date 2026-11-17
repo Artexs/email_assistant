@@ -16,6 +16,9 @@ export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";
 export type { LabelInput } from "./label-input";
 export { classifyEmail, EMPTY_EXTRAS, escalateEmail } from "./classifier";
+export { classifyStored, wouldMoveOf } from "./classify-stored";
+export type { ClassifyStoredDeps, StoredCall, StoredClassification } from "./classify-stored";
+export { loadTriageMailbox } from "./mailbox-snapshot";
 export type { ClassifierEmail, ClassifierExtras, SenderContext } from "./classifier";
 export { deadlinesInWindow } from "./classifier-extras";
 export { loadClassifierExtras, SENDER_HISTORY_DAYS } from "./extras-reader";
@@ -33,6 +36,7 @@ export {
   listLabeledResults,
   listLatestFeedbackByEmailIds,
   listLatestTriageByEmailIds,
+  listNewestResultsOf,
   listTriagedBetween,
   listUnlabeled,
   listUsageSince,
@@ -44,6 +48,7 @@ export type {
   LabeledResult,
   LatestFeedbackRow,
   LatestTriageResult,
+  StoredResultRow,
   MailKind,
   TriageResultInput,
   TriagedItemRow,

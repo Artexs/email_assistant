@@ -1,4 +1,4 @@
-import { dueDigestSlot, isLateSlot, localDateTime, localKey, localToInstant, parseDigestTimes } from "@ea/core";
+import { dueDigestSlot, isLateSlot, localKey, parseDigestTimes } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
@@ -24,21 +24,21 @@ export interface DigestJobDeps {
   webBaseUrl?: string;
 }
 
-// The first digest of the member's local day gets the brief (F116 stage 18, F7). "First" = no digest outbox row of the member
-// from the start of the same local day up to now that is not `failed` (a digest that never reached the chat does not count).
-// It runs in the queue transaction and takes a lock per member and day first: two transactions of one member queue one after
-// the other, so the second sees the outbox row of the first and gets the count line. Exported for its race test.
+// The first digest of the member's day gets the brief (F116 stage 19 rule, review 18 N5; stage 18 F7). The day is the date of the SLOT
+// (`slotDate`, the local date of the slot key), not the time at which the job runs: a 20:00 slot that runs at 01:00 is still a slot of its
+// own day, and a day with a missing midnight or 25 hours needs no clock arithmetic. "First" = no digest outbox row of the member for a slot
+// of the same date that is not `failed` (a digest that never reached the chat does not count; its marks went back, `releaseBriefMarks`).
+// It runs in the queue transaction and takes a lock per member and day first: two transactions of one member queue one after the other,
+// so the second sees the outbox row of the first and gets the count line. Exported for its race test.
 export async function isFirstDigestOfDay(
   trx: Transaction<DB>,
   ctx: { orgId: string },
-  input: { userId: string; timeZone: string; now: Date }
+  input: { userId: string; slotDate: string }
 ): Promise<boolean> {
-  const { userId, timeZone, now } = input;
-  const day = localDateTime(now, timeZone).date;
-  await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`digest_day:${ctx.orgId}:${userId}:${day}`}, 0))`.execute(
+  const { userId, slotDate } = input;
+  await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`digest_day:${ctx.orgId}:${userId}:${slotDate}`}, 0))`.execute(
     trx
   );
-  const dayStart = localToInstant(day, "00:00", timeZone);
   const earlier = await trx
     .selectFrom("outbox")
     .select("id")
@@ -46,8 +46,7 @@ export async function isFirstDigestOfDay(
     .where("user_id", "=", userId)
     .where("kind", "=", "digest")
     .where("status", "<>", "failed")
-    .where("created_at", ">=", dayStart)
-    .where("created_at", "<=", now)
+    .where(sql<boolean>`starts_with(dedup_key, ${`digest:${slotDate}T`})`)
     .limit(1)
     .executeTakeFirst();
   return earlier === undefined;
@@ -115,7 +114,7 @@ export async function queueDigest(
     // `loopConsentOf` is the only way to the consent version (consent-gate.test.ts).
     let loops: DigestLoops | undefined;
     if (await isFeatureOn(trx, ctx, "open_loops")) {
-      const firstOfDay = await isFirstDigestOfDay(trx, ctx, { userId, timeZone, now });
+      const firstOfDay = await isFirstDigestOfDay(trx, ctx, { userId, slotDate: slot.date });
       const loopConsent = (await loopConsentOf(trx, ctx, [userId])).has(userId);
       loops = { firstOfDay, loopConsent, ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }) };
     }
@@ -131,13 +130,20 @@ export async function queueDigest(
     });
     const { message, shown } = built;
     const loopIds = [...shown.surfaced, ...shown.stale];
+    // The line of each loop (and delegation) that a brief line names: the taps on its buttons edit that line (stage 19).
+    const hasLines = Object.keys(shown.lineOf).length > 0;
     const outboxId = await queueNotice(trx, ctx, {
       userId,
       locale: link.locale,
       kind: "digest",
       dedupKey: `digest:${slot.key}`,
       digestId,
-      view: { text: message.text, buttons: message.buttons, ...(loopIds.length === 0 ? {} : { loopIds }) },
+      view: {
+        text: message.text,
+        buttons: message.buttons,
+        ...(loopIds.length === 0 ? {} : { loopIds }),
+        ...(hasLines ? { lineOf: shown.lineOf } : {}),
+      },
       now,
     });
     // The rollback keeps a digest row from staying without its message, also when the view does not render.
