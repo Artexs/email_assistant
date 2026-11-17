@@ -25,7 +25,7 @@ import {
 } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
-import { createHistoryJob, regateAll, type RegateDeps } from "./modules/trust";
+import { createHistoryJob, createTripwireJob, regateAll, type RegateDeps } from "./modules/trust";
 import {
   ConfigError,
   featuresOff,
@@ -202,6 +202,7 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 let triageRun: Promise<void> = Promise.resolve();
 let loopsAnalyzeRun: Promise<void> = Promise.resolve();
 let historyRun: Promise<void> = Promise.resolve();
+let tripwireRun: Promise<void> = Promise.resolve();
 let loopsMatchRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
@@ -285,6 +286,20 @@ if (scope !== null) {
   });
   log.info("job_scheduled", { job: "loops.analyze" });
 }
+// The tripwire of the trust ladder (F110): a category whose moves the user corrects loses its `auto`. It reads corrections and checks, not
+// mail, and calls no model, so it runs with the scope off too.
+const tripwire = createTripwireJob({
+  db,
+  settings: settingsDeps(db, () => new Date(), gate),
+  testMail: testMailRule(config),
+  ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
+  now: () => new Date(),
+});
+scheduler.add("trust.tripwire", "0 * * * * *", () => {
+  tripwireRun = tripwire.run();
+  return tripwireRun;
+});
+log.info("job_scheduled", { job: "trust.tripwire" });
 // The close rules need no model: they run with the scope off too, so a reply still closes its loop.
 const loopMatch = createLoopMatchJob({ db, now: () => new Date() });
 scheduler.add("loops.match", "50 */2 * * * *", () => {
@@ -430,6 +445,7 @@ async function shutdown(): Promise<void> {
       loopsAnalyzeRun,
       historyRun,
       regateRun,
+      tripwireRun,
       loopsMatchRun,
       committerRun,
       returnedRun,

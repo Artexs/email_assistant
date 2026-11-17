@@ -447,6 +447,16 @@ describe("regateAll", () => {
     expect(done[0]).toMatchObject({ level: "info", stamped: 1, regranted: 1, paused: 1, run: "start" });
   });
 
+  test("a category that is not a moving one (urgent) is paused with a trip and no notice", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await setup(trx, { urgent: on(KEY_A) });
+      expect(await regateAll(depsOf(trx, gateOf(KEY_B)), NOW)).toMatchObject({ paused: 1 });
+      expect((await policyOf(trx, box.mailboxId)).urgent?.auto).toBe(false);
+      expect((await tripsOf(trx, box.mailboxId)).map((trip) => trip.category)).toEqual(["urgent"]);
+      expect(await noticesOf(trx, box.orgId)).toHaveLength(0);
+    });
+  });
+
   test("7: a suspended organization is untouched", async () => {
     await withRollback(db, async (trx) => {
       const box = await setup(trx, { notification: on(KEY_A), info: on(null) });
@@ -860,6 +870,9 @@ describe("the start run", () => {
     expect(start).toBeLessThan(main.indexOf('scheduler.add("triage.worker"'));
     expect(start).toBeLessThan(main.indexOf('scheduler.add("actions.committer"'));
     expect(main).toContain('scheduler.add("trust.regate", "20 */5 * * * *"');
+    // The tripwire job is registered with the other jobs, and shutdown waits for both trust jobs.
+    expect(main).toContain('scheduler.add("trust.tripwire"');
+    expect(main).toMatch(/Promise\.allSettled\(\[[^\]]*\bregateRun,[^\]]*\btripwireRun,/);
   });
 
   test("a failure of the whole start run stops the server before the workers start", () => {

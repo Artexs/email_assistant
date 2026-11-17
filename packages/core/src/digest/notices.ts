@@ -1,7 +1,6 @@
 import type { SendLimitKind } from "../send-limits";
 import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
-import type { BarCategory } from "../triage/metrics";
 import type { SenderRuleKind } from "../triage/rules";
 import { suspiciousReasons, type SuspiciousReason } from "../triage/suspicious";
 import type { MovingCategory, TripReason } from "../trust";
@@ -209,7 +208,7 @@ export function renderTrustReportReadyNotice(
 
 // A category lost its `auto` (F110 D15): the category, a fixed reason phrase and the settings link. No mail data.
 export function renderAutonomyPausedNotice(
-  input: { category: BarCategory; reason: TripReason; corrections: number; settingsUrl: string | null },
+  input: { category: MovingCategory; reason: TripReason; corrections: number; settingsUrl: string | null },
   texts: CoreTexts
 ): OutMessage {
   const paused = texts.notices.autonomyPaused;

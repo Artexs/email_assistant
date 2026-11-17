@@ -5,6 +5,7 @@
 import {
   autoFor,
   barCategories,
+  movingCategories,
   parseCategoryPolicy,
   sameKey,
   type BarCategory,
@@ -191,6 +192,9 @@ async function pauseCategory(
         counts: {},
       });
       if (tripId === null) return;
+      // The notice text is about automatic moves: only the moving categories have one. `urgent` and `needs_reply` are paused with a trip, no notice.
+      const category = movingCategories.find((moving) => moving === decision.category);
+      if (category === undefined) return;
       await queueTrustNotice(inner, ctx, {
         kind: "autonomy_paused",
         mailboxId,
@@ -198,7 +202,7 @@ async function pauseCategory(
         now,
         view: {
           mailboxId,
-          category: decision.category,
+          category,
           reason: decision.reason,
           corrections: 0,
           settingsUrl: trustSettingsUrlOf(deps.webBaseUrl),
