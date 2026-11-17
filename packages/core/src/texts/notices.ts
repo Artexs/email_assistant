@@ -51,6 +51,9 @@ export interface NoticeTexts {
   };
   // The one line for an owner whose consent does not cover open-loop data (replaces a follow-up card or result).
   loopConsent: { approval: string; result: string };
+  // Reply drafts (F115 stage 03): one fixed line per kind, no button. A count and a clock only: no mail text. The
+  // Telegram review stages replace these lines and keep the kind names.
+  replyDrafts: { ready: (count: number, clock: string) => string; prompt: string; result: string };
   // F110 stage 10 (D15): counts, category names and fixed phrases only. `link` is a text line, not a button.
   trustReady: {
     first: (checked: number) => string;
@@ -112,6 +115,13 @@ const PL_WAITING = {
   few: (count: number) => `${count} wiadomości czekają`,
   many: (count: number) => `${count} wiadomości czeka`,
   other: (count: number) => `${count} wiadomości czeka`,
+} as const;
+
+const PL_REPLIES_READY = {
+  one: (count: number) => `Gotowy jest ${count} szkic odpowiedzi`,
+  few: (count: number) => `Gotowe są ${count} szkice odpowiedzi`,
+  many: (count: number) => `Gotowych jest ${count} szkiców odpowiedzi`,
+  other: (count: number) => `Gotowych jest ${count} szkiców odpowiedzi`,
 } as const;
 
 const PL_NOTICES = { one: "powiadomienie", few: "powiadomienia", many: "powiadomień", other: "powiadomień" } as const;
@@ -212,6 +222,11 @@ export const noticeTexts = {
     loopConsent: {
       approval: "A follow-up waits for your approval in the panel.",
       result: "A follow-up has a new result in the panel.",
+    },
+    replyDrafts: {
+      ready: (count, clock) => `✍️ ${count} reply ${count === 1 ? "draft is" : "drafts are"} ready (${clock}).`,
+      prompt: "✍️ A reply draft needs your instruction. Answer this message with the points to cover.",
+      result: "✍️ A reply draft has a new result. Check it in the panel.",
     },
     trustReady: {
       first: (checked) =>
@@ -368,6 +383,11 @@ export const noticeTexts = {
     loopConsent: {
       approval: "Przypomnienie o odpowiedzi czeka na Twoje zatwierdzenie w panelu.",
       result: "Przypomnienie o odpowiedzi ma nowy status. Sprawdź go w panelu.",
+    },
+    replyDrafts: {
+      ready: (count, clock) => `✍️ ${PL_REPLIES_READY[pluralCategory("pl", count)](count)} (${clock}).`,
+      prompt: "✍️ Szkic odpowiedzi czeka na Twoją wskazówkę. Odpowiedz na tę wiadomość i napisz, o czym ma być.",
+      result: "✍️ Szkic odpowiedzi ma nowy status. Sprawdź go w panelu.",
     },
     trustReady: {
       first: (checked) => `📋 Sprawdzanie poczty z ostatnich 30 dni zakończone. Przejrzane wiadomości: ${checked}.`,

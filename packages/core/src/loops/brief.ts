@@ -274,8 +274,13 @@ export function renderBrief(sections: BriefSections, texts: CoreTexts, opts: Bri
 // The keyboard rows of the brief, one row per line that names a loop or a delegation, in the order of the text (F116 stage 19).
 // `consent` is `loopConsentOf` of the user: false gives no row at all, whatever the sections hold (D17; review 17 N5).
 // Waiting and delegated lines: Draft follow-up (only when `canDraft`), Later (not after the third), Done. Promised: Done, Drop.
-// A delegation: Done (`dd:`). A ⌛ line: Reopen.
-export function briefKeyboard(sections: BriefSections, texts: CoreTexts, opts: { consent: boolean }): OutButton[][] {
+// A delegation: Done (`dd:`). A ⌛ line: Reopen. Draft, Drop and Reopen are owner only (the web routes say the same): `owner` false
+// leaves them out, so a member never sees a button that answers "only an owner can do this". A ⌛ line has Reopen alone: no row.
+export function briefKeyboard(
+  sections: BriefSections,
+  texts: CoreTexts,
+  opts: { consent: boolean; owner: boolean }
+): OutButton[][] {
   if (!opts.consent) return [];
   const b = texts.loopTaps.buttons;
   const button = (text: string, callback: Parameters<typeof encodeCallback>[0]): OutButton => ({
@@ -287,7 +292,7 @@ export function briefKeyboard(sections: BriefSections, texts: CoreTexts, opts: {
     for (const line of sections[key].lines) {
       if ("mail" in line) continue;
       if ("stale" in line) {
-        rows.push([button(b.reopen, { kind: "loop_reopen", loopId: line.stale.id })]);
+        if (opts.owner) rows.push([button(b.reopen, { kind: "loop_reopen", loopId: line.stale.id })]);
       } else if ("delegation" in line) {
         if (line.delegation.closable) {
           rows.push([button(b.done, { kind: "delegation_done", delegationId: line.delegation.id })]);
@@ -295,12 +300,12 @@ export function briefKeyboard(sections: BriefSections, texts: CoreTexts, opts: {
       } else if (line.section === "promised") {
         rows.push([
           button(b.done, { kind: "loop_done", loopId: line.loop.id }),
-          button(b.drop, { kind: "loop_drop", loopId: line.loop.id }),
+          ...(opts.owner ? [button(b.drop, { kind: "loop_drop", loopId: line.loop.id })] : []),
         ]);
       } else {
         const { loop } = line;
         rows.push([
-          ...(loop.canDraft ? [button(b.draft, { kind: "loop_follow_up", loopId: loop.id })] : []),
+          ...(loop.canDraft && opts.owner ? [button(b.draft, { kind: "loop_follow_up", loopId: loop.id })] : []),
           ...(loop.laterCount < MAX_LATER_TAPS ? [button(b.later, { kind: "loop_later", loopId: loop.id })] : []),
           button(b.done, { kind: "loop_done", loopId: loop.id }),
         ]);

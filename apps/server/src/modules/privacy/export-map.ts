@@ -229,6 +229,16 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "created_at",
     "updated_at"
   ),
+  // The name, signature and writing style that the user set for a mailbox (the key is the mailbox id, as `mailbox_settings`).
+  mailbox_profiles: byOrgExcluding(
+    { updated_by: "an internal id" },
+    "mailbox_id",
+    "org_id",
+    "display_name",
+    "signature",
+    "writing_style",
+    "updated_at"
+  ),
   mailbox_settings: byOrg(
     "mailbox_id",
     "org_id",
@@ -353,6 +363,31 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "locale",
     "detail",
     "edit_of_outbox_id"
+  ),
+  // A reply request: what the user asked for (the instruction), the sample text and the state a person understands. The
+  // ids, the thread key, the folder and the counters of the drafter job stay out.
+  reply_requests: byOrgExcluding(
+    {
+      id: "an internal id",
+      mailbox_id: "an internal id",
+      email_id: "an internal id",
+      thread_key: "a Message-ID used for matching",
+      folder: "internal: the folder of the mail at request time",
+      requested_by: "an internal id",
+      previous_send_id: "an internal id",
+      send_action_id: "an internal id",
+      attempts: "internal state of the drafter job",
+      next_attempt_at: "internal state of the drafter job",
+      locked_at: "internal state of the drafter job",
+      updated_at: "internal state",
+    },
+    "org_id",
+    "trigger",
+    "status",
+    "reason_code",
+    "instruction",
+    "sample_body",
+    "created_at"
   ),
   schema_migrations: { export: false, reason: "the migration ledger, not data of the organization" },
   sender_rules: byOrg("id", "org_id", "mailbox_id", "pattern", "kind", "created_at"),

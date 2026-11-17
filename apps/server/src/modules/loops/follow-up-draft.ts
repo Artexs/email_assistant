@@ -39,7 +39,7 @@ export type DraftFollowUpResult =
 // A follow-up send in these states is "waiting": it still can go out. A `rejected`, `expired` or `failed` one is closed:
 // a new one may be drafted. (A `failed` send with an unknown outcome may have gone out; the user sees a new card and
 // decides.)
-const WAITING_STATUSES = ["awaiting_approval", "approved", "applying"];
+export const WAITING_STATUSES = ["awaiting_approval", "approved", "applying"];
 const FOLLOW_UP_LIMIT = 2;
 const SUBJECT_MAX = 300;
 

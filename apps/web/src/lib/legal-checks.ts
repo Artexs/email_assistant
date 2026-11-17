@@ -39,6 +39,11 @@ export function headingCount(markdown: string): number {
   return (markdown.match(/^## /gm) ?? []).length;
 }
 
+// The text of each `##` heading, in order.
+export function headingTitles(markdown: string): string[] {
+  return [...markdown.matchAll(/^## (.+)$/gm)].map((match) => match[1] as string);
+}
+
 // The Markdown files under `src/legal` that are not one of the six pages.
 export function strayLegalFiles(): string[] {
   const expected = new Set(legalLangs.flatMap((lang) => legalDocs.map((doc) => `${lang}/${doc}.md`)));

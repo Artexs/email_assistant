@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
 import { MESSAGE_MAX_CHARS } from "../digest/message";
-import { barCategories } from "../triage/metrics";
 import { movingCategories, tripReasons } from "../trust";
 
 import { encodeNoticeView, NoticeViewError } from "./encode";
@@ -115,7 +114,7 @@ describe("autonomy_paused", () => {
 
   test("every reason, category and locale fits one message with no undefined (T1)", () => {
     for (const reason of tripReasons) {
-      for (const category of barCategories) {
+      for (const category of movingCategories) {
         for (const locale of locales) {
           const text = textOf("autonomy_paused", paused(reason, { category }), locale);
           expect(text.length).toBeGreaterThan(0);
@@ -155,6 +154,10 @@ describe("autonomy_paused", () => {
     expect(noticeViewSchemas.autonomy_paused.safeParse(paused("corrections", { category: "delegation" })).success).toBe(
       false
     );
+    // Trips count `move` actions: only the moving categories can be paused (a text "Automatic moves for Urgent" would be wrong).
+    for (const category of ["urgent", "needs_reply", "unsure", "delegation"]) {
+      expect(noticeViewSchemas.autonomy_paused.safeParse(paused("corrections", { category })).success).toBe(false);
+    }
     expect(renderNotice("autonomy_paused", paused("corrections", { sender: "a@b.test" }), opts("pl"))).toEqual({
       ok: false,
     });
@@ -201,8 +204,8 @@ describe("pinned texts", () => {
   });
 
   test("the Polish category name is quoted", () => {
-    expect(textOf("autonomy_paused", paused("history_fail", { category: "needs_reply" }), "pl")).toContain(
-      "z kategorii „Odpowiedz” zostało"
+    expect(textOf("autonomy_paused", paused("history_fail", { category: "notification" }), "pl")).toContain(
+      "z kategorii „Powiadomienie” zostało"
     );
   });
 

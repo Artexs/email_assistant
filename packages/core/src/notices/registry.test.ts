@@ -15,6 +15,9 @@ import {
   renderAutonomyPausedNotice,
   renderHostBlockedNotice,
   renderLoopConsentNotice,
+  renderRepliesReadyNotice,
+  renderReplyPromptNotice,
+  renderReplyResultNotice,
   renderNotTriagedNotice,
   renderSendHeldNotice,
   renderSentMissingNotice,
@@ -288,6 +291,17 @@ const cases: Case[] = [
     kind: "loop_consent",
     view: { about: "approval" },
     direct: (texts) => renderLoopConsentNotice({ about: "approval" }, texts),
+  },
+  {
+    kind: "replies_ready",
+    view: { count: 3, now, timeZone },
+    direct: (texts) => renderRepliesReadyNotice({ count: 3, now, timeZone }, texts),
+  },
+  { kind: "reply_prompt", view: { emailId: id1 }, direct: (texts) => renderReplyPromptNotice(texts) },
+  {
+    kind: "reply_result",
+    view: { emailId: id1, reason: "answered" },
+    direct: (texts) => renderReplyResultNotice(texts),
   },
   {
     kind: "trust_report_ready",

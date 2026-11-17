@@ -289,6 +289,7 @@ describe("history purpose: backfillInbox", () => {
         slot: { date: "2026-11-03", time: "13:00", late: false },
         now: NOW,
         locale: "en",
+        role: "owner",
         testMail: NO_TEST_SENDERS,
       });
       expect(message.text).not.toContain("Not processed");

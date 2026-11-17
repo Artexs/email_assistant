@@ -43,6 +43,7 @@ const request = {
   slot: null,
   now: T,
   locale: "en" as const,
+  role: "owner" as const,
   testMail: NO_TEST_SENDERS,
 };
 const BASE = "https://panel.test";

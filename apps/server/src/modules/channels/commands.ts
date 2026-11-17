@@ -219,6 +219,7 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
     slot: null,
     now,
     locale: link.locale,
+    role: link.role,
     testMail: deps.testMail,
     ...(deps.webBaseUrl === undefined ? {} : { panelBase: deps.webBaseUrl }),
   });

@@ -106,6 +106,25 @@ describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
   });
 });
 
+describe("the tripwire job is wired in main.ts", () => {
+  const main = read("main.ts");
+
+  test("it is scheduled every minute, once, and outside the block of the triage scope (it calls no model)", () => {
+    const start = main.indexOf("if (scope !== null) {");
+    const end = main.indexOf("\n}\n", start);
+    expect(main.slice(start, end)).not.toContain("trust.tripwire");
+    expect(main).toContain('scheduler.add("trust.tripwire", "0 * * * * *"');
+    expect(main.split('scheduler.add("trust.tripwire"')).toHaveLength(2);
+  });
+
+  test("it gets the settings deps with the gate evidence of the running classifier, and the shutdown waits for its run", () => {
+    expect(callOf(main, "createTripwireJob")).toContain("settingsDeps(db, () => new Date(), gate)");
+    const start = main.indexOf("Promise.allSettled([");
+    expect(main.slice(start, main.indexOf("])", start))).toContain("tripwireRun");
+    expect(main).toContain("tripwireRun = tripwire.run();");
+  });
+});
+
 describe("the token store is wired into every composition root", () => {
   const main = read("main.ts");
 

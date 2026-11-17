@@ -7,6 +7,7 @@ import {
   isOwnMailOf,
   mailOAuthRuntime,
   sendScope,
+  settingsDeps,
   uidplusOf,
 } from "./composition";
 import { createCommitterJob, createExpiryJob, sentOriginOf } from "./modules/actions";
@@ -30,7 +31,7 @@ import {
 } from "./modules/operator";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
-import { createHistoryJob } from "./modules/trust";
+import { createHistoryJob, createTripwireJob, regateAll, type RegateDeps } from "./modules/trust";
 import {
   ConfigError,
   featuresOff,
@@ -207,6 +208,7 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 let triageRun: Promise<void> = Promise.resolve();
 let loopsAnalyzeRun: Promise<void> = Promise.resolve();
 let historyRun: Promise<void> = Promise.resolve();
+let tripwireRun: Promise<void> = Promise.resolve();
 let loopsMatchRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
@@ -215,6 +217,29 @@ const classifierRow = llmTable.roles.classifier;
 // The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
 const gate = gateEvidenceOf(config, { table: llmTable });
 const scope = triageScope(config, classifierRow.provider);
+// The re-gate of `auto` (ADR 0028, rule 16 of the product rules): it runs once here, before the triage worker and the committer exist, so a `ready` move that
+// was planned under the old model meets the new policy. A failure of the whole run (the database) stops the start: the container restarts.
+// A mailbox that fails alone is logged and left to the job below. It always runs: the global evidence belongs to the model, not to a flag.
+const regateDeps: Omit<RegateDeps, "run"> = {
+  db,
+  gate,
+  testMail: testMailRule(config),
+  settingsOf: (trx) => settingsDeps(trx, () => new Date(), gate),
+  ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
+};
+try {
+  await regateAll({ ...regateDeps, run: "start" }, new Date());
+} catch (error) {
+  log.error("trust_regate_failed", { ...errorFields(error) });
+  await db.destroy().catch(() => undefined);
+  process.exit(1);
+}
+let regateRun: Promise<void> = Promise.resolve();
+scheduler.add("trust.regate", "20 */5 * * * *", () => {
+  regateRun = regateAll({ ...regateDeps, run: "job" }, new Date()).then(() => undefined);
+  return regateRun;
+});
+log.info("job_scheduled", { job: "trust.regate" });
 if (scope !== null) {
   log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
   const llm = createLlmClient({ table: llmTable });
@@ -267,6 +292,20 @@ if (scope !== null) {
   });
   log.info("job_scheduled", { job: "loops.analyze" });
 }
+// The tripwire of the trust ladder (F110): a category whose moves the user corrects loses its `auto`. It reads corrections and checks, not
+// mail, and calls no model, so it runs with the scope off too.
+const tripwire = createTripwireJob({
+  db,
+  settings: settingsDeps(db, () => new Date(), gate),
+  testMail: testMailRule(config),
+  ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
+  now: () => new Date(),
+});
+scheduler.add("trust.tripwire", "0 * * * * *", () => {
+  tripwireRun = tripwire.run();
+  return tripwireRun;
+});
+log.info("job_scheduled", { job: "trust.tripwire" });
 // The close rules need no model: they run with the scope off too, so a reply still closes its loop.
 const loopMatch = createLoopMatchJob({ db, now: () => new Date() });
 scheduler.add("loops.match", "50 */2 * * * *", () => {
@@ -432,6 +471,8 @@ async function shutdown(): Promise<void> {
       triageRun,
       loopsAnalyzeRun,
       historyRun,
+      regateRun,
+      tripwireRun,
       loopsMatchRun,
       committerRun,
       returnedRun,

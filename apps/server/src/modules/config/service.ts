@@ -4,6 +4,7 @@ import {
   effectiveAutoFor,
   parseCategoryPolicy,
   parseToolSwitches,
+  sameKey,
   thresholdFor,
   type ActionType,
   type BarCategory,
@@ -64,6 +65,8 @@ export interface SettingsView {
   categoryPolicy: CategoryPolicy;
   // null: none set.
   urgencyProfile: UrgencyProfile | null;
+  // Working days before a waiting loop is due.
+  loopWaitDays: number;
   movesSupported: boolean;
 }
 
@@ -110,6 +113,9 @@ export function closedBy(
       return { types: ["flag"] };
     case "create_draft":
       return { types: [], sends: true };
+    // A follow-up that waits for a tap stays valid: the owner decides at the card.
+    case "auto_follow_up":
+      return null;
   }
 }
 
@@ -119,6 +125,7 @@ function toView(row: MailboxSettingsRow, movesSupported: boolean): SettingsView 
     toolSwitches: parseToolSwitches(row.tool_switches),
     categoryPolicy: parseCategoryPolicy(row.category_policy),
     urgencyProfile: parseUrgencyProfile(row.urgency_profile),
+    loopWaitDays: row.loop_wait_days,
     movesSupported,
   };
 }
@@ -313,6 +320,58 @@ export async function setCategoryAuto(
   });
 }
 
+// The re-gate (ADR 0028) writes a grant without changing `auto`: `legacy` stamps the running key on `auto` that was on before the
+// ladder (one audit row for all the categories of the mailbox), `regate` moves a grant to the running key (one row per call, with the
+// old key). A category that is not `auto` is skipped. The row moves `updated_at`, so a triage batch that read the old settings writes
+// nothing. Ready moves stay: `auto` stays on, and the old key had evidence when the grant was made. A pause expires them through `setCategoryAuto`.
+export async function setCategoryGrants(
+  deps: SettingsDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  input: { categories: BarCategory[]; by: "legacy" | "regate"; from?: CategoryGrant["key"]; actor: string }
+): Promise<SettingsChange> {
+  return applyChange(deps, ctx, mailboxId, input.actor, (before) => {
+    const runningKey = deps.gate.runningKey;
+    const at = deps.now().toISOString();
+    // Only `auto` that has no grant (`legacy`) or a grant on another key (`regate`) takes the write: a second run finds nothing to do.
+    const stamped = input.categories.filter((category) => {
+      if (!autoFor(before.categoryPolicy, category)) return false;
+      const grant = before.categoryPolicy[category]?.grant;
+      return input.by === "legacy" ? grant === undefined : grant !== undefined && !sameKey(grant.key, runningKey);
+    });
+    const categoryPolicy: CategoryPolicy = { ...before.categoryPolicy };
+    for (const category of stamped) {
+      categoryPolicy[category] = { ...before.categoryPolicy[category], grant: { key: runningKey, by: input.by, at } };
+    }
+    return {
+      patch: { categoryPolicy },
+      changed: stamped.length > 0,
+      event: auditEvents.mailboxPolicyChanged,
+      data: {
+        field: "grant",
+        categories: stamped.join(","),
+        grant_by: input.by,
+        grant_provider: runningKey.provider,
+        grant_model: runningKey.model,
+        grant_effort: runningKey.reasoningEffort,
+        grant_prompt: runningKey.promptVersion,
+        grant_endpoint: runningKey.endpoint,
+        ...(input.from
+          ? {
+              from_provider: input.from.provider,
+              from_model: input.from.model,
+              from_effort: input.from.reasoningEffort,
+              from_prompt: input.from.promptVersion,
+              from_endpoint: input.from.endpoint,
+            }
+          : {}),
+      },
+      close: null,
+      warnings: [],
+    };
+  });
+}
+
 export async function setToolSwitch(
   deps: SettingsDeps,
   ctx: TenantContext,
@@ -327,6 +386,34 @@ export async function setToolSwitch(
     close: { field: "switch", name: input.name, to: input.value },
     warnings: [],
   }));
+}
+
+// The wait of the open loops: working days before a waiting loop is due. A change moves the due date of loops opened
+// later only. The write takes the settings row lock and sets `updated_at`, so a chaser run that read the old settings
+// retries (it skips once). One `settings.changed` audit row holds the numbers and `via`.
+export async function setLoopWaitDays(
+  db: SettingsDeps["db"],
+  ctx: TenantContext,
+  mailboxId: string,
+  days: number,
+  by: { userId: string; via: "web" }
+): Promise<{ changed: boolean; days: number }> {
+  return inTransaction(db, async (trx) => {
+    const row = await lockMailboxSettings(trx, ctx, mailboxId);
+    if (!row) {
+      throw new SettingsNotFoundError();
+    }
+    if (row.loop_wait_days === days) {
+      return { changed: false, days };
+    }
+    await updateMailboxSettings(trx, ctx, mailboxId, { loopWaitDays: days });
+    await recordAudit(trx, ctx, {
+      actor: by.userId,
+      event: auditEvents.settingsChanged,
+      data: { mailbox_id: mailboxId, field: "loop_wait_days", from: row.loop_wait_days, to: days, via: by.via },
+    });
+    return { changed: true, days };
+  });
 }
 
 // Who sets the profile. `web` carries the signed-in user; `cli` is the operator.

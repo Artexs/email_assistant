@@ -24,6 +24,9 @@ export const noticeKinds = [
   "loop_consent",
   "trust_report_ready",
   "autonomy_paused",
+  "replies_ready",
+  "reply_prompt",
+  "reply_result",
 ] as const;
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);

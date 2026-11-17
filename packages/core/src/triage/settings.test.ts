@@ -19,7 +19,18 @@ describe("parseToolSwitches", () => {
       flag: false,
       create_draft: false,
       move_unsure: false,
+      auto_follow_up: false,
     });
+  });
+
+  test("keeps the open-loops switch through a parse; only a JSON true is on, a bad value is off and fails nothing else", () => {
+    expect(parseToolSwitches({ auto_follow_up: true }).auto_follow_up).toBe(true);
+    for (const value of ["true", 1, "yes", null, { on: true }, [true], 0]) {
+      expect(parseToolSwitches({ move: true, auto_follow_up: value })).toMatchObject({
+        move: true,
+        auto_follow_up: false,
+      });
+    }
   });
 
   test("drops an unknown key", () => {
@@ -101,5 +112,13 @@ describe("effectiveAutoFor (ADR 0028)", () => {
   test("a stored grant of another shape is a parse error, not a match", () => {
     expect(() => parseCategoryPolicy({ info: { auto: true, grant: { by: "evidence", at: "x" } } })).toThrow();
     expect(() => parseCategoryPolicy({ info: { auto: true, grant: { ...grantOf(KEY_A), by: "nobody" } } })).toThrow();
+  });
+
+  // `at` is the `granted_at` of a trip (F110 stage 09): a text that is not an ISO instant must not reach it.
+  test("a grant whose time is not an ISO instant is a parse error", () => {
+    for (const at of ["yesterday", "2026-11-10", "2026-11-10 10:00:00", ""]) {
+      expect(() => parseCategoryPolicy({ info: { auto: true, grant: { ...grantOf(KEY_A), at } } })).toThrow();
+    }
+    expect(() => parseCategoryPolicy({ info: { auto: true, grant: grantOf(KEY_A) } })).not.toThrow();
   });
 });

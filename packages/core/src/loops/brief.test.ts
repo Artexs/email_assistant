@@ -365,7 +365,13 @@ describe("the 4096 cut (T3)", () => {
         items,
         counts: { needs_reply: items.length },
         mailboxes: boxes(count),
-        brief: { sections: loopSections(sectionsInput), loopConsent: true, urgentEmailIds: [], openLoops: null },
+        brief: {
+          sections: loopSections(sectionsInput),
+          loopConsent: true,
+          owner: true,
+          urgentEmailIds: [],
+          openLoops: null,
+        },
       }),
       en
     );
@@ -426,7 +432,13 @@ describe("the brief inside the digest", () => {
   test("the first digest: the block follows the title; the urgent mails leave the normal list; the delegation footer goes", () => {
     const { message } = renderDigestWithBrief(
       base({
-        brief: { sections, loopConsent: true, urgentEmailIds: urgent.map((row) => row.emailId), openLoops: null },
+        brief: {
+          sections,
+          loopConsent: true,
+          owner: true,
+          urgentEmailIds: urgent.map((row) => row.emailId),
+          openLoops: null,
+        },
       }),
       en
     );
@@ -449,7 +461,15 @@ describe("the brief inside the digest", () => {
     const footer = "Delegations: 1 waiting for a reply, 1 overdue";
     const loopsOnly = fullInput({ waitingDelegations: part([]) });
     const only = renderDigestWithBrief(
-      base({ brief: { sections: loopSections(loopsOnly), loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      base({
+        brief: {
+          sections: loopSections(loopsOnly),
+          loopConsent: true,
+          owner: true,
+          urgentEmailIds: [],
+          openLoops: null,
+        },
+      }),
       en
     ).message.text;
     expect(only).toContain(footer);
@@ -460,6 +480,7 @@ describe("the brief inside the digest", () => {
         brief: {
           sections: loopSections({ ...fullInput(), consent: false }),
           loopConsent: false,
+          owner: true,
           urgentEmailIds: [],
           openLoops: null,
         },
@@ -472,7 +493,7 @@ describe("the brief inside the digest", () => {
     expect(uncovered).not.toContain("Marta");
     // A ⏳ line with a delegation: the footer goes.
     const named = renderDigestWithBrief(
-      base({ brief: { sections, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      base({ brief: { sections, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null } }),
       en
     ).message.text;
     expect(named).not.toContain(footer);
@@ -481,7 +502,13 @@ describe("the brief inside the digest", () => {
   test("a later digest keeps the delegation footer and adds the count line", () => {
     const text = renderDigestWithBrief(
       base({
-        brief: { sections: null, loopConsent: true, urgentEmailIds: [], openLoops: { waiting: 3, promised: 1 } },
+        brief: {
+          sections: null,
+          loopConsent: true,
+          owner: true,
+          urgentEmailIds: [],
+          openLoops: { waiting: 3, promised: 1 },
+        },
       }),
       en
     ).message.text;
@@ -491,7 +518,13 @@ describe("the brief inside the digest", () => {
     expect(
       renderDigestWithBrief(
         base({
-          brief: { sections: null, loopConsent: true, urgentEmailIds: [], openLoops: { waiting: 0, promised: 2 } },
+          brief: {
+            sections: null,
+            loopConsent: true,
+            owner: true,
+            urgentEmailIds: [],
+            openLoops: { waiting: 0, promised: 2 },
+          },
         }),
         pl
       ).message.text
@@ -505,7 +538,15 @@ describe("the brief inside the digest", () => {
     expect(plain.shown).toEqual({ surfaced: [], stale: [], lineOf: {} });
     // An empty brief adds no header and no blank line.
     const empty = renderDigestWithBrief(
-      base({ brief: { sections: loopSections(briefInput()), loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      base({
+        brief: {
+          sections: loopSections(briefInput()),
+          loopConsent: true,
+          owner: true,
+          urgentEmailIds: [],
+          openLoops: null,
+        },
+      }),
       en
     );
     expect(empty.message.text.replace("Delegations: 1 waiting for a reply, 1 overdue\n", "")).toContain(
@@ -516,7 +557,7 @@ describe("the brief inside the digest", () => {
 
   test("the lines of the brief that stayed are named; a covered and an uncovered user differ", () => {
     const covered = renderDigestWithBrief(
-      base({ brief: { sections, loopConsent: true, urgentEmailIds: [], openLoops: null } }),
+      base({ brief: { sections, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null } }),
       en
     );
     expect(covered.shown.surfaced).toHaveLength(4);
@@ -525,6 +566,7 @@ describe("the brief inside the digest", () => {
         brief: {
           sections: loopSections({ ...fullInput(), consent: false }),
           loopConsent: false,
+          owner: true,
           urgentEmailIds: [],
           openLoops: null,
         },

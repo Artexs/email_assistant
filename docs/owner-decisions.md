@@ -555,3 +555,21 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: before, an empty check used up the single `trust_report_ready` notice, and a later real check queued none.
 - Undo: queue the notice for every first ended check, as in the worker's first version.
 - Source: job `2026-11-17-f110-review-s07-opus-llm-on-hist-d8b9cd1e`, finding N3.
+
+### 2026-11-17 · F110 re-gate: after a model switch an automatic category comes back when the evidence is eligible, not only when a history check for the new model passed (F110) · user-visible · new
+- Choice: the re-gate re-grants a category when the global evidence is eligible (plan decision D8). A missing history result or a `no_result` does not block. A stale `fail` blocks. A final global `go` alone re-grants.
+- Why: the plan says "always on, every org"; the global evidence belongs to the model. The task text said a history result for the NEW key must pass; the code and plan differ.
+- Undo: require a stored history result with the new key in `trust/regate.ts`.
+- Source: job `2026-11-17-f110-review-s08-opus-re-gate-mod-0ced40bd`, finding N3.
+
+### 2026-11-17 · F110 re-gate: moves of a mailbox whose start re-gate failed are expired at once (F110) · production · new
+- Choice: if a mailbox fails in the start run, its `ready` move and mark-as-read rows expire in their own transaction. Before, they could apply under the old key for up to 5 minutes, or 24 hours if the failure repeated.
+- Why: no move should apply under an unproven key. The committer has no policy re-check.
+- Undo: remove the expiry in the start catch.
+- Source: same job, finding N1.
+
+### 2026-11-17 · F110 re-gate: pausing a non-moving category (urgent, needs_reply) after a model switch writes a trip and no notice (F110) · user-visible · new
+- Choice: when the re-gate pauses `urgent` or `needs_reply` it records the trip and sends no `autonomy_paused` notice, because the notice type covers moving categories only (stage 09 narrowed it).
+- Why: a notice for a category that never moves mail would confuse the user.
+- Undo: widen the notice category type and queue the notice in `trust/regate.ts`.
+- Source: job `2026-11-17-f110-s08-regate-risky-automatic-c3bab87b`.

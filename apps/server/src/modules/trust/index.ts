@@ -13,6 +13,7 @@ export {
   HISTORY_SAMPLE_SIZE,
   orderSample,
 } from "./history-classify";
+export { regateAll, type RegateDeps, type RegateResult, type RegateRun } from "./regate";
 export { historyActedOn } from "./acted-on";
 export { historyResultOf } from "./history-result";
 export {
@@ -34,7 +35,9 @@ export {
   releaseCheck,
   type ClaimedCheck,
   type ClaimResult,
+  type EndedHook,
 } from "./history-queue";
+export { createTripwireJob, runTripwire, type TripwireDeps } from "./tripwire";
 export { queueHistoryCheckOnConnect } from "./connect-hook";
 export { queueHistoryCheckByOperator, type OperatorQueueResult } from "./operator";
 export {
@@ -54,6 +57,7 @@ export {
   historyResultSchema,
   insertTrip,
   latestHistoryCheck,
+  newestDoneCheck,
   noResultReasonSchema,
   OPEN_CHECK_STATUSES,
   queueHistoryCheck,

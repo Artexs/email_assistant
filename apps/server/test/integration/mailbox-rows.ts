@@ -123,6 +123,34 @@ export async function fillMailbox(
   await insertLoopRow(trx, ctx, mailboxId, { sent_email_id: sent.id });
   await insertAnalysisRow(trx, ctx, mailboxId, sent.id, { status: "pending" });
 
+  // One reply request (for the mail) and the profile of the mailbox (F115): both go with the mailbox.
+  await trx
+    .insertInto("reply_requests")
+    .values({
+      org_id: ctx.orgId,
+      mailbox_id: mailboxId,
+      email_id: triaged.emailId,
+      thread_key: `<${randomUUID()}@x.test>`,
+      folder: "INBOX",
+      trigger: "tap",
+      status: "pending",
+      instruction: "Say yes.",
+      requested_by: userId,
+      created_at: now,
+      updated_at: now,
+    })
+    .execute();
+  await trx
+    .insertInto("mailbox_profiles")
+    .values({
+      mailbox_id: mailboxId,
+      org_id: ctx.orgId,
+      display_name: "Jan",
+      signature: "Jan Kowalski",
+      updated_by: userId,
+    })
+    .execute();
+
   // One history check with one item (the item goes with the mail and with the check) and one trip (F110): all go with the mailbox.
   const checkId = await insertCheckRow(trx, ctx, mailboxId, { status: "done", finished_at: now });
   await insertCheckItemRow(trx, ctx, checkId, triaged.emailId);
@@ -165,6 +193,7 @@ export async function countMailboxRows(
       | "mailbox_folders"
       | "mailbox_sent_sync"
       | "mailbox_oauth_states"
+      | "mailbox_profiles"
   ) => {
     const column = table === "mailboxes" ? "id" : "mailbox_id";
     const row = await trx
@@ -206,7 +235,7 @@ export async function countMailboxRows(
     return Number(row.n);
   };
   const single = async (
-    table: "emails" | "delegations" | "sender_rules" | "sent_emails" | "open_loops" | "sent_analyses"
+    table: "emails" | "delegations" | "sender_rules" | "sent_emails" | "open_loops" | "sent_analyses" | "reply_requests"
   ) => {
     const row = await trx
       .selectFrom(table)
@@ -257,6 +286,8 @@ export async function countMailboxRows(
     autonomy_trips: await trust("autonomy_trips"),
     mailbox_sent_sync: await byMailbox("mailbox_sent_sync"),
     mailbox_oauth_states: await byMailbox("mailbox_oauth_states"),
+    mailbox_profiles: await byMailbox("mailbox_profiles"),
+    reply_requests: await single("reply_requests"),
     audit_log_by_email: await audit("email_id"),
     audit_log_by_action: await audit("action_id"),
     audit_log_by_mailbox: await audit("mailbox"),
