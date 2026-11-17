@@ -62,6 +62,7 @@ export {
   clearActionPayloads,
   clearLoopSentCopies,
   countActionsSince,
+  countSpamMoves,
   countClaimable,
   countFailedSendsSince,
   countHeldSends,

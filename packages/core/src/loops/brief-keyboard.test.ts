@@ -187,6 +187,42 @@ describe("the keyboard inside the digest", () => {
     expect(cut.message.buttons.flat().some((button) => button.data.endsWith(shown.stale.at(-1) as string))).toBe(false);
   });
 
+  test("lineOf and the keyboard stay right with the spam review line present and absent (F110 stage 17)", () => {
+    const sections = loopSections(fullBrief());
+    const brief = { sections, loopConsent: true, urgentEmailIds: [], openLoops: null };
+    const base = { brief, items: [digestItem(1, "info")], counts: { info: 1 } };
+    const without = renderDigestWithBrief(digestInput(base), en);
+    const spamReview = { moved: 2, wouldMove: 0, url: null };
+    const withLine = renderDigestWithBrief(digestInput({ ...base, spamReview }), en);
+    expect(withLine.message.text).toContain("🗑 2 went to spam");
+    expect(without.message.text).not.toContain("🗑");
+    expect(Object.keys(without.shown.lineOf).length).toBeGreaterThan(0);
+    expect(withLine.shown.lineOf).toEqual(without.shown.lineOf);
+    expect(withLine.message.buttons).toEqual(without.message.buttons);
+    const rendered = renderBriefLines(sections, en, { timeZone: ZONE, now: NOW });
+    for (const result of [without, withLine]) {
+      const lines = result.message.text.split("\n");
+      for (const [id, at] of Object.entries(result.shown.lineOf)) {
+        expect(lines[at]).toBe(rendered.lines[rendered.ids.indexOf(id)]);
+      }
+    }
+    // Over 4096 characters the line goes first: the digest equals the one without it, lineOf and buttons included.
+    const long = "x".repeat(400);
+    const items = Array.from({ length: 15 }, (_, i) => digestItem(i + 1, "info", { subject: long, aiText: long }));
+    const full = { brief, items, counts: { info: 15 } };
+    for (let size = 0; size < 400; size += 10) {
+      const sized = full.items.map((item) => ({ ...item, subject: "s".repeat(size), aiText: "a".repeat(size) }));
+      const plain = renderDigestWithBrief(digestInput({ ...full, items: sized }), en);
+      const spam = renderDigestWithBrief(digestInput({ ...full, items: sized, spamReview }), en);
+      if (!spam.message.text.includes("🗑") && plain.message.text.length > 3500) {
+        expect(spam.message).toEqual(plain.message);
+        expect(spam.shown).toEqual(plain.shown);
+        return;
+      }
+    }
+    throw new Error("no size dropped the spam review line");
+  });
+
   test("a loop text with a line break cannot move the line numbers: one line per loop", () => {
     const sections = loopSections(
       briefInput({

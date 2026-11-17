@@ -29,3 +29,5 @@ the small duplicates and stale statements of quality pass 1 are cleaned (finding
 ## Source
 
 Quality pass 1, `spec/quality/2026-11-15-pass-1.md`, finding(s) 9-18: read each finding there (file, line, broken rule, proposed fix). Built only when the owner restarts the work. A fix that drops or changes a user feature waits for the owner.
+
+- `apps/server/src/scripts/stats-week.ts` still writes with `process.stdout.write`, not `createCliOutput` (its bare line format is pinned by `stats-week-cli.test.ts`; found in F116 stage 23). Move it and update the test together.

@@ -149,6 +149,8 @@ export async function queueDigest(
       now,
       locale: link.locale,
       testMail,
+      // The spam review line (F110 stage 17) is part of the text: it needs the panel link, and both rows carry it.
+      ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }),
     };
     const built = await buildDigest(trx, ctx, { ...request, ...(loops === undefined ? {} : { loops }) });
     const { message, shown } = built;

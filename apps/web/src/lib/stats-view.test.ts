@@ -64,6 +64,42 @@ describe("statsRows", () => {
     expect(cellOf(rows, "stats_m7")).toBe("$0.41");
   });
 
+  test("the split rows show only with a split, one per kind, and the totals change their label", () => {
+    const tally = (due: number, closed: number, surfaced: number) => ({
+      due,
+      closedOnTime: closed,
+      surfacedOnTime: surfaced,
+      pending: 0,
+    });
+    const none = tally(0, 0, 0);
+    expect(statsRows([week()]).map((row) => row.label)).not.toContain("stats_m2_kind_waiting");
+    const split = week({
+      m2: {
+        ...tally(3, 2, 3),
+        byKind: { delegation: none, waiting: tally(3, 2, 3), promised: none, delegated: none },
+      },
+    });
+    const rows = statsRows([split, week()]);
+    const labels = rows.map((row) => row.label);
+    expect(labels).not.toContain("stats_m2_closed");
+    expect(labels.slice(labels.indexOf("stats_m2_loops_closed"), labels.indexOf("stats_m3"))).toEqual([
+      "stats_m2_loops_closed",
+      "stats_m2_loops_surfaced",
+      "stats_m2_kind_delegation",
+      "stats_m2_kind_waiting",
+      "stats_m2_kind_promised",
+      "stats_m2_kind_delegated",
+    ]);
+    expect(cellOf(rows, "stats_m2_kind_waiting")).toBe("67% (2 of 3) closed · 100% (3 of 3) surfaced");
+    expect(cellOf(rows, "stats_m2_kind_promised")).toBe("–");
+    expect(cellOf(rows, "stats_m2_kind_waiting", 1)).toBe("–");
+    for (const row of rows) expect(Object.hasOwn(en, row.label)).toBe(true);
+    setLocaleForTest("pl");
+    expect(cellOf(statsRows([split]), "stats_m2_kind_waiting")).toBe(
+      "67 % (2 z 3) zamkniętych · 100 % (3 z 3) pokazanych"
+    );
+  });
+
   test("a denominator of 0 or no value gives a dash", () => {
     const empty = week({
       m1: {
