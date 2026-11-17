@@ -259,6 +259,7 @@ export {
 } from "./tools";
 export {
   locateByActionId,
+  locateByMessageId,
   locateKeyOf,
   locateMessage,
   LOCATE_CHUNK,

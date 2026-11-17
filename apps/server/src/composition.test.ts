@@ -86,6 +86,24 @@ describe("the own-mail check is composed in every root (F110 stage 20)", () => {
   });
 });
 
+// Review N12 and N13: two sentences of the docs were wrong (the report mail is not "the only write to INBOX": the spam rescue and own sends land
+// there too; the header id is an outbox row, not an action row).
+describe("the docs say what the report mail does (F110 stage 20 review)", () => {
+  const root = join(import.meta.dir, "../../..");
+
+  test("architecture: the only APPEND into INBOX, not the only write", () => {
+    const text = readFileSync(join(root, "docs/architecture.md"), "utf8");
+    expect(text).toContain("Report mail is the only APPEND into INBOX");
+    expect(text).not.toContain("only write to INBOX");
+  });
+
+  test("ADR 0022 point 2 names an outbox row, not an action row", () => {
+    const text = readFileSync(join(root, "docs/decisions/0022-report-mail-into-own-inbox.md"), "utf8");
+    expect(text).toContain("the id of an outbox row of the channel `mail`");
+    expect(text).not.toContain("id of an action row");
+  });
+});
+
 describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
   const main = read("main.ts");
 
@@ -97,6 +115,10 @@ describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
     // Not inside `if (config.TELEGRAM_BOT_TOKEN === undefined) { ... } else { ... }`: a mail-only member needs no bot.
     const telegramBlock = main.indexOf("if (config.TELEGRAM_BOT_TOKEN === undefined) {");
     expect(main.indexOf('scheduler.add("channels.report_mail"')).toBeLessThan(telegramBlock);
+  });
+
+  test("the sender gets WEB_BASE_URL: without it the mail has no link (review TG2)", () => {
+    expect(callOf(main, "createReportMailSender")).toContain("webBaseUrl: config.WEB_BASE_URL");
   });
 
   test("the sender gets the IMAP adapter with the shared tokens and no SMTP sender", () => {

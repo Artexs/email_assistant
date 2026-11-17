@@ -11,6 +11,7 @@ import { getMemberNotify, isFeatureOn } from "../tenancy";
 import { createQuietGate } from "./quiet-gate";
 import {
   claimDueOutbox,
+  countOutboxAttempt,
   expireOldMailOutbox,
   failOutbox,
   markOutboxSent,
@@ -106,8 +107,20 @@ export function createReportMailSender(deps: ReportMailSenderDeps): { run(): Pro
       const ctx = { orgId: row.orgId };
       const outboxLog = log.with({ outbox_id: row.id });
       let appended = false;
+      // The attempts of the row, with the one that a stale reclaim counts below.
+      let attempts = row.attempts;
       try {
-        if (row.wasStale) outboxLog.warn("outbox_mail_resent_after_stale");
+        // A row that a dead run left `sending`: the APPEND may have landed. This claim counts an attempt, so a row that keeps crashing its
+        // sender ends as `too_many_errors`, and the adapter looks for the message before it appends again.
+        if (row.wasStale) {
+          outboxLog.warn("outbox_mail_resent_after_stale");
+          if (attempts + 1 >= MAX_OTHER_ERRORS) {
+            await fail(row, "too_many_errors");
+            continue;
+          }
+          await guarded(() => countOutboxAttempt(db, ctx, row.id, row.lockedAt), row.id);
+          attempts += 1;
+        }
         // A mail row names its mailbox and one of the four report kinds; a row that does not is a bad row, never a message.
         if (row.mailboxId === null || !isReportMailKind(row.kind)) {
           await fail(row, "bad_view");
@@ -173,8 +186,13 @@ export function createReportMailSender(deps: ReportMailSenderDeps): { run(): Pro
           now,
           linkBase,
         });
-        await deps.mailbox.append(ctx, mailboxId, message);
+        // A row that was tried before may have its message in the INBOX already: the adapter finds it and appends nothing.
+        const result = await deps.mailbox.append(ctx, mailboxId, message, {
+          retry: attempts > 0,
+          since: row.createdAt,
+        });
         appended = true;
+        if (result === "found") outboxLog.info("outbox_mail_found");
 
         const markSent = async (trx: Transaction<DB>): Promise<boolean> => {
           const ok = await markOutboxSent(trx, ctx, row.id, row.lockedAt, {
@@ -200,28 +218,37 @@ export function createReportMailSender(deps: ReportMailSenderDeps): { run(): Pro
               continue;
             }
             case "soft": {
-              const next = new Date(now.getTime() + backoff(row.attempts + 1));
+              const next = new Date(now.getTime() + backoff(attempts + 1));
               if (row.mailboxId !== null) heldMailboxes.set(row.mailboxId, next);
               await release(row, next, true);
               outboxLog.warn("outbox_paused", { code: error.code, wait_ms: next.getTime() - now.getTime() });
               continue;
             }
             case "refused":
+              // The other rows of this mailbox wait too: a full mailbox refuses each of them, and each try is a login.
+              if (row.mailboxId !== null) {
+                heldMailboxes.set(row.mailboxId, new Date(now.getTime() + REPORT_MAIL_WAIT_MS));
+              }
               await fail(row, "append_refused");
               outboxLog.error("outbox_refused", { code: error.code });
               continue;
-            case "other":
-              if (row.attempts + 1 >= MAX_OTHER_ERRORS) {
+            case "other": {
+              const next = new Date(now.getTime() + backoff(attempts + 1));
+              // The other rows of this mailbox wait for the same time and count no attempt: one login per mailbox per run.
+              if (row.mailboxId !== null) heldMailboxes.set(row.mailboxId, next);
+              if (attempts + 1 >= MAX_OTHER_ERRORS) {
                 await fail(row, "too_many_errors");
               } else {
-                await release(row, new Date(now.getTime() + backoff(row.attempts + 1)), true);
+                await release(row, next, true);
               }
               outboxLog.error("outbox_failed", { code: error.code });
               continue;
+            }
           }
         }
-        // A database error. After an APPEND the row stays `sending`: the next claim after 5 min appends it again (at least once).
-        if (!appended) await release(row, new Date(now.getTime() + backoff(row.attempts + 1)), true);
+        // A database error. After an APPEND the row stays `sending`: the next claim after 5 min counts an attempt and finds the message
+        // in the INBOX, so nothing is appended twice.
+        if (!appended) await release(row, new Date(now.getTime() + backoff(attempts + 1)), true);
         outboxLog.error("outbox_failed", { ...errorFields(error) });
       }
     }

@@ -243,3 +243,38 @@ test("isOwnReportMail: only a mail row of this organization and this mailbox cou
     expect(await isOwnReportMail(trx, a.ctx, a.mailboxId, telegram ?? "")).toBe(false);
   });
 });
+
+test("the APPEND landed and the mark did not: the next claim finds the message by its Message-ID and appends nothing", async () => {
+  await withRollback(db, async (trx) => {
+    const s = await setup(trx);
+    const id = await digestRow(trx, s);
+    const mailbox = createImapReportMailbox({ db: trx, secrets, openProvider: openImapProvider, now: () => s.now });
+    await createReportMailSender({ db: trx, mailbox, now: () => s.now, webBaseUrl: BASE }).run();
+    const server = await openImapProvider(s.imap);
+    try {
+      const before = await server.fetchAbove("INBOX", 0);
+      expect(before).toHaveLength(1);
+      expect(before[0]?.messageId).toBe(`<ea-report-${id}@localhost>`);
+      // A crash after the APPEND leaves the row `sending` with an old lock (the mark never landed).
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", sent_at: null, locked_at: new Date(s.now.getTime() - 10 * 60_000) })
+        .where("id", "=", id)
+        .execute();
+      const later = new Date(s.now.getTime() + 60_000);
+      await createReportMailSender({ db: trx, mailbox, now: () => later, webBaseUrl: BASE }).run();
+      const after = await server.fetchAbove("INBOX", 0);
+      expect(after.map((meta) => meta.uid)).toEqual(before.map((meta) => meta.uid));
+      // The own-mail header stays: the sync still skips the one message.
+      expect(after[0]?.actionId).toBe(id);
+    } finally {
+      await server.close();
+    }
+    const row = await trx
+      .selectFrom("outbox")
+      .select(["status", "attempts"])
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+    expect(row).toMatchObject({ status: "sent", attempts: 1 });
+  });
+});

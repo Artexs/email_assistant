@@ -503,6 +503,25 @@ export async function releaseOutbox(
   return Number(result.numUpdatedRows) === 1;
 }
 
+// A claim that took a row over from a dead run (`wasStale`) counts one attempt of that row, so a row that keeps crashing its sender ends
+// as `too_many_errors` (F110 stage 20). The token compare-and-set is the one of `releaseOutbox`.
+export async function countOutboxAttempt(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  id: string,
+  lockedAt: Date
+): Promise<boolean> {
+  const result = await db
+    .updateTable("outbox")
+    .set((eb) => ({ attempts: eb("attempts", "+", 1) }))
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", id)
+    .where("status", "=", "sending")
+    .where("locked_at", "=", lockedAt)
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows) === 1;
+}
+
 export async function failOutbox(
   db: DbOrTrx,
   ctx: TenantContext,

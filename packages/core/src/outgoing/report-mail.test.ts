@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
+import { renderAutonomyPausedNotice } from "../digest/notices";
+import { textTables } from "../texts";
+
 import {
   buildReportMail,
   escapeHtml,
@@ -107,5 +110,17 @@ describe("the HTML part", () => {
     expect(isLinkOfBase("https://app.example.testing/x", BASE)).toBe(false);
     expect(isLinkOfBase("https://app.example.test:8443/x", BASE)).toBe(false);
     expect(isLinkOfBase("https://app.example.test/x", null)).toBe(false);
+  });
+});
+
+describe("the Polish paused notice (review N14)", () => {
+  test("the mail subject and the Telegram body use the same verb: wstrzymane", () => {
+    const body = renderAutonomyPausedNotice(
+      { category: "info", reason: "corrections", corrections: 2, settingsUrl: null },
+      textTables.pl
+    ).text;
+    expect(reportMailSubject("autonomy_paused", "pl")).toContain("wstrzymane");
+    expect(body).toContain("wstrzymane");
+    expect(body).not.toContain("wyłączone");
   });
 });

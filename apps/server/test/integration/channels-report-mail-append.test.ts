@@ -14,7 +14,13 @@ import {
   type ReportMailbox,
 } from "../../src/modules/channels";
 import { createFakeChannel } from "../../src/modules/channels/fake/channel";
-import { MailAuthError, setMailboxStatus, type MailboxStatus, type MailProvider } from "../../src/modules/mail";
+import {
+  MailAuthError,
+  OAuthGrantError,
+  setMailboxStatus,
+  type MailboxStatus,
+  type MailProvider,
+} from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { insertCredentials, insertMailbox } from "../../src/modules/mail/repo";
 import { insertDigest } from "../../src/modules/reports";
@@ -539,5 +545,218 @@ describe("the port", () => {
   test("a ReportMailError never carries the message of its cause", () => {
     const error = new ReportMailError("refused", "append_refused");
     expect(error.message).toBe("report mail error append_refused");
+  });
+});
+
+// The review of stage 20 (TG1, N1, N2).
+describe("one login per mailbox per run (review TG1, N2)", () => {
+  async function threeRows(trx: Transaction<DB>, b: Box): Promise<string[]> {
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      ids.push(await mailRow(trx, b, { createdAt: new Date(T.getTime() - (3 - i) * 60_000) }));
+    }
+    return ids;
+  }
+
+  test("TG1: a refused login with three rows of one mailbox opens one login; the others wait with no attempt", async () => {
+    await withRollback(db, async (trx) => {
+      const b = await box(trx, {
+        openProvider: async () => {
+          throw new MailAuthError("IMAP login failed");
+        },
+      });
+      const ids = await threeRows(trx, b);
+      await sender(trx, b).run();
+      expect(b.opened.count).toBe(1);
+      for (const id of ids) expect(await stateOf(trx, id)).toMatchObject({ status: "pending", attempts: 0 });
+    });
+  });
+
+  test("N2: a revoked OAuth grant at open waits like a refused login: no attempt, one login", async () => {
+    await withRollback(db, async (trx) => {
+      const b = await box(trx, {
+        openProvider: async () => {
+          throw new OAuthGrantError("oauth_revoked", "invalid_grant", null);
+        },
+      });
+      const ids = await threeRows(trx, b);
+      await sender(trx, b).run();
+      expect(b.opened.count).toBe(1);
+      for (const id of ids) {
+        const row = await stateOf(trx, id);
+        expect(row).toMatchObject({ status: "pending", attempts: 0 });
+        expect(row.next_attempt_at.toISOString()).toBe(new Date(T.getTime() + REPORT_MAIL_WAIT_MS).toISOString());
+      }
+    });
+  });
+
+  test("N2: another failure at open holds the mailbox: one login, one attempt for the first row, none for the others", async () => {
+    await withRollback(db, async (trx) => {
+      const b = await box(trx, {
+        openProvider: async () => {
+          throw new HardError("IMAP connect failed");
+        },
+      });
+      const ids = await threeRows(trx, b);
+      await sender(trx, b).run();
+      expect(b.opened.count).toBe(1);
+      expect(await stateOf(trx, ids[0] ?? "")).toMatchObject({ status: "pending", attempts: 1 });
+      expect(await stateOf(trx, ids[1] ?? "")).toMatchObject({ status: "pending", attempts: 0 });
+      expect(await stateOf(trx, ids[2] ?? "")).toMatchObject({ status: "pending", attempts: 0 });
+    });
+  });
+
+  test("N2: a refused APPEND (a full mailbox) fails the first row and holds the mailbox: one login", async () => {
+    await withRollback(db, async (trx) => {
+      const fake = createFakeMailProvider();
+      const b = await box(trx, {
+        openProvider: async () => ({
+          ...fake,
+          appendMessage: async () => {
+            throw new HardError("NO [OVERQUOTA]");
+          },
+        }),
+      });
+      const ids = await threeRows(trx, b);
+      await sender(trx, b).run();
+      expect(b.opened.count).toBe(1);
+      expect(await stateOf(trx, ids[0] ?? "")).toMatchObject({ status: "failed", error_code: "append_refused" });
+      for (const id of ids.slice(1)) {
+        const row = await stateOf(trx, id);
+        expect(row).toMatchObject({ status: "pending", attempts: 0 });
+        expect(row.next_attempt_at.toISOString()).toBe(new Date(T.getTime() + REPORT_MAIL_WAIT_MS).toISOString());
+      }
+    });
+  });
+});
+
+describe("a retry looks for the message first (review N1)", () => {
+  const messageIdOf = (id: string, b: Box) => `<ea-report-${id}@${b.address.split("@")[1]}>`;
+
+  test("a stale reclaim after an APPEND that landed finds the message and appends nothing; the row ends sent", async () => {
+    await withRollback(db, async (trx) => {
+      const b = await box(trx);
+      const id = await mailRow(trx, b);
+      await sender(trx, b).run();
+      expect(b.appended).toHaveLength(1);
+      // The mark never landed: the row is `sending` with an old lock, as a crash leaves it.
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", sent_at: null, locked_at: new Date(T.getTime() - 10 * 60_000) })
+        .where("id", "=", id)
+        .execute();
+      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      expect(b.appended).toHaveLength(1);
+      expect((await b.fake.fetchAbove("INBOX", 0)).map((meta) => meta.messageId)).toEqual([messageIdOf(id, b)]);
+      expect(await stateOf(trx, id)).toMatchObject({ status: "sent", attempts: 1 });
+      expect(errorLines.some((line) => line.includes("outbox_mail_resent_after_stale"))).toBe(true);
+    });
+  });
+
+  test("a network timeout after the server stored the mail: the next try finds it and appends nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const fake = createFakeMailProvider();
+      const stored: Buffer[] = [];
+      const b = await box(trx, {
+        openProvider: async () => ({
+          ...fake,
+          appendMessage: async (folder, raw, flags, date) => {
+            const result = await fake.appendMessage(folder, raw, flags, date);
+            stored.push(Buffer.from(raw));
+            if (stored.length === 1) throw new SoftError("timeout after the server stored the mail");
+            return result;
+          },
+        }),
+      });
+      const id = await mailRow(trx, b);
+      await sender(trx, b).run();
+      expect(await stateOf(trx, id)).toMatchObject({ status: "pending", attempts: 1 });
+      await sender(trx, b, new Date(T.getTime() + 31_000)).run();
+      expect(await stateOf(trx, id)).toMatchObject({ status: "sent", attempts: 1 });
+      expect(stored).toHaveLength(1);
+      expect(await fake.fetchAbove("INBOX", 0)).toHaveLength(1);
+    });
+  });
+
+  test("a retry whose message is not there appends it; a first try never searches", async () => {
+    await withRollback(db, async (trx) => {
+      const b = await box(trx);
+      const first = await mailRow(trx, b);
+      await sender(trx, b).run();
+      expect(b.fake.calls).not.toContain("searchSinceIn");
+      expect(await stateOf(trx, first)).toMatchObject({ status: "sent", attempts: 0 });
+      const retried = await mailRow(trx, b);
+      await trx.updateTable("outbox").set({ attempts: 1 }).where("id", "=", retried).execute();
+      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      expect(b.fake.calls).toContain("searchSinceIn");
+      expect(b.appended).toHaveLength(2);
+      expect(await stateOf(trx, retried)).toMatchObject({ status: "sent" });
+    });
+  });
+
+  test("a search that fails never leads to a blind APPEND: the row backs off", async () => {
+    await withRollback(db, async (trx) => {
+      const b = await box(trx);
+      const id = await mailRow(trx, b);
+      await trx.updateTable("outbox").set({ attempts: 1 }).where("id", "=", id).execute();
+      b.fake.failOn("searchSinceIn", new SoftError("lost connection"));
+      await sender(trx, b).run();
+      expect(b.appended).toHaveLength(0);
+      expect(await stateOf(trx, id)).toMatchObject({ status: "pending", attempts: 2 });
+    });
+  });
+
+  test("a stale reclaim counts an attempt; a row that keeps crashing its sender ends as too_many_errors with no APPEND", async () => {
+    await withRollback(db, async (trx) => {
+      const b = await box(trx);
+      const id = await mailRow(trx, b);
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", attempts: 4, locked_at: new Date(T.getTime() - 10 * 60_000) })
+        .where("id", "=", id)
+        .execute();
+      await sender(trx, b).run();
+      expect(await stateOf(trx, id)).toMatchObject({ status: "failed", error_code: "too_many_errors" });
+      expect(b.opened.count).toBe(0);
+
+      const other = await mailRow(trx, b);
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", attempts: 0, locked_at: new Date(T.getTime() - 10 * 60_000) })
+        .where("id", "=", other)
+        .execute();
+      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      expect(await stateOf(trx, other)).toMatchObject({ status: "sent", attempts: 1 });
+    });
+  });
+
+  test("the adapter only reads and appends: a Proxy provider that throws on any other method sees search, fetch, append and close", async () => {
+    await withRollback(db, async (trx) => {
+      const fake = createFakeMailProvider();
+      const seen: string[] = [];
+      const allowed = new Set(["searchSinceIn", "fetchByUidsIn", "appendMessage", "close"]);
+      const guarded = new Proxy(fake, {
+        get(target, prop, receiver) {
+          const value = Reflect.get(target, prop, receiver) as unknown;
+          if (typeof prop !== "string" || typeof value !== "function") return value;
+          return (...args: unknown[]) => {
+            if (!allowed.has(prop)) throw new Error(`the report mail adapter called ${prop}`);
+            seen.push(prop);
+            return (value as (...a: unknown[]) => unknown).apply(target, args);
+          };
+        },
+      });
+      const b = await box(trx, { openProvider: async () => guarded as unknown as MailProvider });
+      const id = await mailRow(trx, b);
+      await sender(trx, b).run();
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", sent_at: null, locked_at: new Date(T.getTime() - HOUR) })
+        .where("id", "=", id)
+        .execute();
+      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      expect(await stateOf(trx, id)).toMatchObject({ status: "sent" });
+      expect(seen).toEqual(["appendMessage", "close", "searchSinceIn", "fetchByUidsIn", "close"]);
+    });
   });
 });

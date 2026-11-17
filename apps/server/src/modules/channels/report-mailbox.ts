@@ -23,7 +23,25 @@ export class ReportMailError extends Error {
   }
 }
 
+export interface AppendOptions {
+  /**
+   * The row was tried before (a stale reclaim, or an earlier attempt): the message may be in the INBOX already. The port looks for its
+   * fixed Message-ID first and does not APPEND when it finds it.
+   */
+  retry: boolean;
+  /** When the row was queued: the earliest time the message can have been stored. */
+  since: Date;
+}
+
 export interface ReportMailbox {
-  /** Appends the message to the INBOX of the mailbox. Throws `ReportMailError`; a message that was appended is not appended again by the port. */
-  append(ctx: TenantContext, mailboxId: string, message: ReportMailMessage): Promise<void>;
+  /**
+   * Appends the message to the INBOX of the mailbox. Answers `found` when `retry` is set and the message is there already (nothing was
+   * appended), else `appended`. Throws `ReportMailError`.
+   */
+  append(
+    ctx: TenantContext,
+    mailboxId: string,
+    message: ReportMailMessage,
+    opts: AppendOptions
+  ): Promise<"appended" | "found">;
 }
