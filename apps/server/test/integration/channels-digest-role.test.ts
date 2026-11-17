@@ -5,7 +5,7 @@ import { noDelegationHooks } from "../../src/modules/actions";
 import { detectNotices, digestNowMessage, scheduleDigests, type CommandDeps } from "../../src/modules/channels";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { buildDigest } from "../../src/modules/reports";
-import { setDigestTimes, setOrgFeature } from "../../src/modules/tenancy";
+import { setDigestTimes, setMemberReportChannel, setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
 import { EIGHT, loopRow, ready, waitingLoop, type BriefOrg } from "./channels-digest-brief-fixtures";
@@ -212,6 +212,61 @@ describe("the role reaches the digest through the job and the /digest command", 
       const member = await digestNowMessage(deps, linkOf(org, { role: "assistant" }));
       expect(prefixes(owner.buttons)).toContain("dg:");
       expect(prefixes(member.buttons)).not.toContain("dg:");
+    });
+  });
+});
+
+describe("the mail digest row takes the role of its member", () => {
+  test("a mail-only member gets no 👥 and no ⌛ line; a mail-only owner gets the 👥; no loop is marked", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, stale, waiting } = await world(trx);
+      const now = new Date(EIGHT);
+      await setOrgFeature(trx, org.ctx, { flag: "delegate_button", enabled: true, actor: "cli", now });
+      await setOrgFeature(trx, org.ctx, { flag: "report_mail", enabled: true, actor: "cli", now });
+      await insertDelegate(trx, org.ctx, { name: "Anna" });
+      await insertTriaged(trx, org.ctx, org.mailboxId, {
+        category: "needs_reply",
+        createdAt: new Date("2026-11-20T06:00:00Z"),
+        subject: "Budget question",
+        from: "boss@y.test",
+        fields: { language: "en" },
+      });
+      // Two mail-only members (no chat): the owner of the fixture and a member; the owner's chat link is removed.
+      await trx.deleteFrom("chat_links").where("org_id", "=", org.ctx.orgId).execute();
+      const memberId = await addMember(trx, org.ctx.orgId);
+      for (const userId of [org.userId, memberId]) {
+        await trx
+          .updateTable("memberships")
+          .set({ created_at: new Date("2026-11-05T20:00:00Z") })
+          .where("org_id", "=", org.ctx.orgId)
+          .where("user_id", "=", userId)
+          .execute();
+        await setDigestTimes(trx, org.ctx, userId, ["08:00"]);
+        await setMemberReportChannel(trx, org.ctx, userId, { channel: "mail", mailboxId: org.mailboxId });
+      }
+      await scheduleDigests({ db: trx, now: () => now, testMail: NO_TEST_SENDERS });
+      const rows = await trx
+        .selectFrom("outbox")
+        .select(["user_id", "channel", "view"])
+        .where("org_id", "=", org.ctx.orgId)
+        .where("kind", "=", "digest")
+        .execute();
+      expect(rows.map((row) => [row.channel, row.user_id]).sort()).toEqual(
+        [
+          ["mail", org.userId],
+          ["mail", memberId],
+        ].sort()
+      );
+      const viewOf = (userId: string) =>
+        rows.find((row) => row.user_id === userId)?.view as { text: string; buttons: { data?: string }[][] };
+      expect(prefixes(viewOf(org.userId).buttons)).toContain("dg:");
+      expect(prefixes(viewOf(memberId).buttons)).not.toContain("dg:");
+      for (const userId of [org.userId, memberId]) {
+        expect(prefixes(viewOf(userId).buttons)).not.toEqual(expect.arrayContaining(["lf:"]));
+        expect(viewOf(userId).text).not.toContain("Old offer");
+      }
+      expect((await loopRow(trx, stale)).stale_notified_at).toBeNull();
+      expect((await loopRow(trx, waiting)).surfaced_at).toBeNull();
     });
   });
 });

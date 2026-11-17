@@ -223,7 +223,7 @@ describe("the keyboard inside the digest", () => {
 
   test("lineOf and the keyboard stay right with the spam review line present and absent (F110 stage 17)", () => {
     const sections = loopSections(fullBrief());
-    const brief = { sections, loopConsent: true, urgentEmailIds: [], openLoops: null };
+    const brief = { sections, loopConsent: true, owner: true, urgentEmailIds: [], openLoops: null };
     const base = { brief, items: [digestItem(1, "info")], counts: { info: 1 } };
     const without = renderDigestWithBrief(digestInput(base), en);
     const spamReview = { moved: 2, wouldMove: 0, url: null };

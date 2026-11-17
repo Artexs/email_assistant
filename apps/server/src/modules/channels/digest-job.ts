@@ -91,16 +91,20 @@ async function scheduleForMember(
   if (slot === null) return;
 
   const periodStart = await digestPeriodStart(db, ctx, { userId, linkedAt: member.chat?.linkedAt ?? now }, now);
-  const outboxId = await queueDigest(db, member, {
-    slot,
-    periodStart,
-    now,
-    timeZone,
-    testMail,
-    webBaseUrl,
-    telegram: routes.telegram,
-    mailboxId: routes.mailboxId,
-  });
+  const outboxId = await queueDigest(
+    db,
+    { ...member, role: membership.role },
+    {
+      slot,
+      periodStart,
+      now,
+      timeZone,
+      testMail,
+      webBaseUrl,
+      telegram: routes.telegram,
+      mailboxId: routes.mailboxId,
+    }
+  );
   if (outboxId === null) return;
   log.info("digest_queued", { slot: slot.key, user_id: userId, outbox_id: outboxId });
 }
@@ -109,7 +113,8 @@ async function scheduleForMember(
 // loops that the text named. null = the slot has a row already. Exported for the race tests of the brief.
 export async function queueDigest(
   db: Db | Transaction<DB>,
-  link: Pick<LinkedChat, "orgId" | "userId" | "locale">,
+  // `role` is the role of the member the digest is for (the membership row), for the Telegram row and the mail row alike.
+  link: Pick<LinkedChat, "orgId" | "userId" | "locale" | "role">,
   input: {
     slot: { key: string; date: string; time: string };
     periodStart: Date;
