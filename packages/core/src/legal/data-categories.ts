@@ -149,6 +149,7 @@ export const dataCategories: readonly DataCategory[] = [
       "emails.message_id_header",
       "emails.content_hash",
       "emails.thread_key",
+      "reply_requests.thread_key",
       "sent_emails.dedup_key",
       "sent_emails.message_id",
       "sent_emails.parent_message_id",
@@ -242,6 +243,30 @@ export const dataCategories: readonly DataCategory[] = [
     ],
     subjects: ["users", "others"],
     kept: { kind: "daysAfterClose", days: 90 },
+  },
+  {
+    id: "reply-texts",
+    label: { en: "Reply draft requests", pl: "Prośby o szkice odpowiedzi" },
+    purpose: {
+      en: "The short instruction that you give for a reply draft, and the sample drafts that the AI writes to show its style",
+      pl: "Krótka wskazówka, którą podajesz do szkicu odpowiedzi, i przykładowe szkice, które AI pisze, by pokazać swój styl",
+    },
+    columns: ["reply_requests.instruction", "reply_requests.sample_body"],
+    subjects: ["users", "others"],
+    // The same period as the other AI texts: `clearActionPayloads` and the reply text clear use one cut-off (retention job).
+    kept: { kind: "days", days: 90 },
+  },
+  {
+    id: "mailbox-profile",
+    label: { en: "Mailbox writing profile", pl: "Profil pisania skrzynki" },
+    purpose: {
+      en: "The name, the signature and the writing style that you set for a mailbox, used in the drafts that the AI writes",
+      pl: "Imię i nazwisko, podpis i styl pisania ustawione dla skrzynki, używane w szkicach pisanych przez AI",
+    },
+    columns: ["mailbox_profiles.*"],
+    // A signature can name a colleague or a contact: the DSR address map covers these columns (`address-map.ts`).
+    subjects: ["users", "others"],
+    kept: untilDelete,
   },
   {
     id: "chat-links",

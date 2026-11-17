@@ -25,6 +25,11 @@ const TEXT_LIMITS: Readonly<Record<string, number>> = {
   "outbox.text": 4096,
   "open_loops.subject": 300,
   "open_loops.text": 80,
+  "reply_requests.instruction": 300,
+  "reply_requests.sample_body": 2000,
+  "mailbox_profiles.display_name": 100,
+  "mailbox_profiles.signature": 1000,
+  "mailbox_profiles.writing_style": 1000,
 };
 
 // One step inside the erase transaction, after the mails are deleted and before the scrub. The default is

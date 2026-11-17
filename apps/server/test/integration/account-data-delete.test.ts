@@ -132,12 +132,14 @@ const DELETE_SEEDS: Record<string, Seed> = {
   history_checks: base,
   mailbox_credentials: base,
   mailbox_folders: base,
+  mailbox_profiles: base,
   mailbox_oauth_states: base,
   mailbox_sent_sync: base,
   mailbox_settings: base,
   mailboxes: base,
   memberships: base,
   open_loops: base,
+  reply_requests: base,
   org_features: async (trx, org) => {
     await upsertOrgFeature(trx, { orgId: org.orgId }, { flag: "stats_page", enabled: true, setBy: "cli", setAt: NOW });
   },

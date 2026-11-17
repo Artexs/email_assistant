@@ -40,6 +40,10 @@ const ROW_SHAPE: Readonly<Record<string, { id: string; emailId: string | null }>
   sent_emails: { id: "id", emailId: null },
   // An open loop has no incoming mail either. Its id is never in `goesSent`, so every loop that names the person is a mention.
   open_loops: { id: "id", emailId: null },
+  // A reply request names its mail: a request of a mail that goes is deleted with it (cascade), the others are mentions.
+  reply_requests: { id: "id", emailId: "email_id" },
+  // A profile belongs to a mailbox, not to a mail: its key is the mailbox id, which is never in `goesSent`.
+  mailbox_profiles: { id: "mailbox_id", emailId: null },
 };
 
 // Tables of the `list` rule and the field of `DsrMatch.listed` that each fills.
@@ -150,7 +154,7 @@ async function findMentions(
       // only when it stays.
       const mailFilter =
         shape.emailId === null
-          ? sql<boolean>`not (t.id = any (${goesSent}::uuid[]))`
+          ? sql<boolean>`not (${sql.ref(`t.${shape.id}`)} = any (${goesSent}::uuid[]))`
           : sql<boolean>`(${sql.ref(`t.${shape.emailId}`)} is null or not (${sql.ref(`t.${shape.emailId}`)} = any (${goes}::uuid[])))`;
       const result = await sql<{ id: string }>`
         select ${sql.ref(`t.${shape.id}`)}::text as id
