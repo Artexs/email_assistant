@@ -37,6 +37,9 @@ describe("hasTrustedAlignedDkimPass", () => {
     expect(check("interia.pl; dkim=pass")).toBe(false);
     expect(check("interia.pl; dkim=pass header.d=other.example")).toBe(false);
     expect(check("interia.pl; dkim=fail (dkim=pass header.d=c.example) header.d=c.example")).toBe(false);
+    // The comment holds a signing domain that matches: it is not part of the result.
+    expect(check("interia.pl; dkim=pass (checked header.d=c.example) header.d=other.example")).toBe(false);
+    expect(check("interia.pl; dkim=pass (checked header.d=other.example) header.d=c.example")).toBe(true);
     expect(check("interia.pl; spf=pass smtp.mailfrom=c.example; dkim=fail header.d=c.example")).toBe(false);
     expect(check("interia.pl; x-dkim=pass header.d=c.example")).toBe(false);
     expect(check("interia.pl")).toBe(false);

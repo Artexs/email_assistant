@@ -256,6 +256,15 @@ describe("suspiciousSendersOf", () => {
       expect((await suspiciousSendersOf(trx, ctxA, a.mailboxId, asked, SINCE)).size).toBe(0);
       expect([...(await suspiciousSendersOf(trx, ctxB, b.mailboxId, asked, SINCE))]).toEqual(["x@news.test"]);
       expect((await suspiciousSendersOf(trx, ctxA, a.mailboxId, [], SINCE)).size).toBe(0);
+      // The mailbox of organization A asked in the scope of organization B: A's flagged sender stays hidden.
+      await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        from: "z@news.test",
+        suspiciousReasons: ["auth_fail"],
+      });
+      expect((await suspiciousSendersOf(trx, ctxB, a.mailboxId, ["z@news.test"], SINCE)).size).toBe(0);
+      expect([...(await suspiciousSendersOf(trx, ctxA, a.mailboxId, ["z@news.test"], SINCE))]).toEqual(["z@news.test"]);
     });
   });
 });

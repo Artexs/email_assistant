@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
@@ -222,12 +224,41 @@ describe("listNewsletterSenders", () => {
         "mine@c.example",
       ]);
 
+      // The mailbox of this organization read in the scope of another organization shows nothing.
+      expect(await listNewsletterSenders(trx, { orgId: b.orgId }, a.mailboxId, NOW, TRUSTED)).toEqual([]);
+
       for (let n = 0; n < NEWSLETTER_MAX_SENDERS + 5; n += 1)
         await mail(trx, ctx, a.mailboxId, { from: `bulk${String(n).padStart(3, "0")}@c.example` });
       const many = await listNewsletterSenders(trx, ctx, a.mailboxId, NOW, TRUSTED);
       expect(many).toHaveLength(NEWSLETTER_MAX_SENDERS);
       expect(many.map((s) => s.senderLower)).not.toContain("other-org@c.example");
     });
+  });
+});
+
+describe("a link in a mail is data, never an action", () => {
+  test("12: reading the senders makes no request: fetch is never called, and the module imports no HTTP client", async () => {
+    const real = globalThis.fetch;
+    const calls: unknown[] = [];
+    globalThis.fetch = ((...args: unknown[]) => {
+      calls.push(args);
+      throw new Error("a request was made");
+    }) as unknown as typeof fetch;
+    try {
+      await withRollback(db, async (trx) => {
+        const { a, ctx } = await setup(trx);
+        await mail(trx, ctx, a.mailboxId, { from: "news@c.example", link: LINK, post: ONE_CLICK, authResults: PASS });
+        const senders = await listNewsletterSenders(trx, ctx, a.mailboxId, NOW, TRUSTED);
+        expect(senders).toHaveLength(1);
+      });
+    } finally {
+      globalThis.fetch = real;
+    }
+    expect(calls).toEqual([]);
+    const source = readFileSync(join(import.meta.dir, "../../src/modules/trust/newsletters.ts"), "utf8");
+    expect(source).not.toMatch(
+      /\bfetch\s*\(|node:https?|node:net|node:dns|from "undici"|XMLHttpRequest|\bBun\.connect/
+    );
   });
 });
 
