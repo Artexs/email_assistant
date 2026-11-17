@@ -142,10 +142,9 @@ function itemOfFailure(emailId: string, error: unknown, costUsd: number): NewIte
 }
 
 // A failed call still used tokens. Known tokens are priced; unknown tokens (a blocked answer, a bad body) count a fixed estimate, so the
-// cap sees the spend. No call at all (the mail failed before the model): nothing to count.
+// cap sees the spend. A mail that failed before the model was asked counts the estimate too: the cost of doubt is a cap that stops early.
 function failedCallCost(call: StoredCall | undefined, now: Date): number {
-  if (call === undefined) return 0;
-  if (call.tokensIn !== null && call.tokensOut !== null) {
+  if (call !== undefined && call.tokensIn !== null && call.tokensOut !== null) {
     const priced = costPerMail(call.model, call.tokensIn, call.tokensOut, now, call.endpoint);
     if (priced !== null) return priced;
   }
@@ -306,15 +305,13 @@ export async function classifyStep(
       checkLog.warn("history_mail_failed", { ...errorFields(error) });
       if (!(await commit(itemOfFailure(emailId, error, failedCallCost(lastCall.call, deps.now())))))
         return { kind: "done" };
-      // Only a call that was made counts in the streak; the cost is in the item, so the cap at the top of the loop sees it.
-      if (lastCall.call !== undefined) {
-        const failed = (deps.failures.get(check.id) ?? 0) + 1;
-        if (failed >= HISTORY_MAX_FAILED_IN_ROW) {
-          deps.failures.delete(check.id);
-          return { kind: "end", reason: "model_failing" };
-        }
-        deps.failures.set(check.id, failed);
+      // The cost is in the item, so the cap at the top of the loop sees it; the streak ends the check when nothing works.
+      const failed = (deps.failures.get(check.id) ?? 0) + 1;
+      if (failed >= HISTORY_MAX_FAILED_IN_ROW) {
+        deps.failures.delete(check.id);
+        return { kind: "end", reason: "model_failing" };
       }
+      deps.failures.set(check.id, failed);
       continue;
     }
     deps.failures.delete(check.id);
