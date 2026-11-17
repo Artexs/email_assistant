@@ -161,6 +161,12 @@ export function formatDay(at: Date, timeZone: string, locale: UserLocale): strin
   return `${weekdays[local.weekday]} ${local.day} ${months[local.month - 1]}`;
 }
 
+// "Tue 10.11" or "wt. 10.11": the weekday, the day and the month in numbers (the brief lines).
+export function formatDayNumeric(at: Date, timeZone: string, locale: UserLocale): string {
+  const local = localParts(at, timeZone);
+  return `${clockTexts[locale].weekdays[local.weekday]} ${pad(local.day)}.${pad(local.month)}`;
+}
+
 export function isQuietTime(at: Date, timeZone: string, quiet: QuietHours = QUIET_HOURS): boolean {
   const { time } = localDateTime(at, timeZone);
   if (quiet.start === quiet.end) return false;

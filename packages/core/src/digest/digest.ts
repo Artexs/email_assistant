@@ -1,3 +1,4 @@
+import { dropLastLine, renderBrief, shownIds, type BriefRenderOptions, type BriefSections } from "../loops/brief";
 import type { CoreTexts } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
 import type { SenderRuleKind } from "../triage/rules";
@@ -60,6 +61,17 @@ export interface DigestHandled {
   shadowOnly: boolean;
 }
 
+// The open-loops part of a digest (F116 stage 18). Absent: today's digest, byte for byte.
+export interface DigestBrief {
+  // The first digest of the local day: the "needs you today" block. Null: a later digest.
+  sections: BriefSections | null;
+  // The mails that the 🔴 lines show: they leave the normal list.
+  urgentEmailIds: readonly string[];
+  links?: BriefRenderOptions["links"];
+  // The count line of a later digest: waiting lines and promises due. Null: no line.
+  openLoops: { waiting: number; promised: number } | null;
+}
+
 export interface DigestInput {
   kind: "scheduled" | "on_demand";
   now: Date;
@@ -79,7 +91,19 @@ export interface DigestInput {
   llmPause?: LlmPause;
   // The handled share of the last 7 days (D24): set only while `handled_share` is on.
   handled?: DigestHandled;
+  brief?: DigestBrief;
   maxLines?: number;
+}
+
+// What a rendered digest named: the loops of the brief that stayed in the text after the 4096 cut.
+export interface DigestShown {
+  surfaced: string[];
+  stale: string[];
+}
+
+export interface RenderedDigest {
+  message: OutMessage;
+  shown: DigestShown;
 }
 
 function sumCounts(counts: Partial<Record<Category, number>>, list: readonly Category[]): number {
@@ -145,14 +169,40 @@ function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {
   return lines;
 }
 
-function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: CoreTexts): OutMessage {
+// The urgent mails that the 🔴 lines show leave the normal list: the "+n more" count must not count them again.
+function removedByBrief(input: DigestInput): Partial<Record<Category, number>> {
+  const ids = new Set(input.brief?.urgentEmailIds ?? []);
+  const removed: Partial<Record<Category, number>> = {};
+  for (const item of input.items) {
+    if (ids.has(item.emailId)) removed[item.category] = (removed[item.category] ?? 0) + 1;
+  }
+  return removed;
+}
+
+function briefOptions(input: DigestInput): BriefRenderOptions {
+  return {
+    timeZone: input.timeZone,
+    now: input.now,
+    ...(input.brief?.links === undefined ? {} : { links: input.brief.links }),
+  };
+}
+
+function renderListed(
+  input: DigestInput,
+  listed: readonly DigestItem[],
+  briefSections: BriefSections | null,
+  texts: CoreTexts
+): OutMessage {
   const { counts } = input;
+  const removed = removedByBrief(input);
   const total = sumCounts(counts, CATEGORY_ORDER);
   const since = formatClock(input.periodStart, input.timeZone, input.now, texts.locale);
   const lines = [
     headerLine(input, texts),
     total > 0 ? texts.digest.since(since, total, sumCounts(counts, ACTION_CATEGORIES)) : texts.digest.noMail(since),
   ];
+  const block = briefSections === null ? [] : renderBrief(briefSections, texts, briefOptions(input));
+  if (block.length > 0) lines.splice(1, 0, "", ...block, "");
   if (input.mailboxes.length === 0) lines.push(texts.digest.noMailbox);
   for (const mailbox of input.mailboxes) lines.push(mailboxLine(input, mailbox, texts));
 
@@ -172,7 +222,10 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: 
   });
 
   const parts = CATEGORY_ORDER.flatMap((category) => {
-    const rest = Math.max(0, (counts[category] ?? 0) - listed.filter((item) => item.category === category).length);
+    const rest = Math.max(
+      0,
+      (counts[category] ?? 0) - listed.filter((item) => item.category === category).length - (removed[category] ?? 0)
+    );
     return rest > 0 ? [{ rest, name: texts.digest.moreName[category](rest) }] : [];
   });
   const footer: string[] = [];
@@ -182,8 +235,15 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: 
   if (input.skippedTooOld > 0) footer.push(texts.digest.notProcessedOld(input.skippedTooOld));
   if (input.skippedBacklog > 0) footer.push(texts.digest.notProcessedBacklog(input.skippedBacklog));
   if (input.waiting > 0) footer.push(texts.digest.waiting(input.waiting));
-  if (input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
+  // The footer line of the delegations goes only when a ⏳ line of the first digest of the day names a delegation (D16, review 18 N3):
+  // else a delegation due later, or a member without consent, would see no delegation at all.
+  const delegationShown = input.brief?.sections?.waiting.lines.some((line) => "delegation" in line) === true;
+  if (!delegationShown && input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
     footer.push(texts.digest.delegations(input.delegations.open, input.delegations.overdue));
+  }
+  const openLoops = input.brief?.openLoops ?? null;
+  if (openLoops !== null && openLoops.waiting + openLoops.promised > 0) {
+    footer.push(texts.brief.openLoops(openLoops.waiting, openLoops.promised));
   }
   if (total > 0 && input.mailboxes.length > 0 && input.mailboxes.every((mailbox) => mailbox.mode === "shadow")) {
     footer.push(texts.digest.shadow);
@@ -217,12 +277,33 @@ function cutToLimit(text: string): string {
   return `${text.slice(0, end)}…`;
 }
 
-export function renderDigest(input: DigestInput, texts: CoreTexts): OutMessage {
-  const listed = sortItems(input.items).slice(0, input.maxLines ?? DIGEST_MAX_LINES);
+// The message and the loops of the brief that its text names (a line that the 4096 cut dropped is not named).
+export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): RenderedDigest {
+  const urgentIds = new Set(input.brief?.urgentEmailIds ?? []);
+  const listed = sortItems(input.items.filter((item) => !urgentIds.has(item.emailId))).slice(
+    0,
+    input.maxLines ?? DIGEST_MAX_LINES
+  );
+  let sections = input.brief?.sections ?? null;
   for (;;) {
-    const message = renderListed(input, listed, texts);
-    if (message.text.length <= MESSAGE_MAX_CHARS) return message;
-    if (listed.length === 0) return { text: cutToLimit(message.text), buttons: [] };
-    listed.pop();
+    const message = renderListed(input, listed, sections, texts);
+    if (message.text.length <= MESSAGE_MAX_CHARS) {
+      return { message, shown: sections === null ? { surfaced: [], stale: [] } : shownIds(sections) };
+    }
+    // Normal rows go first, then the lines of the brief from the bottom section up.
+    if (listed.length > 0) {
+      listed.pop();
+      continue;
+    }
+    const shorter = sections === null ? null : dropLastLine(sections);
+    if (shorter !== null) {
+      sections = shorter;
+      continue;
+    }
+    return { message: { text: cutToLimit(message.text), buttons: [] }, shown: { surfaced: [], stale: [] } };
   }
+}
+
+export function renderDigest(input: DigestInput, texts: CoreTexts): OutMessage {
+  return renderDigestWithBrief(input, texts).message;
 }

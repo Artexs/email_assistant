@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { textTables } from "../texts";
 
-import { cleanSubject, cutText, senderLabel } from "./text";
+import { cleanSubject, cutText, senderLabel, withoutEscapeRemains } from "./text";
 
 const LONE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
 
@@ -61,5 +61,68 @@ describe("senderLabel", () => {
 
   test("keeps the address", () => {
     expect(senderLabel("Ann <ann@firma.test>", textTables.en)).toBe("Ann <ann@firma.test>");
+  });
+});
+
+describe("withoutEscapeRemains (F116 review 12, N6)", () => {
+  // The same remains in every form that a text channel can carry: raw, single-character CSI, escaped spelling, encoded, full-width,
+  // and with invisible characters inside. Each one must leave "red text".
+  const FORMS: [string, string][] = [
+    ["remains only", "[31mred text[0m"],
+    ["raw ESC", "\u001b[31mred text\u001b[0m"],
+    ["parameters", "[0;1;31mred text[0m"],
+    ["single-character CSI", "\u009b31mred text\u009b0m"],
+    ["escaped x1b", "\\x1b[31mred text\\x1b[0m"],
+    ["escaped u001b", "\\u001b[31mred text\\u001b[0m"],
+    ["octal 033", "\\033[31mred text\\033[0m"],
+    ["escaped e", "\\e[31mred text\\e[0m"],
+    ["caret notation", "^[[31mred text^[[0m"],
+    ["percent encoding", "%1B[31mred text%1b[0m"],
+    ["quoted-printable", "=1B[31mred text=1B[0m"],
+    ["decimal entity", "&#27;[31mred text&#27;[0m"],
+    ["hex entity", "&#x1b;[31mred text&#X1B;[0m"],
+    ["full-width", "［３１ｍred text［０ｍ"],
+    ["invisible inside", "[3\u200b1\u2060mred text[\u00ad0m"],
+    ["variation selector inside", "[31\ufe0fmred text[0m"],
+    ["operating-system command", "\u001b]0;evil title\u0007red text"],
+    ["operating-system command with ST", "\u001b]8;;http://x.test\u001b\\red text"],
+    ["8-bit operating-system command", "\u009d0;evil\u009cred text"],
+    // Review 18 N1.
+    ["no parameter, reset", "\\e[mred text\\e[m"],
+    ["no parameter, erase line", "red text\\e[K"],
+    ["raw ESC, no parameter", "\u001b[mred text\u001b[K"],
+    ["private mode", "\u001b[?25hred text\u001b[?25l"],
+    ["bare private mode", "[?25hred text[?25l"],
+    ["colon parameters", "[38:2:255:0:0mred text[0m"],
+    ["four digits", "[1000mred text[0m"],
+    ["character-set switch", "\u001b(Bred text\\e(0"],
+    ["nested", "[[31m31mred text[0m"],
+    ["nested twice", "[[[31m31m31mred text"],
+  ];
+  test.each(FORMS)("%s", (_name, input) => {
+    expect(cutText(withoutEscapeRemains(input), 80)).toBe("red text");
+  });
+
+  test("an ordinary text with brackets, numbers and letters stays whole", () => {
+    for (const text of [
+      "see [1a] and [2b] and [10x]",
+      "list [1] [2] [3]",
+      "Offer [EXT] Q1",
+      "5 m and 31 m",
+      "price =1 b",
+      "a [12;4] range",
+      "Re: [ticket 31]",
+      // Review 18 N2: text in brackets that ends with a letter of a control sequence.
+      "Spotkanie [2h] i [10m]",
+      "[5s] [3m] [1k] [20h] [4s]",
+      "plan [1h]\n[30m] break",
+    ]) {
+      expect(withoutEscapeRemains(text)).toBe(text);
+    }
+  });
+
+  test("an unterminated operating-system command removes at most 200 characters", () => {
+    const text = `\u001b]0;${"x".repeat(500)}`;
+    expect(withoutEscapeRemains(text).length).toBeGreaterThan(290);
   });
 });

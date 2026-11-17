@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-15
 ---
 
 # F105 · E7-T6 Identity A (TOTP, backup codes, break-glass)

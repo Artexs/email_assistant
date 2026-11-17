@@ -9,7 +9,7 @@ import { mistakeButton, reasonButtons, rejectReasonText } from "./action-feedbac
 import { encodeCallback } from "./callback";
 import { formatClock, formatDay, localDateTime } from "./local-time";
 import { MESSAGE_MAX_CHARS, type OutMessage } from "./message";
-import { cleanSubject, cutText } from "./text";
+import { cleanSubject, cutText, withoutEscapeRemains } from "./text";
 
 export const APPROVAL_QUOTE_CHARS = 1500;
 export const CHASER_SET_LIMIT = 10;
@@ -118,7 +118,10 @@ export function renderApprovalRequest(
       view.sender.external ? `${texts.common.from}: ${label} · ${t.externalSender}` : `${texts.common.from}: ${label}`
     );
   }
-  head.push(`${texts.common.subject}: ${cleanSubject(view.subject, texts)}`);
+  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped (review 12, N6).
+  head.push(
+    `${texts.common.subject}: ${cleanSubject(followUp && view.subject !== null ? withoutEscapeRemains(view.subject) : view.subject, texts)}`
+  );
   if (view.dueDate !== null) head.push(`${t.due}: ${view.dueDate}`);
   if (followUp && view.followUpNumber !== undefined) head.push(t.followUp.number(view.followUpNumber));
 
@@ -139,7 +142,7 @@ export function renderApprovalRequest(
     if (view.quote === null) return null;
     const cut = quoteCut(view.quote.text, max);
     const shown = chatQuoteText(cut.text);
-    return { ...shown, cut: view.quote.cut || cut.cut };
+    return { ...shown, text: followUp ? withoutEscapeRemains(shown.text) : shown.text, cut: view.quote.cut || cut.cut };
   };
 
   let body = view.body;

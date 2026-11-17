@@ -7,7 +7,7 @@ import { auditEvents, recordAudit } from "../audit";
 import { DSR_ADDRESS_MAP, normalizeDsrAddress } from "./address-map";
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";
 import { addressPatterns, findOpenActions, matchSubject, rowCondition, type AddressPatterns } from "./dsr-match";
-import { eraseManyMailOutbox } from "./outbox";
+import { blankDigestsNamingLoops, eraseManyMailOutbox } from "./outbox";
 
 const DEADLOCK_CODE = "40P01";
 const FOREIGN_KEY_CODE = "23503";
@@ -101,12 +101,14 @@ async function nullability(trx: Transaction<DB>): Promise<Record<string, boolean
 // a sent mail that this erase deletes (health, money). Runs before the scrub, while the rows still name the address.
 // `texts_cleared_at` marks the row as cleared, as the retention clear does. A loop without recipients left is closed by
 // the match job of the loop module. The `thread_key` and `message_id` of the loop stay: they are opaque Message-IDs
-// kept for matching, no address and no text. Exported for its own test with a connection that bypasses row-level
-// security; `index.ts` does not export it.
+// kept for matching, no address and no text. The stored digests whose brief names such a loop are blanked too (the copy of
+// the ask and the subject in `outbox.text`; `blankDigestsNamingLoops`); `scrubbed` gets their count under `outbox.text`.
+// Exported for its own test with a connection that bypasses row-level security; `index.ts` does not export it.
 export async function clearLoopTextsOfPerson(
   trx: Transaction<DB>,
   orgId: string,
-  patterns: AddressPatterns
+  patterns: AddressPatterns,
+  scrubbed?: Record<string, number>
 ): Promise<number> {
   const named = Object.entries(DSR_ADDRESS_MAP.open_loops ?? {})
     .filter(([, rule]) => rule === "equal" || rule === "recipients")
@@ -115,8 +117,16 @@ export async function clearLoopTextsOfPerson(
   const result = await sql`
     update open_loops as t set text = null, subject = null, texts_cleared_at = now(), updated_at = now()
     where t.org_id = ${orgId}::uuid and (t.text is not null or t.subject is not null)
-      and (${sql.join(named, sql` or `)})`.execute(trx);
-  return Number(result.numAffectedRows ?? 0n);
+      and (${sql.join(named, sql` or `)})
+    returning t.id`.execute(trx);
+  const digests = await blankDigestsNamingLoops(
+    trx,
+    orgId,
+    result.rows.map((row) => (row as { id: string }).id)
+  );
+  const touched = digests.blanked + digests.dropped;
+  if (touched > 0 && scrubbed !== undefined) scrubbed["outbox.text"] = (scrubbed["outbox.text"] ?? 0) + touched;
+  return result.rows.length;
 }
 
 // Every kept row of the organization loses the address, by the rule of its column. Selected by the same condition as the
@@ -129,7 +139,7 @@ async function scrubMentions(
 ): Promise<Record<string, number>> {
   const nullable = await nullability(trx);
   const scrubbed: Record<string, number> = {};
-  const cleared = await clearLoopTextsOfPerson(trx, orgId, patterns);
+  const cleared = await clearLoopTextsOfPerson(trx, orgId, patterns, scrubbed);
   if (cleared > 0) scrubbed["open_loops.text"] = cleared;
   for (const [table, columns] of Object.entries(DSR_ADDRESS_MAP)) {
     for (const [column, rule] of Object.entries(columns)) {

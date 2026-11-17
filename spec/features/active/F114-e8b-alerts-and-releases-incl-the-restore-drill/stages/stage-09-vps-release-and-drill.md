@@ -21,6 +21,8 @@ Part of [`../plan.md`](../plan.md). [risky] (deploy, VPS). Decisions P2, P4, P6,
 
 ## Part C — Restore drill (needs U1)
 
+**Waits (owner, 2026-11-15: "we postpone it").** U1 (the `age` key path), U2 (Healthchecks backup URL) and U3 (operator Telegram group) are owner to-dos: `notes/owner-later.md` item 3. Parts A and B run without them; F114 stays open for Part C only.
+
 9. Write down the live `db` and `server` container ids and start times.
 10. Live counts (`organizations`, `users`, `mailboxes`, `emails`) = **before**; `deploy/backup.sh` → name; the same counts = **after**.
 11. Copy that `.dump.age` file (encrypted) to `/tmp/f114-drill/` on the PC.

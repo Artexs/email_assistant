@@ -1,0 +1,3 @@
+# F105 outcome
+
+Two-factor sign-in (TOTP and backup codes), the operator rule and the break-glass designation are live on the VPS since release v0.1.0 and stay in v0.2.0. Closed on 2026-11-15 without owner step U1 of stage 15: the owner turned two-factor sign-in on once (the QR code scan worked in a real authenticator app) and then turned it off by choice. While it is off, `/operator` sends the owner to `/settings?two_factor=required`. This is the designed operator rule, not a fault. The stage 15 checks after U1 (`org:break-glass` shows `two-factor on`, audit `web.login | totp`) were not run for that reason. Turning two-factor sign-in on again opens the operator console with no change to the code.
