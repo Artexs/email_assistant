@@ -7,7 +7,7 @@ Owner answer ("idk"): the coordinator default holds (ticket F115, "Stage 01 acco
 `phone` stays: 9 to 11 unexplained digits in a phone-like run. The user's approval of the exact version is the last control; zero misses on hostile text is not the goal.
 
 Choices made here (coordinator default plus the owner's "numbers the user typed in the mail they answer are allowed"):
-- Numbers of the quoted mail (subject and body) are KNOWN from 9 to 26 digits, in one run or in groups joined by one space, dot or dash. This keeps false positives low (an ID of the mail has 13 digits in 20 % of the generated bodies). It also lets the draft repeat an account number that the mail holds (a BEC mail): only the user's approval stops that. A number of 27 digits or more and an IBAN of the mail are never known.
+- Numbers of the quoted mail (subject and body) are KNOWN from 9 to 26 digits, in one run or in groups joined by one space, dot or dash. This keeps false positives low (an ID of the mail has 13 digits in one of seven generated forms). It also lets the draft repeat an account number that the mail holds (a BEC mail): only the user's approval stops that. A number of 27 digits or more and an IBAN of the mail are never known.
 - Earlier limit "mail runs only up to 12 digits" is replaced by 26.
 
 ## Residual (what still passes), measured with the reviewer's adversarial generator rebuilt (`/tmp/f115-s01/adv/adv.ts`, 77,000 forms, same structure and seed as the original; the original scripts were deleted on the owner's order)
