@@ -22,6 +22,7 @@ import { createLlmPause, createTriageJob } from "../../src/modules/triage";
 import { regateAll, type RegateDeps } from "../../src/modules/trust";
 import type { DB, Db } from "../../src/platform/db";
 import type { LlmClient } from "../../src/platform/llm";
+import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import {
   addMember,
@@ -32,8 +33,6 @@ import {
   randomChatId,
   suspendOrg,
 } from "./fixtures";
-import { captureLogs, eventLines, logProblems } from "../log-capture";
-
 import { testDb, withRollback } from "./helpers";
 import { insertCheckRow, insertTripRow } from "./trust-fixtures";
 
@@ -108,7 +107,11 @@ function depsOf(conn: Db | Transaction<DB>, gate: GateEvidenceDeps, over: Partia
   };
 }
 
-type Entry = { auto: boolean; threshold: number; grant?: { key: EvidenceKey; by: string; at: string } };
+interface Entry {
+  auto: boolean;
+  threshold: number;
+  grant?: { key: EvidenceKey; by: string; at: string };
+}
 const on = (key: EvidenceKey | null, by = "evidence"): Entry => ({
   auto: true,
   threshold: 0.7,
