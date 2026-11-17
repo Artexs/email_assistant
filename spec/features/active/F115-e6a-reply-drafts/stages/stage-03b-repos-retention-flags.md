@@ -26,3 +26,8 @@ Part of [`../plan.md`](../plan.md). Needs 03. No migration. Split from stage 03 
   2. A new mailbox has `tool_switches.reply_drafts` false.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the profile in mail building (04), the switch route rules (10).
+
+## Carry-over from the stage 03 review
+
+- N6: pick ONE cut-off column for the retention of reply texts (`created_at` or `updated_at`) and one source (`data_retention_days` or `RETENTION_TEXT_DAYS`); make `docs/architecture.md` §7, the legal category `reply-texts` and `retention.ts` agree, with a test.
+- N5: the `mailbox_profiles.signature` copy of `organizations.style_text` is a snapshot; decide the fallback order with stage 04/11.

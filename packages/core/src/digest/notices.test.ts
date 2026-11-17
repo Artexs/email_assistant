@@ -10,6 +10,9 @@ import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
   renderHostBlockedNotice,
+  renderRepliesReadyNotice,
+  renderReplyPromptNotice,
+  renderReplyResultNotice,
   renderSentMissingNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
@@ -568,5 +571,48 @@ describe("Polish notices", () => {
     expect(text).toContain("mailbox:password");
     expect(text).toContain("mb-1");
     expect(text).toContain("deploy/README.md");
+  });
+});
+
+describe("reply draft notices (F115 stage 03)", () => {
+  const at = new Date("2026-11-20T10:05:00Z");
+
+  test("replies_ready prints the count and the clock in the org time zone; no button", () => {
+    const input = { count: 1, now: at, timeZone };
+    const clock = formatClock(at, timeZone, at, "en");
+    expect(renderRepliesReadyNotice(input, textTables.en)).toEqual({
+      text: `✍️ 1 reply draft is ready (${clock}).`,
+      buttons: [],
+    });
+    expect(renderRepliesReadyNotice({ ...input, count: 4 }, textTables.en).text).toBe(
+      `✍️ 4 reply drafts are ready (${clock}).`
+    );
+  });
+
+  test("replies_ready in Polish: one, few and many forms", () => {
+    const clock = formatClock(at, timeZone, at, "pl");
+    const polish = (count: number) => renderRepliesReadyNotice({ count, now: at, timeZone }, textTables.pl).text;
+    expect(polish(1)).toBe(`✍️ Gotowy jest 1 szkic odpowiedzi (${clock}).`);
+    expect(polish(3)).toBe(`✍️ Gotowe są 3 szkice odpowiedzi (${clock}).`);
+    expect(polish(5)).toBe(`✍️ Gotowych jest 5 szkiców odpowiedzi (${clock}).`);
+    expect(polish(22)).toBe(`✍️ Gotowe są 22 szkice odpowiedzi (${clock}).`);
+    expect(polish(12)).toBe(`✍️ Gotowych jest 12 szkiców odpowiedzi (${clock}).`);
+  });
+
+  test("reply_prompt and reply_result are one fixed line each, en and pl, no button", () => {
+    expect(renderReplyPromptNotice(textTables.en)).toEqual({
+      text: "✍️ A reply draft needs your instruction. Answer this message with the points to cover.",
+      buttons: [],
+    });
+    expect(renderReplyPromptNotice(textTables.pl).text).toBe(
+      "✍️ Szkic odpowiedzi czeka na Twoją wskazówkę. Odpowiedz na tę wiadomość i napisz, o czym ma być."
+    );
+    expect(renderReplyResultNotice(textTables.en)).toEqual({
+      text: "✍️ A reply draft has a new result. Check it in the panel.",
+      buttons: [],
+    });
+    expect(renderReplyResultNotice(textTables.pl).text).toBe(
+      "✍️ Szkic odpowiedzi ma nowy status. Sprawdź go w panelu."
+    );
   });
 });
