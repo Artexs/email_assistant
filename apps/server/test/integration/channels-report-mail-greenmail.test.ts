@@ -225,6 +225,8 @@ test("isOwnReportMail: only a mail row of this organization and this mailbox cou
     // Another mailbox, another organization, an unknown id and a value that is not a uuid.
     expect(await isOwnReportMail(trx, a.ctx, randomUUID(), mailRow)).toBe(false);
     expect(await isOwnReportMail(trx, b.ctx, b.mailboxId, mailRow)).toBe(false);
+    // The mailbox and the row are right but the caller names another organization: the organization filter decides.
+    expect(await isOwnReportMail(trx, b.ctx, a.mailboxId, mailRow)).toBe(false);
     expect(await isOwnReportMail(trx, a.ctx, a.mailboxId, randomUUID())).toBe(false);
     expect(await isOwnReportMail(trx, a.ctx, a.mailboxId, "not-a-uuid")).toBe(false);
     // A Telegram row is no report mail.
