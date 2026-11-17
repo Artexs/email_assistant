@@ -17,6 +17,7 @@ import {
   type DigestShown,
   type DigestSpamReview,
   type MailboxMode,
+  type MembershipRole,
   type OutMessage,
   type UserLocale,
 } from "@ea/core";
@@ -78,6 +79,9 @@ export interface DigestRequest {
   slot: { date: string; time: string; late: boolean } | null;
   now: Date;
   locale: UserLocale;
+  // The role of the member that gets the digest. Draft, Drop, Reopen and Delegate are owner only: a member gets no such button and no
+  // ⌛ line (its one button is Reopen), so the line stays for an owner (review 19 N3 and N4).
+  role: MembershipRole;
   testMail: TestMailRule;
   loops?: DigestLoops;
   // The base URL of the panel (`WEB_BASE_URL`): the spam review line links to the Activity list with it. Unset: no link.
@@ -177,6 +181,7 @@ async function loadBrief(
     return {
       sections: null,
       loopConsent: loops.loopConsent,
+      owner: request.role === "owner",
       urgentEmailIds: [],
       openLoops: { waiting: loopBrief.waiting.total + delegations.total, promised: loopBrief.promised.total },
     };
@@ -224,12 +229,14 @@ async function loadBrief(
       total: delegations.total,
     },
     promised: loopBrief.promised,
-    stale: loopBrief.stale,
+    // A ⌛ line has one button, Reopen, which only an owner may tap: a member's digest does not show it and does not mark it.
+    stale: request.role === "owner" ? loopBrief.stale : { rows: [], total: 0 },
   };
   const links = panelLinks(loops.panelBase);
   return {
     sections: loopSections(input),
     loopConsent: loops.loopConsent,
+    owner: request.role === "owner",
     urgentEmailIds: urgent.map((item) => item.emailId),
     openLoops: null,
     ...(links === undefined ? {} : { links }),
@@ -345,6 +352,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
     suspicious: suspicious.get(row.email_id) ?? [],
     ...(delegateOn &&
+    request.role === "owner" &&
     draftMailboxIds.has(row.mailbox_id) &&
     delegableCategory(row.category) &&
     (suspiciousAny.get(row.email_id) ?? []).length === 0

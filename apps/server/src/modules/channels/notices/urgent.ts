@@ -138,6 +138,7 @@ async function detectUrgent(
               ...(whyOn ? { confidence: hasModelMark(row.reason_code) ? row.confidence : null, rule: row.rule } : {}),
               // The Delegate button: no field unless it shows, so a view without it renders as before.
               ...(delegateOn &&
+              member.role === "owner" &&
               drafting.get(row.mailbox_id) === true &&
               (suspiciousAny.get(row.email_id) ?? []).length === 0
                 ? { delegable: true as const }

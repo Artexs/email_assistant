@@ -38,6 +38,7 @@ describe("the guards under the brief", () => {
     slot: { date: "2026-11-20", time: "08:00", late: false },
     now: new Date(EIGHT),
     locale: "en" as const,
+    role: "owner" as const,
     testMail: NO_TEST_SENDERS,
     ...over,
   });

@@ -48,6 +48,7 @@ flowchart BT
   channels --> tenancy
   channels --> triage
   config --> audit
+  config --> tenancy
   delegation --> actions
   delegation --> audit
   delegation --> config

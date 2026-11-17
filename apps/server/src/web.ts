@@ -17,6 +17,7 @@ import {
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
 import { delegateRoutes, delegationHooks, delegationRoutes } from "./modules/delegation";
+import { loopRoutes } from "./modules/loops";
 import {
   createMailOAuthClients,
   getSentSyncView,
@@ -388,6 +389,7 @@ export function apiRouters(
       approvalRoutes({ db, now, sendScope: extras.sendScope, hooks: delegationHooks({ db }), uidplus: uidplusOf(db) })
     );
     api.route("/", delegateRoutes({ db, now }));
+    api.route("/", loopRoutes({ db, now }));
     api.route(
       "/",
       delegationRoutes({

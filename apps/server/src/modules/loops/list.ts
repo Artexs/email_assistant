@@ -1,4 +1,4 @@
-import { localDateTime, localToInstant, nextLocalDate } from "@ea/core";
+import { localDateTime, nextLocalDate, startOfLocalDay } from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";
 
@@ -98,9 +98,10 @@ export interface BriefLoops {
 
 const BRIEF_ROWS = 20;
 
-// The first instant of the next local day: "by the end of the local day" means before it.
+// The first instant of the next local day: "by the end of the local day" means before it. A zone that repeats midnight in
+// autumn (Havana) starts the day at the first 00:00; a zone that skips it in spring starts the day at the change.
 export function endOfLocalDay(now: Date, timeZone: string): Date {
-  return localToInstant(nextLocalDate(localDateTime(now, timeZone).date), "00:00", timeZone);
+  return startOfLocalDay(nextLocalDate(localDateTime(now, timeZone).date), timeZone);
 }
 
 // The loops for the brief of the given mailboxes, oldest due first. Only the org of `ctx`. "By the end of the

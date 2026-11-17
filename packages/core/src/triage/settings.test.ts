@@ -19,7 +19,18 @@ describe("parseToolSwitches", () => {
       flag: false,
       create_draft: false,
       move_unsure: false,
+      auto_follow_up: false,
     });
+  });
+
+  test("keeps the open-loops switch through a parse; only a JSON true is on, a bad value is off and fails nothing else", () => {
+    expect(parseToolSwitches({ auto_follow_up: true }).auto_follow_up).toBe(true);
+    for (const value of ["true", 1, "yes", null, { on: true }, [true], 0]) {
+      expect(parseToolSwitches({ move: true, auto_follow_up: value })).toMatchObject({
+        move: true,
+        auto_follow_up: false,
+      });
+    }
   });
 
   test("drops an unknown key", () => {

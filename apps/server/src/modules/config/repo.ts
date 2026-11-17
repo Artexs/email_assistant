@@ -4,7 +4,7 @@ import {
   type MailboxMode,
   type SenderRule,
   type SenderRuleKind,
-  type ToolSwitches,
+  type ToolSwitchesInput,
   type UrgencyProfile,
 } from "@ea/core";
 import { sql, type Selectable, type Transaction } from "kysely";
@@ -92,9 +92,10 @@ export async function updateMailboxSettings(
   mailboxId: string,
   patch: {
     mode?: MailboxMode;
-    toolSwitches?: ToolSwitches;
+    toolSwitches?: ToolSwitchesInput;
     categoryPolicy?: CategoryPolicy;
     urgencyProfile?: UrgencyProfile | null;
+    loopWaitDays?: number;
   }
 ): Promise<boolean> {
   const result = await trx
@@ -106,6 +107,7 @@ export async function updateMailboxSettings(
       ...(patch.urgencyProfile === undefined
         ? {}
         : { urgency_profile: patch.urgencyProfile === null ? null : JSON.stringify(patch.urgencyProfile) }),
+      ...(patch.loopWaitDays === undefined ? {} : { loop_wait_days: patch.loopWaitDays }),
       updated_at: sql`now()`,
     })
     .where("org_id", "=", ctx.orgId)

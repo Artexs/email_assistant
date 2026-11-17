@@ -3,10 +3,16 @@ import { describe, expect, test } from "bun:test";
 import { categories, type Category } from "./categories";
 import type { PlannedAction } from "./planners";
 import { actionStatusFor, decidePolicy, type PolicyDecision, type PolicyInput } from "./policy";
-import type { ToolSwitches } from "./settings";
+import type { MailToolSwitches } from "./settings";
 
-const allOff: ToolSwitches = { move: false, mark_read: false, flag: false, create_draft: false, move_unsure: false };
-const allOn: ToolSwitches = { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: true };
+const allOff: MailToolSwitches = {
+  move: false,
+  mark_read: false,
+  flag: false,
+  create_draft: false,
+  move_unsure: false,
+};
+const allOn: MailToolSwitches = { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: true };
 
 function input(overrides: Partial<PolicyInput> = {}): PolicyInput {
   return {
@@ -46,9 +52,9 @@ const allActions: PlannedAction[] = [
   saveSummary,
 ];
 
-function allSwitchCombinations(): ToolSwitches[] {
-  const keys = Object.keys(allOff) as (keyof ToolSwitches)[];
-  const combinations: ToolSwitches[] = [];
+function allSwitchCombinations(): MailToolSwitches[] {
+  const keys = Object.keys(allOff) as (keyof MailToolSwitches)[];
+  const combinations: MailToolSwitches[] = [];
   for (let bits = 0; bits < 2 ** keys.length; bits++) {
     const switches = { ...allOff };
     keys.forEach((key, index) => {

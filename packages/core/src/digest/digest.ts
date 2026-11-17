@@ -87,6 +87,8 @@ export interface DigestBrief {
   sections: BriefSections | null;
   // `loopConsentOf` of the member: false gives no loop button (D17, review 17 N5). The sections already hold counts only then.
   loopConsent: boolean;
+  // The member is an owner: Draft, Drop and Reopen are owner only, so a member's keyboard has none of them (review 19 N3).
+  owner: boolean;
   // The mails that the 🔴 lines show: they leave the normal list.
   urgentEmailIds: readonly string[];
   links?: BriefRenderOptions["links"];
@@ -301,7 +303,7 @@ function renderListed(
   const buttons: OutButton[][] =
     briefSections === null || input.brief === undefined
       ? []
-      : briefKeyboard(briefSections, texts, { consent: input.brief.loopConsent });
+      : briefKeyboard(briefSections, texts, { consent: input.brief.loopConsent, owner: input.brief.owner });
   const mailRows: OutButton[][] = [];
   listed.forEach((item, index) => {
     const n = index + 1;
