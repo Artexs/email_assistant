@@ -40,7 +40,7 @@ After the next `mail.sync` run (every `MAIL_SYNC_EVERY_MIN`, default 2 minutes):
 7. The card shows "Last sent mail seen: …" (the owner sees it).
 8. Telegram: no `sent_missing` notice now (it can come only after 7 quiet days).
 9. Answered marks (N4): `SELECT count(*) FROM sent_emails s JOIN emails e ON e.mailbox_id = s.mailbox_id AND e.message_id_header = s.parent_message_id WHERE s.mailbox_id = '<pilot mailbox>' AND s.origin = 'user'` → a count. 0 means no `In-Reply-To`/`References` from Interia's clients, or no answered mail in the window: write which in the note; with replies the owner knows of, 0 is a finding for E5b.
-10. Time budget (stage 13a): `… | grep sent_sync_done` → read `duration_ms` of each line in the first hour, and count the lines with `status=budget`. `duration_ms` stays well under 60000. Any `budget` line means the pass hit the 60 s budget: write the count and the longest `duration_ms` in the note, and read the reason (a big first pass, or a slow server) before the next step.
+10. Time budget (stage 13a): `… | grep sent_sync_done` → read `duration_ms` of each line in the first hour, and count the lines with `"status":"budget"` (`grep -c '"status":"budget"'`; the VPS logs JSON). `duration_ms` stays well under 60000. Any `budget` line means the pass hit the 60 s budget: write the count and the longest `duration_ms` in the note, and read the reason (a big first pass, or a slow server) before the next step.
 
 ## After
 

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { createImapMailProvider, CLOSE_LOGOUT_TIMEOUT_MS } from "../../src/modules/mail/imap/client";
 import type { SentFolderReader } from "../../src/modules/mail/port";
@@ -93,6 +93,23 @@ describe("the deadline", () => {
   });
 });
 
+describe("the timer of a call", () => {
+  test("a call that returns clears its timer", async () => {
+    const set = spyOn(globalThis, "setTimeout");
+    const clear = spyOn(globalThis, "clearTimeout");
+    try {
+      const deadline = startDeadline({ budgetMs: 60_000 }, 1);
+      expect(await deadline.call(async () => 7)).toBe(7);
+      const timer = set.mock.results.map((r) => r.value).find((v) => v !== undefined);
+      expect(timer).toBeDefined();
+      expect(clear.mock.calls.map((c) => c[0])).toContain(timer);
+    } finally {
+      set.mockRestore();
+      clear.mockRestore();
+    }
+  });
+});
+
 describe("header step budget", () => {
   test("incremental: budget used up between chunks gives budget, written chunks stay, cursor at the last chunk", async () => {
     await withRollback(db, async (trx) => {
@@ -172,7 +189,94 @@ describe("header step budget", () => {
   });
 });
 
+describe("a stalled call at each header step", () => {
+  test("folderStatus", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      putFive(org);
+      const { reader, calls } = hooked(org, { folderStatus: never });
+      const result = await syncSentHeaders(
+        depsOf(trx, org, { provider: reader, budgetMs: 50 }),
+        org.ctx,
+        org.mailboxId
+      );
+      expect(result.status).toBe("budget");
+      expect(calls).toEqual(["folderStatus"]);
+      expect((await stateOf(trx, org)).lastErrorCode).toBeNull();
+    });
+  });
+
+  test("fetchByUidsIn (initial mode)", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      putFive(org);
+      const { reader, calls } = hooked(org, { fetchByUidsIn: never });
+      const result = await syncSentHeaders(
+        depsOf(trx, org, { provider: reader, budgetMs: 50 }),
+        org.ctx,
+        org.mailboxId
+      );
+      expect(result.status).toBe("budget");
+      expect(calls).toEqual(["folderStatus", "searchSinceIn", "fetchByUidsIn"]);
+      expect(await rowsOf(trx, org)).toEqual([]);
+    });
+  });
+
+  test("fetchAbove (incremental mode): the cursor stays", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      await org.provider.ensureFolder("Sent");
+      expect((await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId)).mode).toBe("initial");
+      putFive(org);
+      const before = (await stateOf(trx, org)).lastUid;
+      const { reader, calls } = hooked(org, { fetchAbove: never });
+      const result = await syncSentHeaders(
+        depsOf(trx, org, { provider: reader, budgetMs: 50 }),
+        org.ctx,
+        org.mailboxId
+      );
+      expect(result).toMatchObject({ status: "budget", mode: "incremental" });
+      expect(calls).toEqual(["folderStatus", "fetchAbove"]);
+      expect((await stateOf(trx, org)).lastUid).toBe(before);
+      expect(await rowsOf(trx, org)).toEqual([]);
+    });
+  });
+});
+
 describe("text step budget", () => {
+  test("the text step shares the deadline of the header step", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      put(org, 1, ago(4 * HOUR));
+      put(org, 2, ago(3 * HOUR), { headers: { "X-EA-Action-Id": randomUUID() } });
+      put(org, 3, ago(2 * HOUR));
+      const clock = manualClock();
+      // The header step uses 400 of 500 ms; each text fetch uses 200 ms more.
+      const { reader, calls } = hooked(org, {
+        fetchContent: () => {
+          clock.t += 200;
+          return undefined;
+        },
+      });
+      const result = await syncSentFolder(
+        depsOf(trx, org, {
+          provider: reader,
+          budgetMs: 500,
+          clock: clock.now,
+          sentOriginOf: async () => {
+            clock.t += 400;
+            return null;
+          },
+        }),
+        org.ctx,
+        org.mailboxId
+      );
+      expect(result.status).toBe("budget");
+      expect(result.texts).toEqual({ stored: 1, gone: 0, expired: 0, budget: true });
+      expect(calls.filter((call) => call === "fetchContent")).toHaveLength(1);
+    });
+  });
+
   test("budget used up during the text step gives budget, stored texts stay, the rest stay pending", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);

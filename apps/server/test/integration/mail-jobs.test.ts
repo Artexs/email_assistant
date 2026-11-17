@@ -771,7 +771,8 @@ describe("the Sent pass in the sync job", () => {
       const done = capture.lines.filter((line) => line.includes("sent_sync_done"));
       expect(done).toHaveLength(1);
       expect(done[0]).toMatch(/ status=budget /);
-      expect(done[0]).toMatch(/ duration_ms=\d+$/);
+      // The budget is 50 ms: the pass took at least that long (a late start or a constant 0 fails here).
+      expect(Number(/ duration_ms=(\d+)$/.exec(done[0] ?? "")?.[1])).toBeGreaterThanOrEqual(40);
       expect(capture.lines.filter((line) => line.includes("sent_sync_failed"))).toEqual([]);
       const state = await getSentSyncState(trx, { orgId: box.orgId }, box.mailboxId);
       expect(state?.lastPassAt).toEqual(NOW);
