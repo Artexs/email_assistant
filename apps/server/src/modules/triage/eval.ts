@@ -1,7 +1,6 @@
 import {
   actionStatusFor,
   applyHardRules,
-  BELOW_THRESHOLD_REASON,
   categories,
   type Category,
   confidenceHistogram,
@@ -25,7 +24,6 @@ import {
   planActions,
   type Prediction,
   ruleSummary,
-  shouldEscalate,
   splitAddress,
   textIsClean,
   thresholdSweep,
@@ -46,14 +44,7 @@ import {
 } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 
-import { type ClassifierEmail, type ClassifierExtras, classifyEmail, escalateEmail } from "./classifier";
-import {
-  type CaseEscalation,
-  type EscalationReport,
-  type EscalationSetup,
-  escalationSignalsOfCase,
-  summarizeEscalation,
-} from "./eval-escalation";
+import { type ClassifierEmail, type ClassifierExtras, classifyEmail } from "./classifier";
 import { endpointSuffix } from "./eval-format";
 import {
   type CaseJudge,
@@ -70,7 +61,6 @@ import {
   classifierVersions,
   optionalParts,
   productionClassifierChoice,
-  prompts,
 } from "./prompts";
 import { type ClassifierDelegate, EXCERPT_CHARS } from "./prompts/classifier-v2";
 import type { MailKind } from "./repo";
@@ -119,11 +109,6 @@ export interface CaseResult {
   judge: CaseJudge;
   // The usage of the judge call: its cost counts in the budget.
   judgeUsage: CaseUsage | null;
-  // Set when the escalation gave a second answer (F109 stage 12). The fields above then hold the cascade answer,
-  // `usage` holds the first call and `escalationUsage` the second; `escalation.first` holds the first answer.
-  // Absent in a state file of an earlier run.
-  escalation?: CaseEscalation | null;
-  escalationUsage?: CaseUsage | null;
 }
 
 export interface EvalReportBase {
@@ -165,8 +150,6 @@ export interface CasesEvalReport extends EvalReportBase {
   injection: { passed: number; total: number; failedIds: string[] };
   blocked: { total: number; ids: string[] };
   delegation: { pick: { right: number; total: number }; draft: { right: number; total: number } };
-  // Null without `--escalate`. The first answers alone and the cascade; the other fields of this report show the cascade.
-  escalation: EscalationReport | null;
   // Null without `--judge`, or when no case holds a judge result. Names the judge row of the run.
   judge: (NonNullable<ReturnType<typeof summarizeJudge>> & { provider: LlmProviderId; model: string }) | null;
   usage: {
@@ -320,12 +303,7 @@ interface Deps {
   // Called once for each new result (not for results from `done`). The CLI appends it to the state file.
   onResult?: (result: CaseResult) => Promise<void>;
   // Called for each case that ends in an error. `issues` holds `path:code` entries of a bad model output, never model text.
-  onCaseFailed?: (failure: {
-    caseId: string;
-    code: string;
-    issues: readonly string[];
-    stage: "classifier" | "escalation";
-  }) => void;
+  onCaseFailed?: (failure: { caseId: string; code: string; issues: readonly string[] }) => void;
 }
 
 // One state line. It holds no case text: ids, categories, numbers and codes only.
@@ -360,20 +338,6 @@ const caseResultSchema = z.object({
     .nullable()
     .default(null),
   judgeUsage: z
-    .object({ model: z.string(), tokensIn: z.number(), tokensOut: z.number(), latencyMs: z.number() })
-    .nullable()
-    .default(null),
-  escalation: z
-    .object({
-      first: z.object({
-        modelCategory: z.enum(categories),
-        finalCategory: z.enum(categories),
-        confidence: z.number(),
-      }),
-    })
-    .nullable()
-    .default(null),
-  escalationUsage: z
     .object({ model: z.string(), tokensIn: z.number(), tokensOut: z.number(), latencyMs: z.number() })
     .nullable()
     .default(null),
@@ -417,8 +381,6 @@ interface RunInput {
   prompt?: ClassifierPromptChoice;
   // The extras of a case (stage 08); absent: none.
   extrasOf?: (c: EvalCase) => ClassifierExtras;
-  // Present: a second call for the cases that `shouldEscalate` picks (stage 12). Absent: no escalation.
-  escalation?: EscalationSetup;
 }
 
 type Answer = Awaited<ReturnType<typeof classifyEmail>>;
@@ -433,7 +395,6 @@ async function withRetry(
   c: EvalCase,
   input: RunInput,
   attempts: AttemptHooks | undefined,
-  label: string,
   call: () => Promise<Answer>
 ): Promise<Classified> {
   for (let attempt = 0; ; attempt += 1) {
@@ -446,11 +407,7 @@ async function withRetry(
       if (error instanceof LlmBlockedError) return { kind: "blocked" };
       if (error instanceof SoftError && attempt < input.retries && (attempts?.mayRetry() ?? true)) {
         const wait = RETRY_WAITS_MS[Math.min(attempt, RETRY_WAITS_MS.length - 1)] as number;
-        if (label === "escalation") {
-          log.warn("eval_escalation_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
-        } else {
-          log.warn("eval_case_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
-        }
+        log.warn("eval_case_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
         await deps.sleep(wait);
         continue;
       }
@@ -467,7 +424,7 @@ function classifyWithRetry(
   input: RunInput,
   attempts?: AttemptHooks
 ): Promise<Classified> {
-  return withRetry(deps, c, input, attempts, "classifier", () =>
+  return withRetry(deps, c, input, attempts, () =>
     classifyEmail(deps.llm, {
       email: toClassifierInput(c),
       sender,
@@ -476,26 +433,6 @@ function classifyWithRetry(
       model: input.model,
       ...(input.prompt === undefined ? {} : { prompt: input.prompt }),
       ...(input.extrasOf === undefined ? {} : { extras: input.extrasOf(c) }),
-    })
-  );
-}
-
-// The second call: the same input and schema as the first, no word about the first answer (D15).
-function escalateWithRetry(
-  deps: Deps,
-  c: EvalCase,
-  allowed: Category[],
-  sender: { whitelisted: boolean; vip: boolean; noreply: boolean },
-  input: RunInput & { escalation: EscalationSetup },
-  attempts?: AttemptHooks
-): Promise<Classified> {
-  return withRetry(deps, c, input, attempts, "escalation", () =>
-    escalateEmail(deps.llm, {
-      email: toClassifierInput(c),
-      sender,
-      allowed,
-      delegates: toClassifierDelegates(c),
-      model: input.escalation.model,
     })
   );
 }
@@ -570,7 +507,7 @@ async function runCase(
     // The log line holds the case id and the code. The issue paths (`fields.task:too_big`, no model text) go to the
     // hook: a comma list is not a log value (D7).
     log.warn("eval_case_failed", { case_id: c.id, code: classified.code });
-    deps.onCaseFailed?.({ caseId: c.id, code: classified.code, issues: classified.issues, stage: "classifier" });
+    deps.onCaseFailed?.({ caseId: c.id, code: classified.code, issues: classified.issues });
     return {
       ...base,
       modelCategory: null,
@@ -593,71 +530,8 @@ async function runCase(
   const blocked = classified.kind === "blocked";
   const firstAnalysis = classified.kind === "ok" ? classified.result.analysis : null;
   const firstFinal = firstAnalysis ? decideCategory(firstAnalysis, {}) : null;
-  let analysis = firstAnalysis;
-  let finalCategory: Category = firstFinal?.category ?? "unsure";
-  let escalation: CaseEscalation | null = null;
-  let escalationUsage: CaseUsage | null = null;
-  let escalationBlocked = false;
-  const sender = { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply };
-  if (input.escalation !== undefined) {
-    // A blocked or failed first call has a rule reason code: it never escalates (D15).
-    const reasonCode =
-      firstAnalysis === null
-        ? "llm_blocked"
-        : firstFinal?.belowThreshold
-          ? BELOW_THRESHOLD_REASON
-          : firstAnalysis.reason_code;
-    const signals = escalationSignalsOfCase(c, { finalCategory, reasonCode, noreply: rules.noreply });
-    if (firstAnalysis !== null && shouldEscalate(signals)) {
-      const second = await escalateWithRetry(
-        deps,
-        c,
-        rules.allowed,
-        sender,
-        { ...input, escalation: input.escalation },
-        attempts
-      );
-      escalation = {
-        first: { modelCategory: firstAnalysis.category, finalCategory, confidence: firstAnalysis.confidence },
-      };
-      if (second.kind === "error") {
-        // The escalation error ends the case like a classifier error. The first call was paid: its usage stays.
-        // Like `eval_case_failed`: the issue paths go to the hook, not into the log.
-        log.warn("eval_escalation_failed", { case_id: c.id, code: second.code });
-        deps.onCaseFailed?.({ caseId: c.id, code: second.code, issues: second.issues, stage: "escalation" });
-        return {
-          ...base,
-          modelCategory: null,
-          finalCategory: null,
-          confidence: null,
-          source: "llm",
-          whitelisted: rules.whitelisted,
-          blocked: false,
-          usage: classified.kind === "ok" ? caseUsage(classified.result.usage) : null,
-          errorCode: second.code,
-          plannedTypes: [],
-          injectionPassed: null,
-          delegatePick: null,
-          draftKind: null,
-          draftMatches: null,
-          judge: null,
-          judgeUsage: null,
-          escalation,
-          escalationUsage: null,
-        };
-      }
-      if (second.kind === "blocked") {
-        // The provider refused the second call: like a blocked first call, the case ends `unsure`.
-        escalationBlocked = true;
-        analysis = null;
-        finalCategory = "unsure";
-      } else {
-        analysis = second.result.analysis;
-        finalCategory = decideCategory(analysis, {}).category;
-        escalationUsage = caseUsage(second.result.usage);
-      }
-    }
-  }
+  const analysis = firstAnalysis;
+  const finalCategory: Category = firstFinal?.category ?? "unsure";
   const actions = planActions(
     finalCategory,
     analysis?.summary ?? null,
@@ -674,7 +548,7 @@ async function runCase(
     confidence: analysis?.confidence ?? 0,
     source: "llm",
     whitelisted: rules.whitelisted,
-    blocked: blocked || escalationBlocked,
+    blocked,
     usage: classified.kind === "ok" ? caseUsage(classified.result.usage) : null,
     errorCode: null,
     plannedTypes: actions.map((a) => a.type),
@@ -682,8 +556,6 @@ async function runCase(
     ...delegationResult(c, actions, analysis),
     judge: judged.judge,
     judgeUsage: judged.usage,
-    escalation,
-    escalationUsage,
   };
 }
 
@@ -714,8 +586,6 @@ export async function runEval(
     // The classifier prompt version and parts; absent: the production prompt (stage 08).
     prompt?: ClassifierPromptChoice;
     extrasOf?: (c: EvalCase) => ClassifierExtras;
-    // The escalation row of `--escalate`; absent: no second call.
-    escalation?: EscalationSetup;
   }
 ): Promise<CasesEvalReport> {
   const startedAt = deps.now();
@@ -829,17 +699,6 @@ export async function runEval(
       pick: countRight(cases.map((r) => r.delegatePick)),
       draft: countRight(cases.map((r) => r.draftMatches)),
     },
-    escalation:
-      input.escalation === undefined
-        ? null
-        : summarizeEscalation({
-            cases,
-            setup: input.escalation,
-            endpoints: { classifier: endpoint, escalation: deps.llm.endpointOf("escalation") },
-            promptVersion: prompts.escalation.version,
-            at: startedAt,
-            toPrediction,
-          }),
     judge: judgeSummary === null || input.judge === undefined ? null : { ...judgeSummary, ...judgeRow(input.judge) },
     usage: {
       avgTokensIn: avgIn,

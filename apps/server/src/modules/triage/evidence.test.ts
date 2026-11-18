@@ -168,10 +168,9 @@ describe("loadGateEvidence and globalEvidenceFor", () => {
     expect(files({ ...v3, promptParts: null })).toEqual(["classifier-b.json"]);
   });
 
-  test("10: an extractor file and an escalation file next to a good one are skipped with no warn line", () => {
+  test("10: an extractor file next to a good one are skipped with no warn line", () => {
     put("classifier-a.json");
     writeFileSync(join(dir, "extractor-x.json"), JSON.stringify({ role: "extractor", other: "schema" }));
-    put("classifier-esc.json", { role: "escalation", model: "gpt-6-sol" });
     const index = loadGateEvidence(dir);
     expect(index.files.map((file) => file.file)).toEqual(["classifier-a.json"]);
     expect(warnLines()).toEqual([]);

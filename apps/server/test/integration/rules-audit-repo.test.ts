@@ -329,7 +329,7 @@ describe("audit repository", () => {
       expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "classifier" })).toBe(2);
       expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "judge" })).toBe(1);
       expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "drafter" })).toBe(1);
-      expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "escalation" })).toBe(0);
+      expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "extractor" })).toBe(0);
     });
   });
 });

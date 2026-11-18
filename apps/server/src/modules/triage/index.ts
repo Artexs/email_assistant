@@ -16,7 +16,7 @@ export { triageRoutes } from "./routes";
 export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";
 export type { LabelInput } from "./label-input";
-export { classifyEmail, EMPTY_EXTRAS, escalateEmail } from "./classifier";
+export { classifyEmail, EMPTY_EXTRAS } from "./classifier";
 export { classifyStored, wouldMoveOf } from "./classify-stored";
 export type { ClassifyStoredDeps, StoredCall, StoredClassification } from "./classify-stored";
 export { loadTriageMailbox } from "./mailbox-snapshot";

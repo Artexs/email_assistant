@@ -1,4 +1,4 @@
-import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices, monthlyCost, wilsonInterval } from "@ea/core";
+import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices, wilsonInterval } from "@ea/core";
 
 import type { CasesEvalReport, EvalReport } from "./eval";
 import { num, pct, table, usd } from "./eval-format";
@@ -183,75 +183,6 @@ function judgeParts(report: CasesEvalReport): string[] {
   return lines;
 }
 
-// The escalation of a sim run with `--escalate`: counts, shares and costs only; no case id.
-function escalationParts(report: CasesEvalReport): string[] {
-  const esc = report.escalation;
-  if (esc === null) return [];
-  const share = esc.answered === 0 ? null : esc.triggered / esc.answered;
-  const lines: string[] = [
-    "## Escalation",
-    "",
-    `Second call: role escalation, ${esc.provider} ${esc.model}${esc.reasoningEffort === null ? "" : ` (effort ${esc.reasoningEffort})`}, prompt ${esc.promptVersion}. The other tables of this report show the cascade (the final answers).`,
-    "",
-    `Triggered: ${esc.triggered} of ${esc.answered} answered cases (${pct(share)}).`,
-  ];
-  const changed = Object.entries(esc.changed).sort(([a], [b]) => a.localeCompare(b));
-  const changedTotal = changed.reduce((total, [, n]) => total + n, 0);
-  lines.push(
-    `Changed final answers: ${changedTotal}${changed.length === 0 ? "" : ` (${changed.map(([key, n]) => `${key} ${n}`).join(", ")})`}`,
-    ""
-  );
-  const k = (m: typeof esc.first.misses) => [m.k, m.urgentMissed, m.needsReplyHidden, m.spamFalsePositives, m.h];
-  lines.push(
-    ...table(
-      ["answers", "K", "urgent missed", "needs_reply hidden", "spam false positives", "H"],
-      [
-        ["first", ...k(esc.first.misses)],
-        ["cascade", ...k(esc.cascade.misses)],
-      ]
-    )
-  );
-  lines.push(
-    "K = urgent missed + needs_reply with a final info, notification, spam or unsure + spam false positives. H = urgent, needs_reply or delegation with a final info, notification or spam. LLM rows only, like the confusion matrix.",
-    ""
-  );
-  lines.push(
-    ...table(
-      [
-        "category",
-        "first TP",
-        "first FP",
-        "first precision",
-        "first recall",
-        "cascade TP",
-        "cascade FP",
-        "cascade precision",
-        "cascade recall",
-      ],
-      categories.map((category) => {
-        const a = esc.first.metrics[category];
-        const b = esc.cascade.metrics[category];
-        return [category, a.tp, a.fp, pct(a.precision), pct(a.recall), b.tp, b.fp, pct(b.precision), pct(b.recall)];
-      })
-    )
-  );
-  const classifierUsd = esc.cost.classifierUsd;
-  const escalationUsd = esc.cost.escalationUsd;
-  const perMail = (value: number | null) => (value === null || esc.calledCases === 0 ? null : value / esc.calledCases);
-  const total = classifierUsd === null && escalationUsd === null ? null : (classifierUsd ?? 0) + (escalationUsd ?? 0);
-  const cascadePerMail = perMail(total);
-  lines.push(
-    "Cost split (the price table of the run, no cached-input discount):",
-    "",
-    `- classifier: ${usd(classifierUsd)} (${usd(perMail(classifierUsd))} per mail)`,
-    `- escalation: ${usd(escalationUsd)} (${usd(perMail(escalationUsd))} per mail)`,
-    `- cascade: ${usd(total)} (${usd(cascadePerMail)} per mail)`,
-    `- cascade per mailbox per month at ${DEFAULT_MAILS_PER_DAY} mails per day: ${usd(cascadePerMail === null ? null : monthlyCost(cascadePerMail, DEFAULT_MAILS_PER_DAY))}`,
-    ""
-  );
-  return lines;
-}
-
 function casesParts(report: CasesEvalReport, hideIds: boolean): string[] {
   const { whitelist, injection, blocked, delegation, usage } = report;
   const lines: string[] = [
@@ -294,12 +225,10 @@ function casesParts(report: CasesEvalReport, hideIds: boolean): string[] {
   lines.push(`delegate pick: ${delegation.pick.right}/${delegation.pick.total}`);
   lines.push(`draft kind: ${delegation.draft.right}/${delegation.draft.total}`, "");
   lines.push(...judgeParts(report));
-  lines.push(...escalationParts(report));
   lines.push("## Usage", "");
   lines.push(
     `- average tokens in / out: ${num(usage.avgTokensIn)} / ${num(usage.avgTokensOut)}`,
     `- latency p50 / p95: ${num(usage.latencyP50)} ms / ${num(usage.latencyP95)} ms`,
-    ...(report.escalation === null ? [] : ["- (first calls only: the cascade cost is in the Escalation section)"]),
     `- cost per mail: ${usd(usage.costPerMail)}`,
     `- cost per mailbox per month at ${DEFAULT_MAILS_PER_DAY} mails per day: ${usd(usage.monthlyCostAt200)}`
   );

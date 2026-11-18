@@ -244,8 +244,7 @@ export const gateFileSchema = z.object({
 
 export type GateFile = z.infer<typeof gateFileSchema>;
 
-// What a gate file proves. A cascade run (`--escalate`) proves the escalation row: the gate file is named and filled as
-// role `escalation` with the escalation model and prompt, so it never replaces the file of the classifier alone.
+// What a gate file proves: the role, provider, model and prompt of the run.
 export function gateIdentityOf(report: CasesEvalReport): {
   role: LlmRole;
   provider: string;
@@ -256,18 +255,7 @@ export function gateIdentityOf(report: CasesEvalReport): {
   promptVersion: string;
   promptParts: CasesEvalReport["promptParts"];
 } {
-  const esc = report.escalation;
-  if (esc === null) return { ...report };
-  return {
-    role: "escalation",
-    provider: esc.provider,
-    endpoint: esc.endpoint,
-    host: esc.host,
-    model: esc.model,
-    reasoningEffort: esc.reasoningEffort,
-    promptVersion: esc.promptVersion,
-    promptParts: null,
-  };
+  return { ...report };
 }
 
 export function buildGateFile(input: SimReportInput & { now: Date }): GateFile {

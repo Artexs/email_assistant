@@ -330,20 +330,14 @@ describe("eval (case sets) streams", () => {
 });
 
 describe("evalFailureLine", () => {
-  test("holds the issue paths; an escalation failure says so; no paths, no brackets", () => {
-    const base = {
-      caseId: "inv-001",
-      code: "bad_output",
-      issues: ["fields.task:too_big", "fields.due_date:invalid_type"],
-    };
-    expect(evalFailureLine({ ...base, stage: "classifier" })).toBe(
-      "case inv-001 failed: bad_output (fields.task:too_big, fields.due_date:invalid_type)"
-    );
-    expect(evalFailureLine({ ...base, stage: "escalation" })).toBe(
-      "case inv-001 escalation failed: bad_output (fields.task:too_big, fields.due_date:invalid_type)"
-    );
-    expect(evalFailureLine({ caseId: "a", code: "http_503", issues: [], stage: "classifier" })).toBe(
-      "case a failed: http_503"
-    );
+  test("holds the issue paths; no paths, no brackets", () => {
+    expect(
+      evalFailureLine({
+        caseId: "inv-001",
+        code: "bad_output",
+        issues: ["fields.task:too_big", "fields.due_date:invalid_type"],
+      })
+    ).toBe("case inv-001 failed: bad_output (fields.task:too_big, fields.due_date:invalid_type)");
+    expect(evalFailureLine({ caseId: "a", code: "http_503", issues: [] })).toBe("case a failed: http_503");
   });
 });
