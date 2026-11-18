@@ -651,3 +651,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the stage cannot pass its own tests otherwise.
 - Undo: remove them from `packages/core/src/features.ts` and the channel list, and let the test allow the difference.
 - Source: F118 stage 02 worker notes.
+
+### 2026-11-18 · F115 stage 13: Telegram texts no longer say "in the panel" (F115) · user-visible · new
+- Choice: the review card and tap texts say "Changed" and "Version N" instead of "Changed in the panel" and "Version N, edited in the panel", because a draft can now change from Telegram too. Reply all has no "back to sender only" button in Telegram (the service has `mode: "from"` for the panel).
+- Why: the old wording is false once Redraft works from Telegram.
+- Undo: restore the strings in `texts/approvals.ts` and `texts/bot.ts` and their tests.
+- Source: F115 stage 13 worker notes.

@@ -293,6 +293,7 @@ describe("listLiveDeviceIds and listDeviceViews", () => {
         "id",
         "lastErrorCode",
         "lastSuccessAt",
+        "sessionId",
       ]);
       expect(JSON.stringify(views)).not.toContain(CANARY_ENDPOINT);
     });

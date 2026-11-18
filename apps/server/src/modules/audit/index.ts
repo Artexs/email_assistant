@@ -2,6 +2,7 @@ export { countEventsByDataKey, listLlmCallRows } from "./metrics-repo";
 export { latestLlmPause, type LlmPauseRead } from "./llm-pause";
 export {
   auditEvents,
+  countActorEventsSince,
   countEventsBetween,
   countHistoryLlmCallsSince,
   countLlmCallOutcomesSince,

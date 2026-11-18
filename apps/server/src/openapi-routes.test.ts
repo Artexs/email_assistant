@@ -528,6 +528,26 @@ describe("the real app", () => {
     expect(path?.patch?.responses?.["409"]?.description).toContain("no_mailbox");
   });
 
+  test("F118 s03: the four push device routes are described with their error codes; the answers hold no endpoint or key", async () => {
+    const paths = (await openApiSpec(realApp())).paths as Record<
+      string,
+      Record<
+        string,
+        { operationId?: string; requestBody?: unknown; responses?: Record<string, { description?: string }> }
+      >
+    >;
+    expect(paths["/api/me/push"]?.get?.operationId).toBe("getPush");
+    const put = paths["/api/me/push/subscription"]?.put;
+    expect(put?.operationId).toBe("putPushSubscription");
+    expect(put?.requestBody).toBeDefined();
+    expect(put?.responses?.["400"]?.description).toContain("push_host_not_allowed");
+    expect(put?.responses?.["404"]?.description).toContain("no_device");
+    expect(put?.responses?.["409"]?.description).toContain("push_off");
+    expect(put?.responses?.["409"]?.description).toContain("push_device_elsewhere");
+    expect(paths["/api/me/push/devices/{id}"]?.delete?.operationId).toBe("deletePushDevice");
+    expect(paths["/api/me/push/test"]?.post?.responses?.["429"]?.description).toContain("push_test_limit");
+  });
+
   test("the middleware entries are no route keys", () => {
     const app = realApp();
     // The app has middleware entries under /api (the guards, the 404 catch-all); none of them is a key.
