@@ -55,7 +55,7 @@ The system keeps mail text only for a limited time. Once a day the job `platform
 | function | `clearMailBodies`, `clearMailHeaders`, `PENDING_BODY_DAYS` | `apps/server/src/modules/mail/repo/retention.ts`     |
 | function | `clearSentBodies`, `clearSentHeaders`                      | `apps/server/src/modules/mail/repo/retention.ts`     |
 | function | `clearCapturedHeaders`                                     | `apps/server/src/modules/mail/repo/headers.ts`       |
-| function | `clearTriageTexts`                                         | `apps/server/src/modules/triage/repo.ts`             |
+| function | `clearTriageTexts`                                         | `apps/server/src/modules/triage/repo/results.ts`     |
 | function | `clearActionPayloads`, `clearActionErrors`                 | `apps/server/src/modules/actions/repo/retention.ts`  |
 | function | `clearDelegationTasks`, `isOpenDelegationDraft`            | `apps/server/src/modules/delegation/repo.ts`         |
 | function | `clearLoopTexts`                                           | `apps/server/src/modules/loops/retention.ts`         |
