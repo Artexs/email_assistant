@@ -48,3 +48,8 @@ Part of [`../plan.md`](../plan.md). Risk: a server request to a URL from untrust
 ## Out of scope
 
 `mailto:` unsubscribe; retries; following redirects.
+
+## Carry-over from the stage 22 review
+
+- Do NOT act on `oneClick` until the stage 22 fix of the Authentication-Results parser (RFC 8601 aware, private suffix list) is on master (review-22.md NOTE 1, 3). Re-check the trust chain: spoofed A-R top header (NOTE 2): the POST target comes only from a sender whose A-R is trusted and ON TOP.
+- Show `senderLower` as the identity, never `fromName` (NOTE 4).

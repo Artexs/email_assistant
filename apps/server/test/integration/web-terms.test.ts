@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 
-import { TERMS_VERSION } from "@ea/core";
+import { TERMS_HISTORY, TERMS_VERSION } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -233,10 +233,10 @@ describe("terms on the password reset", () => {
 });
 
 describe("terms in the panel", () => {
-  const appFor = (org: WebOrg) =>
+  const appForSessions = (sessions: Record<string, string>) =>
     webTestApp({
       db,
-      sessions: { owner: org.ownerId, assistant: org.assistantId },
+      sessions,
       isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
       routers: (api) =>
         api.route(
@@ -254,6 +254,8 @@ describe("terms in the panel", () => {
           })
         ),
     });
+
+  const appFor = (org: WebOrg) => appForSessions({ owner: org.ownerId, assistant: org.assistantId });
 
   const setup = async () => {
     const org = await webOrg(db);
@@ -274,6 +276,40 @@ describe("terms in the panel", () => {
     const res = await app.request("/api/me/terms", as("owner", { method: "POST", body: { version: TERMS_VERSION } }));
     expect(res.status).toBe(204);
     expect(await meTerms(app, "owner")).toEqual({ accepted: true, current: TERMS_VERSION });
+  });
+
+  test("the one bump: a member who accepted the stub-era version is asked again, accepts once, and is not asked a third time", async () => {
+    const stubEra = TERMS_HISTORY[0]?.version ?? "";
+    expect(TERMS_VERSION).not.toBe(stubEra);
+    const org = await setup();
+    const app = appFor(org);
+    await db
+      .updateTable("users")
+      .set({ terms_version: stubEra, terms_accepted_at: new Date("2026-11-13T10:00:00Z") })
+      .where("id", "=", org.ownerId)
+      .execute();
+    // The member accepted the old version: the panel still asks (the dialog shows while `accepted` is false).
+    expect(await meTerms(app, "owner")).toEqual({ accepted: false, current: TERMS_VERSION });
+    // The old version no longer counts as an answer to the dialog.
+    const stale = await app.request("/api/me/terms", as("owner", { method: "POST", body: { version: stubEra } }));
+    expect(stale.status).toBe(409);
+    expect(await meTerms(app, "owner")).toEqual({ accepted: false, current: TERMS_VERSION });
+    const ok = await app.request("/api/me/terms", as("owner", { method: "POST", body: { version: TERMS_VERSION } }));
+    expect(ok.status).toBe(204);
+    expect((await termsOf(org.ownerId)).terms_version).toBe(TERMS_VERSION);
+    expect(await meTerms(app, "owner")).toEqual({ accepted: true, current: TERMS_VERSION });
+    expect(await meTerms(app, "owner")).toEqual({ accepted: true, current: TERMS_VERSION });
+    expect(await termsRows(org.orgId)).toHaveLength(1);
+  });
+
+  test("a new member accepts at the setup link and the panel does not ask again", async () => {
+    const { email, orgId, userId } = await createUser();
+    const token = await resetToken(handle, email);
+    expect((await post(handle, "reset-password", resetBody(PASSWORD, token))).status).toBe(200);
+    const app = appForSessions({ newcomer: userId });
+    expect(await meTerms(app, "newcomer")).toEqual({ accepted: true, current: TERMS_VERSION });
+    expect(await meTerms(app, "newcomer")).toEqual({ accepted: true, current: TERMS_VERSION });
+    expect(await termsRows(orgId)).toHaveLength(1);
   });
 
   test("POST /api/me/terms sets the columns and one audit row; an old version is 409; {} is 400; no session is 401", async () => {

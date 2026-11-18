@@ -45,8 +45,8 @@ export const subprocessors: readonly Subprocessor[] = [
       pl: "treść, temat i nadawca wiadomości do sortowania i szkiców",
     },
     location: {
-      en: "No EU location (ADR 0015). <to confirm: country>",
-      pl: "Brak lokalizacji w UE (ADR 0015). <to confirm: country>",
+      en: "No EU region is used (standard endpoint, ADR 0015). <to confirm: country>",
+      pl: "Region UE nie jest używany (standardowy punkt końcowy, ADR 0015). <to confirm: country>",
     },
     termsUrl: "https://openai.com/policies/privacy-policy/",
     personalData: true,

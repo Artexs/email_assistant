@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { pl } from "../i18n/pl";
 import { isAllowedPlaceholder, legalLangs, legalPlaceholders, type LegalLang } from "./legal";
 import { findPlaceholders, headingTitles, readLegalSource } from "./legal-checks";
 
@@ -104,7 +105,14 @@ describe("the data processing agreement sources", () => {
 
     test(`${lang}: the open points are placeholders`, () => {
       const found = findPlaceholders(source);
-      for (const open of ["staff", "objection period", "audit rights"])
+      for (const open of [
+        "staff",
+        "objection period",
+        "audit rights",
+        "sub-processor contracts",
+        "help with Articles 32 to 36",
+        "proof of compliance",
+      ])
         expect(found).toContain(`<to confirm: ${open}>`);
     });
 
@@ -132,5 +140,19 @@ describe("the placeholder list", () => {
   test("3. the organization name placeholder is listed", () => {
     expect(legalPlaceholders).toContain("<organization name>");
     expect(isAllowedPlaceholder("<organization name>")).toBe(true);
+  });
+});
+
+describe("the mode names", () => {
+  // The panel calls the modes "Tryb podglądu" and "Tryb asystenta" (`mb_mode_shadow`, `mb_mode_assist`). The texts use the same names.
+  test("the pl privacy policy and terms name the modes as the panel does", () => {
+    expect(pl.mb_mode_assist.toLowerCase()).toBe("tryb asystenta");
+    expect(pl.mb_mode_shadow.toLowerCase()).toBe("tryb podglądu");
+    for (const doc of ["privacy", "terms"] as const) {
+      const source = readLegalSource("pl", doc);
+      expect(source).toContain("trybie asystenta");
+      expect(source).toContain("trybie podglądu");
+      expect(source).not.toMatch(/tryb\w* asysty\b/i);
+    }
   });
 });

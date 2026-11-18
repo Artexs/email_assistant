@@ -41,7 +41,7 @@ Annex 1. The processor applies these measures:
 - The panel is reachable only through Tailscale, by members of the private network. It has no public address.
 - Backups are encrypted with `age` before upload. The key to decrypt them is not on the server.
 - Ten failed sign-ins in 15 minutes lock the account for 15 minutes. A new password is checked against known leaks; only 5 characters of its hash leave the server. A member can turn on a second factor (TOTP).
-- Each organization sees only its own data. The code filters every query by organization, and the database adds row-level security as a second barrier.
+- Each organization sees only its own data. The code filters every query by organization, and for web requests the database adds row-level security as a second barrier.
 - Logs hold ids, counts, codes and times. They hold no mail text, no address and no password.
 
 ## Sub-processors
@@ -49,12 +49,14 @@ Annex 1. The processor applies these measures:
 - The controller gives the processor a general written authorisation to use the sub-processors of Annex 2. Annex 2 is the table at the end of this page. It lists each service, what data it gets, where it works and when it is in use.
 - When Annex 2 gets a new row, the version of this text changes. Each member then sees the dialog at the next sign-in.
 - Period to object to a new sub-processor: \<to confirm: objection period>.
+- Obligations of each sub-processor (Article 28(4) GDPR): \<to confirm: sub-processor contracts>.
 
 ## Help with requests
 
 - The processor tells the controller about a request that it receives from a data subject. The processor does not answer the request itself, unless the controller authorises it.
 - On the written instruction of the owner of the organization, the processor finds the data of one person and erases it. The processor tells the controller which data it found, so that the controller can answer.
 - The controller answers a request within one month (Article 12(3) GDPR).
+- Help with the duties of the controller for security, breach notices and impact assessments (Articles 32 to 36 GDPR): \<to confirm: help with Articles 32 to 36>.
 
 ## Breaches
 
@@ -70,4 +72,5 @@ Annex 1. The processor applies these measures:
 
 ## Audits
 
-Audit rights of the controller: \<to confirm: audit rights>.
+- Audit rights of the controller: \<to confirm: audit rights>.
+- Information that shows compliance with Article 28 GDPR: \<to confirm: proof of compliance>.

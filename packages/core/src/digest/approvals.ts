@@ -105,10 +105,13 @@ export function renderApprovalRequest(
   let title = t.title.delegation(`${nameText}${address}`);
   if (view.kind === "clarification") title = t.title.clarification(address);
   if (view.kind === "reminder") title = t.title.reminder(`${nameText}${address}`);
+  if (view.kind === "reply") title = t.title.reply(address);
   if (followUp) title = t.followUp.title;
   const head = [view.synthetic ? `${title} · ${texts.common.test}` : title];
   if (view.version !== undefined && view.version >= 2) head.push(t.versionLine(view.version));
   if (followUp) head.push(...followUpRecipientLines(view, texts));
+  // A reply may go to more people than its title names (Reply all): the Cc line is never cut, as in a follow-up.
+  if (view.kind === "reply" && (view.cc?.length ?? 0) > 0) head.push(...followUpRecipientLines(view, texts).slice(1));
   if (view.sender !== null) {
     // The view stores the English placeholder (plan D19); the renderer prints it in the row's language.
     const stored =
@@ -330,7 +333,7 @@ export function renderSendResult(
   if (sendKind === "follow_up") return renderFollowUpResult(input, texts);
   const to = recipientLabel(recipient);
   const subject = cleanSubject(input.subject, texts);
-  const closing = sendKind === "clarification" ? "" : t.closings[sendKind];
+  const closing = sendKind === "clarification" || sendKind === "reply" ? "" : t.closings[sendKind];
   const sendAgain: OutMessage["buttons"] = [
     [{ text: t.buttons.sendAgain, data: encodeCallback({ kind: "send_again", actionId }) }],
   ];

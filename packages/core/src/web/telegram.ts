@@ -5,6 +5,9 @@ export const telegramStateSchema = z.object({
   linked: z.boolean(),
   linkedAt: z.iso.datetime().nullable(),
   botUsername: z.string().nullable(),
+  // The consent version of the session user that an unlink did not withdraw. null: no consent row, or the chat is not linked.
+  // The panel asks for a new confirmation while `consentCovers(consentVersion, TELEGRAM_CONSENT_VERSION)` is false (F116 stage 22).
+  consentVersion: z.string().nullable(),
 });
 export type TelegramState = z.infer<typeof telegramStateSchema>;
 

@@ -14,6 +14,7 @@ import {
   listSyncFolders,
   listSyncTargets,
   MailAuthError,
+  mailboxProfileOf,
   markHostBlocked,
   openMailboxProvider,
   setFolderMapEntry,
@@ -290,6 +291,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       // A batch without a draft or a send never reads these two.
       owner: facts?.owner ?? { displayName: mailbox.address },
       organization: facts?.organization ?? { styleText: null, timezone: "UTC" },
+      // Read only for a batch that builds a message (the same rule as the owner and the organization).
+      profile: facts === null ? null : await mailboxProfileOf(deps.db, ctx, mailboxId),
       compose: deps.compose ?? composeMessage,
       sender,
       hooks: deps.hooks ?? noDelegationHooks,

@@ -20,6 +20,7 @@ describe("parseToolSwitches", () => {
       create_draft: false,
       move_unsure: false,
       auto_follow_up: false,
+      reply_drafts: false,
     });
   });
 
@@ -31,6 +32,17 @@ describe("parseToolSwitches", () => {
         auto_follow_up: false,
       });
     }
+  });
+
+  test("keeps the reply-drafts switch through a parse; only a JSON true is on, a bad value is off and fails nothing else", () => {
+    expect(parseToolSwitches({}).reply_drafts).toBe(false);
+    expect(parseToolSwitches({ reply_drafts: true }).reply_drafts).toBe(true);
+    for (const value of ["true", 1, "yes", null, { on: true }, [true], 0]) {
+      expect(parseToolSwitches({ move: true, reply_drafts: value })).toMatchObject({ move: true, reply_drafts: false });
+    }
+    // It is independent of the draft switch (PD-082).
+    expect(parseToolSwitches({ reply_drafts: true }).create_draft).toBe(false);
+    expect(parseToolSwitches({ create_draft: true }).reply_drafts).toBe(false);
   });
 
   test("drops an unknown key", () => {

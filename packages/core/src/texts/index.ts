@@ -14,6 +14,8 @@ import { digestTexts, type DigestTexts } from "./digest";
 import { followUpTexts, type FollowUpTexts } from "./follow-up";
 import { loopTapTexts, type LoopTapTexts } from "./loop-taps";
 import { noticeTexts, type NoticeTexts } from "./notices";
+import { replyMailTexts, type ReplyMailTexts } from "./reply-mail";
+import { reportMailTexts, type ReportMailTexts } from "./report-mail";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { suspiciousTexts, type SuspiciousTexts } from "./suspicious";
 import { whyTexts, type WhyTexts } from "./why";
@@ -36,6 +38,8 @@ export type {
   FollowUpTexts,
   LoopTapTexts,
   NoticeTexts,
+  ReplyMailTexts,
+  ReportMailTexts,
   ReviewTexts,
   SuspiciousTexts,
   WhyTexts,
@@ -52,12 +56,14 @@ export interface CoreTexts {
   wouldDo: WouldDoTexts;
   common: CommonTexts;
   notices: NoticeTexts;
+  reportMail: ReportMailTexts;
   approvals: ApprovalTexts;
   review: ReviewTexts;
   digest: DigestTexts;
   brief: BriefTexts;
   loopTaps: LoopTapTexts;
   followUp: FollowUpTexts;
+  replyMail: ReplyMailTexts;
   suspicious: SuspiciousTexts;
   why: WhyTexts;
   bot: BotTexts;
@@ -74,12 +80,14 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     wouldDo: wouldDoTexts.en,
     common: commonTexts.en,
     notices: noticeTexts.en,
+    reportMail: reportMailTexts.en,
     approvals: approvalTexts.en,
     review: reviewTexts.en,
     digest: digestTexts.en,
     brief: briefTexts.en,
     loopTaps: loopTapTexts.en,
     followUp: followUpTexts.en,
+    replyMail: replyMailTexts.en,
     suspicious: suspiciousTexts.en,
     why: whyTexts.en,
     bot: botTexts.en,
@@ -94,12 +102,14 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     wouldDo: wouldDoTexts.pl,
     common: commonTexts.pl,
     notices: noticeTexts.pl,
+    reportMail: reportMailTexts.pl,
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
     digest: digestTexts.pl,
     brief: briefTexts.pl,
     loopTaps: loopTapTexts.pl,
     followUp: followUpTexts.pl,
+    replyMail: replyMailTexts.pl,
     suspicious: suspiciousTexts.pl,
     why: whyTexts.pl,
     bot: botTexts.pl,

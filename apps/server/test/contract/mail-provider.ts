@@ -208,6 +208,28 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(content.capture?.partsKnown).toBe(true);
     });
 
+    test("fetchContent captures List-Unsubscribe-Post as a flag: exact value, case and space free", async () => {
+      const { provider, seed } = await freshEnv();
+      const link = "<https://u.example.test/x>";
+      await seed(
+        "INBOX",
+        mail(1, { headers: { "List-Unsubscribe": link, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } })
+      );
+      await seed(
+        "INBOX",
+        mail(2, { headers: { "List-Unsubscribe": link, "List-Unsubscribe-Post": "  list-unsubscribe=one-click " } })
+      );
+      await seed("INBOX", mail(3, { headers: { "List-Unsubscribe": link } }));
+      await seed(
+        "INBOX",
+        mail(4, { headers: { "List-Unsubscribe": link, "List-Unsubscribe-Post": "something=else" } })
+      );
+      const metas = await provider.fetchAbove(INBOX, 0);
+      const flags: (boolean | undefined)[] = [];
+      for (const meta of metas) flags.push((await provider.fetchContent(INBOX, meta.uid)).capture?.listUnsubscribePost);
+      expect(flags).toEqual([true, true, false, false]);
+    });
+
     test("fetchContent of an unknown uid gives no text and no capture", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));

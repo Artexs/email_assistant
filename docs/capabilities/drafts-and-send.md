@@ -8,12 +8,12 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
 
 ## Rules
 
-1. **Draft kinds and the message.** The kinds are `delegation`, `clarification`, `reminder` and `follow_up` (`draftKinds` in `packages/core/src/triage/payloads.ts`; the `follow_up` kind is rule 15).
+1. **Draft kinds and the message.** The kinds are `delegation`, `clarification`, `reminder`, `follow_up` and `reply` (`draftKinds` in `packages/core/src/triage/payloads.ts`; the `follow_up` kind is rule 15, the `reply` kind rule 16).
    - `planActions` makes a `delegation` draft when the classifier names an active delegate id and a task. It makes a `clarification` draft (a question to the sender of the mail) when there is no delegate but the classifier gave a question, and the sender address is valid and is not a no-reply address. The chaser makes a `reminder` draft (`delegation.md`). Mail from the spam folder plans no draft.
    - Each draft is one pair: a `create_draft` row and a `send` row with `depends_on_action_id` = the draft. The policy decides the status of both (`docs/architecture.md` §4.3): `ready` and `awaiting_approval` in `assist` mode with the switch `create_draft` on, else `logged` for both.
    - The recipient comes from the `delegates` row or from the sender address of the mail (a clarification), never from LLM text (`docs/architecture.md` §4.1 rule 2). One recipient only.
    - The body is a fixed text per kind and language (`DRAFT_TEMPLATES`: `pl` or `en`; the language `other` uses `en`). The task and the question are LLM text: they pass `markUntrustedText` again and lose their line breaks before they enter the template.
-   - The signature is `organizations.style_text` when it is set, else the display name of the owner (`buildOutgoingMessage`).
+   - The signature is the `signature` of the mailbox profile (`mailbox_profiles`) when it is set, else `organizations.style_text` when it is set, else the display name of the owner (`buildOutgoingMessage`). The `From` name is the `display_name` of the profile when it is set, else the display name of the owner, else the mailbox address. A mailbox with no profile row reads as all null. The committer, the approval view and the panel edit read the same profile row, so the text that the owner sees is the text that is sent.
    - A `delegation` or `clarification` message holds a quote of the original mail: a header block (`--- Original message ---`), then the body, each line with `> `, at most 8000 characters (`QUOTE_MAX_CHARS`). A `reminder` has no quote.
    - The subject is `Fwd: <subject>` for a delegation, `Re: <subject>` for a clarification and `Re: Fwd: <subject>` for a reminder (the subject is cut at 200 characters; an existing prefix is not doubled).
    - The `Message-ID` is `<ea-<draft action id>@<domain of the mailbox>>`, the `Date` is the `created_at` of the draft, and the header `X-EA-Action-Id` is the id of the draft. The draft and the sent mail are the same message.
@@ -164,6 +164,14 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
   - **Edit** (`POST /approvals/:id/edit`): subject and body only; recipients, quote and number never change; a `delegateId` is 400 `validation`. The new pair keeps `loop_id`. The edit takes the loop lock first (`LoopHooks.isOpen`), then the send; a closed loop answers 409 `closed` / `loop_closed` (an old version still answers `changed`).
   - The recipient pattern (`ADDRESS_PATTERN`) refuses control, zero-width and bidi characters, so the address on the card is the address that is sent.
 
+16. **Reply (F115 stage 04).** A `reply` draft answers an incoming mail with text that the drafter writes (later stages). The payload is `{ kind, to (exactly 1), cc (0 to 10), language, body, request_id, folder, recipients (from, reply_to or all), version?, subject_text?, body_text? }`; the text is `body_text ?? body`. The kind has no template (`NO_TEMPLATE` in `packages/core/src/outgoing/templates.ts`: the body comes from the payload). Nothing makes a reply yet: stage 07 adds the producer, and a reply never goes out without the tap of the user (ADR 0003).
+
+- **Recipients.** `to` is the stored `From` of the mail and `cc` the stored recipients that "Reply all" adds. Nothing in them comes from an LLM. The writer (`createPlanned`, `actions/repo/planned.ts`) refuses a reply pair whose Cc equals the To, names an address twice or names an own mailbox of the organization (`replyRecipientsProblem`), whose payload fails the schema (11 Cc, 2 To), whose send names other recipients than its draft in the same call, or that hangs on a loop. The error text holds no address.
+- **Send.** The send payload repeats `kind`, `to` and `cc`; the send schema allows a Cc for `follow_up` (at most 9) and `reply` (at most 10), and only a `follow_up` has more than one To. The envelope, the recipient-day limit (a Cc counts as a recipient) and the `SEND_SCOPE=self` filter read `to` and `cc` together (`sendRecipients`). Before the call the committer checks that the send and the draft are both replies with the same To and the same Cc (a set compare, lower case); else the send ends `failed` / `bad_payload` and no SMTP call is made.
+- **Message.** Subject `Re: <subject>` (no second prefix: `Re:`, `Odp:` stay). `In-Reply-To` is the Message-ID of the original and `References` is its chain plus that id, at most the last 20. The `Cc` header lists `cc`. The text is the body, then the signature (rule 1), then the quote `quoteReply` (`packages/core/src/replies/quote.ts`): the line "On <date>, <name> wrote:" / "<date> <name> napisał(a):", then the original with `> ` on each line, at most 8000 characters. The date is in the time zone of the organization, the name is the `From` display name of the original (`email_headers.from_name`, one line, at most 100 characters), else its address. An original with no text has no quote. Our code adds no visible prefix, no `[[` and no header except `X-EA-Action-Id`. An edit (`body_text`) replaces the body and the signature and keeps the quote.
+- **Edit.** `editApproval` of a reply is gated by the tool switch `reply_drafts` (and mode `assist`), not by `create_draft`; the other kinds keep `create_draft`. Answer `drafts_off` when the gate is off.
+- **Card.** Title `✍️ Reply to <address>` / `✍️ Odpowiedź do <address>`; the Cc is spelled out whole in a `Cc:` line. The digest phrase is "reply drafted" / "szkic odpowiedzi". A recipient on the F106 data request map is found by its Cc: the address map reads the whole payload.
+
 ## Entry points
 
 | Kind     | Name                                                                                                           | Where                                                                                    |
@@ -252,8 +260,12 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `apps/server/test/integration/web-actions.test.ts`
 - `apps/server/test/integration/smtp-send.test.ts`
 - `apps/server/test/integration/actions-send-logs.test.ts`
+- `apps/server/test/integration/replies-kind.test.ts` (rule 16)
+- `apps/server/test/integration/replies-profile-message.test.ts` (the profile in the message, rule 1)
 - `packages/core/src/outgoing/message.test.ts`
 - `packages/core/src/outgoing/quote.test.ts`
 - `packages/core/src/outgoing/sender.test.ts`
 - `packages/core/src/outgoing/templates.test.ts`
+- `packages/core/src/replies/quote.test.ts`
+- `packages/core/src/triage/draft-kinds.test.ts`
 - `packages/core/src/digest/approvals.test.ts`

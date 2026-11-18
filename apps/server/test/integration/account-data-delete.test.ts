@@ -155,6 +155,7 @@ const DELETE_SEEDS: Record<string, Seed> = {
     ),
   triage_feedback: base,
   triage_results: base,
+  unsubscribe_requests: base,
 };
 
 async function emailId(trx: Trx, orgId: string): Promise<string> {

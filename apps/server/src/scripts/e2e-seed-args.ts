@@ -273,17 +273,17 @@ export interface DelegationsSeedIds {
 // F116 stage 21: one organization per project for the open loops spec (it drafts, moves, closes and untracks loops, so each project
 // needs its own). The flags `open_loops`, `delegation_pages` and `approvals_page` are on; the mailbox is in assist mode with drafts on.
 // One loop for each kind and state of the page, two delegations for the Delegated tab, and follow-up pairs for the waiting and S11 rows.
-export const E2E_LOOPS_OWNER_EMAILS: Record<E2eProject, string> = {
-  mobile: "e2e-loops-owner-mobile@x.test",
-  desktop: "e2e-loops-owner-desktop@x.test",
+export const E2E_OPEN_LOOPS_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-open-loops-owner-mobile@x.test",
+  desktop: "e2e-open-loops-owner-desktop@x.test",
 };
-export const E2E_LOOPS_MEMBER_EMAILS: Record<E2eProject, string> = {
-  mobile: "e2e-loops-member-mobile@x.test",
-  desktop: "e2e-loops-member-desktop@x.test",
+export const E2E_OPEN_LOOPS_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-open-loops-member-mobile@x.test",
+  desktop: "e2e-open-loops-member-desktop@x.test",
 };
-export const e2eLoopsOrgName = (project: E2eProject): string => `E2E Loops ${project}`;
-export const e2eLoopsMailbox = (project: E2eProject): string => `e2e-loops-${project}@e2e.test`;
-export const E2E_LOOPS_DELEGATE = { name: "Dana Delegate", email: "dana@example.com" } as const;
+export const e2eOpenLoopsOrgName = (project: E2eProject): string => `E2E Open Loops ${project}`;
+export const e2eOpenLoopsMailbox = (project: E2eProject): string => `e2e-open-loops-${project}@e2e.test`;
+export const E2E_OPEN_LOOPS_DELEGATE = { name: "Dana Delegate", email: "dana@example.com" } as const;
 // `dueInDays` is counted from the seed time; `"today"` is one hour before the end of the local day of the organization (inside "Due
 // today" at any hour of the run). Open waiting loops are past due on purpose: the chaser plans a follow-up for a past-due `delegated`
 // loop, so those are due later; a past-due `waiting` loop gets none while `auto_follow_up` is off. `pair` adds a follow-up `create_draft`
@@ -300,7 +300,7 @@ export interface E2eLoopPlan {
   autoReply?: true;
   pair?: true;
 }
-export const E2E_LOOPS = {
+export const E2E_OPEN_LOOPS = {
   // Waiting: Draft follow-up (T5) and Later (T6) change them.
   waitDraft: {
     kind: "waiting",
@@ -429,21 +429,21 @@ export const E2E_LOOPS = {
   // Delegated: Untrack with confirm (T8) closes one of them.
   delUntrack: {
     kind: "delegated",
-    counterpart: E2E_LOOPS_DELEGATE.email,
+    counterpart: E2E_OPEN_LOOPS_DELEGATE.email,
     text: "Prepare the quarterly numbers",
     subject: "E2E quarterly",
     dueInDays: 3,
   },
   delView: {
     kind: "delegated",
-    counterpart: E2E_LOOPS_DELEGATE.email,
+    counterpart: E2E_OPEN_LOOPS_DELEGATE.email,
     text: "Check the supplier list",
     subject: "E2E suppliers",
     dueInDays: 4,
   },
   delClosed: {
     kind: "delegated",
-    counterpart: E2E_LOOPS_DELEGATE.email,
+    counterpart: E2E_OPEN_LOOPS_DELEGATE.email,
     text: "Finished handover",
     subject: "E2E handover",
     dueInDays: -6,
@@ -451,9 +451,9 @@ export const E2E_LOOPS = {
   },
 } as const satisfies Record<string, E2eLoopPlan>;
 // The two F102 delegations of the Delegated tab (keys of `E2E_DELEGATIONS`).
-export const E2E_LOOPS_DELEGATIONS = ["sent", "answered"] as const;
-export interface LoopsSeedIds {
-  loopIds: Record<keyof typeof E2E_LOOPS, string>;
+export const E2E_OPEN_LOOPS_DELEGATIONS = ["sent", "answered"] as const;
+export interface OpenLoopsSeedIds {
+  loopIds: Record<keyof typeof E2E_OPEN_LOOPS, string>;
   // The follow-up sends of the rows that have a `pair`.
   pendingSendId: string;
   s11ClosedSendId: string;
@@ -512,6 +512,28 @@ export const ACTIVITY_SUBJECTS = {
 export const activityFillerSubject = (n: number): string => `E2E filler ${n}`;
 export const ACTIVITY_FILLERS = 52;
 
+// F116 stage 22: one organization per project for the loops spec (the Delegate action, the loop settings and the new Telegram
+// terms). The flags `open_loops`, `delegate_button`, `delegation_pages`, `sent_sync` and `approvals_page` are on. The mailbox is in assist mode with
+// drafts on and tracks Sent. One active delegate (Anna Nowak). The owner is linked to Telegram with a consent of an old version.
+export const E2E_LOOPS_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-loops-owner-mobile@x.test",
+  desktop: "e2e-loops-owner-desktop@x.test",
+};
+export const E2E_LOOPS_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-loops-member-mobile@x.test",
+  desktop: "e2e-loops-member-desktop@x.test",
+};
+export const e2eLoopsOrgName = (project: E2eProject): string => `E2E Loops ${project}`;
+export const e2eLoopsMailbox = (project: E2eProject): string => `e2e-loops-${project}@e2e.test`;
+// A consent version older than the current text: the loops spec confirms the new terms.
+export const E2E_LOOPS_OLD_CONSENT = "2026-11-14";
+export const E2E_LOOPS_CHAT_IDS: Record<E2eProject, number> = { mobile: 9_100_001, desktop: 9_100_002 };
+export const E2E_LOOPS_SUBJECTS = {
+  reply: "E2E loops reply",
+  unsure: "E2E loops unsure",
+  newsletter: "E2E loops newsletter",
+} as const;
+
 export interface SeedFile {
   orgId: string;
   owner: { userId: string; email: string; password: string };
@@ -559,7 +581,16 @@ export interface SeedFile {
       orgId: string;
       owner: { userId: string; email: string; password: string };
       member: { userId: string; email: string; password: string };
-    } & LoopsSeedIds
+      mailboxId: string;
+    }
+  >;
+  openLoopsOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      member: { userId: string; email: string; password: string };
+    } & OpenLoopsSeedIds
   >;
   urgencyOrgs: Record<
     E2eProject,

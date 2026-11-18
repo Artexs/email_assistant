@@ -15,7 +15,7 @@ import { HardError } from "../../platform/errors";
 import { ValidationError } from "../../platform/http";
 import { auditEvents, recordAudit } from "../audit";
 import { getMailboxSettings, lockSettingsForShare } from "../config";
-import { getMailbox } from "../mail";
+import { getMailbox, mailboxProfileOf } from "../mail";
 import { getOrganization, listMemberships } from "../tenancy";
 
 import { anchorOfRow } from "./anchor";
@@ -83,7 +83,12 @@ export async function editApproval(
     // The share lock is held: a setter cannot commit between this read and the end of the transaction.
     const settings = await getMailboxSettings(trx, ctx, mailboxId);
     const switches = settings && parseToolSwitches(settings.tool_switches);
-    if (!settings || !switches || settings.mode !== "assist" || !switches.create_draft) return { kind: "drafts_off" };
+    // The gate of a reply draft is its own switch (reply drafts), the gate of every other kind is `create_draft`. The kind is read
+    // from the unlocked probe: a send never changes its kind, and the settings lock above is the one that decides.
+    const probeKind = sendPayloadSchema.safeParse(probe.payload);
+    const gateOn =
+      probeKind.success && probeKind.data.kind === "reply" ? switches?.reply_drafts : switches?.create_draft;
+    if (!settings || !switches || settings.mode !== "assist" || !gateOn) return { kind: "drafts_off" };
 
     // Lock order for a follow-up: its loop first, then the send. A closed loop refuses the edit (after the checks below, so
     // an old version still answers `changed` and a closed send still names its state).
@@ -129,6 +134,7 @@ export async function editApproval(
         mailbox: { address: mailbox.address },
         owner: { displayName: owner?.display_name ?? mailbox.address },
         organization: { styleText: organization.style_text, timezone: organization.timezone },
+        profile: await mailboxProfileOf(trx, ctx, mailboxId),
         original,
       });
       if (

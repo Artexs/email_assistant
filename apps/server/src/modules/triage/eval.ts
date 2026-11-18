@@ -242,7 +242,12 @@ function planDelegationInput(c: EvalCase, analysis: TriageAnalysis): DelegationI
 
 function draftKindOf(actions: PlannedAction[]): DraftKind {
   for (const action of actions) {
-    if (action.type === "create_draft" && action.draft.kind !== "reminder" && action.draft.kind !== "follow_up") {
+    if (
+      action.type === "create_draft" &&
+      action.draft.kind !== "reminder" &&
+      action.draft.kind !== "follow_up" &&
+      action.draft.kind !== "reply"
+    ) {
       return action.draft.kind;
     }
   }

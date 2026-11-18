@@ -56,6 +56,7 @@ const TENANT_TABLES = [
   "sso_providers",
   "triage_feedback",
   "triage_results",
+  "unsubscribe_requests",
 ];
 const ALL_POLICY_TABLES = [...TENANT_TABLES, "organizations"];
 

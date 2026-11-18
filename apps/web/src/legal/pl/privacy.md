@@ -11,9 +11,9 @@ Ta strona opisuje, co asystent poczty robi z danymi osobowymi. Opisuje ustawieni
 
 Tabela „Co przechowujemy” na końcu strony podaje każdy rodzaj danych, kogo dotyczy, po co go trzymamy i jak długo.
 
-- **Poczta.** Asystent przechowuje wiadomości z podłączonych skrzynek: treść, temat, adresy i dane z nagłówków (nazwa nadawcy, Reply-To, Return-Path, wyniki sprawdzania spamu i uwierzytelnienia, dane listy, nazwy i rozmiary załączników, hosty linków). Są to także dane osób, które nie są członkami: nadawców i adresatów tych wiadomości.
+- **Poczta.** Asystent przechowuje wiadomości z podłączonych skrzynek: treść, temat, adresy i dane z nagłówków (nazwa nadawcy, Reply-To, Return-Path, wyniki uwierzytelnienia, dane listy, nazwy i rozmiary załączników, hosty linków). Są to także dane osób, które nie są członkami: nadawców i adresatów tych wiadomości.
 - **Wysłana poczta.** Asystent może czytać folder Wysłane skrzynki. Nigdy go nie zmienia. Ta funkcja jest domyślnie wyłączona. Działa tylko wtedy, gdy operator włączy ją dla organizacji, a członek włączy przełącznik „Śledź moją wysłaną pocztę” dla skrzynki.
-- **Wyniki AI.** AI zapisuje dla każdej wiadomości krótkie uzasadnienie, wyciągnięte pola, podsumowania i treść szkiców. System je przechowuje.
+- **Wyniki AI.** AI zapisuje dla każdej wiadomości krótkie uzasadnienie, wyciągnięte pola (na przykład zadanie lub pytanie do szkicu) i podsumowania. System buduje każdy szkic ze stałego tekstu i tych pól. System przechowuje je wszystkie.
 - **Członkowie.** System przechowuje imię i nazwisko, adres e-mail, język, hasło (jako skrót), sesje (urządzenie, adres sieciowy i ostatni dzień użycia), opcjonalny drugi składnik, wersję regulaminu, którą członek zaakceptował, oraz czat Telegrama, który członek powiązał.
 - **Sekret skrzynki.** Hasło lub token skrzynki jest przechowywane w postaci zaszyfrowanej.
 - **Co zrobił system.** Dziennik audytu zapisuje, kto co i kiedy zdecydował. Zawiera identyfikatory, kody i liczby, nigdy treść wiadomości.
@@ -42,19 +42,19 @@ Asystent używa danych w tych celach. Dla każdego celu podstawa prawna nie jest
 ## Kto otrzymuje dane
 
 - Tabela „Podmioty przetwarzające” na końcu strony podaje każdą zewnętrzną usługę, która dostaje dane, co dostaje, gdzie działa i kiedy jest używana. Druga tabela podaje usługi, które nie dostają danych osobowych.
-- **Model AI.** Ta instalacja używa OpenAI. Asystent wysyła treść, temat i nadawcę wiadomości, listę wykonawców oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie wysyła wiadomości starszych niż 7 dni. Według płatnych warunków API, które obowiązują w tej usłudze, OpenAI nie trenuje modeli na danych z API. Asystent prosi OpenAI, aby nie przechowywało danych (`store: false`). OpenAI przechowuje logi nadużyć do 30 dni. OpenAI nie ma w tym zastosowaniu lokalizacji w UE. Warunki sprawdzono ostatnio: \<to confirm: OpenAI terms check date>. Instalacja może zamiast tego używać Google Gemini. Kolumna „Używana, gdy” podaje warunek.
+- **Model AI.** Ta instalacja używa OpenAI. Asystent wysyła treść, temat i nadawcę wiadomości, listę wykonawców oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie wysyła wiadomości starszych niż 7 dni, chyba że operator jednorazowo wczyta starszą pocztę (backfill). Według płatnych warunków API, które obowiązują w tej usłudze, OpenAI nie trenuje modeli na danych z API. Asystent prosi OpenAI, aby nie przechowywało danych (`store: false`). OpenAI przechowuje logi nadużyć do 30 dni. Ta instalacja nie używa regionu UE w OpenAI. Publiczną stronę OpenAI o kontroli danych sprawdzono ostatnio 2026-11-17. Instalacja może zamiast tego używać Google Gemini. Kolumna „Używana, gdy” podaje warunek.
 - **Telegram.** Telegram dostaje tylko to, co podaje tekst zgody w panelu, po zgodzie członka: nadawcę i temat wiadomości, nazwy (lub typy plików) i rozmiary załączników, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona i nazwiska wykonawców oraz adresy skrzynek. Jeśli członek włączy otwarte sprawy, Telegram dostaje też to, na kogo członek czeka, krótki opis tego, o co poprosił lub co obiecał, termin, temat oraz szkice przypomnień z ich adresatami. Czaty z botem nie są szyfrowane metodą end-to-end.
-- **Przekazywanie poza EOG.** OpenAI nie ma w tym zastosowaniu lokalizacji w UE, a Telegram może przetwarzać dane poza Europejskim Obszarem Gospodarczym. Mechanizm przekazania: \<to confirm: transfer mechanism>.
+- **Przekazywanie poza EOG.** Ta instalacja nie używa regionu UE w OpenAI. OpenAI i Telegram mogą przetwarzać dane poza Europejskim Obszarem Gospodarczym. Mechanizm przekazania: \<to confirm: transfer mechanism>.
 - **Kopia zapasowa.** Kopia jest szyfrowana narzędziem `age`, zanim opuści serwer. Klucza do jej odszyfrowania nie ma na serwerze.
 - **Dostawca poczty.** Gdy właściciel zatwierdza szkic, wiadomość wychodzi ze skrzynki właściciela przez dostawcę poczty tej skrzynki.
 
 ## AI i decyzje
 
-- AI sortuje pocztę, pisze krótkie uzasadnienia i podsumowania oraz szkice zleceń i pytań.
+- AI sortuje pocztę, pisze krótkie uzasadnienia i podsumowania oraz podaje zadanie lub pytanie, które trafia do szkicu.
 - Asystent nigdy nie wysyła wiadomości sam. Wysłanie wymaga zatwierdzenia przez właściciela dokładnego tekstu, w Telegramie lub w panelu. Bez zatwierdzenia wysyłka wygasa po 48 godzinach.
 - AI nie może wybrać adresata. System bierze adresatów z wiadomości i z wykonawców, których dodała organizacja.
-- Nowa skrzynka jest w trybie podglądu: nic się w niej nie zmienia. W trybie asysty przeniesienie następuje tylko dla kategorii, którą właściciel ustawił jako automatyczną i która przeszła bramkę jakości.
-- Każde automatyczne przeniesienie ma powód w dzienniku audytu. Członek może je cofnąć przez 7 dni przyciskiem Cofnij, w Telegramie lub w panelu.
+- Nowa skrzynka jest w trybie podglądu: nic się w niej nie zmienia. W trybie asystenta przeniesienie następuje tylko dla kategorii, którą właściciel ustawił jako automatyczną i która przeszła bramkę jakości. Wiadomości, co do których asystent nie jest pewny, są przenoszone tylko wtedy, gdy właściciel włączy osobny przełącznik.
+- Każda decyzja o sortowaniu ma kod powodu w dzienniku audytu. Członek może cofnąć automatyczne przeniesienie przez 7 dni przyciskiem Cofnij, w Telegramie lub w panelu.
 - Asystent tylko sortuje, oznacza, przenosi i pisze szkice. Czy to jest decyzja wywołująca skutki prawne: \<to confirm: assessment of automated decisions>.
 
 ## Twoje prawa
@@ -81,7 +81,7 @@ Asystent używa danych w tych celach. Dla każdego celu podstawa prawna nie jest
 - **Panel.** Panel jest dostępny tylko przez Tailscale, dla członków sieci prywatnej. Nie ma publicznego adresu.
 - **Kopie zapasowe** są szyfrowane przed wysłaniem.
 - **Logowanie.** Dziesięć nieudanych logowań w 15 minut blokuje konto na 15 minut. Nowe hasło jest sprawdzane w bazie znanych wycieków, a z serwera wychodzi tylko 5 znaków jego skrótu. Członek może włączyć drugi składnik (TOTP).
-- **Rozdzielenie.** Każda organizacja widzi tylko swoje dane. Kod filtruje każde zapytanie według organizacji, a baza danych dodaje zabezpieczenie na poziomie wierszy jako drugą barierę.
+- **Rozdzielenie.** Każda organizacja widzi tylko swoje dane. Kod filtruje każde zapytanie według organizacji, a dla żądań z panelu baza danych dodaje zabezpieczenie na poziomie wierszy jako drugą barierę.
 - **Logi** nie zawierają treści wiadomości.
 
 ## Zmiany

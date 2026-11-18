@@ -35,6 +35,10 @@ export const noticeKindSchema = z.enum(noticeKinds);
 export const noticeChannels = ["telegram", "mail"] as const;
 export type NoticeChannel = (typeof noticeChannels)[number];
 
+// The kinds that also go by mail (F110 D14, Q6). Every other kind goes to Telegram only; `noticeRenderers` has a `mail` renderer for these four.
+export const reportMailKinds = ["digest", "weekly_report", "trust_report_ready", "autonomy_paused"] as const;
+export type ReportMailKind = (typeof reportMailKinds)[number];
+
 export const noticeDetails = ["full"] as const; // E9b adds "minimal"
 export type NoticeDetail = (typeof noticeDetails)[number];
 

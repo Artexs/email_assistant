@@ -17,12 +17,16 @@ export const toolSwitchesSchema = z.object({
   // follow-up still waits for a tap. It sits in the schema so that a settings write does not drop the stored key. Only a JSON
   // `true` is on: another stored value reads as off and does not fail the parse of the other switches (triage reads them all).
   auto_follow_up: z.boolean().default(false).catch(false),
+  // Reply drafts (E6a, F115): the drafter writes a reply draft for mail that needs one. Off until the owner turns it on; the
+  // flag `reply_drafts` must be on too, and every draft still waits for a tap. Independent of `create_draft`. Read like
+  // `auto_follow_up`: only a JSON `true` is on.
+  reply_drafts: z.boolean().default(false).catch(false),
 });
 export type ToolSwitches = z.infer<typeof toolSwitchesSchema>;
 // What a writer may pass: a key that is left out takes its default.
 export type ToolSwitchesInput = z.input<typeof toolSwitchesSchema>;
-// The switches of the mailbox tools: what the triage policy reads. `auto_follow_up` belongs to the open loops.
-export type MailToolSwitches = Omit<ToolSwitches, "auto_follow_up">;
+// The switches of the mailbox tools: what the triage policy reads. `auto_follow_up` belongs to the open loops and `reply_drafts` to the reply drafter.
+export type MailToolSwitches = Omit<ToolSwitches, "auto_follow_up" | "reply_drafts">;
 
 export function parseToolSwitches(json: unknown): ToolSwitches {
   return toolSwitchesSchema.parse(json);

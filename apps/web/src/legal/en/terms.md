@@ -19,7 +19,7 @@ These terms say how the service works and what you can expect from it. They desc
 
 - Each organization has one plan state: `trial`, `active` or `suspended`. The operator changes it. A trial that ends does not change the state by itself.
 - An organization has a limit on the number of mailboxes. The operator sets the limit.
-- While an organization is `suspended`, the assistant is paused for it. It does not read new mail, sort mail or send digests. Telegram commands only answer that the account is paused. After the resume, mail that arrived more than 24 hours before the resume is not sorted.
+- While an organization is `suspended`, the assistant is paused for it. It does not read new mail, sort mail or send digests. Telegram commands, except help, only answer that the account is paused. After the resume, mail that arrived more than 24 hours before the resume is not sorted.
 - A member of a suspended organization can still read the panel and accept the terms. A member can also choose the language, and the owner can delete the organization.
 - These terms set no price and no payment terms.
 
@@ -27,7 +27,7 @@ These terms say how the service works and what you can expect from it. They desc
 
 - The service stores the password of a mailbox encrypted. Use an app password when the mail provider has one. The stored secret opens the whole mailbox.
 - A new mailbox is in shadow mode. In shadow mode the assistant changes nothing in the mailbox and only reports what it would do.
-- In assist mode, the assistant can move mail, flag it, mark it as read and save drafts in the Drafts folder of the mailbox. A move or a mark as read happens only for a category that the owner set to run by itself and that passed the quality gate.
+- In assist mode, the assistant can move mail, flag it, mark it as read and save drafts in the Drafts folder of the mailbox. A move or a mark as read happens only for a category that the owner set to run by itself and that passed the quality gate. Mail that the assistant is unsure about moves only when the owner turns on a separate switch for it.
 - The assistant never sends a mail without an owner. The owner taps Send on the exact text, in Telegram or in the panel. Without a tap the send ends after 48 hours.
 - The assistant never deletes mail in your mailbox.
 - When the organization is deleted, the drafts and folders that the assistant made stay in the mailbox. The owner removes them.

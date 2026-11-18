@@ -16,8 +16,16 @@ export interface TemplateFields {
 type Language = "pl" | "en";
 type TemplateText = Required<TemplateFields>;
 
-// One body per draft kind. A new kind fails typecheck here until it has its text.
-export const DRAFT_TEMPLATES: Readonly<Record<DraftKind, (pl: boolean, fields: TemplateText) => string>> = {
+// A kind whose body is not a template. The reason says where the body comes from. `draft-kinds.test.ts` holds the two lists
+// together: every kind is in exactly one of them.
+export const NO_TEMPLATE = {
+  reply:
+    "the body is the text in the payload (`body_text ?? body`); the signature and the quote are added by `buildOutgoingMessage`",
+} as const satisfies Partial<Record<DraftKind, string>>;
+export type TemplatedKind = Exclude<DraftKind, keyof typeof NO_TEMPLATE>;
+
+// One body per draft kind. A new kind fails typecheck here until it has its text, or a reason in `NO_TEMPLATE`.
+export const DRAFT_TEMPLATES: Readonly<Record<TemplatedKind, (pl: boolean, fields: TemplateText) => string>> = {
   delegation: (pl, { task, dueDate, senderLabel, dateLabel, signature }) => {
     const due = dueDate === null ? "" : pl ? `Termin: ${dueDate}\n` : `Due: ${dueDate}\n`;
     return pl
@@ -42,7 +50,7 @@ export const DRAFT_TEMPLATES: Readonly<Record<DraftKind, (pl: boolean, fields: T
   },
 };
 
-export function renderTemplate(kind: DraftKind, language: Language, fields: TemplateFields): string {
+export function renderTemplate(kind: TemplatedKind, language: Language, fields: TemplateFields): string {
   const { task = "", question = "", subject = "", followUpNumber = 1, ...rest } = fields;
   return DRAFT_TEMPLATES[kind](language === "pl", { ...rest, task, question, subject, followUpNumber });
 }

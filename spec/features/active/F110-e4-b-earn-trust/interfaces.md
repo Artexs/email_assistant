@@ -23,8 +23,8 @@ Part of [`plan.md`](plan.md). A stage that creates a name below keeps it. A work
   - `setCategoryAutoWithEvidence` (stage 04), `regateAll` (stage 08), `runTripwire` (stage 09), `trustViewFor` (stage 11; the one reader of the card, the report page and M8).
 - `channels` (stage 10, widened in stage 19): `queueTrustNotice(trx, ctx, { kind, view, mailboxId, now })`, plus `tripId` for `autonomy_paused` (the dedup anchor; stage 10 deviation, a discriminated input); returns the rows queued. Link helpers `trustReportUrlOf(base, mailboxId)`, `trustSettingsUrlOf(base)` → `string | null`. Core: `tripReasons` (the runtime list of `TripReason`). Stage 20: `isOwnReportMail(db, ctx, mailboxId, id)`.
 - `reports` (stage 12): week deps gain `trustEvidence?: (ctx, mailboxId) => Promise<TrustEvidenceRows>`, injected by the composition roots.
-- `triage/suspicious-repo.ts` (stage 22): `suspiciousSendersOf(db, ctx, mailboxId, sendersLower): Promise<Set<string>>`.
-- `trust/newsletters.ts` (stage 22): `listNewsletterSenders(db, ctx, mailboxId, now)`.
+- `triage/suspicious-repo.ts` (stage 22): `suspiciousSendersOf(db, ctx, mailboxId, sendersLower, since): Promise<Set<string>>` (`since` is the window start; the reader has no clock).
+- `triage/newsletter-senders.ts` (stage 22; exported by `triage/index.ts`; it is in `triage`, not `trust`, because a `trust` source may not name `triage_results`): `listNewsletterSenders(db, ctx, mailboxId, now, { trustedAuthservIds })` → `{ senderLower, fromName, count, latestAt, latestEmailId, oneClick, hasLink }[]`. A spam or suspicious sender is left out, so the type has no `spam` field. `trustedAuthservIds` is `MAIL_TRUSTED_AUTHSERV_IDS` only (not the IMAP host): the caller passes `mailTrustedAuthservIds(config)`.
 - `platform/public-http.ts` (stage 24): `postOneClick(url, deps): Promise<{ kind: "ok" | "refused" | "failed"; code: string }>`.
 
 ## Schema (stage 03; stage 22 for unsubscribe)

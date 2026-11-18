@@ -2,19 +2,19 @@ import { execFileSync } from "node:child_process";
 
 import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
-import { E2E_DELEGATIONS, E2E_LOOPS, E2E_LOOPS_DELEGATE } from "../../../server/src/scripts/e2e-seed-args";
+import { E2E_DELEGATIONS, E2E_OPEN_LOOPS, E2E_OPEN_LOOPS_DELEGATE } from "../../../server/src/scripts/e2e-seed-args";
 import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// The open loops organization of the project (see `e2e-loops-rows.ts`): the flags `open_loops`, `delegation_pages` and `approvals_page`
+// The open loops organization of the project (see `e2e-open-loops-rows.ts`): the flags `open_loops`, `delegation_pages` and `approvals_page`
 // are on, the mailbox is in assist mode with drafts on, and there is one loop for each kind and state of the page. The tests change the
 // rows, so the tests of a project run in this order: the reads first, then the actions (draft, later, done, untrack, drop), then S11.
 test.describe.configure({ mode: "serial" });
 
 const project = (): "mobile" | "desktop" => (test.info().project.name === "mobile" ? "mobile" : "desktop");
-const org = () => readSeed().loopsOrgs[project()];
+const org = () => readSeed().openLoopsOrgs[project()];
 
 // Every test signs in once, from its own client address: the login rate limit counts per address. Documentation range 203.0.113.0/24,
 // a block per project (30–54 and 130–154 here), away from the blocks of the other specs.
@@ -30,12 +30,12 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
   return errors;
 }
 
-type Key = keyof typeof E2E_LOOPS;
-const textOf = (key: Key): string => E2E_LOOPS[key].text;
-const counterpartOf = (key: Key): string => E2E_LOOPS[key].counterpart;
+type Key = keyof typeof E2E_OPEN_LOOPS;
+const textOf = (key: Key): string => E2E_OPEN_LOOPS[key].text;
+const counterpartOf = (key: Key): string => E2E_OPEN_LOOPS[key].counterpart;
 // The name that the buttons of a row carry: who it is about (the delegate for a delegated loop, else the counterpart) and its text.
 const whoOf = (key: Key): string =>
-  E2E_LOOPS[key].kind === "delegated" ? E2E_LOOPS_DELEGATE.name : counterpartOf(key);
+  E2E_OPEN_LOOPS[key].kind === "delegated" ? E2E_OPEN_LOOPS_DELEGATE.name : counterpartOf(key);
 const nameOf = (key: Key): string => `${whoOf(key)}, ${textOf(key)}`;
 const fill = (text: string, name: string) => text.replace("{name}", name);
 
@@ -181,8 +181,8 @@ test("rows: each kind shows its counterpart, text, reason, due date and counters
   await page.goto("/delegations");
   const delegated = regionOf(page, "delegated");
   const forward = rowOf(delegated, "delView");
-  await expect(forward).toContainText(E2E_LOOPS_DELEGATE.name);
-  await expect(forward).toContainText(E2E_LOOPS_DELEGATE.email);
+  await expect(forward).toContainText(E2E_OPEN_LOOPS_DELEGATE.name);
+  await expect(forward).toContainText(E2E_OPEN_LOOPS_DELEGATE.email);
   await expect(forward).toContainText(/You forwarded this to a delegate; no answer for/);
   await expect(buttonOf(delegated, "delView", en.lp_untrack_for)).toBeVisible();
   expect(errors).toEqual([]);

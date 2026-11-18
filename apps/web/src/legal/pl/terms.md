@@ -19,7 +19,7 @@ Ten regulamin mówi, jak działa usługa i czego możesz się po niej spodziewa�
 
 - Każda organizacja ma jeden stan planu: `trial`, `active` albo `suspended`. Zmienia go operator. Zakończony okres próbny nie zmienia stanu sam.
 - Organizacja ma limit liczby skrzynek. Limit ustawia operator.
-- Gdy organizacja jest `suspended`, asystent jest dla niej wstrzymany. Nie czyta nowej poczty, nie sortuje wiadomości i nie wysyła podsumowań. Polecenia w Telegramie odpowiadają tylko, że konto jest wstrzymane. Po wznowieniu wiadomości, które przyszły ponad 24 godziny przed wznowieniem, nie są sortowane.
+- Gdy organizacja jest `suspended`, asystent jest dla niej wstrzymany. Nie czyta nowej poczty, nie sortuje wiadomości i nie wysyła podsumowań. Polecenia w Telegramie, oprócz pomocy, odpowiadają tylko, że konto jest wstrzymane. Po wznowieniu wiadomości, które przyszły ponad 24 godziny przed wznowieniem, nie są sortowane.
 - Członek wstrzymanej organizacji nadal może czytać panel i akceptować regulamin. Może też wybrać język, a właściciel może usunąć organizację.
 - Ten regulamin nie podaje ceny ani warunków płatności.
 
@@ -27,7 +27,7 @@ Ten regulamin mówi, jak działa usługa i czego możesz się po niej spodziewa�
 
 - Usługa przechowuje hasło skrzynki w postaci zaszyfrowanej. Używaj hasła aplikacji, gdy dostawca poczty je oferuje. Zapisany sekret otwiera całą skrzynkę.
 - Nowa skrzynka jest w trybie podglądu. W trybie podglądu asystent niczego nie zmienia w skrzynce i tylko zgłasza, co by zrobił.
-- W trybie asystenta asystent może przenosić wiadomości, oznaczać je flagą, oznaczać jako przeczytane i zapisywać szkice w folderze szkiców skrzynki. Przeniesienie lub oznaczenie jako przeczytane następuje tylko dla kategorii, którą właściciel ustawił jako automatyczną i która przeszła bramkę jakości.
+- W trybie asystenta asystent może przenosić wiadomości, oznaczać je flagą, oznaczać jako przeczytane i zapisywać szkice w folderze szkiców skrzynki. Przeniesienie lub oznaczenie jako przeczytane następuje tylko dla kategorii, którą właściciel ustawił jako automatyczną i która przeszła bramkę jakości. Wiadomości, co do których asystent nie jest pewny, są przenoszone tylko wtedy, gdy właściciel włączy osobny przełącznik.
 - Asystent nigdy nie wysyła wiadomości bez właściciela. Właściciel dotyka Wyślij przy dokładnym tekście, w Telegramie lub w panelu. Bez dotknięcia wysyłka wygasa po 48 godzinach.
 - Asystent nigdy nie usuwa wiadomości z Twojej skrzynki.
 - Gdy organizacja zostanie usunięta, szkice i foldery, które utworzył asystent, zostają w skrzynce. Usuwa je właściciel.

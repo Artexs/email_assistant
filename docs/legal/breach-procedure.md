@@ -1,6 +1,6 @@
 # Personal data breach procedure (GDPR Art. 33, 34) — DRAFT, not legal advice
 
-Status: draft of the build commit. The steps run from the first sign of a breach to the notices. The provider is the processor of the mail of each organization and the controller of the account data of members (`docs/legal/records-of-processing.md`). The text of Art. 33 and 34 is not yet checked against the law: `<to confirm: Art. 33 and 34 wording checked>`.
+Status: draft of the build commit. The steps run from the first sign of a breach to the notices. The provider is the processor of the mail of each organization and the controller of the account data of members (`docs/legal/records-of-processing.md`). The text of Art. 33 and 34 was read at EUR-Lex on 2026-11-17 (rows of `docs/legal/claims.md`). No lawyer has checked it.
 
 This paper writes no new runbook. Where a runbook exists, a step links to it. Where none exists, the step says so and shows a visible placeholder. Contact of the provider: `<contact>`. Address: `<address>`.
 
@@ -51,14 +51,14 @@ For the mail of an organization the organization is the controller. The provider
 - **When.** Without undue delay. The target is 24 hours after awareness. This is a default of the F107 plan; the law sets no number for the processor (F107 question Q9: the owner confirms it). `<to confirm: 24 hours target>`. The 72 hours of the next step belong to the controller.
 - **How.** By a private channel, never by an open mail. Use the contact of the owner: `<to confirm: contact channel of the owners>`.
 - **What.** The nature of the breach, the data categories, the organizations and the approximate number of people, the likely effects, and the measures taken and planned. Add no mail text.
-- **Wording to check:** the content list of Art. 33(3). `<to confirm: Art. 33(3) wording checked>`.
+- **Content list.** Art. 33(3) lists the same points for the notice to the authority, and adds the contact point of the data protection officer (read at EUR-Lex on 2026-11-17).
 
 For the account data of members the provider is the controller: continue with the next section as the controller.
 
 ## Notify the authority and the people
 
-- **The controller notifies the supervisory authority** within 72 hours after it becomes aware of the breach (Art. 33(1)), unless the breach is unlikely to put people at risk. In Poland the authority is UODO. `<to confirm: Art. 33(1) and the authority checked>`.
-- **The controller notifies the people** when the breach is likely to put them at high risk (Art. 34). `<to confirm: Art. 34 wording checked>`.
+- **The controller notifies the supervisory authority** within 72 hours after it becomes aware of the breach (Art. 33(1)), unless the breach is unlikely to put people at risk. In Poland the authority is UODO. The 72 hours and the exception were read at EUR-Lex on 2026-11-17. The authority was read at the site of UODO on the same day (`docs/legal/claims.md`).
+- **The controller notifies the people** when the breach is likely to put them at high risk (Art. 34). The article was read at EUR-Lex on 2026-11-17.
 - **When the provider is the controller** (account data of members), `<provider name>` makes both notices.
 - **When the organization is the controller,** the provider helps with facts, on the written request of the owner. The DPA says that the processor tells the controller without undue delay and follows this procedure (`apps/web/src/legal/en/dpa.md`, section "Breaches").
 - A notice to people has no mail text and no secret in it.

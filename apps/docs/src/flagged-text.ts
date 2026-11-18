@@ -72,6 +72,14 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
   ],
   open_loops: ["📝 Follow-up", "Open loops on time", "A follow-up waits for your approval in the panel."],
   sent_sync: ["No sent mail seen for"],
+  report_mail: [
+    "[Email assistant]",
+    "[Asystent poczty]",
+    "Mailbox check ready",
+    "Sprawdzenie poczty gotowe",
+    "Automatic moves paused",
+    "Automatyczne przenoszenie wstrzymane",
+  ],
 };
 
 // A default-off flag with no text that a user can see yet. The reason names where the flag is read.
@@ -79,6 +87,8 @@ export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
   delegate_button:
     "only the server function `delegateMail` (modules/loops/delegate.ts) reads it: no button text exists yet",
   trust_ladder: "no text: it adds `blocks` codes to the `no_go` API answer and changes the evidence gate",
+  reply_drafts:
+    "F115 stage 03b adds the flag and the switch only (`tool_switches.reply_drafts`, hidden while the flag is off): the text of the drafts, notices and cards comes in the stages 12 to 15",
 };
 
 export const FLAGGED_TEXT: FlaggedText[] = [

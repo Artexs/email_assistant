@@ -7,8 +7,7 @@ Every paper is a draft, not legal advice. It describes the setup that the code a
 - [records-of-processing.md](records-of-processing.md) — records of processing, GDPR Art. 30: record A (provider as controller of member account data) and record B (provider as processor of the mail).
 - [dpia.md](dpia.md) — draft data protection impact assessment, GDPR Art. 35, for the processing of executives' mail with an LLM.
 - [breach-procedure.md](breach-procedure.md) — personal data breach procedure, GDPR Art. 33 and 34: detect, contain, assess, notify, record, after. The breach register lives outside this repository.
-
-A claims list that gives the source of each claim of the papers follows in a later stage of F107.
+- [claims.md](claims.md) — the claims list: each factual claim of the six in-app texts, the two registries and the three papers above, with its source (a repo path, an ADR or a public URL with the date read) and the condition that changes it. The test `apps/server/src/legal-papers.test.ts` checks its shape. The counts per paper are at the top of the file.
 
 ## In-app pages (static, no sign-in)
 

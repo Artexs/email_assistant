@@ -1,4 +1,4 @@
-import type { SuspiciousReason } from "@ea/core";
+import type { Suspicion, SuspiciousReason } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -41,6 +41,37 @@ export async function listFrequentSenders(
     HAVING count(*) >= ${FREQUENT_MIN_MAILS}
   `.execute(db);
   return rows.map((row) => row.sender);
+}
+
+// The senders (of `sendersLower`, lower case) with at least one mail in this mailbox since `since` whose newest result has
+// reasons (F110 stage 22; PD-063: bulk unsubscribe never touches a flagged sender). The rule is per sender: one flagged mail
+// puts the sender in the set, an older flagged row under a clean newest row does not (the pattern of `listFrequentSenders`).
+// Queries `from_address_lower` (index `emails_mailbox_sender_idx`): never `lower(from_address)`. Mail with no result does not count.
+export async function suspiciousSendersOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  sendersLower: readonly string[],
+  since: Date
+): Promise<Set<string>> {
+  if (sendersLower.length === 0) return new Set();
+  const { rows } = await sql<{ sender: string }>`
+    SELECT DISTINCT e.from_address_lower AS sender
+    FROM emails e
+    JOIN LATERAL (
+      SELECT tr.suspicious_reasons
+      FROM triage_results tr
+      WHERE tr.org_id = e.org_id AND tr.email_id = e.id
+      ORDER BY tr.created_at DESC, tr.id DESC
+      LIMIT 1
+    ) latest ON true
+    WHERE e.org_id = ${ctx.orgId}
+      AND e.mailbox_id = ${mailboxId}
+      AND e.from_address_lower = ANY(${sendersLower as string[]}::text[])
+      AND e.received_at >= ${since}
+      AND cardinality(latest.suspicious_reasons) > 0
+  `.execute(db);
+  return new Set(rows.map((row) => row.sender));
 }
 
 // The newest non-empty `from_name` of mail from each address in this mailbox in the window (the display names of VIPs).
@@ -88,6 +119,38 @@ export async function suspiciousReasonsOf(
     WHERE cardinality(latest.suspicious_reasons) > 0
   `.execute(db);
   for (const row of rows) found.set(row.email_id, row.suspicious_reasons);
+  return found;
+}
+
+const SUSPICION_CHUNK = 500;
+
+// The three-state suspicion of each mail (F115 D4, F109 review-4 N3): no `triage_results` row → `untriaged` (never checked, not
+// clean); the newest row has no reasons → `clean`; else `flagged` with its codes. Every id of `emailIds` is in the map. An id
+// of another organization finds no row under this `ctx` and reads `untriaged`. It ignores the flag `suspicious_mail`, like
+// `suspiciousReasonsOf`, which stays as it is for the callers that only need the reasons.
+export async function suspicionOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, Suspicion>> {
+  const found = new Map<string, Suspicion>();
+  for (const id of emailIds) found.set(id, { state: "untriaged" });
+  for (let start = 0; start < emailIds.length; start += SUSPICION_CHUNK) {
+    const chunk = emailIds.slice(start, start + SUSPICION_CHUNK);
+    const { rows } = await sql<{ email_id: string; suspicious_reasons: SuspiciousReason[] }>`
+      SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.suspicious_reasons
+      FROM triage_results tr
+      WHERE tr.org_id = ${ctx.orgId}
+        AND tr.email_id = ANY(${chunk as string[]}::uuid[])
+      ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
+    `.execute(db);
+    for (const row of rows) {
+      found.set(
+        row.email_id,
+        row.suspicious_reasons.length === 0 ? { state: "clean" } : { state: "flagged", reasons: row.suspicious_reasons }
+      );
+    }
+  }
   return found;
 }
 

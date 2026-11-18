@@ -25,6 +25,7 @@ export * from "./sso";
 export * from "./stats";
 export * from "./telegram";
 export * from "./terms";
+export * from "./trust";
 export * from "./two-factor";
 export * from "../legal";
 export * from "../mail/providers";

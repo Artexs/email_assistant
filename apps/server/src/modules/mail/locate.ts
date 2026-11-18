@@ -96,3 +96,35 @@ export async function locateByActionId(
   }
   return null;
 }
+
+export interface MessageIdLocateKey {
+  /** The Message-ID that the caller put on the message, with or without the angle brackets. */
+  messageId: string;
+  /** The earliest time the message can have been stored: the search window starts one day earlier. */
+  since: Date;
+}
+
+const bare = (id: string): string => id.trim().replace(/^<|>$/g, "").toLowerCase();
+
+/**
+ * Finds a message that the system appended itself by its fixed Message-ID, with no header search (Interia finds nothing by `Message-ID`,
+ * but a FETCH returns it). The newest messages are read first: an appended report mail is among them. A message flagged `\Deleted` does
+ * not count. Nothing here writes to the mailbox (F110 stage 20).
+ */
+export async function locateByMessageId(
+  provider: MailProvider,
+  folder: string,
+  key: MessageIdLocateKey
+): Promise<FolderMessageMeta | null> {
+  const wanted = bare(key.messageId);
+  const counts = (meta: FolderMessageMeta): boolean =>
+    !isDeleted(meta) && meta.messageId !== null && bare(meta.messageId) === wanted;
+  const uids = await provider.searchSinceIn(folder, new Date(key.since.getTime() - DAY_MS));
+  const newestFirst = [...uids].sort((a, b) => b - a);
+  for (let i = 0; i < newestFirst.length; i += LOCATE_NEWEST_FIRST_CHUNK) {
+    const metas = await provider.fetchByUidsIn(folder, newestFirst.slice(i, i + LOCATE_NEWEST_FIRST_CHUNK));
+    const found = metas.find(counts);
+    if (found !== undefined) return found;
+  }
+  return null;
+}

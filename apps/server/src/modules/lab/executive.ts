@@ -72,7 +72,10 @@ export async function lookupCard(
     if (messageId === null) return null;
     const payload = sendPayloadSchema.safeParse(send.payload);
     if (!payload.success) return { messageId };
-    const kind = payload.data.kind === "reminder" || payload.data.kind === "follow_up" ? "other" : payload.data.kind;
+    const kind =
+      payload.data.kind === "reminder" || payload.data.kind === "follow_up" || payload.data.kind === "reply"
+        ? "other"
+        : payload.data.kind;
     return { messageId, draft: { kind, recipient: payload.data.to[0] ?? "" } };
   }
   if (card.emailId === undefined) return null;

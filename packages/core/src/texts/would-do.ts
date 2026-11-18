@@ -40,8 +40,9 @@ export const wouldDoTexts = {
     flag: (_tense) => "flag",
     markRead: (_tense) => "mark read",
     move: (_tense, folder) => (folder === null ? "move" : `move to ${folder}`),
-    draft: (_tense, kind, name, skills = null) => {
+    draft: (tense, kind, name, skills = null) => {
       if (kind === "clarification") return "draft a question to the sender";
+      if (kind === "reply") return isFuture(tense) ? "draft a reply" : "reply drafted";
       return `draft a ${kind === "reminder" ? "reminder" : "delegation"} to ${name ?? "a delegate"}${skills === null ? "" : ` (${skills})`}`;
     },
     send: {
@@ -69,6 +70,7 @@ export const wouldDoTexts = {
     draft: (tense, kind, name, skills = null) => {
       const noun = isFuture(tense) ? "przygotować szkic" : "szkic";
       if (kind === "clarification") return `${noun} pytania do nadawcy`;
+      if (kind === "reply") return `${noun} odpowiedzi`;
       return `${noun} ${kind === "reminder" ? "przypomnienia" : "zlecenia"}${plDelegate(name, skills)}`;
     },
     send: {

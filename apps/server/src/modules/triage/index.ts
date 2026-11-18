@@ -63,7 +63,14 @@ export {
   toClassifierInput,
   toPrediction,
 } from "./eval";
-export { suspiciousReasonsOf, suspiciousThreadKeysOf } from "./suspicious-repo";
+export {
+  hasHttpsUnsubscribeLink,
+  listNewsletterSenders,
+  NEWSLETTER_MAX_SENDERS,
+  NEWSLETTER_WINDOW_DAYS,
+  type NewsletterSender,
+} from "./newsletter-senders";
+export { suspiciousReasonsOf, suspiciousSendersOf, suspiciousThreadKeysOf, suspicionOf } from "./suspicious-repo";
 export { suspiciousReasonsToShow } from "./suspicious-show";
 export { BUDGET_STOP_REASON, firstEstimateUsd, RETRY_WAITS_MS, runPool } from "./eval-pool";
 export type { AttemptHooks, EvalBudget } from "./eval-pool";

@@ -1,5 +1,5 @@
 // The types and the helper that apply.ts, drafts.ts and send.ts share. It imports none of them, so there is no import cycle.
-import type { MoveTarget, OutgoingMessage, SendLimits } from "@ea/core";
+import type { MoveTarget, OutgoingMessage, SendLimits, SenderProfile } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -50,6 +50,8 @@ export interface ApplyDeps {
   };
   owner: { displayName: string };
   organization: { styleText: string | null; timezone: string };
+  /** The profile row of the mailbox (reply drafts): name and signature. Null or absent: no row, so the fallbacks apply. */
+  profile?: SenderProfile | null;
   compose(message: OutgoingMessage): Promise<Buffer>;
   sender: MailSender | null;
   hooks: DelegationHooks;

@@ -44,6 +44,8 @@ const ROW_SHAPE: Readonly<Record<string, { id: string; emailId: string | null }>
   reply_requests: { id: "id", emailId: "email_id" },
   // A profile belongs to a mailbox, not to a mail: its key is the mailbox id, which is never in `goesSent`.
   mailbox_profiles: { id: "mailbox_id", emailId: null },
+  // An unsubscribe request belongs to a mailbox and a sender, not to a mail: every row that names the address is a mention.
+  unsubscribe_requests: { id: "id", emailId: null },
 };
 
 // Tables of the `list` rule and the field of `DsrMatch.listed` that each fills.
@@ -77,6 +79,7 @@ export function rowCondition(rule: AddressRule, column: string, patterns: Addres
     case "json":
       return sql<boolean>`${ref}::text ~* ${patterns.json}`;
     case "equal":
+    case "delete":
       return sql<boolean>`lower(${ref}) = ${address}`;
     case "sender":
     case "list":

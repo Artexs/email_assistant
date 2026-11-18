@@ -114,7 +114,9 @@ export {
   listAnsweredOrFlagged,
   listFromAddresses,
   listHistoryCandidates,
+  listMailExamples,
   type HistoryCandidate,
+  type MailExampleFacts,
   type StoredEmail,
 } from "./history";
 export {
@@ -158,3 +160,5 @@ export {
   type SentSummary,
   type UserAnswer,
 } from "./sent-readers";
+export { mailboxProfileOf, upsertMailboxProfile, type MailboxProfile, type MailboxProfileFields } from "./profiles";
+export { replyFactsOf, type MailReplyFacts } from "./reply-facts";

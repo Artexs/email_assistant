@@ -20,6 +20,7 @@ export function loopOriginal(anchor: LoopAnchor): OriginalMail {
 
 export interface OriginalMailRow {
   from_address: string | null;
+  from_name: string | null;
   subject: string | null;
   received_at: Date;
   message_id_header: string | null;
@@ -32,6 +33,7 @@ export interface OriginalMailRow {
 export function mailOriginal(email: OriginalMailRow): OriginalMail {
   return {
     fromAddress: email.from_address,
+    fromName: email.from_name,
     subject: email.subject,
     receivedAt: email.received_at,
     messageId: email.message_id_header,

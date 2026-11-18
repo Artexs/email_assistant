@@ -31,6 +31,12 @@ function headerValue(parsed: ParsedMail, key: string): string | null {
   return value === "" ? null : value;
 }
 
+// RFC 8058: the topmost `List-Unsubscribe-Post` value, trimmed and case-insensitive, is `List-Unsubscribe=One-Click`.
+// Absent or any other value is `false`. Only the flag is kept, never the header text.
+function oneClickOf(value: string | null): boolean {
+  return value !== null && value.toLowerCase() === "list-unsubscribe=one-click";
+}
+
 function token(value: string | null): string | null {
   if (value === null) return null;
   const word = (value.split(/[;\s,]/)[0] ?? "").toLowerCase();
@@ -144,6 +150,7 @@ export function captureFromParsed(parsed: ParsedMail, opts: { partsKnown: boolea
     returnPath: returnPathOf(headerValue(parsed, "return-path")),
     authResults: cleanCut(headerValue(parsed, "authentication-results"), CAPTURE_LIMITS.authResults),
     listUnsubscribe: cleanCut(headerValue(parsed, "list-unsubscribe"), CAPTURE_LIMITS.listUnsubscribe),
+    listUnsubscribePost: oneClickOf(headerValue(parsed, "list-unsubscribe-post")),
     listId: cleanCut(headerValue(parsed, "list-id"), CAPTURE_LIMITS.listId),
     autoSubmitted: token(headerValue(parsed, "auto-submitted")),
     precedence: token(headerValue(parsed, "precedence")),

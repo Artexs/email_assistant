@@ -44,6 +44,43 @@ export type EvidenceGateResult =
 
 const NO_TRIP: TripState = { tripped: false, reason: null, at: null };
 
+// What the gate reads of one mailbox: the real labels and the global evidence of every bar category, the newest history result
+// and the active trips.
+export interface EvidenceInputs {
+  gates: Record<BarCategory, GateView>;
+  globals: Record<BarCategory, GlobalEvidence>;
+  // Only the moving categories have a history result; the others read `undefined`.
+  history: Partial<Record<BarCategory, HistoryCategoryResult | null>>;
+  trips: ReadonlyMap<BarCategory, TripState>;
+}
+
+export async function readEvidenceInputs(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { gate: GateEvidenceDeps; testMail: TestMailRule; now: Date }
+): Promise<EvidenceInputs> {
+  return {
+    gates: await goNoGoFor(db, ctx, mailboxId, opts.now, opts.testMail),
+    globals: globalEvidenceFor(opts.gate.index, opts.gate.runningKey),
+    history: await historyResultFor(db, ctx, mailboxId),
+    trips: await activeTripsOf(db, ctx, mailboxId),
+  };
+}
+
+// The one rule that turns the reads of a mailbox into the `autoEvidence` verdict of one category: the gate, the history notice, the
+// "turn on recommended" write and the trust view all call it.
+export function judgeCategory(inputs: EvidenceInputs, category: BarCategory): AutoEvidenceResult {
+  const gate = inputs.gates[category];
+  return autoEvidence({
+    category,
+    global: inputs.globals[category],
+    history: inputs.history[category] ?? null,
+    trip: inputs.trips.get(category) ?? NO_TRIP,
+    realLabels: { kept: gate.kept, decision: gate.decision === "no-go: too few" ? "too-few" : gate.decision },
+  });
+}
+
 // The three evidence sources and the real labels for one category: the one reader of the gate and of the history check's notice.
 export async function readCategoryEvidence(
   db: Db | Transaction<DB>,
@@ -52,23 +89,8 @@ export async function readCategoryEvidence(
   category: BarCategory,
   opts: { gate: GateEvidenceDeps; testMail: TestMailRule; now: Date }
 ): Promise<{ gate: GateView; result: AutoEvidenceResult; global: GlobalEvidence }> {
-  const gate = (await goNoGoFor(db, ctx, mailboxId, opts.now, opts.testMail))[category];
-  const global = globalEvidenceFor(opts.gate.index, opts.gate.runningKey)[category];
-  // Only the moving categories have a history result; the others read `undefined`.
-  const historyRows: Partial<Record<BarCategory, HistoryCategoryResult | null>> = await historyResultFor(
-    db,
-    ctx,
-    mailboxId
-  );
-  const trip = (await activeTripsOf(db, ctx, mailboxId)).get(category) ?? NO_TRIP;
-  const result = autoEvidence({
-    category,
-    global,
-    history: historyRows[category] ?? null,
-    trip,
-    realLabels: { kept: gate.kept, decision: gate.decision === "no-go: too few" ? "too-few" : gate.decision },
-  });
-  return { gate, result, global };
+  const inputs = await readEvidenceInputs(db, ctx, mailboxId, opts);
+  return { gate: inputs.gates[category], result: judgeCategory(inputs, category), global: inputs.globals[category] };
 }
 
 // The reads happen outside the settings lock, as in `setCategoryAutoWithGate`: a label, a check or a trip that lands

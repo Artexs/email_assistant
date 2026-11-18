@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { categoryOfColumn, type Kept } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
@@ -24,5 +27,43 @@ describe("data categories: retention pins", () => {
   test("the 90-day text period equals RETENTION_TEXT_DAYS", () => {
     expect(RETENTION_TEXT_DAYS).toBe(90);
     expect(keptOf("emails", "subject")).toEqual({ kind: "days", days: RETENTION_TEXT_DAYS });
+  });
+});
+
+// Reply texts (F115 stage 03b, review 3 N6): ONE period and ONE cut-off column. The period is the text period of the job
+// (`RETENTION_TEXT_DAYS`), not `data_retention_days`; the column is `created_at`. The four places agree: the job
+// (`retention.ts` and `clearReplyTexts`, pinned by `replies-retention.test.ts`), the category `reply-texts`, `docs/architecture.md`
+// §7 and `docs/legal/records-of-processing.md`.
+describe("reply texts: one period and one cut-off column", () => {
+  const ROOT = path.resolve(import.meta.dir, "../../..");
+  const read = (file: string) => readFileSync(path.join(ROOT, file), "utf8");
+  const rowOf = (markdown: string, needle: string) => markdown.split("\n").find((line) => line.includes(needle)) ?? "";
+
+  test("the category keeps both columns for the text period", () => {
+    for (const column of ["instruction", "sample_body"]) {
+      expect(keptOf("reply_requests", column)).toEqual({ kind: "days", days: RETENTION_TEXT_DAYS });
+    }
+  });
+
+  test("the job counts from created_at: the function reads that column and no other", () => {
+    const source = read("apps/server/src/modules/replies/retention.ts");
+    expect(source).toContain('.where("created_at", "<", opts.before)');
+    expect(source).not.toContain('"updated_at", "<"');
+    const job = read("apps/server/src/retention.ts");
+    expect(job).toContain("clearers.clearReplyTexts(db, ctx, { before: textsBefore, now })");
+  });
+
+  test("§7 of the architecture and the records of processing name the same period and the same column", () => {
+    const architecture = rowOf(read("docs/architecture.md"), "`reply_requests.instruction`");
+    const records = rowOf(read("docs/legal/records-of-processing.md"), "| `reply-texts`");
+    for (const row of [architecture, records]) {
+      expect(row).toContain(`${RETENTION_TEXT_DAYS} days`);
+      expect(row).toContain("`created_at`");
+      expect(row).not.toContain("last change");
+      expect(row).not.toContain("<to confirm");
+    }
+    expect(architecture).toContain("`RETENTION_TEXT_DAYS`");
+    expect(architecture).toContain("`clearReplyTexts`");
+    expect(read("docs/legal/records-of-processing.md")).not.toContain("<to confirm: cut-off column>");
   });
 });

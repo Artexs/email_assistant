@@ -93,4 +93,45 @@ describe("composeMessage", () => {
     expect(text).toContain("Subject: Re: Offer");
     expect(text).toContain("In-Reply-To: <orig@firma.pl>");
   });
+
+  test("a reply writes To, Cc and the thread headers, adds no marker and no header of ours but the action id", async () => {
+    const reply = {
+      kind: "reply",
+      to: ["klient@firma.pl"],
+      cc: ["b@y.pl"],
+      language: "pl",
+      body: "Dzień dobry,\n\nsprawdzę i wrócę z odpowiedzią.",
+      request_id: "44444444-4444-4444-8444-444444444444",
+      folder: "INBOX",
+      recipients: "all",
+    } satisfies DraftPayload;
+    const raw = (await composeMessage(buildOutgoingMessage(input(reply)))).toString("latin1");
+    const head = raw.slice(0, raw.indexOf("\r\n\r\n"));
+    expect(head).toContain("To: klient@firma.pl");
+    expect(head).toContain("Cc: b@y.pl");
+    expect(head).toContain("In-Reply-To: <orig@firma.pl>");
+    expect(head).toContain("References: <root@firma.pl> <prev@firma.pl> <orig@firma.pl>");
+    // Only the headers of the standard set and the one header that finds our own draft.
+    const custom = head.split("\r\n").filter((line) => /^x-/i.test(line));
+    expect(custom).toEqual([`X-Ea-Action-ID: ${ID}`]);
+    expect(raw).not.toContain("[[");
+  });
+
+  test("a reply body with header-like lines adds no header and no recipient", async () => {
+    const reply = {
+      kind: "reply",
+      to: ["klient@firma.pl"],
+      cc: [],
+      language: "en",
+      body: "Hi\r\nBcc: evil@x.test\r\nTo: evil2@x.test\r\n\r\nbye",
+      request_id: "44444444-4444-4444-8444-444444444444",
+      folder: "INBOX",
+      recipients: "from",
+    } satisfies DraftPayload;
+    const raw = (await composeMessage(buildOutgoingMessage(input(reply)))).toString("latin1");
+    const head = raw.slice(0, raw.indexOf("\r\n\r\n"));
+    expect(head).not.toMatch(/^bcc:/im);
+    expect(head.match(/^to:/gim)).toHaveLength(1);
+    expect(head).not.toContain("evil");
+  });
 });

@@ -25,7 +25,7 @@ import {
 import { listSenderRules } from "../../config";
 import { getDelegate, listDelegateAddresses } from "../../delegation";
 import { loopHooks } from "../../loops";
-import { getMailbox, isSyntheticMessageId, listMailboxes } from "../../mail";
+import { getMailbox, isSyntheticMessageId, listMailboxes, mailboxProfileOf } from "../../mail";
 import { getOrganization, isFeatureOn, listMemberships } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
@@ -85,6 +85,7 @@ export async function approvalViewFor(
     mailbox: { address: mailbox.address },
     owner: { displayName: owner?.display_name ?? mailbox.address },
     organization: { styleText: organization.style_text, timezone: organization.timezone },
+    profile: await mailboxProfileOf(db, ctx, mailbox.id),
     original,
   });
   let external = false;

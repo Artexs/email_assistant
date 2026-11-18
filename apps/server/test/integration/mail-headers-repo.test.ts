@@ -24,6 +24,7 @@ const CAPTURE: CapturedHeaders = {
   returnPath: "bounce@evil.test",
   authResults: "mx.top.example; dmarc=fail header.from=evil.test; spf=fail",
   listUnsubscribe: "<https://u.test/x>, <mailto:u@u.test>",
+  listUnsubscribePost: true,
   listId: "News <news.list.test>",
   autoSubmitted: "auto-replied",
   precedence: "bulk",
@@ -75,6 +76,27 @@ describe("email headers repository", () => {
       expect(await insertEmailHeaders(trx, org.ctx, { mailboxId: org.mailboxId, dedupKey: "none" }, CAPTURE, at)).toBe(
         false
       );
+    });
+  });
+
+  test("1b: a row stored before the column existed reads as null; a stored false reads as false", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const oldId = await mailOf(trx, org, "old");
+      const newId = await mailOf(trx, org, "new");
+      await trx
+        .insertInto("email_headers")
+        .values({ email_id: oldId, org_id: org.ctx.orgId, parts_known: true, captured_at: at })
+        .execute();
+      await insertEmailHeaders(
+        trx,
+        org.ctx,
+        { mailboxId: org.mailboxId, dedupKey: "new" },
+        { ...CAPTURE, listUnsubscribePost: false },
+        at
+      );
+      expect((await getEmailHeaders(trx, org.ctx, oldId))?.listUnsubscribePost).toBeNull();
+      expect((await getEmailHeaders(trx, org.ctx, newId))?.listUnsubscribePost).toBe(false);
     });
   });
 
@@ -131,6 +153,8 @@ describe("email headers repository", () => {
         returnPath: null,
         authResults: null,
         listUnsubscribe: null,
+        // A flag, not text: retention keeps it with the counts.
+        listUnsubscribePost: true,
         listId: null,
         attachments: [],
         links: [],

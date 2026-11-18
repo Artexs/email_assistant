@@ -106,8 +106,8 @@ export const dataCategories: readonly DataCategory[] = [
     id: "captured-headers",
     label: { en: "Captured headers", pl: "Zapisane nagłówki" },
     purpose: {
-      en: "Header facts of a mail: sender name, reply-to, return path, verdicts, list data, attachments and links",
-      pl: "Dane z nagłówków wiadomości: nazwa nadawcy, reply-to, return-path, werdykty, dane listy, załączniki i linki",
+      en: "Header facts of a mail: sender name, reply-to, return path, authentication results, list data, attachments and links",
+      pl: "Dane z nagłówków wiadomości: nazwa nadawcy, reply-to, return-path, wyniki uwierzytelnienia, dane listy, załączniki i linki",
     },
     columns: ["email_headers.*"],
     subjects: ["users", "others"],
@@ -162,8 +162,8 @@ export const dataCategories: readonly DataCategory[] = [
     id: "ai-results",
     label: { en: "AI texts", pl: "Teksty AI" },
     purpose: {
-      en: "The AI's reasons, extracted fields, summaries, draft texts and error text",
-      pl: "Uzasadnienia AI, wyciągnięte pola, podsumowania, treść szkiców i tekst błędów",
+      en: "The AI's reasons, extracted fields and summaries, the draft texts that the system builds from them, and error text",
+      pl: "Uzasadnienia, wyciągnięte pola i podsumowania AI, szkice budowane z nich przez system oraz tekst błędów",
     },
     columns: ["triage_results.reason", "triage_results.fields", "actions.payload", "actions.last_error"],
     subjects: ["users", "others"],
@@ -253,7 +253,8 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["reply_requests.instruction", "reply_requests.sample_body"],
     subjects: ["users", "others"],
-    // The same period as the other AI texts: `clearActionPayloads` and the reply text clear use one cut-off (retention job).
+    // The text period of the retention job (`RETENTION_TEXT_DAYS`, the same for every organization), counted from `reply_requests.created_at`
+    // (`clearReplyTexts`, `docs/architecture.md` §7). `legal-retention.test.ts` ties the number and the column to the job and the papers.
     kept: { kind: "days", days: 90 },
   },
   {
@@ -266,6 +267,18 @@ export const dataCategories: readonly DataCategory[] = [
     columns: ["mailbox_profiles.*"],
     // A signature can name a colleague or a contact: the DSR address map covers these columns (`address-map.ts`).
     subjects: ["users", "others"],
+    kept: untilDelete,
+  },
+  {
+    id: "unsubscribe-data",
+    label: { en: "Unsubscribe requests", pl: "Prośby o wypisanie z list" },
+    purpose: {
+      en: "The address and the domain of a mailing-list sender that you asked to unsubscribe from, and the result of the request",
+      pl: "Adres i domena nadawcy listy mailingowej, z której poprosiłeś o wypisanie, oraz wynik tej prośby",
+    },
+    columns: ["unsubscribe_requests.*"],
+    // The sender is a third party. A data-request erase of the sender deletes the row (`address-map.ts`, rule `delete`).
+    subjects: ["others"],
     kept: untilDelete,
   },
   {

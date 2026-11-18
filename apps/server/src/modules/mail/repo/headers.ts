@@ -8,7 +8,9 @@ import type { DbOrTrx } from "./shared";
 
 const RETENTION_BATCH = 1000;
 
-export interface EmailHeadersRow extends CapturedHeaders {
+// `listUnsubscribePost` is null on a row stored before F110 stage 22 (the header was not captured then).
+export interface EmailHeadersRow extends Omit<CapturedHeaders, "listUnsubscribePost"> {
+  listUnsubscribePost: boolean | null;
   emailId: string;
   capturedAt: Date;
   textsClearedAt: Date | null;
@@ -31,13 +33,14 @@ export async function insertEmailHeaders(
 ): Promise<boolean> {
   const result = await sql`
     INSERT INTO email_headers (
-      email_id, org_id, from_name, reply_to, return_path, auth_results, list_unsubscribe, list_id,
-      auto_submitted, precedence, has_calendar, attachments, attachment_count, links, link_count,
+      email_id, org_id, from_name, reply_to, return_path, auth_results, list_unsubscribe, list_unsubscribe_post,
+      list_id, auto_submitted, precedence, has_calendar, attachments, attachment_count, links, link_count,
       parts_known, captured_at
     )
     SELECT
       e.id, e.org_id, ${capture.fromName}::text, ${capture.replyTo}::text[], ${capture.returnPath}::text,
-      ${capture.authResults}::text, ${capture.listUnsubscribe}::text, ${capture.listId}::text,
+      ${capture.authResults}::text, ${capture.listUnsubscribe}::text,
+      ${capture.listUnsubscribePost}::boolean, ${capture.listId}::text,
       ${capture.autoSubmitted}::text, ${capture.precedence}::text, ${capture.hasCalendar}::boolean,
       ${JSON.stringify(capture.attachments)}::jsonb, ${capture.attachmentCount}::integer,
       ${JSON.stringify(capture.links)}::jsonb, ${capture.linkCount}::integer,
@@ -68,6 +71,7 @@ export async function getEmailHeaders(
     returnPath: row.return_path,
     authResults: row.auth_results,
     listUnsubscribe: row.list_unsubscribe,
+    listUnsubscribePost: row.list_unsubscribe_post,
     listId: row.list_id,
     autoSubmitted: row.auto_submitted,
     precedence: row.precedence,

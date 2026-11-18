@@ -116,6 +116,7 @@ const allZero = {
   mailbox_folders: 0,
   mailbox_profiles: 0,
   reply_requests: 0,
+  unsubscribe_requests: 0,
   emails: 0,
   triage_results: 0,
   triage_feedback: 0,

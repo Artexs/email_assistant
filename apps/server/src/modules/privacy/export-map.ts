@@ -124,6 +124,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "return_path",
     "auth_results",
     "list_unsubscribe",
+    "list_unsubscribe_post",
     "list_id",
     "auto_submitted",
     "precedence",
@@ -474,6 +475,19 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "tokens_out",
     "latency_ms",
     "created_at"
+  ),
+  // A request to unsubscribe from a sender (F110): the sender address, its domain and the result code of the request.
+  unsubscribe_requests: byOrg(
+    "id",
+    "org_id",
+    "mailbox_id",
+    "sender_lower",
+    "sender_domain",
+    "method",
+    "status",
+    "code",
+    "created_at",
+    "finished_at"
   ),
   // The allow-list. Better Auth keeps `email_verified`, `image` and `updated_at` for itself; the owner knows the rest.
   users: {
