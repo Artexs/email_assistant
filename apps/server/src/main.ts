@@ -12,6 +12,7 @@ import {
 } from "./composition";
 import { createCommitterJob, createExpiryJob, sentOriginOf } from "./modules/actions";
 import {
+  cardEditHooks,
   createImapReportMailbox,
   createOperatorNotices,
   createReportMailSender,
@@ -29,6 +30,7 @@ import {
   runSloTick,
   type SloCheckEntry,
 } from "./modules/operator";
+import { createReplyJobs } from "./modules/replies";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
 import { createHistoryJob, createTripwireJob, regateAll, type RegateDeps } from "./modules/trust";
@@ -207,11 +209,16 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
 let loopsAnalyzeRun: Promise<void> = Promise.resolve();
+let repliesDrafterRun: Promise<void> = Promise.resolve();
 let historyRun: Promise<void> = Promise.resolve();
 let tripwireRun: Promise<void> = Promise.resolve();
 let loopsMatchRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
+// The hooks of the delegation and the card edits, the send scope and the UIDPLUS read: the committer, the expiry job and the reply drafter share them.
+const scopeOfSends = sendScope(config);
+const hooks = delegationHooks({ db });
+const uidplus = uidplusOf(db);
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
 // The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
@@ -291,6 +298,24 @@ if (scope !== null) {
     return loopsAnalyzeRun;
   });
   log.info("job_scheduled", { job: "loops.analyze" });
+  // The reply drafter: it scans triaged `needs_reply` mail, claims the requests and writes a draft that waits for one tap. It never
+  // sends. It has its own LLM pause, the same model client and the same scope: with the scope off, no mail goes out.
+  const replyJobs = createReplyJobs({
+    db,
+    llm,
+    dailyCap: config.LLM_DAILY_CAP,
+    scope,
+    hooks,
+    approvalHooks: cardEditHooks({ sendScope: scopeOfSends }),
+    uidplus,
+    now: () => new Date(),
+    onCapReached: (ctx, mailboxId, dayStart) => operator.capReached(ctx, mailboxId, dayStart, config.LLM_DAILY_CAP),
+  });
+  scheduler.add("replies.drafter", "*/15 * * * * *", () => {
+    repliesDrafterRun = replyJobs.drafter.run().then(() => undefined);
+    return repliesDrafterRun;
+  });
+  log.info("job_scheduled", { job: "replies.drafter" });
 }
 // The tripwire of the trust ladder (F110): a category whose moves the user corrects loses its `auto`. It reads corrections and checks, not
 // mail, and calls no model, so it runs with the scope off too.
@@ -320,15 +345,12 @@ let returnedRun: Promise<void> = Promise.resolve();
 let expiryRun: Promise<void> = Promise.resolve();
 let chaserRun: Promise<void> = Promise.resolve();
 const scopeOfActions = actionsScope(config);
-const scopeOfSends = sendScope(config);
 const limitsOfSends = sendLimits(config);
 log.info("send_limits", {
   mailbox_hour: limitsOfSends.mailboxHour,
   mailbox_day: limitsOfSends.mailboxDay,
   recipient_day: limitsOfSends.recipientDay,
 });
-const hooks = delegationHooks({ db });
-const uidplus = uidplusOf(db);
 // Always built: `save_summary` rows are applied under every scope.
 const committer = createCommitterJob(
   committerDeps({
@@ -470,6 +492,7 @@ async function shutdown(): Promise<void> {
     Promise.allSettled([
       triageRun,
       loopsAnalyzeRun,
+      repliesDrafterRun,
       historyRun,
       regateRun,
       tripwireRun,

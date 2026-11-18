@@ -9,7 +9,7 @@ import {
   type ReplyCheckCode,
 } from "@ea/core";
 
-import { dataBlock, neutralize } from "./classifier-v2";
+import { dataBlock, neutralize, oneLine } from "./classifier-v2";
 
 // Any change to the text below needs a new file and version id (`drafter-v2.ts`) and a passing drafter run (F115
 // stage 02). The text of this file never holds a mail, an address or a draft.
@@ -99,12 +99,15 @@ export function buildUserPrompt(input: DrafterInput, nonce: string, retry?: Retr
   const local = localDateTime(input.today, input.timeZone);
   const received = localDateTime(input.mail.receivedAt, input.timeZone);
   const sender = [
-    input.mail.fromName === null ? "" : cutChars(input.mail.fromName, DRAFTER_NAME_MAX),
+    input.mail.fromName === null ? "" : cutChars(oneLine(input.mail.fromName), DRAFTER_NAME_MAX),
     input.mail.fromAddress,
   ]
     .filter((part) => part.trim() !== "")
     .join(" ");
-  const subject = input.mail.subject === null || input.mail.subject.trim() === "" ? "(no subject)" : input.mail.subject;
+  // The sender name and the subject are header text of a third party: one line each, so a line break cannot start a
+  // forged header line (`From:`, `Subject:`) or a blank line that ends the headers inside the data block.
+  const subjectText = input.mail.subject === null ? "" : oneLine(input.mail.subject);
+  const subject = subjectText === "" ? "(no subject)" : subjectText;
   const body = input.mail.body.trim() === "" ? "(no text)" : cutChars(input.mail.body, DRAFTER_MAIL_BODY_MAX);
   const language = input.language === "pl" ? "Polish (pl)" : "English (en)";
   return [
