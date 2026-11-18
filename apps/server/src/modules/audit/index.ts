@@ -6,6 +6,7 @@ export {
   countHistoryLlmCallsSince,
   countLlmCallOutcomesSince,
   countLlmCallsSince,
+  countMaillessCallsSince,
   sumLlmCallsByModelSince,
   countMailboxEventsBetween,
   findActionActor,

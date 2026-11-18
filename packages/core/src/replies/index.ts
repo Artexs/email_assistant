@@ -22,3 +22,16 @@ export type {
   ReplyLanguage,
   ReplyTrigger,
 } from "./eligibility";
+export {
+  checkProfileInput,
+  PROFILE_NAME_MAX,
+  PROFILE_SIGNATURE_MAX,
+  PROFILE_STYLE_MAX,
+  profileErrorCodes,
+  profileFallbacks,
+  profileFields,
+  resolveReplyStyle,
+} from "./profile";
+export type { ProfileCheck, ProfileErrorCode, ProfileField, ProfileFields, ProfileInput } from "./profile";
+export { SAMPLE_MAIL } from "./sample-mail";
+export type { SampleMail } from "./sample-mail";

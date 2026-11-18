@@ -538,7 +538,10 @@ describe("closedBy", () => {
     });
     expect(closedBy({ field: "switch", name: "mark_read", to: false })).toEqual({ types: ["mark_read"] });
     expect(closedBy({ field: "switch", name: "flag", to: false })).toEqual({ types: ["flag"] });
-    expect(closedBy({ field: "switch", name: "create_draft", to: false })).toEqual({ types: [], sends: true });
+    // A reply draft has its own switch: `create_draft` off leaves the reply sends open, `reply_drafts` off closes only them.
+    expect(closedBy({ field: "switch", name: "create_draft", to: false })).toEqual({ types: [], sends: "others" });
+    expect(closedBy({ field: "switch", name: "reply_drafts", to: false })).toEqual({ types: [], sends: "replies" });
+    expect(closedBy({ field: "switch", name: "reply_drafts", to: true })).toBeNull();
     expect(closedBy({ field: "switch", name: "flag", to: true })).toBeNull();
   });
 });

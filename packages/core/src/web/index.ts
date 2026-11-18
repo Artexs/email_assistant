@@ -17,6 +17,7 @@ export * from "./org-name";
 export * from "./operator";
 export * from "./organization";
 export * from "./password";
+export * from "./profile";
 export * from "./public-content";
 export * from "./rules";
 export * from "./security-log";
