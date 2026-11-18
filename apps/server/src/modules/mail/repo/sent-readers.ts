@@ -1,3 +1,4 @@
+import { registrableDomain } from "@ea/core";
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
@@ -139,4 +140,49 @@ export async function listSentHealth(db: DbOrTrx, ctx: TenantContext): Promise<S
       lastErrorCode: row.last_error_code,
     };
   });
+}
+
+export interface SentRecipientDomain {
+  // The registrable domain (lower case, `registrableDomain` of core).
+  domain: string;
+  // Distinct user mails with a recipient on this domain.
+  mails: number;
+}
+
+// The registrable domains that the user wrote to: To or Cc of `origin = 'user'` Sent mail of this mailbox with `sent_at` at or after
+// `since`, not an automatic reply, counted once per mail. Only domains with at least `minMails` mails; the most mailed first
+// (ties by name), at most `limit`. One statement. A mail that has two recipients on subdomains of one registrable domain counts
+// once for that domain. A recipient with no domain, and a row whose recipients the retention cleared, count for nothing. The
+// result holds domains and counts only, never an address.
+export async function sentRecipientDomains(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { since: Date; minMails: number; limit: number }
+): Promise<SentRecipientDomain[]> {
+  const { rows } = await sql<{ id: string; host: string }>`
+    SELECT DISTINCT s.id, lower(btrim(substring(a.addr FROM '@([^@]*)$'))) AS host
+    FROM sent_emails s
+    CROSS JOIN LATERAL unnest(s.to_addresses || s.cc_addresses) AS a(addr)
+    WHERE s.org_id = ${ctx.orgId}
+      AND s.mailbox_id = ${mailboxId}
+      AND s.origin = 'user'
+      AND s.sent_at >= ${opts.since}
+      AND ${sql.raw(notAutomaticSql("s.auto_submitted"))}
+      AND a.addr LIKE '%@%'
+  `.execute(db);
+  const mailsOf = new Map<string, Set<string>>();
+  for (const row of rows) {
+    if (row.host === "") continue;
+    const domain = registrableDomain(row.host);
+    if (domain === "") continue;
+    const ids = mailsOf.get(domain) ?? new Set<string>();
+    ids.add(row.id);
+    mailsOf.set(domain, ids);
+  }
+  return [...mailsOf]
+    .map(([domain, ids]) => ({ domain, mails: ids.size }))
+    .filter((row) => row.mails >= opts.minMails)
+    .sort((a, b) => b.mails - a.mails || (a.domain < b.domain ? -1 : 1))
+    .slice(0, opts.limit);
 }

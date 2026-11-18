@@ -1,4 +1,4 @@
-import type { Suspicion, SuspiciousReason } from "@ea/core";
+import { registrableDomain, type Suspicion, type SuspiciousReason } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -72,6 +72,40 @@ export async function suspiciousSendersOf(
       AND cardinality(latest.suspicious_reasons) > 0
   `.execute(db);
   return new Set(rows.map((row) => row.sender));
+}
+
+// The registrable domains of the senders of incoming mail in this mailbox since `since` whose newest result has reasons. One
+// flagged mail puts its domain in the set; an older flagged row under a clean newest row does not. Mail with no result does not
+// count. The known-domain list of the look-alike rule drops these domains, so a reply to a phisher does not make the
+// phishing domain known. It ignores the flag `suspicious_mail`. The result holds domains only, never an address.
+export async function suspiciousSenderDomains(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date
+): Promise<Set<string>> {
+  const { rows } = await sql<{ host: string }>`
+    SELECT DISTINCT substring(e.from_address_lower FROM '@([^@]*)$') AS host
+    FROM emails e
+    JOIN LATERAL (
+      SELECT tr.suspicious_reasons
+      FROM triage_results tr
+      WHERE tr.org_id = e.org_id AND tr.email_id = e.id
+      ORDER BY tr.created_at DESC, tr.id DESC
+      LIMIT 1
+    ) latest ON true
+    WHERE e.org_id = ${ctx.orgId}
+      AND e.mailbox_id = ${mailboxId}
+      AND e.received_at >= ${since}
+      AND e.from_address_lower LIKE '%@%'
+      AND cardinality(latest.suspicious_reasons) > 0
+  `.execute(db);
+  const domains = new Set<string>();
+  for (const row of rows) {
+    const domain = registrableDomain(row.host);
+    if (domain !== "") domains.add(domain);
+  }
+  return domains;
 }
 
 // The newest non-empty `from_name` of mail from each address in this mailbox in the window (the display names of VIPs).

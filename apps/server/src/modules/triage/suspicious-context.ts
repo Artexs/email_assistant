@@ -9,10 +9,22 @@ import {
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../../platform/db";
-import { getEmailHeaders, listMailboxes, type ClaimedEmail } from "../mail";
-import { listMemberships } from "../tenancy";
+import { getEmailHeaders, listMailboxes, sentRecipientDomains, type ClaimedEmail } from "../mail";
+import { isFeatureOn, listMemberships } from "../tenancy";
 
-import { FREQUENT_WINDOW_DAYS, listFrequentSenders, listNewestFromNames } from "./suspicious-repo";
+import {
+  FREQUENT_WINDOW_DAYS,
+  listFrequentSenders,
+  listNewestFromNames,
+  suspiciousSenderDomains,
+} from "./suspicious-repo";
+
+// Domains the user writes to (flags `sender_context` and `suspicious_mail` both on): at least this many user mails in the window.
+export const SENT_DOMAIN_MIN_MAILS = 2;
+export const SENT_DOMAIN_WINDOW_DAYS = 90;
+export const SENT_DOMAIN_LIMIT = 500;
+// The reader may return more than the limit: the free-mail and suspicious filters cut the list before the limit applies.
+const SENT_DOMAIN_READ_LIMIT = 5000;
 
 // The context of `assessSuspicious` for one mailbox, read once per batch.
 export interface SuspiciousContext {
@@ -55,6 +67,31 @@ function isFreeMail(domain: string): boolean {
   return freeMailDomains.includes(domain);
 }
 
+// The registrable domains of Sent mail that count as known for the look-alike rule: at least `SENT_DOMAIN_MIN_MAILS` user mails in
+// the window, not a free-mail domain, and no incoming mail of the window from the domain has a newest result with reasons. At most
+// `SENT_DOMAIN_LIMIT`, the most mailed first. A look-alike of such a domain is suspicious; mail from the domain itself is not
+// silenced (the known-sender rule does not use this list).
+async function sentDomainsToKnow(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: Date
+): Promise<string[]> {
+  const since = new Date(now.getTime() - SENT_DOMAIN_WINDOW_DAYS * 24 * 3_600_000);
+  const written = await sentRecipientDomains(db, ctx, mailboxId, {
+    since,
+    minMails: SENT_DOMAIN_MIN_MAILS,
+    limit: SENT_DOMAIN_READ_LIMIT,
+  });
+  const candidates = written.filter((row) => !isFreeMail(row.domain));
+  if (candidates.length === 0) return [];
+  const flagged = await suspiciousSenderDomains(db, ctx, mailboxId, since);
+  return candidates
+    .filter((row) => !flagged.has(row.domain))
+    .slice(0, SENT_DOMAIN_LIMIT)
+    .map((row) => row.domain);
+}
+
 export async function loadSuspiciousContext(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
@@ -89,6 +126,13 @@ export async function loadSuspiciousContext(
       addAddress(pattern, false);
       if (rule.kind === "vip") vipAddresses.push(pattern);
     }
+  }
+
+  // The domains that the user writes to widen the look-alike list. Both flags must be on: the reasons block drafts and follow-ups
+  // whatever the flag `suspicious_mail` says, so with either flag off the context stays as it was. The module `contacts` is a layer
+  // above this one: the plain flag `sender_context` is read here, not `senderFlags`.
+  if ((await isFeatureOn(db, ctx, "sender_context")) && (await isFeatureOn(db, ctx, "suspicious_mail"))) {
+    for (const domain of await sentDomainsToKnow(db, ctx, mailbox.id, input.now)) knownDomains.add(domain);
   }
 
   const since = new Date(input.now.getTime() - FREQUENT_WINDOW_DAYS * 24 * 3_600_000);

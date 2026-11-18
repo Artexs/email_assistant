@@ -158,7 +158,9 @@ export {
   getSentSummary,
   listSentHealth,
   listUserAnswers,
+  sentRecipientDomains,
   type SentHealthRow,
+  type SentRecipientDomain,
   type SentSummary,
   type UserAnswer,
 } from "./sent-readers";
