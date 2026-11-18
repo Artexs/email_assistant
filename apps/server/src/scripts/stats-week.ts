@@ -2,9 +2,10 @@ import { lastFinishedWeek } from "@ea/core";
 
 import { gateEvidenceOf, trustEvidenceOf } from "../composition";
 import { listUrgentNoticeTimes } from "../modules/channels";
+import { configureMailHosts } from "../modules/mail";
 import { weekStats } from "../modules/reports";
 import { getOrganization } from "../modules/tenancy";
-import { loadConfig, testMailRule } from "../platform/config";
+import { loadConfig, mailAllowLocal, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
@@ -22,6 +23,8 @@ async function main(): Promise<number> {
   }
 
   const config = loadConfig();
+  // The trust reader comes from `composition`, which reaches mail code: the host policy is set as in every entry point.
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
