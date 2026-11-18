@@ -1191,6 +1191,33 @@ export const pl: Record<TextKey, string> = {
   tgc_title: "Nowe zasady Telegrama: otwarte sprawy",
   tgc_confirm: "Potwierdź",
   tgc_confirmed_toast: "Potwierdzono nowe zasady Telegrama.",
+  // F110 stage 13: the evidence lines of the autonomy card and the block lines of the "Set anyway" dialog
+  trust_proof_go: "Dowód: {percent}% na {cases} przypadkach testowych",
+  trust_proof_go_provisional: "Dowód: {percent}% na {cases} przypadkach testowych (wstępny)",
+  trust_proof_none: "Brak jeszcze dowodu dla tego modelu AI",
+  trust_proof_no_go: "Nie udowodniono ({percent}%)",
+  trust_proof_no_go_provisional: "Nie udowodniono ({percent}%) (wstępny wynik)",
+  trust_proof_no_go_plain: "Nie udowodniono",
+  trust_mail_pass: "Twoja poczta: sprawdzenie zaliczone",
+  trust_mail_fail: "Twoja poczta: ukryłoby to wiadomości, które były Ci potrzebne ({moved} z {acted})",
+  trust_mail_few: "Twoja poczta: za mało historii",
+  trust_mail_unchecked: "Twoja poczta: jeszcze nie sprawdzono",
+  trust_mail_unclear:
+    "Twoja poczta: nie znaleziono problemu, ale próba jest za mała, by mieć pewność ({moved} z {acted})",
+  trust_paused_corrections: "Wstrzymano: w ciągu 7 dni poprawiono 2 z jego przeniesień",
+  trust_paused_important_hidden: "Wstrzymano: przeniósł wiadomość, która była Ci potrzebna",
+  trust_paused_model_switch: "Wstrzymano: zmienił się model AI i nie ma jeszcze dowodu dla tej kategorii",
+  trust_paused_evidence_changed: "Wstrzymano: nowe wyniki testów już go nie uzasadniają",
+  trust_paused_history_fail: "Wstrzymano: sprawdzenie ostatnich 30 dni wykryło wiadomości, które były Ci potrzebne",
+  trust_paused_other: "Wstrzymano",
+  trust_anyway_intro: "Automat odrzucono z tych powodów:",
+  trust_block_no_global: "Ten model AI nie ma jeszcze dowodu skuteczności.",
+  trust_block_global_no_go: "Wyniki testów tego modelu AI nie osiągają wymaganego progu dla tej kategorii.",
+  trust_block_global_provisional: "Wyniki testów tego modelu AI nie są jeszcze ostateczne.",
+  trust_block_history_fail: "Twoja poczta: ta kategoria ukryłaby wiadomości, które były Ci potrzebne.",
+  trust_block_tripped: "Ta kategoria została wstrzymana po problemie. Ponowne włączenie kończy wstrzymanie.",
+  trust_block_real_labels_no_go: "Twoje własne oceny pokazują, że ta kategoria nie jest jeszcze dość precyzyjna.",
+  trust_report_link: "Zobacz raport",
   // F110 stage 23: the newsletters card of the Rules page (flag bulk_unsubscribe)
   nl_title: "Newslettery",
   nl_help:
@@ -1217,6 +1244,54 @@ export const pl: Record<TextKey, string> = {
   nl_err_rate: "Zbyt wiele próśb w ostatniej godzinie. Spróbuj później.",
   nl_err_not_allowed: "Tego nadawcy nie można już wypisać jednym kliknięciem.",
   nl_err_send: "Nie udało się wysłać prośby.",
+  // F110 stage 14: the report page ("what I would have done") and the onboarding steps with the flag trust_ladder
+  title_report: "Raport",
+  rep_off: "Ta strona jest wyłączona dla Twojej organizacji.",
+  rep_no_mailbox: "Najpierw połącz skrzynkę. Potem zacznie się sprawdzanie poczty.",
+  rep_load_error: "Nie udało się wczytać raportu.",
+  rep_intro: "Co asystent zrobiłby z Twoją pocztą z ostatnich 30 dni.",
+  rep_read_only:
+    "Sprawdzanie przeczytało wiadomości z ostatnich 30 dni w folderze INBOX, tylko do odczytu. Niczego nie zmieniło.",
+  rep_starting: "Rozpoczynam sprawdzanie…",
+  rep_progress: "Sprawdzam ostatnie 30 dni… ({checked} z najwyżej {max} wiadomości)",
+  rep_checked: "Sprawdzone wiadomości: {checked}.",
+  rep_capped:
+    "Sprawdzanie zatrzymało się na limicie kosztów. Wynik opiera się na dotychczas sprawdzonych wiadomościach.",
+  rep_counts: "Sprawdzone wiadomości: {total} · Zostałyby przeniesione: {wouldMove}",
+  rep_auto_on: "Automatyczne przenoszenie: włączone",
+  rep_recommended: "Zalecane: włącz",
+  rep_not_recommended: "Jeszcze niezalecane",
+  rep_turn_on: "Włącz zalecane ({categories})",
+  rep_turned_on: "Włączono: {categories}.",
+  rep_mode_assist: "Skrzynka jest teraz w trybie asystenta.",
+  rep_mode_shadow: "Skrzynka jest teraz w trybie podglądu. Asystent nadal niczego nie zmienia.",
+  rep_nothing: "Na razie nic nie jest zalecane. Powody są w liniach powyżej.",
+  rep_all_on: "Wszystko, co jest zalecane, jest już włączone.",
+  rep_owner_only: "Włączyć to może tylko właściciel.",
+  rep_check_again: "Sprawdź ponownie",
+  rep_check_started: "Sprawdzanie rozpoczęte.",
+  rep_check_running: "Sprawdzanie już trwa.",
+  rep_review_suggest: "Chcesz sam sprawdzić 10 decyzji? To nieobowiązkowe.",
+  rep_review_link: "Sprawdź 10 decyzji",
+  rep_nr_no_history: "Nie ma wiadomości z ostatnich 30 dni do sprawdzenia. Decydują same wyniki testów.",
+  rep_nr_uidvalidity:
+    "Skrzynka zmieniła numerację folderu, więc sprawdzanie nie mogło się zakończyć. Decydują same wyniki testów.",
+  rep_nr_cost_unknown:
+    "Cena tego modelu AI jest nieznana, więc sprawdzanie się nie odbyło. Decydują same wyniki testów.",
+  rep_nr_stopped: "Sprawdzanie zatrzymało się po kilku nieudanych próbach. Decydują same wyniki testów.",
+  rep_nr_key_changed: "Model AI zmienił się w trakcie sprawdzania, więc je przerwano. Decydują same wyniki testów.",
+  rep_nr_auth_refused:
+    "Skrzynka odrzuciła logowanie, więc sprawdzanie nie mogło odczytać poczty. Decydują same wyniki testów.",
+  rep_nr_model_failing:
+    "Sprawdzanie zatrzymało się, bo model AI zawiódł przy pięciu wiadomościach z rzędu. Decydują same wyniki testów.",
+  ob_channel_title: "Wybierz, jak asystent ma się z Tobą kontaktować",
+  ob_channel_mail: "Raporty trafiają do Ciebie pocztą.",
+  ob_report_title: "Zobacz, co bym zrobił",
+  ob_report_wait: "Sprawdzanie zacznie się po połączeniu skrzynki.",
+  ob_report_open:
+    "Asystent sprawdza pocztę z ostatnich 30 dni, tylko do odczytu. Potem pokazuje, co by zrobił, a Ty możesz włączyć to, co zaleca.",
+  ob_report_done: "Sprawdzanie zakończone.",
+  ob_report_link: "Otwórz raport",
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).

@@ -1,5 +1,6 @@
 export {
   countSenderRules,
+  getMailboxOauthProvider,
   getMailboxSettings,
   getMovesSupported,
   insertDefaultSettings,
@@ -24,6 +25,7 @@ export {
   setMode,
   setToolSwitch,
   setUrgencyProfile,
+  OauthMailboxError,
   SettingsNotFoundError,
   type SettingsChange,
   type SettingsDeps,

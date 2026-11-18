@@ -4,6 +4,7 @@ import {
   loopSwitchNames,
   loopWaitBodySchema,
   modeBodySchema,
+  replySwitchNames,
   ruleBodySchema,
   rulesQuerySchema,
   sentSyncBodySchema,
@@ -24,7 +25,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
-import { parseBody, parseQuery, requireOwner, type ApiEnv } from "../../platform/http";
+import { parseBody, parseQuery, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { isFeatureOn } from "../tenancy";
 
 import { rulesDocs, settingsDocs } from "./api-docs";
@@ -35,6 +36,7 @@ import {
   setMode,
   setToolSwitch,
   setUrgencyProfile,
+  OauthMailboxError,
   SettingsNotFoundError,
   type SettingsChange,
 } from "./service";
@@ -91,6 +93,10 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
       return await run();
     } catch (error) {
       if (error instanceof SettingsNotFoundError) return notFound(c);
+      // D19: reply drafts are for password mailboxes only; the card shows the switch disabled for an OAuth mailbox.
+      if (error instanceof OauthMailboxError) {
+        throw new ValidationError([{ path: "reply_drafts", code: "custom", message: "oauth_mailbox" }]);
+      }
       throw error;
     }
   };
@@ -126,11 +132,15 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
 
   app.patch("/settings/:mailboxId/switches/:name", requireOwner, settingsDocs.patchSettingsSwitch, async (c) => {
     const id = mailboxIdOf(c);
-    const name = member([...toolSwitchNames, ...loopSwitchNames], c.req.param("name"));
+    const name = member([...toolSwitchNames, ...loopSwitchNames, ...replySwitchNames], c.req.param("name"));
     if (!id || !name || !(await ensureSettings(c, id))) return notFound(c);
     // A switch of the open loops is hidden with the flag: it looks like an unknown switch.
     const loopSwitch = member(loopSwitchNames, name) !== null;
     if (loopSwitch && !(await isFeatureOn(deps.db, c.get("ctx"), "open_loops"))) return notFound(c);
+    // The same for the reply switch: it exists only while the flag `reply_drafts` is on.
+    if (member(replySwitchNames, name) !== null && !(await isFeatureOn(deps.db, c.get("ctx"), "reply_drafts"))) {
+      return notFound(c);
+    }
     const body = await parseBody(c, switchBodySchema);
     return guarded(c, async () => {
       const change = await setToolSwitch(deps.settings, c.get("ctx"), id, {

@@ -37,9 +37,11 @@ import {
 } from "./modules/mail";
 import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
+import { replyRoutes, type StylePreview } from "./modules/replies";
 import { activityRoutes, statsRoutes, type StatsRouteDeps } from "./modules/reports";
 import {
   anySsoUsable,
+  getMemberNotify,
   getUserAuthProfile,
   isBreakGlassOwner,
   isFeatureOn,
@@ -52,7 +54,7 @@ import {
   type TenancyRouteDeps,
 } from "./modules/tenancy";
 import { goNoGoFor, newsletterRoutes, triageRoutes } from "./modules/triage";
-import { queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
+import { hasEndedCheck, queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
 import {
   createAuth,
   expiredSessionCookie,
@@ -209,6 +211,21 @@ export function approvalsWaiting(db: Db): TenancyRouteDeps["approvalsWaiting"] {
   return async (ctx) => ((await isFeatureOn(db, ctx, "approvals_page")) ? countWaitingApprovals(db, ctx) : 0);
 }
 
+// F110 stage 14: with `trust_ladder` on, onboarding asks for a channel (per user) and a finished history check (per organization).
+// `null`: the flag is off and onboarding is as before. The member row and the check are read with the organization of the caller only.
+async function trustOnboardingOf(
+  db: Db,
+  ctx: TenantContext,
+  userId: string
+): Promise<{ reportByMail: boolean; reportReady: boolean } | null> {
+  if (!(await isFeatureOn(db, ctx, "trust_ladder"))) return null;
+  const notify = await getMemberNotify(db, ctx, userId);
+  return {
+    reportByMail: notify !== undefined && notify.report_channel !== "telegram",
+    reportReady: await hasEndedCheck(db, ctx),
+  };
+}
+
 // D15: the Telegram item is per user, the others per organization.
 export function onboardingDeps(
   db: Db,
@@ -224,6 +241,7 @@ export function onboardingDeps(
         telegramAvailable: botUsername !== null,
         modeChosen: await hasAuditEvent(db, ctx, [auditEvents.mailboxModeChanged, auditEvents.onboardingModeKept]),
         ruleCount: await countSenderRules(db, ctx),
+        trust: await trustOnboardingOf(db, ctx, userId),
       }),
     telegram: async (ctx, userId) => ({
       available: botUsername !== null,
@@ -335,6 +353,8 @@ export interface WebExtras {
   gate?: GateEvidenceDeps;
   /** Default: `postOneClick` with the system lookup (the guarded client). A test passes a fake: no test sends a real request. */
   postOneClick?: (url: URL) => Promise<OneClickResult>;
+  /** The style preview of the reply drafts (F115): one drafter call on a fixed sample mail. Absent or null: no model client runs, and a preview answers `failed`. */
+  stylePreview?: StylePreview | null;
 }
 
 export function apiRouters(
@@ -401,6 +421,7 @@ export function apiRouters(
     );
     api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
+    api.route("/", replyRoutes({ db, preview: extras.stylePreview ?? null }));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));

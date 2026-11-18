@@ -111,7 +111,7 @@ export function followUpBlocked(item: Pick<LoopItem, "followUpsSent">): boolean 
   return item.followUpsSent >= LOOP_FOLLOW_UP_MAX;
 }
 
-// The 409 codes of each action and their texts (the codes of `docs/capabilities/sent-mail.md` rule 22). A code that is not in the table
+// The 409 codes of each action and their texts (the codes of `docs/capabilities/open-loops.md` rule 5). A code that is not in the table
 // gets the general error.
 const CONFLICT_TEXTS: Record<LoopAction, Partial<Record<string, TextKey>>> = {
   follow_up: {

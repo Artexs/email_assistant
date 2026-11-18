@@ -6,6 +6,7 @@ import cspFinalize from "./integrations/csp-finalize";
 import inPlaceCheck from "./integrations/in-place-check";
 import linkCheck from "./integrations/link-check";
 import publicContent from "./integrations/public-content";
+import shots from "./integrations/shots";
 import { IN_PLACE_PAGES, IN_PLACE_SECTION, inOperate, inPlaceSourcePaths } from "./src/in-place";
 
 // The public docs site (ADR 0030). Starlight's own Expressive Code highlights code, so `markdown.syntaxHighlight` stays on.
@@ -73,6 +74,8 @@ export default defineConfig({
     // After the CSP and public checks: the in-place pages are built and listed, then every same-site link resolves (plan D5, D6).
     inPlaceCheck(),
     linkCheck(),
+    // Where the screenshot files are, and the log line `shots: on|off` (stage 11).
+    shots(),
   ],
   // Astro hashes its own scripts and styles. `cspFinalize` hashes the rest and relaxes `style-src`.
   // No `frame-ancestors`: a meta CSP ignores it (plan Q6). No `'unsafe-eval'` or `'wasm-unsafe-eval'`: Pagefind needs neither.

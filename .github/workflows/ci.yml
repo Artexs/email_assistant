@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [master]
   workflow_dispatch: {}
+  # The docs deploy (docs-deploy.yml) runs every job of this file before it makes the shots: a published site passed all checks of CI.
+  workflow_call: {}
 
 permissions:
   contents: read

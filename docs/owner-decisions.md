@@ -573,3 +573,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a notice for a category that never moves mail would confuse the user.
 - Undo: widen the notice category type and queue the notice in `trust/regate.ts`.
 - Source: job `2026-11-17-f110-s08-regate-risky-automatic-c3bab87b`.
+
+### 2026-11-18 · F110 one-click unsubscribe: the privacy text does not yet name the request the server sends after your tap (F110) · privacy · new
+- Choice: after an owner tap the server sends ONE request from its own address to the server the newsletter names (the one-click URL). That server learns that this subscription asked to leave, that the mailbox is active and when the tap happened. The privacy text does not say so yet. Saying so is a legal text change and needs a `TERMS_VERSION` bump (every user accepts the new terms at the next sign-in).
+- Why: the reviewer asked for it; the bump is batched with the next legal change (F115 stage 17) so users are asked once.
+- Undo: leave the text as it is; the feature stays behind the flag `bulk_unsubscribe` (off).
+- Source: job `2026-11-18-f110-review-s24-opus-hard-ssrf-r-d6314836`, NOTE 9.
+
+### 2026-11-18 · F110 one-click unsubscribe: DKIM coverage of the List-Unsubscribe headers is not checked, only a "more than one header" guard (F110) · security · new
+- Choice: the POST target is the link of the newest trusted mail of the sender. A replayed signed mail with an added header could point it elsewhere. The cheap guard refuses a mail with more than one such header. The full check (read the DKIM-Signature `h=` list) needs new captured data and is a later ticket.
+- Why: the risk is low (fixed body, public https host on port 443, after an owner tap, the same POST an attacker with their own DKIM domain gets today).
+- Undo: keep the flag `bulk_unsubscribe` off.
+- Source: same job, NOTE 1.

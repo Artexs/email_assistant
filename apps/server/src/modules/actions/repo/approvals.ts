@@ -93,13 +93,14 @@ export async function listUnseenApprovalSends(
 }
 // The `awaiting_approval` sends of one mailbox, oldest first: sends of its mail and follow-ups of its loops. The caller locks each
 // one (`expireSend`). `emailId` narrows the list to the sends of one mail (a follow-up has none, so it never matches).
+// `kinds`: `replies` lists only the reply sends (payload kind `reply`), `others` every other kind; absent: all.
 export async function listAwaitingSendIds(
   trx: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { emailId?: string } = {}
+  opts: { emailId?: string; kinds?: "replies" | "others" } = {}
 ): Promise<{ id: string; emailId: string | null }[]> {
-  const { emailId } = opts;
+  const { emailId, kinds } = opts;
   const rows = await trx
     .selectFrom("actions")
     .select(["id", "email_id", "loop_id"])
@@ -121,6 +122,8 @@ export async function listAwaitingSendIds(
       ])
     )
     .$if(emailId !== undefined, (qb) => qb.where("email_id", "=", emailId as string))
+    .$if(kinds === "replies", (qb) => qb.where(sql<boolean>`payload->>'kind' is not distinct from 'reply'`))
+    .$if(kinds === "others", (qb) => qb.where(sql<boolean>`payload->>'kind' is distinct from 'reply'`))
     .orderBy("created_at")
     .orderBy("id")
     .execute();

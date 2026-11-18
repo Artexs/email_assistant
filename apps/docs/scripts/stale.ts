@@ -11,6 +11,8 @@ import { POLISH_SET } from "../src/front-matter";
 const FRONT_MATTER = /^---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
 // A line that holds only a `<Shot … />` tag (the tag may span lines): a screenshot never stales a translation.
 const SHOT_LINE = /^[ \t]*<Shot\b[^>]*?\/>[ \t]*(?:\n|$)/gm;
+// The import of the component that a page with a `<Shot />` line needs: it belongs to the same screenshot, so it never stales a translation either.
+const SHOT_IMPORT_LINE = /^import Shot from "(?:\.\.\/)+components\/Shot\.astro";[ \t]*(?:\n|$)/gm;
 
 const EXIT_CLEAN = 0;
 const EXIT_FINDINGS = 1;
@@ -22,9 +24,10 @@ function bodyOf(markdown: string): string {
   return match ? markdown.slice(match[0].length) : markdown;
 }
 
-// First 16 hex of sha256 of the body: `\r\n` as `\n`, no `<Shot />` lines, no trailing whitespace.
+// First 16 hex of sha256 of the body: `\r\n` as `\n`, no `<Shot />` lines, no import line of `Shot`, no trailing whitespace.
+// The lines go whole, with no neighbouring blank line: a page puts each `<Shot />` line directly under a heading (`polish.test.ts`).
 export function bodyHash(markdown: string): string {
-  const body = bodyOf(markdown).replaceAll("\r\n", "\n").replace(SHOT_LINE, "").trimEnd();
+  const body = bodyOf(markdown).replaceAll("\r\n", "\n").replace(SHOT_LINE, "").replace(SHOT_IMPORT_LINE, "").trimEnd();
   return createHash("sha256").update(body).digest("hex").slice(0, 16);
 }
 
