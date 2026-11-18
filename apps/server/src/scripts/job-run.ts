@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import { actionsScope, committerDeps, loopsLlmScope, mailOAuthRuntime, sendScope, uidplusOf } from "../composition";
 import { createCommitterJob, createExpiryJob } from "../modules/actions";
-import { createTelegramRuntime } from "../modules/channels";
+import { cardEditHooks, createTelegramRuntime } from "../modules/channels";
 import { delegationHooks } from "../modules/delegation";
 import { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "../modules/loops";
 import { configureMailHosts } from "../modules/mail";
+import { createReplyJobs } from "../modules/replies";
 import { createCliOutput } from "../platform/cli";
 import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
@@ -33,9 +34,10 @@ async function main(): Promise<number> {
     out.fail("TELEGRAM_BOT_TOKEN is empty");
     return 1;
   }
-  const llmScope = args.name === "loops.analyze" ? loopsLlmScope(config) : null;
-  if (args.name === "loops.analyze" && llmScope === null) {
-    out.fail("TRIAGE_LLM_SCOPE is off: the Sent analysis needs the model");
+  const needsModel = args.name === "loops.analyze" || args.name === "replies.drafter";
+  const llmScope = needsModel ? loopsLlmScope(config) : null;
+  if (needsModel && llmScope === null) {
+    out.fail(`TRIAGE_LLM_SCOPE is off: ${args.name} needs the model`);
     return 1;
   }
   return await withLogContext({ job: args.name, run_id: randomUUID() }, async () => {
@@ -82,6 +84,26 @@ async function main(): Promise<number> {
           `${args.name}: ran once (mailboxes ${run.mailboxes}, analysed ${run.analysed}, skipped ${run.skipped}, opened ${run.opened}, restarted ${run.restarted}, promises closed ${run.promisesClosed}, waiting ${run.waiting}, failed ${run.failed}, mailbox errors ${run.mailboxErrors}${run.stopped ? ", stopped by the model" : ""})`
         );
         return 0;
+      } else if (args.name === "replies.drafter") {
+        if (llmScope === null) throw new Error("the model scope is off");
+        const llm = createLlmClient({ table: llmRoleTable(config) });
+        const jobs = createReplyJobs({
+          db,
+          llm,
+          dailyCap: config.LLM_DAILY_CAP,
+          scope: llmScope,
+          hooks,
+          approvalHooks: cardEditHooks({ sendScope: sendScope(config) }),
+          uidplus,
+          now,
+        });
+        const run = await jobs.drafter.run();
+        // Counts only: no id, no address, no text.
+        const { outcomes } = run;
+        out.print(
+          `${args.name}: ran once (mailboxes ${run.mailboxes}, requested ${run.requested}, claimed ${run.claimed}, timed out ${run.timedOut}, done ${outcomes.done}, no draft ${outcomes.no_draft}, failed ${outcomes.failed}, cancelled ${outcomes.cancelled}, superseded ${outcomes.superseded}, waiting ${outcomes.waiting}, retry ${outcomes.retry}, lost ${outcomes.lost}, mailbox errors ${run.mailboxErrors})`
+        );
+        return run.mailboxErrors > 0 ? 1 : 0;
       } else if (args.name === "loops.match") {
         const run = await createLoopMatchJob({ db, now }).run();
         // Counts only: no id, no address, no text.
