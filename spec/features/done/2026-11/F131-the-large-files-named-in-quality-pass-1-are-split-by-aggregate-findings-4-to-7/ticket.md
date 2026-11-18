@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-15
+landed: 2026-11-19
 ---
 
 # F131 · the large files named in quality pass 1 are split by aggregate (findings 4 to 7)
