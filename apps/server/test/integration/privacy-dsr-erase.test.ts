@@ -27,7 +27,7 @@ import {
   insertTestEmail,
   testCapabilities,
 } from "./fixtures";
-import { testDb } from "./helpers";
+import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
 
 // `eraseSubjectData` and the `org:dsr --erase` CLI. The seed is committed (the erase runs its own
 // transaction and takes row locks); `afterEach` removes it. The connection is the `app` role.
@@ -409,7 +409,7 @@ describe("eraseSubjectData", () => {
     const keptBefore = await db.selectFrom("emails").selectAll().where("id", "=", w.k2).executeTakeFirstOrThrow();
     const result = await erased(w);
     expect(result.counts.listed).toEqual({ delegates: 1, sender_rules: 1 });
-    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person));
+    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY));
     expect(match.mails).toEqual([]);
     expect(match.mentions).toEqual({});
     expect(match.listed).toEqual({ delegates: [w.delegateId], senderRules: [w.ruleId] });
@@ -457,7 +457,7 @@ describe("eraseSubjectData", () => {
     expect(rowA.cc_addresses).toEqual(["r@x.test"]);
     expect(rowA.to_addresses).toEqual(["q@x.test"]);
     expect(rowA.subject).not.toContain(person);
-    const match = await db.transaction().execute((trx) => matchSubject(trx, a.orgId, person));
+    const match = await db.transaction().execute((trx) => matchSubject(trx, a.orgId, person, TEST_CREDENTIALS_KEY));
     expect(match.mentions).toEqual({});
     expect(await db.selectFrom("sent_emails").selectAll().where("id", "=", sentB.id).executeTakeFirstOrThrow()).toEqual(
       beforeB
@@ -592,7 +592,7 @@ describe("eraseSubjectData", () => {
 
   test("9. a chain of actions over three levels is deleted and counted; the erase is not blocked", async () => {
     const w = await seedOrg(unique());
-    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person));
+    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY));
     expect(match.chainActions.sort()).toEqual([...w.chain].sort());
     expect(match.chainDelegations).toEqual([w.delegation]);
     const result = await erased(w);

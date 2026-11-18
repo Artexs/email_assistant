@@ -3,6 +3,7 @@ import type { Transaction } from "kysely";
 
 import { clearActionErrors, clearActionPayloads } from "./modules/actions";
 import { clearOutboxTexts, deleteOldLinkTokens } from "./modules/channels";
+import { deleteEndedSuggestions, deleteOldProfiles } from "./modules/contacts";
 import { clearDelegationTasks, isOpenDelegationDraft } from "./modules/delegation";
 import { clearLoopTexts } from "./modules/loops";
 import {
@@ -31,6 +32,11 @@ export const LINK_TOKEN_GRACE_MS = 24 * HOUR_MS;
 export const OAUTH_STATE_GRACE_MS = HOUR_MS;
 // A reset or invite token row goes this long after it expired.
 export const VERIFICATION_GRACE_MS = 24 * HOUR_MS;
+// A sender profile goes this long after the newest date it holds (data category `sender-context`).
+export const PROFILE_RETENTION_DAYS = 365;
+// An ended rule suggestion goes this long after its end; an open one that nobody answered ends as `expired` after the second period.
+export const SUGGESTION_ENDED_DAYS = 90;
+export const SUGGESTION_OPEN_DAYS = 30;
 
 export interface RetentionCounts {
   body: number;
@@ -46,6 +52,10 @@ export interface RetentionCounts {
   loops: number;
   replyTexts: number;
   tokens: number;
+  // Sender profiles deleted.
+  profiles: number;
+  // Rule suggestions expired plus deleted.
+  suggestions: number;
 }
 
 export interface Clearers {
@@ -64,6 +74,8 @@ export interface Clearers {
   deleteOldLinkTokens: typeof deleteOldLinkTokens;
   deleteOldOAuthStates: typeof deleteOldOAuthStates;
   deleteExpiredVerifications: typeof deleteExpiredVerifications;
+  deleteOldProfiles: typeof deleteOldProfiles;
+  deleteEndedSuggestions: typeof deleteEndedSuggestions;
 }
 
 export interface RetentionJobDeps {
@@ -101,6 +113,8 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     deleteOldLinkTokens,
     deleteOldOAuthStates,
     deleteExpiredVerifications,
+    deleteOldProfiles,
+    deleteEndedSuggestions,
     ...deps.clearers,
   };
 
@@ -131,6 +145,15 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     const tokens =
       (await clearers.deleteOldLinkTokens(db, ctx, { before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS) })) +
       (await clearers.deleteOldOAuthStates(db, ctx, { before: new Date(now.getTime() - OAUTH_STATE_GRACE_MS) }));
+    // The sender context: the flags decide nothing here, so the data of a switched-off `sender_context` still ages out.
+    const profiles = await clearers.deleteOldProfiles(db, ctx, {
+      before: new Date(now.getTime() - PROFILE_RETENTION_DAYS * DAY_MS),
+    });
+    const suggestions = await clearers.deleteEndedSuggestions(db, ctx, {
+      before: new Date(now.getTime() - SUGGESTION_ENDED_DAYS * DAY_MS),
+      openBefore: new Date(now.getTime() - SUGGESTION_OPEN_DAYS * DAY_MS),
+      now,
+    });
     const counts = {
       body,
       headers,
@@ -145,6 +168,8 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
       loops,
       replyTexts,
       tokens,
+      profiles,
+      suggestions,
     };
     if (sumOf(counts) > 0) {
       log.info("retention_org_done", {
@@ -162,6 +187,8 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
         loop_rows: loops,
         reply_text_rows: replyTexts,
         token_rows: tokens,
+        profile_rows: profiles,
+        suggestion_rows: suggestions,
       });
     }
     return counts;
