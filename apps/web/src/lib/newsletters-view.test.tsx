@@ -59,6 +59,11 @@ describe("actionOf", () => {
       )
     ).toMatchObject({ kind: "open" });
     expect(actionOf(item({ senderLower: "a@c.example", method: "none" }))).toEqual({ kind: "none" });
+    // A link that the server should not send for the state of the row is not shown.
+    expect(actionOf(item({ senderLower: "a@c.example", method: "one_click", linkUrl: link }))).toEqual({
+      kind: "wait",
+    });
+    expect(actionOf(item({ senderLower: "a@c.example", method: "none", linkUrl: link }))).toEqual({ kind: "none" });
   });
 });
 
