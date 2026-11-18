@@ -14,7 +14,8 @@ import {
 } from "../actions";
 import { auditEvents, recordAudit } from "../audit";
 import { getMailboxSettings, lockSettingsForShare } from "../config";
-import { isFeatureOn } from "../tenancy";
+import { getMailbox } from "../mail";
+import { isFeatureOn, isOrgSuspended } from "../tenancy";
 
 import { loadReplyFacts } from "./facts";
 import { finishReplyRequest, lockReplyRequest, type ReplyRequestRow } from "./repo/requests";
@@ -97,6 +98,12 @@ export async function writeReplyDraft(deps: WriteDeps, ctx: TenantContext, input
       return { kind: "cancelled", reason };
     };
 
+    // The state of the organization and the mailbox, read under the lock: the call took time, and a suspend or a pause in that time
+    // stops every write (the run checked both before the call only).
+    if (await isOrgSuspended(trx, ctx)) return cancel("org_suspended");
+    const mailbox = await getMailbox(trx, ctx, request.mailbox_id);
+    if (mailbox === undefined || mailbox.status !== "active") return cancel("mailbox_inactive");
+
     // The gates, read under the share lock.
     if (!(await isFeatureOn(trx, ctx, "reply_drafts"))) return cancel("feature_off");
     const settings = hasSettings ? await getMailboxSettings(trx, ctx, request.mailbox_id) : undefined;
@@ -106,6 +113,8 @@ export async function writeReplyDraft(deps: WriteDeps, ctx: TenantContext, input
     // The facts that can change while the model works: an answer in Sent, a suspicious sign.
     const loaded = (await loadReplyFacts(trx, ctx, [request.email_id], { ownerLocale: null })).get(request.email_id);
     if (loaded === undefined) return cancel("mail_gone");
+    // A newest triage result of `spam` (the mail was judged again while the model worked) gets no draft, whatever the trigger.
+    if (loaded.facts.category === "spam") return cancel("spam");
     if (loaded.facts.suspicion.state === "flagged") return cancel("suspicious");
     if (loaded.mail.answered) return cancel("answered");
 

@@ -9,7 +9,7 @@ import {
   type ReplyCheckCode,
 } from "@ea/core";
 
-import { dataBlock, neutralize, oneLine } from "./classifier-v2";
+import { dataBlock, neutralize } from "./classifier-v2";
 
 // Any change to the text below needs a new file and version id (`drafter-v2.ts`) and a passing drafter run (F115
 // stage 02). The text of this file never holds a mail, an address or a draft.
@@ -72,6 +72,14 @@ Output fields:
 
 Return only JSON that matches the schema. Give no other text.`;
 }
+
+// The header text of a third party on one line. Every line break and control character becomes a space: a CR, an LF, a Unicode
+// line or paragraph separator (U+2028, U+2029), NEL (U+0085) and any other C0 or C1 control character. A model may read some of
+// them as a line break and then see a forged `From:` line or a second block end.
+// eslint-disable-next-line no-control-regex -- the control characters are the point of this pattern
+const HEADER_BREAKS = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g;
+// The break characters become spaces first; then the block markers are removed.
+const oneLine = (text: string): string => neutralize(text.replace(HEADER_BREAKS, " ")).replace(/\s+/g, " ").trim();
 
 // One line: a line break in the user's text cannot start a new section of the prompt.
 function userLine(text: string | null): string {

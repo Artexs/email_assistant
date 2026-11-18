@@ -270,8 +270,8 @@ interface ErrorEnds {
 }
 
 // A provider error. The quota or the service (soft) and a wrong key or model (config) are not about the mail: the request goes
-// back in 5 minutes with no try counted, and the pause of the job stops the other requests. A hard error counts a try; the third
-// ends the request.
+// back in 5 minutes with no try counted, and the pause of the job stops the other requests. A hard error and a timeout count a
+// try; the third ends the request.
 async function handleCallError(
   deps: DraftDeps,
   row: ReplyRequestRow,
@@ -280,7 +280,9 @@ async function handleCallError(
 ): Promise<DraftOutcome> {
   const code = llmErrorCode(error.cause);
   const retryAt = new Date(ends.now.getTime() + RETRY_WAIT_MS);
-  const soft = (softCodes as readonly string[]).includes(code);
+  // A timeout counts as a try, as in the Sent analysis: one mail can time out on every call, so it must end after the try limit
+  // (a mail that always times out must not retry for 7 days). Other soft errors are about the service, not the mail.
+  const soft = code !== "timeout" && (softCodes as readonly string[]).includes(code);
   if (soft || (configCodes as readonly string[]).includes(code)) {
     deps.pause.trip(soft ? "soft" : "config", code, ends.now);
     if (!soft) ends.requestLog.error("reply_llm_config_error", { error_code: code });
