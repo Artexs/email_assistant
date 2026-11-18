@@ -139,7 +139,7 @@ export function auditSsoEvent(db: Db): NonNullable<AuthDeps["onSsoEvent"]> {
   };
 }
 
-// L16: the accepted terms and their audit row go in one transaction, in the user's oldest organization. It never throws.
+// The accepted terms and their audit row go in one transaction, in the user's oldest organization. It never throws.
 export function termsAcceptedHandler(db: Db, now: () => Date): AuthDeps["onTermsAccepted"] {
   return async (userId, version) => {
     try {
@@ -160,7 +160,7 @@ export function termsAcceptedHandler(db: Db, now: () => Date): AuthDeps["onTerms
   };
 }
 
-// L7: a failed auth mail is an operator notice in the user's oldest organization. It never throws.
+// A failed auth mail is an operator notice in the user's oldest organization. It never throws.
 export function authMailFailedHandler(
   db: Db,
   notify: WebExtras["onAuthMailFailed"]
@@ -259,7 +259,7 @@ export function onboardingDeps(
   };
 }
 
-// `botUsername` only tells whether Telegram is on: a server without a bot never blocks `done` (B2).
+// `botUsername` only tells whether Telegram is on: a server without a bot never blocks `done`.
 export function homePathOf(
   db: Db,
   botUsername: (() => Promise<string>) | null = null
