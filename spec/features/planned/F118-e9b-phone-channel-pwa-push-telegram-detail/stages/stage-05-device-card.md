@@ -25,7 +25,7 @@ Carry-over reads: `plan.md` D9, D16; `interfaces.md` (routes of stage 03); `apps
 - **Test (unit):** the re-bind function with fakes: granted plus subscription → one PUT; `default` permission → no PUT; no subscription → no PUT.
 - **Check:** the touched tests, `bun run web:build`, then the Proof with the e2e step as in stage 04.
 - **Done when:** the Proof with the e2e step prints `PROOF_OK`.
-- **Out of scope:** route choice (11), Telegram detail (11).
+- **Out of scope:** route choice (12), Telegram detail (12).
 
 ## Checkpoint A (owner, after the land)
 

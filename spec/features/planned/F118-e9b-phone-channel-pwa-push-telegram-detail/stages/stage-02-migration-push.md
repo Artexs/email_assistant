@@ -1,6 +1,6 @@
 # F118 stage 02 — Migration A: devices and routes `[risky]`
 
-Part of [`../plan.md`](../plan.md). Needs nothing (may run before 01 lands only if the coordinator wants; default: after 01). **Migration**: no other migration in the repo at the same time. Owner step after the land: `bun run db:migrate` on the shared dev DB.
+Part of [`../plan.md`](../plan.md). Needs 01. **Migration**: no other migration in the repo at the same time. Owner step after the land: `bun run db:migrate` on the shared dev DB.
 
 Carry-over reads: `plan.md` D3, D4, D7; `interfaces.md` § Server (table, repo, outbox column); the newest migrations (`20261115180001_trust_ladder.sql` for the CHECK widening and its `down`); `privacy/export-map.ts`, `privacy/address-map.ts`, `privacy/delete.ts`; `platform/crypto.ts`.
 
@@ -36,4 +36,4 @@ Carry-over reads: `plan.md` D3, D4, D7; `interfaces.md` § Server (table, repo, 
   6. `privacy-export-map` and account delete tests pass with the new table; an org delete removes its rows.
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
-- **Out of scope:** routes (03), queueing (06), the sender (07), the Telegram detail columns (09).
+- **Out of scope:** routes (03), queueing (07), the sender (08), the Telegram detail columns (10).

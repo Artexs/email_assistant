@@ -31,9 +31,9 @@ A user can install the web panel on the phone and get Web Push notices that hold
 
 ## Slices
 
-- 12 worker stages in order (`plan.md` § Stages); no stage runs in parallel with another of this ticket.
-- Stages 02 and 09 add a migration: no other migration in the repo at the same time.
-- Owner checkpoint A after stage 05 (a real push on the owner's phone), B after stage 12 (pilot switch-on). How to run: `plan.md` § How to run.
+- 13 worker stages in order (`plan.md` § Stages); no stage runs in parallel with another of this ticket.
+- Stages 02 and 10 add a migration: no other migration in the repo at the same time.
+- Owner checkpoint A after stage 05 (a real push on the owner's phone), B after stage 13 (pilot switch-on). How to run: `plan.md` § How to run.
 
 ## Sequenced
 
@@ -43,4 +43,4 @@ A user can install the web panel on the phone and get Web Push notices that hold
 
 ## Notes
 
-Source row: §2.1 #24. ADR 0032 (proposed → accepted in stage 12). Absorbs the Telegram half of F075. Decisions: PD-092, PD-093, PD-094, PD-095.
+Source row: §2.1 #24. ADR 0032 (proposed → accepted in stage 13). Absorbs the Telegram half of F075. Decisions: PD-092, PD-093, PD-094, PD-095.

@@ -41,4 +41,4 @@ Carry-over reads: `plan.md` D1, D5, D18, D19; `interfaces.md` § Server (`channe
   3. A public key that does not match the private key → `ConfigError` `vapid_key_mismatch`.
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
-- **Out of scope:** tables, routes, the job (02–07).
+- **Out of scope:** tables, routes, the job (02–08).
