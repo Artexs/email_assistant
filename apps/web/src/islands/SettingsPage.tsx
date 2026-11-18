@@ -30,6 +30,7 @@ import { t, tp, type TextKey, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { selectedMailboxId, settingsPath } from "../lib/settings-api";
+import { loadTrustView } from "../lib/trust-api";
 import { useResource } from "../lib/use-resource";
 
 interface MailboxSettingsProps {
@@ -43,6 +44,10 @@ interface MailboxSettingsProps {
 
 function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailboxes, reloadMe }: MailboxSettingsProps) {
   const { data, error, loading, reload, mutate } = useResource(() => api(settingsPath(mailbox.id), settingsViewSchema));
+  // F110 stage 13: with the flag `trust_ladder` on, the card also reads the trust view. Flag off: no request, the card is as before.
+  const { me } = useMe();
+  const trustOn = me?.features.includes("trust_ladder") === true;
+  const trust = useResource(() => (trustOn ? loadTrustView(mailbox.id) : Promise.resolve(null)));
 
   // A 404 on the settings means the mailbox is gone (removed in another tab): the list decides what is selected.
   const missing = error instanceof ApiError && error.status === 404;
@@ -71,6 +76,7 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
 
   const onChanged = (change: SettingsWebChange, toastKey: TextKey, vars?: Record<string, string | number>) => {
     mutate(change.settings);
+    if (trustOn) trust.reload();
     if (change.settings.mode !== data.mode) reloadMe();
     reloadMailboxes();
     const suffix = change.expired > 0 ? ` ${tp("expired_suffix", change.expired)}` : "";
@@ -80,7 +86,13 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
   return (
     <>
       <ModeCard mailbox={mailbox} settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
-      <CategoriesCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
+      <CategoriesCard
+        settings={data}
+        trust={trust.data}
+        isOwner={isOwner}
+        onChanged={onChanged}
+        onMissing={reloadMailboxes}
+      />
       <SyncFoldersCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
       {data.sentSync !== null && (
         <SentMailCard
