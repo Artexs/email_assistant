@@ -63,6 +63,9 @@ export async function closeLockedSend(
     approvedCloses: boolean;
     claimed: boolean;
     resultNotifiedAt?: Date;
+    // Decide the result notice from the row that this call locked: an `approved` send (the user tapped Send and waits) gets a notice,
+    // any other state sets `result_notified_at` to `now`. Replaces `resultNotifiedAt`.
+    notifyApprovedOnly?: boolean;
   }
 ): Promise<CloseLockedResult> {
   const send = await lockAnySend(trx, ctx, sendId);
@@ -76,13 +79,18 @@ export async function closeLockedSend(
   } else if (send.status !== "awaiting_approval") {
     return { kind: "not_open", state: send.status };
   }
+  const resultNotifiedAt = opts.notifyApprovedOnly
+    ? send.status === "approved"
+      ? undefined
+      : opts.now
+    : opts.resultNotifiedAt;
   const changed = await setExpired(trx, ctx, sendId, {
     reason: opts.reason,
     at: opts.now,
     from: send.status as "awaiting_approval" | "approved",
     staleBefore,
     ignoreLock: opts.claimed,
-    ...(opts.resultNotifiedAt === undefined ? {} : { resultNotifiedAt: opts.resultNotifiedAt }),
+    ...(resultNotifiedAt === undefined ? {} : { resultNotifiedAt }),
   });
   if (!changed) return { kind: "lost" };
   await recordAudit(trx, ctx, {

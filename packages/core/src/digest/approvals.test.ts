@@ -333,6 +333,19 @@ describe("the texts of the copy check (the mail client edit)", () => {
       "⌛ You already answered this mail. Nothing was sent. · S"
     );
   });
+
+  test("newer_mail and suspicious say what to do next; original_moved says moved, not inbox (en, pl)", () => {
+    const en = textTables.en.approvals.sendResult.expired;
+    const pl = textTables.pl.approvals.sendResult.expired;
+    expect(en.newer_mail("S")).toContain("Read the newer mail; a new draft may follow.");
+    expect(en.suspicious("S")).toContain("a new draft may follow");
+    expect(pl.newer_mail("S")).toContain("Przeczytaj nowszą wiadomość; może pojawić się nowy szkic.");
+    expect(pl.suspicious("S")).toContain("może pojawić się nowy szkic");
+    expect(en.original_moved("S")).toContain("moved");
+    expect(en.original_moved("S")).not.toContain("inbox");
+    expect(pl.original_moved("S")).toContain("przeniesiono");
+    expect(pl.original_moved("S")).not.toContain("odbiorcz");
+  });
 });
 
 const PANEL_URL = "https://ea.example.ts.net/approvals?id=7f1c0d1e-0000-4000-8000-000000000001";
@@ -668,11 +681,19 @@ describe("renderSendResult", () => {
     ["draft_changed", "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Offer", "both"],
     ["answered", "⌛ You already answered this mail. Nothing was sent. · Fwd: Offer", "both"],
     ["sent_by_user", "⌛ It looks like you sent it from your mail client. Nothing was sent. · Fwd: Offer", "closing"],
-    ["newer_mail", "⌛ A newer mail arrived in this thread. Nothing was sent. · Fwd: Offer", "both"],
-    ["original_moved", "⌛ The mail left the inbox. Nothing was sent. · Fwd: Offer", "both"],
+    [
+      "newer_mail",
+      "⌛ A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow. · Fwd: Offer",
+      "both",
+    ],
+    [
+      "original_moved",
+      "⌛ The mail was moved to another folder. Nothing was sent. Answer it from its new place if you still want to. · Fwd: Offer",
+      "both",
+    ],
     [
       "suspicious",
-      "⌛ The mail was marked as suspicious after the draft was made. Nothing was sent. · Fwd: Offer",
+      "⌛ The mail was marked as suspicious after the draft was made. Nothing was sent. Read the mail with care; a new draft may follow. · Fwd: Offer",
       "both",
     ],
   ];

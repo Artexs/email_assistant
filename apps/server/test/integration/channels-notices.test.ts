@@ -1821,9 +1821,17 @@ describe("send result notices", () => {
       const cases: [string, string, boolean][] = [
         ["answered", "You already answered this mail. Nothing was sent.", true],
         ["sent_by_user", "It looks like you sent it from your mail client. Nothing was sent.", false],
-        ["newer_mail", "A newer mail arrived in this thread. Nothing was sent.", true],
-        ["original_moved", "The mail left the inbox. Nothing was sent.", true],
-        ["suspicious", "The mail was marked as suspicious after the draft was made. Nothing was sent.", true],
+        [
+          "newer_mail",
+          "A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow.",
+          true,
+        ],
+        ["original_moved", "The mail was moved to another folder. Nothing was sent.", true],
+        [
+          "suspicious",
+          "The mail was marked as suspicious after the draft was made. Nothing was sent. Read the mail with care; a new draft may follow.",
+          true,
+        ],
         ["draft_missing", "the draft is not in your Drafts folder", false],
       ];
       const sends: [string, string, boolean][] = [];

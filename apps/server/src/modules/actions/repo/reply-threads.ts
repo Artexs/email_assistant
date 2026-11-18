@@ -107,3 +107,31 @@ export async function listSweepReplySends(
         ]
   );
 }
+
+// The mailboxes that hold at least one reply send that the sweep may look at (same states as `listSweepReplySends`), with the creation time
+// of the oldest such send. The oldest mailbox comes first, then the mailbox id: the sweep visits the mailbox with the longest wait first, and
+// a mailbox with nothing to sweep is not in the list. It reads every organization (a job path, like `listSyncTargets`); the caller
+// then works under the context of each organization. Every join ties `org_id`.
+export async function listMailboxesWithOpenReplySends(
+  db: DbOrTrx
+): Promise<{ orgId: string; mailboxId: string; oldestAt: Date }[]> {
+  const rows = await db
+    .selectFrom("actions as a")
+    .innerJoin("emails as e", (join) => join.onRef("e.id", "=", "a.email_id").onRef("e.org_id", "=", "a.org_id"))
+    .select(["e.org_id", "e.mailbox_id", (eb) => eb.fn.min("a.created_at").as("oldest_at")])
+    .where("a.type", "=", "send")
+    .where(sql<string>`a.payload->>'kind'`, "=", "reply")
+    .where((eb) =>
+      eb.or([
+        eb("a.status", "=", "awaiting_approval"),
+        eb.and([eb("a.status", "=", "approved"), eb("a.locked_at", "is", null)]),
+      ])
+    )
+    .groupBy(["e.org_id", "e.mailbox_id"])
+    .orderBy("oldest_at")
+    .orderBy("e.mailbox_id")
+    .execute();
+  return rows.flatMap((row) =>
+    row.oldest_at === null ? [] : [{ orgId: row.org_id, mailboxId: row.mailbox_id, oldestAt: row.oldest_at }]
+  );
+}

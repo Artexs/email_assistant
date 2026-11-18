@@ -3,7 +3,14 @@ import { draftPayloadSchema } from "@ea/core";
 import type { TenantContext } from "../../platform/db";
 import { SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
-import { newerMailInThread, refreshFlagsOfEmail, replyFactsOf, syncSentHeaders, type MailProvider } from "../mail";
+import {
+  markAutomaticAnswers,
+  newerMailInThread,
+  refreshFlagsOfEmail,
+  replyFactsOf,
+  syncSentHeaders,
+  type MailProvider,
+} from "../mail";
 
 import type { ApplyDeps } from "./apply-shared";
 import { sentOriginOf, type ClaimedAction, type DraftRow } from "./repo";
@@ -47,7 +54,8 @@ export async function checkReplyBeforeSend(
       log.info("reply_send_checked", { action_id: action.id, result: "newer_mail" });
       return { kind: "close", reason: "newer_mail" };
     }
-    if (draftFolder !== null && before.folder !== draftFolder) {
+    // A move that the assistant made (`moved_at` set) is no reason to stop: the user did not move the mail.
+    if (draftFolder !== null && before.folder !== draftFolder && before.movedAt === null) {
       log.info("reply_send_checked", { action_id: action.id, result: "original_moved" });
       return { kind: "close", reason: "original_moved" };
     }
@@ -65,6 +73,8 @@ export async function checkReplyBeforeSend(
     );
     if (sent.status === "budget") throw new SoftError("the Sent pass ran out of time");
 
+    // A vacation reply in Sent is no answer: read the `Auto-Submitted` header of the Sent mail that would count (stage 09 review N4).
+    await markAutomaticAnswers({ db: deps.db, provider }, ctx, emailId);
     const flags = await refreshFlagsOfEmail({ db: deps.db, provider, now: deps.now }, ctx, emailId);
     const answered = (await replyFactsOf(deps.db, ctx, [emailId])).get(emailId)?.answered === true;
     log.info("reply_send_checked", {

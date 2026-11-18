@@ -9,7 +9,7 @@ import { delegationHooks } from "../../src/modules/delegation";
 import { newerMailInThread, refreshFlagsOfEmail } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
-import { createReplySweep } from "../../src/modules/replies";
+import { createReplySweep, SWEEP_LIMIT, SWEEP_LIST_LIMIT } from "../../src/modules/replies";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 import { captureLogs, type CapturedLogs } from "../log-capture";
@@ -48,7 +48,11 @@ async function send(trx: Transaction<DB>, id: string) {
   return trx.selectFrom("actions").selectAll().where("id", "=", id).executeTakeFirstOrThrow();
 }
 
-function sweepOf(trx: Transaction<DB>, decided: { sendId: string; decision: string }[] = [], limit?: number) {
+function sweepOf(
+  trx: Transaction<DB>,
+  decided: { sendId: string; decision: string }[] = [],
+  limits: { closeLimit?: number; listLimit?: number; now?: () => Date } = {}
+) {
   const approvalHooks: ApprovalHooks = {
     onDecided: async (_trx, _ctx, input) => {
       decided.push({ sendId: input.sendId, decision: input.decision });
@@ -59,8 +63,9 @@ function sweepOf(trx: Transaction<DB>, decided: { sendId: string; decision: stri
     hooks: delegationHooks({ db: trx }),
     approvalHooks,
     uidplus: async () => true,
-    now: () => NOW,
-    ...(limit === undefined ? {} : { limit }),
+    now: limits.now ?? (() => NOW),
+    ...(limits.closeLimit === undefined ? {} : { closeLimit: limits.closeLimit }),
+    ...(limits.listLimit === undefined ? {} : { listLimit: limits.listLimit }),
   });
 }
 
@@ -355,7 +360,7 @@ describe("the sweep: policy, locks, tenants, limits", () => {
     });
   });
 
-  test("8. at most 200 sends per run, oldest first; the rest wait for the next run", async () => {
+  test("8. at most 200 closes per run, oldest first; the rest wait for the next run", async () => {
     await withRollback(db, async (trx) => {
       const o = await sweepOrg(trx);
       const created: string[] = [];
@@ -367,7 +372,7 @@ describe("the sweep: policy, locks, tenants, limits", () => {
 
       const first = await run(trx, o);
 
-      expect(first).toMatchObject({ checked: 200, closed: { answered: 200 } });
+      expect(first).toMatchObject({ checked: 203, closed: { answered: 200 } });
       const states = await trx.selectFrom("actions").select(["id", "status"]).where("id", "in", created).execute();
       const open = states.filter((row) => row.status === "awaiting_approval").map((row) => row.id);
       expect(open.sort()).toEqual(created.slice(200).sort());
@@ -376,7 +381,7 @@ describe("the sweep: policy, locks, tenants, limits", () => {
     });
   }, 60_000);
 
-  test("8b. the limit is for the whole run, not for each mailbox", async () => {
+  test("8b. the cap of closes is for the whole run, not for each mailbox", async () => {
     await withRollback(db, async (trx) => {
       const a = await sweepOrg(trx);
       const b = await sweepOrg(trx);
@@ -387,9 +392,9 @@ describe("the sweep: policy, locks, tenants, limits", () => {
         }
       }
 
-      const result = await sweepOf(trx, [], 4).run({ mailboxIds: [a.mailboxId, b.mailboxId] });
+      const result = await sweepOf(trx, [], { closeLimit: 4 }).run({ mailboxIds: [a.mailboxId, b.mailboxId] });
 
-      expect(result).toMatchObject({ checked: 4, closed: { answered: 4 } });
+      expect(result.closed.answered).toBe(4);
     });
   });
 
@@ -517,6 +522,236 @@ describe("tenant isolation of the readers of the sweep and the pass", () => {
       expect(
         await trx.selectFrom("email_flags").select("email_id").where("email_id", "=", mail.emailId).execute()
       ).toEqual([]);
+    });
+  });
+});
+
+describe("the sweep: the cap counts closes, mailboxes are visited by the age of their oldest open send (review B1)", () => {
+  test("B1a. open sends cost no close budget: a 4th answered send behind 3 older open ones still closes (cap 3)", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      for (let index = 0; index < 3; index += 1) {
+        await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + index * 1000) });
+      }
+      const answered = await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + 10_000) });
+      await markAnswered(trx, o, answered.emailId);
+
+      const result = await sweepOf(trx, [], { closeLimit: 3 }).run({ mailboxIds: [o.mailboxId] });
+
+      expect(result).toMatchObject({ checked: 4, closed: { answered: 1 } });
+      expect((await send(trx, answered.sendId)).status).toBe("expired");
+    });
+  });
+
+  test("B1b. a mailbox with many open sends does not starve a later mailbox (other organization too)", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await sweepOrg(trx);
+      const b = await sweepOrg(trx);
+      // A holds the older sends, none of them closes. B holds one newer send, and it is answered.
+      for (let index = 0; index < 5; index += 1) {
+        await sweepReply(trx, a, { createdAt: new Date(T0.getTime() + index * 1000) });
+      }
+      const answered = await sweepReply(trx, b, { createdAt: new Date(T0.getTime() + HOUR) });
+      await markAnswered(trx, b, answered.emailId);
+
+      const result = await sweepOf(trx, [], { closeLimit: 3 }).run({ mailboxIds: [a.mailboxId, b.mailboxId] });
+
+      expect(result).toMatchObject({ checked: 6, closed: { answered: 1 } });
+      expect((await send(trx, answered.sendId)).status).toBe("expired");
+    });
+  });
+
+  test("B1c. the mailbox with the oldest open send comes first: with a cap of 1 it gets the close", async () => {
+    await withRollback(db, async (trx) => {
+      const older = await sweepOrg(trx);
+      const newer = await sweepOrg(trx);
+      const first = await sweepReply(trx, newer, { createdAt: new Date(T0.getTime() + HOUR) });
+      const second = await sweepReply(trx, older, { createdAt: T0 });
+      await markAnswered(trx, newer, first.emailId);
+      await markAnswered(trx, older, second.emailId);
+
+      const result = await sweepOf(trx, [], { closeLimit: 1 }).run({ mailboxIds: [newer.mailboxId, older.mailboxId] });
+
+      expect(result.closed.answered).toBe(1);
+      expect((await send(trx, second.sendId)).status).toBe("expired");
+      expect((await send(trx, first.sendId)).status).toBe("awaiting_approval");
+    });
+  });
+
+  test("B1d. a mailbox with nothing open is not visited and costs nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const idle = await sweepOrg(trx);
+      const busy = await sweepOrg(trx);
+      const pair = await sweepReply(trx, busy);
+      await markAnswered(trx, busy, pair.emailId);
+
+      const result = await sweepOf(trx).run({ mailboxIds: [idle.mailboxId, busy.mailboxId] });
+
+      expect(result).toMatchObject({ mailboxes: 1, checked: 1, closed: { answered: 1 } });
+    });
+  });
+
+  test("B1e. the number of listed sends per run is bounded too, over all mailboxes", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await sweepOrg(trx);
+      const b = await sweepOrg(trx);
+      for (const [o, base] of [
+        [a, 0],
+        [b, 100],
+      ] as const) {
+        for (let index = 0; index < 2; index += 1) {
+          await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + (base + index) * 1000) });
+        }
+      }
+      const result = await sweepOf(trx, [], { listLimit: 3 }).run({ mailboxIds: [a.mailboxId, b.mailboxId] });
+      expect(result.checked).toBe(3);
+    });
+  });
+
+  test("B1g. the cap of closes holds inside one mailbox (cap 2, three answered sends: two close, the oldest first)", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      const pairs = [];
+      for (let index = 0; index < 3; index += 1) {
+        const pair = await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + index * 1000) });
+        await markAnswered(trx, o, pair.emailId);
+        pairs.push(pair);
+      }
+      const result = await sweepOf(trx, [], { closeLimit: 2 }).run({ mailboxIds: [o.mailboxId] });
+      expect(result.closed.answered).toBe(2);
+      expect((await send(trx, pairs[2]?.sendId ?? "")).status).toBe("awaiting_approval");
+    });
+  });
+
+  test("B1f. the defaults are 200 closes and 1000 listed sends per run", () => {
+    expect(SWEEP_LIMIT).toBe(200);
+    expect(SWEEP_LIST_LIMIT).toBe(1000);
+  });
+});
+
+describe("the sweep: races with a tap and with a claim (review N1, T2)", () => {
+  test("N1. a tap between the list and the close: the close locks the row as approved, so the user gets a result notice", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      const pair = await sweepReply(trx, o);
+      await markAnswered(trx, o, pair.emailId);
+      // `now()` runs once per close, after the list and before the close transaction: the tap lands there.
+      const now = () => {
+        void trx
+          .updateTable("actions")
+          .set({ status: "approved", approved_at: NOW, approved_by: o.userId, approved_via: "web" })
+          .where("id", "=", pair.sendId)
+          .execute();
+        return NOW;
+      };
+
+      const result = await sweepOf(trx, [], { now }).run({ mailboxIds: [o.mailboxId] });
+
+      expect(result.closed.answered).toBe(1);
+      expect(await send(trx, pair.sendId)).toMatchObject({
+        status: "expired",
+        status_reason: "answered",
+        result_notified_at: null,
+      });
+      const toTell = await listSendResultsToNotify(trx, o.ctx, { limit: 10, now: NOW, pendingCopyMaxAgeMs: 600_000 });
+      expect(toTell.map((row) => row.id)).toEqual([pair.sendId]);
+    });
+  });
+
+  test("T2. a committer claim between the list and the close: the close answers busy, nothing is closed, no notice", async () => {
+    await withRollback(db, async (trx) => {
+      logs = captureLogs();
+      const o = await sweepOrg(trx);
+      const pair = await sweepReply(trx, o, { status: "approved" });
+      await markAnswered(trx, o, pair.emailId);
+      const now = () => {
+        void trx.updateTable("actions").set({ locked_at: NOW }).where("id", "=", pair.sendId).execute();
+        return NOW;
+      };
+
+      const result = await sweepOf(trx, [], { now }).run({ mailboxIds: [o.mailboxId] });
+
+      expect(result).toMatchObject({ checked: 1, skipped: 1, mailboxErrors: 0, closed: { answered: 0 } });
+      expect(await send(trx, pair.sendId)).toMatchObject({ status: "approved", status_reason: null });
+      expect(logs.lines.some((line) => line.includes("reply_closed"))).toBe(false);
+    });
+  });
+});
+
+describe("the sweep and the pass: moves, junk, spam (review N6, N7)", () => {
+  test("N6. a move that the assistant made (moved_at set) does not close the reply; a move of the user does", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      const byAssistant = await sweepReply(trx, o);
+      const byUser = await sweepReply(trx, o);
+      await trx
+        .updateTable("emails")
+        .set({ folder: "Archive", moved_at: T0 })
+        .where("id", "=", byAssistant.emailId)
+        .execute();
+      await trx.updateTable("emails").set({ folder: "Archive" }).where("id", "=", byUser.emailId).execute();
+
+      const result = await run(trx, o);
+
+      expect(result.closed.original_moved).toBe(1);
+      expect((await send(trx, byAssistant.sendId)).status).toBe("awaiting_approval");
+      expect(await send(trx, byUser.sendId)).toMatchObject({ status: "expired", status_reason: "original_moved" });
+    });
+  });
+
+  test("N7. a newer mail in the junk folder, in the trash folder, or in the spam category does not close the reply", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      await trx
+        .insertInto("mailbox_folders")
+        .values({ org_id: o.ctx.orgId, mailbox_id: o.mailboxId, key: "junk", path: "Junk", role: "junk" })
+        .execute();
+      await trx
+        .updateTable("mailboxes")
+        .set({ folder_map: JSON.stringify({ drafts: "Drafts", trash: "Trash" }) })
+        .where("id", "=", o.mailboxId)
+        .execute();
+      const junk = await sweepReply(trx, o);
+      const junkSource = await sweepReply(trx, o);
+      const trash = await sweepReply(trx, o);
+      const spam = await sweepReply(trx, o);
+      const real = await sweepReply(trx, o);
+      const later = new Date(T0.getTime() + HOUR);
+      const inJunk = await addThreadMail(trx, o.ctx, junk.emailId, { receivedAt: later });
+      await trx.updateTable("emails").set({ folder: "Junk" }).where("id", "=", inJunk).execute();
+      const fromJunk = await addThreadMail(trx, o.ctx, junkSource.emailId, { receivedAt: later });
+      await trx.updateTable("emails").set({ source_folder: "Junk" }).where("id", "=", fromJunk).execute();
+      const inTrash = await addThreadMail(trx, o.ctx, trash.emailId, { receivedAt: later });
+      await trx.updateTable("emails").set({ folder: "Trash" }).where("id", "=", inTrash).execute();
+      const spamMail = await addThreadMail(trx, o.ctx, spam.emailId, { receivedAt: later });
+      const triage = (emailId: string, category: string, at: Date) =>
+        trx
+          .insertInto("triage_results")
+          .values({
+            org_id: o.ctx.orgId,
+            email_id: emailId,
+            category,
+            confidence: 0.9,
+            reason_code: "direct_request",
+            fields: "{}",
+            suspicious_reasons: [],
+            created_at: at,
+          })
+          .execute();
+      await triage(spamMail, "spam", later);
+      await addThreadMail(trx, o.ctx, real.emailId, { receivedAt: later });
+
+      const result = await run(trx, o);
+
+      expect(result.closed.newer_mail).toBe(1);
+      for (const kept of [junk, junkSource, trash, spam])
+        expect((await send(trx, kept.sendId)).status).toBe("awaiting_approval");
+      expect(await send(trx, real.sendId)).toMatchObject({ status: "expired", status_reason: "newer_mail" });
+
+      // The newest result decides: a mail that was spam and is now `needs_reply` counts.
+      await triage(spamMail, "needs_reply", new Date(later.getTime() + HOUR));
+      await run(trx, o);
+      expect(await send(trx, spam.sendId)).toMatchObject({ status: "expired", status_reason: "newer_mail" });
     });
   });
 });

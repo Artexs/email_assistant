@@ -261,10 +261,12 @@ export const approvalTexts = {
         draft_changed: (subject) => `✏️ You edited this draft in your mail client. Send it from there. · ${subject}`,
         answered: (subject) => `⌛ You already answered this mail. Nothing was sent. · ${subject}`,
         sent_by_user: (subject) => `⌛ It looks like you sent it from your mail client. Nothing was sent. · ${subject}`,
-        newer_mail: (subject) => `⌛ A newer mail arrived in this thread. Nothing was sent. · ${subject}`,
-        original_moved: (subject) => `⌛ The mail left the inbox. Nothing was sent. · ${subject}`,
+        newer_mail: (subject) =>
+          `⌛ A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow. · ${subject}`,
+        original_moved: (subject) =>
+          `⌛ The mail was moved to another folder. Nothing was sent. Answer it from its new place if you still want to. · ${subject}`,
         suspicious: (subject) =>
-          `⌛ The mail was marked as suspicious after the draft was made. Nothing was sent. · ${subject}`,
+          `⌛ The mail was marked as suspicious after the draft was made. Nothing was sent. Read the mail with care; a new draft may follow. · ${subject}`,
       },
       rejected: (byName, subject) => `✖️ Rejected${byName === null ? "" : ` by ${byName}`} · ${subject}`,
     },
@@ -414,10 +416,12 @@ export const approvalTexts = {
         answered: (subject) => `⌛ Na tę wiadomość już odpowiedziano. Nic nie wysłano. · ${subject}`,
         sent_by_user: (subject) =>
           `⌛ Wygląda na to, że odpowiedź wysłano z programu pocztowego. Nic nie wysłano. · ${subject}`,
-        newer_mail: (subject) => `⌛ W tym wątku pojawiła się nowsza wiadomość. Nic nie wysłano. · ${subject}`,
-        original_moved: (subject) => `⌛ Wiadomość opuściła skrzynkę odbiorczą. Nic nie wysłano. · ${subject}`,
+        newer_mail: (subject) =>
+          `⌛ W tym wątku pojawiła się nowsza wiadomość. Nic nie wysłano. Przeczytaj nowszą wiadomość; może pojawić się nowy szkic. · ${subject}`,
+        original_moved: (subject) =>
+          `⌛ Wiadomość przeniesiono do innego folderu. Nic nie wysłano. Jeśli nadal chcesz odpowiedzieć, zrób to z jej nowego miejsca. · ${subject}`,
         suspicious: (subject) =>
-          `⌛ Po utworzeniu szkicu wiadomość oznaczono jako podejrzaną. Nic nie wysłano. · ${subject}`,
+          `⌛ Po utworzeniu szkicu wiadomość oznaczono jako podejrzaną. Nic nie wysłano. Przeczytaj ją uważnie; może pojawić się nowy szkic. · ${subject}`,
       },
       rejected: (byName, subject) => `✖️ Odrzucono${byName === null ? "" : ` (${byName})`} · ${subject}`,
     },

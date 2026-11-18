@@ -37,11 +37,17 @@ export async function messageIdOf(trx: Transaction<DB>, emailId: string): Promis
 }
 
 // The user answers `parentMessageId` in the mail client: a mail in the Sent folder with `In-Reply-To`, sent at `at`.
-export async function appendUserReply(box: CopyBox, parentMessageId: string, at: Date): Promise<number> {
+export async function appendUserReply(
+  box: CopyBox,
+  parentMessageId: string,
+  at: Date,
+  extra: { to?: string; subject?: string; headers?: Record<string, string> } = {}
+): Promise<number> {
   const raw = await new MailComposer({
     from: box.address,
-    to: "boss@x.test",
-    subject: "Re: Offer",
+    to: extra.to ?? "boss@x.test",
+    subject: extra.subject ?? "Re: Offer",
+    ...(extra.headers === undefined ? {} : { headers: extra.headers }),
     text: "My own answer",
     inReplyTo: parentMessageId,
     references: parentMessageId,

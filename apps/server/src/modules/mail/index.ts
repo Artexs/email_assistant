@@ -237,6 +237,7 @@ export {
   type SentSwitchResult,
 } from "./sent-switch";
 export { getSentSyncView, isSentVisible } from "./sent-view";
+export { markAutomaticAnswers } from "./sent-automatic";
 export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
 export {
   isSyntheticMessageId,

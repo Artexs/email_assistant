@@ -6,6 +6,7 @@ import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import {
   closeSend,
+  listMailboxesWithOpenReplySends,
   listSweepReplySends,
   type ApprovalHooks,
   type DelegationHooks,
@@ -20,8 +21,10 @@ import { lockThread } from "./write";
 
 const log = createLog("replies");
 
-// One run closes at most this many open reply sends, oldest first, over all mailboxes.
+// One run closes at most this many open reply sends over all mailboxes. Only closes count against it: a send that stays open costs nothing.
 export const SWEEP_LIMIT = 200;
+// One run also lists at most this many open reply sends over all mailboxes, so a run stays short.
+export const SWEEP_LIST_LIMIT = 1000;
 
 // Why the sweep closes an open reply (D11, D12). The order is the order of the checks.
 export const sweepReasons = ["answered", "newer_mail", "original_moved", "suspicious", "policy_changed"] as const;
@@ -34,14 +37,15 @@ export interface SweepDeps {
   approvalHooks: ApprovalHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   now(): Date;
-  // Sends per run over all mailboxes (default `SWEEP_LIMIT`). Only a test sets it.
-  limit?: number;
+  // Closes per run (default `SWEEP_LIMIT`) and listed sends per run (default `SWEEP_LIST_LIMIT`), over all mailboxes. Only a test sets them.
+  closeLimit?: number;
+  listLimit?: number;
 }
 
 export interface SweepResult {
   mailboxes: number;
   mailboxErrors: number;
-  // Open reply sends that the sweep looked at.
+  // Open reply sends that the sweep listed.
   checked: number;
   closed: Record<SweepReason, number>;
   // A send that a run held, or that a tap, a send or another close took first: left alone.
@@ -55,6 +59,12 @@ const emptyResult = (): SweepResult => ({
   closed: { answered: 0, newer_mail: 0, original_moved: 0, suspicious: 0, policy_changed: 0 },
   skipped: 0,
 });
+
+// What one run may still do: closes and listed sends.
+interface Budget {
+  closeLeft: number;
+  listLeft: number;
+}
 
 interface MailboxFacts {
   // Mode `assist` and the switch `reply_drafts` of the mailbox are both on.
@@ -73,14 +83,15 @@ async function reasonOf(
 ): Promise<SweepReason | null> {
   if (mail.answered) return "answered";
   if (await newerMailInThread(deps.db, ctx, send.emailId)) return "newer_mail";
-  if (send.draftFolder !== null && mail.folder !== send.draftFolder) return "original_moved";
+  // A move that the assistant made (`moved_at` set) does not count: the user did not move the mail.
+  if (send.draftFolder !== null && mail.folder !== send.draftFolder && mail.movedAt === null) return "original_moved";
   if (suspicious) return "suspicious";
   if (!mailbox.policyOpen) return "policy_changed";
   return null;
 }
 
 // One close, one transaction: the lock of the thread (D7: the drafter takes it too), then the shared close. A waiting send closes
-// with no result notice; a send that the user tapped (`approved`) gets one, because that user waits for a result.
+// with no result notice; a send that the user tapped (`approved` when the close locks it) gets one, because that user waits for a result.
 async function closeOne(
   deps: SweepDeps,
   ctx: TenantContext,
@@ -95,7 +106,8 @@ async function closeOne(
     const closed = await closeSend(trx, ctx, {
       sendId: send.sendId,
       reason,
-      notify: send.status === "approved",
+      // Decided from the row that the close locks: a tap may land between the list and the close.
+      notify: "approved",
       claimed: false,
       now,
       deps: { hooks: deps.hooks, approvalHooks: deps.approvalHooks, uidplus: deps.uidplus },
@@ -114,10 +126,10 @@ export function createReplySweep(deps: SweepDeps): {
     ctx: TenantContext,
     mailboxId: string,
     total: SweepResult,
-    budget: { left: number }
+    budget: Budget
   ): Promise<void> {
     if (!(await isFeatureOn(deps.db, ctx, "reply_drafts"))) return;
-    const sends = await listSweepReplySends(deps.db, ctx, mailboxId, { limit: budget.left });
+    const sends = await listSweepReplySends(deps.db, ctx, mailboxId, { limit: budget.listLeft });
     if (sends.length === 0) return;
     const settings = await getMailboxSettings(deps.db, ctx, mailboxId);
     // No settings row: the mailbox is going away; leave its sends to the expiry job.
@@ -125,13 +137,14 @@ export function createReplySweep(deps: SweepDeps): {
     const mailbox: MailboxFacts = {
       policyOpen: settings.mode === "assist" && parseToolSwitches(settings.tool_switches).reply_drafts,
     };
-    budget.left -= sends.length;
+    budget.listLeft -= sends.length;
     total.checked += sends.length;
     const ids = sends.map((send) => send.emailId);
     const mails = await replyFactsOf(deps.db, ctx, ids);
     const suspicious = await suspiciousReasonsOf(deps.db, ctx, ids);
     const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
     for (const send of sends) {
+      if (budget.closeLeft <= 0) return;
       const mail = mails.get(send.emailId);
       // The mail of the send is gone or belongs to another mailbox: nothing to decide on.
       if (mail === undefined || mail.mailboxId !== mailboxId) continue;
@@ -140,6 +153,7 @@ export function createReplySweep(deps: SweepDeps): {
         if (reason === null) continue;
         if (await closeOne(deps, ctx, mailboxId, send, mail.threadKey, reason)) {
           total.closed[reason] += 1;
+          budget.closeLeft -= 1;
           mailboxLog.info("reply_closed", { action_id: send.sendId, reason });
         } else {
           total.skipped += 1;
@@ -154,10 +168,17 @@ export function createReplySweep(deps: SweepDeps): {
   return {
     async run(opts) {
       const total = emptyResult();
-      const budget = { left: deps.limit ?? SWEEP_LIMIT };
-      const targets = await listSyncTargets(deps.db);
+      const budget: Budget = {
+        closeLeft: deps.closeLimit ?? SWEEP_LIMIT,
+        listLeft: deps.listLimit ?? SWEEP_LIST_LIMIT,
+      };
+      // The mailboxes that the sync visits (active, organization not suspended), and among them those with an open reply send: the
+      // mailbox with the oldest open send first. A mailbox with nothing to sweep costs nothing.
+      const visited = new Set((await listSyncTargets(deps.db)).map((target) => target.mailboxId));
+      const targets = await listMailboxesWithOpenReplySends(deps.db);
       for (const { orgId, mailboxId } of targets) {
-        if (budget.left <= 0) break;
+        if (budget.closeLeft <= 0 || budget.listLeft <= 0) break;
+        if (!visited.has(mailboxId)) continue;
         if (opts?.mailboxIds !== undefined && !opts.mailboxIds.includes(mailboxId)) continue;
         const ctx = { orgId };
         try {
