@@ -12,7 +12,7 @@ import {
 
 import { apiDoc } from "../../platform/openapi";
 
-// The OpenAPI description of the approval routes (ADR 0023, F102 ticket). Any member reads; only the owner writes. Every
+// The OpenAPI description of the approval routes (ADR 0023). Any member reads; only the owner writes. Every
 // route answers 404 `not_found` while the flag `approvals_page` is off.
 const tags = ["approvals"];
 const params = z.object({ id: z.uuid() });

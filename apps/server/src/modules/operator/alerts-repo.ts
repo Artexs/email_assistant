@@ -3,7 +3,7 @@ import type { SloKind } from "@ea/core";
 import type { Db } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 
-// F114: the open state of operator alerts. The table `ops_alerts` has no `org_id`: it is host-wide state (disk, backup)
+// The open state of operator alerts. The table `ops_alerts` has no `org_id`: it is host-wide state (disk, backup)
 // and holds codes and numbers only. These functions take no `TenantContext`; the exception is listed in
 // `docs/code-patterns.md` § Data access.
 

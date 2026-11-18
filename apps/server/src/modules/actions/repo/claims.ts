@@ -36,7 +36,7 @@ export interface ClaimedAction {
     folder: string;
     uid: number;
     inbox_uid: number | null;
-    /** emails.source_folder (D6). `inbox_uid` keeps its name: the last known UID in this folder (D3). */
+    /** emails.source_folder. `inbox_uid` keeps its name: the last known UID in this folder. */
     source_folder: string;
     message_id_header: string | null;
     content_hash: string;
@@ -58,10 +58,10 @@ export function mailOf(action: ClaimedAction): NonNullable<ClaimedAction["email"
   if (action.email === null) throw new ActionAnchorError("invalid_anchor");
   return action.email;
 }
-// D21: age of the action row and of the mail.
+// Age of the action row and of the mail.
 export const CLAIM_MAX_AGE_MS = 24 * 3_600_000;
 export const CLAIM_MAX_MAIL_AGE_MS = 7 * 24 * 3_600_000;
-// D6: save_summary first, the move last (a move can change the UID); a draft before its send.
+// save_summary first, the move last (a move can change the UID); a draft before its send.
 const TYPE_RANK: Record<ActionType, number> = {
   save_summary: 0,
   flag: 1,
@@ -93,7 +93,7 @@ function inMailbox(eb: ClaimEb, ctx: TenantContext, mailboxId: string): Expressi
     eb.and([eb("open_loops.org_id", "=", ctx.orgId), eb("open_loops.mailbox_id", "=", mailboxId)]),
   ]);
 }
-// D17. The lock and retry rules apply to every branch; the branches are the S3 mailbox actions, the drafts and the sends.
+// The lock and retry rules apply to every branch; the branches are the mailbox actions, the drafts and the sends.
 function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts: ClaimWindow): Expression<SqlBool> {
   const { mailbox, send } = opts.filter;
   const mailboxChanges = eb.and([
@@ -113,7 +113,7 @@ function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts
         ? eb.or([eb("actions.type", "=", "save_summary"), mailKindFilter("synthetic", mailbox.testMail)])
         : sqlTrue,
   ]);
-  // A draft is made only while its send waits; an `applying` one is the recovery (D12) and stays behind the mailbox filter.
+  // A draft is made only while its send waits; an `applying` one is the recovery and stays behind the mailbox filter.
   const drafts = eb.and([
     eb("actions.type", "=", "create_draft"),
     mailboxFilterExpr(mailbox),
@@ -123,7 +123,7 @@ function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts
       eb.and([eb("actions.status", "=", "applying"), eb("actions.reverses_action_id", "is", null)]),
     ]),
   ]);
-  // The `applying` recovery sends nothing: the send filter does not apply (D16).
+  // The `applying` recovery sends nothing: the send filter does not apply.
   const sends = eb.and([
     eb("actions.type", "=", "send"),
     draftApplied,
@@ -173,7 +173,7 @@ export async function countClaimable(
     .executeTakeFirstOrThrow();
   return { total: Number(row.total), mailboxChanging: Number(row.mailbox_changing), sending: Number(row.sending) };
 }
-// D16: `approved` sends of the mailbox with an applied draft that the send filter does not admit (no lock rule).
+// `approved` sends of the mailbox with an applied draft that the send filter does not admit (no lock rule).
 export async function countHeldSends(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -192,7 +192,7 @@ export async function countHeldSends(
   return Number(row.count);
 }
 // `locked_at` = `now` is the token for markApplying, finishAction and releaseAction (also on an `approved` row).
-// The claim does not change `attempts` or the status (D7).
+// The claim does not change `attempts` or the status.
 export async function claimActions(
   db: DbOrTrx,
   ctx: TenantContext,

@@ -46,7 +46,7 @@ export const SEND_RETRY_WAIT_MS = RETRY_WAIT_MS;
 export const SEND_HARD_TRIES = HARD_ERROR_TRIES;
 // `provider_result.cap` of a send that the soft-retry cap ended; the result notice reads it.
 export const SOFT_CAP_MARK = "soft_retry";
-// The notifier treats an older `pending` Sent copy as failed (D20).
+// The notifier treats an older `pending` Sent copy as failed.
 export const SENT_COPY_PENDING_MAX_AGE_MS = 10 * 60_000;
 
 type ProviderResult = Record<string, string | number | boolean | null>;
@@ -56,7 +56,7 @@ export type SendOutcome =
   | { kind: "retry"; soft: boolean; count: boolean }
   | { kind: "failed"; reason: "smtp_rejected" | "smtp_error" | "outcome_unknown"; capped?: true };
 
-// D11, F044. Pure. Maps an error of `sender.send` to what the row does. No branch sends again.
+// Pure. Maps an error of `sender.send` to what the row does. No branch sends again.
 // `sinceTapMs` is the time since the tap (`approved_at`): a soft error at or after the cap ends the send.
 export function sendOutcomeOf(error: unknown, attempts: number, sinceTapMs = 0): SendOutcome {
   if (error instanceof MailAuthError) return authErrorOutcome(error);
@@ -162,7 +162,7 @@ function sameReplyRecipients(
   );
 }
 
-// The payloads, the draft and the message. The draft's id and `created_at` give the draft APPEND's Message-ID and Date (D9).
+// The payloads, the draft and the message. The draft's id and `created_at` give the draft APPEND's Message-ID and Date.
 // A follow-up is also checked against its loop: the send and the draft name the same loop, the send goes to nobody that the
 // draft does not name, and nobody that the loop does not hold. `null`: the payload is bad.
 async function prepare(
@@ -378,7 +378,7 @@ async function saveSentCopy(
   await updateProviderResult(deps.db, ctx, action.id, { sent_copy: copy });
 }
 
-// Errors of the steps before `markApplying`: the S3 hard-count rule, the row back to `approved`.
+// Errors of the steps before `markApplying`: the hard-count rule of the mailbox actions, the row back to `approved`.
 async function composeFailed(
   deps: ApplyDeps,
   ctx: TenantContext,
@@ -468,7 +468,7 @@ async function sendFailed(
     from: "applying",
     cancel: outcome.reason === "outcome_unknown" ? "outcome_unknown" : "send_failed",
     lastError: outcome.reason === "outcome_unknown" ? `smtp_${code}` : lastError,
-    // The third hard error counts (S3 rule); a content, unknown or capped soft error ends with `attempts` unchanged.
+    // The third hard error counts (the hard-count rule of the mailbox actions); a content, unknown or capped soft error ends with `attempts` unchanged.
     ...(outcome.reason === "smtp_error" && stage !== "content" && !outcome.capped
       ? { countAttempt: true as const }
       : {}),
@@ -594,7 +594,7 @@ async function closeSendOfClosedLoop(
   return { kind: "loop_closed" };
 }
 
-// D11. Approved → applying → SMTP → applied. At most once: after `markApplying` nothing here sends a second time.
+// Approved → applying → SMTP → applied. At most once: after `markApplying` nothing here sends a second time.
 export async function applySend(
   deps: ApplyDeps,
   ctx: TenantContext,
@@ -650,7 +650,7 @@ export async function applySend(
     if (gate.kind === "close") return closeForCopy(deps, ctx, action, gate.reason);
   }
 
-  // (2) Own commit, before any SMTP call. The limit check and `markApplying` share one transaction under the mailbox lock (PD-044).
+  // (2) Own commit, before any SMTP call. The limit check and `markApplying` share one transaction under the mailbox lock.
   // A follow-up goes only while its loop is open: `isOpen` takes the loop lock first, then the limit check and
   // `markApplying` run under it. A closed loop ends the claimed send here: no SMTP call.
   const start = await inTransaction(deps.db, async (trx): Promise<SendStart | { kind: "loop_closed" }> => {
@@ -757,7 +757,7 @@ async function recoveryFailed(
   return { kind: "retry", soft };
 }
 
-// D11, 12.2. A claimed `applying` send: the SMTP call may have started. Look in Sent; never send again.
+// A claimed `applying` send: the SMTP call may have started. Look in Sent; never send again.
 async function recoverSend(
   deps: ApplyDeps,
   ctx: TenantContext,

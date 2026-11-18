@@ -153,7 +153,7 @@ describe("delegates table (stage 13 tests 1 and 2)", () => {
       { t: "skip", code: "auto_submitted", ref: "asystentka:7" },
       { t: "skip", code: "unexpected_delegation", ref: "ksiegowa:5" },
       { t: "skip", code: "unmapped", ref: "ksiegowa:6" },
-      // A UID that held another mail at send time (a mailbox reset between): the stage 14 code.
+      // A UID that held another mail at send time (a mailbox reset between).
       { t: "skip", code: "received_changed", ref: "k4" },
       // Not bot events: an executive unmapped (digits), an executive no_rule, an injector skip.
       { t: "skip", code: "unmapped", ref: "17:abc" },

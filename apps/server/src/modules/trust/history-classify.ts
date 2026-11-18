@@ -1,4 +1,4 @@
-// The classify step of the history check (F110 D10 to D13): one item per sample mail, each with its own cost, then the result.
+// The classify step of the history check: one item per sample mail, each with its own cost, then the result.
 // A run classifies up to 20 mails one after another and stops after 12 seconds; the job runs again 15 seconds later.
 // Money rules: the check stops at $0.25 (`capped`), a model without a price never runs (`cost_unknown`), a pause of the model client
 // waits (no attempt), and a repeat after a crash repeats at most the one call that had no committed item.
@@ -190,7 +190,7 @@ async function finalize(
     ctx,
     items.map((item) => item.emailId)
   );
-  // N2: the share of `\Answered` among the mail of the check shows whether the provider sets the flag at all.
+  // The share of `\Answered` among the mail of the check shows whether the provider sets the flag at all.
   checkLog.info("history_check_result", {
     checked: items.length,
     acted: items.filter((item) => item.actedOn).length,

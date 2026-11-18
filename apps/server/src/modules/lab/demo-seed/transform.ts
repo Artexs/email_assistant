@@ -1,7 +1,7 @@
 import { DEMO_TABLES, TABLE_SPECS, type DemoRow, type DemoTable } from "./tables";
 import { DemoSeedError, IMPORT_ORG_NAME, type DemoSeed } from "./types";
 
-// The pure part of the import (stage 15): a seed in, the rows of a new organization out. It reads no database and
+// The pure part of the import: a seed in, the rows of a new organization out. It reads no database and
 // writes nothing, so a unit test runs it with a counter for new ids.
 
 export interface ImportContext {
@@ -81,7 +81,7 @@ function keptOutbox(rows: DemoRow[]): DemoRow[] {
 /**
  * Builds the rows of the new organization from a seed that passed `checkDemoSeed`.
  * - every row id is new, every foreign key goes through the id map (a key that points outside its parent table is a
- *   bad seed), and every id inside a JSON column or a key column is mapped too (T9: `audit_log.data.mailbox_id`,
+ *   bad seed), and every id inside a JSON column or a key column is mapped too (`audit_log.data.mailbox_id`,
  *   `actions.payload.delegation_id`);
  * - `org_id` is the new organization; every user id is the new owner;
  * - the mailboxes are `paused`; the placeholder secret goes with them;

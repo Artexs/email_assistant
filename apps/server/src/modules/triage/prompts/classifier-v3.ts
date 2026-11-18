@@ -14,11 +14,11 @@ import {
   THREAD_MAILS,
 } from "./classifier-v2";
 
-// F109 stage 08. v3 starts as the v2 text. Each part adds one input section and at most two rule lines. A change of
+// v3 starts as the v2 text. Each part adds one input section and at most two rule lines. A change of
 // the text or of the production part list needs a new file and version id (`classifier-v4.ts`) and a passing gate.
 export const PROMPT_VERSION = "classifier-v3";
 
-// The type's order is the order of the sections and the rule lines, whatever the order of a list. `attachments` is always on (P2).
+// The type's order is the order of the sections and the rule lines, whatever the order of a list. `attachments` is always on.
 export const classifierV3Parts = ["attachments", "urgency", "history", "list"] as const;
 export type ClassifierV3Part = (typeof classifierV3Parts)[number];
 

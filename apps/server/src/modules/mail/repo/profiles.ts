@@ -4,10 +4,10 @@ import type { DB, TenantContext } from "../../../platform/db";
 
 import type { DbOrTrx } from "./shared";
 
-// The name, the signature and the writing style of one mailbox (F115, D13). Every text is optional: null means "use the fallback".
-// `signature` starts as a copy of `organizations.style_text` (the migration of stage 03). The copy is a snapshot: a later
+// The name, the signature and the writing style of one mailbox. Every text is optional: null means "use the fallback".
+// `signature` starts as a copy of `organizations.style_text` (set by the migration that created the table). The copy is a snapshot: a later
 // change of the organization text does not reach it, and a mailbox that was made after the migration has no row.
-// Fallback order (decision N5, read by stage 04 and stage 11): `signature` null or no row → `organizations.style_text` → owner name.
+// Fallback order (the message builder and the panel read this order): `signature` null or no row → `organizations.style_text` → owner name.
 export interface MailboxProfile {
   mailboxId: string;
   displayName: string | null;
@@ -17,7 +17,7 @@ export interface MailboxProfile {
   updatedBy: string | null;
 }
 
-// The fields that a write may set. A key that is left out keeps its stored value; null clears it. The stage 10 service
+// The fields that a write may set. A key that is left out keeps its stored value; null clears it. The service
 // turns an empty string into null before this call.
 export interface MailboxProfileFields {
   displayName?: string | null;

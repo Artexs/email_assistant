@@ -1,4 +1,4 @@
-// The push endpoint comes from a browser (`PushSubscription.endpoint`), so it is untrusted (F118 D19, Q6). The server sends a
+// The push endpoint comes from a browser (`PushSubscription.endpoint`), so it is untrusted. The server sends a
 // request to it, so it must name one of the push services of the browser vendors and nothing else (SSRF guard). This check
 // runs before any network step: at subscribe time and again in `sendWebPush`. It reads parsed URL parts only.
 

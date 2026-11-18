@@ -24,7 +24,7 @@ function languageOf(fields: unknown): "pl" | "en" | "other" {
   return parsed.success ? parsed.data.language : "other";
 }
 
-// The facts of each mail for `replyEligibility` (F115 D4): the stored mail facts of the `mail` module, the three-state suspicion
+// The facts of each mail for `replyEligibility`: the stored mail facts of the `mail` module, the three-state suspicion
 // and the newest triage result. A mail with no result is not triaged; a mail that is not in this organization is absent.
 // `ownerLocale` is the locale of the organization owner that the caller read (null reads as Polish in the rule).
 export async function loadReplyFacts(

@@ -48,7 +48,7 @@ export async function listFlagTargets(
 
 /**
  * INBOX mail received from `since` to `receivedBefore` (the backfill time: live mail that arrives after it is the sync's) whose flags are not known since `checkedSince`: no `email_flags` row, or a row last tried
- * before that time. The history check waits for this count to reach 0 (F110 D6). `checked_at` means "last tried", so a mail that a
+ * before that time. The history check waits for this count to reach 0. `checked_at` means "last tried", so a mail that a
  * refresh could not read counts as known once it was tried.
  */
 export async function countInboxMailWithoutFreshFlags(
@@ -77,7 +77,7 @@ export interface FlagRead extends FlagTarget {
   flagged: boolean;
 }
 
-// D6: one row per mail, written only while `emails.folder` and `emails.uid` still equal the read's (a move in between skips
+// One row per mail, written only while `emails.folder` and `emails.uid` still equal the read's (a move in between skips
 // the mail). The first-seen times never reset. The answered check columns are not touched. Returns the rows written.
 export async function writeEmailFlags(db: DbOrTrx, ctx: TenantContext, reads: FlagRead[], at: Date): Promise<number> {
   // One statement cannot change a row twice: the last read of a mail wins.
@@ -118,7 +118,7 @@ export async function writeEmailFlags(db: DbOrTrx, ctx: TenantContext, reads: Fl
   return written;
 }
 
-// N1 (review 1): mail that a refresh could not read (gone, moved, or a UID of another mail) must not stay at the head of the
+// Mail that a refresh could not read (gone, moved, or a UID of another mail) must not stay at the head of the
 // queue. This sets `checked_at` ("last tried") only, under the same folder and UID guard as `writeEmailFlags`. A mail without
 // a row gets one with all flags false and no first-seen time: that row means "tried, flags unknown", never "unread".
 // The flags, the first_*_at times and the answered check of an existing row are not touched.

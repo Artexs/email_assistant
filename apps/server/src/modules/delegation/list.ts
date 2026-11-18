@@ -12,7 +12,7 @@ import type { Db, TenantContext } from "../../platform/db";
 
 import { listDelegationPage, type DelegationPageCursor, type DelegationPageRow, type DelegationStatus } from "./repo";
 
-// The states of each filter (F102 commands.md).
+// The states of each filter (`docs/capabilities/delegation.md`).
 const FILTER_STATUSES: Record<DelegationFilter, readonly DelegationStatus[]> = {
   open: ["drafted", "sent"],
   overdue: ["overdue"],

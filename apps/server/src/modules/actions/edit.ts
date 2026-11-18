@@ -40,7 +40,7 @@ async function originalOfSend(deps: ApprovalDeps, trx: Transaction<DB>, ctx: Ten
   return anchor === undefined ? undefined : loopOriginal(anchor);
 }
 
-// An edit (F102 ticket, supersede) replaces a waiting send by a new version. It checks the texts, then `replaceApproval` does the
+// An edit (supersede) replaces a waiting send by a new version. It checks the texts, then `replaceApproval` does the
 // locks, the supersede and the cards (the same core as the redraft of a reply). The owner check is the caller's, as for `approve`.
 export async function editApproval(
   deps: ApprovalDeps,

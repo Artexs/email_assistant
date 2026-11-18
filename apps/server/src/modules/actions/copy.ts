@@ -8,7 +8,7 @@ import { locateByActionId, type FolderMessageMeta, type MailContent, type MailPr
 
 import { getDraft, getDraftMailboxId } from "./repo";
 
-// The edit check of a Drafts copy (ADR 0033, ticket F115-e6a-reply-drafts: the copy hash of every draft kind). The committer reads the copy right after its APPEND and keeps the
+// The edit check of a Drafts copy (ADR 0033: the copy hash of every draft kind). The committer reads the copy right after its APPEND and keeps the
 // hash of what a person can change (`draftCopyKey`: text, Subject, To, Cc, attachment list) in `provider_result.copy_hash`.
 // Before a send, and before a delete, it reads the copy again and compares. The text itself is never stored. A copy that the
 // server holds with another text, another address, another Subject or another attachment list is the user's edit.

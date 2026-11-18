@@ -6,7 +6,7 @@ import { closeWaitingApprovalSetsSince, releaseMarksOfUndeliveredDigests, SENDER
 
 import type { EraseStep } from "./erase";
 
-// What a stored notice (an `outbox` row) holds about mail, by kind. The erase of one person's data (F106 stage 09) needs
+// What a stored notice (an `outbox` row) holds about mail, by kind. The erase of one person's data needs
 // this because a row of a `many_mails` kind has no mail id: the digest view is `{ text, buttons }` with the sender cut to
 // 40 characters, so the address pattern of the erase misses it.
 //   one_mail  every queue path sets `emailId`: the row goes with its mail (foreign key cascade).
@@ -33,10 +33,10 @@ export const NOTICE_MAIL_CONTENT: Readonly<Record<NoticeKind, NoticeMailContent>
   sent_missing: "no_mail", // mailbox address
   loop_consent: "no_mail", // a fixed line and the panel link: no recipient, no text
   replies_ready: "no_mail", // a count and a clock (`renderRepliesReadyNotice`)
-  reply_prompt: "one_mail", // `emailId` set; the view holds the id only (stage 13 queues it)
-  reply_result: "one_mail", // `emailId` set; the view holds the id and a code (stage 13 queues it)
+  reply_prompt: "one_mail", // `emailId` set; the view holds the id only
+  reply_result: "one_mail", // `emailId` set; the view holds the id and a code
   weekly_report: "no_mail", // counts and category names only (`renderWeeklyReport`)
-  approval_edit: "one_mail", // `queueCardEdits` sets `emailId` of the target card (F102); its view keeps the card text
+  approval_edit: "one_mail", // `queueCardEdits` sets `emailId` of the target card; its view keeps the card text
   trust_report_ready: "no_mail", // category names and a count (`renderTrustReportReadyNotice`)
   autonomy_paused: "no_mail", // a category, a fixed reason and a count (`renderAutonomyPausedNotice`)
   not_triaged: "one_mail", // the detector sets `emailId`; the view holds the sender address of that mail
@@ -55,7 +55,7 @@ const REMOVED = "[removed]";
 //     counted `outbox_blanked`); a fresh `sending` row is in flight and finishes.
 //   `pending` approval sets with a send that still waits stay: the open-action refusal of the erase means that no such
 //     request names a mail that goes.
-// A message that Telegram has delivered stays in the chat: nothing here can recall it (runbook, stage 10).
+// A message that Telegram has delivered stays in the chat: nothing here can recall it (runbook).
 // Runs in the erase transaction; the `org_id` filter is backed by the row-level policy of the tenant scope.
 export const eraseManyMailOutbox: EraseStep = async (trx, orgId, erased) => {
   if (erased.mailIds.length === 0 || erased.earliestCreatedAt === null || MANY_MAILS_KINDS.length === 0) {
@@ -92,7 +92,7 @@ async function closeWaitingSets(trx: Transaction<DB>, orgId: string, since: Date
 }
 
 async function drop(trx: Transaction<DB>, orgId: string, since: Date): Promise<{ outbox_dropped: number }> {
-  // The pending digests go undelivered: the marks of the loops that they name go back first (review 19 N1).
+  // The pending digests go undelivered: the marks of the loops that they name go back first.
   await releaseMarksOfUndeliveredDigests(trx, { orgId }, { since });
   const result = await sql`
     delete from outbox
@@ -103,7 +103,7 @@ async function drop(trx: Transaction<DB>, orgId: string, since: Date): Promise<{
 }
 
 // A loop that an erase cleared (its ask and subject) may be named in the brief lines of stored digests: `view.loopIds` holds
-// the ids of the loops that a digest named (F116 stage 18). Such a digest loses its text and view, whatever else it listed: the
+// the ids of the loops that a digest named. Such a digest loses its text and view, whatever else it listed: the
 // address scrub of the erase would leave the ask and the subject in the line. A `sent` or `failed` row is blanked as `blank` does;
 // a `pending` or `sending` digest is deleted (the next slot covers the period, as `drop` does). A delivered message stays in the
 // chat: nothing here can recall it. Returns the rows blanked and the rows deleted.
@@ -118,7 +118,7 @@ export async function blankDigestsNamingLoops(
   const blanked = await sql`
     update outbox set text = ${REMOVED}, view = '{}'::jsonb
     where org_id = ${orgId}::uuid and kind = 'digest' and status in ('sent', 'failed') and ${names}`.execute(trx);
-  // The pending digests that name a cleared loop are deleted: the marks of their other loops go back first (review 19 N1).
+  // The pending digests that name a cleared loop are deleted: the marks of their other loops go back first.
   await releaseMarksOfUndeliveredDigests(trx, { orgId }, { named: loopIds, except: loopIds });
   const dropped = await sql`
     delete from outbox

@@ -24,7 +24,7 @@ export async function composeMessage(message: OutgoingMessage): Promise<Buffer> 
 }
 
 /**
- * The MIME bytes of a report mail (F110 stage 20): `multipart/alternative` with a text and an HTML part, UTF-8. It is a message for an
+ * The MIME bytes of a report mail: `multipart/alternative` with a text and an HTML part, UTF-8. It is a message for an
  * APPEND into the own INBOX, never for an SMTP send. The same message always gives the same bytes.
  */
 export async function composeReportMail(message: ReportMailMessage): Promise<Buffer> {

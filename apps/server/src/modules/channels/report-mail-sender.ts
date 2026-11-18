@@ -40,7 +40,7 @@ export interface ReportMailSenderDeps {
 const isReportMailKind = (kind: string): kind is ReportMailKind =>
   (reportMailKinds as readonly string[]).includes(kind);
 
-// F110 stage 20 (ADR 0022 point 1): appends the `mail` rows of the outbox to the INBOX of their mailbox. It never sends: the port APPENDs
+// ADR 0022 point 1: appends the `mail` rows of the outbox to the INBOX of their mailbox. It never sends: the port APPENDs
 // and nothing here opens an SMTP or Graph sender. The recipient is the mailbox of the row, read from the mailbox table at send time.
 // Log lines hold the row id, the kind and codes only: never the text, a subject or an address.
 export function createReportMailSender(deps: ReportMailSenderDeps): { run(): Promise<void> } {

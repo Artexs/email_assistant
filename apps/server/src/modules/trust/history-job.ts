@@ -1,4 +1,4 @@
-// The history check job (F110 D13): one check per organization per run moves through `queued` → `backfilling` → `waiting_flags` →
+// The history check job: one check per organization per run moves through `queued` → `backfilling` → `waiting_flags` →
 // `classifying` → `done`. Steps are idempotent (mail dedup, one item per mail), a claim holds a lock, and a step error costs one
 // attempt. Only the classify step calls the model (`history-classify.ts`); a run stops starting organizations after its time budget.
 // Logs carry the check id, the mailbox id, a status and a code: never a mail value, an address or a token.
@@ -336,7 +336,7 @@ async function finish(
   }
 }
 
-// A flag-on organization starts the check of every active mailbox that has none (review 1 N3): turning the flag on for
+// A flag-on organization starts the check of every active mailbox that has none: turning the flag on for
 // mailboxes that exist already starts their checks. The unique index and the mailbox lock make it one row.
 async function queueFlagOnChecks(deps: HistoryJobDeps): Promise<void> {
   const targets = await listSyncTargets(deps.db);

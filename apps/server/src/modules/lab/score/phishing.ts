@@ -33,7 +33,7 @@ export interface PhishingCount {
 export interface PhishingSection extends PhishingCount {
   // The suspicious-mail warning exists in the notice (feature `suspicious_mail` on). Off: the warned count is 0 by lack of a field.
   warningField: boolean;
-  // PD-063: an urgent push of a phishing mail with no warning. M3 does not count it; it is its own line.
+  // An urgent push of a phishing mail with no warning. M3 does not count it; it is its own line.
   unwarnedUrgentPush: number;
   byTag: Record<string, PhishingCount>;
 }

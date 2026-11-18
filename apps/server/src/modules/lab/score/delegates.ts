@@ -17,7 +17,7 @@ import { section, table } from "./render-util";
 import type { SectionScope } from "./section";
 
 const ZONE = "Europe/Warsaw";
-// The executive's tap on the reminder card comes after the chaser run (stage 13: 2 hours).
+// The executive's tap on the reminder card comes after the chaser run (2 hours).
 const TAP_ALLOWANCE_MS = 2 * HOUR_MS;
 
 export const BEHAVIOURS: readonly DelegateBehaviour[] = ["done", "late", "out_of_office", "other_address", "silent"];
@@ -31,7 +31,7 @@ export interface DelegateObservation {
   // A delegation of this mail was sent.
   sent: boolean;
   answered: boolean;
-  // The answering mail carries an `Auto-Submitted` header (N3: the server cannot tell it from a real answer).
+  // The answering mail carries an `Auto-Submitted` header (the server cannot tell it from a real answer).
   answeredByAuto: boolean;
   reminders: number;
   overdue: boolean;
@@ -52,7 +52,7 @@ export interface DelegateBehaviourScore {
   reminderNotReachable: number;
   // Sent delegations whose outcome differs from the expected one of the behaviour.
   differ: number;
-  // `other_address` only: answered is a finding for E5b (the planted F040 miss), not a plain mismatch.
+  // `other_address` only: answered is a finding (the planted miss of the delegate lab), not a plain mismatch.
   finding: boolean;
 }
 
@@ -111,7 +111,7 @@ export function firstChaserRunAfter(due: Date): Date {
     : localToInstant(nextLocalDate(local.date), CHASER_LOCAL_TIME, ZONE);
 }
 
-/** T5: a reminder is reachable when the first chaser run after the due time, plus the tap allowance, is before the tail end. */
+/** A reminder is reachable when the first chaser run after the due time, plus the tap allowance, is before the tail end. */
 export function reminderReachable(due: Date, tailEndsAt: Date): boolean {
   return firstChaserRunAfter(due).getTime() + TAP_ALLOWANCE_MS < tailEndsAt.getTime();
 }

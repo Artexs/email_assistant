@@ -30,7 +30,7 @@ export interface DigestJobDeps {
   webBaseUrl?: string;
 }
 
-// The first digest of the member's day gets the brief (F116 stage 19 rule, review 18 N5; stage 18 F7). The day is the date of the SLOT
+// The first digest of the member's day gets the brief. The day is the date of the SLOT
 // (`slotDate`, the local date of the slot key), not the time at which the job runs: a 20:00 slot that runs at 01:00 is still a slot of its
 // own day, and a day with a missing midnight or 25 hours needs no clock arithmetic. "First" = no digest outbox row of the member for a slot
 // of the same date that is not `failed` (a digest that never reached the chat does not count; its marks went back, `releaseBriefMarks`).
@@ -61,7 +61,7 @@ export async function isFirstDigestOfDay(
 }
 
 // One digest row per member and slot, with one Telegram outbox row for a member with a chat and, with the flag `report_mail`,
-// one mail row for a member whose report channel is `mail` or `both` (F110 stage 19, P4, D14). A member with no chat visits
+// one mail row for a member whose report channel is `mail` or `both`. A member with no chat visits
 // the job for the mail row; the slot rules stay, and the "last slot" is the one of the member's `digests` rows.
 async function scheduleForMember(
   db: Db | Transaction<DB>,
@@ -122,7 +122,7 @@ export async function queueDigest(
     timeZone: string;
     testMail: TestMailRule;
     webBaseUrl: string | undefined;
-    // Which rows to queue. Absent = one Telegram row, as before F110 stage 19. `mailboxId` set = a mail row into that mailbox.
+    // Which rows to queue. Absent = one Telegram row, as before the report mail existed. `mailboxId` set = a mail row into that mailbox.
     telegram?: boolean;
     mailboxId?: string | null;
   }
@@ -136,9 +136,9 @@ export async function queueDigest(
   const queue = async (trx: Transaction<DB>): Promise<string | null> => {
     const digestId = await insertDigest(trx, ctx, { userId, slotKey: slot.key, periodStart, periodEnd });
     if (digestId === null) return null;
-    // The brief (F116) belongs to the Telegram digest row only: it needs the flag, the first-of-day decision and the consent of the
+    // The brief belongs to the Telegram digest row only: it needs the flag, the first-of-day decision and the consent of the
     // member, all read in this transaction, and it marks loops. A member with no Telegram row (mail only) gets a digest with no
-    // brief and no marks; a mail row of a member with a Telegram row is built without the brief too (stage 20 may change this).
+    // brief and no marks; a mail row of a member with a Telegram row is built without the brief too.
     // `loopConsentOf` is the only way to the consent version (consent-gate.test.ts).
     let loops: DigestLoops | undefined;
     if (telegram && (await isFeatureOn(trx, ctx, "open_loops"))) {
@@ -155,13 +155,13 @@ export async function queueDigest(
       locale: link.locale,
       role: link.role,
       testMail,
-      // The spam review line (F110 stage 17) is part of the text: it needs the panel link, and both rows carry it.
+      // The spam review line is part of the text: it needs the panel link, and both rows carry it.
       ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }),
     };
     const built = await buildDigest(trx, ctx, { ...request, ...(loops === undefined ? {} : { loops }) });
     const { message, shown } = built;
     const loopIds = [...shown.surfaced, ...shown.stale];
-    // The line of each loop (and delegation) that a brief line names: the taps on its buttons edit that line (stage 19).
+    // The line of each loop (and delegation) that a brief line names: the taps on its buttons edit that line.
     const hasLines = Object.keys(shown.lineOf).length > 0;
     const viewOf = (text: string, buttons: typeof message.buttons, withBrief: boolean) => ({
       text,

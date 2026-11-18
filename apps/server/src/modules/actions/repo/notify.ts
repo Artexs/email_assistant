@@ -54,7 +54,7 @@ export async function listFailedUnnotified(
     ])
     .where("actions.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
-    // loop rows: open loops stage 10/11
+    // loop rows
     .where("actions.email_id", "is not", null)
     .where("actions.status", "=", "failed")
     .where("actions.notified_at", "is", null)
@@ -64,7 +64,7 @@ export async function listFailedUnnotified(
         eb("actions.reverses_action_id", "is not", null),
       ])
     )
-    // One notice per failure (D20): a send and an original draft end in a `send_result` notice.
+    // One notice per failure: a send and an original draft end in a `send_result` notice.
     .where("actions.type", "<>", "send")
     .where((eb) => eb.or([eb("actions.type", "<>", "create_draft"), eb("actions.reverses_action_id", "is not", null)]))
     .orderBy("actions.updated_at")
@@ -124,7 +124,7 @@ export async function listSendsToNotify(
 ): Promise<SendRow[]> {
   // A follow-up is one card, whatever its payload says about a set.
   // A reply send gets no generic card: the generic card shows the whole draft text, and a reply card needs the consent check of the
-  // Telegram link (the reply notice of a later stage of ticket F115 builds it). Until then the send waits in the panel.
+  // Telegram link (the reply notice of the reply drafts builds it). Until then the send waits in the panel.
   let query = notifiableSends(db, ctx)
     .where(sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`)
     .where(sql<boolean>`actions.payload->>'kind' is distinct from 'reply'`);
@@ -132,7 +132,7 @@ export async function listSendsToNotify(
   const rows = await query.orderBy("actions.created_at").orderBy("actions.id").limit(opts.limit).execute();
   return rows.map(toSendRow);
 }
-// A set is listed whole, and only when none of its sends waits for a draft (D21).
+// A set is listed whole, and only when none of its sends waits for a draft.
 export async function listSetsToNotify(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -176,7 +176,7 @@ export async function listSetsToNotify(
   }
   return grouped;
 }
-// D20: an `applied` send waits for its Sent copy outcome; a copy still `pending` after `pendingCopyMaxAgeMs` counts as lost.
+// An `applied` send waits for its Sent copy outcome; a copy still `pending` after `pendingCopyMaxAgeMs` counts as lost.
 export async function listSendResultsToNotify(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -205,7 +205,7 @@ export async function listSendResultsToNotify(
     .execute();
   return rows.map(toSendRow);
 }
-// The failed sends of follow-ups that no notice told yet (open loops stage 11). One `action_failed` notice each, with a fixed text.
+// The failed sends of follow-ups that no notice told yet. One `action_failed` notice each, with a fixed text.
 // `outcome_unknown` is told apart: the mail may have gone out. The notice mark is `result_notified_at`, as for a result.
 export interface FailedFollowUp {
   id: string;
@@ -252,7 +252,7 @@ export interface SendLimitHold {
   lastError: string;
 }
 
-// One row per mailbox that has sends held by a send limit now (PD-044, F099 D11). A hold ended when
+// One row per mailbox that has sends held by a send limit now. A hold ended when
 // `next_attempt_at <= now`: the committer has not run yet, so the send no longer waits on the limit.
 // `lastError` is the one of the row that goes out first (ties: smallest id); it names the limit.
 export async function listSendLimitHolds(db: DbOrTrx, ctx: TenantContext, now: Date): Promise<SendLimitHold[]> {
@@ -283,7 +283,7 @@ export async function listSendLimitHolds(db: DbOrTrx, ctx: TenantContext, now: D
 }
 
 // The same hold for the follow-ups of a mailbox: approved follow-up sends that a send limit holds. A separate list because the notice
-// for them is a fixed line with the panel link (open loops stage 11); the mail sends keep their notice.
+// for them is a fixed line with the panel link; the mail sends keep their notice.
 export async function listFollowUpLimitHolds(db: DbOrTrx, ctx: TenantContext, now: Date): Promise<SendLimitHold[]> {
   const result = await sql<{ mailbox_id: string; waiting: number; next_at: Date; last_error: string }>`
     select distinct on (a.mailbox_id) a.mailbox_id,

@@ -95,7 +95,7 @@ export async function listActivity(
   const feedback = await listLatestFeedbackByEmailIds(db, ctx, ids);
   const delegations = await listLatestDelegationsByEmailIds(db, ctx, ids);
   const suspicious = await suspiciousReasonsToShow(db, ctx, ids);
-  // F110 stage 16: the rule shows only while the flag is on. A page without a rule needs no flag read.
+  // The rule shows only while the flag is on. A page without a rule needs no flag read.
   const whyOn = rows.some((row) => row.rule !== null) && (await isFeatureOn(db, ctx, "why_lines"));
 
   const delegateIds = new Set<string>();

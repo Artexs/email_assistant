@@ -5,12 +5,12 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-// The frequent-sender window and count (F109 D4).
+// The frequent-sender window and count.
 export const FREQUENT_WINDOW_DAYS = 90;
 export const FREQUENT_MIN_MAILS = 3;
 
 // The lower-case addresses among `senders` with at least `FREQUENT_MIN_MAILS` mails in this mailbox in the window, each mail
-// with a newest result that is not `spam` and has no suspicious reason (review N1, N15). Flagged mail and spam never make a
+// with a newest result that is not `spam` and has no suspicious reason (review N1). Flagged mail and spam never make a
 // sender known. Queries `from_address_lower` (index `emails_mailbox_sender_idx`): never `lower(from_address)`, which the tenant
 // policy blocks as an index condition. Mail without a result (not triaged yet, skipped) does not count.
 export async function listFrequentSenders(
@@ -44,7 +44,7 @@ export async function listFrequentSenders(
 }
 
 // The senders (of `sendersLower`, lower case) with at least one mail in this mailbox since `since` whose newest result has
-// reasons (F110 stage 22; PD-063: bulk unsubscribe never touches a flagged sender). The rule is per sender: one flagged mail
+// reasons (bulk unsubscribe never touches a flagged sender). The rule is per sender: one flagged mail
 // puts the sender in the set, an older flagged row under a clean newest row does not (the pattern of `listFrequentSenders`).
 // Queries `from_address_lower` (index `emails_mailbox_sender_idx`): never `lower(from_address)`. Mail with no result does not count.
 export async function suspiciousSendersOf(
@@ -97,7 +97,7 @@ export async function listNewestFromNames(
   return rows.map((row) => row.from_name);
 }
 
-// The reasons of the newest `triage_results` row of each mail (F109 D5). A mail with no row, or a row with no reason, is absent.
+// The reasons of the newest `triage_results` row of each mail. A mail with no row, or a row with no reason, is absent.
 // It ignores the flag `suspicious_mail`: a caller that blocks a draft blocks it with the flag off too (PD-063 is a safety rule).
 // Readers for follow-ups, reply drafts and unsubscribe call this before they draft or act. The organization comes from `ctx`.
 export async function suspiciousReasonsOf(
@@ -124,7 +124,7 @@ export async function suspiciousReasonsOf(
 
 const SUSPICION_CHUNK = 500;
 
-// The three-state suspicion of each mail (F115 D4, F109 review-4 N3): no `triage_results` row → `untriaged` (never checked, not
+// The three-state suspicion of each mail (F109 review-4 N3): no `triage_results` row → `untriaged` (never checked, not
 // clean); the newest row has no reasons → `clean`; else `flagged` with its codes. Every id of `emailIds` is in the map. An id
 // of another organization finds no row under this `ctx` and reads `untriaged`. It ignores the flag `suspicious_mail`, like
 // `suspiciousReasonsOf`, which stays as it is for the callers that only need the reasons.
@@ -155,7 +155,7 @@ export async function suspicionOf(
 }
 
 // The thread keys (of `threadKeys`, in this mailbox) with at least one incoming mail whose newest result has reasons.
-// The rule of a follow-up is per thread (PD-128): one flagged mail blocks the thread, an older flagged row under a clean newest row does not.
+// The rule of a follow-up is per thread: one flagged mail blocks the thread, an older flagged row under a clean newest row does not.
 export async function suspiciousThreadKeysOf(
   db: DbOrTrx,
   ctx: TenantContext,

@@ -17,7 +17,7 @@ export type UndoResult =
   | { kind: "held" } // undoable, but ACTIONS_SCOPE or the mailbox status would hold the reverse back (M9)
   | { kind: "not_found" }; // no such mail in this organization
 
-// D10: every undoable action of the mail gets a reverse row; the committer applies it. The caller writes the feedback.
+// Every undoable action of the mail gets a reverse row; the committer applies it. The caller writes the feedback.
 export async function undo(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
@@ -65,7 +65,7 @@ export async function undo(
         });
       }
       if (created > 0) {
-        // D22: the sync stores no INBOX copy of this mail while the reverse move runs.
+        // The sync stores no INBOX copy of this mail while the reverse move runs.
         if (reverseMove) await setUndoPending(trx, ctx, emailId, opts.now);
         // m13: a `ready` original in a retry wait would move the mail again after the Undo.
         await expireReady(

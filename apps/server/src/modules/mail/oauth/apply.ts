@@ -43,9 +43,9 @@ import { OAuthGrantError, type MailOAuthClient, type MailOAuthClients } from "./
 import { mailOAuthFlag } from "./providers";
 import { encodeOAuthSecret, saveOAuthSecret, withMailboxOAuthLock, type OAuthSecret } from "./secret-store";
 
-// Connect and Reconnect of an OAuth mailbox (F117 stage 09). The checked grant of `finishOAuthCallback` comes in; a mailbox row (Connect)
+// Connect and Reconnect of an OAuth mailbox. The checked grant of `finishOAuthCallback` comes in; a mailbox row (Connect)
 // or a replaced secret (Reconnect) goes out, or one refusal code. A refusal stores nothing.
-// No token, code, `state`, verifier or provider text reaches a log line, an error, a result or an audit row (F117 plan, secrets rule).
+// No token, code, `state`, verifier or provider text reaches a log line, an error, a result or an audit row (secrets rule).
 // The login tests use `user = grant.address`: the access token binds that address to the real account.
 
 const log = createLog("mail");

@@ -6,7 +6,7 @@ import { releaseBriefMarks } from "../../loops";
 
 import type { DbOrTrx } from "./shared";
 
-// A digest that ended `failed` never showed its brief lines: their marks go back (F116 stage 19, review 18 N4). The row keeps its view
+// A digest that ended `failed` never showed its brief lines: their marks go back. The row keeps its view
 // (`loopIds`), so the next digest names the loops again and no other digest has to. `except`: loops whose marks stay (a loop that is
 // being cleared; its mark does not matter any more).
 export async function releaseMarksOfFailedDigests(
@@ -23,7 +23,7 @@ export async function releaseMarksOfFailedDigests(
   }
 }
 // The digests that no sender delivered (`pending`, `sending`) and that a delete or a blanking is about to end (the Sent switch off,
-// an erase): their marks go back before the view is blanked or the row is deleted (review 19 N1). `named`: only the digests that name
+// an erase): their marks go back before the view is blanked or the row is deleted. `named`: only the digests that name
 // one of these loops. `since`: only the digests created at or after this time. `except`: the loops that are being cleared keep their
 // marks. The caller holds the transaction and calls this before the update or the delete, while the views are still there.
 export async function releaseMarksOfUndeliveredDigests(

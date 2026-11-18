@@ -38,7 +38,7 @@ export interface ClassifierPrompt {
 }
 
 // Every classifier version that can run: the eval picks one with `--prompt-version`. Production uses the one that
-// `prompts.classifier` names (stage 11 moves the pointer).
+// `prompts.classifier` names.
 export const classifierVersions = {
   "classifier-v2": {
     role: "classifier",
@@ -59,7 +59,7 @@ export type ClassifierVersion = keyof typeof classifierVersions;
 export const classifierVersionIds = Object.keys(classifierVersions) as ClassifierVersion[];
 
 // The part list of the production prompt when the pointer is `classifier-v3`; `attachments` is always on. A change of
-// the list is `classifier-v4` with its own gate (stage 11 sets it from the dev experiments).
+// the list is `classifier-v4` with its own gate.
 export const CLASSIFIER_V3_PARTS: readonly ClassifierV3Part[] = ["attachments"];
 
 // The prompt each role uses now. A new version is a new file `<role>-v<n>.ts`, a new entry here and a sim gate run with

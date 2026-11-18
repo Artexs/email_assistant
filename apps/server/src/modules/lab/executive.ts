@@ -19,7 +19,7 @@ import { FakeTgError, type FakeMessage, type FakeTgClient } from "./fake-tg";
 import type { LabState, LoggedLabEvent } from "./state";
 
 // The driver of the scripted executive: it reads the run org's fake Telegram chat, finds the slot behind each
-// card, plans the press of the stage 09 rules and presses it at its time, at most once (plan.md § Design decisions, exactly once).
+// card, plans the press of the rules and presses it at its time, at most once (plan.md § Design decisions, exactly once).
 //
 // Events (all in `events.jsonl`): `seen` (part `tg`, ref = the newest message id read), `tap_planned`, `tap_intent`,
 // `tap_done`, and `skip` with the codes `unmapped`, `no_rule`, `tap_repeat`, `tap_unsure`, `tap_gone`, `fake_restarted`.

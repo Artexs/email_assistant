@@ -32,7 +32,7 @@ import { type LinkedChat } from "../port";
 import { queueLoopConsentLines, splitByLoopConsent } from "./loop-consent";
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
-// The panel page of a send (F102 ticket): `<WEB_BASE_URL>/approvals?id=<send id>`, with no double slash after a trailing `/`.
+// The panel page of a send: `<WEB_BASE_URL>/approvals?id=<send id>`, with no double slash after a trailing `/`.
 // A link that the view schema refuses (a space, a line break, too long) is left out: the card must still go out.
 export function panelUrlOf(base: string | undefined, sendId: string): string | undefined {
   if (base === undefined) return undefined;
@@ -47,7 +47,7 @@ export function panelListUrlOf(base: string | undefined): string | undefined {
   return url.success ? url.data : undefined;
 }
 
-// D19: the text the owner sees is the text the committer sends (same builder, same inputs).
+// The text the owner sees is the text the committer sends (same builder, same inputs).
 // `panelBase`: the base URL of the panel when the link goes on the card (the caller checks the flag `approvals_page`).
 // `draftRow`: the draft of the send when the caller has read it. `quote` is the whole quote that the committer sends
 // (up to 8000 characters); the view holds the quote cut for a card.
@@ -119,7 +119,7 @@ export async function approvalViewFor(
 }
 
 // A card that the renderer refuses (a follow-up whose To and Cc do not fit one message, rule 2,400 characters) is refused again at
-// every run. The same rows would fill the limit of `listSendsToNotify` and hold back newer cards (review 11 N5). The process remembers
+// every run. The same rows would fill the limit of `listSendsToNotify` and hold back newer cards. The process remembers
 // their ids and lists the others; a restart tries each once more. Nothing is written: the send stays `awaiting_approval` with
 // `notified_at` null, so the panel shows it and the 7-day limit of an unnotified send applies. Only a refusal of the renderer
 // counts: another error (a lost connection) may pass at the next run.
@@ -131,7 +131,7 @@ export function forgetRefusedCards(): void {
   refusedCards.clear();
 }
 
-// D19: one request per owner for each send that waits, after its draft is applied. No owner: nothing is queued or marked.
+// One request per owner for each send that waits, after its draft is applied. No owner: nothing is queued or marked.
 async function detectApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -147,7 +147,7 @@ async function detectApprovals(
   const panelBase = webBaseUrl !== undefined && (await isFeatureOn(db, ctx, "approvals_page")) ? webBaseUrl : undefined;
   for (const row of rows) {
     try {
-      // A follow-up card names recipients of the owner's own sent mail: the consent gate splits the owners (stage 11, D17).
+      // A follow-up card names recipients of the owner's own sent mail: the consent gate splits the owners.
       const gate = row.loop_id === null ? { covered: owners, withheld: [] } : await splitByLoopConsent(db, ctx, owners);
       const noticeView =
         gate.covered.length === 0

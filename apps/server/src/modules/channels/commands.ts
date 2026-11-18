@@ -52,14 +52,14 @@ export interface CommandDeps {
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
-  // The test-sender rule: /review lists real mail only (F097 D1).
+  // The test-sender rule: /review lists real mail only.
   testMail: TestMailRule;
   // Public contact address for the paused answer. null = "the operator".
   operatorContact: string | null;
   // Minutes between two mail syncs (MAIL_SYNC_EVERY_MIN), for the /resume text.
   syncEveryMin: number;
   // The base URL of the panel (`WEB_BASE_URL`): the picker of the Delegate button links to the delegates page, and the
-  // spam review line of /digest links to the Activity list (F110 stage 17). Unset: no link, the panel text.
+  // spam review line of /digest links to the Activity list. Unset: no link, the panel text.
   webBaseUrl?: string;
 }
 
@@ -123,7 +123,7 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   const member = await getMembership(db, ctx, link.userId);
   const times = parseDigestTimes(member?.digest_times ?? []);
   const next = nextDigestTime({ now, timeZone, times });
-  // The own quiet hours of the member (F110 stage 18); the default while the flag is off or the member set none.
+  // The own quiet hours of the member; the default while the flag is off or the member set none.
   const own = (await isFeatureOn(db, ctx, "user_quiet_hours"))
     ? await getMemberNotify(db, ctx, link.userId)
     : undefined;
@@ -135,7 +135,7 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   return { text: lines.join("\n"), buttons: [] };
 }
 
-// The cause of an approved send that waits, in the order of the tap toast (S4 16.1): the mailbox, then the scope.
+// The cause of an approved send that waits, in the order of the tap toast: the mailbox, then the scope.
 // `held` sends are not admitted by the scope; `sending` sends are admitted and go out on a tick.
 function approvedText(
   deps: CommandDeps,
@@ -225,7 +225,7 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
   });
 }
 
-// The /review page (F097 D4, D6): behind the flag `review_command`; a seeded random sample of unlabelled real mail.
+// The /review page: behind the flag `review_command`; a seeded random sample of unlabelled real mail.
 // A new seed per call (chat id and time) gives a new sample on the next /review.
 export async function reviewMessage(deps: CommandDeps, link: LinkedChat): Promise<OutMessage> {
   const texts = textsFor(link.locale);

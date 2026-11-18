@@ -8,7 +8,7 @@ import { getActiveAlert, markAlertSent, openAlert, resolveAlert, type AlertPhase
 import type { SloReading } from "./slo-checks";
 import { sloAlertText, type AlertLocale } from "./slo-texts";
 
-// F114 stage 03: one tick of the `ops.slo` job. For each kind it reads the check, asks `nextAlertStep` what to do, sends the
+// One tick of the `ops.slo` job. For each kind it reads the check, asks `nextAlertStep` what to do, sends the
 // text and then writes the mark (send first, then mark: a crash repeats one notice, never loses one). The tick keeps no
 // memory: the open state lives in `ops_alerts`, so a restart changes nothing. `scheduler.ts` runs the tick without a tenant
 // scope; the checks read every organization.

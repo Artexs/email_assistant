@@ -1,6 +1,6 @@
 import type { DemoRow } from "./tables";
 
-// Which values may leave the lab (rule of F113 stage 15). Every address in a seed ends in `.test`; every mailbox host
+// Which values may leave the lab. Every address in a seed ends in `.test`; every mailbox host
 // is the sim GreenMail (a loopback name) or a `.test` name. The scan reads every string of every row, so an address in
 // a subject, a body, a header, a JSON payload or an audit row is found. Findings name the table and column only.
 //

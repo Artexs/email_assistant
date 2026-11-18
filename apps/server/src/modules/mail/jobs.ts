@@ -22,7 +22,7 @@ export interface MailSyncJobDeps {
   db: Db | Transaction<DB>;
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
-  // F117: the token store of the `oauth` mailboxes (stage 10 wires it in `main.ts`).
+  // The token store of the `oauth` mailboxes.
   oauthTokens?: OpenDeps["oauthTokens"];
   isOwnActionId: SyncDeps["isOwnActionId"];
   sentOriginOf: SentSyncDeps["sentOriginOf"];
@@ -104,14 +104,14 @@ async function syncOne(
       uid_updated: sum("uidUpdated"),
       returned: sum("returned"),
     });
-    // D5: a folder that fails 3 runs in a row gets one error line, until it syncs again.
+    // A folder that fails 3 runs in a row gets one error line, until it syncs again.
     for (const folder of result.folders) failures.set(`${mailboxId}:${folder.folder}`, 0);
     for (const key of result.failed) {
       const count = (failures.get(`${mailboxId}:${key}`) ?? 0) + 1;
       failures.set(`${mailboxId}:${key}`, count);
       if (count === 3) mailboxLog.error("sync_folder_failing", { folder_key: key, failed_runs: 3 });
     }
-    // D6: the flag refresh reads FLAGS only, on this connection, at most every 10 min per mailbox. An error here never fails the sync.
+    // The flag refresh reads FLAGS only, on this connection, at most every 10 min per mailbox. An error here never fails the sync.
     const flagsNow = deps.now().getTime();
     if (flagsNow - (lastFlagsAt.get(mailboxId) ?? 0) >= FLAGS_REFRESH_EVERY_MS) {
       lastFlagsAt.set(mailboxId, flagsNow);
@@ -147,14 +147,14 @@ export function createMailSyncJob(deps: MailSyncJobDeps): { run(): Promise<void>
   const lastFlagsAt = new Map<string, number>();
   return {
     async run() {
-      // D18: a blocked mailbox that the guard now allows is active again, and this run syncs it. It never throws.
+      // A blocked mailbox that the guard now allows is active again, and this run syncs it. It never throws.
       await recheckBlockedHosts({ db: deps.db, now: deps.now });
       const targets = await listSyncTargets(deps.db);
       for (const { orgId, mailboxId } of targets) {
         const ctx = { orgId };
         const mailboxLog = log.with({ org_id: orgId, mailbox_id: mailboxId });
         try {
-          // D4: a suspend during the run stops the next mailbox, not only the next run.
+          // A suspend during the run stops the next mailbox, not only the next run.
           if (await isOrgSuspended(deps.db, ctx)) continue;
           await syncOne(deps, ctx, mailboxId, failures, lastFlagsAt);
         } catch (error) {

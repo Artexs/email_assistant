@@ -13,7 +13,7 @@ import { HardError } from "../../../platform/errors";
 
 import { actionTypeSchema, type DbOrTrx } from "./shared";
 
-// The `X-EA-Action-Id` of a mail is the id of a draft of this mailbox: the mail is the system's own (D15).
+// The `X-EA-Action-Id` of a mail is the id of a draft of this mailbox: the mail is the system's own.
 // Any sender can write the header, so a value that is not a uuid never reaches the query.
 export async function isOwnActionId(
   db: DbOrTrx,
@@ -227,7 +227,7 @@ async function insertPlanned(
   }
   return created;
 }
-// Writes only the `delegation_id` key of the payload (D2), on `create_draft` and `send` rows of the context org.
+// Writes only the `delegation_id` key of the payload, on `create_draft` and `send` rows of the context org.
 // Returns the row count.
 export async function setDelegationId(
   db: DbOrTrx,

@@ -1,4 +1,4 @@
-// The newsletters list of the panel (F110 stage 23, D17): the senders of `listNewsletterSenders`, each with the unsubscribe method
+// The newsletters list of the panel: the senders of `listNewsletterSenders`, each with the unsubscribe method
 // and the state of its request. A reader only: it never fetches a URL and never writes. The display name and the link are
 // untrusted mail text; the route sends them as data and the panel shows them as plain text.
 import {
@@ -22,7 +22,7 @@ export interface NewsletterViewOptions {
   isOwner: boolean;
 }
 
-/** `one_click` when the one-click rule of D17 holds, else `link` for an `https` link, else `none`. */
+/** `one_click` when the one-click rule holds, else `link` for an `https` link, else `none`. */
 export function methodOf(sender: Pick<NewsletterSender, "oneClick" | "hasLink">): NewsletterMethod {
   if (sender.oneClick) return "one_click";
   return sender.hasLink ? "link" : "none";

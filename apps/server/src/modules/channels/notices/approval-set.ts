@@ -7,7 +7,7 @@ import { type LinkedChat } from "../port";
 
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
-// D21: one request per owner for a whole reminder set.
+// One request per owner for a whole reminder set.
 async function detectApprovalSets(
   db: DbOrTrx,
   ctx: TenantContext,

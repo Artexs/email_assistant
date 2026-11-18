@@ -58,10 +58,10 @@ export interface TelegramRuntimeDeps {
   syncEveryMin: number;
   // `WEB_BASE_URL`; the approval card links to the panel only when it is set and `approvals_page` is on.
   webBaseUrl?: string;
-  // The LLM pause and the scope of the triage worker of this process: the `not_triaged` notice reads them (F109 stage 15).
+  // The LLM pause and the scope of the triage worker of this process: the `not_triaged` notice reads them.
   // Absent when the worker is off.
   degraded?: NoticeDeps["degraded"];
-  // The M8 reader of the weekly report (F110 stage 12). Absent: the report has no evidence lines.
+  // The M8 reader of the weekly report. Absent: the report has no evidence lines.
   trustEvidence?: NoticeDeps["trustEvidence"];
   // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;

@@ -1,7 +1,7 @@
 import { isUnsupportedAuthMechanism } from "../imap/client";
 import { MailAuthError, SmtpSendError, type MailSender } from "../port";
 
-// How a refused login of an OAuth mailbox becomes a reason (F117 ticket, stage 10). Only `open.ts` calls this: a password mailbox
+// How a refused login of an OAuth mailbox becomes a reason. Only `open.ts` calls this: a password mailbox
 // never gets a reason. Nothing here reads the message or the `cause` of an error; they can hold the access token.
 
 /** The login did not pass: a refusal (`MailAuthError` without a reason), or a server that offers no XOAUTH2 at all. */

@@ -105,7 +105,7 @@ async function resultKindOf(
   }
 }
 
-// D20: every end state of a send gives one notice per owner. A pending Sent copy counts as lost after 10 minutes.
+// Every end state of a send gives one notice per owner. A pending Sent copy counts as lost after 10 minutes.
 async function detectSendResults(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -120,7 +120,7 @@ async function detectSendResults(
     pendingCopyMaxAgeMs: SENT_COPY_PENDING_MAX_AGE_MS,
   });
   if (rows.length === 0) return;
-  // One flag read for the run; the button shows only on a `sent` result (plan D21).
+  // One flag read for the run; the button shows only on a `sent` result.
   const mistakeButton = await isFeatureOn(db, ctx, "mistake_capture");
   // The panel link of the consent line, as on the approval card: only when the panel page is on and the base URL is set.
   const panelBase = webBaseUrl !== undefined && (await isFeatureOn(db, ctx, "approvals_page")) ? webBaseUrl : undefined;
@@ -134,7 +134,7 @@ async function detectSendResults(
       const to = Array.isArray(row.payload.to) ? stringOf(row.payload.to[0]) : null;
       const draftTo = Array.isArray(draftRow?.payload.to) ? stringOf(draftRow.payload.to[0]) : null;
       const result = await resultKindOf(db, ctx, row, draftRemoved, names);
-      // A follow-up result names its first recipient (a sent mail): the consent gate splits the owners (stage 11, D17).
+      // A follow-up result names its first recipient (a sent mail): the consent gate splits the owners.
       const gate = row.loop_id === null ? { covered: owners, withheld: [] } : await splitByLoopConsent(db, ctx, owners);
       const view = {
         actionId: row.id,

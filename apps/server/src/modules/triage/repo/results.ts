@@ -73,7 +73,7 @@ export async function latestTriageResult(
   }
   return { ...row, category: categorySchema.parse(row.category) };
 }
-/** The newest `triage_results` row of each mail with the fields that the history check reuses (F110): the key of the run and the VIP mark. */
+/** The newest `triage_results` row of each mail with the fields that the history check reuses: the key of the run and the VIP mark. */
 export interface StoredResultRow {
   emailId: string;
   category: Category;
@@ -147,7 +147,7 @@ export async function listLatestTriageByEmailIds(
   return out;
 }
 const RETENTION_BATCH = 1000;
-// Retention (A23): the reason text and the extracted fields go after the period. Batches by id; a locked row waits for a later day.
+// Retention: the reason text and the extracted fields go after the period. Batches by id; a locked row waits for a later day.
 export async function clearTriageTexts(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -180,7 +180,7 @@ export async function clearTriageTexts(
     if (changed === 0) return total;
   }
 }
-// F099 D14: the newest triage result of the organization, null when none.
+// The newest triage result of the organization, null when none.
 export async function lastTriageAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
   const row = await db
     .selectFrom("triage_results")

@@ -29,7 +29,7 @@ import { getMailbox, mailboxHasUidplus } from "../mail";
 import { heldReason } from "./held-reason";
 import { approvalViewFor } from "./notices/approval";
 
-// F102 ticket: the read side of the approvals page. It builds the view with `approvalViewFor`, the builder of the card,
+// The read side of the approvals page. It builds the view with `approvalViewFor`, the builder of the card,
 // so the page shows the text that the committer sends. Every read filters by the organization (`ctx`).
 
 export interface ApprovalReadDeps {

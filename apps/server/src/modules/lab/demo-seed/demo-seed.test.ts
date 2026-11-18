@@ -11,7 +11,7 @@ import { DEMO_TABLES, demoColumns, type DemoRow, type DemoTable } from "./tables
 import { buildImportRows, mapIdsInJson, mapIdsInText, PLACEHOLDER_SECRET } from "./transform";
 import { DEMO_SEED_FORMAT, DemoSeedError, IMPORT_ORG_NAME, type DemoSeed } from "./types";
 
-// F113 stage 15: the pure parts of the demo seed (scan, shape, id map, import rules). The database tests are in
+// The pure parts of the demo seed (scan, shape, id map, import rules). The database tests are in
 // `test/integration/lab-demo-seed.test.ts`.
 
 const uuid = (n: number): string => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -457,7 +457,7 @@ describe("the seed files", () => {
       expect(() => writeNewSeedFile(path, "two")).toThrow(DemoSeedError);
       expect(readSeedFile(path)).toBe("one");
       expect(readSeedFile(join(dir, "missing.json"))).toBeUndefined();
-      // N8: only the owner reads or writes the file (umask can only remove more bits).
+      // Only the owner reads or writes the file (umask can only remove more bits).
       expect(statSync(path).mode & 0o177).toBe(0);
     } finally {
       rmSync(dir, { recursive: true, force: true });

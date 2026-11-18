@@ -25,7 +25,7 @@ const AUDIT_NAME: Record<ProfileField, string> = {
   writingStyle: "writing_style",
 };
 
-// The stored values and the texts that stand in for a null (D13), so that the card shows what is used. Undefined: the mailbox is
+// The stored values and the texts that stand in for a null, so that the card shows what is used. Undefined: the mailbox is
 // not of the organization (a foreign id answers like an unknown one).
 export async function getProfileView(
   db: DbOrTrx,

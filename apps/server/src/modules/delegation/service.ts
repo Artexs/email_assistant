@@ -88,7 +88,7 @@ export type UpdateDelegateResult =
   | { kind: "changed" | "same" | "not_found" }
   | { kind: "invalid"; field: "name" | "tags" };
 
-// D10: name, tags and the active state. The address never changes. One audit row per call that changes something; it holds the
+// Name, tags and the active state. The address never changes. One audit row per call that changes something; it holds the
 // names of the changed fields, never the old or the new value. A disabled delegate keeps its open delegations.
 export async function updateDelegate(
   db: DbOrTrx,
@@ -127,7 +127,7 @@ export async function updateDelegate(
       event: auditEvents.delegateChanged,
       data: {
         delegate_id: input.id,
-        // Audit data is flat (F106 D17): the field names go in one string, in the order name, tags, active.
+        // Audit data is flat: the field names go in one string, in the order name, tags, active.
         fields: fields.join(","),
         ...(activeChanged ? { active: input.active } : {}),
         via: input.via,
@@ -157,7 +157,7 @@ function dueInstant(dueDate: string | null, timezone: string): Date | null {
   return localToInstant(dueDate, DUE_TIME, timezone);
 }
 
-// Runs in the caller's transaction (`saveTriage`); the caller then merges `delegation_id` into the two payloads (D2).
+// Runs in the caller's transaction (`saveTriage`); the caller then merges `delegation_id` into the two payloads.
 export async function createDelegation(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -171,7 +171,7 @@ export async function createDelegation(
     dueDate: string | null;
     timezone: string;
     now: Date;
-    // The Delegate command (F116) sets all three; triage sets none: `source` is `triage` and the actor is the system.
+    // The Delegate command sets all three; triage sets none: `source` is `triage` and the actor is the system.
     source?: DelegationSource;
     via?: "web" | "telegram" | "cli";
     actor?: string;
@@ -207,7 +207,7 @@ export async function createDelegation(
   return id;
 }
 
-// D7: an open delegation of this mailbox whose delegate sent the mail, in a thread that the system started.
+// An open delegation of this mailbox whose delegate sent the mail, in a thread that the system started.
 export async function detectReply(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -222,7 +222,7 @@ export async function detectReply(
   return found ? { delegationId: found.id, delegateId: found.delegateId } : null;
 }
 
-// The three closing functions lock the delegation first, then its reminder sends (D6 lock order).
+// The three closing functions lock the delegation first, then its reminder sends (the lock order).
 async function closeReminders(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -310,7 +310,7 @@ export interface CancelByUserDeps extends ApprovalDeps {
   afterRead?(delegationId: string): Promise<void>;
 }
 
-// F102 stage 15: the user cancels an open delegation. Status flow: `drafted`, `sent` or `overdue` -> `cancelled` /
+// The user cancels an open delegation. Status flow: `drafted`, `sent` or `overdue` -> `cancelled` /
 // `user_cancelled`; the reason is final. Two ways, as the lock orders differ:
 //   `drafted`: the waiting send is rejected (`reject`: lock the send, then the delegation), with the card hooks, so the Telegram cards
 //     follow. A panel edit can replace the send between the read and the lock: `reject` answers `superseded`, and the call reads the
@@ -400,7 +400,7 @@ export async function closeDelegation(
   return { kind: "done" };
 }
 
-// The callbacks that the committer, the approvals and the expiry job call (D29). `main.ts` wires them.
+// The callbacks that the committer, the approvals and the expiry job call. `main.ts` wires them.
 export function delegationHooks(_deps: { db: Db }): DelegationHooks {
   return {
     onSent: async (trx, ctx, input) => {

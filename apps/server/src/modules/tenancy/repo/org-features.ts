@@ -46,7 +46,7 @@ export async function upsertOrgFeature(
     .execute();
 }
 
-// No TenantContext: listed in docs/code-patterns.md. Only /api/operator/* calls it (F087).
+// No TenantContext: listed in docs/code-patterns.md. Only /api/operator/* calls it.
 export async function listOrgFeatureRowsOfAll(
   db: Db | Transaction<DB>
 ): Promise<{ org_id: string; flag: string; enabled: boolean }[]> {

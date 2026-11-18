@@ -38,7 +38,7 @@ export async function getMailboxSettings(
     .executeTakeFirst();
 }
 
-// The category policy of every mailbox of the organization in `assist` mode (the tripwire reads them; F110 stage 09). The value is
+// The category policy of every mailbox of the organization in `assist` mode (the tripwire reads them). The value is
 // unparsed: a row that does not parse must not stop the other mailboxes, so the caller parses each one.
 export async function listAssistPolicies(
   db: DbOrTrx,
@@ -55,7 +55,7 @@ export async function listAssistPolicies(
 }
 
 // The OAuth provider of the mailbox: null for a password mailbox, undefined when the mailbox is not of the organization. The column is
-// set at insert and never changes, so a read before the settings lock is enough (F115 D19).
+// set at insert and never changes, so a read before the settings lock is enough.
 export async function getMailboxOauthProvider(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -132,7 +132,7 @@ export async function updateMailboxSettings(
   return (result.numUpdatedRows ?? 0n) > 0n;
 }
 
-// Moves work with MOVE, or with COPY + EXPUNGE through UIDPLUS (D1). Read here, because `mail` imports `config`.
+// Moves work with MOVE, or with COPY + EXPUNGE through UIDPLUS. Read here, because `mail` imports `config`.
 export async function getMovesSupported(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
   const row = await db
     .selectFrom("mailboxes")

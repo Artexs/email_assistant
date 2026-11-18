@@ -6,7 +6,7 @@ import { HardError } from "../../platform/errors";
 
 export const remoteTargetSchema = z
   .object({
-    testAddress: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/), // the only allowed recipient (D2)
+    testAddress: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/), // the only allowed recipient
     host: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/), // an ssh config alias; no leading "-" (it would be an ssh option)
     remoteDir: z
       .string()

@@ -21,7 +21,7 @@ export type OrgDeleteScopedResult = OrgDeleteResult | { kind: "scope_mismatch" }
 
 /**
  * What the caller says the organization holds, checked INSIDE the delete transaction after the organization lock
- * (F113 stage 14 review, N1 and N2). A mailbox or a member that is outside these lists makes the delete return
+ *. A mailbox or a member that is outside these lists makes the delete return
  * `scope_mismatch` with nothing changed. The lock makes the check safe against a late insert: a mailbox row or a
  * membership that commits before the lock is seen by the check; one that starts later waits for the delete and then
  * fails its foreign key. Addresses and emails compare in lower case.
@@ -52,7 +52,7 @@ function codeOf(error: unknown): unknown {
 // call `delete_organization`. Nothing is written when the name differs. The mailbox addresses go to the caller only
 // (the operator tells the owner which passwords to change); no log line holds them.
 //
-// Why the member users are locked (F106 stage 01 review, N4): the function deletes the users whose only membership is
+// Why the member users are locked: the function deletes the users whose only membership is
 // this organization. Its select takes no lock on the memberships table. An invite into another organization that commits
 // during the delete would lose its new membership through the cascade of `users`. A `FOR UPDATE` on the member users
 // conflicts with the `FOR KEY SHARE` that the foreign key of a new membership takes. So an insert that started before

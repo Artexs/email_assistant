@@ -33,7 +33,7 @@ export type SendCloseReason =
   // The loop of a follow-up closed (a reply, Done, Drop, the switch off): the follow-up must not go out.
   | "loop_closed";
 
-// An `approved` send closes only for these reasons; a tap was given, so a plain timeout of the request does not apply (D22).
+// An `approved` send closes only for these reasons; a tap was given, so a plain timeout of the request does not apply.
 const CLOSES_APPROVED: readonly SendCloseReason[] = ["held_timeout", "delegation_closed", "loop_closed"];
 
 // What `closeLockedSend` found. `busy`: a run holds the row (`applying`, or `approved` with a fresh lock that the caller does not
@@ -112,9 +112,9 @@ export async function closeLockedSend(
   return { kind: "closed", send };
 }
 
-// D22: the cascade for one send. The caller holds the transaction.
+// The cascade for one send. The caller holds the transaction.
 // false = the row was not in a closable state (a tap, a send or another close won).
-// A send in flight (`applying`, or `approved` with a fresh lock) finishes. `result_notified_at` stays null (D20).
+// A send in flight (`applying`, or `approved` with a fresh lock) finishes. `result_notified_at` stays null.
 export async function expireSend(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -133,7 +133,7 @@ export async function expireSend(
   return result.kind === "closed";
 }
 
-// D13: the draft of a dead send never lands and never stays behind when the server has UIDPLUS.
+// The draft of a dead send never lands and never stays behind when the server has UIDPLUS.
 // `ready` → expired; `applied` + UIDPLUS → a reverse row; the rest is left to its own step or stays.
 export async function closeDraftOfSend(
   trx: Transaction<DB>,
@@ -176,7 +176,7 @@ export async function closeDraftOfSend(
   return "none";
 }
 
-// D6: a delegation that is answered, done or cancelled sends no more reminders. Every open reminder send closes with its draft.
+// A delegation that is answered, done or cancelled sends no more reminders. Every open reminder send closes with its draft.
 // The caller holds the delegation lock (lock order: the delegation, then its sends). An `applying` reminder finishes. `sendIds` are the sends that this call
 // closed (a caller that edits their cards queues the edits itself; this function calls no approval hook).
 export async function expireReminderActions(
@@ -216,7 +216,7 @@ export interface ExpiryDeps {
   listExpired?: typeof listExpiredApprovals;
 }
 
-// D22: every hour. Time passes for paused mailboxes too, so the job walks them as well.
+// Every hour. Time passes for paused mailboxes too, so the job walks them as well.
 export function createExpiryJob(deps: ExpiryDeps): { run(): Promise<void> } {
   const list = deps.listExpired ?? listExpiredApprovals;
 

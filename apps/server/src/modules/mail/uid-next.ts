@@ -1,5 +1,5 @@
 /**
- * D4: the UIDNEXT of a folder. Interia gives a wrong STATUS value (1) and no SELECT value, so the highest UID + 1 counts too.
+ * The UIDNEXT of a folder. Interia gives a wrong STATUS value (1) and no SELECT value, so the highest UID + 1 counts too.
  * The largest of the finite inputs; at least 1.
  */
 export function resolveUidNext(input: {

@@ -2,8 +2,8 @@ import type { SmtpSecurity } from "@ea/core";
 
 import type { TokenResource } from "../port";
 
-// The mailbox OAuth providers (F117 D6): URLs, scopes and hosts are constants. No env key holds a URL; a test builds its own
-// registry (see `specs` of apps/server/test/fake-mail-oauth.ts). The values are from the plan (D6); spike rows M2 and G1 may change them.
+// The mailbox OAuth providers: URLs, scopes and hosts are constants. No env key holds a URL; a test builds its own
+// registry (see `specs` of apps/server/test/fake-mail-oauth.ts). The values are from the plan; spike rows M2 and G1 may change them.
 
 export type MailOAuthProvider = "microsoft" | "google";
 
@@ -24,7 +24,7 @@ export interface MailOAuthProviderSpec {
   issuerOk(iss: string): boolean;
 }
 
-/** The organization flag that gates a new connect with the provider (D8). */
+/** The organization flag that gates a new connect with the provider. */
 export const mailOAuthFlag = (provider: MailOAuthProvider) => `mail_oauth_${provider}` as const;
 
 export const mailOAuthProviders: Readonly<Record<MailOAuthProvider, MailOAuthProviderSpec>> = {
@@ -46,7 +46,7 @@ export const mailOAuthProviders: Readonly<Record<MailOAuthProvider, MailOAuthPro
     },
     authorizeParams: { prompt: "select_account" },
     imap: { host: "outlook.office365.com", port: 993 },
-    // Stored, not used: every Microsoft mailbox sends through Graph (D5).
+    // Stored, not used: every Microsoft mailbox sends through Graph.
     smtp: { host: "smtp.office365.com", port: 587, security: "starttls" },
     sendVia: "graph",
     graphBaseUrl: "https://graph.microsoft.com",
@@ -72,7 +72,7 @@ export const mailOAuthProviders: Readonly<Record<MailOAuthProvider, MailOAuthPro
 // `https://www.googleapis.com/auth/userinfo.email`) or leave them out (Microsoft: `offline_access`), so a grant check never needs them.
 const IDENTITY_SCOPES: ReadonlySet<string> = new Set(["openid", "email", "profile", "offline_access"]);
 
-/** The scopes of the resource that a grant must hold: its resource scopes without the identity names (F117 plan review N1). Empty for a resource the provider lacks. */
+/** The scopes of the resource that a grant must hold: its resource scopes without the identity names. Empty for a resource the provider lacks. */
 export function requiredResourceScopes(spec: MailOAuthProviderSpec, resource: TokenResource): string[] {
   return (spec.resourceScopes[resource] ?? []).filter((scope) => !IDENTITY_SCOPES.has(scope.toLowerCase()));
 }

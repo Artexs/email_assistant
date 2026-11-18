@@ -41,7 +41,7 @@ export interface ApprovalInput {
   now: Date;
 }
 
-// A reject can name the reason that the delegation gets when this send is its waiting draft (F102 stage 15: the user cancels the
+// A reject can name the reason that the delegation gets when this send is its waiting draft (the user cancels the
 // delegation). Default `rejected`. `user_cancelled` is final: no "Send again" or "It went out" reopens it.
 export interface RejectInput extends ApprovalInput {
   delegationReason?: "user_cancelled";
@@ -71,7 +71,7 @@ export type RejectResult =
   | { kind: "not_found" };
 
 // The user whose own card the decision edits in place: the tap on a Telegram card edits that card itself, so the hook
-// must leave it alone (D4). A decision from the panel or the CLI has no such card.
+// must leave it alone. A decision from the panel or the CLI has no such card.
 export function decidedBy(input: ApprovalInput): { exceptUserId?: string } {
   return input.via === "telegram" ? { exceptUserId: input.userId } : {};
 }
@@ -107,7 +107,7 @@ function isStale(lockedAt: Date | null, now: Date): boolean {
 }
 
 // A tap or a panel approve that finds the send past its time limit closes it. The cards of the other owners lose their buttons
-// (F102 stage 18: this path queued no card edit before); the tapped card of a Telegram tap is the handler's own edit.
+// (this path queued no card edit before); the tapped card of a Telegram tap is the handler's own edit.
 async function expireByTap(
   trx: Transaction<DB>,
   deps: ApprovalDeps,
@@ -134,7 +134,7 @@ async function expireByTap(
   return { kind: "expired", byThisTap: true };
 }
 
-// The caller holds the lock of the row. The owner check is the caller's (D26): the Telegram handler checks the role.
+// The caller holds the lock of the row. The owner check is the caller's: the Telegram handler checks the role.
 async function approveRow(
   trx: Transaction<DB>,
   deps: ApprovalDeps,
@@ -250,7 +250,7 @@ async function rejectRow(
   return { kind: "rejected" };
 }
 
-// D18: the only way a send becomes `approved`. One transaction.
+// The only way a send becomes `approved`. One transaction.
 export async function approve(
   deps: ApprovalDeps,
   ctx: TenantContext,
@@ -277,7 +277,7 @@ export async function reject(
   });
 }
 
-// Only the rows that the set message showed (`notified_at` set): a row whose draft failed was left out (D21).
+// Only the rows that the set message showed (`notified_at` set): a row whose draft failed was left out.
 // A follow-up is never in a set (belt and braces: the set readers are mail-only, and the payload schema refuses `set_id` on it).
 function inSetMessage(send: SendRow): boolean {
   return send.status === "awaiting_approval" && send.notified_at !== null && send.loop_id === null;
@@ -322,7 +322,7 @@ export async function rejectSet(
   });
 }
 
-// D18: one resend per failed row (`:again` key). The delegation stays `cancelled` until the new send is `applied` (D6).
+// One resend per failed row (`:again` key). The delegation stays `cancelled` until the new send is `applied`.
 // A delegation or reminder send whose delegation is closed gets `delegation_closed` and no row.
 export async function sendAgain(
   deps: ApprovalDeps,
@@ -343,7 +343,7 @@ export async function sendAgain(
     ) {
       return { kind: "not_failed" };
     }
-    // A24: retention cleared the payload of an old failed send; there is nothing to send again.
+    // Retention cleared the payload of an old failed send; there is nothing to send again.
     if (!sendPayloadSchema.safeParse(failed.payload).success) return { kind: "draft_gone" };
     const draft =
       failed.depends_on_action_id === null ? undefined : await getDraft(trx, ctx, failed.depends_on_action_id);
@@ -368,7 +368,7 @@ export async function sendAgain(
   });
 }
 
-// "It went out" (F041): a delegation send ended `failed` / `outcome_unknown`, and the owner says that the mail reached the delegate.
+// "It went out": a delegation send ended `failed` / `outcome_unknown`, and the owner says that the mail reached the delegate.
 // The delegation goes `cancelled` -> `sent` with the message id that the send stored. No SMTP call; the send row stays `failed`.
 // A send that was sent again, or a delegation in another state, changes nothing (lock order: send, then delegation).
 export async function markWentOut(

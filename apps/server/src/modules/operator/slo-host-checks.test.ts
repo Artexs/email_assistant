@@ -5,7 +5,7 @@ import { loadConfig, sloThresholds } from "../../platform/config";
 import { checkBackupAge, checkDisk, type SloReading, type StatFs } from "./slo-checks";
 import { sloAlertText } from "./slo-texts";
 
-// F114 stage 04: the disk and backup-age checks. Both read the host through an injected function, so no test touches the disk.
+// The disk and backup-age checks. Both read the host through an injected function, so no test touches the disk.
 const cfg = sloThresholds(
   loadConfig({
     DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/x",

@@ -31,7 +31,7 @@ export async function realGoNoGoRows(
   return (await realReportFor(db, ctx, mailboxId, now, testMail)).goNoGo;
 }
 
-// The go/no-go row of each category from the labelled real mail (D10 (b)). One query for all five categories.
+// The go/no-go row of each category from the labelled real mail. One query for all five categories.
 export async function goNoGoFor(
   db: Db | Transaction<DB>,
   ctx: TenantContext,

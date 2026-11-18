@@ -6,13 +6,13 @@ import { mailKindFilter, type TestMailRule } from "../mail";
 
 import type { UnlabeledResult } from "./repo";
 
-// The Telegram /review page (F097 D4): its size and how far back it looks.
+// The Telegram /review page: its size and how far back it looks.
 export const REVIEW_PAGE_SIZE = 10;
 export const REVIEW_WINDOW_DAYS = 30;
 
 type DbOrTrx = Db | Transaction<DB>;
 
-// One row per mail (its latest triage result), no feedback row, real mail only (D1 rule), received since `since`.
+// One row per mail (its latest triage result), no feedback row, real mail only, received since `since`.
 // Order: md5(email_id::text || seed), then email_id, so one seed always gives one order and a new seed gives a new sample.
 export async function listReviewSample(
   db: DbOrTrx,

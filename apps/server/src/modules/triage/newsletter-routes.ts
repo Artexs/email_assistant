@@ -22,11 +22,11 @@ export interface NewsletterRouteDeps {
 const idSchema = z.uuid();
 
 /**
- * The newsletters list (F110 stage 23, flag `bulk_unsubscribe`). The flag comes first: with it off the route is a 404 for every role
+ * The newsletters list (flag `bulk_unsubscribe`). The flag comes first: with it off the route is a 404 for every role
  * and for a bad id. Any member reads the list; only the owner gets the links (a member sees no actions). A mailbox of another
  * organization, or an unknown id, is the same 404 `not_found`. Every query filters `org_id`. The GET route never fetches a link.
  *
- * `POST .../unsubscribe` (F110 stage 24): the owner's tap, one request to the sender per (mailbox, sender) and never from the
+ * `POST .../unsubscribe`: the owner's tap, one request to the sender per (mailbox, sender) and never from the
  * system by itself. Flag first, then owner only. See `newsletter-unsubscribe.ts`.
  */
 export function newsletterRoutes(deps: NewsletterRouteDeps): Hono<ApiEnv> {

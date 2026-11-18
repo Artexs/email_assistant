@@ -2,10 +2,10 @@ import { isTestMail, type TestMailRule } from "../mail";
 
 import type { MailboxClaimFilter, SendClaimFilter } from "./repo";
 
-// D8: `off` = no mailbox change; `synthetic` = test mail only (a synthetic Message-ID or a sender of `testMail`); `all` = real mail of every mailbox (the mode of each mailbox is the consent).
+// `off` = no mailbox change; `synthetic` = test mail only (a synthetic Message-ID or a sender of `testMail`); `all` = real mail of every mailbox (the mode of each mailbox is the consent).
 export type ActionsScope = { kind: "off" } | { kind: "synthetic"; testMail: TestMailRule } | { kind: "all" };
 
-// D16: `off` = no send; `self` = only to the listed addresses; `all` = every send, always after an owner's tap.
+// `off` = no send; `self` = only to the listed addresses; `all` = every send, always after an owner's tap.
 export type SendScope = { kind: "off" } | { kind: "self"; addresses: string[] } | { kind: "all" };
 
 // Pure. The committer and the Undo tap use it. `all` admits every mailbox.

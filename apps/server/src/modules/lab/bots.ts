@@ -231,7 +231,7 @@ async function handleMail(input: ReadInput, message: { uid: number; raw: string 
     result.unmapped += 1;
     return;
   }
-  // A clarification the executive's side sent to a delegate's own mail: not a delegation (N13).
+  // A clarification the executive's side sent to a delegate's own mail: not a delegation.
   if (slot.persona === persona.key) {
     skip("reply_to_own_mail");
     return;

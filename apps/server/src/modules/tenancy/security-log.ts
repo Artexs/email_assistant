@@ -22,7 +22,7 @@ function lockedUntilOf(data: unknown): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-// The newest security events of the organization (plan D27): names of members only, no address, no id, no IP.
+// The newest security events of the organization: names of members only, no address, no id, no IP.
 export async function listSecurityLog(db: Db, ctx: TenantContext, now: Date): Promise<SecurityLog> {
   const rows = await listAuditEvents(db, ctx, {
     events: securityEventCodes,

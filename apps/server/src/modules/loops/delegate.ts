@@ -68,7 +68,7 @@ export function delegateTaskText(
 }
 
 // A mail that must not become a delegation: no triage result (the suspicion check has not run), the final category
-// `spam`, a suspicious reason (PD-063), a sender that is an own mailbox, or a mail of the system itself.
+// `spam`, a suspicious reason, a sender that is an own mailbox, or a mail of the system itself.
 async function delegable(trx: Transaction<DB>, ctx: TenantContext, email: EmailMeta): Promise<boolean> {
   const triage = await latestTriageResult(trx, ctx, email.id);
   if (triage === undefined || triage.category === "spam") return false;
@@ -83,7 +83,7 @@ async function delegable(trx: Transaction<DB>, ctx: TenantContext, email: EmailM
   return true;
 }
 
-// The user picks a delegate for a mail: the draft and the approval of a delegation that triage made (PD-124).
+// The user picks a delegate for a mail: the draft and the approval of a delegation that triage made.
 // The checks run in the order of the stage text. The first statement of the transaction share-locks the settings row
 // (M13): a setter that turns drafts off waits for this call, or this call sees its commit. The recipient is the address
 // of the `delegates` row; no mail text is a recipient. The send waits for a tap (ADR 0003). The caller says whether the

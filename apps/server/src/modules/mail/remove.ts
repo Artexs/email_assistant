@@ -116,7 +116,7 @@ export async function removeMailbox(
   mailboxLog.info("mailbox_removed", { user_id: input.userId });
 
   // After the commit: no cached access token of the mailbox may outlive it. A crash from here on leaves the token valid at the
-  // provider until it expires or the owner revokes it; the notice text names the page (accepted: the plan of F117 lists it).
+  // provider until it expires or the owner revokes it; the notice text names the page (accepted limit).
   let revoked: boolean | null = null;
   if (provider !== null && target !== null && page !== null) {
     deps.oauth?.tokens?.drop(mailboxId);

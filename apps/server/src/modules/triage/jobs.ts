@@ -79,7 +79,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
           // The index of the mail in work; -1 before the claim.
           let current = -1;
           try {
-            // D4: a suspend during the run stops the next mailbox, not only the next run.
+            // A suspend during the run stops the next mailbox, not only the next run.
             if (await isOrgSuspended(deps.db, ctx)) continue;
             const row = await getMailbox(deps.db, ctx, mailboxId);
             if (row === undefined) continue;

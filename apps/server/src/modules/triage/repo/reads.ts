@@ -21,7 +21,7 @@ export interface TriagedItemRow {
   reason_code: string;
   reason: string | null;
   model_category: Category | null;
-  // The sender rule that shaped the result (`fields.rule`, F110 stage 16); null on an old row.
+  // The sender rule that shaped the result (`fields.rule`); null on an old row.
   rule: SenderRuleKind | null;
   triaged_at: Date;
   received_at: Date;

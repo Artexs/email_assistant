@@ -1,4 +1,4 @@
-// The tripwire (ADR 0028, ticket F110 stage 09): a category that the user keeps correcting loses its `auto`, once, with one notice per owner.
+// The tripwire (ADR 0028): a category that the user keeps correcting loses its `auto`, once, with one notice per owner.
 // Two causes: user corrections of the moves of the category after its grant (`tripwireDue`), and a `fail` of the history check that
 // ended after the grant. The job reads the corrections with one query per organization and writes each trip in one transaction under
 // the settings row lock. Logs hold the organization, the mailbox, the category and a reason code: never a mail id or a mail value.

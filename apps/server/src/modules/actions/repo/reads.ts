@@ -91,7 +91,7 @@ export async function listActionsForEmails(
       kind: kind.success ? kind.data : null,
       delegateId: row.delegate_id,
     };
-    // D11 (a): after the window the send waits for another reason, so it must not name the limit.
+    // After the window the send waits for another reason, so it must not name the limit.
     if (
       row.status === "approved" &&
       sendLimitOfError(row.last_error) !== null &&
@@ -158,7 +158,7 @@ export async function countActionsSince(
   return { applied: count("applied"), failed: count("failed"), undone: count("undone") };
 }
 
-// The spam review line of the digest (F110 stage 17): mails whose original `move` to `ai_spam` became `applied` in the window
+// The spam review line of the digest: mails whose original `move` to `ai_spam` became `applied` in the window
 // (`moved`), and mails of the shadow mailboxes whose `move` to `ai_spam` was only `logged` in it (`wouldMove`). A window is
 // `after < t <= until`. One mail counts once. A move that the user undid is `undone`: it does not count. Mail that sat in the
 // spam folder before the system has no move, so it is not counted.

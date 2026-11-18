@@ -16,7 +16,7 @@ export interface ActionRouteDeps {
 
 const idSchema = z.uuid();
 
-// Plan D21: the web twin of the two Telegram taps. Owner only; every call checks the flag `mistake_capture` itself.
+// The web twin of the two Telegram taps. Owner only; every call checks the flag `mistake_capture` itself.
 export function actionRoutes(deps: ActionRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 

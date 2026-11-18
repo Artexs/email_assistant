@@ -1,7 +1,7 @@
 // Source of truth for `actions.status` edges. A new status write must update this file;
 // `transitions.test.ts` and `actions-transitions.test.ts` fail otherwise.
 //
-// This file is data only. No runtime code imports it (D3: the runtime step is a separate task).
+// This file is data only. No runtime code imports it (the runtime step is a separate task).
 // - `ACTION_ENTRIES`: how a new row gets its first status.
 // - `ACTION_EDGES`: the edges that callers use (design map). One row per (writer, from, to).
 // - `WRITER_GUARDS`: the guard of each writer variant, as the repository code writes it.
@@ -203,7 +203,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     to: "expired",
     types: ["send"],
     writer: "finishAction",
-    // The loop of a follow-up closed after the tap and before the SMTP call: the claimed send ends here (open loops stage 10).
+    // The loop of a follow-up closed after the tap and before the SMTP call: the claimed send ends here.
     reasons: ["loop_closed"],
     callers: ["send.ts"],
   },
@@ -504,7 +504,7 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
 ];
 
 // --- Latent edges ----------------------------------------------------------------------------------------------
-// A guard admits each edge below. No caller uses it. Closing them is the runtime follow-up task (D3).
+// A guard admits each edge below. No caller uses it. Closing them is the runtime follow-up task.
 
 export const LATENT_EDGES: readonly LatentEdge[] = [
   // L2: markApplying admits more than E2 and E3.
@@ -610,7 +610,7 @@ export const LATENT_EDGES: readonly LatentEdge[] = [
 ];
 
 // --- Pair rules (two rows move together) -----------------------------------------------------------------------
-// No runtime check (D8). `test` names the integration test that proves the rule, as `<file> › <title>` (a title can be a prefix of the real title).
+// No runtime check. `test` names the integration test that proves the rule, as `<file> › <title>` (a title can be a prefix of the real title).
 
 export const PAIR_RULES: readonly PairRule[] = [
   {

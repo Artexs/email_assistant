@@ -32,7 +32,7 @@ import { CursorMovedError, newRow, withRunCopies, type RunState, type SyncDeps, 
 
 const log = createLog("mail");
 
-// D4: system-moved mail that the check looks at for a user move back below the cursor.
+// system-moved mail that the check looks at for a user move back below the cursor.
 export const RETURN_CHECK_WINDOW_MS = 7 * DAY_MS;
 
 export const RETURN_CHECK_LIMIT = 500;
@@ -54,8 +54,8 @@ function logCopySkipped(mailboxLog: Log, rowId: string, kind: string): void {
   mailboxLog.debug("sync_below_cursor_copy_skipped", { email_id: rowId, kind });
 }
 
-// D4: a mail that the user puts back into its source folder can keep its UID (Interia) and then sits below that folder's cursor.
-// A copy of a mail that is still in its system folder is stored like a new mail (D2-D5, D11).
+// A mail that the user puts back into its source folder can keep its UID (Interia) and then sits below that folder's cursor.
+// A copy of a mail that is still in its system folder is stored like a new mail.
 export async function checkReturnedBelowCursor(
   deps: SyncDeps,
   ctx: TenantContext,
@@ -81,7 +81,7 @@ export async function checkReturnedBelowCursor(
     const chunk = rows.slice(offset, offset + RETURN_CHECK_CHUNK);
     const uids = [...new Set(chunk.flatMap((row) => (row.inbox_uid === null ? [row.uid] : [row.inbox_uid, row.uid])))];
     const metas = await deps.provider.fetchByUidsIn(folder.path, uids);
-    // A meta at a UID that a row of its identity holds in the folder is that row's mail (a stored copy), not a return (D6).
+    // A meta at a UID that a row of its identity holds in the folder is that row's mail (a stored copy), not a return.
     const held = await listFolderRowsAtUids(
       deps.db,
       ctx,
@@ -119,7 +119,7 @@ export async function checkReturnedBelowCursor(
       const stored: PlannedCopy[] = [];
       let missing = 0;
       for (const copy of planned) {
-        // The folder lock does not serialize the reads of the plan: decide again with the rows that are committed now (D4).
+        // The folder lock does not serialize the reads of the plan: decide again with the rows that are committed now.
         const runStored = state.newKeys.get(copy.baseKey) ?? [];
         const fromDb = await findCopies(trx, ctx, mailboxId, { messageId: copy.messageId, contentHash: copy.hash });
         const decision = decideBelowCursorCopy({
@@ -152,7 +152,7 @@ export async function checkReturnedBelowCursor(
       result.stored += done.stored.length;
       result.copiesStored += done.stored.length;
       result.captureMissing += done.missing;
-      // The run state changes after the commit only (D5).
+      // The run state changes after the commit only.
       for (const copy of done.stored) {
         const entries = state.newKeys.get(copy.baseKey) ?? [];
         state.newKeys.set(copy.baseKey, [
@@ -181,7 +181,7 @@ export async function checkReturnedBelowCursor(
   }
 }
 
-// One copy hit: the rule of D2 on the rows of its identity, then the body fetch for a copy to store. Null: nothing to store.
+// One copy hit: the copy rule on the rows of its identity, then the body fetch for a copy to store. Null: nothing to store.
 async function planCopy(
   deps: SyncDeps,
   ctx: TenantContext,
@@ -194,7 +194,7 @@ async function planCopy(
   state: RunState
 ): Promise<PlannedCopy | null> {
   const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
-  // Found only at another UID: it can be an untracked twin while the row's mail came back (D11).
+  // Found only at another UID: it can be an untracked twin while the row's mail came back.
   if (foundUid !== row.uid) {
     logCopySkipped(mailboxLog, row.id, "uncertain");
     return null;

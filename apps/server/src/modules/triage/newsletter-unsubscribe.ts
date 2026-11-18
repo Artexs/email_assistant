@@ -1,4 +1,4 @@
-// The one-click unsubscribe command of the newsletters list (F110 stage 24, D17, RFC 8058). The owner taps once; this code
+// The one-click unsubscribe command of the newsletters list (RFC 8058). The owner taps once; this code
 // re-checks that the sender is still allowed, writes the intent row and commits it, and only then sends the request through
 // the guarded client (`platform/public-http.ts`). The URL comes from the stored `List-Unsubscribe` header of a sender whose
 // `Authentication-Results` is trusted and on top (`listNewsletterSenders` decides `oneClick`); it is untrusted mail text. It is

@@ -8,7 +8,7 @@ function anchorColumns(anchor: ActionAnchor): { email_id: string } | { loop_id: 
   return anchor.kind === "email" ? { email_id: anchor.emailId } : { loop_id: anchor.loopId };
 }
 
-// F102 ticket: the two rows of a panel edit. The new draft is `ready`, the new send `awaiting_approval`; each names the row it
+// The two rows of a panel edit. The new draft is `ready`, the new send `awaiting_approval`; each names the row it
 // replaces (`supersedes_action_id`, the composite FK keeps it in the organization). The keys make a second insert a no-op.
 // Null: the key exists (the caller holds the lock of the old send, so this means a crash left a row: nothing is written).
 export async function insertEditedPair(

@@ -41,14 +41,14 @@ export interface TenancyRouteDeps {
   now(): Date;
   scopes: { triage: ScopeInfo; actions: ScopeInfo; send: ScopeInfo };
   countMailboxes: (ctx: TenantContext) => Promise<{ total: number; inAuthError: number }>; // web.ts implements it with the mail index
-  approvalsWaiting: (ctx: TenantContext) => Promise<number>; // web.ts implements it with `actions` and the flag `approvals_page` (F102 ticket, nav badge)
+  approvalsWaiting: (ctx: TenantContext) => Promise<number>; // web.ts implements it with `actions` and the flag `approvals_page` (nav badge)
   onboarding: (ctx: TenantContext, userId: string) => Promise<Onboarding>;
   telegram: (
     ctx: TenantContext,
     userId: string
   ) => Promise<{ available: boolean; linked: boolean; botUsername: string | null }>;
   sessions: (userId: string) => Promise<AuthSessionRow[]>; // web.ts: listUserSessions of the auth handle (L21)
-  operatorContact: string | null; // the public OPERATOR_CONTACT value (D29), not a secret
+  operatorContact: string | null; // the public OPERATOR_CONTACT value, not a secret
   backupCodesLeft: (userId: string) => Promise<number | null>; // web.ts: backupCodesLeft of the auth handle
   keepMode: (ctx: TenantContext, userId: string, now: Date) => Promise<void>;
 }
@@ -102,7 +102,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       approvalsWaiting: await deps.approvalsWaiting(ctx),
       digestTimes: parseDigestTimes(member.digest_times),
       terms: { accepted: profile?.termsVersion === TERMS_VERSION, current: TERMS_VERSION },
-      // The same set that requireOperator reads (plan D23). The body never lists the operator ids.
+      // The same set that requireOperator reads. The body never lists the operator ids.
       operator: c.get("web").operatorUserIds?.has(userId) === true,
       features: (await featureStates(deps.db, ctx)).filter((state) => state.enabled).map((state) => state.flag),
       signInMethod,
@@ -118,7 +118,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     return c.json(settings);
   });
 
-  // Owner only first, then the flag: an assistant gets 403 whatever the flag says (plan D26).
+  // Owner only first, then the flag: an assistant gets 403 whatever the flag says.
   app.get("/security-log", requireOwner, tenancyDocs.getSecurityLog, async (c) => {
     const ctx = c.get("ctx");
     if (!(await isFeatureOn(deps.db, ctx, "security_log"))) return c.json({ error: "not_found" }, 404);
@@ -196,7 +196,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     return c.json(body);
   });
 
-  // D15: keep shadow mode once; a second call writes nothing and answers 204 too.
+  // Keep shadow mode once; a second call writes nothing and answers 204 too.
   app.post("/onboarding/keep-mode", requireOwner, tenancyDocs.postKeepMode, async (c) => {
     await deps.keepMode(c.get("ctx"), c.get("session").userId, deps.now());
     return c.body(null, 204);

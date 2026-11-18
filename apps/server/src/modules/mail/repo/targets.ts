@@ -4,7 +4,7 @@ import type { MailboxStatus } from "./mailboxes";
 import type { DbOrTrx } from "./shared";
 
 // Scheduler entry point: lists work across tenants, so it takes no TenantContext. Callers build a TenantContext from orgId for every later call.
-// A `suspended` organization is skipped unless `includeSuspended` (D4: only the approval expiry runs for it).
+// A `suspended` organization is skipped unless `includeSuspended` (only the approval expiry runs for it).
 export async function listMailboxTargets(
   db: DbOrTrx,
   opts: { statuses: readonly MailboxStatus[]; includeSuspended: boolean }
@@ -36,7 +36,7 @@ export async function listAuthErrorMailboxesBefore(
     .execute();
   return rows.map((row) => ({ orgId: row.org_id, mailboxId: row.id, statusChangedAt: row.status_changed_at }));
 }
-// SLO job entry point (F114): active mailboxes of organizations that are not `suspended` whose last sign of life is before `before`.
+// SLO job entry point: active mailboxes of organizations that are not `suspended` whose last sign of life is before `before`.
 // The sign of life is the latest of the last sync, the last status change (a resume or a connect), the creation and the
 // organization resume: after any of them the sync needs time to run, so the mailbox is not late yet. Postgres `greatest`
 // skips NULL. Ids and times only; no address.

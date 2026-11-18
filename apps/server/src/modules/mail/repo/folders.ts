@@ -190,7 +190,7 @@ export async function getJunkFolderPath(db: DbOrTrx, ctx: TenantContext, mailbox
   return row?.path ?? null;
 }
 // Conditional update on the folder row: it changes the cursor only when the stored cursor is still `expected`.
-// The INBOX row also writes the two `mailboxes` columns in the same transaction (D3 dual write, for a code rollback).
+// The INBOX row also writes the two `mailboxes` columns in the same transaction (a dual write, for a code rollback).
 export async function updateFolderCursor(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -243,7 +243,7 @@ export async function forceRescan(db: DbOrTrx, ctx: TenantContext, mailboxId: st
       .where("mailbox_id", "=", mailboxId)
       .where("uidvalidity", "is not", null)
       .executeTakeFirst();
-    // D3 dual write.
+    // A dual write: see the INBOX row above.
     await trx
       .updateTable("mailboxes")
       .set({ uidvalidity: "0" })
