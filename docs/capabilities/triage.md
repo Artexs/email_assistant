@@ -190,7 +190,7 @@ emails.status:   pending → processing → triaged → done                (don
 
 ## Decisions
 
-- ADR 0003 (plan, policy, commit), ADR 0007 (Gemini), ADR 0012 (LLM data and cost), ADR 0013 (pilot mailbox, free tier), ADR 0015 (LLM provider switch), ADR 0028 (accepted, F110: autonomy evidence without user labels; [trust.md](trust.md)).
+- ADR 0003 (plan, policy, commit), ADR 0007 (Gemini), ADR 0012 (LLM data and cost), ADR 0013 (pilot mailbox, free tier), ADR 0015 (LLM provider switch), ADR 0028 (accepted, F110: autonomy evidence without user labels; [trust.md](trust.md)), ADR 0035 (LLM endpoint: EU option and own model; guide: [own-model.md](../own-model.md)).
 - PD-003 (metrics M1–M8), PD-056 (E3 splits into E3a Measure and E3b Improve).
 - E3b (F109): PD-063 (suspicious-mail rules), PD-064 (attachments), PD-061 and PD-062 (`classifier-v3`, sender history), PD-060 (escalation: not built, code removed in F130), PD-017 (urgency profile). Plan: `spec/features/active/F109-e3b-improve/plan.md`; results: `notes/2026-11-15-e3b-improve-results.md`.
 - `docs/architecture.md` keeps the flow, rules 1–5 (§4.1), the categories (§4.2) and the policy table (§4.3).
