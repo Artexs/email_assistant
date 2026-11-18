@@ -34,13 +34,14 @@ describe("the shot run config", () => {
     const servers = read(`${E2E}/servers.ts`);
     expect(servers).toContain("bun tools/fake-telegram/src/cli.ts serve --port ${E2E_TELEGRAM_PORT}");
     expect(servers).toContain("bun run db:migrate && bun apps/server/src/main.ts");
-    expect(servers).toContain("reuseExistingServer: false");
+    // Both servers: a taken port fails the run instead of serving another build.
+    expect(servers.match(/reuseExistingServer: false/g)?.length).toBe(2);
   });
   test("one test at a time, no project, the system Chromium", () => {
     expect(config).toContain("workers: 1");
     expect(config).not.toContain("projects:");
     expect(config).toContain("launchOptions: e2eLaunchOptions()");
-    expect(read(`${E2E}/servers.ts`)).toContain("process.env.CHROMIUM_PATH");
+    expect(read(`${E2E}/servers.ts`)).toContain("const chromiumPath = process.env.CHROMIUM_PATH;");
   });
   test("the global setup empties the shot folder before it seeds, and the folder is apps/docs/public/shots", () => {
     const setup = read(`${E2E}/docs-shots/global-setup.ts`);

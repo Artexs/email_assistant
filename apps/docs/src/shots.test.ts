@@ -9,7 +9,6 @@ import { pl } from "@ea/web/i18n/pl";
 import {
   isShotPage,
   SHOT_LOCALES,
-  SHOT_NAME_PATTERN,
   SHOT_PAGES,
   SHOT_VIEWPORTS,
   shotFileExists,
@@ -26,6 +25,7 @@ import {
   shotView,
 } from "./shots";
 
+const SHOT_NAME_PATTERN = /^[a-z]+-(en|pl)-(desktop|phone)$/;
 const ROOT = join(import.meta.dir, "../../..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
@@ -80,6 +80,9 @@ describe("shot helpers", () => {
   test("shotsOn: only the value on turns it on", () => {
     expect(shotsOn({ DOCS_SHOTS: "on" })).toBe(true);
     for (const value of [undefined, "", "off", "1", "ON", "true"]) expect(shotsOn({ DOCS_SHOTS: value })).toBe(false);
+  });
+  test("a PNG file below 10 KB is no screenshot", () => {
+    expect(SHOT_MIN_BYTES).toBe(10 * 1024);
   });
   test("shotUrl is under the site base", () => {
     expect(shotUrl("settings-en-desktop")).toBe("/email_assistant/shots/settings-en-desktop.png");

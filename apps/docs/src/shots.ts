@@ -82,8 +82,6 @@ export const SHOT_TEXT_ALLOW: readonly { text: string; reason: string }[] = [
   },
 ];
 
-export const SHOT_NAME_PATTERN = /^[a-z]+-(en|pl)-(desktop|phone)$/;
-
 export function isShotPage(page: string): page is ShotPage {
   return (SHOT_PAGES as readonly string[]).includes(page);
 }
@@ -122,10 +120,10 @@ export function shotView(
   currentLocale: string | undefined,
   options: { on: boolean; exists: (name: string) => boolean }
 ): ShotView {
-  if (!isShotPage(page)) throw new Error(`shot_unknown_page ${page}`);
   const locale = shotLocale(currentLocale);
-  const desktop = SHOTS.find((shot) => shot.name === `${page}-${locale}-desktop`);
-  const phone = SHOTS.find((shot) => shot.name === `${page}-${locale}-phone`);
+  // A page that is not in the list has no shot of its name: this is the check, also for names like `toString`.
+  const desktop = isShotPage(page) ? SHOTS.find((shot) => shot.name === `${page}-${locale}-desktop`) : undefined;
+  const phone = isShotPage(page) ? SHOTS.find((shot) => shot.name === `${page}-${locale}-phone`) : undefined;
   if (desktop === undefined || phone === undefined) throw new Error(`shot_unknown_page ${page}`);
   if (!options.on) return { kind: "box", desktop, phone };
   for (const shot of [desktop, phone]) {
