@@ -1754,6 +1754,65 @@ describe("send result notices", () => {
     });
   });
 
+  test("(4c) failed copy_check_error: the cause text and the Send again button", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      const failed = await ended(trx, o, {
+        status: "failed",
+        reason: "copy_check_error",
+        providerResult: { stage: "copy_check" },
+        attempts: 3,
+      });
+
+      await run(trx);
+
+      const result = await resultText(trx, o, failed.sendId);
+      expect(result.text).toContain("The system could not read the draft in your mailbox; nothing was sent");
+      expect(result.data).toEqual([`ag:${failed.sendId}`]);
+    });
+  });
+
+  test("(1c) the card line allows an edit in the mail client only while the flag draft_copy_check is on", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const off = await sendOrg(trx);
+      await waiting(trx, off);
+      const on = await sendOrg(trx);
+      await waiting(trx, on);
+      await setOrgFeature(trx, on.ctx, { flag: "draft_copy_check", enabled: true, actor: "cli", now: T });
+
+      await run(trx);
+
+      for (const row of await rows(trx, off.orgId, "approval")) {
+        expect(row.text).toContain("Do not send the draft from your mail client.");
+        expect(row.text).not.toContain("Edit here, or edit and send in your mail client.");
+      }
+      const flagged = await rows(trx, on.orgId, "approval");
+      expect(flagged.length).toBeGreaterThan(0);
+      for (const row of flagged) {
+        expect(row.text).toContain("Edit here, or edit and send in your mail client.");
+        expect(row.text).not.toContain("Do not send the draft from your mail client.");
+      }
+    });
+  });
+
+  test("(4b) expired draft_changed: the text names the edit in the mail client, and the draft stays", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      const changed = await ended(trx, o, { status: "expired", reason: "draft_changed" });
+      // The copy of a changed draft is kept: no reverse row removes it.
+      await run(trx);
+
+      const text = (await resultText(trx, o, changed.sendId)).text;
+      expect(text).toContain(
+        "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Quarterly offer"
+      );
+      expect(text).toContain("The draft stays in Drafts.");
+    });
+  });
+
   test("(5) rejected: the name of the rejecting owner", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);

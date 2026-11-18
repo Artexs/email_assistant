@@ -156,6 +156,8 @@ export const codeFieldNames = [
   "spam_outcome",
   // re-gate run: `start` (once, before the workers) or `job` (every 5 minutes)
   "run",
+  // the copy check before a send (F115 stage 08): `same`, `changed`, `missing` or `no_baseline`
+  "result",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;

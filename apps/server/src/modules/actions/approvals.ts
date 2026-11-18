@@ -337,7 +337,9 @@ export async function sendAgain(
     if (failed === undefined || failed.loop_id !== null) return { kind: "not_found" };
     if (
       failed.status !== "failed" ||
-      (failed.status_reason !== "outcome_unknown" && failed.status_reason !== "smtp_error")
+      (failed.status_reason !== "outcome_unknown" &&
+        failed.status_reason !== "smtp_error" &&
+        failed.status_reason !== "copy_check_error")
     ) {
       return { kind: "not_failed" };
     }

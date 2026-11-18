@@ -43,6 +43,13 @@ No double reply: the committer checks "already answered" right before a reply se
 - A `busy` older reply that the job left (an `applying` send, or an `approved` one under a fresh lock) is yours: the committer or the sweep ends it.
 - Notes: `notes/2026-11-18-f115-s07-drafter-job.md`.
 
+## Carry-over from stage 08
+
+- The copy check is in `applySend` as step (1b), before the send commits as `applying` (`copy-check.ts` `checkCopyBeforeSend`, `send.ts` `closeForCopy`). The pre-send pass of this stage goes before it, in the same place: answered and copy unchanged → `answered`; answered and copy missing → `sent_by_user`; answered and copy changed → `draft_changed`. `checkCopyBeforeSend` answers `close` with `draft_missing` for a missing copy; this stage maps it to `sent_by_user` when the mail is answered.
+- `ApplyOutcome` `expired` now has the reasons `draft_changed` and `draft_missing`. `closeSend` is called from the committer with `claimed: true` and `ApprovalHooks` from `CommitterDeps.approvalHooks` (wired in `committerDeps`); the sweep has no committer, so it passes its own hooks.
+- Result texts: stage 08 added `draft_changed` (en, pl; `SendResultKind`, `views.ts`, `send-result.ts` `EXPIRY_REASONS`). The reasons `answered`, `newer_mail`, `original_moved`, `suspicious` and `sent_by_user` still have none, and `closeSend(notify: true)` of them is skipped with a warning until you add them in the same four places. `draft_missing` says "the draft could not be created": a missing copy is a different cause; give it its own text.
+- A reply with no `copy_hash` ends `draft_missing` before the answered pass could say more: keep the answered check first.
+
 ## Carry-over from the stage 08 review
 
 - N2: after "edit and send in your mail client" a `draft_missing` end is the likely outcome (the user sent it, or the client dropped the `X-EA-Action-Id` header): its text "Not sent: the draft could not be created" is wrong: write a text that fits.

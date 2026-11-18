@@ -16,8 +16,17 @@ import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 import { locateByActionId, MailAuthError, SmtpSendError, type AuthErrorReason, type MailProvider } from "../mail";
 
-import { authErrorOutcome, inTransaction, loopHooksOf, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
+import {
+  approvalHooksOf,
+  authErrorOutcome,
+  inTransaction,
+  loopHooksOf,
+  type ApplyDeps,
+  type ApplyOutcome,
+} from "./apply-shared";
+import { closeSend, type CloseSendReason } from "./close";
 import { DELEGATION_DUE_AFTER_MS, HARD_ERROR_TRIES, RETRY_WAIT_MS, SEND_SOFT_CAP_MS } from "./constants";
+import { checkCopyBeforeSend, mustCheckCopy } from "./copy-check";
 import { buildDraftMessage, loopAnchorOf, recipientsFromLoop } from "./drafts";
 import { closeDraftOfSend } from "./expiry";
 import {
@@ -74,7 +83,7 @@ interface Prepared {
 }
 
 interface Failure {
-  reason: "smtp_rejected" | "smtp_error" | "outcome_unknown" | "bad_payload" | "has_gaps";
+  reason: "smtp_rejected" | "smtp_error" | "outcome_unknown" | "bad_payload" | "has_gaps" | "copy_check_error";
   // The row is `approved` before `markApplying` (payload and compose errors), else `applying`.
   from: "approved" | "applying";
   cancel: "send_failed" | "outcome_unknown";
@@ -374,19 +383,21 @@ async function composeFailed(
   deps: ApplyDeps,
   ctx: TenantContext,
   action: ClaimedAction,
-  error: unknown
+  error: unknown,
+  stage: "compose" | "copy_check" = "compose"
 ): Promise<ApplyOutcome> {
   const now = deps.now();
   const label = describeError(error);
   if (action.attempts + 1 >= SEND_HARD_TRIES) {
     return failSend(deps, ctx, action, {
-      reason: "smtp_error",
+      // An IMAP error of the copy check is not an SMTP error: it has its own reason and notice text.
+      reason: stage === "copy_check" ? "copy_check_error" : "smtp_error",
       from: "approved",
       cancel: "send_failed",
       lastError: label,
       countAttempt: true,
-      providerResult: { stage: "compose" },
-      auditData: { action_type: "send", stage: "compose", attempts: action.attempts + 1 },
+      providerResult: { stage },
+      auditData: { action_type: "send", stage, attempts: action.attempts + 1 },
     });
   }
   log.warn("send_retry", {
@@ -469,6 +480,78 @@ async function sendFailed(
       ...(outcome.capped ? { cap: SOFT_CAP_MARK } : {}),
     },
   });
+}
+
+// The read of the Drafts folder failed before the SMTP call (nothing is sent yet). A login error goes to the mailbox status. A soft
+// error puts the send back to `approved` for 5 minutes with no count; it counts against the soft cap, like a soft SMTP error. A
+// hard error counts as a try of the steps before `markApplying`.
+async function copyCheckFailed(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  action: ClaimedAction,
+  error: unknown
+): Promise<ApplyOutcome> {
+  const now = deps.now();
+  if (error instanceof MailAuthError) {
+    await releaseAction(deps.db, ctx, action.id, action.locked_at, {
+      toStatus: "approved",
+      nextAttemptAt: null,
+      countAttempt: false,
+      now,
+    });
+    return authErrorOutcome(error);
+  }
+  if (!(error instanceof SoftError)) return composeFailed(deps, ctx, action, error, "copy_check");
+  const label = describeError(error);
+  const sinceTapMs = action.approved_at === null ? 0 : now.getTime() - action.approved_at.getTime();
+  if (sinceTapMs >= SEND_SOFT_CAP_MS) {
+    return failSend(deps, ctx, action, {
+      reason: "copy_check_error",
+      from: "approved",
+      cancel: "send_failed",
+      lastError: label,
+      providerResult: { stage: "copy_check", cap: SOFT_CAP_MARK },
+      auditData: { action_type: "send", stage: "copy_check", cap: SOFT_CAP_MARK },
+    });
+  }
+  log.warn("send_retry", { action_id: action.id, send_stage: "copy_check", ...errorFields(error) });
+  await releaseAction(deps.db, ctx, action.id, action.locked_at, {
+    toStatus: "approved",
+    nextAttemptAt: new Date(now.getTime() + SEND_RETRY_WAIT_MS),
+    countAttempt: false,
+    now,
+    lastError: label,
+  });
+  return { kind: "retry", soft: true };
+}
+
+// The Drafts copy changed or is gone: the claimed send ends `expired` with the reason and no SMTP call is made. The copy stays
+// (the reverse row of the draft keeps a changed copy). `notify: true`: the owner gets a result notice. A send of a loop takes the
+// loop lock first.
+async function closeForCopy(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  action: ClaimedAction,
+  reason: Extract<CloseSendReason, "draft_changed" | "draft_missing">
+): Promise<ApplyOutcome> {
+  const closed = await inTransaction(deps.db, async (trx) => {
+    if (action.loop_id !== null) await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id);
+    return closeSend(trx, ctx, {
+      sendId: action.id,
+      reason,
+      notify: true,
+      claimed: true,
+      now: deps.now(),
+      deps: {
+        hooks: deps.hooks,
+        approvalHooks: approvalHooksOf(deps),
+        uidplus: () => Promise.resolve(deps.mailbox.capabilities.uidplus),
+      },
+    });
+  });
+  if (closed.kind !== "closed") return { kind: "lost" };
+  log.info("send_closed", { action_id: action.id, reason });
+  return { kind: "expired", reason };
 }
 
 // The loop of a follow-up is closed (or gone) after the tap. The claimed `approved` send ends `expired` / `loop_closed`, and
@@ -558,6 +641,14 @@ export async function applySend(
   }
   if (prepared === null || raw === null) return badPayload(deps, ctx, action);
   const { payload, message } = prepared;
+
+  // (1b) The edit check: the Drafts copy must be the one the system made. A reply always checks; another kind checks while the
+  // org flag is on. Before any commit of the send, so a closed send never counts against the send limits.
+  if (mustCheckCopy(deps, payload.kind)) {
+    const gate = await checkCopyBeforeSend(deps, action, provider, draft, payload.kind);
+    if (gate.kind === "error") return copyCheckFailed(deps, ctx, action, gate.error);
+    if (gate.kind === "close") return closeForCopy(deps, ctx, action, gate.reason);
+  }
 
   // (2) Own commit, before any SMTP call. The limit check and `markApplying` share one transaction under the mailbox lock (PD-044).
   // A follow-up goes only while its loop is open: `isOpen` takes the loop lock first, then the limit check and

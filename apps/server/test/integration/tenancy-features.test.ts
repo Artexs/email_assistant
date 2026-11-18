@@ -196,6 +196,7 @@ describe("org_features", () => {
         { flag: "spam_review_line", enabled: false, source: "default" },
         { flag: "bulk_unsubscribe", enabled: false, source: "default" },
         { flag: "reply_drafts", enabled: false, source: "default" },
+        { flag: "draft_copy_check", enabled: false, source: "default" },
       ]);
     });
   });

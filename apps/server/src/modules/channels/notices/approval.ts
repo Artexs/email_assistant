@@ -113,6 +113,8 @@ export async function approvalViewFor(
   view.version = draftVersion(draft);
   const panelUrl = panelUrlOf(options.panelBase, send.id);
   if (panelUrl !== undefined) view.panelUrl = panelUrl;
+  // The card line invites an edit in the mail client only where the system stops a changed copy (a reply, or the flag on).
+  if (await isFeatureOn(db, ctx, "draft_copy_check")) view.copyCheck = true;
   return { view, subject: message.subject, quote: message.parts.quote };
 }
 

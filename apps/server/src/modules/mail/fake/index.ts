@@ -303,10 +303,12 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
         const end = raw.indexOf("\r\n\r\n");
         return (await contentFromHeaderBlock(end < 0 ? raw : raw.subarray(0, end))) ?? { text: null, capture: null };
       }
-      const capture = (await contentFromSource(raw))?.capture ?? null;
+      const parsed = await contentFromSource(raw);
+      const capture = parsed?.capture ?? null;
       if (stored.msg.text !== undefined) return { text: stored.msg.text, capture };
       if (stored.msg.html !== undefined) return { text: stripTags(stored.msg.html), capture };
-      return { text: null, capture };
+      // A message that `appendMessage` stored has its bytes: the text is the one a server would read from them (the edit check of a draft).
+      return { text: stored.raw === undefined ? null : (parsed?.text ?? null), capture };
     },
 
     async fetchFlagsIn(folder, uids) {

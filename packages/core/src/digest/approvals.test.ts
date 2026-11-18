@@ -251,6 +251,70 @@ describe("renderApprovalRequest with an edited body", () => {
   });
 });
 
+describe("the texts of the copy check (the mail client edit)", () => {
+  test("the two card lines, in English and in Polish", () => {
+    expect(textTables.en.approvals.sendLine).toBe(
+      "The system sends it after your tap. Do not send the draft from your mail client."
+    );
+    expect(textTables.pl.approvals.sendLine).toBe(
+      "System wyśle wiadomość po naciśnięciu przycisku. Nie wysyłaj szkicu z programu pocztowego."
+    );
+    expect(textTables.en.approvals.sendLineEditable).toBe(
+      "The system sends it after your tap. Edit here, or edit and send in your mail client."
+    );
+    expect(textTables.pl.approvals.sendLineEditable).toBe(
+      "System wyśle wiadomość po naciśnięciu przycisku. Edytuj tutaj albo edytuj i wyślij w programie pocztowym."
+    );
+  });
+
+  test("N1: the editable line shows for a reply, or for any kind while the flag is on; the other cards keep the old line", () => {
+    const line = (over: Partial<ApprovalView>, lang: "en" | "pl") =>
+      renderApprovalRequest({ actionId: ID, view: view(over), now: NOW, timeZone: TZ }, textTables[lang]).text;
+    for (const lang of ["en", "pl"] as const) {
+      const a = textTables[lang].approvals;
+      expect(line({}, lang).endsWith(a.sendLine)).toBe(true);
+      expect(line({ kind: "clarification" }, lang).endsWith(a.sendLine)).toBe(true);
+      expect(line({ kind: "reply" }, lang).endsWith(a.sendLineEditable)).toBe(true);
+      expect(line({ copyCheck: true }, lang).endsWith(a.sendLineEditable)).toBe(true);
+      expect(line({ kind: "clarification", copyCheck: true }, lang).endsWith(a.sendLineEditable)).toBe(true);
+    }
+  });
+
+  test("a failed send with the cause copy_check says the draft could not be read and offers Send again (en, pl)", () => {
+    for (const [lang, text] of [
+      ["en", "The system could not read the draft in your mailbox; nothing was sent"],
+      ["pl", "System nie mógł odczytać szkicu w Twojej skrzynce; nic nie wysłano"],
+    ] as const) {
+      const message = renderSendResult(
+        {
+          actionId: ID,
+          sendKind: "reply",
+          result: { kind: "failed", cause: "copy_check", code: null, tries: 3 },
+          recipient: { name: null, address: "anna@example.com" },
+          subject: "Fwd: Offer",
+          synthetic: false,
+        },
+        textTables[lang]
+      );
+      expect(message.text).toContain(text);
+      expect(message.buttons).toHaveLength(1);
+    }
+  });
+
+  test("the result of a changed draft says the user edited it and must send it from the mail client", () => {
+    expect(textTables.en.approvals.sendResult.expired.draft_changed("Fwd: Offer")).toBe(
+      "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Offer"
+    );
+    expect(textTables.pl.approvals.sendResult.expired.draft_changed("Fwd: Offer")).toBe(
+      "✏️ Szkic został zmieniony w programie pocztowym. Wyślij go stamtąd. · Fwd: Offer"
+    );
+    expect(textTables.en.approvals.followUp.expired.draft_changed).toBe(
+      "✏️ Follow-up not sent: you edited this draft in your mail client. Send it from there."
+    );
+    expect(textTables.pl.approvals.followUp.expired.draft_changed).toContain("Wyślij go stamtąd.");
+  });
+});
+
 const PANEL_URL = "https://ea.example.ts.net/approvals?id=7f1c0d1e-0000-4000-8000-000000000001";
 const SEND_LINE_EN = "The system sends it after your tap. Do not send the draft from your mail client.";
 
@@ -572,6 +636,7 @@ describe("renderSendResult", () => {
     ],
     ["delegation_closed", "⌛ Not sent: the delegation was closed · Fwd: Offer", "draft"],
     ["policy_changed", "⌛ Not sent: the setting was changed · Fwd: Offer", "both"],
+    ["draft_changed", "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Offer", "both"],
   ];
 
   test.each(sendKinds)("expired (%s)", (sendKind) => {
@@ -654,6 +719,7 @@ describe("Polish send results", () => {
         "held_timeout",
         "delegation_closed",
         "policy_changed",
+        "draft_changed",
       ] as const
     ).map((reason): SendResultKind => ({ kind: "expired", reason, draftRemoved: false })),
   ];

@@ -32,6 +32,7 @@ import type { DB, Db, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertDraftAndSend, insertTriaged, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { putDraftCopy } from "./reply-fixtures";
 
 // F115 stage 04: the draft kind `reply` through the actions module. The payloads are built by hand: nothing makes a reply yet.
 // Every test runs in a transaction that is rolled back.
@@ -158,6 +159,7 @@ async function approvedReply(
     cc: opts.cc ?? [],
     ...(opts.sendCc === undefined ? {} : { sendCc: opts.sendCc }),
   });
+  await putDraftCopy(trx, s, p, NOW);
   if (opts.fromName !== undefined) {
     await trx
       .insertInto("email_headers")
@@ -251,7 +253,6 @@ describe("a reply send through the committer (F115 stage 04)", () => {
       // A reply goes out only while the org flag `reply_drafts` is on (stage 05): the committer run below needs it.
       await setOrgFeature(trx, s.ctx, { flag: "reply_drafts", enabled: true, actor: "cli", now: NOW });
       const p = await approvedReply(trx, s, { cc: [CC] });
-      await s.fake.appendMessage("Drafts", Buffer.from("x"), ["\\Draft"], CREATED);
 
       const only = await claimAll(trx, s, { kind: "self", addresses: [TO] });
       expect(only.map((entry) => entry.id)).not.toContain(p.sendId);

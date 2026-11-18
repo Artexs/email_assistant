@@ -189,6 +189,13 @@ export const featureFlags = {
     epic: "E6a",
     removeBy: "2027-06-01",
   },
+  draft_copy_check: {
+    default: false,
+    description:
+      "Before a send, the system compares the Drafts copy with the one it made and stops when you changed it (reply drafts always check).",
+    epic: "E6a",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

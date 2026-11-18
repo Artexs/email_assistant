@@ -105,7 +105,7 @@ export async function closeLockedSend(
   if (typeof delegationId === "string" && !("reminder" in send.payload) && opts.reason !== "delegation_closed") {
     await opts.hooks.onCancelled(trx, ctx, {
       delegationId,
-      reason: opts.reason === "draft_missing" ? "draft_missing" : "expired",
+      reason: opts.reason === "draft_missing" || opts.reason === "draft_changed" ? opts.reason : "expired",
       at: opts.now,
     });
   }

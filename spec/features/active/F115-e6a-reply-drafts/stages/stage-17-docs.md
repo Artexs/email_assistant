@@ -20,3 +20,9 @@ The docs say what the code does (PD-009). No code change except a doc test that 
 ## Carry-over from the stage 07 review
 
 - N6: fix the `dataReceived` text of the `openai` and `gemini` rows (`packages/core/src/legal/subprocessors.ts`), the claims C136 and C139 and the privacy text: the drafter sends the mailbox profile, the instruction and the org time zone as well; one TERMS_VERSION bump with the F107 P5 rule.
+
+## Carry-over from stage 08
+
+- `docs/capabilities/drafts-and-send.md` already has the bullet "Copy hash (F115 stage 08)", and the lines about mail client edits (rule 16 text and the Limits bullet) are updated; this stage re-reads them with the final behaviour and the stage 09 pass.
+- The docs site pages `apps/docs/src/content/docs/explanation/never-sends-alone.mdx` and `how-to/approve-a-send.mdx` (and `pl/how-to/approve-a-send.mdx`) still say "Do not send the draft from your mail client". Rewrite them in the F107 style once the flag `draft_copy_check` is on for the pilot; the flag is default off, so a page must not state the stop as sure (`apps/docs/src/flagged-text.ts` `NO_VISIBLE_TEXT.draft_copy_check` holds the reason).
+- `docs/known-alerts.md` has the entry `draft_copy_unhashed`. New events: `draft_copy_unhashed`, `draft_copy_kept`, `reply_send_checked` (code field `result`, new in `platform/log-fields.ts`).

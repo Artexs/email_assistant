@@ -161,6 +161,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Read the `committer_*` lines of the same run and the code of `committer.ts` (`needs` of the handler). File a bug with the action type.
 - **Status:** investigating
 
+### `draft_copy_unhashed` (fields `action_id`, `error_code`)
+
+- **First seen:** 2026-11-18 (F115 stage 08; not seen live)
+- **Source:** `apps/server/src/modules/actions/drafts.ts` (`copyBaseline`, level `warn`).
+- **Cause:** The draft step made its copy in Drafts, but the read of that copy right after the APPEND failed (`error_code` is the error name or code), found no copy (`copy_not_found`) or could not read its text (`text_unreadable`). The draft stays `applied` with no `provider_result.copy_hash`, so the copy check has no baseline.
+- **Fix:** No action for one line. A reply send of that draft never sends: it ends `draft_missing` and the copy stays. Run `bun run reply:check-copy --org-id <uuid> --action-id <draft id>` to see what the server holds. If many lines appear for one mailbox, read the IMAP lines of the same time (the server may not return the text of a new draft at once).
+- **Status:** investigating
+
 ### `send_waits_for_draft` (field `action_id`; before F103: `action <id>: the draft is not applied; the send waits`)
 
 - **First seen:** 2026-11-15 (F103 stage 09)
