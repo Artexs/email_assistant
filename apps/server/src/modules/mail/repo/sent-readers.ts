@@ -1,8 +1,10 @@
+import { sql } from "kysely";
+
 import type { TenantContext } from "../../../platform/db";
 import { HardError } from "../../../platform/errors";
 
 import { getSentSyncState, isSentErrorCode, type SentErrorCode } from "./sent-state";
-import type { DbOrTrx } from "./shared";
+import { notAutomaticSql, type DbOrTrx } from "./shared";
 
 const ANSWER_CHUNK = 500;
 
@@ -12,7 +14,9 @@ export interface UserAnswer {
 }
 
 // The earliest reply of the user to each incoming mail: a user row of the same mailbox, in any Sent folder, whose parent id is the
-// mail's Message-ID. A system send never counts. The order is the send time, then the row id. Ids without a reply are absent.
+// mail's Message-ID. A system send never counts. It must also go to the sender of the mail or to its Reply-To (a forward to a colleague
+// that keeps the thread headers is no answer), and it must not be automatic (`Auto-Submitted` other than `no`: a vacation reply is no
+// answer). A row whose recipients were cleared by the retention is not judged by the recipient rule. The order is the send time, then the row id. Ids without a reply are absent.
 export async function listUserAnswers(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -29,12 +33,24 @@ export async function listUserAnswers(
           .onRef("s.mailbox_id", "=", "e.mailbox_id")
           .onRef("s.parent_message_id", "=", "e.message_id_header")
       )
+      .leftJoin("email_headers as h", (join) =>
+        join.onRef("h.email_id", "=", "e.id").onRef("h.org_id", "=", "e.org_id")
+      )
       .distinctOn("e.id")
       .select(["e.id as emailId", "s.id as sentEmailId", "s.sent_at as answeredAt"])
       .where("e.org_id", "=", ctx.orgId)
       .where("e.id", "in", chunk)
       .where("s.org_id", "=", ctx.orgId)
       .where("s.origin", "=", "user")
+      // One recipient of the Sent mail (To or Cc) is the sender of the mail or an address of its Reply-To. Stored addresses are lower case.
+      // A row with no stored recipient (the retention cleared its headers, or the mail had only Bcc) cannot be judged and counts as before.
+      .where(
+        sql<boolean>`(
+          cardinality(s.to_addresses || s.cc_addresses) = 0
+          OR (s.to_addresses || s.cc_addresses) && (ARRAY[e.from_address_lower] || COALESCE(h.reply_to, '{}'::text[]))
+        )`
+      )
+      .where(sql<boolean>`${sql.raw(notAutomaticSql("s.auto_submitted"))}`)
       .orderBy("e.id")
       .orderBy("s.sent_at")
       .orderBy("s.id")
