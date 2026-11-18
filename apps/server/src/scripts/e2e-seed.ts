@@ -29,8 +29,8 @@ import { seedApprovalsRows } from "./e2e-approvals-rows";
 import { seedDelegationsRows } from "./e2e-delegations-rows";
 import { seedLoopsRows } from "./e2e-loops-rows";
 import { seedNewsletterRows } from "./e2e-newsletter-rows";
-import { seedReviewRows } from "./e2e-review-rows";
 import { seedOpenLoopsRows } from "./e2e-open-loops-rows";
+import { seedReviewRows } from "./e2e-review-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_APPROVALS_MEMBER_EMAILS,

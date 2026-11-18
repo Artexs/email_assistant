@@ -8,7 +8,7 @@ import { setLocaleForTest, t } from "../i18n";
 import { en } from "../i18n/en";
 import { pl } from "../i18n/pl";
 import { reviewPath, reviewSamplePath } from "./review-api";
-import { canConfirm, pickCategories, reviewFinished } from "./review-view";
+import { canConfirm, pickCategories, reviewFinished, reviewHrefFor } from "./review-view";
 
 afterEach(() => setLocaleForTest("en"));
 
@@ -66,6 +66,12 @@ describe("the review rules", () => {
     expect(reviewFinished(10, 10, false)).toBe(true);
     expect(reviewFinished(10, 3, true)).toBe(true);
     expect(reviewFinished(0, 0, false)).toBe(false);
+  });
+
+  test("the report page links to the review only with the flag on", () => {
+    expect(reviewHrefFor(["trust_ladder"], MAILBOX)).toBeNull();
+    expect(reviewHrefFor([], MAILBOX)).toBeNull();
+    expect(reviewHrefFor(["trust_ladder", "panel_review"], MAILBOX)).toBe(`/review?mailbox=${MAILBOX}`);
   });
 
   test("the paths carry the mailbox id", () => {

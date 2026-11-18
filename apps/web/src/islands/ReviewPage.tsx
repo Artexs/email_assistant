@@ -21,6 +21,7 @@ import { canWrite } from "../lib/can-write";
 import { errorText } from "../lib/errors";
 import { pickReportMailbox } from "../lib/report-view";
 import { fetchReviewSample, postReviewLabel } from "../lib/review-api";
+import { PANEL_REVIEW_FLAG } from "../lib/review-view";
 import { reportPath } from "../lib/trust-api";
 import { useNow } from "../lib/use-now";
 import { useResource } from "../lib/use-resource";
@@ -100,7 +101,7 @@ function Review() {
   if (me === null) return null;
 
   // The flag is off: the page asks for nothing (the review routes would answer 404).
-  if (!me.features.includes("panel_review")) {
+  if (!me.features.includes(PANEL_REVIEW_FLAG)) {
     return (
       <Card>
         <CardContent>

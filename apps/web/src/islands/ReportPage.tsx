@@ -18,8 +18,8 @@ import { t, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { errorText } from "../lib/errors";
-import { reviewPath } from "../lib/review-api";
 import { pickReportMailbox, shouldPoll } from "../lib/report-view";
+import { reviewHrefFor } from "../lib/review-view";
 import { historyCheckPath, recommendedPath, trustPath } from "../lib/trust-api";
 import { useResource } from "../lib/use-resource";
 
@@ -33,7 +33,15 @@ function Loading() {
 }
 
 // One mailbox. The parent remounts it (`key`) when the choice changes, so a view never shows next to another mailbox.
-function MailboxReport({ mailboxId, isOwner, reviewOn }: { mailboxId: string; isOwner: boolean; reviewOn: boolean }) {
+function MailboxReport({
+  mailboxId,
+  isOwner,
+  features,
+}: {
+  mailboxId: string;
+  isOwner: boolean;
+  features: readonly string[];
+}) {
   const [poll, setPoll] = useState(true);
   const { data, error, loading, reload, mutate } = useResource(() => api(trustPath(mailboxId), trustViewSchema), {
     pollMs: poll ? 30_000 : 0,
@@ -96,7 +104,7 @@ function MailboxReport({ mailboxId, isOwner, reviewOn }: { mailboxId: string; is
       isOwner={isOwner}
       pending={pending}
       turnedOn={turnedOn}
-      reviewHref={reviewOn ? reviewPath(mailboxId) : null}
+      reviewHref={reviewHrefFor(features, mailboxId)}
       onTurnOn={() => void turnOn()}
       onCheckAgain={() => void checkAgain()}
     />
@@ -154,12 +162,7 @@ function Report() {
   return (
     <div className="flex max-w-3xl flex-col gap-4">
       {list.length >= 2 && <MailboxSelector mailboxes={list} value={mailbox.id} onChange={choose} />}
-      <MailboxReport
-        key={mailbox.id}
-        mailboxId={mailbox.id}
-        isOwner={isOwner}
-        reviewOn={me.features.includes("panel_review")}
-      />
+      <MailboxReport key={mailbox.id} mailboxId={mailbox.id} isOwner={isOwner} features={me.features} />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import {
   type ReviewLabelCategory,
 } from "@ea/core/web";
 
+import { reviewPath } from "./review-api";
+
 // What the user answered for one item (this page load only).
 export interface ReviewAnswer {
   saved: boolean;
@@ -29,4 +31,12 @@ export function pickCategories(sample: PanelReviewSample, item: PanelReviewItem)
 // The thank-you shows after the last item is answered, or when the user taps "Done". It is never a required step.
 export function reviewFinished(total: number, answered: number, doneTapped: boolean): boolean {
   return doneTapped || (total > 0 && answered >= total);
+}
+
+// The flag of the review: the page and the link of the report page read it from `me.features`.
+export const PANEL_REVIEW_FLAG = "panel_review";
+
+// The link of the report page to the review: only while the flag is on for the organization. `null`: no link.
+export function reviewHrefFor(features: readonly string[], mailboxId: string): string | null {
+  return features.includes(PANEL_REVIEW_FLAG) ? reviewPath(mailboxId) : null;
 }
