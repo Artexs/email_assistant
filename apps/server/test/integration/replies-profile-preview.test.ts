@@ -327,15 +327,15 @@ describe("POST /api/mailboxes/:id/profile/preview", () => {
     const first = await noDraft.post(noDraft.mine);
     expect(await first.json()).toEqual({ kind: "failed", reason: "no_draft" });
 
-    const broken = await setup({ script: () => new LlmHardError("provider said no") });
+    const broken = await setup({ script: () => new LlmHardError("http_400", "fake-drafter") });
     const second = await broken.post(broken.mine);
     expect(second.status).toBe(200);
     const body = (await second.json()) as { kind: string; reason: string };
     expect(body.kind).toBe("failed");
-    expect(body.reason).not.toBe("");
+    expect(body.reason).toBe("http_400");
     expect(await previewRows(broken.org.orgId)).toHaveLength(1);
 
-    const soft = await setup({ script: () => new LlmSoftError("quota") });
+    const soft = await setup({ script: () => new LlmSoftError("http_429", "fake-drafter") });
     expect(((await (await soft.post(soft.mine)).json()) as { kind: string }).kind).toBe("failed");
   });
 

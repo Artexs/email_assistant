@@ -223,7 +223,7 @@ describe("the switch reply_drafts (F115 stage 10 step 1)", () => {
       // Off is always accepted: a stored `true` (made before the guard, or by hand) can go off.
       await trx
         .updateTable("mailbox_settings")
-        .set({ tool_switches: { ...before.tool_switches, reply_drafts: true } })
+        .set({ tool_switches: { ...(before.tool_switches as Record<string, unknown>), reply_drafts: true } })
         .where("mailbox_id", "=", s.mailboxId)
         .execute();
       const off = await setToolSwitch(deps, s.ctx, s.mailboxId, {

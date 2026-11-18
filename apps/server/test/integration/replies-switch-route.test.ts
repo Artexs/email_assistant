@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { sql } from "kysely";
 
 import { insertDefaultSettings, settingsRoutes } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
@@ -176,7 +177,7 @@ describe("PATCH /api/settings/:mailboxId/switches/reply_drafts", () => {
       .select("id")
       .where("org_id", "=", org.orgId)
       .where("event", "=", "mailbox.switch_changed")
-      .where(({ eb, ref }) => eb(ref("data", "->>").key("mailbox_id"), "=", oauth))
+      .where(sql<string>`data->>'mailbox_id'`, "=", oauth)
       .execute();
     expect(audits).toEqual([]);
 
