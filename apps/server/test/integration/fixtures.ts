@@ -413,7 +413,7 @@ export async function insertDraftAndSend(
   ctx: TenantContext,
   mailboxId: string,
   opts: {
-    kind?: "delegation" | "clarification" | "reminder";
+    kind?: "delegation" | "clarification" | "reminder" | "reply";
     draftStatus?: string;
     sendStatus?: string;
     to?: string;
@@ -438,6 +438,10 @@ export async function insertDraftAndSend(
     setId?: string;
     delegationId?: string;
     reminder?: 1 | 2;
+    // Kind `reply` (F115): the Cc of the draft, the Cc of the send when it differs, and the draft body. `to` is the To.
+    cc?: string[];
+    sendCc?: string[];
+    replyBody?: string;
     // F079: also insert the `sent` outbox row of the approval request, for the first member of the organization.
     requestSent?: boolean;
   }
@@ -458,23 +462,35 @@ export async function insertDraftAndSend(
   const draft: DraftPayload =
     kind === "clarification"
       ? { kind, to: [to], question: task, language }
-      : kind === "reminder"
+      : kind === "reply"
         ? {
             kind,
-            ...delegate,
-            delegation_id: opts.delegationId ?? randomUUID(),
-            reminder: opts.reminder ?? 1,
-            thread: { in_reply_to: null, references: [] },
+            to: [to],
+            cc: opts.cc ?? [],
+            language,
+            body: opts.replyBody ?? "Thank you, I will check and reply.",
+            request_id: randomUUID(),
+            folder: "INBOX",
+            recipients: "from",
           }
-        : { kind, ...delegate };
+        : kind === "reminder"
+          ? {
+              kind,
+              ...delegate,
+              delegation_id: opts.delegationId ?? randomUUID(),
+              reminder: opts.reminder ?? 1,
+              thread: { in_reply_to: null, references: [] },
+            }
+          : { kind, ...delegate };
   const draftPayload: Record<string, unknown> = { ...draft };
   if (opts.delegationId !== undefined) draftPayload.delegation_id = opts.delegationId;
   const sendPayload: Record<string, unknown> = { ...sendPayloadFor(draft) };
+  if (opts.sendCc !== undefined) sendPayload.cc = opts.sendCc;
   if (opts.delegationId !== undefined) sendPayload.delegation_id = opts.delegationId;
   if (opts.setId !== undefined) sendPayload.set_id = opts.setId;
 
   const emailId = await insertTriaged(trx, ctx, mailboxId, {
-    category: kind === "clarification" ? "needs_reply" : "delegation",
+    category: kind === "clarification" || kind === "reply" ? "needs_reply" : "delegation",
     createdAt,
     subject: opts.subject,
     from: opts.from,

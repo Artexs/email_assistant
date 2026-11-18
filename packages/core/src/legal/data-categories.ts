@@ -253,7 +253,8 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["reply_requests.instruction", "reply_requests.sample_body"],
     subjects: ["users", "others"],
-    // The same period as the other AI texts: `clearActionPayloads` and the reply text clear use one cut-off (retention job).
+    // The text period of the retention job (`RETENTION_TEXT_DAYS`, the same for every organization), counted from `reply_requests.created_at`
+    // (`clearReplyTexts`, `docs/architecture.md` §7). `legal-retention.test.ts` ties the number and the column to the job and the papers.
     kept: { kind: "days", days: 90 },
   },
   {
@@ -266,6 +267,18 @@ export const dataCategories: readonly DataCategory[] = [
     columns: ["mailbox_profiles.*"],
     // A signature can name a colleague or a contact: the DSR address map covers these columns (`address-map.ts`).
     subjects: ["users", "others"],
+    kept: untilDelete,
+  },
+  {
+    id: "unsubscribe-data",
+    label: { en: "Unsubscribe requests", pl: "Prośby o wypisanie z list" },
+    purpose: {
+      en: "The address and the domain of a mailing-list sender that you asked to unsubscribe from, and the result of the request",
+      pl: "Adres i domena nadawcy listy mailingowej, z której poprosiłeś o wypisanie, oraz wynik tej prośby",
+    },
+    columns: ["unsubscribe_requests.*"],
+    // The sender is a third party. A data-request erase of the sender deletes the row (`address-map.ts`, rule `delete`).
+    subjects: ["others"],
     kept: untilDelete,
   },
   {

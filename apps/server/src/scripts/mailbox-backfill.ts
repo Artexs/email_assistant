@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { isOwnActionId } from "../modules/actions";
+import { isOwnMailOf } from "../composition";
 import { backfillMailbox, configureMailHosts, CursorMovedError } from "../modules/mail";
 import { requeueBackfillWindow } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
@@ -71,7 +71,7 @@ async function main(): Promise<number> {
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
     const now = new Date();
     const result = await backfillMailbox(
-      { db, secrets, isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId) },
+      { db, secrets, isOwnActionId: isOwnMailOf(db) },
       { orgId: options.orgId },
       options.mailboxId,
       {

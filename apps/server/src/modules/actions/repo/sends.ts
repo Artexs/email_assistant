@@ -11,6 +11,8 @@ import type { DbOrTrx } from "./shared";
 export interface SendMail {
   subject: string | null;
   from_address: string | null;
+  /** `email_headers.from_name`: the display name of the sender, or null (a reply quotes it). */
+  from_name: string | null;
   message_id_header: string | null;
   received_at: Date;
   references_header: string | null;
@@ -73,6 +75,12 @@ export function sendBase(db: DbOrTrx, ctx: TenantContext) {
       "actions.last_error",
       "actions.locked_at",
       sql<string | null>`coalesce(emails.mailbox_id, open_loops.mailbox_id)`.as("mailbox_id"),
+      // The display name of the sender (a reply quotes it); null when the mail has no header row or no name.
+      sql<
+        string | null
+      >`(SELECT h.from_name FROM email_headers h WHERE h.email_id = emails.id AND h.org_id = emails.org_id)`.as(
+        "from_name"
+      ),
       "emails.subject",
       "emails.from_address",
       "emails.message_id_header",
@@ -98,6 +106,7 @@ export function toSendRow(row: SendQueryRow): SendRow {
     email = {
       subject: row.subject,
       from_address: row.from_address,
+      from_name: row.from_name,
       message_id_header: row.message_id_header,
       received_at: row.received_at,
       references_header: row.references_header,

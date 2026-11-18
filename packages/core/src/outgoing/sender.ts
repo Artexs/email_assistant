@@ -26,7 +26,7 @@ export interface ApprovalView {
   body: string; // parts.body
   quote: { text: string; cut: boolean } | null;
   synthetic: boolean;
-  // A follow-up only (see `approvalViewSchema`).
+  // A follow-up, and a reply (see `approvalViewSchema`).
   to?: string[];
   cc?: string[];
   followUpNumber?: 1 | 2;
@@ -68,6 +68,10 @@ export function approvalViewOf(
           cc: message.cc.map((entry) => entry.address),
           followUpNumber: draft.n,
         }
+      : {}),
+    // A reply may carry a Cc after "Reply all": the card and the panel spell every recipient out.
+    ...(draft.kind === "reply"
+      ? { to: message.to.map((entry) => entry.address), cc: message.cc.map((entry) => entry.address) }
       : {}),
   };
 }

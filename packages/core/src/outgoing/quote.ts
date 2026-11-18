@@ -31,6 +31,20 @@ export function cleanFromAddress(fromAddress: string | null): string {
   return clean === "" ? "(unknown sender)" : clean;
 }
 
+// The `> `-prefixed lines of a quoted text, cut at `QUOTE_MAX_CHARS` code points. CRLF becomes LF. An empty text gives "(no text)".
+export function quotedLines(text: string | null): string {
+  const normalized = (text ?? "").replace(/\r\n?/g, "\n");
+  let body = "(no text)";
+  if (normalized.trim() !== "") {
+    const points = Array.from(normalized);
+    body = points.length > QUOTE_MAX_CHARS ? `${points.slice(0, QUOTE_MAX_CHARS).join("")} […]` : normalized;
+  }
+  return body
+    .split("\n")
+    .map((line) => `> ${line}`)
+    .join("\n");
+}
+
 // The body is sender text: it is quoted as it is (the delegate must see the original). The header values are cleaned.
 export function quoteOriginal(original: OriginalMail, language: "pl" | "en", timezone: string): string {
   const from = cleanFromAddress(original.fromAddress);
@@ -40,17 +54,7 @@ export function quoteOriginal(original: OriginalMail, language: "pl" | "en", tim
     language === "pl"
       ? `--- Oryginalna wiadomość ---\nOd: ${from}\nData: ${date}\nTemat: ${subject}\n\n`
       : `--- Original message ---\nFrom: ${from}\nDate: ${date}\nSubject: ${subject}\n\n`;
-  const normalized = (original.bodyText ?? "").replace(/\r\n?/g, "\n");
-  let body = "(no text)";
-  if (normalized.trim() !== "") {
-    const points = Array.from(normalized);
-    body = points.length > QUOTE_MAX_CHARS ? `${points.slice(0, QUOTE_MAX_CHARS).join("")} […]` : normalized;
-  }
-  const quoted = body
-    .split("\n")
-    .map((line) => `> ${line}`)
-    .join("\n");
-  return `${header}${quoted}`;
+  return `${header}${quotedLines(original.bodyText)}`;
 }
 
 // Cuts on a line end when possible, for the approval message. Counts code points: no lone surrogate.

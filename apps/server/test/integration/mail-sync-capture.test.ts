@@ -66,6 +66,7 @@ async function rows(trx: Db | Transaction<DB>, mailboxId: string) {
       "email_headers.email_id as header_id",
       "email_headers.reply_to",
       "email_headers.list_unsubscribe",
+      "email_headers.list_unsubscribe_post",
       "email_headers.return_path",
       "email_headers.parts_known",
     ])
@@ -124,6 +125,31 @@ describe("sync stores the capture", () => {
         .select((eb) => eb.fn.countAll<string>().as("n"))
         .executeTakeFirstOrThrow();
       expect(Number(count.n)).toBe(2);
+    });
+  });
+
+  test("2b: the sync stores list_unsubscribe_post: true for one-click, false for a plain link, false without a link", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const link = "<https://u.test/x>";
+      s.fake.deliver(
+        "INBOX",
+        seed(1, { headers: { "List-Unsubscribe": link, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } })
+      );
+      s.fake.deliver(
+        "INBOX",
+        seed(2, { headers: { "List-Unsubscribe": link, "List-Unsubscribe-Post": "list-unsubscribe=one-click " } })
+      );
+      s.fake.deliver("INBOX", seed(3, { headers: { "List-Unsubscribe": link } }));
+      s.fake.deliver("INBOX", seed(4));
+
+      await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect((await rows(trx, s.mailboxId)).map((row) => row.list_unsubscribe_post)).toEqual([
+        true,
+        true,
+        false,
+        false,
+      ]);
     });
   });
 

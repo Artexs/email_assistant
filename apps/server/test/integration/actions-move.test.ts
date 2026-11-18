@@ -665,6 +665,7 @@ describe("ensureMoved", () => {
     message_id_header: MESSAGE_ID,
     content_hash: hash,
     from_address: "sender@x.test",
+    from_name: null,
     to_addresses: [],
     received_at: RECEIVED,
     subject: "s",

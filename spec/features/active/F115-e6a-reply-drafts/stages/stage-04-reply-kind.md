@@ -31,6 +31,7 @@ Adds the draft kind `reply` along the checklist "Add a draft kind" (`docs/code-p
 ## Step 3 — Name and signature per mailbox (every kind)
 
 - **Goal:** the committer, `editApproval` and the approval view read `mailboxProfileOf` and pass the display name and signature to `buildOutgoingMessage` with the D13 fallbacks.
+- **Decision (review 3 N5, set in stage 03b):** `mailbox_profiles.signature` is a snapshot of `organizations.style_text` from the migration. The fallback order stays D13 and is read at send time: the profile `signature` when it is not null → the current `organizations.style_text` (when there is no profile row, or the signature is null, e.g. a mailbox made after the migration or a signature the owner cleared) → the owner name. The profile never copies the org text again. After stage 11 the org card is read-only, so `style_text` stops changing and the two sources cannot drift. `mailboxProfileOf` returns `null` for a mailbox without a row: handle it as "signature null".
 - **Test (integration):**
   1. Profile display name `"Anna Nowak"` → `From: "Anna Nowak" <box@x>` for a delegation draft.
   2. No profile row and org `style_text` `"Pozdrawiam, Jan"` → that signature (today's text, no change).

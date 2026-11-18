@@ -2,6 +2,7 @@ export * from "./address";
 export * from "./analysis";
 export * from "./categories";
 export * from "./cost";
+export * from "./dkim-pass";
 export * from "./escalation";
 export * from "./eval-case";
 export * from "./expire-filter";

@@ -890,6 +890,7 @@ export const pl: Record<TextKey, string> = {
   appr_title_clarification: "Pytanie do nadawcy: {to}",
   appr_title_reminder: "Przypomnienie: {to}",
   appr_title_follow_up: "Przypomnienie o odpowiedzi: {to}",
+  appr_title_reply: "Odpowiedź do {to}",
   appr_inactive: "(nieaktywny wykonawca)",
   appr_test_mail: "Wiadomość testowa",
   appr_from: "Od",
@@ -1076,6 +1077,33 @@ export const pl: Record<TextKey, string> = {
   title_approvals: "Zatwierdzenia",
   title_delegates: "Wykonawcy",
   title_delegations: "Zlecenia",
+  // F116 stage 22: the Delegate action on a mail row, the open-loop settings and the new Telegram terms
+  dla_button: "Zleć",
+  dla_title: "Zleć tę wiadomość",
+  dla_text:
+    "Wybierz wykonawcę. Asystent przygotuje szkic dla tej osoby. Nic nie zostanie wysłane przed Twoim zatwierdzeniem.",
+  dla_select_label: "Wykonawca",
+  dla_select_placeholder: "Wybierz wykonawcę",
+  dla_submit: "Zleć",
+  dla_done: "Zlecenie przygotowane jako szkic. Zatwierdź je, aby je wysłać.",
+  dla_done_link: "Otwórz zatwierdzenie",
+  dla_exists: "Ta wiadomość ma już zlecenie.",
+  dla_exists_link: "Otwórz zlecenie",
+  dla_inactive: "Ten wykonawca jest wyłączony. Wybierz innego wykonawcę.",
+  dla_drafts_off: "Zlecanie wymaga trybu asystenta z włączonymi szkicami.",
+  dla_not_delegable: "Tej wiadomości nie można zlecić.",
+  lset_title: "Otwarte sprawy",
+  lset_needs_sent: "Włącz „Śledź moją wysłaną pocztę”, aby korzystać z otwartych spraw.",
+  lset_wait_label: "Czas oczekiwania przed przypomnieniem",
+  lset_wait_help: "Liczone w dniach roboczych (od poniedziałku do piątku).",
+  lset_wait_toast: "Zapisano czas oczekiwania przed przypomnieniem.",
+  lset_auto_label: "Przygotowuj przypomnienia automatycznie",
+  lset_auto_help: "Szkice nadal czekają na Twoje zatwierdzenie, zanim zostaną wysłane.",
+  lset_auto_on_toast: "Przypomnienia będą przygotowywane automatycznie.",
+  lset_auto_off_toast: "Przypomnienia nie będą przygotowywane automatycznie.",
+  tgc_title: "Nowe zasady Telegrama: otwarte sprawy",
+  tgc_confirm: "Potwierdź",
+  tgc_confirmed_toast: "Potwierdzono nowe zasady Telegrama.",
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).
@@ -1101,4 +1129,6 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
     few: "Anulowano {count} zaplanowane akcje.",
     many: "Anulowano {count} zaplanowanych akcji.",
   },
+  // F116 stage 22
+  lset_wait_days: { one: "1 dzień roboczy", few: "{count} dni robocze", many: "{count} dni roboczych" },
 };

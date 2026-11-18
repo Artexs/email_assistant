@@ -13,7 +13,7 @@ export interface TermsHistoryEntry {
 // `spec/features/active/F107-e7-t4-papers-and-cost/plan.md`).
 export const TERMS_HISTORY: readonly TermsHistoryEntry[] = [
   { version: "2026-11-12", sha256: null }, // the stub era
-  { version: "2026-11-17", sha256: "03ba1a09694fe82ccfe18190b893a71ff96f7f791fa26312a2f514710d8b4ec9" },
+  { version: "2026-11-17", sha256: "19879c6e6fec34e7eac3f75d873be45400dcc8c048e0b88dae19d6c28c5eec5a" },
 ];
 
 function lastVersion(history: readonly TermsHistoryEntry[]): string {

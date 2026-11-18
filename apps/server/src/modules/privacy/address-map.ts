@@ -11,7 +11,9 @@
 //   json        a jsonb document; the address anywhere in its text form (`addressRegex`)
 //   equal       one address; the whole value equals the address
 //   list        a row that the operator reads and the owner decides on (a delegate, a rule); never changed
-export type AddressRule = "sender" | "recipients" | "text" | "json" | "equal" | "list";
+//   delete      one address; the whole value equals the address, and the erase deletes the row (not a cleaned value: a
+//               NOT NULL value that becomes `''` would hit a unique key on the second erase)
+export type AddressRule = "sender" | "recipients" | "text" | "json" | "equal" | "list" | "delete";
 
 export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, AddressRule>>>> = {
   emails: {
@@ -51,6 +53,11 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     display_name: "text",
     signature: "text",
     writing_style: "text",
+  },
+  // The sender that the user asked to unsubscribe from (F110): a third-party address. The erase of the sender deletes the
+  // row. `sender_domain` is its domain part (no address): it goes with the row, see `NOT_PERSONAL`.
+  unsubscribe_requests: {
+    sender_lower: "delete",
   },
   email_headers: {
     // The display name can be an address (`"p@x.test" <r@x.test>`), so a kept mail can hold the person's address here.
@@ -170,6 +177,14 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ...reasons(
     ["email_headers.list_unsubscribe"],
     "the unsubscribe link or mailto of a mailing list; a mailto holds the subscriber, normally the organization's own mailbox"
+  ),
+  ...reasons(
+    ["unsubscribe_requests.sender_domain"],
+    "the domain part of `sender_lower`, no local part: no address of a person; the row goes with the erase of the sender"
+  ),
+  ...reasons(
+    ["unsubscribe_requests.method", "unsubscribe_requests.status", "unsubscribe_requests.code"],
+    "closed list of codes (CHECK constraint); `code` is a short result code, never a URL"
   ),
   ...reasons(["email_headers.list_id"], "the name of a mailing list, set by the list sender"),
   ...reasons(["email_headers.auto_submitted", "email_headers.precedence"], "one header token, no address"),

@@ -15,6 +15,7 @@ import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
 import { channelDocs } from "./api-docs";
+import { ownConsentVersion } from "./consent";
 import { createLinkToken, unlinkUser } from "./linking";
 import { changeNotify, notifyViewOf } from "./notify-settings";
 import { getChatLinkForUser } from "./repo";
@@ -37,11 +38,14 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     const { userId } = c.get("session");
     const link = await getChatLinkForUser(deps.db, ctx, userId);
     const botUsername = deps.botUsername ? await deps.botUsername().catch(() => null) : null;
+    // Only a linked user has a consent that counts: an unlink withdraws it (F116 review 17, N4).
+    const consentVersion = link === undefined ? null : await ownConsentVersion(deps.db, ctx, userId);
     const state: TelegramState = {
       available: deps.botUsername !== null,
       linked: link !== undefined,
       linkedAt: link?.linkedAt.toISOString() ?? null,
       botUsername,
+      consentVersion,
     };
     return c.json(state);
   });

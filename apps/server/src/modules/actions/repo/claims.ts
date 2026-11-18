@@ -41,6 +41,8 @@ export interface ClaimedAction {
     message_id_header: string | null;
     content_hash: string;
     from_address: string | null;
+    /** `email_headers.from_name`: the display name of the sender, or null (a reply quotes it). */
+    from_name: string | null;
     to_addresses: string[];
     subject: string | null;
     received_at: Date;
@@ -238,6 +240,12 @@ export async function claimActions(
         "original_created_at"
       ),
       sql<string>`coalesce(emails.mailbox_id, open_loops.mailbox_id)`.as("mailbox_id"),
+      // The display name of the sender (a reply quotes it); null when the mail has no header row or no name.
+      sql<
+        string | null
+      >`(SELECT h.from_name FROM email_headers h WHERE h.email_id = emails.id AND h.org_id = emails.org_id)`.as(
+        "from_name"
+      ),
       "emails.id as mail_id",
       "emails.folder",
       "emails.uid",
@@ -287,6 +295,7 @@ export async function claimActions(
               message_id_header: row.message_id_header,
               content_hash: row.content_hash as string,
               from_address: row.from_address,
+              from_name: row.from_name,
               to_addresses: row.to_addresses as string[],
               subject: row.subject,
               received_at: row.received_at as Date,

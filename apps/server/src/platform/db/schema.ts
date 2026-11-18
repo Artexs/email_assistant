@@ -250,6 +250,7 @@ export interface EmailHeaders {
   links: Generated<Json>;
   list_id: string | null;
   list_unsubscribe: string | null;
+  list_unsubscribe_post: boolean | null;
   org_id: string;
   parts_known: boolean;
   precedence: string | null;
@@ -650,6 +651,19 @@ export interface TriageResults {
   vip: Generated<boolean>;
 }
 
+export interface UnsubscribeRequests {
+  code: string | null;
+  created_at: Generated<Timestamp>;
+  finished_at: Timestamp | null;
+  id: Generated<string>;
+  mailbox_id: string;
+  method: string;
+  org_id: string;
+  sender_domain: string;
+  sender_lower: string;
+  status: Generated<string>;
+}
+
 export interface Users {
   created_at: Generated<Timestamp>;
   display_name: string;
@@ -705,5 +719,6 @@ export interface DB {
   sso_providers: SsoProviders;
   triage_feedback: TriageFeedback;
   triage_results: TriageResults;
+  unsubscribe_requests: UnsubscribeRequests;
   users: Users;
 }

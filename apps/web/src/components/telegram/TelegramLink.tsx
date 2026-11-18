@@ -1,5 +1,6 @@
 import {
   TELEGRAM_CONSENT_VERSION,
+  telegramConsentSchema,
   telegramLinkSchema,
   telegramStateSchema,
   formatClock,
@@ -21,6 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
+import { NewTerms } from "./NewTerms";
 
 export interface TelegramLinkProps {
   timeZone: string;
@@ -100,6 +102,23 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     }
   };
 
+  // A linked user with an older consent confirms the current text (F116 stage 22). The server writes the row for the session user.
+  const confirmTerms = async () => {
+    setBusy(true);
+    try {
+      await api("/api/telegram/consent", telegramConsentSchema, {
+        method: "POST",
+        body: { version: TELEGRAM_CONSENT_VERSION },
+      });
+      toast.success(t("tgc_confirmed_toast"));
+      reload();
+    } catch (error) {
+      toast.error(t(errorText(error)));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const copy = async () => {
     if (link === null) return;
     try {
@@ -116,31 +135,34 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
 
   if (data.linked) {
     return (
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="text-sm">
-          {data.linkedAt === null
-            ? t("tg_linked")
-            : t("tg_linked_since", { date: formatClock(new Date(data.linkedAt), timeZone, now, getLocale()) })}
-        </p>
-        <Button variant="outline" disabled={busy} onClick={() => setConfirmOpen(true)}>
-          {t("tg_unlink")}
-        </Button>
-        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("tg_unlink_title")}</DialogTitle>
-              <DialogDescription>{t("tg_unlink_text")}</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-                {t("cancel")}
-              </Button>
-              <Button variant="destructive" disabled={busy} onClick={unlink}>
-                {t("tg_unlink")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      <div className="flex flex-col items-start gap-3">
+        <NewTerms state={data} features={me?.features ?? []} busy={busy} onConfirm={() => void confirmTerms()} />
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm">
+            {data.linkedAt === null
+              ? t("tg_linked")
+              : t("tg_linked_since", { date: formatClock(new Date(data.linkedAt), timeZone, now, getLocale()) })}
+          </p>
+          <Button variant="outline" disabled={busy} onClick={() => setConfirmOpen(true)}>
+            {t("tg_unlink")}
+          </Button>
+          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t("tg_unlink_title")}</DialogTitle>
+                <DialogDescription>{t("tg_unlink_text")}</DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                  {t("cancel")}
+                </Button>
+                <Button variant="destructive" disabled={busy} onClick={unlink}>
+                  {t("tg_unlink")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     );
   }

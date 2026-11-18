@@ -300,18 +300,25 @@ const AUTH_FAIL_DMARC = /(?:^|[\s;(])dmarc\s*=\s*fail(?![a-z])/;
 const AUTH_FAIL_SPF = /(?:^|[\s;(])spf\s*=\s*fail(?![a-z])/;
 const AUTH_FAIL_DKIM = /(?:^|[\s;(])dkim\s*=\s*fail(?![a-z])/;
 
-function isAuthFail(authResults: string | null, trusted: string[]): boolean {
-  if (authResults === null) return false;
+// The results part of the topmost `Authentication-Results` value (folded: NFKC, lower case), when its authserv-id is one of
+// `trusted` (or a sub-domain of one). null otherwise. The capture keeps the topmost value, which a sender can write: only an
+// authserv-id that the operator trusts makes the verdicts count.
+export function trustedAuthResults(authResults: string | null, trusted: readonly string[]): string | null {
+  if (authResults === null) return null;
   const folded = authResults.normalize("NFKC").toLowerCase();
   const semicolon = folded.indexOf(";");
-  if (semicolon < 0) return false;
+  if (semicolon < 0) return null;
 
   const id = folded.slice(0, semicolon).trim().split(/\s+/)[0] ?? "";
-  if (id === "") return false;
+  if (id === "") return null;
   const trustedIds = trusted.map((entry) => entry.trim().toLowerCase().replace(/\.+$/, "")).filter((e) => e !== "");
-  if (!trustedIds.some((entry) => id === entry || id.endsWith(`.${entry}`))) return false;
+  if (!trustedIds.some((entry) => id === entry || id.endsWith(`.${entry}`))) return null;
+  return folded.slice(semicolon);
+}
 
-  const results = folded.slice(semicolon);
+function isAuthFail(authResults: string | null, trusted: string[]): boolean {
+  const results = trustedAuthResults(authResults, trusted);
+  if (results === null) return false;
   return AUTH_FAIL_DMARC.test(results) || (AUTH_FAIL_SPF.test(results) && AUTH_FAIL_DKIM.test(results));
 }
 
@@ -388,3 +395,7 @@ export function assessSuspicious(input: SuspiciousInput): SuspiciousReason[] {
   if (input.attachments.some(isRiskyAttachment)) reasons.push("risky_attachment");
   return reasons;
 }
+
+// The three states of the suspicion of one mail (F115 D4, F109 review-4 N3). A mail with no `triage_results` row is NOT clean:
+// it was never checked. `flagged` carries the reasons of the newest row. Readers that block a draft need all three states.
+export type Suspicion = { state: "untriaged" } | { state: "clean" } | { state: "flagged"; reasons: SuspiciousReason[] };

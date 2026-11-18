@@ -50,6 +50,84 @@ describe("the history job is wired in main.ts", () => {
   });
 });
 
+// F110 stage 20 (ADR 0022 point 2): report mail is the system's own mail, so every caller of the sync, the backfill and the history run
+// passes the composed own-mail check. A root that passed `isOwnActionId` alone would store, triage and sample the report mail.
+describe("the own-mail check is composed in every root (F110 stage 20)", () => {
+  test("main.ts: the sync job and the history job get isOwnMailOf; the CLI backfill too", () => {
+    const main = read("main.ts");
+    expect(callOf(main, "createMailSyncJob")).toContain("isOwnActionId: isOwnMailOf(db)");
+    expect(callOf(main, "createHistoryJob")).toContain("isOwnActionId: isOwnMailOf(db)");
+    expect(callOf(read("scripts/mailbox-backfill.ts"), "backfillMailbox")).toContain("isOwnActionId: isOwnMailOf(db)");
+  });
+
+  test("no file outside the modules passes a sync dependency that is not the composed check", () => {
+    return (async () => {
+      const found: string[] = [];
+      for await (const file of new Bun.Glob("**/*.ts").scan({ cwd: import.meta.dir })) {
+        if (file.endsWith(".test.ts") || file.startsWith("modules/")) continue;
+        const text = read(file);
+        for (const match of text.matchAll(/isOwnActionId:\s*([^\n,}]*)/g)) {
+          found.push(`${file}: ${match[1]?.trim()}`);
+        }
+      }
+      expect(found.sort()).toEqual([
+        "main.ts: isOwnMailOf(db)",
+        "main.ts: isOwnMailOf(db)",
+        "scripts/mailbox-backfill.ts: isOwnMailOf(db)",
+      ]);
+    })();
+  });
+
+  test("isOwnMailOf is the draft check or the report mail check", () => {
+    const text = read("composition.ts");
+    expect(text).toContain(
+      "(await isOwnActionId(db, ctx, mailboxId, id)) || (await isOwnReportMail(db, ctx, mailboxId, id))"
+    );
+  });
+});
+
+// Review N12 and N13: two sentences of the docs were wrong (the report mail is not "the only write to INBOX": the spam rescue and own sends land
+// there too; the header id is an outbox row, not an action row).
+describe("the docs say what the report mail does (F110 stage 20 review)", () => {
+  const root = join(import.meta.dir, "../../..");
+
+  test("architecture: the only APPEND into INBOX, not the only write", () => {
+    const text = readFileSync(join(root, "docs/architecture.md"), "utf8");
+    expect(text).toContain("Report mail is the only APPEND into INBOX");
+    expect(text).not.toContain("only write to INBOX");
+  });
+
+  test("ADR 0022 point 2 names an outbox row, not an action row", () => {
+    const text = readFileSync(join(root, "docs/decisions/0022-report-mail-into-own-inbox.md"), "utf8");
+    expect(text).toContain("the id of an outbox row of the channel `mail`");
+    expect(text).not.toContain("id of an action row");
+  });
+});
+
+describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
+  const main = read("main.ts");
+
+  test("it is scheduled every 15 seconds, once, outside the Telegram block, and the shutdown waits for its run", () => {
+    expect(main.split('scheduler.add("channels.report_mail", "*/15 * * * * *"')).toHaveLength(2);
+    expect(main).toContain("reportMailRun = reportMail.run();");
+    const start = main.indexOf("Promise.allSettled([");
+    expect(main.slice(start, main.indexOf("])", start))).toContain("reportMailRun");
+    // Not inside `if (config.TELEGRAM_BOT_TOKEN === undefined) { ... } else { ... }`: a mail-only member needs no bot.
+    const telegramBlock = main.indexOf("if (config.TELEGRAM_BOT_TOKEN === undefined) {");
+    expect(main.indexOf('scheduler.add("channels.report_mail"')).toBeLessThan(telegramBlock);
+  });
+
+  test("the sender gets WEB_BASE_URL: without it the mail has no link (review TG2)", () => {
+    expect(callOf(main, "createReportMailSender")).toContain("webBaseUrl: config.WEB_BASE_URL");
+  });
+
+  test("the sender gets the IMAP adapter with the shared tokens and no SMTP sender", () => {
+    const call = callOf(main, "createImapReportMailbox");
+    expect(call).toContain("oauthTokens: mailOAuth.tokens");
+    expect(call).not.toMatch(/smtp|openSender|Graph/i);
+  });
+});
+
 describe("the tripwire job is wired in main.ts", () => {
   const main = read("main.ts");
 
@@ -113,6 +191,8 @@ describe("the token store is wired into every composition root", () => {
         "composition.ts",
         "main.ts",
         "modules/actions/committer.ts",
+        // The report mail adapter opens the mailbox for an APPEND into its INBOX (F110 stage 20); it passes no sender.
+        "modules/channels/report-mailbox-imap.ts",
         "modules/mail/jobs.ts",
         "modules/mail/open.ts",
         // `backfillMailbox` with the purpose `history`: its caller (the history job) passes `oauthTokens` from its composition root.
@@ -299,5 +379,11 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
 
   test("the web passes the gate to the one settings deps builder", () => {
     expect(callOf(read("web.ts"), "settingsDeps")).toContain("gate");
+  });
+
+  test("the web mounts the trust routes with the settings deps of the same gate and the test mail rule", () => {
+    const call = callOf(read("web.ts"), "trustRoutes");
+    expect(call).toContain("settingsDeps(db, now, extras.gate)");
+    expect(call).toContain("testMail: testMailRule(config)");
   });
 });

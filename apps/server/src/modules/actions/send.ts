@@ -2,6 +2,7 @@ import {
   DEFAULT_SEND_LIMITS,
   draftPayloadSchema,
   sendPayloadSchema,
+  sameAddresses,
   sendRecipients,
   type OutgoingMessage,
   type SendPayload,
@@ -138,6 +139,19 @@ async function failSend(
   return { kind: "failed", reason: failure.reason };
 }
 
+// The send and the draft of a reply: the same kind, the same To and the same Cc (lower case, as a set).
+function sameReplyRecipients(
+  send: { kind: string; to: readonly string[]; cc?: readonly string[] | undefined },
+  draft: { kind: string; to: readonly string[]; cc?: readonly string[] }
+): boolean {
+  return (
+    send.kind === "reply" &&
+    draft.kind === "reply" &&
+    sameAddresses(send.to, draft.to) &&
+    sameAddresses(send.cc ?? [], draft.cc ?? [])
+  );
+}
+
 // The payloads, the draft and the message. The draft's id and `created_at` give the draft APPEND's Message-ID and Date (D9).
 // A follow-up is also checked against its loop: the send and the draft name the same loop, the send goes to nobody that the
 // draft does not name, and nobody that the loop does not hold. `null`: the payload is bad.
@@ -154,6 +168,14 @@ async function prepare(
   if (
     (followUp === null) !== (action.loop_id === null) ||
     (followUp === null) !== (payload.data.kind !== "follow_up")
+  ) {
+    return null;
+  }
+  // A reply is checked like a follow-up: the send and the draft are both replies and name the same To and Cc, because
+  // the envelope reads the send and the message headers read the draft. A recipient that only the send names gets nothing.
+  if (
+    (payload.data.kind === "reply" || draftPayload.data.kind === "reply") &&
+    !sameReplyRecipients(payload.data, draftPayload.data)
   ) {
     return null;
   }

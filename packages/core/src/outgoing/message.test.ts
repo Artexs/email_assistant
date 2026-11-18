@@ -184,4 +184,105 @@ describe("buildOutgoingMessage", () => {
     const message = buildOutgoingMessage(input(delegation, {}, { references: ["<root@firma.pl>", "<orig@firma.pl>"] }));
     expect(message.references).toEqual(["<root@firma.pl>", "<orig@firma.pl>"]);
   });
+
+  describe("a reply (F115)", () => {
+    const reply = {
+      kind: "reply",
+      to: ["klient@firma.pl"],
+      cc: [],
+      language: "pl",
+      body: "Dzień dobry,\n\nsprawdzę i wrócę z odpowiedzią.",
+      request_id: DELEGATE,
+      folder: "INBOX",
+      recipients: "from",
+    } satisfies DraftPayload;
+    const mail = { messageId: "<a@x>", references: ["<r@x>"], subject: "Offer", fromName: "Jan Kowalski" };
+
+    test("1 threads on the original: In-Reply-To, References and the Re: subject", () => {
+      const message = buildOutgoingMessage(input(reply, {}, mail));
+      expect(message.inReplyTo).toBe("<a@x>");
+      expect(message.references).toEqual(["<r@x>", "<a@x>"]);
+      expect(message.subject).toBe("Re: Offer");
+      expect(message.to).toEqual([{ name: null, address: "klient@firma.pl" }]);
+      expect(message.cc).toEqual([]);
+    });
+
+    test("2 an original subject that has a prefix stays as it is", () => {
+      for (const subject of ["RE: Offer", "Odp: Offer", "re: Offer"]) {
+        expect(buildOutgoingMessage(input(reply, {}, { ...mail, subject })).subject).toBe(subject);
+      }
+      expect(buildOutgoingMessage(input(reply, {}, { ...mail, subject: null })).subject).toBe("Re: (no subject)");
+    });
+
+    test("3 the text is the body, the signature, then the quote of the original", () => {
+      const message = buildOutgoingMessage(input(reply, {}, { ...mail, bodyText: "Linia 1\nLinia 2" }));
+      expect(message.parts.body).toBe(`${reply.body}\n\nArtek`);
+      expect(message.parts.quote).toBe("pt. 6 lis 10:00 Jan Kowalski napisał(a):\n> Linia 1\n> Linia 2");
+      expect(message.text).toBe(`${message.parts.body}\n\n${message.parts.quote}`);
+    });
+
+    test("4 a Cc goes in cc, in order; no recipient comes from anywhere else", () => {
+      const message = buildOutgoingMessage(input({ ...reply, cc: ["b@y.pl", "c@y.pl"] }, {}, mail));
+      expect(message.cc).toEqual([
+        { name: null, address: "b@y.pl" },
+        { name: null, address: "c@y.pl" },
+      ]);
+    });
+
+    test("5 body_text replaces the body and the signature; subject_text replaces the subject; the quote stays", () => {
+      const message = buildOutgoingMessage(
+        input({ ...reply, version: 2, body_text: "Moja wersja", subject_text: "Nowy temat" }, {}, mail)
+      );
+      expect(message.parts.body).toBe("Moja wersja");
+      expect(message.subject).toBe("Nowy temat");
+      expect(message.parts.quote).toContain("napisał(a):");
+    });
+
+    test("6 an original with no text has no quote block", () => {
+      const message = buildOutgoingMessage(input(reply, {}, { ...mail, bodyText: "  " }));
+      expect(message.parts.quote).toBeNull();
+      expect(message.text).toBe(message.parts.body);
+    });
+
+    test("8 the text of the body can name no recipient: To and Cc come from the payload only", () => {
+      const hostile = { ...reply, body: "Hi\nTo: evil@x.test\nCc: evil2@x.test\nBcc: evil3@x.test\n\nbye" };
+      const message = buildOutgoingMessage(input(hostile, {}, { ...mail, bodyText: "Cc: evil4@x.test" }));
+      expect(message.to.map((entry) => entry.address)).toEqual(["klient@firma.pl"]);
+      expect(message.cc).toEqual([]);
+      expect(Object.keys(message.headers)).toEqual(["X-EA-Action-Id"]);
+    });
+
+    test("7 the References are the last 20 ids", () => {
+      const references = Array.from({ length: 30 }, (_, i) => `<r${i}@x>`);
+      const message = buildOutgoingMessage(input(reply, {}, { ...mail, references }));
+      expect(message.references).toHaveLength(20);
+      expect(message.references.at(-1)).toBe("<a@x>");
+      expect(message.references[0]).toBe("<r11@x>");
+    });
+  });
+
+  describe("the name and the signature of the mailbox (reply drafts)", () => {
+    const build = (patch: Partial<BuildInput>) => buildOutgoingMessage(input(delegation, patch));
+    const style = { styleText: "Pozdrawiam, Jan", timezone: "Europe/Warsaw" };
+
+    test("the profile name is the From name; no profile or a blank name: the owner name", () => {
+      expect(build({ profile: { displayName: "Anna Nowak", signature: null } }).from).toEqual({
+        name: "Anna Nowak",
+        address: "User@Interia.pl",
+      });
+      expect(build({ profile: null }).from.name).toBe("Artek");
+      expect(build({}).from.name).toBe("Artek");
+      expect(build({ profile: { displayName: "  ", signature: null } }).from.name).toBe("Artek");
+      expect(build({ profile: { displayName: null, signature: null } }).from.name).toBe("Artek");
+    });
+
+    test("signature: the profile, else the organization style text, else the owner name", () => {
+      const profile = (signature: string | null) => ({ displayName: null, signature });
+      expect(build({ organization: style, profile: profile("Anna") }).parts.body).toEndWith("\n\nAnna");
+      expect(build({ organization: style, profile: profile(null) }).parts.body).toEndWith("\n\nPozdrawiam, Jan");
+      expect(build({ organization: style, profile: null }).parts.body).toEndWith("\n\nPozdrawiam, Jan");
+      expect(build({ organization: style, profile: profile("  ") }).parts.body).toEndWith("\n\nPozdrawiam, Jan");
+      expect(build({ profile: profile(null) }).parts.body).toEndWith("\n\nArtek");
+    });
+  });
 });

@@ -1,17 +1,16 @@
-import { isQuietTime, QUIET_HOURS, quietEnd, renderNotice, type OutMessage, type QuietHours } from "@ea/core";
+import { renderNotice, type OutMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
-import type { DB, Db, TenantContext } from "../../platform/db";
+import type { DB, Db } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { markDigestSent } from "../reports";
-import { getOrganization, isFeatureOn, listQuietHoursOf } from "../tenancy";
 
 import { checkCardEdit } from "./card-edit-check";
 import { ChannelError, type ChatChannel } from "./port";
+import { createQuietGate } from "./quiet-gate";
 import {
   claimDueOutbox,
-  expireOldMailOutbox,
   failOutbox,
   getChatLinkForUser,
   markOutboxSent,
@@ -29,7 +28,6 @@ export const SOFT_BACKOFF_MAX_MS = 15 * 60_000;
 export const CONFIG_PAUSE_MS = 10 * 60_000;
 export const MAX_OTHER_ERRORS = 5;
 
-const MIN_HOLD_MS = 60_000;
 const DEFAULT_BATCH_SIZE = 20;
 const DEFAULT_PER_USER_LIMIT = 3;
 
@@ -41,7 +39,7 @@ export interface SenderDeps {
   perUserLimit?: number;
 }
 
-function backoff(attempt: number): number {
+export function backoff(attempt: number): number {
   return Math.min(SOFT_BACKOFF_START_MS * 2 ** (attempt - 1), SOFT_BACKOFF_MAX_MS);
 }
 
@@ -77,13 +75,6 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
 
   async function run(): Promise<void> {
     const now = deps.now();
-    // F110 stage 19: this sender never claims a mail row; a mail row that nobody sends within the life of a row expires here.
-    try {
-      const expired = await expireOldMailOutbox(db, { before: new Date(now.getTime() - OUTBOX_MAX_AGE_MS) });
-      if (expired > 0) log.warn("outbox_mail_expired", { count: expired });
-    } catch (error) {
-      log.error("outbox_mail_expire_failed", { ...errorFields(error) });
-    }
     if (pausedUntil !== null && now < pausedUntil) return;
 
     let claimed: ClaimedOutbox[];
@@ -98,36 +89,9 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
       return;
     }
 
-    const timezones = new Map<string, string>();
     const sentPerUser = new Map<string, number>();
-
-    async function timezoneOf(ctx: TenantContext): Promise<string> {
-      const cached = timezones.get(ctx.orgId);
-      if (cached !== undefined) return cached;
-      const org = await getOrganization(db, ctx);
-      if (!org) throw new Error("organization not found");
-      timezones.set(ctx.orgId, org.timezone);
-      return org.timezone;
-    }
-
-    // F110 stage 18: the quiet hours of the users of this batch, read once. An organization with the flag off, or a user
-    // with no hours of their own, gets the default. A row that quiet hours never hold (digest, edit) needs no hours.
-    let quietOfUsers: Map<string, QuietHours> | undefined;
-    const flagged = new Map<string, boolean>();
-
-    async function quietOf(row: ClaimedOutbox): Promise<QuietHours> {
-      let on = flagged.get(row.orgId);
-      if (on === undefined) {
-        on = await isFeatureOn(db, { orgId: row.orgId }, "user_quiet_hours");
-        flagged.set(row.orgId, on);
-      }
-      if (!on) return QUIET_HOURS;
-      quietOfUsers ??= await listQuietHoursOf(
-        db,
-        claimed.map((claim) => ({ orgId: claim.orgId, userId: claim.userId }))
-      );
-      return quietOfUsers.get(`${row.orgId}:${row.userId}`) ?? QUIET_HOURS;
-    }
+    // F110 stage 18: the quiet hours of the users of this batch, read once. A row that quiet hours never hold (digest, edit) needs no hours.
+    const quiet = createQuietGate({ db, now, claimed });
 
     for (const [index, row] of claimed.entries()) {
       const ctx = { orgId: row.orgId };
@@ -173,13 +137,11 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
             continue;
           }
         }
-        const timezone = await timezoneOf(ctx);
+        const timezone = await quiet.timezoneOf(ctx);
         if (row.kind !== "digest" && !isEdit) {
-          const quiet = await quietOf(row);
-          if (isQuietTime(now, timezone, quiet)) {
-            // At least one minute ahead: a row never goes back to the queue with a time that has passed.
-            const end = quietEnd(now, timezone, quiet);
-            await release(row, new Date(Math.max(end.getTime(), now.getTime() + MIN_HOLD_MS)), false);
+          const until = await quiet.holdUntil(row, timezone);
+          if (until !== null) {
+            await release(row, until, false);
             continue;
           }
         }
