@@ -76,6 +76,14 @@ describe("parseSettingsArgs", () => {
     expect(parseSettingsArgs(["switch", ...ids, "--name", "create_draft", "--value", "on"])).toMatchObject({
       name: "create_draft",
     });
+    expect(parseSettingsArgs(["switch", ...ids, "--name", "reply_drafts", "--value", "on"])).toEqual({
+      kind: "switch",
+      orgId: org,
+      mailboxId: mailbox,
+      name: "reply_drafts",
+      value: true,
+    });
+    expect(usage).toContain("reply_drafts");
     expect(parseSettingsArgs(["switch", ...ids, "--name", "send", "--value", "on"])).toBeUndefined();
   });
 
