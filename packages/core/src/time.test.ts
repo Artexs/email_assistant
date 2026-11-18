@@ -29,14 +29,14 @@ describe("addDays", () => {
 });
 
 describe("one definition", () => {
-  test("no source file outside the tests defines its own DAY_MS or HOUR_MS", async () => {
+  test("no source file outside the tests defines its own DAY_MS or HOUR_MS (or dayMs, hourMs)", async () => {
     const root = new URL("../../../", import.meta.url).pathname;
     const own: string[] = [];
     for (const pattern of ["apps/*/src/**/*.ts", "packages/*/src/**/*.ts", "tools/*/src/**/*.ts"]) {
       for await (const path of new Bun.Glob(pattern).scan({ cwd: root })) {
         if (path.endsWith("/time.ts") || path.includes("node_modules") || /\.test\.ts$/.test(path)) continue;
         const text = await Bun.file(`${root}${path}`).text();
-        if (/^\s*(export )?(const|let) (DAY|HOUR)_MS\b/m.test(text)) own.push(path);
+        if (/^\s*(export )?(const|let) (day|hour)_?ms\b/im.test(text)) own.push(path);
       }
     }
     expect(own).toEqual([]);
