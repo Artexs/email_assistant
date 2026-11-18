@@ -30,3 +30,6 @@ Carry-over reads: stage 03 code; `apps/server/src/main.ts` (scheduling of `loops
 ## Done when
 
 All tests pass; mutation: remove the try-lock → test 2 fails. Then the Proof command.
+
+## Carry-over from the stage 03 review (2026-11-18)
+See `../review-3.md`: write only changed rows on a repeat pass (no 5300 dead tuples per hour per mailbox) and test it; the time test uses committed data plus `ANALYZE` by the migrator role; the job gates suspended organizations and paused mailboxes.
