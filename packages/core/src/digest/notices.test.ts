@@ -574,24 +574,51 @@ describe("Polish notices", () => {
   });
 });
 
-describe("reply draft notices (F115 stage 03)", () => {
+describe("reply draft notices (F115 stage 03, stage 12)", () => {
   const at = new Date("2026-11-20T10:05:00Z");
 
-  test("replies_ready prints the count and the clock in the org time zone; no button", () => {
-    const input = { count: 1, now: at, timeZone };
+  test("replies_ready prints the count and the clock in the org time zone; a covered owner gets the Review button", () => {
+    const input = { count: 1, now: at, timeZone, review: true };
     const clock = formatClock(at, timeZone, at, "en");
     expect(renderRepliesReadyNotice(input, textTables.en)).toEqual({
       text: `✍️ 1 reply draft is ready (${clock}).`,
-      buttons: [],
+      buttons: [[{ text: "📝 Review", data: "rv" }]],
     });
     expect(renderRepliesReadyNotice({ ...input, count: 4 }, textTables.en).text).toBe(
       `✍️ 4 reply drafts are ready (${clock}).`
     );
+    expect(renderRepliesReadyNotice({ ...input, count: 5 }, textTables.pl).buttons).toEqual([
+      [{ text: "📝 Przejrzyj", data: "rv" }],
+    ]);
+  });
+
+  test("replies_ready for an owner whose consent does not cover reply data: count, consent line, panel link, no button", () => {
+    const clock = formatClock(at, timeZone, at, "en");
+    const input = { count: 2, now: at, timeZone, review: false, panelUrl: "https://app.test/approvals" };
+    expect(renderRepliesReadyNotice(input, textTables.en)).toEqual({
+      text: [
+        `✍️ 2 reply drafts are ready (${clock}).`,
+        "Confirm the new Telegram terms in the panel to review here.",
+        "Open in panel: https://app.test/approvals",
+      ].join("\n"),
+      buttons: [],
+    });
+    const polish = renderRepliesReadyNotice(input, textTables.pl);
+    expect(polish.text.split("\n")[1]).toBe("Potwierdź nowe warunki Telegrama w panelu, aby przeglądać szkice tutaj.");
+    expect(polish.buttons).toEqual([]);
+  });
+
+  test("replies_ready carries no mail text and no address in any variant", () => {
+    for (const review of [true, false]) {
+      const text = renderRepliesReadyNotice({ count: 3, now: at, timeZone, review }, textTables.en).text;
+      expect(text).not.toMatch(/@/);
+    }
   });
 
   test("replies_ready in Polish: one, few and many forms", () => {
     const clock = formatClock(at, timeZone, at, "pl");
-    const polish = (count: number) => renderRepliesReadyNotice({ count, now: at, timeZone }, textTables.pl).text;
+    const polish = (count: number) =>
+      renderRepliesReadyNotice({ count, now: at, timeZone, review: true }, textTables.pl).text;
     expect(polish(1)).toBe(`✍️ Gotowy jest 1 szkic odpowiedzi (${clock}).`);
     expect(polish(3)).toBe(`✍️ Gotowe są 3 szkice odpowiedzi (${clock}).`);
     expect(polish(5)).toBe(`✍️ Gotowych jest 5 szkiców odpowiedzi (${clock}).`);

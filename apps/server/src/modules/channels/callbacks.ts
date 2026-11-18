@@ -9,6 +9,7 @@ import {
   isDelegateCallback,
   isFeedbackCallback,
   isLoopCallback,
+  isReplyCallback,
   labelCategories,
   parseCallback,
   textsFor,
@@ -25,6 +26,7 @@ import { handleApprovalCallback, type CallbackDeps } from "./approval-taps";
 import { handleDelegateCallback } from "./delegate-taps";
 import { handleLoopCallback } from "./loop-taps";
 import type { CallbackResult, LinkedChat, TapSource } from "./port";
+import { handleReplyCallback } from "./reply-taps";
 import { feedbackTap, reviewPickerMessage } from "./review-taps";
 
 export type { CallbackDeps } from "./approval-taps";
@@ -63,6 +65,7 @@ export async function handleCallback(
   const ctx = { orgId: link.orgId, userId: link.userId };
   if (isAnsweredCallback(callback))
     return handleAnsweredTap({ db: deps.db, ctx, link, now: deps.now(), texts }, callback);
+  if (isReplyCallback(callback)) return handleReplyCallback(deps, link, ctx, callback, texts, tapSource);
   if (isLoopCallback(callback)) return handleLoopCallback(deps, link, ctx, callback, texts, tapSource);
   if (isDelegateCallback(callback)) return handleDelegateCallback(deps, link, ctx, callback, texts);
   if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts, tapSource);

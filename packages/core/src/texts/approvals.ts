@@ -36,6 +36,16 @@ export interface ApprovalTexts {
       string
     >;
   };
+  // The review card of a reply draft: the lines that only a reply has, and its Skip button.
+  reply: {
+    to: string; // "To:"
+    cc: string; // "Cc:"
+    replyTo: string; // "Reply-To:" (the Reply-To of the original, when it differs from its From)
+    fill: (gaps: string) => string; // the gaps that nobody filled; no Send button while there is one
+    sentHidden: string; // the Sent mail is not read: only `\Answered` shows an answer
+    skip: string; // the button
+    noMore: string; // the review is at its end
+  };
   inactive: string; // "(inactive)"
   externalSender: string; // "⚠️ external sender"
   due: string; // "Due"
@@ -97,6 +107,8 @@ export interface ApprovalTexts {
     unknownRest: string;
     expired: {
       timeout: (subject: string) => string;
+      // A reply lives 7 days, another send 48 h: the `timeout` of a reply names no hours of the other rule.
+      timeoutReply: (subject: string) => string;
       draft_missing: (subject: string) => string;
       not_notified: (subject: string) => string;
       not_seen: (subject: string) => string;
@@ -127,6 +139,7 @@ export interface ApprovalTexts {
     rejectedReason: (reason: string) => string; // no clock: the tap time is not the reject time
     markedMistake: (time: string) => string;
     changed: (time: string) => string; // a panel edit replaced the draft; the new version is a new message
+    skipped: (time: string) => string; // a reply card that the owner skipped in the review
   };
   answered: {
     title: (name: string, subject: string) => string;
@@ -179,6 +192,15 @@ export const approvalTexts = {
         loop_closed: "⌛ Follow-up not sent: the open loop was closed.",
         draft_changed: "✏️ Follow-up not sent: you edited this draft in your mail client. Send it from there.",
       },
+    },
+    reply: {
+      to: "To:",
+      cc: "Cc:",
+      replyTo: "Reply-To:",
+      fill: (gaps) => `⚠️ Fill these: ${gaps}. Fill them in the panel; you cannot send this draft until then.`,
+      sentHidden: "I cannot see your sent mail; check you did not answer already.",
+      skip: "⏭ Skip",
+      noMore: "No more replies waiting.",
     },
     inactive: "(inactive)",
     externalSender: "⚠️ external sender",
@@ -246,6 +268,7 @@ export const approvalTexts = {
         "The connection broke after the content was sent. Check Sent or ask the recipient before you send again.",
       expired: {
         timeout: (subject) => `⌛ Not sent: the approval expired (48 h) · ${subject}`,
+        timeoutReply: (subject) => `⌛ Not sent: nobody approved the draft in 7 days · ${subject}`,
         // Two causes: the draft was never made, or the copy in Drafts is gone (deleted, moved or sent from the mail client).
         draft_missing: (subject) =>
           `❌ Not sent: the draft is not in your Drafts folder (it was not created, or you deleted, moved or sent it in your mail client) · ${subject}`,
@@ -289,6 +312,7 @@ export const approvalTexts = {
       rejectedReason: (reason) => `✖️ Rejected. Reason: ${reason}.`,
       markedMistake: (time) => `⚠️ Marked as a mistake ${time}.`,
       changed: (time) => `✏️ Changed in the panel ${time}. The new version comes as a new message.`,
+      skipped: (time) => `⏭ Skipped ${time}. The draft stays in the panel.`,
     },
     answered: {
       title: (name, subject) => `📩 ${name} answered · ${subject}`,
@@ -332,6 +356,15 @@ export const approvalTexts = {
         draft_changed:
           "✏️ Nie wysłano przypomnienia o odpowiedzi: szkic został zmieniony w programie pocztowym. Wyślij go stamtąd.",
       },
+    },
+    reply: {
+      to: "Do:",
+      cc: "DW:",
+      replyTo: "Reply-To:",
+      fill: (gaps) => `⚠️ Uzupełnij: ${gaps}. Zrób to w panelu; do tego czasu nie możesz wysłać tego szkicu.`,
+      sentHidden: "Nie widzę Twojej wysłanej poczty. Sprawdź, czy ta wiadomość nie ma już odpowiedzi.",
+      skip: "⏭ Pomiń",
+      noMore: "Nie ma więcej szkiców odpowiedzi do przejrzenia.",
     },
     inactive: "(nieaktywny wykonawca)",
     externalSender: "⚠️ nadawca zewnętrzny",
@@ -401,6 +434,7 @@ export const approvalTexts = {
         "Połączenie zostało przerwane po wysłaniu treści. Sprawdź folder Sent lub zapytaj odbiorcę, zanim wyślesz ponownie.",
       expired: {
         timeout: (subject) => `⌛ Nie wysłano: zatwierdzenie wygasło (48 h) · ${subject}`,
+        timeoutReply: (subject) => `⌛ Nie wysłano: nikt nie zatwierdził szkicu w ciągu 7 dni · ${subject}`,
         draft_missing: (subject) =>
           `❌ Nie wysłano: szkicu nie ma w folderze Drafts (nie powstał albo został usunięty, przeniesiony lub wysłany w programie pocztowym) · ${subject}`,
         not_notified: (subject) =>
@@ -444,6 +478,7 @@ export const approvalTexts = {
       rejectedReason: (reason) => `✖️ Odrzucono. Powód: ${reason}.`,
       markedMistake: (time) => `⚠️ Oznaczono jako błąd ${time}.`,
       changed: (time) => `✏️ Zmieniono w panelu ${time}. Nowa wersja przyjdzie w osobnej wiadomości.`,
+      skipped: (time) => `⏭ Pominięto ${time}. Szkic zostaje w panelu.`,
     },
     answered: {
       title: (name, subject) => `📩 Odpowiedź od: ${name} · ${subject}`,

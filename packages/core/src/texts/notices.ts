@@ -54,7 +54,15 @@ export interface NoticeTexts {
   loopConsent: { approval: string; result: string };
   // Reply drafts: one fixed line per kind, no button. A count and a clock only: no mail text. The
   // Telegram review stages replace these lines and keep the kind names.
-  replyDrafts: { ready: (count: number, clock: string) => string; prompt: string; result: string };
+  // `review` is the button of the ready notice; `consent` is the line for an owner whose Telegram consent does not cover reply
+  // drafts (the count only, no button).
+  replyDrafts: {
+    ready: (count: number, clock: string) => string;
+    prompt: string;
+    result: string;
+    review: string;
+    consent: string;
+  };
   // Counts, category names and fixed phrases only. `link` is a text line, not a button.
   trustReady: {
     first: (checked: number) => string;
@@ -234,6 +242,8 @@ export const noticeTexts = {
       ready: (count, clock) => `✍️ ${count} reply ${count === 1 ? "draft is" : "drafts are"} ready (${clock}).`,
       prompt: "✍️ A reply draft needs your instruction. Answer this message with the points to cover.",
       result: "✍️ A reply draft has a new result. Check it in the panel.",
+      review: "📝 Review",
+      consent: "Confirm the new Telegram terms in the panel to review here.",
     },
     trustReady: {
       first: (checked) =>
@@ -406,6 +416,8 @@ export const noticeTexts = {
       ready: (count, clock) => `✍️ ${PL_REPLIES_READY[pluralCategory("pl", count)](count)} (${clock}).`,
       prompt: "✍️ Szkic odpowiedzi czeka na Twoją wskazówkę. Odpowiedz na tę wiadomość i napisz, o czym ma być.",
       result: "✍️ Szkic odpowiedzi ma nowy status. Sprawdź go w panelu.",
+      review: "📝 Przejrzyj",
+      consent: "Potwierdź nowe warunki Telegrama w panelu, aby przeglądać szkice tutaj.",
     },
     trustReady: {
       first: (checked) => `📋 Sprawdzanie poczty z ostatnich 30 dni zakończone. Przejrzane wiadomości: ${checked}.`,

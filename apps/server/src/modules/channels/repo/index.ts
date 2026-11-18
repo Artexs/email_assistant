@@ -29,6 +29,7 @@ export {
   type OutboxFailCode,
   type OutboxKind,
 } from "./outbox";
+export { findApprovalCardOfTap, findReviewCards, lastRepliesReady } from "./review-cards";
 export { releaseMarksOfUndeliveredDigests } from "./digest-marks";
 export {
   cancelPendingApprovalRequestsOfClosedSends,

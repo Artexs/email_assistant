@@ -225,6 +225,52 @@ describe("listUserAnswers", () => {
     });
   });
 
+  test("G2. `No` (upper case) and `no; param` in the stored Auto-Submitted count as an answer; `AUTO-REPLIED` and `auto-replied; x=1` do not", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const upper = await incoming(trx, a, "<up@a.test>");
+      const withParam = await incoming(trx, a, "<wp@a.test>");
+      const autoUpper = await incoming(trx, a, "<au@a.test>");
+      const autoParam = await incoming(trx, a, "<ap@a.test>");
+      const setAuto = async (id: string, value: string) =>
+        trx.updateTable("sent_emails").set({ auto_submitted: value }).where("id", "=", id).execute();
+      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<up@a.test>" }), "No");
+      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<wp@a.test>" }), "no; param=1");
+      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<au@a.test>" }), "AUTO-REPLIED");
+      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<ap@a.test>" }), "auto-replied; x=1");
+
+      const answers = await listUserAnswers(trx, a.ctx, [upper, withParam, autoUpper, autoParam]);
+
+      expect([...answers.keys()].sort()).toEqual([upper, withParam].sort());
+    });
+  });
+
+  test("N-a. settledOnly: a pending row with no Auto-Submitted is no answer yet; a read row, a headers-only row and a pending row with a stored `no` are", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const pending = await incoming(trx, a, "<pe@a.test>");
+      const stored = await incoming(trx, a, "<st@a.test>");
+      const headersOnly = await incoming(trx, a, "<ho@a.test>");
+      const pendingNo = await incoming(trx, a, "<pn@a.test>");
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<pe@a.test>", content: "pending" });
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<st@a.test>", content: "pending" }).then((id) =>
+        trx.updateTable("sent_emails").set({ content: "stored" }).where("id", "=", id).execute()
+      );
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<ho@a.test>", content: "headers_only" });
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<pn@a.test>", content: "pending" }).then((id) =>
+        trx.updateTable("sent_emails").set({ auto_submitted: "no" }).where("id", "=", id).execute()
+      );
+      const all = [pending, stored, headersOnly, pendingNo];
+
+      const settled = await listUserAnswers(trx, a.ctx, all, { settledOnly: true });
+      const plain = await listUserAnswers(trx, a.ctx, all);
+
+      expect([...settled.keys()].sort()).toEqual([stored, headersOnly, pendingNo].sort());
+      // Without the option the pending row counts as before (the pass before a send reads its header itself).
+      expect([...plain.keys()].sort()).toEqual(all.sort());
+    });
+  });
+
   test("a mail without a reply or without a Message-ID is absent; no ids give an empty map", async () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);

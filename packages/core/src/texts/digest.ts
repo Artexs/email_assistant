@@ -28,6 +28,8 @@ export interface DigestTexts {
   notProcessedBacklog: (count: number) => string;
   waiting: (count: number) => string;
   delegations: (open: number, overdue: number) => string;
+  // The footer line of the reply drafts that wait for a review: a count only, no button.
+  repliesReady: (count: number) => string;
   shadow: string;
   // The spam review line of the footer (flag `spam_review_line`). `url` null: the panel text instead of the link.
   // `would` is the shadow-mode form: the moves were only logged.
@@ -106,6 +108,7 @@ export const digestTexts = {
     notProcessedBacklog: (count) => `📭 Not processed (from the account pause): ${count}`,
     waiting: (count) => `⏳ Waiting for triage: ${count}`,
     delegations: (open, overdue) => `👥 Delegations: ${open} waiting for a reply, ${overdue} overdue`,
+    repliesReady: (count) => `📝 ${count} ${count === 1 ? "reply" : "replies"} ready`,
     shadow: "Shadow mode: the system changed nothing in your mailbox.",
     spamReview: {
       moved: (count, url) =>
@@ -155,6 +158,7 @@ export const digestTexts = {
     waiting: (count) => `⏳ Czeka na klasyfikację AI: ${count}`,
     delegations: (open, overdue) =>
       `👥 Zlecenia: ${open} ${PL_WAIT[pluralCategory("pl", open)]} na odpowiedź, ${overdue} po terminie`,
+    repliesReady: (count) => `📝 Szkice odpowiedzi do przejrzenia: ${count}`,
     shadow: "Tryb podglądu: system niczego nie zmienił w Twojej skrzynce.",
     spamReview: {
       moved: (count, url) =>

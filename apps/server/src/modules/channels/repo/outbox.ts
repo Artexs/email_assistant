@@ -135,6 +135,7 @@ export interface ClaimedOutbox {
   orgId: string;
   userId: string;
   kind: OutboxKind;
+  dedupKey: string;
   view: unknown;
   channel: NoticeChannel;
   // The mailbox of a `mail` row (the report mailbox); null for a row that names none.
@@ -200,6 +201,7 @@ export async function claimDueOutbox(
       "o.org_id",
       "o.user_id",
       "o.kind",
+      "o.dedup_key",
       "o.view",
       "o.channel",
       "o.mailbox_id",
@@ -221,6 +223,7 @@ export async function claimDueOutbox(
       orgId: row.org_id,
       userId: row.user_id,
       kind: noticeKindSchema.parse(row.kind),
+      dedupKey: row.dedup_key,
       view: row.view,
       channel: z.enum(noticeChannels).parse(row.channel),
       mailboxId: row.mailbox_id,

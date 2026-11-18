@@ -28,3 +28,6 @@ Carry-over reads: `plan.md` (all decisions); `docs/decisions/0032-phone-channel-
 ## Checkpoint B (owner, after the land)
 
 Owner steps O4–O5 in `questions.md`: deploy; flags `web_push` and `telegram_minimal` on for the pilot org; a planted urgent mail gives a push on the phone within the M5 target and its tap opens `/activity?category=urgent`; a test member linked with `minimal` gets counts and links only. Pass → the coordinator closes F118.
+
+## Carry-over from the stage 02 review (2026-11-18)
+See `../review-2.md` (the lines for stage 13).

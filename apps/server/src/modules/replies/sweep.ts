@@ -140,7 +140,9 @@ export function createReplySweep(deps: SweepDeps): {
     budget.listLeft -= sends.length;
     total.checked += sends.length;
     const ids = sends.map((send) => send.emailId);
-    const mails = await replyFactsOf(deps.db, ctx, ids);
+    // A Sent row whose header is not read yet is no answer here: it may be a vacation reply, and the sweep reads no mailbox. It counts
+    // after the sync reads its header; until then the draft stays open (the pass before a send reads that header itself).
+    const mails = await replyFactsOf(deps.db, ctx, ids, { settledSentOnly: true });
     const suspicious = await suspiciousReasonsOf(deps.db, ctx, ids);
     const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
     for (const send of sends) {
