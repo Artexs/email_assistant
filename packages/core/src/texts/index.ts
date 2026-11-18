@@ -14,6 +14,7 @@ import { digestTexts, type DigestTexts } from "./digest";
 import { followUpTexts, type FollowUpTexts } from "./follow-up";
 import { loopTapTexts, type LoopTapTexts } from "./loop-taps";
 import { noticeTexts, type NoticeTexts } from "./notices";
+import { operatorTexts, type OperatorTexts } from "./operator";
 import { replyMailTexts, type ReplyMailTexts } from "./reply-mail";
 import { reportMailTexts, type ReportMailTexts } from "./report-mail";
 import { reviewTexts, type ReviewTexts } from "./review";
@@ -38,6 +39,7 @@ export type {
   FollowUpTexts,
   LoopTapTexts,
   NoticeTexts,
+  OperatorTexts,
   ReplyMailTexts,
   ReportMailTexts,
   ReviewTexts,
@@ -56,6 +58,7 @@ export interface CoreTexts {
   wouldDo: WouldDoTexts;
   common: CommonTexts;
   notices: NoticeTexts;
+  operator: OperatorTexts;
   reportMail: ReportMailTexts;
   approvals: ApprovalTexts;
   review: ReviewTexts;
@@ -80,6 +83,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     wouldDo: wouldDoTexts.en,
     common: commonTexts.en,
     notices: noticeTexts.en,
+    operator: operatorTexts.en,
     reportMail: reportMailTexts.en,
     approvals: approvalTexts.en,
     review: reviewTexts.en,
@@ -102,6 +106,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     wouldDo: wouldDoTexts.pl,
     common: commonTexts.pl,
     notices: noticeTexts.pl,
+    operator: operatorTexts.pl,
     reportMail: reportMailTexts.pl,
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
