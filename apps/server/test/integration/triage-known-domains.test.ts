@@ -12,6 +12,7 @@ import {
   resetSentDomainCache,
   type SuspiciousContext,
 } from "../../src/modules/triage";
+import { suspiciousSenderDomains } from "../../src/modules/triage/suspicious-repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import {
@@ -620,6 +621,19 @@ describe("the cache of the Sent domains", () => {
       await insert("00000000-0000-4000-8000-000000000001", "a@zweite.pl");
       await insert("00000000-0000-4000-8000-000000000002", "a@zweite.pl");
       expect((await contextOf(trx, s)).sentDomains).toEqual(["erste.pl", "zweite.pl"]);
+    });
+  });
+});
+
+describe("suspiciousSenderDomains", () => {
+  test("registrable domains of flagged senders; a tenant of a shared hosting suffix stays apart", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await incomingWith(trx, s, "x@mail.kontrahemt.pl", ["lookalike_domain"]);
+      await incomingWith(trx, s, "x@alpha.herokuapp.com", ["auth_fail"]);
+      await incomingWith(trx, s, "x@sauber.pl", []);
+      const found = await suspiciousSenderDomains(trx, s.ctx, s.mailboxId, ago(90));
+      expect([...found].sort()).toEqual(["alpha.herokuapp.com", "kontrahemt.pl"]);
     });
   });
 });
