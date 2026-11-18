@@ -291,6 +291,19 @@ describe("the pass before a reply send: answered", () => {
     });
   });
 
+  test("4i. a reply in Sent with Auto-Submitted: no is an answer (review N4)", async () => {
+    await withRollback(db, async (trx) => {
+      const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
+      await sentSyncOn(trx, box.ctx, box.mailboxId);
+      await appendUserReply(box, await messageIdOf(trx, p.emailId), LATE, { headers: { "Auto-Submitted": "no" } });
+
+      const send = await runSend(trx, box, p.sendId);
+
+      expect(send).toMatchObject({ status: "expired", status_reason: "answered" });
+      expect(box.sender.sent).toHaveLength(0);
+    });
+  });
+
   test("4e. a mail that the assistant moved (moved_at set) does not stop the reply (review N6; a move of the user is test 5c)", async () => {
     await withRollback(db, async (trx) => {
       const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
