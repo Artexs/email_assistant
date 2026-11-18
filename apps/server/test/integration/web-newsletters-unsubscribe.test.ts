@@ -281,6 +281,15 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
     expect(box.posts).toEqual([]);
   });
 
+  test("11d: parallel taps cannot pass the limit of a domain (one writer per organization)", async () => {
+    const senders = Array.from({ length: 8 }, (_, i) => `p${i}@d.example`);
+    for (const from of senders) await oneClick(from);
+    const answers = await Promise.all(senders.map((sender) => tap("owner", sender)));
+    expect(answers.map((res) => res.status).sort()).toEqual([200, 200, 200, 429, 429, 429, 429, 429]);
+    expect(box.posts).toHaveLength(UNSUBSCRIBE_DOMAIN_LIMIT);
+    expect(await rows()).toHaveLength(UNSUBSCRIBE_DOMAIN_LIMIT);
+  });
+
   test("11c: the limit of another organization does not count", async () => {
     const recent = new Date(NOW.getTime() - 5 * 60_000);
     await addSenderMail(db, box.org.otherOrgId, box.otherMailboxId, { from: "t@c.example" });
