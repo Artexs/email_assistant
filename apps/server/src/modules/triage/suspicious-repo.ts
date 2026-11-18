@@ -10,7 +10,7 @@ export const FREQUENT_WINDOW_DAYS = 90;
 export const FREQUENT_MIN_MAILS = 3;
 
 // The lower-case addresses among `senders` with at least `FREQUENT_MIN_MAILS` mails in this mailbox in the window, each mail
-// with a newest result that is not `spam` and has no suspicious reason (review N1). Flagged mail and spam never make a
+// with a newest result that is not `spam` and has no suspicious reason. Flagged mail and spam never make a
 // sender known. Queries `from_address_lower` (index `emails_mailbox_sender_idx`): never `lower(from_address)`, which the tenant
 // policy blocks as an index condition. Mail without a result (not triaged yet, skipped) does not count.
 export async function listFrequentSenders(
@@ -98,7 +98,7 @@ export async function listNewestFromNames(
 }
 
 // The reasons of the newest `triage_results` row of each mail. A mail with no row, or a row with no reason, is absent.
-// It ignores the flag `suspicious_mail`: a caller that blocks a draft blocks it with the flag off too (PD-063 is a safety rule).
+// It ignores the flag `suspicious_mail`: a caller that blocks a draft blocks it with the flag off too (this is a safety rule).
 // Readers for follow-ups, reply drafts and unsubscribe call this before they draft or act. The organization comes from `ctx`.
 export async function suspiciousReasonsOf(
   db: DbOrTrx,
@@ -124,7 +124,7 @@ export async function suspiciousReasonsOf(
 
 const SUSPICION_CHUNK = 500;
 
-// The three-state suspicion of each mail (F109 review-4 N3): no `triage_results` row → `untriaged` (never checked, not
+// The three-state suspicion of each mail: no `triage_results` row → `untriaged` (never checked, not
 // clean); the newest row has no reasons → `clean`; else `flagged` with its codes. Every id of `emailIds` is in the map. An id
 // of another organization finds no row under this `ctx` and reads `untriaged`. It ignores the flag `suspicious_mail`, like
 // `suspiciousReasonsOf`, which stays as it is for the callers that only need the reasons.

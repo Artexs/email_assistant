@@ -24,7 +24,7 @@ export interface SuspiciousContext {
   trustedAuthservIds: string[];
 }
 
-// Accepted limit (stage 16 writes it, review N16): mail that forges an own address or a domain of the organization counts as known.
+// Accepted limit : mail that forges an own address or a domain of the organization counts as known.
 // Only `auth_fail` catches it, and only when the mail host adds a trusted `Authentication-Results` header.
 
 export interface SuspiciousContextInput {
