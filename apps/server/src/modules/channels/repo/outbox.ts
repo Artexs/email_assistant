@@ -38,7 +38,7 @@ export const outboxFailCodes = [
   "edit_failed",
   // Report mail: the mail server refused the APPEND into the INBOX.
   "append_refused",
-  // Push rows (F118): the device of the row was removed (sign-out, expiry, the user, a gone endpoint) before the push went out.
+  // Push rows (phone channel): the device of the row was removed (sign-out, expiry, the user, a gone endpoint) before the push went out.
   "no_device",
 ] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];

@@ -154,7 +154,7 @@ async function seedOrg(sharedUserId?: string): Promise<Seed> {
       values (${orgId}, ${orgId}::uuid, 'https://idp.x.test', ${`${randomUUID()}.x.test`}, ${JSON.stringify({ clientSecret: idpClientSecret })})`.execute(
       trx
     );
-    // A push device (F118): the export holds its label and times but never the encrypted endpoint or its hash.
+    // A push device (phone channel): the export holds its label and times but never the encrypted endpoint or its hash.
     const pushSecret = `push-secret-${randomUUID()}`;
     const pushEndpointHash = createHash("sha256").update(randomUUID()).digest("hex");
     await sql`insert into push_subscriptions (org_id, user_id, secret, key_version, endpoint_hash, device_label)

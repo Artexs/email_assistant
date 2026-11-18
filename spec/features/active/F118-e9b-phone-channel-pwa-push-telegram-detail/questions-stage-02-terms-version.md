@@ -30,3 +30,7 @@ Every member accepts the terms again at the next sign-in after this version ship
 ## Plan question Q12
 
 Plan question Q12 (push services as sub-processors) stays open for stage 13: the papers name FCM, Mozilla and Apple only there. This stage adds no sub-processor and no outside call.
+
+## Decision (coordinator, final)
+
+Accepted. The line is in `packages/core/src/web/terms.ts` (committed). The digest was recomputed after the merge of master and did not change.

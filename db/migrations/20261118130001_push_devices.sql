@@ -1,8 +1,8 @@
 -- migrate:up
--- F118 stage 02: push devices and notice routes. Expand only: one new table, one new outbox column, one new member
+-- Push devices and notice routes (phone channel). Expand only: one new table, one new outbox column, one new member
 -- column and one CHECK list that only grows. No old column or constraint is removed or narrowed, so the code of the
 -- previous release runs on this schema: it never writes the new table, the new column or a `push` row, and it never
--- reads `notice_routes`. (A release that reads a `push` row cannot render it: the rollback note is in the F118 plan, G-flag.)
+-- reads `notice_routes`. (A release that reads a `push` row cannot render it: the plan of the phone channel says: no deploy between the fan-out stage and the sender stage.)
 -- The two constraints on the new `outbox.push_subscription_id` are table constraints on an existing table, so `db:check-migrations`
 -- reads them as contract statements. They hold no old data and refuse nothing that the previous release writes (it never writes
 -- the column): the mark below only silences the check for them. No statement in this file drops or narrows anything that exists.
@@ -40,7 +40,7 @@ CREATE POLICY tenant_rows ON push_subscriptions FOR ALL TO app
   WITH CHECK (app_current_org() IS NULL OR org_id = app_current_org());
 
 -- One outbox row per device (`channel = 'push'`). The key clears only its own column when the device goes: the row stays
--- as history (a sent row feeds the delivery metrics and the F079 check). `org_id` is NOT NULL and stays.
+-- as history (a sent row feeds the delivery metrics and the check that a request was seen). `org_id` is NOT NULL and stays.
 ALTER TABLE outbox DROP CONSTRAINT outbox_channel_check;
 ALTER TABLE outbox ADD CONSTRAINT outbox_channel_check CHECK (channel IN ('telegram', 'mail', 'push'));
 ALTER TABLE outbox ADD COLUMN push_subscription_id uuid;

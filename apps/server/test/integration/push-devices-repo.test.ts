@@ -24,7 +24,7 @@ import { captureLogs, eventLines, logProblems } from "../log-capture";
 import { addMember, createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F118 stage 02: the repository of the push devices (`channels/push/repo.ts`). The connection is the `app` role with no
+// The repository of the push devices (`channels/push/repo.ts`). The connection is the `app` role with no
 // tenant scope, so every query must filter by the `org_id` of its `TenantContext` itself.
 const db = testDb();
 afterAll(async () => {

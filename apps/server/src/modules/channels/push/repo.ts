@@ -10,16 +10,16 @@ import type { DbOrTrx } from "../repo/shared";
 
 import type { PushTarget } from "./send";
 
-// The push devices of the members (F118 D3, D9). One row per browser. The endpoint and the keys live only inside `secret`
+// The push devices of the members. One row per browser. The endpoint and the keys live only inside `secret`
 // (the ADR 0009 box, AAD `push:<id>`): no query here selects them except `loadDeviceSecret`, and no log line or error
 // carries them. Every query filters by `org_id` of the `TenantContext`.
 
 const log = createLog("channels");
 
-/** A user keeps at most this many devices; the next subscribe removes the oldest first (D3). */
+/** A user keeps at most this many devices; the next subscribe removes the oldest first. */
 export const MAX_DEVICES_PER_USER = 10;
 
-/** The device key of the dedup of a push row: the Telegram key of the event, the word `push` and the device id (D4). */
+/** The device key of the dedup of a push row: the Telegram key of the event, the word `push` and the device id. */
 export function pushDedupKey(key: string, subscriptionId: string): string {
   return `${key}:push:${subscriptionId}`;
 }
@@ -40,7 +40,7 @@ export class PushDeviceElsewhereError extends Error {
 
 export interface UpsertPushSubscription {
   userId: string;
-  /** The web session that makes the device live (D9). */
+  /** The web session that makes the device live. */
   sessionId: string;
   endpoint: string;
   p256dh: string;
@@ -48,7 +48,7 @@ export interface UpsertPushSubscription {
   deviceLabel: string;
   box: SecretBox;
   now: Date;
-  /** A page load: re-bind a device of this user that exists; store nothing new (D16). */
+  /** A page load: re-bind a device of this user that exists; store nothing new. */
   rebindOnly?: boolean;
 }
 
@@ -123,7 +123,7 @@ export async function upsertPushSubscription(
   return { id, created: true };
 }
 
-// The devices that the sender and the fan-out may use: bound to a session that exists and has not expired (D9). No secret,
+// The devices that the sender and the fan-out may use: bound to a session that exists and has not expired. No secret,
 // no box. Oldest first.
 export async function listLiveDeviceIds(
   db: DbOrTrx,

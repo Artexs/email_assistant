@@ -15,6 +15,7 @@ export const TERMS_HISTORY: readonly TermsHistoryEntry[] = [
   { version: "2026-11-12", sha256: null }, // the stub era
   { version: "2026-11-17", sha256: "19879c6e6fec34e7eac3f75d873be45400dcc8c048e0b88dae19d6c28c5eec5a" },
   { version: "2026-11-18", sha256: "4c28889f8a7b2567b52b26b06c6be28b0cce5711298113425e32db6a2fd3673d" }, // data category sender-context
+  { version: "2026-11-18-2", sha256: "8386c47db63b162fb771458b7e3c31ce09d07587ca588fc51ec730c95bd420d4" }, // data category push-devices
 ];
 
 function lastVersion(history: readonly TermsHistoryEntry[]): string {

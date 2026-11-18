@@ -27,3 +27,7 @@ Ticket: `spec/features/active/F118-e9b-phone-channel-pwa-push-telegram-detail/` 
 - After the land of stage 02: `bun run db:migrate` on the shared dev DB (owner step).
 - Stage 03 carry-over from the stage 01 review: `decodeBase64Url` refuses padded base64url; the device API must not add padding.
 - A new device is never live until its `session_id` is set to an unexpired session: `listLiveDeviceIds` joins `auth_sessions` on both `id` and `user_id`.
+
+## Owner-decision note (for the coordinator)
+
+- privacy, accepted by the coordinator: the data category `push-devices` moves the legal digest, so `TERMS_HISTORY` has the entry `2026-11-18-2` (sha256 `8386c47d…20d4`); members accept the terms again at the next sign-in. To undo: remove the category and the entry together.

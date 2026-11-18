@@ -12,7 +12,7 @@ import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 import { addMember, createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F118 stage 02: the migration `20261118130001_push_devices.sql` (the table `push_subscriptions`, the column
+// The migration `20261118130001_push_devices.sql` (the table `push_subscriptions`, the column
 // `outbox.push_subscription_id`, the channel `push` and the column `memberships.notice_routes`). The connection is the `app`
 // role; the Down and Up sections run as the owner.
 const db = testDb();
@@ -406,7 +406,7 @@ describe("the previous release", () => {
   test("13: its statements (no push column, no notice_routes) still work and leave the new values at their defaults", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      // The INSERT of the code before F118 names no `push_subscription_id`; its rows are `telegram` or `mail`.
+      // The INSERT of the code before the phone channel names no `push_subscription_id`; its rows are `telegram` or `mail`.
       await sql`
         INSERT INTO outbox (org_id, user_id, kind, dedup_key, mailbox_id, status, next_attempt_at, created_at, channel)
         VALUES (${o.orgId}, ${o.userId}, 'sync_ok', ${randomUUID()}, ${o.mailboxId}, 'pending', now(), now(), 'telegram')`.execute(

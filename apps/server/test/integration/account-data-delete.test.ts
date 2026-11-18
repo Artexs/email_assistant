@@ -139,7 +139,7 @@ const DELETE_SEEDS: Record<string, Seed> = {
   mailboxes: base,
   memberships: base,
   open_loops: base,
-  // The device of a member (F118): the secret is a made-up ciphertext, the hash a made-up digest.
+  // The device of a member (phone channel): the secret is a made-up ciphertext, the hash a made-up digest.
   push_subscriptions: (trx, org) =>
     execute(
       trx,

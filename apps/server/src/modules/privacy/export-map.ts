@@ -368,7 +368,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "edit_of_outbox_id",
     "push_subscription_id"
   ),
-  // The phone and browser devices of a member (F118). The endpoint and the keys live only inside `secret` (the encrypted
+  // The phone and browser devices of a member (phone channel). The endpoint and the keys live only inside `secret` (the encrypted
   // box of ADR 0009) and `endpoint_hash` is derived from the endpoint: neither goes out. The label, the times and the
   // last error code are the member's own device data.
   push_subscriptions: byOrgExcluding(
