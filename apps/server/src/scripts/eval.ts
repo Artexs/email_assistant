@@ -66,7 +66,7 @@ export async function runReal(options: EvalOptions, orgId: string, mailboxId: st
     });
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
-    // Counts only (D32): no mail id, no address, no text.
+    // Counts only: no mail id, no address, no text.
     if (options.json !== undefined) writeFileSync(options.json, `${JSON.stringify(realCounts(report), null, 2)}\n`);
     return evalExitCode(report);
   } finally {
@@ -74,7 +74,7 @@ export async function runReal(options: EvalOptions, orgId: string, mailboxId: st
   }
 }
 
-// The sim-vs-real gap: two files, no DB, no LLM key (D32).
+// The sim-vs-real gap: two files, no DB, no LLM key.
 function runGap(options: EvalOptions): number {
   try {
     const sim = gateFileSchema.safeParse(JSON.parse(readFileSync(options["sim-json"] as string, "utf8")));

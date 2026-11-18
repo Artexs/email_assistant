@@ -42,7 +42,7 @@ import {
 
 import type { SentSimCommand } from "./sim-args";
 
-// The sent-bank variants of the sim commands (F116 stage 02). Lines hold counts, ids and codes, never mail text.
+// The sent-bank variants of the sim commands. Lines hold counts, ids and codes, never mail text.
 export interface SentSimResult {
   code: number;
   lines: string[];

@@ -137,7 +137,7 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     ).toBeUndefined();
   });
 
-  // F130: the escalation cascade is gone, so its flags are unknown options.
+  // The escalation cascade is gone, so its flags are unknown options.
   test("--escalate and the --escalation-* flags are a usage error", () => {
     const sim = ["--sim", "lab-01", "--part", "dev"];
     expect(parseEvalArgs([...sim, "--escalate"])).toBeUndefined();

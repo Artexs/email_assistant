@@ -108,8 +108,8 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   const effort = row.reasoningEffort;
 
   const { endpoint, host } = llmEndpointFields(table, "classifier");
-  // An own server costs nothing and has no price row: the run takes no budget (D12). The judge is a paid provider
-  // (PD-026), so an own run with `--judge` would send paid calls with no cap: it is refused.
+  // An own server costs nothing and has no price row: the run takes no budget. The judge is a paid provider
+  // , so an own run with `--judge` would send paid calls with no cap: it is refused.
   const own = endpoint === "own";
   if (own && options.judge) {
     cli.fail("an own endpoint run has no USD budget, so it cannot use --judge (the judge is a paid provider)");
@@ -205,7 +205,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   }
 
   let newSpendUsd = 0;
-  // The judge is on another provider than the classifier (PD-026): a call is priced at the endpoint of its provider.
+  // The judge is on another provider than the classifier: a call is priced at the endpoint of its provider.
   const endpointOfModel = (usedModel: string) =>
     judgeRow !== undefined && usedModel === judgeRow.model && usedModel !== model
       ? table.providers[judgeRow.provider].endpoint
@@ -268,7 +268,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     const markdown = renderEvalReport(report, { title: `Eval report: sim ${scenario} ${part}`, sim });
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
-    // The gate file of a full holdout run at the default bar (D27); an older file of the same name is replaced.
+    // The gate file of a full holdout run at the default bar; an older file of the same name is replaced.
     const refusal = gateFileRefusal(options, report);
     if (refusal !== null) {
       cli.print(refusal);

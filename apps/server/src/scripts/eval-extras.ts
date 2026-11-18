@@ -2,7 +2,7 @@ import { assessSuspicious, type EvalCase, EVAL_RECEIVED_AT, localDateTime, type 
 
 import { type ClassifierExtras, deadlinesInWindow, suspiciousInputOfCase, typeOfName } from "../modules/triage";
 
-// F109 stage 08: the `ClassifierExtras` of a sim case. The sim history is the persona group's generated mix, so only
+// The `ClassifierExtras` of a sim case. The sim history is the persona group's generated mix, so only
 // `received` and `corrections` pass (review N2); `byCategory` never does.
 const MAX_ATTACHMENTS = 10;
 

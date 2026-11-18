@@ -16,7 +16,7 @@ import { parseEvalArgs } from "./eval-args";
 import { runSim } from "./eval-sim";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
-// F111 stage 03 step 2: a holdout run per endpoint. Own state and gate files, no budget for an own run, and the
+// A holdout run per endpoint. Own state and gate files, no budget for an own run, and the
 // guard that stops an uncapped PAID run stays. Fake client, temp dirs: no real call, no money.
 
 const OWN_MODEL = "SpeakLeash/bielik-11b-v3.1:Q4_K_M";

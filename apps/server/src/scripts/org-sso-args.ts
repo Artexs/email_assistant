@@ -26,7 +26,7 @@ function isAcceptedIssuer(issuer: string, allowOrigins: readonly string[]): bool
 }
 
 // Structure only; the domain is normalized and checked by the runner. The secret never comes as a value: only `--client-secret-stdin`
-// exists (D10). null on any bad argument.
+// exists. null on any bad argument.
 export function parseOrgSsoArgs(argv: string[], options: { allowOrigins: readonly string[] }): OrgSsoCommand | null {
   let values;
   try {

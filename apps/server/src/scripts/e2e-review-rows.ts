@@ -8,7 +8,7 @@ import { E2E_REVIEW_MAIL_COUNT, E2E_REVIEW_SUMMARY, e2eReviewSender, e2eReviewSu
 const HOUR = 60 * 60_000;
 const FIRST_UID = 950_001;
 
-// The mail 1 to 12 of the review spec (F110 stage 15): categories as listed, all received in the last days, none labelled.
+// The mail 1 to 12 of the review spec: categories as listed, all received in the last days, none labelled.
 const CATEGORIES = [
   "info",
   "notification",

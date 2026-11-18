@@ -211,7 +211,7 @@ describe("runSim gate file", () => {
   });
 });
 
-// F109 stage 08: the prompt flags reach the call, the state file, the report and the gate file.
+// The prompt flags reach the call, the state file, the report and the gate file.
 describe("runSim prompt version and parts", () => {
   const v3 = ["--prompt-version", "classifier-v3"];
 

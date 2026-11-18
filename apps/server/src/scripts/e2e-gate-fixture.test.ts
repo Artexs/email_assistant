@@ -8,7 +8,7 @@ import { llmRoleTable, loadConfig } from "../platform/config";
 
 import { E2E_GATE_FIXTURE_DIR, E2E_LLM_PIN } from "./e2e-seed-args";
 
-// The autonomy card spec (F110 stage 13) reads gate files from a fixture folder through `GATE_EVIDENCE_DIR`. A file counts only for the
+// The autonomy card spec reads gate files from a fixture folder through `GATE_EVIDENCE_DIR`. A file counts only for the
 // exact running key, so a change of the prompt pointer or of the pin must show here, not as a card without lines in e2e.
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const config = loadConfig({
