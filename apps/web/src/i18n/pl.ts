@@ -52,4 +52,10 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
     few: "{count} e-maile w ciągu 30 dni",
     many: "{count} e-maili w ciągu 30 dni",
   },
+  // The push device card: the test notice
+  push_test_sent: {
+    one: "Wysłano powiadomienie testowe na 1 urządzenie.",
+    few: "Wysłano powiadomienie testowe na {count} urządzenia.",
+    many: "Wysłano powiadomienie testowe na {count} urządzeń.",
+  },
 };

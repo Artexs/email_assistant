@@ -4,6 +4,7 @@ import { RELEASES } from "virtual:ea-changelog-releases";
 
 import { authClient } from "../../lib/auth-client";
 import { ApiError } from "../../lib/api";
+import { useRebindPush } from "../../lib/use-rebind-push";
 import { setLocale, t, useLocale, type TextKey } from "../../i18n";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
@@ -49,6 +50,8 @@ function Frame({ active, title, children }: AppShellProps) {
   // The Delegations page is "Open loops" while that flag is on; the shell knows the flags only after `me` came.
   const locale = useLocale();
   const features = me?.features ?? [];
+  // Phone notices: an existing subscription of this browser follows the new session (once per page load).
+  useRebindPush(features.includes("web_push"));
   const heading = pageTitle(active, title, features);
   useEffect(() => {
     document.title = `${t(heading)} · ${t("brand")}`;

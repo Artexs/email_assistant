@@ -8,6 +8,7 @@ import {
   E2E_SEND_TEST_ADDRESS,
   seedTargetOk,
 } from "../../server/src/scripts/e2e-seed-args";
+import { generateVapidKeyPair } from "../../server/src/platform/vapid-keys";
 import { FAKE_TOKEN } from "../../../tools/fake-telegram/src/state";
 
 // The one place that knows the e2e environment: the port, the base URL, the fixed secret and the server env.
@@ -26,6 +27,10 @@ export const GREENMAIL = {
   imapPort: 3143,
   smtpPort: 3025,
 } as const;
+
+// A new throw-away VAPID pair for each run of a process: it signs nothing that leaves the machine (the push specs use a fake
+// push manager, and no spec calls a push service). The server needs it so that `GET /api/me/push` answers a public key.
+const e2eVapid = generateVapidKeyPair();
 
 export const repoRoot = resolve(import.meta.dirname, "../../..");
 
@@ -90,6 +95,9 @@ export function e2eEnv(): Record<string, string> {
     TELEGRAM_BOT_TOKEN: FAKE_TOKEN,
     TELEGRAM_API_ROOT: E2E_TELEGRAM_URL,
     HEARTBEAT_URL: "",
+    VAPID_PUBLIC_KEY: e2eVapid.publicKey,
+    VAPID_PRIVATE_KEY: e2eVapid.privateKey,
+    VAPID_SUBJECT: "mailto:e2e@e2e.test",
     LOG_LEVEL: "info",
     // Fake client keys turn the Microsoft sign-in on as "configured". A new connect also needs the flag
     // `mail_oauth_microsoft`, which only `mailbox-oauth.spec.ts` turns on. No request goes to Microsoft.
