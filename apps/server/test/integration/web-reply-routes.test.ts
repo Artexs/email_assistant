@@ -148,6 +148,27 @@ describe("POST /api/replies and GET /api/replies/requests/:id", () => {
   });
 });
 
+describe("the line of POST /api/replies", () => {
+  test("4b. a line over 300 characters or empty after cleaning answers 400 validation without the text; 300 characters pass", async () => {
+    const w = await kit.setup();
+    const emailId = await kit.mailOf(w.box);
+    for (const instruction of ["y".repeat(301), "", "\u0000\u0007"]) {
+      const res = await w.app.request("/api/replies", post("owner", { emailId, instruction }));
+      const text = await res.text();
+      expect({ status: res.status, error: (JSON.parse(text) as { error: string }).error }).toEqual({
+        status: 400,
+        error: "validation",
+      });
+      expect(text).not.toContain("yyyy");
+    }
+    const rows = () => db.selectFrom("reply_requests").select("id").where("org_id", "=", w.box.ctx.orgId).execute();
+    expect(await rows()).toEqual([]);
+    const ok = await w.app.request("/api/replies", post("owner", { emailId, instruction: "y".repeat(300) }));
+    expect(ok.status).toBe(202);
+    expect(await rows()).toHaveLength(1);
+  });
+});
+
 describe("POST /api/approvals/:id/redraft", () => {
   test("5. a line makes a request; the job writes version 2 with the line as data; the old send is superseded; the answer, logs and audit rows never hold the line", async () => {
     const w = await kit.setup();

@@ -1,5 +1,7 @@
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
+import { getUserRequest, replyVersionFacts } from "../../src/modules/replies";
+
 import { insertDraftAndSend } from "./fixtures";
 import { testDb } from "./helpers";
 import { NOW } from "./reply-job-fixtures";
@@ -264,5 +266,35 @@ describe("GET /api/replies/requests/:id", () => {
     const res = await status(w, request.id);
     expect(await res.json()).toEqual({ status: "superseded", reasonCode: null, sendId: newer.sendId });
     expect(sameThread.sendId).not.toBe(newer.sendId);
+  });
+});
+
+// The route runs in the tenant scope of the session, so the database policy hides another organization's rows before the query filter
+// matters. These calls run with no scope: only the `org_id` filter of the query keeps another organization out.
+describe("the readers filter by organization on their own", () => {
+  test("8. getUserRequest and replyVersionFacts answer nothing for the other organization's context", async () => {
+    const w = await kit.setup();
+    const made = await kit.draftOf(w.box);
+    const asked = await w.app.request(
+      `/api/approvals/${made.sendId}/redraft`,
+      post("owner", { instruction: "shorter" })
+    );
+    const { requestId } = (await asked.json()) as { requestId: string };
+    await kit.runDrafter(w.box);
+    const [done] = await db.selectFrom("reply_requests").select("send_action_id").where("id", "=", requestId).execute();
+    const mine = w.box.ctx;
+    const theirs = w.theirBox.ctx;
+
+    expect(await getUserRequest(db, mine, requestId)).toMatchObject({ status: "done", emailId: made.emailId });
+    expect(await getUserRequest(db, theirs, requestId)).toBeUndefined();
+    const sendId = done?.send_action_id ?? "";
+    expect(await replyVersionFacts(db, mine, { sendId, emailId: made.emailId })).toEqual({
+      instruction: "shorter",
+      redrafts: 1,
+    });
+    expect(await replyVersionFacts(db, theirs, { sendId, emailId: made.emailId })).toEqual({
+      instruction: null,
+      redrafts: 0,
+    });
   });
 });

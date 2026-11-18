@@ -124,6 +124,11 @@ describe("the role, the session and the Origin check", () => {
         expect({ c: c.name, ...res }).toEqual({ c: c.name, status: 403, body: { error: "owner_only" } });
       }
     }
+    // The owner check comes before the body: a member with a bad body still gets 403, not 400.
+    for (const c of CALLS.filter((entry) => entry.write)) {
+      const res = await answer(await call(w, c, "member", made.sendId, { bad: true }));
+      expect({ c: c.name, ...res }).toEqual({ c: c.name, status: 403, body: { error: "owner_only" } });
+    }
     const read = await call(w, CALLS[3] as Call, "member", UNKNOWN);
     expect(read.status).toBe(404);
     expect(
@@ -234,9 +239,9 @@ describe("the organization and the body", () => {
     ];
     for (const [path, body] of bad) {
       const res = await w.app.request(path, post("owner", body));
-      expect({ path, body, ...(await answer(res)) }).toMatchObject({
+      expect({ path, sent: body, ...(await answer(res)) }).toMatchObject({
         path,
-        body,
+        sent: body,
         status: 400,
         body: { error: "validation" },
       });

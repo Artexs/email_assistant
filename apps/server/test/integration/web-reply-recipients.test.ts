@@ -63,6 +63,14 @@ describe("the three modes", () => {
       payload: { kind: "reply", to: ["anna@client.test"], cc: ["b@y.test", "c@z.test"] },
     });
     expect((await detailOf(w, sendId)).state).toBe("superseded");
+    // The change is written as a panel change.
+    const edited = await db
+      .selectFrom("audit_log")
+      .select(["data", "actor"])
+      .where("org_id", "=", w.box.ctx.orgId)
+      .where("event", "=", "action.edited")
+      .execute();
+    expect(edited).toEqual([{ actor: w.org.ownerId, data: expect.objectContaining({ via: "web", version: 2 }) }]);
 
     const same = await recipients(w, id, { mode: "all" });
     expect({ status: same.status, body: await same.json() }).toEqual({ status: 400, body: { error: "unchanged" } });
