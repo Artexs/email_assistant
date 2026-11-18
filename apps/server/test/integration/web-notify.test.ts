@@ -398,7 +398,7 @@ describe("PATCH /api/me/notify: review fixes", () => {
   });
 });
 
-// Stage 06 of the phone channel: the routes of a member per notice group (`web_push`).
+// The routes of a member per notice group (the flag `web_push`).
 describe("notice routes", () => {
   const routesOf = async (orgId: string, userId: string) =>
     noticeRoutesSchema.parse(

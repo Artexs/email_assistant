@@ -53,7 +53,7 @@ export interface EffectiveRoute {
 }
 
 /**
- * The channels that one notice goes to (D7).
+ * The channels that one notice goes to.
  *
  * - A kind with no group stays on Telegram (and `reply_result` answers a Telegram request): `{ telegram: hasChat, push: false }`.
  * - Missing choice: `both` for `urgent` and `approvals` when the member has a live device, else `telegram`. `updates`: `telegram`.
