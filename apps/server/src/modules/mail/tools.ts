@@ -43,15 +43,13 @@ import {
   type MailboxRow,
 } from "./repo";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
+import { fetchSince, type SyncDeps, type SyncResult } from "./sync";
 import {
   backfillInbox,
-  fetchSince,
   historyRefusalBeforeOpen,
   type BackfillPurpose,
   type HistoryBackfillOutcome,
-  type SyncDeps,
-  type SyncResult,
-} from "./sync";
+} from "./sync-backfill";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
 // Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`, `mailbox:signals`, `testmail-target deliver`).
