@@ -219,7 +219,7 @@ const m9: Row = {
   },
 };
 
-/** Send a MIME mail with Graph to the plus address. Shared by M10 and P1. Returns the HTTP status. */
+/** Send a MIME mail with Graph to the plus address. Shared by the Graph probes. Returns the HTTP status. */
 async function graphSend(
   ctx: Ctx,
   spec: { subject: string; messageId: string; actionId: string; bcc?: string }
