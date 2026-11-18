@@ -15,7 +15,7 @@ import { createFakeChannel, type FakeChannel } from "../../src/modules/channels/
 import { digestNowMessage, type CommandDeps } from "../../src/modules/channels/commands";
 import { handleReplyText } from "../../src/modules/channels/reply-redraft";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
-import { redraftReply, requestReply } from "../../src/modules/replies";
+import { draftableMails, redraftReply, requestReply } from "../../src/modules/replies";
 import type { DB } from "../../src/platform/db";
 
 import { addMember, isolateChannels, linkChat, randomChatId, renderedOf } from "./fixtures";
@@ -200,7 +200,8 @@ describe("Redraft", () => {
       );
       expect(cards.map((card) => card.dedup_key)).toEqual([`approval:${second?.id}:r1`]);
       expect(renderedOf(cards[0] as never).text).toContain("Version 2");
-      // The detector answers once: a second tick queues no second card.
+      // The detector answers once: a second tick queues no second card, also after the first one went out.
+      await r.sendOut();
       await r.detect();
       expect(
         (await outboxOf(trx, r, "approval")).filter((card) => card.dedup_key.startsWith(`approval:${second?.id}`))
@@ -676,6 +677,76 @@ describe("the line of text and the result: what they never do", () => {
       // The control: the same hour holds a notice that nobody asked for.
       const [control] = await outboxOf(trx, r, "replies_ready");
       expect(control?.status).toBe("pending");
+    });
+  });
+});
+
+describe("who gets the answer, and which mails get the button", () => {
+  test("23. with two owners, each gets the answer to his own request only", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const second = await addMember(trx, r.box.ctx.orgId, "owner");
+      await linkChat(trx, r.box.ctx, second, randomChatId(), new Date(NOW.getTime() - HOUR));
+      await recordAudit(trx, r.box.ctx, {
+        event: auditEvents.webTelegramConsent,
+        actor: second,
+        data: { via: "web", version: REPLY_CONSENT_SINCE },
+        at: new Date(NOW.getTime() - 2 * HOUR),
+      });
+      const ask = { db: trx, now: () => r.clock.now };
+      const first = await addReplyMail(trx, r.box, {
+        category: "info",
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+      });
+      const other = await addReplyMail(trx, r.box, {
+        category: "info",
+        receivedAt: new Date(NOW.getTime() - 10 * MINUTE),
+      });
+      await requestReply(ask, r.box.ctx, { userId: r.box.userId, via: "telegram", emailId: first });
+      await requestReply(ask, r.box.ctx, { userId: second, via: "telegram", emailId: other });
+
+      await r.job();
+      await r.detect();
+
+      const sendOf = async (emailId: string) =>
+        (await pairRows(trx, r.box)).find((row) => row.type === "send" && row.email_id === emailId);
+      const cards = (await outboxOf(trx, r, "approval")).map((card) => [card.user_id, card.dedup_key]);
+      expect(cards.sort()).toEqual(
+        [
+          [r.box.userId, `approval:${(await sendOf(first))?.id}:r1`],
+          [second, `approval:${(await sendOf(other))?.id}:r1`],
+        ].sort()
+      );
+    });
+  });
+
+  test("24. draftableMails: only a needs_reply or urgent mail with a clean sender and no open draft; an info mail and an answered mail are left out", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const needs = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 40 * MINUTE) });
+      const urgent = await addReplyMail(trx, r.box, {
+        category: "urgent",
+        receivedAt: new Date(NOW.getTime() - 30 * MINUTE),
+      });
+      const info = await addReplyMail(trx, r.box, {
+        category: "info",
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+      });
+      const answered = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 10 * MINUTE) });
+      await trx
+        .insertInto("email_flags")
+        .values({
+          email_id: answered,
+          org_id: r.box.ctx.orgId,
+          answered: true,
+          checked_at: NOW,
+          seen: true,
+          flagged: false,
+        })
+        .execute();
+      const ids = [needs, urgent, info, answered];
+
+      expect([...(await draftableMails(trx, r.box.ctx, ids, { now: NOW }))].sort()).toEqual([needs, urgent].sort());
     });
   });
 });
