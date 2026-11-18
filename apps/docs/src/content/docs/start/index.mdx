@@ -9,6 +9,7 @@ capabilities:
 ---
 
 import UiText from "../../../components/UiText.astro";
+import Shot from "../../../components/Shot.astro";
 
 This tutorial teaches one path. You start with your invite link. You end with your first digest in Telegram.
 Do the steps in order. Each step says what you see and what the system does.
@@ -46,6 +47,7 @@ Two-factor sign-in is optional. When you turn it on, the panel asks for a code f
 You turn it on in **<UiText k="nav_settings" />**, in the Account card. See [Turn on two-factor sign-in](../how-to/two-factor/).
 
 ## 4. Do the Onboarding checklist
+<Shot page="onboarding" />
 
 After the first sign-in the panel opens the page **<UiText k="nav_onboarding" />**. It shows a checklist.
 The checklist is done when you have a mailbox, a Telegram link and a chosen mode. The last item is optional. The Telegram link counts only when the server has a Telegram bot.
@@ -54,6 +56,7 @@ When it is done, the panel shows this text and opens Activity at each next sign-
 > <UiText k="ob_all_set" />
 
 ### Connect a mailbox
+<Shot page="mailboxes" />
 
 Only an owner can connect a mailbox. Other members see this text:
 
@@ -103,10 +106,12 @@ A new mailbox starts in shadow mode. For an owner, the checklist item says:
 Press **<UiText k="ob_keep_shadow" />** to stay in shadow mode. You can switch a mailbox to assist mode later, in Settings.
 
 ### Add sender rules
+<Shot page="rules" />
 
 This item is optional. You can add VIP, whitelist and blocklist senders on the page **<UiText k="nav_rules" />**. You can do it later.
 
 ## 5. Shadow mode
+<Shot page="activity" />
 
 In shadow mode the system reads and sorts your mail, and it reports what it would do. It changes nothing in your mailbox.
 It does not move, flag or mark mail. It does not make drafts and it sends no mail.
@@ -119,6 +124,7 @@ You see the result in two places:
 The digest shows this line when it lists mail and every mailbox is in shadow mode.
 
 ## 6. Your first digest
+<Shot page="settings" />
 
 By default the system sends a digest at 08:00 and at 16:00. It uses the time zone of your organization.
 You can change the times in **<UiText k="nav_settings" />**, in the card **<UiText k="digest_title" />**.

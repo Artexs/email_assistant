@@ -4,6 +4,7 @@ import { join, relative } from "node:path";
 
 import { frontMatterValue } from "../scripts/stale";
 import { POLISH_SET } from "./front-matter";
+import { isShotPage } from "./shots";
 
 const CONTENT_DIR = join(import.meta.dir, "content/docs");
 
@@ -27,7 +28,41 @@ function outsideCode(markdown: string): string[] {
   });
 }
 
-// Everything the two pages of a pair must share (stage 10 T4): sections, steps, panel labels, links, capabilities.
+// The `<Shot page="x" />` lines outside code fences, in page order. `underHeading`: the line before is a ## or ### heading;
+// `blankAfter`: the line after is blank. Both hold on a page, so that `bodyHash` (which cuts the line alone) leaves the hash of the page as it was.
+export interface ShotLine {
+  page: string;
+  line: number;
+  underHeading: boolean;
+  blankAfter: boolean;
+}
+export function shotLines(markdown: string): ShotLine[] {
+  const lines = outsideCode(markdown);
+  return lines.flatMap((text, line) => {
+    const match = /^<Shot page="([^"]*)" \/>$/.exec(text);
+    if (!match) return [];
+    return [
+      {
+        page: match[1] ?? "",
+        line,
+        underHeading: /^#{2,3} /.test(lines[line - 1] ?? ""),
+        blankAfter: (lines[line + 1] ?? "") === "",
+      },
+    ];
+  });
+}
+
+// The number of Shot lines of each section: the text before the first heading, then each ## or ### heading with its text.
+export function shotsPerSection(markdown: string): number[] {
+  const counts = [0];
+  for (const text of outsideCode(markdown)) {
+    if (/^#{2,3} /.test(text)) counts.push(0);
+    else if (/^<Shot\b/.test(text)) counts[counts.length - 1] = (counts.at(-1) ?? 0) + 1;
+  }
+  return counts;
+}
+
+// Everything the two pages of a pair must share (stage 10 T4, stage 12 T2): sections, steps, panel labels, links, shots, capabilities.
 function structure(markdown: string) {
   const lines = outsideCode(markdown);
   const text = lines.join("\n");
@@ -39,6 +74,8 @@ function structure(markdown: string) {
     uiKeys: [...text.matchAll(/<UiText\s+k="([^"]+)"/g)].map((match) => match[1]),
     // The link targets in page order. A target is relative to the page folder; the pair has the same folder depth.
     links: [...text.matchAll(/\]\(([^)\s]+)\)/g)].map((match) => match[1]),
+    // The `<Shot page />` values in page order: both languages show the same panel pages in the same sections (stage 12 T2).
+    shots: shotLines(markdown).map((shot) => shot.page),
   };
 }
 
@@ -53,6 +90,7 @@ export function pairProblems(english: string, polish: string): string[] {
   if (en.uiKeys.join(",") !== pl.uiKeys.join(","))
     problems.push(`ui_keys ${en.uiKeys.join(",")} ${pl.uiKeys.join(",")}`);
   if (en.links.join(",") !== pl.links.join(",")) problems.push(`links ${en.links.join(",")} ${pl.links.join(",")}`);
+  if (en.shots.join(",") !== pl.shots.join(",")) problems.push(`shots ${en.shots.join(",")} ${pl.shots.join(",")}`);
   return problems;
 }
 
@@ -68,7 +106,7 @@ const PAGE =
   '---\ntitle: T\n---\nIntro [a](../a/)\n\n## One\n\n1. Press <UiText k="save" />.\n2. Go.\n\n### Sub\n\n## Two\n';
 
 describe("Polish pages", () => {
-  test("T4 each pair has the same ## and ### headings, numbered steps, panel keys and links", () => {
+  test("T4 each pair has the same ## and ### headings, numbered steps, panel keys, links and Shot lines", () => {
     for (const id of POLISH_SET) {
       const english = pageFile(CONTENT_DIR, id);
       const polish = pageFile(join(CONTENT_DIR, "pl"), id);
@@ -108,6 +146,70 @@ describe("Polish pages", () => {
     expect(pairProblems(PAGE, PAGE.replace('k="save"', 'k="cancel"'))).toEqual(["ui_keys save cancel"]);
     expect(pairProblems(PAGE, PAGE.replace('<UiText k="save" />', "Zapisz"))).toEqual(["ui_keys save "]);
     expect(pairProblems(PAGE, PAGE.replace("(../a/)", "(../b/)"))).toEqual(["links ../a/ ../b/"]);
+    const shot = (page: string) => PAGE.replace("## One\n", `## One\n<Shot page="${page}" />\n`);
+    expect(pairProblems(shot("rules"), shot("rules"))).toEqual([]);
+    expect(pairProblems(shot("rules"), PAGE)).toEqual(["shots rules "]);
+    expect(pairProblems(PAGE, shot("rules"))).toEqual(["shots  rules"]);
+    expect(pairProblems(shot("rules"), shot("settings"))).toEqual(["shots rules settings"]);
+    const two = PAGE.replace("## One\n", '## One\n<Shot page="rules" />\n').replace(
+      "## Two\n",
+      '## Two\n<Shot page="settings" />\n'
+    );
+    const swapped = two.replace("rules", "tmp").replace("settings", "rules").replace("tmp", "settings");
+    expect(pairProblems(two, swapped)).toEqual(["shots rules,settings settings,rules"]);
+  });
+  test("each `<Shot page>` of a page is a page of SHOTS, and a page has a Shot line only with the import of the component", () => {
+    for (const file of mdxFiles(CONTENT_DIR)) {
+      const text = readFileSync(file, "utf8");
+      const id = relative(CONTENT_DIR, file);
+      const pages = shotLines(text).map((shot) => shot.page);
+      for (const page of pages) expect({ id, page, known: isShotPage(page) }).toEqual({ id, page, known: true });
+      // The import line sits next to the `UiText` import of the page and has its path.
+      const uiImport = /^import UiText from "((?:\.\.\/)+)components\/UiText\.astro";$/m.exec(text);
+      const shotImport = /^import Shot from "((?:\.\.\/)+)components\/Shot\.astro";$/gm;
+      const imports = [...text.matchAll(shotImport)];
+      expect({ id, imports: imports.length, pages: pages.length > 0 }).toEqual({
+        id,
+        imports: pages.length > 0 ? 1 : 0,
+        pages: pages.length > 0,
+      });
+      if (pages.length > 0) expect({ id, path: imports[0]?.[1] }).toEqual({ id, path: uiImport?.[1] });
+    }
+  });
+  test("at most one Shot line a section, directly under its heading and before a blank line (the hash of the page stays)", () => {
+    for (const file of mdxFiles(CONTENT_DIR)) {
+      const id = relative(CONTENT_DIR, file);
+      const text = readFileSync(file, "utf8");
+      const shots = shotLines(text);
+      for (const shot of shots) {
+        expect({ id, page: shot.page, underHeading: shot.underHeading, blankAfter: shot.blankAfter }).toEqual({
+          id,
+          page: shot.page,
+          underHeading: true,
+          blankAfter: true,
+        });
+      }
+      expect({ id, perSection: shotsPerSection(text).filter((count) => count > 1) }).toEqual({ id, perSection: [] });
+    }
+  });
+  test("the tutorial shows each of the five panel pages once, and the sender-rule and digest-time guides show theirs", () => {
+    const pagesOf = (dir: string, id: string) =>
+      shotLines(readFileSync(pageFile(dir, id) ?? "", "utf8")).map((shot) => shot.page);
+    for (const dir of [CONTENT_DIR, join(CONTENT_DIR, "pl")]) {
+      expect(pagesOf(dir, "start")).toEqual(["onboarding", "mailboxes", "rules", "activity", "settings"]);
+      expect(pagesOf(dir, "how-to/sender-rules")).toEqual(["rules"]);
+      expect(pagesOf(dir, "how-to/digest-times")).toEqual(["settings"]);
+    }
+  });
+  test("the Shot lines of a page are cut whole by the pair check: a line of a section with two lines, or one not under a heading, is found", () => {
+    const heading = shotLines('## A\n<Shot page="rules" />\n\ntext\n');
+    expect(heading).toEqual([{ page: "rules", line: 1, underHeading: true, blankAfter: true }]);
+    expect(shotLines('## A\n\n<Shot page="rules" />\n\ntext\n')[0]?.underHeading).toBe(false);
+    expect(shotLines('## A\n<Shot page="rules" />\ntext\n')[0]?.blankAfter).toBe(false);
+    expect(shotLines('```\n<Shot page="rules" />\n```\n')).toEqual([]);
+    expect(shotLines('## A\n<Shot page="rules"/>\n')).toEqual([]);
+    expect(shotsPerSection('## A\n<Shot page="rules" />\n\n## B\n<Shot page="rules" />\n')).toEqual([0, 1, 1]);
+    expect(shotsPerSection('## A\n<Shot page="rules" />\n\n<Shot page="settings" />\n')).toEqual([0, 2]);
   });
   test("a heading or a step inside a code fence does not count", () => {
     const fenced = `${PAGE}\n\`\`\`\n## Not a heading\n1. Not a step\n\`\`\`\n`;

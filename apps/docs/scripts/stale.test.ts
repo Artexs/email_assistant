@@ -74,6 +74,29 @@ describe("bodyHash", () => {
   test("the hash is the first 16 hex of the sha256 of the trimmed body", () => {
     expect(bodyHash("---\nt: a\n---\nHi\n")).toBe(createHash("sha256").update("Hi").digest("hex").slice(0, 16));
   });
+  test("the import line of the Shot component does not count, at any folder depth; another import or text does", () => {
+    const body = 'import UiText from "../../../components/UiText.astro";\n\nHi\n';
+    const base = bodyHash(`---\nt: a\n---\n${body}`);
+    const withShot = (line: string) =>
+      bodyHash(`---\nt: a\n---\nimport UiText from "../../../components/UiText.astro";\n${line}\n\nHi\n`);
+    expect(withShot('import Shot from "../../../components/Shot.astro";')).toBe(base);
+    expect(withShot('import Shot from "../../../../components/Shot.astro";')).toBe(base);
+    expect(withShot('import Shot from "../components/Shot.astro"; ')).toBe(base);
+    expect(withShot('import Shot from "../../../components/Other.astro";')).not.toBe(base);
+    expect(withShot('import Other from "../../../components/Shot.astro";')).not.toBe(base);
+    expect(withShot('import Shot from "https://example.test/components/Shot.astro";')).not.toBe(base);
+    expect(withShot('import Shot from "../../../components/Shot.astro"; // x')).not.toBe(base);
+    expect(bodyHash(`---\nt: a\n---\nHi import Shot from "../../../components/Shot.astro";\n`)).not.toBe(
+      bodyHash("---\nt: a\n---\nHi")
+    );
+  });
+  test("a page with the import and one Shot line under a heading hashes as the page without both", () => {
+    const plain =
+      '---\nt: a\n---\nimport UiText from "../../../components/UiText.astro";\n\nIntro\n\n## Steps\n\n1. Go.\n';
+    const shot =
+      '---\nt: a\n---\nimport UiText from "../../../components/UiText.astro";\nimport Shot from "../../../components/Shot.astro";\n\nIntro\n\n## Steps\n<Shot page="rules" />\n\n1. Go.\n';
+    expect(bodyHash(shot)).toBe(bodyHash(plain));
+  });
   test("a Shot tag over several lines does not count", () => {
     expect(bodyHash('---\nt: a\n---\nHi\n<Shot\n  page="x"\n/>\n')).toBe(bodyHash("---\nt: a\n---\nHi"));
   });
