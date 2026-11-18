@@ -20,7 +20,7 @@ import { getUserAuthProfile, isFeatureOn } from "../../tenancy";
 
 import { pushDocs } from "./api-docs";
 import { encryptPushPayload, PushKeyError } from "./encrypt";
-import { checkPushEndpoint } from "./endpoint";
+import { canonicalEndpoint, checkPushEndpoint } from "./endpoint";
 import {
   listDeviceViews,
   loadDeviceSecret,
@@ -134,7 +134,7 @@ export function pushRoutes(deps: PushRouteDeps): Hono<ApiEnv> {
         const device = await upsertPushSubscription(trx, ctx, {
           userId,
           sessionId,
-          endpoint: body.endpoint,
+          endpoint: canonicalEndpoint(body.endpoint),
           p256dh: body.keys.p256dh,
           auth: body.keys.auth,
           deviceLabel: deviceLabelOf(c.req.header("user-agent")),
@@ -162,24 +162,26 @@ export function pushRoutes(deps: PushRouteDeps): Hono<ApiEnv> {
   });
 
   app.delete("/me/push/devices/:id", flagFirst, pushDocs.deletePushDevice, async (c) => {
-    const id = idSchema.safeParse(c.req.param("id"));
-    if (!id.success) return c.json({ error: "not_found" }, 404);
+    const parsed = idSchema.safeParse(c.req.param("id"));
+    if (!parsed.success) return c.json({ error: "not_found" }, 404);
+    // The database matches a uuid in any case; the audit row and the log hold the one lower case form.
+    const deviceId = parsed.data.toLowerCase();
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
     const removed = await deps.db.transaction().execute(async (trx) => {
-      const done = await removeDevice(trx, ctx, id.data, { userId });
+      const done = await removeDevice(trx, ctx, deviceId, { userId });
       if (done) {
         await recordAudit(trx, ctx, {
           event: auditEvents.pushRemoved,
           actor: userId,
-          data: { push_subscription_id: id.data, via: "web" },
+          data: { push_subscription_id: deviceId, via: "web" },
           at: deps.now(),
         });
       }
       return done;
     });
     if (!removed) return c.json({ error: "not_found" }, 404);
-    log.info("push_removed", { user_id: userId, push_subscription_id: id.data });
+    log.info("push_removed", { user_id: userId, push_subscription_id: deviceId });
     return c.body(null, 204);
   });
 
@@ -217,7 +219,7 @@ export function pushRoutes(deps: PushRouteDeps): Hono<ApiEnv> {
     const lang = (await getUserAuthProfile(deps.db, userId))?.locale ?? "pl";
     let sent = 0;
     for (const { id, target } of prepared) {
-      // The push payload shape: v, id, kind, count, itemId, lang (the schema of the later PWA stage must accept this literal).
+      // The push payload shape: v, id, kind, count, itemId, lang (`pushPayloadSchema` of the service worker parses this literal; a test pins it).
       const payload = { v: 1, id: randomUUID(), kind: "test", count: 1, itemId: null, lang };
       const result = await sendWebPush(
         target,

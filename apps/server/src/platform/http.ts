@@ -157,6 +157,11 @@ export const PUBLIC_PAGE_PATHS: readonly RegExp[] = [
   /^\/_astro\//,
   /^\/favicon\./,
   /^\/robots\.txt$/,
+  // The installable shell: the manifest, the service worker, its offline page and the icons. Static files with no data.
+  /^\/manifest\.webmanifest$/,
+  /^\/sw\.js$/,
+  /^\/offline\.html$/,
+  /^\/icons\//,
 ];
 
 interface ValidationDetail {
@@ -468,10 +473,13 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     serveStatic({
       root: web.dist,
       onFound: (filePath, c) => {
-        c.header(
-          "Cache-Control",
-          filePath.includes("/_astro/") ? "public, max-age=31536000, immutable" : "private, no-store"
-        );
+        // The worker file is checked on every load (`no-cache`: store, then revalidate), so a new version reaches the browser at once.
+        const cacheControl = filePath.includes("/_astro/")
+          ? "public, max-age=31536000, immutable"
+          : c.req.path === "/sw.js"
+            ? "no-cache"
+            : "private, no-store";
+        c.header("Cache-Control", cacheControl);
       },
     })
   );
