@@ -42,7 +42,7 @@ export interface TripwireDeps {
 }
 
 // A category with `auto` on and a grant, in an `assist` mailbox: the only ones the tripwire watches. A mailbox with `auto` and no
-// grant (set before F110) has no grant time to count from; the re-gate stamps it, and from then on it is watched.
+// grant (set before the trust ladder existed) has no grant time to count from; the re-gate stamps it, and from then on it is watched.
 interface Watched {
   mailboxId: string;
   category: MovingCategory;
