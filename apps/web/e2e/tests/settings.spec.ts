@@ -62,7 +62,7 @@ test("mode, switch and auto", async ({ page }, testInfo) => {
   await expect(mode.getByText(en.mode_shadow, { exact: true })).toBeVisible();
   await expect(page.locator("[data-card=folders]")).toBeVisible();
   await expect(page.locator("[data-card=signature]")).toBeVisible();
-  // F115 stage 11: with the flag `reply_drafts` off (the main organization) the style card keeps the name and the signature; the switch,
+  // With the flag `reply_drafts` off (the main organization) the style card keeps the name and the signature; the switch,
   // the writing style and Preview are gone.
   const style = page.locator("[data-card=reply-style]");
   await expect(style.getByLabel(en.rs_name_label, { exact: true })).toBeVisible();
@@ -137,7 +137,7 @@ test("general: digest time, signature, timezone", async ({ page }) => {
     page.locator("[data-card=digest]").getByLabel(t("digest_time_label", { n: 1 }), { exact: true })
   ).toHaveValue("08:00");
 
-  // The organization signature is read-only (F115 stage 11): the old text shows, there is no field and no Save, and the panel sends no
+  // The organization signature is read-only: the old text shows, there is no field and no Save, and the panel sends no
   // write of it. Only the API route still takes `styleText`, so the test sets the old text through it.
   const writes: string[] = [];
   page.on("request", (request) => {

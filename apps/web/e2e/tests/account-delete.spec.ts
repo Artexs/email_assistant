@@ -6,7 +6,7 @@ import { E2E_BASE_URL } from "../env";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// F106 stage 11. The delete flow in a real browser: the dialog (focus, errors), the buttons that must not show, the one
+// The delete flow in a real browser: the dialog (focus, errors), the buttons that must not show, the one
 // DELETE request, the login notice and the data that must not stay in the page. The spec deletes the organization of its own
 // project ("E2E Delete Phone" or "E2E Delete Desktop"), so the tests depend on each other: in this order. The two projects
 // run in their own workers, each with its own organization, so the module variables below are per project.

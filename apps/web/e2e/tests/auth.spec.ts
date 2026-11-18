@@ -24,7 +24,7 @@ test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": nextAddress(addressBase()) });
 });
 
-// The phone shows the e-mail in the menu sheet, the desktop in the user menu button (stage 10).
+// The phone shows the e-mail in the menu sheet, the desktop in the user menu button.
 async function expectShellEmail(page: Page, email: string): Promise<void> {
   if (onMobile()) {
     await page.getByRole("button", { name: en.menu_open }).click();

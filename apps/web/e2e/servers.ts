@@ -2,7 +2,7 @@ import type { PlaywrightTestConfig } from "@playwright/test";
 
 import { E2E_BASE_URL, E2E_TELEGRAM_PORT, E2E_TELEGRAM_URL, repoRoot } from "./env";
 
-// The web servers of the panel e2e run, shared by `playwright.config.ts` and `docs-shots.config.ts` (F112 stage 11): the docs shot run
+// The web servers of the panel e2e run, shared by `playwright.config.ts` and `docs-shots.config.ts`: the docs shot run
 // uses the same fake Telegram, the same server, the same seed and the same env, so both read the one definition. `env` is `e2eEnv()`.
 export function e2eWebServers(env: Record<string, string>): NonNullable<PlaywrightTestConfig["webServer"]> {
   return [

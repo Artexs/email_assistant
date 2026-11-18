@@ -12,7 +12,7 @@ import { cspErrors, nextAddress, signIn } from "../helpers";
 import { e2eEnv, repoRoot } from "../env";
 import { readSeed } from "../seed";
 
-// F112 stage 15: the Help link and the "What is new" card of the real panel follow the flag `docs_links`.
+// The Help link and the "What is new" card of the real panel follow the flag `docs_links`.
 // The flag is on for the seed organization only while a test of this file turns it on; the e2e seed never holds it (stage 11 needs the
 // main organization with no flag on). The built panel holds the real `CHANGELOG.md`: the spec computes the expected card from it, so a
 // later release with "For users" lines does not break it.

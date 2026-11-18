@@ -6,7 +6,7 @@ import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// F116 stage 22. The loops organization of the project (see `e2e-seed.ts`, `e2e-loops-rows.ts`): the flags `open_loops`,
+// The loops organization of the project (see `e2e-seed.ts`, `e2e-loops-rows.ts`): the flags `open_loops`,
 // `delegate_button`, `delegation_pages`, `sent_sync` and `approvals_page` are on; one active delegate (Anna Nowak); a mailbox in assist mode with drafts
 // on that tracks Sent; three triaged mails (needs reply, unsure, info); the owner is linked to Telegram with a consent of an old
 // version; a member. The tests change this organization (a delegation, a wait, a consent), so they run in this order. The seed
@@ -45,7 +45,7 @@ test("T5: an owner delegates a needs-reply row: the dialog, a pick, the success 
   const dialog = page.getByRole("dialog", { name: en.dla_title });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("button", { name: en.dla_submit, exact: true })).toBeDisabled();
-  // T9: the dialog open.
+  // The dialog open.
   await expectNoA11yViolations(page);
 
   await dialog.getByRole("combobox", { name: en.dla_select_label, exact: true }).click();
@@ -91,7 +91,7 @@ test("T7: the wait select set to 5 is saved after a reload; the switch is saved 
   const auto = card.getByRole("switch", { name: en.lset_auto_label });
   await expect(wait).toHaveValue("3");
   await expect(auto).not.toBeChecked();
-  // T9: the settings page.
+  // The settings page.
   await expectNoA11yViolations(page);
 
   await wait.selectOption("5");

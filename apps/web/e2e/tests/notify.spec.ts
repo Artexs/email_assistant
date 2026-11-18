@@ -8,7 +8,7 @@ import { e2eEnv, E2E_BASE_URL, repoRoot } from "../env";
 import { cleanUpOrg, cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// F110 stage 18: the quiet hours card of Settings. The flag `user_quiet_hours` is on for the seed organization only while this file
+// The quiet hours card of Settings. The flag `user_quiet_hours` is on for the seed organization only while this file
 // runs. The channel card needs the flag `report_mail`: it stays off here, so the card must not show.
 test.describe.configure({ mode: "serial" });
 

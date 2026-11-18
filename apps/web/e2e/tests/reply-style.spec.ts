@@ -7,7 +7,7 @@ import { E2E_BASE_URL } from "../env";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// F115 stage 11: the style card (name, signature, writing style, Preview) and the reply drafts switch. The seed gives each project an
+// The style card (name, signature, writing style, Preview) and the reply drafts switch. The seed gives each project an
 // organization with the flag `reply_drafts` on and two mailboxes: `box` (password) and `oauth` (a provider is set). The tests of a
 // project run in this order and leave the organization as they found it (`reset`).
 //

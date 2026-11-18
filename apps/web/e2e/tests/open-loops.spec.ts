@@ -528,7 +528,7 @@ async function reloadApprovals(page: Page): Promise<void> {
   await reloaded;
 }
 
-// S11 (review 11, TG-4): a follow-up whose loop closes while Edit is open. The reload keeps the dialog and the typed text; Save closes
+// S11 (TG-4): a follow-up whose loop closes while Edit is open. The reload keeps the dialog and the typed text; Save closes
 // the dialog, says why (the loop is closed, or the send expired with it), puts the focus on the result line and plans no new version.
 for (const [name, closeIt] of [
   ["the loop is closed in the database (the send still waits)", "database"],

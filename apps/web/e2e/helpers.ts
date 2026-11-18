@@ -142,7 +142,7 @@ export interface AlertFill {
 
 // The layout of the text inside one alert: the width of the box, the width of the widest text line, and the number of lines.
 // A text node has no element of its own, so the helper measures it with a DOM range. An alert that collapses its bare text
-// into a zero-width column (F127) shows as many lines as words and a narrow text.
+// into a zero-width column shows as many lines as words and a narrow text.
 export async function alertFill(alert: Locator): Promise<AlertFill> {
   return alert.evaluate((element) => {
     const range = document.createRange();
