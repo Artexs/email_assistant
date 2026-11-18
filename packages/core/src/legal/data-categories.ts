@@ -308,6 +308,19 @@ export const dataCategories: readonly DataCategory[] = [
     kept: untilDelete,
   },
   {
+    id: "push-devices",
+    label: { en: "Notice devices", pl: "Urządzenia powiadomień" },
+    purpose: {
+      en: "The phone or the browser that a member registered to receive push notices: an encrypted address of the push service with its keys, a name of the device and the result of the last send",
+      pl: "Telefon lub przeglądarka, które członek zarejestrował do powiadomień push: zaszyfrowany adres usługi push z kluczami, nazwa urządzenia i wynik ostatniego wysłania",
+    },
+    columns: ["push_subscriptions.*"],
+    // The device is bound to a web session: the end of the session makes it inactive, and the member can remove it in the
+    // panel. No retention job clears the row: it goes with the member or with the organization.
+    subjects: ["users"],
+    kept: untilDelete,
+  },
+  {
     id: "messages",
     label: { en: "Messages to members", pl: "Wiadomości do członków" },
     purpose: {

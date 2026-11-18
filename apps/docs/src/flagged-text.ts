@@ -99,6 +99,8 @@ export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
     "F120 stage 02 adds the flag and the `contact` loop source only: no reader exists yet (F120 stage 09); a loop shows days, never a flag text",
   sender_suggestions:
     "F120 stage 02 adds the flag and the table only: no route or card text exists yet (the F120 stages 06 and 07)",
+  web_push:
+    "F118 stage 02 adds the flag and the tables only: no route, sender or text exists yet (the device routes come in F118 stage 03, the sender in stage 08)",
 };
 
 export const FLAGGED_TEXT: FlaggedText[] = [

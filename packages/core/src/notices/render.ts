@@ -34,6 +34,7 @@ export type NoticeEditInput = Parameters<typeof approvalEdit>[0];
 export const noticeEditRenderers: {
   telegram: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
   mail?: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
+  push?: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
 } = {
   telegram: { full: (input, opts) => approvalEdit(input, textsFor(opts.locale)) },
 };
