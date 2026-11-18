@@ -9,7 +9,7 @@ import { delegationHooks } from "../../src/modules/delegation";
 import { newerMailInThread, refreshFlagsOfEmail } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
-import { createReplySweep, SWEEP_LIMIT } from "../../src/modules/replies";
+import { createReplySweep } from "../../src/modules/replies";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 import { captureLogs, type CapturedLogs } from "../log-capture";
@@ -48,7 +48,7 @@ async function send(trx: Transaction<DB>, id: string) {
   return trx.selectFrom("actions").selectAll().where("id", "=", id).executeTakeFirstOrThrow();
 }
 
-function sweepOf(trx: Transaction<DB>, decided: { sendId: string; decision: string }[] = []) {
+function sweepOf(trx: Transaction<DB>, decided: { sendId: string; decision: string }[] = [], limit?: number) {
   const approvalHooks: ApprovalHooks = {
     onDecided: async (_trx, _ctx, input) => {
       decided.push({ sendId: input.sendId, decision: input.decision });
@@ -60,11 +60,12 @@ function sweepOf(trx: Transaction<DB>, decided: { sendId: string; decision: stri
     approvalHooks,
     uidplus: async () => true,
     now: () => NOW,
+    ...(limit === undefined ? {} : { limit }),
   });
 }
 
 const run = (trx: Transaction<DB>, o: SweepOrg, decided?: { sendId: string; decision: string }[]) =>
-  sweepOf(trx, decided).run({ mailboxId: o.mailboxId });
+  sweepOf(trx, decided).run({ mailboxIds: [o.mailboxId] });
 
 describe("the sweep: answered", () => {
   test("1. email_flags.answered closes a waiting reply with no result notice, and a held approved reply with one", async () => {
@@ -284,8 +285,10 @@ describe("the sweep: policy, locks, tenants, limits", () => {
       await markAnswered(trx, o, locked.emailId);
       await markAnswered(trx, o, free.emailId);
 
-      await run(trx, o);
+      const result = await run(trx, o);
 
+      // The locked send is not even listed: the sweep looked at one send.
+      expect(result).toMatchObject({ checked: 1, skipped: 0, closed: { answered: 1 } });
       expect(await send(trx, locked.sendId)).toMatchObject({ status: "approved", status_reason: null });
       expect(await send(trx, free.sendId)).toMatchObject({ status: "expired", status_reason: "answered" });
     });
@@ -302,8 +305,9 @@ describe("the sweep: policy, locks, tenants, limits", () => {
         .execute();
       await markAnswered(trx, o, pair.emailId);
 
-      await run(trx, o);
+      const result = await run(trx, o);
 
+      expect(result.checked).toBe(0);
       expect((await send(trx, pair.sendId)).status).toBe("applying");
     });
   });
@@ -355,7 +359,7 @@ describe("the sweep: policy, locks, tenants, limits", () => {
     await withRollback(db, async (trx) => {
       const o = await sweepOrg(trx);
       const created: string[] = [];
-      for (let index = 0; index < SWEEP_LIMIT + 3; index += 1) {
+      for (let index = 0; index < 203; index += 1) {
         const pair = await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + index * 1000) });
         await markAnswered(trx, o, pair.emailId);
         created.push(pair.sendId);
@@ -363,14 +367,31 @@ describe("the sweep: policy, locks, tenants, limits", () => {
 
       const first = await run(trx, o);
 
-      expect(first).toMatchObject({ checked: SWEEP_LIMIT, closed: { answered: SWEEP_LIMIT } });
+      expect(first).toMatchObject({ checked: 200, closed: { answered: 200 } });
       const states = await trx.selectFrom("actions").select(["id", "status"]).where("id", "in", created).execute();
       const open = states.filter((row) => row.status === "awaiting_approval").map((row) => row.id);
-      expect(open.sort()).toEqual(created.slice(SWEEP_LIMIT).sort());
+      expect(open.sort()).toEqual(created.slice(200).sort());
       const second = await run(trx, o);
       expect(second.closed.answered).toBe(3);
     });
   }, 60_000);
+
+  test("8b. the limit is for the whole run, not for each mailbox", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await sweepOrg(trx);
+      const b = await sweepOrg(trx);
+      for (const o of [a, b]) {
+        for (let index = 0; index < 3; index += 1) {
+          const pair = await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + index * 1000) });
+          await markAnswered(trx, o, pair.emailId);
+        }
+      }
+
+      const result = await sweepOf(trx, [], 4).run({ mailboxIds: [a.mailboxId, b.mailboxId] });
+
+      expect(result).toMatchObject({ checked: 4, closed: { answered: 4 } });
+    });
+  });
 
   test("9. a send that the user rejected between the read and the close is skipped, not an error", async () => {
     await withRollback(db, async (trx) => {
@@ -390,7 +411,7 @@ describe("the sweep: policy, locks, tenants, limits", () => {
         },
       });
 
-      const result = await sweep.run({ mailboxId: o.mailboxId });
+      const result = await sweep.run({ mailboxIds: [o.mailboxId] });
 
       expect(result).toMatchObject({ mailboxErrors: 0, checked: 1, skipped: 1 });
       expect(result.closed.answered).toBe(0);

@@ -21,6 +21,11 @@ export async function sentSyncOn(trx: Transaction<DB>, ctx: TenantContext, mailb
   await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: new Date(NOW.getTime() - HOUR) });
 }
 
+// Only the org flag: the switch of the mailbox stays off, so the Sent mail is not read.
+export async function sentSyncFlagOnly(trx: Transaction<DB>, ctx: TenantContext): Promise<void> {
+  await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
+}
+
 export async function messageIdOf(trx: Transaction<DB>, emailId: string): Promise<string> {
   const row = await trx
     .selectFrom("emails")

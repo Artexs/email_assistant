@@ -23,7 +23,7 @@ import {
   type CopyBox,
 } from "./copy-hash-fixtures";
 import { testDb, withRollback } from "./helpers";
-import { addThreadMail, appendUserReply, messageIdOf, sentSyncOn } from "./reply-answered-fixtures";
+import { addThreadMail, appendUserReply, messageIdOf, sentSyncFlagOnly, sentSyncOn } from "./reply-answered-fixtures";
 
 // F115 stage 09, step 1: the pass before a reply send. GreenMail holds the Drafts, Sent and INBOX folders; the test acts like the mail
 // client of the user (a reply in Sent, a flag on the original, an edit of the draft). Every close here sends nothing.
@@ -231,6 +231,13 @@ describe("the pass before a reply send: answered", () => {
       const other = await getSend(trx, seen.box.ctx, seen.p.sendId);
       if (other === undefined) throw new Error("no send");
       expect((await approvalViewFor(trx, seen.box.ctx, other)).view.sentVisible).toBeUndefined();
+
+      // The org flag alone is not enough: the switch of the mailbox must be on too.
+      const flagOnly = await seedPair(trx, boxes, { kind: "reply", flag: false });
+      await sentSyncFlagOnly(trx, flagOnly.box.ctx);
+      const third = await getSend(trx, flagOnly.box.ctx, flagOnly.p.sendId);
+      if (third === undefined) throw new Error("no send");
+      expect((await approvalViewFor(trx, flagOnly.box.ctx, third)).view.sentVisible).toBe(false);
     });
   });
 

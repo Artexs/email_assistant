@@ -66,7 +66,7 @@ describe("the sweep with real commits (F115 stage 09)", () => {
       await locked;
       let done = false;
       const running = sweep()
-        .run({ mailboxId: o.mailboxId })
+        .run({ mailboxIds: [o.mailboxId] })
         .then((result) => {
           done = true;
           return result;
@@ -90,8 +90,8 @@ describe("the sweep with real commits (F115 stage 09)", () => {
     const { o, pair } = await committedReply();
     try {
       const results = await Promise.all([
-        sweep().run({ mailboxId: o.mailboxId }),
-        sweep().run({ mailboxId: o.mailboxId }),
+        sweep().run({ mailboxIds: [o.mailboxId] }),
+        sweep().run({ mailboxIds: [o.mailboxId] }),
       ]);
 
       expect(results.reduce((sum, result) => sum + result.closed.answered, 0)).toBe(1);

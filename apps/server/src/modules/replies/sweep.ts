@@ -34,6 +34,8 @@ export interface SweepDeps {
   approvalHooks: ApprovalHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   now(): Date;
+  // Sends per run over all mailboxes (default `SWEEP_LIMIT`). Only a test sets it.
+  limit?: number;
 }
 
 export interface SweepResult {
@@ -105,7 +107,9 @@ async function closeOne(
 
 // `replies.sweep` (every 5 minutes): closes the open reply sends whose reason to exist ended. It reads no mailbox. Flag `reply_drafts`
 // off: it does nothing (the committer holds reply sends and the expiry job ends them). A suspended organization is skipped.
-export function createReplySweep(deps: SweepDeps): { run(opts?: { mailboxId?: string }): Promise<SweepResult> } {
+export function createReplySweep(deps: SweepDeps): {
+  run(opts?: { mailboxIds?: readonly string[] }): Promise<SweepResult>;
+} {
   async function sweepMailbox(
     ctx: TenantContext,
     mailboxId: string,
@@ -150,11 +154,11 @@ export function createReplySweep(deps: SweepDeps): { run(opts?: { mailboxId?: st
   return {
     async run(opts) {
       const total = emptyResult();
-      const budget = { left: SWEEP_LIMIT };
+      const budget = { left: deps.limit ?? SWEEP_LIMIT };
       const targets = await listSyncTargets(deps.db);
       for (const { orgId, mailboxId } of targets) {
         if (budget.left <= 0) break;
-        if (opts?.mailboxId !== undefined && opts.mailboxId !== mailboxId) continue;
+        if (opts?.mailboxIds !== undefined && !opts.mailboxIds.includes(mailboxId)) continue;
         const ctx = { orgId };
         try {
           if (await isOrgSuspended(deps.db, ctx)) continue;
