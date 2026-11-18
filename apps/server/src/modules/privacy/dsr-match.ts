@@ -1,11 +1,15 @@
 import { sql, type RawBuilder, type Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
-import { senderContextRowsOf, type SenderContextRows } from "../contacts";
+import { normalizedAddress, senderContextRowsOf, type SenderContextRows } from "../contacts";
 
 import { addressRegex, DSR_ADDRESS_MAP, normalizeDsrAddress, type AddressRule } from "./address-map";
 
 type DbOrTrx = Db | Transaction<DB>;
+
+// Every compare of a stored address with the asked address goes through `normalizedAddress`, the SQL form of the one address
+// rule (`normalizeSenderAddress` in `@ea/core`, the rule that `normalizeDsrAddress` applies to the asked address). A Greek
+// final sigma or a Turkish dotted capital I cannot make the database `lower()` and the JavaScript `toLowerCase()` disagree.
 
 export interface DsrMatch {
   // The address is a mailbox of the organization or the e-mail of a member: the other fields stay empty.
@@ -79,14 +83,14 @@ export function rowCondition(rule: AddressRule, column: string, patterns: Addres
   const ref = sql.ref(`t.${column}`);
   switch (rule) {
     case "recipients":
-      return sql<boolean>`exists (select 1 from unnest(${ref}) as v where lower(v) = ${address})`;
+      return sql<boolean>`exists (select 1 from unnest(${ref}) as v where ${normalizedAddress("v")} = ${address})`;
     case "text":
       return sql<boolean>`${ref} ~* ${patterns.text}`;
     case "json":
       return sql<boolean>`${ref}::text ~* ${patterns.json}`;
     case "equal":
     case "delete":
-      return sql<boolean>`lower(${ref}) = ${address}`;
+      return sql<boolean>`${normalizedAddress(`t.${column}`)} = ${address}`;
     case "sender":
     case "list":
       return null;
@@ -98,7 +102,7 @@ async function findMails(db: DbOrTrx, orgId: string, address: string): Promise<{
   // that holds this copy. The Reply-To rule: the person is the only Reply-To (a contact form).
   const result = await sql<{ id: string; dedup_key: string }>`
     with own as (
-      select coalesce(array_agg(lower(address)), '{}') as addresses from mailboxes where org_id = ${orgId}::uuid
+      select coalesce(array_agg(${normalizedAddress("address")}), '{}') as addresses from mailboxes where org_id = ${orgId}::uuid
     )
     select e.id::text as id, e.dedup_key
     from emails e
@@ -106,14 +110,14 @@ async function findMails(db: DbOrTrx, orgId: string, address: string): Promise<{
     cross join own
     where e.org_id = ${orgId}::uuid
       and (
-        lower(e.from_address) = ${address}
-        or (cardinality(h.reply_to) = 1 and lower(h.reply_to[1]) = ${address})
+        ${normalizedAddress("e.from_address")} = ${address}
+        or (cardinality(h.reply_to) = 1 and ${normalizedAddress("h.reply_to[1]")} = ${address})
         or (
-          exists (select 1 from unnest(e.to_addresses || e.cc_addresses) as v where lower(v) = ${address})
+          exists (select 1 from unnest(e.to_addresses || e.cc_addresses) as v where ${normalizedAddress("v")} = ${address})
           and not exists (
             select 1
             from unnest(array_prepend(e.from_address, e.to_addresses || e.cc_addresses)) as v
-            where v is not null and lower(v) <> ${address} and lower(v) <> all (own.addresses)
+            where v is not null and ${normalizedAddress("v")} <> ${address} and ${normalizedAddress("v")} <> all (own.addresses)
           )
         )
       )
@@ -126,20 +130,20 @@ async function findMails(db: DbOrTrx, orgId: string, address: string): Promise<{
 async function findSentMails(db: DbOrTrx, orgId: string, address: string): Promise<{ id: string; dedupKey: string }[]> {
   const result = await sql<{ id: string; dedup_key: string }>`
     with own as (
-      select coalesce(array_agg(lower(address)), '{}') as addresses from mailboxes where org_id = ${orgId}::uuid
+      select coalesce(array_agg(${normalizedAddress("address")}), '{}') as addresses from mailboxes where org_id = ${orgId}::uuid
     )
     select s.id::text as id, s.dedup_key
     from sent_emails s
     cross join own
     where s.org_id = ${orgId}::uuid
       and (
-        lower(s.from_address) = ${address}
-        or exists (select 1 from unnest(s.to_addresses || s.cc_addresses) as v where lower(v) = ${address})
+        ${normalizedAddress("s.from_address")} = ${address}
+        or exists (select 1 from unnest(s.to_addresses || s.cc_addresses) as v where ${normalizedAddress("v")} = ${address})
       )
       and not exists (
         select 1
         from unnest(array_prepend(s.from_address, s.to_addresses || s.cc_addresses)) as v
-        where v is not null and lower(v) <> ${address} and lower(v) <> all (own.addresses)
+        where v is not null and ${normalizedAddress("v")} <> ${address} and ${normalizedAddress("v")} <> all (own.addresses)
       )
     order by s.id`.execute(db);
   return result.rows.map((row) => ({ id: row.id, dedupKey: row.dedup_key }));
@@ -188,7 +192,7 @@ async function findListed(db: DbOrTrx, orgId: string, address: string): Promise<
     if (names.length === 0) continue;
     if (!field) throw new Error(`dsr_match_no_list_field:${table}`);
     const any = sql.join(
-      names.map((column) => sql<boolean>`lower(${sql.ref(`t.${column}`)}) = ${address}`),
+      names.map((column) => sql<boolean>`${normalizedAddress(`t.${column}`)} = ${address}`),
       sql` or `
     );
     const result = await sql<{ id: string }>`
@@ -268,10 +272,10 @@ async function findChains(
 async function isOwnAddress(db: DbOrTrx, orgId: string, address: string): Promise<boolean> {
   const result = await sql<{ own: boolean }>`
     select (
-      exists (select 1 from mailboxes where org_id = ${orgId}::uuid and lower(address) = ${address})
+      exists (select 1 from mailboxes where org_id = ${orgId}::uuid and ${normalizedAddress("address")} = ${address})
       or exists (
         select 1 from memberships m join users u on u.id = m.user_id
-        where m.org_id = ${orgId}::uuid and lower(u.email) = ${address}
+        where m.org_id = ${orgId}::uuid and ${normalizedAddress("u.email")} = ${address}
       )
     ) as own`.execute(db);
   return result.rows[0]?.own === true;

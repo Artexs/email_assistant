@@ -1,3 +1,5 @@
+import { normalizeSenderAddress } from "@ea/core";
+
 // The registry of the columns that can hold the address of a third party (account data).
 //
 // One list serves the find and the erase, so a column cannot be searched and then skipped when
@@ -324,12 +326,13 @@ export const NO_PERSONAL_TABLES: Readonly<Record<string, string>> = {
 
 const MAX_ADDRESS_LENGTH = 254;
 
-// Trims and lower-cases. Null unless the value is one address: one `@`, a domain of non-empty labels with a dot, at most
+// Trims and lower-cases by the one address rule of `@ea/core` (`normalizeSenderAddress`): the same form as the SQL compare
+// of the match (`normalizedAddress`), also for a Greek final sigma and a Turkish dotted capital I. Null unless the value is one address: one `@`, a domain of non-empty labels with a dot, at most
 // 254 characters, and no whitespace, quote, backslash, angle bracket, control, format (zero-width) or separator
 // character. A value that NFKC changes (full-width letters) is null: it would match no stored address. Reviewed after
 // `p@x.test.`, `p@.test` and `p@x..test` matched nothing and passed.
 export function normalizeDsrAddress(input: string): string | null {
-  const address = input.trim().toLowerCase();
+  const address = normalizeSenderAddress(input);
   if (address.length === 0 || address.length > MAX_ADDRESS_LENGTH) return null;
   if (/[\s"\\<>\p{Cc}\p{Cf}\p{Z}]/u.test(address)) return null;
   if (address.normalize("NFKC") !== address) return null;
@@ -367,7 +370,11 @@ const LETTERS = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\
 // pattern left an address on its own line of a draft payload.
 export function addressRegex(address: string, opts: { json?: boolean } = {}): string {
   // `\` before an ASCII punctuation character makes it an ordinary character in a Postgres regex.
-  const escaped = address.replace(/[!-/:-@[-`{-~]/gu, "\\$&");
+  const escaped = address
+    .replace(/[!-/:-@[-`{-~]/gu, "\\$&")
+    // The asked address is in the one address rule form (`σ`, plain `i`); the text holds any form that the rule folds to it.
+    .replaceAll("\u03c3", "[\u03c3\u03c2\u03a3]")
+    .replaceAll("i", "(?:i\u0307?|\u0130)");
   // A quote or a brace is `atext`, so it joins the local part (`o'p@x.test`, `a{p@x.test`). At the start of the text or
   // after a character that is not `atext` it is punctuation around the address (`'p@x.test'`, `{p@x.test}`).
   const starts = [`(?<![${LETTERS}${ATEXT}])`, "(?<=[a-z]=)", `(?<=(?:^|[^${LETTERS}${ATEXT}])['{])`];
