@@ -16,3 +16,7 @@ The docs say what the code does (PD-009). No code change except a doc test that 
 - **Check:** `bun run graph:modules` leaves no diff, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the epic page and `docs/product/stage-2/*` (the coordinator).
+
+## Carry-over from the stage 07 review
+
+- N6: fix the `dataReceived` text of the `openai` and `gemini` rows (`packages/core/src/legal/subprocessors.ts`), the claims C136 and C139 and the privacy text: the drafter sends the mailbox profile, the instruction and the org time zone as well; one TERMS_VERSION bump with the F107 P5 rule.

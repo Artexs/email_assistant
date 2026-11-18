@@ -42,3 +42,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 - The Telegram `expired` tap text says "(48 h)" for a reply that lives 7 days: fix it.
 - A reply that fails with `has_gaps` is reported as the `bad_payload` cause until stage 09 adds its own text; stage 09 adds texts for the new reasons and the result detector must stop skipping `closeSend` with `notify: true`.
 - The new Polish and English tap and notice texts are agent drafts: judge wording.
+
+## Carry-over from the stage 07 review
+
+- Stage 07 added a SKIP of `reply` sends in `listSendsToNotify` (review-7.md N1): replace it by the proper reply notice and the consent check (D16, D15), and add the test that the generic detector never queues a reply (TG2).
