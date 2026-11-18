@@ -14,7 +14,8 @@ const skipped = /(^|\/)(node_modules|dist|\.astro|\.f132-logs|test-results|playw
 
 // A ticket number, a product decision number, a stage number, a review number, and one of the plan letters S, D, P, N, A, Q, T
 // or U with one or two digits. A quarter written with its year is a date, not a code.
-const CODE = /\bF\d{3}\b(?!-[a-z0-9])|\bPD-\d+\b|\b[Ss]tages? \d+[a-z]?\b|\b[Rr]eview (?:round )?\d+\b|\b[SDPNAQTU]\d{1,2}[a-z]?\b(?! \d{4}\b)/;
+const CODE =
+  /\bF\d{3}\b(?!-[a-z0-9])|\bPD-\d+\b|\b[Ss]tages? \d+[a-z]?\b|\b[Rr]eview (?:round )?\d+\b|\b[SDPNAQTU]\d{1,2}[a-z]?\b(?! \d{4}\b)/;
 
 // Files whose comments name test fixtures by a short label that the same file defines: they are not plan codes.
 const FIXTURE_LABELS: Record<string, RegExp> = {
@@ -23,7 +24,10 @@ const FIXTURE_LABELS: Record<string, RegExp> = {
   "apps/server/test/integration/web-delegations.test.ts": /\b[DU]\d\b/, // the six delegations and the two owners
 };
 
-type Comment = { line: number; text: string };
+interface Comment {
+  line: number;
+  text: string;
+}
 
 function tsComments(file: string, text: string): Comment[] {
   const kind = file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -31,7 +35,10 @@ function tsComments(file: string, text: string): Comment[] {
   const found = new Map<number, Comment>();
   const add = (ranges: ts.CommentRange[] | undefined) => {
     for (const range of ranges ?? []) {
-      found.set(range.pos, { line: source.getLineAndCharacterOfPosition(range.pos).line + 1, text: text.slice(range.pos, range.end) });
+      found.set(range.pos, {
+        line: source.getLineAndCharacterOfPosition(range.pos).line + 1,
+        text: text.slice(range.pos, range.end),
+      });
     }
   };
   const visit = (node: ts.Node) => {
@@ -51,7 +58,10 @@ function lineComments(file: string, text: string): Comment[] {
     : file.endsWith(".css")
       ? /\/\*[\s\S]*?\*\//g
       : /<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|(?<![:"'`\w])\/\/.*$/gm;
-  return [...text.matchAll(pattern)].map((match) => ({ line: text.slice(0, match.index).split("\n").length, text: match[0] }));
+  return [...text.matchAll(pattern)].map((match) => ({
+    line: text.slice(0, match.index).split("\n").length,
+    text: match[0],
+  }));
 }
 
 function bareCodes(file: string, text: string): string[] {
@@ -72,7 +82,7 @@ describe("comments carry no bare ticket or decision codes", () => {
     expect(bareCodes("a.ts", "// the rule of D12\nconst x = 1;")).toHaveLength(1);
     expect(bareCodes("a.ts", "/* F115 stage 09 */\nconst x = 1;")).toHaveLength(1);
     expect(bareCodes("a.ts", "// see PD-044 and S3 and review 17")).toHaveLength(1);
-    expect(bareCodes("a.ts", "// ticket folder F115-e6a-reply-drafts, a quarter (\"Q3 2025\")")).toEqual([]);
+    expect(bareCodes("a.ts", '// ticket folder F115-e6a-reply-drafts, a quarter ("Q3 2025")')).toEqual([]);
     expect(bareCodes("a.ts", 'const x = "F115 D12 stage 09";')).toEqual([]);
     expect(bareCodes("a.sh", "# the rule of D12")).toHaveLength(1);
   });
