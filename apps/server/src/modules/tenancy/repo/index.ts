@@ -14,6 +14,7 @@ export {
 export {
   getMemberNotify,
   getMembership,
+  getOrgOwner,
   insertMembership,
   listMemberships,
   listMembershipsOfUser,
@@ -23,6 +24,7 @@ export {
   setMemberReportChannel,
   type MemberNotify,
   type MembershipWithUser,
+  type OrgOwner,
   type UserMembership,
 } from "./memberships";
 export {

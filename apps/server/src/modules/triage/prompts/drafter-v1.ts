@@ -73,6 +73,15 @@ Output fields:
 Return only JSON that matches the schema. Give no other text.`;
 }
 
+// The header text of a third party on one line. Every line break and control character becomes a space: a CR, an LF, NEL (U+0085)
+// and any other C0 or C1 control character, here; the Unicode line and paragraph separators (U+2028, U+2029) are white space for
+// `\s`, so the collapse below turns them into a space too. A model may read any of them as a line break and then see a forged
+// `From:` line or a second block end.
+// eslint-disable-next-line no-control-regex -- the control characters are the point of this pattern
+const HEADER_BREAKS = /[\u0000-\u001f\u007f-\u009f]+/g;
+// The break characters become spaces first; then the block markers are removed.
+const oneLine = (text: string): string => neutralize(text.replace(HEADER_BREAKS, " ")).replace(/\s+/g, " ").trim();
+
 // One line: a line break in the user's text cannot start a new section of the prompt.
 function userLine(text: string | null): string {
   if (text === null || text.trim() === "") return "(none)";
@@ -99,12 +108,15 @@ export function buildUserPrompt(input: DrafterInput, nonce: string, retry?: Retr
   const local = localDateTime(input.today, input.timeZone);
   const received = localDateTime(input.mail.receivedAt, input.timeZone);
   const sender = [
-    input.mail.fromName === null ? "" : cutChars(input.mail.fromName, DRAFTER_NAME_MAX),
+    input.mail.fromName === null ? "" : cutChars(oneLine(input.mail.fromName), DRAFTER_NAME_MAX),
     input.mail.fromAddress,
   ]
     .filter((part) => part.trim() !== "")
     .join(" ");
-  const subject = input.mail.subject === null || input.mail.subject.trim() === "" ? "(no subject)" : input.mail.subject;
+  // The sender name and the subject are header text of a third party: one line each, so a line break cannot start a
+  // forged header line (`From:`, `Subject:`) or a blank line that ends the headers inside the data block.
+  const subjectText = input.mail.subject === null ? "" : oneLine(input.mail.subject);
+  const subject = subjectText === "" ? "(no subject)" : subjectText;
   const body = input.mail.body.trim() === "" ? "(no text)" : cutChars(input.mail.body, DRAFTER_MAIL_BODY_MAX);
   const language = input.language === "pl" ? "Polish (pl)" : "English (en)";
   return [
