@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 
-import { notifyViewSchema } from "@ea/core";
+import { noticeRoutesSchema, notifyViewSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import type { Hono } from "hono";
 
 import { auditEvents } from "../../src/modules/audit";
 import { channelRoutes } from "../../src/modules/channels";
+import { upsertPushSubscription } from "../../src/modules/channels/push";
 import { insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
 import { upsertOrgFeature } from "../../src/modules/tenancy";
 import type { Db } from "../../src/platform/db";
@@ -14,6 +15,7 @@ import type { ApiEnv } from "../../src/platform/http";
 import { randomChatId, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { box, newSession } from "./web-push-kit";
 
 // GET/PATCH /api/me/notify (tests 7, 8 and 9 of the stage).
 const db = testDb();
@@ -29,13 +31,17 @@ afterAll(async () => {
   await db.destroy();
 });
 
-async function setup(flags: { quiet?: boolean; mail?: boolean } = { quiet: true, mail: true }, routeDb: Db = db) {
+async function setup(
+  flags: { quiet?: boolean; mail?: boolean; push?: boolean } = { quiet: true, mail: true },
+  routeDb: Db = db
+) {
   const org = await webOrg(db);
   orgs.push(org);
   const ctx = { orgId: org.orgId };
   for (const [flag, enabled] of [
     ["user_quiet_hours", flags.quiet ?? false],
     ["report_mail", flags.mail ?? false],
+    ["web_push", flags.push ?? false],
   ] as const) {
     if (enabled) await upsertOrgFeature(db, ctx, { flag, enabled, setBy: org.ownerId, setAt: NOW });
   }
@@ -389,5 +395,217 @@ describe("PATCH /api/me/notify: review fixes", () => {
     const keys = (await auditOf(org.orgId)).map((row) => (row.data as { keys: string }).keys).sort();
     expect(keys).toEqual(["report_channel", "report_channel,report_mailbox_id"]);
     expect(await rowOf(org.orgId, org.ownerId)).toMatchObject({ report_channel: "both", report_mailbox_id: mailboxId });
+  });
+});
+
+// Stage 06 of the phone channel: the routes of a member per notice group (`web_push`).
+describe("notice routes", () => {
+  const routesOf = async (orgId: string, userId: string) =>
+    noticeRoutesSchema.parse(
+      (
+        await db
+          .selectFrom("memberships")
+          .select("notice_routes")
+          .where("org_id", "=", orgId)
+          .where("user_id", "=", userId)
+          .executeTakeFirstOrThrow()
+      ).notice_routes
+    );
+  const read = async (app: Hono<ApiEnv>, cookie: string) =>
+    notifyViewSchema.parse(await (await app.request("/api/me/notify", as(cookie))).json());
+  const patchRoutes = (app: Hono<ApiEnv>, cookie: string, routes: unknown) =>
+    app.request("/api/me/notify", patch(cookie, { routes }));
+  const routeAudit = async (orgId: string) => (await auditOf(orgId)).map((row) => row.data);
+
+  async function linkChat(orgId: string, userId: string) {
+    await db
+      .insertInto("chat_links")
+      .values({
+        org_id: orgId,
+        user_id: userId,
+        channel: "telegram",
+        external_chat_id: randomChatId(),
+        linked_at: NOW,
+      })
+      .execute();
+  }
+
+  async function addDevice(orgId: string, userId: string, sessionExpiresAt?: Date) {
+    const sessionId = await newSession(db, userId, sessionExpiresAt);
+    await db.transaction().execute((trx) =>
+      upsertPushSubscription(
+        trx,
+        { orgId },
+        {
+          userId,
+          sessionId,
+          endpoint: `https://fcm.googleapis.com/fcm/send/${randomUUID()}`,
+          p256dh: "B".repeat(87),
+          auth: "a".repeat(22),
+          deviceLabel: "Chrome on Android",
+          box,
+          now: NOW,
+        }
+      )
+    );
+  }
+
+  test("1. one group is stored, the other keys stay; null removes a key; the view and the audit row follow", async () => {
+    const { org, app } = await setup({ push: true });
+    const res = await patchRoutes(app, "owner", { urgent: "push" });
+    expect(res.status).toBe(200);
+    expect(notifyViewSchema.parse(await res.json()).routes).toEqual({ urgent: "push" });
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({ urgent: "push" });
+
+    await patchRoutes(app, "owner", { approvals: "both" });
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({ urgent: "push", approvals: "both" });
+    await patchRoutes(app, "owner", { urgent: "telegram", updates: "push" });
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({ urgent: "telegram", approvals: "both", updates: "push" });
+    const removed = await patchRoutes(app, "owner", { approvals: null });
+    expect(notifyViewSchema.parse(await removed.json()).routes).toEqual({ urgent: "telegram", updates: "push" });
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({ urgent: "telegram", updates: "push" });
+
+    // One audit row per real change, with the key name and no value; the same value again writes none.
+    expect(await routeAudit(org.orgId)).toEqual([
+      { via: "web", keys: "notice_routes" },
+      { via: "web", keys: "notice_routes" },
+      { via: "web", keys: "notice_routes" },
+      { via: "web", keys: "notice_routes" },
+    ]);
+    await patchRoutes(app, "owner", { urgent: "telegram", updates: "push" });
+    await patchRoutes(app, "owner", { approvals: null });
+    expect(await routeAudit(org.orgId)).toHaveLength(4);
+    expect(JSON.stringify(await routeAudit(org.orgId))).not.toMatch(/push|both|telegram"/);
+  });
+
+  test("2. every group takes every value the database CHECK allows (the schema and the CHECK agree)", async () => {
+    const { org, app } = await setup({ push: true });
+    for (const group of ["urgent", "approvals", "updates"] as const) {
+      for (const value of ["telegram", "push", "both"] as const) {
+        const res = await patchRoutes(app, "owner", { [group]: value });
+        expect({ group, value, status: res.status }).toEqual({ group, value, status: 200 });
+        expect((await routesOf(org.orgId, org.ownerId))[group]).toBe(value);
+      }
+    }
+  });
+
+  test("3. a value outside telegram, push and both, another key, an empty or mixed body: 400, nothing stored or audited", async () => {
+    const { org, app } = await setup({ push: true, quiet: true, mail: true });
+    for (const routes of [
+      { urgent: "fax" },
+      { urgent: "PUSH" },
+      { urgent: ["push"] },
+      { urgent: 1 },
+      { digest: "push" },
+      { urgent: "push", extra: "telegram" },
+      {},
+      [],
+      "push",
+      null,
+    ]) {
+      const res = await patchRoutes(app, "owner", routes);
+      expect({ routes, status: res.status }).toEqual({ routes, status: 400 });
+    }
+    const mixed = await app.request(
+      "/api/me/notify",
+      patch("owner", { routes: { urgent: "push" }, quietStart: "22:00", quietEnd: "07:00" })
+    );
+    expect(mixed.status).toBe(400);
+    const mixedChannel = await app.request(
+      "/api/me/notify",
+      patch("owner", { routes: { urgent: "push" }, reportChannel: "telegram" })
+    );
+    expect(mixedChannel.status).toBe(400);
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({});
+    expect(await routeAudit(org.orgId)).toEqual([]);
+  });
+
+  test("3b. the flag web_push off: the routes are refused (404) and nothing is stored; the other groups still work", async () => {
+    const { org, app } = await setup({ quiet: true, mail: true });
+    const res = await patchRoutes(app, "owner", { urgent: "push" });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({});
+    expect(await routeAudit(org.orgId)).toEqual([]);
+    expect(
+      (await app.request("/api/me/notify", patch("owner", { quietStart: "23:00", quietEnd: "06:00" }))).status
+    ).toBe(200);
+  });
+
+  test("4. the caller's row only: another member and a member of another organization change their own row, not this one", async () => {
+    const { org, app } = await setup({ push: true });
+    expect((await patchRoutes(app, "assistant", { updates: "push" })).status).toBe(200);
+    expect(await routesOf(org.orgId, org.assistantId)).toEqual({ updates: "push" });
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({});
+    // The other organization has no flag: its owner is refused and the first organization keeps its rows.
+    expect((await patchRoutes(app, "other-owner", { urgent: "push" })).status).toBe(404);
+    expect(await routesOf(org.otherOrgId, org.otherOwnerId)).toEqual({});
+    // With the flag on there, the owner of org B changes the row of org B only.
+    await upsertOrgFeature(
+      db,
+      { orgId: org.otherOrgId },
+      { flag: "web_push", enabled: true, setBy: org.otherOwnerId, setAt: NOW }
+    );
+    expect((await patchRoutes(app, "other-owner", { urgent: "both" })).status).toBe(200);
+    expect(await routesOf(org.otherOrgId, org.otherOwnerId)).toEqual({ urgent: "both" });
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({});
+    expect(await routesOf(org.orgId, org.assistantId)).toEqual({ updates: "push" });
+    // A user id in the body is no key: 400.
+    expect(
+      (await app.request("/api/me/notify", patch("assistant", { routes: { urgent: "push" }, userId: org.ownerId })))
+        .status
+    ).toBe(400);
+  });
+
+  test("5. two changes of two groups at once both stay (the row is locked, the merge reads the new value)", async () => {
+    const { org, app } = await setup({ push: true });
+    const results = await Promise.all([
+      patchRoutes(app, "owner", { urgent: "push" }),
+      patchRoutes(app, "owner", { approvals: "both" }),
+      patchRoutes(app, "owner", { updates: "push" }),
+    ]);
+    expect(results.map((res) => res.status)).toEqual([200, 200, 200]);
+    expect(await routesOf(org.orgId, org.ownerId)).toEqual({ urgent: "push", approvals: "both", updates: "push" });
+  });
+
+  test("6. GET: routeDefaults follow the chat and the live devices of the member (effectiveRoute)", async () => {
+    const { org, app } = await setup({ push: true });
+    const none = { telegram: false, push: false };
+    const tg = { telegram: true, push: false };
+    const phone = { telegram: false, push: true };
+    const both = { telegram: true, push: true };
+    expect((await read(app, "owner")).routeDefaults).toEqual({ urgent: none, approvals: none, updates: none });
+    expect((await read(app, "owner")).routes).toEqual({});
+
+    await linkChat(org.orgId, org.ownerId);
+    expect((await read(app, "owner")).routeDefaults).toEqual({ urgent: tg, approvals: tg, updates: tg });
+
+    // A device of the assistant and a device with an expired session are not a live device of the owner.
+    await addDevice(org.orgId, org.assistantId);
+    await addDevice(org.orgId, org.ownerId, new Date("2026-11-10T00:00:00Z"));
+    expect((await read(app, "owner")).routeDefaults).toEqual({ urgent: tg, approvals: tg, updates: tg });
+
+    await addDevice(org.orgId, org.ownerId);
+    const withDevice = await read(app, "owner");
+    expect(withDevice.routeDefaults).toEqual({ urgent: both, approvals: both, updates: tg });
+    // The assistant has a device and no chat: push in every group.
+    expect((await read(app, "assistant")).routeDefaults).toEqual({ urgent: phone, approvals: phone, updates: phone });
+
+    // The stored choice is in `routes`; `routeDefaults` stays the default.
+    await patchRoutes(app, "owner", { urgent: "telegram" });
+    const chosen = await read(app, "owner");
+    expect(chosen.routes).toEqual({ urgent: "telegram" });
+    expect(chosen.routeDefaults).toEqual({ urgent: both, approvals: both, updates: tg });
+  });
+
+  test("6b. GET with the flag off: the stored routes show, a device does not count", async () => {
+    const { org, app } = await setup({ push: true });
+    await linkChat(org.orgId, org.ownerId);
+    await addDevice(org.orgId, org.ownerId);
+    await patchRoutes(app, "owner", { urgent: "push" });
+    await db.deleteFrom("org_features").where("org_id", "=", org.orgId).where("flag", "=", "web_push").execute();
+    const view = await read(app, "owner");
+    expect(view.routes).toEqual({ urgent: "push" });
+    expect(view.routeDefaults.urgent).toEqual({ telegram: true, push: false });
   });
 });

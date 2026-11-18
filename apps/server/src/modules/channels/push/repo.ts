@@ -60,14 +60,15 @@ export async function lockPushUser(trx: Transaction<DB>, userId: string): Promis
   await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`push:${userId}`}, 0))`.execute(trx);
 }
 
-// An existing `(user, endpoint)` gets the new session, keys and label (re-bind; `created` false). With `rebindOnly` and no such
-// device: null, nothing stored. A new device beyond the cap removes a device of the user first (a dead one before a live one,
+// An existing `(user, endpoint)` gets the new session, keys and label (re-bind; `created` false). `sessionChanged` is true when
+// the device is new or was bound to another session (or none): a page load of the same session changes no binding. With
+// `rebindOnly` and no such device: null, nothing stored. A new device beyond the cap removes a device of the user first (a dead one before a live one,
 // then the oldest), which fails its open rows.
 export async function upsertPushSubscription(
   trx: Transaction<DB>,
   ctx: TenantContext,
   input: UpsertPushSubscription
-): Promise<{ id: string; created: boolean } | null> {
+): Promise<{ id: string; created: boolean; sessionChanged: boolean } | null> {
   await lockPushUser(trx, input.userId);
   const hash = endpointHash(input.endpoint);
   const secretOf = (id: string) =>
@@ -75,7 +76,7 @@ export async function upsertPushSubscription(
 
   const existing = await trx
     .selectFrom("push_subscriptions")
-    .select("id")
+    .select(["id", "session_id"])
     .where("org_id", "=", ctx.orgId)
     .where("user_id", "=", input.userId)
     .where("endpoint_hash", "=", hash)
@@ -94,7 +95,7 @@ export async function upsertPushSubscription(
       .where("org_id", "=", ctx.orgId)
       .where("id", "=", existing.id)
       .execute();
-    return { id: existing.id, created: false };
+    return { id: existing.id, created: false, sessionChanged: existing.session_id !== input.sessionId };
   }
   if (input.rebindOnly) return null;
 
@@ -137,7 +138,7 @@ export async function upsertPushSubscription(
     .executeTakeFirst();
   // No row came back: the unique key holds a device that this organization cannot see (another organization of the user).
   if (!inserted) throw new PushDeviceElsewhereError();
-  return { id, created: true };
+  return { id, created: true, sessionChanged: true };
 }
 
 // The devices that the sender and the fan-out may use: bound to a session that exists and has not expired. No secret,

@@ -1,8 +1,10 @@
 import {
   membershipRoleSchema,
+  noticeRoutesSchema,
   reportChannelSchema,
   userLocaleSchema,
   type MembershipRole,
+  type NoticeRoutes,
   type UserLocale,
 } from "@ea/core";
 import { sql, type Transaction } from "kysely";
@@ -146,6 +148,8 @@ export interface MemberNotify {
   quiet_end: string | null;
   report_channel: "telegram" | "mail" | "both";
   report_mailbox_id: string | null;
+  /** The stored choice per notice group. The database CHECK allows only the shape of `noticeRoutesSchema`. */
+  notice_routes: NoticeRoutes;
 }
 
 // `lock`: the row stays locked until the end of the transaction, so a second change waits and reads the new values.
@@ -157,11 +161,17 @@ export async function getMemberNotify(
 ): Promise<MemberNotify | undefined> {
   const query = db
     .selectFrom("memberships")
-    .select(["quiet_start", "quiet_end", "report_channel", "report_mailbox_id"])
+    .select(["quiet_start", "quiet_end", "report_channel", "report_mailbox_id", "notice_routes"])
     .where("org_id", "=", ctx.orgId)
     .where("user_id", "=", userId);
   const row = await (opts.lock === true ? query.forUpdate() : query).executeTakeFirst();
-  return row && { ...row, report_channel: reportChannelSchema.parse(row.report_channel) };
+  return (
+    row && {
+      ...row,
+      report_channel: reportChannelSchema.parse(row.report_channel),
+      notice_routes: noticeRoutesSchema.parse(row.notice_routes),
+    }
+  );
 }
 
 // The row of the caller only: the user id comes from the session, never from a body.
@@ -189,6 +199,22 @@ export async function setMemberReportChannel(
   const result = await db
     .updateTable("memberships")
     .set({ report_channel: input.channel, report_mailbox_id: input.mailboxId })
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+// The whole stored object: the caller merges a change into the locked row first. The shape is `NoticeRoutes`, the same as the CHECK.
+export async function setMemberNoticeRoutes(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  routes: NoticeRoutes
+): Promise<boolean> {
+  const result = await db
+    .updateTable("memberships")
+    .set({ notice_routes: JSON.stringify(noticeRoutesSchema.parse(routes)) })
     .where("org_id", "=", ctx.orgId)
     .where("user_id", "=", userId)
     .executeTakeFirst();

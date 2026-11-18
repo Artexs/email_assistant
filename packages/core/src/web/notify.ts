@@ -1,8 +1,9 @@
 import { DIGEST_TIME_PATTERN } from "../digest/schedule";
+import { noticeRoutesPatchSchema, noticeRoutesSchema } from "../notices/routes";
 
 import { z } from "./zod";
 
-// The own quiet hours and report channel of a member (`GET/PATCH /api/me/notify`).
+// The own quiet hours, report channel and notice routes of a member (`GET/PATCH /api/me/notify`).
 export const reportChannels = ["telegram", "mail", "both"] as const;
 export const reportChannelSchema = z.enum(reportChannels);
 export type ReportChannel = z.infer<typeof reportChannelSchema>;
@@ -29,25 +30,38 @@ export const notifyViewSchema = z.object({
   // The active mailboxes of the organization that can get the report mail, oldest first.
   mailboxes: z.array(z.object({ id: z.uuid(), address: z.string() })),
   telegramLinked: z.boolean(),
+  // The stored choice per notice group (a missing key: the user chose none). The routes need the flag `web_push`.
+  routes: noticeRoutesSchema,
+  // Where a notice of each group goes now with no stored choice, for the chat and the live push devices of the member
+  // (`effectiveRoute`). The panel shows it as the default of a group.
+  routeDefaults: z.strictObject({
+    urgent: z.strictObject({ telegram: z.boolean(), push: z.boolean() }),
+    approvals: z.strictObject({ telegram: z.boolean(), push: z.boolean() }),
+    updates: z.strictObject({ telegram: z.boolean(), push: z.boolean() }),
+  }),
 });
 export type NotifyView = z.infer<typeof notifyViewSchema>;
 
 // One body changes one group of keys. Quiet hours: both keys, both a time or both null (reset to the default).
 // Channel: `reportChannel` (null resets to `telegram`) and, for `mail` or `both`, an optional mailbox.
+// Routes: `routes` alone; a key that is not in the body keeps its stored value, `null` removes the key.
 export const notifyPatchSchema = z
   .strictObject({
     quietStart: timeSchema.nullable().optional(),
     quietEnd: timeSchema.nullable().optional(),
     reportChannel: reportChannelSchema.nullable().optional(),
     reportMailboxId: z.uuid().nullable().optional(),
+    routes: noticeRoutesPatchSchema.optional(),
   })
   .superRefine((body, ctx) => {
     const quiet = body.quietStart !== undefined || body.quietEnd !== undefined;
     const channel = body.reportChannel !== undefined || body.reportMailboxId !== undefined;
-    if (quiet === channel) {
+    const routes = body.routes !== undefined;
+    if ([quiet, channel, routes].filter(Boolean).length !== 1) {
       ctx.addIssue({ code: "custom", message: "notify_one_group" });
       return;
     }
+    if (routes) return;
     if (
       quiet &&
       (body.quietStart === undefined ||
