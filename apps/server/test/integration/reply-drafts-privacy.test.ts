@@ -10,7 +10,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test
 import { eraseSubjectData, exportOrganization, matchSubject } from "../../src/modules/privacy";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
-import { testDb } from "./helpers";
+import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
 import { insertMailboxProfile, insertReplyRequest } from "./reply-fixtures";
 
 // The reply request and the mailbox profile are in the data request, the erase and the organization
@@ -76,7 +76,8 @@ const requestRow = (id: string) => db.selectFrom("reply_requests").selectAll().w
 const profileRow = (mailboxId: string) =>
   db.selectFrom("mailbox_profiles").selectAll().where("mailbox_id", "=", mailboxId).executeTakeFirstOrThrow();
 
-const match = (w: World, address = w.person) => db.transaction().execute((trx) => matchSubject(trx, w.orgId, address));
+const match = (w: World, address = w.person) =>
+  db.transaction().execute((trx) => matchSubject(trx, w.orgId, address, TEST_CREDENTIALS_KEY));
 
 const erase = (w: World, address = w.person) =>
   eraseSubjectData(db, { orgId: w.orgId, address, confirm: address, credentialsKey: KEY, now: NOW });
@@ -202,7 +203,13 @@ describe("reply requests and profiles in the organization export", () => {
         insertMailboxProfile(trx, w, w.mailboxId, { display_name: "Jan", signature: "Jan K.", writing_style: "short" })
       );
     const out = join(dir, `${randomUUID()}.age`);
-    const exported = await exportOrganization(db, { orgId: w.orgId, recipient, out, now: NOW });
+    const exported = await exportOrganization(db, {
+      orgId: w.orgId,
+      recipient,
+      out,
+      credentialsKey: TEST_CREDENTIALS_KEY,
+      now: NOW,
+    });
     expect(exported.kind).toBe("written");
     const tables = (await decrypt(out)).tables as Record<string, Record<string, unknown>[]>;
 

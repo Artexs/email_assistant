@@ -26,7 +26,7 @@ import { configureFeatures } from "../../src/modules/tenancy";
 import { tombstoneKeyHash } from "../../src/platform/crypto";
 import { waitFor } from "../wait-for";
 
-import { testDb } from "./helpers";
+import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
 import { ago, DAY, HOUR, NOW, put, siblingMailbox, newOrg, type Org } from "./mail-sent-fixtures";
 
 // A data request finds, reports and erases sent mail. The seed is committed (the erase runs its own
@@ -180,7 +180,7 @@ async function erased(w: World) {
 }
 
 function match(orgId: string, address: string) {
-  return db.transaction().execute((trx) => matchSubject(trx, orgId, address));
+  return db.transaction().execute((trx) => matchSubject(trx, orgId, address, TEST_CREDENTIALS_KEY));
 }
 
 async function auditData(orgId: string, event: string) {
@@ -515,7 +515,13 @@ describe("data request for sent mail", () => {
     const w = await seedWorld();
     const cleared = await addSent(w, { from: w.boss, to: [w.other], cc: [w.person], content: "cleared" });
     const out = join(dir, `${randomUUID()}.age`);
-    const exported = await exportOrganization(db, { orgId: w.orgId, recipient, out, now: NOW });
+    const exported = await exportOrganization(db, {
+      orgId: w.orgId,
+      recipient,
+      out,
+      credentialsKey: TEST_CREDENTIALS_KEY,
+      now: NOW,
+    });
     expect(exported.kind).toBe("written");
     const file = await decrypt(out);
     const rows = (file.tables as Record<string, Record<string, unknown>[]>).sent_emails ?? [];

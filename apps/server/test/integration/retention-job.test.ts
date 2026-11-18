@@ -224,6 +224,29 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
     sample_body: text,
     created_at: over90,
   });
+  // A sender profile whose last mail is over 365 days old and an open suggestion over 30 days old: one row each.
+  await trx
+    .insertInto("sender_profiles")
+    .values({
+      org_id: org.orgId,
+      mailbox_id: org.mailboxId,
+      key_hash: randomUUID().replaceAll("-", "").repeat(2),
+      relation: "known",
+      last_seen_at: new Date(NOW.getTime() - 400 * 24 * 3_600_000),
+    })
+    .execute();
+  await trx
+    .insertInto("sender_suggestions")
+    .values({
+      org_id: org.orgId,
+      mailbox_id: org.mailboxId,
+      key_hash: randomUUID().replaceAll("-", "").repeat(2),
+      scope: "address",
+      kind: "vip",
+      pattern: "never-logged@x.test",
+      created_at: new Date(NOW.getTime() - 40 * 24 * 3_600_000),
+    })
+    .execute();
   await trx
     .insertInto("chat_link_tokens")
     .values({
@@ -250,6 +273,8 @@ const ZERO: RetentionCounts = {
   loops: 0,
   replyTexts: 0,
   tokens: 0,
+  profiles: 0,
+  suggestions: 0,
 };
 
 describe("retention job: runOrg", () => {
@@ -274,6 +299,8 @@ describe("retention job: runOrg", () => {
         loops: 1,
         replyTexts: 1,
         tokens: 1,
+        profiles: 1,
+        suggestions: 1,
       });
       expect(await job.runOrg(org, NOW)).toEqual(ZERO);
     });
@@ -504,6 +531,8 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
           loops: 0,
           replyTexts: 0,
           tokens: 1,
+          profiles: 0,
+          suggestions: 0,
         });
         expect(await body(trx, doneOld)).toBeNull();
         expect(await body(trx, pendingOld)).toBeNull();
@@ -546,12 +575,15 @@ describe("retention job: log", () => {
         "loop_rows",
         "reply_text_rows",
         "token_rows",
+        "profile_rows",
+        "suggestion_rows",
       ]) {
         expect(done[0]).toContain(`${key}=1`);
       }
       expect(joined).not.toContain("dropped_fields");
       expect(joined).not.toContain("TopSecretText");
       expect(joined).not.toContain("@x.test");
+      expect(joined).not.toContain("never-logged");
       expect(joined).not.toContain(old);
     });
   });
@@ -657,6 +689,7 @@ describe("retention job: an error in a Sent clear function", () => {
         expect(joined).not.toContain("CanaryText");
         expect(joined).not.toContain("OtherText");
         expect(joined).not.toContain("@x.test");
+        expect(joined).not.toContain("never-logged");
         const rows = await trx
           .selectFrom("sent_emails")
           .select(["body_text", "subject"])

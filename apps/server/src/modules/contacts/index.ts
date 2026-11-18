@@ -6,6 +6,15 @@ export {
   type ContactsRefreshJobDeps,
   type ContactsRefreshResult,
 } from "./jobs";
+export {
+  deleteEndedSuggestions,
+  deleteOldProfiles,
+  deleteSenderContextRowsOf,
+  lockProfilesOfOrg,
+  senderAddressesOfProfiles,
+  senderContextRowsOf,
+  type SenderContextRows,
+} from "./privacy";
 export { readSenderLines, senderLineOf, type SenderLineDeps, type SenderMail } from "./lines";
 export { readProfiles } from "./profiles";
 export {

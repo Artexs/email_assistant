@@ -17,7 +17,7 @@ import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
 import { insertAction, insertDelegate, insertDelegation, insertTestEmail, testCapabilities } from "./fixtures";
-import { testDb, withRollback } from "./helpers";
+import { testDb, withRollback, TEST_CREDENTIALS_KEY } from "./helpers";
 
 // The address map and `matchSubject`. Every test runs in a transaction that rolls back. The addresses
 // carry a random part, because `users.email` and `mailboxes.address` are unique across the database.
@@ -327,7 +327,7 @@ describe("matchSubject", () => {
       const twoReplyTo = await w.mail(w.box1, { from_address: w.at("r2") });
       await addHeaders(trx, w, twoReplyTo, { reply_to: [w.person, w.at("q")] });
 
-      const match = await matchSubject(trx, w.orgId, w.person);
+      const match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.ownAddress).toBe(false);
       expect(match.mails.map((mail) => mail.id).sort()).toEqual([upper, between, form].sort());
       const rows = await trx
@@ -351,7 +351,7 @@ describe("matchSubject", () => {
       const b = await w.mail(w.box2, { from_address: w.own, to_addresses: [w.own2, w.person, w.at("q")] });
       const c = await w.mail(w.box1, { from_address: w.own, to_addresses: [w.own2, w.person] });
       const d = await w.mail(w.box2, { from_address: w.own, to_addresses: [w.own2, w.person] });
-      const again = await matchSubject(trx, w.orgId, w.person);
+      const again = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       const ids = again.mails.map((mail) => mail.id);
       expect(ids).toEqual(expect.arrayContaining([c, d]));
       expect(ids).not.toContain(a);
@@ -367,7 +367,7 @@ describe("matchSubject", () => {
       const toMail = await w.mail(w.box1, { from_address: w.at("r"), to_addresses: [upper, w.at("q")] });
       const ccMail = await w.mail(w.box1, { from_address: w.at("r"), cc_addresses: [w.at("q"), upper] });
       const goes = await w.mail(w.box1, { from_address: w.own.toUpperCase(), to_addresses: [w.own2, upper] });
-      const match = await matchSubject(trx, w.orgId, w.person);
+      const match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.mails.map((mail) => mail.id)).toEqual([goes]);
       expect(match.mentions["emails.to_addresses"]).toEqual([toMail]);
       expect(match.mentions["emails.cc_addresses"]).toEqual([ccMail]);
@@ -442,7 +442,7 @@ describe("matchSubject", () => {
         }
       );
 
-      const match = await matchSubject(trx, w.orgId, w.person);
+      const match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.mails).toEqual([]);
       expect(match.mentions).toEqual({
         "emails.body_text": [body],
@@ -470,7 +470,7 @@ describe("matchSubject", () => {
         status: "awaiting_approval",
         payload: { to: [w.person] },
       });
-      let match = await matchSubject(trx, w.orgId, w.person);
+      let match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.openActions).toEqual([pending]);
       expect(match.mentions["actions.payload"]).toEqual([pending]);
 
@@ -479,19 +479,19 @@ describe("matchSubject", () => {
         .set({ status: "applied", applied_at: new Date(), approved_at: new Date() })
         .where("id", "=", pending)
         .execute();
-      match = await matchSubject(trx, w.orgId, w.person);
+      match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.openActions).toEqual([]);
       expect(match.mentions["actions.payload"]).toEqual([pending]);
 
       // On a mail that goes, a ready move is not open; an awaiting send, a draft and an applying action are.
       const goes = await w.mail(w.box1, { from_address: w.person });
       await insertAction(trx, ctx, goes, { type: "move", status: "ready" });
-      expect((await matchSubject(trx, w.orgId, w.person)).openActions).toEqual([]);
+      expect((await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY)).openActions).toEqual([]);
       const send = await insertAction(trx, ctx, goes, { type: "send", status: "awaiting_approval" });
       const draft = await insertAction(trx, ctx, goes, { type: "create_draft", status: "ready" });
       const applying = await insertAction(trx, ctx, goes, { type: "flag", status: "applying" });
       const ended = await insertAction(trx, ctx, goes, { type: "send", status: "failed" });
-      match = await matchSubject(trx, w.orgId, w.person);
+      match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.openActions.sort()).toEqual([send, draft, applying].sort());
       expect(match.openActions).not.toContain(ended);
 
@@ -505,7 +505,7 @@ describe("matchSubject", () => {
         reversesActionId: applying,
       });
       await insertAction(trx, ctx, kept, { type: "move", status: "ready" });
-      match = await matchSubject(trx, w.orgId, w.person);
+      match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.chainActions.sort()).toEqual([chained, reverse].sort());
     });
   });
@@ -522,7 +522,7 @@ describe("matchSubject", () => {
         .executeTakeFirstOrThrow();
       await trx.insertInto("sender_rules").values({ org_id: w.orgId, pattern: "@x.test", kind: "blocklist" }).execute();
 
-      const match = await matchSubject(trx, w.orgId, w.person);
+      const match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.listed.delegates).toHaveLength(2);
       expect(match.listed.delegates).toContain(delegate);
       expect(match.listed.senderRules).toEqual([rule.id]);
@@ -537,7 +537,7 @@ describe("matchSubject", () => {
       await w.mail(w.box1, { from_address: w.own });
       await insertDelegate(trx, { orgId: w.orgId }, { email: w.own });
       for (const address of [w.own, w.own2.toUpperCase(), w.owner]) {
-        expect(await matchSubject(trx, w.orgId, address)).toEqual({
+        expect(await matchSubject(trx, w.orgId, address, TEST_CREDENTIALS_KEY)).toEqual({
           ownAddress: true,
           mails: [],
           sentMails: [],
@@ -546,16 +546,17 @@ describe("matchSubject", () => {
           openActions: [],
           chainActions: [],
           chainDelegations: [],
+          senderContext: { profiles: [], suggestions: [] },
         });
       }
-      expect((await matchSubject(trx, w.orgId, w.person)).ownAddress).toBe(false);
+      expect((await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY)).ownAddress).toBe(false);
     });
   });
 
   test("an address that is not an address is refused without the value in the error", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const error = await matchSubject(trx, w.orgId, "not an address").catch((e: unknown) => e);
+      const error = await matchSubject(trx, w.orgId, "not an address", TEST_CREDENTIALS_KEY).catch((e: unknown) => e);
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toBe("dsr_match_invalid_address");
     });
@@ -578,16 +579,16 @@ describe("matchSubject", () => {
       await b.mail(b.box1, { from_address: b.at("r"), to_addresses: [person, b.at("q")] });
 
       const mine = await a.mail(a.box1, { from_address: person });
-      const match = await matchSubject(trx, a.orgId, person);
+      const match = await matchSubject(trx, a.orgId, person, TEST_CREDENTIALS_KEY);
       expect(match.mails.map((mail) => mail.id)).toEqual([mine]);
       expect(match.mentions).toEqual({});
       expect(match.listed).toEqual({ delegates: [], senderRules: [] });
       expect(match.openActions).toEqual([]);
       expect(match.chainActions).toEqual([]);
       // Own addresses of the other organization are not own addresses here.
-      expect((await matchSubject(trx, a.orgId, b.own)).ownAddress).toBe(false);
-      expect((await matchSubject(trx, a.orgId, b.owner)).ownAddress).toBe(false);
-      expect((await matchSubject(trx, a.orgId, a.owner)).ownAddress).toBe(true);
+      expect((await matchSubject(trx, a.orgId, b.own, TEST_CREDENTIALS_KEY)).ownAddress).toBe(false);
+      expect((await matchSubject(trx, a.orgId, b.owner, TEST_CREDENTIALS_KEY)).ownAddress).toBe(false);
+      expect((await matchSubject(trx, a.orgId, a.owner, TEST_CREDENTIALS_KEY)).ownAddress).toBe(true);
     });
   });
 
@@ -616,7 +617,7 @@ describe("matchSubject", () => {
       };
       const before = await state();
       await sql`set transaction read only`.execute(trx);
-      const match = await matchSubject(trx, w.orgId, w.person);
+      const match = await matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY);
       expect(match.mails).toHaveLength(1);
       expect(await state()).toEqual(before);
     });

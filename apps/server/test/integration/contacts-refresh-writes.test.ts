@@ -66,6 +66,31 @@ async function fullMailbox(trx: Trx, org: Org): Promise<void> {
   await seedSenderActivity(trx, org.ctx, org.mailboxId, { sent: [{ at: ago(3), to: ["carl@acme.pl"] }] });
 }
 
+// One stored value at a time is changed; the pass must see it, write that row only, and restore the value.
+const changes: [string, string][] = [
+  ["received", "99"],
+  ["moved_back", "99"],
+  ["answered", "99"],
+  ["flagged", "99"],
+  ["unseen_7d", "99"],
+  ["user_mails_to", "99"],
+  ["delegations_to", "99"],
+  ["reply_samples_theirs", "99"],
+  ["relation", "'vip'"],
+  ["by_category", `'{"spam": 1}'::jsonb`],
+  ["corrections", `'{"spam": 1}'::jsonb`],
+  ["bulk_signals", "ARRAY['noreply']::text[]"],
+  ["median_user_reply_hours", "1"],
+  ["median_their_reply_hours", "1"],
+  // A median that goes from a value to NULL is a change too (`<>` would read NULL as "unknown", not different).
+  ["median_user_reply_hours", "NULL"],
+  ["median_their_reply_hours", "NULL"],
+  // The date columns widen: a stored first date that is too new, and a last date that is too old, both change.
+  ["first_seen_at", "now()"],
+  ["last_seen_at", "now() - interval '200 days'"],
+  ["last_user_mail_at", "now() - interval '200 days'"],
+];
+
 describe("a repeat pass writes only changed rows", () => {
   test("1 a second pass at the same time writes no row: no new tuple, no dead tuple", async () => {
     await withRollback(db, async (trx) => {
@@ -122,29 +147,8 @@ describe("a repeat pass writes only changed rows", () => {
     });
   });
 
-  // One stored value at a time is changed; the pass must see it, write that row only, and restore the value.
-  const changes: [string, string][] = [
-    ["received", "99"],
-    ["moved_back", "99"],
-    ["answered", "99"],
-    ["flagged", "99"],
-    ["unseen_7d", "99"],
-    ["user_mails_to", "99"],
-    ["delegations_to", "99"],
-    ["reply_samples_theirs", "99"],
-    ["relation", "'vip'"],
-    ["by_category", `'{"spam": 1}'::jsonb`],
-    ["corrections", `'{"spam": 1}'::jsonb`],
-    ["bulk_signals", "ARRAY['noreply']::text[]"],
-    ["median_user_reply_hours", "1"],
-    ["median_their_reply_hours", "1"],
-    // The date columns widen: a stored first date that is too new, and a last date that is too old, both change.
-    ["first_seen_at", "now()"],
-    ["last_seen_at", "now() - interval '200 days'"],
-    ["last_user_mail_at", "now() - interval '200 days'"],
-  ];
   for (const [column, value] of changes) {
-    test(`3 a changed ${column} is written back`, async () => {
+    test(`3 a changed ${column} (to ${value}) is written back`, async () => {
       await withRollback(db, async (trx) => {
         const org = await newOrg(trx);
         await fullMailbox(trx, org);
@@ -180,5 +184,29 @@ describe("a repeat pass writes only changed rows", () => {
       expect(moved).toHaveLength(1);
       expect((await profileOf(trx, org, "bob@acme.pl"))?.received).toBe(2);
     });
+  });
+
+  test("5 a changed row gets `refreshed_at` of the pass that wrote it; an unchanged row keeps its old value", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      await fullMailbox(trx, org);
+      await refresh(trx, org);
+      const later = new Date(NOW.getTime() + 3 * HOUR);
+      await seedSenderActivity(trx, org.ctx, org.mailboxId, { address: "bob@acme.pl", mails: [{ at: ago(1) }] });
+      expect(await refresh(trx, org, later)).toEqual({ written: 1, unchanged: 2, zeroed: 0, skipped: false });
+      expect(ms((await profileOf(trx, org, "bob@acme.pl"))?.refreshed_at)).toBe(later.getTime());
+      expect(ms((await profileOf(trx, org, "anna@acme.pl"))?.refreshed_at)).toBe(NOW.getTime());
+    });
+  });
+
+  test("6 the columns that the pass compares are every column of the table but its keys and `refreshed_at`", async () => {
+    // A new column that joins the schema, the insert and the update but not the `CHANGED` list would never be rewritten.
+    // The per-column cases above are the proof for each listed column; this test ties the list to the table.
+    const { rows } = await sql<{ column_name: string }>`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'sender_profiles'
+        AND column_name NOT IN ('id', 'org_id', 'mailbox_id', 'key_hash', 'refreshed_at')
+    `.execute(db);
+    expect(rows.map((row) => row.column_name).sort()).toEqual([...new Set(changes.map(([column]) => column))].sort());
   });
 });

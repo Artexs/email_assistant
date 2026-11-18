@@ -14,7 +14,7 @@ import { clearLoopTextsOfPerson } from "../../src/modules/privacy/erase";
 import { createDb } from "../../src/platform/db";
 
 import { createOrgWithMailbox } from "./fixtures";
-import { testDb, withRollback } from "./helpers";
+import { testDb, withRollback, TEST_CREDENTIALS_KEY } from "./helpers";
 import { insertAnalysisRow, insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
 // The open loops are in the data request and the organization export. A loop copies recipients and
@@ -87,7 +87,7 @@ function seedLoop(w: World, overrides: Parameters<typeof insertLoopRow>[3] = {})
 }
 
 function match(orgId: string, address: string) {
-  return db.transaction().execute((trx) => matchSubject(trx, orgId, address));
+  return db.transaction().execute((trx) => matchSubject(trx, orgId, address, TEST_CREDENTIALS_KEY));
 }
 
 function erase(w: World, address = w.person) {
@@ -385,7 +385,13 @@ describe("open loops in the organization export", () => {
     await seedLoop(w, { sent_email_id: sentId, counterpart: w.other, to_addresses: [w.other], text: "send the plan" });
     await db.transaction().execute((trx) => insertAnalysisRow(trx, { orgId: w.orgId }, w.mailboxId, sentId));
     const out = join(dir, `${randomUUID()}.age`);
-    const exported = await exportOrganization(db, { orgId: w.orgId, recipient, out, now: NOW });
+    const exported = await exportOrganization(db, {
+      orgId: w.orgId,
+      recipient,
+      out,
+      credentialsKey: TEST_CREDENTIALS_KEY,
+      now: NOW,
+    });
     expect(exported.kind).toBe("written");
     const tables = (await decrypt(out)).tables as Record<string, Record<string, unknown>[]>;
 
