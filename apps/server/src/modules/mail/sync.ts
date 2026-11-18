@@ -1,4 +1,4 @@
-import { pickSyncFolders, type SyncFolderKey } from "@ea/core";
+import { DAY_MS, pickSyncFolders, type SyncFolderKey } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -59,8 +59,6 @@ const log = createLog("mail");
 
 const DEFAULT_CHUNK_SIZE = 50;
 const BODY_TEXT_LIMIT = 100_000;
-const HOUR_MS = 3_600_000;
-const DAY_MS = 24 * HOUR_MS;
 const INITIAL_WINDOW_MS = DAY_MS;
 const RESCAN_WINDOW_MS = 7 * DAY_MS;
 // Pilot exception (user, 2026-11-06): the backfill may go back 180 days, past the 30-day body retention (architecture §7).

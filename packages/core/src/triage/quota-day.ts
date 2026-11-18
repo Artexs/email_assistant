@@ -1,8 +1,8 @@
+import { HOUR_MS } from "../time";
+
 // The day of the LLM call cap. The free-tier daily quota resets at midnight Pacific time [not verified].
 // A change of the quota day is a code change.
 export const QUOTA_TIMEZONE = "America/Los_Angeles";
-
-const HOUR_MS = 3_600_000;
 
 interface LocalParts {
   year: number;

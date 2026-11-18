@@ -3,7 +3,7 @@
 // A link in a mail is untrusted text. This module reads two facts from the stored headers (is there an `https` link, does the
 // header allow one-click) and returns flags. The URL itself does not leave the headers; stage 24 reads it again and checks it
 // before any request.
-import { hasTrustedAlignedDkimPass } from "@ea/core";
+import { DAY_MS, hasTrustedAlignedDkimPass } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -12,7 +12,6 @@ import { suspiciousSendersOf } from "./suspicious-repo";
 
 export const NEWSLETTER_WINDOW_DAYS = 30;
 export const NEWSLETTER_MAX_SENDERS = 200;
-const DAY_MS = 24 * 3_600_000;
 
 export interface NewsletterSender {
   senderLower: string;

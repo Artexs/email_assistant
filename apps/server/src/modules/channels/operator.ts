@@ -1,4 +1,4 @@
-import { sendLimitOfError, type SendLimitKind } from "@ea/core";
+import { DAY_MS, type SendLimitKind, sendLimitOfError } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -13,8 +13,6 @@ import { telegramErrorFields } from "./telegram/errors";
 
 const log = createLog("channels");
 
-const HOUR_MS = 3_600_000;
-const DAY_MS = 24 * HOUR_MS;
 const TRIAL_WARNING_MS = 3 * DAY_MS;
 
 export type OperatorNoticeKind = "trial_ending" | "llm_cap" | "auth_error_24h" | "auth_mail_failed" | "send_limit";

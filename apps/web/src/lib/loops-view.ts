@@ -1,11 +1,12 @@
 import {
-  LOOP_DEFAULT_FILTER,
-  loopFilters,
-  loopKinds,
+  DAY_MS,
   type DelegationFilter,
+  LOOP_DEFAULT_FILTER,
   type LoopFilterName,
+  loopFilters,
   type LoopItem,
   type LoopKindName,
+  loopKinds,
 } from "@ea/core/web";
 
 import { t, tp, type TextKey } from "../i18n";
@@ -152,7 +153,6 @@ export function workingDaysWaited(sentAt: string, now: Date, timeZone: string): 
       .map(Number);
     return Date.UTC(year, month - 1, date);
   };
-  const DAY_MS = 24 * 60 * 60 * 1000;
   const from = day(new Date(sentAt));
   const to = day(now);
   let count = 0;

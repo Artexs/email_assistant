@@ -1,3 +1,5 @@
+import { HOUR_MS } from "@ea/core";
+
 import type { TenantContext } from "../platform/db";
 import type { Db } from "../platform/db";
 
@@ -7,7 +9,6 @@ import { inTransaction } from "./e2e-activity-rows";
 // pass, `spam` fails (6 of 60 acted-on mails would have moved), and an active trip on `info` (two corrections). Together with the gate
 // fixture folder (`apps/web/e2e/gate-fixture/`, all three categories `go`), the card shows: `notification` eligible, `spam` blocked by
 // the history, `info` paused. The rows hold counts only; no mail is seeded.
-const HOUR_MS = 3_600_000;
 
 const entry = { acted: 60, total: 200, wouldMove: 40 };
 

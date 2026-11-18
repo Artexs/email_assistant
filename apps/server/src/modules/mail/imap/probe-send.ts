@@ -1,4 +1,5 @@
 // Write probe for the S4 send rules: one synthetic mail through the draft, SMTP, Sent and INBOX paths. Test address only.
+import { DAY_MS } from "@ea/core";
 import type { FetchMessageObject, FetchQueryObject, ImapFlow } from "imapflow";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
 
@@ -16,7 +17,6 @@ import {
 } from "./smtp";
 
 const INBOX_PATH = "INBOX";
-const DAY_MS = 86_400_000;
 const ACTION_HEADER = "x-ea-action-id";
 const DEFAULT_POLL_MS = 5000;
 const DEFAULT_INBOX_TIMEOUT_MS = 120_000;

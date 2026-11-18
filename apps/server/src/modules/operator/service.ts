@@ -1,13 +1,14 @@
 import {
   costPerMail,
-  QUOTA_TIMEZONE,
-  quotaDayStart,
+  DAY_MS,
   type OperatorFlagBody,
   type OperatorNotices,
   type OperatorOrgDetail,
   type OperatorOrgList,
   type OperatorOrgRow,
   type OperatorPlanBody,
+  QUOTA_TIMEZONE,
+  quotaDayStart,
 } from "@ea/core";
 
 import type { Db, TenantContext } from "../../platform/db";
@@ -29,8 +30,6 @@ import {
   type SetOrgPlanResult,
 } from "../tenancy";
 import { lastTriageAt } from "../triage";
-
-const DAY_MS = 24 * 3_600_000;
 
 // D18: calls and cost of the quota day. A model without a price adds its calls to `unpricedCalls`.
 export async function llmToday(db: Db, ctx: TenantContext, now: Date): Promise<OperatorOrgRow["llmToday"]> {

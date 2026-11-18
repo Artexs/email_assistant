@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { localDateTime, parseToolSwitches } from "@ea/core";
+import { DAY_MS, localDateTime, parseToolSwitches } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../platform/db";
@@ -50,7 +50,6 @@ export const MAX_PLANNED = CHASER_SET_LIMIT;
 export const PROMISE_GRACE_DAYS = 7;
 export const STALE_AFTER_LAST_FOLLOW_UP_DAYS = 14;
 export const STALE_AFTER_DUE_DAYS = 30;
-const DAY_MS = 24 * 3_600_000;
 // Loops that one run reads. A loop that is not ready (too soon, a card waits) stays a candidate, so a very long list can hide the
 // newest ones for a day: the next run reads the same oldest-first part again, and every planned or closed loop leaves it.
 const CANDIDATE_BATCH = 500;

@@ -1,4 +1,5 @@
 // Send limits (PD-044): a pure rule. No I/O and no Date.now(): the caller passes `now`.
+import { DAY_MS, HOUR_MS } from "./time";
 
 export const sendLimitKinds = ["mailbox_hour", "mailbox_day", "recipient_day"] as const;
 export type SendLimitKind = (typeof sendLimitKinds)[number];
@@ -15,9 +16,9 @@ export interface SendLimits {
 export const DEFAULT_SEND_LIMITS: SendLimits = { mailboxHour: 20, mailboxDay: 100, recipientDay: 5 };
 
 export const SEND_LIMIT_WINDOW_MS: Record<SendLimitKind, number> = {
-  mailbox_hour: 3_600_000,
-  mailbox_day: 86_400_000,
-  recipient_day: 86_400_000,
+  mailbox_hour: HOUR_MS,
+  mailbox_day: DAY_MS,
+  recipient_day: DAY_MS,
 };
 
 /** A send that counts: its start time and its recipients as stored in the payload. */

@@ -1,4 +1,5 @@
 import {
+  DAY_MS,
   SECURITY_LOG_DAYS,
   SECURITY_LOG_LIMIT,
   securityEventCodes,
@@ -12,8 +13,6 @@ import type { Db, TenantContext } from "../../platform/db";
 import { listAuditEvents } from "../audit";
 
 import { listMemberships } from "./repo";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function lockedUntilOf(data: unknown): string | null {
   if (typeof data !== "object" || data === null) return null;

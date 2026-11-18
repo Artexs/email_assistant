@@ -1,10 +1,10 @@
+import { DAY_MS } from "@ea/core";
+
 import type { FolderStatus, MessageMeta } from "./port";
 import type { NewSentEmail } from "./repo";
 import { baseDedupKey, contentHash, normalizeMessageId, threadKey } from "./sync-rules";
 
 // Pure rules of the Sent read (no database, no mail server).
-
-const DAY_MS = 24 * 3_600_000;
 
 /** Sent mail older than this (by INTERNALDATE) is not stored. */
 export const SENT_HEADER_WINDOW_MS = 30 * DAY_MS;

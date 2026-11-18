@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  type CaseDelivery,
+  DAY_MS,
+  type FoundCopy,
   planDelivery,
+  type SortFolderKey,
+  sortFolderKeys,
   SYNC_FOLDER_DEFAULTS,
   syncFolderDefaultPath,
-  sortFolderKeys,
-  type CaseDelivery,
-  type FoundCopy,
   type SyncFolderKey,
-  type SortFolderKey,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -400,7 +401,6 @@ export interface DeliverInput {
 }
 
 const MAX_WANTED = 200;
-const DAY_MS = 86_400_000;
 
 async function findCopies(
   provider: MailProvider,

@@ -1,4 +1,12 @@
-import { lateMin, QUIET_HOURS, type QuietHours, type SloCheck, type SloKind, type SloThresholds } from "@ea/core";
+import {
+  HOUR_MS,
+  lateMin,
+  QUIET_HOURS,
+  type QuietHours,
+  type SloCheck,
+  type SloKind,
+  type SloThresholds,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -136,7 +144,6 @@ const GIB = 1024 ** 3;
 // The disk clears 5 percentage points and 0.5 GB above the open values (a hysteresis band, so a value on the line does not flap).
 const DISK_CLEAR_PCT = 5;
 const DISK_CLEAR_GB = 0.5;
-const HOUR_MS = 3_600_000;
 
 /** `statfs` of `node:fs/promises`, as much of it as the check reads. */
 export type StatFs = (path: string) => Promise<{ bavail: number; blocks: number; bsize: number }>;
