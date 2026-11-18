@@ -19,8 +19,16 @@ describe("readCheckCopyOptions", () => {
   });
 
   test("the usage names the four words, says it never writes to the mailbox or a row, and names the OAuth token write", () => {
-    for (const word of ["same", "changed", "missing", "no_baseline", "never writes to the mailbox", "refresh"]) {
+    for (const word of [
+      "same",
+      "changed",
+      "missing",
+      "no_baseline",
+      "never writes to the mailbox and never changes a",
+      "refresh",
+    ]) {
       expect(usage).toContain(word);
     }
+    expect(usage).not.toContain("or the database");
   });
 });
