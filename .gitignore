@@ -55,6 +55,10 @@ apps/docs/e2e/playwright-report/
 # docs app build output and generated types
 apps/docs/dist/
 apps/docs/.astro/
+# the screenshots of `bun run docs:shots` (stage 11): made by CI from the e2e seed, never committed
+apps/docs/public/shots/
+# the folder of the builds in `apps/docs/scripts/shots-build.test.ts`
+apps/docs/dist-shots-test/
 
 # release state of deploy/release.sh and deploy/rollback.sh (the folder is in git, the file is not)
 deploy/release-state/state

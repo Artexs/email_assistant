@@ -7,3 +7,20 @@
 site-search kbd {
   display: none !important;
 }
+
+/*
+ * `<Shot>` (stage 11): the screenshot of a panel page, or, while `DOCS_SHOTS` is not `on`, a bordered box with its alt text.
+ */
+.shot img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+}
+.shot-off {
+  border: 2px dashed var(--sl-color-gray-4);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: var(--sl-color-gray-2);
+}

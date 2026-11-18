@@ -42,6 +42,7 @@ import { loadGateEvidence, noGateEvidence, runningEvidenceKey, setCategoryAutoWi
 import {
   clearTrips,
   setCategoryAutoWithEvidence,
+  trustEvidenceReader,
   type CategoryEvidence,
   type EvidenceGateInput,
 } from "./modules/trust";
@@ -174,6 +175,17 @@ export function settingsDeps(db: Db, now: () => Date, gate: GateEvidenceDeps = n
         sendClose: { hooks, uidplus: await mailboxHasUidplus(trx, trxCtx, filter.mailboxId) },
       }),
   };
+}
+
+// F110 stage 12: the M8 reader of the week service (stats route, `stats:week`, the weekly report). `reports` and `channels` may not
+// import `trust`, so every root that builds a week service passes this one, over the same settings deps as the trust routes.
+export function trustEvidenceOf(
+  db: Db,
+  now: () => Date,
+  gate: GateEvidenceDeps | undefined,
+  testMail: TestMailRule
+): ReturnType<typeof trustEvidenceReader> {
+  return trustEvidenceReader({ settings: settingsDeps(db, now, gate), testMail });
 }
 
 // F079: the resume hook of `setOrgPlan`. Sends whose approval request no owner saw before the pause end as `not_seen`

@@ -51,3 +51,4 @@ Template:
 | 0033 | Reply drafts: free LLM text under code checks; mail-client edits win             | proposed                                            |
 | 0034 | Sender profiles hold counts under a keyed hash, never mail text                  | proposed                                            |
 | 0035 | LLM calls can go to an EU endpoint or to the buyer's own model; no PII sanitizer | proposed                                            |
+| 0036 | Open loops: one module, one chaser, a loop anchor for actions                    | accepted                                            |

@@ -160,6 +160,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "report_mail", enabled: false },
       { orgId: org.orgId, flag: "urgency_editor", enabled: false },
       { orgId: org.orgId, flag: "spam_review_line", enabled: false },
+      { orgId: org.orgId, flag: "bulk_unsubscribe", enabled: false },
       { orgId: org.orgId, flag: "reply_drafts", enabled: false },
       { orgId: org.orgId, flag: "draft_copy_check", enabled: false },
     ]);

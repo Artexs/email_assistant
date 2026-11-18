@@ -37,6 +37,12 @@ No double reply: the committer checks "already answered" right before a reply se
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** Telegram cards (12), the panel (15).
 
+## Carry-over from stage 07
+
+- The drafter job closes an older open reply of the thread only when it writes a draft for a newer mail (`newer_mail`, `closeSend` with `notify: false`, `claimed: false`; `busy` is left to the sweep). A newer mail in the thread that has no open reply and no request does not stop a draft for the older mail. The sweep (`newerMailInThread`) must close such a draft; test it with an older mail drafted first and a newer mail of another category after it.
+- A `busy` older reply that the job left (an `applying` send, or an `approved` one under a fresh lock) is yours: the committer or the sweep ends it.
+- Notes: `notes/2026-11-18-f115-s07-drafter-job.md`.
+
 ## Carry-over from stage 08
 
 - The copy check is in `applySend` as step (1b), before the send commits as `applying` (`copy-check.ts` `checkCopyBeforeSend`, `send.ts` `closeForCopy`). The pre-send pass of this stage goes before it, in the same place: answered and copy unchanged → `answered`; answered and copy missing → `sent_by_user`; answered and copy changed → `draft_changed`. `checkCopyBeforeSend` answers `close` with `draft_missing` for a missing copy; this stage maps it to `sent_by_user` when the mail is answered.

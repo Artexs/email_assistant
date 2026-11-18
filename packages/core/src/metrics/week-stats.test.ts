@@ -103,4 +103,24 @@ describe("buildWeekStats", () => {
     expect(stats.m5.p90Minutes).toBeNull();
     expect(stats.m7.mailboxes).toBe(1);
   });
+
+  test("M8 rows carry the three trust keys; a row stored before F110 has none and reads null", () => {
+    const trust = {
+      global: { decision: "no-go", provisional: true, wilsonLower: null, cases: 12 },
+      history: { outcome: "fail", acted: 100, moved: 3 },
+      trip: { tripped: true, reason: "corrections" },
+    } as const;
+    const given = buildWeekStats(
+      { ...rows(), gates: [gateRow({ category: "spam", ...trust }), gateRow({ category: "info" })] },
+      { weekStart, mailboxId, timeZone, now }
+    );
+    expect(given.m8[0]).toMatchObject(trust);
+    expect(given.m8[1]).toMatchObject({ global: null, history: null, trip: null });
+    // A queued report view from before the change: the keys are missing.
+    const old = JSON.parse(JSON.stringify(given)) as { m8: Record<string, unknown>[] };
+    old.m8 = old.m8.map(({ global: _g, history: _h, trip: _t, ...rest }) => rest);
+    const parsed = weekStatsSchema.parse(old);
+    expect(parsed.m8.every((row) => row.global === null && row.history === null && row.trip === null)).toBe(true);
+    expect(() => weekStatsSchema.parse({ ...given, m8: [{ ...given.m8[0], trip: { tripped: true } }] })).toThrow();
+  });
 });

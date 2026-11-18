@@ -63,7 +63,10 @@ export {
   toClassifierInput,
   toPrediction,
 } from "./eval";
+export { newsletterRoutes, type NewsletterRouteDeps } from "./newsletter-routes";
+export { methodOf as newsletterMethodOf, newsletterViewFor, type NewsletterViewOptions } from "./newsletter-view";
 export {
+  firstHttpsUnsubscribeUrl,
   hasHttpsUnsubscribeLink,
   listNewsletterSenders,
   NEWSLETTER_MAX_SENDERS,

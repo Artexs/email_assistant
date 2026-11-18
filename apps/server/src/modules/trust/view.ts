@@ -10,6 +10,7 @@ import {
   type MovingCategory,
   type TrustCategory,
   type TrustCheck,
+  type TrustEvidenceRows,
   type TrustExample,
   type TrustView,
 } from "@ea/core";
@@ -125,5 +126,33 @@ export async function trustViewFor(
     check: latest === null ? null : await checkViewOf(db, ctx, latest),
     categories,
     examples: await examplesOf(db, ctx, done?.id ?? null),
+  };
+}
+
+/**
+ * The M8 reader (F110 stage 12): the global, history and trip state of each bar category of one mailbox, from the one reader
+ * `trustViewFor`. `null`: no such mailbox in the organization. The composition roots hand it to `reports`, which may not import `trust`.
+ */
+export function trustEvidenceReader(
+  deps: TrustViewDeps
+): (ctx: TenantContext, mailboxId: string) => Promise<TrustEvidenceRows | null> {
+  return async (ctx, mailboxId) => {
+    const view = await trustViewFor(deps, ctx, mailboxId);
+    if (view === null) return null;
+    const rows = {} as TrustEvidenceRows;
+    for (const category of barCategories) {
+      const { global, history, trip } = view.categories[category];
+      rows[category] = {
+        global: {
+          decision: global.decision,
+          provisional: global.provisional,
+          wilsonLower: global.wilsonLower,
+          cases: global.cases,
+        },
+        history: history === null ? null : { outcome: history.outcome, acted: history.acted, moved: history.moved },
+        trip: { tripped: trip.tripped, reason: trip.reason },
+      };
+    }
+    return rows;
   };
 }

@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "
 import type { Transaction } from "kysely";
 
 import { detectNotices, scheduleDigests } from "../../src/modules/channels";
+import type { NoticeDeps } from "../../src/modules/channels/notices/run";
 import { failedAttemptKeys } from "../../src/modules/channels/notices/weekly-report";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { setDigestTimes, setOrgFeature } from "../../src/modules/tenancy";
@@ -47,8 +48,19 @@ afterEach(() => {
   warnSpy.mockRestore();
 });
 
-async function tick(trx: Transaction<DB>, now: Date, testMail = NO_TEST_SENDERS): Promise<void> {
-  await detectNotices({ db: trx, now: () => now, startedAt: new Date(now.getTime() - 24 * 3_600_000), testMail });
+async function tick(
+  trx: Transaction<DB>,
+  now: Date,
+  testMail = NO_TEST_SENDERS,
+  trustEvidence?: NoticeDeps["trustEvidence"]
+): Promise<void> {
+  await detectNotices({
+    db: trx,
+    now: () => now,
+    startedAt: new Date(now.getTime() - 24 * 3_600_000),
+    testMail,
+    ...(trustEvidence === undefined ? {} : { trustEvidence }),
+  });
 }
 
 async function weeklyRows(trx: Transaction<DB>, orgId: string) {
@@ -141,6 +153,39 @@ describe("weekly report detector", () => {
       const rows = await weeklyRows(trx, o.ctx.orgId);
       expect(rows).toHaveLength(2);
       for (const row of rows) expect(row.text.startsWith("📈 Week Mon 16 Nov – Sun 22 Nov")).toBe(true);
+    });
+  });
+
+  // F110 stage 12: the notifier passes the reader of the composition root to the week service; the report shows its lines.
+  test("(5b) with a trust reader and trust_ladder on, the row holds the keys and the text the evidence lines", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await orgA(trx);
+      await flag(trx, o.ctx, "weekly_report");
+      await setOrgFeature(trx, o.ctx, { flag: "trust_ladder", enabled: true, actor: "cli", now: MONDAY_0830 });
+      const entry = {
+        global: { decision: "go" as const, provisional: false, wilsonLower: 0.9, cases: 100 },
+        history: { outcome: "pass" as const, acted: 80, moved: 1 },
+        trip: { tripped: false, reason: null },
+      };
+      await trx
+        .updateTable("mailbox_settings")
+        .set({ category_policy: JSON.stringify({ notification: { auto: true } }) })
+        .where("org_id", "=", o.ctx.orgId)
+        .execute();
+      const asked: string[] = [];
+      await tick(trx, MONDAY_0900, NO_TEST_SENDERS, async (_ctx, mailboxId) => {
+        asked.push(mailboxId);
+        return { urgent: entry, needs_reply: entry, info: entry, notification: entry, spam: entry };
+      });
+      expect(asked).toHaveLength(1);
+      const rows = await weeklyRows(trx, o.ctx.orgId);
+      expect(rows).toHaveLength(2);
+      for (const row of rows) {
+        const m8 = (row.view as { week: { m8: { global: unknown }[] } }).week.m8;
+        expect(m8.every((r) => r.global !== null)).toBe(true);
+        expect(row.text).toContain("\nnotification: auto on · proof go · check pass");
+        expect(row.text.split("\n").filter((line) => line.includes("· proof"))).toHaveLength(1);
+      }
     });
   });
 

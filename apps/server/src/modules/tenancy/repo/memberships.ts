@@ -1,4 +1,10 @@
-import { membershipRoleSchema, reportChannelSchema, type MembershipRole } from "@ea/core";
+import {
+  membershipRoleSchema,
+  reportChannelSchema,
+  userLocaleSchema,
+  type MembershipRole,
+  type UserLocale,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
@@ -30,6 +36,30 @@ export async function listMembershipsOfUser(db: Db | Transaction<DB>, userId: st
     .orderBy("org_id")
     .execute();
   return rows.map((row) => ({ ...row, role: membershipRoleSchema.parse(row.role) }));
+}
+
+export interface OrgOwner {
+  userId: string;
+  displayName: string;
+  /** The language of the owner's panel; null when it is not a locale that the product has (reply drafts read it as Polish). */
+  locale: UserLocale | null;
+}
+
+// The oldest owner of the organization (the same member that the committer reads as "the owner"), or undefined.
+// Reads the name and the locale only; an address never leaves this function.
+export async function getOrgOwner(db: Db | Transaction<DB>, ctx: TenantContext): Promise<OrgOwner | undefined> {
+  const row = await db
+    .selectFrom("memberships")
+    .innerJoin("users", "users.id", "memberships.user_id")
+    .select(["memberships.user_id", "users.display_name", "users.locale"])
+    .where("memberships.org_id", "=", ctx.orgId)
+    .where("memberships.role", "=", "owner")
+    .orderBy("memberships.created_at")
+    .orderBy("users.email")
+    .executeTakeFirst();
+  if (row === undefined) return undefined;
+  const locale = userLocaleSchema.safeParse(row.locale);
+  return { userId: row.user_id, displayName: row.display_name, locale: locale.success ? locale.data : null };
 }
 
 export async function listMemberships(db: Db | Transaction<DB>, ctx: TenantContext): Promise<MembershipWithUser[]> {
