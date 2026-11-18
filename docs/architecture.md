@@ -568,6 +568,7 @@ Tenancy:
   | `loops.chaser`         | `20 */15 * * * *` (every 15 min; acts from 07:30 local time; replaced `delegation.chaser`) | [open-loops.md](capabilities/open-loops.md) rule 6          |
   | `loops.analyze`        | `35 * * * * *` (every minute at second 35; only when the triage scope is not `off`)        | [open-loops.md](capabilities/open-loops.md) rule 2          |
   | `loops.match`          | `50 */2 * * * *` (every 2 min; needs no model, runs with the scope `off`)                  | [open-loops.md](capabilities/open-loops.md) rule 3          |
+  | `contacts.refresh`     | `0 7 * * * *` (hourly at minute 7; needs no model, runs with the scope `off`)              | `docs/capabilities/sender-context.md` (stage 12)            |
   | `triage.returned`      | `*/15 * * * * *` (every 15 s)                                                              | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
   | `trust.history`        | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)                     | [trust.md](capabilities/trust.md) rule 7                    |
   | `trust.regate`         | `20 */5 * * * *` (every 5 min; also once at start, before the triage worker)               | [trust.md](capabilities/trust.md) rule 9                    |

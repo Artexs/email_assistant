@@ -38,6 +38,9 @@ export const numberFieldNames = [
   "wait_ms",
   // mail sync: the time of one Sent pass
   "duration_ms",
+  // sender profile pass: rows already equal (not written) and rows zeroed
+  "unchanged",
+  "zeroed",
   // retention job: rows cleared per kind
   "body_rows",
   "header_rows",
