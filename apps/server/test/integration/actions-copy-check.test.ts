@@ -257,6 +257,19 @@ describe("the copy check: an IMAP error", () => {
   });
 });
 
+describe("the copy check: the cards", () => {
+  test("9. a send that the check closes edits its cards through the approval hooks of the committer: once, as expired", async () => {
+    await withRollback(db, async (trx) => {
+      const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
+      await editCopy(box, p.draftId, { text: (text) => `${text} edited` });
+
+      await runSend(trx, box, p.sendId);
+
+      expect(box.decided).toEqual([{ sendId: p.sendId, decision: "expired" }]);
+    });
+  });
+});
+
 describe("the copy check: a follow-up", () => {
   test("8. an edited copy → draft_changed, zero SMTP calls, the loop row unchanged, no outbox row written by the close", async () => {
     await withRollback(db, async (trx) => {

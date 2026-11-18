@@ -52,6 +52,8 @@ export interface CopyBox {
   clock: { now: Date };
   /** The wrapper that the committer's connection goes through (fault injection). Default: none. */
   wrap: { provider: (provider: MailProvider) => MailProvider };
+  /** The sends whose cards the committer asked to edit (`ApprovalHooks.onDecided`). */
+  decided: { sendId: string; decision: string }[];
   committer: ReturnType<typeof createCommitterJob>;
   /** Closes every connection that the box opened. */
   close(): Promise<void>;
@@ -91,6 +93,7 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
   const sender = createFakeMailSender();
   const clock = { now: NOW };
   const wrap: CopyBox["wrap"] = { provider: (provider) => provider };
+  const decided: CopyBox["decided"] = [];
   const committer = createCommitterJob({
     db: trx,
     secrets,
@@ -101,6 +104,11 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
     },
     compose: composeMessage,
     hooks: delegationHooks({ db: trx }),
+    approvalHooks: {
+      onDecided: async (_trx, _ctx, input) => {
+        decided.push({ sendId: input.sendId, decision: input.decision });
+      },
+    },
     loopHooks: loopHooks(),
     scope: { kind: "all" },
     sendScope: { kind: "all" },
@@ -115,6 +123,7 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
     sender,
     clock,
     wrap,
+    decided,
     committer,
     async close() {
       for (const provider of opened) await provider.close().catch(() => undefined);

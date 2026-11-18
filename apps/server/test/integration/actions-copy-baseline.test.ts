@@ -10,6 +10,7 @@ import {
   createFolderResolver,
   noDelegationHooks,
 } from "../../src/modules/actions";
+import { getDraftMailboxId } from "../../src/modules/actions/repo";
 import { composeMessage, openImapProvider, type MailProvider } from "../../src/modules/mail";
 import { HardError } from "../../src/platform/errors";
 import { captureLogs, type CapturedLogs } from "../log-capture";
@@ -219,6 +220,23 @@ describe("the baseline after the APPEND", () => {
       expect(events(logs, "draft_copy_unhashed")).toEqual([
         expect.objectContaining({ action_id: p.draftId, error_code: "HardError" }),
       ]);
+    });
+  });
+});
+
+describe("getDraftMailboxId", () => {
+  test("8. the mailbox of a draft of this organization; another organization, a send id and an unknown id give undefined", async () => {
+    await withRollback(db, async (trx) => {
+      const two = await copyBox(trx);
+      boxes.push(two);
+      const one = await copyBox(trx);
+      boxes.push(one);
+      const p = await waitingPair(trx, one);
+
+      expect(await getDraftMailboxId(trx, one.ctx, p.draftId)).toBe(one.mailboxId);
+      expect(await getDraftMailboxId(trx, two.ctx, p.draftId)).toBeUndefined();
+      expect(await getDraftMailboxId(trx, one.ctx, p.sendId)).toBeUndefined();
+      expect(await getDraftMailboxId(trx, one.ctx, randomUUID())).toBeUndefined();
     });
   });
 });

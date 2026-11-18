@@ -2,10 +2,11 @@ import { randomBytes } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { DEFAULT_SEND_LIMITS } from "@ea/core";
 import { describe, expect, spyOn, test } from "bun:test";
 
 import { actionsScope, committerDeps, gateEvidenceDir, sendScope } from "./composition";
-import { noLoopHooks } from "./modules/actions";
+import { noApprovalHooks, noLoopHooks } from "./modules/actions";
 import type { OAuthTokens } from "./modules/mail";
 import { loadConfig } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
@@ -167,6 +168,19 @@ describe("the token store is wired into every composition root", () => {
 
   test("scripts/job-run.ts: the committer deps get a token store", () => {
     expect(callOf(read("scripts/job-run.ts"), "committerDeps")).toContain("oauthTokens:");
+  });
+
+  test("committerDeps carries the real approval hooks: a send that the committer closes edits its cards", () => {
+    const deps = committerDeps({
+      db: {} as never,
+      secrets: {} as never,
+      oauthTokens: {} as never,
+      scope: { kind: "off" },
+      sendScope: { kind: "off" },
+      sendLimits: DEFAULT_SEND_LIMITS,
+    });
+    expect(deps.approvalHooks).toBeDefined();
+    expect(deps.approvalHooks).not.toBe(noApprovalHooks);
   });
 
   test("scripts/reply-check-copy.ts: the mailbox opener gets a token store", () => {
