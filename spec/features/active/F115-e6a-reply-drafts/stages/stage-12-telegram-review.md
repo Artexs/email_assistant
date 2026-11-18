@@ -36,3 +36,9 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 
 - **The approval detector skips `reply`.** Test 5 above is the proof: the detector (`channels/notices/approval.ts`) lists only sends whose payload kind is not `reply`. Stage 05 also made the `not_seen` rule skip replies (a reply has no `approval:<id>` card), so a reply is never closed because "no owner saw its card".
 - A tap on a reply answers `has_gaps` and `feature_off` with the texts of stage 05 (`taps.hasGaps`, `taps.featureOff`); the review card of this stage shows no Send button for a gap (D15), so those answers cover a stale card only.
+
+## Carry-over from stage 05
+
+- The Telegram `expired` tap text says "(48 h)" for a reply that lives 7 days: fix it.
+- A reply that fails with `has_gaps` is reported as the `bad_payload` cause until stage 09 adds its own text; stage 09 adds texts for the new reasons and the result detector must stop skipping `closeSend` with `notify: true`.
+- The new Polish and English tap and notice texts are agent drafts: judge wording.
