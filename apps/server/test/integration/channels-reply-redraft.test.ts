@@ -12,9 +12,10 @@ import {
   type LinkedChat,
 } from "../../src/modules/channels";
 import { createFakeChannel, type FakeChannel } from "../../src/modules/channels/fake/channel";
+import { digestNowMessage, type CommandDeps } from "../../src/modules/channels/commands";
 import { handleReplyText } from "../../src/modules/channels/reply-redraft";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
-import { requestReply } from "../../src/modules/replies";
+import { redraftReply, requestReply } from "../../src/modules/replies";
 import type { DB } from "../../src/platform/db";
 
 import { addMember, isolateChannels, linkChat, randomChatId, renderedOf } from "./fixtures";
@@ -535,6 +536,240 @@ describe("Draft reply", () => {
       const rows = await outboxOf(trx, r, "urgent");
       expect(rows).toHaveLength(2);
       for (const row of rows) expect(renderedOf(row as never).buttons).toHaveLength(1);
+    });
+  });
+});
+
+describe("the line of text and the result: what they never do", () => {
+  test("16. a card that was sent before the chat was linked, and a question that no sender took yet, answer no line of text", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { sendId } = await draftedReply(trx, r.box, r.clock);
+      const cardId = await cardOut(trx, r);
+      // A question that waits in the outbox has no Telegram message id: nothing to answer.
+      await handleCallback(r.deps, r.owner, `rd:${sendId}`);
+      expect(await handleReplyText(r.deps, r.owner, "x", 1)).toBeUndefined();
+      // The chat was linked again after the card went out: message ids belong to one chat, so the old card means nothing.
+      const relinked: LinkedChat = { ...r.owner, linkedAt: new Date(r.clock.now.getTime() + HOUR) };
+
+      expect(await handleReplyText(r.deps, relinked, "say yes", cardId)).toBeUndefined();
+      expect((await requestsOf(trx, r.box)).filter((row) => row.trigger === "redraft")).toEqual([]);
+      expect(await handleReplyText(r.deps, r.owner, "say yes", cardId)).toBeDefined();
+    });
+  });
+
+  test("17. a request that the web made gets no Telegram answer; the request of Telegram does, once, to the user who asked", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const web = await addReplyMail(trx, r.box, {
+        category: "info",
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+      });
+      const chat = await addReplyMail(trx, r.box, {
+        category: "info",
+        receivedAt: new Date(NOW.getTime() - 10 * MINUTE),
+      });
+      const ask = { db: trx, now: () => r.clock.now };
+      await requestReply(ask, r.box.ctx, { userId: r.box.userId, via: "web", emailId: web });
+      await requestReply(ask, r.box.ctx, { userId: r.box.userId, via: "telegram", emailId: chat });
+
+      await r.job();
+      await r.detect();
+      await r.detect();
+
+      const cards = await outboxOf(trx, r, "approval");
+      const sendOf = async (emailId: string) =>
+        (await pairRows(trx, r.box)).find((row) => row.type === "send" && row.email_id === emailId);
+      expect(cards.map((card) => card.dedup_key)).toEqual([`approval:${(await sendOf(chat))?.id}:r1`]);
+      expect(await sendOf(web)).toBeDefined();
+    });
+  });
+
+  test("18. a result for an owner whose consent does not cover reply data is not queued", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx, { consented: false });
+      const emailId = await addReplyMail(trx, r.box, { category: "info" });
+      await requestReply({ db: trx, now: () => r.clock.now }, r.box.ctx, {
+        userId: r.box.userId,
+        via: "telegram",
+        emailId,
+      });
+      await r.job();
+      await r.detect();
+
+      expect(await outboxOf(trx, r, "approval")).toEqual([]);
+      expect(await outboxOf(trx, r, "reply_result")).toEqual([]);
+    });
+  });
+
+  test("19. a draft that cannot be made for an OAuth mailbox, and the flag off, answer with the reason; the redraft too", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock);
+      const ask = { db: trx, now: () => r.clock.now };
+      await trx.updateTable("mailboxes").set({ oauth_provider: "google" }).where("id", "=", r.box.mailboxId).execute();
+      const other = await addReplyMail(trx, r.box, { category: "info" });
+
+      expect(await requestReply(ask, r.box.ctx, { userId: r.box.userId, via: "telegram", emailId: other })).toEqual({
+        kind: "blocked",
+        reason: "oauth_mailbox",
+      });
+      expect(
+        await redraftReply(ask, r.box.ctx, { userId: r.box.userId, via: "telegram", sendId, instruction: "x" })
+      ).toEqual({ kind: "blocked", reason: "oauth_mailbox" });
+      await trx.updateTable("mailboxes").set({ oauth_provider: null }).where("id", "=", r.box.mailboxId).execute();
+      await trx.updateTable("org_features").set({ enabled: false }).where("org_id", "=", r.box.ctx.orgId).execute();
+      expect(
+        await redraftReply(ask, r.box.ctx, { userId: r.box.userId, via: "telegram", sendId, instruction: "x" })
+      ).toEqual({ kind: "feature_off" });
+      expect(emailId).toBeDefined();
+    });
+  });
+
+  test("20. the question and the result are not held in quiet hours (a notice of another kind is: the control)", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { sendId } = await draftedReply(trx, r.box, r.clock);
+      await cardOut(trx, r);
+      // 23:30 in Europe/Warsaw (22:30 UTC in November): inside the default quiet hours.
+      r.clock.now = new Date("2026-11-18T22:30:00Z");
+      await handleCallback(r.deps, r.owner, `rd:${sendId}`);
+      await r.sendOut();
+      expect(r.channel.sent.at(-1)?.message.forceReply).toBe(true);
+      const [prompt] = await outboxOf(trx, r, "reply_prompt");
+      expect(prompt?.status).toBe("sent");
+
+      await trx
+        .insertInto("outbox")
+        .values({
+          org_id: r.box.ctx.orgId,
+          user_id: r.box.userId,
+          kind: "reply_result",
+          dedup_key: "reply_result:quiet-check",
+          email_id: prompt?.email_id,
+          view: JSON.stringify({ emailId: prompt?.email_id, reason: "timeout" }),
+          locale: "en",
+          status: "pending",
+          attempts: 0,
+          next_attempt_at: r.clock.now,
+          created_at: r.clock.now,
+        })
+        .execute();
+      await trx
+        .insertInto("outbox")
+        .values({
+          org_id: r.box.ctx.orgId,
+          user_id: r.box.userId,
+          kind: "replies_ready",
+          dedup_key: "replies_ready:quiet-control",
+          view: JSON.stringify({ count: 1, now: r.clock.now, timeZone: "Europe/Warsaw", review: false }),
+          locale: "en",
+          status: "pending",
+          attempts: 0,
+          next_attempt_at: r.clock.now,
+          created_at: r.clock.now,
+        })
+        .execute();
+      await r.sendOut();
+      const [result] = await outboxOf(trx, r, "reply_result");
+      expect(result?.status).toBe("sent");
+      // The control: the same hour holds a notice that nobody asked for.
+      const [control] = await outboxOf(trx, r, "replies_ready");
+      expect(control?.status).toBe("pending");
+    });
+  });
+});
+
+describe("the question after Redraft: a resend", () => {
+  test("22. a question that was sent before a crash and is sent again keeps ForceReply", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock);
+      await trx
+        .insertInto("outbox")
+        .values({
+          org_id: r.box.ctx.orgId,
+          user_id: r.box.userId,
+          kind: "reply_prompt",
+          dedup_key: `reply_prompt:${sendId}:1`,
+          email_id: emailId,
+          view: JSON.stringify({ emailId }),
+          locale: "en",
+          // The first send was taken and never marked: the claim is stale and the stored text is sent as it is.
+          status: "sending",
+          locked_at: new Date(NOW.getTime() - HOUR),
+          text: "✍️ Write one line: what should the reply say?",
+          buttons: JSON.stringify([]),
+          attempts: 0,
+          next_attempt_at: NOW,
+          created_at: new Date(NOW.getTime() - HOUR),
+        })
+        .execute();
+
+      await r.sendOut();
+
+      expect(r.channel.sent.at(-1)?.message).toEqual({
+        text: "✍️ Write one line: what should the reply say?",
+        buttons: [],
+        forceReply: true,
+      });
+    });
+  });
+});
+
+describe("the Draft reply button on the digest", () => {
+  function commandDeps(trx: Transaction<DB>, r: Rig): CommandDeps {
+    return {
+      db: trx,
+      now: () => r.clock.now,
+      llmDailyCap: 300,
+      triageScope: "all",
+      actionsScope: { kind: "all" },
+      llm: { provider: "gemini", classifierModel: "m" },
+      hooks: noDelegationHooks,
+      uidplus: async () => true,
+      sendScope: { kind: "all" },
+      testMail: NO_TEST_SENDERS,
+      operatorContact: null,
+      syncEveryMin: 2,
+    };
+  }
+
+  test("21. an owner with the consent gets the button on a needs_reply row with no open draft; an info row, a member and an unconsented owner get none", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const needs = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 30 * MINUTE) });
+      const info = await addReplyMail(trx, r.box, {
+        category: "info",
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+      });
+      const buttons = (message: { buttons: { data: string }[][] }) =>
+        message.buttons.flat().map((button) => button.data);
+
+      const ownerDigest = await digestNowMessage(commandDeps(trx, r), r.owner);
+      expect(buttons(ownerDigest)).toContain(`dr:${needs}`);
+      expect(buttons(ownerDigest)).not.toContain(`dr:${info}`);
+
+      expect(
+        buttons(await digestNowMessage(commandDeps(trx, r), r.member)).some((data) => data.startsWith("dr:"))
+      ).toBe(false);
+
+      // The draft of the mail is open now: no button.
+      await requestReply({ db: trx, now: () => r.clock.now }, r.box.ctx, {
+        userId: r.box.userId,
+        via: "telegram",
+        emailId: needs,
+      });
+      await r.job();
+      expect(buttons(await digestNowMessage(commandDeps(trx, r), r.owner)).some((data) => data.startsWith("dr:"))).toBe(
+        false
+      );
+    });
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx, { consented: false });
+      await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 30 * MINUTE) });
+      const message = await digestNowMessage(commandDeps(trx, r), r.owner);
+      expect(message.buttons.flat().some((button) => button.data.startsWith("dr:"))).toBe(false);
     });
   });
 });
