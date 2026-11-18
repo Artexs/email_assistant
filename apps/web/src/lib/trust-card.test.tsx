@@ -33,7 +33,7 @@ const row = (over: Partial<TrustCategory> = {}): TrustCategory => ({
   },
   history: { outcome: "pass", acted: 60, moved: 0, upper: 0.01, total: 200, wouldMove: 40 },
   trip: { tripped: false, reason: null, at: null },
-  realLabels: { kept: 0, precision: null, decision: "too-few" },
+  realLabels: { kept: 0, precision: null, decision: "no-go: too few" },
   evidence: { eligible: true, recommended: true, blocks: [] },
   ...over,
 });
