@@ -31,8 +31,10 @@ export const noticeKinds = [
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);
 
-// `mail` is the report mail of E4-B (APPEND into the own INBOX, F110 stage 20); E9b adds "push". Only four kinds go by mail.
-export const noticeChannels = ["telegram", "mail"] as const;
+// `mail` is the report mail of E4-B (APPEND into the own INBOX, F110 stage 20). Only four kinds go by mail. `push` is the Web
+// Push row of E9b (one row per device, `outbox.push_subscription_id`): the CHECK list of the table has it since F118 stage 02, and
+// the test `telegram-schema` ties the two lists. No code writes or renders a `push` row before the F118 stages 07 and 08.
+export const noticeChannels = ["telegram", "mail", "push"] as const;
 export type NoticeChannel = (typeof noticeChannels)[number];
 
 // The kinds that also go by mail (F110 D14, Q6). Every other kind goes to Telegram only; `noticeRenderers` has a `mail` renderer for these four.

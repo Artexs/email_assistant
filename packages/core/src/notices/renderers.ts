@@ -39,6 +39,8 @@ export interface NoticeRenderer<S extends z.ZodType> {
   schema: S;
   telegram: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
   mail?: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
+  // The Web Push payload of a push kind (F118 stages 07 and 08 fill it): absent for every kind until then.
+  push?: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
 }
 
 function defineRenderer<S extends z.ZodType>(renderer: NoticeRenderer<S>): NoticeRenderer<S> {
