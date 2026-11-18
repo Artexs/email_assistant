@@ -1,4 +1,4 @@
-import { isAutoSubmitted, parseToolSwitches, sendPayloadFor, type DraftPayload, draftPayloadSchema } from "@ea/core";
+import { draftPayloadSchema, parseToolSwitches, sendPayloadFor, type DraftPayload } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -163,19 +163,18 @@ export async function writeReplyDraft(deps: WriteDeps, ctx: TenantContext, input
         at: now,
       });
     }
-    // Close the older open replies of the thread. A newer automatic mail does not close one (an out-of-office is no answer).
-    if (!isAutoSubmitted(loaded.facts.headers?.autoSubmitted ?? null)) {
-      for (const entry of open) {
-        await closeSend(trx, ctx, {
-          sendId: entry.sendId,
-          reason: "newer_mail",
-          notify: false,
-          claimed: false,
-          now,
-          deps: { hooks: deps.hooks, approvalHooks: deps.approvalHooks, uidplus: deps.uidplus },
-        });
-        // `busy` and `not_open`: leave it. The sweep or the committer ends it.
-      }
+    // Close the older open replies of the thread: they answer a mail that is not the last one. The facts above exclude an automatic
+    // mail (an out-of-office is no answer and gets no draft), so every mail that reaches this line may close an older reply.
+    for (const entry of open) {
+      await closeSend(trx, ctx, {
+        sendId: entry.sendId,
+        reason: "newer_mail",
+        notify: false,
+        claimed: false,
+        now,
+        deps: { hooks: deps.hooks, approvalHooks: deps.approvalHooks, uidplus: deps.uidplus },
+      });
+      // `busy` and `not_open`: leave it. The sweep or the committer ends it.
     }
     if (!(await finishReplyRequest(trx, ctx, request.id, lockedAt, { status: "done", sendActionId: send.id, now }))) {
       // Cannot happen after the lock; the throw rolls the pair back.

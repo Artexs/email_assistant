@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import { nextQuotaDayStart, QUOTA_TIMEZONE } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
@@ -11,7 +11,7 @@ import {
   noApprovalHooks,
   noDelegationHooks,
 } from "../../src/modules/actions";
-import { updateMailboxSettings } from "../../src/modules/config";
+import { insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
 import { composeMessage } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
@@ -927,6 +927,149 @@ describe("the drafter job: one draft per request, exactly once", () => {
       const [request] = await requestsOf(trx, s);
       expect(request?.status).toBe("drafting");
       expect(request?.locked_at?.getTime()).toBe(later.getTime());
+    });
+  });
+
+  test("a worker that lost its claim does not end the request either: a no_draft answer leaves the new claim alone", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupBox(trx);
+      await addReplyMail(trx, s);
+      const later = new Date(NOW.getTime() + 7 * MINUTE);
+      const { llm } = fakeLlm(async () => {
+        await trx
+          .updateTable("reply_requests")
+          .set({ locked_at: later })
+          .where("mailbox_id", "=", s.mailboxId)
+          .execute();
+        return { decision: "no_draft", reason_code: "needs_facts", body: "", gaps: [], language: "pl" };
+      });
+
+      const run = await runJob(jobDeps(trx, llm, fresh()), s);
+
+      expect(run.outcomes.lost).toBe(1);
+      const [request] = await requestsOf(trx, s);
+      expect(request?.status).toBe("drafting");
+      expect(request?.locked_at?.getTime()).toBe(later.getTime());
+    });
+  });
+
+  test("a pair with the keys of the request that appears during the call (another worker wrote it, the user closed it): no second pair, the request ends done with it", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupBox(trx);
+      const emailId = await addReplyMail(trx, s);
+      const [request0] = await (async () => {
+        await queueRequest(trx, s, emailId, "auto");
+        return requestsOf(trx, s);
+      })();
+      const requestId = request0?.id ?? "";
+      let storedSend = "";
+      const { llm } = fakeLlm(async () => {
+        const created = await createPlanned(trx, s.ctx, emailId, [
+          {
+            type: "create_draft",
+            payload: {
+              kind: "reply",
+              to: ["other@client.test"],
+              cc: [],
+              language: "pl",
+              body: "Tekst innego procesu.",
+              request_id: requestId,
+              folder: "INBOX",
+              recipients: "from",
+            },
+            status: "ready",
+            idempotencyKey: `${requestId}:create_draft`,
+          },
+          {
+            type: "send",
+            payload: { kind: "reply", to: ["other@client.test"], cc: [] },
+            status: "awaiting_approval",
+            idempotencyKey: `${requestId}:send`,
+            dependsOn: "create_draft",
+          },
+        ]);
+        storedSend = created.find((action) => action.type === "send")?.id ?? "";
+        // The user already closed that send: the thread rule does not see an open reply, so only the keys stop a second pair.
+        await trx
+          .updateTable("actions")
+          .set({ status: "expired", status_reason: "timeout" })
+          .where("id", "=", storedSend)
+          .execute();
+        return CLEAN_ANSWER;
+      });
+
+      await runJob(jobDeps(trx, llm, fresh()), s);
+
+      expect(await pairRows(trx, s)).toHaveLength(2);
+      expect(await requestOf(trx, requestId)).toMatchObject({ status: "done", send_action_id: storedSend });
+    });
+  });
+
+  test("the cap line: 239 rows let an automatic request draft; 240 make it wait", async () => {
+    await withRollback(db, async (trx) => {
+      const low = await setupBox(trx);
+      await addReplyMail(trx, low);
+      await seedLlmCalls(trx, low, 239);
+      const first = fakeLlm(() => CLEAN_ANSWER);
+      await runJob(jobDeps(trx, first.llm, fresh()), low);
+      expect(first.requests).toHaveLength(1);
+      expect((await requestsOf(trx, low))[0]?.status).toBe("done");
+
+      const high = await setupBox(trx);
+      await addReplyMail(trx, high);
+      await seedLlmCalls(trx, high, 240);
+      const second = fakeLlm(() => CLEAN_ANSWER);
+      await runJob(jobDeps(trx, second.llm, fresh()), high);
+      expect(second.requests).toHaveLength(0);
+      expect((await requestsOf(trx, high))[0]?.status).toBe("pending");
+    });
+  });
+
+  test("the thread rule is per mailbox: an open reply of the same thread key in another mailbox of the org is not touched", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupBox(trx);
+      const clock = fresh();
+      const { llm } = fakeLlm(() => CLEAN_ANSWER);
+      const jobs = createReplyJobs(jobDeps(trx, llm, clock));
+      await addReplyMail(trx, s, { threadKey: "shared-thread", receivedAt: new Date("2026-11-18T08:00:00Z") });
+      await jobs.drafter.run({ mailboxId: s.mailboxId });
+
+      // A second mailbox of the same org with a newer mail of a thread of the same key.
+      const otherMailbox = randomUUID();
+      await trx
+        .insertInto("mailboxes")
+        .columns([
+          "id",
+          "org_id",
+          "address",
+          "imap_host",
+          "imap_port",
+          "smtp_host",
+          "smtp_port",
+          "capabilities",
+          "folder_map",
+        ])
+        .values({
+          id: otherMailbox,
+          org_id: s.ctx.orgId,
+          address: `second-${otherMailbox}@x.test`,
+          imap_host: "imap.x.test",
+          imap_port: 993,
+          smtp_host: "smtp.x.test",
+          smtp_port: 465,
+          capabilities: JSON.stringify({}),
+          folder_map: JSON.stringify({ drafts: "Drafts" }),
+        })
+        .execute();
+      await insertDefaultSettings(trx, s.ctx, otherMailbox);
+      await updateMailboxSettings(trx, s.ctx, otherMailbox, { mode: "assist" });
+      await setSwitch(trx, otherMailbox, true);
+      const second = { ...s, mailboxId: otherMailbox };
+      await addReplyMail(trx, second, { threadKey: "shared-thread", receivedAt: new Date("2026-11-18T08:05:00Z") });
+      clock.now = new Date(NOW.getTime() + MINUTE);
+      await createReplyJobs(jobDeps(trx, llm, clock)).drafter.run({ mailboxId: otherMailbox });
+
+      expect(await openReplySends(trx, s)).toHaveLength(2);
     });
   });
 
