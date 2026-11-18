@@ -477,12 +477,20 @@ describe("setReplyRecipients (Reply all, Use Reply-To)", () => {
     });
   });
 
-  test("15. an address of the mail that the draft schema refuses gives `bad_recipient` and no version", async () => {
+  test("15. an entry that is no address is no recipient (no button, no send to it); a sender that is no address gives `bad_recipient`; no version in any refusal", async () => {
     await withRollback(db, async (trx) => {
       const box = await setupBox(trx);
       const { emailId, sendId } = await drafted(trx, box);
       await setAddresses(trx, emailId, { to: [box.address, "not an address"] });
 
+      expect(
+        await setReplyRecipients(approvalDeps(trx), box.ctx, { ...owner(box), sendId, mode: "all", now: NOW })
+      ).toEqual({ kind: "no_others" });
+      expect((await newest(trx, box)).send?.id).toBe(sendId);
+
+      // The sender is no address: nothing can be built.
+      await trx.updateTable("emails").set({ from_address: "nonsense" }).where("id", "=", emailId).execute();
+      await setAddresses(trx, emailId, { to: [box.address, "b@y.test"] });
       expect(
         await setReplyRecipients(approvalDeps(trx), box.ctx, { ...owner(box), sendId, mode: "all", now: NOW })
       ).toEqual({ kind: "bad_recipient" });
