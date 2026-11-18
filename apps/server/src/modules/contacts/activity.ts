@@ -195,14 +195,21 @@ export async function readSenderActivity(
       AND emails.from_address_lower <> ''
       AND ${mailKindFilter("real", testMail)}
   `;
-  const newestResult = (emailId: string) => sql`
-    LATERAL (
-      SELECT tr.category, cardinality(tr.suspicious_reasons) > 0 AS suspicious
-      FROM triage_results tr
-      WHERE tr.org_id = ${ctx.orgId} AND tr.email_id = ${sql.ref(emailId)}
-      ORDER BY tr.created_at DESC, tr.id DESC
-      LIMIT 1
-    )
+  // The newest triage result and the newest feedback row of each mail of the window. One `DISTINCT ON` pass over the mailbox
+  // (a hash join with the window), not one index probe per mail: the plan does not depend on the table statistics.
+  const newestResult = sql`
+    SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.category, cardinality(tr.suspicious_reasons) > 0 AS suspicious
+    FROM triage_results tr
+    JOIN win ON win.id = tr.email_id
+    WHERE tr.org_id = ${ctx.orgId}
+    ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
+  `;
+  const newestFeedback = sql`
+    SELECT DISTINCT ON (tf.email_id) tf.email_id, tf.verdict, tf.true_category, tf.source
+    FROM triage_feedback tf
+    JOIN win ON win.id = tf.email_id
+    WHERE tf.org_id = ${ctx.orgId}
+    ORDER BY tf.email_id, tf.created_at DESC, tf.id DESC
   `;
 
   const own = await ownAddresses(db, ctx, mailboxId);
@@ -212,7 +219,7 @@ export async function readSenderActivity(
   );
 
   const mails = await sql<MailRow>`
-    WITH win AS (${win}), m AS (
+    WITH win AS (${win}), nt AS (${newestResult}), m AS (
       SELECT
         w.addr, w.received_at,
         COALESCE(f.answered, false) AS answered,
@@ -226,7 +233,7 @@ export async function readSenderActivity(
       FROM win w
       LEFT JOIN email_flags f ON f.email_id = w.id AND f.org_id = ${ctx.orgId}
       LEFT JOIN email_headers h ON h.email_id = w.id AND h.org_id = ${ctx.orgId}
-      LEFT JOIN ${newestResult("w.id")} nt ON true
+      LEFT JOIN nt ON nt.email_id = w.id
     )
     SELECT
       addr,
@@ -250,26 +257,20 @@ export async function readSenderActivity(
   `.execute(db);
 
   const categories = await sql<CategoryRow>`
-    WITH win AS (${win})
+    WITH win AS (${win}), nt AS (${newestResult})
     SELECT w.addr, nt.category, count(*)::int AS n
     FROM win w
-    JOIN ${newestResult("w.id")} nt ON true
+    JOIN nt ON nt.email_id = w.id
     GROUP BY w.addr, nt.category
   `.execute(db);
 
   // The newest feedback of each mail and the newest triage category: one correction per mail (a later mark replaces an earlier).
   const feedback = await sql<FeedbackRow>`
-    WITH win AS (${win}), fb AS (
+    WITH win AS (${win}), nt AS (${newestResult}), nf AS (${newestFeedback}), fb AS (
       SELECT w.addr, nf.verdict, nf.true_category, nf.source, nt.category AS category
       FROM win w
-      JOIN LATERAL (
-        SELECT tf.verdict, tf.true_category, tf.source
-        FROM triage_feedback tf
-        WHERE tf.org_id = ${ctx.orgId} AND tf.email_id = w.id
-        ORDER BY tf.created_at DESC, tf.id DESC
-        LIMIT 1
-      ) nf ON true
-      LEFT JOIN ${newestResult("w.id")} nt ON true
+      JOIN nf ON nf.email_id = w.id
+      LEFT JOIN nt ON nt.email_id = w.id
     )
     SELECT addr, 'correction' AS kind, true_category AS category, count(*)::int AS n
     FROM fb WHERE verdict = 'wrong' AND true_category IS NOT NULL
@@ -331,7 +332,11 @@ export async function readSenderActivity(
   // Their delay is the time from a Sent mail to the incoming mail that names its Message-ID in In-Reply-To (a whole id, as
   // `replyMatch`; `<id>` tokens when there are any, else bare words). One sample per incoming mail: the newest Sent mail it names.
   const theirDelays = await sql<DelayRow>`
-    WITH win AS (${win}), named AS (
+    WITH win AS (${win}), own_sent AS MATERIALIZED (
+      SELECT s.id, s.sent_at, regexp_replace(btrim(s.message_id), '^<|>$', '', 'g') AS ref
+      FROM sent_emails s
+      WHERE s.org_id = ${ctx.orgId} AND s.mailbox_id = ${mailboxId} AND s.origin = 'user' AND s.message_id IS NOT NULL
+    ), named AS MATERIALIZED (
       SELECT w.id, w.addr, w.received_at, t.id AS ref
       FROM win w
       CROSS JOIN LATERAL unnest(
@@ -349,13 +354,7 @@ export async function readSenderActivity(
     FROM (
       SELECT DISTINCT ON (n.id) n.addr, extract(epoch FROM (n.received_at - s.sent_at)) / 3600 AS hours
       FROM named n
-      JOIN sent_emails s
-        ON s.org_id = ${ctx.orgId}
-        AND s.mailbox_id = ${mailboxId}
-        AND s.origin = 'user'
-        AND s.message_id IS NOT NULL
-        AND regexp_replace(btrim(s.message_id), '^<|>$', '', 'g') = n.ref
-        AND s.sent_at < n.received_at
+      JOIN own_sent s ON s.ref = n.ref AND s.sent_at < n.received_at
       ORDER BY n.id, s.sent_at DESC, s.id
     ) d
     WHERE hours > 0 AND hours <= ${MAX_DELAY_HOURS}

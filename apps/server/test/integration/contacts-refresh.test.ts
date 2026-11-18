@@ -142,6 +142,11 @@ describe("refreshMailboxProfiles: counts", () => {
         })),
         sent: mine.map(({ id }, index) => ({ at: ago(20 - index * 3), messageId: id })),
       });
+      // A reply that arrives before the Sent mail it names (clock skew) is no sample.
+      await seedSenderActivity(trx, org.ctx, org.mailboxId, {
+        address: "anna@acme.pl",
+        mails: [{ at: ago(25), inReplyTo: mine[0]?.id }],
+      });
       // Carl answers four of the same Sent mails, and a fifth mail names an id with a suffix: not a match.
       await seedSenderActivity(trx, org.ctx, org.mailboxId, {
         address: "carl@acme.pl",
@@ -398,6 +403,28 @@ describe("refreshMailboxProfiles: second pass", () => {
     });
   });
 
+  test("8d last_seen_at never moves back when the newest mail is gone", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const seeded = await seedSenderActivity(trx, org.ctx, org.mailboxId, {
+        address: "anna@acme.pl",
+        mails: mailsAt([1, 5]),
+      });
+      await refresh(trx, org);
+      expect(ms((await profileOf(trx, org, "anna@acme.pl"))?.last_seen_at)).toBe(ago(1).getTime());
+
+      // A data-request erase or a delete removes the newest mail.
+      await trx
+        .deleteFrom("emails")
+        .where("id", "=", seeded.emailIds[0] as string)
+        .execute();
+      await refresh(trx, org);
+      const row = await profileOf(trx, org, "anna@acme.pl");
+      expect(row?.received).toBe(1);
+      expect(ms(row?.last_seen_at)).toBe(ago(1).getTime());
+    });
+  });
+
   test("8c a second pass at the same time changes no count", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
@@ -473,6 +500,35 @@ describe("refreshMailboxProfiles: privacy and tenants", () => {
       });
       await refresh(trx, org);
       expect(await countRows(trx, org)).toBe(0);
+    });
+  });
+});
+
+describe("refreshMailboxProfiles: mailbox scope", () => {
+  test("10c a pass of one mailbox never changes the rows of another mailbox", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const secondId = randomUUID();
+      await insertMailbox(trx, org.ctx, {
+        id: secondId,
+        address: `second-${secondId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await seedSenderActivity(trx, org.ctx, secondId, { address: "anna@acme.pl", mails: mailsAt([1, 2]) });
+      await refreshMailboxProfiles(deps(trx), org.ctx, secondId, { now: NOW });
+      const before = await trx.selectFrom("sender_profiles").selectAll().where("mailbox_id", "=", secondId).execute();
+      expect(before).toHaveLength(1);
+
+      // The first mailbox has no mail: its pass writes nothing and zeroes nothing in the second mailbox.
+      expect(await refresh(trx, org)).toEqual({ written: 0, zeroed: 0, skipped: false });
+      const after = await trx.selectFrom("sender_profiles").selectAll().where("mailbox_id", "=", secondId).execute();
+      expect(after).toEqual(before);
+      expect(after[0]?.received).toBe(2);
     });
   });
 });
