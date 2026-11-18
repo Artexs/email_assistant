@@ -8,6 +8,14 @@ export {
   type ReplyJobs,
   type ReplyRunResult,
 } from "./jobs";
+export {
+  createReplySweep,
+  SWEEP_LIMIT,
+  sweepReasons,
+  type SweepDeps,
+  type SweepReason,
+  type SweepResult,
+} from "./sweep";
 export { MAX_TRIES, USER_REQUEST_TIMEOUT_MS, type ReplyLlmScope } from "./draft-one";
 export {
   claimReplyRequests,

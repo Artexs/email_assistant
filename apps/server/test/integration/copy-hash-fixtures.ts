@@ -54,6 +54,8 @@ export interface CopyBox {
   wrap: { provider: (provider: MailProvider) => MailProvider };
   /** Test hook: runs inside `LoopHooks.isOpen` before the loop is read, with the transaction (the loop lock is taken there). */
   onIsOpen: { run?: (trx: Transaction<DB>, loopId: string) => Promise<void> };
+  /** Test settings read by the committer at each run: the time budget of the Sent pass before a reply send (ms). Default: none. */
+  tune: { sentBudgetMs?: number };
   /** The sends whose cards the committer asked to edit (`ApprovalHooks.onDecided`). */
   decided: { sendId: string; decision: string }[];
   committer: ReturnType<typeof createCommitterJob>;
@@ -96,6 +98,7 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
   const clock = { now: NOW };
   const wrap: CopyBox["wrap"] = { provider: (provider) => provider };
   const decided: CopyBox["decided"] = [];
+  const tune: CopyBox["tune"] = {};
   const onIsOpen: CopyBox["onIsOpen"] = {};
   const loops = loopHooks();
   const committer = createCommitterJob({
@@ -123,6 +126,9 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
     scope: { kind: "all" },
     sendScope: { kind: "all" },
     now: () => clock.now,
+    get sentBudgetMs() {
+      return tune.sentBudgetMs;
+    },
   });
   return {
     ctx,
@@ -134,6 +140,7 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
     clock,
     wrap,
     onIsOpen,
+    tune,
     decided,
     committer,
     async close() {

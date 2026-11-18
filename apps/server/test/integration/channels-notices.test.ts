@@ -1702,7 +1702,7 @@ describe("send result notices", () => {
         providerResult: { stage: "envelope", response_code: 450, code: "EENVELOPE", cap: "soft_retry" },
       });
       const bad = await ended(trx, o, { status: "failed", reason: "bad_payload", attempts: 1 });
-      // A reply whose text still held a gap at the claim (stage 05): told like a bad payload, nothing was sent.
+      // A reply whose text still held a gap at the claim (stage 05): nothing was sent; it has its own cause text (stage 09).
       const gaps = await ended(trx, o, { status: "failed", reason: "has_gaps", attempts: 0 });
 
       await run(trx);
@@ -1723,7 +1723,8 @@ describe("send result notices", () => {
       expect(b.text).toContain("The stored send data is not valid; nothing was sent");
       expect(b.data).toEqual([]);
       const g = await resultText(trx, o, gaps.sendId);
-      expect(g.text).toContain("The stored send data is not valid; nothing was sent");
+      expect(g.text).toContain("The reply still has a gap marked with [[ ]] that nobody filled; nothing was sent");
+      expect(g.text).not.toContain("The stored send data is not valid");
       expect(g.data).toEqual([]);
     });
   });
@@ -1810,6 +1811,36 @@ describe("send result notices", () => {
         "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Quarterly offer"
       );
       expect(text).toContain("The draft stays in Drafts.");
+    });
+  });
+
+  test("(4d) a reply that closes for a reply reason (F115 stage 09) gets a result notice with its own text", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      const cases: [string, string, boolean][] = [
+        ["answered", "You already answered this mail. Nothing was sent.", true],
+        ["sent_by_user", "It looks like you sent it from your mail client. Nothing was sent.", false],
+        ["newer_mail", "A newer mail arrived in this thread. Nothing was sent.", true],
+        ["original_moved", "The mail left the inbox. Nothing was sent.", true],
+        ["suspicious", "The mail was marked as suspicious after the draft was made. Nothing was sent.", true],
+        ["draft_missing", "the draft is not in your Drafts folder", false],
+      ];
+      const sends: [string, string, boolean][] = [];
+      for (const [reason, text, draftLine] of cases) {
+        const p = await ended(trx, o, { status: "expired", reason }, { kind: "reply", to: `a-${randomUUID()}@x.test` });
+        sends.push([p.sendId, text, draftLine]);
+      }
+
+      await run(trx);
+
+      for (const [sendId, text, draftLine] of sends) {
+        const row = await resultText(trx, o, sendId);
+        expect(row.text).toContain(text);
+        expect(row.text.includes("The draft stays in Drafts.")).toBe(draftLine);
+        expect(row.data).toEqual([]);
+        expect((await sendState(trx, sendId)).result_notified_at).toEqual(T);
+      }
     });
   });
 

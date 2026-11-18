@@ -33,3 +33,10 @@ export async function getSentSyncView(
     errorCode: state?.lastErrorCode ?? null,
   };
 }
+
+// Can the system see the Sent mail of this mailbox? The org flag `sent_sync` is on and the switch of the mailbox is on. A reply
+// card says "I cannot see your sent mail" when it is not (F115 D10: then only `\Answered` on the original shows an answer).
+export async function isSentVisible(db: Db | Transaction<DB>, ctx: TenantContext, mailboxId: string): Promise<boolean> {
+  if (!(await isFeatureOn(db, ctx, "sent_sync"))) return false;
+  return (await getSentSyncState(db, ctx, mailboxId))?.enabled === true;
+}

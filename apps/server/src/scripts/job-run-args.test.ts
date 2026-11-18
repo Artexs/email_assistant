@@ -29,6 +29,11 @@ describe("parseJobRunArgs", () => {
     expect(parseJobRunArgs(["--name", "replies.drafter", "--force"])).toBeNull();
   });
 
+  test("parses replies.sweep and refuses --force for it", () => {
+    expect(parseJobRunArgs(["--name", "replies.sweep"])).toEqual({ name: "replies.sweep", force: false });
+    expect(parseJobRunArgs(["--name", "replies.sweep", "--force"])).toBeNull();
+  });
+
   test("the usage text names every job", () => {
     for (const name of jobNames) expect(usage).toContain(name);
   });

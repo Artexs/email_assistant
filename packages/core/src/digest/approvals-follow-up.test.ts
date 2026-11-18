@@ -318,6 +318,12 @@ describe("the result lines of a follow-up", () => {
     expect(() => result({ kind: "failed", cause: "tries", code: null, tries: 3 })).toThrow(RangeError);
     expect(() => result({ kind: "rejected_by_server", stage: "rcpt_to", responseCode: 550 })).toThrow(RangeError);
   });
+
+  test("a follow-up has no text for a reason of the reply drafts", () => {
+    for (const reason of ["answered", "sent_by_user", "newer_mail", "original_moved", "suspicious"] as const) {
+      expect(() => result({ kind: "expired", reason, draftRemoved: true })).toThrow(RangeError);
+    }
+  });
 });
 
 describe("the fixed notices of a follow-up (T3b, G13, D17)", () => {

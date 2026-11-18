@@ -30,6 +30,12 @@ const EXPIRY_REASONS = [
   "policy_changed",
   "loop_closed",
   "draft_changed",
+  // F115: the reasons that only a reply send has.
+  "answered",
+  "sent_by_user",
+  "newer_mail",
+  "original_moved",
+  "suspicious",
 ] as const;
 
 function stringOf(value: unknown): string | null {
@@ -68,10 +74,11 @@ async function resultKindOf(
           };
         case "outcome_unknown":
           return { kind: "outcome_unknown" };
-        // A reply with a gap never went out: the stored data was not valid for a send.
         case "bad_payload":
-        case "has_gaps":
           return { kind: "failed", cause: "bad_payload", code: null, tries: row.attempts };
+        // A reply with a gap never went out (the tap refuses such a text, so a hand edit of the database made it).
+        case "has_gaps":
+          return { kind: "failed", cause: "has_gaps", code: null, tries: row.attempts };
         // The Drafts copy could not be read before the send (an IMAP error): nothing went out, and "Send again" is offered.
         case "copy_check_error":
           return {
