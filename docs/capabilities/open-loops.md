@@ -69,12 +69,14 @@ Nothing the user waits for should slip. The assistant reads the user's own Sent 
 
 - A new ask or promise in a later own mail in the thread of an open `waiting` or `delegated` loop is not extracted: that mail restarts the wait and calls no model (D9, review N13). A mail to other people is a side note and is analysed as new mail.
 - An ignored `waiting` or `delegated` loop ends `stale` 30 days after due, in every mode (rule 6).
-- Promises of other people (PD-122), snooze of incoming mail, calendar items and a wait per contact (E11a) are not built. There is no delegate alias list, and no report mail channel (ADR 0022 is not built).
+- Promises of other people (PD-122), snooze of incoming mail, calendar items and a wait per contact (E11a) are not built. There is no delegate alias list, and the report mail channel is a separate flag (`report_mail`, ADR 0022), off by default.
 - A reply from an alias of the user counts as the user's own only when the user wrote from that alias before (rule 3); a reply from a stranger alias closes the loop. A reply that arrives during the SMTP call of a follow-up falls before the new `wait_from_at` and is not counted.
 - Texts of closed loops outlive a switch off by up to 90 days (rule 11). A delivered Telegram message cannot be recalled.
 - With several linked owners only the first digest that commits shows a ⌛ line (the mark is one column).
 - `sentFromAddressesOf` reads the Sent rows of the mailbox on every `matchReplies` run and every `isOpen`; no index covers `(mailbox_id, from_address)`. Fine at pilot size.
 - The extractor schema is checked on OpenAI only. On Gemini a schema rejection is a hard `http_400` (rule 2): check it before `open_loops` is turned on there.
+- A privacy erase blanks only loops whose text is still stored: a loop that retention already cleared can leave its subject in a digest that is still stored. The window is about one day.
+- The stale span of a chaser counts 24 hours times the days, so a daylight-saving change moves the boundary by one hour.
 - The pilot proof (one real follow-up sent after a tap, flags on for the pilot organization) is stage 25 of F116.
 
 ## Decisions
