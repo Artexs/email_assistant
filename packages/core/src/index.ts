@@ -19,5 +19,6 @@ export * from "./changelog";
 export * from "./loopback";
 export * from "./ops";
 export * from "./loops";
+export * from "./contacts";
 export * from "./replies";
 export * from "./trust";

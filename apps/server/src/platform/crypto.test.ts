@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { CryptoError, createSecretBox } from "./crypto";
+import { CryptoError, createSecretBox, dsrAddressHash, senderKeyHash } from "./crypto";
 
 const key = randomBytes(32).toString("base64");
 const otherKey = randomBytes(32).toString("base64");
@@ -101,5 +101,39 @@ describe("createSecretBox", () => {
     expect(keyError).toBeInstanceOf(CryptoError);
     expect((keyError as CryptoError).name).toBe("CryptoError");
     expect((keyError as CryptoError).message).not.toContain(shortKey);
+  });
+});
+
+describe("senderKeyHash", () => {
+  test("the same key, org and address give the same hash", () => {
+    expect(senderKeyHash(key, "o1", "a@x.pl")).toBe(senderKeyHash(key, "o1", "a@x.pl"));
+  });
+
+  test("the same address in another org gives another hash", () => {
+    expect(senderKeyHash(key, "o1", "a@x.pl")).not.toBe(senderKeyHash(key, "o2", "a@x.pl"));
+  });
+
+  test("another credentials key gives another hash", () => {
+    expect(senderKeyHash(key, "o1", "a@x.pl")).not.toBe(senderKeyHash(otherKey, "o1", "a@x.pl"));
+  });
+
+  test("the hash differs from the DSR address hash (another info string)", () => {
+    expect(senderKeyHash(key, "o1", "a@x.pl")).not.toBe(dsrAddressHash(key, "a@x.pl"));
+  });
+
+  test("a domain value and an address value give different hashes", () => {
+    expect(senderKeyHash(key, "o1", "@x.pl")).not.toBe(senderKeyHash(key, "o1", "a@x.pl"));
+  });
+
+  test("the output is 64 hex characters", () => {
+    expect(senderKeyHash(key, "o1", "a@x.pl")).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  test("a key of 31 bytes or a key that is not base64 throws CryptoError without the key in the message", () => {
+    const short = randomBytes(31).toString("base64");
+    const error = catchError(() => senderKeyHash(short, "o1", "a@x.pl"));
+    expect(error).toBeInstanceOf(CryptoError);
+    expect((error as CryptoError).message).not.toContain(short);
+    expect(() => senderKeyHash(`${"x".repeat(43)}!`, "o1", "a@x.pl")).toThrow(CryptoError);
   });
 });
