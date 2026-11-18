@@ -362,4 +362,22 @@ describe("the cap of 500 domains", () => {
       expect(own).not.toContain("firma500.pl");
     });
   });
+  test("flagged domains do not use up the 500 places", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      const rows = [];
+      for (let n = 0; n < 500; n += 1) {
+        for (let m = 0; m < 2; m += 1) rows.push({ at: ago(2), to: [`a@firma${String(n).padStart(3, "0")}.pl`] });
+      }
+      for (const name of ["phish1", "phish2", "phish3"]) {
+        for (let m = 0; m < 3; m += 1) rows.push({ at: ago(2), to: [`a@${name}.pl`] });
+        await incomingWith(trx, s, `x@${name}.pl`, ["lookalike_domain"]);
+      }
+      await seedSenderActivity(trx, s.ctx, s.mailboxId, { sent: rows });
+      const known = (await contextOf(trx, s)).knownDomains;
+      expect(known.filter((domain) => domain.startsWith("firma"))).toHaveLength(500);
+      expect(known.filter((domain) => domain.startsWith("phish"))).toHaveLength(0);
+    });
+  });
 });
