@@ -7,7 +7,7 @@
 
 - Packages: `@ea/server` (`apps/server`), `@ea/web` (`apps/web`), `@ea/core` (`packages/core`).
 - Server code lives in `apps/server/src/modules/<module>/` and `apps/server/src/platform/`. Shared pure code lives in `packages/core/`.
-- Real platform paths: `platform/config.ts`, `platform/log.ts`, `platform/http.ts`, `platform/db/`, `platform/llm/`, `platform/crypto.ts`, `platform/errors.ts`, `platform/auth.ts`, `platform/scheduler.ts`, `platform/heartbeat.ts`.
+- Real platform paths: `platform/config.ts` (the merged schema and `loadConfig`; the keys by concern in `config-llm.ts`, `config-mail.ts`, `config-ops.ts`, `config-push.ts`, `config-shared.ts`; `config.ts` re-exports every name, importers keep `./config`), `platform/log.ts`, `platform/http.ts`, `platform/db/`, `platform/llm/`, `platform/crypto.ts`, `platform/errors.ts`, `platform/auth.ts`, `platform/scheduler.ts`, `platform/heartbeat.ts`.
 - A module exposes one `index.ts`. Other modules import only from it, never from its inner files. ESLint enforces it (§ Layers and borders).
 - Module files: `index.ts` (public API), `service.ts`, `repo.ts` (DB; past about 400 lines a `repo/` folder, one file per aggregate, behind `repo/index.ts`: `actions/repo/`, `mail/repo/`), `routes.ts` (HTTP), `jobs.ts` (workers), `*.test.ts` next to the code.
 - `packages/core` has no I/O: no DB, no network, no `process.env`, no imports from `apps/*`.
@@ -243,7 +243,7 @@ Every text that a user reads has an English and a Polish version, from the first
 - A module that `actions` must call back (a delegation changes with a send) gets a hooks interface in `actions` (`DelegationHooks`); `main.ts` wires the implementation. `actions` never imports `delegation`.
 - No import cycles between modules: a module sets a column that another module's worker reads (`docs/modules.md` §2).
 - The LLM returns data that a Zod schema checks. LLM text is untrusted: never use it as a recipient, a folder name or a command.
-- An LLM call names a role: `llm.generate({ role, promptVersion, schema, system, prompt })`. The role table (`llmRoleTable`, `platform/config.ts`) decides provider, model, timeout, rate and effort; code never picks a model. A new role is a row: a name in `packages/core/src/llm-roles.ts`, its `LLM_<ROLE>_*` keys, a prompt entry.
+- An LLM call names a role: `llm.generate({ role, promptVersion, schema, system, prompt })`. The role table (`llmRoleTable`, `platform/config-llm.ts`, re-exported by `platform/config.ts`) decides provider, model, timeout, rate and effort; code never picks a model. A new role is a row: a name in `packages/core/src/llm-roles.ts`, its `LLM_<ROLE>_*` keys, a prompt entry.
 - Every role returns data that a Zod schema checks, also a free-text role (its text is a schema field).
 - Prompts live in the registry (`modules/triage/prompts/index.ts`, `prompts`): one entry per role with its version, and one file `<role>-v<n>.ts` per version whose `PROMPT_VERSION` equals the file name. A changed prompt text is a new file and a new version. A role without a prompt is in `rolesWithoutPrompt` with the epic that writes it. The registry test fails on a gap.
 - Every LLM call in a job or a request writes one `llm.call` row through `recordLlmCall` (`modules/audit`) with `role` and `prompt_version`; the daily cap and the cost per role read these rows. `llm:check` and `eval` write none.

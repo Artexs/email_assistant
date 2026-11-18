@@ -196,6 +196,27 @@ export const featureFlags = {
     epic: "E6a",
     removeBy: "2027-06-01",
   },
+  sender_context: {
+    default: false,
+    description:
+      "The assistant keeps a count-only profile of each sender (no mail text, no plain address) and shows one line about the sender in Activity and Approvals.",
+    epic: "E11a",
+    removeBy: "2027-06-01",
+  },
+  contact_wait: {
+    default: false,
+    description:
+      "An open loop waits as long as its contact usually takes to reply. It counts as off unless sender_context is on.",
+    epic: "E11a",
+    removeBy: "2027-06-01",
+  },
+  sender_suggestions: {
+    default: false,
+    description:
+      "The Rules page suggests VIP, whitelist and blocklist rules from the sender profiles, with a reason. It counts as off unless sender_context is on.",
+    epic: "E11a",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

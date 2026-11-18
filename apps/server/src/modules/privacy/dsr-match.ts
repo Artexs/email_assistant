@@ -46,6 +46,8 @@ const ROW_SHAPE: Readonly<Record<string, { id: string; emailId: string | null }>
   mailbox_profiles: { id: "mailbox_id", emailId: null },
   // An unsubscribe request belongs to a mailbox and a sender, not to a mail: every row that names the address is a mention.
   unsubscribe_requests: { id: "id", emailId: null },
+  // A suggestion belongs to a mailbox and an address, not to a mail: every row that names the address is a mention.
+  sender_suggestions: { id: "id", emailId: null },
 };
 
 // Tables of the `list` rule and the field of `DsrMatch.listed` that each fills.
