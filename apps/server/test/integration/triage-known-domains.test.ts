@@ -264,6 +264,11 @@ describe("known domains of the look-alike rule", () => {
       expect(known).not.toContain("fremd.pl");
       expect(known).not.toContain("zweit.pl");
       expect((await contextOf(trx, b)).knownDomains).toContain("fremd.pl");
+      // A flagged mail of the other mailbox does not block a domain of this one.
+      await sentTo(trx, a, ["x@partner.pl"]);
+      await sentTo(trx, a, ["x@partner.pl"]);
+      await incomingWith(trx, { ctx: a.ctx, mailboxId: second }, "m@partner.pl", ["auth_fail"]);
+      expect((await contextOf(trx, a)).knownDomains).toContain("partner.pl");
     });
   });
 
