@@ -3,6 +3,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { en } from "@ea/web/i18n/en";
+import { pl } from "@ea/web/i18n/pl";
+
 import {
   isShotPage,
   SHOT_LOCALES,
@@ -10,10 +13,15 @@ import {
   SHOT_PAGES,
   SHOT_VIEWPORTS,
   shotFileExists,
+  shotFilesProblem,
   shotLocale,
+  SHOT_MIN_BYTES,
+  SHOT_TEXT_ALLOW,
   SHOTS,
+  shotFeaturesProblem,
   shotsDir,
   shotsOn,
+  shotTextProblem,
   shotUrl,
   shotView,
 } from "./shots";
@@ -49,6 +57,17 @@ describe("SHOTS (T1)", () => {
       expect(en).not.toBe(pl);
       expect(SHOTS.find((shot) => shot.name === `${page}-en-phone`)?.alt).toBe(en);
       expect(SHOTS.find((shot) => shot.name === `${page}-pl-phone`)?.alt).toBe(pl);
+    }
+  });
+});
+
+describe("SHOT_TEXT_ALLOW", () => {
+  test("each allowed text has a reason and still stands in a text of the panel", () => {
+    const panelText = [...Object.values(en), ...Object.values(pl)].join("\n");
+    expect(SHOT_TEXT_ALLOW.length).toBeGreaterThan(0);
+    for (const entry of SHOT_TEXT_ALLOW) {
+      expect(entry.reason.length).toBeGreaterThan(10);
+      expect(panelText).toContain(entry.text);
     }
   });
 });
@@ -137,5 +156,80 @@ describe("wiring", () => {
   });
   test("the PNG files are ignored by git", () => {
     expect(read(".gitignore").split("\n")).toContain("apps/docs/public/shots/");
+  });
+});
+
+describe("the checks of the shot run", () => {
+  test("shotFeaturesProblem: an empty list passes, a flag on or no list fails (plan P2)", () => {
+    expect(shotFeaturesProblem([])).toBeNull();
+    expect(shotFeaturesProblem(["docs_links"])).toBe("shot_features_on docs_links");
+    expect(shotFeaturesProblem(["stats_page", "docs_links"])).toBe("shot_features_on stats_page,docs_links");
+    for (const value of [undefined, null, "docs_links", {}])
+      expect(shotFeaturesProblem(value)).toBe("shot_features_unknown");
+  });
+
+  test("shotTextProblem: the rules of the public-content check stop a page, with the rule and the shot name", () => {
+    expect(shotTextProblem("Settings\nDigest times 08:00", "settings-en-desktop")).toBeNull();
+    expect(shotTextProblem("owner e2e-owner@x.test and 198.51.100.200", "a-en-desktop")).toBeNull();
+    expect(shotTextProblem("write to jan.kowalski@gmail.com", "rules-en-phone")).toBe(
+      "public_content R2 jan.kowalski@gmail.com in shot rules-en-phone"
+    );
+    expect(shotTextProblem("from 198.18.0.61", "settings-en-desktop")).toBe(
+      "public_content R3 198.18.0.61 in shot settings-en-desktop"
+    );
+    expect(shotTextProblem("host bob.corp-net.ts.net", "x-pl-phone")).toContain("public_content R1");
+  });
+
+  test("shotTextProblem: only the allowed texts of SHOT_TEXT_ALLOW pass", () => {
+    expect(shotTextProblem("An address (anna@firma.pl) or a domain", "rules-en-desktop")).toBeNull();
+    expect(shotTextProblem("An address (anna@firma.com.pl)", "rules-en-desktop")).toContain("public_content R2");
+    expect(shotTextProblem("write to ewa@firma.pl", "rules-en-desktop")).toBe(
+      "public_content R2 ewa@firma.pl in shot rules-en-desktop"
+    );
+  });
+
+  describe("shotFilesProblem", () => {
+    const two = [
+      { name: "a-en-desktop", path: "/a", locale: "en", viewport: "desktop", alt: "x" },
+      { name: "a-en-phone", path: "/a", locale: "en", viewport: "phone", alt: "x" },
+    ] as const;
+    const withDir = (run: (dir: string) => void) => {
+      const dir = mkdtempSync(join(tmpdir(), "docs-shot-files-"));
+      try {
+        run(dir);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    };
+    const big = "x".repeat(SHOT_MIN_BYTES + 1);
+
+    test("exactly the files, each above 10 KB, passes", () => {
+      withDir((dir) => {
+        writeFileSync(join(dir, "a-en-desktop.png"), big);
+        writeFileSync(join(dir, "a-en-phone.png"), big);
+        expect(shotFilesProblem(dir, two)).toBeNull();
+      });
+    });
+    test("a missing file, an extra file, a small file and a missing folder fail", () => {
+      withDir((dir) => {
+        writeFileSync(join(dir, "a-en-desktop.png"), big);
+        expect(shotFilesProblem(dir, two)).toBe("shot_files_missing a-en-phone.png");
+        writeFileSync(join(dir, "a-en-phone.png"), big);
+        writeFileSync(join(dir, "old-en-phone.png"), big);
+        expect(shotFilesProblem(dir, two)).toBe("shot_files_extra old-en-phone.png");
+        rmSync(join(dir, "old-en-phone.png"));
+        writeFileSync(join(dir, "a-en-phone.png"), "x".repeat(SHOT_MIN_BYTES));
+        expect(shotFilesProblem(dir, two)).toBe("shot_file_small a-en-phone.png");
+        expect(shotFilesProblem(join(dir, "none"), two)).toBe("shot_files_missing a-en-desktop.png,a-en-phone.png");
+      });
+    });
+    test("the default list is SHOTS: 20 files", () => {
+      withDir((dir) => {
+        for (const shot of SHOTS) writeFileSync(join(dir, `${shot.name}.png`), big);
+        expect(shotFilesProblem(dir)).toBeNull();
+        rmSync(join(dir, "rules-pl-phone.png"));
+        expect(shotFilesProblem(dir)).toBe("shot_files_missing rules-pl-phone.png");
+      });
+    });
   });
 });

@@ -1,10 +1,11 @@
 // The screenshots of the docs (plan P5, D9, ADR 0030 point 4): CI makes them from the e2e seed (`bun run docs:shots`), nobody adds one by hand.
 // A page names a screenshot with `<Shot page="settings" />` (`components/Shot.astro`); this file holds the list and the build rules.
 // The panel text of the alt strings is plain: it states what the page of the panel is for, never behaviour behind a default-off flag (plan P2).
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { DOCS_BASE } from "@ea/core";
+import { publicContentProblems } from "@ea/core/web";
 
 export type ShotLocale = "en" | "pl";
 export type ShotViewport = "desktop" | "phone";
@@ -34,28 +35,28 @@ export const SHOT_PHONE_MEDIA = "(max-width: 600px)";
 const ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
   onboarding: {
     path: "/onboarding",
-    en: "The Onboarding page of the panel, with the first steps to set up the assistant.",
-    pl: "Strona Pierwsze kroki w panelu, z pierwszymi krokami konfiguracji asystenta.",
+    en: "The Onboarding page of the panel, with the steps to connect a mailbox, link Telegram and choose the mode.",
+    pl: "Strona Start w panelu, z krokami: podłącz skrzynkę, połącz Telegram i wybierz tryb.",
   },
   mailboxes: {
     path: "/mailboxes",
-    en: "The Mailboxes page of the panel, with the connected mailboxes and the form to connect one.",
-    pl: "Strona Skrzynki w panelu, z podłączonymi skrzynkami i formularzem podłączenia.",
+    en: "The Mailboxes page of the panel, with no mailbox yet, the Connect mailbox button and the Telegram card.",
+    pl: "Strona Skrzynki w panelu, jeszcze bez skrzynki, z przyciskiem podłączenia skrzynki i kartą Telegram.",
   },
   settings: {
     path: "/settings",
-    en: "The Settings page of the panel, with the cards for the mailbox, the digest and the account.",
-    pl: "Strona Ustawienia w panelu, z kartami skrzynki, podsumowania i konta.",
+    en: "The Settings page of the panel, with the digest times and the signature of the assistant's messages.",
+    pl: "Strona Ustawienia w panelu, z godzinami podsumowań i podpisem wiadomości asystenta.",
   },
   rules: {
     path: "/rules",
-    en: "The Rules page of the panel, with the sender rules that sort mail.",
-    pl: "Strona Reguły w panelu, z regułami nadawców, które sortują pocztę.",
+    en: "The Rules page of the panel, with the form to add a sender rule and the rule lists.",
+    pl: "Strona Reguły w panelu, z formularzem dodania reguły nadawcy i listami reguł.",
   },
   activity: {
     path: "/activity",
-    en: "The Activity page of the panel, with the list of mails that the assistant handled.",
-    pl: "Strona Aktywność w panelu, z listą wiadomości, którymi zajął się asystent.",
+    en: "The Activity page of the panel, with its filters and no mail yet, before a mailbox is connected.",
+    pl: "Strona Aktywność w panelu, z filtrami i bez wiadomości, zanim podłączono skrzynkę.",
   },
 };
 
@@ -70,6 +71,16 @@ export const SHOTS: readonly ShotEntry[] = SHOT_PAGES.flatMap((page) =>
     }))
   )
 );
+
+// Texts of the panel that the public-content check of the shot run (`publicContentProblems`) accepts, each with its reason. The run has no
+// other allowance: a mail address of a real-looking domain on a page stops it. `shots.test.ts` checks each text still stands in the panel text.
+export const SHOT_TEXT_ALLOW: readonly { text: string; reason: string }[] = [
+  {
+    text: "anna@firma.pl",
+    reason:
+      "the example address in the help text of a sender rule (`rules_pattern_help`), a fixed text of the panel, no person",
+  },
+];
 
 export const SHOT_NAME_PATTERN = /^[a-z]+-(en|pl)-(desktop|phone)$/;
 
@@ -125,4 +136,33 @@ export function shotView(
 
 export function shotFileExists(name: string, dir: string = shotsDir()): boolean {
   return existsSync(join(dir, `${name}.png`));
+}
+
+// The checks of the shot run (`apps/web/e2e/docs-shots/shots.spec.ts`). Each returns the first problem as text, or null.
+
+// Plan P2: the enabled feature list of the organization (`/api/me` `features`) must be empty, so no shot shows a default-off feature.
+export function shotFeaturesProblem(features: unknown): string | null {
+  if (!Array.isArray(features)) return "shot_features_unknown";
+  return features.length === 0 ? null : `shot_features_on ${features.join(",")}`;
+}
+
+// Plan D4: the text of a page, before its shot, passes the public-content check (rules R1 to R7) with `SHOT_TEXT_ALLOW` as the allow list.
+export function shotTextProblem(text: string, name: string): string | null {
+  const [first] = publicContentProblems(
+    text,
+    SHOT_TEXT_ALLOW.map((entry) => entry.text)
+  );
+  return first === undefined ? null : `public_content ${first.rule} ${first.match} in shot ${name}`;
+}
+
+// Stage 11 T4: the folder holds exactly the PNG files of `SHOTS`, each larger than `SHOT_MIN_BYTES`.
+export function shotFilesProblem(dir: string, shots: readonly ShotEntry[] = SHOTS): string | null {
+  const files = existsSync(dir) ? readdirSync(dir) : [];
+  const wanted = new Set(shots.map((shot) => `${shot.name}.png`));
+  const missing = [...wanted].filter((file) => !files.includes(file)).sort();
+  if (missing.length > 0) return `shot_files_missing ${missing.join(",")}`;
+  const extra = files.filter((file) => !wanted.has(file)).sort();
+  if (extra.length > 0) return `shot_files_extra ${extra.join(",")}`;
+  const small = [...wanted].sort().find((file) => statSync(join(dir, file)).size <= SHOT_MIN_BYTES);
+  return small === undefined ? null : `shot_file_small ${small}`;
 }

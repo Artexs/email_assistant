@@ -66,7 +66,8 @@ describe("astro.config.mjs", () => {
       const off = logger();
       run({ config: { root: pathToFileURL(`${DOCS_ROOT}/`) }, logger: off.logger });
       expect(off.lines).toEqual(["shots: off"]);
-      expect(process.env.EA_DOCS_SHOTS_DIR).toBe(join(DOCS_ROOT, "public/shots"));
+      // `delete` narrows the type to undefined for the compiler: the cast keeps what `run` wrote.
+      expect(process.env.EA_DOCS_SHOTS_DIR as string | undefined).toBe(join(DOCS_ROOT, "public/shots"));
       process.env.DOCS_SHOTS = "on";
       const on = logger();
       run({ config: { root: pathToFileURL(`${DOCS_ROOT}/`) }, logger: on.logger });
