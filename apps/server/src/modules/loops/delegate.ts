@@ -84,8 +84,8 @@ async function delegable(trx: Transaction<DB>, ctx: TenantContext, email: EmailM
 }
 
 // The user picks a delegate for a mail: the draft and the approval of a delegation that triage made.
-// The checks run in the order of the stage text. The first statement of the transaction share-locks the settings row
-// (M13): a setter that turns drafts off waits for this call, or this call sees its commit. The recipient is the address
+// The checks run in a fixed order. The first statement of the transaction share-locks the settings row
+// so a setter that turns drafts off waits for this call, or this call sees its commit. The recipient is the address
 // of the `delegates` row; no mail text is a recipient. The send waits for a tap (ADR 0003). The caller says whether the
 // user is an owner of the organization; this function checks it again and trusts no caller.
 export async function delegateMail(
