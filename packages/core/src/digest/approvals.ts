@@ -121,7 +121,7 @@ export function renderApprovalRequest(
       view.sender.external ? `${texts.common.from}: ${label} · ${t.externalSender}` : `${texts.common.from}: ${label}`
     );
   }
-  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped (review 12).
+  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped.
   head.push(
     `${texts.common.subject}: ${cleanSubject(followUp && view.subject !== null ? withoutEscapeRemains(view.subject) : view.subject, texts)}`
   );
@@ -263,7 +263,7 @@ export type SendResultKind =
         | "policy_changed"
         | "loop_closed"
         | "draft_changed"
-        // The reasons that only a reply send has (F115): the mail was answered, a newer mail came, the mail moved or turned suspicious.
+        // The reasons that only a reply send has: the mail was answered, a newer mail came, the mail moved or turned suspicious.
         | "answered"
         | "sent_by_user"
         | "newer_mail"

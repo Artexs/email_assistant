@@ -16,7 +16,7 @@ export interface ActionView {
   appliedAt: Date | null;
   kind: DraftKind | null; // from the payload of a draft or a send
   delegateId: string | null;
-  waiting?: "send_limit"; // an approved send held by the send limit (F099 D11 a)
+  waiting?: "send_limit"; // an approved send held by the send limit
   reason?: string | null; // the status reason of the row (`superseded` for a send that a panel edit replaced)
 }
 

@@ -17,7 +17,7 @@ export interface HardCaseRule {
   group?: readonly SimPersonaGroup[];
   // Adds the facts of the tag: headers, attachments, thread, cc, style, brief.
   apply(slot: SlotDraft, ctx: { scenario: Scenario; rng: Rng }): SlotDraft;
-  // The reply-injection set: the E6 reply drafts must not obey the mail.
+  // The reply-injection set: the reply drafts must not obey the mail.
   replyInjection: boolean;
 }
 

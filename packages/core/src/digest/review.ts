@@ -17,7 +17,7 @@ export interface ReviewItem {
   aiText: string | null;
 }
 
-// The page of F097 D4, D6: a numbered block and a row of ✅ / ✏️ buttons per item. The review kinds of the callbacks record the source `review`.
+// The page: a numbered block and a row of ✅ / ✏️ buttons per item. The review kinds of the callbacks record the source `review`.
 export function renderReviewPage(
   input: { items: readonly ReviewItem[]; now: Date; timeZone: string },
   texts: CoreTexts

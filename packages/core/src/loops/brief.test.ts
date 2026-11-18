@@ -42,7 +42,7 @@ const delegation = (n: number, over: Partial<BriefDelegation> = {}): BriefDelega
   ...over,
 });
 
-// T1 of the stage: 2 urgent, 7 waiting on you, 3 loops, 1 delegation and 1 promise.
+// The data: 2 urgent, 7 waiting on you, 3 loops, 1 delegation and 1 promise.
 function fullInput(over: Partial<BriefInput> = {}): BriefInput {
   return briefInput({
     urgent: part([

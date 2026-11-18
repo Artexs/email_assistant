@@ -13,11 +13,11 @@ export const toolSwitchesSchema = z.object({
   flag: z.boolean().default(false),
   create_draft: z.boolean().default(false),
   move_unsure: z.boolean().default(false),
-  // Open loops (E5b): the daily chaser plans a follow-up card for a waiting loop. Off until the owner turns it on; every
+  // Open loops: the daily chaser plans a follow-up card for a waiting loop. Off until the owner turns it on; every
   // follow-up still waits for a tap. It sits in the schema so that a settings write does not drop the stored key. Only a JSON
   // `true` is on: another stored value reads as off and does not fail the parse of the other switches (triage reads them all).
   auto_follow_up: z.boolean().default(false).catch(false),
-  // Reply drafts (E6a): the drafter writes a reply draft for mail that needs one. Off until the owner turns it on; the
+  // Reply drafts: the drafter writes a reply draft for mail that needs one. Off until the owner turns it on; the
   // flag `reply_drafts` must be on too, and every draft still waits for a tap. Independent of `create_draft`. Read like
   // `auto_follow_up`: only a JSON `true` is on.
   reply_drafts: z.boolean().default(false).catch(false),

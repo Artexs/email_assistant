@@ -22,7 +22,7 @@ export interface WouldDoTexts {
   draft: (tense: ActionTense, kind: DraftKind, name: string | null, skills?: string | null) => string;
   send: Record<SendPhraseStatus, string>;
   sendChanged: string; // a send that ended `expired` / `superseded`: a panel edit replaced it
-  sendLimitWait: string; // an approved send held by the send limit (F099 D11 a); the stage plan has no row for it
+  sendLimitWait: string; // an approved send held by the send limit
   staysIn: (folder: string) => string;
 }
 

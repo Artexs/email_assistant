@@ -86,7 +86,7 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
     })
     // To and Cc together are at most 10 (the loop row holds them that way).
     .refine((draft) => draft.to.length + draft.cc.length <= FOLLOW_UP_RECIPIENTS_MAX),
-  // A reply draft (F115 interfaces): the text is `body_text ?? body`. The recipients are never LLM text: the writer sets
+  // A reply draft: the text is `body_text ?? body`. The recipients are never LLM text: the writer sets
   // `to` and `cc` from the stored headers of the mail (`replyRecipientsProblem` checks the rest).
   z.object({
     kind: z.literal("reply"),

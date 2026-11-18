@@ -19,7 +19,7 @@ export interface TripState {
 export const TRIP_WINDOW_DAYS = 7;
 export const TRIP_MIN_CORRECTIONS = 2;
 
-/** `corrections` holds only the corrections that count under D9. The window is the 7 days before `now`. */
+/** `corrections` holds only the corrections that count under the correction rule. The window is the 7 days before `now`. */
 export function tripwireDue(input: {
   corrections: readonly { at: Date; important: boolean }[];
   now: Date;

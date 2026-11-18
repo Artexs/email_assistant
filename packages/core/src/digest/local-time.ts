@@ -194,7 +194,7 @@ export function quietEnd(at: Date, timeZone: string, quiet: QuietHours = QUIET_H
   return new Date(next ?? at.getTime() + 60_000);
 }
 
-// Minutes from `from` to `to` that lie outside the quiet hours of the time zone (F114 urgent check). The sender holds
+// Minutes from `from` to `to` that lie outside the quiet hours of the time zone. The sender holds
 // a notice in quiet hours by the time of the send, so the minutes in quiet hours are not late. Zero when `to <= from`.
 export function lateMin(from: Date, to: Date, timeZone: string, quiet: QuietHours = QUIET_HOURS): number {
   const fromMs = from.getTime();

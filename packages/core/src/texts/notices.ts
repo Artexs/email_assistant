@@ -105,7 +105,7 @@ export interface NoticeTexts {
     autoFew: (category: string, labels: number, minimum: number) => string;
     auto: (items: string) => string;
     autoNone: string;
-    // F110 stage 12 (fixed phrases only): the evidence line of a category on `auto`, and the line of a paused one.
+    // Fixed phrases only: the evidence line of a category on `auto`, and the line of a paused one.
     autoOn: (category: string, proof: string, check: string) => string;
     autoPaused: (category: string, reason: string) => string;
     proof: { go: string; noGo: string; none: string };

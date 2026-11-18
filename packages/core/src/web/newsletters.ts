@@ -5,7 +5,7 @@ import { z } from "./zod";
 export const newsletterMethods = ["one_click", "link", "none"] as const;
 export type NewsletterMethod = (typeof newsletterMethods)[number];
 
-/** The state of an unsubscribe request (the table `unsubscribe_requests`; stage 24 writes it). */
+/** The state of an unsubscribe request (the table `unsubscribe_requests`). */
 export const unsubscribeRequestStatuses = ["requested", "done", "failed", "refused"] as const;
 export type UnsubscribeRequestStatus = (typeof unsubscribeRequestStatuses)[number];
 

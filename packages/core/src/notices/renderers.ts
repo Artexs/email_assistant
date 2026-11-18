@@ -163,7 +163,7 @@ export const noticeRenderers = {
       full: (view, opts) => {
         const texts = textsFor(opts.locale).notices;
         const access = view.access;
-        // No access field: a row queued before F117, or a password mailbox. Today's text.
+        // No access field: a row queued before the field existed, or a password mailbox. Today's text.
         if (access === undefined) return { text: texts.mailboxRemoved, buttons: [] };
         const text = {
           google:

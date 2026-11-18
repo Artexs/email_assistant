@@ -95,7 +95,7 @@ export function greetingOf(persona: SimPersona, rng: Rng): Slot["style"]["greeti
   return "formal";
 }
 
-// List headers of a newsletter or marketing sender (X1): the reserved host of the sender.
+// List headers of a newsletter or marketing sender: the reserved host of the sender.
 function listHeaders(persona: SimPersona, rng: Rng): Record<string, string> {
   if (!listGroups.includes(persona.group)) return {};
   const domain = senderDomain(persona);

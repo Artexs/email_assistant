@@ -74,7 +74,7 @@ export const weekStatsSchema = z.strictObject({
         wilsonLower: rate,
         decision: z.enum(["go", "no-go", "no-go: too few"]),
         // The three sources of ADR 0028. Null: the flag `trust_ladder` is off for the organization, or the caller has no trust reader.
-        // A stored view of a report queued before F110 has no key: it reads null (the default).
+        // A stored view of a report queued before the trust ladder has no key: it reads null (the default).
         global: z
           .strictObject({
             decision: z.enum(["go", "no-go", "too-few", "none"]),

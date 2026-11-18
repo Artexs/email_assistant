@@ -1,4 +1,4 @@
-// The card, the result lines and the fixed notices of a follow-up (T3b texts).
+// The card, the result lines and the fixed notices of a follow-up.
 import { describe, expect, test } from "bun:test";
 
 import { encodeNoticeView } from "../notices/encode";

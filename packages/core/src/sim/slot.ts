@@ -37,7 +37,7 @@ export const slotSchema = z
     kind: z.enum(["synthetic", "injection"]),
     expectedDelegate: z.string().optional(),
     expectedDraft: z.enum(["delegation", "clarification", "none"]).optional(),
-    // Week only (E2b).
+    // Week only (the live lab).
     delegateBehaviour: z.enum(["done", "late", "out_of_office", "other_address", "silent"]).optional(),
     // Address on the company's reserved domain that replaces the persona address (a bounce comes from mailer-daemon).
     fromOverride: z.string().optional(),

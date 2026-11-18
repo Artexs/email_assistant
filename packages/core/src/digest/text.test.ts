@@ -87,7 +87,7 @@ describe("withoutEscapeRemains (F116 review 12, N6)", () => {
     ["operating-system command", "\u001b]0;evil title\u0007red text"],
     ["operating-system command with ST", "\u001b]8;;http://x.test\u001b\\red text"],
     ["8-bit operating-system command", "\u009d0;evil\u009cred text"],
-    // Review 18 N1.
+    // A review finding.
     ["no parameter, reset", "\\e[mred text\\e[m"],
     ["no parameter, erase line", "red text\\e[K"],
     ["raw ESC, no parameter", "\u001b[mred text\u001b[K"],
@@ -112,7 +112,7 @@ describe("withoutEscapeRemains (F116 review 12, N6)", () => {
       "price =1 b",
       "a [12;4] range",
       "Re: [ticket 31]",
-      // Review 18 N2: text in brackets that ends with a letter of a control sequence.
+      // Text in brackets that ends with a letter of a control sequence.
       "Spotkanie [2h] i [10m]",
       "[5s] [3m] [1k] [20h] [4s]",
       "plan [1h]\n[30m] break",

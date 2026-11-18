@@ -121,7 +121,7 @@ const urgentView = z.strictObject({
   actions: z.array(wouldDoActionSchema),
   delegateNames: z.record(z.string(), z.string()),
   stayFolder: text,
-  // Optional on read: a view queued before F109 has no field.
+  // Optional on read: a view queued earlier has no field.
   suspicious: z.array(z.enum(suspiciousReasons)).optional(),
   // Optional on read, written only when the flag `attachment_line` is on and the mail has an attachment to show.
   attachments: attachmentFactSchema.optional(),
@@ -139,7 +139,7 @@ const urgentView = z.strictObject({
 const authErrorView = z.strictObject({
   address: text,
   mailboxId: id,
-  // Optional on read: a view queued before F117 has no field. Set for an OAuth mailbox only.
+  // Optional on read: a view queued earlier has no field. Set for an OAuth mailbox only.
   oauth: z
     .strictObject({ provider: z.enum(mailOAuthProviderKeys), reason: z.enum(authErrorReasons).nullable() })
     .optional(),
@@ -226,7 +226,7 @@ const delegationAnsweredView = z.strictObject({
   synthetic: z.boolean(),
 });
 
-// Optional on read: a row queued before F117 has no field (it renders the password text). Set at queue time: the mailbox row is gone
+// Optional on read: a row queued earlier has no field (it renders the password text). Set at queue time: the mailbox row is gone
 // when the notice renders. `revoked`: the Google revoke call went through (true) or not (false); null when no call was made.
 const mailboxRemovedView = z.strictObject({
   access: z.strictObject({ page: z.enum(removeAccessPages), revoked: z.boolean().nullable() }).optional(),
@@ -313,7 +313,7 @@ const replyResultView = z.strictObject({ emailId: id, reason: z.string().regex(/
 // `blocked`: the moving categories that the evidence does not support (a count; the Telegram text prints no number for it).
 // `reportUrl`: `<WEB_BASE_URL>/report?mailbox=<id>`, null when `WEB_BASE_URL` is not set.
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-// The link of a trust notice is the panel page and nothing else (F110 stage 10 review): http or https, no user info
+// The link of a trust notice is the panel page and nothing else: http or https, no user info
 // (`https://app.test@evil.test/` has the host evil.test), no control, format or bidi character, a fixed path, and no query
 // but the mailbox id. An address, a subject or a name cannot ride in the link.
 const trustUrl = (path: string, mailbox: "required" | "none") =>

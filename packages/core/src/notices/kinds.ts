@@ -31,7 +31,7 @@ export const noticeKinds = [
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);
 
-// `mail` is the report mail of E4-B (APPEND into the own INBOX); E9b adds "push". Only four kinds go by mail.
+// `mail` is the report mail of the trust ladder (APPEND into the own INBOX); the phone channel adds "push". Only four kinds go by mail.
 export const noticeChannels = ["telegram", "mail"] as const;
 export type NoticeChannel = (typeof noticeChannels)[number];
 
@@ -39,7 +39,7 @@ export type NoticeChannel = (typeof noticeChannels)[number];
 export const reportMailKinds = ["digest", "weekly_report", "trust_report_ready", "autonomy_paused"] as const;
 export type ReportMailKind = (typeof reportMailKinds)[number];
 
-export const noticeDetails = ["full"] as const; // E9b adds "minimal"
+export const noticeDetails = ["full"] as const; // The phone channel adds "minimal"
 export type NoticeDetail = (typeof noticeDetails)[number];
 
 export interface NoticeRenderOptions {

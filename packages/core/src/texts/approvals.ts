@@ -105,7 +105,7 @@ export interface ApprovalTexts {
       policy_changed: (subject: string) => string;
       loop_closed: (subject: string) => string;
       draft_changed: (subject: string) => string;
-      // The reasons of the reply drafts (F115): each says that nothing was sent.
+      // The reasons of the reply drafts: each says that nothing was sent.
       answered: (subject: string) => string;
       sent_by_user: (subject: string) => string;
       newer_mail: (subject: string) => string;

@@ -77,7 +77,7 @@ function decideApproval(card: ExecCard, truth: ExecTruthInfo): ExecAction {
   return press(card, "ar", "reason_not_needed");
 }
 
-// Rules, first match wins: spec/features/active/F113-e2b-live-lab/stages/stage-09-executive-rules.md.
+// Rules, first match wins (`docs/capabilities/live-lab.md`).
 export function executiveDecision(card: ExecCard, truth: ExecTruth, memory: ExecMemory): ExecAction {
   if (truth === null) return UNMAPPED;
   switch (card.kind) {

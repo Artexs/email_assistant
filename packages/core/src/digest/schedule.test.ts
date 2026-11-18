@@ -112,29 +112,29 @@ describe("dueDigestSlot after a timezone change", () => {
     dueDigestSlot({ now: new Date(now), timeZone, times, afterKey })?.key ?? null;
 
   test("west move: the next slot waits for the new local time", () => {
-    // characterisation (S5c fact 3): the U8 note on the Settings page depends on this
+    // characterisation: the note on the Settings page depends on this
     expect(slotKey("2026-11-11T13:30:00Z", "America/New_York", "2026-11-11T08:00")).toBeNull();
     expect(slotKey("2026-11-11T18:00:00Z", "America/New_York", "2026-11-11T08:00")).toBe("2026-11-11T13:00");
   });
 
   test("east move: the next slot is the next morning", () => {
-    // characterisation (S5c fact 3): the U8 note on the Settings page depends on this
+    // characterisation: the note on the Settings page depends on this
     expect(slotKey("2026-11-11T14:00:00Z", "Asia/Tokyo", "2026-11-11T13:00")).toBeNull();
     expect(slotKey("2026-11-11T23:00:00Z", "Asia/Tokyo", "2026-11-11T13:00")).toBe("2026-11-12T08:00");
   });
 
   test("east move at once: a later slot of the same local day is due", () => {
-    // characterisation (S5c fact 3): the U8 note on the Settings page depends on this
+    // characterisation: the note on the Settings page depends on this
     expect(slotKey("2026-11-11T08:00:00Z", "Asia/Tokyo", "2026-11-11T08:00")).toBe("2026-11-11T13:00");
   });
 
   test("a new time is due at its local time", () => {
-    // characterisation (S5c fact 3): the U8 note on the Settings page depends on this
+    // characterisation: the note on the Settings page depends on this
     expect(slotKey("2026-11-11T11:00:00Z", TZ, "2026-11-11T08:00", ["08:00", "11:00"])).toBe("2026-11-11T11:00");
   });
 
   test("a large west move skips digests", () => {
-    // characterisation (S5c fact 3): the U8 note on the Settings page depends on this
+    // characterisation: the note on the Settings page depends on this
     expect(slotKey("2026-11-11T16:00:00Z", "America/Los_Angeles", "2026-11-11T13:00")).toBeNull();
     expect(slotKey("2026-11-11T21:00:00Z", "America/Los_Angeles", "2026-11-11T13:00")).toBeNull();
     expect(slotKey("2026-11-12T16:00:00Z", "America/Los_Angeles", "2026-11-11T13:00")).toBe("2026-11-12T08:00");

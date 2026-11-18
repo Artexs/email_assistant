@@ -51,7 +51,7 @@ export const delegatePatchBodySchema = z
 export type DelegatePatchBody = z.infer<typeof delegatePatchBodySchema>;
 
 // GET /api/delegations and the two POST routes. The list answers one page of delegations by state, newest
-// first; `kind` is always `delegation` (E5b adds loop kinds to the same list). The task text and the subject never go to a log.
+// first; `kind` is always `delegation` (open loops add loop kinds to the same list). The task text and the subject never go to a log.
 export const DELEGATION_PAGE_SIZE = 50;
 // The most reminders that one delegation gets (the chaser and "Remind now" share it). The server and the panel read this one value.
 export const DELEGATION_REMINDER_LIMIT = 2;

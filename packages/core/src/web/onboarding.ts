@@ -22,13 +22,13 @@ export function onboardingOf(input: {
   telegramAvailable: boolean;
   modeChosen: boolean;
   ruleCount: number;
-  /** `null`: the flag `trust_ladder` is off, the steps are as before F110. */
+  /** `null`: the flag `trust_ladder` is off, the steps are as before the trust ladder. */
   trust: { reportByMail: boolean; reportReady: boolean } | null;
 }): Onboarding {
   const mailbox = input.mailboxCount > 0;
   const channel = input.telegramLinked || (input.trust?.reportByMail ?? false);
   const report = input.trust?.reportReady ?? false;
-  // A server without a bot never blocks on the channel step (as the Telegram item before F110).
+  // A server without a bot never blocks on the channel step (as the Telegram item before the trust ladder).
   const reachable = channel || !input.telegramAvailable;
   const done = input.trust === null ? mailbox && reachable && input.modeChosen : mailbox && reachable && report;
   return {

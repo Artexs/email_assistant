@@ -172,7 +172,7 @@ describe("autonomy_paused", () => {
   });
 });
 
-// Review of stage 10 (TG1-TG3): every text is pinned in en and pl, and the links are strict.
+// A review fix: every text is pinned in en and pl, and the links are strict.
 describe("pinned texts", () => {
   const plPrefix = "⏸ Automatyczne przenoszenie wiadomości z kategorii „Powiadomienie” zostało wstrzymane";
   const plTail = `\nWłącz je ponownie w Ustawieniach.\nUstawienia: ${settingsUrl}`;
