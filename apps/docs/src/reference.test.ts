@@ -17,7 +17,7 @@ import {
   MESSAGE_MAX_CHARS,
   QUIET_HOURS,
   SENDER_RULE_LIMIT,
-  STYLE_TEXT_MAX,
+  PROFILE_SIGNATURE_MAX,
   toolSwitchNames,
   UNDO_WINDOW_MS,
   APPROVAL_QUOTE_CHARS,
@@ -261,7 +261,7 @@ describe("reference/settings", () => {
   });
   test("the digest times and the signature limits are the numbers of the code", () => {
     expect(page).toContain(`Up to ${MAX_DIGEST_TIMES} times of the day`);
-    expect(page).toContain(`Text of up to ${STYLE_TEXT_MAX} characters`);
+    expect(page).toContain(`Text of up to ${PROFILE_SIGNATURE_MAX} characters`);
     expect(page).toContain(`You can undo each move for ${days(UNDO_WINDOW_MS)}.`);
   });
   test("the defaults come from the migrations", () => {
