@@ -1,4 +1,4 @@
-import { registrableDomain, type Suspicion, type SuspiciousReason } from "@ea/core";
+import { registrableDomainShared, type Suspicion, type SuspiciousReason } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -74,7 +74,7 @@ export async function suspiciousSendersOf(
   return new Set(rows.map((row) => row.sender));
 }
 
-// The registrable domains of the senders of incoming mail in this mailbox since `since` whose newest result has reasons. One
+// The registrable domains (`registrableDomainShared`) of the senders of incoming mail in this mailbox since `since` whose newest result has reasons. One
 // flagged mail puts its domain in the set; an older flagged row under a clean newest row does not. Mail with no result does not
 // count. The known-domain list of the look-alike rule drops these domains, so a reply to a phisher does not make the
 // phishing domain known. It ignores the flag `suspicious_mail`. The result holds domains only, never an address.
@@ -102,7 +102,7 @@ export async function suspiciousSenderDomains(
   `.execute(db);
   const domains = new Set<string>();
   for (const row of rows) {
-    const domain = registrableDomain(row.host);
+    const domain = registrableDomainShared(row.host);
     if (domain !== "") domains.add(domain);
   }
   return domains;

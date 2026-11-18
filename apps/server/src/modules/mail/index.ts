@@ -185,6 +185,8 @@ export {
   markSentPass,
   releaseEmail,
   resetSentCursor,
+  newestUserSentId,
+  SENT_RECIPIENT_MAX_MAILS,
   sentRecipientDomains,
   updateSentCursor,
   writeSentSwitch,

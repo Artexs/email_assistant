@@ -1,12 +1,17 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import type { Transaction } from "kysely";
+import type { KyselyPlugin, Transaction } from "kysely";
 
 import { sentRecipientDomains } from "../../src/modules/mail";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { configureFeatures, setOrgFeature } from "../../src/modules/tenancy";
-import { assessEmail, loadSuspiciousContext, type SuspiciousContext } from "../../src/modules/triage";
+import {
+  assessEmail,
+  loadSuspiciousContext,
+  resetSentDomainCache,
+  type SuspiciousContext,
+} from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import {
@@ -31,7 +36,10 @@ afterAll(async () => {
   await db.destroy();
 });
 
-afterEach(() => configureFeatures({ off: [] }));
+afterEach(() => {
+  configureFeatures({ off: [] });
+  resetSentDomainCache();
+});
 
 const now = new Date("2026-11-18T10:00:00Z");
 const DAY = 24 * 3_600_000;
@@ -59,6 +67,11 @@ async function sentTo(trx: Transaction<DB>, s: Scene, to: string[], opts: { days
   await seedSenderActivity(trx, s.ctx, s.mailboxId, {
     sent: [{ at: ago(opts.days ?? 5), to, ...(opts.system === true ? { system: true } : {}) }],
   });
+}
+
+async function sentTwice(trx: Transaction<DB>, s: Scene, to: string[]) {
+  await sentTo(trx, s, to);
+  await sentTo(trx, s, to);
 }
 
 function contextOf(trx: Transaction<DB>, s: Scene): Promise<SuspiciousContext> {
@@ -92,7 +105,7 @@ describe("known domains of the look-alike rule", () => {
       await setFlags(trx, s, {});
       await sentTo(trx, s, ["jan@kontrahent.pl"]);
       await sentTo(trx, s, ["jan@kontrahent.pl"]);
-      expect((await contextOf(trx, s)).knownDomains).toContain("kontrahent.pl");
+      expect((await contextOf(trx, s)).sentDomains).toContain("kontrahent.pl");
       expect(await reasonsOfMail(trx, s, "jan@kontrahemt.pl")).toContain("lookalike_domain");
     });
   });
@@ -106,6 +119,7 @@ describe("known domains of the look-alike rule", () => {
       for (const flags of [{ suspicious: false }, { context: false }, { context: false, suspicious: false }]) {
         await setFlags(trx, s, flags);
         const context = await contextOf(trx, s);
+        expect(context.sentDomains).toEqual([]);
         expect(context.knownDomains).toEqual(before.knownDomains);
         expect(context).toEqual({ ...before, isKnown: context.isKnown });
         expect(await reasonsOfMail(trx, s, "jan@kontrahemt.pl")).not.toContain("lookalike_domain");
@@ -118,7 +132,7 @@ describe("known domains of the look-alike rule", () => {
       const s = await scene(trx);
       await setFlags(trx, s, {});
       await sentTo(trx, s, ["jan@kontrahent.pl"]);
-      expect((await contextOf(trx, s)).knownDomains).not.toContain("kontrahent.pl");
+      expect((await contextOf(trx, s)).sentDomains).not.toContain("kontrahent.pl");
       expect(await reasonsOfMail(trx, s, "jan@kontrahemt.pl")).not.toContain("lookalike_domain");
     });
   });
@@ -133,8 +147,8 @@ describe("known domains of the look-alike rule", () => {
       await sentTo(trx, s, ["x@kontrahemt.pl"]);
       await sentTo(trx, s, ["x@kontrahemt.pl"]);
       const context = await contextOf(trx, s);
-      expect(context.knownDomains).not.toContain("kontrahemt.pl");
-      expect(context.knownDomains).toContain("kontrahent.pl");
+      expect(context.sentDomains).not.toContain("kontrahemt.pl");
+      expect(context.sentDomains).toContain("kontrahent.pl");
       expect(await reasonsOfMail(trx, s, "y@kontrahemt.pl")).toContain("lookalike_domain");
     });
   });
@@ -177,7 +191,7 @@ describe("known domains of the look-alike rule", () => {
         .execute();
       // `partner.pl`: a flagged mail from a subdomain blocks it.
       await incomingWith(trx, s, "m@mail.partner.pl", ["auth_fail"]);
-      const known = (await contextOf(trx, s)).knownDomains;
+      const known = (await contextOf(trx, s)).sentDomains;
       expect(known).toContain("lieferant.de");
       expect(known).not.toContain("partner.pl");
     });
@@ -190,7 +204,7 @@ describe("known domains of the look-alike rule", () => {
       await sentTo(trx, s, ["a@lieferant.de"]);
       await sentTo(trx, s, ["a@lieferant.de"]);
       await incomingWith(trx, s, "m@lieferant.de", ["auth_fail"], 91);
-      expect((await contextOf(trx, s)).knownDomains).toContain("lieferant.de");
+      expect((await contextOf(trx, s)).sentDomains).toContain("lieferant.de");
     });
   });
 
@@ -202,7 +216,7 @@ describe("known domains of the look-alike rule", () => {
       await sentTo(trx, s, ["y@gmail.com"]);
       await sentTo(trx, s, ["y@gmail.com", "z@kontrahent.pl"]);
       await sentTo(trx, s, ["z@kontrahent.pl"]);
-      const known = (await contextOf(trx, s)).knownDomains;
+      const known = (await contextOf(trx, s)).sentDomains;
       expect(known).not.toContain("gmail.com");
       expect(known).toContain("kontrahent.pl");
     });
@@ -220,7 +234,7 @@ describe("known domains of the look-alike rule", () => {
       await sentTo(trx, s, ["a@half.pl"], { days: 91 });
       await sentTo(trx, s, ["a@edge.pl"], { days: 89 });
       await sentTo(trx, s, ["a@edge.pl"], { days: 89 });
-      const known = (await contextOf(trx, s)).knownDomains;
+      const known = (await contextOf(trx, s)).sentDomains;
       expect(known).toContain("edge.pl");
       for (const domain of ["alt.pl", "system.pl", "half.pl"]) expect(known).not.toContain(domain);
     });
@@ -235,7 +249,7 @@ describe("known domains of the look-alike rule", () => {
           sent: [{ at: ago(2), to: ["a@urlop.pl"], autoSubmitted: "auto-replied" }],
         });
       }
-      expect((await contextOf(trx, s)).knownDomains).not.toContain("urlop.pl");
+      expect((await contextOf(trx, s)).sentDomains).not.toContain("urlop.pl");
     });
   });
 
@@ -260,15 +274,15 @@ describe("known domains of the look-alike rule", () => {
       });
       await sentTo(trx, { ctx: a.ctx, mailboxId: second }, ["x@zweit.pl"]);
       await sentTo(trx, { ctx: a.ctx, mailboxId: second }, ["x@zweit.pl"]);
-      const known = (await contextOf(trx, a)).knownDomains;
+      const known = (await contextOf(trx, a)).sentDomains;
       expect(known).not.toContain("fremd.pl");
       expect(known).not.toContain("zweit.pl");
-      expect((await contextOf(trx, b)).knownDomains).toContain("fremd.pl");
+      expect((await contextOf(trx, b)).sentDomains).toContain("fremd.pl");
       // A flagged mail of the other mailbox does not block a domain of this one.
       await sentTo(trx, a, ["x@partner.pl"]);
       await sentTo(trx, a, ["x@partner.pl"]);
       await incomingWith(trx, { ctx: a.ctx, mailboxId: second }, "m@partner.pl", ["auth_fail"]);
-      expect((await contextOf(trx, a)).knownDomains).toContain("partner.pl");
+      expect((await contextOf(trx, a)).sentDomains).toContain("partner.pl");
     });
   });
 
@@ -341,6 +355,12 @@ describe("sentRecipientDomains", () => {
   });
 });
 
+// A label per number, no two of them one edit or one look-alike apart: three letters of "abcdefgh" (512 values), written twice.
+function firma(n: number): string {
+  const code = [(n >> 6) & 7, (n >> 3) & 7, n & 7].map((digit) => "abcdefgh"[digit]).join("");
+  return `firma${code}${code}`;
+}
+
 describe("the cap of 500 domains", () => {
   test("the context holds at most 500 Sent domains, the most mailed first", async () => {
     await withRollback(db, async (trx) => {
@@ -349,7 +369,7 @@ describe("the cap of 500 domains", () => {
       // 501 domains with 2 mails each, plus one with 3 mails: the one with 3 stays, one with 2 goes.
       const rows = [];
       for (let n = 0; n < 501; n += 1) {
-        for (let m = 0; m < 2; m += 1) rows.push({ at: ago(2), to: [`a@firma${String(n).padStart(3, "0")}.pl`] });
+        for (let m = 0; m < 2; m += 1) rows.push({ at: ago(2), to: [`a@${firma(n)}.pl`] });
       }
       for (let m = 0; m < 3; m += 1) rows.push({ at: ago(2), to: ["a@haeufig.pl"] });
       await seedSenderActivity(trx, s.ctx, s.mailboxId, { sent: rows });
@@ -361,10 +381,10 @@ describe("the cap of 500 domains", () => {
           trustedAuthservIds: [],
           now,
         })
-      ).knownDomains.filter((domain) => domain === "haeufig.pl" || domain.startsWith("firma"));
+      ).sentDomains.filter((domain) => domain === "haeufig.pl" || domain.startsWith("firma"));
       expect(own).toHaveLength(500);
       expect(own).toContain("haeufig.pl");
-      expect(own).not.toContain("firma500.pl");
+      expect(own).not.toContain(`${firma(500)}.pl`);
     });
   });
   test("flagged domains do not use up the 500 places", async () => {
@@ -373,16 +393,200 @@ describe("the cap of 500 domains", () => {
       await setFlags(trx, s, {});
       const rows = [];
       for (let n = 0; n < 500; n += 1) {
-        for (let m = 0; m < 2; m += 1) rows.push({ at: ago(2), to: [`a@firma${String(n).padStart(3, "0")}.pl`] });
+        for (let m = 0; m < 2; m += 1) rows.push({ at: ago(2), to: [`a@${firma(n)}.pl`] });
       }
       for (const name of ["phish1", "phish2", "phish3"]) {
         for (let m = 0; m < 3; m += 1) rows.push({ at: ago(2), to: [`a@${name}.pl`] });
         await incomingWith(trx, s, `x@${name}.pl`, ["lookalike_domain"]);
       }
       await seedSenderActivity(trx, s.ctx, s.mailboxId, { sent: rows });
-      const known = (await contextOf(trx, s)).knownDomains;
+      const known = (await contextOf(trx, s)).sentDomains;
       expect(known.filter((domain) => domain.startsWith("firma"))).toHaveLength(500);
       expect(known.filter((domain) => domain.startsWith("phish"))).toHaveLength(0);
+    });
+  });
+});
+
+describe("the Sent domain list in detail", () => {
+  test("a domain that appears only in Cc counts", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      for (let i = 0; i < 2; i += 1) {
+        await seedSenderActivity(trx, s.ctx, s.mailboxId, {
+          sent: [{ at: ago(3), to: ["a@eigen.pl"], cc: ["boss@nurcc.pl"] }],
+        });
+      }
+      expect((await contextOf(trx, s)).sentDomains).toContain("nurcc.pl");
+    });
+  });
+
+  test("the 90-day edge: exactly 90 days counts, one second more does not", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      await sentTo(trx, s, ["a@genau.pl"], { days: 90 });
+      await sentTo(trx, s, ["a@genau.pl"], { days: 90 });
+      for (let i = 0; i < 2; i += 1) {
+        await seedSenderActivity(trx, s.ctx, s.mailboxId, {
+          sent: [{ at: new Date(ago(90).getTime() - 1000), to: ["a@zuspaet.pl"] }],
+        });
+      }
+      const known = (await contextOf(trx, s)).sentDomains;
+      expect(known).toContain("genau.pl");
+      expect(known).not.toContain("zuspaet.pl");
+    });
+  });
+
+  test("a tenant of a shared hosting suffix stays apart and is no target", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      await sentTo(trx, s, ["a@alpha.herokuapp.com"]);
+      await sentTo(trx, s, ["a@beta.herokuapp.com"]);
+      await sentTo(trx, s, ["a@someone.github.io"]);
+      await sentTo(trx, s, ["a@someone.github.io"]);
+      const written = await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since: ago(90), minMails: 1, limit: 10 });
+      expect(written).toEqual([
+        { domain: "someone.github.io", mails: 2 },
+        { domain: "alpha.herokuapp.com", mails: 1 },
+        { domain: "beta.herokuapp.com", mails: 1 },
+      ]);
+      const known = (await contextOf(trx, s)).sentDomains;
+      expect(known).toEqual([]);
+    });
+  });
+
+  test("free-mail domains of the Polish and international providers are never added", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      const free = [
+        "vp.pl",
+        "autograf.pl",
+        "onet.eu",
+        "yahoo.pl",
+        "outlook.pl",
+        "me.com",
+        "aol.com",
+        "msn.com",
+        "mail.com",
+        "pm.me",
+        "proton.me",
+        "protonmail.com",
+        "tutanota.com",
+        "zoho.com",
+        "hotmail.co.uk",
+        "yahoo.co.uk",
+        "gmx.com",
+        "gmx.net",
+        "gmx.de",
+        "web.de",
+      ];
+      for (const domain of free) await sentTwice(trx, s, [`a@${domain}`]);
+      await sentTwice(trx, s, ["a@kontrahent.pl"]);
+      expect((await contextOf(trx, s)).sentDomains).toEqual(["kontrahent.pl"]);
+    });
+  });
+
+  test("the reader reads only the newest maxMails mails", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await sentTo(trx, s, ["a@alt.pl"], { days: 50 });
+      await sentTo(trx, s, ["a@alt.pl"], { days: 50 });
+      await sentTo(trx, s, ["a@neu.pl"], { days: 2 });
+      await sentTo(trx, s, ["a@neu.pl"], { days: 2 });
+      const since = ago(90);
+      expect(
+        await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since, minMails: 1, limit: 10, maxMails: 2 })
+      ).toEqual([{ domain: "neu.pl", mails: 2 }]);
+      expect(await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since, minMails: 1, limit: 10 })).toHaveLength(2);
+    });
+  });
+});
+
+// The statements of a plugin run: each raw statement keeps its text, so a test can tell the Sent read from the rest.
+function recordingPlugin() {
+  const statements: string[] = [];
+  const plugin: KyselyPlugin = {
+    transformQuery(args) {
+      const node = args.node as unknown as { sqlFragments?: readonly string[] };
+      statements.push(node.sqlFragments === undefined ? "" : node.sqlFragments.join("?"));
+      return args.node;
+    },
+    async transformResult(args) {
+      return args.result;
+    },
+  };
+  return { statements, plugin };
+}
+
+const sentReads = (statements: string[]): number => statements.filter((text) => text.includes("unnest(")).length;
+const flaggedReads = (statements: string[]): number =>
+  statements.filter((text) => text.includes("cardinality(latest.suspicious_reasons) > 0")).length;
+
+describe("the cache of the Sent domains", () => {
+  test("a second batch makes no domain read; a new Sent mail or 10 minutes end the entry", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      await sentTwice(trx, s, ["a@kontrahent.pl"]);
+      const { statements, plugin } = recordingPlugin();
+      const load = (at: Date) =>
+        loadSuspiciousContext(trx.withPlugin(plugin), s.ctx, {
+          mailbox: { id: s.mailboxId, rules: [], delegates: [] },
+          imapHost: "imap.x.test",
+          senders: [],
+          trustedAuthservIds: [],
+          now: at,
+        });
+
+      expect((await load(now)).sentDomains).toEqual(["kontrahent.pl"]);
+      expect([sentReads(statements), flaggedReads(statements)]).toEqual([1, 1]);
+
+      const before = statements.length;
+      expect((await load(new Date(now.getTime() + 9 * 60_000))).sentDomains).toEqual(["kontrahent.pl"]);
+      expect([sentReads(statements), flaggedReads(statements)]).toEqual([1, 1]);
+      expect(statements.length - before).toBeGreaterThan(0);
+
+      await sentTwice(trx, s, ["a@neuer.pl"]);
+      expect((await load(now)).sentDomains).toEqual(["kontrahent.pl", "neuer.pl"]);
+      expect(sentReads(statements)).toBe(2);
+
+      await load(new Date(now.getTime() + 11 * 60_000));
+      expect(sentReads(statements)).toBe(3);
+    });
+  });
+
+  test("with a flag off nothing is read and nothing is cached", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, { suspicious: false });
+      await sentTwice(trx, s, ["a@kontrahent.pl"]);
+      const { statements, plugin } = recordingPlugin();
+      const context = await loadSuspiciousContext(trx.withPlugin(plugin), s.ctx, {
+        mailbox: { id: s.mailboxId, rules: [], delegates: [] },
+        imapHost: "imap.x.test",
+        senders: [],
+        trustedAuthservIds: [],
+        now,
+      });
+      expect(context.sentDomains).toEqual([]);
+      expect(sentReads(statements)).toBe(0);
+    });
+  });
+
+  test("the cache is per mailbox", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await scene(trx);
+      const b = await scene(trx);
+      await setFlags(trx, a, {});
+      await setFlags(trx, b, {});
+      await sentTwice(trx, a, ["a@kontrahent.pl"]);
+      await sentTwice(trx, b, ["a@fremd.pl"]);
+      expect((await contextOf(trx, a)).sentDomains).toEqual(["kontrahent.pl"]);
+      expect((await contextOf(trx, b)).sentDomains).toEqual(["fremd.pl"]);
+      expect((await contextOf(trx, a)).sentDomains).toEqual(["kontrahent.pl"]);
     });
   });
 });

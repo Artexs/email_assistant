@@ -158,6 +158,8 @@ export {
   getSentSummary,
   listSentHealth,
   listUserAnswers,
+  newestUserSentId,
+  SENT_RECIPIENT_MAX_MAILS,
   sentRecipientDomains,
   type SentHealthRow,
   type SentRecipientDomain,

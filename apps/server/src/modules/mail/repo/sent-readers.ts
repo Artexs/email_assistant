@@ -1,4 +1,4 @@
-import { registrableDomain } from "@ea/core";
+import { registrableDomainShared } from "@ea/core";
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
@@ -8,6 +8,9 @@ import { getSentSyncState, isSentErrorCode, type SentErrorCode } from "./sent-st
 import { notAutomaticSql, type DbOrTrx } from "./shared";
 
 const ANSWER_CHUNK = 500;
+
+// The most user Sent mails (the newest) that `sentRecipientDomains` reads.
+export const SENT_RECIPIENT_MAX_MAILS = 5000;
 
 export interface UserAnswer {
   answeredAt: Date;
@@ -143,38 +146,60 @@ export async function listSentHealth(db: DbOrTrx, ctx: TenantContext): Promise<S
 }
 
 export interface SentRecipientDomain {
-  // The registrable domain (lower case, `registrableDomain` of core).
+  // The registrable domain (lower case, `registrableDomainShared` of core: a tenant of a shared hosting suffix stays apart).
   domain: string;
   // Distinct user mails with a recipient on this domain.
   mails: number;
 }
 
+// The id of the newest user Sent mail of the mailbox (any age), or null. A cheap key for a cache of `sentRecipientDomains`:
+// a new Sent mail changes it. It returns an id, never an address.
+export async function newestUserSentId(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<string | null> {
+  const row = await db
+    .selectFrom("sent_emails")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("origin", "=", "user")
+    .orderBy("sent_at", "desc")
+    .orderBy("id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.id ?? null;
+}
+
 // The registrable domains that the user wrote to: To or Cc of `origin = 'user'` Sent mail of this mailbox with `sent_at` at or after
-// `since`, not an automatic reply, counted once per mail. Only domains with at least `minMails` mails; the most mailed first
-// (ties by name), at most `limit`. One statement. A mail that has two recipients on subdomains of one registrable domain counts
-// once for that domain. A recipient with no domain, and a row whose recipients the retention cleared, count for nothing. The
-// result holds domains and counts only, never an address.
+// `since`, not an automatic reply, counted once per mail. Only the newest `maxMails` such mails are read (the database cuts the rows
+// before they reach the process). Only domains with at least `minMails` mails; the most mailed first (ties by name), at most
+// `limit`. One statement. A mail that has two recipients on subdomains of one registrable domain counts once for that domain.
+// A recipient with no domain, and a row whose recipients the retention cleared, count for nothing. The result holds domains
+// and counts only, never an address.
 export async function sentRecipientDomains(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { since: Date; minMails: number; limit: number }
+  opts: { since: Date; minMails: number; limit: number; maxMails?: number }
 ): Promise<SentRecipientDomain[]> {
   const { rows } = await sql<{ id: string; host: string }>`
-    SELECT DISTINCT s.id, lower(btrim(substring(a.addr FROM '@([^@]*)$'))) AS host
-    FROM sent_emails s
-    CROSS JOIN LATERAL unnest(s.to_addresses || s.cc_addresses) AS a(addr)
-    WHERE s.org_id = ${ctx.orgId}
-      AND s.mailbox_id = ${mailboxId}
-      AND s.origin = 'user'
-      AND s.sent_at >= ${opts.since}
-      AND ${sql.raw(notAutomaticSql("s.auto_submitted"))}
-      AND a.addr LIKE '%@%'
+    SELECT DISTINCT m.id, lower(btrim(substring(a.addr FROM '@([^@]*)$'))) AS host
+    FROM (
+      SELECT s.id, s.to_addresses, s.cc_addresses
+      FROM sent_emails s
+      WHERE s.org_id = ${ctx.orgId}
+        AND s.mailbox_id = ${mailboxId}
+        AND s.origin = 'user'
+        AND s.sent_at >= ${opts.since}
+        AND ${sql.raw(notAutomaticSql("s.auto_submitted"))}
+      ORDER BY s.sent_at DESC, s.id DESC
+      LIMIT ${opts.maxMails ?? SENT_RECIPIENT_MAX_MAILS}
+    ) m
+    CROSS JOIN LATERAL unnest(m.to_addresses || m.cc_addresses) AS a(addr)
+    WHERE a.addr LIKE '%@%'
   `.execute(db);
   const mailsOf = new Map<string, Set<string>>();
   for (const row of rows) {
     if (row.host === "") continue;
-    const domain = registrableDomain(row.host);
+    const domain = registrableDomainShared(row.host);
     if (domain === "") continue;
     const ids = mailsOf.get(domain) ?? new Set<string>();
     ids.add(row.id);

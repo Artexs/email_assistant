@@ -1,6 +1,7 @@
 import {
   assessSuspicious,
   freeMailDomains,
+  isLookalike,
   registrableDomain,
   type SenderRule,
   type SuspiciousInput,
@@ -9,7 +10,7 @@ import {
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../../platform/db";
-import { getEmailHeaders, listMailboxes, sentRecipientDomains, type ClaimedEmail } from "../mail";
+import { getEmailHeaders, listMailboxes, newestUserSentId, sentRecipientDomains, type ClaimedEmail } from "../mail";
 import { isFeatureOn, listMemberships } from "../tenancy";
 
 import {
@@ -32,6 +33,10 @@ export interface SuspiciousContext {
   isKnown(address: string | null): boolean;
   // The registrable domains of known addresses and domain rules. Frequent senders are not here: they never silence `lookalike_domain`.
   knownDomains: string[];
+  // The registrable domains that the user wrote to (see `sentDomainsToKnow`): look-alike TARGETS only. A sender on one gets no
+  // exemption from `lookalike_domain` and is not known by it, so the first mails of such a sender run every rule. Empty unless
+  // both flags `sender_context` and `suspicious_mail` are on.
+  sentDomains: string[];
   protectedNames: string[];
   trustedAuthservIds: string[];
 }
@@ -67,29 +72,84 @@ function isFreeMail(domain: string): boolean {
   return freeMailDomains.includes(domain);
 }
 
-// The registrable domains of Sent mail that count as known for the look-alike rule: at least `SENT_DOMAIN_MIN_MAILS` user mails in
-// the window, not a free-mail domain, and no incoming mail of the window from the domain has a newest result with reasons. At most
-// `SENT_DOMAIN_LIMIT`, the most mailed first. A look-alike of such a domain is suspicious; mail from the domain itself is not
-// silenced (the known-sender rule does not use this list).
-async function sentDomainsToKnow(
+interface SentCandidates {
+  newestSentId: string | null;
+  at: number;
+  domains: string[];
+}
+
+// A per-mailbox cache of the Sent candidates. The key is the newest user Sent id (a new Sent mail ends the entry) and the age
+// of 10 minutes (the 90-day window and the newest results of incoming mail move on). Staleness only ever keeps a target on the
+// list a little longer, or leaves one off for 10 minutes; a target never exempts a sender. One entry per mailbox, at most 1000.
+const SENT_CACHE_MAX_AGE_MS = 10 * 60_000;
+const SENT_CACHE_MAX_ENTRIES = 1000;
+const sentCache = new Map<string, SentCandidates>();
+
+// For tests: forget every cached entry.
+export function resetSentDomainCache(): void {
+  sentCache.clear();
+}
+
+// The registrable domains of Sent mail that may become look-alike targets, most mailed first: at least `SENT_DOMAIN_MIN_MAILS` user
+// mails in the window (the newest 5000 Sent mails are read), not a free-mail domain, not a tenant of a shared hosting suffix
+// (it is not a registrable domain of its own), and no incoming mail of the window from the domain has a newest result with reasons.
+async function sentCandidates(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
   now: Date
 ): Promise<string[]> {
+  const key = `${ctx.orgId}:${mailboxId}`;
+  const newestSentId = await newestUserSentId(db, ctx, mailboxId);
+  const cached = sentCache.get(key);
+  const age = cached === undefined ? -1 : now.getTime() - cached.at;
+  if (cached !== undefined && cached.newestSentId === newestSentId && age >= 0 && age < SENT_CACHE_MAX_AGE_MS) {
+    return cached.domains;
+  }
+
   const since = new Date(now.getTime() - SENT_DOMAIN_WINDOW_DAYS * 24 * 3_600_000);
-  const written = await sentRecipientDomains(db, ctx, mailboxId, {
-    since,
-    minMails: SENT_DOMAIN_MIN_MAILS,
-    limit: SENT_DOMAIN_READ_LIMIT,
-  });
-  const candidates = written.filter((row) => !isFreeMail(row.domain));
-  if (candidates.length === 0) return [];
-  const flagged = await suspiciousSenderDomains(db, ctx, mailboxId, since);
-  return candidates
-    .filter((row) => !flagged.has(row.domain))
-    .slice(0, SENT_DOMAIN_LIMIT)
-    .map((row) => row.domain);
+  let domains: string[] = [];
+  const written =
+    newestSentId === null
+      ? []
+      : await sentRecipientDomains(db, ctx, mailboxId, {
+          since,
+          minMails: SENT_DOMAIN_MIN_MAILS,
+          limit: SENT_DOMAIN_READ_LIMIT,
+        });
+  const candidates = written.filter((row) => !isFreeMail(row.domain) && row.domain === registrableDomain(row.domain));
+  if (candidates.length > 0) {
+    const flagged = await suspiciousSenderDomains(db, ctx, mailboxId, since);
+    domains = candidates.filter((row) => !flagged.has(row.domain)).map((row) => row.domain);
+  }
+  if (!sentCache.has(key) && sentCache.size >= SENT_CACHE_MAX_ENTRIES) {
+    const oldest = sentCache.keys().next();
+    if (oldest.done !== true) sentCache.delete(oldest.value);
+  }
+  sentCache.set(key, { newestSentId, at: now.getTime(), domains });
+  return domains;
+}
+
+// The look-alike targets from Sent mail, at most `SENT_DOMAIN_LIMIT`, in count order. A candidate is SKIPPED when it is already in
+// the base list or looks like a domain already on the list (the base list or a more mailed candidate): the user may have mistyped
+// an address, and a typo-squat must stay a look-alike of the real domain. A target never exempts itself and never makes its
+// sender known: the exemption of `isLookalike` and the known-sender rule read the base list only.
+async function sentDomainsToKnow(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: Date,
+  base: readonly string[]
+): Promise<string[]> {
+  const list = [...base];
+  const sent: string[] = [];
+  for (const domain of await sentCandidates(db, ctx, mailboxId, now)) {
+    if (sent.length >= SENT_DOMAIN_LIMIT) break;
+    if (list.includes(domain) || isLookalike(domain, [], list)) continue;
+    list.push(domain);
+    sent.push(domain);
+  }
+  return sent;
 }
 
 export async function loadSuspiciousContext(
@@ -128,11 +188,12 @@ export async function loadSuspiciousContext(
     }
   }
 
-  // The domains that the user writes to widen the look-alike list. Both flags must be on: the reasons block drafts and follow-ups
-  // whatever the flag `suspicious_mail` says, so with either flag off the context stays as it was. The module `contacts` is a layer
-  // above this one: the plain flag `sender_context` is read here, not `senderFlags`.
+  // The domains that the user writes to add look-alike targets (`sentDomains`). Both flags must be on: the reasons block drafts and
+  // follow-ups whatever the flag `suspicious_mail` says, so with either flag off the context stays as it was. The module `contacts`
+  // is a layer above this one: the plain flag `sender_context` is read here, not `senderFlags`.
+  let sentDomains: string[] = [];
   if ((await isFeatureOn(db, ctx, "sender_context")) && (await isFeatureOn(db, ctx, "suspicious_mail"))) {
-    for (const domain of await sentDomainsToKnow(db, ctx, mailbox.id, input.now)) knownDomains.add(domain);
+    sentDomains = await sentDomainsToKnow(db, ctx, mailbox.id, input.now, [...knownDomains]);
   }
 
   const since = new Date(input.now.getTime() - FREQUENT_WINDOW_DAYS * 24 * 3_600_000);
@@ -153,6 +214,7 @@ export async function loadSuspiciousContext(
       return addresses.has(folded) || frequent.has(folded) || senderDomains.has(domainOf(folded));
     },
     knownDomains: [...knownDomains].sort(),
+    sentDomains,
     protectedNames: [...new Set([...mailbox.delegates.map((delegate) => delegate.name), ...memberNames, ...vipNames])],
     trustedAuthservIds: [...trusted].sort(),
   };
@@ -178,6 +240,7 @@ export async function assessEmail(
     isList: headers !== undefined && (headers.listId !== null || headers.listUnsubscribe !== null),
     senderKnown: context.isKnown(email.from_address),
     knownDomains: context.knownDomains,
+    sentDomains: context.sentDomains,
     protectedNames: context.protectedNames,
   };
   return assessSuspicious(input);
