@@ -4,6 +4,7 @@ import { upsertOrgFeature } from "../../src/modules/tenancy";
 import { newsletterRoutes } from "../../src/modules/triage";
 import type { Db } from "../../src/platform/db";
 import type { ApiEnv } from "../../src/platform/http";
+import type { OneClickResult } from "../../src/platform/public-http";
 
 import { insertTriaged } from "./fixtures";
 import { addMailbox } from "./trust-fixtures";
@@ -21,11 +22,18 @@ export interface NewsletterBox {
   org: WebOrg;
   mailboxId: string;
   otherMailboxId: string;
+  /** The URLs that the fake client got (F110 stage 24: no test sends a real request). */
+  posts: string[];
+  /** What the fake client answers next. Default `ok` / `http_200`. */
+  answer: { result: OneClickResult; delayMs: number; onPost?: () => Promise<void>; throws?: boolean };
   app(trusted?: readonly string[]): Hono<ApiEnv>;
   cleanup(): Promise<void>;
 }
 
-export async function newsletterBox(db: Db, opts: { flag?: boolean } = {}): Promise<NewsletterBox> {
+export async function newsletterBox(
+  db: Db,
+  opts: { flag?: boolean; post?: (url: URL) => Promise<OneClickResult> } = {}
+): Promise<NewsletterBox> {
   const org = await webOrg(db);
   const mailboxId = await db.transaction().execute((trx) => addMailbox(trx, { orgId: org.orgId }));
   const otherMailboxId = await db.transaction().execute((trx) => addMailbox(trx, { orgId: org.otherOrgId }));
@@ -36,15 +44,30 @@ export async function newsletterBox(db: Db, opts: { flag?: boolean } = {}): Prom
       { flag: "bulk_unsubscribe", enabled: opts.flag ?? true, setBy: "test", setAt: NOW }
     );
   }
+  const posts: string[] = [];
+  const answer: NewsletterBox["answer"] = { result: { kind: "ok", code: "http_200" }, delayMs: 0 };
+  const post = async (url: URL): Promise<OneClickResult> => {
+    posts.push(url.href);
+    if (answer.throws) throw new Error("fake client crash");
+    await answer.onPost?.();
+    if (answer.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, answer.delayMs));
+    return answer.result;
+  };
   return {
     org,
     mailboxId,
     otherMailboxId,
+    posts,
+    answer,
     app: (trusted = TRUSTED) =>
       webTestApp({
         db,
         sessions: { owner: org.ownerId, member: org.assistantId, other: org.otherOwnerId },
-        routers: (api) => api.route("/", newsletterRoutes({ db, now: () => NOW, trustedAuthservIds: trusted })),
+        routers: (api) =>
+          api.route(
+            "/",
+            newsletterRoutes({ db, now: () => NOW, trustedAuthservIds: trusted, post: opts.post ?? post })
+          ),
       }),
     cleanup: () => org.cleanup(),
   };
@@ -92,7 +115,12 @@ export async function addRequest(
   orgId: string,
   mailboxId: string,
   sender: string,
-  over: { status?: "requested" | "done" | "failed" | "refused"; code?: string | null; finishedAt?: Date | null } = {}
+  over: {
+    status?: "requested" | "done" | "failed" | "refused";
+    code?: string | null;
+    finishedAt?: Date | null;
+    createdAt?: Date;
+  } = {}
 ): Promise<void> {
   const status = over.status ?? "requested";
   await db
@@ -105,7 +133,7 @@ export async function addRequest(
       method: "one_click",
       status,
       code: over.code ?? (status === "requested" ? null : status),
-      created_at: new Date(NOW.getTime() - 2 * HOUR),
+      created_at: over.createdAt ?? new Date(NOW.getTime() - 2 * HOUR),
       finished_at:
         over.finishedAt === undefined
           ? status === "requested"

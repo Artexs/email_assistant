@@ -3,6 +3,8 @@ name: Docs deploy
 # Publishes the docs site to GitHub Pages (ADR 0030 point 2).
 # - A pushed tag `v<x.y.z>` deploys only when it is the newest release tag (apps/docs/scripts/deploy-gate.ts).
 # - A manual run deploys the ref chosen in the GitHub UI, also an old tag (rollback).
+# A deploy first runs every job of ci.yml (job `checks`), then makes the screenshots from the e2e seed (no real data, no secret) and builds the site with them.
+# A run that does not deploy (an older tag) stops after the gate: no checks, no build.
 # A pushed release tag whose version has no release in CHANGELOG.md fails the gate (error changelog_missing, a red run, not a skip).
 # A pushed release tag starts this workflow. Until the owner has done the Pages setup (owner step O1), the deploy job fails red.
 on:
@@ -15,9 +17,10 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  # The gate: does this run deploy? It runs first and holds the tag list, so it needs the full history. It publishes nothing.
+  gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     outputs:
       deploy: ${{ steps.gate.outputs.deploy }}
     steps:
@@ -42,24 +45,97 @@ jobs:
           GATE_REF_TYPE: ${{ github.ref_type }}
           GATE_REF_NAME: ${{ github.ref_name }}
         run: git tag --list 'v*' | bun apps/docs/scripts/deploy-gate.ts
+  # Every job of ci.yml (ci, e2e, image, docs) at this ref, before anything is built for the public site. A red job stops the deploy.
+  checks:
+    needs: gate
+    if: needs.gate.outputs.deploy == 'true'
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+  # The site with its screenshots. The shots come from the e2e seed in a database that this job creates: no real data, no secret.
+  build:
+    needs: [gate, checks]
+    if: needs.gate.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The services and the env of the `e2e` job of ci.yml.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: email_assistant
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+      greenmail:
+        image: greenmail/standalone:2.1.15
+        env:
+          GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false"
+        ports: ["3025:3025", "3143:3143", "3993:3993"]
+    env:
+      TEST_IMAP_HOST: 127.0.0.1
+      TEST_IMAP_PORT: "3143"
+      TEST_IMAPS_PORT: "3993"
+      TEST_SMTP_PORT: "3025"
+      E2E_DATABASE_URL: postgres://app:app_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+      E2E_MIGRATOR_DATABASE_URL: postgres://migrator:migrator_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+      DATABASE_URL: postgres://app:app_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+      MIGRATOR_DATABASE_URL: postgres://migrator:migrator_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      # The Astro 7 CLI needs Node 22.23.4 or later: pinned, not the runner image's default.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
       # A stale public Polish page blocks a release (ADR 0030 point 5).
       - name: Check that no public Polish page is stale
-        if: steps.gate.outputs.deploy == 'true'
         run: bun run docs:stale --strict
+      - name: Generate a test credentials key
+        run: echo "CREDENTIALS_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+      - name: Create database roles and the e2e database
+        run: |
+          psql "postgresql://postgres:postgres@localhost:5432/email_assistant" -v ON_ERROR_STOP=1 -v migrator_password=migrator_ci -v app_password=app_ci -f db/roles.sql
+          psql "postgresql://postgres:postgres@localhost:5432/email_assistant" -v ON_ERROR_STOP=1 -c 'CREATE DATABASE email_assistant_e2e'
+          psql "postgresql://postgres:postgres@localhost:5432/email_assistant_e2e" -v ON_ERROR_STOP=1 -c 'GRANT CONNECT ON DATABASE email_assistant_e2e TO migrator, app' -c 'REVOKE CREATE ON SCHEMA public FROM PUBLIC' -c 'GRANT USAGE, CREATE ON SCHEMA public TO migrator' -c 'GRANT USAGE ON SCHEMA public TO app'
+      - run: bun run db:migrate
+      - run: bun run web:build
+      - run: bunx playwright install --with-deps chromium
+      # The PNG files go to apps/docs/public/shots (not in git), then into the site. The run signs in as the owner of the seed's main organization.
+      - name: Make the screenshots
+        run: bun run docs:shots
       # In-place pages link to GitHub at this ref: the tag of a tag push, the commit of a manual run.
-      - name: Build the site
-        if: steps.gate.outputs.deploy == 'true'
+      - name: Build the site with the screenshots
         env:
+          DOCS_SHOTS: "on"
           DOCS_GIT_REF: ${{ github.event_name == 'push' && github.ref_name || github.sha }}
         run: bun run docs:build
+      # The browser check of the built site: CSP, search, language, accessibility, the 404 page.
+      - name: Check the built site in a browser
+        run: bun run docs:test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: docs-deploy-playwright-results
+          path: |
+            apps/web/e2e/test-results/
+            apps/docs/e2e/test-results/
+          retention-days: 7
       - name: Upload the site
-        if: steps.gate.outputs.deploy == 'true'
         uses: actions/upload-pages-artifact@v5
         with:
           path: apps/docs/dist
   deploy:
-    needs: build
-    if: needs.build.outputs.deploy == 'true'
+    needs: [gate, build]
+    if: needs.gate.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Only a run that deploys enters the group: a run with deploy=false never cancels a pending newer deploy.

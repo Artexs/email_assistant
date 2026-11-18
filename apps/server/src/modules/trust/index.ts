@@ -53,6 +53,7 @@ export {
 export {
   activeTripsOf,
   clearTrips,
+  hasEndedCheck,
   historyCategoryResultSchema,
   historyCheckReasonSchema,
   historyCheckStatusSchema,

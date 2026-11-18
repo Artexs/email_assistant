@@ -40,11 +40,11 @@ async function requestsOf(
   ctx: TenantContext,
   mailboxId: string,
   sendersLower: string[]
-): Promise<Map<string, { status: UnsubscribeRequestStatus; at: Date }>> {
+): Promise<Map<string, { status: UnsubscribeRequestStatus; at: Date; code: string | null }>> {
   if (sendersLower.length === 0) return new Map();
   const rows = await db
     .selectFrom("unsubscribe_requests")
-    .select(["sender_lower", "status", "created_at", "finished_at"])
+    .select(["sender_lower", "status", "code", "created_at", "finished_at"])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("sender_lower", "in", sendersLower)
@@ -52,7 +52,7 @@ async function requestsOf(
   return new Map(
     rows.map((row) => [
       row.sender_lower,
-      { status: row.status as UnsubscribeRequestStatus, at: row.finished_at ?? row.created_at },
+      { status: row.status as UnsubscribeRequestStatus, at: row.finished_at ?? row.created_at, code: row.code },
     ])
   );
 }
@@ -83,7 +83,7 @@ export async function newsletterViewFor(
         count: sender.count,
         latestAt: sender.latestAt.toISOString(),
         method,
-        request: request === null ? null : { status: request.status, at: request.at.toISOString() },
+        request: request === null ? null : { status: request.status, at: request.at.toISOString(), code: request.code },
       };
       // The link goes to the owner only: for `link`, and for `one_click` once a request exists (the page is the way out of a failed request).
       const offer = method === "link" || (method === "one_click" && request !== null);

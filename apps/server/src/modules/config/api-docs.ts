@@ -5,6 +5,7 @@ import {
   loopWaitBodySchema,
   modeBodySchema,
   noGoBodySchema,
+  replySwitchNames,
   ruleBodySchema,
   ruleListSchema,
   ruleViewSchema,
@@ -49,9 +50,9 @@ export const settingsDocs = {
   patchSettingsSwitch: apiDoc({
     operationId: "patchSettingsSwitch",
     summary:
-      "Turn a tool switch of a mailbox on or off (owner only). `auto_follow_up` exists only while the flag `open_loops` is on: else the answer is 404.",
+      "Turn a tool switch of a mailbox on or off (owner only). `auto_follow_up` exists only while the flag `open_loops` is on, and `reply_drafts` only while the flag `reply_drafts` is on: else the answer is 404. `reply_drafts` off closes the open reply drafts of the mailbox. `reply_drafts` on for a mailbox with an OAuth provider answers 400 `validation` (field `reply_drafts`).",
     tags: ["settings"],
-    params: z.object({ mailboxId, name: z.enum([...toolSwitchNames, ...loopSwitchNames]) }),
+    params: z.object({ mailboxId, name: z.enum([...toolSwitchNames, ...loopSwitchNames, ...replySwitchNames]) }),
     body: switchBodySchema,
     ok: { status: 200, schema: settingsChangeSchema },
     errors: [ownerOnly, notFound],

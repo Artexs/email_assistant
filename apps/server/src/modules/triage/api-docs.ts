@@ -1,9 +1,17 @@
 import {
+  apiErrorSchema,
   feedbackBodySchema,
   feedbackResultSchema,
   newsletterListSchema,
+  reviewLabelBodySchema,
+  reviewLabelResultSchema,
+  reviewSampleQuerySchema,
+  reviewSampleSchema,
   undoBodySchema,
   undoResultSchema,
+  unsubscribeBodySchema,
+  unsubscribeResultSchema,
+  unsubscribeStoredSchema,
   z,
 } from "@ea/core";
 
@@ -43,5 +51,47 @@ export const newsletterDocs = {
     params: z.object({ mailboxId: z.uuid() }),
     ok: { status: 200, schema: newsletterListSchema },
     errors: [notFound],
+  }),
+  postUnsubscribe: apiDoc({
+    operationId: "postUnsubscribe",
+    summary:
+      "The owner's tap: send one RFC 8058 one-click unsubscribe request for one sender of the list. Owner only. The server checks the sender again (not spam, not suspicious, one-click offered by a trusted authentication result) and the target (public `https` host, port 443, no redirect); it sends the fixed body `List-Unsubscribe=One-Click` and nothing from the mail. The answer holds the end state (`done`, `failed`, `refused`) and a short code; the answer of the other server is never stored or returned. A second tap for the same sender gets 409 `already_requested` and sends nothing.",
+    tags: ["newsletters"],
+    params: z.object({ mailboxId: z.uuid() }),
+    body: unsubscribeBodySchema,
+    ok: { status: 200, schema: unsubscribeResultSchema },
+    errors: [
+      { status: 403, codes: ["owner_only"] },
+      notFound,
+      {
+        status: 409,
+        codes: ["not_allowed", "no_one_click", "already_requested"],
+        schema: z.union([apiErrorSchema, unsubscribeStoredSchema]),
+      },
+      { status: 429, codes: ["rate_limited"] },
+    ],
+  }),
+};
+
+// F110 stage 15 (flag `panel_review`): with the flag off both routes answer 404 `not_found` for every role. A mailbox or a mail of
+// another organization looks like an unknown one: the same 404.
+export const reviewDocs = {
+  getReviewSample: apiDoc({
+    operationId: "getReviewSample",
+    summary:
+      "A random sample of up to 10 unlabelled decisions of one mailbox, for every member (the sample rules of the Telegram /review page: real mail of 30 days, no feedback row, no test mail). Each item holds the category, the confidence, the stored AI summary, the sender's display name, the subject and the date. A new request gives a new sample. `delegation` says whether the organization has an active delegate.",
+    tags: ["review"],
+    query: reviewSampleQuerySchema,
+    ok: { status: 200, schema: reviewSampleSchema },
+    errors: [notFound],
+  }),
+  postReviewLabel: apiDoc({
+    operationId: "postReviewLabel",
+    summary:
+      "Label one decision with the source `review`, for every member: `verdict: right` agrees with the category, `category` names the true one (`delegation` only when the organization has an active delegate). The same answer twice gives `saved: false`. The label unlocks nothing: it feeds the tripwire and the real-label block only. `needs_category`: `right` on a mail the assistant could not place.",
+    tags: ["review"],
+    body: reviewLabelBodySchema,
+    ok: { status: 200, schema: reviewLabelResultSchema },
+    errors: [notFound, { status: 409, codes: ["needs_category", "no_delegates"] }],
   }),
 };

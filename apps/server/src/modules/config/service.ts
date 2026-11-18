@@ -26,13 +26,28 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 
-import { getMovesSupported, lockMailboxSettings, updateMailboxSettings, type MailboxSettingsRow } from "./repo";
+import {
+  getMailboxOauthProvider,
+  getMovesSupported,
+  lockMailboxSettings,
+  updateMailboxSettings,
+  type MailboxSettingsRow,
+} from "./repo";
 
 // A route maps it to 404 (a mailbox removed between the check and the write).
 export class SettingsNotFoundError extends HardError {
   constructor() {
     super("no mailbox_settings row");
     this.name = "SettingsNotFoundError";
+  }
+}
+
+// The switch `reply_drafts` cannot go on for a mailbox that has an OAuth provider: reply drafts are for password IMAP mailboxes until
+// Graph and Gmail get them (F115 D19). A route maps it to 400 `validation` (field `reply_drafts`); the CLI exits 1.
+export class OauthMailboxError extends HardError {
+  constructor() {
+    super("oauth_mailbox");
+    this.name = "OauthMailboxError";
   }
 }
 
@@ -89,7 +104,7 @@ type Change =
 // Follows `decidePolicy`. null = the change closes no gate.
 export function closedBy(
   change: Change
-): { types: MailboxActionType[]; category?: { is: string } | { not: string }; sends?: true } | null {
+): { types: MailboxActionType[]; category?: { is: string } | { not: string }; sends?: ExpireFilter["sends"] } | null {
   if (change.field === "mode") {
     return change.to === "shadow" ? { types: ["move", "mark_read", "flag"], sends: true } : null;
   }
@@ -111,14 +126,15 @@ export function closedBy(
       return { types: ["mark_read"] };
     case "flag":
       return { types: ["flag"] };
+    // A reply draft has its own switch (PD-082): `create_draft` off leaves the reply sends open.
     case "create_draft":
-      return { types: [], sends: true };
+      return { types: [], sends: "others" };
     // A follow-up that waits for a tap stays valid: the owner decides at the card.
     case "auto_follow_up":
       return null;
-    // Stage 10 closes the open replies of the mailbox when this switch goes off.
+    // The open reply sends of the mailbox close; a delegation or follow-up send stays.
     case "reply_drafts":
-      return null;
+      return { types: [], sends: "replies" };
   }
 }
 
@@ -383,6 +399,13 @@ export async function setToolSwitch(
   mailboxId: string,
   input: { name: keyof ToolSwitches; value: boolean; actor: string }
 ): Promise<SettingsChange> {
+  // D19: the guard sits here, so the route and the CLI both meet it. `oauth_provider` is set at insert only: a mailbox never turns OAuth
+  // later, so the read before the settings lock cannot go stale. Off is always accepted.
+  if (input.name === "reply_drafts" && input.value) {
+    const provider = await getMailboxOauthProvider(deps.db, ctx, mailboxId);
+    if (provider === undefined) throw new SettingsNotFoundError();
+    if (provider !== null) throw new OauthMailboxError();
+  }
   return applyChange(deps, ctx, mailboxId, input.actor, (before) => ({
     patch: { toolSwitches: { ...before.toolSwitches, [input.name]: input.value } },
     changed: before.toolSwitches[input.name] !== input.value,

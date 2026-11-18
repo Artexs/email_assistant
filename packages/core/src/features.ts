@@ -133,6 +133,12 @@ export const featureFlags = {
     epic: "E4-B",
     removeBy: "2027-03-01",
   },
+  panel_review: {
+    default: false,
+    description: "An optional page in the panel where you check a sample of 10 decisions of the assistant.",
+    epic: "E4-B",
+    removeBy: "2027-03-01",
+  },
   why_lines: {
     default: false,
     description:

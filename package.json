@@ -87,6 +87,7 @@
     "trust:history-check": "bun apps/server/src/scripts/trust-history-check.ts",
     "mailbox:settings": "bun apps/server/src/scripts/mailbox-settings.ts",
     "reply:check-copy": "bun apps/server/src/scripts/reply-check-copy.ts",
+    "mailbox:profile": "bun apps/server/src/scripts/mailbox-profile.ts",
     "db:up": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env up -d --wait db",
     "dev:up": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env up -d --wait db greenmail",
     "db:down": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env down",

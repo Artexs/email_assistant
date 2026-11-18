@@ -22,3 +22,15 @@ export const OUTSIDE_SERVICE_KEYS: Readonly<Record<string, string | { exempt: st
     exempt: "dev only: a fake Bot API on a loopback address (the config schema refuses any other host)",
   },
 };
+
+// Outside calls that no config key names, because the host comes from mail text, and that are no sub-processor (F110 stage 24).
+// A call here needs a reason that says what the other side receives, and the file that makes it. A test reads this list: a new class
+// of outside call is a decision (a row in `subprocessors`, or an entry here with a reason), never a silent addition.
+export const OUTSIDE_CALL_CLASSES: Readonly<Record<string, { file: string; call: string; exempt: string }>> = {
+  unsubscribe_target: {
+    file: "web.ts",
+    call: "postOneClick(",
+    exempt:
+      "the one-click unsubscribe request (RFC 8058) goes to the server that the newsletter itself names, after an owner tap, and only to a public https host on port 443; it holds the fixed body `List-Unsubscribe=One-Click` and no data of the mailbox, so the other side processes nothing for this service and is no sub-processor; it receives the address of this server, as a mail sender does when a recipient opens a link",
+  },
+};

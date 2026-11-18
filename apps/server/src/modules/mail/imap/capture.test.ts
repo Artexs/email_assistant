@@ -169,13 +169,39 @@ describe("captureFromParsed", () => {
     expect(await postOf(link, "List-Unsubscribe-Post:")).toBe(false);
     expect(await postOf(link, "List-Unsubscribe-Post: List-Unsubscribe=One-Click-Not")).toBe(false);
     expect(await postOf(link, "List-Unsubscribe-Post: yes; List-Unsubscribe=One-Click")).toBe(false);
-    // The topmost line counts: a lower line cannot turn the flag on, and cannot turn it off.
+    // Two lines are never one-click (F110 stage 24 review, test 5d): the old rule read the topmost line and gave true for the
+    // second case; a repeated header can be a forged line above a signed one.
     expect(await postOf(link, "List-Unsubscribe-Post: no", "List-Unsubscribe-Post: List-Unsubscribe=One-Click")).toBe(
       false
     );
     expect(await postOf(link, "List-Unsubscribe-Post: List-Unsubscribe=One-Click", "List-Unsubscribe-Post: no")).toBe(
-      true
+      false
     );
+  });
+
+  test("5d: more than one List-Unsubscribe or List-Unsubscribe-Post line gives no stored link and no one-click; one of each is as before", async () => {
+    const post = "List-Unsubscribe-Post: List-Unsubscribe=One-Click";
+    const one = await captureOf(simple(["List-Unsubscribe: <https://u.test/x>", post]));
+    expect([one.listUnsubscribe, one.listUnsubscribePost]).toEqual(["<https://u.test/x>", true]);
+
+    // The forged line on top of the signed one, with and without a second post line.
+    const cases = [
+      ["List-Unsubscribe: <https://evil.test/x>", "List-Unsubscribe: <https://u.test/x>", post],
+      ["List-Unsubscribe: <https://u.test/x>", post, "List-Unsubscribe: <https://evil.test/x>"],
+      ["List-Unsubscribe: <https://u.test/x>", post, post],
+      ["List-Unsubscribe: <https://evil.test/x>", "list-unsubscribe: <https://u.test/x>", post, post],
+    ];
+    for (const lines of cases) {
+      const capture = await captureOf(simple(lines));
+      expect({ lines, link: capture.listUnsubscribe, post: capture.listUnsubscribePost }).toEqual({
+        lines,
+        link: null,
+        post: false,
+      });
+    }
+    // A repeated header that is not an unsubscribe header changes nothing.
+    const other = await captureOf(simple(["List-Unsubscribe: <https://u.test/x>", post, "List-Id: a", "List-Id: b"]));
+    expect([other.listUnsubscribe, other.listUnsubscribePost]).toEqual(["<https://u.test/x>", true]);
   });
 
   test("5: a mail without the headers gives null and empty values", async () => {

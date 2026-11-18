@@ -503,6 +503,32 @@ export const E2E_TRUST_MEMBER_EMAILS: Record<E2eProject, string> = {
 };
 export const e2eTrustOrgName = (project: E2eProject): string => `E2E Trust ${project}`;
 export const e2eTrustMailbox = (project: E2eProject): string => `e2e-trust-${project}@e2e.test`;
+// F110 stage 14: three more mailboxes of the same organization for the report page spec, one per state of the page. They are created
+// after the card mailbox, so the Settings page (first mailbox) is unchanged. `done`: a done check, `notification` recommended, `spam`
+// failed, `info` paused, mode shadow. `running`: a check that classifies. `noResult`: a `no_result` check (`no_history`), no trip.
+export const E2E_REPORT_KINDS = ["done", "running", "noResult"] as const;
+export type E2eReportKind = (typeof E2E_REPORT_KINDS)[number];
+export const e2eReportMailbox = (project: E2eProject, kind: E2eReportKind): string =>
+  `e2e-report-${kind.toLowerCase()}-${project}@e2e.test`;
+// F110 stage 15: one organization per project for the panel review spec. The flags `panel_review` and `trust_ladder` are on; one mailbox
+// with a done history check (so the report page offers the link) and 12 real mails with a triage result and no label (`e2e-review-rows.ts`).
+// The spec labels mail, so it needs its own organization. No delegate: the category select has no `delegation`.
+export const E2E_REVIEW_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-review-owner-mobile@x.test",
+  desktop: "e2e-review-owner-desktop@x.test",
+};
+export const E2E_REVIEW_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-review-member-mobile@x.test",
+  desktop: "e2e-review-member-desktop@x.test",
+};
+export const e2eReviewOrgName = (project: E2eProject): string => `E2E Review ${project}`;
+export const e2eReviewMailbox = (project: E2eProject): string => `e2e-review-${project}@e2e.test`;
+// The mail of the review organization: `count` mails, the text is made up. The sender address is not in the test sender list and the
+// Message-ID is not a synthetic one, so the mail counts as real.
+export const E2E_REVIEW_MAIL_COUNT = 12;
+export const E2E_REVIEW_SUMMARY = "E2E review summary: a made-up line.";
+export const e2eReviewSubject = (n: number): string => `E2E review subject ${String(n).padStart(2, "0")}`;
+export const e2eReviewSender = (n: number): string => `E2E Review Sender ${String(n).padStart(2, "0")}`;
 export const E2E_TIMEZONE = "Europe/Warsaw";
 
 // The seeded profile at the seed time `now`: the ended deadline is due the day before the local date of the organization, the future one in ten days.
@@ -582,6 +608,21 @@ export const E2E_LOOPS_SUBJECTS = {
   newsletter: "E2E loops newsletter",
 } as const;
 
+// F115 stage 11: one organization per project for the style card spec (it saves a name, a signature and a writing style, and turns the
+// reply drafts switch on, so each project needs its own). The flag `reply_drafts` is on. Two mailboxes in assist mode: `box` signs in
+// with a password, `oauth` has a provider set (the switch is disabled for it).
+export const E2E_REPLY_STYLE_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-reply-style-owner-mobile@x.test",
+  desktop: "e2e-reply-style-owner-desktop@x.test",
+};
+export const E2E_REPLY_STYLE_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-reply-style-member-mobile@x.test",
+  desktop: "e2e-reply-style-member-desktop@x.test",
+};
+export const e2eReplyStyleOrgName = (project: E2eProject): string => `E2E Reply Style ${project}`;
+export const e2eReplyStyleMailbox = (project: E2eProject, which: "box" | "oauth"): string =>
+  `e2e-reply-style-${which}-${project}@e2e.test`;
+
 export interface SeedFile {
   orgId: string;
   owner: { userId: string; email: string; password: string };
@@ -657,6 +698,7 @@ export interface SeedFile {
       owner: { userId: string; email: string; password: string };
       member: { userId: string; email: string; password: string };
       mailbox: { id: string; address: string };
+      reportMailboxes: Record<E2eReportKind, { id: string; address: string }>;
     }
   >;
   newsletterOrgs: Record<
@@ -666,6 +708,25 @@ export interface SeedFile {
       owner: { userId: string; email: string; password: string };
       member: { userId: string; email: string; password: string };
       mailbox: { id: string; address: string };
+    }
+  >;
+  reviewOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      member: { userId: string; email: string; password: string };
+      mailbox: { id: string; address: string };
+    }
+  >;
+  replyStyleOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      member: { userId: string; email: string; password: string };
+      box: { id: string; address: string };
+      oauth: { id: string; address: string };
     }
   >;
   approvalsOrgs: Record<

@@ -1,98 +1,47 @@
-import {
-  normalizeStyleText,
-  organizationViewSchema,
-  STYLE_TEXT_MAX,
-  styleTextSchema,
-  type OrganizationSettings,
-  type OrganizationView,
-} from "@ea/core/web";
-import { useState } from "react";
-import { toast } from "sonner";
+import type { MailboxView, OrganizationSettings } from "@ea/core/web";
 
-import { t, type TextKey } from "../../i18n";
-import { api } from "../../lib/api";
-import { isDirty } from "../../lib/draft";
-import { errorText } from "../../lib/errors";
-import { useDraft } from "../../lib/use-draft";
-import { Button } from "../ui/button";
+import { t } from "../../i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
 
-const styleErrors: readonly TextKey[] = ["style_too_long", "style_bad_char"];
+import { STYLE_CARD_ID } from "./ReplyStyleCard";
 
 export interface SignatureCardProps {
   organization: OrganizationSettings;
-  isOwner: boolean;
-  onSaved(view: OrganizationView): void;
+  mailboxes: readonly MailboxView[];
 }
 
-export function SignatureCard({ organization, isOwner, onSaved }: SignatureCardProps) {
-  const { draft, setValue, reset } = useDraft(organization.styleText ?? "");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<TextKey | null>(null);
-  const value = draft.value;
-
-  const save = async () => {
-    const parsed = styleTextSchema.safeParse(value);
-    if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message;
-      setError(styleErrors.find((key) => key === message) ?? "error_generic");
-      return;
-    }
-    setPending(true);
-    try {
-      const view = await api("/api/organization", organizationViewSchema, {
-        method: "PATCH",
-        body: { styleText: value },
-      });
-      reset(view.styleText ?? "");
-      setError(null);
-      toast.success(t("sig_saved_toast"));
-      onSaved(view);
-    } catch (failure) {
-      toast.error(t(errorText(failure)));
-    } finally {
-      setPending(false);
-    }
-  };
-
+// The signature of the organization, read-only since F115 stage 11: each mailbox has its own signature (the style card). The old text
+// still stands in for a mailbox with no signature of its own, until E6b drops it. The panel calls no write of it any more.
+export function SignatureCard({ organization, mailboxes }: SignatureCardProps) {
+  const old = organization.styleText?.trim() ?? "";
   return (
     <Card data-card="signature">
       <CardHeader>
         <CardTitle>{t("sig_title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">{t("sig_help")}</p>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="signature">{t("sig_label")}</Label>
-          <Textarea
-            id="signature"
-            rows={4}
-            value={value}
-            readOnly={!isOwner}
-            disabled={pending}
-            aria-invalid={error !== null}
-            onChange={(event) => {
-              setError(null);
-              setValue(event.target.value);
-            }}
-          />
-          <p className="text-sm text-muted-foreground">
-            {t("sig_counter", { count: normalizeStyleText(value).length, max: STYLE_TEXT_MAX })}
-          </p>
-          {error !== null && (
-            <p role="alert" className="text-sm text-destructive">
-              {t(error)}
+        <p className="text-sm text-muted-foreground">{t("rs_org_note")}</p>
+        {old !== "" && (
+          <>
+            <p data-old-text="" className="whitespace-pre-wrap rounded-md border p-3 text-sm">
+              {old}
             </p>
-          )}
-        </div>
-        {isOwner && (
-          <div>
-            <Button type="button" disabled={pending || !isDirty(draft)} onClick={() => void save()}>
-              {t("save")}
-            </Button>
-          </div>
+            <p className="text-sm text-muted-foreground">{t("rs_org_old")}</p>
+          </>
+        )}
+        {mailboxes.length > 0 && (
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {mailboxes.map((mailbox) => (
+              <li key={mailbox.id}>
+                <a
+                  className="underline underline-offset-4"
+                  href={`/settings?mailbox=${encodeURIComponent(mailbox.id)}#${STYLE_CARD_ID}`}
+                >
+                  {t("rs_org_link", { address: mailbox.address })}
+                </a>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>

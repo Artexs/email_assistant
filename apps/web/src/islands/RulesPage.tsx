@@ -168,7 +168,7 @@ function Rules() {
         />
       )}
       {me.features.includes("bulk_unsubscribe") && (
-        <NewslettersCard mailboxes={mailboxes} timeZone={me.organization.timezone} />
+        <NewslettersCard mailboxes={mailboxes} timeZone={me.organization.timezone} isOwner={isOwner} />
       )}
     </div>
   );

@@ -1,0 +1,42 @@
+import { profileBodySchema, profilePreviewSchema, profileViewSchema, z } from "@ea/core";
+
+import { apiDoc } from "../../platform/openapi";
+
+// The OpenAPI description of the mailbox profile routes of the reply drafts (ADR 0023, F115 stage 10). Any member reads; the write
+// and the preview are owner only. An unknown mailbox, or one of another organization, answers 404 `not_found`.
+const tags = ["replies"];
+const params = z.object({ id: z.uuid() });
+const ownerOnly = { status: 403, codes: ["owner_only"] } as const;
+const notFound = { status: 404, codes: ["not_found"] } as const;
+
+export const replyDocs = {
+  getProfile: apiDoc({
+    operationId: "getMailboxProfile",
+    summary:
+      "The display name, the signature and the writing style of a mailbox (null: not set), and the texts that stand in for a null: `fallbackName` and `fallbackSignature`.",
+    tags,
+    params,
+    ok: { status: 200, schema: profileViewSchema },
+    errors: [notFound],
+  }),
+  putProfile: apiDoc({
+    operationId: "putMailboxProfile",
+    summary:
+      'Set the display name (one line, 1 to 100 characters, none of `< > " @`), the signature (up to 1,000 characters) and the writing style (up to 1,000 characters) of a mailbox (owner only). A key that is left out stays; an empty string clears the field. A text that fails answers 400 `validation`. The answer is the same view as the read.',
+    tags,
+    params,
+    body: profileBodySchema,
+    ok: { status: 200, schema: profileViewSchema },
+    errors: [ownerOnly, notFound],
+  }),
+  previewProfile: apiDoc({
+    operationId: "previewMailboxProfile",
+    summary:
+      'One draft on a fixed sample mail, with the unsaved values of the card (owner only). It counts in the daily LLM cap like a tap. At most 10 a day for each mailbox: then 429 `preview_limit`; a second one at the same time answers 429 `preview_busy`. A draft that fails a check, or a failed call, answers 200 `{ kind: "failed", reason }`. 404 while the flag `reply_drafts` is off.',
+    tags,
+    params,
+    body: profileBodySchema,
+    ok: { status: 200, schema: profilePreviewSchema },
+    errors: [ownerOnly, notFound, { status: 429, codes: ["preview_limit", "preview_busy"] }],
+  }),
+};
