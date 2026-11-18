@@ -17,7 +17,9 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F120-e11a-sender-context` (🟠 ACTIVE): The assistant knows who each sender is to the user and suggests rules from it
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
+- `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟠 ACTIVE): E9b Phone channel (PWA, push, Telegram detail)
 - `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
 - `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
@@ -96,6 +98,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F133-the-small-duplicates-and-stale-statements-of-quality-pass-1-are-cleaned-findings-9-to-18` (🟢 PROVEN): the small duplicates and stale statements of quality pass 1 are cleaned (findings 9 to 18); landed 2026-11-18
 - `F130-the-escalation-cascade-code-its-role-and-its-keys-are-removed-from-production-quality-pass-1-finding-2` (🟢 PROVEN): the escalation cascade code, its role and its keys are removed from production (quality pass 1, finding 2); landed 2026-11-18
 - `F112-e10a-docs-site` (🟢 PROVEN): E10a Docs site; landed 2026-11-18
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
@@ -105,5 +108,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟢 PROVEN): E7-T6 Identity A (TOTP, backup codes, break-glass); landed 2026-11-15
 - `F103-e8a-logs` (🟢 PROVEN): E8a Logs; landed 2026-11-15
 - `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
-- `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
-- 2026-11: 81 landed. spec/features/done/2026-11/
+- 2026-11: 82 landed. spec/features/done/2026-11/

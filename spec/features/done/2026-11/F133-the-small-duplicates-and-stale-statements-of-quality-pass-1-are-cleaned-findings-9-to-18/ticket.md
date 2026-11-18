@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-15
+landed: 2026-11-18
 ---
 
 # F133 · the small duplicates and stale statements of quality pass 1 are cleaned (findings 9 to 18)
