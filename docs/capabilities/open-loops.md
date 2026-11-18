@@ -56,7 +56,7 @@ Nothing the user waits for should slip. The assistant reads the user's own Sent 
 | page     | `/delegations` as "Open loops"                                                             | `apps/web/src/components/loops/OpenLoops.tsx`                                                        |
 | CLI      | `bun run job:run --name loops.analyze\|loops.match\|loops.chaser`                          | `apps/server/src/scripts/job-run.ts`                                                                 |
 | CLI      | `bun run stats:week` (the M2 lines per kind)                                               | `apps/server/src/scripts/stats-week-args.ts`                                                         |
-| eval     | the extractor bank, runner and gate (`evals/results/gate/extractor-*.json`)                | `apps/server/src/modules/loops/extractor-eval.ts`                                                    |
+| eval     | the extractor bank, runner and gate (`evals/results/gate/extractor-*.json`)                | `apps/server/src/modules/loops/extractor-eval-run.ts`                                                |
 
 ## Data
 
