@@ -116,7 +116,7 @@ export async function approvalViewFor(
   // The card line invites an edit in the mail client only where the system stops a changed copy (a reply, or the flag on).
   if (await isFeatureOn(db, ctx, "draft_copy_check")) view.copyCheck = true;
   // A reply is stopped when the mail is answered, but only `\Answered` on the original shows that while the Sent mail is not read
-  // (the flag `sent_sync` or the switch of the mailbox is off): the card says "I cannot see your sent mail" (stage 12 prints it).
+  // (the flag `sent_sync` or the switch of the mailbox is off): the card says "I cannot see your sent mail".
   if (draft.kind === "reply" && !(await isSentVisible(db, ctx, mailbox.id))) view.sentVisible = false;
   return { view, subject: message.subject, quote: message.parts.quote };
 }

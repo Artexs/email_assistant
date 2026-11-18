@@ -30,7 +30,7 @@ export const EXPIRY_REASONS = [
   "policy_changed",
   "loop_closed",
   "draft_changed",
-  // F115: the reasons that only a reply send has.
+  // The reasons that only a reply send has.
   "answered",
   "sent_by_user",
   "newer_mail",

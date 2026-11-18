@@ -73,7 +73,7 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
   }
 }
 
-// A follow-up that failed (review G13): one fixed `action_failed` notice per owner, no recipient, no text,
+// A follow-up that failed: one fixed `action_failed` notice per owner, no recipient, no text,
 // so the consent gate has nothing to withhold. A send that may have gone out (`outcome_unknown`) says so. The mark is
 // `result_notified_at` (the send's own `notified_at` marks its approval card). There is no "Send again": a new follow-up is drafted
 // from its loop.
