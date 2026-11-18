@@ -414,6 +414,7 @@ describe("loadDeviceSecret", () => {
       const bad = await subscribe(trx, o, o.userId, s);
       const wrongKey = await subscribe(trx, o, o.userId, s);
       const swapped = await subscribe(trx, o, o.userId, s);
+      const garbled = await subscribe(trx, o, o.userId, s);
       const good = await subscribe(trx, o, o.userId, s);
       // A garbage secret, a secret of another key, and a secret that was made for another device (the AAD names the id).
       await sql`update push_subscriptions set secret = ${"not-a-secret"} where id = ${bad?.id ?? ""}::uuid`.execute(
@@ -435,15 +436,22 @@ describe("loadDeviceSecret", () => {
       await sql`update push_subscriptions set secret = ${mine.secret} where id = ${swapped?.id ?? ""}::uuid`.execute(
         trx
       );
-      const pendings = await Promise.all([bad, wrongKey, swapped].map((made) => pushRow(trx, o, made?.id ?? "")));
+      // A secret that opens but holds text that is no JSON: the parser error must not reach the log with that text.
+      const garbledSecret = box.encrypt(`${CANARY_ENDPOINT} is not json`, `push:${garbled?.id ?? ""}`);
+      await sql`update push_subscriptions set secret = ${garbledSecret.ciphertext} where id = ${garbled?.id ?? ""}::uuid`.execute(
+        trx
+      );
+      const pendings = await Promise.all(
+        [bad, wrongKey, swapped, garbled].map((made) => pushRow(trx, o, made?.id ?? ""))
+      );
 
       const logs = captureLogs();
       try {
-        for (const made of [bad, wrongKey, swapped])
+        for (const made of [bad, wrongKey, swapped, garbled])
           expect(await loadDeviceSecret(trx, { orgId: o.orgId }, made?.id ?? "", box)).toBeNull();
         const events = eventLines(logs.lines, "push_secret_unreadable");
         expect(events.map((line) => line.push_subscription_id).sort()).toEqual(
-          [bad?.id, wrongKey?.id, swapped?.id].sort()
+          [bad?.id, wrongKey?.id, swapped?.id, garbled?.id].sort()
         );
         expect(logProblems(logs.lines, [CANARY_ENDPOINT, "not-a-secret", "p256dh-", "fcm.googleapis.com"])).toEqual([]);
       } finally {
