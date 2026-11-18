@@ -4,6 +4,7 @@ import { sql, type Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
+import { senderAddressesOfProfiles } from "../contacts";
 
 import { writeEncryptedFile } from "./encrypted-file";
 import { EXPORT_MAP, type ExportTable } from "./export-map";
@@ -45,7 +46,7 @@ function whereOf(table: string, spec: ExportedTable, orgId: string) {
 // JSON) and `jsonb` as a value, so `JSON.stringify` is the whole conversion.
 async function* exportChunks(
   trx: Transaction<DB>,
-  input: { orgId: string; now: Date },
+  input: { orgId: string; now: Date; credentialsKey: string },
   counts: Record<string, number>,
   onTable?: (table: string) => void
 ): AsyncGenerator<string> {
@@ -62,13 +63,23 @@ async function* exportChunks(
       select ${select} from ${sql.table(table)} where ${whereOf(table, spec, input.orgId)} order by ${orderBy}`.execute(
       trx
     );
+    // A profile row holds the keyed hash of its address. The export gives the address back where the organization still holds
+    // it (a mail, a sender rule or a delegate): the owner's own copy of data about others. No holder: `address` is null.
+    const addresses =
+      table === "sender_profiles"
+        ? await senderAddressesOfProfiles(trx, { orgId: input.orgId }, input.credentialsKey)
+        : null;
     let count = 0;
     for (;;) {
       const { rows } = await sql<Record<string, unknown>>`fetch ${sql.lit(BATCH_ROWS)} from ${sql.id(CURSOR)}`.execute(
         trx
       );
       if (rows.length === 0) break;
-      yield `${count > 0 ? "," : ""}${rows.map((row) => JSON.stringify(row)).join(",")}`;
+      const out =
+        addresses === null
+          ? rows
+          : rows.map((row) => ({ ...row, address: addresses.get(String(row.key_hash)) ?? null }));
+      yield `${count > 0 ? "," : ""}${out.map((row) => JSON.stringify(row)).join(",")}`;
       count += rows.length;
     }
     await sql`close ${sql.id(CURSOR)}`.execute(trx);
@@ -86,7 +97,15 @@ async function* exportChunks(
 // `onTable` runs after each table; a test uses it to fail the export half way.
 export async function exportOrganization(
   db: Db,
-  input: { orgId: string; recipient: string; out: string; now: Date; onTable?: (table: string) => void }
+  input: {
+    orgId: string;
+    recipient: string;
+    out: string;
+    now: Date;
+    // `CREDENTIALS_KEY`: the key of the profile hash, to find the address of each profile row.
+    credentialsKey: string;
+    onTable?: (table: string) => void;
+  }
 ): Promise<OrgExportResult> {
   const counts: Record<string, number> = {};
   const result = await db

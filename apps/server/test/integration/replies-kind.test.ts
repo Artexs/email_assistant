@@ -31,7 +31,7 @@ import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertDraftAndSend, insertTriaged, pauseOtherMailboxes } from "./fixtures";
-import { testDb, withRollback } from "./helpers";
+import { testDb, withRollback, TEST_CREDENTIALS_KEY } from "./helpers";
 import { putDraftCopy } from "./reply-fixtures";
 
 // The draft kind `reply` through the actions module. The payloads are built by hand: nothing makes a reply yet.
@@ -648,7 +648,7 @@ describe("the data request finds a reply by its Cc (reply drafts)", () => {
         cc: [person],
         createdAt: CREATED,
       });
-      const match = await matchSubject(trx, s.ctx.orgId, person);
+      const match = await matchSubject(trx, s.ctx.orgId, person, TEST_CREDENTIALS_KEY);
       expect([...(match.mentions["actions.payload"] ?? [])].sort()).toEqual([p.draftId, p.sendId].sort());
       expect(match.openActions).toContain(p.sendId);
     });
