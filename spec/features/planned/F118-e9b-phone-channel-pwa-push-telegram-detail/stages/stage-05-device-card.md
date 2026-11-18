@@ -21,7 +21,7 @@ Carry-over reads: `plan.md` D9, D16; `interfaces.md` (routes of stage 03); `apps
 
 ## Step 2 — Re-bind on load
 
-- **Goal:** D16. On each panel load in `AppShell`, when `web_push` is on, `Notification.permission === "granted"` and `pushManager.getSubscription()` returns one, `PUT` it once per page load. A failure is silent (console only, no endpoint).
+- **Goal:** D16. On each panel load in `AppShell`, when `web_push` is on, `Notification.permission === "granted"` and `pushManager.getSubscription()` returns one, `PUT` it with `rebindOnly: true` once per page load. A 404 or other failure is silent (console only, no endpoint).
 - **Test (unit):** the re-bind function with fakes: granted plus subscription → one PUT; `default` permission → no PUT; no subscription → no PUT.
 - **Check:** the touched tests, `bun run web:build`, then the Proof with the e2e step as in stage 04.
 - **Done when:** the Proof with the e2e step prints `PROOF_OK`.

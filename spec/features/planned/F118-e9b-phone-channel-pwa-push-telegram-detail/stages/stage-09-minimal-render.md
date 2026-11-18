@@ -1,6 +1,6 @@
 # F118 stage 09 — Minimal Telegram render `[risky]`
 
-Part of [`../plan.md`](../plan.md). Needs 08. No migration; nothing selects `minimal` yet (stage 10 does).
+Part of [`../plan.md`](../plan.md). Needs 08b. No migration; nothing selects `minimal` yet (stage 10 does).
 
 Carry-over reads: `plan.md` D12, D17; `interfaces.md` (`noticeFactsOf`, `renderNotice` minimal); `docs/code-patterns.md` § Notices are facts; `packages/core/src/notices/{kinds,renderers,render,views}.ts`, `registry.test.ts`; `packages/core/src/texts/`; `docs/capabilities/digest-and-notices.md` rules 4, 5, 13, 14.
 
@@ -26,11 +26,11 @@ Carry-over reads: `plan.md` D12, D17; `interfaces.md` (`noticeFactsOf`, `renderN
 ## Step 2 — Direct answers in minimal
 
 - **Goal:** the bot's direct answers follow the detail too. The function that decides the detail of a chat (`telegramDetailOf`) returns `full` in this stage (stage 10 makes it real), so this step adds the branches and their tests with a fake detail.
-- **Decisions:** `/digest` in `minimal` → the minimal digest text and no keyboard. `/review` in `minimal` → "The review is in the panel: <link to /review>" (en, pl), no items. `/status` stays (it shows the own mailboxes, mode and counts; it holds no mail text). A tap on an old `full` card keeps working (the card is already in the chat).
+- **Decisions:** `/digest` in `minimal` → the minimal digest text and no keyboard. `/review` in `minimal` → "The review is in the panel: <link to /review>" (en, pl), no items. `/status` in `minimal` names the mailboxes "Mailbox 1", "Mailbox 2" (in the order it lists them today) instead of their addresses, also in the approvals line; the rest stays (D12, Q4). A tap on an old `full` card answers as today: its text is already in that chat (D12).
 - **Test (integration, fake detail `minimal`):**
   1. `/digest` → no subject or sender of the seeded mail, no keyboard.
   2. `/review` → the panel line, no AI summary.
-  3. `/status` → unchanged text.
+  3. `/status` with two mailboxes → "Mailbox 1" and "Mailbox 2", no `@`; with the fake detail `full` → today's text byte for byte.
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the column, the send-time choice (10), the setting (11, 12).

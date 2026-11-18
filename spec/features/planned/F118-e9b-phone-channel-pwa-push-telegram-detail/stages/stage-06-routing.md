@@ -8,7 +8,7 @@ Carry-over reads: `plan.md` D6, D7; `interfaces.md` (`noticeGroups`, `effectiveR
 
 - **Goal:** one pure rule that says which channels a notice of a kind goes to.
 - **Files:** `packages/core/src/notices/routes.ts` (+ test).
-- **Interfaces:** `noticeGroups`, `pushKinds`, `noticeGroupOf`, `effectiveRoute({ stored, hasChat, hasDevice, group })`, `noticeRoutesSchema` (strict `{ urgent?, approvals?, updates? }` of `telegram | push | both`).
+- **Interfaces:** `effectiveRoute({ stored, hasChat, hasDevice, group })`, `noticeRoutesSchema` (strict `{ urgent?, approvals?, updates? }` of `telegram | push | both`). `noticeGroups`, `pushKinds` and `noticeGroupOf` exist from stage 04.
 - **Decisions:** D6, D7. A kind with no group → `{ telegram: hasChat, push: false }`.
 - **Test (unit), `effectiveRoute`:**
   1. group `urgent`, stored none, chat yes, device yes → telegram and push.
@@ -18,7 +18,7 @@ Carry-over reads: `plan.md` D6, D7; `interfaces.md` (`noticeGroups`, `effectiveR
   5. `approvals`, stored `telegram`, chat no, device yes → push only (fallback).
   6. `updates`, stored `push`, chat yes, device yes → push only.
   7. chat no, device no → nothing.
-  8. Every kind of `noticeKinds` is in at most one group; every group kind is in `pushKinds`; `digest`, `approval_edit`, `reply_prompt`, `loop_consent` are in no group.
+  8. Every kind of `noticeKinds` is in at most one group; every group kind is in `pushKinds`; `digest`, `approval_edit`, `reply_prompt`, `reply_result`, `loop_consent` are in no group (`reply_result` answers a Telegram request: Telegram only).
 
 ## Step 2 — Route setting API
 

@@ -7,7 +7,7 @@ Carry-over reads: `plan.md` (all decisions); `docs/decisions/0032-phone-channel-
 ## Step 1 — Papers
 
 - **Goal:** the papers name the push services and the Telegram detail levels (E9 notes §4, E7 row).
-- **Decisions:** a subprocessor row `web-push`: "Google (FCM), Mozilla, Apple, Microsoft push services: receive an encrypted notice with a kind, a count and an id; they cannot read it." The privacy text: Telegram gets mail content only in `full`, which the user turns on; `minimal` sends counts and links. A new `TERMS_HISTORY` entry with today's date and the new digest; `tg_consent_text` names both levels. Texts en and pl.
+- **Decisions:** a subprocessor row `web-push`: "Google (FCM), Mozilla, Apple, Microsoft push services: receive an encrypted notice with a kind, a count and an id; they cannot read it." The privacy text: Telegram gets mail content only in `full`, which the user turns on; `minimal` sends counts and links. A new `TERMS_HISTORY` entry with today's date and the new digest. Do not change `tg_consent_text` or `TELEGRAM_CONSENT_VERSION` (D13): the level texts are the panel texts of stage 12, so a linked user keeps their loop consent. Texts en and pl.
 - **Test:** `legal-version.test.ts` passes with the new digest; the subprocessor list test includes `web-push`.
 
 ## Step 2 — Docs and ADR

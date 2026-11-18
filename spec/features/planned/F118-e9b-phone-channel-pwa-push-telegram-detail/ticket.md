@@ -31,9 +31,9 @@ A user can install the web panel on the phone and get Web Push notices that hold
 
 ## Slices
 
-- 13 worker stages in order (`plan.md` § Stages); no stage runs in parallel with another of this ticket.
+- 14 worker stages (01–13 and 08b) in order (`plan.md` § Stages); none runs in parallel with another.
 - Stages 02 and 10 add a migration: no other migration in the repo at the same time.
-- Owner checkpoint A after stage 05 (a real push on the owner's phone), B after stage 13 (pilot switch-on). How to run: `plan.md` § How to run.
+- Owner checkpoint A after stage 05 (a real push on the owner's phone), B after stage 13 (pilot switch-on). No deploy between 07 and 08. How to run: `plan.md` § How to run.
 
 ## Sequenced
 
