@@ -6,27 +6,42 @@ opened: 2026-11-13
 
 ## Outcome
 
-E7-T5 Production on the VPS: the Stage 2 ticket in row 14 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 4 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E07-platform-and-trust.md` and its discovery notes `docs/product/stage-2/epics/E07-discovery-notes.md`; the planning job turns them into stages.
+The home VPS runs the application as a production system: the long-running server holds only the keys it needs, migrations run in a one-off service that alone gets the migrator key, the backups reach Backblaze and a failed backup reaches the operator, and ADR 0019 records that production stays on the home VPS behind Tailscale. A second test organization goes through invite, plan changes and delete on the VPS while the pilot keeps working. Source: Stage 2 row 14 (`docs/product/stage-2/05-execution-plan.md` §2.1), epic `docs/product/stage-2/epics/E07-platform-and-trust.md` (S6f), old segment file `tasks/planned/s6f-hosted-production.md`. It absorbs F021 (env split).
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- Env split (S6 D25): host file `deploy/db.env` for the three database passwords, a `migrate` one-off service, the server and `cli` without admin keys, a split tool and a key-name check.
+- VPS rollout in two releases (expand, then contract).
+- Backup checks on the VPS and in the bucket (read only); no `.env.bak-*` on the VPS (D30).
+- ADR 0019, `docs/architecture.md` §10, `deploy/README.md`, capability pages.
+- Final checkpoint: second test organization on the VPS; close S6.
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- The CI timing tests (fixed by F093; stage 05 only checks CI).
+- The failed-backup alert and the backup status file (built by F114 stages 03–04); the restore drill (F114 stage 09).
+- The sim stack env (`deploy/compose.sim.yaml`) and the local dev env.
+- A hosted server, a public domain, an image registry (ADR 0019 says why).
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- On the VPS, `deploy/check-server-env.sh` prints `server env ok`: the running server has no database password and no migrator URL.
+- A release runs its migrations through the `migrate` one-off service; the server and `cli` configs hold no migrator URL.
+- The last nightly backup on the VPS printed `backup ok`, its status file says `ok`, and the object is listed in the bucket (names and sizes only).
+- No `.env.bak-*` file is left on the VPS.
+- ADR 0019 "Production stays on the home VPS behind Tailscale" is accepted.
+- A second test organization goes through invite, set password, plan `suspended` and `active`, and delete on the VPS; the pilot still syncs. Full list: `plan.md` § Done when.
+
+## Slices
+
+Five stages, one job each, in order. 01–03 are worker jobs; 04 and 05 are coordinator runs on the VPS. No migration. 01 and 03 change `deploy/compose.yaml`: no other job that changes Compose files runs next to them. Checkpoints and the release order: `plan.md` § How to run.
 
 ## Sequenced
 
-- Plan after: none (planning may run ahead of the build).
-- Build after: E7-T1 … T4; the E8b drill proves its restore (landed, in `spec/features/done/`).
-- Gate: —
+- Plan after: F114 (E8b alerts and releases: the release, rollback and restore scripts and the backup status file this plan changes; it has `stages/`).
+- Build after: E7-T1 Polish UI (F098), E7-T2 platform controls (F099), E7-T3 account data (F106), all in `done/`, and E7-T4 papers and cost (F107, active) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 14). Stage 05 also needs F114 in `done/` (its stage 09 drill proves the restore).
+- Gate: — (VPS deploys are pre-approved, owner 2026-11-13). Stage 05 waits for the F114 drill, which waits for the owner's `age` key (`notes/owner-later.md` item 3).
 
 ## Notes
 
-Source row: §2.1 # 14. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+Plan: [plan.md](plan.md). Defaults for the owner: [questions.md](questions.md). Interfaces: [interfaces.md](interfaces.md). Scouts: [scouts.md](scouts.md). The old env-split ticket (F021) is dropped and absorbed here.
