@@ -6,6 +6,7 @@ import type { Transaction } from "kysely";
 import { contactWaitFor } from "../../src/modules/contacts";
 import { analyzeSent, loopItemsOf, writeExtraction } from "../../src/modules/loops";
 import type { SentCandidate } from "../../src/modules/loops/analysis-repo";
+import { loopsOf as loopsOfAnswer } from "../../src/modules/loops/analyze-write";
 import type { Extraction } from "../../src/modules/loops/extractor";
 import { toLoopRow } from "../../src/modules/loops/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
@@ -334,6 +335,51 @@ describe("the read of the contact wait", () => {
       await write({ ...ASK, expects_reply: false, ask: null }, none);
       expect(none).toEqual([]);
     });
+  });
+});
+
+describe("loopsOf with a contact wait", () => {
+  const env = {
+    mailboxId: "00000000-0000-4000-8000-000000000001",
+    ownAddresses: [],
+    timeZone: "Europe/Warsaw",
+    waitDays: 3,
+    delegates: [],
+    now: RUN_AT,
+  };
+  const row = {
+    id: "00000000-0000-4000-8000-000000000002",
+    threadKey: "<t@x.test>",
+    messageId: "<m@x.test>",
+    referencesIds: [],
+    fromAddress: null,
+    to: [ANNA],
+    cc: [],
+    subject: "Offer",
+    bodyText: "text",
+    content: "stored",
+    sentAt: WED,
+    listId: null,
+    autoSubmitted: null,
+    hasCalendar: false,
+    actionId: null,
+    attempts: 0,
+  } satisfies SentCandidate;
+  const ask = { expectsReply: true, ask: "x", due: null, promise: null, promiseDue: null, language: "en" } as const;
+  const wait = { waitDays: 2, usualReplyDays: 1 };
+
+  test("a stated date wins over a contact wait that the caller passes: its source, its date, no usual reply", () => {
+    const due = new Date("2026-11-27T16:00:00Z");
+    const [loop] = loopsOfAnswer(row, { ...ask, due }, env, wait).loops;
+    expect(loop).toMatchObject({ dueSource: "stated", usualReplyDays: null });
+    expect(loop?.dueAt.getTime()).toBe(due.getTime());
+  });
+
+  test("a promise keeps its stated date and gets no usual reply", () => {
+    const promiseDue = new Date("2026-11-27T16:00:00Z");
+    const { loops } = loopsOfAnswer(row, { ...ask, expectsReply: false, promise: "p", promiseDue }, env, wait);
+    expect(loops).toHaveLength(1);
+    expect(loops[0]).toMatchObject({ kind: "promised", dueSource: "stated", usualReplyDays: null });
   });
 });
 
