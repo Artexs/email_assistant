@@ -5,11 +5,11 @@ import { ConfigError, emptyAsUndefined } from "./config-shared";
 import { type LlmProviderId, llmProviderIds, type LlmRoleSettings, type LlmRoleTable } from "./llm";
 import { DEFAULT_OPENAI_BASE_URL, type LlmEndpoint, parseLlmBaseUrl } from "./llm/endpoint";
 
-// Step 0.2 (AI Studio, free tier, 2026-11-04): classifier RPM 15 × 0.8 = 12. The RPD is not known, so the cap stays 300.
+// Measured on AI Studio (free tier, 2026-11-04): classifier RPM 15 × 0.8 = 12. The RPD is not known, so the cap stays 300.
 const defaultGeminiRpm = 12;
 const defaultLlmDailyCap = 300;
 
-// Accepted values of `reasoning.effort` (stage 0 note, case F).
+// Accepted values of `reasoning.effort`.
 export const openAiReasoningEfforts = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
 // The roles with their own env keys. The classifier keeps the provider keys (LLM_PROVIDER, *_MODEL_CLASSIFIER).
@@ -61,7 +61,7 @@ export const llmShape = {
   OPENAI_ENDPOINT_KIND: z.preprocess(emptyAsUndefined, z.literal("own").optional()),
   // LLM call attempts per mailbox per America/Los_Angeles day.
   LLM_DAILY_CAP: z.coerce.number().int().positive().default(defaultLlmDailyCap),
-  // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended (S6a).
+  // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended.
   TRIAGE_LLM_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
   ...roleKeyShape,
 };
@@ -177,7 +177,7 @@ export function llmRoleTable(
   overrides: Partial<Record<LlmRole, LlmRoleOverride>> = {}
 ): LlmRoleTable {
   const providerRow = (provider: LlmProviderId) => providerBlocks[provider](config);
-  // D4: an own server gets no `reasoning` field, whatever an env key or an override says.
+  // An own server gets no `reasoning` field, whatever an env key or an override says.
   const noEffort = (provider: LlmProviderId) => providerRow(provider).endpoint()?.endpoint === "own";
   const finish = (row: LlmRoleSettings): LlmRoleSettings =>
     noEffort(row.provider) ? { ...row, reasoningEffort: null } : row;
