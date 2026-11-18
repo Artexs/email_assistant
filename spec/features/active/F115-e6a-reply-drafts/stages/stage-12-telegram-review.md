@@ -46,3 +46,12 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 ## Carry-over from the stage 07 review
 
 - Stage 07 added a SKIP of `reply` sends in `listSendsToNotify` (review-7.md N1): replace it by the proper reply notice and the consent check (D16, D15), and add the test that the generic detector never queues a reply (TG2).
+
+## Carry-over from stage 09
+
+- The approval view of a reply has `sentVisible: false` while the Sent mail is not read (org flag `sent_sync` or the switch of the mailbox off; set by `approvalViewFor`). The card must say "I cannot see your sent mail" then: only `\Answered` on the original shows an answer.
+- The result texts of `answered`, `sent_by_user`, `newer_mail`, `original_moved`, `suspicious`, `draft_changed`, `draft_missing` and the `has_gaps` cause exist (en, pl). The Telegram tap text `expired` still says 48 h for a reply that lives 7 days: that is yours.
+- Notes: `notes/2026-11-18-f115-s09-answered-sweep.md`.
+
+## Carry-over from the stage 09 re-review (2026-11-18)
+First commit of this stage: the gaps G1, G2 and the fix N-a, and the doc limits N-b, N-c, N-d from `review-9.md` section "Re-review of the repair". Each gets a test and a saved mutation log.

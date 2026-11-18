@@ -15,6 +15,7 @@ import {
   mailTrustedAuthservIds,
   operatorChatId,
   operatorUserIds,
+  pushConfigOf,
   sendLimits,
   sendTestAddresses,
   sloThresholds,
@@ -24,6 +25,7 @@ import {
   webTrustedOrigins,
   webTrustedProxies,
 } from "./config";
+import { generateVapidKeyPair } from "./vapid-keys";
 
 const fullEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -851,6 +853,74 @@ describe("SLO thresholds (F114)", () => {
     ];
     for (const [key, value] of bad) {
       expect(configError({ ...fullEnv, [key]: value }).keys).toContain(key);
+    }
+  });
+});
+
+describe("VAPID keys (Web Push, F118)", () => {
+  const pair = generateVapidKeyPair();
+  const vapidEnv = {
+    ...fullEnv,
+    VAPID_PUBLIC_KEY: pair.publicKey,
+    VAPID_PRIVATE_KEY: pair.privateKey,
+    VAPID_SUBJECT: "mailto:ops@example.org",
+  };
+
+  test("1. one or two of the three keys set: ConfigError names the missing key, never a value", () => {
+    const names = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"] as const;
+    for (const missing of names) {
+      const partial = Object.fromEntries(Object.entries(vapidEnv).filter(([key]) => key !== missing));
+      const error = configError(partial);
+      expect({ missing, keys: error.keys }).toEqual({ missing, keys: [missing] });
+      expect(error.message).not.toContain(pair.privateKey);
+      expect(error.message).not.toContain(pair.publicKey);
+    }
+    const onlyOne = configError({ ...fullEnv, VAPID_PRIVATE_KEY: pair.privateKey });
+    expect(onlyOne.keys.sort()).toEqual(["VAPID_PUBLIC_KEY", "VAPID_SUBJECT"]);
+    expect(onlyOne.message).not.toContain(pair.privateKey);
+    expect(configError({ ...vapidEnv, VAPID_SUBJECT: "" }).keys).toEqual(["VAPID_SUBJECT"]);
+  });
+
+  test("2. none set: pushConfigOf is null (also with empty values); all set: the keys", () => {
+    expect(pushConfigOf(loadConfig(fullEnv))).toBeNull();
+    expect(
+      pushConfigOf(loadConfig({ ...fullEnv, VAPID_PUBLIC_KEY: "", VAPID_PRIVATE_KEY: "", VAPID_SUBJECT: "" }))
+    ).toBeNull();
+    expect(pushConfigOf(loadConfig(vapidEnv))).toEqual({
+      publicKey: pair.publicKey,
+      privateKey: pair.privateKey,
+      subject: "mailto:ops@example.org",
+    });
+    expect(pushConfigOf(loadConfig({ ...vapidEnv, VAPID_SUBJECT: "https://example.org/contact" }))?.subject).toBe(
+      "https://example.org/contact"
+    );
+  });
+
+  test("3. a public key that does not match the private key: ConfigError vapid_key_mismatch, no key text", () => {
+    const other = generateVapidKeyPair();
+    const error = configError({ ...vapidEnv, VAPID_PUBLIC_KEY: other.publicKey });
+    expect(error.keys).toEqual(["VAPID_PUBLIC_KEY"]);
+    expect(error.codes).toEqual(["vapid_key_mismatch"]);
+    expect(error.message).toContain("vapid_key_mismatch");
+    for (const secret of [pair.privateKey, pair.publicKey, other.publicKey, other.privateKey])
+      expect(error.message).not.toContain(secret);
+  });
+
+  test("4. a key of the wrong shape and a subject that is no mailto: or https: URI are refused, with no value in the message", () => {
+    const secretLike = "s3cretvaluethatisnotakey";
+    for (const [key, value] of [
+      ["VAPID_PRIVATE_KEY", secretLike],
+      ["VAPID_PRIVATE_KEY", pair.privateKey.slice(0, 40)],
+      ["VAPID_PRIVATE_KEY", `${pair.privateKey}=`],
+      ["VAPID_PUBLIC_KEY", secretLike],
+      ["VAPID_PUBLIC_KEY", pair.publicKey.slice(0, 80)],
+      ["VAPID_SUBJECT", "ops@example.org"],
+      ["VAPID_SUBJECT", "http://example.org"],
+      ["VAPID_SUBJECT", "mailto:not an address"],
+    ] as const) {
+      const error = configError({ ...vapidEnv, [key]: value });
+      expect({ key, value, keys: error.keys.includes(key) }).toEqual({ key, value, keys: true });
+      expect(error.message).not.toContain(value);
     }
   });
 });

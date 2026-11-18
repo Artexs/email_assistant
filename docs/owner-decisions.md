@@ -633,3 +633,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a real phone cannot be simulated.
 - Undo: none needed.
 - Source: same plan, Q1, O1 to O3.
+
+### 2026-11-18 · TERMS_VERSION bumped to 2026-11-18 for the new data category sender-context (F120) · privacy · new
+- Choice: F120 stage 02 adds the data category `sender-context` (keyed sender hashes, dates and counts, 365 days). This changes the legal digest, so the version guard needs a new `TERMS_HISTORY` entry and `TERMS_VERSION` becomes `2026-11-18`. Every user must accept the terms again once. The privacy page sentence for the new data comes with the next legal text batch (F120 stage 12, F115 stage 17).
+- Why: master CI would stay red otherwise, and only you and test organizations exist now.
+- Undo: remove the entry together with the tables (F120 rollback).
+- Source: F120 stage 02 worker question and review.

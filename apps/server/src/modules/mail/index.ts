@@ -28,7 +28,15 @@ export { openMailboxProvider, type GraphSenderOptions, type OpenDeps } from "./o
 export { countDecryptableCredentials, type CredentialCounts } from "./credentials-check";
 export { checkMailboxHosts, markHostBlocked, type HostCheck } from "./host-status";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
-export { FLAGS_CHUNK, FLAGS_REFRESH_EVERY_MS, FLAGS_RUN_LIMIT, FLAGS_WINDOW_MS, refreshFlags } from "./flags";
+export {
+  FLAGS_CHUNK,
+  FLAGS_REFRESH_EVERY_MS,
+  FLAGS_RUN_LIMIT,
+  FLAGS_WINDOW_MS,
+  refreshFlags,
+  refreshFlagsOfEmail,
+  type FlagsOfEmailResult,
+} from "./flags";
 export { MOVE_CHECK_CHUNK, findUserMoves, type UserMovesDeps, type UserMovesResult } from "./moves";
 export {
   applyOAuthGrant,
@@ -161,6 +169,7 @@ export {
   mailboxHasUidplus,
   mailboxProfileOf,
   replyFactsOf,
+  newerMailInThread,
   mailKindFilter,
   deleteSentEmails,
   expireSentTexts,
@@ -228,7 +237,8 @@ export {
   type SentSwitchInput,
   type SentSwitchResult,
 } from "./sent-switch";
-export { getSentSyncView } from "./sent-view";
+export { getSentSyncView, isSentVisible } from "./sent-view";
+export { markAutomaticAnswers } from "./sent-automatic";
 export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
 export {
   isSyntheticMessageId,
@@ -242,16 +252,12 @@ export {
 } from "./seed";
 export {
   backfillInbox,
-  CursorMovedError,
   HISTORY_SKIP_REASON,
-  syncMailbox,
   type BackfillPurpose,
   type BackfillRefusal,
   type HistoryBackfillOutcome,
-  type MailboxSyncResult,
-  type SyncDeps,
-  type SyncResult,
-} from "./sync";
+} from "./sync-backfill";
+export { CursorMovedError, syncMailbox, type MailboxSyncResult, type SyncDeps, type SyncResult } from "./sync";
 export {
   auditMailbox,
   backfillMailbox,

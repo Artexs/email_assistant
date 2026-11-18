@@ -74,6 +74,15 @@ export {
   NEWSLETTER_WINDOW_DAYS,
   type NewsletterSender,
 } from "./newsletter-senders";
+export {
+  renderSuspiciousReport,
+  suspiciousInputOfCase,
+  suspiciousRows,
+  TARGETS as SUSPICIOUS_TARGETS,
+  typeOfName,
+  type SuspiciousReportInput,
+  type SuspiciousRow,
+} from "./eval-suspicious";
 export { suspiciousReasonsOf, suspiciousSendersOf, suspiciousThreadKeysOf, suspicionOf } from "./suspicious-repo";
 export { suspiciousReasonsToShow } from "./suspicious-show";
 export { BUDGET_STOP_REASON, firstEstimateUsd, RETRY_WAITS_MS, runPool } from "./eval-pool";

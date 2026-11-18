@@ -60,7 +60,8 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 | CLI      | `bun run mailbox:audit`                                                                                                | `apps/server/src/scripts/mailbox-audit.ts`       |
 | CLI      | `bun run mailbox:signals`                                                                                              | `apps/server/src/scripts/mailbox-signals.ts`     |
 | CLI      | `bun run mailbox:settings` (`sync-folder`)                                                                             | `apps/server/src/scripts/mailbox-settings.ts`    |
-| function | `syncMailbox`, `backfillInbox`                                                                                         | `apps/server/src/modules/mail/sync.ts`           |
+| function | `syncMailbox`                                                                                                          | `apps/server/src/modules/mail/sync.ts`           |
+| function | `backfillInbox`                                                                                                        | `apps/server/src/modules/mail/sync-backfill.ts`  |
 | function | `backfillMailbox` (also the purpose `history`), `refreshFlagsOfMailbox` (the history job; [trust.md](trust.md) rule 7) | `apps/server/src/modules/mail/tools.ts`          |
 | function | `refreshFlags`                                                                                                         | `apps/server/src/modules/mail/flags.ts`          |
 | function | `findUserMoves`                                                                                                        | `apps/server/src/modules/mail/moves.ts`          |

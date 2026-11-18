@@ -98,8 +98,15 @@ describe("replyFactsOf", () => {
   test("2: a user Sent row whose parent matches answers the mail; a system Sent row does not", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const byUser = await insertTestEmail(trx, org.ctx, org.mailboxId, { message_id_header: "<u@a.test>" });
-      const bySystem = await insertTestEmail(trx, org.ctx, org.mailboxId, { message_id_header: "<s@a.test>" });
+      // The sender of the mail is the recipient of the Sent row (`to@x.test`): the reply went to the sender.
+      const byUser = await insertTestEmail(trx, org.ctx, org.mailboxId, {
+        message_id_header: "<u@a.test>",
+        from_address: "to@x.test",
+      });
+      const bySystem = await insertTestEmail(trx, org.ctx, org.mailboxId, {
+        message_id_header: "<s@a.test>",
+        from_address: "to@x.test",
+      });
       await sentRow(trx, org, "<u@a.test>", "user");
       await sentRow(trx, org, "<s@a.test>", "system");
       const facts = await replyFactsOf(trx, org.ctx, [byUser, bySystem]);

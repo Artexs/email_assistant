@@ -18,6 +18,16 @@ export const OUTSIDE_SERVICE_KEYS: Readonly<Record<string, string | { exempt: st
   MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "microsoft-oauth",
   MAIL_OAUTH_GOOGLE_CLIENT_ID: "google-oauth",
   MAIL_OAUTH_GOOGLE_CLIENT_SECRET: "google-oauth",
+  VAPID_PUBLIC_KEY: {
+    exempt: "the public half of the own Web Push identity of this install; it names no outside service (F118)",
+  },
+  VAPID_PRIVATE_KEY: {
+    exempt: "the secret half of the own Web Push identity of this install; it names no outside service (F118)",
+  },
+  VAPID_SUBJECT: {
+    exempt:
+      "the contact URI of the operator in the Web Push JWT; the push services themselves get their sub-processor row with the papers of F118 stage 13",
+  },
   TELEGRAM_API_ROOT: {
     exempt: "dev only: a fake Bot API on a loopback address (the config schema refuses any other host)",
   },

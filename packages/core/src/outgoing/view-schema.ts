@@ -27,4 +27,5 @@ export const approvalViewSchema = z.strictObject({
   version: z.number().int().min(1).optional(),
   panelUrl: panelUrlSchema.optional(),
   copyCheck: z.literal(true).optional(),
+  sentVisible: z.literal(false).optional(),
 });

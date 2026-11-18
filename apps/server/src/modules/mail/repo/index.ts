@@ -123,6 +123,7 @@ export {
 export {
   countInboxMailWithoutFreshFlags,
   getEmailFlags,
+  getFlagTarget,
   listFlagTargets,
   setAnsweredCheck,
   touchEmailFlags,
@@ -163,3 +164,4 @@ export {
 } from "./sent-readers";
 export { mailboxProfileOf, upsertMailboxProfile, type MailboxProfile, type MailboxProfileFields } from "./profiles";
 export { replyFactsOf, type MailReplyFacts } from "./reply-facts";
+export { newerMailInThread } from "./thread";

@@ -31,7 +31,7 @@ import {
   runSloTick,
   type SloCheckEntry,
 } from "./modules/operator";
-import { createReplyJobs, createStylePreview, type StylePreview } from "./modules/replies";
+import { createReplyJobs, createReplySweep, createStylePreview, type StylePreview } from "./modules/replies";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
 import { createHistoryJob, createTripwireJob, regateAll, type RegateDeps } from "./modules/trust";
@@ -216,6 +216,7 @@ scheduler.add("ops.slo", "30 */5 * * * *", () => {
 let triageRun: Promise<void> = Promise.resolve();
 let loopsAnalyzeRun: Promise<void> = Promise.resolve();
 let repliesDrafterRun: Promise<void> = Promise.resolve();
+let repliesSweepRun: Promise<void> = Promise.resolve();
 let historyRun: Promise<void> = Promise.resolve();
 let tripwireRun: Promise<void> = Promise.resolve();
 let loopsMatchRun: Promise<void> = Promise.resolve();
@@ -347,6 +348,20 @@ scheduler.add("loops.match", "50 */2 * * * *", () => {
   return loopsMatchRun;
 });
 log.info("job_scheduled", { job: "loops.match" });
+// The sweep of the reply drafts: it closes an open reply whose mail was answered, left its folder or got a newer mail in its thread. It
+// reads the database only and calls no model and no mailbox, so it runs with the scope off too.
+const replySweep = createReplySweep({
+  db,
+  hooks,
+  approvalHooks: cardEditHooks({ sendScope: scopeOfSends }),
+  uidplus,
+  now: () => new Date(),
+});
+scheduler.add("replies.sweep", "40 */5 * * * *", () => {
+  repliesSweepRun = replySweep.run().then(() => undefined);
+  return repliesSweepRun;
+});
+log.info("job_scheduled", { job: "replies.sweep" });
 
 // The runs of the committer, the returned job and the S4 jobs that are going now. Shutdown waits for them.
 let committerRun: Promise<void> = Promise.resolve();
@@ -504,6 +519,7 @@ async function shutdown(): Promise<void> {
       triageRun,
       loopsAnalyzeRun,
       repliesDrafterRun,
+      repliesSweepRun,
       historyRun,
       regateRun,
       tripwireRun,

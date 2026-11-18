@@ -70,7 +70,7 @@ An owner can delete the whole organization from the Account card (Settings), wit
 | function | `DSR_ADDRESS_MAP`, `NOT_PERSONAL`, `normalizeDsrAddress`, `addressRegex` | `apps/server/src/modules/privacy/address-map.ts`          |
 | function | `eraseManyMailOutbox`, `NOTICE_MAIL_CONTENT`                             | `apps/server/src/modules/privacy/outbox.ts`               |
 | function | `dsrAddressHash`, `tombstoneKeyHash`                                     | `apps/server/src/platform/crypto.ts`                      |
-| function | `closeWaitingApprovalSetsSince`                                          | `apps/server/src/modules/channels/repo.ts`                |
+| function | `closeWaitingApprovalSetsSince`                                          | `apps/server/src/modules/channels/repo/cancel.ts`         |
 | function | `orgNameMatches`                                                         | `packages/core/src/web/org-name.ts`                       |
 | function | `securityEvents`, `securityKindOf`                                       | `packages/core/src/security-log.ts`                       |
 | page     | the delete block of the Account card; the notice on the login page       | `apps/web/src/components/settings/DeleteOrganization.tsx` |
