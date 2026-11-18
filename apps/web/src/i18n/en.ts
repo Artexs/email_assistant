@@ -1250,6 +1250,52 @@ export const en = {
   rs_org_note: "Signatures are set per mailbox now.",
   rs_org_old: "This old text of the organization still applies to a mailbox that has no signature of its own.",
   rs_org_link: "Open the card of {address}",
+  // F110 stage 14: the report page ("what I would have done") and the onboarding steps with the flag trust_ladder
+  title_report: "Report",
+  rep_off: "This page is off for your organization.",
+  rep_no_mailbox: "Connect a mailbox first. The check starts after that.",
+  rep_load_error: "Could not load the report.",
+  rep_intro: "What the assistant would have done with your mail from the last 30 days.",
+  rep_read_only: "The check read the last 30 days of your INBOX, read-only. It changed nothing.",
+  rep_starting: "Starting the check…",
+  rep_progress: "Checking your last 30 days… ({checked} of up to {max} mails)",
+  rep_checked: "Mails checked: {checked}.",
+  rep_capped: "The check stopped at its cost limit. The result uses the mails checked so far.",
+  rep_counts: "Mails checked: {total} · Would be moved: {wouldMove}",
+  rep_auto_on: "Automatic moves: on",
+  rep_recommended: "Recommended: turn on",
+  rep_not_recommended: "Not recommended yet",
+  rep_turn_on: "Turn on recommended ({categories})",
+  rep_turned_on: "Turned on: {categories}.",
+  rep_mode_assist: "The mailbox is in assist mode now.",
+  rep_mode_shadow: "The mailbox is in shadow mode now. The assistant still changes nothing.",
+  rep_nothing: "Nothing is recommended yet. The lines above say why.",
+  rep_all_on: "Everything that is recommended is already on.",
+  rep_owner_only: "Only an owner can turn this on.",
+  rep_check_again: "Check again",
+  rep_check_started: "The check started.",
+  rep_check_running: "A check is already running.",
+  rep_review_suggest: "Want to check 10 decisions yourself? It is optional.",
+  rep_review_link: "Check 10 decisions",
+  rep_nr_no_history: "There is no mail from the last 30 days to check. The test results alone decide.",
+  rep_nr_uidvalidity:
+    "Your mailbox changed its folder numbering, so the check could not finish. The test results alone decide.",
+  rep_nr_cost_unknown:
+    "The price of this AI model is unknown, so the check did not run. The test results alone decide.",
+  rep_nr_stopped: "The check stopped after several failed tries. The test results alone decide.",
+  rep_nr_key_changed: "The AI model changed during the check, so it was cancelled. The test results alone decide.",
+  rep_nr_auth_refused:
+    "The mailbox refused the login, so the check could not read your mail. The test results alone decide.",
+  rep_nr_model_failing:
+    "The check stopped because the AI model failed on five mails in a row. The test results alone decide.",
+  ob_channel_title: "Choose how the assistant reaches you",
+  ob_channel_mail: "Reports reach you by mail.",
+  ob_report_title: "See what I would have done",
+  ob_report_wait: "The check starts when a mailbox is connected.",
+  ob_report_open:
+    "The assistant checks your last 30 days of mail, read-only. Then it shows what it would have done, and you can turn on what it recommends.",
+  ob_report_done: "The check is ready.",
+  ob_report_link: "Open the report",
 } as const;
 
 export type TextKey = keyof typeof en;

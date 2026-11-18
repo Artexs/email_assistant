@@ -10,8 +10,9 @@ import type { Hono } from "hono";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "../../src/modules/audit";
 import { countSenderRules, insertSenderRule } from "../../src/modules/config";
 import { insertMailbox } from "../../src/modules/mail/repo";
-import { tenancyRoutes } from "../../src/modules/tenancy";
+import { setMemberReportChannel, tenancyRoutes, upsertOrgFeature } from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
+import { hasEndedCheck } from "../../src/modules/trust";
 import type { ApiEnv } from "../../src/platform/http";
 import { approvalsWaiting, countMailboxes, homePathOf, onboardingDeps } from "../../src/web";
 
@@ -133,6 +134,9 @@ describe("GET /api/me onboarding", () => {
       telegramAvailable: true,
       mode: false,
       rules: 0,
+      trust: false,
+      channel: false,
+      report: false,
       done: false,
     });
     expect(me.telegram).toEqual({ available: true, linked: false, botUsername: "fake_ea_bot" });
@@ -187,6 +191,81 @@ describe("GET /api/me onboarding", () => {
     expect(await hasAuditEvent(db, ctx, [auditEvents.mailboxModeChanged, auditEvents.onboardingModeKept])).toBe(false);
     expect(await countSenderRules(db, ctx)).toBe(0);
     expect(await countSenderRules(db, other)).toBe(1);
+  });
+});
+
+// F110 stage 14: with `trust_ladder` on, the steps are mailbox, channel, report. Counts and flags only.
+describe("GET /api/me onboarding with the flag trust_ladder", () => {
+  async function flagOn(orgId: string): Promise<void> {
+    await upsertOrgFeature(db, { orgId }, { flag: "trust_ladder", enabled: true, setBy: "test", setAt: NOW });
+  }
+  async function addCheck(
+    orgId: string,
+    mailboxId: string,
+    status: "done" | "no_result" | "classifying"
+  ): Promise<void> {
+    const ended = status !== "classifying";
+    await db
+      .insertInto("history_checks")
+      .values({
+        org_id: orgId,
+        mailbox_id: mailboxId,
+        reason: "connect",
+        status,
+        no_result_reason: status === "no_result" ? "no_history" : null,
+        finished_at: ended ? NOW : null,
+      })
+      .execute();
+  }
+
+  test("a mailbox and a link do not close it until a check ended; done or no_result both close it", async () => {
+    const { org, app } = await setup();
+    await flagOn(org.orgId);
+    const mailboxId = await addMailbox(org.orgId);
+    await linkOwner(org);
+    // The mode is not chosen and is not asked for.
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({
+      trust: true,
+      report: false,
+      done: false,
+      mode: false,
+    });
+    await addCheck(org.orgId, mailboxId, "classifying");
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({ report: false, done: false });
+    await addCheck(org.orgId, mailboxId, "no_result");
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({ channel: true, report: true, done: true });
+    await db.deleteFrom("history_checks").where("org_id", "=", org.orgId).execute();
+    await addCheck(org.orgId, mailboxId, "done");
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({ report: true, done: true });
+  });
+
+  test("the report channel `mail` counts as a channel for the member of the row only", async () => {
+    const { org, app } = await setup();
+    await flagOn(org.orgId);
+    const mailboxId = await addMailbox(org.orgId);
+    await addCheck(org.orgId, mailboxId, "done");
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({ channel: false, done: false });
+    await setMemberReportChannel(db, { orgId: org.orgId }, org.ownerId, { channel: "mail", mailboxId });
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({ channel: true, telegram: false, done: true });
+    expect((await meOf(app, "assistant")).onboarding).toMatchObject({ channel: false, done: false });
+  });
+
+  test("a check of another organization does not count; with the flag off nothing changes", async () => {
+    const { org, app } = await setup();
+    const mailboxId = await addMailbox(org.orgId);
+    await linkOwner(org);
+    await flagOn(org.otherOrgId);
+    const otherMailboxId = await addMailbox(org.otherOrgId);
+    await addCheck(org.otherOrgId, otherMailboxId, "done");
+    expect(await hasEndedCheck(db, { orgId: org.otherOrgId })).toBe(true);
+    expect(await hasEndedCheck(db, { orgId: org.orgId })).toBe(false);
+    // Flag off here: a finished check of this organization changes nothing, the mode still decides.
+    await addCheck(org.orgId, mailboxId, "done");
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({ trust: false, report: false, done: false });
+    // Flag on here, no check of its own: the check of the other organization does not close it.
+    await db.deleteFrom("history_checks").where("org_id", "=", org.orgId).execute();
+    await flagOn(org.orgId);
+    expect((await meOf(app, "owner")).onboarding).toMatchObject({ trust: true, report: false, done: false });
   });
 });
 

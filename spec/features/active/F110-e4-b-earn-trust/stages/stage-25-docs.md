@@ -38,3 +38,8 @@ Part of [`../plan.md`](../plan.md). Docs only; no code. Needs stages 01–24 lan
 ## Carry-over from stage 05 review
 
 - N3/N4: account-data.md line 83 and sync.md rule 19 must name the automatic history check at connect (mail with no tombstone); retention counts from created_at, onboarding text must not suggest a 30-day age limit (review-5.md).
+
+## Carry-over from the stage 24 review
+
+- Document the replay limit (review-24.md NOTE 1, 2, 4, 8): DKIM coverage of the List-Unsubscribe headers is NOT checked; the cheap mitigation refuses a mail with more than one such header; the target comes from the newest mail with a result; NAT64 answers are refused; the domain limit counts an attacker-chosen domain.
+- Open a ticket for the full DKIM `h=` coverage check (new captured data).
