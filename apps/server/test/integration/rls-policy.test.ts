@@ -126,6 +126,10 @@ async function seedOrg(trx: Trx): Promise<{ orgId: string; userId: string; mailb
   );
   await sql`insert into sso_providers (provider_id, org_id, issuer, domain, oidc_config)
     values (${orgId}, ${orgId}::uuid, 'https://idp.x.test', ${`${orgId}.x.test`}, '{}')`.execute(trx);
+  await sql`insert into push_subscriptions (org_id, user_id, secret, key_version, endpoint_hash, device_label)
+    values (${orgId}::uuid, ${userId}::uuid, 'ciphertext', 1, ${createHash("sha256").update(randomUUID()).digest("hex")}, 'Phone')`.execute(
+    trx
+  );
   return { orgId, userId, mailboxId };
 }
 
