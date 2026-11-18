@@ -193,13 +193,23 @@ export function renderApprovalRequest(
   // The recipients never shrink (the owner decides on them), so a card that cannot hold them does not render at all.
   if (text.length > MESSAGE_MAX_CHARS) throw new RangeError("the approval card does not fit one message");
   if (view.kind === "reply") {
-    // A reply card has no Send button while a gap is open, and a Skip button
+    // A reply card has no Send button while a gap is open, and a Skip button. The second row changes the draft: a new text from one
+    // line, and (only when they make sense) the other recipients or the Reply-To address as the recipient.
     const row: OutMessage["buttons"][number] = [];
     if ((view.gaps ?? []).length === 0)
       row.push({ text: t.buttons.send, data: encodeCallback({ kind: "approve", actionId }) });
     row.push({ text: t.buttons.reject, data: encodeCallback({ kind: "reject", actionId }) });
     row.push({ text: t.reply.skip, data: encodeCallback({ kind: "reply_skip", sendId: actionId }) });
-    return { text, buttons: [row] };
+    const change: OutMessage["buttons"][number] = [
+      { text: t.reply.redraft, data: encodeCallback({ kind: "reply_redraft", sendId: actionId }) },
+    ];
+    if (view.canReplyAll === true) {
+      change.push({ text: t.reply.replyAll, data: encodeCallback({ kind: "reply_all", sendId: actionId }) });
+    }
+    if (view.canUseReplyTo === true) {
+      change.push({ text: t.reply.useReplyTo, data: encodeCallback({ kind: "reply_use_reply_to", sendId: actionId }) });
+    }
+    return { text, buttons: [row, change] };
   }
   return {
     text,

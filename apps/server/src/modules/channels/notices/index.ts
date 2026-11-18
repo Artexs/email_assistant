@@ -15,6 +15,7 @@ import { followUpClosedDetector } from "./follow-up-closed";
 import { hostBlockedDetector } from "./host-blocked";
 import { notTriagedDetector } from "./not-triaged";
 import { repliesReadyDetector } from "./replies-ready";
+import { replyResultsDetector } from "./reply-results";
 import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
 import { sendHeldDetector } from "./send-held";
 import { sendResultDetector } from "./send-result";
@@ -40,6 +41,7 @@ export const detectors: readonly Detector[] = [
   approvalDetector,
   approvalSetDetector,
   repliesReadyDetector,
+  replyResultsDetector,
   sendResultDetector,
   followUpClosedDetector,
   sendHeldDetector,
@@ -58,10 +60,8 @@ export const queuedBy = {
   approval_edit: "channels/card-edits.ts",
   // The one line for an owner whose consent does not cover open-loop data: queued by the approval and send-result detectors.
   loop_consent: "channels/notices/loop-consent.ts",
-  // The reply prompt and the reply result are queued by the Telegram redraft code (the entry is a name only). `replies_ready` has its own
-  // detector.
-  reply_prompt: "replies/telegram.ts",
-  reply_result: "replies/telegram.ts",
+  // The question after a Redraft tap is queued by the tap code. `replies_ready` and `reply_result` have their own detectors.
+  reply_prompt: "channels/reply-redraft.ts",
   // The trust module calls `queueTrustNotice` inside its own transaction (history check end, re-gate, tripwire).
   trust_report_ready: "trust (through channels/notices/trust.ts)",
   autonomy_paused: "trust (through channels/notices/trust.ts)",

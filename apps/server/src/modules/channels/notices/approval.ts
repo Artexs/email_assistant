@@ -6,7 +6,10 @@ import {
   isExternalSender,
   matchSender,
   NoticeViewError,
+  otherParticipants,
+  otherReplyTo,
   panelUrlSchema,
+  REPLY_CC_MAX,
   type ApprovalView,
   type OriginalMail,
 } from "@ea/core";
@@ -129,11 +132,27 @@ export async function approvalViewFor(
   if (draft.kind === "reply" && email !== null && send.email_id !== null) {
     const emailId = send.email_id;
     const from = email.from_address?.toLowerCase() ?? null;
-    const replyTo = (await replyFactsOf(db, ctx, [emailId])).get(emailId)?.replyTo ?? [];
+    const mail = (await replyFactsOf(db, ctx, [emailId])).get(emailId);
+    const replyTo = mail?.replyTo ?? [];
     const others = [...new Set(replyTo.map((address) => address.toLowerCase()))]
       .filter((address) => address !== from && address.length <= 320)
       .slice(0, 5);
     if (others.length > 0) view.replyTo = others;
+    // The buttons that change the recipients: only when there is something to change to (the rules of the service are the same ones).
+    if (mail !== undefined && mail.fromAddress !== null) {
+      const facts = { from: mail.fromAddress, own: mail.ownAddresses };
+      const participants = otherParticipants({
+        ...facts,
+        toAddresses: mail.toAddresses,
+        ccAddresses: mail.ccAddresses,
+      });
+      if (draft.recipients !== "all" && participants.length > 0 && participants.length <= REPLY_CC_MAX) {
+        view.canReplyAll = true;
+      }
+      if (draft.recipients !== "reply_to" && otherReplyTo({ ...facts, replyTo }).length > 0) {
+        view.canUseReplyTo = true;
+      }
+    }
   }
   return { view, subject: message.subject, quote: message.parts.quote };
 }

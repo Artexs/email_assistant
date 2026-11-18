@@ -42,6 +42,25 @@ const item = (patch: Partial<Parameters<typeof ApprovalSummary>[0]["item"]> = {}
 const summary = (patch: Parameters<typeof item>[0] = {}) =>
   renderToStaticMarkup(<ApprovalSummary item={item(patch)} now={NOW} />);
 
+describe("ApprovalSummary sender line", () => {
+  const sender = { relation: "vip", received: 8, answered: 6, userMailsTo: 3, lastSeenDaysAgo: 2, days: 90 } as const;
+
+  test("shows the line below the From line; no line with null or no key", () => {
+    const html = summary({ sender });
+    expect(html).toContain(
+      "VIP · you answered 6 of 8 mails in 90 days · you wrote to them 3 times · last mail 2 days ago"
+    );
+    expect(html.indexOf("From:")).toBeLessThan(html.indexOf("you answered"));
+    expect(summary({ sender: null })).not.toContain("you answered");
+    expect(summary()).not.toContain("you answered");
+  });
+
+  test("the Polish page has its own words", () => {
+    setLocaleForTest("pl");
+    expect(summary({ sender })).toContain("odpowiedź na 6 z 8 wiadomości w 90 dni");
+  });
+});
+
 describe("ApprovalSummary of a follow-up (F116 stage 11)", () => {
   const followUp = (patch: Partial<View> = {}) =>
     summary({

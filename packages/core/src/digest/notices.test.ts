@@ -56,6 +56,17 @@ describe("renderUrgentNotice", () => {
     ]);
   });
 
+  test("the Draft reply button is its own row and shows only when `draftable` is set (en and pl)", () => {
+    expect(renderUrgentNotice({ ...urgent, draftable: false }, textTables.en).buttons).toHaveLength(1);
+    const en = renderUrgentNotice({ ...urgent, draftable: true }, textTables.en);
+    expect(en.buttons[1]).toEqual([{ text: "✍️ Draft reply", data: `dr:${ID}` }]);
+    expect(renderUrgentNotice({ ...urgent, draftable: true }, textTables.pl).buttons[1]).toEqual([
+      { text: "✍️ Szkic odpowiedzi", data: `dr:${ID}` },
+    ]);
+    // The delegate button stays in the first row.
+    expect(renderUrgentNotice({ ...urgent, delegable: true, draftable: true }, textTables.en).buttons).toHaveLength(2);
+  });
+
   test("leaves out the AI line when there is no AI text", () => {
     expect(renderUrgentNotice({ ...urgent, aiText: null }, textTables.en).text).not.toContain("💬");
   });
@@ -626,20 +637,54 @@ describe("reply draft notices (F115 stage 03, stage 12)", () => {
     expect(polish(12)).toBe(`✍️ Gotowych jest 12 szkiców odpowiedzi (${clock}).`);
   });
 
-  test("reply_prompt and reply_result are one fixed line each, en and pl, no button", () => {
+  test("reply_prompt is one fixed line with ForceReply, en and pl, no button", () => {
     expect(renderReplyPromptNotice(textTables.en)).toEqual({
-      text: "✍️ A reply draft needs your instruction. Answer this message with the points to cover.",
+      text: "✍️ Write one line: what should the reply say?",
       buttons: [],
+      forceReply: true,
     });
-    expect(renderReplyPromptNotice(textTables.pl).text).toBe(
-      "✍️ Szkic odpowiedzi czeka na Twoją wskazówkę. Odpowiedz na tę wiadomość i napisz, o czym ma być."
-    );
-    expect(renderReplyResultNotice(textTables.en)).toEqual({
-      text: "✍️ A reply draft has a new result. Check it in the panel.",
+    expect(renderReplyPromptNotice(textTables.pl)).toEqual({
+      text: "✍️ Napisz jedną linijkę: co ma być w odpowiedzi?",
       buttons: [],
+      forceReply: true,
     });
-    expect(renderReplyResultNotice(textTables.pl).text).toBe(
-      "✍️ Szkic odpowiedzi ma nowy status. Sprawdź go w panelu."
-    );
+  });
+
+  test("reply_result is one fixed line for each reason, en and pl, no button", () => {
+    const fixed: Record<string, [string, string]> = {
+      needs_facts: [
+        "✍️ No draft: the reply needs facts that are not in the mail. Write it yourself.",
+        "✍️ Brak szkicu: odpowiedź wymaga faktów, których nie ma w wiadomości. Napisz ją samodzielnie.",
+      ],
+      timeout: ["✍️ The draft took too long. Try once more.", "✍️ Szkic powstawał za długo. Spróbuj jeszcze raz."],
+      llm_cap: [
+        "✍️ The daily limit of AI calls for this mailbox is reached. Try again tomorrow.",
+        "✍️ Dzienny limit wywołań AI dla tej skrzynki został wykorzystany. Spróbuj jutro.",
+      ],
+      closed: ["✍️ This draft was closed; nothing changed.", "✍️ Ten szkic został zamknięty; nic się nie zmieniło."],
+      switch_off: [
+        "✍️ Reply drafts are off for this mailbox. Turn them on in the panel.",
+        "✍️ Szkice odpowiedzi są wyłączone dla tej skrzynki. Włącz je w panelu.",
+      ],
+      // A reason of the eligibility rule uses the tap text.
+      answered: ["✍️ This mail has an answer already.", "✍️ Ta wiadomość ma już odpowiedź."],
+      // A code with no own text.
+      bad_recipient: ["✍️ No draft was made.", "✍️ Nie powstał żaden szkic."],
+    };
+    for (const [reason, [en, pl]] of Object.entries(fixed)) {
+      expect(renderReplyResultNotice({ reason }, textTables.en), reason).toEqual({ text: en, buttons: [] });
+      expect(renderReplyResultNotice({ reason }, textTables.pl), reason).toEqual({ text: pl, buttons: [] });
+    }
+  });
+
+  test("every reply result text is one line, has no address and is not empty, en and pl", () => {
+    for (const texts of [textTables.en, textTables.pl]) {
+      for (const text of Object.values(texts.notices.replyDrafts.results)) {
+        expect(text.length).toBeGreaterThan(5);
+        expect(text).not.toContain("\n");
+        expect(text).not.toMatch(/@/);
+      }
+      for (const text of Object.values(texts.bot.taps.reply.blocked)) expect(text.length).toBeGreaterThan(5);
+    }
   });
 });

@@ -70,6 +70,7 @@ function newLoop(org: Org, sentEmailId: string | null, overrides: Partial<NewLoo
     language: "en",
     dueAt: new Date("2026-11-24T16:00:00Z"),
     dueSource: "default",
+    usualReplyDays: null,
     waitFromAt: AT,
     at: AT,
     ...overrides,

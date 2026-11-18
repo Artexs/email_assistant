@@ -38,3 +38,5 @@ export { STYLE_FORM_LINE_MAX, styleAddressForms, styleFromForm, styleLengths } f
 export type { StyleAddressForm, StyleForm, StyleLength, StyleLocale } from "./style-form";
 export { SAMPLE_MAIL } from "./sample-mail";
 export type { SampleMail } from "./sample-mail";
+export { otherParticipants, otherReplyTo, replyRecipients, sameRecipients } from "./recipients";
+export type { ReplyRecipientFacts, ReplyRecipientMode, ReplyRecipients, ReplyRecipientsResult } from "./recipients";

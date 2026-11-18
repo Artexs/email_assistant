@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
 import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
+import { readSenderLines, type SenderLineDeps } from "../contacts";
 import { listDelegateNames, listLatestDelegationsByEmailIds } from "../delegation";
 import { isFeatureOn } from "../tenancy";
 import { listActivityRows, listLatestFeedbackByEmailIds, suspiciousReasonsToShow } from "../triage";
@@ -61,13 +62,16 @@ export function decodeActivityCursor(text: string): ActivityCursor | null {
 }
 
 // One page of the activity list: the latest result of each mail with its actions, feedback and delegation.
-// A fixed number of queries per page (at most 9; the flag read of `why_lines` makes it 10, and only when a row holds a rule), whatever the number of rows.
+// A fixed number of queries per page (at most 9; the flag read of `why_lines` makes it 10, and only when a row holds a rule),
+// whatever the number of rows. `sender` (absent: no sender line) adds the flag read of `sender_context` and, with the flag on,
+// ONE profile read for the whole page.
 export async function listActivity(
   db: Db,
   ctx: TenantContext,
   query: ActivityQuery,
   now: Date,
-  texts: CoreTexts
+  texts: CoreTexts,
+  sender?: SenderLineDeps
 ): Promise<ActivityWebPage> {
   const limit = query.limit ?? ACTIVITY_PAGE_SIZE;
   const oldest = now.getTime() - ACTIVITY_MAX_DAYS * DAY_MS;
@@ -104,9 +108,19 @@ export async function listActivity(
       if (action.delegateId !== null) delegateIds.add(action.delegateId);
     }
   }
+  const lines =
+    sender === undefined
+      ? null
+      : await readSenderLines(
+          sender,
+          ctx,
+          rows.map((row) => ({ mailboxId: row.mailbox_id, address: row.from_address })),
+          now
+        );
+
   const names = delegateIds.size === 0 ? new Map<string, string>() : await listDelegateNames(db, ctx, [...delegateIds]);
 
-  const items = rows.map((row): ActivityItem => {
+  const items = rows.map((row, index): ActivityItem => {
     const own = actions.get(row.email_id) ?? [];
     const rated = feedback.get(row.email_id);
     const delegation = delegations.get(row.email_id);
@@ -163,6 +177,7 @@ export async function listActivity(
             },
       suspicious: suspicious.get(row.email_id) ?? [],
       rule: whyOn ? row.rule : null,
+      ...(lines === null ? {} : { sender: lines[index] ?? null }),
     };
   });
 

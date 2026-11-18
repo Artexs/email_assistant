@@ -69,7 +69,7 @@ export interface MailOpts {
   threadKey?: string;
   messageId?: string;
   language?: "pl" | "en" | "other";
-  category?: "needs_reply" | "info";
+  category?: "needs_reply" | "info" | "urgent";
   // Default true: without an `email_headers` row the mail is "not checked".
   headers?: boolean;
   // The `Auto-Submitted` header value, when set.
@@ -256,4 +256,32 @@ export async function queueRequest(
     .where("id", "=", id)
     .execute();
   return id;
+}
+
+// The To, Cc and Reply-To that a stored mail has (the recipients of Reply all and Use Reply-To come from them).
+export async function setMailAddresses(
+  conn: Conn,
+  emailId: string,
+  addresses: { to?: string[]; cc?: string[]; replyTo?: string[] }
+): Promise<void> {
+  await conn
+    .updateTable("emails")
+    .set({ to_addresses: addresses.to ?? [], cc_addresses: addresses.cc ?? [] })
+    .where("id", "=", emailId)
+    .execute();
+  await conn
+    .updateTable("email_headers")
+    .set({ reply_to: addresses.replyTo ?? [] })
+    .where("email_id", "=", emailId)
+    .execute();
+}
+
+// One mail that the job has drafted (a fake model that answers `CLEAN_ANSWER`): the mail id and its waiting send.
+export async function draftedReply(conn: Transaction<DB>, box: JobBox, clock: Clock, opts: MailOpts = {}) {
+  const emailId = await addReplyMail(conn, box, opts);
+  const { llm } = fakeLlm(() => CLEAN_ANSWER);
+  await runJob(jobDeps(conn, llm, clock), box);
+  const send = (await pairRows(conn, box)).find((row) => row.type === "send" && row.email_id === emailId);
+  if (send === undefined) throw new Error("the job made no send");
+  return { emailId, sendId: send.id };
 }

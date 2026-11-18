@@ -8,6 +8,27 @@ import { pluralCategory } from "./locale";
 
 type FailedAction = "move" | "flag" | "mark_read" | "create_draft";
 
+// The result lines of a reply request that a user waited for in Telegram (one text for each group of reason codes; the eligibility
+// reasons use `bot.taps.reply.blocked`). `off`: a gate of the mailbox is closed. `generic`: a code with no own text.
+export const replyResultKeys = [
+  "needs_facts",
+  "not_a_reply",
+  "unsafe_request",
+  "no_text",
+  "timeout",
+  "llm_cap",
+  "llm_error",
+  "checks",
+  "output",
+  "internal",
+  "closed",
+  "changed",
+  "off",
+  "mail_gone",
+  "generic",
+] as const;
+export type ReplyResultKey = (typeof replyResultKeys)[number];
+
 // One entry per line that a notice prints; a function where the line holds values.
 export interface NoticeTexts {
   urgentTitle: string;
@@ -58,10 +79,12 @@ export interface NoticeTexts {
   // drafts (the count only, no button).
   replyDrafts: {
     ready: (count: number, clock: string) => string;
-    prompt: string;
-    result: string;
+    prompt: string; // the ForceReply message after a Redraft tap
+    results: Record<ReplyResultKey, string>; // the result of a tap or a redraft that ended with no new card
     review: string;
     consent: string;
+    draft: string; // the "Draft reply" button of an urgent notice
+    draftRow: (n: number) => string; // the same button on a digest row
   };
   // Counts, category names and fixed phrases only. `link` is a text line, not a button.
   trustReady: {
@@ -240,10 +263,28 @@ export const noticeTexts = {
     },
     replyDrafts: {
       ready: (count, clock) => `✍️ ${count} reply ${count === 1 ? "draft is" : "drafts are"} ready (${clock}).`,
-      prompt: "✍️ A reply draft needs your instruction. Answer this message with the points to cover.",
-      result: "✍️ A reply draft has a new result. Check it in the panel.",
+      prompt: "✍️ Write one line: what should the reply say?",
+      results: {
+        needs_facts: "✍️ No draft: the reply needs facts that are not in the mail. Write it yourself.",
+        not_a_reply: "✍️ No draft: this mail does not need a reply.",
+        unsafe_request: "✍️ No draft: this mail asks for something that needs your own decision.",
+        no_text: "✍️ No draft: the text of the mail is not stored any more.",
+        timeout: "✍️ The draft took too long. Try once more.",
+        llm_cap: "✍️ The daily limit of AI calls for this mailbox is reached. Try again tomorrow.",
+        llm_error: "✍️ The AI service failed. Try again later.",
+        checks: "✍️ The draft did not pass the safety checks. Try again or write the reply yourself.",
+        output: "✍️ The AI gave no usable answer. Try again.",
+        internal: "✍️ Something went wrong. Try again later.",
+        closed: "✍️ This draft was closed; nothing changed.",
+        changed: "✍️ Another version replaced this draft meanwhile. Use the newest message.",
+        off: "✍️ Reply drafts are off for this mailbox. Turn them on in the panel.",
+        mail_gone: "✍️ The mail is not available any more.",
+        generic: "✍️ No draft was made.",
+      },
       review: "📝 Review",
       consent: "Confirm the new Telegram terms in the panel to review here.",
+      draft: "✍️ Draft reply",
+      draftRow: (n) => `✍️ ${n}`,
     },
     trustReady: {
       first: (checked) =>
@@ -414,10 +455,28 @@ export const noticeTexts = {
     },
     replyDrafts: {
       ready: (count, clock) => `✍️ ${PL_REPLIES_READY[pluralCategory("pl", count)](count)} (${clock}).`,
-      prompt: "✍️ Szkic odpowiedzi czeka na Twoją wskazówkę. Odpowiedz na tę wiadomość i napisz, o czym ma być.",
-      result: "✍️ Szkic odpowiedzi ma nowy status. Sprawdź go w panelu.",
+      prompt: "✍️ Napisz jedną linijkę: co ma być w odpowiedzi?",
+      results: {
+        needs_facts: "✍️ Brak szkicu: odpowiedź wymaga faktów, których nie ma w wiadomości. Napisz ją samodzielnie.",
+        not_a_reply: "✍️ Brak szkicu: ta wiadomość nie wymaga odpowiedzi.",
+        unsafe_request: "✍️ Brak szkicu: ta wiadomość prosi o coś, co wymaga Twojej własnej decyzji.",
+        no_text: "✍️ Brak szkicu: treść wiadomości nie jest już zapisana.",
+        timeout: "✍️ Szkic powstawał za długo. Spróbuj jeszcze raz.",
+        llm_cap: "✍️ Dzienny limit wywołań AI dla tej skrzynki został wykorzystany. Spróbuj jutro.",
+        llm_error: "✍️ Usługa AI zawiodła. Spróbuj później.",
+        checks: "✍️ Szkic nie przeszedł kontroli bezpieczeństwa. Spróbuj ponownie albo napisz odpowiedź samodzielnie.",
+        output: "✍️ AI nie dało użytecznej odpowiedzi. Spróbuj ponownie.",
+        internal: "✍️ Coś poszło nie tak. Spróbuj później.",
+        closed: "✍️ Ten szkic został zamknięty; nic się nie zmieniło.",
+        changed: "✍️ W międzyczasie inna wersja zastąpiła ten szkic. Użyj najnowszej wiadomości.",
+        off: "✍️ Szkice odpowiedzi są wyłączone dla tej skrzynki. Włącz je w panelu.",
+        mail_gone: "✍️ Wiadomość nie jest już dostępna.",
+        generic: "✍️ Nie powstał żaden szkic.",
+      },
       review: "📝 Przejrzyj",
       consent: "Potwierdź nowe warunki Telegrama w panelu, aby przeglądać szkice tutaj.",
+      draft: "✍️ Szkic odpowiedzi",
+      draftRow: (n) => `✍️ ${n}`,
     },
     trustReady: {
       first: (checked) => `📋 Sprawdzanie poczty z ostatnich 30 dni zakończone. Przejrzane wiadomości: ${checked}.`,

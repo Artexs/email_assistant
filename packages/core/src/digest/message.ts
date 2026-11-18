@@ -9,6 +9,8 @@ export interface OutButton {
 export interface OutMessage {
   text: string;
   buttons: OutButton[][];
+  // The chat client opens the reply box for this message (Telegram ForceReply): the user's next text is the answer to it.
+  forceReply?: true;
 }
 
 export const MESSAGE_MAX_CHARS = 4096;

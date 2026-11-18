@@ -212,4 +212,14 @@ export const plActivity = {
   stats_m8_info: "Dane dla automatu: info",
   stats_m8_notification: "Dane dla automatu: powiadomienia",
   stats_m8_spam: "Dane dla automatu: spam",
+  // sender line (Activity detail and Approvals): counts only, one line under the From line
+  sender_rel_delegate: "Delegat",
+  sender_rel_vip: "VIP",
+  sender_rel_bulk: "Nadawca masowy",
+  sender_rel_known: "Znany",
+  sender_rel_new: "Nowy",
+  sender_answered: "odpowiedź na {answered} z {received} wiadomości w {days} dni",
+  sender_wrote: "Twoje wiadomości do nadawcy: {userMailsTo}",
+  sender_last_seen: "ostatnia wiadomość {n} dni temu",
+  sender_last_seen_today: "ostatnia wiadomość dzisiaj",
 } satisfies Partial<Record<TextKey, string>>;

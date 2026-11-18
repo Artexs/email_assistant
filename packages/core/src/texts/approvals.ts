@@ -45,6 +45,9 @@ export interface ApprovalTexts {
     sentHidden: string; // the Sent mail is not read: only `\Answered` shows an answer
     skip: string; // the button
     noMore: string; // the review is at its end
+    redraft: string; // the button: write a new version from one line of instruction
+    replyAll: string; // the button: the other recipients of the mail go to Cc
+    useReplyTo: string; // the button: the Reply-To of the mail becomes the recipient
   };
   inactive: string; // "(inactive)"
   externalSender: string; // "⚠️ external sender"
@@ -201,6 +204,9 @@ export const approvalTexts = {
       sentHidden: "I cannot see your sent mail; check you did not answer already.",
       skip: "⏭ Skip",
       noMore: "No more replies waiting.",
+      redraft: "✍️ Redraft",
+      replyAll: "👥 Reply all",
+      useReplyTo: "↩️ Use Reply-To",
     },
     inactive: "(inactive)",
     externalSender: "⚠️ external sender",
@@ -212,7 +218,7 @@ export const approvalTexts = {
     quoteCut: "(quote cut; the draft has the full text)",
     sendLine: "The system sends it after your tap. Do not send the draft from your mail client.",
     sendLineEditable: "The system sends it after your tap. Edit here, or edit and send in your mail client.",
-    versionLine: (version) => `✏️ Version ${version}, edited in the panel.`,
+    versionLine: (version) => `✏️ Version ${version}.`,
     panelLine: (url) => `Open in panel: ${url}`,
     buttons: {
       send: "📤 Send",
@@ -311,7 +317,7 @@ export const approvalTexts = {
       done: (time) => `✅ Done ${time}.`,
       rejectedReason: (reason) => `✖️ Rejected. Reason: ${reason}.`,
       markedMistake: (time) => `⚠️ Marked as a mistake ${time}.`,
-      changed: (time) => `✏️ Changed in the panel ${time}. The new version comes as a new message.`,
+      changed: (time) => `✏️ Changed ${time}. The new version comes as a new message.`,
       skipped: (time) => `⏭ Skipped ${time}. The draft stays in the panel.`,
     },
     answered: {
@@ -365,6 +371,9 @@ export const approvalTexts = {
       sentHidden: "Nie widzę Twojej wysłanej poczty. Sprawdź, czy ta wiadomość nie ma już odpowiedzi.",
       skip: "⏭ Pomiń",
       noMore: "Nie ma więcej szkiców odpowiedzi do przejrzenia.",
+      redraft: "✍️ Napisz inaczej",
+      replyAll: "👥 Odpowiedz wszystkim",
+      useReplyTo: "↩️ Użyj Reply-To",
     },
     inactive: "(nieaktywny wykonawca)",
     externalSender: "⚠️ nadawca zewnętrzny",
@@ -377,7 +386,7 @@ export const approvalTexts = {
     sendLine: "System wyśle wiadomość po naciśnięciu przycisku. Nie wysyłaj szkicu z programu pocztowego.",
     sendLineEditable:
       "System wyśle wiadomość po naciśnięciu przycisku. Edytuj tutaj albo edytuj i wyślij w programie pocztowym.",
-    versionLine: (version) => `✏️ Wersja ${version}, zmieniona w panelu.`,
+    versionLine: (version) => `✏️ Wersja ${version}.`,
     panelLine: (url) => `Otwórz w panelu: ${url}`,
     buttons: {
       send: "📤 Wyślij",
@@ -477,7 +486,7 @@ export const approvalTexts = {
       done: (time) => `✅ Gotowe ${time}.`,
       rejectedReason: (reason) => `✖️ Odrzucono. Powód: ${reason}.`,
       markedMistake: (time) => `⚠️ Oznaczono jako błąd ${time}.`,
-      changed: (time) => `✏️ Zmieniono w panelu ${time}. Nowa wersja przyjdzie w osobnej wiadomości.`,
+      changed: (time) => `✏️ Zmieniono ${time}. Nowa wersja przyjdzie w osobnej wiadomości.`,
       skipped: (time) => `⏭ Pominięto ${time}. Szkic zostaje w panelu.`,
     },
     answered: {
