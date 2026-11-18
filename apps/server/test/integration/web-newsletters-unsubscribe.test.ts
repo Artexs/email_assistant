@@ -281,6 +281,16 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
     expect(box.posts).toEqual([]);
   });
 
+  test("11e: a sender that has a request is 409 `already_requested` also when the limit is reached (the stored state wins over the limit)", async () => {
+    const recent = new Date(NOW.getTime() - 5 * 60_000);
+    for (const from of ["a@d.example", "b@d.example", "c@d.example"])
+      await addRequest(db, box.org.orgId, box.mailboxId, from, { status: "done", createdAt: recent });
+    await oneClick("c@d.example");
+    const res = await tap("owner", "c@d.example");
+    expect([res.status, await res.json()]).toMatchObject([409, { error: "already_requested" }]);
+    expect(box.posts).toEqual([]);
+  });
+
   test("11d: parallel taps cannot pass the limit of a domain (one writer per organization)", async () => {
     const senders = Array.from({ length: 8 }, (_, i) => `p${i}@d.example`);
     for (const from of senders) await oneClick(from);
