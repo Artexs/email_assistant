@@ -20,9 +20,11 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F117-e9a-mailbox-oauth` (🟠 ACTIVE): E9a Mailbox OAuth
 - `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
+- `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟠 ACTIVE): E8b Alerts and releases (incl. the restore drill)
 - `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
 - `F111-e11b-private-model-option` (🟠 ACTIVE): E11b Private model option
+- `F110-e4-b-earn-trust` (🟠 ACTIVE): E4-B Earn trust
 - `F107-e7-t4-papers-and-cost` (🟠 ACTIVE): E7-T4 Papers and cost
 - `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
 - `F102-e4-a-act-from-the-panel` (🟠 ACTIVE): E4-A Act from the panel
@@ -94,9 +96,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F115-e6a-reply-drafts` (🟢 PROVEN): Mail that needs a reply gets a checked draft that waits for one tap; landed 2026-11-18
 - `F112-e10a-docs-site` (🟢 PROVEN): E10a Docs site; landed 2026-11-18
-- `F110-e4-b-earn-trust` (🟢 PROVEN): E4-B Earn trust; landed 2026-11-18
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
 - `F109-e3b-improve` (🟢 PROVEN): E3b Improve; landed 2026-11-15
@@ -104,4 +104,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟢 PROVEN): E7-T6 Identity A (TOTP, backup codes, break-glass); landed 2026-11-15
 - `F103-e8a-logs` (🟢 PROVEN): E8a Logs; landed 2026-11-15
 - `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
-- 2026-11: 82 landed. spec/features/done/2026-11/
+- `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
+- `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
+- 2026-11: 80 landed. spec/features/done/2026-11/

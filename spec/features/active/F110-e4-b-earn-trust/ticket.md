@@ -1,6 +1,5 @@
 ---
 opened: 2026-11-13
-landed: 2026-11-18
 ---
 
 # F110 · E4-B Earn trust
