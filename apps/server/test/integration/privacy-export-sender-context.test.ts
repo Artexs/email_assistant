@@ -8,10 +8,11 @@ import { Decrypter, generateX25519Identity, identityToRecipient } from "age-encr
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 
 import { insertSenderRule } from "../../src/modules/config/repo";
+import { refreshMailboxProfiles } from "../../src/modules/contacts";
 import { EXPORT_MAP, exportOrganization } from "../../src/modules/privacy";
 import { senderKeyHash } from "../../src/platform/crypto";
 
-import { ago, KEY, newOrg, NOW, secondMailbox, type Org } from "./contacts-fixtures";
+import { ago, KEY, newOrg, NO_TEST, NOW, secondMailbox, type Org } from "./contacts-fixtures";
 import { insertDelegate, seedSenderActivity } from "./fixtures";
 import { testDb } from "./helpers";
 
@@ -189,5 +190,22 @@ describe("the export of sender profiles and suggestions", () => {
     if (suggestionMap === undefined || !suggestionMap.export) throw new Error("sender_suggestions is not exported");
     for (const row of suggestions) expect(Object.keys(row).sort()).toEqual([...suggestionMap.columns].sort());
     expect(suggestions.map((row) => row.pattern).sort()).toEqual(["anna@acme.pl", null]);
+  });
+});
+
+describe("the address rule in the export", () => {
+  test("5 a profile of a Greek or Turkish address gets its plain address, found by the one address rule", async () => {
+    const org = await seedOrg();
+    // The mail rows hold the address as it arrived, with a lower-case final sigma and an `i` plus a combining dot: the database
+    // `lower()` leaves both, so only the one address rule gives the folded form that the pass hashed. The export names it.
+    await db.transaction().execute(async (trx) => {
+      await seedSenderActivity(trx, org.ctx, org.mailboxId, { address: "αννας@χρ.gr", mails: [{ at: ago(3) }] });
+      await seedSenderActivity(trx, org.ctx, org.mailboxId, { address: "i\u0307lker@x.tr", mails: [{ at: ago(2) }] });
+    });
+    // The pass writes the profiles: the key comes from the one address rule, not from the test.
+    await refreshMailboxProfiles({ db, credentialsKey: KEY, testMail: NO_TEST }, org.ctx, org.mailboxId, { now: NOW });
+    const profiles = (await exportRows(org)).sender_profiles ?? [];
+    expect(profiles).toHaveLength(2);
+    expect(profiles.map((row) => row.address).sort()).toEqual(["ilker@x.tr", "αννασ@χρ.gr"].sort());
   });
 });

@@ -292,7 +292,7 @@ export const dataCategories: readonly DataCategory[] = [
     // A profile row holds no address, name or mail text: only the keyed hash, dates and counts. An open suggestion holds the
     // address or domain it names (`sender_suggestions.pattern`, cleared when the suggestion ends). The people are third
     // parties. The period is the longest one: a profile goes 365 days after its last activity, an ended suggestion 90 days
-    // after its end (the retention clearers come with the privacy stage of the ticket folder).
+    // after its end (`deleteOldProfiles` and `deleteEndedSuggestions` in `modules/contacts/privacy.ts`, run by the daily retention job).
     subjects: ["others"],
     kept: { kind: "days", days: 365 },
   },
