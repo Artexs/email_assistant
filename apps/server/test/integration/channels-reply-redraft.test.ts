@@ -11,8 +11,8 @@ import {
   type CallbackDeps,
   type LinkedChat,
 } from "../../src/modules/channels";
-import { createFakeChannel, type FakeChannel } from "../../src/modules/channels/fake/channel";
 import { digestNowMessage, type CommandDeps } from "../../src/modules/channels/commands";
+import { createFakeChannel, type FakeChannel } from "../../src/modules/channels/fake/channel";
 import { handleReplyText } from "../../src/modules/channels/reply-redraft";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { draftableMails, redraftReply, requestReply } from "../../src/modules/replies";

@@ -17,7 +17,11 @@ export interface ReplyRecipientFacts {
   own: readonly string[];
 }
 
-export type ReplyRecipients = { to: [string]; cc: string[]; recipients: ReplyRecipientMode };
+export interface ReplyRecipients {
+  to: [string];
+  cc: string[];
+  recipients: ReplyRecipientMode;
+}
 
 export type ReplyRecipientsResult =
   | { kind: "ok"; value: ReplyRecipients }
