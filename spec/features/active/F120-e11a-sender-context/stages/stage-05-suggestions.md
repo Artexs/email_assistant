@@ -41,3 +41,6 @@ Carry-over reads: stage 01 `suggestionsFor`, stage 03 pass, `apps/server/src/mod
 ## Done when
 
 All tests pass; mutation: drop the `status = 'open'` check in Accept → test 4 fails. Then the Proof command.
+
+## Carry-over from the stage 03b review (2026-11-18)
+See `../review-3b.md` (Stage 05 lines): Sent coverage with a missing Sent folder; frozen profiles of auth_error and host_blocked mailboxes.

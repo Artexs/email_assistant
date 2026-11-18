@@ -38,3 +38,6 @@ The docs say what the code does (PD-009). No code change except a doc test that 
 - Stage 13 changed no legal text and did not bump `TERMS_VERSION`; `REPLY_CONSENT_SINCE` is still the placeholder, so none of Redraft, Reply all, Use Reply-To and Draft reply shows to a user. The legal batch of stage 12 and 17 stands. Notes: `notes/2026-11-18-f115-s13-telegram-redraft.md`.
 - Rollback text: an older release does not know the callback codes `rd`, `ra`, `ru`, `dr` (they parse to null and answer "invalid") and the audit event `reply.requested` (free text column; harmless); the views of `reply_prompt` and `reply_result` kept their shape.
 - Privacy: the user's line of instruction is stored only in `reply_requests.instruction` (retention clears it); the audit row `reply.requested` holds ids and codes only; the Telegram message of the user stays in Telegram.
+
+## Carry-over from the stage 13 review (2026-11-18)
+See `../review-13.md`: rollback text N1 (strict view fields), the tap-flood cost N3 and a per-mail tap limit, the ended-request window limit N9.

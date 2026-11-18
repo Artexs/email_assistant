@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { SecretBox } from "../../../platform/crypto";
 import type { DB, TenantContext } from "../../../platform/db";
@@ -52,6 +52,14 @@ export interface UpsertPushSubscription {
   rebindOnly?: boolean;
 }
 
+// One transaction at a time per user. The lock is held to the end of the transaction. Two subscribes of one user would otherwise both pass
+// the `select` below before either commits: the same endpoint twice would end in a unique-key conflict that looks like another
+// organization (`PushDeviceElsewhereError`), and two new devices at 9 would leave 11. The key holds the user only: the unique key
+// `(user_id, endpoint_hash)` spans organizations.
+export async function lockPushUser(trx: Transaction<DB>, userId: string): Promise<void> {
+  await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`push:${userId}`}, 0))`.execute(trx);
+}
+
 // An existing `(user, endpoint)` gets the new session, keys and label (re-bind; `created` false). With `rebindOnly` and no such
 // device: null, nothing stored. A new device beyond the cap removes the oldest of the user first, which fails its open rows.
 export async function upsertPushSubscription(
@@ -59,6 +67,7 @@ export async function upsertPushSubscription(
   ctx: TenantContext,
   input: UpsertPushSubscription
 ): Promise<{ id: string; created: boolean } | null> {
+  await lockPushUser(trx, input.userId);
   const hash = endpointHash(input.endpoint);
   const secretOf = (id: string) =>
     input.box.encrypt(JSON.stringify({ endpoint: input.endpoint, p256dh: input.p256dh, auth: input.auth }), aadOf(id));
@@ -150,6 +159,8 @@ export async function listLiveDeviceIds(
 
 export interface DeviceView {
   id: string;
+  /** The live session of the device (the join keeps only a session that exists). */
+  sessionId: string;
   deviceLabel: string;
   createdAt: Date;
   lastSuccessAt: Date | null;
@@ -172,6 +183,7 @@ export async function listDeviceViews(
     )
     .select([
       "push_subscriptions.id",
+      "push_subscriptions.session_id",
       "push_subscriptions.device_label",
       "push_subscriptions.created_at",
       "push_subscriptions.last_success_at",
@@ -185,6 +197,7 @@ export async function listDeviceViews(
     .execute();
   return rows.map((row) => ({
     id: row.id,
+    sessionId: row.session_id ?? "",
     deviceLabel: row.device_label,
     createdAt: row.created_at,
     lastSuccessAt: row.last_success_at,

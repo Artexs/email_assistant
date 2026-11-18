@@ -30,6 +30,7 @@ const extras = {
 const WRITE_ROUTES = [
   "DELETE /api/channels/telegram/link",
   "DELETE /api/mailboxes/:id",
+  "DELETE /api/me/push/devices/:id",
   "DELETE /api/rules/:id",
   "PATCH /api/delegates/:id",
   "PATCH /api/me/digest-times",
@@ -60,6 +61,7 @@ const WRITE_ROUTES = [
   "POST /api/loops/:id/later",
   "POST /api/loops/:id/reopen",
   "POST /api/loops/:id/untrack",
+  "POST /api/me/push/test",
   "POST /api/mailboxes",
   "POST /api/mailboxes/:id/password",
   "POST /api/mailboxes/:id/pause",
@@ -74,6 +76,7 @@ const WRITE_ROUTES = [
   "POST /api/trust/:mailboxId/history-check",
   "POST /api/trust/:mailboxId/recommended",
   "PUT /api/mailboxes/:id/profile",
+  "PUT /api/me/push/subscription",
   "PUT /api/settings/:mailboxId/urgency",
 ];
 

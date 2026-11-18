@@ -33,3 +33,6 @@ Carry-over reads: `plan.md` D5, D15, D17; `interfaces.md` (`PushPayload`, `pushT
 - **Check:** the touched tests, `bun run web:build`, then the Proof and `flock /tmp/email-assistant-shared-tests.lock bun run test:e2e > /tmp/f118-s04/e2e.log 2>&1` (add `&& ` before `echo PROOF_OK`).
 - **Done when:** the Proof with the e2e step prints `PROOF_OK`.
 - **Out of scope:** the subscribe button and install help (05).
+
+## Carry-over from the stage 03 review (2026-11-18)
+FIRST COMMIT of this stage: the small fixes N2, N3, N1 and the test TG2 from `../review-3.md`, each with a saved mutation log; add `push.test_sent` to interfaces.md.

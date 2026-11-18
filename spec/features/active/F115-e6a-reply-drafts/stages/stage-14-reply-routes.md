@@ -29,3 +29,6 @@ Typed `/api` routes for the panel, on top of the F102 approvals API. Every route
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the web page (15).
+
+## Carry-over from the stage 13 review (2026-11-18)
+See `../review-13.md` (N2 residuals): decide Reply-To versus From for Reply all, the plus variant and alias of the own mailbox, and the display-name recipient with a visible button; write the decisions down.

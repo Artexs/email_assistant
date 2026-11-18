@@ -112,6 +112,9 @@ export const auditEvents = {
   memberNotifyChanged: "member.notify_changed", // Actor: the user; data: via, keys (the changed keys in one string, comma between); never a value
   newsletterUnsubscribe: "newsletter.unsubscribe", // Actor: the user; data: mailbox_id, domain (the sender domain), status, code; never a URL
   orgMemberAdded: "org.member_added", // actor: cli; data: user_id, role
+  pushSubscribed: "push.subscribed", // actor: the user; data: push_subscription_id, created, via; never an endpoint or a key
+  pushRemoved: "push.removed", // actor: the user; data: push_subscription_id, via
+  pushTestSent: "push.test_sent", // actor: the user; data: devices (the count of devices tried); the rate limit counts these rows
   webMemberSessionsEnded: "web.member_sessions_ended", // actor: cli; data: user_id, count, only_sso
 } as const;
 
@@ -416,6 +419,25 @@ export async function countEventsBetween(
     .where("created_at", "<=", range.until);
   if (opts?.reasonCode !== undefined) query = query.where("reason_code", "=", opts.reasonCode);
   const row = await query.executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
+// The rows of one event by one actor (a user id) after a time.
+export async function countActorEventsSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  event: string,
+  actor: string,
+  after: Date
+): Promise<number> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", event)
+    .where("actor", "=", actor)
+    .where("created_at", ">", after)
+    .executeTakeFirstOrThrow();
   return Number(row.count);
 }
 

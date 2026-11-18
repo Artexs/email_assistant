@@ -49,7 +49,7 @@ describe("refreshMailboxProfiles: counts", () => {
         sent: [{ at: ago(2) }, { at: ago(3) }, { at: ago(4) }],
       });
       const result = await refresh(trx, org);
-      expect(result).toEqual({ written: 1, zeroed: 0, skipped: false });
+      expect(result).toEqual({ written: 1, unchanged: 0, zeroed: 0, skipped: false });
       const row = await profileOf(trx, org, "anna@acme.pl");
       expect(row).toMatchObject({
         received: 8,
@@ -297,13 +297,13 @@ describe("refreshMailboxProfiles: second pass", () => {
         mails: [{ at: ago(60), answered: true, category: "info", headers: {} }],
         sent: [{ at: ago(59) }],
       });
-      expect(await refresh(trx, org)).toEqual({ written: 1, zeroed: 0, skipped: false });
+      expect(await refresh(trx, org)).toEqual({ written: 1, unchanged: 0, zeroed: 0, skipped: false });
       const first = await profileOf(trx, org, "anna@acme.pl");
       expect(first).toMatchObject({ received: 1, answered: 1, user_mails_to: 1, relation: "known" });
 
       // 40 days later the mail is 100 days old.
       const later = new Date(NOW.getTime() + 40 * DAY);
-      expect(await refresh(trx, org, later)).toEqual({ written: 0, zeroed: 1, skipped: false });
+      expect(await refresh(trx, org, later)).toEqual({ written: 0, unchanged: 0, zeroed: 1, skipped: false });
       const second = await profileOf(trx, org, "anna@acme.pl");
       expect(second).toMatchObject({
         received: 0,
@@ -323,6 +323,7 @@ describe("refreshMailboxProfiles: second pass", () => {
       // A row that is zero already stays as it is.
       expect(await refresh(trx, org, new Date(later.getTime() + HOUR))).toEqual({
         written: 0,
+        unchanged: 0,
         zeroed: 0,
         skipped: false,
       });
@@ -384,7 +385,7 @@ describe("refreshMailboxProfiles: second pass", () => {
       });
       await refresh(trx, org);
       const before = await profileOf(trx, org, "anna@acme.pl");
-      expect(await refresh(trx, org)).toEqual({ written: 1, zeroed: 0, skipped: false });
+      expect(await refresh(trx, org)).toEqual({ written: 0, unchanged: 1, zeroed: 0, skipped: false });
       expect(await profileOf(trx, org, "anna@acme.pl")).toEqual(before);
     });
   });
@@ -474,7 +475,7 @@ describe("refreshMailboxProfiles: mailbox scope", () => {
       expect(before).toHaveLength(1);
 
       // The first mailbox has no mail: its pass writes nothing and zeroes nothing in the second mailbox.
-      expect(await refresh(trx, org)).toEqual({ written: 0, zeroed: 0, skipped: false });
+      expect(await refresh(trx, org)).toEqual({ written: 0, unchanged: 0, zeroed: 0, skipped: false });
       const after = await trx.selectFrom("sender_profiles").selectAll().where("mailbox_id", "=", secondId).execute();
       expect(after).toEqual(before);
       expect(after[0]?.received).toBe(2);
@@ -628,7 +629,7 @@ describe("refreshMailboxProfiles: gates", () => {
           org.mailboxId,
           { now: NOW }
         );
-        expect(busy).toEqual({ written: 0, zeroed: 0, skipped: true });
+        expect(busy).toEqual({ written: 0, unchanged: 0, zeroed: 0, skipped: true });
         // The flag read and the try-lock are the only statements: no mail was read.
         expect(statements).toBeLessThanOrEqual(2);
         expect(await profileOf(trx, org, "anna@acme.pl")).toEqual(before);
@@ -636,7 +637,7 @@ describe("refreshMailboxProfiles: gates", () => {
         release(undefined);
         await holder;
       }
-      expect(await refresh(trx, org)).toEqual({ written: 1, zeroed: 0, skipped: false });
+      expect(await refresh(trx, org)).toEqual({ written: 1, unchanged: 0, zeroed: 0, skipped: false });
       expect((await profileOf(trx, org, "anna@acme.pl"))?.received).toBe(1);
     });
   });
@@ -647,15 +648,15 @@ describe("refreshMailboxProfiles: gates", () => {
       const on = await newOrg(trx);
       await seedSenderActivity(trx, off.ctx, off.mailboxId, { address: "anna@acme.pl", mails: mailsAt([1]) });
       await seedSenderActivity(trx, on.ctx, on.mailboxId, { address: "anna@acme.pl", mails: mailsAt([1]) });
-      expect(await refresh(trx, off)).toEqual({ written: 0, zeroed: 0, skipped: true });
+      expect(await refresh(trx, off)).toEqual({ written: 0, unchanged: 0, zeroed: 0, skipped: true });
       expect(await countRows(trx, off)).toBe(0);
-      expect(await refresh(trx, on)).toEqual({ written: 1, zeroed: 0, skipped: false });
+      expect(await refresh(trx, on)).toEqual({ written: 1, unchanged: 0, zeroed: 0, skipped: false });
       expect(await countRows(trx, on)).toBe(1);
 
       // Turning the flag off again stops the pass; the stored rows stay.
       await setOrgFeature(trx, on.ctx, { flag: "sender_context", enabled: false, actor: "cli", now: NOW });
       await seedSenderActivity(trx, on.ctx, on.mailboxId, { address: "anna@acme.pl", mails: mailsAt([2]) });
-      expect(await refresh(trx, on)).toEqual({ written: 0, zeroed: 0, skipped: true });
+      expect(await refresh(trx, on)).toEqual({ written: 0, unchanged: 0, zeroed: 0, skipped: true });
       expect((await profileOf(trx, on, "anna@acme.pl"))?.received).toBe(1);
     });
   });

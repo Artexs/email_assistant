@@ -13,6 +13,7 @@ import {
   channelRoutes,
   getChatLinkForUser,
   listUrgentNoticeTimes,
+  pushRoutes,
   queueMailboxRemovedNotices,
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
@@ -72,6 +73,7 @@ import {
   mailAllowLocal,
   mailTrustedAuthservIds,
   operatorUserIds,
+  pushConfigOf,
   webTrustedOrigins,
   webTrustedProxies,
   testMailRule,
@@ -355,6 +357,8 @@ export interface WebExtras {
   postOneClick?: (url: URL) => Promise<OneClickResult>;
   /** The style preview of the reply drafts: one drafter call on a fixed sample mail. Absent or null: no model client runs, and a preview answers `failed`. */
   stylePreview?: StylePreview | null;
+  /** Default: the global `fetch`. The only way out to a push service (the test notice). A test passes a fake that answers on the loopback. */
+  pushFetch?: typeof fetch;
 }
 
 export function apiRouters(
@@ -438,6 +442,10 @@ export function apiRouters(
     );
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
+    api.route(
+      "/",
+      pushRoutes({ db, now, box: extras.secrets, keys: pushConfigOf(config), fetch: extras.pushFetch ?? fetch })
+    );
     api.route(
       "/",
       approvalRoutes({ db, now, sendScope: extras.sendScope, hooks: delegationHooks({ db }), uidplus: uidplusOf(db) })
