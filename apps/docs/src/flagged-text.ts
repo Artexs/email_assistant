@@ -26,6 +26,7 @@ export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>>
   report_mail: ["notify_channel_title", "notify_channel_both"],
   urgency_editor: ["urg_title", "urg_topic_add"],
   bulk_unsubscribe: ["nl_open_link", "nl_none"],
+  panel_review: ["title_review", "rv_thanks"],
 };
 
 // Telegram texts and lines of the digest: literal parts of `packages/core/src/texts` and `digest`, English and Polish.

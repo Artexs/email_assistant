@@ -3,7 +3,6 @@ import type { BarCategory, TrustView } from "@ea/core/web";
 import { t, type TextKey } from "../../i18n";
 import {
   dueCategories,
-  PANEL_REVIEW_HREF,
   recommendationNote,
   REPORT_CATEGORIES,
   REPORT_SAMPLE_MAX,
@@ -26,6 +25,8 @@ export interface ReportContentProps {
   pending: boolean;
   // The answer of the last tap on "Turn on recommended" (null: none yet).
   turnedOn: TurnedOn | null;
+  // The path of the optional panel review (stage 15); null while the flag `panel_review` is off: no link then.
+  reviewHref: string | null;
   onTurnOn(): void;
   onCheckAgain(): void;
 }
@@ -42,7 +43,15 @@ const categoryNames = (categories: readonly BarCategory[]): string =>
 
 // The report of one mailbox: counts and fixed phrases only. The view holds example mails for the panel review; this component never reads
 // `view.examples`, so no sender name, subject or address can show here (F110 stage 14).
-export function ReportContent({ view, isOwner, pending, turnedOn, onTurnOn, onCheckAgain }: ReportContentProps) {
+export function ReportContent({
+  view,
+  isOwner,
+  pending,
+  turnedOn,
+  reviewHref,
+  onTurnOn,
+  onCheckAgain,
+}: ReportContentProps) {
   const state = reportState(view);
   const due = dueCategories(view);
   const note = recommendationNote(view);
@@ -118,10 +127,10 @@ export function ReportContent({ view, isOwner, pending, turnedOn, onTurnOn, onCh
       {!isOwner && showCategories(view) && due.length > 0 && (
         <p className="text-sm text-muted-foreground">{t("rep_owner_only")}</p>
       )}
-      {showCategories(view) && PANEL_REVIEW_HREF !== null && (
+      {showCategories(view) && reviewHref !== null && (
         <p className="text-sm">
           {t("rep_review_suggest")}{" "}
-          <a className="underline" href={PANEL_REVIEW_HREF}>
+          <a className="underline" href={reviewHref}>
             {t("rep_review_link")}
           </a>
         </p>

@@ -69,7 +69,7 @@ test("R1: a done check shows counts, the proof, the history line and the pause p
   await expect(turnOn(page, en.cat_notification)).toBeVisible();
   await expect(page.getByText(en.rep_read_only)).toBeVisible();
   await expect(page.getByRole("button", { name: en.rep_check_again })).toBeVisible();
-  // The suggestion of the panel review waits for stage 15.
+  // The suggestion of the panel review shows only with the flag `panel_review`: this organization has it off (review.spec.ts has it on).
   await expect(page.getByText(en.rep_review_suggest)).toHaveCount(0);
   // No mail text: the report shows no sender name, subject or address of a mail. (The selector above it names the user's own mailboxes.)
   await expect(page.locator("[data-report-state]").getByText(/@/)).toHaveCount(0);

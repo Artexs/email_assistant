@@ -10,7 +10,7 @@ const pageFiles = readdirSync(pagesDir).filter((file) => file.endsWith(".astro")
 
 describe("islands", () => {
   test("there are islands to check", () => {
-    expect(islandFiles.length).toBe(14);
+    expect(islandFiles.length).toBe(15);
   });
 
   test("every island starts its default export with useLocale()", () => {

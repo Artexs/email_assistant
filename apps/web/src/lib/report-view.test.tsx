@@ -98,7 +98,11 @@ const withCheck = (over: Partial<Check>): TrustView => view({ check: { ...doneCh
 
 function html(
   v: TrustView,
-  over: { isOwner?: boolean; turnedOn?: Parameters<typeof ReportContent>[0]["turnedOn"] } = {}
+  over: {
+    isOwner?: boolean;
+    turnedOn?: Parameters<typeof ReportContent>[0]["turnedOn"];
+    reviewHref?: string | null;
+  } = {}
 ): string {
   return renderToStaticMarkup(
     <ReportContent
@@ -106,6 +110,7 @@ function html(
       isOwner={over.isOwner ?? true}
       pending={false}
       turnedOn={over.turnedOn ?? null}
+      reviewHref={over.reviewHref ?? null}
       onTurnOn={() => undefined}
       onCheckAgain={() => undefined}
     />
@@ -222,8 +227,18 @@ describe("the report content", () => {
     expect(markup).toContain(t("rep_turn_on", { categories: en.cat_notification }));
     expect(markup).toContain(en.rep_read_only);
     expect(markup).toContain(en.rep_check_again);
-    // The suggestion of the panel review is hidden until stage 15 gives the link a target.
+    // The suggestion of the panel review is hidden while the flag `panel_review` is off (no href).
     expect(markup).not.toContain(en.rep_review_suggest);
+  });
+
+  test("with the flag on the optional review link shows under the categories, never as a button or a required step", () => {
+    const href = `/review?mailbox=${MAILBOX}`;
+    const markup = html(view(), { reviewHref: href });
+    expect(text(markup)).toContain(en.rep_review_suggest);
+    expect(markup).toContain(`href="${href}"`);
+    expect(markup).toContain(en.rep_review_link);
+    // A running check has no categories yet: no suggestion.
+    expect(html(withCheck({ status: "classifying" }), { reviewHref: href })).not.toContain(en.rep_review_suggest);
   });
 
   test("a member sees the text and no button", () => {

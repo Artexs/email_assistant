@@ -17,9 +17,6 @@ const OPEN_STATUSES: readonly Check["status"][] = ["queued", "backfilling", "wai
 // The history sample of one check (D11); the progress line says "of up to".
 export const REPORT_SAMPLE_MAX = 500;
 
-// The optional "check 10 decisions" link (stage 15). `null` until the panel review page exists: the stage 15 worker sets the path.
-export const PANEL_REVIEW_HREF: string | null = null;
-
 export type ReportState =
   | { kind: "starting" }
   | { kind: "running"; checked: number }

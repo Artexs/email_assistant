@@ -1281,6 +1281,21 @@ export const pl: Record<TextKey, string> = {
     "Asystent sprawdza pocztę z ostatnich 30 dni, tylko do odczytu. Potem pokazuje, co by zrobił, a Ty możesz włączyć to, co zaleca.",
   ob_report_done: "Sprawdzanie zakończone.",
   ob_report_link: "Otwórz raport",
+  // F110 stage 15: the optional panel review "Check 10 decisions" (flag panel_review)
+  title_review: "Sprawdź 10 decyzji",
+  rv_intro:
+    "To decyzje asystenta dotyczące Twojej poczty z ostatnich 30 dni. Oceń, czy każda jest trafna. To nieobowiązkowe. Nic nie zmienia w Twojej skrzynce.",
+  rv_no_mailbox: "Najpierw podłącz skrzynkę. Potem pojawią się decyzje do sprawdzenia.",
+  rv_load_error: "Nie udało się wczytać decyzji.",
+  rv_empty: "Nie ma niesprawdzonych decyzji z ostatnich 30 dni.",
+  rv_right: "✅ Trafna",
+  rv_sure: "Pewność: {value} %",
+  rv_pick_label: "Nietrafna? Wybierz właściwą kategorię",
+  rv_pick_none: "Wybierz kategorię",
+  rv_progress: "Odpowiedzi: {answered} z {total}",
+  rv_done: "Gotowe",
+  rv_thanks: "Dziękujemy. Twoje odpowiedzi pomagają asystentowi sprawdzać samego siebie. Niczego nie włączają.",
+  rv_back: "Wróć do raportu",
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).
