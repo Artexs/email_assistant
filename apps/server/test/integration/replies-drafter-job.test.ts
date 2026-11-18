@@ -1154,8 +1154,13 @@ describe("the drafter job: one draft per request, exactly once", () => {
       const second = { ...s, mailboxId: otherMailbox };
       await addReplyMail(trx, second, { threadKey: "shared-thread", receivedAt: new Date("2026-11-18T08:05:00Z") });
       clock.now = new Date(NOW.getTime() + MINUTE);
+      // The scan of the first mailbox does not take the mail of the second one.
+      await jobs.drafter.run({ mailboxId: s.mailboxId });
+      expect(await requestsOf(trx, s)).toHaveLength(1);
+      expect(await requestsOf(trx, second)).toHaveLength(0);
       await createReplyJobs(jobDeps(trx, llm, clock)).drafter.run({ mailboxId: otherMailbox });
 
+      expect(await requestsOf(trx, second)).toHaveLength(1);
       expect(await openReplySends(trx, s)).toHaveLength(2);
     });
   });
@@ -1196,6 +1201,28 @@ describe("the drafter job: one draft per request, exactly once", () => {
       await runJob(jobDeps(trx, none.llm, fresh()), other);
       expect((await requestsOf(trx, other))[0]).toMatchObject({ status: "no_draft", reason_code: "needs_facts" });
       expect(await pairRows(trx, other)).toEqual([]);
+    });
+  });
+
+  test("an organization that is suspended during the run is skipped: its mailbox gets no scan and no call", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const first = await setupBox(trx);
+      const second = await setupBox(trx);
+      await addReplyMail(trx, first);
+      await addReplyMail(trx, second);
+      const { llm, requests } = fakeLlm(async () => {
+        // The first mailbox is in work; the operator suspends the second organization now.
+        await trx.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", second.ctx.orgId).execute();
+        return CLEAN_ANSWER;
+      });
+
+      const run = await createReplyJobs(jobDeps(trx, llm, fresh())).drafter.run();
+
+      expect(requests).toHaveLength(1);
+      expect(run.requested).toBe(1);
+      expect(await requestsOf(trx, second)).toHaveLength(0);
+      expect(await pairRows(trx, second)).toEqual([]);
     });
   });
 

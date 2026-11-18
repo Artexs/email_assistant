@@ -38,3 +38,9 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, user text into
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** routes and panel (14, 15).
+
+## Carry-over from stage 07
+
+- A `redraft` request ends `done` (new version; `send_action_id` is the new send), `cancelled` / `closed` (the send does not wait any more, or the request has no `previous_send_id`), `cancelled` / `changed` (another version replaced the send while the model worked), or `failed` (`timeout`, `llm_cap`, `llm_error`, `checks`, `output`, `internal`). The full list of reason codes is in `notes/2026-11-18-f115-s07-drafter-job.md`.
+- The job calls `replaceApproval` with `via: "web"` and the requester as `userId`: every card is edited, including the card of the Telegram user who asked. The request has no channel column; if the notice needs the channel, add it to the request in this stage's repository (no migration is possible: carry it in `instruction` or a new column in the one migration of the ticket, which is already applied).
+- A redraft whose send is not `awaiting_approval` ends before the model call; the user is told by `reply_result`, not by a second draft.
