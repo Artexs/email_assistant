@@ -125,7 +125,11 @@ describe("lab command", () => {
       lab: { orgId: "o-lab", mailboxId: "m-lab", address: LAB_MAILBOXES.lab, chatId: 1 },
       demo: { orgId: "o-demo", mailboxId: "m-demo", address: LAB_MAILBOXES.demo, chatId: 2 },
     });
-  const cli: CliOutput = { print: (text) => printed.push(text), fail: (text) => failed.push(text) };
+  const cli: CliOutput = {
+    print: (text) => printed.push(text),
+    fail: (text) => failed.push(text),
+    raw: (text) => printed.push(text),
+  };
   const deps = (): LabDeps => ({
     env,
     state: state(),

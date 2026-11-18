@@ -27,6 +27,12 @@ describe("createCliOutput", () => {
     expect(errorSpy.mock.calls).toEqual([["[rules]", "refused: x"]]);
   });
 
+  test("raw goes to console.log with no prefix", () => {
+    createCliOutput("stats-week").raw("m3_total 4 hidden 2");
+    expect(logSpy.mock.calls).toEqual([["m3_total 4 hidden 2"]]);
+    expect(errorSpy.mock.calls).toEqual([]);
+  });
+
   test("the log level and the log format do not change the output", () => {
     setLogLevel("error");
     setLogFormat("json");
