@@ -20,7 +20,7 @@ import { queueLoopConsentLines, splitByLoopConsent } from "./loop-consent";
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 const SEND_KINDS: readonly DraftKind[] = draftKinds;
-const EXPIRY_REASONS = [
+export const EXPIRY_REASONS = [
   "timeout",
   "draft_missing",
   "not_notified",

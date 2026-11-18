@@ -434,8 +434,6 @@ describe("newerMailInThread (D7)", () => {
       await sweepReply(trx, b, { threadKey: thread, createdAt: new Date(T0.getTime() + HOUR) });
       await sweepReply(trx, a, { createdAt: new Date(T0.getTime() + HOUR) });
       expect(await newerMailInThread(trx, a.ctx, first.emailId)).toBe(false);
-      // Another organization reading this mail finds nothing.
-      expect(await newerMailInThread(trx, b.ctx, first.emailId)).toBe(false);
 
       // An older mail of the thread: not newer.
       await addThreadMail(trx, a.ctx, first.emailId, { receivedAt: new Date(T0.getTime() - HOUR) });
@@ -452,6 +450,8 @@ describe("newerMailInThread (D7)", () => {
         autoSubmitted: "no",
       });
       expect(await newerMailInThread(trx, a.ctx, first.emailId)).toBe(true);
+      // Another organization reading this mail finds nothing, although a newer mail exists.
+      expect(await newerMailInThread(trx, b.ctx, first.emailId)).toBe(false);
     });
   });
 

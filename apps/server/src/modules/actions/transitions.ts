@@ -335,7 +335,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
       "policy_changed",
       "delegation_closed",
       "superseded",
-      // `closeSend` (close.ts) for every kind: the reasons of the reply drafts. No caller yet; the sweep and the pre-send pass call it.
+      // `closeSend` (close.ts) for every kind: the reasons of the reply drafts. Callers: the pass and the copy check of `applySend` (`send.ts`) and the sweep (`replies/sweep.ts`).
       "answered",
       "newer_mail",
       "original_moved",
