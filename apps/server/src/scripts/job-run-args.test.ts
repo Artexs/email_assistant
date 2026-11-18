@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseJobRunArgs } from "./job-run-args";
+import { jobNames, parseJobRunArgs, usage } from "./job-run-args";
 
 describe("parseJobRunArgs", () => {
   test("parses a job name", () => {
@@ -22,6 +22,15 @@ describe("parseJobRunArgs", () => {
   test("parses loops.match and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "loops.match"])).toEqual({ name: "loops.match", force: false });
     expect(parseJobRunArgs(["--name", "loops.match", "--force"])).toBeNull();
+  });
+
+  test("parses replies.drafter and refuses --force for it", () => {
+    expect(parseJobRunArgs(["--name", "replies.drafter"])).toEqual({ name: "replies.drafter", force: false });
+    expect(parseJobRunArgs(["--name", "replies.drafter", "--force"])).toBeNull();
+  });
+
+  test("the usage text names every job", () => {
+    for (const name of jobNames) expect(usage).toContain(name);
   });
 
   test("rejects an unknown or missing name", () => {

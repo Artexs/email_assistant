@@ -7,6 +7,13 @@ type DbOrTrx = Db | Transaction<DB>;
 
 export type ReplyRequestRow = Selectable<DB["reply_requests"]>;
 export type { ReplyTrigger };
+// The column is text with a CHECK of the four triggers: an unknown value is a bug, not a request to draft.
+export function triggerOf(row: Pick<ReplyRequestRow, "trigger">): ReplyTrigger {
+  if (row.trigger === "auto" || row.trigger === "tap" || row.trigger === "redraft" || row.trigger === "sample") {
+    return row.trigger;
+  }
+  throw new Error("unknown reply request trigger");
+}
 export type ReplyRequestEnd = "done" | "no_draft" | "failed" | "cancelled" | "superseded";
 
 // A `drafting` row whose claim is older than this is taken back (the worker that held it died). D2: the claim is `locked_at`.
@@ -110,7 +117,14 @@ export async function finishReplyRequest(
   ctx: TenantContext,
   requestId: string,
   lockedAt: Date,
-  next: { status: ReplyRequestEnd; reasonCode?: string | null; sendActionId?: string | null; now: Date }
+  next: {
+    status: ReplyRequestEnd;
+    reasonCode?: string | null;
+    sendActionId?: string | null;
+    // The text of a `sample` request (the user's own preview; retention clears it).
+    sampleBody?: string | null;
+    now: Date;
+  }
 ): Promise<boolean> {
   const result = await db
     .updateTable("reply_requests")
@@ -118,6 +132,7 @@ export async function finishReplyRequest(
       status: next.status,
       reason_code: next.reasonCode ?? null,
       ...(next.sendActionId === undefined ? {} : { send_action_id: next.sendActionId }),
+      ...(next.sampleBody === undefined ? {} : { sample_body: next.sampleBody }),
       locked_at: null,
       updated_at: next.now,
     })
@@ -180,4 +195,46 @@ export async function countRedrafts(db: DbOrTrx, ctx: TenantContext, emailId: st
     .where("trigger", "=", "redraft")
     .executeTakeFirstOrThrow();
   return Number(row.count);
+}
+
+// Locks one claimed request until the end of the transaction, only while the claim with `lockedAt` still holds it. False: the
+// claim was lost (a stale take-back or a finish), so the caller writes nothing.
+export async function lockReplyRequest(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  requestId: string,
+  lockedAt: Date
+): Promise<boolean> {
+  const row = await trx
+    .selectFrom("reply_requests")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", requestId)
+    .where("status", "=", "drafting")
+    .where("locked_at", "=", lockedAt)
+    .forUpdate()
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
+// Ends the `pending` requests of a user wait (a tap, a redraft or a sample: every trigger but `auto`) of one mailbox that were
+// made at or before `createdBefore`: `failed` / `timeout`. A `pending` row is held by no run, so this needs no claim. A request
+// that a run holds (`drafting`) ends by that run, or by the next claim after the stale take-back. Returns the ids.
+export async function failStaleUserRequests(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { createdBefore: Date; now: Date }
+): Promise<string[]> {
+  const rows = await db
+    .updateTable("reply_requests")
+    .set({ status: "failed", reason_code: "timeout", locked_at: null, updated_at: opts.now })
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("status", "=", "pending")
+    .where("trigger", "<>", "auto")
+    .where("created_at", "<=", opts.createdBefore)
+    .returning("id")
+    .execute();
+  return rows.map((row) => row.id);
 }

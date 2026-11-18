@@ -84,7 +84,11 @@ flowchart BT
   privacy --> audit
   privacy --> channels
   privacy --> tenancy
+  replies --> actions
+  replies --> audit
+  replies --> config
   replies --> mail
+  replies --> tenancy
   replies --> triage
   reports --> actions
   reports --> audit

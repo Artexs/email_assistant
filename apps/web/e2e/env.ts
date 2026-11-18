@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 import {
+  E2E_AUTHSERV_ID,
   E2E_GATE_FIXTURE_DIR,
   E2E_LLM_PIN,
   E2E_SEND_TEST_ADDRESS,
@@ -80,6 +81,8 @@ export function e2eEnv(): Record<string, string> {
     // the dev stack, through the seeded mailbox) and the others stay held by the scope. Every other organization has no approved send.
     SEND_SCOPE: "self",
     SEND_TEST_ADDRESSES: E2E_SEND_TEST_ADDRESS,
+    // F110 stage 23: the newsletters spec seeds a `dkim=pass` of this authserv-id; it gives one-click.
+    MAIL_TRUSTED_AUTHSERV_IDS: E2E_AUTHSERV_ID,
     MAIL_ALLOW_LOCAL_HOSTS: "true",
     // The e2e server has no internet: the leaked-password check would fail closed.
     AUTH_PWNED_CHECK: "off",

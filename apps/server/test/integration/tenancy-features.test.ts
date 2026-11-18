@@ -193,6 +193,7 @@ describe("org_features", () => {
         { flag: "report_mail", enabled: false, source: "default" },
         { flag: "urgency_editor", enabled: false, source: "default" },
         { flag: "spam_review_line", enabled: false, source: "default" },
+        { flag: "bulk_unsubscribe", enabled: false, source: "default" },
         { flag: "reply_drafts", enabled: false, source: "default" },
       ]);
     });

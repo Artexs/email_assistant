@@ -1,10 +1,17 @@
 import { afterAll, describe, expect, test } from "bun:test";
+import type { Transaction } from "kysely";
 
+import { settingsDeps } from "../../src/composition";
 import { listUrgentNoticeTimes } from "../../src/modules/channels";
 import { recentWeekStats, weekStats, type WeekStatsDeps } from "../../src/modules/reports";
+import { upsertOrgFeature } from "../../src/modules/tenancy";
+import { trustEvidenceReader } from "../../src/modules/trust";
+import type { DB } from "../../src/platform/db";
 
 import { testDb, withRollback } from "./helpers";
 import { WEEK, WEEK_NOW, seedWeek } from "./metrics-fixtures";
+import { insertCheckRow, insertTripRow } from "./trust-fixtures";
+import { gateFile, gateOf } from "./web-trust-kit";
 
 const db = testDb();
 
@@ -14,7 +21,7 @@ afterAll(async () => {
 
 const deps: WeekStatsDeps = { urgentNotices: listUrgentNoticeTimes, testMail: { senders: [] } };
 
-const counts = async (trx: typeof db, orgId: string) => {
+const counts = async (trx: Transaction<DB>, orgId: string) => {
   const count = async (table: "audit_log" | "outbox") =>
     Number(
       (
@@ -145,6 +152,105 @@ describe("weekStats", () => {
       );
       if (stats === "not_found") throw new Error("not_found");
       expect(stats.m8).toEqual([]);
+    });
+  });
+});
+
+// F110 stage 12: the three sources of ADR 0028 on the M8 rows (tests 1 to 3 of the stage).
+describe("M8 trust evidence", () => {
+  // `info` is `go` but provisional; the other categories are `no-go`.
+  const provisional = gateFile({ info: 0.8 });
+  provisional.provisional = true;
+  provisional.categories.info = { ...provisional.categories.info, provisional: true };
+  const gate = gateOf(provisional);
+
+  const depsOn = (trx: Transaction<DB>, withReader = true): WeekStatsDeps => ({
+    ...deps,
+    ...(withReader
+      ? {
+          trustEvidence: trustEvidenceReader({
+            settings: { ...settingsDeps(db, () => WEEK_NOW, gate), db: trx },
+            testMail: { senders: [] },
+          }),
+        }
+      : {}),
+  });
+  const flag = (trx: Transaction<DB>, orgId: string, enabled: boolean) =>
+    upsertOrgFeature(trx, { orgId }, { flag: "trust_ladder", enabled, setBy: "test", setAt: WEEK_NOW });
+
+  async function seedTrust(trx: Transaction<DB>, orgId: string, mailboxId: string): Promise<void> {
+    const result = { spam: { outcome: "fail", acted: 100, moved: 3, upper: 0.07, total: 300, wouldMove: 30 } };
+    await insertCheckRow(trx, { orgId }, mailboxId, {
+      status: "done",
+      result: JSON.stringify(result),
+      created_at: new Date("2026-11-20T10:00:00Z"),
+      finished_at: new Date("2026-11-20T11:00:00Z"),
+    });
+    await insertTripRow(trx, { orgId }, mailboxId, { category: "notification", reason: "corrections" });
+  }
+
+  test("1. flag on: the rows show the global evidence, the newest done check and the trip", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      await flag(trx, orgA.ctx.orgId, true);
+      await seedTrust(trx, orgA.ctx.orgId, orgA.mailboxId);
+      const stats = await weekStats(trx, orgA.ctx, { weekStart: WEEK, mailboxId: null, now: WEEK_NOW }, depsOn(trx));
+      if (stats === "not_found") throw new Error("not_found");
+      const row = (category: string) => stats.m8.find((r) => r.category === category);
+      expect(row("info")).toMatchObject({
+        global: { decision: "go", provisional: true, cases: 200 },
+        history: null,
+        trip: { tripped: false, reason: null },
+      });
+      expect(row("spam")).toMatchObject({
+        global: { decision: "no-go", provisional: false },
+        history: { outcome: "fail", acted: 100, moved: 3 },
+        trip: { tripped: false, reason: null },
+      });
+      expect(row("notification")).toMatchObject({ trip: { tripped: true, reason: "corrections" } });
+      // Exact keys: the page must not get a field that the schema does not name.
+      expect(Object.keys(row("spam")?.global ?? {}).sort()).toEqual([
+        "cases",
+        "decision",
+        "provisional",
+        "wilsonLower",
+      ]);
+      expect(Object.keys(row("spam")?.history ?? {}).sort()).toEqual(["acted", "moved", "outcome"]);
+      expect(Object.keys(row("spam")?.trip ?? {}).sort()).toEqual(["reason", "tripped"]);
+    });
+  });
+
+  test("2. flag off, or no reader: the three keys are null and the other keys are the same", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      await seedTrust(trx, orgA.ctx.orgId, orgA.mailboxId);
+      const query = { weekStart: WEEK, mailboxId: null, now: WEEK_NOW };
+      const base = await weekStats(trx, orgA.ctx, query, deps);
+      // The flag is off (the default): a reader is given, and its data is not read.
+      const off = await weekStats(trx, orgA.ctx, query, depsOn(trx));
+      // The flag is on, but the root gave no reader.
+      await flag(trx, orgA.ctx.orgId, true);
+      const noReader = await weekStats(trx, orgA.ctx, query, depsOn(trx, false));
+      for (const stats of [base, off, noReader]) {
+        if (stats === "not_found") throw new Error("not_found");
+        expect(stats.m8).toHaveLength(5);
+        for (const row of stats.m8) expect([row.global, row.history, row.trip]).toEqual([null, null, null]);
+      }
+      expect(off).toEqual(base);
+      expect(noReader).toEqual(base);
+    });
+  });
+
+  test("3. a mailbox that is not the organization's reads null from the reader, not data", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA, orgB } = await seedWeek(trx);
+      await flag(trx, orgA.ctx.orgId, true);
+      await seedTrust(trx, orgA.ctx.orgId, orgA.mailboxId);
+      const reader = depsOn(trx).trustEvidence;
+      if (reader === undefined) throw new Error("reader");
+      expect(await reader(orgB.ctx, orgA.mailboxId)).toBeNull();
+      expect(await reader(orgA.ctx, orgB.mailboxId)).toBeNull();
+      expect(await reader(orgA.ctx, orgA.mailboxId)).not.toBeNull();
     });
   });
 });
