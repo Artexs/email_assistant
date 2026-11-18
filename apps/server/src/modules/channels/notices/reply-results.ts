@@ -1,6 +1,6 @@
 import { NoticeViewError } from "@ea/core";
 
-import { listEndedRequestsVia, type EndedRequest } from "../../replies";
+import { listEndedRequestsVia, USER_REQUEST_TIMEOUT_MS, type EndedRequest } from "../../replies";
 import { isFeatureOn } from "../../tenancy";
 import { replyConsentOf } from "../consent";
 import { queueReviewCardOfSend } from "../reply-review";
@@ -34,6 +34,7 @@ async function detectReplyResults(run: OrgRun): Promise<void> {
     via: "telegram",
     since: new Date(now.getTime() - REPLY_RESULT_WINDOW_MS),
     limit: RESULT_LIMIT,
+    maxLifeMs: USER_REQUEST_TIMEOUT_MS,
   });
   if (ended.length === 0) return;
   const covered = await replyConsentOf(

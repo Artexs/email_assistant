@@ -656,10 +656,7 @@ describe("reply draft notices (F115 stage 03, stage 12)", () => {
         "✍️ No draft: the reply needs facts that are not in the mail. Write it yourself.",
         "✍️ Brak szkicu: odpowiedź wymaga faktów, których nie ma w wiadomości. Napisz ją samodzielnie.",
       ],
-      timeout: [
-        "✍️ The draft took too long. Tap again to try once more.",
-        "✍️ Szkic powstawał za długo. Stuknij ponownie, aby spróbować jeszcze raz.",
-      ],
+      timeout: ["✍️ The draft took too long. Try once more.", "✍️ Szkic powstawał za długo. Spróbuj jeszcze raz."],
       llm_cap: [
         "✍️ The daily limit of AI calls for this mailbox is reached. Try again tomorrow.",
         "✍️ Dzienny limit wywołań AI dla tej skrzynki został wykorzystany. Spróbuj jutro.",

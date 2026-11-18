@@ -4,21 +4,14 @@ import type { Transaction } from "kysely";
 
 import { noDelegationHooks } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
-import {
-  createOutboxSender,
-  detectNotices,
-  handleCallback,
-  type CallbackDeps,
-  type LinkedChat,
-} from "../../src/modules/channels";
+import { handleCallback, type LinkedChat } from "../../src/modules/channels";
 import { digestNowMessage, type CommandDeps } from "../../src/modules/channels/commands";
-import { createFakeChannel, type FakeChannel } from "../../src/modules/channels/fake/channel";
 import { handleReplyText } from "../../src/modules/channels/reply-redraft";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { draftableMails, redraftReply, requestReply } from "../../src/modules/replies";
 import type { DB } from "../../src/platform/db";
 
-import { addMember, isolateChannels, linkChat, randomChatId, renderedOf } from "./fixtures";
+import { addMember, linkChat, randomChatId, renderedOf } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import {
   addReplyMail,
@@ -33,11 +26,8 @@ import {
   requestsOf,
   runJob,
   setMailAddresses,
-  setupBox,
-  type Clock,
-  type FakeAnswer,
-  type JobBox,
 } from "./reply-job-fixtures";
+import { cardOut, openSend, outboxOf, rig, type Rig } from "./reply-telegram-fixtures";
 
 // The reply drafts in Telegram: Redraft, Reply all, Draft reply. The model is a fake and the channel is a fake; the sender, the notice
 // detectors and the drafter job run against one transaction that is rolled back. One clock moves forward after each step.
@@ -46,115 +36,6 @@ const db = testDb();
 afterAll(async () => {
   await db.destroy();
 });
-
-interface Rig {
-  box: JobBox;
-  owner: LinkedChat;
-  member: LinkedChat;
-  memberId: string;
-  deps: CallbackDeps;
-  clock: Clock;
-  channel: FakeChannel;
-  // One sender run, one notice detection and one job run, each a minute after the step before.
-  sendOut(): Promise<void>;
-  detect(): Promise<void>;
-  job(answer?: FakeAnswer): Promise<void>;
-}
-
-async function rig(trx: Transaction<DB>, opts: { consented?: boolean } = {}): Promise<Rig> {
-  await isolateChannels(trx);
-  const box = await setupBox(trx);
-  const memberId = await addMember(trx, box.ctx.orgId);
-  await linkChat(trx, box.ctx, box.userId, randomChatId(), new Date(NOW.getTime() - HOUR));
-  await linkChat(trx, box.ctx, memberId, randomChatId(), new Date(NOW.getTime() - HOUR));
-  if (opts.consented !== false) {
-    await recordAudit(trx, box.ctx, {
-      event: auditEvents.webTelegramConsent,
-      actor: box.userId,
-      data: { via: "web", version: REPLY_CONSENT_SINCE },
-      at: new Date(NOW.getTime() - 2 * HOUR),
-    });
-  }
-  const clock: Clock = { now: NOW };
-  const link = (userId: string, role: "owner" | "assistant"): LinkedChat => ({
-    orgId: box.ctx.orgId,
-    userId,
-    role,
-    chatId: 1,
-    linkedAt: new Date(NOW.getTime() - HOUR),
-    locale: "en",
-  });
-  const deps: CallbackDeps = {
-    db: trx,
-    now: () => clock.now,
-    actionsScope: { kind: "all" },
-    hooks: noDelegationHooks,
-    uidplus: async () => true,
-    sendScope: { kind: "all" },
-  };
-  const channel = createFakeChannel();
-  const tick = () => {
-    clock.now = new Date(clock.now.getTime() + MINUTE);
-  };
-  return {
-    box,
-    owner: link(box.userId, "owner"),
-    member: link(memberId, "assistant"),
-    memberId,
-    deps,
-    clock,
-    channel,
-    async sendOut() {
-      tick();
-      await createOutboxSender({ db: trx, channel, now: () => clock.now }).run();
-    },
-    async detect() {
-      tick();
-      await detectNotices({
-        db: trx,
-        now: () => clock.now,
-        startedAt: new Date(NOW.getTime() - HOUR),
-        testMail: NO_TEST_SENDERS,
-      });
-    },
-    async job(answer: FakeAnswer = CLEAN_ANSWER) {
-      tick();
-      const { llm } = fakeLlm(() => answer);
-      await runJob(jobDeps(trx, llm, clock), box);
-    },
-  };
-}
-
-async function outboxOf(trx: Transaction<DB>, r: Rig, kind: string) {
-  return trx
-    .selectFrom("outbox")
-    .selectAll()
-    .where("org_id", "=", r.box.ctx.orgId)
-    .where("kind", "=", kind as never)
-    .orderBy("created_at")
-    .orderBy("id")
-    .execute();
-}
-
-const openSend = async (trx: Transaction<DB>, r: Rig) =>
-  (await pairRows(trx, r.box)).find((row) => row.type === "send" && row.status === "awaiting_approval");
-
-// A reply card that went out: the review of the draft, sent by the fake channel. Returns the message id of the card.
-async function cardOut(trx: Transaction<DB>, r: Rig): Promise<number> {
-  // The committer has put the draft in Drafts: the review lists only such replies.
-  await trx
-    .updateTable("actions")
-    .set({ status: "applied", applied_at: NOW })
-    .where("org_id", "=", r.box.ctx.orgId)
-    .where("type", "=", "create_draft")
-    .where("status", "=", "ready")
-    .execute();
-  await handleCallback(r.deps, r.owner, "rv");
-  await r.sendOut();
-  const sent = r.channel.sent.at(-1);
-  if (sent === undefined) throw new Error("no card went out");
-  return sent.messageId;
-}
 
 describe("Redraft", () => {
   test("1. Redraft sends one question with ForceReply; the user's line answers it; the job writes version 2; the user gets the version 2 card", async () => {

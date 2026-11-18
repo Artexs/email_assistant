@@ -273,11 +273,12 @@ export interface EndedRequest {
 }
 
 // The tap and redraft requests that ended at or after `since` and that were asked for through `via` (the audit row `reply.requested` of the
-// service holds it; the request has no channel column). Oldest end first. The chat channel answers each one once with the result.
+// service holds it; the request has no channel column). Oldest end first. `maxLifeMs`: the longest time between the creation of a request and
+// its end (the request timeout of the drafter): an older request is not an end of this window. The chat channel answers each one once with the result.
 export async function listEndedRequestsVia(
   db: DbOrTrx,
   ctx: TenantContext,
-  opts: { via: string; since: Date; limit: number }
+  opts: { via: string; since: Date; limit: number; maxLifeMs: number }
 ): Promise<EndedRequest[]> {
   const rows = await db
     .selectFrom("reply_requests as r")
@@ -296,6 +297,9 @@ export async function listEndedRequestsVia(
     .where("r.status", "in", ["done", "no_draft", "failed", "cancelled", "superseded"])
     .where("r.requested_by", "is not", null)
     .where("r.updated_at", ">=", opts.since)
+    // A request of a user ends within `maxLifeMs` of its creation (the request timeout). A row whose `updated_at` is newer than that
+    // but whose creation is far older was touched by something else (retention, an operator): it did not end now.
+    .where("r.created_at", ">=", new Date(opts.since.getTime() - opts.maxLifeMs))
     .where(
       sql<boolean>`exists (
         select 1 from audit_log a

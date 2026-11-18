@@ -210,7 +210,7 @@ describe("the taps of the reply drafts (F115 stage 13)", () => {
     expect(pl.drafting).toBe("✍️ Piszę szkic. Przyjdzie w nowej wiadomości.");
     expect(pl.redraftAsk).toBe("Napisz jedną linijkę w odpowiedzi na wiadomość poniżej.");
     expect(pl.redraftQueued).toBe("✍️ Piszę nową wersję. Przyjdzie w nowej wiadomości.");
-    expect(pl.redraftLimit).toBe("Ta wiadomość ma już 5 nowych wersji. Edytuj szkic w panelu.");
+    expect(pl.redraftLimit).toBe("Ten szkic ma już 5 nowych wersji. Edytuj go w panelu.");
     expect(pl.instructionLength).toBe("Napisz jedną linijkę, od 1 do 300 znaków.");
     expect(pl.closed).toBe("Ten szkic jest zamknięty. Nic się nie zmieniło.");
     expect(pl.recipientsDone).toBe("👥 Zmieniono odbiorców. Nowa wersja przyjdzie w nowej wiadomości.");
