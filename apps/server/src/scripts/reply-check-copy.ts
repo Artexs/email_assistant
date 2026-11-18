@@ -13,7 +13,7 @@ import { readCheckCopyOptions, usage } from "./reply-check-copy-args";
 const out = createCliOutput("reply-check-copy");
 const log = createLog("reply-check-copy");
 
-// The probe of the copy hash (reply drafts, probe P1): reads the Drafts copy of one draft and compares it with the stored hash.
+// The probe of the copy hash (reply drafts): reads the Drafts copy of one draft and compares it with the stored hash.
 async function main(): Promise<number> {
   const options = readCheckCopyOptions(process.argv.slice(2));
   if (!options) {

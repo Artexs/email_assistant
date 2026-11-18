@@ -831,7 +831,7 @@ async function main(): Promise<number> {
         return url;
       };
 
-      // Every password set carries the current terms (F082 L16): the seeded users have accepted them.
+      // Every password set carries the current terms: the seeded users have accepted them.
       const setPassword = async (newPassword: string, token: string): Promise<void> => {
         const body = { newPassword, token, termsVersion: TERMS_VERSION };
         await handle.auth.api.resetPassword({ body });

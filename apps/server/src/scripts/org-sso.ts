@@ -122,7 +122,7 @@ export async function runOrgSso(argv: string[], deps: OrgSsoDeps): Promise<numbe
           return 1;
         }
         const oidcConfig = buildOidcConfig(found.discovered, { clientId: command.clientId, clientSecret });
-        // `db`, never an open transaction: after a unique violation a transaction is aborted (stage 07 review N4).
+        // `db`, never an open transaction: after a unique violation a transaction is aborted.
         const result = await setSsoProvider(deps.db, ctx, {
           issuer: command.issuer,
           domain,

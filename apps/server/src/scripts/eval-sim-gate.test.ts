@@ -15,7 +15,7 @@ import { parseEvalArgs } from "./eval-args";
 import { runSim } from "./eval-sim";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
-// The gate file rule of D27 at the runSim level: a gate file comes only from a COMPLETE holdout run at the default
+// The gate file rule at the runSim level: a gate file comes only from a COMPLETE holdout run at the default
 // bar and minimum support with no --limit. Fake LLM client, temp ledger, runs and gate dirs: no real call, no money.
 
 const config = loadConfig({
@@ -104,7 +104,7 @@ function fakeClient(
 async function run(extra: string[], opts: { part?: "holdout" | "dev"; failFrom?: number } = {}) {
   const part = opts.part ?? "holdout";
   corpus = await completeCorpus();
-  // `sim freeze` is stage 12; the loader reads only the version and the audit status.
+  // `sim freeze` writes the gate file; the loader reads only the version and the audit status.
   writeJson(join(corpus.dir, "manifest.json"), { version: "1", audit: { status: "pending" } });
   const fake = fakeClient(readSlots(corpus.dir, part), { failFrom: opts.failFrom });
   const gateDir = join(tmp, "gate");
@@ -232,7 +232,7 @@ describe("runSim prompt version and parts", () => {
     ]);
     const report = readFileSync(out, "utf8");
     expect(report).toContain("- prompt version: classifier-v3[history,urgency]");
-    // Review N2: the report says where the sim history comes from.
+    // The report says where the sim history comes from.
     expect(report).toContain("ideal mix, not from the model's own past labels");
   });
 

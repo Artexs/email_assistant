@@ -97,7 +97,7 @@ describe("checkSimCompose", () => {
     ).toEqual(["greenmail: port_not_loopback", "greenmail: greenmail_port_published"]);
   });
 
-  // The false passes of the stage 03 review: forms of Compose that the first rules did not see.
+  // The false passes of an earlier review: forms of Compose that the first rules did not see.
   test("v3 an image under any tag of the production image is refused", () => {
     for (const image of ["ea-server:latest", "ea-server", "docker.io/library/ea-server:1"]) {
       const text = change("server", "image: ea-sim-server", `image: ${image}`);

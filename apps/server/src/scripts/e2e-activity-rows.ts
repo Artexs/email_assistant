@@ -124,7 +124,7 @@ export async function insertAction(trx: Transaction<DB>, ctx: TenantContext, inp
   return row.id;
 }
 
-// The rows of S5d B12: M1 moved notification, M2 reply, M3 unsure, M4 delegated, then the fillers.
+// The rows of the activity page: moved notification, reply, unsure, delegated, then the fillers.
 // The actions of one mail get distinct `created_at` values: the activity read model orders them by it.
 export async function seedActivityRows(
   db: Db | Transaction<DB>,

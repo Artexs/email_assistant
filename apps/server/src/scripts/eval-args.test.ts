@@ -145,7 +145,7 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     expect(parseEvalArgs([...sim, "--escalation-reasoning-effort", "none"])).toBeUndefined();
   });
 
-  // Review N5: both flags are pinned to the production prompt when v3 is the pointer.
+  // Both flags are pinned to the production prompt when v3 is the pointer.
   describe("N5: the production pointer is v3", () => {
     const production = productionClassifierChoice("classifier-v3", ["attachments", "list", "urgency"]);
 

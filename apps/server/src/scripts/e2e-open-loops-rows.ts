@@ -115,7 +115,7 @@ async function seedFollowUpPair(
   });
 }
 
-// One loop for each kind and state of the page (see `E2E_OPEN_LOOPS`), one active delegate for the delegated loops, and two F102
+// One loop for each kind and state of the page (see `E2E_OPEN_LOOPS`), one active delegate for the delegated loops, and two
 // delegations for the Delegated tab.
 export async function seedOpenLoopsRows(
   db: Db | Transaction<DB>,

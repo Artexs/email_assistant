@@ -95,7 +95,7 @@ export const E2E_APPROVALS = {
     body: "E2E original request: please check the vendor contract.",
     task: "Check the vendor contract",
   },
-  // A second waiting send to the first delegate, for the edit that is approved (T3 of the approvals spec).
+  // A second waiting send to the first delegate, for the edit that is approved.
   edit: {
     delegateName: "Anna Nowak",
     delegateEmail: E2E_SEND_TEST_ADDRESS,
@@ -273,7 +273,7 @@ export interface DelegationsSeedIds {
 
 // One organization per project for the open loops spec (it drafts, moves, closes and untracks loops, so each project
 // needs its own). The flags `open_loops`, `delegation_pages` and `approvals_page` are on; the mailbox is in assist mode with drafts on.
-// One loop for each kind and state of the page, two delegations for the Delegated tab, and follow-up pairs for the waiting and S11 rows.
+// One loop for each kind and state of the page, two delegations for the Delegated tab, and follow-up pairs for the waiting rows and the rows of the closing-loop test.
 export const E2E_OPEN_LOOPS_OWNER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-open-loops-owner-mobile@x.test",
   desktop: "e2e-open-loops-owner-desktop@x.test",
@@ -356,7 +356,7 @@ export const E2E_OPEN_LOOPS = {
     dueInDays: -4,
     pair: true,
   },
-  // S11 (TG-4): a follow-up whose loop closes while Edit is open. The first loop closes in the database, the second is dropped.
+  // A follow-up whose loop closes while Edit is open. The first loop closes in the database, the second is dropped.
   s11Closed: {
     kind: "waiting",
     counterpart: "dan@client.test",
@@ -451,7 +451,7 @@ export const E2E_OPEN_LOOPS = {
     closed: "done",
   },
 } as const satisfies Record<string, E2eLoopPlan>;
-// The two F102 delegations of the Delegated tab (keys of `E2E_DELEGATIONS`).
+// The two delegations of the Delegated tab (keys of `E2E_DELEGATIONS`).
 export const E2E_OPEN_LOOPS_DELEGATIONS = ["sent", "answered"] as const;
 export interface OpenLoopsSeedIds {
   loopIds: Record<keyof typeof E2E_OPEN_LOOPS, string>;
@@ -576,7 +576,7 @@ export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-activity-desktop@x.test",
 };
 
-// The mails of the activity rows (S5d B12). The Playwright runner imports these; this file imports only `pg`.
+// The mails of the activity rows. The Playwright runner imports these; this file imports only `pg`.
 export const ACTIVITY_SUBJECTS = {
   moved: "E2E moved notification",
   reply: "E2E reply needed",
