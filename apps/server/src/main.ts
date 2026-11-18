@@ -175,7 +175,12 @@ const operatorSend =
         if (telegram === null) throw new Error("telegram is off");
         await telegram.sendDirect(operatorChat, text);
       };
-const operator = createOperatorNotices({ db, now: () => new Date(), send: operatorSend });
+const operator = createOperatorNotices({
+  db,
+  now: () => new Date(),
+  send: operatorSend,
+  locale: config.OPERATOR_LOCALE,
+});
 let operatorRun: Promise<void> = Promise.resolve();
 scheduler.add("channels.operator", "0 13 * * * *", () => {
   operatorRun = operator.run();

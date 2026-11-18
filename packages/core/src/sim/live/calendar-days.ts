@@ -1,5 +1,5 @@
 // Calendar-day arithmetic on YYYY-MM-DD strings. Pure: it works on UTC day numbers and never on local time.
-const DAY_MS = 86_400_000;
+import { addDays as shiftDay, DAY_MS } from "../../time";
 
 export function parseDay(date: string): { year: number; month: number; day: number } | undefined {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
@@ -37,9 +37,10 @@ export function dayNumberOf(date: string): number {
   return dayNumber(parts.year, parts.month, parts.day);
 }
 
+// The same shift as `addDays` of `../../time`, but a text that is not a real date throws.
 export function addDays(date: string, days: number): string {
-  const parts = dayParts(dayNumberOf(date) + days);
-  return formatDay(parts.year, parts.month, parts.day);
+  dayNumberOf(date);
+  return shiftDay(date, days);
 }
 
 // Monday = 1 … Sunday = 7.

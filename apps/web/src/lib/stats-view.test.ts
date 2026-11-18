@@ -66,6 +66,14 @@ describe("statsRows", () => {
     expect(cellOf(rows, "stats_m7")).toBe("$0.41");
   });
 
+  test("Polish writes the cost and the minutes with a decimal comma", () => {
+    setLocaleForTest("pl");
+    const slow = week({ m5: { ...week().m5, p90Minutes: 2.5 } });
+    const rows = statsRows([slow]);
+    expect(cellOf(rows, "stats_m5")).toBe("2,5 min (1)");
+    expect(cellOf(rows, "stats_m7")).toBe("0,41 USD");
+  });
+
   test("the split rows show only with a split, one per kind, and the totals change their label", () => {
     const tally = (due: number, closed: number, surfaced: number) => ({
       due,

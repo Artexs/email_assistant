@@ -1,4 +1,4 @@
-import { nextAlertStep, SLO_KINDS, type SloKind, type SloThresholds } from "@ea/core";
+import { HOUR_MS, nextAlertStep, SLO_KINDS, type SloKind, type SloThresholds } from "@ea/core";
 
 import type { Db } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
@@ -30,8 +30,6 @@ export interface SloTickDeps {
   log: Pick<Log, "info" | "warn">;
   locale?: AlertLocale;
 }
-
-const HOUR_MS = 3_600_000;
 
 export async function runSloTick(deps: SloTickDeps, now: Date): Promise<void> {
   const order = (kind: SloKind): number => SLO_KINDS.indexOf(kind);

@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { Client } from "pg";
 
 export const E2E_ORG_NAME = "E2E";
@@ -537,7 +538,6 @@ export function e2eUrgencyProfile(now: Date): {
   deadlines: { label: string; due: string }[];
 } {
   const localDate = (at: Date): string => new Intl.DateTimeFormat("en-CA", { timeZone: E2E_TIMEZONE }).format(at);
-  const DAY_MS = 24 * 60 * 60 * 1000;
   return {
     topics: [{ label: E2E_URGENCY_SEEDED.topic.label, keywords: [...E2E_URGENCY_SEEDED.topic.keywords] }],
     deadlines: [

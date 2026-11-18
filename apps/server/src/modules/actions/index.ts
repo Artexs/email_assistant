@@ -75,6 +75,7 @@ export {
   countSpamMoves,
   countClaimable,
   countFailedSendsSince,
+  countFailedSendsSinceOfAll,
   countHeldSends,
   countApprovals,
   countWaitingApprovals,

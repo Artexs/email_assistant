@@ -1,41 +1,47 @@
 import {
   costPerMail,
-  QUOTA_TIMEZONE,
-  quotaDayStart,
+  DAY_MS,
   type OperatorFlagBody,
   type OperatorNotices,
   type OperatorOrgDetail,
   type OperatorOrgList,
   type OperatorOrgRow,
   type OperatorPlanBody,
+  type OperatorPlanResult,
+  QUOTA_TIMEZONE,
+  quotaDayStart,
 } from "@ea/core";
 
 import type { Db, TenantContext } from "../../platform/db";
-import { countFailedSendsSince, lastSendAppliedAt } from "../actions";
-import { auditEvents, listAuditEvents, sumLlmCallsByModelSince } from "../audit";
-import { countFailedOutboxSince, lastOutboxSentAt, listLinkedChatsOfOrg } from "../channels";
-import { listMailboxes } from "../mail";
+import { countFailedSendsSince, countFailedSendsSinceOfAll, lastSendAppliedAt } from "../actions";
+import { auditEvents, listAuditEventsOfAll, sumLlmCallsByModelSince, sumLlmCallsByModelSinceOfAll } from "../audit";
+import {
+  countFailedOutboxSince,
+  countFailedOutboxSinceOfAll,
+  countLinkedChatsOfAll,
+  lastOutboxSentAt,
+} from "../channels";
+import { listMailboxes, listMailboxStatesOfAll } from "../mail";
 import { lastDigestSentAt } from "../reports";
 import {
+  countMembershipsOfAll,
   featureStates,
   getOrgPlan,
   getSsoState,
-  listMemberships,
-  listOrganizations,
+  listOrgPlansOfAll,
   setOrgFeature,
   setOrgPlan,
   type SetOrgFeatureResult,
   type SetOrgPlanHooks,
   type SetOrgPlanResult,
+  type OrgPlanState,
 } from "../tenancy";
 import { lastTriageAt } from "../triage";
 
-const DAY_MS = 24 * 3_600_000;
+type LlmRows = Awaited<ReturnType<typeof sumLlmCallsByModelSince>>;
 
 // D18: calls and cost of the quota day. A model without a price adds its calls to `unpricedCalls`.
-export async function llmToday(db: Db, ctx: TenantContext, now: Date): Promise<OperatorOrgRow["llmToday"]> {
-  const since = quotaDayStart(now, QUOTA_TIMEZONE);
-  const rows = await sumLlmCallsByModelSince(db, ctx, since);
+function llmTotals(rows: LlmRows, since: Date, now: Date): OperatorOrgRow["llmToday"] {
   const today = { since: since.toISOString(), calls: 0, costUsd: 0, unpricedCalls: 0 };
   for (const row of rows) {
     today.calls += row.calls;
@@ -46,51 +52,54 @@ export async function llmToday(db: Db, ctx: TenantContext, now: Date): Promise<O
   return today;
 }
 
-async function operatorOrgRow(db: Db, orgId: string, now: Date): Promise<OperatorOrgRow | undefined> {
-  const ctx: TenantContext = { orgId };
-  const since = new Date(now.getTime() - DAY_MS);
-  const [plan, members, chats, mailboxes, sends, outbox, llm] = await Promise.all([
-    getOrgPlan(db, ctx),
-    listMemberships(db, ctx),
-    listLinkedChatsOfOrg(db, ctx),
-    listMailboxes(db, ctx),
-    countFailedSendsSince(db, ctx, since),
-    countFailedOutboxSince(db, ctx, since),
-    llmToday(db, ctx, now),
-  ]);
-  // The organization was deleted between the list and its reads: no row.
-  if (!plan) return undefined;
-  const synced = mailboxes.flatMap((mailbox) => (mailbox.last_synced_at ? [mailbox.last_synced_at.getTime()] : []));
-  const count = (status: string) => mailboxes.filter((mailbox) => mailbox.status === status).length;
-  return {
-    orgId,
-    plan: plan.plan,
-    trialEndsAt: plan.trialEndsAt?.toISOString() ?? null,
-    resumedAt: plan.resumedAt?.toISOString() ?? null,
-    maxMailboxes: plan.maxMailboxes,
-    members: members.length,
-    linkedChats: chats.length,
-    mailboxes: {
-      total: mailboxes.length,
-      active: count("active"),
-      paused: count("paused"),
-      authError: count("auth_error"),
-      hostBlocked: count("host_blocked"),
-    },
-    lastSyncAt: synced.length > 0 ? new Date(Math.max(...synced)).toISOString() : null,
-    failures24h: { sends, outbox },
-    llmToday: llm,
-  };
+export async function llmToday(db: Db, ctx: TenantContext, now: Date): Promise<OperatorOrgRow["llmToday"]> {
+  const since = quotaDayStart(now, QUOTA_TIMEZONE);
+  return llmTotals(await sumLlmCallsByModelSince(db, ctx, since), since, now);
 }
 
-// D14: one organization after another, each read tenant-scoped. The reads of one organization run together.
+// D14: the list reads each table once across all organizations (the console reads across organizations by design, behind
+// the operator role) and groups the rows by organization. The reads run together. The row of an organization holds the same
+// values as its one-by-one reads (`getOperatorOrg`).
 export async function listOperatorOrgs(deps: { db: Db; now: () => Date }): Promise<OperatorOrgList> {
+  const { db } = deps;
   const now = deps.now();
-  const orgs: OperatorOrgRow[] = [];
-  for (const { id } of await listOrganizations(deps.db)) {
-    const row = await operatorOrgRow(deps.db, id, now);
-    if (row) orgs.push(row);
-  }
+  const since = new Date(now.getTime() - DAY_MS);
+  const quotaSince = quotaDayStart(now, QUOTA_TIMEZONE);
+  const [plans, members, chats, mailboxes, sends, outbox, llm] = await Promise.all([
+    listOrgPlansOfAll(db),
+    countMembershipsOfAll(db),
+    countLinkedChatsOfAll(db),
+    listMailboxStatesOfAll(db),
+    countFailedSendsSinceOfAll(db, since),
+    countFailedOutboxSinceOfAll(db, since),
+    sumLlmCallsByModelSinceOfAll(db, quotaSince),
+  ]);
+  const mailboxesOf = new Map<string, Awaited<ReturnType<typeof listMailboxStatesOfAll>>>();
+  for (const mailbox of mailboxes) mailboxesOf.set(mailbox.orgId, [...(mailboxesOf.get(mailbox.orgId) ?? []), mailbox]);
+  const orgs = plans.map(({ orgId, state }): OperatorOrgRow => {
+    const own = mailboxesOf.get(orgId) ?? [];
+    const synced = own.flatMap((mailbox) => (mailbox.lastSyncedAt ? [mailbox.lastSyncedAt.getTime()] : []));
+    const count = (status: string) => own.filter((mailbox) => mailbox.status === status).length;
+    return {
+      orgId,
+      plan: state.plan,
+      trialEndsAt: state.trialEndsAt?.toISOString() ?? null,
+      resumedAt: state.resumedAt?.toISOString() ?? null,
+      maxMailboxes: state.maxMailboxes,
+      members: members.get(orgId) ?? 0,
+      linkedChats: chats.get(orgId) ?? 0,
+      mailboxes: {
+        total: own.length,
+        active: count("active"),
+        paused: count("paused"),
+        authError: count("auth_error"),
+        hostBlocked: count("host_blocked"),
+      },
+      lastSyncAt: synced.length > 0 ? new Date(Math.max(...synced)).toISOString() : null,
+      failures24h: { sends: sends.get(orgId) ?? 0, outbox: outbox.get(orgId) ?? 0 },
+      llmToday: llmTotals(llm.get(orgId) ?? [], quotaSince, now),
+    };
+  });
   return { orgs, at: now.toISOString() };
 }
 
@@ -163,34 +172,80 @@ export async function listOperatorNotices(deps: { db: Db; now: () => Date }, day
   const now = deps.now();
   const since = new Date(now.getTime() - days * DAY_MS);
   const notices: OperatorNotices["notices"] = [];
-  for (const { id } of await listOrganizations(deps.db)) {
-    const rows = await listAuditEvents(
-      deps.db,
-      { orgId: id },
-      { events: [auditEvents.operatorNotice], since, limit: NOTICE_LIMIT }
-    );
-    for (const row of rows) {
-      // `data` is stored JSON: read it as unknown and skip a row whose kind or key is not a string.
-      const data = typeof row.data === "object" && row.data !== null ? (row.data as Record<string, unknown>) : {};
-      const { kind, key } = data;
-      if (typeof kind !== "string" || typeof key !== "string") continue;
-      notices.push({ orgId: id, kind, key, at: row.at.toISOString() });
-    }
+  const rows = await listAuditEventsOfAll(deps.db, {
+    events: [auditEvents.operatorNotice],
+    since,
+    perOrgLimit: NOTICE_LIMIT,
+  });
+  for (const row of rows) {
+    // `data` is stored JSON: read it as unknown and skip a row whose kind or key is not a string.
+    const data = typeof row.data === "object" && row.data !== null ? (row.data as Record<string, unknown>) : {};
+    const { kind, key } = data;
+    if (typeof kind !== "string" || typeof key !== "string") continue;
+    notices.push({ orgId: row.orgId, kind, key, at: row.at.toISOString() });
   }
   notices.sort((a, b) => (a.at === b.at ? a.orgId.localeCompare(b.orgId) : a.at < b.at ? 1 : -1));
   return { notices: notices.slice(0, NOTICE_LIMIT), since: since.toISOString() };
+}
+
+/** The answer of the plan route: the HTTP status and the final JSON body; `kind` is the service result for the log line. */
+export interface OperatorPlanOutcome {
+  kind: SetOrgPlanResult["kind"];
+  status: 200 | 400 | 404;
+  body: OperatorPlanResult | { error: string };
+}
+
+const planResultOf = (
+  result: "changed" | "unchanged",
+  state: OrgPlanState,
+  counts: { cancelledMessages: number; expiredSends: number }
+): OperatorPlanResult => ({
+  result,
+  plan: state.plan,
+  trialEndsAt: state.trialEndsAt?.toISOString() ?? null,
+  maxMailboxes: state.maxMailboxes,
+  resumedAt: state.resumedAt?.toISOString() ?? null,
+  ...counts,
+});
+
+/** Maps a `setOrgPlan` result to the answer of the route (pure). */
+export function planOutcomeOf(result: SetOrgPlanResult): OperatorPlanOutcome {
+  switch (result.kind) {
+    case "not_found":
+    case "trial_days_needed":
+      return { kind: result.kind, status: result.kind === "not_found" ? 404 : 400, body: { error: result.kind } };
+    case "bad_input":
+      return { kind: result.kind, status: 400, body: { error: result.reason } };
+    case "unchanged":
+      return {
+        kind: result.kind,
+        status: 200,
+        body: planResultOf("unchanged", result.state, { cancelledMessages: 0, expiredSends: 0 }),
+      };
+    case "changed":
+      return {
+        kind: result.kind,
+        status: 200,
+        body: planResultOf("changed", result.after, {
+          cancelledMessages: result.cancelledMessages,
+          expiredSends: result.expiredSends,
+        }),
+      };
+  }
 }
 
 // D20: the same service functions as the CLIs; the actor is the operator's user id. The audit rows go into the target organization.
 export async function changeOrgPlan(
   deps: { db: Db; now: () => Date; planHooks: SetOrgPlanHooks },
   input: { orgId: string; actor: string; body: OperatorPlanBody }
-): Promise<SetOrgPlanResult> {
-  return setOrgPlan(
-    deps.db,
-    { orgId: input.orgId },
-    { ...input.body, actor: input.actor, now: deps.now() },
-    deps.planHooks
+): Promise<OperatorPlanOutcome> {
+  return planOutcomeOf(
+    await setOrgPlan(
+      deps.db,
+      { orgId: input.orgId },
+      { ...input.body, actor: input.actor, now: deps.now() },
+      deps.planHooks
+    )
   );
 }
 

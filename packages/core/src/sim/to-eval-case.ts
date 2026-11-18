@@ -1,3 +1,4 @@
+import { HOUR_MS } from "../time";
 import { type EvalCase, evalCaseSchema } from "../triage/eval-case";
 
 import type { CaseText } from "./files";
@@ -5,7 +6,6 @@ import { isHtmlOnly } from "./hard-cases";
 import type { Scenario } from "./scenario";
 import type { Slot } from "./slot";
 
-const HOUR_MS = 3_600_000;
 const MAX_PARENTS = 3;
 
 export interface HtmlBodyInput {

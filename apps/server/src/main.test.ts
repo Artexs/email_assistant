@@ -42,7 +42,9 @@ describe("main", () => {
   test("the ops.slo job and the operator notices share one operator send", () => {
     const source = readFileSync(mainPath, "utf8");
     expect(source).toMatch(/const operatorSend =\s+operatorChat === null\s+\? null\s+: async/);
-    expect(source).toContain("createOperatorNotices({ db, now: () => new Date(), send: operatorSend })");
+    expect(source).toMatch(
+      /createOperatorNotices\(\{\s+db,\s+now: \(\) => new Date\(\),\s+send: operatorSend,\s+locale: config\.OPERATOR_LOCALE,\s+\}\)/
+    );
     expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?send: operatorSend,/);
   });
 

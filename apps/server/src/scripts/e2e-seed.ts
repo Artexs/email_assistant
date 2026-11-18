@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
-import { TERMS_VERSION } from "@ea/core";
+import { DAY_MS, TERMS_VERSION } from "@ea/core";
 import { Client } from "pg";
 
 import { insertDefaultSettings, setUrgencyProfile, updateMailboxSettings } from "../modules/config";
@@ -112,7 +112,6 @@ import { seedReportRows, seedTrustRows } from "./e2e-trust-rows";
 
 const out = createCliOutput("e2e-seed");
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 // The GreenMail of the dev stack (the same host that the Playwright config uses).
 const GREENMAIL_HOST = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
 const ASSIST_SWITCHES = { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: false };

@@ -609,3 +609,27 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: planner defaults with the review's fixes.
 - Undo: change the plan before the stage builds.
 - Source: same plan, Q2, Q5 to Q8.
+
+### 2026-11-18 · F118 phone channel: push for urgent, approvals and updates only; a `minimal` Telegram level that shows no mail text and no address (F118) · user-visible · new
+- Choice: (Q2) push carries three groups: Urgent, Approvals and Updates (send results, delegations, mailbox and sync problems). The digest, the weekly report and the trust reports stay on Telegram and mail. (Q4) the `minimal` Telegram level prints no string from the notice, not even your own mailbox address; `/status` names mailboxes "Mailbox 1…"; `/review` answers with a panel link only. (Q7) if the chosen channel is missing, the notice goes to the other one; a push that fails with `no_device` falls back to Telegram.
+- Why: planner defaults with the review's fixes.
+- Undo: leave the flags `web_push` and `telegram_minimal` off.
+- Source: `spec/features/planned/F118-e9b-phone-channel-pwa-push-telegram-detail/questions.md` (Q2, Q4, Q7).
+
+### 2026-11-18 · F118 push: devices are bound to the sign-in session; company sign-in sessions end after 12 hours and then push stops until you open the panel again (F118) · production · new
+- Choice: (Q3) accept it; a held push falls back to Telegram. (Q6) push endpoints are limited to the FCM, Mozilla, Apple and Windows hosts, checked at subscribe and again at send. (Q8) 10 devices per user.
+- Why: security default.
+- Undo: change the plan before the stage builds.
+- Source: same plan, Q3, Q6, Q8.
+
+### 2026-11-18 · F118 push: real ids and counts reach the push services (FCM) from checkpoint A, but the papers name them only in stage 13 (F118) · privacy · new
+- Choice: (Q12) `web_push` stays on only for your own organization until stage 13 lands (gate G-papers). Notice payloads carry ids and counts, never mail text. The legal papers get the push services as sub-processors and one `TERMS_VERSION` bump in stage 13.
+- Why: nobody else is affected until the papers say it.
+- Undo: leave `web_push` off.
+- Source: same plan, Q12.
+
+### 2026-11-18 · F118 checkpoint A needs your phone (F118) · production · new
+- Choice: after stage 05 the real phone test needs you: run `bun run push:keys`, put the VAPID keys in the VPS `.env`, deploy, turn on `web_push` for your organization, install the panel on the Android phone, send a test push. If it fails, F118 stops (Q1). Stages 01 to 05 build before this; stage 06 and later wait.
+- Why: a real phone cannot be simulated.
+- Undo: none needed.
+- Source: same plan, Q1, O1 to O3.

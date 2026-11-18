@@ -145,6 +145,19 @@ describe("operator notices: hourly run", () => {
     });
   });
 
+  test("trial_ending: locale pl sends the Polish text (OPERATOR_LOCALE)", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const endsAt = new Date(NOW.getTime() + 2 * DAY);
+      await setTrial(trx, org.orgId, endsAt);
+      const { texts, send } = recorder();
+      await createOperatorNotices({ db: trx, now: () => NOW, send, locale: "pl" }).run();
+      expect(mine(texts, org.orgId)).toEqual([
+        `Okres próbny organizacji ${org.orgId} kończy się ${endsAt.toISOString()}.`,
+      ]);
+    });
+  });
+
   test("trial_ending: an ended trial gets the 'ended' text once", async () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);

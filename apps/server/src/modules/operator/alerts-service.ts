@@ -1,4 +1,4 @@
-import { SLO_KINDS, type SloKind } from "@ea/core";
+import { DAY_MS, SLO_KINDS, type SloKind } from "@ea/core";
 
 import type { Db } from "../../platform/db";
 
@@ -7,7 +7,6 @@ import { sloAlertText, TEST_FACTS, TEST_IDS, type AlertLocale } from "./slo-text
 
 // F114 stage 03: the two service functions of the CLIs `ops:alerts` and `ops:alert-test`.
 
-const DAY_MS = 86_400_000;
 const LIST_LIMIT = 200;
 
 /** The incidents opened in the last `days` days, newest first. Numbers and kinds only. */

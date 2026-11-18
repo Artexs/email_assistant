@@ -268,6 +268,46 @@ export async function sumLlmCallsByModelSince(
   }));
 }
 
+// The same sums for every organization at once, grouped by organization. Inside one organization the rows keep the order of
+// `sumLlmCallsByModelSince` (model, then endpoint). An organization with no call has no entry.
+export async function sumLlmCallsByModelSinceOfAll(
+  db: DbOrTrx,
+  since: Date
+): Promise<Map<string, Awaited<ReturnType<typeof sumLlmCallsByModelSince>>>> {
+  const model = sql<string>`coalesce(data->>'model', 'unknown')`;
+  const endpoint = sql<string>`coalesce(data->>'endpoint', 'standard')`;
+  const rows = await db
+    .selectFrom("audit_log")
+    .select([
+      "org_id",
+      model.as("model"),
+      endpoint.as("endpoint"),
+      sql<string>`count(*)`.as("calls"),
+      sql<string>`coalesce(sum((data->>'tokens_in')::bigint), 0)`.as("tokens_in"),
+      sql<string>`coalesce(sum((data->>'tokens_out')::bigint), 0)`.as("tokens_out"),
+    ])
+    .where("event", "=", auditEvents.llmCall)
+    .where("created_at", ">=", since)
+    .groupBy(["org_id", model, endpoint])
+    .orderBy("org_id")
+    .orderBy(model)
+    .orderBy(endpoint)
+    .execute();
+  const byOrg = new Map<string, Awaited<ReturnType<typeof sumLlmCallsByModelSince>>>();
+  for (const row of rows) {
+    const list = byOrg.get(row.org_id) ?? [];
+    list.push({
+      model: row.model,
+      endpoint: toEndpointKind(row.endpoint),
+      calls: Number(row.calls),
+      tokensIn: Number(row.tokens_in),
+      tokensOut: Number(row.tokens_out),
+    });
+    byOrg.set(row.org_id, list);
+  }
+  return byOrg;
+}
+
 // The `llm.call` rows of the style preview (F115 stage 10): the calls of one mailbox with this prompt version that belong to no mail
 // (`email_id` is null), at or after `since`. A preview makes one row per call, so a retry inside one preview counts twice.
 export async function countMaillessCallsSince(
@@ -447,6 +487,39 @@ export async function listAuditEvents(
     .execute();
   return rows.map((row) => ({
     id: String(row.id),
+    at: row.created_at,
+    actor: row.actor,
+    event: row.event,
+    reasonCode: row.reason_code,
+    data: row.data,
+  }));
+}
+
+// The rows of `listAuditEvents` for every organization at once: the newest `perOrgLimit` rows of each organization, newest first
+// (created_at, then id), each row with its `orgId`. One query (a window over the organization), not one per organization.
+export async function listAuditEventsOfAll(
+  db: DbOrTrx,
+  opts: { events: readonly string[]; since: Date; perOrgLimit: number }
+): Promise<(AuditEventRow & { orgId: string })[]> {
+  if (opts.events.length === 0) return [];
+  const rank = sql<string>`row_number() over (partition by org_id order by created_at desc, id desc)`;
+  const rows = await db
+    .selectFrom(
+      db
+        .selectFrom("audit_log")
+        .select(["id", "org_id", "created_at", "actor", "event", "reason_code", "data", rank.as("rank")])
+        .where("event", "in", [...opts.events])
+        .where("created_at", ">=", opts.since)
+        .as("ranked")
+    )
+    .select(["id", "org_id", "created_at", "actor", "event", "reason_code", "data"])
+    .where("rank", "<=", String(opts.perOrgLimit))
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .execute();
+  return rows.map((row) => ({
+    id: String(row.id),
+    orgId: row.org_id,
     at: row.created_at,
     actor: row.actor,
     event: row.event,

@@ -35,6 +35,7 @@ export * from "../legal";
 export * from "../mail/providers";
 export * from "../changelog";
 export * from "../site";
+export * from "../time";
 export * from "../texts/locale";
 export { userLocales, userLocaleSchema, type UserLocale } from "../tenancy";
 export { rightAnswer, pickedText, pickAnswer, type UndoAnswerKind } from "../digest/answers";

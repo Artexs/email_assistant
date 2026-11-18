@@ -150,6 +150,7 @@ export {
   listFlagTargets,
   listFolderUids,
   listMailboxes,
+  listMailboxStatesOfAll,
   listMailboxTargets,
   listReturned,
   listSyncFolders,

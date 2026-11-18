@@ -445,6 +445,19 @@ export async function countFailedSendsSince(db: DbOrTrx, ctx: TenantContext, sin
   return Number(row.count);
 }
 
+// The same count for every organization at once (an organization with no failed send has no entry).
+export async function countFailedSendsSinceOfAll(db: DbOrTrx, since: Date): Promise<Map<string, number>> {
+  const rows = await db
+    .selectFrom("actions")
+    .select(["org_id", sql<string>`count(*)`.as("count")])
+    .where("type", "=", "send")
+    .where("status", "=", "failed")
+    .where("updated_at", ">", since)
+    .groupBy("org_id")
+    .execute();
+  return new Map(rows.map((row) => [row.org_id, Number(row.count)]));
+}
+
 // F099 D14: the newest `applied_at` of an applied send of the organization, null when none.
 export async function lastSendAppliedAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
   const row = await db

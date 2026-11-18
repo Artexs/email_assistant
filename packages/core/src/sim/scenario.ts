@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isReservedHost } from "../testmail/batch";
+import { DAY_MS } from "../time";
 import { urgencyProfileSchema } from "../triage/urgency-profile";
 
 export const simPersonaGroups = [
@@ -113,7 +114,6 @@ export interface ScenarioIssue {
   detail: string;
 }
 
-const DAY_MS = 86_400_000;
 const WARSAW_OFFSET_FORMAT = new Intl.DateTimeFormat("en-US", {
   timeZone: "Europe/Warsaw",
   hourCycle: "h23",

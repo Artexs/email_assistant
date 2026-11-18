@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { localDateTime, localToInstant } from "../digest/local-time";
+import { addDays } from "../time";
 import { senderHistorySchema, type SenderHistory } from "../triage/sender-history";
 import type { UrgencySource } from "../triage/urgency-profile";
 
@@ -80,10 +81,6 @@ export function dayCounts(spec: WeekSpec): DayCount[] {
     >;
     return { day, total, byCategory };
   });
-}
-
-function addDays(date: string, days: number): string {
-  return new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 }
 
 const clock = (minute: number): string => `${pad(Math.floor(minute / 60), 2)}:${pad(minute % 60, 2)}`;

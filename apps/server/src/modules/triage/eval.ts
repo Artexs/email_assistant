@@ -3,31 +3,32 @@ import {
   applyHardRules,
   categories,
   type Category,
-  confidenceHistogram,
   computeMetrics,
+  confidenceHistogram,
   confusionMatrix,
   costPerMail,
-  DEFAULT_MAILS_PER_DAY,
   decideCategory,
   decidePolicy,
+  DEFAULT_MAILS_PER_DAY,
   delegateIdOf,
+  type DelegationInput,
   delegationInputOf,
   draftCheckCodes,
   EVAL_RECEIVED_AT,
-  type DelegationInput,
   type EvalCase,
   goNoGo,
-  monthlyCost,
+  HOUR_MS,
   type LlmEndpointKind,
   type LlmRole,
-  type PlannedAction,
+  type MailToolSwitches,
+  monthlyCost,
   planActions,
+  type PlannedAction,
   type Prediction,
   ruleSummary,
   splitAddress,
   textIsClean,
   thresholdSweep,
-  type MailToolSwitches,
   type TriageAnalysis,
 } from "@ea/core";
 import { z } from "zod";
@@ -67,7 +68,6 @@ import type { MailKind } from "./repo";
 
 const log = createLog("eval");
 
-const HOUR_MS = 3_600_000;
 const STOP_AFTER_ERRORS = 3;
 const STOP_REASON = "soft errors in a row (quota or overload), resume later";
 const SAFE_ACTION_TYPES: readonly string[] = ["move", "mark_read", "flag", "save_summary"];

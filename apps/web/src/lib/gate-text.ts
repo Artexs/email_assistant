@@ -2,17 +2,19 @@ import type { GateView } from "@ea/core/web";
 
 import type { TextKey } from "../i18n";
 
+import { formatNumber, formatTrimmed } from "./format-number";
+
 export function formatPercent(ratio: number): string {
-  return Number((ratio * 100).toFixed(1)).toString();
+  return formatTrimmed(ratio * 100, 1);
 }
 
 // Rounded down, so a failing precision never shows the bar's number. The inner round removes float noise.
 export function formatPrecision(ratio: number): string {
-  return String(Math.floor(Math.round(ratio * 1e6) / 1e3) / 10);
+  return formatNumber(Math.floor(Math.round(ratio * 1e6) / 1e3) / 10);
 }
 
 export function formatConfidence(value: number): string {
-  return String(value);
+  return formatNumber(value);
 }
 
 export function gateText(
