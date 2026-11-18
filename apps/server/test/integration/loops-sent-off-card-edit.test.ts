@@ -15,7 +15,7 @@ import { CURRENT_CONSENT, consentRow, insertFollowUp } from "./follow-up-fixture
 import { testDb, withRollback } from "./helpers";
 import { commandOrg, type CommandOrg } from "./loops-commands-fixtures";
 
-// F116 stage 14 re-review, note A: a follow-up card that Telegram already delivered keeps its Send and Reject buttons when
+// A follow-up card that Telegram already delivered keeps its Send and Reject buttons when
 // "Track my sent mail" goes off. The send is `expired`, so a tap is refused, but the buttons stay. The switch off queues one
 // edit with a fixed text of ours as the original: no quote, no address, no subject.
 const db = testDb();

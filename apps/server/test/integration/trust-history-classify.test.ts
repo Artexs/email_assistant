@@ -86,7 +86,7 @@ describe("1. the sample: acted-on mail first, and a stored result under the chec
       const check = await checkOf(db, checkId);
       expect(check.status).toBe("classifying");
       expect(Number(check.cost_usd)).toBeCloseTo(0.19, 10);
-      // The classify step saves no triage result: the one stored row is still the only one (review 5 TG2).
+      // The classify step saves no triage result: the one stored row is still the only one.
       expect(await countOf("triage_results", box.orgId)).toBe(1);
     });
   });

@@ -10,7 +10,7 @@ import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 
-// `org:delete` as a subprocess. D17: stdout and stderr hold no organization name; the mailbox address
+// `org:delete` as a subprocess. Stdout and stderr hold no organization name; the mailbox address
 // lines after a delete are the one place that prints addresses.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

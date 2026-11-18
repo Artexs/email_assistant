@@ -114,7 +114,7 @@ export function approvalKit(db: Db) {
 
   type World = Awaited<ReturnType<typeof setup>>;
 
-  // A send S1 with its draft, and a sent Telegram card for U1 and U2 (as the notifier leaves them).
+  // A send with its draft, and a sent Telegram card for U1 and U2 (as the notifier leaves them).
   async function addSend(s: World, opts: SendOpts = {}, orgId = s.org.orgId, mailboxId = s.mailboxId) {
     const created = await db
       .transaction()

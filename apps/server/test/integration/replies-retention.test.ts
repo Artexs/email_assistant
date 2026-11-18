@@ -10,7 +10,7 @@ import { testDb, withRollback } from "./helpers";
 import { insertReplyRequest } from "./reply-fixtures";
 
 // The retention of the reply texts (`reply_requests.instruction`, `sample_body`).
-// The period is `RETENTION_TEXT_DAYS` (90) for every organization, counted from `created_at` (review 3).
+// The period is `RETENTION_TEXT_DAYS` (90) for every organization, counted from `created_at`.
 const db = testDb();
 
 afterAll(async () => {

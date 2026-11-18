@@ -536,7 +536,7 @@ describe("D18", () => {
     const refusals = outputs.filter((output) => !output.ok);
     expect(grants).toHaveLength(2);
     expect(refusals.length).toBeGreaterThan(8);
-    // A grant holds its tokens by design (stage 09 stores them). A refusal and the log lines hold none.
+    // A grant holds its tokens by design. A refusal and the log lines hold none.
     const seen = [...logLines, ...refusals.map((output) => inspect(output, { depth: 10 }))].join("\n");
     expect(logLines.length).toBeGreaterThan(0);
     expect(secretsSeen.filter((value) => value !== "").length).toBeGreaterThan(30);

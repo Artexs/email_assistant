@@ -83,7 +83,7 @@ async function waitingMailbox(trx: Transaction<DB>, ctx: TenantContext, mailboxI
   await updateMailboxSettings(trx, ctx, mailboxId, { mode: "assist", toolSwitches: SWITCHES });
 }
 
-// A delegation mail whose draft D1 the committer put into the fake Drafts folder, and its waiting send S1.
+// A delegation mail whose first draft the committer put into the fake Drafts folder, and its waiting send.
 async function seed(trx: Transaction<DB>, opts: { kind?: "delegation" | "clarification" | "reminder" } = {}) {
   await pauseOtherMailboxes(trx);
   const box = await createOrgWithMailbox(trx);
@@ -151,7 +151,7 @@ async function seed(trx: Transaction<DB>, opts: { kind?: "delegation" | "clarifi
   return seeded;
 }
 
-// The message of the draft D1 as the committer builds it: the same builder and inputs.
+// The message of the first draft as the committer builds it: the same builder and inputs.
 async function builtMessage(trx: Transaction<DB>, s: Seed) {
   const draft = await row(trx, s.p.draftId);
   const mailbox = await trx
@@ -258,7 +258,7 @@ describe("editApproval: the new version", () => {
       expect(reverses).toHaveLength(1);
       expect(reverses[0]?.payload).toMatchObject({ reason: "expired", uid: d1Uid });
 
-      // The committer runs the reverse row; the fake provider deletes the copy of D1 and gets the copy of D2.
+      // The committer runs the reverse row; the fake provider deletes the copy of the first draft and gets the copy of the second.
       await s.runCommitter();
       expect((await row(trx, s.p.draftId)).status).toBe("undone");
       expect((await row(trx, reverses[0]?.id as string)).status).toBe("applied");

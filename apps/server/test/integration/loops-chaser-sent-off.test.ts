@@ -11,7 +11,7 @@ import { chase, DUE_YESTERDAY, NOW, setAutoFollowUp } from "./loops-chaser-fixtu
 import { commandLoop, commandOrg } from "./loops-commands-fixtures";
 import { tablesHolding } from "./loops-scan-fixtures";
 
-// F116 stage 15 (the stage 14 N1 owner decision): "Track my sent mail" off removes every copy of the Sent mail. The chaser makes
+// The owner decision: "Track my sent mail" off removes every copy of the Sent mail. The chaser makes
 // new copies: the follow-up pair that it plans (quote, To, Cc, subject in `actions.payload`) and, later, its cards. This test
 // runs the real planner, scans every table and every log line for planted values, then switches off and scans again. A new
 // place that the chaser copies a value to (an audit row, a log line, a column) fails the first scan or the second.

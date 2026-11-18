@@ -19,7 +19,7 @@ import { fakeOidcConfig, ssoSignIn, SSO_TEST_ORIGIN } from "../sso-helpers";
 
 import { testDb } from "./helpers";
 
-// Stage 04 of F119: who may sign in through the provider of an organization, and the SSO audit rows.
+// Who may sign in through the provider of an organization, and the SSO audit rows.
 const db = testDb();
 
 const ERROR_URL = "/login?sso=failed";

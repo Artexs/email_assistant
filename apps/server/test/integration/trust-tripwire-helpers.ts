@@ -34,7 +34,7 @@ export const GRANT_AT = "2026-11-01T10:00:00.000Z";
 export const NOW = new Date("2026-11-08T12:00:00Z");
 export const at = (iso: string): Date => new Date(iso);
 
-// A non-provisional `go` for every category under the running key: the evidence gate of stage 04 lets `auto` on.
+// A non-provisional `go` for every category under the running key: the evidence gate lets `auto` on.
 export const GO_GATE: GateEvidenceDeps = (() => {
   const categories = {} as Record<BarCategory, GlobalEvidence>;
   for (const category of barCategories) {

@@ -11,7 +11,7 @@ import { createOrgWithMailbox, insertDraftAndSend, insertTestEmail } from "./fix
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 
-// The migration `action_loop_anchor` (spec/features/active/F116-e5b-open-loops/stages/stage-09-action-anchor.md):
+// The migration `action_loop_anchor` :
 // the second anchor of an action, its CHECKs, composite keys, row-level security, and the Up and Down sections.
 const db = testDb();
 

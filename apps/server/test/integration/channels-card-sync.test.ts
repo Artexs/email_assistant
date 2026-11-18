@@ -132,7 +132,7 @@ async function insertCard(
   return row.id;
 }
 
-// Two owners with a chat each, a waiting send S1 and its two sent cards C1 (message 501) and C2 (message 502).
+// Two owners with a chat each, a waiting send and its two sent cards C1 (message 501) and C2 (message 502).
 async function world(trx: Transaction<DB>): Promise<World> {
   await isolateChannels(trx);
   const { orgId, userId: u1, mailboxId } = await createOrgWithMailbox(trx);

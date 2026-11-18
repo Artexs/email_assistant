@@ -35,7 +35,7 @@ export const testCapabilities: MailCapabilities = {
   keywords: true,
 };
 
-// The S4 fields of `ApplyDeps` for tests that apply no draft or send.
+// The send fields of `ApplyDeps` for tests that apply no draft or send.
 export function applyDepsDefaults(): Pick<
   ApplyDeps,
   "mailbox" | "owner" | "organization" | "compose" | "sender" | "hooks" | "appendFolders"
@@ -140,7 +140,7 @@ export async function pauseOtherMailboxes(trx: Transaction<DB>): Promise<void> {
   await trx.updateTable("mailboxes").set({ status: "paused" }).where("status", "=", "active").execute();
 }
 
-// The plan state of the stage 6 tests: a direct update, as the CLI's service does it (the hooks are not part of these tests).
+// The plan state of the tests: a direct update, as the CLI's service does it (the hooks are not part of these tests).
 export async function suspendOrg(trx: Transaction<DB>, orgId: string): Promise<void> {
   await trx.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", orgId).execute();
 }

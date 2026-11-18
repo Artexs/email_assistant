@@ -16,7 +16,7 @@ import { testDb } from "./helpers";
 import { approvalKit, bodyOf, HOUR, NOW, post, ROUTES } from "./web-approvals-kit";
 import { TEST_ORIGIN } from "./web-helpers";
 
-// F102 ticket, approvals write API: approve, reject and edit from the panel. Owner only; the rules of the service; the Telegram cards follow.
+// Approvals write API: approve, reject and edit from the panel. Owner only; the rules of the service; the Telegram cards follow.
 const db = testDb();
 const { cleanup, inTrx, setup, addSend, insertDelegateNow, send, auditOf, editRows, sendCount } = approvalKit(db);
 

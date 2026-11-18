@@ -9,7 +9,7 @@ import { insertDefaultSettings } from "../../src/modules/config";
 import { createOrgWithMailbox, insertDraftAndSend } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F115 stage 10 on the command line: `bun run mailbox:settings switch --name reply_drafts` (D19 guard, closing rule) and
+// On the command line: `bun run mailbox:settings switch --name reply_drafts` (guard, closing rule) and
 // `bun run mailbox:profile`. `print` goes to stdout, `fail` to stderr (createCliOutput).
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

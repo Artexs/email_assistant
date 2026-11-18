@@ -56,7 +56,7 @@ describe("job:run CLI", () => {
     expect(lines[1]).toContain("delegation.chaser is an alias of loops.chaser");
   });
 
-  // F115 stage 09: the sweep needs no model and no LLM scope; it prints counts only.
+  // The sweep needs no model and no LLM scope; it prints counts only.
   test("replies.sweep runs once without the model and prints a counts line", async () => {
     const result = await runJob(["--name", "replies.sweep"]);
 

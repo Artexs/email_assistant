@@ -10,7 +10,7 @@ import type { DB } from "../../src/platform/db";
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// `queueTrustNotice` queues one Telegram row per linked owner. Stages 07, 08 and 09 call it in their
+// `queueTrustNotice` queues one Telegram row per linked owner. The history check, the tripwire and the re-gate call it in their
 // own transaction.
 const db = testDb();
 const now = new Date("2026-11-15T10:00:00Z");

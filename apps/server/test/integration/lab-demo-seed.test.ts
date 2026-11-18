@@ -437,7 +437,7 @@ describe("exportDemo (F113 stage 15)", () => {
 
   // Each case plants one address outside `.test` in one column; the export refuses and names the table and column.
   const BAD: [string, string, string, string][] = [
-    // Review B1: forms that the first scan let through into the seed file.
+    // Forms that the first scan let through into the seed file.
     [
       "emails",
       "body_text",
@@ -873,13 +873,13 @@ describe("importDemo (F113 stage 15)", () => {
     expect((await rowCounts(twin.orgId)).organizations).toBe(1);
   });
 
-  // TG1: only an org that looks like an import (every mailbox paused with the placeholder secret) is replaced.
+  // Only an org that looks like an import (every mailbox paused with the placeholder secret) is replaced.
   test("6c: replace refuses an org with the import name and no mailbox, a mailbox that is active, or a mailbox with a real secret", async () => {
     const fx = await buildFixture();
     const seed = elsewhere(await exportOf(fx));
     const email = owner();
 
-    // A real org renamed to the import name: owner = the --email user, no mailbox row (reviewer case R4).
+    // A real org renamed to the import name: owner = the --email user, no mailbox row.
     const { orgId: bare } = await createOrganizationWithOwner(db, {
       orgName: IMPORT_ORG_NAME,
       timezone: "Europe/Warsaw",
@@ -979,7 +979,7 @@ describe("importDemo (F113 stage 15)", () => {
     const users = await sql<{ n: string }>`select count(*) as n from users where email = ${email}`.execute(db);
     expect(Number(users.rows[0]?.n)).toBe(0);
 
-    // With replace the delete is its own transaction (review N5): the old import is gone, the failed import leaves none.
+    // With replace the delete is its own transaction: the old import is gone, the failed import leaves none.
     const first = await importDemo(db, elsewhere(good), {
       ownerEmail: email,
       replace: false,
@@ -1048,7 +1048,7 @@ describe("importDemo (F113 stage 15)", () => {
       "non_test_address",
       ["emails", "body_text"]
     );
-    // Review B1: a crafted file can carry the forms too; the import scan refuses them.
+    // A crafted file can carry the forms too; the import scan refuses them.
     for (const body of [
       'write to "john"@gmail.com',
       "write to john@[10.0.0.1]",

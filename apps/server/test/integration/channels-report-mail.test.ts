@@ -29,7 +29,7 @@ import {
 import { testDb, withRollback } from "./helpers";
 import { seedWeek } from "./metrics-fixtures";
 
-// The report kinds of D14 (digest, weekly_report, trust_report_ready, autonomy_paused) also go by mail to a
+// The report kinds (digest, weekly_report, trust_report_ready, autonomy_paused) also go by mail to a
 // member whose report channel is `mail` or `both`; the Telegram sender never claims a mail row.
 const db = testDb();
 

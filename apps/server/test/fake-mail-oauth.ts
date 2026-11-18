@@ -43,12 +43,12 @@ export interface FakeMailOAuth {
     emailVerified?: boolean;
     tid?: string;
     codeChallenge?: string;
-    /** Claims that replace or add to the ID token payload; a key with `undefined` is left out (stage 08 tests). */
+    /** Claims that replace or add to the ID token payload; a key with `undefined` is left out. */
     claims?: Record<string, unknown>;
   }): string;
   /** The next token or revoke request gets this answer. "timeout": no answer until `stop()`. */
   failNext(answer: FakeFailure): void;
-  /** The next refresh-token request gets this answer (a code redeem before it passes). Stage 09: the `graph` refresh of a Microsoft connect. */
+  /** The next refresh-token request gets this answer (a code redeem before it passes). The `graph` refresh of a Microsoft connect uses it. */
   failNextRefresh(answer: FakeFailure): void;
   /** Per provider: does a refresh give a new refresh token? Microsoft true, Google false. */
   rotate: Record<MailOAuthProvider, boolean>;
@@ -80,7 +80,7 @@ interface IssuedRefresh {
   live: boolean;
 }
 
-// The scopes a real provider names in its answer are not known before the spike (rows M2, G1). These defaults follow the plan review:
+// The scopes a real provider names in its answer are not known before the spike (rows M2). These defaults follow the plan review:
 // Google names `email` as the userinfo.email URL; Microsoft leaves `offline_access` out.
 const DEFAULT_GRANTED: Record<MailOAuthProvider, string[]> = {
   microsoft: ["https://outlook.office.com/IMAP.AccessAsUser.All"],
@@ -234,7 +234,7 @@ export async function startFakeMailOAuth(): Promise<FakeMailOAuth> {
       if (req.method !== "POST" || provider === null || (action !== "token" && action !== "revoke")) {
         return new Response("not found", { status: 404 });
       }
-      // A real endpoint takes the secret in the body only; a query on a token request is a client bug (review T1).
+      // A real endpoint takes the secret in the body only; a query on a token request is a client bug.
       if (url.search !== "") return Response.json({ error: "invalid_request" }, { status: 400 });
       const form = new URLSearchParams(await req.text());
       const failure = failures.shift();

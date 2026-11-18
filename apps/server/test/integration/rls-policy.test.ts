@@ -15,7 +15,7 @@ import { createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { fillMailbox } from "./mailbox-rows";
 
-// Policy tests of F092 (spec/features/active/F092-rls-safety-net/plan.md D8–D13). The connection is the `app` role.
+// Policy tests of the RLS safety net (ADR 0011). The connection is the `app` role.
 const db = testDb();
 
 afterAll(async () => {

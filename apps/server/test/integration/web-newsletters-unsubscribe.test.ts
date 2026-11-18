@@ -330,7 +330,7 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
   });
 });
 
-// TG3 (review of stage 24): the REAL client behind the route. The lookup is a stub and the dialer throws: a refused target must end
+// The REAL client behind the route. The lookup is a stub and the dialer throws: a refused target must end
 // `refused` with its stored code and reach neither. Nothing here opens a connection.
 describe("the real guarded client behind the route", () => {
   test("13: a metadata address, an IPv4-mapped literal and port 8443 end `refused`: the stored code, 0 lookups, 0 dials", async () => {

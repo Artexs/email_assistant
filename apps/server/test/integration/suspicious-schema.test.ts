@@ -11,7 +11,7 @@ import { createDb, type DB } from "../../src/platform/db";
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// Constraints and index of the F109 stage 02 migration (spec/features/active/F109-e3b-improve/stages/stage-02-migration.md).
+// Constraints and index of the suspicious-mail migration.
 const db = testDb();
 
 afterAll(async () => {
@@ -182,10 +182,10 @@ describe("F109 migration: sender index", () => {
   });
 
   // A small test table gives every index the same cost, so a seq scan or the older mailbox index could win the tie
-  // (review N19). The test sets enable_seqscan = off and enable_sort = off and asks for received_at order: only a plan
+  // The test sets enable_seqscan = off and enable_sort = off and asks for received_at order: only a plan
   // on emails_mailbox_sender_idx reads one sender's mail in that order without a Sort. It runs as the app role, under
   // the tenant policy: `lower(from_address) = $1` could not be an index condition there (lower() is not leakproof),
-  // and `from_address_lower = lower($1)` can. Stages 03 and 10 use this query shape.
+  // and `from_address_lower = lower($1)` can. The triage read and the review read use this query shape.
   test("7b: as the app role (row-level security) the sender query has the sender index as its Index Cond", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
@@ -226,7 +226,7 @@ describe("F109 migration: sender index", () => {
 });
 
 // The Down section runs inside a transaction (DDL is transactional) as the table owner and is rolled back, so the
-// shared test DB keeps its schema (Opus review TG1).
+// shared test DB keeps its schema.
 describe("F109 migration: Down", () => {
   test("9: Down deletes the not_triaged rows, keeps the other kinds, and drops the column and the index", async () => {
     const url = process.env.MIGRATOR_DATABASE_URL;

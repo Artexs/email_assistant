@@ -548,7 +548,7 @@ describe("the port", () => {
   });
 });
 
-// The review of stage 20 (TG1).
+// A review fix:
 describe("one login per mailbox per run (review TG1, N2)", () => {
   async function threeRows(trx: Transaction<DB>, b: Box): Promise<string[]> {
     const ids: string[] = [];

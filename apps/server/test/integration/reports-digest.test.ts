@@ -704,7 +704,7 @@ describe("digest why lines (F110 stage 16)", () => {
         createdAt: at(-80 * MIN),
         subject: "SUBJECT-DELEGATED",
       });
-      // TG6: a reverse draft that carries another delegate (created before the original) never shows its tags or its name.
+      // A reverse draft that carries another delegate (created before the original) never shows its tags or its name.
       const bob = await insertDelegate(trx, ctx, { name: "Bob Reverse", tags: ["secret-tag"] });
       await insertAction(trx, ctx, delegated.emailId, {
         type: "create_draft",
@@ -744,7 +744,7 @@ describe("digest why lines (F110 stage 16)", () => {
       expect(on).not.toContain(", it)");
       // The same delegation with the flag off: the line of today.
       expect(off).toContain("will draft a delegation to Anna Nowak; waits for your approval");
-      // TG1: an old blocklist row has no rule key and confidence 1: no percent.
+      // An old blocklist row has no rule key and confidence 1: no percent.
       expect(on).toMatch(/SUBJECT-OLDBLOCK\n💬 The sender is on your blocklist\.\n/);
       expect(on).not.toContain("100%");
 

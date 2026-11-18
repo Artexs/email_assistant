@@ -544,7 +544,7 @@ describe("the guards of the reset (F113 stage 14): each alone refuses, and nothi
     await expect(w.mail.countMessages(outside)).rejects.toMatchObject({ code: "address_refused" });
   });
 
-  // The member email of the org must be the demo mailbox address (stage 14 review).
+  // The member email of the org must be the demo mailbox address.
   async function addOtherMember(orgId: string): Promise<void> {
     const added = await addMember(
       db,
@@ -587,7 +587,7 @@ describe("the guards of the reset (F113 stage 14): each alone refuses, and nothi
   });
 
   // The guards ran before the delete transaction; a row that commits in the window must not be deleted with the org
-  // (stage 14 review). `lookupOrg` is the last read of the pre-check: the hook adds the row right after it.
+  // `lookupOrg` is the last read of the pre-check: the hook adds the row right after it.
   async function lateInsert(add: (orgId: string) => Promise<void>) {
     const w = world();
     const first = await resetDemo(w.deps, {});

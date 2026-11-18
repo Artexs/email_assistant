@@ -13,12 +13,12 @@ import { commandOrg, FRIDAY, type CommandOrg } from "./loops-commands-fixtures";
 import { tablesHolding } from "./loops-scan-fixtures";
 import { siblingMailbox } from "./mail-sent-fixtures";
 
-// F116 stage 14 review (an owner decision): "Track my sent mail" off removes every copy of the Sent mail that a loop
+// The owner decision: "Track my sent mail" off removes every copy of the Sent mail that a loop
 // made, not only the loop row. The places that copy the body, the subject or an address of a Sent mail:
 //   1. `sent_emails`           the mail itself (`deleteSentEmails`)
 //   2. `sent_analyses`         no text; goes with the Sent row (cascade)
 //   3. `open_loops`            subject, ask, To, Cc, counterpart (`onSentOff`: the loops that it closes; a loop that was
-//                              closed before keeps them until retention, the stage 08 rule)
+//                              closed before keeps them until retention, the retention rule)
 //   4. `actions.payload`       `quote`, `to`, `cc`, `subject` of every follow-up `create_draft` and `send` (`clearLoopSentCopies`)
 //   5. `outbox.view` / `text`  the cards of the follow-ups: approval, edit, result (`clearLoopCards`)
 //   6. `audit_log`, logs       ids and codes only

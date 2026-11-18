@@ -16,7 +16,7 @@ import { startFakeOidc, type FakeOidc } from "../fake-oidc";
 
 import { testDb } from "./helpers";
 
-// Stage 07 of spec/features/active/F119-e7-t7-identity-b-oidc: the provider service (`setSsoProvider`, `removeSsoProvider`,
+// The provider service (`setSsoProvider`, `removeSsoProvider`,
 // `getSsoState`). The configs come from `discoverProviderConfig` and `buildOidcConfig`, against the fake IdP.
 const db = testDb();
 

@@ -15,7 +15,7 @@ import { composeMessage } from "../../src/modules/mail";
 import type { FakeMailProvider } from "../../src/modules/mail/fake";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-// Rows of the F115 tables for the integration tests.
+// Rows of the reply-drafts tables for the integration tests.
 export type ReplyRequestOverrides = Partial<Insertable<DB["reply_requests"]>>;
 
 // One `reply_requests` row for a mail; the defaults are a valid automatic request.

@@ -40,7 +40,7 @@ interface Made {
   emailId: string;
 }
 
-// The T1 data: D1 `drafted`, D2 `sent` due tomorrow, D3 `overdue` with a waiting reminder, D4 `answered`, D5 `done`, D6 `cancelled`,
+// The test data: D1 `drafted`, D2 `sent` due tomorrow, D3 `overdue` with a waiting reminder, D4 `answered`, D5 `done`, D6 `cancelled`,
 // made in this order (each one minute after the one before). A sent card exists for U1 and U2 for every send of the organization.
 async function world(s: Seed, opts: { orgId?: string; mailboxId?: string; delegateId?: string; start?: number } = {}) {
   const orgId = opts.orgId ?? s.org.orgId;

@@ -97,7 +97,7 @@ describe("GET and PUT /api/mailboxes/:id/profile", () => {
     expect(await get.json()).toMatchObject({ displayName: "Anna Nowak" });
     expect((await storedRow(mine.id))?.updated_by).toBe(org.ownerId);
 
-    // The reader of stage 04: the message builder takes the stored name for the From header.
+    // The reader: the message builder takes the stored name for the From header.
     const profile = await mailboxProfileOf(db, { orgId: org.orgId }, mine.id);
     const message = buildOutgoingMessage({
       draft: {

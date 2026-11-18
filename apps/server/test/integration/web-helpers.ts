@@ -10,7 +10,7 @@ import type { TenancyRouteDeps } from "../../src/modules/tenancy/routes";
 import type { Db } from "../../src/platform/db";
 import { buildTrustedProxies, createApp, type ApiEnv, type WebDeps } from "../../src/platform/http";
 
-// The body of a password set: every `/reset-password` call carries the current terms (F082 L16).
+// The body of a password set: every `/reset-password` call carries the current terms.
 export function resetBody(
   newPassword: string,
   token: string

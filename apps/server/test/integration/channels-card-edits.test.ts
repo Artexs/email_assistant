@@ -200,7 +200,7 @@ describe("queueCardEdits", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await insertCard(w, w.u1);
-      // TG2: the compiler refuses the call (typecheck fails when the directive is not needed); the runtime check stays.
+      // The compiler refuses the call (typecheck fails when the directive is not needed); the runtime check stays.
       // @ts-expect-error approved_held needs heldBy
       const call = queueCardEdits(trx, w.ctx, { sendId: w.sendId, outcome: "approved_held", at });
       await expect(call).rejects.toThrow("bad notice view for approval_edit");

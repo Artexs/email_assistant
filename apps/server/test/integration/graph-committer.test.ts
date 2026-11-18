@@ -27,7 +27,7 @@ import { testDb } from "./helpers";
 import { webOrg, type WebOrg } from "./web-helpers";
 
 // The committer sends the mail of a Microsoft mailbox through Graph. IMAP is the local GreenMail (auth off: a login with
-// a new user makes the mailbox, XOAUTH2 takes any token), the token endpoint is the fake of stage 06, Graph is the fake of this stage.
+// a new user makes the mailbox, XOAUTH2 takes any token), the token endpoint is the fake token server, Graph is the fake of this test.
 // The mail goes to the fake Graph server only; test addresses end in `@x.test`. The job is the real `committerDeps` composition.
 // Rows are committed: the token store runs its own transactions on the pool. The committer finds the mailboxes of the whole database;
 // a mailbox without a claimable action is never opened.

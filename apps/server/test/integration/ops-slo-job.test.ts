@@ -407,7 +407,7 @@ describe("ops:alert-test", () => {
   });
 });
 
-// The real disk and backup-age checks as `SloCheckEntry` objects, through the whole tick and the stage 03 texts.
+// The real disk and backup-age checks as `SloCheckEntry` objects, through the whole tick and the texts.
 describe("the ops.slo tick with the disk and backup-age checks", () => {
   const backupCfg = { ...cfg, backupStatusFile: "/run/ea-backup/status.json" };
   const entries = (statfs: Parameters<typeof checkDisk>[0], file: () => Promise<string>): SloCheckEntry[] => [

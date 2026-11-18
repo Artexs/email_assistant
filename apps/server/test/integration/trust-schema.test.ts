@@ -11,7 +11,7 @@ import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { addMailbox, insertCheckItemRow, insertCheckRow, insertTripRow } from "./trust-fixtures";
 
-// The migration `trust_ladder` (spec/features/active/F110-e4-b-earn-trust/stages/stage-03-migration.md): CHECKs, keys,
+// The migration `trust_ladder` (`docs/capabilities/trust.md`): CHECKs, keys,
 // row-level security as the app role, and the Up and Down sections as the table owner.
 const db = testDb();
 

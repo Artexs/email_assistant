@@ -9,7 +9,7 @@ import { setLogLevel } from "../../src/platform/log";
 import { testDb } from "./helpers";
 import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F119 stage 11 (step 11.1): GET /api/sign-in-options is public and answers one bit for every caller.
+// GET /api/sign-in-options is public and answers one bit for every caller.
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");
 

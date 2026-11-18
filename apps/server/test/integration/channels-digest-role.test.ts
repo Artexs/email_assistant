@@ -15,7 +15,7 @@ import { consentRow, CURRENT_CONSENT } from "./follow-up-fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopRow } from "./loops-fixtures";
 
-// F116 stage 20, carry-over of the stage 19 review: Draft, Drop, Reopen and Delegate are owner only, so the digest of a
+// Draft, Drop, Reopen and Delegate are owner only, so the digest of a
 // member has no such button, and the ⌛ line (one button, Reopen) goes to owners only and is not marked by a member's digest.
 const db = testDb();
 

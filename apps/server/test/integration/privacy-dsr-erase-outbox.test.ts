@@ -49,7 +49,7 @@ interface World {
   orgId: string;
   userId: string;
   mailboxId: string;
-  goneMail: string; // from the person; created at T0
+  goneMail: string; // from the person; created at the start
   keptMail: string; // from someone else
   t0: Date;
   rows: Record<string, string>; // name → outbox id

@@ -59,7 +59,7 @@ const llm: LlmClient = {
   },
 } as LlmClient;
 
-// A mailbox in `assist` with `notification` on auto; `grant` is the stored grant (absent: a row from before F110).
+// A mailbox in `assist` with `notification` on auto; `grant` is the stored grant (absent: a row from before the trust ladder).
 async function setup(trx: Transaction<DB>, grantKey: EvidenceKey | null) {
   await pauseOtherMailboxes(trx);
   const box = await createOrgWithMailbox(trx);

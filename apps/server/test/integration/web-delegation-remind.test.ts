@@ -25,7 +25,7 @@ afterAll(async () => {
 
 const LATER = new Date("2026-11-20T13:05:00Z");
 
-// A delegation D3 `overdue` with 0 reminders sent, in O1 by default (or in O2 with its own delegate and mailbox).
+// An `overdue` delegation with 0 reminders sent, in O1 by default (or in O2 with its own delegate and mailbox).
 async function overdue(
   s: Seed,
   opts: { theirs?: boolean; remindersSent?: number; status?: string; active?: boolean } = {}

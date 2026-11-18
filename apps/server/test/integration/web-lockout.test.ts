@@ -344,7 +344,7 @@ describe("lockout", () => {
     expect((await row(open.userId))?.failed_count).toBe(2);
   });
 
-  // B1: Better Auth's own form-CSRF check refuses these requests for every address; the lock must not show through it.
+  // Better Auth's own form-CSRF check refuses these requests for every address; the lock must not show through it.
   test("a request that Better Auth refuses before the password check answers the same for a locked user, a free user and an unknown address", async () => {
     const locked = await createOwner();
     const open = await createOwner();

@@ -1,4 +1,4 @@
-// F110 stage 19 with F116 stages 18 and 19: the brief and its marks belong to the Telegram digest row only. A mail row never
+// The brief and its marks belong to the Telegram digest row only. A mail row never
 // marks a loop and never counts as the first digest of the day.
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
@@ -40,7 +40,7 @@ async function setup(trx: Transaction<DB>, channel: "mail" | "both" | "telegram"
   return { org, open: await waitingLoop(trx, org), stale: await staleLoop(trx, org) };
 }
 
-// The stored view holds the text (a mail row has no renderer before stage 20).
+// The stored view holds the text (a mail row has no renderer).
 const textOf = (row: { view: unknown } | undefined): string => (row?.view as { text: string }).text;
 
 const rows = (trx: Transaction<DB>, orgId: string) =>

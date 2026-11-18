@@ -93,7 +93,7 @@ describe("removeDraft keeps a changed copy", () => {
   test("3. an F102 edit of a changed copy: the old copy stays, the new version is APPENDed next to it", async () => {
     await withRollback(db, async (trx) => {
       const { box, p } = await seedPair(trx, boxes, { kind: "clarification", flag: false });
-      // The F102 edit needs the mode `assist` and the switch `create_draft`.
+      // The panel edit needs the mode `assist` and the switch `create_draft`.
       await insertDefaultSettings(trx, box.ctx, box.mailboxId);
       await updateMailboxSettings(trx, box.ctx, box.mailboxId, {
         mode: "assist",

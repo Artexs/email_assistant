@@ -35,7 +35,7 @@ import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixt
 import { depsOf as sentDepsOf, newOrg, put, siblingMailbox } from "./mail-sent-fixtures";
 
 // The follow-up kind goes through the committer. A follow-up hangs on a loop (`loop_id`), not on a mail.
-// Every test runs in a transaction that is rolled back: a committed loop row would break the Down guard of the stage 07 test.
+// Every test runs in a transaction that is rolled back: a committed loop row would break the Down guard of the migration test.
 const db = testDb();
 
 afterAll(async () => {

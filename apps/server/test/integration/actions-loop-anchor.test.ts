@@ -43,9 +43,9 @@ import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes, testCapa
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 
-// Stage 9 of the open loops feature (spec/features/active/F116-e5b-open-loops/stages/stage-09-action-anchor.md): an
-// action that hangs on a loop has no mail. Stage 10 opened the claim, the draft lookups and the send limits for it
-// opened the readers of cards, lists, notices and the expiry. The approval set readers stay mail-only on purpose (a follow-up
+// Loop-anchored actions: an
+// action that hangs on a loop has no mail. The claim, the draft lookups and the send limits are open for it, and
+// the readers of cards, lists, notices and the expiry are open for it too. The approval set readers stay mail-only on purpose (a follow-up
 // is one card), and the failure notice of a mail action stays mail-only (a follow-up has its own, see `listFailedFollowUps`).
 // Each test puts a loop pair and a mail pair in organization A and a mail pair in organization B, on one connection
 // without a tenant scope: a missing `org_id` filter would show the rows of the other organization.

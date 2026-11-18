@@ -2,7 +2,7 @@ import { createDecipheriv, createECDH, createHmac } from "node:crypto";
 
 // Test-side decrypt of a Web Push body (RFC 8291 on RFC 8188 `aes128gcm`). It has its own ECDH call and its own HKDF
 // (HMAC-SHA-256 as in RFC 5869), so a test does not trust the code it checks: `push/encrypt.ts` uses `hkdfSync`.
-// Stage 08 reuses it to read the body that the sender posts to a fake push service.
+// The push tests use it to read the body that the sender posts to a fake push service.
 
 function hmac(key: Uint8Array, data: Uint8Array): Buffer {
   return createHmac("sha256", key).update(data).digest();

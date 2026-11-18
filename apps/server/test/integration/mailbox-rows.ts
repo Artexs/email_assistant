@@ -193,7 +193,7 @@ export async function countMailboxRows(
   trx: Transaction<DB>,
   orgId: string,
   ids: MailboxIds,
-  // Audit rows of these events are not counted: stage 5 writes `mailbox.removed` with data.mailbox_id after the delete.
+  // Audit rows of these events are not counted: the remove writes `mailbox.removed` with data.mailbox_id after the delete.
   opts?: { exceptEvents?: readonly string[] }
 ): Promise<Record<string, number>> {
   const { mailboxId, emailIds, actionIds } = ids;

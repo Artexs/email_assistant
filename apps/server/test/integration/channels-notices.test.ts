@@ -215,13 +215,13 @@ describe("urgent notices", () => {
       }
       for (const row of await rows(trx, off.orgId, "urgent")) {
         expect(row.email_id).toBe(offId);
-        // No field at all: a view without it also renders in the code before F109 (rollback safety).
+        // No field at all: a view without it also renders in the code from before the field existed (rollback safety).
         expect("suspicious" in (row.view as object)).toBe(false);
         expect(row.text).not.toContain("⚠");
       }
       for (const row of await rows(trx, other.orgId, "urgent")) {
         expect(row.email_id).toBe(cleanId);
-        // No field at all: a view without it also renders in the code before F109 (rollback safety).
+        // No field at all: a view without it also renders in the code from before the field existed (rollback safety).
         expect("suspicious" in (row.view as object)).toBe(false);
         expect(row.text).not.toContain("⚠");
       }
@@ -897,7 +897,7 @@ describe("organizations", () => {
       expect(await rows(trx, b.orgId, "urgent")).toHaveLength(2);
       expect(await rows(trx, a.orgId)).toHaveLength(0);
       // One detector fails and logs by name and organization; the later detectors of the organization still run (a per-detector
-      // catch, F116 stage 11): the organization no longer fails as a whole.
+      // catch): the organization no longer fails as a whole.
       expect(errorLines.length).toBeGreaterThan(0);
       for (const line of errorLines) {
         expect(line).toMatch(
@@ -1702,7 +1702,7 @@ describe("send result notices", () => {
         providerResult: { stage: "envelope", response_code: 450, code: "EENVELOPE", cap: "soft_retry" },
       });
       const bad = await ended(trx, o, { status: "failed", reason: "bad_payload", attempts: 1 });
-      // A reply whose text still held a gap at the claim nothing was sent; it has its own cause text.
+      // A reply whose text still held a gap at the claim: nothing was sent; it has its own cause text.
       const gaps = await ended(trx, o, { status: "failed", reason: "has_gaps", attempts: 0 });
 
       await run(trx);

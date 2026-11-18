@@ -269,7 +269,7 @@ describe("GET /api/channels/telegram consentVersion (F116 stage 22)", () => {
     expect(await stateOf(app, "owner")).toMatchObject({ consentVersion: TELEGRAM_CONSENT_VERSION });
     expect(await stateOf(app, "assistant")).toMatchObject({ consentVersion: null });
 
-    // An unlink withdraws the consent: after a CLI link the old row does not count (review 17).
+    // An unlink withdraws the consent: after a CLI link the old row does not count.
     expect((await app.request("/api/channels/telegram/link", as("owner", { method: "DELETE" }))).status).toBe(204);
     await link(org.orgId, org.ownerId, new Date(NOW.getTime() + 60_000));
     expect(await stateOf(app, "owner")).toMatchObject({ linked: true, consentVersion: null });

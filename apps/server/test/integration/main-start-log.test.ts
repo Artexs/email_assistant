@@ -8,7 +8,7 @@ const repoRoot = path.resolve(import.meta.dir, "../../../..");
 const baseKeys = ["time", "level", "module", "event", "msg"];
 const allowedKeys = new Set<string>([...baseKeys, ...logFieldNames, "dropped_fields"]);
 
-// F089 acceptance: with LOG_FORMAT=json the server writes one JSON object per line, with the base keys and allow-listed fields only.
+// With LOG_FORMAT=json the server writes one JSON object per line, with the base keys and allow-listed fields only.
 test("bun apps/server/src/main.ts writes JSON event lines", async () => {
   // A free port: bind 0, read it, release it.
   const probe = Bun.serve({ port: 0, fetch: () => new Response() });

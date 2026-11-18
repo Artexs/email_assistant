@@ -11,7 +11,7 @@ import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
 import { fillMailbox } from "./mailbox-rows";
 
-// `org:export` as a subprocess. D17: stdout and stderr hold ids, sizes and counts only.
+// `org:export` as a subprocess. Stdout and stderr hold ids, sizes and counts only.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const script = resolve(import.meta.dir, "../../src/scripts/org-export.ts");

@@ -332,7 +332,7 @@ describe("data request for sent mail", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.message_id).toBe("<sent2@x.test>");
 
-    // The limit of the F106 erase: mail that arrives later names the person again, so the operator erases again.
+    // The limit of the erase: mail that arrives later names the person again, so the operator erases again.
     const again = await erased(w);
     expect(again.counts.sent_mails).toBe(1);
     expect(await sentRows(w.orgId)).toEqual([]);

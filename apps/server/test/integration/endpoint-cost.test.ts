@@ -41,7 +41,7 @@ function call(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, endpo
     at: new Date(when),
   };
   if (endpoint !== undefined) return recordLlmCall(trx, ctx, { ...base, endpoint });
-  // The old shape: a row written before F111 has no `endpoint` key.
+  // The old shape: a row written before the endpoint was logged has no `endpoint` key.
   return recordAudit(trx, ctx, {
     actor: "system",
     event: auditEvents.llmCall,

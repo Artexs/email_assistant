@@ -335,7 +335,7 @@ describe("no done or no_result row keeps finished_at empty", () => {
       const check = await checkOf(db, checkId);
       expect(check).toMatchObject({ status: "no_result", no_result_reason: "stopped" });
       expectFinishedTogether(check);
-      // TG5: the stop of the claim queues the report notice in its transaction, one row per owner.
+      // The stop of the claim queues the report notice in its transaction, one row per owner.
       expect(await noticeRows(box.orgId)).toHaveLength(2);
     });
   });

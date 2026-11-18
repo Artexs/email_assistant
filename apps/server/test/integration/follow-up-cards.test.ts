@@ -55,7 +55,7 @@ interface World {
   mailboxId: string;
   owner: string; // consent covers loop data
   owner2: string; // consent covers loop data
-  oldOwner: string; // an F109 consent
+  oldOwner: string; // an old consent
   noConsentOwner: string; // linked by the CLI: no consent row
   member: string; // an assistant
 }

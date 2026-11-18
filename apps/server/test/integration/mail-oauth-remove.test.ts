@@ -26,7 +26,7 @@ import { testDb } from "./helpers";
 import { as, noBackupCodes, noPrivacy, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // Remove of an OAuth mailbox. Google: the token is revoked after the delete commits. Microsoft: no call; the notice
-// names the page. The token endpoint is the fake of stage 06. Rows are committed, because Remove runs its own transactions on the pool.
+// names the page. The token endpoint is the fake token server. Rows are committed, because Remove runs its own transactions on the pool.
 // No real provider call. The canary: the refresh token is in no log line, answer, notice or audit row.
 const db = testDb();
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);

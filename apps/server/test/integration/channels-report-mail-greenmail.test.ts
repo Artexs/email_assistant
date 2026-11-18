@@ -29,7 +29,7 @@ import type { DB } from "../../src/platform/db";
 import { isolateChannels } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F110 stage 20 against the real IMAP server (GreenMail, bun run dev:up; auth is off, any password logs in): the report mail sender
+// The report mail against the real IMAP server (GreenMail, bun run dev:up; auth is off, any password logs in): the report mail sender
 // APPENDs a digest row into the INBOX, and no sync, history backfill or rescan stores it (ADR 0022 point 2). Random addresses.
 const db = testDb();
 const host = process.env.TEST_IMAP_HOST ?? "127.0.0.1";

@@ -66,7 +66,7 @@ interface Fixture {
   otherMailbox: string;
 }
 
-// One slot due at T0. The executive address is the run mailbox, so it is in `labAddresses`, like the real mailboxes.
+// One slot due at time zero. The executive address is the run mailbox, so it is in `labAddresses`, like the real mailboxes.
 function fixtureOf(suffix: string): Fixture {
   const mailbox = `u-${suffix}@localhost`;
   const personas = base.scenario.personas.map((persona, index) => ({

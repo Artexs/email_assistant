@@ -296,7 +296,7 @@ describe("T12 the urgent notice", () => {
         const org = await delegateOrg(trx, { category: "urgent" });
         await prepare(trx, org);
         const row = await urgentRow(trx, org);
-        // No field at all: a view without it also renders in the code before stage 19.
+        // No field at all: a view without it also renders in the code from before the field existed.
         expect("delegable" in (row.view as object)).toBe(false);
         expect(renderedOf(row).buttons[0]).toHaveLength(2);
       });

@@ -401,7 +401,7 @@ describe("the style text copy and the Down and Up sections", () => {
         expect(profile?.display_name).toBeNull();
         expect(profile?.writing_style).toBeNull();
       }
-      // The organization text stays (E6b drops it).
+      // The organization text stays (a later step drops it).
       const org = await trx
         .selectFrom("organizations")
         .select("style_text")
