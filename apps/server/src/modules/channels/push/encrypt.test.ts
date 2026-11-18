@@ -1,3 +1,4 @@
+import { ECDH } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -110,6 +111,10 @@ describe("encryptPushPayload", () => {
     const wrongPrefix = Buffer.from(receiver.publicKey);
     wrongPrefix[0] = 0x02;
     expect(field({ ...ok, p256dh: wrongPrefix.toString("base64url") })).toBe("p256dh");
+    // A compressed point (33 bytes) is a valid P-256 key for ECDH, but RFC 8291 binds the 65-byte form into the key info.
+    const compressed = ECDH.convertKey(receiver.publicKey, "prime256v1", undefined, undefined, "compressed") as Buffer;
+    expect(compressed.length).toBe(33);
+    expect(field({ ...ok, p256dh: compressed.toString("base64url") })).toBe("p256dh");
     const offCurve = Buffer.from(receiver.publicKey);
     offCurve[64] = (offCurve[64] ?? 0) ^ 0xff;
     expect(field({ ...ok, p256dh: offCurve.toString("base64url") })).toBe("p256dh");
