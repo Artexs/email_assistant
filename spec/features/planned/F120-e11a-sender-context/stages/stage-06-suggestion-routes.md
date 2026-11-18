@@ -6,13 +6,13 @@ Carry-over reads: `apps/server/src/modules/config/routes.ts` (`rulesRoutes`: own
 
 ## Step 1 — routes
 
-- `suggestionRoutes` in `contacts`, mounted in `apps/server/src/web.ts`. Flag `sender_suggestions` is the first middleware: off → 404 `not_found` for every role, also with a bad id or body.
+- `suggestionRoutes` in `contacts`, mounted in `apps/server/src/web.ts`. The flag check is the first middleware: `senderFlags().suggestions` false (P1: `sender_suggestions` off, or `sender_context` off) → 404 `not_found` for every role, also with a bad id or body.
 - `GET /api/suggestions/:mailboxId` (any member): open rows of the mailbox, newest first, as `SuggestionItem[]` (schema in `@ea/core/web`). Mailbox of another org or unknown → 404.
 - `POST /api/suggestions/:id/accept` and `/dismiss` (owner; 403 `owner_only` before any query): body `{}`; answers 200 `{ status: "accepted" | "dismissed" }`; `already` → 409 `already`; `rule_limit` → 409 `rule_limit`; `not_found` → 404. A suspended org → 403 `org_suspended` (the write guard). `via: "web"`.
 - OpenAPI entries as the other routes (`openapi-routes.test.ts`).
 - Test (`web-suggestions.test.ts`):
   1. 401 without a session on all three.
-  2. Flag off → 404 for owner and member.
+  2. `sender_suggestions` off → 404 for owner and member; `sender_suggestions` on with `sender_context` off → 404.
   3. Member GET → 200 with items; member POST accept → 403.
   4. Owner accept → 200, rule exists; again → 409 `already`.
   5. Other org's mailbox id and suggestion id → 404.
@@ -20,7 +20,7 @@ Carry-over reads: `apps/server/src/modules/config/routes.ts` (`rulesRoutes`: own
 
 ## Step 2 — weekly report line
 
-- When `sender_suggestions` is on and the mailbox (or the org, summed over mailboxes) has open suggestions, the weekly report view gets the optional key `suggestions: { open: number }` and the text gets one line: en `💡 <n> rule suggestion(s) wait for you · <WEB_BASE_URL>/rules`, pl `💡 Sugestie reguł do przejrzenia: <n> · <WEB_BASE_URL>/rules`; with no `WEB_BASE_URL`: `… · check them in the panel` / `… · sprawdź w panelu`. No line at 0.
+- When `senderFlags().suggestions` is true and the mailbox (or the org, summed over mailboxes) has open suggestions, the weekly report view gets the optional key `suggestions: { open: number }` and the text gets one line: en `💡 <n> rule suggestion(s) wait for you · <WEB_BASE_URL>/rules`, pl `💡 Sugestie reguł do przejrzenia: <n> · <WEB_BASE_URL>/rules`; with no `WEB_BASE_URL`: `… · check them in the panel` / `… · sprawdź w panelu`. No line at 0.
 - The view schema accepts rows without the key (rows queued in the last 24 h; rollback note).
 - Counts and fixed words only: no consent version change.
 - Test:

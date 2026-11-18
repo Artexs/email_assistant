@@ -30,7 +30,7 @@ The assistant keeps a count-only profile of each sender per mailbox (mails, answ
 
 ## Slices
 
-13 stages, one worker job each; order and parallel lanes in `plan.md` § How to run. Stage 02 is the only migration. Stage 13 is a coordinator VPS step.
+14 stages (01–03, 03b, 04–13), one worker job each; order and parallel lanes in `plan.md` § How to run. Stage 02 is the only migration. Stage 13 is a coordinator VPS step.
 
 ## Sequenced
 

@@ -11,7 +11,7 @@ Carry-over reads: `apps/web/src/islands/RulesPage.tsx`, `components/rules/Newsle
 - Each item: the pattern, the kind as a badge, and the reason line from the counts:
   - VIP by answers: en `You answered {answered} of {received} mails in 30 days.` pl `Odpowiedziałeś na {answered} z {received} wiadomości w 30 dni.`
   - VIP by flags: en `You flagged {flagged} mails in 30 days.` pl `Oznaczyłeś flagą {flagged} wiadomości w 30 dni.`
-  - Whitelist: en `You moved back or corrected {n} mails from spam or notifications in 90 days.` pl `Przeniosłeś z powrotem lub poprawiłeś {n} wiadomości ze spamu lub powiadomień w 90 dni.`
+  - Whitelist: en `You moved back or corrected {rescued} mails from spam or notifications in 90 days.` pl `Przeniosłeś z powrotem lub poprawiłeś {rescued} wiadomości ze spamu lub powiadomień w 90 dni.`
   - Blocklist: en `You marked {corrected} mails as spam in 90 days and never wrote to this sender.` pl `Oznaczyłeś {corrected} wiadomości jako spam w 90 dni i nigdy nie pisałeś do tego nadawcy.`
   - Domain: the same lines with `from {senders} senders of this domain` / `od {senders} nadawców z tej domeny` appended.
   - Polish verbs: use the form the panel already uses for the user (grep `en.ts`/`pl.ts` for an existing second-person past tense; if the panel uses an impersonal form, follow it). The review of this stage checks the Polish.

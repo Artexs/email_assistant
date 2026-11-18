@@ -19,7 +19,8 @@ Carry-over reads: `docs/capabilities/account-data.md` rules 7–13, `docs/capabi
 ## Step 2 — DSR find and erase
 
 - Goal: `org:dsr --find` prints `sender profiles <n>` and `sender suggestions <n>`; `--erase` deletes every `sender_profiles` row whose `key_hash = senderKeyHash(key, orgId, address)` in all mailboxes of the org, and every `sender_suggestions` row with that address key or with `pattern = address`. A domain suggestion (`@acme.pl`) does not match an address erase: it names a domain, not the person (default, Q5). The find report lists only address rows.
-- The erase writes the counts `sender_profiles`, `sender_suggestions` into the audit data (flat counts, as rule 13).
+- Lock (D8): before it deletes profile rows, the erase takes `pg_advisory_xact_lock(profileLockKey(mailboxId))` (blocking) for each mailbox of the org, in mailbox id order, inside its transaction. A running pass finishes first; a pass that starts later skips while the erase holds the lock, and its next run reads the mail after the erase.
+- The erase writes the counts `sender_profiles`, `sender_suggestions` into the audit data (flat counts, as rule 13; the DSR exception of plan.md § Rules).
 - A later refresh can write the row again from mail that the erase kept (the erase deletes the person's mail that goes; mentions stay). That is accepted: the profile then counts only mail that still exists. Write this in the capability page (stage 12).
 - Test (`privacy-dsr-sender-context.test.ts`):
   1. Profiles of `anna@acme.pl` in mailboxes M1 and M2 → find counts 2; erase deletes both; the row of `bob@acme.pl` stays.
@@ -28,6 +29,7 @@ Carry-over reads: `docs/capabilities/account-data.md` rules 7–13, `docs/capabi
   4. Audit row holds counts and `address_hash`, never the address.
   5. All mail of `anna@acme.pl` goes in the erase → a refresh pass after it writes no row for her.
   6. A domain suggestion `@acme.pl` → not erased by the erase of `anna@acme.pl`.
+  7. Race: a pass holds the lock on connection 1 after its read; the erase starts on connection 2 and waits; the pass commits; the erase then deletes the row → after both, no row of `anna@acme.pl`. A second variant: the erase holds the lock; a pass on connection 1 returns `skipped`.
 
 ## Step 3 — export
 
@@ -39,4 +41,4 @@ Carry-over reads: `docs/capabilities/account-data.md` rules 7–13, `docs/capabi
 
 ## Done when
 
-All tests pass; mutation: remove the org filter from the erase delete → step 2 test 3 fails. Then the Proof command. Checkpoint after this stage (plan.md § Owner checkpoints).
+All tests pass; mutations: remove the org filter from the erase delete → step 2 test 3 fails; remove the erase lock → test 7 fails. Then the Proof command. Checkpoint after this stage (plan.md § Owner checkpoints).

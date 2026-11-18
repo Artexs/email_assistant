@@ -5,12 +5,12 @@ Names that one stage creates and a later stage or ticket uses. Code detail beyon
 ## Core (`packages/core`, stage 01)
 
 - `contactWaitDays(medianTheirReplyHours: number | null, samples: number): number | null` — D12; null below 5 samples or with a null median.
-- `usualReplyDays(medianHours: number): number` — max(1, round(h / 24)).
+- `usualReplyDays(medianHours: number): number` — clamp(round(h / 24), 1, 60).
 - `suggestionKinds = ["vip", "whitelist", "blocklist"]`, `suggestionScopes = ["address", "domain"]`, `suggestionStatuses = ["open", "accepted", "dismissed", "withdrawn", "expired"]`.
-- `SuggestionInput` (one per address, in memory): `{ address, domain, isFreeMailDomain, isOwn, isNoreply, relation, received30, answered30, flagged30, correctedToSpam90, correctedAwayFromSpamOrNotification90, movedBackFromSpamOrNotification90, answered90, userMailsTo90, suspicious90, isVip, isWhitelisted, isBlocklisted, isDelegate }`.
-- `SuggestionReason` (counts only, stored as JSON): `{ received?, answered?, flagged?, corrected?, movedBack?, senders? }`, `.strict()`.
-- `suggestionsFor(inputs, ctx: { dismissed: Set<string /* kind:scope:key */>, open: Set<string>, createdLast7Days: number, keyOf(value) }) : Candidate[]` — D10 rules, conflict rule, cap order. Pure.
-- `SenderLine` (web schema, `@ea/core/web`): `{ relation: SenderRelation, received: number, answered: number, userMailsTo: number, days: 90 }`.
+- `SuggestionInput` (one per address, in memory): `{ address, domain, isFreeMailDomain, isOwnDomain, isOwn, isNoreply, relation, received30, answered30, flagged30, correctedToSpam90, rescued90, answered90, userMailsTo90, suspicious90, isVip, isWhitelisted, isBlocklisted, isDelegate }`. `rescued90` = distinct mails that the user moved back or corrected away from `spam` or `notification` (one mail counts once).
+- `SuggestionReason` (counts only, stored as JSON): `{ received?, answered?, flagged?, corrected?, rescued?, senders? }`, `.strict()`.
+- `suggestionsFor(inputs, ctx: { dismissed: Set<string /* kind:scope:key */>, open: Set<string>, createdLast7Days: number, sentCoverage: boolean, keyOf(value) }) : Candidate[]` — D10 rules, conflict rule, cap order. Pure.
+- `SenderLine` (web schema, `@ea/core/web`): `{ relation: SenderRelation, received: number, answered: number, userMailsTo: number, lastSeenDaysAgo: number | null, days: 90 }`.
 - `SuggestionItem` (web schema): `{ id, kind, scope, pattern, reason: SuggestionReason, createdAt }`.
 
 ## Server platform (stage 01)
@@ -35,11 +35,12 @@ Meanings (90-day window, D4): `received` incoming mails; `by_category` newest `t
 
 ## Contacts module (`apps/server/src/modules/contacts`, layer 3)
 
-- Stage 03: `refreshMailboxProfiles(deps, ctx, mailboxId, { now }) : Promise<{ written: number; zeroed: number; skipped: boolean }>`; job `contacts.refresh` (`0 7 * * * *`, hourly at minute 7); `readProfiles(db, ctx, mailboxId, addresses: string[]) : Promise<Map<string /* lower address */, SenderHistory>>` (hashes inside; `days: 90`).
+- Stage 03: `readSenderActivity(db, ctx, mailboxId, { now })`; `refreshMailboxProfiles(deps, ctx, mailboxId, { now }) : Promise<{ written: number; zeroed: number; skipped: boolean }>`; `readProfiles(db, ctx, pairs: { mailboxId: string; address: string }[], now) : Promise<Map<string /* `${mailboxId}:${lower address}` */, SenderHistory>>` (one query for all pairs; hashes inside; `days: 90`).
+- Stage 03b: job `contacts.refresh` (`0 7 * * * *`, hourly at minute 7); `profileLockKey(mailboxId)` (the advisory lock key that the pass and the DSR erase share, D8); `sentCoverage(db, ctx, mailboxId)` (D16).
 - Stage 04: `deleteOldProfiles(db, ctx, { before })`, `deleteEndedSuggestions(db, ctx, { before })` (retention clearers); `profileRowsOfAddress(trx, ctx, address)` count and delete for DSR.
 - Stage 05: `acceptSuggestion(deps, ctx, { id, actor, via })` → `accepted | already | rule_limit | not_found`; `dismissSuggestion(…)` → `dismissed | already | not_found`; `listOpenSuggestions(db, ctx, mailboxId)`; `countOpenSuggestions(db, ctx, mailboxId)`. Audit events `suggestion.accepted`, `suggestion.dismissed` (data: `mailbox_id`, `kind`, `scope`).
 - Stage 06 routes: `GET /api/suggestions/:mailboxId` (member), `POST /api/suggestions/:id/accept`, `POST /api/suggestions/:id/dismiss` (owner). Flag `sender_suggestions` first: 404 `not_found` for every role.
-- Stage 09: `contactWaitFor(db, ctx, mailboxId, address) : Promise<{ waitDays: number; usualReplyDays: number } | null>`.
+- Stage 09: `contactWaitFor(db, ctx, mailboxId, counterpart) : Promise<{ waitDays: number; usualReplyDays: number } | null>` (null with `contact_wait` or `sender_context` off).
 
 ## Triage hook (stage 11)
 

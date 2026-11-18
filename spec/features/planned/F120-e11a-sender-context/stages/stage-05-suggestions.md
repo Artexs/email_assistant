@@ -6,10 +6,10 @@ Carry-over reads: stage 01 `suggestionsFor`, stage 03 pass, `apps/server/src/mod
 
 ## Step 1 — the generator in the pass
 
-- Goal: after the profile upsert, in the same transaction and only with `sender_suggestions` on, `refreshMailboxProfiles` also:
-  1. marks `open` rows `withdrawn` (pattern null, `ended_at = now`) when the rule no longer holds for their key, or a sender rule of that kind already covers the pattern (mailbox or org scope);
+- Goal: after the profile upsert, in the same transaction and only when `senderFlags().suggestions` is true (stage 03b), `refreshMailboxProfiles` also:
+  1. marks `open` rows `withdrawn` (pattern null, `ended_at = now`) only when (D11) a sender rule of that kind covers the pattern (mailbox or org scope), a "never" condition of D10 is now true for the key (bulk, noreply, suspicious mail, VIP, whitelisted, blocklisted, known or delegate for a blocklist, lost Sent coverage for a blocklist), or a new domain row of the same kind covers the address. A count or ratio that drops below the rule does not withdraw (no flicker);
   2. marks `open` rows older than 30 days `expired`;
-  3. builds `SuggestionInput` per address from the stage 03 read, plus the sender rules of the mailbox and the org, and calls `suggestionsFor` with `dismissed` (dismissed in the last 90 days), `open`, and `createdLast7Days` (rows created in the last 7 days, any status);
+  3. builds `SuggestionInput` per address from the stage 03 read, plus the sender rules of the mailbox and the org and the own mailbox domains, and calls `suggestionsFor` with `dismissed` (last 90 days), `open`, `createdLast7Days` (any status) and `sentCoverage` (stage 03b);
   4. inserts the candidates as `open` with `pattern` (the address, or `@domain`) and `reason`.
 - A whitelist of `@domain` or a VIP of `@domain` covers an address. A blocklist pattern covers it the same way.
 - Test (`contacts-suggestions.test.ts`, with `seedSenderActivity`):
@@ -20,6 +20,9 @@ Carry-over reads: stage 01 `suggestionsFor`, stage 03 pass, `apps/server/src/mod
   5. Dismissed 10 days ago → not suggested again; dismissed 91 days ago → suggested again.
   6. Flag `sender_suggestions` off → profiles written, no suggestion rows.
   7. Open row created 31 days ago → `expired`.
+  8. VIP row open; the ratio drops to 50% next pass → still `open`; the sender turns `bulk` → `withdrawn`.
+  9. Seeded open address blocklist rows for `a@acme.pl` and `b@acme.pl` (created 8 days ago); the pass makes the domain row `@acme.pl` → both address rows `withdrawn`.
+  10. Sent sync switch off → no blocklist row; an open blocklist row → `withdrawn`.
 
 ## Step 2 — Accept and Dismiss
 

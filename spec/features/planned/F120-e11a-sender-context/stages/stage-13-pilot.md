@@ -16,7 +16,7 @@ Part of [`../plan.md`](../plan.md). Needs stages 01–12 landed, F104 and F110 i
 1. Write down the rollback target (`deploy/release-state/state`, HEAD commit).
 2. `deploy/release.sh v<x.y.z>` → `release ok v<x.y.z> previous <old>`. Any other end: Rollback.
 3. One-off commands in the `cli` service only.
-4. Flag `sender_context` on for the pilot org (`org:flag --flag sender_context --on`; default of Q3). Then `bun run job:run --name contacts.refresh` in `cli`.
+4. Flag `sender_context` on for the pilot org (`org:flag --flag sender_context --on`; default of Q3). Then `bun run job:run --name contacts.refresh` in `cli`. Known domains (D9) stay inactive while `suspicious_mail` is off (owner decision of F109).
 
 ## Checks
 
@@ -31,8 +31,9 @@ Part of [`../plan.md`](../plan.md). Needs stages 01–12 landed, F104 and F110 i
 
 0. Flags off first (`org:flag --off` for the three flags).
 1. Before `deploy/rollback.sh` starts the old image: fail the pending rows that stage 12 listed as unreadable by the old code (`weekly_report` with `suggestions`, digests with the brief suffix data).
-2. `deploy/rollback.sh` → `rollback ok <target>`. Never `db:rollback`: the old code ignores the two tables and the `usual_reply_days` column; `due_source = 'contact'` rows read by the old loops code — the worker of stage 12 checks that the old code tolerates the value (it reads the column as text) and writes the result into the rollback section; if it does not, step 0 also runs `UPDATE open_loops SET due_source = 'default' WHERE due_source = 'contact'`.
-3. Report the failing check.
+2. Always, before the old image starts: `UPDATE open_loops SET due_source = 'default', usual_reply_days = NULL WHERE due_source = 'contact'` (the old loops code parses `due_source` with a strict enum and throws on `contact`).
+3. `deploy/rollback.sh` → `rollback ok <target>`. Never `db:rollback`: the old code ignores the two tables and the `usual_reply_days` column.
+4. Report the failing check.
 
 ## After
 

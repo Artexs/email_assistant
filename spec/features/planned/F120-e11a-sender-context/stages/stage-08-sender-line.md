@@ -7,22 +7,23 @@ Carry-over reads: `packages/core/src/web/activity.ts` (`ActivityItem`), `package
 ## Step 1 — API
 
 - `ActivityItem` and the web approval item get the optional key `sender: SenderLine | null` (interfaces.md). Filled only when `sender_context` is on and a profile row exists for the mail's sender in the mail's mailbox; else `null`. With the flag off the key is absent from the answer, so the answer is byte for byte as before.
-- One `readProfiles` call per page (all senders of the page at once), not one per item.
+- One `readProfiles` call per page with the `(mailboxId, address)` pairs of all items (the page can span mailboxes), not one per item.
 - Approvals: from the original incoming mail of the approval. A follow-up or reminder (no incoming mail) → `null`.
 - The mail's address cleared by retention → `null`.
 - Telegram views and outbox views do not change (P2).
 - Test (integration):
-  1. Flag on, profile of `anna@acme.pl` (received 8, answered 6, userMailsTo 3, relation known) → activity item `sender = { relation: "known", received: 8, answered: 6, userMailsTo: 3, days: 90 }`.
+  1. Flag on, profile of `anna@acme.pl` (received 8, answered 6, userMailsTo 3, relation known, last mail 2 days ago) → activity item `sender = { relation: "known", received: 8, answered: 6, userMailsTo: 3, lastSeenDaysAgo: 2, days: 90 }`.
   2. Flag off → no `sender` key.
   3. Mail with cleared `from_address` → `sender: null`.
   4. Approval of a follow-up → `sender: null`.
-  5. A page of 50 items → one profile query (count statements with the test query log, or assert `readProfiles` is called once through a spy on the deps).
+  5. A page of 50 items from two mailboxes (no `mailboxId` filter) → one `readProfiles` call (spy on the deps) and both mailboxes' lines filled.
 
 ## Step 2 — panel
 
 - Activity detail and the approval summary show one line below the From line:
-  - en `{Relation} · you answered {answered} of {received} mails in 90 days · you wrote to them {userMailsTo} times`
-  - pl `{Relation} · odpowiedź na {answered} z {received} wiadomości w 90 dni · Twoje wiadomości do nadawcy: {userMailsTo}`
+  - en `{Relation} · you answered {answered} of {received} mails in 90 days · you wrote to them {userMailsTo} times · last mail {n} days ago`
+  - pl `{Relation} · odpowiedź na {answered} z {received} wiadomości w 90 dni · Twoje wiadomości do nadawcy: {userMailsTo} · ostatnia wiadomość {n} dni temu`
+  - The last-mail part shows when `lastSeenDaysAgo` is not null; 0 → `today` / `dzisiaj`.
   - Relation words: delegate `Delegate`/`Delegat`, vip `VIP`/`VIP`, bulk `Bulk sender`/`Nadawca masowy`, known `Known`/`Znany`, new `New`/`Nowy`.
   - The answered part shows when `received > 0` (also with `answered 0`); the wrote part shows when `userMailsTo > 0`.
 - Test:
