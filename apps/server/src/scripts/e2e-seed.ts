@@ -54,6 +54,10 @@ import {
   E2E_LOOPS_OWNER_EMAILS,
   e2eLoopsMailbox,
   e2eLoopsOrgName,
+  E2E_REPLY_STYLE_MEMBER_EMAILS,
+  E2E_REPLY_STYLE_OWNER_EMAILS,
+  e2eReplyStyleMailbox,
+  e2eReplyStyleOrgName,
   E2E_TRUST_MEMBER_EMAILS,
   E2E_TRUST_OWNER_EMAILS,
   E2E_URGENCY_MEMBER_EMAILS,
@@ -114,7 +118,8 @@ async function seedAssistMailbox(
   db: Db,
   secretBox: ReturnType<typeof createSecretBox>,
   ctx: { orgId: string },
-  address: string
+  address: string,
+  opts: { oauthProvider?: "microsoft" | "google" } = {}
 ): Promise<string> {
   const mailboxId = randomUUID();
   await insertMailbox(db, ctx, {
@@ -126,6 +131,7 @@ async function seedAssistMailbox(
     smtpPort: 3025,
     capabilities: { move: true, uidplus: true, idle: false, condstore: false, specialUse: false, keywords: false },
     folderMap: { drafts: "Drafts" },
+    ...(opts.oauthProvider === undefined ? {} : { oauthProvider: opts.oauthProvider }),
   });
   await insertInboxFolder(db, ctx, mailboxId);
   const mailboxSecret = secretBox.encrypt("e2e-assist-box-password", `mailbox:${mailboxId}`);
@@ -165,6 +171,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eTrustOrgName),
         ...E2E_PROJECTS.map(e2eNewslettersOrgName),
         ...E2E_PROJECTS.map(e2eLoopsOrgName),
+        ...E2E_PROJECTS.map(e2eReplyStyleOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -198,6 +205,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_NEWSLETTERS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_LOOPS_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_LOOPS_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_REPLY_STYLE_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_REPLY_STYLE_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -553,6 +562,44 @@ async function main(): Promise<number> {
         trustIds[project] = { orgId: trustOwner.orgId, ownerId: trustOwner.userId, memberId: member.id, mailboxId };
       }
 
+      // F115 stage 11: one organization per project for the style card spec. The flag `reply_drafts` is on; two mailboxes in assist mode,
+      // one with a password and one that signs in with a provider (the reply drafts switch is disabled for it).
+      const replyStyleIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; boxId: string; oauthId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const replyOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eReplyStyleOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_REPLY_STYLE_OWNER_EMAILS[project],
+          displayName: `E2E Reply Style owner ${project}`,
+        });
+        const ctx = { orgId: replyOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_REPLY_STYLE_MEMBER_EMAILS[project],
+          displayName: `E2E Reply Style member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        await upsertOrgFeature(db, ctx, {
+          flag: "reply_drafts",
+          enabled: true,
+          setBy: replyOwner.userId,
+          setAt: new Date(),
+        });
+        const boxId = await seedAssistMailbox(db, secretBox, ctx, e2eReplyStyleMailbox(project, "box"));
+        const oauthId = await seedAssistMailbox(db, secretBox, ctx, e2eReplyStyleMailbox(project, "oauth"), {
+          oauthProvider: "google",
+        });
+        replyStyleIds[project] = {
+          orgId: replyOwner.orgId,
+          ownerId: replyOwner.userId,
+          memberId: member.id,
+          boxId,
+          oauthId,
+        };
+      }
+
       // F110 stage 23: one organization per project for the newsletters spec. The flag `bulk_unsubscribe` is on; one mailbox with five
       // newsletter senders and one request. See `e2e-newsletter-rows.ts`.
       const newsletterIds = {} as Record<
@@ -860,6 +907,22 @@ async function main(): Promise<number> {
         };
       }
 
+      const replyStyleOrgs = {} as SeedFile["replyStyleOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_REPLY_STYLE_OWNER_EMAILS[project];
+        const memberEmail = E2E_REPLY_STYLE_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = replyStyleIds[project];
+        replyStyleOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          box: { id: ids.boxId, address: e2eReplyStyleMailbox(project, "box") },
+          oauth: { id: ids.oauthId, address: e2eReplyStyleMailbox(project, "oauth") },
+        };
+      }
+
       const trustOrgs = {} as SeedFile["trustOrgs"];
       for (const project of E2E_PROJECTS) {
         const ownerEmail = E2E_TRUST_OWNER_EMAILS[project];
@@ -958,6 +1021,7 @@ async function main(): Promise<number> {
         openLoopsOrgs,
         urgencyOrgs,
         trustOrgs,
+        replyStyleOrgs,
         newsletterOrgs,
         approvalsOrgs,
         loopsOrgs,

@@ -30,8 +30,11 @@ export {
   profileErrorCodes,
   profileFallbacks,
   profileFields,
+  profileLength,
   resolveReplyStyle,
 } from "./profile";
 export type { ProfileCheck, ProfileErrorCode, ProfileField, ProfileFields, ProfileInput } from "./profile";
+export { STYLE_FORM_LINE_MAX, styleAddressForms, styleFromForm, styleLengths } from "./style-form";
+export type { StyleAddressForm, StyleForm, StyleLength, StyleLocale } from "./style-form";
 export { SAMPLE_MAIL } from "./sample-mail";
 export type { SampleMail } from "./sample-mail";
