@@ -608,6 +608,27 @@ describe("readProfiles", () => {
 
       const other = await newOrg(trx);
       expect((await readProfiles(deps(trx), other.ctx, pairs, NOW)).size).toBe(0);
+
+      // The query filters `org_id` by itself: a row of another organization with the hash of this organization is not read.
+      await trx
+        .insertInto("sender_profiles")
+        .values({
+          org_id: other.ctx.orgId,
+          mailbox_id: other.mailboxId,
+          key_hash: hashOf(org.ctx.orgId, "anna@acme.pl"),
+          received: 9,
+          relation: "new",
+          first_seen_at: NOW,
+          last_seen_at: NOW,
+        })
+        .execute();
+      const foreign = await readProfiles(
+        deps(trx),
+        org.ctx,
+        [{ mailboxId: other.mailboxId, address: "anna@acme.pl" }],
+        NOW
+      );
+      expect(foreign.size).toBe(0);
     });
   });
 });
