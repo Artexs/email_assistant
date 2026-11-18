@@ -1322,6 +1322,8 @@ export const en = {
   rv_done: "Done",
   rv_thanks: "Thank you. Your answers help the assistant check itself. They do not turn anything on.",
   rv_back: "Back to the report",
+  // F133: an amount in US dollars (the number carries the decimal mark of the language)
+  money_usd: "${amount}",
 } as const;
 
 export type TextKey = keyof typeof en;

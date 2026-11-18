@@ -1347,6 +1347,8 @@ export const pl: Record<TextKey, string> = {
   rv_done: "Gotowe",
   rv_thanks: "Dziękujemy. Twoje odpowiedzi pomagają asystentowi sprawdzać samego siebie. Niczego nie włączają.",
   rv_back: "Wróć do raportu",
+  // F133: an amount in US dollars (the number carries the decimal mark of the language)
+  money_usd: "{amount} USD",
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).
