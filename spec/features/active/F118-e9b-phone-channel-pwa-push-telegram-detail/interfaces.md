@@ -27,6 +27,6 @@ Part of [plan.md](plan.md). These names are the contract between the stages and 
 - `NoticeRecipient = { userId, role, locale, since: Date, hasChat: boolean }` (stage 07): `OrgRun.members` and `owners` become recipients.
 - `queueNotice` (stage 07): new inputs `eventAt?: Date` (required for a push kind, D20) and `only?: "telegram" | "push"` (D21). Without an explicit `channel`, it writes one Telegram row and one push row per live device with `createdAt ≤ eventAt`, by `effectiveRoute`. It returns the Telegram row id when it wrote one, else the first push row id, else null.
 - Job `channels.push` (`createPushSender`, every 15 s, stage 08): registered when `pushConfigOf` is not null, with or without the Telegram bot.
-- Audit events: `push.subscribed`, `push.removed` (stage 03), `member.telegram_detail_changed`, `org.telegram_lock_changed` (stage 11). Data: ids and the new value only.
+- Audit events: `push.subscribed`, `push.removed`, `push.test_sent` (stage 03; the last one counts the test notices of a user per hour and holds the device count), `member.telegram_detail_changed`, `org.telegram_lock_changed` (stage 11). Data: ids and the new value only.
 - Outbox fail codes added: `no_device` (stage 02, `removeDevice`), `push_refused` (stage 08).
 - Log fields added: `push_subscription_id` (uuid), `http_status` (number) if missing. Never an endpoint, a key or a payload.

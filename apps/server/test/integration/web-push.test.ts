@@ -4,7 +4,7 @@ import { pushStateSchema, pushSubscriptionAnswerSchema, pushTestAnswerSchema } f
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
-import { PUSH_TEST_LIMIT } from "../../src/modules/channels/push";
+import { endpointHash, PUSH_TEST_LIMIT } from "../../src/modules/channels/push";
 import { insertMembership } from "../../src/modules/tenancy/repo";
 import { captureLogs, logProblems } from "../log-capture";
 
@@ -13,6 +13,7 @@ import { webOrg, type WebOrg } from "./web-helpers";
 import {
   as,
   CANARY_ENDPOINT,
+  box,
   CHROME_ANDROID,
   configNoPush,
   decryptPushBody,
@@ -304,6 +305,45 @@ describe("PUT /api/me/push/subscription and GET /api/me/push", () => {
     ]);
   });
 
+  test("one browser is one device: a leading space, an upper case host and :443 store the canonical endpoint once", async () => {
+    const receiver = newReceiver();
+    const canonical = `${CANARY_ENDPOINT}-canon`;
+    const first = await register(owner, receiver, canonical);
+    const variants = [
+      ` ${canonical}`,
+      `${canonical} `,
+      canonical.replace("fcm.googleapis.com", "FCM.Googleapis.COM"),
+      canonical.replace("fcm.googleapis.com", "fcm.googleapis.com:443"),
+    ];
+    for (const endpoint of variants) {
+      const res = await app().request("/api/me/push/subscription", put(owner2, subscriptionBody(receiver, endpoint)));
+      expect(res.status).toBe(200);
+      expect(pushSubscriptionAnswerSchema.parse(await res.json()).id).toBe(first.id);
+    }
+    const rows = await devicesOf(org.ownerId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.endpoint_hash).toBe(endpointHash(canonical));
+    // The stored endpoint is the canonical one (the sender reads it back from the secret).
+    expect(
+      JSON.parse(
+        box.decrypt({ ciphertext: rows[0]?.secret ?? "", keyVersion: rows[0]?.key_version ?? 1 }, `push:${first.id}`)
+      )
+    ).toMatchObject({ endpoint: canonical });
+    expect((await auditOf("push.subscribed")).map((r) => (r.data as { created: boolean }).created)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  test("GET /api/me/push answers Cache-Control: no-store (the device list is per user and per session)", async () => {
+    const res = await app().request("/api/me/push", as(owner));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
   test("8. rebindOnly: no device of this user answers 404 no_device and stores nothing; a device of another member stays as it is", async () => {
     const { receiver, endpoint, id } = await register(owner);
     // The assistant signs in on the browser that holds the owner's subscription.
@@ -390,6 +430,23 @@ describe("DELETE /api/me/push/devices/:id", () => {
 
     const again = await app().request(`/api/me/push/devices/${id}`, as(owner, { method: "DELETE" }));
     expect(again.status).toBe(404);
+  });
+
+  test("an upper case uuid in the path removes the device; the audit row and the log hold the lower case id", async () => {
+    const { id } = await register(owner);
+    expect(id).toBe(id.toLowerCase());
+    const logs = captureLogs();
+    try {
+      const res = await app().request(`/api/me/push/devices/${id.toUpperCase()}`, as(owner, { method: "DELETE" }));
+      expect(res.status).toBe(204);
+    } finally {
+      logs.stop();
+    }
+    expect(await devicesOf(org.ownerId)).toHaveLength(0);
+    expect((await auditOf("push.removed")).map((r) => r.data)).toEqual([{ push_subscription_id: id, via: "web" }]);
+    const removedLine = logs.lines.find((line) => line.includes("push_removed")) ?? "";
+    expect(removedLine).toContain(id);
+    expect(removedLine).not.toContain(id.toUpperCase());
   });
 });
 
