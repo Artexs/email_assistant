@@ -78,6 +78,18 @@ A new draft kind, in this order:
 
 A draft that waits for approval is never edited in place. An edit is a superseding row: `editApproval` (`actions/edit.ts`) adds a new `create_draft` and a new `send`, each with `supersedes_action_id` set to the old row, and ends the old send as `expired` / `superseded`, in one transaction. The version, the Drafts copy and the new tap all need new rows; a changed payload would need rules for each of them.
 
+### An action on a loop
+
+A follow-up answers the user's own Sent mail, so it has no incoming mail. An action hangs on one anchor: `email_id` or `loop_id` (open loops, ADR 0036). Use this list when a new code path reads or writes `actions` or `outbox`.
+
+1. **The anchor rule.** The database allows exactly one of `email_id` and `loop_id`, and a `loop_id` row is a `create_draft` or a `send` only (`actions_anchor_check`; `actions-loop-anchor-schema.test.ts`). A new writer for loops uses `createPlannedForLoop` (`actions/repo/planned.ts`); it never sets `set_id` (a follow-up is never in an approval set).
+2. **Read it through the anchor helpers** (`actions/anchor.ts`). A path that exists only for incoming mail (Undo, mailbox moves, triage planning, delegation, clarification, reminder, the activity of a mail) calls `emailIdOf(row)`: for a loop row it throws `ActionAnchorError("loop_anchor")`, so a missed path fails loud, not silent. A path that must handle both calls `anchorOfRow(row)` and branches.
+3. **The hook.** `actions` never imports `loops`. It calls `LoopHooks` (`isOpen`, `anchorOf`, `onFollowUpSent`; `noLoopHooks` by default, `loopHooks()` from the composition root). The committer asks `isOpen` before the Drafts APPEND and before SMTP and ends a send of a closed loop `expired` / `loop_closed`; the card builder reads the text through `anchorOf`, so the card shows the text that is sent.
+4. **Recipients from the loop row only.** `to` and `cc` of the draft and the send come from `open_loops`; a payload that names another address is `bad_payload` and no SMTP call. Nothing from an LLM reaches an address. The send limits and `SEND_SCOPE` count `to ∪ cc`.
+5. **Lock order.** The settings row (share), the Sent state row, then the loop, then its sends. A close, a Later, a Draft tap, the chaser, the committer and `onSentOff` follow it, and each rule of the kind "exactly one" has a race test on two connections (also as the table owner).
+6. **Copies.** A loop action copies subject, recipients and a quote into `actions.payload` and `outbox`. A new copy needs a delete rule in `onSentOff` (`clearLoopSentCopies`, `clearLoopCards`), in retention and in the erase, and a case in the scan test `loops-sent-off-copies.test.ts`.
+7. **Consent.** A message with loop data in Telegram goes through `loopConsentOf` (`channels/consent.ts`); `consent-gate.test.ts` lists the files that may queue loop data.
+
 ### Add a user command
 
 A user command is an HTTP route plus one service function (ADR 0023). In this order:

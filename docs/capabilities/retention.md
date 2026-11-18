@@ -1,6 +1,6 @@
 # Retention
 
-> Checked against the code at `d331192b`, 2026-11-15.
+> Checked against the code at `cb3f73dd`, 2026-11-18.
 
 ## What it does now
 
@@ -36,7 +36,7 @@ The system keeps mail text only for a limited time. Once a day the job `platform
 5. **Outbox.** A `sent` or `failed` row gets the text `[removed]` and an empty view (its `error_code` stays). A `pending` or `sending` row older than 90 days becomes `failed` / `expired` and loses its text and its view: the row of a suspended organization is never claimed, and a message of that age must not go out at a resume.
 6. **Every organization, every plan.** The job walks `listOrganizations`, so a paused mailbox, a `suspended` organization and `TRIAGE_LLM_SCOPE=off` change nothing.
 7. **Crash safety.** Most clear functions work in batches of 1 000 rows, selected by id with `FOR UPDATE SKIP LOCKED`. Two do not: `deleteExpiredVerifications` is one delete with no batch and no lock, and `deleteOldLinkTokens` selects by `token_hash`. There is no transaction around the whole run. A row that another job holds waits for the next day. Every rule excludes rows that are already cleared, so a run that stopped in the middle is safe to repeat and a second run changes nothing.
-   7a. **Loop texts.** `clearLoopTexts` clears a loop 90 days after `closed_at`; an open loop keeps its texts. `onSentOff` (switch "Track my sent mail" off) closes and clears only the loops that are open at that time. A loop that is already closed (for example `replied`) keeps its texts until this 90-day rule, so they can outlive the withdrawal by up to 90 days.
+   7a. **Loop texts.** `clearLoopTexts` clears a loop 90 days after `closed_at`; an open loop keeps its texts. `onSentOff` (switch "Track my sent mail" off) closes and clears only the loops that are open at that time. A loop that is already closed (for example `replied`) keeps its texts until this 90-day rule, so they can outlive the withdrawal by up to 90 days. A loop that the chaser closes `stale` or `expired` is such a loop. The follow-up payloads (`quote`, `to`, `cc`, `subject` of a loop action), the follow-up cards and the digest rows that name a loop follow the rules of their own tables (`clearActionPayloads`, `clearOutboxTexts`); the Sent switch off clears them at once (`sent-mail.md` rule 13, `open-loops.md` rule 11).
 8. **The log.** Per organization one event `retention_org_done` with `org_id` and the counts `body_rows`, `header_rows`, `sent_body_rows`, `sent_header_rows`, `captured_header_rows`, `triage_rows`, `payload_rows`, `error_rows`, `task_rows`, `outbox_rows`, `loop_rows`, `reply_text_rows`, `token_rows` (`token_rows` adds the Telegram link tokens and the OAuth sign-in states), written only when the sum is above 0, and one event `retention_done` (`org_count`, `count`) per run. The lines hold counts and the organization id only: no text and no mail id. The expired `auth_verifications` rows go once per run, not per organization; the log line `retention_auth_verifications_deleted` holds the count. A failure there (`retention_auth_verifications_failed`) never stops the run; the rows wait for the next day.
 
 9. **Data of F109 (suspicious-mail rules, attachment line, urgency profile, `not_triaged` notice).**
@@ -75,6 +75,7 @@ The job writes these columns and no others: `emails` (`body_text`, `subject`, `f
 - Retention is not the erase: it clears texts by age and keeps the rows. A tombstone (`dsr_tombstones`) has no expiry and no retention job clears it.
 - No route or CLI changes `data_retention_days`; the value changes only in the database.
 - No alert when the job fails or does not run. The log line is the only sign.
+- An open loop keeps its subject, ask and addresses for as long as it is open, also after the Sent subject went at 90 days (an owner decision of F116 stage 08), so a loop that nobody closes keeps them until the chaser closes it `stale` (30 days after due) and 90 days more pass.
 - A cut attachment name in a notice stays up to 90 days, longer than the captured list when `data_retention_days` is below 90 (rule 9).
 
 ## Decisions
