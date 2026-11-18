@@ -467,6 +467,7 @@ export interface OpenLoops {
   thread_key: string;
   to_addresses: Generated<string[]>;
   updated_at: Generated<Timestamp>;
+  usual_reply_days: number | null;
   wait_from_at: Timestamp;
 }
 
@@ -568,6 +569,31 @@ export interface ReplyRequests {
   updated_at: Generated<Timestamp>;
 }
 
+export interface SenderProfiles {
+  answered: Generated<number>;
+  bulk_signals: Generated<string[]>;
+  by_category: Generated<Json>;
+  corrections: Generated<Json>;
+  delegations_to: Generated<number>;
+  first_seen_at: Timestamp | null;
+  flagged: Generated<number>;
+  id: Generated<string>;
+  key_hash: string;
+  last_seen_at: Timestamp | null;
+  last_user_mail_at: Timestamp | null;
+  mailbox_id: string;
+  median_their_reply_hours: number | null;
+  median_user_reply_hours: number | null;
+  moved_back: Generated<number>;
+  org_id: string;
+  received: Generated<number>;
+  refreshed_at: Generated<Timestamp>;
+  relation: string;
+  reply_samples_theirs: Generated<number>;
+  unseen_7d: Generated<number>;
+  user_mails_to: Generated<number>;
+}
+
 export interface SenderRules {
   created_at: Generated<Timestamp>;
   id: Generated<string>;
@@ -575,6 +601,21 @@ export interface SenderRules {
   mailbox_id: string | null;
   org_id: string;
   pattern: string;
+}
+
+export interface SenderSuggestions {
+  created_at: Generated<Timestamp>;
+  ended_at: Timestamp | null;
+  ended_by: string | null;
+  id: Generated<string>;
+  key_hash: string;
+  kind: string;
+  mailbox_id: string;
+  org_id: string;
+  pattern: string | null;
+  reason: Generated<Json>;
+  scope: string;
+  status: Generated<string>;
 }
 
 export interface SentAnalyses {
@@ -730,7 +771,9 @@ export interface DB {
   outbox: Outbox;
   push_subscriptions: PushSubscriptions;
   reply_requests: ReplyRequests;
+  sender_profiles: SenderProfiles;
   sender_rules: SenderRules;
+  sender_suggestions: SenderSuggestions;
   sent_analyses: SentAnalyses;
   sent_emails: SentEmails;
   sso_providers: SsoProviders;

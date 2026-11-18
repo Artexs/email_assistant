@@ -151,7 +151,9 @@ const DELETE_SEEDS: Record<string, Seed> = {
     await upsertOrgFeature(trx, { orgId: org.orgId }, { flag: "stats_page", enabled: true, setBy: "cli", setAt: NOW });
   },
   outbox: base,
+  sender_profiles: base,
   sender_rules: base,
+  sender_suggestions: base,
   sent_analyses: base,
   sent_emails: base,
   sso_providers: (trx, org) =>

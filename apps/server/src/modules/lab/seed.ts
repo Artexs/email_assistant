@@ -40,7 +40,7 @@ export const LAB_TARGETS: Record<LabOrgKey, SeedTarget> = {
 };
 
 // Every key of `packages/core/src/features.ts` is in exactly one list. `mistake_capture` is on: the executive needs the
-// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on. `trust_ladder` stays off until the evidence stages of the same epic are built; the pilot turns it on. `panel_review` stays off until the owner asks (F110 stage 26): the lab run labels nothing through the panel. `why_lines` stays off until the owner asks (F110 stage 26). `docs_links` stays off until the docs site is live. `user_quiet_hours` and `report_mail` stay off: the lab run has fixed notice times and no report mail, and the pilot turns them on per member. `urgency_editor` is on: its server side exists, and the lab run writes the profile the card shows. `spam_review_line` stays off until the pilot turns it on (F110 stage 26). `bulk_unsubscribe` stays off until the one-click stage is built and the pilot turns it on (F110 stages 24 and 26). `reply_drafts` stays off until the reply stages are built and the pilot turns it on (F115 stage 18). `draft_copy_check` stays off until the pilot turns it on after the copy probe (F115 stage 18). `web_push` stays off: the lab run has no phone and no push service, and the pilot turns it on after the sender stages of the F118 ticket folder.
+// reason buttons. `org_delete`, `sso_sign_in` and the two `mail_oauth_*` flags stay off: the lab org has no delete through the panel (`lab reset` deletes it through the operator function, with its own guards), no SSO and no OAuth mailbox (its mailbox is a GreenMail password login). `open_loops` and `delegate_button` stay off until the loop stages are built and the pilot turns them on. `trust_ladder` stays off until the evidence stages of the same epic are built; the pilot turns it on. `panel_review` stays off until the owner asks (F110 stage 26): the lab run labels nothing through the panel. `why_lines` stays off until the owner asks (F110 stage 26). `docs_links` stays off until the docs site is live. `user_quiet_hours` and `report_mail` stay off: the lab run has fixed notice times and no report mail, and the pilot turns them on per member. `urgency_editor` is on: its server side exists, and the lab run writes the profile the card shows. `spam_review_line` stays off until the pilot turns it on (F110 stage 26). `bulk_unsubscribe` stays off until the one-click stage is built and the pilot turns it on (F110 stages 24 and 26). `reply_drafts` stays off until the reply stages are built and the pilot turns it on (F115 stage 18). `draft_copy_check` stays off until the pilot turns it on after the copy probe (F115 stage 18). `sender_context`, `contact_wait` and `sender_suggestions` stay off until the F120 stages build their readers and the pilot turns them on (F120 stage 13). `web_push` stays off: the lab run has no phone and no push service, and the pilot turns it on after the sender stages of the F118 ticket folder.
 export const LAB_FLAGS_OFF = [
   "org_delete",
   "sso_sign_in",
@@ -58,6 +58,9 @@ export const LAB_FLAGS_OFF = [
   "bulk_unsubscribe",
   "reply_drafts",
   "draft_copy_check",
+  "sender_context",
+  "contact_wait",
+  "sender_suggestions",
   "web_push",
 ] as const satisfies readonly FeatureKey[];
 export const LAB_FLAGS_ON = [

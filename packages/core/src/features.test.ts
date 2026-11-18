@@ -69,6 +69,16 @@ describe("featureFlags registry", () => {
     expect(featureFlags.draft_copy_check.removeBy).toBe("2027-06-01");
   });
 
+  test("sender_context, contact_wait and sender_suggestions exist, default off, epic E11a, remove by 2027-06-01, in this order", () => {
+    for (const key of ["sender_context", "contact_wait", "sender_suggestions"] as const) {
+      expect({ key, default: featureFlags[key].default }).toEqual({ key, default: false });
+      expect({ key, epic: featureFlags[key].epic }).toEqual({ key, epic: "E11a" });
+      expect({ key, removeBy: featureFlags[key].removeBy }).toEqual({ key, removeBy: "2027-06-01" });
+    }
+    const keys = featureKeys.filter((key) => ["sender_context", "contact_wait", "sender_suggestions"].includes(key));
+    expect(keys).toEqual(["sender_context", "contact_wait", "sender_suggestions"]);
+  });
+
   test("security_log exists, defaults off and has the epic E7-T2 and remove-by 2027-03-01", () => {
     expect(featureFlags.security_log.default).toBe(false);
     expect(featureEpicPattern.test(featureFlags.security_log.epic)).toBe(true);

@@ -282,6 +282,21 @@ export const dataCategories: readonly DataCategory[] = [
     kept: untilDelete,
   },
   {
+    id: "sender-context",
+    label: { en: "Sender profiles", pl: "Profile nadawców" },
+    purpose: {
+      en: "Counts about each sender and recipient of a mailbox (mails, answers, reply times) under a keyed hash instead of the address, and the rule suggestions that the assistant makes from them",
+      pl: "Liczby o każdym nadawcy i adresacie skrzynki (wiadomości, odpowiedzi, czasy odpowiedzi) pod skrótem z kluczem zamiast adresu oraz podpowiedzi reguł, które asystent z nich tworzy",
+    },
+    columns: ["sender_profiles.*", "sender_suggestions.*"],
+    // A profile row holds no address, name or mail text: only the keyed hash, dates and counts. An open suggestion holds the
+    // address or domain it names (`sender_suggestions.pattern`, cleared when the suggestion ends). The people are third
+    // parties. The period is the longest one: a profile goes 365 days after its last activity, an ended suggestion 90 days
+    // after its end (the retention clearers come with the privacy stage of the ticket folder).
+    subjects: ["others"],
+    kept: { kind: "days", days: 365 },
+  },
+  {
     id: "chat-links",
     label: { en: "Chat links", pl: "Powiązania z czatem" },
     purpose: {

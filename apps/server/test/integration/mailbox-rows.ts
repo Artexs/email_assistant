@@ -165,6 +165,30 @@ export async function fillMailbox(
     })
     .execute();
 
+  // One profile and one open suggestion of a sender (sender context): both go with the mailbox. The key is a hash, never an address.
+  await trx
+    .insertInto("sender_profiles")
+    .values({
+      org_id: ctx.orgId,
+      mailbox_id: mailboxId,
+      key_hash: createHash("sha256").update(randomUUID()).digest("hex"),
+      relation: "new",
+      first_seen_at: now,
+      last_seen_at: now,
+    })
+    .execute();
+  await trx
+    .insertInto("sender_suggestions")
+    .values({
+      org_id: ctx.orgId,
+      mailbox_id: mailboxId,
+      key_hash: createHash("sha256").update(randomUUID()).digest("hex"),
+      scope: "address",
+      kind: "vip",
+      pattern: `vip-${randomUUID()}@x.test`,
+    })
+    .execute();
+
   // One history check with one item (the item goes with the mail and with the check) and one trip (F110): all go with the mailbox.
   const checkId = await insertCheckRow(trx, ctx, mailboxId, { status: "done", finished_at: now });
   await insertCheckItemRow(trx, ctx, checkId, triaged.emailId);
@@ -258,6 +282,8 @@ export async function countMailboxRows(
       | "sent_analyses"
       | "reply_requests"
       | "unsubscribe_requests"
+      | "sender_profiles"
+      | "sender_suggestions"
   ) => {
     const row = await trx
       .selectFrom(table)
@@ -311,6 +337,8 @@ export async function countMailboxRows(
     mailbox_profiles: await byMailbox("mailbox_profiles"),
     reply_requests: await single("reply_requests"),
     unsubscribe_requests: await single("unsubscribe_requests"),
+    sender_profiles: await single("sender_profiles"),
+    sender_suggestions: await single("sender_suggestions"),
     audit_log_by_email: await audit("email_id"),
     audit_log_by_action: await audit("action_id"),
     audit_log_by_mailbox: await audit("mailbox"),
