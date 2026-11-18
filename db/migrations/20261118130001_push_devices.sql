@@ -52,10 +52,19 @@ ALTER TABLE outbox
 CREATE INDEX outbox_push_subscription_idx ON outbox (push_subscription_id) WHERE push_subscription_id IS NOT NULL;
 
 -- The route of each notice group of a member: `{urgent?, approvals?, updates?}`, each `telegram`, `push` or `both`.
--- A missing key means the default of the code. The code validates the keys and the values; the CHECK keeps the shape.
+-- A missing key means the default of the code. The CHECK keeps exactly that shape: an object, only these three keys, only
+-- these three string values (the path is `strict`: in the default lax mode an array value would be unwrapped and pass).
+-- No free text fits, so the column holds no personal data and stays small. A new group or value
+-- needs a new migration that widens the CHECK.
 ALTER TABLE memberships
   ADD COLUMN notice_routes jsonb NOT NULL DEFAULT '{}'
-    CONSTRAINT memberships_notice_routes_check CHECK (jsonb_typeof(notice_routes) = 'object');
+    CONSTRAINT memberships_notice_routes_check CHECK (
+      CASE WHEN jsonb_typeof(notice_routes) = 'object' THEN
+        (notice_routes - 'urgent' - 'approvals' - 'updates') = '{}'::jsonb
+        AND NOT jsonb_path_exists(
+          notice_routes,
+          'strict $.* ? (@.type() != "string" || (@ != "telegram" && @ != "push" && @ != "both"))')
+      ELSE false END);
 
 -- migrate:down
 -- The old list refuses `push`: drop the push rows first (delivery rows; a device is made again by the next subscribe),

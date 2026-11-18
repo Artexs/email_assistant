@@ -155,6 +155,9 @@ describe("push_subscriptions: constraints", () => {
       await device(trx, o, { device_label: "" });
       await expectSqlState(trx, () => device(trx, o, { key_version: 0 }), CHECK);
       await expectSqlState(trx, () => device(trx, o, { secret: "" }), CHECK);
+      // The secret holds the box of one endpoint and its keys: the upper limit is 8192 characters, no more.
+      await device(trx, o, { secret: "x".repeat(8192) });
+      await expectSqlState(trx, () => device(trx, o, { secret: "x".repeat(8193) }), CHECK);
       for (const code of ["", "HTTP_410", "http 410", "https://x.test", "x".repeat(41)])
         await expectSqlState(trx, () => device(trx, o, { last_error_code: code }), CHECK);
       await device(trx, o, { last_error_code: "push_refused" });
@@ -333,6 +336,78 @@ describe("memberships.notice_routes", () => {
       );
       await set('{"urgent":"both","approvals":"push"}');
       expect(await read()).toEqual({ urgent: "both", approvals: "push" });
+    });
+  });
+
+  test("10b: only the keys urgent, approvals and updates with the values telegram, push and both fit; no free text fits", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const set = (value: string) =>
+        sql`update memberships set notice_routes = ${value}::jsonb where org_id = ${o.orgId}::uuid and user_id = ${o.userId}::uuid`.execute(
+          trx
+        );
+      const read = async () =>
+        (
+          await trx
+            .selectFrom("memberships")
+            .select("notice_routes")
+            .where("org_id", "=", o.orgId)
+            .where("user_id", "=", o.userId)
+            .executeTakeFirstOrThrow()
+        ).notice_routes;
+      for (const group of ["urgent", "approvals", "updates"])
+        for (const route of ["telegram", "push", "both"]) {
+          const value = { [group]: route };
+          await set(JSON.stringify(value));
+          expect(await read()).toEqual(value);
+        }
+      await set('{"urgent":"telegram","approvals":"push","updates":"both"}');
+      await set("{}");
+      const bad = [
+        // an unknown key, also next to good ones, also a near name and a different case
+        '{"fax":"push"}',
+        '{"urgent":"push","fax":"push"}',
+        '{"Urgent":"push"}',
+        '{"urgent ":"push"}',
+        '{"":"push"}',
+        // an unknown value, a different case, a space, an empty string, free text
+        '{"urgent":"fax"}',
+        '{"urgent":"PUSH"}',
+        '{"urgent":"push "}',
+        '{"urgent":""}',
+        '{"urgent":"call me at jan@x.test"}',
+        // a value that is not a string
+        '{"urgent":1}',
+        '{"urgent":true}',
+        '{"urgent":null}',
+        '{"urgent":["push"]}',
+        '{"urgent":{"a":"push"}}',
+        // one bad value next to good ones
+        '{"urgent":"push","approvals":"fax"}',
+      ];
+      for (const value of bad) await expectSqlState(trx, () => set(value), CHECK);
+      expect(await read()).toEqual({});
+    });
+  });
+
+  test("10c: a value of 100 kB (a long key, a long text value, many keys) is refused", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const set = (value: string) =>
+        sql`update memberships set notice_routes = ${value}::jsonb where org_id = ${o.orgId}::uuid and user_id = ${o.userId}::uuid`.execute(
+          trx
+        );
+      const big = "x".repeat(100_000);
+      const many = Object.fromEntries(Array.from({ length: 5000 }, (_, n) => [`k${n}`, "push"]));
+      for (const value of [{ [big]: "push" }, { urgent: big }, many])
+        await expectSqlState(trx, () => set(JSON.stringify(value)), CHECK);
+      const row = await trx
+        .selectFrom("memberships")
+        .select("notice_routes")
+        .where("org_id", "=", o.orgId)
+        .where("user_id", "=", o.userId)
+        .executeTakeFirstOrThrow();
+      expect(row.notice_routes).toEqual({});
     });
   });
 });
