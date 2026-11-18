@@ -77,6 +77,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## PARKED
 
+- `F136-every-limen-job-runs-the-playwright-suites-in-parallel-with-no-shared-lock` (🔴 PLANNED, parked: starts only when the owner moves this line to NEXT or names F136; then it needs a plan; no migration expected): parallel `test:e2e` and `docs:test` runs per Limen job with no shared lock; seams and open questions in the folder `notes.md`; sequenced after none; gate —.
 - `F129-every-command-line-tool-follows-one-standard-and-agents-find-each-tool-its-risk-and-its-exit-codes-in-one-generated-list` (🔴 PLANNED, parked: starts only when the owner moves this line to NEXT or names F129; then it needs a plan; no migration expected): one CLI standard (`docs/cli.md`), an inventory stage that merges or removes overlapping tools, a generated `cli:list`; design input `notes/2026-11-15-cli-standard.md`; owner decisions in `ticket.md` § Notes; sequenced after F103 stage 04 (landed); gate —.
 
 ## PROVEN
