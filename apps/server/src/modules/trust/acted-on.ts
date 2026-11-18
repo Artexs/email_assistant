@@ -1,4 +1,4 @@
-// "Acted on" (F110 D6): the user dealt with the mail themselves. The IMAP flag `\Answered` or `\Flagged`, or feedback whose true
+// "Acted on": the user dealt with the mail themselves. The IMAP flag `\Answered` or `\Flagged`, or feedback whose true
 // category is `urgent` or `needs_reply`. Sent-mail signals join here later (the seam of the next epic): this is the only reader of
 // the definition, so a new signal changes one function.
 import type { Db, TenantContext } from "../../platform/db";

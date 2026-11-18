@@ -354,7 +354,7 @@ describe("handled share line", () => {
   });
 });
 
-describe("replies ready line (F115 stage 12)", () => {
+describe("replies ready line ", () => {
   test("one footer line with the count, en and pl, no button; 0 or absent: no line", () => {
     const one = render(input({ repliesReady: 1 }));
     expect(one.text).toContain("📝 1 reply ready");

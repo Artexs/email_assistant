@@ -1,4 +1,4 @@
-// CHANGELOG.md parser (F112 stage 13, plan D12). Format: Keep a Changelog 1.1 as `release:prepare` writes it.
+// CHANGELOG.md parser. Format: Keep a Changelog 1.1 as `release:prepare` writes it.
 //   ## [x.y.z] - YYYY-MM-DD      plain SemVer, newest first; the first heading may be `## [Unreleased]`
 //   ### For users                optional group: `- en: <text>`, next line `  pl: <text>`
 // Every other `###` group is free operator text. HTML comments and link lines (`[x.y.z]: <url>`) are skipped.

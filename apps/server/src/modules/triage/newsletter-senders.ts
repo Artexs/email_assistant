@@ -1,7 +1,7 @@
-// The newsletter senders of one mailbox (F110 stage 22, D17, PD-063). It lives in `triage`, next to the readers of the results
+// The newsletter senders of one mailbox. It lives in `triage`, next to the readers of the results
 // that it reads (`trust` may not name the table `triage_results`). A reader only: it never fetches a URL and never writes.
 // A link in a mail is untrusted text. This module reads two facts from the stored headers (is there an `https` link, does the
-// header allow one-click) and returns flags. The URL itself does not leave the headers; stage 24 reads it again and checks it
+// header allow one-click) and returns flags. The URL itself does not leave the headers; the unsubscribe step reads it again and checks it
 // before any request.
 import { DAY_MS, hasTrustedAlignedDkimPass } from "@ea/core";
 import { sql, type Transaction } from "kysely";
@@ -22,7 +22,7 @@ export interface NewsletterSender {
   latestAt: Date;
   latestEmailId: string;
   /**
-   * D17: the newest mail has `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, an `https` link in `List-Unsubscribe`, and
+   * The newest mail has `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, an `https` link in `List-Unsubscribe`, and
    * a `dkim=pass` for the From domain (or a parent) in an `Authentication-Results` header of a trusted authserv-id.
    */
   oneClick: boolean;
@@ -46,7 +46,7 @@ interface Row {
 // The first `https` URI of `List-Unsubscribe` (`<https://host/path>`, separated by commas) that the view may offer: it has a host and
 // no user name or password. Returns the parsed form (`URL.href`, so no control character survives), or null. The stored header has at
 // most 1000 characters (a CHECK of `email_headers`), so the link is short. The link is untrusted text. This is not a safety check
-// of the target (stage 24 does that before any request).
+// of the target (the unsubscribe step does that before any request).
 export function firstHttpsUnsubscribeUrl(header: string | null): string | null {
   if (header === null) return null;
   for (const match of header.matchAll(/<([^<>]*)>/g)) {
@@ -67,7 +67,7 @@ export function hasHttpsUnsubscribeLink(header: string | null): boolean {
 }
 
 // The senders of the last 30 days that the newsletters view may list, most mails first (then newest mail), at most 200. A sender is
-// listed only when every mail of the window that has a result is `info` or `notification` (P6): one `spam`, `urgent`, `unsure`
+// listed only when every mail of the window that has a result is `info` or `notification`: one `spam`, `urgent`, `unsure`
 // or other mail, or one mail with a suspicious reason (`suspiciousSendersOf`), leaves the sender out. Mail with no result yet
 // does not count. `trustedAuthservIds` is `MAIL_TRUSTED_AUTHSERV_IDS` (lower case); an empty list gives `oneClick: false` for
 // every sender. Queries `from_address_lower`, never `lower(from_address)`.

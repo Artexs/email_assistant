@@ -1,20 +1,20 @@
-// The report page (F110 stage 14). Pure: a `TrustView` in, fixed phrases and counts out.
-// The page shows counts and fixed phrases only. The view also holds example mails (sender name and subject, for the panel review of
-// stage 15); nothing here reads them, and no function of this file takes them: mail text never reaches the report.
+// The report page. Pure: a `TrustView` in, fixed phrases and counts out.
+// The page shows counts and fixed phrases only. The view also holds example mails (sender name and subject, for the panel review);
+// nothing here reads them, and no function of this file takes them: mail text never reaches the report.
 import type { MailboxView, TrustView } from "@ea/core/web";
 
 import type { TextKey } from "../i18n";
 
 export type ReportCategory = keyof TrustView["examples"];
 
-// The categories that have a history check and a recommendation (`movingCategories` of the core, D3).
+// The categories that have a history check and a recommendation (`movingCategories` of the core).
 export const REPORT_CATEGORIES = ["info", "notification", "spam"] as const satisfies readonly ReportCategory[];
 
 // The checks that are still open: the page polls while one of these is the newest.
 type Check = NonNullable<TrustView["check"]>;
 const OPEN_STATUSES: readonly Check["status"][] = ["queued", "backfilling", "waiting_flags", "classifying"];
 
-// The history sample of one check (D11); the progress line says "of up to".
+// The history sample of one check; the progress line says "of up to".
 export const REPORT_SAMPLE_MAX = 500;
 
 export type ReportState =
@@ -47,7 +47,7 @@ export function reportState(view: TrustView): ReportState {
   return { kind: "done", capped: check.capped };
 }
 
-// The page polls every 30 s while a check is open or has not started (no live updates: F055 is out of scope).
+// The page polls every 30 s while a check is open or has not started (no live updates).
 export function shouldPoll(view: TrustView | null): boolean {
   if (view === null) return true;
   const state = reportState(view).kind;

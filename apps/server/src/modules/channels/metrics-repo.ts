@@ -55,7 +55,7 @@ export interface UrgentCandidate {
   // The first sent `urgent` notice of the mail.
   noticeAt: Date | null;
   timeZone: string;
-  // The quiet hours that count for the wait (F110 stage 18, Q18). With a sent notice: the hours of the user of the sent
+  // The quiet hours that count for the wait. With a sent notice: the hours of the user of the sent
   // row that gave `noticeAt`. Without one: the hours of the user of each pending or sending urgent row (an empty list:
   // no row yet, so the default applies). A user with no hours of their own gives the default. The caller turns the
   // flag `user_quiet_hours` off per organization by using the default for all.
@@ -76,7 +76,7 @@ const candidateSchema = z.object({
 });
 
 /**
- * F114 SLO job entry point: no TenantContext, it reads every organization that is not `suspended`. Every table is joined with
+ * SLO job entry point: no TenantContext, it reads every organization that is not `suspended`. Every table is joined with
  * its own `org_id`. It returns ids, times and the zone name only; no address, subject or text.
  * The mail the urgent detector (`notices/urgent.ts`) would notify, received at or after `since`: real, not backfilled, latest
  * triage `urgent`, not in the junk folder of its mailbox, mailbox `active`, the organization has a linked chat, the triage

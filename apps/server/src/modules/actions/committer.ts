@@ -59,32 +59,32 @@ export interface CommitterDeps {
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
   scope: ActionsScope;
-  // S4: `off` when missing (the tests of S3). `main.ts` wires the SMTP opener and the scope (stage 18).
+  // `off` when missing (the tests that never send). `main.ts` wires the SMTP opener and the scope.
   sendScope?: SendScope;
   openSender?(opts: SmtpConnectOptions): Promise<MailSender>;
-  // F117: the Graph sender and the token store; `openMailboxProvider` reads them (stages 10 and 13 wire them in `main.ts`).
+  // The Graph sender and the token store; `openMailboxProvider` reads them.
   openGraphSender?: OpenDeps["openGraphSender"];
   oauthTokens?: OpenDeps["oauthTokens"];
   now(): Date;
   /** Waits between the looks for a Graph Sent copy (`ApplyDeps.sleep`). Absent: a real wait. */
   sleep?: ApplyDeps["sleep"];
   batchSize?: number;
-  // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).
+  // The delegation callbacks and the composer. The defaults serve the tests that never send; `main.ts` wires them.
   hooks?: DelegationHooks;
   // The cards of a send that the committer closes (a changed or a missing Drafts copy lose their buttons). `main.ts` and `job:run`
   // wire `cardEditHooks`; absent = `noApprovalHooks`.
   approvalHooks?: ApprovalHooks;
-  // Open loops (F116): reads the loop of a follow-up and writes its counters. `main.ts` and `job:run` wire it; absent = no loop is open.
+  // Open loops: reads the loop of a follow-up and writes its counters. `main.ts` and `job:run` wire it; absent = no loop is open.
   loopHooks?: LoopHooks;
   compose?(message: OutgoingMessage): Promise<Buffer>;
-  // PD-044: absent = `DEFAULT_SEND_LIMITS` and no callback (the older tests). `main.ts` wires them (stage 04).
+  // Absent = `DEFAULT_SEND_LIMITS` and no callback (the older tests). `main.ts` wires them.
   sendLimits?: ApplyDeps["sendLimits"];
   onSendLimited?: ApplyDeps["onSendLimited"];
   /** The time budget of the Sent pass before a reply send (`ApplyDeps.sentBudgetMs`). Absent: the default. A test sets it small. */
   sentBudgetMs?: number;
 }
 
-// The owner and the organization of one tenant, read once per run (D12).
+// The owner and the organization of one tenant, read once per run.
 interface TenantFacts {
   owner: ApplyDeps["owner"];
   organization: ApplyDeps["organization"];
@@ -94,7 +94,7 @@ type EnsuredFolderKey = Exclude<ResolvableFolderKey, "inbox">;
 
 const DEFAULT_PATHS: Record<EnsuredFolderKey, string> = { ...AI_FOLDER_NAMES, drafts: "Drafts", sent: "Sent" };
 
-// D9: `ensureFolder` once per key per run; `inbox` is `INBOX` at once (D12). A real path that differs from `folder_map` is stored (audit: the key, not the path).
+// `ensureFolder` once per key per run; `inbox` is `INBOX` at once. A real path that differs from `folder_map` is stored (audit: the key, not the path).
 export function createFolderResolver(
   deps: {
     db: Db | Transaction<DB>;
@@ -144,7 +144,7 @@ export function createFolderResolver(
 // What each row of a batch needs, from the handler table: IMAP, SMTP, the tenant texts, the sort folders.
 const needs = (action: ClaimedAction): ApplyNeeds => APPLY_HANDLERS[action.type].needs;
 
-// D21: a ready original older than 24 h is never applied. One audit row per row, in one transaction.
+// A ready original older than 24 h is never applied. One audit row per row, in one transaction.
 async function expireStale(deps: CommitterDeps, ctx: TenantContext, mailboxId: string, now: Date): Promise<number> {
   const run = async (trx: Transaction<DB>): Promise<number> => {
     const expired = await expireStaleReady(trx, ctx, mailboxId, {
@@ -200,7 +200,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     }
   }
 
-  // D16: once per process and mailbox. Runs before the `total === 0` return: a mailbox with only held sends has `total` 0.
+  // Once per process and mailbox. Runs before the `total === 0` return: a mailbox with only held sends has `total` 0.
   async function warnWhenSendsHeld(
     ctx: TenantContext,
     mailboxId: string,
@@ -247,7 +247,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     }
   }
 
-  // The owner and the organization are read once per tenant and run, and only for a batch with a draft or a send (D12).
+  // The owner and the organization are read once per tenant and run, and only for a batch with a draft or a send.
   async function loadFacts(
     ctx: TenantContext,
     mailbox: MailboxRow,
@@ -380,7 +380,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     const batch = await claimActions(deps.db, ctx, mailboxId, { now, limit: batchSize, staleBefore, filter });
     if (batch.length === 0) return;
 
-    // U11: a move into a `sort` folder is an APPEND transfer. A disabled row counts: its mail can still be undone.
+    // A move into a `sort` folder is an APPEND transfer. A disabled row counts: its mail can still be undone.
     let appendFolders: ReadonlySet<string> = new Set();
     if (batch.some((action) => needs(action).sortFolders)) {
       try {
@@ -398,7 +398,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     let provider: MailProvider | null = null;
     let sender: MailSender | null = null;
     if (batch.some((action) => needs(action).provider)) {
-      // The recovery of an `applying` send needs no SMTP (M9).
+      // The recovery of an `applying` send needs no SMTP.
       const withSender = batch.some((action) => needs(action).sender && action.status === "approved");
       const opened = await openFor(ctx, mailboxId, batch, now, withSender);
       if (opened === null) return;
@@ -438,7 +438,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       const facts = new Map<string, TenantFacts>();
       for (const { orgId, mailboxId } of targets) {
         try {
-          // D4: a suspend during the run stops the next mailbox, not only the next run.
+          // A suspend during the run stops the next mailbox, not only the next run.
           if (await isOrgSuspended(deps.db, { orgId })) continue;
           await processMailbox({ orgId }, mailboxId, facts);
         } catch (error) {

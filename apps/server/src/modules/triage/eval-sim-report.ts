@@ -18,7 +18,7 @@ import type { CaseResult, CasesEvalReport } from "./eval";
 import { endpointSuffix, num, pct, table } from "./eval-format";
 import { classifierV3Parts } from "./prompts";
 
-// The gate file only ever carries this bar and this minimum support (D27): a looser run writes none.
+// The gate file only ever carries this bar and this minimum support: a looser run writes none.
 export const GATE_BAR = 0.98;
 export const GATE_MIN_KEPT = 30;
 
@@ -44,7 +44,7 @@ export interface SimReportInput {
     audit: "pending" | "done" | "not frozen";
     part: SimPart;
   };
-  // D28: true for holdout. No section prints a case id then.
+  // True for holdout. No section prints a case id then.
   hideIds: boolean;
 }
 
@@ -63,7 +63,7 @@ export function simMetaOf(cases: readonly EvalCase[]): Map<string, SimMeta> {
   return meta;
 }
 
-// Review N2: a gain of the `history` part on the sim may not carry to real mail.
+// A gain of the `history` part on the sim may not carry to real mail.
 export const HISTORY_PART_NOTE =
   "- history part: the sim history (received, corrections) comes from the persona group's ideal mix, not from the model's own past labels. Real history holds only the received count and the user's corrections, so a gain here may not carry to real mail.";
 
@@ -208,7 +208,7 @@ const gateRowSchema = z.object({
 
 const sourceSchema = z.object({ n: z.number(), recall: z.number().nullable() });
 
-// The machine-readable result of a holdout run (D27). No case id, no mail text.
+// The machine-readable result of a holdout run. No case id, no mail text.
 export const gateFileSchema = z.object({
   scenario: z.string(),
   version: z.string(),
@@ -220,14 +220,14 @@ export const gateFileSchema = z.object({
   date: z.string(),
   role: z.string(),
   provider: z.string(),
-  // Where the run's calls went. A file without the keys is from before F111: `standard`, host unknown (null).
+  // Where the run's calls went. A file without the keys is from before the endpoint was logged: `standard`, host unknown (null).
   // A gate file proves one model and prompt on one endpoint and host. `host` is the host name only (no port, no path).
   endpoint: z.enum(["standard", "eu", "own"]).default("standard"),
   host: z.string().nullable().default(null),
   model: z.string(),
   reasoningEffort: z.string().nullable(),
   promptVersion: z.string(),
-  // The optional parts of a `classifier-v3` run, sorted. Absent in a file of an older prompt version (N10).
+  // The optional parts of a `classifier-v3` run, sorted. Absent in a file of an older prompt version.
   promptParts: z.array(z.enum(classifierV3Parts)).optional(),
   bar: z.number(),
   minKept: z.number(),
@@ -303,7 +303,7 @@ export function buildGateFile(input: SimReportInput & { now: Date }): GateFile {
 
 const safe = (part: string): string => part.replace(/[^\w.-]/g, "_");
 
-// The name has no prompt parts (F109 stage 11). `standard` keeps the old name; `eu` and `own` add `-<endpoint>`.
+// The name has no prompt parts. `standard` keeps the old name; `eu` and `own` add `-<endpoint>`.
 export function gateFileName(input: {
   role: LlmRole;
   endpoint: LlmEndpointKind;

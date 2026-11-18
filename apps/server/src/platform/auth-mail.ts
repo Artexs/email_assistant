@@ -115,7 +115,7 @@ export interface AuthMailTasks {
   idle(): Promise<void>;
 }
 
-/** L8: the caller never waits for the mail. A task never rejects and stays in a set until it settles. */
+/** The caller never waits for the mail. A task never rejects and stays in a set until it settles. */
 export function createAuthMailTasks(deps: {
   mailer: AuthMailer;
   localeOf: (userId: string) => Promise<UserLocale>;

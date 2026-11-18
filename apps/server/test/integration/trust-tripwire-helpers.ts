@@ -18,7 +18,7 @@ import type { Db, TenantContext } from "../../src/platform/db";
 import { addMember, createOrgWithMailbox, insertTriagedWithActions, linkChat, randomChatId } from "./fixtures";
 import { insertCheckRow } from "./trust-fixtures";
 
-// Committed organizations for the tests of the tripwire (F110 stage 09). The job writes in transactions of its own, so these tests
+// Committed organizations for the tests of the tripwire. The job writes in transactions of its own, so these tests
 // cannot run in a rolled-back transaction. Every test removes its organizations and users in `finally`.
 export const RUNNING_KEY: EvidenceKey = {
   provider: "gemini",
@@ -34,7 +34,7 @@ export const GRANT_AT = "2026-11-01T10:00:00.000Z";
 export const NOW = new Date("2026-11-08T12:00:00Z");
 export const at = (iso: string): Date => new Date(iso);
 
-// A non-provisional `go` for every category under the running key: the evidence gate of stage 04 lets `auto` on.
+// A non-provisional `go` for every category under the running key: the evidence gate lets `auto` on.
 export const GO_GATE: GateEvidenceDeps = (() => {
   const categories = {} as Record<BarCategory, GlobalEvidence>;
   for (const category of barCategories) {

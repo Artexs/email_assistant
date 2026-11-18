@@ -123,11 +123,11 @@ export function renderApprovalRequest(
   const head = [view.synthetic ? `${title} · ${texts.common.test}` : title];
   if (view.version !== undefined && view.version >= 2) head.push(t.versionLine(view.version));
   if (followUp) head.push(...followUpRecipientLines(view, texts));
-  // A reply card names every recipient (F115 stage 12): To, Cc and the Reply-To of the original when it differs from its From. The
+  // A reply card names every recipient To, Cc and the Reply-To of the original when it differs from its From. The
   // addresses are never cut (the owner decides on them), as in a follow-up; a list that cannot fit one message is refused.
   if (view.kind === "reply") head.push(...replyRecipientLines(view, texts));
   if (view.sender !== null) {
-    // The view stores the English placeholder (plan D19); the renderer prints it in the row's language.
+    // The view stores the English placeholder; the renderer prints it in the row's language.
     const stored =
       view.sender.label === textTables.en.common.unknownSender ? texts.common.unknownSender : view.sender.label;
     const label = cutText(removeLinks(stored), FIELD_MAX_CHARS);
@@ -135,7 +135,7 @@ export function renderApprovalRequest(
       view.sender.external ? `${texts.common.from}: ${label} · ${t.externalSender}` : `${texts.common.from}: ${label}`
     );
   }
-  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped (review 12, N6).
+  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped.
   head.push(
     `${texts.common.subject}: ${cleanSubject(followUp && view.subject !== null ? withoutEscapeRemains(view.subject) : view.subject, texts)}`
   );
@@ -156,7 +156,7 @@ export function renderApprovalRequest(
     if (view.panelUrl !== undefined) lines.push(t.panelLine(view.panelUrl));
     // A reply, and every kind while the flag `draft_copy_check` is on (the view says so), may be edited in the mail client.
     lines.push(view.kind === "reply" || view.copyCheck === true ? t.sendLineEditable : t.sendLine);
-    // The Sent mail is not read: only `\Answered` on the original shows an answer, so the owner must check by hand (D10).
+    // The Sent mail is not read: only `\Answered` on the original shows an answer, so the owner must check by hand.
     if (view.kind === "reply" && view.sentVisible === false) lines.push(t.reply.sentHidden);
     return lines.join("\n");
   };
@@ -193,7 +193,7 @@ export function renderApprovalRequest(
   // The recipients never shrink (the owner decides on them), so a card that cannot hold them does not render at all.
   if (text.length > MESSAGE_MAX_CHARS) throw new RangeError("the approval card does not fit one message");
   if (view.kind === "reply") {
-    // A reply card has no Send button while a gap is open (D15), and a Skip button (F115 stage 12).
+    // A reply card has no Send button while a gap is open ), and a Skip button 
     const row: OutMessage["buttons"][number] = [];
     if ((view.gaps ?? []).length === 0)
       row.push({ text: t.buttons.send, data: encodeCallback({ kind: "approve", actionId }) });
@@ -290,7 +290,7 @@ export type SendResultKind =
         | "policy_changed"
         | "loop_closed"
         | "draft_changed"
-        // The reasons that only a reply send has (F115): the mail was answered, a newer mail came, the mail moved or turned suspicious.
+        // The reasons that only a reply send has: the mail was answered, a newer mail came, the mail moved or turned suspicious.
         | "answered"
         | "sent_by_user"
         | "newer_mail"

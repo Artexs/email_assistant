@@ -1,6 +1,6 @@
 import { createHmac, hkdfSync } from "node:crypto";
 
-// The keyed token of the domain proof (ticket F119). Pure: `node:crypto` only.
+// The keyed token of the domain proof. Pure: `node:crypto` only.
 // The token is not a secret that the operator must hide: it goes into a public DNS record. The key stays secret, so a
 // stranger cannot make the token of another organization.
 

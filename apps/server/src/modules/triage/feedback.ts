@@ -139,7 +139,7 @@ export async function listForLabeling(
   return withSummaries(db, ctx, await listUnlabeled(db, ctx, mailboxId, opts));
 }
 
-// The /review page: a seeded random page of unlabelled real mail of the last 30 days (F097 D4).
+// The /review page: a seeded random page of unlabelled real mail of the last 30 days.
 export async function listForReview(
   db: Db | Transaction<DB>,
   ctx: TenantContext,

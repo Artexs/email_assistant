@@ -6,8 +6,8 @@ import { undo, type ActionsScope, type UndoResult } from "../actions";
 import { recordFeedback } from "./feedback";
 import { getLabelTarget } from "./repo";
 
-// D10 (a): the Telegram tap and the web button run this one Undo + feedback transaction.
-// A mail with no triage result is "not found" before any Undo query, as in the S3 callback.
+// The Telegram tap and the web button run this one Undo + feedback transaction.
+// A mail with no triage result is "not found" before any Undo query, as in the Telegram callback.
 export async function undoWithFeedback(
   db: Db | Transaction<DB>,
   ctx: TenantContext,

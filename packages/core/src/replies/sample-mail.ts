@@ -1,4 +1,4 @@
-// The fixed sample mail of the style preview (F115 stage 10). It is a constant: the preview never reads a real mail. The model
+// The fixed sample mail of the style preview. It is a constant: the preview never reads a real mail. The model
 // answers it in the language of the owner, so the owner sees the name, the signature and the style in a draft.
 
 export interface SampleMail {

@@ -10,7 +10,7 @@ const titleKeys: Record<LegalDoc, TextKey> = {
   dpa: "legal_dpa_title",
 };
 
-// The three legal documents in the panel language (P4). The sign-in page opens them in the same tab; the Account card
+// The three legal documents in the panel language. The sign-in page opens them in the same tab; the Account card
 // opens them in a new tab, so a member keeps the page.
 export function LegalLinks({ newTab = false, className }: { newTab?: boolean; className?: string }) {
   const lang = useLocale();

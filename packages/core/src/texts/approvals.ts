@@ -12,7 +12,7 @@ export interface ApprovalTexts {
     delegation: (to: string) => string; // `to` = "<name> <address>" or "<address>"
     clarification: (address: string) => string;
     reminder: (to: string) => string;
-    reply: (address: string) => string; // a reply draft (F115): the sender's address
+    reply: (address: string) => string; // a reply draft: the sender's address
   };
   // The card, the result lines and the closing lines of a follow-up (open loops). A follow-up goes to other people, so the card
   // spells out every address; no text here names the loop or its ask.
@@ -36,7 +36,7 @@ export interface ApprovalTexts {
       string
     >;
   };
-  // The review card of a reply draft (F115 stage 12): the lines that only a reply has, and its Skip button.
+  // The review card of a reply draft the lines that only a reply has, and its Skip button.
   reply: {
     to: string; // "To:"
     cc: string; // "Cc:"
@@ -107,7 +107,7 @@ export interface ApprovalTexts {
     unknownRest: string;
     expired: {
       timeout: (subject: string) => string;
-      // A reply lives 7 days, another send 48 h (F115 stage 12): the `timeout` of a reply names no hours of the other rule.
+      // A reply lives 7 days, another send 48 h the `timeout` of a reply names no hours of the other rule.
       timeoutReply: (subject: string) => string;
       draft_missing: (subject: string) => string;
       not_notified: (subject: string) => string;
@@ -117,7 +117,7 @@ export interface ApprovalTexts {
       policy_changed: (subject: string) => string;
       loop_closed: (subject: string) => string;
       draft_changed: (subject: string) => string;
-      // The reasons of the reply drafts (F115): each says that nothing was sent.
+      // The reasons of the reply drafts: each says that nothing was sent.
       answered: (subject: string) => string;
       sent_by_user: (subject: string) => string;
       newer_mail: (subject: string) => string;
@@ -139,13 +139,13 @@ export interface ApprovalTexts {
     rejectedReason: (reason: string) => string; // no clock: the tap time is not the reject time
     markedMistake: (time: string) => string;
     changed: (time: string) => string; // a panel edit replaced the draft; the new version is a new message
-    skipped: (time: string) => string; // a reply card that the owner skipped in the review (F115 stage 12)
+    skipped: (time: string) => string; // a reply card that the owner skipped in the review 
   };
   answered: {
     title: (name: string, subject: string) => string;
     tapDone: string;
   };
-  // The answers to the reason and mistake taps (F100 stage 14).
+  // The answers to the reason and mistake taps.
   feedbackTaps: {
     noted: (reason: string) => string; // `reason` = an entry of `reasons`
     notRejected: string;

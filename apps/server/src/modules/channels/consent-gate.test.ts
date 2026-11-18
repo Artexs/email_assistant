@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
-// F116 stage 11 (review 17, N5): the consent gate of open-loop data has one choke point, `loopConsentOf`. These tests read the
+// The consent gate of open-loop data has one choke point, `loopConsentOf`. These tests read the
 // sources, so a new sender of loop data that skips the gate fails here, not in production.
 const SRC = join(import.meta.dir, "..", "..");
 const sources = [...new Bun.Glob("**/*.ts").scanSync({ cwd: SRC })]
@@ -24,7 +24,7 @@ describe("the consent gate of open-loop data", () => {
   test("only the gate of the notices, the digest job (and the gate itself) calls loopConsentOf; the raw version reader has no other caller", () => {
     expect(usersOf(/\bloopConsentOf\(/)).toEqual([
       "modules/channels/consent.ts",
-      "modules/channels/digest-job.ts", // the brief of the first digest of the day (F116 stage 18, review 11 N8)
+      "modules/channels/digest-job.ts", // the brief of the first digest of the day
       "modules/channels/notices/loop-consent.ts",
     ]);
     expect(usersOf(/\bconsentVersionsOf\(/)).toEqual(["modules/channels/consent.ts"]);
@@ -62,7 +62,7 @@ describe("the consent gate of open-loop data", () => {
     expect(commands).not.toMatch(/\bloops:/);
   });
 
-  // F115 stage 12 (D16): reply-draft data has the same kind of choke point.
+  // Reply-draft data has the same kind of choke point.
   test("only consent.ts compares a consent version with the reply version; only the reply notice and the review taps call replyConsentOf", () => {
     expect(usersOf(/\bREPLY_CONSENT_SINCE\b/)).toEqual(["modules/channels/consent.ts"]);
     expect(usersOf(/\breplyConsentOf\(/)).toEqual([

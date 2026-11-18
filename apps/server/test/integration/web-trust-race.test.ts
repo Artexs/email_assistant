@@ -20,7 +20,7 @@ import {
   type TrustWebBox,
 } from "./web-trust-kit";
 
-// "Turn on recommended" under concurrency (F110 stage 11): the evidence is read after the `FOR UPDATE` lock of the settings row,
+// "Turn on recommended" under concurrency: the evidence is read after the `FOR UPDATE` lock of the settings row,
 // so a tap that waits for another writer reads that writer's commit. Committed rows on several connections of the pool.
 const db = testDb();
 let box: TrustWebBox;

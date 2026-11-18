@@ -1,7 +1,7 @@
 import type { UserLocale } from "../tenancy";
 import type { SenderRuleKind } from "../triage/rules";
 
-// The "why" part of a digest item and of the urgent notice (F110 stage 16, flag `why_lines`). Fixed phrases only: the delegate
+// The "why" part of a digest item and of the urgent notice (flag `why_lines`). Fixed phrases only: the delegate
 // tags are the organization's own words (user config), cut in the builder.
 export interface WhyTexts {
   // The mark of a result that a sender rule shaped. It replaces the percent: a rule is not a model mark.

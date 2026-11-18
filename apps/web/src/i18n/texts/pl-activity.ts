@@ -1,7 +1,7 @@
 import type { TextKey } from "../en";
 
 export const plActivity = {
-  // activity (S5d)
+  // activity
   act_filter_mailbox: "Skrzynka",
   act_all_mailboxes: "Wszystkie skrzynki",
   act_filter_category: "Kategoria",
@@ -82,7 +82,7 @@ export const plActivity = {
   undo_nothing: "Nie ma czego cofnąć.",
   undo_too_old: "Za późno na cofnięcie (limit 7 dni).",
   undo_held: "Cofnięcie jest teraz niemożliwe: zmiany w skrzynce są wyłączone albo skrzynka jest wstrzymana.",
-  // operator console (F099)
+  // operator console
   nav_operator: "Operator",
   op_not_found: "Nie znaleziono.",
   op_load_error: "Nie udało się wczytać danych operatora.",
@@ -173,7 +173,7 @@ export const plActivity = {
   op_plan_submit: "Zatwierdź",
   op_flag_changed: "Flaga {flag}: {state}.",
   op_flag_killed: "wyłączona przez listę serwera",
-  // stats page (F100)
+  // stats page
   stats_metric_col: "Wskaźnik",
   stats_mailbox_label: "Skrzynka",
   stats_all_mailboxes: "Wszystkie skrzynki",

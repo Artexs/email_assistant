@@ -24,7 +24,7 @@ export interface QueueNoticeInput<K extends NoticeKind> {
   mailboxId?: string;
   digestId?: string;
   editOfOutboxId?: string;
-  // Absent = `telegram`. A `mail` row holds the same view (F110 stage 19); only the four report kinds go by mail.
+  // Absent = `telegram`. A `mail` row holds the same view; only the four report kinds go by mail.
   channel?: NoticeChannel;
   now: Date;
   // The `created_at` of the row when it must differ from `now` (the order of the edits of one card, `queueCardEdits`).

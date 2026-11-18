@@ -74,7 +74,7 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 | compose  | `deploy/compose.drill.yaml`: the override of the drill stack (project `ea-drill`)                                          | `deploy/compose.drill.yaml`                         |
 | CLI      | `bun run credentials:check`: does `CREDENTIALS_KEY` open every stored mailbox secret? Prints counts only                   | `apps/server/src/scripts/credentials-check.ts`      |
 | function | `countDecryptableCredentials`                                                                                              | `apps/server/src/modules/mail/credentials-check.ts` |
-| config   | `SLO_*`, `BACKUP_STATUS_FILE`, `OPERATOR_TELEGRAM_CHAT_ID`, `OPERATOR_LOCALE`                                              | `apps/server/src/platform/config.ts`                |
+| config   | `SLO_*`, `BACKUP_STATUS_FILE`, `OPERATOR_TELEGRAM_CHAT_ID`, `OPERATOR_LOCALE`                                              | `apps/server/src/platform/config-ops.ts`            |
 
 ## Data
 

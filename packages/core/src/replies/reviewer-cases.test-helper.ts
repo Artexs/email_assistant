@@ -1,4 +1,4 @@
-// The adversarial and ordinary bodies of the second re-review of F115 stage 01 (reviewer scripts cases1–3.json and
+// The adversarial and ordinary bodies of the second re-review of the digit budget (reviewer scripts cases1–3.json and
 // prefix.json). Tests only.
 
 export const MARKS_AND_SEPARATORS: readonly string[] = [

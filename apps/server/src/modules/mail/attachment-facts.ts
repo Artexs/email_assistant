@@ -6,7 +6,7 @@ import { isFeatureOn } from "../tenancy";
 
 import { listAttachmentInputs } from "./repo";
 
-// The attachment fact of each mail that a notice shows (F109 stage 06, flag `attachment_line`): empty while the flag is off.
+// The attachment fact of each mail that a notice shows (flag `attachment_line`): empty while the flag is off.
 // A mail with no `email_headers` row, no attachment, or only inline and calendar parts is absent. Names and sizes only.
 export async function attachmentFactsToShow(
   db: Db | Transaction<DB>,

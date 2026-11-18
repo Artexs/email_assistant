@@ -144,7 +144,7 @@ describe("newsletter texts", () => {
   });
 });
 
-// F110 stage 24: the one-click button.
+// The one-click button.
 describe("the unsubscribe button", () => {
   setLocaleForTest("en");
   const link = "https://u.c.example/x";

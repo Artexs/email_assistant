@@ -11,7 +11,7 @@ import { chase, dueLoop, loopSends, NOW } from "./loops-chaser-fixtures";
 import { auditOf } from "./loops-commands-fixtures";
 import { call, FRIDAY, loopApp, loopWorld, type LoopWorld } from "./web-loops-fixtures";
 
-// F116 stage 20, step 2: the wait of the open loops and the switch `auto_follow_up` on the settings API.
+// The wait of the open loops and the switch `auto_follow_up` on the settings API.
 const db = testDb();
 const worlds: LoopWorld[] = [];
 

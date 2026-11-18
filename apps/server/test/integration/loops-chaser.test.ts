@@ -25,7 +25,7 @@ import {
 import { actionsOfLoop, auditOf, commandLoop, commandOrg, loopOf } from "./loops-commands-fixtures";
 import { siblingMailbox } from "./mail-sent-fixtures";
 
-// F116 stage 15: the one chaser, the loop part. The delegation cases of the old job are in `delegation-chaser.test.ts` (the
+// The one chaser, the loop part. The delegation cases of the old job are in `delegation-chaser.test.ts` (the
 // job `createLoopChaserJob` runs them); the races are in `loops-chaser-race.test.ts`.
 const db = testDb();
 
@@ -513,7 +513,7 @@ describe("a loop that the planner refuses", () => {
   });
 });
 
-// F116 stage 15 review: the gaps that the reviewer proved with mutations.
+// The gaps that the reviewer proved with mutations.
 describe("review gaps", () => {
   test("TG1 two mailboxes in one org: the run of mailbox A touches no loop of mailbox B", async () => {
     await withRollback(db, async (trx) => {

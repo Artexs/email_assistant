@@ -10,10 +10,11 @@ export interface TermsHistoryEntry {
 // Append-only. A change of a legal text (the six pages, the two registries, the `legal_*` keys, `tg_consent_text`) needs a
 // new entry: the unit test `apps/web/src/lib/legal-version.test.ts` fails until the last digest matches the files. A new
 // version makes every member accept the terms again at the next sign-in (the version guard of
-// `spec/features/active/F107-e7-t4-papers-and-cost/plan.md`).
+// `apps/web/src/lib/legal-version.test.ts`).
 export const TERMS_HISTORY: readonly TermsHistoryEntry[] = [
   { version: "2026-11-12", sha256: null }, // the stub era
   { version: "2026-11-17", sha256: "19879c6e6fec34e7eac3f75d873be45400dcc8c048e0b88dae19d6c28c5eec5a" },
+  { version: "2026-11-18", sha256: "4c28889f8a7b2567b52b26b06c6be28b0cce5711298113425e32db6a2fd3673d" }, // data category sender-context
 ];
 
 function lastVersion(history: readonly TermsHistoryEntry[]): string {

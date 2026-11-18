@@ -2,7 +2,7 @@ import { TERMS_VERSION } from "@ea/core/web";
 
 export type SetPasswordResult = { ok: true } | { ok: false; status: number; code: string | null };
 
-// The Better Auth client types have no `termsVersion`, so the setup page posts the request itself (F082 L29).
+// The Better Auth client types have no `termsVersion`, so the setup page posts the request itself.
 export async function setPasswordWithTerms(input: { token: string; newPassword: string }): Promise<SetPasswordResult> {
   const res = await fetch("/api/auth/reset-password", {
     method: "POST",
@@ -30,7 +30,7 @@ export function resetRequestResult(status: number): ResetRequestResult {
   return "error";
 }
 
-// The answer is the same for every address (F082 L10, L28): the page only tells apart the sender being off and the limits.
+// The answer is the same for every address: the page only tells apart the sender being off and the limits.
 export async function requestPasswordReset(email: string): Promise<ResetRequestResult> {
   try {
     const res = await fetch("/api/auth/request-password-reset", {

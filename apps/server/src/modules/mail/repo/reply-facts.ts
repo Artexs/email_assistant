@@ -7,7 +7,7 @@ import type { DbOrTrx } from "./shared";
 
 const FACTS_CHUNK = 500;
 
-// What the stored mail says about one incoming mail, for the reply rules (F115 stage 06). Text from the mail (`fromAddress`,
+// What the stored mail says about one incoming mail, for the reply rules. Text from the mail (`fromAddress`,
 // addresses, `replyTo`) is data for the rules and for the recipient lists of later stages; it never goes to a log line.
 export interface MailReplyFacts {
   emailId: string;

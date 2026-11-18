@@ -10,7 +10,7 @@ import { insertTriaged } from "./fixtures";
 import { addMailbox } from "./trust-fixtures";
 import { webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// Committed rows for the newsletters route (F110 stage 23): an organization with an owner and a member (role `assistant`), one
+// Committed rows for the newsletters route: an organization with an owner and a member (role `assistant`), one
 // mailbox each for it and for a second organization, and the flag `bulk_unsubscribe`.
 export const NOW = new Date("2026-11-18T12:00:00Z");
 const HOUR = 3_600_000;
@@ -22,7 +22,7 @@ export interface NewsletterBox {
   org: WebOrg;
   mailboxId: string;
   otherMailboxId: string;
-  /** The URLs that the fake client got (F110 stage 24: no test sends a real request). */
+  /** The URLs that the fake client got (no test sends a real request). */
   posts: string[];
   /** What the fake client answers next. Default `ok` / `http_200`. */
   answer: { result: OneClickResult; delayMs: number; onPost?: () => Promise<void>; throws?: boolean };

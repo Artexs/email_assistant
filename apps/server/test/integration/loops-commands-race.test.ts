@@ -1,4 +1,4 @@
-// F116 stage 14: the loop commands on real connections. Committed rows; the organizations and users are deleted at the end.
+// The loop commands on real connections. Committed rows; the organizations and users are deleted at the end.
 // Each case runs on the app role, on the table owner (it has no row level security, so only the org filters of the queries
 // hold) and on a mix of both. The rules under test: one follow-up waits at a time; a loop closes once (one audit row, one
 // expiry of its send); Later has three uses and no fourth; a reopen happens once and never on a loop with cleared texts;

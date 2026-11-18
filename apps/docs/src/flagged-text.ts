@@ -1,4 +1,4 @@
-// The user-visible strings of every default-off feature flag (plan P2): a page under `src/content/docs` must not hold one,
+// The user-visible strings of every default-off feature flag: a page under `src/content/docs` must not hold one,
 // because a reader cannot know whether their organization has the flag on. `flagged-text.test.ts` scans the pages.
 // The in-place operator sources are out of scope (operator text). A stage that meets a new flagged string adds it here.
 import { featureFlags, type FeatureKey } from "@ea/core";
@@ -93,6 +93,12 @@ export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
     "F115 stage 03b adds the flag and the switch only (`tool_switches.reply_drafts`, hidden while the flag is off): the text of the drafts, notices and cards comes in the stages 12 to 15",
   draft_copy_check:
     "only the committer reads it (`actions/send.ts`, F115 stage 08): a stopped send tells the user with the fixed result text `draft_changed`, which a reply draft shows whatever the flag says",
+  sender_context:
+    "F120 stage 02 adds the flag and the tables only: no reader or text exists yet (the sender line comes in the F120 stages 03 and 08)",
+  contact_wait:
+    "F120 stage 02 adds the flag and the `contact` loop source only: no reader exists yet (F120 stage 09); a loop shows days, never a flag text",
+  sender_suggestions:
+    "F120 stage 02 adds the flag and the table only: no route or card text exists yet (the F120 stages 06 and 07)",
 };
 
 export const FLAGGED_TEXT: FlaggedText[] = [

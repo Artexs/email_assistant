@@ -22,7 +22,7 @@ import {
 } from "./loops-analyze-fixtures";
 import type { Org } from "./mail-sent-fixtures";
 
-// The call and the write of the Sent analysis (F116 stage 12, step 2): which loops one answer opens, with which
+// The call and the write of the Sent analysis (step 2): which loops one answer opens, with which
 // recipients and due dates, and what the model can never decide.
 const db = testDb();
 

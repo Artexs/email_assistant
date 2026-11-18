@@ -1,4 +1,4 @@
-// "What is new" card rules (F112 stage 14, plan P9). Pure: the panel UI (stage 15) reads and writes the storage.
+// "What is new" card rules. Pure: the panel UI reads and writes the storage.
 import { type ChangelogRelease, compareSemver } from "@ea/core/web";
 
 /** What the card needs of a release: the panel gets no date. */

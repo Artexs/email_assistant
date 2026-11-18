@@ -7,7 +7,7 @@ export class ApiError extends Error {
     readonly code: string,
     message?: string,
     readonly details?: { path: string; code: string; message: string }[],
-    // The parsed error body when it is a JSON object (the 409 gate of S5c reads it).
+    // The parsed error body when it is a JSON object (the 409 gate reads it).
     readonly raw: Record<string, unknown> = {}
   ) {
     super(message ?? code);

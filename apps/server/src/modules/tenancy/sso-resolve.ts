@@ -23,7 +23,7 @@ async function oldestOrgIdOf(db: Db | Transaction<DB>, userId: string): Promise<
   return first?.org_id;
 }
 
-// Who may sign in through the provider of an organization (F119 D5, PD-041). Never creates a user, and never answers
+// Who may sign in through the provider of an organization. Never creates a user, and never answers
 // "continue": the plugin would make a user for `requestSignUp: true` (`spike.md` finding on the resolver). The first failing check gives the code.
 // No TenantContext: it runs inside `/api/auth/*` (like `isBreakGlassOwner`). Kysely reads only.
 export async function resolveSsoMember(db: Db | Transaction<DB>, identity: SsoIdentity): Promise<SsoResolution> {
@@ -47,7 +47,7 @@ export async function resolveSsoMember(db: Db | Transaction<DB>, identity: SsoId
   }
 
   const userId = await getUserIdByEmail(db, email);
-  // Cold review N5: the provider's organization must be the oldest membership, so another organization's IdP never opens this tenant.
+  // The provider's organization must be the oldest membership, so another organization's IdP never opens this tenant.
   if (userId === undefined || (await oldestOrgIdOf(db, userId)) !== orgId) return reject("not_a_member", orgId);
   if (await hasOtherSsoAccount(db, userId, identity.providerId, identity.subject)) {
     return reject("identity_mismatch", orgId);

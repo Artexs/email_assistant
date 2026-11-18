@@ -372,7 +372,7 @@ describe("scoreLabRun", () => {
       expect(score.sections.sentCopies).toEqual({ appended: 1, seen: 0 });
       // Every section of the score has a renderer, and every renderer has a section (the page rule 22.8 lists the keys).
       expect(Object.keys(score.sections)).toEqual(Object.keys(SECTION_RENDERERS));
-      // Stage 13: the second half of the report is scored from the same state and DB.
+      // The second half of the report is scored from the same state and DB.
       expect(Object.keys(score.sections)).toEqual([
         "coverage",
         "sentCopies",

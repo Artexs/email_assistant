@@ -7,7 +7,7 @@ import { WCAG_TAGS } from "../e2e/a11y";
 import { builtPagePaths, distIsBuilt, DOCS_LOCAL_ORIGIN, DOCS_TEST_PORT, docsTestOrigin } from "../e2e/site";
 import { fileForPath, handle } from "../e2e/serve";
 
-// The browser check of the built site (stage 06): its static server, its page list and its wiring. The browser run is `bun run docs:test`.
+// The browser check of the built site: its static server, its page list and its wiring. The browser run is `bun run docs:test`.
 const ROOT = join(import.meta.dir, "../../..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 let dist = "";

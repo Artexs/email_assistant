@@ -1,4 +1,4 @@
-// Which list row holds the focus (F102 stage 18, N-focus). The delegations page uses it to know that a reload removed the row that
+// Which list row holds the focus (N-focus). The delegations page uses it to know that a reload removed the row that
 // had the focus, and then puts the focus on its status line instead of the page body.
 //
 // A `focusout` with no `relatedTarget` has two causes: the user moved the focus to nothing (a click on the page background), or the

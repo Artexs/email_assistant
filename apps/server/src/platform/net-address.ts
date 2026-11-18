@@ -2,7 +2,7 @@ import { lookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
 
 // The one refused-address list for outgoing connections to hosts that a person types: mail servers and identity
-// providers (F119). `platform/` imports no module, so both can use it.
+// providers. `platform/` imports no module, so both can use it.
 
 // Two lists: a BlockList matches an IPv4 address against an IPv4-mapped IPv6 subnet, so one list would refuse 8.8.8.8.
 const localV4 = new BlockList();

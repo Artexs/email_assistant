@@ -7,7 +7,7 @@ import { createLog } from "./log";
 
 const log = createLog("auth");
 
-// L12: a fixed window. The 10th failure inside 15 minutes locks the user for 15 minutes.
+// A fixed window. The 10th failure inside 15 minutes locks the user for 15 minutes.
 export const LOCKOUT_MAX_FAILURES = 10;
 export const LOCKOUT_WINDOW_MS = 15 * 60_000;
 export const LOCKOUT_MS = 15 * 60_000;

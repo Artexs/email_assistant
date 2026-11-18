@@ -27,7 +27,7 @@ const ORG_NAME = "Acme Test";
 const PASSWORD = `MARKER-PASSWORD-${run}-long`;
 const WRONG_PASSWORD = `MARKER-WRONG-PASSWORD-${run}`;
 const WRONG_NAME = `MARKER-WRONG-NAME-${run}`;
-// Strings that must stay out of every log line, error body and audit row (D17), except the 200 body of test 1.
+// Strings that must stay out of every log line, error body and audit row, except the 200 body of test 1.
 const FORBIDDEN = [PASSWORD, WRONG_PASSWORD, WRONG_NAME, "Acme", "acme test", "@x.test"];
 
 let web: WebRuntime;

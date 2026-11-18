@@ -93,7 +93,7 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
       return await run();
     } catch (error) {
       if (error instanceof SettingsNotFoundError) return notFound(c);
-      // D19: reply drafts are for password mailboxes only; the card shows the switch disabled for an OAuth mailbox.
+      // Reply drafts are for password mailboxes only; the card shows the switch disabled for an OAuth mailbox.
       if (error instanceof OauthMailboxError) {
         throw new ValidationError([{ path: "reply_drafts", code: "custom", message: "oauth_mailbox" }]);
       }

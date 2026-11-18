@@ -356,7 +356,7 @@ describe("refreshFlags", () => {
 
       const result = await refreshFlags({ db: trx, provider: fake, now: () => NOW }, ctx, box.mailboxId);
       expect(result).toEqual({ checked: 1, written: 0, notFound: 0, mismatch: 1, gone: [] });
-      // Nothing of the other mail's flags is written; the row only says "tried, flags unknown" (N1).
+      // Nothing of the other mail's flags is written; the row only says "tried, flags unknown".
       expect(await getEmailFlags(trx, ctx, m1)).toMatchObject({
         seen: false,
         answered: false,

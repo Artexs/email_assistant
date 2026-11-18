@@ -4,7 +4,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-// How far back the "waiting on you" lines of the brief look (F116 stage 18).
+// How far back the "waiting on you" lines of the brief look.
 export const WAITING_ON_YOU_DAYS = 14;
 
 export interface WaitingOnYouRow {

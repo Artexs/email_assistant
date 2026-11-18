@@ -72,7 +72,7 @@
   }
 }
 
-/* Tailwind 4.1 font stack: Tailwind 4.3 changed the default (ticket F101-panel-to-astro-7). */
+/* Tailwind 4.1 font stack: Tailwind 4.3 changed the default. */
 @theme {
   --font-sans:
     ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -125,7 +125,7 @@
   }
 }
 
-/* The legal pages (F107): Markdown output has no classes, so the reading layout styles the elements. */
+/* The legal pages: Markdown output has no classes, so the reading layout styles the elements. */
 .legal-draft {
   border: 1px solid var(--border);
   border-left-width: 4px;

@@ -36,7 +36,7 @@ function Section({ title, children }: { title: TextKey; children: ReactNode }) {
   );
 }
 
-// Read-only (F119 D14): the operator changes the provider with the CLI `org:sso`.
+// Read-only: the operator changes the provider with the CLI `org:sso`.
 function SsoSection({ sso }: { sso: OperatorOrgDetail["sso"] }) {
   const lines = ssoLines(sso);
   return (

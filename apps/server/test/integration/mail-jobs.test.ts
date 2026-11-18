@@ -350,7 +350,7 @@ describe("suspended organizations", () => {
   });
 
   describe("the host re-check at the start of a run", () => {
-    // The preload (`bunfig.toml`) allows local hosts for GreenMail: put that policy back after each test (D19).
+    // The preload (`bunfig.toml`) allows local hosts for GreenMail: put that policy back after each test.
     afterEach(() => {
       configureMailHosts({ allowLocal: true });
     });
@@ -1041,7 +1041,7 @@ describe("the Sent pass in the sync job", () => {
   });
 });
 
-// F103: every line of the sync job is an event with ids, codes and counts. A server reply, an address or a subject never reaches a line.
+// Every line of the sync job is an event with ids, codes and counts. A server reply, an address or a subject never reaches a line.
 describe("mail sync job: log lines are events without server text", () => {
   const MARKER = "MARKER-ADDR@x.test";
   const MARKER_SUBJECT = "MARKER-SUBJECT canary-1b7e";

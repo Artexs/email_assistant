@@ -38,7 +38,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     const { userId } = c.get("session");
     const link = await getChatLinkForUser(deps.db, ctx, userId);
     const botUsername = deps.botUsername ? await deps.botUsername().catch(() => null) : null;
-    // Only a linked user has a consent that counts: an unlink withdraws it (F116 review 17, N4).
+    // Only a linked user has a consent that counts: an unlink withdraws it.
     const consentVersion = link === undefined ? null : await ownConsentVersion(deps.db, ctx, userId);
     const state: TelegramState = {
       available: deps.botUsername !== null,
@@ -85,7 +85,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     return c.json(linkAnswer);
   });
 
-  // A linked user confirms the current consent text (F116 stage 17). The user comes from the session, never from the body.
+  // A linked user confirms the current consent text. The user comes from the session, never from the body.
   app.post("/telegram/consent", channelDocs.postTelegramConsent, async (c) => {
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
@@ -111,7 +111,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     return c.body(null, 204);
   });
 
-  // F110 stage 18: the own quiet hours and report channel. The row is the one of the session user: no body names another.
+  // The own quiet hours and report channel. The row is the one of the session user: no body names another.
   app.get("/me/notify", channelDocs.getNotify, async (c) => {
     const view = await notifyViewOf(deps.db, c.get("ctx"), c.get("session").userId);
     if (view === undefined) return c.json({ error: "not_found" }, 404);

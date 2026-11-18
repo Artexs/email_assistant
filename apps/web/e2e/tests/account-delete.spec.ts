@@ -6,7 +6,7 @@ import { E2E_BASE_URL } from "../env";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// F106 stage 11. The delete flow in a real browser: the dialog (focus, errors), the buttons that must not show, the one
+// The delete flow in a real browser: the dialog (focus, errors), the buttons that must not show, the one
 // DELETE request, the login notice and the data that must not stay in the page. The spec deletes the organization of its own
 // project ("E2E Delete Phone" or "E2E Delete Desktop"), so the tests depend on each other: in this order. The two projects
 // run in their own workers, each with its own organization, so the module variables below are per project.
@@ -15,7 +15,7 @@ test.describe.configure({ mode: "serial" });
 type Project = "mobile" | "desktop";
 
 const projectOf = (name: string): Project => name as Project;
-// Free blocks of the `nextAddress` range (the other specs use 10..200 in steps of 10; F105 took 50 and 150).
+// Free blocks of the `nextAddress` range (the other specs use 10..200 in steps of 10; 50 and 150 are taken too).
 const addressBase = (project: string): number => (project === "mobile" ? 0 : 220);
 
 const WRONG_PASSWORD = "e2e-delete-wrong-password-xx";
@@ -90,7 +90,7 @@ async function signInAndOpenSettings(
   return account;
 }
 
-// The blocks of the Account card that have a top border and no content: the fault of stage 04 review B1.
+// The blocks of the Account card that have a top border and no content.
 async function emptyBorderedBlocks(account: Locator): Promise<number> {
   return account
     .locator("div.border-t")

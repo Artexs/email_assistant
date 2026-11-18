@@ -91,7 +91,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
     }
 
     const sentPerUser = new Map<string, number>();
-    // F110 stage 18: the quiet hours of the users of this batch, read once. A row that quiet hours never hold (digest, edit) needs no hours.
+    // The quiet hours of the users of this batch, read once. A row that quiet hours never hold (digest, edit) needs no hours.
     const quiet = createQuietGate({ db, now, claimed });
 
     for (const [index, row] of claimed.entries()) {
@@ -126,7 +126,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           }
           message = rendered.message;
         }
-        // An edit of a card that was sent (F102 card sync): it makes no sound, so quiet hours do not hold it back. It checks
+        // An edit of a card that was sent: it makes no sound, so quiet hours do not hold it back. It checks
         // that its outcome is still the one of the send before it takes a place in the per-user limit.
         const isEdit = row.kind === "approval_edit";
         let editCheck: Awaited<ReturnType<typeof checkCardEdit>> | undefined;
@@ -236,7 +236,7 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
               continue;
           }
         }
-        // A database error. After a send the row stays `sending`: the next claim after 5 min sends it again (D4).
+        // A database error. After a send the row stays `sending`: the next claim after 5 min sends it again.
         if (!sent) {
           await release(row, new Date(now.getTime() + backoff(row.attempts + 1)), true);
         }

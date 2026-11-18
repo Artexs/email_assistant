@@ -18,7 +18,7 @@ import { listUrgentCandidates } from "../channels";
 import { listLaggingMailboxes, type TestMailRule } from "../mail";
 import { isFeatureOn, listOrganizations } from "../tenancy";
 
-// F114 stage 02: the service-level checks that read the database. They read every organization that is not `suspended` and
+// The service-level checks that read the database. They read every organization that is not `suspended` and
 // return numbers and ids only. A reading holds no address, subject or text; the ids are UUIDs of mailboxes, mails or
 // organizations, at most `MAX_IDS`, never stored (`ops_alerts` has no org_id).
 
@@ -84,7 +84,7 @@ export async function checkUrgentLatency(
   const late: { emailId: string; waitMin: number }[] = [];
   const badZoneOrgs = new Set<string>();
   const ownHours = new Map<string, boolean>();
-  // F110 stage 18 (Q18): with `user_quiet_hours` on, the wait leaves out the quiet hours of the user of the notice. With
+  // With `user_quiet_hours` on, the wait leaves out the quiet hours of the user of the notice. With
   // several pending rows (no notice yet) the largest wait counts: nobody got the notice, each value already leaves out the
   // own quiet hours of its user, so a user in quiet hours cannot hide a user who really waits.
   const hoursOf = async (mail: (typeof candidates)[number]): Promise<QuietHours[]> => {
@@ -171,7 +171,7 @@ export async function checkDisk(
   return reading("slo_disk", "between", facts, []);
 }
 
-// The shape that `deploy/backup.sh` writes (one JSON line; stage 04 step 1).
+// The shape that `deploy/backup.sh` writes (one JSON line).
 const backupStatusSchema = z.object({
   result: z.enum(["ok", "failed"]),
   at: z.iso.datetime(),

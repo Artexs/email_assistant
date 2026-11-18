@@ -12,13 +12,13 @@ import {
 const keys = (items: { key: string }[]) => items.map((item) => item.key);
 
 describe("navItems", () => {
-  // T1: the order and the 5-tab limit for each combination of `approvals_page`, `delegation_pages`, `stats_page` and `open_loops`.
+  // The order and the 5-tab limit for each combination of `approvals_page`, `delegation_pages`, `stats_page` and `open_loops`.
   const base = ["activity", "mailboxes", "settings", "rules"];
   const flags = ["approvals_page", "delegation_pages", "stats_page", "open_loops"] as const;
   const expectedAll = (features: readonly string[]): string[] => [
     "activity",
     ...(features.includes("approvals_page") ? ["approvals"] : []),
-    // The F102 flag or the flag of the open loops shows the item.
+    // The delegations flag or the flag of the open loops shows the item.
     ...(features.includes("delegation_pages") || features.includes("open_loops") ? ["delegations"] : []),
     "mailboxes",
     "settings",
@@ -52,14 +52,14 @@ describe("navItems", () => {
     expect(keys(phoneOverflow([...flags]))).toEqual(["rules", "stats"]);
   });
 
-  // T3: the label of the Delegations item with the flag open_loops on and off.
+  // The label of the Delegations item with the flag open_loops on and off.
   test("the Delegations item is Open loops while the flag open_loops is on, and Delegations otherwise", () => {
     const label = (features: string[]) => navItems(features).find((item) => item.key === "delegations")?.label;
     expect(label(["delegation_pages"])).toBe("nav_delegations");
     expect(label(["delegation_pages", "open_loops"])).toBe("nav_open_loops");
     expect(label(["open_loops"])).toBe("nav_open_loops");
     expect(label([])).toBeUndefined();
-    // The address stays the F102 page, and no other item changes its label.
+    // The address stays the delegations page, and no other item changes its label.
     expect(navItems(["delegation_pages", "open_loops"]).find((item) => item.key === "delegations")?.href).toBe(
       "/delegations"
     );
@@ -87,7 +87,7 @@ describe("pageTitle", () => {
 });
 
 describe("approvalsBadge", () => {
-  // T2: the badge text for 0, 1 and 100, and the edges of "99+".
+  // The badge text for 0, 1 and 100, and the edges of "99+".
   test("hidden at 0, the number up to 99, then 99+", () => {
     expect(approvalsBadge(0)).toBeNull();
     expect(approvalsBadge(1)).toBe("1");

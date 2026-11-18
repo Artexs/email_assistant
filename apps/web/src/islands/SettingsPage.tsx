@@ -45,10 +45,10 @@ interface MailboxSettingsProps {
 
 function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailboxes, reloadMe }: MailboxSettingsProps) {
   const { data, error, loading, reload, mutate } = useResource(() => api(settingsPath(mailbox.id), settingsViewSchema));
-  // F110 stage 13: with the flag `trust_ladder` on, the card also reads the trust view. Flag off: no request, the card is as before.
+  // With the flag `trust_ladder` on, the card also reads the trust view. Flag off: no request, the card is as before.
   const { me } = useMe();
   const trustOn = me?.features.includes("trust_ladder") === true;
-  // F115 stage 11: the style card always shows the name and the signature (every draft kind); the writing style and Preview need the flag.
+  // The style card always shows the name and the signature (every draft kind); the writing style and Preview need the flag.
   const replyDraftsOn = me?.features.includes("reply_drafts") === true;
   const trust = useResource(() => (trustOn ? loadTrustView(mailbox.id) : Promise.resolve(null)));
 

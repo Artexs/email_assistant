@@ -10,7 +10,7 @@ import { readSeed } from "../seed";
 
 // The open loops organization of the project (see `e2e-open-loops-rows.ts`): the flags `open_loops`, `delegation_pages` and `approvals_page`
 // are on, the mailbox is in assist mode with drafts on, and there is one loop for each kind and state of the page. The tests change the
-// rows, so the tests of a project run in this order: the reads first, then the actions (draft, later, done, untrack, drop), then S11.
+// rows, so the tests of a project run in this order: the reads first, then the actions (draft, later, done, untrack, drop), then the closing-loop test.
 test.describe.configure({ mode: "serial" });
 
 const project = (): "mobile" | "desktop" => (test.info().project.name === "mobile" ? "mobile" : "desktop");
@@ -39,7 +39,7 @@ const whoOf = (key: Key): string =>
 const nameOf = (key: Key): string => `${whoOf(key)}, ${textOf(key)}`;
 const fill = (text: string, name: string) => text.replace("{name}", name);
 
-// The list region of one kind: the page has one per tab (the Delegated tab has the F102 list above it).
+// The list region of one kind: the page has one per tab (the Delegated tab has the delegations list above it).
 const regionOf = (page: Page, kind: "waiting" | "promised" | "delegated") =>
   page.getByRole("region", { name: en[`lp_list_${kind}`] });
 const rowOf = (region: Locator, key: Key) => region.getByRole("listitem").filter({ hasText: textOf(key) });
@@ -95,7 +95,7 @@ test("T10: the address names the tab and the filter; Delegated is the default; a
   await expect(filterLink(page, en.dgn_filter_open)).toHaveAttribute("aria-current", "page");
   await page.goBack();
   await expect(tabLink(page, en.lp_tab_delegated)).toHaveAttribute("aria-current", "page");
-  // The header of the F102 pages stays.
+  // The header of the delegations pages stays.
   const header = page.getByRole("navigation", { name: en.dlg_tabs_label });
   await expect(header.getByRole("link", { name: en.dlg_tab_delegates })).toHaveAttribute("href", "/delegates");
   expect(errors).toEqual([]);
@@ -467,7 +467,7 @@ test("the flag open_loops alone: the item and the tabs show, the Delegates heade
     await expect(page.getByRole("heading", { level: 1, name: en.title_open_loops })).toBeVisible();
     const nav = page.getByRole("navigation", { name: en.nav_main });
     await expect(nav.getByRole("link", { name: en.nav_open_loops })).toHaveAttribute("aria-current", "page");
-    // No Delegates header and no F102 list; the Delegated tab holds the tracked loops with their own filters.
+    // No Delegates header and no delegations list; the Delegated tab holds the tracked loops with their own filters.
     await expect(page.getByRole("navigation", { name: en.dlg_tabs_label })).toHaveCount(0);
     await expect(page.getByRole("list", { name: en.dgn_list_label })).toHaveCount(0);
     await expect(page.getByRole("navigation", { name: en.dgn_filters_label })).toHaveCount(0);
@@ -487,7 +487,7 @@ test("the flag open_loops alone: the item and the tabs show, the Delegates heade
   }
 });
 
-// The F102 specs of the same project ran before and moved rows, so the Open tab can be empty: the list or the empty text is the page.
+// The delegations specs of the same project ran before and moved rows, so the Open tab can be empty: the list or the empty text is the page.
 const f102ListOrEmpty = (page: Page) =>
   page.getByRole("list", { name: en.dgn_list_label }).or(page.getByText(en.dgn_empty_open));
 
@@ -528,7 +528,7 @@ async function reloadApprovals(page: Page): Promise<void> {
   await reloaded;
 }
 
-// S11 (review 11, TG-4): a follow-up whose loop closes while Edit is open. The reload keeps the dialog and the typed text; Save closes
+// A follow-up whose loop closes while Edit is open. The reload keeps the dialog and the typed text; Save closes
 // the dialog, says why (the loop is closed, or the send expired with it), puts the focus on the result line and plans no new version.
 for (const [name, closeIt] of [
   ["the loop is closed in the database (the send still waits)", "database"],

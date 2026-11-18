@@ -135,7 +135,7 @@ describe("delegate callback data", () => {
   });
 });
 
-// F115 stage 12: the review of reply drafts.
+// The review of reply drafts.
 describe("the reply review callbacks", () => {
   test("`rv` starts the review, `rv:<send>` asks for the next one after a send; both parse back and are short", () => {
     expect(encodeCallback({ kind: "reply_review" })).toBe("rv");

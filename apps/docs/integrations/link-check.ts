@@ -1,4 +1,4 @@
-// Astro integration: after the build, every same-site link of every page must resolve (plan D6).
+// Astro integration: after the build, every same-site link of every page must resolve.
 // A same-site link is an `href` or `src` that is relative or starts with the site base. An absolute URL, also one to the
 // site address (the canonical link of the 404 page names a path that is the file `404.html`), counts as another origin.
 // An absolute URL that does not parse is broken.

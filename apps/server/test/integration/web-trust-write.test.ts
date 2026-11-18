@@ -24,7 +24,7 @@ import {
   type TrustWebBox,
 } from "./web-trust-kit";
 
-// POST /api/trust/:mailboxId/recommended and /history-check (F110 stage 11). Committed rows; `afterEach` removes the organizations.
+// POST /api/trust/:mailboxId/recommended and /history-check. Committed rows; `afterEach` removes the organizations.
 const db = testDb();
 let box: TrustWebBox;
 

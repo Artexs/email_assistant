@@ -57,7 +57,7 @@ export async function getDraftMailboxId(db: DbOrTrx, ctx: TenantContext, id: str
   `.execute(db);
   return result.rows[0]?.mailbox_id ?? undefined;
 }
-// D20: a reverse row of the draft exists = the draft was removed (or its removal is queued).
+// A reverse row of the draft exists = the draft was removed (or its removal is queued).
 export async function draftHasReverse(db: DbOrTrx, ctx: TenantContext, draftId: string): Promise<boolean> {
   const row = await db
     .selectFrom("actions")
@@ -69,7 +69,7 @@ export async function draftHasReverse(db: DbOrTrx, ctx: TenantContext, draftId: 
     .executeTakeFirst();
   return row !== undefined;
 }
-// A resend shares the draft of the failed send (D18).
+// A resend shares the draft of the failed send.
 export async function listSendsOfDraft(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -85,7 +85,7 @@ export async function listSendsOfDraft(
     .orderBy("id")
     .execute();
 }
-// A `ready` original draft whose send is dead: no draft is created for it (D13). The caller writes the audit row.
+// A `ready` original draft whose send is dead: no draft is created for it. The caller writes the audit row.
 export async function expireReadyDraft(
   trx: Transaction<DB>,
   ctx: TenantContext,

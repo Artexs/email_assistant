@@ -14,7 +14,7 @@ export function getStaticPaths() {
 }
 
 // The text of each page is Markdown in `src/legal/<lang>/<doc>.md`. The frame (draft line, version, tables) is here, so a
-// text stage writes text only. The frame reads no env value (E3).
+// text stage writes text only. The frame reads no env value.
 const sources = import.meta.glob<MarkdownInstance<Record<string, unknown>>>("../../../legal/*/*.md", { eager: true });
 
 const { lang, doc } = Astro.params as { lang: "pl" | "en"; doc: LegalDoc };

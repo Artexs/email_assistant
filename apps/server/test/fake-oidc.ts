@@ -1,4 +1,4 @@
-// A small OpenID Connect provider for the SSO tests (F119): `Bun.serve` on `http://127.0.0.1:<random port>`,
+// A small OpenID Connect provider for the SSO tests: `Bun.serve` on `http://127.0.0.1:<random port>`,
 // RS256 keys from `node:crypto`. It needs no package. It signs in the user that `setUser` names, with no consent screen.
 import { createHash, generateKeyPairSync, randomBytes, sign } from "node:crypto";
 

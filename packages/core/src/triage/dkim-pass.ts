@@ -73,7 +73,7 @@ function stripCommentsAndQuotes(text: string): string | null {
 
 // A `dkim=pass` result with `header.d` = the From domain or a parent of it (down to the registrable domain), read only
 // when the authserv-id of the topmost `Authentication-Results` value is trusted. False for any other input. This does not
-// prove that the signature covers the `List-Unsubscribe` headers, as RFC 8058 asks (accepted limit, F110 question 16).
+// prove that the signature covers the `List-Unsubscribe` headers, as RFC 8058 asks (accepted limit).
 export function hasTrustedAlignedDkimPass(
   authResults: string | null,
   trustedAuthservIds: readonly string[],

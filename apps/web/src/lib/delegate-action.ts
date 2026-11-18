@@ -16,7 +16,7 @@ import { canWrite } from "./can-write";
 import { errorText } from "./errors";
 import { settingsPath } from "./settings-api";
 
-// The Delegate action on a mail row of the Activity page (F116 stage 22, PD-124). The action is a hint: the server checks every
+// The Delegate action on a mail row of the Activity page. The action is a hint: the server checks every
 // rule again when the owner picks a delegate (`POST /emails/:id/delegate`), and a refusal has its own text.
 
 // What the page knows once: the active delegates of the organization and the mailboxes in assist mode with drafts on.

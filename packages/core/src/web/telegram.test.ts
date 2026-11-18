@@ -37,10 +37,10 @@ describe("telegramConsentBodySchema", () => {
   });
 });
 
-describe("REPLY_CONSENT_SINCE (F115 stage 12)", () => {
+describe("REPLY_CONSENT_SINCE ", () => {
   test("it is a valid version, and no consent that a user can give today covers it (the text does not name reply data yet)", () => {
     expect(consentCovers(REPLY_CONSENT_SINCE, REPLY_CONSENT_SINCE)).toBe(true);
-    // Stage 17 of F115 changes the consent text and sets the version in one commit; the invariant test of the web texts then takes over.
+    // The next legal text batch changes the consent text and sets the version in one commit; the invariant test of the web texts then takes over.
     expect(consentCovers(TELEGRAM_CONSENT_VERSION, REPLY_CONSENT_SINCE)).toBe(false);
     expect(consentCovers(null, REPLY_CONSENT_SINCE)).toBe(false);
   });

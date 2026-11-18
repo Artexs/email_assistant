@@ -1,4 +1,4 @@
-// A fake Microsoft Graph `sendMail` server for the mailbox OAuth tests (F117 stage 13): `Bun.serve` on `http://127.0.0.1:<random port>`.
+// A fake Microsoft Graph `sendMail` server for the mailbox OAuth tests: `Bun.serve` on `http://127.0.0.1:<random port>`.
 // A TEST DOUBLE ONLY. It sends nothing anywhere: it keeps the mail it got in memory. No production code reads its URL (the provider
 // registry holds the real one; a test passes `baseUrl` in).
 // It is as strict as the sender must be: POST, the bearer header, `Content-Type: text/plain` and a base64 body. Else it answers 400.

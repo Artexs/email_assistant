@@ -284,7 +284,7 @@ describe("the real repository", () => {
     };
     expect(manifest.scripts["docs:stale"]).toBe("bun apps/docs/scripts/stale.ts");
     expect(manifest.scripts["test:unit"]).toContain("apps/docs/scripts");
-    // Strict, as the deploy runs it (stage 12 T1): no real Polish page is stale, so no `<Shot />` line or its import changed a hash.
+    // Strict, as the deploy runs it: no real Polish page is stale, so no `<Shot />` line or its import changed a hash.
     const result = Bun.spawnSync([process.execPath, STALE_SCRIPT, "--strict"], {
       env: { PATH: process.env.PATH ?? "" },
     });

@@ -6,7 +6,7 @@ import { type AttemptHooks, RETRY_WAITS_MS } from "../triage";
 
 import { extractSent } from "./extractor";
 
-// The extractor eval (F116 stage 06): the code filters and `extractSent` on every case of a sent part, scored
+// The extractor eval: the code filters and `extractSent` on every case of a sent part, scored
 // against the slot labels. The runner is `scripts/eval-extractor.ts`; the report and the gate file are in
 // `extractor-report.ts`.
 

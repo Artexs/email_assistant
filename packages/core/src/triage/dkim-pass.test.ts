@@ -64,7 +64,7 @@ describe("hasTrustedAlignedDkimPass", () => {
     ).toBe(true);
   });
 
-  // F110 stage 22 review, NOTE 1: the header is lexed per RFC 8601 before it is split on `;`.
+  // The header is lexed per RFC 8601 before it is split on `;`.
   test("6: a `;` or a `dkim=pass` inside a comment or a quoted string never makes a result", () => {
     const check = (value: string) => hasTrustedAlignedDkimPass(value, TRUSTED, "c.example");
     // The three probes of the review.

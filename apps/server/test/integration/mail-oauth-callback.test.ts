@@ -26,7 +26,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { TEST_ORIGIN, webOrg, type WebOrg } from "./web-helpers";
 
-// F117 stage 08: `finishOAuthCallback` against the fake token server. Rows are committed, because the state store runs its own
+// `finishOAuthCallback` against the fake token server. Rows are committed, because the state store runs its own
 // transactions. Every refusal is one code of the closed set; a refusal stores nothing.
 const db = testDb();
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
@@ -536,7 +536,7 @@ describe("D18", () => {
     const refusals = outputs.filter((output) => !output.ok);
     expect(grants).toHaveLength(2);
     expect(refusals.length).toBeGreaterThan(8);
-    // A grant holds its tokens by design (stage 09 stores them). A refusal and the log lines hold none.
+    // A grant holds its tokens by design. A refusal and the log lines hold none.
     const seen = [...logLines, ...refusals.map((output) => inspect(output, { depth: 10 }))].join("\n");
     expect(logLines.length).toBeGreaterThan(0);
     expect(secretsSeen.filter((value) => value !== "").length).toBeGreaterThan(30);

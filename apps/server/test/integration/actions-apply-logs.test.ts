@@ -33,7 +33,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F103 stage 09: one test per event of `drafts.ts` and `send.ts` (and `action_no_provider` of `apply.ts`). Each runs the
+// One test per event of `drafts.ts` and `send.ts` (and `action_no_provider` of `apply.ts`). Each runs the
 // code with canary values that must not reach a log line: a recipient, a subject, a draft text, a task, an SMTP reply
 // and an error text with an address. The events of `apply.ts` that a committer run writes are in
 // `actions-committer-logs.test.ts`.

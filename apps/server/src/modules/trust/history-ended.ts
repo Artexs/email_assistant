@@ -1,4 +1,4 @@
-// What a check that ends tells the owner (F110 D16): the first check of a mailbox that ends `done` or `no_result` (a check cut short by a
+// What a check that ends tells the owner: the first check of a mailbox that ends `done` or `no_result` (a check cut short by a
 // model switch does not count: it ends through `endCheckKeyChanged`, which has no hook, and `countEarlierEndedChecks` skips it) queues the
 // `trust_report_ready` notice, in the transaction of the end. Later checks queue nothing. The view holds counts and category names only.
 import { movingCategories, type GateEvidenceDeps, type MovingCategory } from "@ea/core";

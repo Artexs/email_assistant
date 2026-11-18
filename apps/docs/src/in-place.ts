@@ -1,4 +1,4 @@
-// Operator docs read in place (ADR 0030 point 3, plan D5): the site page is the repository file itself, never a copy.
+// Operator docs read in place (ADR 0030 point 3): the site page is the repository file itself, never a copy.
 // The loader renders each source at build time; `rewriteLinks` makes its relative links work on the site.
 import { existsSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
@@ -23,7 +23,7 @@ export interface InPlacePage {
 export const IN_PLACE_PAGES: readonly InPlacePage[] = [
   { id: "operate/install-and-run", path: "deploy/README.md" },
   { id: "operate/release-checklist", path: "docs/release-checklist.md" },
-  // The page shows only the "For users" items of released versions (plan P2).
+  // The page shows only the "For users" items of released versions.
   { id: "changelog", path: "CHANGELOG.md", transform: changelogPage, ownLink: true },
 ];
 

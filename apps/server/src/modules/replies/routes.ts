@@ -43,7 +43,7 @@ export function replyRoutes(deps: ReplyRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
   const notFound = (c: Ctx) => c.json({ error: "not_found" }, 404);
 
-  // The profile is read for every kind of draft (D13), so it has no flag. A mailbox of another organization answers 404.
+  // The profile is read for every kind of draft, so it has no flag. A mailbox of another organization answers 404.
   app.get("/mailboxes/:id/profile", replyDocs.getProfile, async (c) => {
     const id = mailboxIdOf(c);
     if (!id) return notFound(c);

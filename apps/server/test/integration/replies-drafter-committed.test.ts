@@ -23,7 +23,7 @@ import {
   type JobBox,
 } from "./reply-job-fixtures";
 
-// F115 stage 07: the tests that need real commits (a rollback test cannot show that a crash undoes a write, or that two runs wait
+// The tests that need real commits (a rollback test cannot show that a crash undoes a write, or that two runs wait
 // for each other). Each test makes its own organization and deletes it at the end; the job runs for that mailbox only.
 const db = testDb();
 

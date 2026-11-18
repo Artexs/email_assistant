@@ -7,7 +7,7 @@ import { testDb } from "./helpers";
 import { approvalKit, HOUR, NOW, post, type Seed } from "./web-approvals-kit";
 import { as } from "./web-helpers";
 
-// F102 ticket, approvals write API: one name for one closed send, races between the three writes, and the limit of a send that nobody was told about.
+// Approvals write API: one name for one closed send, races between the three writes, and the limit of a send that nobody was told about.
 const db = testDb();
 const { cleanup, setup, addSend, send, auditOf, editRows, sendCount } = approvalKit(db);
 

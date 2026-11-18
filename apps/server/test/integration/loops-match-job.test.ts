@@ -7,7 +7,7 @@ import { pauseOtherMailboxes, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { loopRow, loopsOrg, reply, RUN_AT, waiting } from "./loops-match-fixtures";
 
-// The job `loops.match` (F116 stage 13, step 2): the runner over the mailboxes.
+// The job `loops.match` (step 2): the runner over the mailboxes.
 const db = testDb();
 
 afterAll(async () => {

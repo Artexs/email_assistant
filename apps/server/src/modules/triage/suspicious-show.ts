@@ -6,7 +6,7 @@ import { isFeatureOn } from "../tenancy";
 
 import { suspiciousReasonsOf } from "./suspicious-repo";
 
-// The reasons that a notice or the panel shows (F109 stage 04): the same map as `suspiciousReasonsOf`, but empty while the flag
+// The reasons that a notice or the panel shows: the same map as `suspiciousReasonsOf`, but empty while the flag
 // `suspicious_mail` is off. The flag decides only what the user sees; a draft block reads `suspiciousReasonsOf` and ignores it.
 export async function suspiciousReasonsToShow(
   db: Db | Transaction<DB>,

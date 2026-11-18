@@ -9,7 +9,7 @@ import { lastRepliesReady } from "../repo";
 import { panelListUrlOf } from "./approval";
 import { inTransaction, queue, warnSkipped, type Detector, type OrgRun } from "./run";
 
-// F115 stage 12 (D15, D16): the "replies ready" notice. At most one for each owner in 2 hours, counted from the queue time of the last one.
+// The "replies ready" notice. At most one for each owner in 2 hours, counted from the queue time of the last one.
 // It counts the open reply sends of the organization that the DB facts do not close (not answered, not suspicious). Quiet hours hold it
 // in the sender, like every notice. An owner whose Telegram consent does not cover reply data gets the count, the panel link and one fixed
 // line, and no Review button (`replyConsentOf`).

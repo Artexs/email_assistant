@@ -56,7 +56,7 @@ export function toClassifierDelegates(c: EvalCase): ClassifierDelegate[] {
   return c.delegates.map((d) => ({ id: delegateIdOf(d.key), name: d.name, tags: d.tags }));
 }
 
-// The delegate's synthetic address: the planner takes it as the delegates row address (stage 9 builds the same input).
+// The delegate's synthetic address: the planner takes it as the delegates row address.
 export function delegateAddress(key: string): string {
   return `${key}@${DELEGATE_ADDRESS_DOMAIN}`;
 }

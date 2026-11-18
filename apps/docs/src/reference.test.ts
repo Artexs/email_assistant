@@ -1,4 +1,4 @@
-// Guards of the reference and explanation pages (stage 09). Each number on a page is read from the code that owns it, so a change of
+// Guards of the reference and explanation pages. Each number on a page is read from the code that owns it, so a change of
 // the code fails here until the page says the same. The page text is read as source: the build checks the front matter and the links.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -77,7 +77,7 @@ const hours = (ms: number): string => `${ms / 3_600_000} hours`;
 const minutes = (ms: number): string => `${ms / 60_000} minutes`;
 const days = (ms: number): string => `${ms / 86_400_000} days`;
 
-// A command that a default-off flag gates stays off the page (plan P2). A flag that defaults on moves the command to the page.
+// A command that a default-off flag gates stays off the page. A flag that defaults on moves the command to the page.
 const COMMAND_FLAGS: Record<string, FeatureKey> = { review: "review_command" };
 
 function commandsOnPage(source: string): string[] {

@@ -1,6 +1,6 @@
 import { cleanUserText } from "../outgoing/user-text";
 
-// The guided form above the writing-style field of the style card (F115 stage 11). `styleFromForm` turns the form into plain
+// The guided form above the writing-style field of the style card. `styleFromForm` turns the form into plain
 // sentences in the language of the owner. The card puts the text into the writing-style field; the owner edits it and saves it. The
 // form keeps no state of its own: only the text is stored. Pure code: no I/O.
 

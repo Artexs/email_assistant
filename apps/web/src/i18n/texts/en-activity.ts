@@ -1,5 +1,5 @@
 export const enActivity = {
-  // activity (S5d)
+  // activity
   act_filter_mailbox: "Mailbox",
   act_all_mailboxes: "All mailboxes",
   act_filter_category: "Category",
@@ -80,7 +80,7 @@ export const enActivity = {
   undo_nothing: "Nothing to undo.",
   undo_too_old: "Too old to undo (7 days).",
   undo_held: "Undo is not possible now: mailbox changes are off or the mailbox is paused.",
-  // operator console (F099)
+  // operator console
   nav_operator: "Operator",
   op_not_found: "Not found.",
   op_load_error: "The operator data did not load.",
@@ -171,7 +171,7 @@ export const enActivity = {
   op_plan_submit: "Confirm",
   op_flag_changed: "Flag {flag}: {state}.",
   op_flag_killed: "off by the server list",
-  // stats page (F100)
+  // stats page
   stats_metric_col: "Metric",
   stats_mailbox_label: "Mailbox",
   stats_all_mailboxes: "All mailboxes",

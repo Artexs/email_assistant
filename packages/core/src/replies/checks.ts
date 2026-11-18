@@ -1,4 +1,4 @@
-// The code checks of a reply body (ADR 0033 §3, PD-073). The drafter's text is untrusted: it is stored and shown only
+// The code checks of a reply body (ADR 0033 §3). The drafter's text is untrusted: it is stored and shown only
 // when every check passes. Pure code. Each check scans every view of the text (`views.ts`).
 import { digitVerdict } from "./digits";
 import { type EntityCode, findEntities } from "./entities";

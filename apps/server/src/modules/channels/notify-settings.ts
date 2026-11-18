@@ -8,7 +8,7 @@ import { getMemberNotify, isFeatureOn, setMemberQuietHours, setMemberReportChann
 
 import { getChatLinkForUser } from "./repo";
 
-// F110 stage 18: the own quiet hours and report channel of one member. Both functions take the user id of the session:
+// The own quiet hours and report channel of one member. Both functions take the user id of the session:
 // no body names another user.
 
 export async function notifyViewOf(

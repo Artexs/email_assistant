@@ -202,7 +202,7 @@ describe("executiveDecision other cards", () => {
   });
 });
 
-// PD-021: the executive approves, rejects and undoes. It never relabels, edits, or answers a check.
+// The executive approves, rejects and undoes. It never relabels, edits, or answers a check.
 describe("the executive never presses a forbidden button", () => {
   test("over every card kind, truth and memory the press is only ap, ar, rw, as, ag or fu", () => {
     const allButtons = [

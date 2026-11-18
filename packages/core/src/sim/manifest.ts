@@ -6,7 +6,7 @@ import type { CaseText } from "./files";
 import type { PlanSpec } from "./plan-spec";
 import { simParts, valueCategories, type SimPart, type Slot, type ValueCategory } from "./slot";
 
-// The freeze record of a corpus: version, per-part counts and hashes, and the state of the owner audit (D34, D36).
+// The freeze record of a corpus: version, per-part counts and hashes, and the state of the owner audit.
 export const manifestSchema = z
   .object({
     scenario: z.string(),
@@ -66,7 +66,7 @@ export interface FreezeFloors {
   hardShare: number;
 }
 
-// P3: the floors of the frozen bank.
+// The floors of the frozen bank.
 export const defaultFreezeFloors: FreezeFloors = { minDev: 50, minHoldout: 200, hardShare: 0.8 };
 
 // A mail the executive sent has no category to check (it has no label).

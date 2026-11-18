@@ -1,4 +1,4 @@
-// The "needs you today" brief of the first digest of the day (F116 stage 18, D16, D17). Pure: no I/O. `loopSections` picks and
+// The "needs you today" brief of the first digest of the day. Pure: no I/O. `loopSections` picks and
 // caps the lines, `renderBrief` writes them in the language of the user. The digest renderer cuts the block with `dropLastLine`
 // when a message is over 4096 characters (loop lines first from the bottom section up) and reads `shownIds` for what stayed.
 import { encodeCallback } from "../digest/callback";
@@ -34,7 +34,7 @@ export interface BriefLoop {
   // The start of the wait: the Sent mail that the answer is missing for.
   sinceAt: Date;
   autoReplyOnly: boolean;
-  // How many times the user moved the due date (0 to 3): at 3 the Later button goes (D13).
+  // How many times the user moved the due date (0 to 3): at 3 the Later button goes.
   laterCount: number;
   // The Draft button shows: the mailbox is in `assist` with drafts on, no follow-up waits for a tap and fewer than two were sent.
   canDraft: boolean;
@@ -67,7 +67,7 @@ export interface BriefPart<T> {
 export interface BriefInput {
   now: Date;
   timeZone: string;
-  // `loopConsentOf` of the user (D17). False: the lines of ⏳, 🤝 and ⌛ become counts.
+  // `loopConsentOf` of the user. False: the lines of ⏳, 🤝 and ⌛ become counts.
   consent: boolean;
   urgent: BriefPart<BriefMail>;
   reply: BriefPart<BriefMail>;
@@ -143,7 +143,7 @@ export function loopSections(input: BriefInput): BriefSections {
     reply: section(input.reply, mailLine("reply"), true, mails(input.reply)),
     waiting: consent
       ? section({ rows: waitingOrder, total: waitingTotal }, (row) => row.line, consent, waitingOrder)
-      : // Delegations are not loop data (D17): their footer line stays, so the count is of loops only (review 18 N3).
+      : // Delegations are not loop data: their footer line stays, so the count is of loops only.
         {
           lines: [],
           more: 0,
@@ -271,8 +271,8 @@ export function renderBrief(sections: BriefSections, texts: CoreTexts, opts: Bri
   return renderBriefLines(sections, texts, opts).lines;
 }
 
-// The keyboard rows of the brief, one row per line that names a loop or a delegation, in the order of the text (F116 stage 19).
-// `consent` is `loopConsentOf` of the user: false gives no row at all, whatever the sections hold (D17; review 17 N5).
+// The keyboard rows of the brief, one row per line that names a loop or a delegation, in the order of the text.
+// `consent` is `loopConsentOf` of the user: false gives no row at all, whatever the sections hold.
 // Waiting and delegated lines: Draft follow-up (only when `canDraft`), Later (not after the third), Done. Promised: Done, Drop.
 // A delegation: Done (`dd:`). A ⌛ line: Reopen. Draft, Drop and Reopen are owner only (the web routes say the same): `owner` false
 // leaves them out, so a member never sees a button that answers "only an owner can do this". A ⌛ line has Reopen alone: no row.

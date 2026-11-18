@@ -1,4 +1,4 @@
-// Write probe for the S3 move rules: one synthetic mail, every IMAP write the committer will use. Test account only.
+// Write probe for the move rules: one synthetic mail, every IMAP write the committer will use. Test account only.
 import { DAY_MS } from "@ea/core";
 import type { FetchMessageObject, ImapFlow } from "imapflow";
 
@@ -117,7 +117,7 @@ function messageBuilder(probeId: string, address: string, now: Date) {
 }
 
 /**
- * Performs every IMAP write that S3 uses (create folder, flags, COPY, UID EXPUNGE, COPY back) on one synthetic mail
+ * Performs every IMAP write that the move rules use (create folder, flags, COPY, UID EXPUNGE, COPY back) on one synthetic mail
  * and reports facts only. Every write names one UID; the only EXPUNGE is `UID EXPUNGE <uid>`, and never in INBOX
  * unless the server proved (in the probe folder) that it expunges only the given UID.
  * An error after the APPEND names the probe mail and folder to delete by hand.
@@ -215,7 +215,7 @@ export function describeFailure(error: unknown, step: string): Error {
 }
 
 /**
- * Creates the probe folder, which tests D9: the real path of an `AI/*` folder. A server that refuses nested folders
+ * Creates the probe folder: it tests the real path of an `AI/*` folder. A server that refuses nested folders
  * (Interia) gets a flat top-level folder `AI-Probe-…` instead; `folders.nested` records which one worked.
  * Returns the folder path and the parent `AI` when the probe created it.
  */

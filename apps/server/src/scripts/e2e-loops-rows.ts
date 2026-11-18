@@ -11,7 +11,7 @@ export interface LoopsSeedIds {
   replyEmailId: string;
 }
 
-// The rows of the loops spec (F116 stage 22) for one organization: three triaged mails (a needs-reply and an unsure one, which
+// The rows of the loops spec for one organization: three triaged mails (a needs-reply and an unsure one, which
 // show the Delegate action, and a newsletter, which does not), "Track my sent mail" on for the mailbox, and the owner linked to
 // Telegram with a consent of an old version. The mail rows are test mail; nothing here is read by a job of the e2e server.
 export async function seedLoopsRows(

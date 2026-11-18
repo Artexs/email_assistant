@@ -743,7 +743,7 @@ describe("renderSendResult", () => {
       `⚠️ Unknown whether the mail to ${to} went out · Fwd: Offer\n${joined("The connection broke after the content was sent. Check Sent or ask the recipient before you send again.", closings[sendKind])}`
     );
     expect(parseCallback(message.buttons[0]?.[0]?.data ?? "")).toEqual({ kind: "send_again", actionId: ID });
-    // F041: only a delegation send has the "It went out" button; it is the second button.
+    // Only a delegation send has the "It went out" button; it is the second button.
     const second = message.buttons[1]?.[0];
     if (sendKind === "delegation") {
       expect(second?.text).toBe("✅ It went out");
@@ -801,7 +801,7 @@ describe("renderSendResult", () => {
     for (const draftRemoved of [true, false]) {
       const draft = draftRemoved ? "The draft was removed." : "The draft stays in Drafts.";
       for (const [reason, firstOfKind, second] of expired) {
-        // A reply lives 7 days: its `timeout` line names no 48 h (F115 stage 12).
+        // A reply lives 7 days: its `timeout` line names no 48 h 
         const first =
           sendKind === "reply" && reason === "timeout"
             ? "⌛ Not sent: nobody approved the draft in 7 days · Fwd: Offer"

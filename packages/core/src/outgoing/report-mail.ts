@@ -4,7 +4,7 @@ import { textsFor } from "../texts";
 
 import type { OutgoingAddress } from "./message";
 
-// F110 stage 20 (ADR 0022): the report mail that the system appends to the user's own INBOX. It is a message in the user's own
+// ADR 0022: the report mail that the system appends to the user's own INBOX. It is a message in the user's own
 // mailbox, not a sent mail: nothing here has a recipient other than the mailbox itself, and no SMTP code is near it.
 
 export const REPORT_MAIL_ID_HEADER = "X-EA-Action-Id";

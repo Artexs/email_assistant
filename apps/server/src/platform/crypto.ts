@@ -73,7 +73,7 @@ export function createSecretBox(keyBase64: string, keyVersion: number): SecretBo
   };
 }
 
-// DSR tombstones (F106): the SHA-256 hex of the dedup key without a trailing `#<n>` copy suffix.
+// DSR tombstones: the SHA-256 hex of the dedup key without a trailing `#<n>` copy suffix.
 // The trigger `emails_skip_tombstoned` computes the same value in SQL; a test pins them equal.
 export function tombstoneKeyHash(dedupKey: string): string {
   return createHash("sha256")
@@ -84,7 +84,7 @@ export function tombstoneKeyHash(dedupKey: string): string {
 const DSR_HASH_INFO = "ea/dsr-address/v1";
 const SENDER_KEY_INFO = "ea/sender-profile/v1";
 
-// The hash of a DSR address for the audit row (F106 account data ticket): HMAC-SHA256 hex over the normalized address. The key is the
+// The hash of a DSR address for the audit row: HMAC-SHA256 hex over the normalized address. The key is the
 // HKDF-SHA256 of the credentials key (empty salt, info `ea/dsr-address/v1`, 32 bytes), so a person who reads the audit
 // table without the credentials key cannot test guessed addresses against it. A change of the credentials key makes
 // old hashes unmatchable. The caller normalizes the address first; this module cannot import the privacy module.
@@ -97,7 +97,7 @@ export function dsrAddressHash(credentialsKeyBase64: string, address: string): s
   return createHmac("sha256", derived).update(address, "utf8").digest("hex");
 }
 
-// The key of a sender in the profile and suggestion tables (F120 D3): HMAC-SHA256 hex over `<orgId>:<value>`, with a key
+// The key of a sender in the profile and suggestion tables: HMAC-SHA256 hex over `<orgId>:<value>`, with a key
 // derived by HKDF-SHA256 from the credentials key (empty salt, info `ea/sender-profile/v1`). The org id in the message
 // gives a different key for the same address in each organization. The value is an address or `@domain`; the caller
 // normalizes it (trim, lower case). The hash never leaves the server. A change of the credentials key orphans old rows.

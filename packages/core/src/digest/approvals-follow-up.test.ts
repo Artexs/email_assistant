@@ -1,4 +1,4 @@
-// F116 stage 11: the card, the result lines and the fixed notices of a follow-up (T1–T3, T3b texts).
+// The card, the result lines and the fixed notices of a follow-up.
 import { describe, expect, test } from "bun:test";
 
 import { encodeNoticeView } from "../notices/encode";

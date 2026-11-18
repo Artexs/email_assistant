@@ -5,7 +5,7 @@ import type { DB, TenantContext } from "../../../platform/db";
 import type { DbOrTrx } from "./shared";
 
 const RETENTION_BATCH = 1000;
-// Types whose payload holds text of the mail or of a draft (A23).
+// Types whose payload holds text of the mail or of a draft.
 const PAYLOAD_TYPES = ["save_summary", "create_draft", "send"];
 const CLOSED_STATUSES = ["applied", "expired", "failed", "rejected", "undone", "logged"];
 // A row that matches the rule keeps its payload. The composition root passes it (`retention.ts`), so `actions`
@@ -94,7 +94,7 @@ export async function clearLoopSentCopies(
     .executeTakeFirstOrThrow();
   return Number(result.numUpdatedRows);
 }
-// Retention (A23): the error text goes 90 days after the last change. Status and `updated_at` stay.
+// Retention: the error text goes 90 days after the last change. Status and `updated_at` stay.
 export async function clearActionErrors(
   db: DbOrTrx,
   ctx: TenantContext,

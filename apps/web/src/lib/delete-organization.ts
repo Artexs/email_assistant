@@ -4,7 +4,7 @@ import { z } from "zod";
 import { deleteError, type DeleteError } from "./errors";
 import { singleFlight } from "./single-flight";
 
-// F106 stage 04. The delete dialog and the login notice. The mailbox addresses go through `sessionStorage` (they are
+// The delete dialog and the login notice. The mailbox addresses go through `sessionStorage` (they are
 // the only data that survives the delete); the password and the typed name never leave the form state.
 export const DELETED_MAILBOXES_KEY = "ea.deleted_mailboxes";
 // Written before the DELETE request and cleared when it fails. The 401 of the `/api/me` poll can send the page to

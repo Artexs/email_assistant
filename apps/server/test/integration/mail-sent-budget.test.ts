@@ -12,7 +12,7 @@ import { configureFeatures } from "../../src/modules/tenancy";
 import { testDb, withRollback } from "./helpers";
 import { ago, depsOf, HOUR, newOrg, put, rowsOf, stateOf, type Org } from "./mail-sent-fixtures";
 
-// F104 stage 13a: the time budget of one Sent pass.
+// The time budget of one Sent pass.
 
 const db = testDb();
 

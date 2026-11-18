@@ -5,7 +5,7 @@ import { sql } from "kysely";
 import { DSR_ADDRESS_MAP } from "../../src/modules/privacy";
 import { createDb, type Db } from "../../src/platform/db";
 
-// F107 stage 01: every table of the database is in a data category or in `NO_PERSONAL_DATA_TABLES`. A new table fails here
+// Every table of the database is in a data category or in `NO_PERSONAL_DATA_TABLES`. A new table fails here
 // until the registry names it (the privacy page and the records of processing read the registry).
 //
 // The catalog is read as the migrator role: the `app` role sees only the tables it has a privilege on.

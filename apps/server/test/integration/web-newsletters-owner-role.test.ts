@@ -7,7 +7,7 @@ import { as } from "./web-helpers";
 import { addRequest, addSenderMail, LINK, newsletterBox, NOW, PASS, type NewsletterBox } from "./web-newsletters-kit";
 
 // The `org_id` filters of the newsletters route, as the table owner: the owner skips row-level security, so only the code keeps a
-// mailbox, a mail or a request of another organization out (F110 stage 23). Committed rows.
+// mailbox, a mail or a request of another organization out. Committed rows.
 const ownerUrl = process.env.MIGRATOR_DATABASE_URL;
 if (!ownerUrl) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs these tests");
 const db = createDb(ownerUrl);

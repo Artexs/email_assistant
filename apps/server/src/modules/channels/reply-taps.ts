@@ -45,8 +45,8 @@ export async function nextReviewResult(
 }
 
 // `reply_review` (the Review button of the notice) and `reply_skip` (the Skip button of a card). Owners only, flag `reply_drafts` on and
-// the Telegram consent of the user must cover reply data (D15, D16). The card itself goes out through the outbox (kind `approval`, so the
-// F102 card sync finds it), not as the answer of the tap.
+// the Telegram consent of the user must cover reply data The card itself goes out through the outbox (kind `approval`, so the
+// card sync finds it), not as the answer of the tap.
 export async function handleReplyCallback(
   deps: CallbackDeps,
   link: LinkedChat,
@@ -88,7 +88,7 @@ export async function handleReplyCallback(
   return { answer: "", ...(edit === undefined ? { keyboard: [] } : { edit }), ...next };
 }
 
-// After Send or Reject on any card: when the send is a reply, the next open reply follows (D15). Another kind of send: nothing.
+// After Send or Reject on any card: when the send is a reply, the next open reply follows. Another kind of send: nothing.
 export async function nextAfterReplyDecision(
   deps: CallbackDeps,
   ctx: TenantContext,

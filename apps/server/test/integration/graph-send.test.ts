@@ -15,7 +15,7 @@ import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/
 import { runMailSenderContract } from "../contract/mail-sender";
 import { startFakeGraph, type FakeGraph } from "../fake-graph";
 
-// F117 stage 13: the Graph sender against the fake Graph server. No real Microsoft call, no real address (test addresses end in `@x.test`).
+// The Graph sender against the fake Graph server. No real Microsoft call, no real address (test addresses end in `@x.test`).
 const FROM = "a@x.test";
 const TOKEN = "graph-access-token-canary-1";
 const FRESH = "graph-access-token-canary-2";

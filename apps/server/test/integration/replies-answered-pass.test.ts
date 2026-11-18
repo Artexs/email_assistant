@@ -27,7 +27,7 @@ import {
 import { testDb, withRollback } from "./helpers";
 import { addThreadMail, appendUserReply, messageIdOf, sentSyncFlagOnly, sentSyncOn } from "./reply-answered-fixtures";
 
-// F115 stage 09, step 1: the pass before a reply send. GreenMail holds the Drafts, Sent and INBOX folders; the test acts like the mail
+// The pass before a reply send. GreenMail holds the Drafts, Sent and INBOX folders; the test acts like the mail
 // client of the user (a reply in Sent, a flag on the original, an edit of the draft). Every close here sends nothing.
 const db = testDb();
 const boxes: CopyBox[] = [];

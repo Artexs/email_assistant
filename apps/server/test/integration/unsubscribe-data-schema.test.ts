@@ -11,7 +11,7 @@ import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F110 stage 22: the migration `20261117140001_unsubscribe_data.sql` (the column `email_headers.list_unsubscribe_post`
+// The migration `20261117140001_unsubscribe_data.sql` (the column `email_headers.list_unsubscribe_post`
 // and the table `unsubscribe_requests`). The connection is the `app` role; the Down and Up sections run as the owner.
 const db = testDb();
 afterAll(async () => {
@@ -244,7 +244,7 @@ describe("email_headers.list_unsubscribe_post and the previous release", () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       const emailId = await insertTestEmail(trx, o, o.mailboxId);
-      // The statement of the code before F110 stage 22: it names no `list_unsubscribe_post`.
+      // The statement of the code before the unsubscribe-post column: it names no `list_unsubscribe_post`.
       await sql`
         INSERT INTO email_headers (email_id, org_id, from_name, reply_to, auth_results, list_unsubscribe, list_id,
           has_calendar, attachments, attachment_count, links, link_count, parts_known, captured_at)

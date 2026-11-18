@@ -34,7 +34,7 @@ describe("rateText", () => {
   });
 });
 
-// F110 stage 12 (tests 4 and 5): the evidence lines of `auto`.
+// The evidence lines of `auto`.
 describe("the evidence lines of the weekly report", () => {
   const MAILBOXES = [1, 2, 3].map((n) => `00000000-0000-4000-8000-00000000000${n}`);
   type Row = WeekStats["m8"][number];

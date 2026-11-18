@@ -120,7 +120,7 @@ async function detail(s: Seed, id: string, who = "owner"): Promise<ApprovalDetai
   return approvalDetailSchema.parse(await res.json());
 }
 
-// T2 data: A waiting with an applied draft, B waiting with a ready draft, C approved and held by SEND_SCOPE, D applied.
+// Test data: A waiting with an applied draft, B waiting with a ready draft, C approved and held by SEND_SCOPE, D applied.
 async function t2Data(s: Seed) {
   const a = await addSend(s.org.orgId, s.mailboxId, { createdAt: at(1), draftStatus: "applied" });
   const b = await addSend(s.org.orgId, s.mailboxId, { createdAt: at(2), draftStatus: "ready" });

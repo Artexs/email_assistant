@@ -112,7 +112,7 @@ describe("stats:week CLI", () => {
     expect(result.stdout).not.toContain(orgA.ids.e1 as string);
   });
 
-  // F110 stage 12 (test 3): the gate file of the committed lab run, copied for the key that the script runs on. `info` is `go` there;
+  // The gate file of the committed lab run, copied for the key that the script runs on. `info` is `go` there;
   // `spam` is `no-go`. `provisional` is a mark of the whole file.
   function gateDir(provisional: boolean): string {
     const dir = mkdtempSync(join(tmpdir(), "f110-s12-gate-"));

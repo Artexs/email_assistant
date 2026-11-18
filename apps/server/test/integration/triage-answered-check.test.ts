@@ -36,7 +36,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-// The answered check of /review (F100 stage 15): the candidate reader, the answer service, the page block and the taps.
+// The answered check of /review: the candidate reader, the answer service, the page block and the taps.
 const T = new Date("2026-11-20T12:00:00Z");
 const DAY = 24 * 3_600_000;
 const TEST_SENDER = "agent@test-sender.test";

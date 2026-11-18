@@ -62,11 +62,11 @@ export const SPAM_REVIEW_MAX_PERIOD_MS = 24 * 3_600_000;
 
 const modeSchema = z.enum(mailboxModes);
 
-// The open-loops part of a scheduled digest (F116 stage 18). Absent: no brief, no count line (the digest on demand).
+// The open-loops part of a scheduled digest. Absent: no brief, no count line (the digest on demand).
 export interface DigestLoops {
   // The first digest of the member's local day: the brief. Later digests of the day get a count line.
   firstOfDay: boolean;
-  // `loopConsentOf` of the member: false hides every loop line (D17). The channels job reads it; `reports` may not import `channels`.
+  // `loopConsentOf` of the member: false hides every loop line. The channels job reads it; `reports` may not import `channels`.
   loopConsent: boolean;
   // The base URL of the panel: the "+n more in the panel" lines link to it.
   panelBase?: string;
@@ -80,11 +80,11 @@ export interface DigestRequest {
   now: Date;
   locale: UserLocale;
   // The role of the member that gets the digest. Draft, Drop, Reopen and Delegate are owner only: a member gets no such button and no
-  // ⌛ line (its one button is Reopen), so the line stays for an owner (review 19 N3 and N4).
+  // ⌛ line (its one button is Reopen), so the line stays for an owner.
   role: MembershipRole;
   testMail: TestMailRule;
   loops?: DigestLoops;
-  // The open reply drafts of the organization that an owner may review (F115 stage 12): one footer line with the count. The channels job
+  // The open reply drafts of the organization that an owner may review (one footer line with the count. The channels job
   // reads it (`reports` may not import `channels`); absent or 0: no line.
   repliesReady?: number;
   // The base URL of the panel (`WEB_BASE_URL`): the spam review line links to the Activity list with it. Unset: no link.
@@ -115,7 +115,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
   return (await buildDigest(db, ctx, request)).message;
 }
 
-// The Activity list filtered to spam (the page reads `category` from its URL): a fixed URL, no mail data (F110 D15).
+// The Activity list filtered to spam (the page reads `category` from its URL): a fixed URL, no mail data.
 export function spamReviewUrlOf(base: string | undefined): string | null {
   return base === undefined ? null : `${base.replace(/\/+$/, "")}/activity?category=spam`;
 }
@@ -253,7 +253,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
   const texts = textsFor(request.locale);
   const mailboxRows = await listMailboxes(db, ctx);
   const mailboxes: DigestMailbox[] = [];
-  // The mailboxes that plan a draft for a tap: the Draft and the Delegate buttons show for their mail only (F116 stage 19).
+  // The mailboxes that plan a draft for a tap: the Draft and the Delegate buttons show for their mail only.
   const draftMailboxIds = new Set<string>();
   for (const row of mailboxRows) {
     const settings = await getMailboxSettings(db, ctx, row.id);
@@ -309,14 +309,14 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
     rows.map((row) => row.email_id)
   );
 
-  // F110 stage 16: the keys of the why line go into the items only while the flag is on.
+  // The keys of the why line go into the items only while the flag is on.
   const whyOn = await isFeatureOn(db, ctx, "why_lines");
   const delegateTags = whyOn ? await listDelegateTags(db, ctx, [...delegateIds]) : new Map<string, string[]>();
 
-  // F116 stage 19: the Delegate button needs the flag and an active delegate (organization), then a mailbox that drafts, a category
+  // The Delegate button needs the flag and an active delegate (organization), then a mailbox that drafts, a category
   // of the action section and no suspicion (row).
   const delegateOn = await delegateButtonOn(db, ctx);
-  // The reasons that `delegateMail` refuses (PD-063), flag or no flag: the button is hidden for the same mails.
+  // The reasons that `delegateMail` refuses, flag or no flag: the button is hidden for the same mails.
   const suspiciousAny = delegateOn
     ? await suspiciousReasonsOf(
         db,
@@ -345,7 +345,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
       },
       texts
     ),
-    // F110 stage 16: with the flag on, a delegation draft names the competence tags of its delegate.
+    // With the flag on, a delegation draft names the competence tags of its delegate.
     wouldDo: describeActions(
       actions.get(row.email_id) ?? [],
       names,

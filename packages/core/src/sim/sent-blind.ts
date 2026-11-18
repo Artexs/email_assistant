@@ -34,7 +34,7 @@ export function sentBlindHash(entry: SentBlindCase): string {
   return createHash("sha256").update(JSON.stringify(entry)).digest("hex");
 }
 
-// The slot label in the form of a checker label: a due reference becomes the local day it resolves to (D7).
+// The slot label in the form of a checker label: a due reference becomes the local day it resolves to.
 export interface SentExpected {
   expectsReply: boolean;
   promise: boolean;

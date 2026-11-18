@@ -37,7 +37,7 @@ describe("main", () => {
     expect(stderr).not.toContain("abc");
   });
 
-  // Source-level pin of the wiring (F114 stage 03): the `ops.slo` tick sends through the one operator send that
+  // Source-level pin of the wiring: the `ops.slo` tick sends through the one operator send that
   // `channels.operator` also gets (a function when OPERATOR_TELEGRAM_CHAT_ID is set, null when it is unset).
   test("the ops.slo job and the operator notices share one operator send", () => {
     const source = readFileSync(mainPath, "utf8");
@@ -48,7 +48,7 @@ describe("main", () => {
     expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?send: operatorSend,/);
   });
 
-  // F114 stage 05: main.ts and the job runner stamp the release on every JSON line.
+  // main.ts and the job runner stamp the release on every JSON line.
   test("main.ts and the job-run script call setLogRelease with the config value", () => {
     expect(readFileSync(mainPath, "utf8")).toContain("setLogRelease(config.EA_RELEASE);");
     expect(readFileSync(join(import.meta.dir, "scripts", "job-run.ts"), "utf8")).toContain(
@@ -56,7 +56,7 @@ describe("main", () => {
     );
   });
 
-  // F114 stage 04: the disk and backup-age checks are entries `{kind, run}` of the `ops.slo` check list (not bare functions),
+  // The disk and backup-age checks are entries `{kind, run}` of the `ops.slo` check list (not bare functions),
   // and the job runs that list.
   test("the ops.slo check list holds the disk and backup-age entries", () => {
     const source = readFileSync(mainPath, "utf8");

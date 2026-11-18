@@ -136,7 +136,7 @@ describe("renderUrgentNotice", () => {
     expect(renderUrgentNotice({ ...empty, confidence: null, rule: null }, textTables.en).text).toBe(
       renderUrgentNotice(empty, textTables.en).text
     );
-    // TG2: with a mark the empty text gives the mark line.
+    // With a mark the empty text gives the mark line.
     const marked = renderUrgentNotice({ ...empty, confidence: 0.8 }, textTables.en).text.split("\n");
     expect(marked.slice(2, 5)).toEqual(["Subject: Server down", "💬 80%", "Received 07:42"]);
   });

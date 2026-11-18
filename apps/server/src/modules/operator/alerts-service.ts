@@ -5,7 +5,7 @@ import type { Db } from "../../platform/db";
 import { listAlerts, type OpsAlertRow } from "./alerts-repo";
 import { sloAlertText, TEST_FACTS, TEST_IDS, type AlertLocale } from "./slo-texts";
 
-// F114 stage 03: the two service functions of the CLIs `ops:alerts` and `ops:alert-test`.
+// The two service functions of the CLIs `ops:alerts` and `ops:alert-test`.
 
 const LIST_LIMIT = 200;
 

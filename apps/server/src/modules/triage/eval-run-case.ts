@@ -44,7 +44,7 @@ interface RunInput {
   retries: number;
   // Absent: the production prompt.
   prompt?: ClassifierPromptChoice;
-  // The extras of a case (stage 08); absent: none.
+  // The extras of a case; absent: none.
   extrasOf?: (c: EvalCase) => ClassifierExtras;
 }
 
@@ -151,7 +151,7 @@ export async function runCase(
   );
   if (classified.kind === "error") {
     // The log line holds the case id and the code. The issue paths (`fields.task:too_big`, no model text) go to the
-    // hook: a comma list is not a log value (D7).
+    // hook: a comma list is not a log value.
     log.warn("eval_case_failed", { case_id: c.id, code: classified.code });
     deps.onCaseFailed?.({ caseId: c.id, code: classified.code, issues: classified.issues });
     return {

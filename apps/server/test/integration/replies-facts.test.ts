@@ -8,7 +8,7 @@ import type { DB } from "../../src/platform/db";
 import { createOrgWithMailbox, insertTestEmail, insertTriaged } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F115 stage 06: the join of the mail facts, the suspicion and the triage result, and what the rule says about it.
+// The join of the mail facts, the suspicion and the triage result, and what the rule says about it.
 
 const db = testDb();
 

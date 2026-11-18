@@ -1,4 +1,4 @@
-// The security log registry (plan D25). Pure: no process.env, no Date.now().
+// The security log registry. Pure: no process.env, no Date.now().
 // One list says which audit events are security events and which kind key the web names them by.
 
 export const securityEventKinds = [

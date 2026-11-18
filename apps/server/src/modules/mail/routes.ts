@@ -30,7 +30,7 @@ import { getMailboxView, listMailboxViews } from "./views";
 
 const log = createLog("mail");
 
-// B5: the socket timeout of each login and the deadline of the whole check, inside one web request.
+// The socket timeout of each login and the deadline of the whole check, inside one web request.
 export const WEB_MAIL_TIMEOUTS = { socketMs: 20_000, deadlineMs: 25_000 } as const;
 
 export interface MailRouteDeps {
@@ -44,7 +44,7 @@ export interface MailRouteDeps {
   oauth?: RemoveDeps["oauth"];
 }
 
-// B11: the status and code of a connect or password failure; null for an unknown error (the route rethrows: 500).
+// The status and code of a connect or password failure; null for an unknown error (the route rethrows: 500).
 // The order matters: the first five are HardErrors. The body never holds the error message (it may name a host).
 export function mailErrorBody(error: unknown): { status: 400 | 404 | 409 | 422 | 502; error: ApiErrorCode } | null {
   if (error instanceof HostNotAllowedError) return { status: 400, error: "host_not_allowed" };

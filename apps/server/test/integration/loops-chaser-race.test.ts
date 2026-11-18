@@ -1,4 +1,4 @@
-// F116 stage 15: the chaser on real connections. Committed rows; the organizations and users are deleted at the end. Each case
+// The chaser on real connections. Committed rows; the organizations and users are deleted at the end. Each case
 // runs on the app role, on the table owner (it has no row level security, so only the org filters of the queries hold) and on a
 // mix of both. The rules under test: a mailbox acts once per local day (two chasers at once give one run); one follow-up waits
 // at a time (the chaser and a tap at once give one pair); a loop closes once (the chaser and Done at once give one close row and
@@ -263,7 +263,7 @@ describe.each(pairs)("two runs of the delegation wrapper at once (%s)", (_name, 
   }, 60_000);
 });
 
-// F116 stage 15 review (TG6): the flag is read again under the lock; another organization's loops stay out of the run.
+// The flag is read again under the lock; another organization's loops stay out of the run.
 describe.each(pairs)("the flag turned off while the run waits for the settings lock (%s)", (_name, connA, connB) => {
   test("the delegation part runs, the loop part writes nothing and no loop marker", async () => {
     const org = await newOrg();

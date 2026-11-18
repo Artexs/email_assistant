@@ -184,10 +184,10 @@ export interface SimGateRow {
   decision: GoDecision;
 }
 
-// Rows of a category in the lab corpus that the gate needs before it can say "go" (D24).
+// Rows of a category in the lab corpus that the gate needs before it can say "go".
 export const SIM_MIN_SUPPORT = 200;
 
-// The sim gate (D23, D24): the Wilson 95 % lower bound of the precision must reach the bar, not the point value.
+// The sim gate: the Wilson 95 % lower bound of the precision must reach the bar, not the point value.
 export function simGoNoGo(
   rows: Prediction[],
   opts: { bar?: number; minSupport?: number; minKept?: number } = {}

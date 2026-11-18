@@ -49,7 +49,7 @@ function codeOf(error: unknown): unknown {
   return typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
 }
 
-// B8: the typed address must match; the pause commits first so that no new claim starts, then one transaction deletes
+// The typed address must match; the pause commits first so that no new claim starts, then one transaction deletes
 // the rows, writes the audit row and queues the owners' notice.
 export async function removeMailbox(
   deps: RemoveDeps,
@@ -116,7 +116,7 @@ export async function removeMailbox(
   mailboxLog.info("mailbox_removed", { user_id: input.userId });
 
   // After the commit: no cached access token of the mailbox may outlive it. A crash from here on leaves the token valid at the
-  // provider until it expires or the owner revokes it; the notice text names the page (accepted: the plan of F117 lists it).
+  // provider until it expires or the owner revokes it; the notice text names the page (accepted limit).
   let revoked: boolean | null = null;
   if (provider !== null && target !== null && page !== null) {
     deps.oauth?.tokens?.drop(mailboxId);

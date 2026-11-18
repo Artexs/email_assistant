@@ -35,7 +35,7 @@ export type CloseSendResult =
   | { kind: "not_open"; state: string }
   | { kind: "not_found" };
 
-// The shared close of reply drafts (ticket F115, interfaces.md): the send ends `expired` with the reason, its draft closes (`closeDraftOfSend`), the cards
+// The shared close of reply drafts (interfaces.md): the send ends `expired` with the reason, its draft closes (`closeDraftOfSend`), the cards
 // of every owner are edited (`onDecided`), the delegation hook runs as `expireSend` runs it, and one `action.expired` audit row
 // names the reason. It takes any kind, also a follow-up that hangs on a loop (a loop-anchored send has no mail). The caller holds the
 // transaction and, for a send of a loop, the lock of the loop first (lock order: the loop, then the send).

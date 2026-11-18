@@ -76,7 +76,7 @@ export function loopsLlmScope(config: Config): AnalysisScope | null {
   return { kind: "all" };
 }
 
-// D16, D31. The config check guarantees the list for `self`.
+// The config check guarantees the list for `self`.
 export function sendScope(config: Config): SendScope {
   if (config.SEND_SCOPE === "off") {
     log.info("send_scope", { config_key: "SEND_SCOPE", scope: "off" });
@@ -140,7 +140,7 @@ export function committerDeps(input: {
     hooks: delegationHooks({ db: input.db }),
     // A send that the committer closes (a changed or a missing Drafts copy) edits its Telegram cards like any other close.
     approvalHooks: cardEditHooks({ sendScope: input.sendScope }),
-    // A follow-up reads and updates its loop through these (open loops stage 10).
+    // A follow-up reads and updates its loop through these.
     loopHooks: loopHooks(),
     scope: input.scope,
     sendScope: input.sendScope,
@@ -177,7 +177,7 @@ export function settingsDeps(db: Db, now: () => Date, gate: GateEvidenceDeps = n
   };
 }
 
-// F110 stage 12: the M8 reader of the week service (stats route, `stats:week`, the weekly report). `reports` and `channels` may not
+// The M8 reader of the week service (stats route, `stats:week`, the weekly report). `reports` and `channels` may not
 // import `trust`, so every root that builds a week service passes this one, over the same settings deps as the trust routes.
 export function trustEvidenceOf(
   db: Db,
@@ -188,7 +188,7 @@ export function trustEvidenceOf(
   return trustEvidenceReader({ settings: settingsDeps(db, now, gate), testMail });
 }
 
-// F079: the resume hook of `setOrgPlan`. Sends whose approval request no owner saw before the pause end as `not_seen`
+// The resume hook of `setOrgPlan`. Sends whose approval request no owner saw before the pause end as `not_seen`
 // (the owner gets the result notice); their queued requests are cancelled. Returns the number of closed sends.
 export function resumeHook(
   db: Db
@@ -208,7 +208,7 @@ export function resumeHook(
   };
 }
 
-// D20: the hooks of `setOrgPlan` for every caller (the `org:plan` CLI and the operator console), so both suspend and
+// The hooks of `setOrgPlan` for every caller (the `org:plan` CLI and the operator console), so both suspend and
 // resume the same way: suspend cancels the queued messages, resume closes the sends with an unseen approval request.
 export function orgPlanHooks(db: Db): SetOrgPlanHooks {
   return { onSuspended: cancelPendingOutboxOfOrg, onResumed: resumeHook(db) };

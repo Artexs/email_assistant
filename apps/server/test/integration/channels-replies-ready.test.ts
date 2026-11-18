@@ -15,7 +15,7 @@ import { addMember, isolateChannels, linkChat, randomChatId, renderedOf } from "
 import { testDb, withRollback } from "./helpers";
 import { markAnswered, sweepOrg, sweepReply, type SweepOrg } from "./reply-answered-fixtures";
 
-// F115 stage 12, step 1: the notice `replies_ready`. Clock: 2026-11-20 10:00Z = 11:00 in Europe/Warsaw (CET).
+// The notice `replies_ready`. Clock: 2026-11-20 10:00Z = 11:00 in Europe/Warsaw (CET).
 const db = testDb();
 const T = new Date("2026-11-20T10:00:00Z");
 const MINUTE = 60_000;

@@ -164,7 +164,7 @@ async function insertActionFeedback(
     .execute();
 }
 
-/** Seeds the scenario of F100 stage 10 (13 mails of organization A, 3 of B) inside `trx`. */
+/** Seeds the scenario (13 mails of organization A, 3 of B) inside `trx`. */
 export async function seedWeek(trx: Transaction<DB>): Promise<SeededWeek> {
   const a = await createOrgWithMailbox(trx);
   const ctx: TenantContext = { orgId: a.orgId };

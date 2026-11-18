@@ -1,4 +1,4 @@
-// Send limits (PD-044): a pure rule. No I/O and no Date.now(): the caller passes `now`.
+// Send limits: a pure rule. No I/O and no Date.now(): the caller passes `now`.
 import { DAY_MS, HOUR_MS } from "./time";
 
 export const sendLimitKinds = ["mailbox_hour", "mailbox_day", "recipient_day"] as const;

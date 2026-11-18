@@ -18,8 +18,8 @@ import { hasMailDomain } from "./sso-provider";
 
 const log = createLog("tenancy");
 
-// The operator manages SSO members on the owner's request (F119 stage 10, D11): add one before the first sign-in (no
-// just-in-time accounts, PD-041), end the sessions, unlink the IdP identity. No result, log line or audit row holds an e-mail address.
+// The operator manages SSO members on the owner's request: add one before the first sign-in (no
+// just-in-time accounts), end the sessions, unlink the IdP identity. No result, log line or audit row holds an e-mail address.
 
 export interface AddMemberInput {
   email: string;
@@ -37,7 +37,7 @@ export type AddMemberResult =
   | { kind: "not_found" };
 
 // One transaction with the organization locked (it orders this write against `setSsoRequired` and the provider writes). The user
-// has no password (no `auth_accounts` row) and a verified address. One address, one user, one organization (D16): any user
+// has no password (no `auth_accounts` row) and a verified address. One address, one user, one organization: any user
 // with this address, in any organization, gives `email_taken`; the unique index backs it when two adds run in two organizations.
 // An organization with "SSO required" takes only an address on the provider domain.
 export async function addMember(
@@ -95,7 +95,7 @@ export async function endMemberSessions(
 export type UnlinkSsoResult = { kind: "unlinked"; sessionsEnded: number } | { kind: "none" } | { kind: "not_member" };
 
 // Removes the link of the user to the provider of this organization and the user's SSO sessions. The next SSO sign-in links
-// again by e-mail (stage 04). The organization lock first, then the provider lock: a callback in flight finishes first (D16).
+// again by e-mail. The organization lock first, then the provider lock: a callback in flight finishes first.
 export async function unlinkSso(
   db: Db | Transaction<DB>,
   ctx: TenantContext,

@@ -270,7 +270,7 @@ describe("telegram link consent", () => {
       const res = await app.request(LINK, as("owner", { method: "POST", body }));
       expect(res.status).toBe(400);
     }
-    // The text before the attachment names went to Telegram (F109 stage 06) is outdated too.
+    // The text before the attachment names went to Telegram is outdated too.
     for (const consentVersion of ["2000-01-01", "2026-11-14"]) {
       const old = await app.request(LINK, as("owner", { method: "POST", body: { consentVersion } }));
       expect(old.status).toBe(409);

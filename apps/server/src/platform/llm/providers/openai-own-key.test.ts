@@ -129,7 +129,7 @@ describe("an own endpoint never gets OpenAI credentials", () => {
   });
 });
 
-// F111 stage 02 review: the SDK reads more of the env than the key, the organization and the project.
+// The SDK reads more of the env than the key, the organization and the project.
 describe("other env variables of the SDK stay home (own endpoint)", () => {
   test("OPENAI_ADMIN_KEY and OPENAI_WEBHOOK_SECRET never reach the client", () => {
     process.env.OPENAI_ADMIN_KEY = "sk-ADMIN-MARKER";

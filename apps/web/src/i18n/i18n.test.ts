@@ -132,13 +132,13 @@ describe("Polish dictionary", () => {
 });
 
 describe("the Telegram consent text", () => {
-  // Attachment names and sizes reach Telegram in notices (F109 stage 06): the consent text names them, and its version moved with it.
+  // Attachment names and sizes reach Telegram in notices: the consent text names them, and its version moved with it.
   test("names the attachments in both languages", () => {
     expect(en.tg_consent_text).toContain("names (or file types) and sizes of their attachments");
     expect(pl.tg_consent_text).toContain("nazwy (lub typy plików) i rozmiary ich załączników");
   });
 
-  // Loop lines and follow-up cards carry recipients, the ask and the promise (F116 stage 17): the text ends with a sentence about them.
+  // Loop lines and follow-up cards carry recipients, the ask and the promise: the text ends with a sentence about them.
   test("T6 ends with the open-loops sentence in both languages", () => {
     expect(en.tg_consent_text).toEndWith(
       "If you turn on open loops: who you wait for (addresses from your sent mail), a short description of what you asked or promised, the due date taken from your sent mail, the subject of the mail, and follow-up drafts with their recipients. Open-loop lines never hold mail bodies."
@@ -152,9 +152,9 @@ describe("the Telegram consent text", () => {
     expect(TELEGRAM_CONSENT_VERSION >= OPEN_LOOPS_CONSENT_SINCE).toBe(true);
   });
 
-  // F115 stage 12 (D16): a Telegram user is covered for reply data only by a consent version that offered a text naming it. While
-  // `REPLY_CONSENT_SINCE` is above the current version nobody is covered (stage 12 ships without the legal text change: it needs a
-  // TERMS_VERSION bump that belongs to F115 stage 17). Once it is not above, both consent texts must name the reply drafts and the other
+  // A Telegram user is covered for reply data only by a consent version that offered a text naming it. While
+  // `REPLY_CONSENT_SINCE` is above the current version nobody is covered (the reply stage ships without the legal text change: it needs a
+  // TERMS_VERSION bump that belongs to the next legal text batch). Once it is not above, both consent texts must name the reply drafts and the other
   // recipients' addresses, or this test fails.
   test("T8 the reply version is not offered before its text names reply data", () => {
     if (REPLY_CONSENT_SINCE > TELEGRAM_CONSENT_VERSION) return;
@@ -169,7 +169,7 @@ describe("the Telegram consent text", () => {
   });
 });
 
-// F110 stage 18 review: the settled words of the notify cards and the time-zone help.
+// The settled words of the notify cards and the time-zone help.
 describe("the texts of the quiet hours and report channel cards", () => {
   test("the Polish channel help uses the settled words: komunikaty, w Telegramie, raporty zaufania", () => {
     // "Powiadomienia" is the mail category; the settled word for what the bot sends is "komunikaty" (tg_intro).

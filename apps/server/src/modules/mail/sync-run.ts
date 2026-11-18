@@ -31,7 +31,7 @@ export interface SyncResult {
   returned: number;
   relocated: number;
   crossCopies: number;
-  /** D9: mail that is the target of a move in flight (not stored). */
+  /** Mail that is the target of a move in flight (not stored). */
   moveInFlight: number;
   returnedBelowCursor: number;
   copiesBelowCursor: number;
@@ -45,7 +45,7 @@ export interface SyncResult {
 export interface MailboxSyncResult extends SyncResult {
   /** Every folder that synced, INBOX first. */
   folders: SyncResult[];
-  /** Folders with an error (D5), never `inbox`. */
+  /** Folders with an error, never `inbox`. */
   failed: SyncFolderKey[];
   /** Rows whose path the server does not list. */
   skipped: SyncFolderKey[];
@@ -82,7 +82,7 @@ export class CursorMovedError extends SoftError {
 }
 
 export interface RunState {
-  /** Email ids (or `run:` ids) that this run already used, with the folder where it matched or stored them (D7). */
+  /** Email ids (or `run:` ids) that this run already used, with the folder where it matched or stored them. */
   matched: Map<string, string>;
   /** The rows that this run stores, by base key, with the folder and UID where it stored them. */
   newKeys: Map<string, { dedupKey: string; folder: string; uid: number }[]>;

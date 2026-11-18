@@ -117,7 +117,7 @@ try {
   process.exit(1);
 }
 
-// F119 N12: a killed `sso_sign_in` locks out every member of an organization that requires SSO, except its break-glass owner.
+// A killed `sso_sign_in` locks out every member of an organization that requires SSO, except its break-glass owner.
 // A DB error does not stop the start.
 try {
   const lockedOut = await countSsoRequiredWhileKilled(db);
@@ -148,7 +148,7 @@ scheduler.add("mail.sync", mailSyncCron(config), mailSync.run);
 log.info("mail_sync_interval", { minutes: Number(config.MAIL_SYNC_EVERY_MIN) });
 scheduler.add("platform.heartbeat", "*/5 * * * *", heartbeat.tick);
 
-// A3: when a scope is `all`, one start line says whom the jobs act on (counts only, no ids). A DB error does not stop the start.
+// When a scope is `all`, one start line says whom the jobs act on (counts only, no ids). A DB error does not stop the start.
 if (config.TRIAGE_LLM_SCOPE === "all" || config.ACTIONS_SCOPE === "all" || config.SEND_SCOPE === "all") {
   try {
     const targets = await countSyncTargets(db);
@@ -166,7 +166,7 @@ if (config.TRIAGE_LLM_SCOPE === "all" || config.ACTIONS_SCOPE === "all" || confi
 // The Telegram runtime; set below when TELEGRAM_BOT_TOKEN is set. The operator notices read it at call time.
 let telegram: ReturnType<typeof createTelegramRuntime> | null = null;
 
-// Operator notices (D31): the chat id is private data and never reaches a log line.
+// Operator notices: the chat id is private data and never reaches a log line.
 const operatorChat = operatorChatId(config);
 const operatorSend =
   operatorChat === null
@@ -188,7 +188,7 @@ scheduler.add("channels.operator", "0 13 * * * *", () => {
 });
 log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegram" });
 
-// F114: the service-level alerts. The job runs in every case: with no operator chat the `slo_alert_sent` line is the send.
+// The service-level alerts. The job runs in every case: with no operator chat the `slo_alert_sent` line is the send.
 // The alert goes only to the operator chat, through the same send as the operator notices. The scheduler runs the tick
 // with no tenant scope, because the checks read every organization.
 const slo = sloThresholds(config);
@@ -220,7 +220,7 @@ let repliesSweepRun: Promise<void> = Promise.resolve();
 let historyRun: Promise<void> = Promise.resolve();
 let tripwireRun: Promise<void> = Promise.resolve();
 let loopsMatchRun: Promise<void> = Promise.resolve();
-// One pause object for the triage worker and the `not_triaged` notice job: they run in this process (F109 stage 15).
+// One pause object for the triage worker and the `not_triaged` notice job: they run in this process.
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 // The style preview of the reply drafts: it needs the model client, so it exists only while the LLM scope is on.
 let stylePreview: StylePreview | null = null;
@@ -230,7 +230,7 @@ const hooks = delegationHooks({ db });
 const uidplus = uidplusOf(db);
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
-// The global evidence of this classifier: the gate files are read once here and passed to the settings deps (F110 D1).
+// The global evidence of this classifier: the gate files are read once here and passed to the settings deps.
 const gate = gateEvidenceOf(config, { table: llmTable });
 const scope = triageScope(config, classifierRow.provider);
 // The re-gate of `auto` (ADR 0028, rule 16 of the product rules): it runs once here, before the triage worker and the committer exist, so a `ready` move that
@@ -278,7 +278,7 @@ if (scope !== null) {
     triageRun = triage.run();
     return triageRun;
   });
-  // The history check of the trust ladder (F110): it reads mail, classifies a sample with the model client and the pause of the triage worker, and writes the checks.
+  // The history check of the trust ladder: it reads mail, classifies a sample with the model client and the pause of the triage worker, and writes the checks.
   const history = createHistoryJob({
     db,
     secrets,
@@ -327,7 +327,7 @@ if (scope !== null) {
   });
   log.info("job_scheduled", { job: "replies.drafter" });
 }
-// The tripwire of the trust ladder (F110): a category whose moves the user corrects loses its `auto`. It reads corrections and checks, not
+// The tripwire of the trust ladder: a category whose moves the user corrects loses its `auto`. It reads corrections and checks, not
 // mail, and calls no model, so it runs with the scope off too.
 const tripwire = createTripwireJob({
   db,
@@ -363,7 +363,7 @@ scheduler.add("replies.sweep", "40 */5 * * * *", () => {
 });
 log.info("job_scheduled", { job: "replies.sweep" });
 
-// The runs of the committer, the returned job and the S4 jobs that are going now. Shutdown waits for them.
+// The runs of the committer, the returned job and the send jobs that are going now. Shutdown waits for them.
 let committerRun: Promise<void> = Promise.resolve();
 let returnedRun: Promise<void> = Promise.resolve();
 let expiryRun: Promise<void> = Promise.resolve();
@@ -410,7 +410,7 @@ scheduler.add("triage.returned", "*/15 * * * * *", () => {
   return returnedRun;
 });
 
-// The daily retention run (A23). Shutdown waits for it.
+// The daily retention run. Shutdown waits for it.
 let retentionRun: Promise<void> = Promise.resolve();
 const retention = createRetentionJob({ db, now: () => new Date() });
 scheduler.add("platform.retention", "0 40 2 * * *", () => {
@@ -423,7 +423,7 @@ log.info("job_scheduled", { job: "platform.retention" });
 let channelRun: Promise<void> = Promise.resolve();
 let digestRun: Promise<void> = Promise.resolve();
 let reportMailRun: Promise<void> = Promise.resolve();
-// The report mail sender (F110 stage 20, ADR 0022): it APPENDs the `mail` rows into the user's own INBOX. It runs with or without the
+// The report mail sender (ADR 0022): it APPENDs the `mail` rows into the user's own INBOX. It runs with or without the
 // Telegram runtime, because a mail-only member needs no bot. It never sends: no SMTP sender is built for it. Rows exist only when the flag
 // `report_mail` is on, and the sender checks the flag again before each APPEND.
 const reportMail = createReportMailSender({
@@ -546,5 +546,5 @@ async function shutdown(): Promise<void> {
 process.on("SIGTERM", () => void shutdown());
 process.on("SIGINT", () => void shutdown());
 
-// After the handlers: this line says the server is ready. A SIGTERM before the handlers exist would kill the process with exit 143 (F123).
+// After the handlers: this line says the server is ready. A SIGTERM before the handlers exist would kill the process with exit 143.
 log.info("server_listening", { port: server.port });

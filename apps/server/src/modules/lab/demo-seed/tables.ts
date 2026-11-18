@@ -1,4 +1,4 @@
-// F113 stage 15: the tables of the demo seed file, and how each one is cut, linked and re-keyed.
+// The tables of the demo seed file, and how each one is cut, linked and re-keyed.
 //
 // The columns of each table are the columns of `EXPORT_MAP` of the privacy module (the same map the account export uses):
 // an `export: false` table is never listed here, and a column in `excluded` is never read. There is no second list of

@@ -67,7 +67,7 @@ describe("bot texts", () => {
     );
   });
 
-  // F115 stage 05: the two answers of a tap on a reply that cannot go out. Fixed values, so a wording change is a decision.
+  // The two answers of a tap on a reply that cannot go out. Fixed values, so a wording change is a decision.
   test("the Polish tap texts for a reply with a gap and for the flag off", () => {
     const { taps } = textTables.pl.bot;
     expect(taps.hasGaps).toBe(
@@ -80,7 +80,7 @@ describe("bot texts", () => {
     expect(textTables.en.bot.taps.featureOff).toBe("Reply drafts are switched off. Nothing was sent.");
   });
 
-  // F115 stage 12: a reply lives 7 days and another send 48 h, so the expired tap text names no number of hours.
+  // A reply lives 7 days and another send 48 h, so the expired tap text names no number of hours.
   test("the expired tap text says no hours, en and pl", () => {
     expect(textTables.en.bot.taps.expired).toBe("This approval expired. The mail was not sent.");
     expect(textTables.pl.bot.taps.expired).toBe("To zatwierdzenie wygasło. Wiadomość nie została wysłana.");

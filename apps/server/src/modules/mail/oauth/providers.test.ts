@@ -59,7 +59,7 @@ describe("registry (D6)", () => {
   });
 });
 
-// Review N1: a grant check compares resource scopes only. Google may answer `email` as the userinfo.email URL, Microsoft may omit offline_access.
+// A grant check compares resource scopes only. Google may answer `email` as the userinfo.email URL, Microsoft may omit offline_access.
 describe("granted scopes (N1)", () => {
   test("the required scopes are the resource scopes without the identity names", () => {
     expect(requiredResourceScopes(google, "mail")).toEqual(["https://mail.google.com/"]);

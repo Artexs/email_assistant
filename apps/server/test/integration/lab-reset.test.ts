@@ -54,7 +54,7 @@ import {
 } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F113 stage 14: the reset of a lab organization. It deletes data, so every test runs on test organizations of the
+// The reset of a lab organization. It deletes data, so every test runs on test organizations of the
 // test DB (committed: the delete function opens its own transaction) and on random GreenMail addresses. The
 // organizations of a test are removed in `afterEach`. No test names a real organization or a real mailbox.
 const host = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
@@ -544,7 +544,7 @@ describe("the guards of the reset (F113 stage 14): each alone refuses, and nothi
     await expect(w.mail.countMessages(outside)).rejects.toMatchObject({ code: "address_refused" });
   });
 
-  // The member email of the org must be the demo mailbox address (stage 14 review, N1).
+  // The member email of the org must be the demo mailbox address.
   async function addOtherMember(orgId: string): Promise<void> {
     const added = await addMember(
       db,
@@ -587,7 +587,7 @@ describe("the guards of the reset (F113 stage 14): each alone refuses, and nothi
   });
 
   // The guards ran before the delete transaction; a row that commits in the window must not be deleted with the org
-  // (stage 14 review, N2). `lookupOrg` is the last read of the pre-check: the hook adds the row right after it.
+  // `lookupOrg` is the last read of the pre-check: the hook adds the row right after it.
   async function lateInsert(add: (orgId: string) => Promise<void>) {
     const w = world();
     const first = await resetDemo(w.deps, {});

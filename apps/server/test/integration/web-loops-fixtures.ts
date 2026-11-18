@@ -7,7 +7,7 @@ import { insertDelegate, insertTriaged } from "./fixtures";
 import { commandOrg, FRIDAY, type CommandOrg } from "./loops-commands-fixtures";
 import { as, webTestApp } from "./web-helpers";
 
-// Committed rows for the route tests of the open loops (F116 stage 20): the routes read through their own connections, so a
+// Committed rows for the route tests of the open loops: the routes read through their own connections, so a
 // rolled-back transaction would show them nothing. Two organizations, each with the flag `open_loops`, an `assist` mailbox
 // with drafts on and the Sent tracking on. Organization A also has the flag `delegate_button`, an active delegate and a triaged mail.
 export { FRIDAY };

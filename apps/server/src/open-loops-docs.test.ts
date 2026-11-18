@@ -4,7 +4,7 @@ import path from "node:path";
 import { featureFlags } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-// The open-loops page and the architecture jobs table must name what the code has: every flag of epic E5b and every job
+// The open-loops page and the architecture jobs table must name what the code has: every flag of the open loops and every job
 // `loops.*` that `main.ts` schedules. A new loop flag or job that nobody wrote down fails here.
 const ROOT = path.resolve(import.meta.dir, "../../..");
 const read = (file: string): string => readFileSync(path.join(ROOT, file), "utf8");

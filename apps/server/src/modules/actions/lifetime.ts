@@ -17,7 +17,7 @@ export function sendKindOf(payload: Record<string, unknown>): string | undefined
 }
 
 // The one rule for the end of an approval. The tap (`approveRow`), the expiry job (its SQL repeats this rule in
-// `listExpiredApprovals`), the F102 `expiresAt` of `ApprovalItem` and the claim of an `approved` send all read the same limits.
+// `listExpiredApprovals`), the `expiresAt` of `ApprovalItem` and the claim of an `approved` send all read the same limits.
 // `awaiting_approval`: a reply ends 7 days after `created_at`, whatever `notified_at`; any other kind ends 48 h after the owner
 // was told, or 7 days after it was planned when no owner was told. `approved` (held): 48 h after the tap, for every kind.
 // Any other status has no limit: null.

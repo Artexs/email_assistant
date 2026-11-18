@@ -3,7 +3,7 @@ import { sql, type Expression, type SqlBool } from "kysely";
 import { mailKindFilter, type TestMailRule } from "../../mail";
 
 // `mailbox` gates the mailbox changes and the drafts: none = save_summary only; synthetic = save_summary and synthetic mail;
-// all = everything. `send` gates the sends (D16): none = no send; self = only to the listed (lower-case) addresses; all = every send.
+// all = everything. `send` gates the sends: none = no send; self = only to the listed (lower-case) addresses; all = every send.
 export type MailboxClaimFilter = { kind: "none" } | { kind: "synthetic"; testMail: TestMailRule } | { kind: "all" };
 export type SendClaimFilter = { kind: "none" } | { kind: "self"; addresses: string[] } | { kind: "all" };
 export interface ClaimFilter {
@@ -20,7 +20,7 @@ export function mailboxFilterExpr(filter: MailboxClaimFilter): Expression<SqlBoo
   if (filter.kind === "synthetic") return mailKindFilter("synthetic", filter.testMail);
   return sqlTrue;
 }
-// `payload.to` and `payload.cc` are JSON arrays (D2). Every address of both must be listed (a follow-up has a Cc). The CASE keeps a
+// `payload.to` and `payload.cc` are JSON arrays. Every address of both must be listed (a follow-up has a Cc). The CASE keeps a
 // malformed payload from raising: it is simply not admitted. A missing `cc` has no address; a `cc` that is not an array is refused.
 export function sendFilterExpr(filter: SendClaimFilter): Expression<SqlBool> {
   if (filter.kind === "none") return sqlFalse;

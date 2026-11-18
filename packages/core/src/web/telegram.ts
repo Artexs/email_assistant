@@ -6,7 +6,7 @@ export const telegramStateSchema = z.object({
   linkedAt: z.iso.datetime().nullable(),
   botUsername: z.string().nullable(),
   // The consent version of the session user that an unlink did not withdraw. null: no consent row, or the chat is not linked.
-  // The panel asks for a new confirmation while `consentCovers(consentVersion, TELEGRAM_CONSENT_VERSION)` is false (F116 stage 22).
+  // The panel asks for a new confirmation while `consentCovers(consentVersion, TELEGRAM_CONSENT_VERSION)` is false.
   consentVersion: z.string().nullable(),
 });
 export type TelegramState = z.infer<typeof telegramStateSchema>;
@@ -21,16 +21,16 @@ export type TelegramLink = z.infer<typeof telegramLinkSchema>;
 // the server then refuses links made with the old text.
 // Versions are ISO dates; a second bump on the same day adds ".2", ".3" (they sort after the bare date and before the next day).
 export const TELEGRAM_CONSENT_VERSION = "2026-11-15.2";
-// The first version whose text names the open-loops data (recipients, the ask, the promise). F116 stage 17.
+// The first version whose text names the open-loops data (recipients, the ask, the promise).
 // A user whose newest consent is older gets no loop text in Telegram (consentCovers).
 export const OPEN_LOOPS_CONSENT_SINCE = "2026-11-15.2";
 
 // The first version whose text names the reply-draft data (the drafts that the AI writes, and the addresses of the other recipients of a
-// mail: To, Cc, Reply-To). F115 stage 12 (D16). A user whose newest consent is older gets only the count of waiting replies and a panel
+// mail: To, Cc, Reply-To). A user whose newest consent is older gets only the count of waiting replies and a panel
 // link in Telegram, never a reply card (`consentCovers`).
 // PLACEHOLDER, deliberately ABOVE `TELEGRAM_CONSENT_VERSION`: the consent text `tg_consent_text` is a legal text (the digest of
-// `legal-version.test.ts` covers it), and a change of it needs a `TERMS_VERSION` bump, which belongs to the legal batch of F115 stage 17.
-// Until then no consent text names reply data, so no user is covered and no reply card goes out. Stage 17 changes the text, bumps
+// `legal-version.test.ts` covers it), and a change of it needs a `TERMS_VERSION` bump, which belongs to the next legal text batch.
+// Until then no consent text names reply data, so no user is covered and no reply card goes out. The next legal text batch changes the text, bumps
 // `TELEGRAM_CONSENT_VERSION` and `TERMS_VERSION`, and sets this constant to the new `TELEGRAM_CONSENT_VERSION` in one commit.
 export const REPLY_CONSENT_SINCE = "2099-12-31";
 

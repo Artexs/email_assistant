@@ -15,7 +15,7 @@ import { createDb, type DB } from "../../src/platform/db";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F114 stage 08: `countDecryptableCredentials` and `bun run credentials:check` (the restore runs it before the server starts).
+// `countDecryptableCredentials` and `bun run credentials:check` (the restore runs it before the server starts).
 // The library tests run in a transaction that rolls back, after it hides the rows of other tests. The script tests need committed
 // rows and read every row of the database, so each one compares with a run before the rows exist (other tests leave rows with other keys).
 const db = testDb();

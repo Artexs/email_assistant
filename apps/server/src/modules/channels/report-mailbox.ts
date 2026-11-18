@@ -2,7 +2,7 @@ import type { ReportMailMessage } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 
-// F110 stage 20 (ADR 0022): the port that puts a report mail into the user's own mailbox. It is not a `ChatChannel`: a mail has no
+// ADR 0022: the port that puts a report mail into the user's own mailbox. It is not a `ChatChannel`: a mail has no
 // chat, no message id to edit and no buttons. The port APPENDs; it has no way to send. The recipient is the mailbox itself, fixed by
 // `ReportMailMessage` (`to` holds the mailbox address from the mailbox row).
 //

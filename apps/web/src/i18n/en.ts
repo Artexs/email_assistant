@@ -24,11 +24,11 @@ export const enPlurals = {
   ob_rules: { one: "1 rule", other: "{count} rules" },
   op_sso_linked: { one: "{count} linked member", other: "{count} linked members" },
   expired_suffix: { one: "1 planned action was cancelled.", other: "{count} planned actions were cancelled." },
-  // F116 stage 21: the wait of an open loop
+  // The wait of an open loop
   lp_working_days: { one: "1 working day", other: "{count} working days" },
-  // F116 stage 22
+  // Loop settings
   lset_wait_days: { one: "1 working day", other: "{count} working days" },
-  // F110 stage 23: mails of a newsletter sender
+  // Mails of a newsletter sender
   nl_count: { one: "1 mail in 30 days", other: "{count} mails in 30 days" },
 } as const;
 

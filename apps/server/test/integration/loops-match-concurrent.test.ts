@@ -1,4 +1,4 @@
-// F116 stage 13: the close rules race on real connections. Committed rows; the organizations and users are deleted at the
+// The close rules race on real connections. Committed rows; the organizations and users are deleted at the
 // end. Each case runs on the app role and on the table owner (the owner has no row level security, so only the org filters
 // of the queries keep the organizations apart). The rules: a loop closes once (one audit row, one expiry of its send),
 // `auto_reply_at` is set once, a mail counts only after `wait_from_at`, a loop never closes twice.

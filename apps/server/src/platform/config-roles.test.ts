@@ -176,7 +176,7 @@ describe("role keys at start", () => {
     expect(keysOf({ ...openaiEnv, LLM_JUDGE_MODEL: "gpt-judge" })).toEqual(["LLM_JUDGE_PROVIDER"]);
   });
 
-  // F130: the VPS .env still holds the five keys of the removed escalation role. The schema drops unknown keys, so the
+  // The VPS .env still holds the five keys of the removed escalation role. The schema drops unknown keys, so the
   // server starts, the keys change nothing, and no role row is built for them.
   test("11: the removed LLM_ESCALATION_* keys in an old .env do not stop the start and build no role", () => {
     const config = loadConfig({

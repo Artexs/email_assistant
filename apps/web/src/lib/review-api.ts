@@ -8,7 +8,7 @@ import {
 
 import { api } from "./api";
 
-// The panel review (F110 stage 15, flag `panel_review`).
+// The panel review (flag `panel_review`).
 export function reviewSamplePath(mailboxId: string): string {
   return `/api/review/sample?mailboxId=${encodeURIComponent(mailboxId)}`;
 }

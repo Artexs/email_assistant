@@ -48,7 +48,7 @@ export const detectors: readonly Detector[] = [
   notTriagedDetector,
 ];
 
-// The detectors that also serve an organization with no linked chat (F110 stage 19).
+// The detectors that also serve an organization with no linked chat.
 export const mailOnlyDetectors: readonly Detector[] = [weeklyReportDetector];
 
 // Kinds that a producer outside the detector list queues.
@@ -58,10 +58,11 @@ export const queuedBy = {
   approval_edit: "channels/card-edits.ts",
   // The one line for an owner whose consent does not cover open-loop data: queued by the approval and send-result detectors.
   loop_consent: "channels/notices/loop-consent.ts",
-  // F115: stage 13 queues these (the entry is a name only). `replies_ready` has its own detector (stage 12).
+  // The reply prompt and the reply result are queued by the Telegram redraft code (the entry is a name only). `replies_ready` has its own
+  // detector.
   reply_prompt: "replies/telegram.ts",
   reply_result: "replies/telegram.ts",
-  // F110: the trust module calls `queueTrustNotice` inside its own transaction (history check end, re-gate, tripwire).
+  // The trust module calls `queueTrustNotice` inside its own transaction (history check end, re-gate, tripwire).
   trust_report_ready: "trust (through channels/notices/trust.ts)",
   autonomy_paused: "trust (through channels/notices/trust.ts)",
 } as const satisfies Partial<Record<NoticeKind, string>>;
@@ -108,7 +109,7 @@ export async function detectNotices(deps: NoticeDeps): Promise<void> {
   try {
     const now = deps.now();
     // Every organization with a linked chat is visited. An organization with only report-mail members (no chat) is visited too,
-    // for the weekly report only: with the flag `report_mail` off that detector queues nothing for them (F110 stage 19).
+    // for the weekly report only: with the flag `report_mail` off that detector queues nothing for them.
     const byOrg = new Map<string, { links: LinkedChat[]; members: ReportMember[] }>();
     for (const member of await listReportMembers(deps.db, { includeSuspended: false })) {
       const entry = byOrg.get(member.orgId) ?? { links: [], members: [] };

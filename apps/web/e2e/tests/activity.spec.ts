@@ -20,7 +20,7 @@ import { readSeed } from "../seed";
 
 test.describe.configure({ mode: "serial" });
 
-// F110 stage 16: the rule hit shows only while the flag `why_lines` is on. The CLI of the platform (`bun run org:flag`) with the
+// The rule hit shows only while the flag `why_lines` is on. The CLI of the platform (`bun run org:flag`) with the
 // e2e env, as the OAuth spec does. The flag is on for the seed organization only while this file runs.
 function setFlag(flag: string, enabled: boolean): void {
   const { orgId } = readSeed();
@@ -94,7 +94,7 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await expect(delegated.getByRole("button", { name: rightLabel(en.act_cat_delegation) })).toHaveCount(0);
   await expect(delegated).toContainText(t("act_dlg_line", { name: "Ola", status: en.act_dlg_drafted }));
 
-  // F110 stage 16: the rule hit shows on the row of a VIP result, and on no other row.
+  // The rule hit shows on the row of a VIP result, and on no other row.
   await expect(reply).toContainText(en.act_rule_vip);
   await expect(moved).not.toContainText(en.act_rule_vip);
 

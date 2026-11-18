@@ -13,7 +13,7 @@ import { insertDraftAndSend, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F115 stage 10 step 1 on the web: PATCH /api/settings/:mailboxId/switches/reply_drafts. Committed rows; the cleanup deletes both organizations.
+// On the web: PATCH /api/settings/:mailboxId/switches/reply_drafts. Committed rows; the cleanup deletes both organizations.
 const db = testDb();
 const NOW = new Date("2026-11-18T12:00:00Z");
 const UNKNOWN = "00000000-0000-4000-8000-000000000000";

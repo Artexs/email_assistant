@@ -1,4 +1,4 @@
-// F116 stage 11: the follow-up card, the consent gate, the result and failure notices, the held notice, the card edit of a closed
+// The follow-up card, the consent gate, the result and failure notices, the held notice, the card edit of a closed
 // loop and the 48 hour expiry. Every test runs in a transaction that is rolled back. The races are in `follow-up-cards-races.test.ts`.
 import { format } from "node:util";
 
@@ -55,7 +55,7 @@ interface World {
   mailboxId: string;
   owner: string; // consent covers loop data
   owner2: string; // consent covers loop data
-  oldOwner: string; // an F109 consent
+  oldOwner: string; // an old consent
   noConsentOwner: string; // linked by the CLI: no consent row
   member: string; // an assistant
 }

@@ -1,4 +1,4 @@
-// The global evidence of the running classifier: the gate files in the image, read once at start (F110 D1, D2, P9).
+// The global evidence of the running classifier: the gate files in the image, read once at start.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -129,7 +129,7 @@ export function runningEvidenceKey(
   };
 }
 
-// Non-provisional first, then the newest date, then the name (D2).
+// Non-provisional first, then the newest date, then the name.
 const rank = (a: GateIndexFile, b: GateIndexFile): number =>
   Number(a.provisional) - Number(b.provisional) || b.date.localeCompare(a.date) || a.file.localeCompare(b.file);
 

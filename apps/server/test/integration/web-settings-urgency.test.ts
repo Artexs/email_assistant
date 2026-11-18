@@ -13,7 +13,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// PUT /api/settings/:mailboxId/urgency (F109 stage 07). The profile may name people: no label or keyword reaches a log
+// PUT /api/settings/:mailboxId/urgency. The profile may name people: no label or keyword reaches a log
 // line, an audit row or an error body.
 const db = testDb();
 const NOW = new Date("2026-11-15T12:00:00Z");

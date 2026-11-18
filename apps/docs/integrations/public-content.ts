@@ -1,5 +1,5 @@
 // Astro integration: after the build, check every text file of the built site for private data and third-party assets
-// (rules R1 to R7 in `@ea/core/web` `public-content.ts`, plan D4). The allow list `public-content-allow.txt` holds
+// (rules R1 to R7 in `@ea/core/web` `public-content.ts`). The allow list `public-content-allow.txt` holds
 // `<exact string> | <reason>` lines; an entry that no file needs fails the build.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

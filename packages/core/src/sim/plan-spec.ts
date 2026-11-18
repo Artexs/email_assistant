@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const share = z.number().min(0).max(1);
 
-// The week of mail the planner builds (stage 08): counts per day, the mix and the thread, delegate and history shapes.
+// The week of mail the planner builds: counts per day, the mix and the thread, delegate and history shapes.
 export const weekSpecSchema = z
   .object({
     weekdayMails: z.number().int().positive(),
@@ -40,7 +40,7 @@ export const weekSpecSchema = z
   .strict();
 export type WeekSpec = z.infer<typeof weekSpecSchema>;
 
-// The plan of one corpus: seed and bank sizes. The planner (stage 07) reads it; the file is evals/sim/<id>/plan.json.
+// The plan of one corpus: seed and bank sizes. The planner reads it; the file is evals/sim/<id>/plan.json.
 export const planSpecSchema = z
   .object({
     seed: z

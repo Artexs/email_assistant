@@ -6,7 +6,7 @@ import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// The panel review "Check 10 decisions" (F110 stage 15). It runs on the review organization of the project (see `e2e-seed.ts`): the flags
+// The panel review "Check 10 decisions". It runs on the review organization of the project (see `e2e-seed.ts`): the flags
 // `panel_review` and `trust_ladder` are on; one mailbox with a done history check and 12 real mails with a triage result and no label
 // (`e2e-review-rows.ts`). The tests of a project run in this order and label mail, so each one reads the state the one before left:
 // 12 mails, then 2, 3, 4 and 12 labels (RV2 to RV5), then none left (RV6).

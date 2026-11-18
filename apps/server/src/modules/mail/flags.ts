@@ -13,7 +13,7 @@ import {
 } from "./repo";
 import { normalizeMessageId } from "./sync-rules";
 
-// D6: the sync job refreshes the IMAP flags of recent mail on its own connection, at most this often per mailbox.
+// The sync job refreshes the IMAP flags of recent mail on its own connection, at most this often per mailbox.
 export const FLAGS_REFRESH_EVERY_MS = 10 * 60_000;
 export const FLAGS_WINDOW_MS = 30 * 24 * 3_600_000;
 export const FLAGS_RUN_LIMIT = 3_000;
@@ -37,7 +37,7 @@ export interface FlagsRefreshResult {
   written: number;
   /** Targets whose UID the server did not return (the mail moved or went). */
   notFound: number;
-  /** Targets whose UID now names another mail (a UIDVALIDITY change, cold review N3). */
+  /** Targets whose UID now names another mail (a UIDVALIDITY change). */
   mismatch: number;
   /** The targets counted in `notFound`, in read order: mail that left its folder (the move finder looks for it). */
   gone: FlagTarget[];
@@ -49,7 +49,7 @@ const flagNames = { seen: "\\seen", answered: "\\answered", flagged: "\\flagged"
 function sameMail(target: FlagTarget, fetched: FlagsOfMessage): boolean {
   const stored = normalizeMessageId(target.messageId);
   const found = normalizeMessageId(fetched.messageId);
-  // One side without a Message-ID cannot show that the UID names the stored mail: a mismatch (review N3).
+  // One side without a Message-ID cannot show that the UID names the stored mail: a mismatch.
   if (stored !== null || found !== null) return stored !== null && found !== null && stored === found;
   return Math.floor(target.receivedAt.getTime() / 1000) === Math.floor(fetched.internalDate.getTime() / 1000);
 }
@@ -105,7 +105,7 @@ export async function refreshFlags(
       }
       // Each chunk is consistent on its own: no transaction around the chunks.
       result.written += await writeEmailFlags(deps.db, ctx, reads, now);
-      // N1: mail that could not be read moves to the back of the queue; `checked_at` means "last tried".
+      // Mail that could not be read moves to the back of the queue; `checked_at` means "last tried".
       await touchEmailFlags(deps.db, ctx, unread, now);
     }
   }
@@ -121,7 +121,7 @@ export type FlagsOfEmailResult =
   | { kind: "mismatch" }
   | { kind: "not_found" };
 
-// The flag refresh for one mail, on the caller's connection (F115 D10: the pass before a reply send asks the server whether the mail
+// The flag refresh for one mail, on the caller's connection (the pass before a reply send asks the server whether the mail
 // is answered). The same read, the same mail check and the same writer as `refreshFlags`; one `fetchFlagsIn` call for one UID.
 export async function refreshFlagsOfEmail(
   deps: Pick<FlagsRefreshDeps, "db" | "provider" | "now">,

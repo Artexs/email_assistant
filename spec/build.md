@@ -17,6 +17,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F131-the-large-files-named-in-quality-pass-1-are-split-by-aggregate-findings-4-to-7` (🟠 ACTIVE): the large files named in quality pass 1 are split by aggregate (findings 4 to 7)
 - `F120-e11a-sender-context` (🟠 ACTIVE): The assistant knows who each sender is to the user and suggests rules from it
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟠 ACTIVE): E9b Phone channel (PWA, push, Telegram detail)
@@ -53,7 +54,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F115-e6a-reply-drafts` (🟡 ACTIVE, plan landed and refreshed, 19 stages (03b added), plan base 17b2a369): E6a Reply drafts: mail that needs a reply gets a checked draft that waits for one tap; build after F097, F100, F102, F104, F099 in done/ and F109 stage 04 (stages 01–02 need only F097); stage 03 the only migration; gate G1 second pass after stage 02 (PD-071, PD-072, PD-083); refresh before stage 01 (`scripts/plan-drift.sh`).
 - `F116-e5b-open-loops` (🔴 PLANNED, plan landed, 25 stages, plan base 9531f16a): E5b Open loops: Waiting, Promised and hand-forward loops chased with a follow-up draft; stages 07 and 09 are migrations (one at a time); stages 01–06 need only F097; stage 07+ after F102, F104 in done/; gate G1 (second pass, PD-119, PD-120, PD-122) before stage 25; refresh before stage 01 (`scripts/plan-drift.sh`).
 - `F117-e9a-mailbox-oauth` (🔴 PLANNED, plan landed 2026-11-15, 21 stages; stage 01 spike kit, owner step U1 before stage 02, gate G1 after it): E9a Mailbox OAuth; sequenced after F082, E7-T2; gate Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087).
-- `F118-e9b-phone-channel-pwa-push-telegram-detail` (🔴 PLANNED, plan landed, 14 stages with 08b, cold review done, plan base db85425a): E9b Phone channel: an installable panel (PWA), Web Push with encryption on node:crypto, a push channel next to Telegram, and a `minimal` Telegram detail level; stages 02 and 10 are migrations (one migration at a time, also next to F120 stage 02); risky stages 01, 02, 03, 07, 08, 08b, 09, 10, 11; stages 01 to 05 build now, checkpoint A after stage 05 needs the owner (VAPID keys in the VPS .env, deploy, install on the Android phone) before stage 06; checkpoint B after stage 13; question defaults in questions.md Q1 to Q12; refresh before stage 01 (`scripts/plan-drift.sh`).
+- `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟠 ACTIVE, stage 01 landed + reviewed, stage 02 building, plan landed, 14 stages with 08b, cold review done, plan base db85425a): E9b Phone channel: an installable panel (PWA), Web Push with encryption on node:crypto, a push channel next to Telegram, and a `minimal` Telegram detail level; stages 02 and 10 are migrations (one migration at a time, also next to F120 stage 02); risky stages 01, 02, 03, 07, 08, 08b, 09, 10, 11; stages 01 to 05 build now, checkpoint A after stage 05 needs the owner (VAPID keys in the VPS .env, deploy, install on the Android phone) before stage 06; checkpoint B after stage 13; question defaults in questions.md Q1 to Q12; refresh before stage 01 (`scripts/plan-drift.sh`).
 - `F119-e7-t7-identity-b-oidc` (🔴 PLANNED, plan landed, 16 stages): E7-T7 Identity B (OIDC); members sign in with the company OIDC account; "SSO required" leaves password sign-in only for the break-glass owner; stage 02 the only migration, stage 03 the only `bun.lock` change; sequenced after E7-T2 and E7-T6 (landed); gate: stage 01 spike, then the second pass (PD-040, PD-041); owner step U1 (Entra tenant, Q10) before stage 16.
 - `F120-e11a-sender-context` (🔴 PLANNED, plan landed, 14 stages, cold review done): E11a Sender context: per-sender profiles (keyed hash), a Suggestions card, a sender line in Activity and Approvals, a contact wait for open loops, known domains for the look-alike rule, a classifier-v4 profile line (dev evals first); build after F104 and F110 are in `done/` (stage 13 is the pilot deploy, mine); stage 02 the only migration (one at a time); risky stages 02, 03, 03b, 04, 05, 10, 11, 13; question defaults in questions.md Q1 to Q15; refresh before stage 01 (`scripts/plan-drift.sh`).
 - `F121-e10b-public-pages-and-demo` (🔴 PLANNED, needs plan): E10b Public pages and demo; sequenced after E2b, E3a, E4-B, E7-T4, E8b; gate —.
@@ -84,6 +85,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F133-the-small-duplicates-and-stale-statements-of-quality-pass-1-are-cleaned-findings-9-to-18` (🟢 PROVEN): the small duplicates and stale statements of quality pass 1 are cleaned (findings 9 to 18); landed 2026-11-18
+- `F132-comments-carry-no-bare-ticket-or-decision-codes-quality-pass-1-finding-8` (🟢 PROVEN): comments carry no bare ticket or decision codes (quality pass 1, finding 8); landed 2026-11-18
 - `F130-the-escalation-cascade-code-its-role-and-its-keys-are-removed-from-production-quality-pass-1-finding-2` (🟢 PROVEN): the escalation cascade code, its role and its keys are removed from production (quality pass 1, finding 2); landed 2026-11-18
 - `F112-e10a-docs-site` (🟢 PROVEN): E10a Docs site; landed 2026-11-18
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
@@ -92,5 +94,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F106-e7-t3-account-data-delete-export-dsr` (🟢 PROVEN): E7-T3 Account data (delete, export, DSR); landed 2026-11-15
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟢 PROVEN): E7-T6 Identity A (TOTP, backup codes, break-glass); landed 2026-11-15
 - `F103-e8a-logs` (🟢 PROVEN): E8a Logs; landed 2026-11-15
-- `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
-- 2026-11: 82 landed. spec/features/done/2026-11/
+- 2026-11: 83 landed. spec/features/done/2026-11/

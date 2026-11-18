@@ -35,7 +35,7 @@ export const E2E_TWO_FACTOR_EMAILS: Record<E2eProject, string> = {
 };
 export const e2eTwoFactorOrgName = (project: E2eProject): string => `E2E Two-factor ${project}`;
 
-// F106 stage 11: one organization per project that only the delete spec uses (it deletes the organization). The owner
+// One organization per project that only the delete spec uses (it deletes the organization). The owner
 // and an assistant share the member password. The mailbox address names the width, as the spec asserts it on the login page.
 export const E2E_DELETE_OWNER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-delete-owner-mobile@x.test",
@@ -57,12 +57,12 @@ export const E2E_TRIAL_ORG_NAME = "E2E Trial";
 export const E2E_TRIAL_OWNER_EMAIL = "e2e-trial-owner@x.test";
 export const E2E_PAUSED_ORG_NAME = "E2E Paused";
 export const E2E_PAUSED_OWNER_EMAIL = "e2e-paused-owner@x.test";
-// F102 stage 07: an organization with the flag `stats_page` on, for the Stats page. The main organization stays without the flag
+// An organization with the flag `stats_page` on, for the Stats page. The main organization stays without the flag
 // (auth.spec counts its 4 phone tabs). The page reads only; no spec changes this organization.
 export const E2E_STATS_ORG_NAME = "E2E Stats";
 export const E2E_STATS_OWNER_EMAIL = "e2e-stats-owner@x.test";
 
-// F102 stage 12: one organization per project for the approvals spec (it approves and rejects, so each project needs its own). The
+// One organization per project for the approvals spec (it approves and rejects, so each project needs its own). The
 // flags `approvals_page`, `stats_page` and `mistake_capture` are on. The organization holds a waiting send (draft applied) to the
 // first delegate and a held send to the second one: the e2e server has SEND_SCOPE=self with the first address only, so the first
 // send goes out through the GreenMail of the dev stack after the approval and the second stays held by the scope.
@@ -95,7 +95,7 @@ export const E2E_APPROVALS = {
     body: "E2E original request: please check the vendor contract.",
     task: "Check the vendor contract",
   },
-  // F102 stage 13: a second waiting send to the first delegate, for the edit that is approved (T3 of the approvals spec).
+  // A second waiting send to the first delegate, for the edit that is approved.
   edit: {
     delegateName: "Anna Nowak",
     delegateEmail: E2E_SEND_TEST_ADDRESS,
@@ -122,7 +122,7 @@ export const E2E_APPROVALS = {
     body: "E2E original request: please answer the race case.",
     task: "Answer the race case",
   },
-  // A waiting reminder (no Edit button, Q2).
+  // A waiting reminder (no Edit button).
   reminder: {
     delegateName: "Anna Nowak",
     delegateEmail: E2E_SEND_TEST_ADDRESS,
@@ -137,7 +137,7 @@ export const E2E_APPROVALS_COUNT = 6;
 // How many of them wait for an approval (the nav badge): all but the held one.
 export const E2E_APPROVALS_WAITING = 5;
 
-// F102 stage 17: one organization per project for the delegates spec (it adds, edits and turns delegates off, so each project needs its
+// One organization per project for the delegates spec (it adds, edits and turns delegates off, so each project needs its
 // own). The flag `delegation_pages` is on. It holds one delegate and a mailbox (its address is no delegate); the member is an assistant.
 export const E2E_DELEGATES_OWNER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-delegates-owner-mobile@x.test",
@@ -150,7 +150,7 @@ export const E2E_DELEGATES_MEMBER_EMAILS: Record<E2eProject, string> = {
 export const e2eDelegatesOrgName = (project: E2eProject): string => `E2E Delegates ${project}`;
 export const E2E_DELEGATES_ANNA = { name: "Anna Nowak", email: "anna@example.com", tags: ["finance"] } as const;
 
-// F102 stage 18: one organization per project for the delegations spec (it reminds, closes and cancels, so each project needs its own).
+// One organization per project for the delegations spec (it reminds, closes and cancels, so each project needs its own).
 // The flags `delegation_pages`, `approvals_page` and `stats_page` are on, so the phone tab bar is full. The mailbox is in assist mode with
 // drafts on, which "Remind now" needs. One delegation for each case of the page; the delegates are distinct people.
 export const E2E_DELEGATIONS_OWNER_EMAILS: Record<E2eProject, string> = {
@@ -271,9 +271,9 @@ export interface DelegationsSeedIds {
   draftedSendId: string;
 }
 
-// F116 stage 21: one organization per project for the open loops spec (it drafts, moves, closes and untracks loops, so each project
+// One organization per project for the open loops spec (it drafts, moves, closes and untracks loops, so each project
 // needs its own). The flags `open_loops`, `delegation_pages` and `approvals_page` are on; the mailbox is in assist mode with drafts on.
-// One loop for each kind and state of the page, two delegations for the Delegated tab, and follow-up pairs for the waiting and S11 rows.
+// One loop for each kind and state of the page, two delegations for the Delegated tab, and follow-up pairs for the waiting rows and the rows of the closing-loop test.
 export const E2E_OPEN_LOOPS_OWNER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-open-loops-owner-mobile@x.test",
   desktop: "e2e-open-loops-owner-desktop@x.test",
@@ -302,7 +302,7 @@ export interface E2eLoopPlan {
   pair?: true;
 }
 export const E2E_OPEN_LOOPS = {
-  // Waiting: Draft follow-up (T5) and Later (T6) change them.
+  // Waiting: Draft follow-up and Later change them.
   waitDraft: {
     kind: "waiting",
     counterpart: "nora@client.test",
@@ -356,7 +356,7 @@ export const E2E_OPEN_LOOPS = {
     dueInDays: -4,
     pair: true,
   },
-  // S11 (review 11, TG-4): a follow-up whose loop closes while Edit is open. The first loop closes in the database, the second is dropped.
+  // A follow-up whose loop closes while Edit is open. The first loop closes in the database, the second is dropped.
   s11Closed: {
     kind: "waiting",
     counterpart: "dan@client.test",
@@ -397,7 +397,7 @@ export const E2E_OPEN_LOOPS = {
     dueInDays: -5,
     closed: "replied_subject",
   },
-  // Promised: Done (T7) moves one of them.
+  // Promised: Done moves one of them.
   promDone: {
     kind: "promised",
     counterpart: "pat@client.test",
@@ -427,7 +427,7 @@ export const E2E_OPEN_LOOPS = {
     dueInDays: -9,
     closed: "expired",
   },
-  // Delegated: Untrack with confirm (T8) closes one of them.
+  // Delegated: Untrack with confirm closes one of them.
   delUntrack: {
     kind: "delegated",
     counterpart: E2E_OPEN_LOOPS_DELEGATE.email,
@@ -451,7 +451,7 @@ export const E2E_OPEN_LOOPS = {
     closed: "done",
   },
 } as const satisfies Record<string, E2eLoopPlan>;
-// The two F102 delegations of the Delegated tab (keys of `E2E_DELEGATIONS`).
+// The two delegations of the Delegated tab (keys of `E2E_DELEGATIONS`).
 export const E2E_OPEN_LOOPS_DELEGATIONS = ["sent", "answered"] as const;
 export interface OpenLoopsSeedIds {
   loopIds: Record<keyof typeof E2E_OPEN_LOOPS, string>;
@@ -461,7 +461,7 @@ export interface OpenLoopsSeedIds {
   s11DroppedSendId: string;
 }
 
-// F110 stage 21: one organization per project for the urgency editor spec (it saves and clears profiles, so each project needs its
+// One organization per project for the urgency editor spec (it saves and clears profiles, so each project needs its
 // own). The flag `urgency_editor` is on. Two mailboxes: `seeded` holds a profile with one topic, a deadline of yesterday and one in
 // ten days; `empty` holds none. The two names are the labels of the deadlines the spec looks for.
 export const E2E_URGENCY_OWNER_EMAILS: Record<E2eProject, string> = {
@@ -480,7 +480,7 @@ export const E2E_URGENCY_SEEDED = {
   endedLabel: "Tax filing",
   futureLabel: "Board pack",
 } as const;
-// F110 stage 13: the e2e server pins the classifier setup, so the gate fixture (`apps/web/e2e/gate-fixture/`) matches the running key
+// The e2e server pins the classifier setup, so the gate fixture (`apps/web/e2e/gate-fixture/`) matches the running key
 // whatever a developer's `.env` says. `e2e-gate-fixture.test.ts` checks the fixture against this pin and the production prompt choice.
 export const E2E_LLM_PIN = {
   LLM_PROVIDER: "openai",
@@ -491,7 +491,7 @@ export const E2E_LLM_PIN = {
 } as const;
 export const E2E_GATE_FIXTURE_DIR = "apps/web/e2e/gate-fixture";
 
-// F110 stage 13: one organization per project for the autonomy card spec. The flag `trust_ladder` is on and the server reads the gate
+// One organization per project for the autonomy card spec. The flag `trust_ladder` is on and the server reads the gate
 // fixture folder (`GATE_EVIDENCE_DIR`, see `apps/web/e2e/env.ts`). One mailbox with a done history check and one trip: see `e2e-trust-rows.ts`.
 // The spec turns `spam` on with "Set anyway", so each project needs its own organization.
 export const E2E_TRUST_OWNER_EMAILS: Record<E2eProject, string> = {
@@ -504,14 +504,14 @@ export const E2E_TRUST_MEMBER_EMAILS: Record<E2eProject, string> = {
 };
 export const e2eTrustOrgName = (project: E2eProject): string => `E2E Trust ${project}`;
 export const e2eTrustMailbox = (project: E2eProject): string => `e2e-trust-${project}@e2e.test`;
-// F110 stage 14: three more mailboxes of the same organization for the report page spec, one per state of the page. They are created
+// Three more mailboxes of the same organization for the report page spec, one per state of the page. They are created
 // after the card mailbox, so the Settings page (first mailbox) is unchanged. `done`: a done check, `notification` recommended, `spam`
 // failed, `info` paused, mode shadow. `running`: a check that classifies. `noResult`: a `no_result` check (`no_history`), no trip.
 export const E2E_REPORT_KINDS = ["done", "running", "noResult"] as const;
 export type E2eReportKind = (typeof E2E_REPORT_KINDS)[number];
 export const e2eReportMailbox = (project: E2eProject, kind: E2eReportKind): string =>
   `e2e-report-${kind.toLowerCase()}-${project}@e2e.test`;
-// F110 stage 15: one organization per project for the panel review spec. The flags `panel_review` and `trust_ladder` are on; one mailbox
+// One organization per project for the panel review spec. The flags `panel_review` and `trust_ladder` are on; one mailbox
 // with a done history check (so the report page offers the link) and 12 real mails with a triage result and no label (`e2e-review-rows.ts`).
 // The spec labels mail, so it needs its own organization. No delegate: the category select has no `delegation`.
 export const E2E_REVIEW_OWNER_EMAILS: Record<E2eProject, string> = {
@@ -547,7 +547,7 @@ export function e2eUrgencyProfile(now: Date): {
   };
 }
 
-// F110 stage 23: one organization per project for the newsletters spec. The flag `bulk_unsubscribe` is on; one mailbox with five
+// One organization per project for the newsletters spec. The flag `bulk_unsubscribe` is on; one mailbox with five
 // newsletter senders (see `e2e-newsletter-rows.ts`). The addresses are the identity of the rows. The server of the e2e run trusts the
 // authserv-id `E2E_AUTHSERV_ID` (`MAIL_TRUSTED_AUTHSERV_IDS`), so a `dkim=pass` of that id gives one-click.
 export const E2E_AUTHSERV_ID = "mx.e2e.test";
@@ -576,7 +576,7 @@ export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-activity-desktop@x.test",
 };
 
-// The mails of the activity rows (S5d B12). The Playwright runner imports these; this file imports only `pg`.
+// The mails of the activity rows. The Playwright runner imports these; this file imports only `pg`.
 export const ACTIVITY_SUBJECTS = {
   moved: "E2E moved notification",
   reply: "E2E reply needed",
@@ -586,7 +586,7 @@ export const ACTIVITY_SUBJECTS = {
 export const activityFillerSubject = (n: number): string => `E2E filler ${n}`;
 export const ACTIVITY_FILLERS = 52;
 
-// F116 stage 22: one organization per project for the loops spec (the Delegate action, the loop settings and the new Telegram
+// One organization per project for the loops spec (the Delegate action, the loop settings and the new Telegram
 // terms). The flags `open_loops`, `delegate_button`, `delegation_pages`, `sent_sync` and `approvals_page` are on. The mailbox is in assist mode with
 // drafts on and tracks Sent. One active delegate (Anna Nowak). The owner is linked to Telegram with a consent of an old version.
 export const E2E_LOOPS_OWNER_EMAILS: Record<E2eProject, string> = {
@@ -608,7 +608,7 @@ export const E2E_LOOPS_SUBJECTS = {
   newsletter: "E2E loops newsletter",
 } as const;
 
-// F115 stage 11: one organization per project for the style card spec (it saves a name, a signature and a writing style, and turns the
+// One organization per project for the style card spec (it saves a name, a signature and a writing style, and turns the
 // reply drafts switch on, so each project needs its own). The flag `reply_drafts` is on. Two mailboxes in assist mode: `box` signs in
 // with a password, `oauth` has a provider set (the switch is disabled for it).
 export const E2E_REPLY_STYLE_OWNER_EMAILS: Record<E2eProject, string> = {

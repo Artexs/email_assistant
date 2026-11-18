@@ -60,7 +60,7 @@ export const digestTimesBodySchema = z
 
 export const digestTimesSchema = z.object({ times: z.array(z.string()) });
 
-// DELETE /api/organization (F106 D4): the password of the signed-in owner and the typed organization name.
+// DELETE /api/organization: the password of the signed-in owner and the typed organization name.
 // The name is matched on the server (`orgNameMatches`). Neither value goes to a log line, an error text or an audit row.
 export const orgDeleteRequestSchema = z.object({
   password: z.string().min(1).max(128),

@@ -51,7 +51,7 @@ interface Retry {
   text: string;
 }
 
-// D31, A19: an event reaches the operator at least once. The text holds ids, dates and counts only.
+// An event reaches the operator at least once. The text holds ids, dates and counts only.
 // The dedup is an audit row `operator.notice` with `data.key`, written after a successful send, in the organization of the event.
 export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices {
   const { db, send } = deps;
@@ -174,7 +174,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
     );
   }
 
-  // The catch for a lost `sendLimitReached` call (F099 D10): a crash between the hold commit and the callback.
+  // The catch for a lost `sendLimitReached` call: a crash between the hold commit and the callback.
   // The key is the same, so the dedup makes one text per mailbox per UTC day.
   async function runSendLimits(now: Date): Promise<void> {
     const organizations = await listOrganizations(db);

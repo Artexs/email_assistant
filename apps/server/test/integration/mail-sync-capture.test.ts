@@ -171,7 +171,7 @@ describe("sync stores the capture", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       for (const n of [1, 2, 3]) s.fake.deliver("INBOX", seed(n));
-      // The stage 01 cut keeps this under 320 characters; the CHECK of the table is the second line.
+      // The cut keeps this under 320 characters; the CHECK of the table is the second line.
       const hostile = withCapture(s.fake, (uid, capture) =>
         uid === 1 && capture !== null ? { ...capture, returnPath: "r".repeat(400) } : capture
       );

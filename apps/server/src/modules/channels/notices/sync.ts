@@ -26,7 +26,7 @@ async function detectSync(
   const within = (at: Date) => now.getTime() - at.getTime() <= SYNC_LATE_MS;
   const fresh = mailbox.last_synced_at !== null && within(mailbox.last_synced_at);
   // The mailbox became active again (resume, new password) or is new: give the sync time to run.
-  // After a pause (D4) the sync runs again from the resume: the same grace.
+  // After a pause the sync runs again from the resume: the same grace.
   const grace =
     within(mailbox.status_changed_at) ||
     (mailbox.last_synced_at === null && within(mailbox.created_at)) ||

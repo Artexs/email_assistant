@@ -25,7 +25,7 @@ import { fakeOidcConfig, nextIp, SESSION_COOKIE, ssoSignIn, SSO_TEST_ORIGIN } fr
 
 import { testDb } from "./helpers";
 
-// Stage 10 of spec/features/active/F119-e7-t7-identity-b-oidc: `org:member` add, end sessions, unlink, and the flag warning.
+// `org:member` add, end sessions, unlink, and the flag warning.
 // `runOrgMember` runs in process, the sign-ins run through the production web wiring against the fake IdP.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

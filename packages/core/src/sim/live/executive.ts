@@ -7,7 +7,7 @@ import { addDays, isoWeekday } from "./calendar-days";
 
 // The rules of the scripted executive of the live lab: which button of a Telegram card the executive presses.
 // Pure: the driver reads the fake Telegram and the slot truth, and calls these functions. The executive only
-// approves, rejects (with a reason) and undoes (PD-021). It never relabels and never edits a draft.
+// approves, rejects (with a reason) and undoes. It never relabels and never edits a draft.
 const ZONE = "Europe/Warsaw";
 const MINUTE_MS = 60_000;
 const MIN_DELAY_MIN = 5;
@@ -77,7 +77,7 @@ function decideApproval(card: ExecCard, truth: ExecTruthInfo): ExecAction {
   return press(card, "ar", "reason_not_needed");
 }
 
-// Rules, first match wins: spec/features/active/F113-e2b-live-lab/stages/stage-09-executive-rules.md.
+// Rules, first match wins (`docs/capabilities/live-lab.md`).
 export function executiveDecision(card: ExecCard, truth: ExecTruth, memory: ExecMemory): ExecAction {
   if (truth === null) return UNMAPPED;
   switch (card.kind) {

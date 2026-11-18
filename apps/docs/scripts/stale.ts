@@ -1,4 +1,4 @@
-// `bun run docs:stale [--strict] [--stamp <pl file>]` (plan D7): a Polish page names its English source and the hash of the
+// `bun run docs:stale [--strict] [--stamp <pl file>]`: a Polish page names its English source and the hash of the
 // source body it was written from. A changed source body makes the Polish page stale. A stale page is visible in CI and,
 // with `--strict`, blocks a release when its source is public (the home page and the start pages).
 import { createHash } from "node:crypto";
@@ -87,7 +87,7 @@ export interface StaleOptions {
   polishSet?: readonly string[];
 }
 
-// A source of the public set: the home page and the start pages (F121 adds security and pricing).
+// A source of the public set: the home page and the start pages.
 function isPublicSource(source: string): boolean {
   return source === "index" || source.startsWith("start");
 }

@@ -8,7 +8,7 @@ import {
 
 import type { TextKey } from "../i18n";
 
-// The form state of the urgency card (F110 stage 21). The keywords of a topic are one comma-separated text in the field.
+// The form state of the urgency card. The keywords of a topic are one comma-separated text in the field.
 export interface TopicDraft {
   label: string;
   keywords: string;

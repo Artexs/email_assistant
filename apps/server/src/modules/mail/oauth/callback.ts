@@ -10,14 +10,14 @@ import { parseIdTokenClaims } from "./id-token";
 import { mailOAuthProviders, type MailOAuthProvider } from "./providers";
 import { consumeOAuthState, type OAuthStart } from "./state";
 
-// The check of the provider's redirect (F117 stage 08, D9, D11, D12, D18). The query goes in; a checked grant or one refusal code comes
-// out. No route, no mailbox write and no audit row here: stage 09 adds them. A refusal stores nothing.
-// D18: no code, token, ID token, state, verifier or provider `error_description` reaches a log line, an error or the result of a
+// The check of the provider's redirect. The query goes in; a checked grant or one refusal code comes
+// out. No route, no mailbox write and no audit row here. A refusal stores nothing.
+// No code, token, ID token, state, verifier or provider `error_description` reaches a log line, an error or the result of a
 // refusal. A refusal logs its code only.
 
 const log = createLog("mail");
 
-/** The closed set of codes a callback may end with (D11). Stage 09 adds `connected` and `reconnected`. */
+/** The closed set of codes a callback may end with. A later step adds `connected` and `reconnected`. */
 export type OAuthRefusalCode =
   | "oauth_cancelled"
   | "oauth_state_invalid"
@@ -66,7 +66,7 @@ export interface CallbackInput {
   query: Record<string, string>;
 }
 
-// AADSTS numbers that mean "consent is missing" (stage 06 `CONSENT_AADSTS`).
+// AADSTS numbers that mean "consent is missing" (`CONSENT_AADSTS`).
 const CONSENT_NUMBERS: readonly string[] = ["90094", "90095", "65001"];
 /** An ID token may be up to 5 minutes past its `exp` (clock skew). */
 const EXP_SKEW_MS = 5 * 60_000;

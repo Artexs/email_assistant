@@ -1,4 +1,4 @@
-// F116 stage 10: the lock order of a follow-up (the loop first, then the send). A reply closes the loop while the committer
+// The lock order of a follow-up (the loop first, then the send). A reply closes the loop while the committer
 // sends the approved follow-up. Committed rows on several connections; the organizations and users are deleted at the end.
 import { afterAll, describe, expect, test } from "bun:test";
 

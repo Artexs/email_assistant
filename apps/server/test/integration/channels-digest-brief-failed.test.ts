@@ -1,4 +1,4 @@
-// F116 stage 19 (review 18 N4, N5): a digest that ends `failed` gives its marks back; the day of a late slot is the date of the slot.
+// A digest that ends `failed` gives its marks back; the day of a late slot is the date of the slot.
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 

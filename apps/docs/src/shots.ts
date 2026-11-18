@@ -1,6 +1,6 @@
-// The screenshots of the docs (plan P5, D9, ADR 0030 point 4): CI makes them from the e2e seed (`bun run docs:shots`), nobody adds one by hand.
+// The screenshots of the docs (ADR 0030 point 4): CI makes them from the e2e seed (`bun run docs:shots`), nobody adds one by hand.
 // A page names a screenshot with `<Shot page="settings" />` (`components/Shot.astro`); this file holds the list and the build rules.
-// The panel text of the alt strings is plain: it states what the page of the panel is for, never behaviour behind a default-off flag (plan P2).
+// The panel text of the alt strings is plain: it states what the page of the panel is for, never behaviour behind a default-off flag.
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -138,13 +138,13 @@ export function shotFileExists(name: string, dir: string = shotsDir()): boolean 
 
 // The checks of the shot run (`apps/web/e2e/docs-shots/shots.spec.ts`). Each returns the first problem as text, or null.
 
-// Plan P2: the enabled feature list of the organization (`/api/me` `features`) must be empty, so no shot shows a default-off feature.
+// The enabled feature list of the organization (`/api/me` `features`) must be empty, so no shot shows a default-off feature.
 export function shotFeaturesProblem(features: unknown): string | null {
   if (!Array.isArray(features)) return "shot_features_unknown";
   return features.length === 0 ? null : `shot_features_on ${features.join(",")}`;
 }
 
-// Plan D4: the text of a page, before its shot, passes the public-content check (rules R1 to R7) with `SHOT_TEXT_ALLOW` as the allow list.
+// The text of a page, before its shot, passes the public-content check (rules R1 to R7) with `SHOT_TEXT_ALLOW` as the allow list.
 export function shotTextProblem(text: string, name: string): string | null {
   const [first] = publicContentProblems(
     text,
@@ -153,7 +153,7 @@ export function shotTextProblem(text: string, name: string): string | null {
   return first === undefined ? null : `public_content ${first.rule} ${first.match} in shot ${name}`;
 }
 
-// Stage 11 T4: the folder holds exactly the PNG files of `SHOTS`, each larger than `SHOT_MIN_BYTES`.
+// The folder holds exactly the PNG files of `SHOTS`, each larger than `SHOT_MIN_BYTES`.
 export function shotFilesProblem(dir: string, shots: readonly ShotEntry[] = SHOTS): string | null {
   const files = existsSync(dir) ? readdirSync(dir) : [];
   const wanted = new Set(shots.map((shot) => `${shot.name}.png`));

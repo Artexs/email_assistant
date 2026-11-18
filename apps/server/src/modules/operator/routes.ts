@@ -33,7 +33,7 @@ function operatorOrgIdParam(c: Context<ApiEnv>): string | null {
   return id.success ? id.data : null;
 }
 
-// No app.use("*") here (P1): createApp guards the whole /api/operator prefix with requireOperator.
+// No app.use("*") here: createApp guards the whole /api/operator prefix with requireOperator.
 export function operatorRoutes(deps: OperatorRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
   app.get("/flags", async (c) => c.json({ rows: await featureStatesOfAll(deps.db) } satisfies OperatorFlags));
@@ -50,7 +50,7 @@ export function operatorRoutes(deps: OperatorRouteDeps): Hono<ApiEnv> {
     const { days } = parseQuery(c, operatorNoticesQuerySchema);
     return c.json((await listOperatorNotices(deps, days)) satisfies OperatorNotices);
   });
-  // Writes (D20): the operator's user id is the actor; the audit rows go into the target organization.
+  // Writes: the operator's user id is the actor; the audit rows go into the target organization.
   app.post("/orgs/:orgId/plan", async (c) => {
     const id = operatorOrgIdParam(c);
     if (id === null) return c.json({ error: "not_found" }, 404);

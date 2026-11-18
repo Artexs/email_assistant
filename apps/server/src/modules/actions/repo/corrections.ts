@@ -1,4 +1,4 @@
-// The reader of the user's corrections of moves (F110 stage 09: the tripwire). One query per organization; the rows hold ids,
+// The reader of the user's corrections of moves (the tripwire). One query per organization; the rows hold ids,
 // a category and times only: no subject, no address and no text.
 import { categorySchema, movingCategories, type Category, type MovingCategory } from "@ea/core";
 import { sql } from "kysely";

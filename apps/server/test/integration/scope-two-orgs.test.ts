@@ -39,7 +39,7 @@ import type { LlmClient } from "../../src/platform/llm";
 import { createOrgWithMailbox, insertDraftAndSend, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F077 stage 2 (D2 end to end): two organizations under scope `all`. The mode, the `auto` flags, the switches and the
+// Two organizations under scope `all`. The mode, the `auto` flags, the switches and the
 // tap of each mailbox stay the consent; no gate reads a mailbox address.
 
 const db = testDb();

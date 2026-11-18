@@ -164,6 +164,9 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "bulk_unsubscribe", enabled: false },
       { orgId: org.orgId, flag: "reply_drafts", enabled: false },
       { orgId: org.orgId, flag: "draft_copy_check", enabled: false },
+      { orgId: org.orgId, flag: "sender_context", enabled: false },
+      { orgId: org.orgId, flag: "contact_wait", enabled: false },
+      { orgId: org.orgId, flag: "sender_suggestions", enabled: false },
     ]);
     expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual(featureKeys.map(() => false));
     for (const row of [...rowsOf(body, org.orgId), ...rowsOf(body, org.otherOrgId)]) {
@@ -252,7 +255,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     }
   });
 
-  // F099 stage 09: the same rule for the write routes, with the path forms of /orgs/:orgId/plan and /flags.
+  // The same rule for the write routes, with the path forms of /orgs/:orgId/plan and /flags.
   test("7c. path forms of the POST routes: a non-operator always gets 404, no session 401, no row written", async () => {
     const app = operatorApp();
     const id = org.orgId;

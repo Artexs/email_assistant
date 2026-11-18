@@ -10,8 +10,8 @@ export interface SignatureCardProps {
   mailboxes: readonly MailboxView[];
 }
 
-// The signature of the organization, read-only since F115 stage 11: each mailbox has its own signature (the style card). The old text
-// still stands in for a mailbox with no signature of its own, until E6b drops it. The panel calls no write of it any more.
+// The signature of the organization, read-only since the reply drafts: each mailbox has its own signature (the style card). The old text
+// still stands in for a mailbox with no signature of its own, until a later step drops it. The panel calls no write of it any more.
 export function SignatureCard({ organization, mailboxes }: SignatureCardProps) {
   const old = organization.styleText?.trim() ?? "";
   return (

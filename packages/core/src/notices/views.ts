@@ -88,10 +88,10 @@ const loopIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 const digestView = z.strictObject({
   text: z.string().min(1).max(MESSAGE_MAX_CHARS),
   buttons: outButtonsSchema,
-  // The loops that the brief lines of this digest name (F116 stage 18): ids only. They let the switch-off of Sent tracking and the
+  // The loops that the brief lines of this digest name: ids only. They let the switch-off of Sent tracking and the
   // erase of a person find the stored copy of a loop line. Absent: no loop line.
   loopIds: z.array(z.string().regex(loopIdPattern)).max(40).optional(),
-  // The line number of each loop or delegation that a brief line names (F116 stage 19): the tap on its buttons edits that line.
+  // The line number of each loop or delegation that a brief line names: the tap on its buttons edits that line.
   // Numbers only, no text. Absent: no loop line.
   lineOf: z.record(z.string().regex(loopIdPattern), z.number().int().min(0).max(200)).optional(),
 });
@@ -121,15 +121,15 @@ const urgentView = z.strictObject({
   actions: z.array(wouldDoActionSchema),
   delegateNames: z.record(z.string(), z.string()),
   stayFolder: text,
-  // Optional on read: a view queued before F109 has no field.
+  // Optional on read: a view queued earlier has no field.
   suspicious: z.array(z.enum(suspiciousReasons)).optional(),
-  // Optional on read, written only when the flag `attachment_line` is on and the mail has an attachment to show (F109 stage 06).
+  // Optional on read, written only when the flag `attachment_line` is on and the mail has an attachment to show.
   attachments: attachmentFactSchema.optional(),
-  // Optional on read, written only when the flag `why_lines` is on (F110 stage 16): the model confidence (null: no model mark)
+  // Optional on read, written only when the flag `why_lines` is on: the model confidence (null: no model mark)
   // and the sender rule that shaped the result.
   confidence: z.number().min(0).max(1).nullable().optional(),
   rule: z.enum(senderRuleKinds).nullable().optional(),
-  // Optional on read, written (true) only when the Delegate button shows (F116 stage 19): the flag `delegate_button` is on, the
+  // Optional on read, written (true) only when the Delegate button shows: the flag `delegate_button` is on, the
   // organization has an active delegate and the mailbox is in `assist` with drafts on. A view without it renders as before.
   delegable: z.literal(true).optional(),
   now: isoDate,
@@ -139,7 +139,7 @@ const urgentView = z.strictObject({
 const authErrorView = z.strictObject({
   address: text,
   mailboxId: id,
-  // Optional on read: a view queued before F117 has no field. Set for an OAuth mailbox only.
+  // Optional on read: a view queued earlier has no field. Set for an OAuth mailbox only.
   oauth: z
     .strictObject({ provider: z.enum(mailOAuthProviderKeys), reason: z.enum(authErrorReasons).nullable() })
     .optional(),
@@ -226,7 +226,7 @@ const delegationAnsweredView = z.strictObject({
   synthetic: z.boolean(),
 });
 
-// Optional on read: a row queued before F117 has no field (it renders the password text). Set at queue time: the mailbox row is gone
+// Optional on read: a row queued earlier has no field (it renders the password text). Set at queue time: the mailbox row is gone
 // when the notice renders. `revoked`: the Google revoke call went through (true) or not (false); null when no call was made.
 const mailboxRemovedView = z.strictObject({
   access: z.strictObject({ page: z.enum(removeAccessPages), revoked: z.boolean().nullable() }).optional(),
@@ -245,7 +245,7 @@ const sendHeldView = z.strictObject({
   panelUrl: panelUrlSchema.optional(),
 });
 
-// The numbers of one week (all mailboxes) and the count of replied mails that wait for a check (D23).
+// The numbers of one week (all mailboxes) and the count of replied mails that wait for a check.
 const weeklyReportView = z.strictObject({
   week: weekStatsSchema,
   timeZone,
@@ -260,7 +260,7 @@ const hostBlockedView = z.strictObject({
   timeZone,
 });
 
-// The edit of a card that an owner got (F102 stage 06): the input of `renderNoticeEdit`. The sender edits the sent message
+// The edit of a card that an owner got: the input of `renderNoticeEdit`. The sender edits the sent message
 // and sends no new one. EXCEPTION to "a view holds no phrase of ours" (docs/code-patterns.md, Notices are facts): `original`
 // is the stored text of the target card (`outbox.text`), as the edit after a tap uses it ("the edit after a tap keeps the
 // stored text"), so it holds our own phrases and mail text, up to one message. It follows the retention of `outbox.text`.
@@ -274,15 +274,15 @@ const approvalEditView = z.strictObject({
   actionId: id.optional(),
 });
 
-// Mail of a VIP or whitelisted sender waits while the AI is paused (F109 stage 15, D17). The sender address only: no
-// subject, display name, body or summary (PD-067). The text of the notice is a fixed phrase of ours.
+// Mail of a VIP or whitelisted sender waits while the AI is paused. The sender address only: no
+// subject, display name, body or summary. The text of the notice is a fixed phrase of ours.
 const notTriagedView = z.strictObject({
   emailId: id,
   mailboxId: id,
   sender: text,
 });
 
-// The mailbox has shown no sent mail for a long time (F104). The view holds the mailbox address and the start of the
+// The mailbox has shown no sent mail for a long time. The view holds the mailbox address and the start of the
 // quiet period only: no subject, no recipient.
 const sentMissingView = z.strictObject({
   address: text,
@@ -291,17 +291,17 @@ const sentMissingView = z.strictObject({
   timeZone,
 });
 
-// One line for an owner whose consent does not cover open-loop data (F116 stage 11): it replaces a follow-up card
+// One line for an owner whose consent does not cover open-loop data: it replaces a follow-up card
 // (`approval`) or a follow-up result (`result`). No recipient, no text, no id of a loop.
 const loopConsentView = z.strictObject({
   about: z.enum(["approval", "result"]),
   panelUrl: panelUrlSchema.optional(),
 });
 
-// Reply drafts (F115 stage 03; the review stages replace these views). `replies_ready`: a count and the queue time.
+// Reply drafts (the review stages replace these views). `replies_ready`: a count and the queue time.
 // `reply_prompt` and `reply_result` name the mail only by id, as the outbox row does; `reason` is a lower-case code
 // (a reply block reason or a request status), never a text.
-// Stage 12: `review` is true for an owner whose Telegram consent covers reply data (the Review button); false: the count, the consent line
+// `review` is true for an owner whose Telegram consent covers reply data (the Review button); false: the count, the consent line
 // and the panel link only. `panelUrl`: the approvals page, when `WEB_BASE_URL` is set and the flag `approvals_page` is on.
 const repliesReadyView = z.strictObject({
   count: z.number().int().min(1),
@@ -313,11 +313,11 @@ const repliesReadyView = z.strictObject({
 const replyPromptView = z.strictObject({ emailId: id });
 const replyResultView = z.strictObject({ emailId: id, reason: z.string().regex(/^[a-z_]{1,40}$/) });
 
-// The history check of a mailbox is ready (F110 stage 10, D15). Counts and category names only: no address, sender, subject or domain.
+// The history check of a mailbox is ready. Counts and category names only: no address, sender, subject or domain.
 // `blocked`: the moving categories that the evidence does not support (a count; the Telegram text prints no number for it).
 // `reportUrl`: `<WEB_BASE_URL>/report?mailbox=<id>`, null when `WEB_BASE_URL` is not set.
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-// The link of a trust notice is the panel page and nothing else (F110 stage 10 review, D15): http or https, no user info
+// The link of a trust notice is the panel page and nothing else: http or https, no user info
 // (`https://app.test@evil.test/` has the host evil.test), no control, format or bidi character, a fixed path, and no query
 // but the mailbox id. An address, a subject or a name cannot ride in the link.
 const trustUrl = (path: string, mailbox: "required" | "none") =>
@@ -349,7 +349,7 @@ const trustReportReadyView = z
   })
   .refine((view) => view.reportUrl === null || view.reportUrl.endsWith(`?mailbox=${view.mailboxId}`));
 
-// A category lost its `auto` (F110 stage 10, D15). The category and a fixed reason only: no mail data. `corrections` is the count
+// A category lost its `auto`. The category and a fixed reason only: no mail data. `corrections` is the count
 // that the `corrections` reason prints. `settingsUrl`: `<WEB_BASE_URL>/settings`, null when `WEB_BASE_URL` is not set.
 const autonomyPausedView = z.strictObject({
   mailboxId: z.string().regex(uuidPattern),

@@ -308,7 +308,7 @@ describe("the nav badge", () => {
     onLogOut: () => undefined,
   };
 
-  // T2: the text of the badge for 0, 1 and 100, and the name that a screen reader reads.
+  // The text of the badge for 0, 1 and 100, and the name that a screen reader reads.
   test("hidden at 0, the number for 1, 99+ above 99; the screen reader text names the count", () => {
     const at = (count: number) => renderToStaticMarkup(<Sidebar {...nav} approvalsWaiting={count} />);
     expect(at(0)).not.toContain("waiting");

@@ -1,4 +1,4 @@
-// Helpers of the tests of the answered pass and the sweep (F115 stage 09). The mail client of a test is a second IMAP connection of the
+// Helpers of the tests of the answered pass and the sweep. The mail client of a test is a second IMAP connection of the
 // same GreenMail user; the user's own reply is an APPEND to the Sent folder.
 import { randomUUID } from "node:crypto";
 

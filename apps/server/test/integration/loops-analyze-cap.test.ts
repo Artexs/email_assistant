@@ -23,7 +23,7 @@ import { ago, HOUR, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
 const MIN = 60_000;
 
-// The cap, the retries and the logs of the Sent analysis (F116 stage 12, step 2).
+// The cap, the retries and the logs of the Sent analysis (step 2).
 const db = testDb();
 
 afterAll(async () => {

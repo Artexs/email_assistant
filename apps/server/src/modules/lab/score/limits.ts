@@ -11,7 +11,7 @@ export interface LimitsSection {
   // `action.send_limited` audit rows of the run mailbox in the run window, by limit kind.
   hits: Record<SendLimitKind, number>;
   total: number;
-  // Sends of the run mailbox that wait on a send limit when the report is scored (PD-068).
+  // Sends of the run mailbox that wait on a send limit when the report is scored.
   heldAtEnd: number;
 }
 

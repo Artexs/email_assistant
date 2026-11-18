@@ -1,4 +1,4 @@
-// F116 stage 18: the lines of the brief as they come from the database (🔴 ✍️ ⏳ 🤝), in both languages, shadow mode and the panel link.
+// The lines of the brief as they come from the database (🔴 ✍️ ⏳ 🤝), in both languages, shadow mode and the panel link.
 import { randomUUID } from "node:crypto";
 
 import { afterAll, describe, expect, test } from "bun:test";

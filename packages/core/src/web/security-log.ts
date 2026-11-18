@@ -3,7 +3,7 @@ import { z } from "./zod";
 // The web imports core only through @ea/core/web, so the kinds are re-exported here.
 export { securityEventKinds, type SecurityEventKind } from "../security-log";
 
-// GET /api/security-log (F099 D26, D27): no IP, no e-mail address, no user id.
+// GET /api/security-log: no IP, no e-mail address, no user id.
 export const securityLogActorSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("member"), name: z.string() }),
   z.strictObject({ kind: z.literal("former_member") }),

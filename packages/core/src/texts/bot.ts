@@ -9,7 +9,7 @@ export type BotCommandName = (typeof botCommandNames)[number];
 type TriageScopeKind = "off" | "synthetic" | "all";
 type SendScopeKind = "off" | "self" | "all";
 
-// Every direct reply of the bot (F098 D12): the help, the link replies, /status, /pause and /resume, and the tap answers.
+// Every direct reply of the bot: the help, the link replies, /status, /pause and /resume, and the tap answers.
 // One entry per sentence. A function holds the values of the text. A name or an address never gets a case ending.
 export interface BotTexts {
   help: string; // the command list, with the /review line
@@ -20,7 +20,7 @@ export interface BotTexts {
   error: string;
   // `operatorContact` null = "the operator".
   accountPaused: (operatorContact: string | null) => string;
-  // The entries of the Telegram command menu (F098 D20).
+  // The entries of the Telegram command menu.
   commands: Record<BotCommandName, string>;
   status: {
     title: (day: string, time: string) => string;

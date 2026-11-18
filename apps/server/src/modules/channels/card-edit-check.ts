@@ -35,7 +35,7 @@ function sendHas(
   }
 }
 
-// The checks of one `approval_edit` row before the sender calls `channel.edit` (F102 card sync):
+// The checks of one `approval_edit` row before the sender calls `channel.edit`:
 //   no card to edit (not sent, no message id, text removed by retention, another user's card) → `no_target`
 //     (an edit whose original is our fixed text for a removed follow-up card needs no text of the card: the switch off blanked it)
 //   the send has another outcome now, or a newer edit of the card went out                       → `stale_edit`

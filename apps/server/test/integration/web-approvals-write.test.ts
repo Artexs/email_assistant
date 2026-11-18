@@ -16,7 +16,7 @@ import { testDb } from "./helpers";
 import { approvalKit, bodyOf, HOUR, NOW, post, ROUTES } from "./web-approvals-kit";
 import { TEST_ORIGIN } from "./web-helpers";
 
-// F102 ticket, approvals write API: approve, reject and edit from the panel. Owner only; the rules of the service (stage 08); the Telegram cards follow.
+// Approvals write API: approve, reject and edit from the panel. Owner only; the rules of the service; the Telegram cards follow.
 const db = testDb();
 const { cleanup, inTrx, setup, addSend, insertDelegateNow, send, auditOf, editRows, sendCount } = approvalKit(db);
 
@@ -104,7 +104,7 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     expect(res.status).toBe(409);
     expect(approvalConflictSchema.parse(await res.json())).toEqual({ error: "closed", state: "expired" });
     expect(await send(id)).toMatchObject({ status: "expired", status_reason: "timeout" });
-    // F102 stage 18: the panel has no card of its own, so both owners' cards lose their buttons (review 9 N3, review 15 N1).
+    // The panel has no card of its own, so both owners' cards lose their buttons.
     const rows = await editRows(s.org.orgId);
     expect(rows.map((row) => row.user_id).sort()).toEqual([s.org.ownerId, s.u2].sort());
     expect(rows.every((row) => row.status === "pending" && row.dedup_key.endsWith(":expired"))).toBe(true);

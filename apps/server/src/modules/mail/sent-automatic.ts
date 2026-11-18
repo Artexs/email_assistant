@@ -8,7 +8,7 @@ import type { DbOrTrx } from "./repo/shared";
 import { normalizeMessageId } from "./sync-rules";
 
 // The header step of the Sent read stores no `Auto-Submitted` (only the text step does, later, for mail inside the text window). A reply
-// pass that must not treat a vacation reply as an answer (F115 stage 09, review N4) reads that one header for the Sent rows that would
+// pass that must not treat a vacation reply as an answer reads that one header for the Sent rows that would
 // count as an answer to `emailId` and are still unread (`content = 'pending'`, `auto_submitted` null): the same rows and recipient rule as
 // `listUserAnswers`. It reads each mail once (UID, Message-ID check, then the capture), and stores the header only when the mail IS automatic;
 // `listUserAnswers` then skips the row. Reads only on the mailbox. An error goes up; the caller decides what a failed read means.

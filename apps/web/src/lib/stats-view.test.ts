@@ -9,7 +9,7 @@ afterEach(() => setLocaleForTest("en"));
 
 const MAILBOX = "00000000-0000-4000-8000-0000000000aa";
 const OTHER_MAILBOX = "00000000-0000-4000-8000-0000000000bb";
-// The three evidence keys of F110 stage 12: null with the flag `trust_ladder` off. The page does not show them yet.
+// The three evidence keys: null with the flag `trust_ladder` off. The page does not show them yet.
 const NO_TRUST = { global: null, history: null, trip: null } as const;
 
 function week(patch: Partial<WeekStats> = {}): WeekStats {

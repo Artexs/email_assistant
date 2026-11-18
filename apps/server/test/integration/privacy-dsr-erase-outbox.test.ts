@@ -18,7 +18,7 @@ import { createDb, type DB } from "../../src/platform/db";
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F106 stage 09: the erase blanks stored digests and approval sets that can list the erased mail. The seed is committed
+// The erase blanks stored digests and approval sets that can list the erased mail. The seed is committed
 // (the erase runs its own transaction); `afterEach` removes it. The connection is the `app` role.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
@@ -49,7 +49,7 @@ interface World {
   orgId: string;
   userId: string;
   mailboxId: string;
-  goneMail: string; // from the person; created at T0
+  goneMail: string; // from the person; created at the start
   keptMail: string; // from someone else
   t0: Date;
   rows: Record<string, string>; // name → outbox id

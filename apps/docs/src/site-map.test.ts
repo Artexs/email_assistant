@@ -33,7 +33,7 @@ function sourcePageIds(
   return [...files(contentDir).map((file) => sourcePageId(contentDir, file)), ...inPlace.map((page) => page.id)].sort();
 }
 
-// Each content stage adds its ids here (stage 07: the tutorial and the FAQ; stage 08: the how-to guides; stage 10: the `pl/` pages).
+// Each content group adds its ids here (the tutorial and the FAQ, the how-to guides, the `pl/` pages).
 const EXPECTED_PAGE_IDS = [
   "changelog",
   "explanation/how-a-mail-is-sorted",

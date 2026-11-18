@@ -53,21 +53,21 @@ export interface DigestItem {
   undoable: boolean;
   // Set only while the flag `suspicious_mail` is on. Absent reads as none.
   suspicious?: readonly SuspiciousReason[];
-  // Set only while the flag `attachment_line` is on and the mail has an attachment to show (F109 stage 06).
+  // Set only while the flag `attachment_line` is on and the mail has an attachment to show.
   attachments?: AttachmentLineInput;
   // A draft exists or is planned for the mail (an original `create_draft` action). A flagged delegation shows "no draft" only without one.
   hasDraft?: boolean;
-  // The Delegate button shows on this row (F116 stage 19): flag `delegate_button` on, an active delegate, the mailbox in `assist`
+  // The Delegate button shows on this row: flag `delegate_button` on, an active delegate, the mailbox in `assist`
   // with drafts on, a category of the action section and no suspicion. Set by the reader; absent reads as no button.
   delegable?: boolean;
-  // Set only while the flag `why_lines` is on (F110 stage 16). Absent reads as no mark: the item renders as before.
+  // Set only while the flag `why_lines` is on. Absent reads as no mark: the item renders as before.
   confidence?: number | null;
   rule?: SenderRuleKind | null;
 }
 
-// The spam review line (F110 stage 17, flag `spam_review_line`): counts of mails that went to the spam folder since the last digest.
+// The spam review line (flag `spam_review_line`): counts of mails that went to the spam folder since the last digest.
 // `moved`: applied moves. `wouldMove`: logged moves of a shadow mailbox. `url`: the filtered Activity list; null: the panel text.
-// Counts and a fixed URL only (D15). Absent: no line.
+// Counts and a fixed URL only. Absent: no line.
 export interface DigestSpamReview {
   moved: number;
   wouldMove: number;
@@ -81,13 +81,13 @@ export interface DigestHandled {
   shadowOnly: boolean;
 }
 
-// The open-loops part of a digest (F116 stage 18). Absent: today's digest, byte for byte.
+// The open-loops part of a digest. Absent: today's digest, byte for byte.
 export interface DigestBrief {
   // The first digest of the local day: the "needs you today" block. Null: a later digest.
   sections: BriefSections | null;
-  // `loopConsentOf` of the member: false gives no loop button (D17, review 17 N5). The sections already hold counts only then.
+  // `loopConsentOf` of the member: false gives no loop button. The sections already hold counts only then.
   loopConsent: boolean;
-  // The member is an owner: Draft, Drop and Reopen are owner only, so a member's keyboard has none of them (review 19 N3).
+  // The member is an owner: Draft, Drop and Reopen are owner only, so a member's keyboard has none of them.
   owner: boolean;
   // The mails that the 🔴 lines show: they leave the normal list.
   urgentEmailIds: readonly string[];
@@ -111,11 +111,11 @@ export interface DigestInput {
   skippedBacklog: number;
   waiting: number;
   delegations?: { open: number; overdue: number };
-  // The reply drafts that wait for a review (F115 stage 12): one footer line with the count, no button. 0 or absent: no line.
+  // The reply drafts that wait for a review: one footer line with the count, no button. 0 or absent: no line.
   repliesReady?: number;
-  // The LLM pause (F100 stage 07, flag `llm_pause_line`). Set: its line is the first line of the footer.
+  // The LLM pause (flag `llm_pause_line`). Set: its line is the first line of the footer.
   llmPause?: LlmPause;
-  // The handled share of the last 7 days (D24): set only while `handled_share` is on.
+  // The handled share of the last 7 days: set only while `handled_share` is on.
   handled?: DigestHandled;
   spamReview?: DigestSpamReview;
   brief?: DigestBrief;
@@ -275,7 +275,7 @@ function renderListed(
   if (input.skippedTooOld > 0) footer.push(texts.digest.notProcessedOld(input.skippedTooOld));
   if (input.skippedBacklog > 0) footer.push(texts.digest.notProcessedBacklog(input.skippedBacklog));
   if (input.waiting > 0) footer.push(texts.digest.waiting(input.waiting));
-  // The footer line of the delegations goes only when a ⏳ line of the first digest of the day names a delegation (D16, review 18 N3):
+  // The footer line of the delegations goes only when a ⏳ line of the first digest of the day names a delegation:
   // else a delegation due later, or a member without consent, would see no delegation at all.
   const delegationShown = input.brief?.sections?.waiting.lines.some((line) => "delegation" in line) === true;
   if (!delegationShown && input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
@@ -349,7 +349,7 @@ export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): Ren
     input.maxLines ?? DIGEST_MAX_LINES
   );
   let sections = input.brief?.sections ?? null;
-  // The spam review lines go before any item row when the text is too long (F110 stage 17).
+  // The spam review lines go before any item row when the text is too long.
   let withSpamReview = true;
   for (;;) {
     const { message, lineOf } = renderListed(input, listed, sections, texts, withSpamReview);

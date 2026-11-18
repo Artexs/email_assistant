@@ -26,7 +26,7 @@ export interface FakeTelegram {
   stop(): Promise<void>;
 }
 
-// The union of the fields of the 7 methods; the Bot API is not validated in stage 1.
+// The union of the fields of the 7 methods; the Bot API is not validated.
 interface Payload {
   chat_id?: number | string;
   message_id?: number;

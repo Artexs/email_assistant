@@ -94,7 +94,7 @@ async function main(): Promise<number> {
     return 1;
   }
   configureMailHosts({ allowLocal: mailAllowLocalFromEnv(process.env) });
-  // Read here, not through loadConfig: the probe needs no DB and no other key (the config key comes in S4 stage 18).
+  // Read here, not through loadConfig: the probe needs no DB and no other key (the config key is read by the server only).
   assertTestAddress(options.address, process.env.TEST_MAILBOX_ADDRESS);
   if (!isAllowedRecipient(options.to, options.address, process.env.SEND_TEST_ADDRESSES)) {
     out.fail("refused: --to is not a test address");

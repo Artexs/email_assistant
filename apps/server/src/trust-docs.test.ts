@@ -4,8 +4,8 @@ import path from "node:path";
 import { featureFlags } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-// The trust-ladder docs name what the code has: every flag of epic E4-B, every job `trust.*` and `channels.report_mail` that
-// `main.ts` schedules, the three migrations of the trust-ladder ticket, the limits that stage 24 left for the docs, and the accepted ADRs. A new
+// The trust-ladder docs name what the code has: every flag of the trust ladder, every job `trust.*` and `channels.report_mail` that
+// `main.ts` schedules, the three migrations of the trust-ladder ticket, the limits that the last step left for the docs, and the accepted ADRs. A new
 // flag or job that nobody wrote down fails here (same idea as `open-loops-docs.test.ts`).
 const ROOT = path.resolve(import.meta.dir, "../../..");
 const read = (file: string): string => readFileSync(path.join(ROOT, file), "utf8");

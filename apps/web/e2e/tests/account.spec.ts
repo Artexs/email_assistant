@@ -31,7 +31,7 @@ test("an assistant sees the settings read-only", async ({ page }) => {
   await expect(page.getByText(en.set_no_mailbox)).toBeVisible();
   await expect(page.getByText(en.set_owner_only)).toBeVisible();
   await expect(page.getByRole("button", { name: en.mode_to_assist })).toHaveCount(0);
-  // The organization signature is read-only for everyone since F115 stage 11: no field, no Save.
+  // The organization signature is read-only for everyone since the reply drafts: no field, no Save.
   await expect(page.locator("[data-card=signature]").getByText(en.rs_org_note)).toBeVisible();
   await expect(page.locator("[data-card=signature]").getByRole("textbox")).toHaveCount(0);
   await expect(page.locator("[data-card=signature]").getByRole("button", { name: en.save })).toHaveCount(0);

@@ -10,7 +10,7 @@ import type { TextKey } from "../i18n";
 import { api as realApi, ApiError } from "./api";
 import { errorText } from "./errors";
 
-// The panel side of the mailbox OAuth sign-in (F117 stage 16): which buttons the connect dialog shows, what a tap does,
+// The panel side of the mailbox OAuth sign-in: which buttons the connect dialog shows, what a tap does,
 // and the banner after the redirect back to `/mailboxes?oauth=<code>`.
 
 type Api = typeof realApi;
@@ -90,7 +90,7 @@ export interface OAuthBanner {
   text: TextKey;
 }
 
-// `mailbox_exists` and `mailbox_limit` reuse the texts of the password connect. `admin_consent_required` shows `oauth_err_admin` (stage 17 adds the approval link).
+// `mailbox_exists` and `mailbox_limit` reuse the texts of the password connect. `admin_consent_required` shows `oauth_err_admin`.
 const resultTexts = {
   connected: { tone: "success", text: "oauth_ok_connected" },
   reconnected: { tone: "success", text: "oauth_ok_reconnected" },

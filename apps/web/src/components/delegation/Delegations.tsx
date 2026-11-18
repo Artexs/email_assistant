@@ -58,7 +58,7 @@ function Loading() {
 type FocusTarget = "row" | "status";
 
 export interface DelegationsProps {
-  // On the "Open loops" page the header links and the tabs belong to the page (stage 21): this list shows only its own part.
+  // On the "Open loops" page the header links and the tabs belong to the page: this list shows only its own part.
   embedded?: boolean;
   // What the page shows under the list, given the filter that the list has now (the tracked loops of the Delegated tab).
   below?: (filter: DelegationFilter) => ReactNode;

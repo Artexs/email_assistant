@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { SHOTS } from "../src/shots";
 
-// Stage 11, T2 and T3 on the real build: one fixture page uses <Shot> (a test fixture, not a real page). Each case runs the docs build into a
+// On the real build: one fixture page uses <Shot> (a test fixture, not a real page). Each case runs the docs build into a
 // folder of its own (on the device of the build, not /tmp: Astro renames files into it), so `dist` stays as it was. The fixture file is in `src/content/docs` for the time of the tests and is removed after.
 const DOCS = join(import.meta.dir, "..");
 // Ignored by git (`.gitignore`).
@@ -12,7 +12,7 @@ const WORK_ROOT = join(DOCS, "dist-shots-test");
 const PUBLIC_SHOTS = join(DOCS, "public/shots");
 const created: string[] = [];
 const FIXTURE = join(DOCS, "src/content/docs/zz-shot-fixture.mdx");
-// With `DOCS_SHOTS=on` every page with a `<Shot />` line needs its files, also the real pages of the tutorial and the guides (stage 12), and the
+// With `DOCS_SHOTS=on` every page with a `<Shot />` line needs its files, also the real pages of the tutorial and the guides, and the
 // Polish fallback of the fixture page needs the Polish ones: a build test that checks one page therefore starts from all 20 files of `SHOTS`.
 // One docs build takes 4 to 15 seconds.
 setDefaultTimeout(60_000);

@@ -13,7 +13,7 @@ import { startFakeOidc, type FakeOidc } from "../fake-oidc";
 
 import { testDb } from "./helpers";
 
-// Stage 08 of spec/features/active/F119-e7-t7-identity-b-oidc: `org:sso` show, set and remove. `runOrgSso` runs in process,
+// `org:sso` show, set and remove. `runOrgSso` runs in process,
 // against the fake IdP. The real entry runs as a child process for the usage and the stream checks.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

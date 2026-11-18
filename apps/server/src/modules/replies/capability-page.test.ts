@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 // The capability page of the drafts names the two cases where the cost of a model call is not in the cap count, and the rule that
-// the generic approval notice skips a reply send (F115 stage 07 review, N1 and N4). A page that loses these lines is a test failure.
+// the generic approval notice skips a reply send. A page that loses these lines is a test failure.
 const page = readFileSync(join(import.meta.dir, "../../../../../docs/capabilities/drafts-and-send.md"), "utf8");
 
 describe("docs/capabilities/drafts-and-send.md, the drafter job", () => {

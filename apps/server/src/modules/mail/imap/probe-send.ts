@@ -1,4 +1,4 @@
-// Write probe for the S4 send rules: one synthetic mail through the draft, SMTP, Sent and INBOX paths. Test address only.
+// Write probe for the send rules: one synthetic mail through the draft, SMTP, Sent and INBOX paths. Test address only.
 import { DAY_MS } from "@ea/core";
 import type { FetchMessageObject, FetchQueryObject, ImapFlow } from "imapflow";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
@@ -448,7 +448,7 @@ async function runInbox(ctx: Ctx, opts: { timeoutMs: number; pollMs: number }, f
   if (hit.uid === null) return;
   const uid = hit.uid;
   ctx.step = "delete INBOX mail";
-  // The INBOX expunge rule (S3): delete only when no other mail of the user is marked \Deleted.
+  // The INBOX expunge rule: delete only when no other mail of the user is marked \Deleted.
   const others = (
     await inFolder(client, INBOX_PATH, async () => {
       const marked = await client.search({ deleted: true }, { uid: true });
@@ -465,7 +465,7 @@ async function runInbox(ctx: Ctx, opts: { timeoutMs: number; pollMs: number }, f
 }
 
 /**
- * Performs every IMAP and SMTP write that S4 uses on one synthetic mail and reports facts only.
+ * Performs every IMAP and SMTP write that the send rules use on one synthetic mail and reports facts only.
  * Every write names one UID; the only EXPUNGE is `UID EXPUNGE <uid>`. An error after the first APPEND names what to
  * delete by hand. The caller checks that the address is the test mailbox and `to` is allowed.
  */

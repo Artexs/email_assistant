@@ -8,8 +8,7 @@ import { sendIdOfCardKey } from "./review-keys";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-// The dedup key of an approval card of one send: `approval:<id>` (the detector) or `approval:<id>:r<n>` (a review card of a reply, F115
-// stage 12). A send id is a UUID, so the LIKE pattern has no wildcard of its own.
+// The dedup key of an approval card of one send: `approval:<id>` (the detector) or `approval:<id>:r<n>` (a review card of a reply). A send id is a UUID, so the LIKE pattern has no wildcard of its own.
 function cardKeyOfSend(sendId: string) {
   return sql<boolean>`(dedup_key = ${`approval:${sendId}`} or dedup_key like ${`approval:${sendId}:r%`})`;
 }
@@ -26,8 +25,8 @@ export interface CardOfSend {
   locale: UserLocale;
 }
 
-// The approval request cards (kind `approval`, dedup `approval:<send id>`, or `approval:<send id>:r<n>` for a review card) of one send. The set cards
-// (`approval_set:`) are another kind and never match (Q15). Oldest first, so the queue order of the edits is stable.
+// The approval request cards (kind `approval`, dedup `approval:<send id>`, or `approval:<send id>:r<n>` for a review card) of one send.
+// The set cards (`approval_set:`) are another kind and never match. Oldest first, so the queue order of the edits is stable.
 export async function listCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: string): Promise<CardOfSend[]> {
   const rows = await db
     .selectFrom("outbox")

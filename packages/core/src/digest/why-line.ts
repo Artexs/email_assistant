@@ -4,7 +4,7 @@ import type { SenderRuleKind } from "../triage/rules";
 
 import { cutText } from "./text";
 
-// How sure the system was and which sender rule hit (F110 stage 16, flag `why_lines`). The builder sets the keys only while the
+// How sure the system was and which sender rule hit (flag `why_lines`). The builder sets the keys only while the
 // flag is on; a view without them renders as before.
 export interface WhyInput {
   category: Category;

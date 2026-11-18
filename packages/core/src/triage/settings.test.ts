@@ -40,7 +40,7 @@ describe("parseToolSwitches", () => {
     for (const value of ["true", 1, "yes", null, { on: true }, [true], 0]) {
       expect(parseToolSwitches({ move: true, reply_drafts: value })).toMatchObject({ move: true, reply_drafts: false });
     }
-    // It is independent of the draft switch (PD-082).
+    // It is independent of the draft switch.
     expect(parseToolSwitches({ reply_drafts: true }).create_draft).toBe(false);
     expect(parseToolSwitches({ create_draft: true }).reply_drafts).toBe(false);
   });
@@ -126,7 +126,7 @@ describe("effectiveAutoFor (ADR 0028)", () => {
     expect(() => parseCategoryPolicy({ info: { auto: true, grant: { ...grantOf(KEY_A), by: "nobody" } } })).toThrow();
   });
 
-  // `at` is the `granted_at` of a trip (F110 stage 09): a text that is not an ISO instant must not reach it.
+  // `at` is the `granted_at` of a trip: a text that is not an ISO instant must not reach it.
   test("a grant whose time is not an ISO instant is a parse error", () => {
     for (const at of ["yesterday", "2026-11-10", "2026-11-10 10:00:00", ""]) {
       expect(() => parseCategoryPolicy({ info: { auto: true, grant: { ...grantOf(KEY_A), at } } })).toThrow();

@@ -27,8 +27,8 @@ const failedAt = new Map<string, number>();
 /** The keys of the failed attempts on record (for tests). */
 export const failedAttemptKeys = (): string[] => [...failedAt.keys()];
 
-// On Monday, every linked member gets the numbers of the last finished week at the member's own slot (F100 plan, weekly report).
-// F110 stage 19: with the flag `report_mail`, a member whose report channel is `mail` or `both` also gets a mail row (dedup key
+// On Monday, every linked member gets the numbers of the last finished week at the member's own slot (weekly report).
+// With the flag `report_mail`, a member whose report channel is `mail` or `both` also gets a mail row (dedup key
 // `weekly_report:<week>:mail`), and a `mail` member with no chat gets that row only.
 async function detectWeeklyReport(run: OrgRun): Promise<void> {
   const { db, ctx, now, timeZone } = run;

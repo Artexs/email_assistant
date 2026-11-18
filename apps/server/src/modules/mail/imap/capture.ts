@@ -149,7 +149,7 @@ function headerHasCalendar(parsed: ParsedMail): boolean {
 export function captureFromParsed(parsed: ParsedMail, opts: { partsKnown: boolean }): CapturedHeaders {
   const attachments = opts.partsKnown ? attachmentsOf(parsed) : [];
   const links = opts.partsKnown ? linkPairs(parsed) : [];
-  // F110 stage 24 review: a mail with MORE THAN ONE `List-Unsubscribe` or `List-Unsubscribe-Post` line gets no link and no one-click.
+  // A mail with MORE THAN ONE `List-Unsubscribe` or `List-Unsubscribe-Post` line gets no link and no one-click.
   // DKIM checks the lowest instance of a repeated header, and this code reads the topmost, so an extra line on top of a signed mail
   // would change the target without breaking the signature. One line of each behaves as before.
   const repeated = headerCount(parsed, "list-unsubscribe") > 1 || headerCount(parsed, "list-unsubscribe-post") > 1;

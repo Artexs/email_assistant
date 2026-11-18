@@ -10,7 +10,7 @@ import type { MailOAuthClients } from "./client";
 import { mailOAuthFlag, type MailOAuthProvider } from "./providers";
 import { createOAuthState } from "./state";
 
-// The start of a provider sign-in and the options the panel shows (F117 stage 07, D8, D9). The routes call these two functions.
+// The start of a provider sign-in and the options the panel shows. The routes call these two functions.
 
 export interface MailOAuthStartDeps {
   db: Db;

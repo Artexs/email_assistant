@@ -27,7 +27,7 @@ export interface PrivacyRouteDeps {
   expiredSessionCookie(): Promise<string>;
 }
 
-// DELETE /api/organization, behind the flag `org_delete` (spec/features/active/F106-e7-t3-account-data-delete-export-dsr).
+// DELETE /api/organization, behind the flag `org_delete` (`docs/capabilities/account-data.md`).
 // Each answer below is final; the order is the rule:
 // owner, flag, body, typed name, lock, password, delete. The password, the typed name and the organization name never reach
 // a log line, an error text or an audit row. A right password does not reset the lockout count (only a sign-in does).

@@ -45,10 +45,10 @@ export function renderUrgentNotice(
     // Old views have no field: they render as before.
     suspicious?: readonly SuspiciousReason[];
     attachments?: AttachmentLineInput;
-    // The `why_lines` keys (F110 stage 16): absent in a view queued with the flag off.
+    // The `why_lines` keys: absent in a view queued with the flag off.
     confidence?: number | null | undefined;
     rule?: SenderRuleKind | null | undefined;
-    // The Delegate button shows (F116 stage 19). Absent: the keyboard of today.
+    // The Delegate button shows. Absent: the keyboard of today.
     delegable?: boolean;
     now: Date;
     timeZone: string;
@@ -135,13 +135,13 @@ export function renderHostBlockedNotice(
   };
 }
 
-// Mail of a VIP or whitelisted sender waits for triage during an LLM pause (F109 stage 15). The sender goes through the
+// Mail of a VIP or whitelisted sender waits for triage during an LLM pause. The sender goes through the
 // chat-safe text helper; the view holds no subject and no other mail text.
 export function renderNotTriagedNotice(input: { sender: string }, texts: CoreTexts): OutMessage {
   return { text: texts.notices.notTriaged(senderLabel(input.sender, texts)), buttons: [] };
 }
 
-// The mailbox shows no sent mail for 7 days (F104). The view holds no recipient and no subject.
+// The mailbox shows no sent mail for 7 days. The view holds no recipient and no subject.
 export function renderSentMissingNotice(
   input: { address: string; since: Date; now: Date; timeZone: string },
   texts: CoreTexts
@@ -155,7 +155,7 @@ export function renderSentMissingNotice(
   };
 }
 
-// Sends of one mailbox wait on a send limit (PD-044). The view holds no limit number: the text names the window.
+// Sends of one mailbox wait on a send limit. The view holds no limit number: the text names the window.
 export function renderSendHeldNotice(
   input: {
     address: string;
@@ -190,8 +190,8 @@ export function renderLoopConsentNotice(
   return { text: lines.join("\n"), buttons: [] };
 }
 
-// Reply drafts (F115 stage 03, stage 12). The ready notice is a count and a clock: no mail text, no address. An owner whose consent
-// covers reply data (`review`) gets the Review button; the others get the consent line only. The panel link line is added when set.
+// Reply drafts. The ready notice is a count and a clock: no mail text, no address. An owner whose consent covers reply data (`review`)
+// gets the Review button; the others get the consent line only. The panel link line is added when set.
 export function renderRepliesReadyNotice(
   input: { count: number; now: Date; timeZone: string; review: boolean; panelUrl?: string | undefined },
   texts: CoreTexts
@@ -216,7 +216,7 @@ export function renderReplyResultNotice(texts: CoreTexts): OutMessage {
   return { text: texts.notices.replyDrafts.result, buttons: [] };
 }
 
-// The check of the last 30 days is ready (F110 D15): a count, category names and the report link. No mail data.
+// The check of the last 30 days is ready: a count, category names and the report link. No mail data.
 export function renderTrustReportReadyNotice(
   input: { checked: number; recommended: readonly MovingCategory[]; reportUrl: string | null },
   texts: CoreTexts
@@ -232,7 +232,7 @@ export function renderTrustReportReadyNotice(
   return { text: lines.join("\n"), buttons: [] };
 }
 
-// A category lost its `auto` (F110 D15): the category, a fixed reason phrase and the settings link. No mail data.
+// A category lost its `auto`: the category, a fixed reason phrase and the settings link. No mail data.
 export function renderAutonomyPausedNotice(
   input: { category: MovingCategory; reason: TripReason; corrections: number; settingsUrl: string | null },
   texts: CoreTexts

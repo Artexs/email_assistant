@@ -148,7 +148,7 @@ export async function handleApprovalCallback(
               heldBy === undefined ? "approved" : "approved_held",
               heldBy === undefined ? {} : { heldBy, actionId: callback.actionId }
             ),
-            // A reply in the review: the next one follows the decision (F115 stage 12).
+            // A reply in the review: the next one follows the decision 
             ...(await nextAfterReplyDecision(deps, ctx, link, callback.actionId, texts, now)),
           };
         }
@@ -184,7 +184,7 @@ export async function handleApprovalCallback(
     case "reject": {
       const result = await reject(approvals, ctx, callback.actionId, input);
       if (result.kind === "rejected") {
-        // The reason buttons only while the flag is on (plan D21).
+        // The reason buttons only while the flag is on.
         const reasonButtons = await isFeatureOn(deps.db, ctx, "mistake_capture");
         return {
           answer: taps.rejectedNow,
@@ -291,7 +291,7 @@ export async function handleApprovalCallback(
       const result = await inTransaction(deps.db, (trx) =>
         closeDelegation(trx, ctx, callback.delegationId, { actor: link.userId, at: now })
       );
-      // The button also sits on a ⏳ line of the digest (F116 stage 19): the tapped message is then the digest, and its edit is that line.
+      // The button also sits on a ⏳ line of the digest: the tapped message is then the digest, and its edit is that line.
       // The edit of the "delegation answered" notice must never go to a digest message: its text would replace the digest.
       const digest =
         source.messageId === undefined || (result.kind !== "done" && result.kind !== "already")

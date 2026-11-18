@@ -26,7 +26,7 @@ export interface UserMembership {
   created_at: Date;
 }
 
-// No TenantContext: the user gives the tenant (the web resolves the organization from the session, S5a).
+// No TenantContext: the user gives the tenant (the web resolves the organization from the session).
 export async function listMembershipsOfUser(db: Db | Transaction<DB>, userId: string): Promise<UserMembership[]> {
   const rows = await db
     .selectFrom("memberships")
@@ -195,7 +195,7 @@ export async function setMemberReportChannel(
   return result.numUpdatedRows === 1n;
 }
 
-// The sender reads the quiet hours of the users of one claimed batch with one query (stage 18). It walks all
+// The sender reads the quiet hours of the users of one claimed batch with one query. It walks all
 // organizations, as `claimDueOutbox` does; the pair `(org_id, user_id)` is the key. A user without a row is not in the map.
 export async function listQuietHoursOf(
   db: Db | Transaction<DB>,

@@ -354,7 +354,7 @@ describe("the SSO session", () => {
     await expectInherited(org.userId, started, old.id);
   });
 
-  // F128: an SSO session skips the code step at sign-in, but turning TOTP off asks it for a code like any session.
+  // An SSO session skips the code step at sign-in, but turning TOTP off asks it for a code like any session.
   test("5d: an SSO session of a user with TOTP on needs a code to turn it off", async () => {
     const { org, browser, secret } = await ssoSessionOf("ann", "2 hours", true);
     const refused = await browser.post("/api/auth/two-factor/disable", { password: PASSWORD });

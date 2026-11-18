@@ -25,7 +25,7 @@ import { addMember, insertDraftAndSend, isolateChannels, linkChat, randomChatId,
 import { testDb, withRollback } from "./helpers";
 import { markAnswered, sentSyncOn, sweepOrg, sweepReply, type SweepOrg } from "./reply-answered-fixtures";
 
-// F115 stage 12, step 2: the review cards of the reply drafts in Telegram.
+// The review cards of the reply drafts in Telegram.
 const db = testDb();
 const T = new Date("2026-11-20T10:00:00Z");
 const HOUR = 3_600_000;
@@ -417,7 +417,7 @@ describe("the consent check (D16)", () => {
       expect(refused.send?.buttons).toEqual([]);
       expect(await cards(trx, o)).toHaveLength(0);
 
-      // The panel button (stage 15) and `POST /api/telegram/consent` write the row of the new version: cards follow.
+      // The panel button and `POST /api/telegram/consent` write the row of the new version: cards follow.
       await consent(trx, o, o.userId, REPLY_CONSENT_SINCE);
       await handleCallback(o.deps, o.owner, "rv");
       expect(await cards(trx, o)).toHaveLength(1);

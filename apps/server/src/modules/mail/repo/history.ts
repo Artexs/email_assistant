@@ -1,4 +1,4 @@
-// Readers of the history check (F110 stage 07): the sample candidates, one stored mail for the classifier and the flag facts of mail.
+// Readers of the history check: the sample candidates, one stored mail for the classifier and the flag facts of mail.
 // Ids, times and booleans leave here; the one reader that returns text (`getStoredEmail`) feeds the classifier only.
 import { sql } from "kysely";
 
@@ -51,7 +51,7 @@ export interface HistoryCandidate {
 }
 
 /**
- * The mail that the history check may classify (D11): INBOX mail received from `since` on, with its body (retention has not
+ * The mail that the history check may classify: INBOX mail received from `since` on, with its body (retention has not
  * cleared it), not written by the mailbox itself. `scope` `synthetic` keeps test mail only (`TRIAGE_LLM_SCOPE`). Newest first; the
  * caller sorts and cuts.
  */
@@ -147,7 +147,7 @@ export interface MailExampleFacts {
 }
 
 /**
- * The facts of the trust report's examples (F110 stage 11): when the mail came, the sender's display name and the subject.
+ * The facts of the trust report's examples: when the mail came, the sender's display name and the subject.
  * The panel shows them behind login; they never go to Telegram. A mail that is gone has no entry. The address is not read.
  */
 export async function listMailExamples(

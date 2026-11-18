@@ -1,4 +1,4 @@
-// The result of a history check from its items (F110 D4): one entry per moving category.
+// The result of a history check from its items: one entry per moving category.
 import { historyOutcome, movingCategories, type Category } from "@ea/core";
 
 import type { HistoryResult } from "./repo";

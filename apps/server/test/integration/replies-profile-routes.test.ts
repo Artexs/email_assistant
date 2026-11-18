@@ -11,7 +11,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F115 stage 10 step 2: GET and PUT /api/mailboxes/:id/profile. Committed rows; the cleanup deletes both organizations.
+// GET and PUT /api/mailboxes/:id/profile. Committed rows; the cleanup deletes both organizations.
 const db = testDb();
 const UNKNOWN = "00000000-0000-4000-8000-000000000000";
 const CANARY = "CANARY-Zofia-Nowak-signature";
@@ -97,7 +97,7 @@ describe("GET and PUT /api/mailboxes/:id/profile", () => {
     expect(await get.json()).toMatchObject({ displayName: "Anna Nowak" });
     expect((await storedRow(mine.id))?.updated_by).toBe(org.ownerId);
 
-    // The reader of stage 04: the message builder takes the stored name for the From header.
+    // The reader: the message builder takes the stored name for the From header.
     const profile = await mailboxProfileOf(db, { orgId: org.orgId }, mine.id);
     const message = buildOutgoingMessage({
       draft: {

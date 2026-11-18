@@ -288,7 +288,7 @@ async function closeConnection(connection: SmtpConnectionLike, polite: boolean):
 
 /**
  * A sender with one SMTP connection per `send` call. Send is at-most-once: it never retries, and the error's `stage`
- * tells the caller whether the content phase began (D10). Pass the failing step through `classifySmtpError`.
+ * tells the caller whether the content phase began. Pass the failing step through `classifySmtpError`.
  * A refused login is a `MailAuthError` at the first `send` (each send logs in on its own connection). After `close`, `send` rejects.
  */
 export async function openSmtpSender(

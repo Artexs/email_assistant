@@ -1,4 +1,4 @@
-// The digit budget of a reply body (owner decision "digit budget", F115 stage 01 re-review 2). A bank account or card
+// The digit budget of a reply body (owner decision "digit budget"). A bank account or card
 // number can be written with any separator, word, mark, markup or quote prefix between its groups, so no pattern of
 // separators can find it. The check counts digits instead. The body is folded (`views.ts`), every maximal run of digits
 // is taken, and each run is
@@ -19,8 +19,8 @@ import { plainView, skeleton, viewsOf } from "./views";
 export const DIGIT_BUDGET = 12;
 /**
  * A sequence of this many digits or more that the user did not type fails the draft, whatever the budget says: digits
- * that cost something and follow each other with one space, dot or dash between two runs (owner answer, ticket F115
- * "Stage 01 account check").
+ * that cost something and follow each other with one space, dot or dash between two runs (owner answer
+ * "account check").
  */
 export const LONG_SEQUENCE_DIGITS = 12;
 /** A run of this many digits that costs something is a phone number. */

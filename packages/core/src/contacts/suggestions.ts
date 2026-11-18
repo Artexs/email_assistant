@@ -6,7 +6,7 @@ import type {
   SuggestionReason,
 } from "./types";
 
-// Suggestion rules (F120 D10, PD-108, discovery notes §2.6). Pure: no clock, no hash; the caller passes `keyOf`.
+// Suggestion rules (discovery notes §2.6). Pure: no clock, no hash; the caller passes `keyOf`.
 const WEEKLY_CAP = 3;
 const VIP_MIN_ANSWERED = 5;
 const VIP_MIN_FLAGGED = 3;
@@ -51,7 +51,7 @@ function whitelistHit(input: SuggestionInput): AddressHit | null {
 }
 
 function blocklistHit(input: SuggestionInput, sentCoverage: boolean): AddressHit | null {
-  // Without Sent coverage "never wrote to them" cannot be known (D16).
+  // Without Sent coverage "never wrote to them" cannot be known.
   if (!sentCoverage) return null;
   if (input.isOwn || input.isVip || input.isWhitelisted || input.isBlocklisted || input.isDelegate) return null;
   if (input.relation === "known" || input.relation === "delegate") return null;

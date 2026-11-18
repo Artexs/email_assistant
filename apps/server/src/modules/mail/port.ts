@@ -62,7 +62,7 @@ export interface MessageMeta {
   actionId: string | null;
 }
 
-// What the capture keeps from one mail (F100 D2). Every adapter returns this shape.
+// What the capture keeps from one mail. Every adapter returns this shape.
 export const CAPTURE_LIMITS = {
   fromName: 200,
   replyTo: 5,
@@ -269,7 +269,7 @@ export class MailboxLimitError extends HardError {
   }
 }
 
-/** The web refuses a local or private mail host (B12). */
+/** The web refuses a local or private mail host. */
 export class HostNotAllowedError extends HardError {
   constructor(options?: { cause?: unknown }) {
     super("host not allowed", options);

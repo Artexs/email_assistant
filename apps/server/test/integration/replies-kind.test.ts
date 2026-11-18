@@ -34,7 +34,7 @@ import { createOrgWithMailbox, insertDraftAndSend, insertTriaged, pauseOtherMail
 import { testDb, withRollback } from "./helpers";
 import { putDraftCopy } from "./reply-fixtures";
 
-// F115 stage 04: the draft kind `reply` through the actions module. The payloads are built by hand: nothing makes a reply yet.
+// The draft kind `reply` through the actions module. The payloads are built by hand: nothing makes a reply yet.
 // Every test runs in a transaction that is rolled back.
 const db = testDb();
 
@@ -250,7 +250,7 @@ describe("a reply send through the committer (F115 stage 04)", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await addCredentials(trx, s);
-      // A reply goes out only while the org flag `reply_drafts` is on (stage 05): the committer run below needs it.
+      // A reply goes out only while the org flag `reply_drafts` is on: the committer run below needs it.
       await setOrgFeature(trx, s.ctx, { flag: "reply_drafts", enabled: true, actor: "cli", now: NOW });
       const p = await approvedReply(trx, s, { cc: [CC] });
 

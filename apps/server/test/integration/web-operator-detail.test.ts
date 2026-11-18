@@ -18,7 +18,7 @@ import { insertAction, insertTestEmail, insertTriaged, testCapabilities } from "
 import { testDb } from "./helpers";
 import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F099 stage 08: GET /api/operator/orgs/:orgId and GET /api/operator/notices (plan D15, D16, D17, D19).
+// GET /api/operator/orgs/:orgId and GET /api/operator/notices.
 const db = testDb();
 const key = randomBytes(32).toString("base64");
 const testConfig = loadConfig({
@@ -256,7 +256,7 @@ describe("operator detail and notices (F099 stage 08)", () => {
     }
   });
 
-  // Golden (F133): the order of equal times, as the per-organization reads gave it before the list was batched.
+  // Golden: the order of equal times, as the per-organization reads gave it before the list was batched.
   test("7b. notices of one time: by organization id, and inside one organization the newest row first", async () => {
     const when = at(-3 * DAY);
     await notice(org.orgId, "llm_cap", "tie:a1", when);

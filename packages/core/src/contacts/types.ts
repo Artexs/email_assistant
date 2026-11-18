@@ -11,7 +11,7 @@ export type SuggestionStatus = (typeof suggestionStatuses)[number];
 
 const count = z.number().int().min(0);
 
-// Counts only, stored as JSON: this type has no text field (ADR 0034, PD-106).
+// Counts only, stored as JSON: this type has no text field (ADR 0034).
 export const suggestionReasonSchema = z
   .object({
     received: count.optional(),

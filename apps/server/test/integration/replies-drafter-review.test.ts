@@ -35,8 +35,8 @@ import {
   type JobBox,
 } from "./reply-job-fixtures";
 
-// F115 stage 07, fixes of the review (review-7.md): N1 the generic approval notice never shows a reply send, N2 a timeout counts as a
-// try, N3 the write checks the organization, the mailbox and the category again, TG1 an open reply of the same mail does not count
+// Fixes of the review: the generic approval notice never shows a reply send, a timeout counts as a
+// try, the write checks the organization, the mailbox and the category again, an open reply of the same mail does not count
 // as a newer one. Every test runs in a transaction that is rolled back.
 const db = testDb();
 

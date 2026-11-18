@@ -8,7 +8,7 @@ import { getMailbox, listMailExamples, type TestMailRule } from "../mail";
 import { recordFeedback, listForReview } from "./feedback";
 import { getLabelTarget } from "./repo";
 
-// The panel review "Check 10 decisions" (F110 stage 15, flag `panel_review`; the caller checks the flag). The same sample rules as the
+// The panel review "Check 10 decisions" (flag `panel_review`; the caller checks the flag). The same sample rules as the
 // Telegram `/review` page (`listReviewSample`): real mail of the last 30 days, no feedback row, random order. The seed (user id and the
 // time of the request) gives a new sample on each load. Every query filters `org_id`. Mail text (sender name, subject, the stored AI
 // summary) goes only into the answer: this file logs nothing.

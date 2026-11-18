@@ -56,7 +56,7 @@ const owner = { owner: true, canWrite: true };
 const member = { owner: false, canWrite: true };
 
 describe("loopActions", () => {
-  // T1: the action list per kind, state and role equals the rules of the stage (D11): a table over every kind, every `status` and
+  // The action list per kind, state and role equals the rules of the stage: a table over every kind, every `status` and
   // every `close_reason`.
   interface Row {
     owner: LoopAction[];
@@ -115,7 +115,7 @@ describe("loopActions", () => {
 });
 
 describe("the kind map", () => {
-  // T2: a component for every `LoopItem.kind`.
+  // A component for every `LoopItem.kind`.
   test("has a component for every kind of the schema", () => {
     const kinds = [...loopItemSchema.shape.kind.options];
     expect([...kinds].sort()).toEqual([...loopKinds].sort());

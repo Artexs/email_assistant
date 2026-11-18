@@ -10,7 +10,7 @@ import type { LinkedChat } from "./port";
 import { findReviewCards } from "./repo";
 import { reviewCardKey } from "./review-keys";
 
-// F115 stage 12: the replies of an organization that an owner may review in Telegram, and the review cards.
+// The replies of an organization that an owner may review in Telegram, and the review cards.
 
 // One page of the scan, and the most that one call reads. A reply lives 7 days, so an organization with more open reply sends than this
 // is not expected; the count shows at most this many.
@@ -61,7 +61,7 @@ export type ReviewCardResult = "queued" | "waiting" | "exists";
 
 // One review card of one send for one owner. A card of that send that no sender took yet (`pending`, `sending`) is not doubled
 // ("waiting"). Else the key is `approval:<send>:r<n>`: `n` counts the review cards that this owner got of the send, so a send that the
-// owner skipped shows again at the next review. The view is the one the committer sends (D19). The card goes out at once (the sender
+// owner skipped shows again at the next review. The view is the one the committer sends The card goes out at once (the sender
 // does not hold review cards in quiet hours).
 export async function queueReviewCard(
   db: DbOrTrx,

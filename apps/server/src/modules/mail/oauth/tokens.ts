@@ -9,7 +9,7 @@ import { OAuthGrantError, OAuthSoftError, type MailOAuthClients } from "./client
 import type { MailOAuthProvider } from "./providers";
 import { readOAuthSecret, saveOAuthSecret, withMailboxOAuthLock } from "./secret-store";
 
-// The token store of OAuth mailboxes (ADR 0031, the F117 ticket): a process cache of access tokens and the refresh behind it.
+// The token store of OAuth mailboxes (ADR 0031): a process cache of access tokens and the refresh behind it.
 // No token reaches a log line or an error (the plan secrets rule). Every line here carries the provider (a closed set).
 
 const log = createLog("mail");

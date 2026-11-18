@@ -11,14 +11,14 @@ const delegationStatusSchema = z.enum(["drafted", "sent", "answered", "overdue",
 export type DelegationStatus = z.infer<typeof delegationStatusSchema>;
 export type DelegationSource = "triage" | "button";
 
-// The reason of a cancel by the user (F102 stage 15). It is final.
+// The reason of a cancel by the user. It is final.
 export const USER_CANCELLED = "user_cancelled";
 
-// The chaser sends at most this many reminders for one delegation (D23).
+// The chaser sends at most this many reminders for one delegation.
 export const MAX_REMINDER_SENDS = DELEGATION_REMINDER_LIMIT;
 
 // A delegation is open while the chaser can still act on it: the draft waits, the task is out, or it is overdue with a
-// reminder left. Retention keeps the task text and the applied draft payload of an open delegation (A23, F083).
+// reminder left. Retention keeps the task text and the applied draft payload of an open delegation.
 export const openDelegationFilter = sql<boolean>`(
   delegations.status in ('drafted', 'sent')
   or (delegations.status = 'overdue' and delegations.reminders_sent < ${sql.lit(MAX_REMINDER_SENDS)})
@@ -98,7 +98,7 @@ export async function lockDelegate(
     .executeTakeFirst();
 }
 
-// The address never changes (F102 D10): the patch has no `email`.
+// The address never changes: the patch has no `email`.
 export async function updateDelegateFields(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -134,7 +134,7 @@ export async function listDelegateNames(
   return new Map(rows.map((row) => [row.id, row.name]));
 }
 
-// The competence tags of delegates (F110 stage 16): words the organization wrote, never mail text.
+// The competence tags of delegates: words the organization wrote, never mail text.
 export async function listDelegateTags(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -150,7 +150,7 @@ export async function listDelegateTags(
   return new Map(rows.map((row) => [row.id, row.competence_tags]));
 }
 
-// For `isExternalSender` (D8). Lower case by the column check.
+// For `isExternalSender`. Lower case by the column check.
 export async function listDelegateAddresses(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -204,7 +204,7 @@ export async function insertDelegation(
     taskSummary: string;
     dueAt: Date | null;
     createdAt: Date;
-    // `triage` (the default of the column) or `button` (the Delegate command, F116).
+    // `triage` (the default of the column) or `button` (the Delegate command).
     source?: DelegationSource;
   }
 ): Promise<string> {
@@ -228,7 +228,7 @@ export async function insertDelegation(
   return row.id;
 }
 
-// The Delegate command of a mail (F116 stage 16) asks two questions about the delegations of one mail.
+// The Delegate command of a mail asks two questions about the delegations of one mail.
 // A delegation that still waits for the delegate: the draft waits, the task is out, or it is overdue.
 export async function findOpenDelegationOfEmail(
   db: DbOrTrx,
@@ -275,7 +275,7 @@ export async function getDelegation(db: DbOrTrx, ctx: TenantContext, id: string)
   return row && toDelegationRow(row);
 }
 
-// Lock order (D6): the delegation first, then its reminder sends.
+// Lock order: the delegation first, then its reminder sends.
 export async function lockDelegation(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -315,7 +315,7 @@ export async function findDelegationBySendAction(
   return row && toDelegationRow(row);
 }
 
-// D7. `ids` are normalized by the caller. The delegate's address is matched inside the query: another delegation in
+// `ids` are normalized by the caller. The delegate's address is matched inside the query: another delegation in
 // the same thread to another delegate never hides the right one. This module only reads `actions` here.
 export async function findOpenDelegationByMessageIds(
   db: DbOrTrx,
@@ -353,7 +353,7 @@ export async function findOpenDelegationByMessageIds(
   return row && { id: row.id, delegateId: row.delegate_id };
 }
 
-// F116 (G10): is a delegation of the mailbox out (`sent` or `overdue`) for a mail of this thread? The thread key is the
+// Is a delegation of the mailbox out (`sent` or `overdue`) for a mail of this thread? The thread key is the
 // one of the delegated incoming mail. The user's own mail in that thread belongs to the delegation chaser. A read only.
 export async function hasOpenDelegationInThread(
   db: DbOrTrx,
@@ -393,7 +393,7 @@ async function updateDelegation(
 }
 
 // Also from `cancelled`: "Send again" after `outcome_unknown`. `due_at` keeps a set value. A delegation that the user cancelled
-// (`user_cancelled`, F102 stage 15) stays cancelled: no send reopens it.
+// (`user_cancelled`) stays cancelled: no send reopens it.
 export async function markDelegationSent(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -445,7 +445,7 @@ export async function markDelegationOverdue(
   return updateDelegation(trx, ctx, id, ["sent"], { status: "overdue", updated_at: at });
 }
 
-// Only a `drafted` delegation is cancelled by the system. The user's own cancel (`user_cancelled`, F102 stage 15) also takes `sent`
+// Only a `drafted` delegation is cancelled by the system. The user's own cancel (`user_cancelled`) also takes `sent`
 // and `overdue`; `answered`, `done` and `cancelled` never change.
 export async function markDelegationCancelled(
   trx: Transaction<DB>,
@@ -462,7 +462,7 @@ export async function markDelegationCancelled(
   });
 }
 
-// A panel edit replaced the waiting send and its draft (F102 ticket): the delegation points at the new rows and the delegate of the new version.
+// A panel edit replaced the waiting send and its draft: the delegation points at the new rows and the delegate of the new version.
 // Only a `drafted` delegation takes it; the caller holds the delegation lock.
 export async function moveDelegationToVersion(
   trx: Transaction<DB>,
@@ -487,7 +487,7 @@ export async function markDelegationDone(
   return updateDelegation(trx, ctx, id, ["answered", "overdue"], { status: "done", updated_at: at });
 }
 
-// `last_reminder_at` is set at planning, so a rejected reminder keeps the 3-day gap (D23).
+// `last_reminder_at` is set at planning, so a rejected reminder keeps the 3-day gap.
 export async function markReminderPlanned(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -524,7 +524,7 @@ export async function listDueDelegations(
     .where("g.org_id", "=", ctx.orgId)
     .where("d.mailbox_id", "=", mailboxId)
     .where("d.status", "in", ["sent", "overdue"])
-    // An overdue row with both reminders sent gets no more (D23): it would only fill the batch.
+    // An overdue row with both reminders sent gets no more: it would only fill the batch.
     .where((eb) => eb.not(eb.and([eb("d.status", "=", "overdue"), eb("d.reminders_sent", ">=", MAX_REMINDER_SENDS)])))
     .where("d.due_at", "<", opts.now)
     .orderBy("d.due_at")
@@ -576,7 +576,7 @@ export interface BriefDelegationRow {
   status: "sent" | "overdue";
 }
 
-// The open delegations (`sent`, `overdue`) with a due date before `dueBefore`, oldest due first: the ⏳ lines of the brief (F116 stage 18).
+// The open delegations (`sent`, `overdue`) with a due date before `dueBefore`, oldest due first: the ⏳ lines of the brief.
 // `total` counts all of them, `rows` holds at most `limit`. Only the organization of `ctx` and the given mailboxes.
 export async function listDelegationsDueBy(
   db: DbOrTrx,
@@ -714,7 +714,7 @@ export async function listLatestDelegationsByEmailIds(
 
 const RETENTION_BATCH = 1000;
 
-// Retention (A23): the task text of a delegation that is not open goes 90 days after the last change (this covers 90 days
+// Retention: the task text of a delegation that is not open goes 90 days after the last change (this covers 90 days
 // after `done`). An open delegation keeps its text until it closes: its reminders read it, and its due date can be far ahead.
 // Batches by id; a locked row waits for a later day. A repeat call changes nothing.
 export async function clearDelegationTasks(
@@ -766,7 +766,7 @@ export type DelegationPageRow = Omit<WithNames, "delegate_name"> & {
   reminder_waiting: boolean;
 };
 
-// One page of the delegation list (F102 stage 15): `limit` rows after the cursor, in the states `statuses`. The caller asks for one
+// One page of the delegation list: `limit` rows after the cursor, in the states `statuses`. The caller asks for one
 // row more than it shows. Every table in the query is filtered by `org_id`.
 export async function listDelegationPage(
   db: DbOrTrx,

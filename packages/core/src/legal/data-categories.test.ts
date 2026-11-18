@@ -57,6 +57,13 @@ describe("dataCategories", () => {
       expect({ table, reason: reason.trim() !== "" }).toEqual({ table, reason: true });
   });
 
+  test("sender-context: both tables, people who are not members, 365 days after the last activity", () => {
+    const category = dataCategories.find((entry) => entry.id === "sender-context");
+    expect(category?.columns).toEqual(["sender_profiles.*", "sender_suggestions.*"]);
+    expect(category?.subjects).toEqual(["others"]);
+    expect(category?.kept).toEqual({ kind: "days", days: 365 });
+  });
+
   test("categoryOfColumn finds a column by name and by table.*", () => {
     expect(categoryOfColumn("emails", "body_text")?.id).toBe("mail-body");
     expect(categoryOfColumn("chat_links", "channel")?.id).toBe("chat-links");

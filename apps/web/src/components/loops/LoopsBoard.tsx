@@ -58,13 +58,13 @@ const OK_TEXTS: Record<"done" | "drop" | "untrack" | "reopen", TextKey> = {
 export interface LoopsBoardProps {
   kind: LoopKindName;
   filter: LoopFilterName;
-  // The state links of a Waiting or Promised tab. The Delegated tab has none: the filter of the F102 list above decides.
+  // The state links of a Waiting or Promised tab. The Delegated tab has none: the filter of the delegations list above decides.
   filterNav?: ReactNode;
-  // A visible heading over the list (the Delegated tab, where it follows the F102 list).
+  // A visible heading over the list (the Delegated tab, where it follows the delegations list).
   showHeading?: boolean;
 }
 
-// One list of loops of one kind with its actions (stage 21). The loop commands are the routes of stage 20; every answer reloads the list.
+// One list of loops of one kind with its actions. The loop commands are routes of the loops module; every answer reloads the list.
 export function LoopsBoard({ kind, filter, filterNav, showHeading = false }: LoopsBoardProps) {
   const { me, reload: reloadMe } = useMe();
   const list = useLoopList(kind, filter);

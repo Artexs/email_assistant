@@ -2,7 +2,7 @@ import type { TenantContext } from "../../../platform/db";
 
 import type { DbOrTrx } from "./shared";
 
-/** `oauth`: the secret is an encoded `OAuthSecret` (F117 D3); the others are a password. */
+/** `oauth`: the secret is an encoded `OAuthSecret`; the others are a password. */
 export type CredentialKind = "password" | "app_password" | "oauth";
 
 export async function insertCredentials(
@@ -56,7 +56,7 @@ export interface CredentialRow {
   key_version: number;
 }
 
-// Credentials check entry point (F114): reads the stored secrets of all organizations, so it takes no TenantContext. One page in
+// Credentials check entry point: reads the stored secrets of all organizations, so it takes no TenantContext. One page in
 // the order of the mailbox id; `after` is the last id of the page before (null for the first page). The caller decrypts and
 // prints counts only; the rows never leave the process.
 export async function listCredentialsPage(

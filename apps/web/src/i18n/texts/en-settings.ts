@@ -1,5 +1,5 @@
 export const enSettings = {
-  // S5c: settings
+  // settings
   set_mailbox_label: "Mailbox",
   set_no_mailbox: "No mailbox yet.",
   set_open_mailboxes: "Open Mailboxes",
@@ -208,7 +208,7 @@ export const enSettings = {
   os_linux: "Linux",
   os_unknown: "unknown system",
   empty_patch: "Change something first.",
-  // S5c: rules
+  // rules
   rules_filter_label: "Show rules for",
   rules_all_mailboxes: "All mailboxes",
   rules_add_title: "Add a rule",
@@ -232,7 +232,7 @@ export const enSettings = {
   rule_deleted_toast: "Rule deleted.",
   err_rule_exists: "This rule exists already.",
   err_rule_limit: "You have reached the limit of 1000 rules.",
-  // F110: the urgency card on the Rules page
+  // The urgency card on the Rules page
   urg_title: "What is urgent for me",
   urg_help: "Topics and deadlines for this mailbox. They count when the urgent-mail check uses them.",
   urg_mailbox_label: "Mailbox",
