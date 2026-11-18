@@ -298,7 +298,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
       references_ids: "Message-IDs used for matching",
       delegate_id: "an internal id",
       language: "the language of the follow-up draft",
-      due_source: "internal: whether the date was stated or defaulted",
+      due_source: "internal: whether the date was stated, defaulted or set from the contact's usual reply time",
+      usual_reply_days: "internal: the usual reply time of the contact that set the date (sender context)",
       wait_from_at: "internal state of the chaser",
       later_count: "internal state of the chaser",
       follow_ups_sent: "internal state of the chaser",
@@ -391,6 +392,47 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "created_at"
   ),
   schema_migrations: { export: false, reason: "the migration ledger, not data of the organization" },
+  // The count-only profile of a contact under a keyed hash, and the rule suggestions made from it (sender context): no address of a
+  // third party in the profile; an open suggestion holds the address or domain it names. The address join of the export comes
+  // with the privacy stage of the ticket folder.
+  sender_profiles: byOrg(
+    "id",
+    "org_id",
+    "mailbox_id",
+    "key_hash",
+    "received",
+    "moved_back",
+    "answered",
+    "flagged",
+    "unseen_7d",
+    "user_mails_to",
+    "delegations_to",
+    "by_category",
+    "corrections",
+    "bulk_signals",
+    "median_user_reply_hours",
+    "median_their_reply_hours",
+    "reply_samples_theirs",
+    "relation",
+    "first_seen_at",
+    "last_seen_at",
+    "last_user_mail_at",
+    "refreshed_at"
+  ),
+  sender_suggestions: byOrg(
+    "id",
+    "org_id",
+    "mailbox_id",
+    "key_hash",
+    "scope",
+    "kind",
+    "pattern",
+    "reason",
+    "status",
+    "created_at",
+    "ended_at",
+    "ended_by"
+  ),
   sender_rules: byOrg("id", "org_id", "mailbox_id", "pattern", "kind", "created_at"),
   // The result of the analysis of a sent mail: codes only, no text.
   sent_analyses: byOrgExcluding(

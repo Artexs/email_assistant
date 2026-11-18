@@ -59,6 +59,11 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
   unsubscribe_requests: {
     sender_lower: "delete",
   },
+  // The address or `@domain` of an OPEN rule suggestion (sender context): a third-party address. The erase of the address deletes the row;
+  // a domain pattern never equals one address, so it stays (the person's profile rows go by their hash, see the privacy stage).
+  sender_suggestions: {
+    pattern: "delete",
+  },
   email_headers: {
     // The display name can be an address (`"p@x.test" <r@x.test>`), so a kept mail can hold the person's address here.
     from_name: "text",
@@ -186,6 +191,20 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     ["unsubscribe_requests.method", "unsubscribe_requests.status", "unsubscribe_requests.code"],
     "closed list of codes (CHECK constraint); `code` is a short result code, never a URL"
   ),
+  ...reasons(
+    ["sender_profiles.key_hash", "sender_suggestions.key_hash"],
+    "keyed hash (HMAC-SHA256, 64 hex characters, CHECK constraint) of the address; the erase finds the rows by the hash of the address"
+  ),
+  ...reasons(
+    ["sender_profiles.by_category", "sender_profiles.corrections"],
+    "category names with counts; the CHECK constraint refuses any other key"
+  ),
+  ...reasons(["sender_profiles.bulk_signals", "sender_profiles.relation"], "closed list of codes (CHECK constraint)"),
+  ...reasons(
+    ["sender_suggestions.scope", "sender_suggestions.kind", "sender_suggestions.status"],
+    "closed list of codes (CHECK constraint)"
+  ),
+  ...reasons(["sender_suggestions.reason"], "counts under fixed keys (CHECK constraint); no text and no address"),
   ...reasons(["email_headers.list_id"], "the name of a mailing list, set by the list sender"),
   ...reasons(["email_headers.auto_submitted", "email_headers.precedence"], "one header token, no address"),
   ...reasons(["email_headers.links"], "link host names only, no address"),
