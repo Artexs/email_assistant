@@ -591,3 +591,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a mailbox has no single user owner, the stage text says "any member", and the Activity page already shows subjects to members. Owner-only would need a per-user owner of a mailbox.
 - Undo: restrict the routes to the owner role in `modules/triage/review-routes.ts` (the member case then answers 403, like the other owner-only routes).
 - Source: job `2026-11-18-f110-s15-panel-review-eac1e969`.
+
+### 2026-11-18 · F110 history check: the privacy page says no mail older than 7 days goes to the model, but the history check sends a capped sample of 30-day-old mail when `trust_ladder` is on (F110) · privacy · new
+- Choice: keep `trust_ladder` OFF everywhere until the privacy text is fixed. The sentence in `apps/web/src/legal/en/privacy.md` (and the Polish text) must say that, with the trust ladder on, the history check sends a capped sample of the last 30 days of mail (about 500 mails at most, $0.25 cap) to the model once at connect and again after a model change. The fix is a legal text change and needs a `TERMS_VERSION` bump (every user accepts the new terms at the next sign-in).
+- Why: found by the F110 docs stage while it wrote the trust page. Today no one is affected: the flag is off for every organization.
+- Undo: leave the flag off.
+- Source: job `2026-11-18-f110-s25-docs-b1c6e2c7`. Same bump batch: the one-click request line (owner decision of 2026-11-18), the `members` subject of the `unsubscribe-data` category, a line about report mail appended into the member's INBOX.
