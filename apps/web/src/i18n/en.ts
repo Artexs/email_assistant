@@ -1172,6 +1172,21 @@ export const en = {
   tgc_title: "New Telegram terms: open loops",
   tgc_confirm: "Confirm",
   tgc_confirmed_toast: "The new Telegram terms are confirmed.",
+  // F110 stage 23: the newsletters card of the Rules page (flag bulk_unsubscribe)
+  nl_title: "Newsletters",
+  nl_help:
+    "Senders of newsletters and notices from the last 30 days. Spam senders and suspicious senders are not listed.",
+  nl_mailbox_label: "Mailbox",
+  nl_empty: "No newsletter senders in the last 30 days.",
+  nl_load_error: "Could not load the newsletters.",
+  nl_latest: "Latest: {time}",
+  nl_open_link: "Open unsubscribe page",
+  nl_open_link_for: "Open unsubscribe page for {sender} (new tab)",
+  nl_none: "No unsubscribe link",
+  nl_requested: "Requested",
+  nl_done: "Done",
+  nl_failed: "Failed",
+  nl_failed_open: "Failed — open the page instead",
 } as const;
 
 export type TextKey = keyof typeof en;
@@ -1187,6 +1202,8 @@ export const enPlurals = {
   lp_working_days: { one: "1 working day", other: "{count} working days" },
   // F116 stage 22
   lset_wait_days: { one: "1 working day", other: "{count} working days" },
+  // F110 stage 23: mails of a newsletter sender
+  nl_count: { one: "1 mail in 30 days", other: "{count} mails in 30 days" },
 } as const;
 
 export type PluralKey = keyof typeof enPlurals;

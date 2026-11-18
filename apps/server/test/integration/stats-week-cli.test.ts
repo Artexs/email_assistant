@@ -1,13 +1,19 @@
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
+import { setOrgFeature } from "../../src/modules/tenancy";
+import { runningEvidenceKey } from "../../src/modules/triage";
+import { llmRoleTable, loadConfig } from "../../src/platform/config";
 import { usage } from "../../src/scripts/stats-week-args";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
 import { flagLoops, seedLoops } from "./loops-m2-fixtures";
 import { WEEK, seedWeek, type SeededWeek } from "./metrics-fixtures";
+import { insertCheckRow, insertTripRow } from "./trust-fixtures";
 
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
@@ -35,10 +41,10 @@ afterAll(async () => {
   await db.destroy();
 });
 
-async function run(args: string[]) {
+async function run(args: string[], env: Record<string, string> = {}) {
   const proc = Bun.spawn(["bun", script, ...args], {
     cwd: repoRoot,
-    env: { ...process.env },
+    env: { ...process.env, ...env },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -100,6 +106,69 @@ describe("stats:week CLI", () => {
     expect(m8.find((l) => l.includes(" notification "))).toContain(" auto no kept 0 ");
     expect(result.stdout).not.toContain("@");
     expect(result.stdout).not.toContain(orgA.ids.e1 as string);
+  });
+
+  // F110 stage 12 (test 3): the gate file of the committed lab run, copied for the key that the script runs on. `info` is `go` there;
+  // `spam` is `no-go`. `provisional` is a mark of the whole file.
+  function gateDir(provisional: boolean): string {
+    const dir = mkdtempSync(join(tmpdir(), "f110-s12-gate-"));
+    const key = runningEvidenceKey(llmRoleTable(loadConfig()));
+    const real = join(repoRoot, "evals/results/gate/classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json");
+    const file = JSON.parse(readFileSync(real, "utf8")) as Record<string, unknown>;
+    writeFileSync(
+      join(dir, "classifier-cli.json"),
+      JSON.stringify({
+        ...file,
+        provider: key.provider,
+        model: key.model,
+        reasoningEffort: key.reasoningEffort,
+        promptVersion: key.promptVersion,
+        endpoint: key.endpoint,
+        host: key.host,
+        provisional,
+      })
+    );
+    return dir;
+  }
+
+  test("3. with trust_ladder on the M8 rows get one trust line per category; off, no such line", async () => {
+    seeded = await db.transaction().execute((trx) => seedWeek(trx));
+    const { orgA } = seeded;
+    const dir = gateDir(false);
+    const provisionalDir = gateDir(true);
+    try {
+      const off = await run(["--org-id", orgA.ctx.orgId, "--week", WEEK], { GATE_EVIDENCE_DIR: dir });
+      expect(off.code).toBe(0);
+      expect(off.stdout).not.toContain("m8_trust");
+
+      await setOrgFeature(db, orgA.ctx, { flag: "trust_ladder", enabled: true, actor: "cli", now: new Date() });
+      const result = { spam: { outcome: "fail", acted: 100, moved: 3, upper: 0.07, total: 300, wouldMove: 30 } };
+      await db.transaction().execute(async (trx) => {
+        await insertCheckRow(trx, orgA.ctx, orgA.mailboxId, {
+          status: "done",
+          result: JSON.stringify(result),
+          finished_at: new Date(),
+        });
+        await insertTripRow(trx, orgA.ctx, orgA.mailboxId, { category: "notification", reason: "corrections" });
+      });
+      const on = await run(["--org-id", orgA.ctx.orgId, "--week", WEEK], { GATE_EVIDENCE_DIR: dir });
+      expect(on.code).toBe(0);
+      const trust = on.stdout.split("\n").filter((line) => line.startsWith("m8_trust "));
+      expect(trust).toHaveLength(5);
+      const of = (category: string) => trust.find((line) => line.includes(` ${category} global `));
+      expect(of("spam")).toEndWith("global no-go · history fail (3/100) · trip none");
+      expect(of("info")).toEndWith("global go · history none · trip none");
+      expect(of("notification")).toEndWith("global no-go · history none · trip corrections");
+      // Counts and codes only: no address, subject or mail id.
+      expect(on.stdout).not.toContain("@");
+
+      // A provisional gate file marks the global evidence.
+      const marked = await run(["--org-id", orgA.ctx.orgId, "--week", WEEK], { GATE_EVIDENCE_DIR: provisionalDir });
+      expect(marked.stdout).toContain(" info global go provisional · history none · trip none");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(provisionalDir, { recursive: true, force: true });
+    }
   });
 
   // The script reads the clock, so the loops are due in a week that is long past: January 2026 (Warsaw, UTC+1).

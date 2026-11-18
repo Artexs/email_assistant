@@ -5,6 +5,7 @@ import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { AddRuleForm } from "../components/rules/AddRuleForm";
 import { RuleList } from "../components/rules/RuleList";
+import { NewslettersCard } from "../components/rules/NewslettersCard";
 import { UrgencyCard } from "../components/rules/UrgencyCard";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -165,6 +166,9 @@ function Rules() {
           timeZone={me.organization.timezone}
           reloadMailboxes={reloadMailboxes}
         />
+      )}
+      {me.features.includes("bulk_unsubscribe") && (
+        <NewslettersCard mailboxes={mailboxes} timeZone={me.organization.timezone} />
       )}
     </div>
   );

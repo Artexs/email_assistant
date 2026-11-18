@@ -78,6 +78,15 @@ export function statsLines(stats: WeekStats): string[] {
       `m8 ${row.mailboxId} ${row.category} auto ${row.auto ? "yes" : "no"} kept ${row.kept}` +
         ` precision ${shown ? num(row.precision) : "-"} lower ${shown ? num(row.wilsonLower) : "-"} ${row.decision}`
     );
+    // F110 stage 12: the three sources of ADR 0028; no line with the flag `trust_ladder` off.
+    if (row.global !== null) {
+      const history =
+        row.history === null ? "none" : `${row.history.outcome} (${row.history.moved}/${row.history.acted})`;
+      const trip = row.trip?.tripped === true ? (row.trip.reason ?? "tripped") : "none";
+      lines.push(
+        `m8_trust ${row.mailboxId} ${row.category} global ${row.global.decision}${row.global.provisional ? " provisional" : ""} · history ${history} · trip ${trip}`
+      );
+    }
   }
   return lines;
 }

@@ -1,6 +1,15 @@
 import { randomUUID } from "node:crypto";
 
-import { actionsScope, committerDeps, loopsLlmScope, mailOAuthRuntime, sendScope, uidplusOf } from "../composition";
+import {
+  actionsScope,
+  committerDeps,
+  gateEvidenceOf,
+  loopsLlmScope,
+  mailOAuthRuntime,
+  sendScope,
+  trustEvidenceOf,
+  uidplusOf,
+} from "../composition";
 import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { cardEditHooks, createTelegramRuntime } from "../modules/channels";
 import { delegationHooks } from "../modules/delegation";
@@ -127,6 +136,7 @@ async function main(): Promise<number> {
           uidplus,
           sendScope: sendScope(config),
           testMail: testMailRule(config),
+          trustEvidence: trustEvidenceOf(db, now, gateEvidenceOf(config, { quiet: true }), testMailRule(config)),
           operatorContact: null,
           syncEveryMin: Number(config.MAIL_SYNC_EVERY_MIN),
         });
