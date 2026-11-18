@@ -108,6 +108,7 @@ export const auditEvents = {
   ssoRequiredChanged: "sso.required_changed", // actor: cli; data: from, to, sessions_ended
   ssoUnlinked: "sso.unlinked", // actor: cli; data: user_id, sessions_ended
   memberNotifyChanged: "member.notify_changed", // F110 s18. actor: the user; data: via, keys (the changed keys in one string, comma between); never a value
+  newsletterUnsubscribe: "newsletter.unsubscribe", // F110 s24. actor: the user; data: mailbox_id, domain (the sender domain), status, code; never a URL
   orgMemberAdded: "org.member_added", // actor: cli; data: user_id, role
   webMemberSessionsEnded: "web.member_sessions_ended", // actor: cli; data: user_id, count, only_sso
 } as const;

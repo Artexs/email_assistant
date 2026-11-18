@@ -1,9 +1,13 @@
 import {
+  apiErrorSchema,
   feedbackBodySchema,
   feedbackResultSchema,
   newsletterListSchema,
   undoBodySchema,
   undoResultSchema,
+  unsubscribeBodySchema,
+  unsubscribeResultSchema,
+  unsubscribeStoredSchema,
   z,
 } from "@ea/core";
 
@@ -43,5 +47,24 @@ export const newsletterDocs = {
     params: z.object({ mailboxId: z.uuid() }),
     ok: { status: 200, schema: newsletterListSchema },
     errors: [notFound],
+  }),
+  postUnsubscribe: apiDoc({
+    operationId: "postUnsubscribe",
+    summary:
+      "The owner's tap: send one RFC 8058 one-click unsubscribe request for one sender of the list. Owner only. The server checks the sender again (not spam, not suspicious, one-click offered by a trusted authentication result) and the target (public `https` host, port 443, no redirect); it sends the fixed body `List-Unsubscribe=One-Click` and nothing from the mail. The answer holds the end state (`done`, `failed`, `refused`) and a short code; the answer of the other server is never stored or returned. A second tap for the same sender gets 409 `already_requested` and sends nothing.",
+    tags: ["newsletters"],
+    params: z.object({ mailboxId: z.uuid() }),
+    body: unsubscribeBodySchema,
+    ok: { status: 200, schema: unsubscribeResultSchema },
+    errors: [
+      { status: 403, codes: ["owner_only"] },
+      notFound,
+      {
+        status: 409,
+        codes: ["not_allowed", "no_one_click", "already_requested"],
+        schema: z.union([apiErrorSchema, unsubscribeStoredSchema]),
+      },
+      { status: 429, codes: ["rate_limited"] },
+    ],
   }),
 };

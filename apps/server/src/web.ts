@@ -80,7 +80,9 @@ import type { Db, TenantContext } from "./platform/db";
 import { errorFields } from "./platform/errors";
 import { buildTrustedProxies, signInMethodOf, type WebDeps, type WebSession } from "./platform/http";
 import { createLog } from "./platform/log";
+import { dnsLookupAll } from "./platform/net-address";
 import { checkPwnedPassword } from "./platform/pwned";
+import { postOneClick, type OneClickResult } from "./platform/public-http";
 
 // The composition root of the web: the parts that need more than one module.
 const log = createLog("web");
@@ -331,6 +333,8 @@ export interface WebExtras {
   onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
   /** The global evidence of the running classifier, built once at start. Default: none (a closed gate; tests). */
   gate?: GateEvidenceDeps;
+  /** Default: `postOneClick` with the system lookup (the guarded client). A test passes a fake: no test sends a real request. */
+  postOneClick?: (url: URL) => Promise<OneClickResult>;
 }
 
 export function apiRouters(
@@ -401,7 +405,15 @@ export function apiRouters(
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
-    api.route("/", newsletterRoutes({ db, now, trustedAuthservIds: mailTrustedAuthservIds(config) }));
+    api.route(
+      "/",
+      newsletterRoutes({
+        db,
+        now,
+        trustedAuthservIds: mailTrustedAuthservIds(config),
+        post: extras.postOneClick ?? ((url) => postOneClick(url, { lookup: dnsLookupAll })),
+      })
+    );
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
     api.route(

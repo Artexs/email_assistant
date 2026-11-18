@@ -327,6 +327,28 @@ describe("the real app", () => {
     expect(operation.responses?.["404"]?.description).toContain("not_found");
   });
 
+  test("POST /api/newsletters/{mailboxId}/unsubscribe is described: operation id, tag, uuid path parameter, a body, owner only, the 404, 409 and 429 codes", async () => {
+    const operation = (await openApiSpec(realApp())).paths?.["/api/newsletters/{mailboxId}/unsubscribe"]?.post as {
+      operationId?: string;
+      tags?: string[];
+      parameters?: unknown;
+      requestBody?: unknown;
+      responses?: Record<string, { description?: string } | undefined>;
+    };
+    expect(operation.operationId).toBe("postUnsubscribe");
+    expect(operation.tags).toEqual(["newsletters"]);
+    expect(operation.parameters).toMatchObject([
+      { name: "mailboxId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+    ]);
+    expect(operation.requestBody).toBeDefined();
+    expect(Object.keys(operation.responses ?? {})).toContain("200");
+    expect(operation.responses?.["403"]?.description).toContain("owner_only");
+    expect(operation.responses?.["404"]?.description).toContain("not_found");
+    for (const code of ["not_allowed", "no_one_click", "already_requested"])
+      expect(operation.responses?.["409"]?.description).toContain(code);
+    expect(operation.responses?.["429"]?.description).toContain("rate_limited");
+  });
+
   test("the three trust routes are described: operation ids, a uuid path parameter, 202 for the check, owner only on the writes, the 409 codes", async () => {
     const paths = (await openApiSpec(realApp())).paths;
     interface Operation {

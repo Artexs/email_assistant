@@ -31,3 +31,25 @@ export type NewsletterItem = z.infer<typeof newsletterItemSchema>;
 
 export const newsletterListSchema = z.strictObject({ senders: z.array(newsletterItemSchema) });
 export type NewsletterList = z.infer<typeof newsletterListSchema>;
+
+/** The body of `POST /api/newsletters/:mailboxId/unsubscribe` (F110 stage 24): the sender address as the list shows it (`senderLower`). */
+export const unsubscribeBodySchema = z.strictObject({ sender: z.string().min(3).max(254) });
+export type UnsubscribeBody = z.infer<typeof unsubscribeBodySchema>;
+
+/**
+ * The answer of the unsubscribe tap: the end state of the request and a short code (`http_200`, `private_host`, `redirect`,
+ * `timeout`, ...). The code never holds a URL and the answer of the other server is never part of it.
+ */
+export const unsubscribeResultSchema = z.strictObject({
+  status: z.enum(["done", "failed", "refused"]),
+  code: z.string().regex(/^[a-z0-9_]{1,40}$/),
+  at: z.iso.datetime(),
+});
+export type UnsubscribeResult = z.infer<typeof unsubscribeResultSchema>;
+
+/** The 409 body of a second tap: the state that the first tap left. */
+export const unsubscribeStoredSchema = z.strictObject({
+  error: z.literal("already_requested"),
+  request: z.strictObject({ status: z.enum(unsubscribeRequestStatuses), at: z.iso.datetime() }),
+});
+export type UnsubscribeStored = z.infer<typeof unsubscribeStoredSchema>;
