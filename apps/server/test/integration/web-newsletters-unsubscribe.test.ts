@@ -1,8 +1,8 @@
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
-import { postOneClick } from "../../src/platform/public-http";
 import { UNSUBSCRIBE_DOMAIN_LIMIT, UNSUBSCRIBE_ORG_LIMIT } from "../../src/modules/triage/newsletter-unsubscribe";
+import { postOneClick } from "../../src/platform/public-http";
 import { waitFor } from "../wait-for";
 
 import { testDb } from "./helpers";

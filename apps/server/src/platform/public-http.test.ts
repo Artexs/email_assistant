@@ -588,7 +588,7 @@ describe("the connection: proxy variables, total budget, header size (review TG1
       expect(proxyHits).toBe(0);
     } finally {
       for (const [name, value] of saved) {
-        if (value === undefined) delete process.env[name];
+        if (value === undefined) Reflect.deleteProperty(process.env, name);
         else process.env[name] = value;
       }
       local.close();
