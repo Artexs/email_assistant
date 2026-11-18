@@ -597,3 +597,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: found by the F110 docs stage while it wrote the trust page. Today no one is affected: the flag is off for every organization.
 - Undo: leave the flag off.
 - Source: job `2026-11-18-f110-s25-docs-b1c6e2c7`. Same bump batch: the one-click request line (owner decision of 2026-11-18), the `members` subject of the `unsubscribe-data` category, a line about report mail appended into the member's INBOX.
+
+### 2026-11-18 · F120 sender context: the sender line shows only in the panel, and a classifier-v4 prompt never goes live without your word (F120) · user-visible · new
+- Choice: (Q1) the sender line (what the assistant knows about a sender) shows only in the panel (Activity, Approvals); Telegram does not change. (Q4) if `classifier-v4[profile]` wins on the dev and holdout evals, the production prompt still does not switch until the owner says so. (Q3) at deploy the coordinator turns on `sender_context`, then `contact_wait` one day later; `sender_suggestions` waits for the owner.
+- Why: planner defaults; the owner decides what changes classification of real mail.
+- Undo: leave the flags off.
+- Source: plan `spec/features/planned/F120-e11a-sender-context/questions.md` (Q1, Q3, Q4).
+
+### 2026-11-18 · F120 sender context: privacy and money defaults (F120) · privacy · new
+- Choice: (Q2) the new tables go into the legal data catalog in stage 02; the privacy page sentence waits for the next legal batch (stage 12 gives the text; a TERMS_VERSION bump). (Q5) a DSR erase of a person does not delete a domain suggestion such as `@acme.pl`. (Q7) when a flag goes off, stored profiles stay until the 12-month retention deletes them. (Q6) stage 11 may spend at most $1.50 on LLM calls. Only address rows are stored, not domain rows; the hash key comes from `CREDENTIALS_KEY` by HKDF with the org id.
+- Why: planner defaults with the review's fixes.
+- Undo: change the plan before the stage builds.
+- Source: same plan, Q2, Q5 to Q8.
