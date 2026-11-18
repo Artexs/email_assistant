@@ -30,7 +30,10 @@ export interface NewsletterBox {
   cleanup(): Promise<void>;
 }
 
-export async function newsletterBox(db: Db, opts: { flag?: boolean } = {}): Promise<NewsletterBox> {
+export async function newsletterBox(
+  db: Db,
+  opts: { flag?: boolean; post?: (url: URL) => Promise<OneClickResult> } = {}
+): Promise<NewsletterBox> {
   const org = await webOrg(db);
   const mailboxId = await db.transaction().execute((trx) => addMailbox(trx, { orgId: org.orgId }));
   const otherMailboxId = await db.transaction().execute((trx) => addMailbox(trx, { orgId: org.otherOrgId }));
@@ -60,7 +63,11 @@ export async function newsletterBox(db: Db, opts: { flag?: boolean } = {}): Prom
       webTestApp({
         db,
         sessions: { owner: org.ownerId, member: org.assistantId, other: org.otherOwnerId },
-        routers: (api) => api.route("/", newsletterRoutes({ db, now: () => NOW, trustedAuthservIds: trusted, post })),
+        routers: (api) =>
+          api.route(
+            "/",
+            newsletterRoutes({ db, now: () => NOW, trustedAuthservIds: trusted, post: opts.post ?? post })
+          ),
       }),
     cleanup: () => org.cleanup(),
   };

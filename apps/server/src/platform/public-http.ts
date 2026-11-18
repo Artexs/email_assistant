@@ -52,7 +52,7 @@ export interface OneClickDeps {
 }
 
 // Ranges that `isLocalAddress` (mail hosts) leaves open and that no unsubscribe link may reach: documentation and relay
-// ranges, the Azure wire server, Teredo and discard. IPv6 is also limited to global unicast (`2000::/3`) below.
+// ranges and the Azure wire server. IPv6 is also limited to global unicast (`2000::/3`), without the protocol block 2001::/23.
 const extraV4 = new BlockList();
 for (const [net, prefix] of [
   ["168.63.129.16", 32], // Azure wire server and metadata helper
@@ -64,21 +64,41 @@ for (const [net, prefix] of [
   extraV4.addSubnet(net, prefix, "ipv4");
 const extraV6 = new BlockList();
 for (const [net, prefix] of [
-  ["2001::", 32], // Teredo
-  ["2001:db8::", 32],
-  ["2001:10::", 28],
-  ["3fff::", 20],
+  ["2001:db8::", 32], // documentation
+  ["3fff::", 20], // documentation (RFC 9637)
 ] as const)
   extraV6.addSubnet(net, prefix, "ipv6");
+// 2001::/23 is the IANA "IETF protocol assignments" block (special-purpose registry, read from memory, checked 2026-11-18). It is
+// not globally reachable (Teredo 2001::/32, benchmarking 2001:2::/48, ORCHID 2001:10::/28, and the rest), except for these entries
+// that the registry marks "Globally Reachable: True": 2001:1::1/128 (PCP anycast), 2001:1::2/128 (TURN anycast), 2001:1::3/128
+// (DNS-SD SRP anycast), 2001:3::/32 (AMT), 2001:4:112::/48 (AS112-v6), 2001:20::/28 (ORCHIDv2), 2001:30::/28 (Drone Remote ID).
+const protocolV6 = new BlockList();
+protocolV6.addSubnet("2001::", 23, "ipv6");
+const protocolExceptionsV6 = new BlockList();
+for (const [net, prefix] of [
+  ["2001:1::1", 128],
+  ["2001:1::2", 128],
+  ["2001:1::3", 128],
+  ["2001:3::", 32],
+  ["2001:4:112::", 48],
+  ["2001:20::", 28],
+  ["2001:30::", 28],
+] as const)
+  protocolExceptionsV6.addSubnet(net, prefix, "ipv6");
 const globalV6 = new BlockList();
 globalV6.addSubnet("2000::", 3, "ipv6");
 
 /** True when the connection to this address literal is allowed: a global unicast address that is in no refused range. */
 export function isPublicAddress(address: string): boolean {
+  // A zone id (`fe80::1%eth0`) names a local interface; a resolver never answers one for a public host.
+  if (address.includes("%")) return false;
   if (isLocalAddress(address)) return false;
   const family = isIP(address);
   if (family === 4) return !extraV4.check(address, "ipv4");
-  if (family === 6) return globalV6.check(address, "ipv6") && !extraV6.check(address, "ipv6");
+  if (family === 6) {
+    if (!globalV6.check(address, "ipv6") || extraV6.check(address, "ipv6")) return false;
+    return !protocolV6.check(address, "ipv6") || protocolExceptionsV6.check(address, "ipv6");
+  }
   return false;
 }
 

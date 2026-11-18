@@ -2,8 +2,8 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createServer, type Server } from "node:https";
-import type { Socket } from "node:net";
-import { tmpdir } from "node:os";
+import { createServer as createTcpServer, type Socket } from "node:net";
+import { networkInterfaces, tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
@@ -72,7 +72,10 @@ interface Local {
   close(): void;
 }
 
-async function startServer(handler: (req: IncomingMessage, res: ServerResponse, body: string) => void): Promise<Local> {
+async function startServer(
+  handler: (req: IncomingMessage, res: ServerResponse, body: string) => void,
+  listenHost = "127.0.0.1"
+): Promise<Local> {
   const seen: Seen[] = [];
   const sockets = new Set<Socket>();
   const server = createServer({ key, cert }, (req, res) => {
@@ -96,7 +99,7 @@ async function startServer(handler: (req: IncomingMessage, res: ServerResponse, 
     sockets.add(socket);
     socket.on("close", () => sockets.delete(socket));
   });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await new Promise<void>((resolve) => server.listen(0, listenHost, resolve));
   const port = (server.address() as { port: number }).port;
   return {
     server,
@@ -247,6 +250,19 @@ describe("isPublicAddress (the address part of the guard)", () => {
       "2001:db8::1",
       "2001:0:4136:e378:8000:63bf:3fff:fdd2", // Teredo
       "100::1",
+      // NOTE 3: the protocol block 2001::/23 is not global, except the registry entries (test 9b)
+      "2001:2::1", // benchmarking
+      "2001:100::1",
+      "2001:10::1", // ORCHID
+      "2001::1",
+      "2001:1::",
+      "2001:1::4",
+      "2001:4:111::1",
+      "2001:1ff:ffff::1",
+      // a zone id names a local interface
+      "2a00:1450:4001:81b::200e%eth0",
+      "fe80::1%eth0",
+      "8.8.8.8%eth0",
       "not an address",
       "",
     ];
@@ -257,6 +273,28 @@ describe("isPublicAddress (the address part of the guard)", () => {
   test("9. public addresses are accepted", () => {
     for (const address of [PUBLIC, "8.8.8.8", "1.1.1.1", "172.32.0.1", "2606:4700::1111", "2a00:1450:4001:81b::200e"])
       expect({ address, public: isPublicAddress(address) }).toEqual({ address, public: true });
+  });
+});
+
+describe("isPublicAddress: the protocol block 2001::/23 (review NOTE 3)", () => {
+  test("9b. the globally reachable entries of the IANA registry stay allowed; the rest of 2001::/23 is refused; the neighbours are public", () => {
+    for (const address of [
+      "2001:1::1",
+      "2001:1::2",
+      "2001:1::3",
+      "2001:3::1", // 2001:3::/32 (AMT)
+      "2001:3:ffff:ffff::1",
+      "2001:4:112::1", // 2001:4:112::/48 (AS112-v6)
+      "2001:20::1", // 2001:20::/28 (ORCHIDv2)
+      "2001:2f:ffff::1",
+      "2001:30::1", // 2001:30::/28 (Drone Remote ID)
+      "2001:3f::1",
+      "2001:200::1", // the first address after the block
+      "2001:4860:4860::8888",
+    ])
+      expect({ address, public: isPublicAddress(address) }).toEqual({ address, public: true });
+    for (const address of ["2001:0::1", "2001:2::1", "2001:1::5", "2001:4:113::1", "2001:40::1", "2001:1fe::1"])
+      expect({ address, public: isPublicAddress(address) }).toEqual({ address, public: false });
   });
 });
 
@@ -513,6 +551,96 @@ describe("the connection (sendPinned through the loopback seam)", () => {
     }
     const closed = await postOneClick(url(`https://${HOST}/x`), { lookup: lookupOf(PUBLIC), dial: viaLoopback(local) });
     expect(closed).toEqual({ kind: "failed", code: "connect" });
+  });
+});
+
+describe("the connection: proxy variables, total budget, header size (review TG1, TG2, TG4)", () => {
+  const PROXY_NAMES = ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"];
+
+  // An address of this host that is not loopback (many proxy clients skip loopback). Without one the test falls back to 127.0.0.1.
+  const outside = Object.values(networkInterfaces())
+    .flat()
+    .find((entry) => entry !== undefined && entry.family === "IPv4" && !entry.internal)?.address;
+
+  test("TG1. HTTPS_PROXY, https_proxy, HTTP_PROXY, http_proxy, ALL_PROXY and all_proxy set to a local listener get no connection", async () => {
+    let proxyHits = 0;
+    const proxy = createTcpServer((socket) => {
+      proxyHits += 1;
+      socket.destroy();
+    });
+    await new Promise<void>((resolve) => proxy.listen(0, "127.0.0.1", resolve));
+    const proxyUrl = `http://127.0.0.1:${(proxy.address() as { port: number }).port}`;
+    const local = await startServer(
+      (_req, res) => res.writeHead(200).end(),
+      outside === undefined ? "127.0.0.1" : "0.0.0.0"
+    );
+    const saved = PROXY_NAMES.map((name) => [name, process.env[name]] as const);
+    try {
+      for (const name of PROXY_NAMES) process.env[name] = proxyUrl;
+      delete process.env.NO_PROXY;
+      delete process.env.no_proxy;
+      const result = await sendPinned(
+        { address: outside ?? "127.0.0.1", hostname: HOST, path: "/u", body: ONE_CLICK_BODY, timeoutMs: 3000 },
+        { port: local.port, ca: cert }
+      );
+      expect(result).toEqual({ status: 200 });
+      expect(local.seen).toHaveLength(1);
+      expect(proxyHits).toBe(0);
+    } finally {
+      for (const [name, value] of saved) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+      local.close();
+      proxy.close();
+    }
+  });
+
+  test("TG2. the total budget covers the lookup and the connection together", async () => {
+    const local = await startServer((_req, res) => setTimeout(() => res.writeHead(200).end(), 250));
+    try {
+      const slowLookup: LookupAll = async () => {
+        await Bun.sleep(400);
+        return [{ address: PUBLIC, family: 4 }];
+      };
+      const started = Date.now();
+      // 400 ms lookup + 250 ms server delay = 650 ms: over the 500 ms budget, though each step alone is inside it.
+      const result = await postOneClick(url(`https://${HOST}/u`), {
+        lookup: slowLookup,
+        dial: viaLoopback(local),
+        timeoutMs: 500,
+      });
+      expect(result).toEqual({ kind: "failed", code: "timeout" });
+      expect(Date.now() - started).toBeLessThan(2000);
+    } finally {
+      local.close();
+    }
+  });
+
+  test("TG4. a header block between 8 and 16 KiB is refused (`network`): the cap `maxHeaderSize` is ours, not the runtime default", async () => {
+    const local = await startServer((_req, res) => res.writeHead(200, { "X-Pad": "a".repeat(12_000) }).end());
+    try {
+      const result = await postOneClick(url(`https://${HOST}/u`), {
+        lookup: lookupOf(PUBLIC),
+        dial: viaLoopback(local),
+        timeoutMs: 3000,
+      });
+      expect(result).toEqual({ kind: "failed", code: "network" });
+      // A small header block still works on the same server code.
+      const small = await startServer((_req, res) => res.writeHead(200, { "X-Pad": "a".repeat(2000) }).end());
+      try {
+        expect(
+          await postOneClick(url(`https://${HOST}/u`), { lookup: lookupOf(PUBLIC), dial: viaLoopback(small) })
+        ).toEqual({
+          kind: "ok",
+          code: "http_200",
+        });
+      } finally {
+        small.close();
+      }
+    } finally {
+      local.close();
+    }
   });
 });
 

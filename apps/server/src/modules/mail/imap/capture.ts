@@ -31,6 +31,11 @@ function headerValue(parsed: ParsedMail, key: string): string | null {
   return value === "" ? null : value;
 }
 
+// How many header lines carry this key. A mail that went through a replay can carry a forged line above the signed one.
+function headerCount(parsed: ParsedMail, key: string): number {
+  return parsed.headerLines.filter((header) => header.key === key).length;
+}
+
 // RFC 8058: the topmost `List-Unsubscribe-Post` value, trimmed and case-insensitive, is `List-Unsubscribe=One-Click`.
 // Absent or any other value is `false`. Only the flag is kept, never the header text.
 function oneClickOf(value: string | null): boolean {
@@ -144,13 +149,19 @@ function headerHasCalendar(parsed: ParsedMail): boolean {
 export function captureFromParsed(parsed: ParsedMail, opts: { partsKnown: boolean }): CapturedHeaders {
   const attachments = opts.partsKnown ? attachmentsOf(parsed) : [];
   const links = opts.partsKnown ? linkPairs(parsed) : [];
+  // F110 stage 24 review: a mail with MORE THAN ONE `List-Unsubscribe` or `List-Unsubscribe-Post` line gets no link and no one-click.
+  // DKIM checks the lowest instance of a repeated header, and this code reads the topmost, so an extra line on top of a signed mail
+  // would change the target without breaking the signature. One line of each behaves as before.
+  const repeated = headerCount(parsed, "list-unsubscribe") > 1 || headerCount(parsed, "list-unsubscribe-post") > 1;
   return {
     fromName: cleanCut(parsed.from?.value[0]?.name, CAPTURE_LIMITS.fromName),
     replyTo: replyToOf(parsed),
     returnPath: returnPathOf(headerValue(parsed, "return-path")),
     authResults: cleanCut(headerValue(parsed, "authentication-results"), CAPTURE_LIMITS.authResults),
-    listUnsubscribe: cleanCut(headerValue(parsed, "list-unsubscribe"), CAPTURE_LIMITS.listUnsubscribe),
-    listUnsubscribePost: oneClickOf(headerValue(parsed, "list-unsubscribe-post")),
+    listUnsubscribe: repeated
+      ? null
+      : cleanCut(headerValue(parsed, "list-unsubscribe"), CAPTURE_LIMITS.listUnsubscribe),
+    listUnsubscribePost: !repeated && oneClickOf(headerValue(parsed, "list-unsubscribe-post")),
     listId: cleanCut(headerValue(parsed, "list-id"), CAPTURE_LIMITS.listId),
     autoSubmitted: token(headerValue(parsed, "auto-submitted")),
     precedence: token(headerValue(parsed, "precedence")),

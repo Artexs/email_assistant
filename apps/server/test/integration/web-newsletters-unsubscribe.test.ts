@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
+import { postOneClick } from "../../src/platform/public-http";
 import { UNSUBSCRIBE_DOMAIN_LIMIT, UNSUBSCRIBE_ORG_LIMIT } from "../../src/modules/triage/newsletter-unsubscribe";
 import { waitFor } from "../wait-for";
 
@@ -326,5 +327,56 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
     });
     const asMember = await box.app().request(`/api/newsletters/${box.mailboxId}`, as("member"));
     expect(JSON.stringify(await asMember.json())).not.toContain("u.c.example");
+  });
+});
+
+// TG3 (review of stage 24): the REAL client behind the route. The lookup is a stub and the dialer throws: a refused target must end
+// `refused` with its stored code and reach neither. Nothing here opens a connection.
+describe("the real guarded client behind the route", () => {
+  test("13: a metadata address, an IPv4-mapped literal and port 8443 end `refused`: the stored code, 0 lookups, 0 dials", async () => {
+    let lookups = 0;
+    let dials = 0;
+    const real = (url: URL) =>
+      postOneClick(url, {
+        lookup: async () => {
+          lookups += 1;
+          return [{ address: "93.184.216.34", family: 4 }];
+        },
+        dial: async () => {
+          dials += 1;
+          throw new Error("the dialer must not be called");
+        },
+      });
+    await box.cleanup();
+    box = await newsletterBox(db, { post: real });
+    const cases = [
+      ["m@c.example", "<https://169.254.169.254/x>", "private_host"],
+      ["v6@c.example", "<https://[::ffff:a00:5]/>", "private_host"],
+      ["port@c.example", "<https://u.c.example:8443/x>", "port"],
+    ] as const;
+    for (const [from, link, code] of cases) {
+      await oneClick(from, link);
+      const res = await tap("owner", from);
+      expect({ from, status: res.status, body: await res.json() }).toEqual({
+        from,
+        status: 200,
+        body: { status: "refused", code, at: NOW.toISOString() },
+      });
+    }
+    const refused = (await rows()).map((row) => [row.sender_lower, row.status, row.code]);
+    expect(refused).toEqual(
+      cases.map(([from, , code]) => [from, "refused", code]).sort((a, b) => (String(a[0]) < String(b[0]) ? -1 : 1))
+    );
+    expect(await audits()).toHaveLength(3);
+    expect({ lookups, dials }).toEqual({ lookups: 0, dials: 0 });
+
+    // A public name does reach the lookup, then the dialer: the stubs are live (the counts above are not zero by accident).
+    await oneClick("ok@d.example", "<https://u.d.example/x>");
+    expect((await tap("owner", "ok@d.example")).status).toBe(200);
+    expect({ lookups, dials }).toEqual({ lookups: 1, dials: 1 });
+    expect((await rows()).find((row) => row.sender_lower === "ok@d.example")).toMatchObject({
+      status: "failed",
+      code: "network",
+    });
   });
 });
