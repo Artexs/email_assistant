@@ -19,6 +19,11 @@ export const LOOP_ROW_ID_PREFIX = "loop-row-";
 export const loopRowId = (id: string): string => `${LOOP_ROW_ID_PREFIX}${id}`;
 export const loopButtonId = (id: string, action: LoopAction): string => `loop-${action}-${id}`;
 const reasonId = (id: string): string => `loop-follow-up-reason-${id}`;
+const DUE_KEY: Record<LoopItem["dueSource"], TextKey> = {
+  stated: "lp_due_stated",
+  default: "lp_due_default",
+  contact: "lp_due_contact",
+};
 
 export interface LoopRowProps {
   item: LoopItem;
@@ -135,9 +140,14 @@ function LoopCard(props: LoopRowProps & { layout: RowLayout }) {
       <LoopText item={item} />
       <p className="text-sm break-words text-muted-foreground">{reasonText(item, now, timeZone)}</p>
       <p className="text-sm text-muted-foreground">
-        {t(item.dueSource === "stated" ? "lp_due_stated" : "lp_due_default", { date: due })}
+        {t(DUE_KEY[item.dueSource], { date: due })}
         {layout.followUps && ` · ${t("lp_follow_ups", { n: item.followUpsSent, max: LOOP_FOLLOW_UP_MAX })}`}
       </p>
+      {item.usualReplyDays !== null && (
+        <p className="text-sm text-muted-foreground">
+          {item.usualReplyDays === 1 ? t("lp_usual_reply_one") : t("lp_usual_reply", { n: item.usualReplyDays })}
+        </p>
+      )}
       {item.matchedBySubject && <p className="text-sm text-muted-foreground">{t("lp_matched_subject")}</p>}
       {item.autoReplyOnly && <p className="text-sm text-muted-foreground">{t("lp_auto_reply_only")}</p>}
       <Actions {...props} />

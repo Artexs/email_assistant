@@ -7,8 +7,15 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { ActionsScope } from "../../src/modules/actions";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { listActivity } from "../../src/modules/reports";
+import { setOrgFeature } from "../../src/modules/tenancy";
 import { getLabelTarget, undoWithFeedback } from "../../src/modules/triage";
-import { seedActivityRows, seedOtherOrgMail } from "../../src/scripts/e2e-activity-rows";
+import { senderKeyHash } from "../../src/platform/crypto";
+import {
+  ACTIVITY_PROFILES,
+  seedActivityProfiles,
+  seedActivityRows,
+  seedOtherOrgMail,
+} from "../../src/scripts/e2e-activity-rows";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -113,5 +120,32 @@ describe("e2e activity rows", () => {
     const code = await proc.exited;
     expect(code).toBe(1);
     expect(await new Response(proc.stderr).text()).toContain("refusing");
+  });
+
+  test("(6) the seeded profiles give the sender line of the panel, under the key of the run", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await createOrgWithMailbox(trx);
+      const ctx = { orgId: s.orgId };
+      const key = Buffer.alloc(32, 9).toString("base64");
+      await setOrgFeature(trx, ctx, { flag: "sender_context", enabled: true, actor: "cli", now: NOW });
+      const result = await seedActivityRows(trx, ctx, s.mailboxId, NOW);
+      await seedActivityProfiles(trx, ctx, s.mailboxId, (address) => senderKeyHash(key, s.orgId, address), NOW);
+      const page = await listActivity(trx, ctx, { notRated: false, limit: 100 }, NOW, textsFor("en"), {
+        db: trx,
+        credentialsKey: key,
+      });
+      const byId = (id: string) => page.items.find((item) => item.emailId === id);
+      expect(byId(result.emailIds.moved)?.sender).toEqual({
+        relation: "new",
+        received: ACTIVITY_PROFILES.shop.received,
+        answered: 0,
+        userMailsTo: 0,
+        lastSeenDaysAgo: 0,
+        days: 90,
+      });
+      expect(byId(result.emailIds.reply)?.sender).toMatchObject({ relation: "known", answered: 6, lastSeenDaysAgo: 2 });
+      // A sender with no seeded profile has no line.
+      expect(byId(result.emailIds.unsure)?.sender).toBeNull();
+    });
   });
 });

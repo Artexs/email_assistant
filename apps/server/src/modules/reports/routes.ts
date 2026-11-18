@@ -3,6 +3,7 @@ import { Hono } from "hono";
 
 import type { Db } from "../../platform/db";
 import { parseQuery, ValidationError, type ApiEnv } from "../../platform/http";
+import type { SenderLineDeps } from "../contacts";
 import { getUserAuthProfile, isFeatureOn } from "../tenancy";
 
 import { decodeActivityCursor, listActivity } from "./activity";
@@ -12,6 +13,8 @@ import { recentWeekStats, type WeekStatsDeps } from "./metrics";
 export interface ActivityRouteDeps {
   db: Db;
   now(): Date;
+  // The sender line (flag `sender_context`). Absent: no line, as with the flag off.
+  sender?: SenderLineDeps;
 }
 
 export function activityRoutes(deps: ActivityRouteDeps): Hono<ApiEnv> {
@@ -39,7 +42,8 @@ export function activityRoutes(deps: ActivityRouteDeps): Hono<ApiEnv> {
         limit: q.limit,
       },
       deps.now(),
-      textsFor(locale)
+      textsFor(locale),
+      deps.sender
     );
     return c.json(page);
   });

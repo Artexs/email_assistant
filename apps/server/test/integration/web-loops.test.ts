@@ -98,6 +98,7 @@ describe("T1 GET /loops", () => {
       followUpWaiting: false,
       sendId: null,
       dueSource: "default",
+      usualReplyDays: null,
     });
     expect(await byId("waiting", "closed", done.id)).toMatchObject({
       matchedBySubject: true,
@@ -109,6 +110,16 @@ describe("T1 GET /loops", () => {
     expect(d).toMatchObject({ reason: "forwarded_to_delegate" });
     expect(d?.delegate).toMatchObject({ name: "Anna" });
     expect(await byId("promised", "open", promised.id)).toMatchObject({ reason: "promised" });
+  });
+
+  test("a loop whose due date comes from the contact shows its usual reply days; any other source shows null", async () => {
+    const { app, make } = await setup();
+    const contact = await make({ due_source: "contact", usual_reply_days: 2 });
+    const plain = await make({ due_source: "default" });
+    const list = loopListSchema.parse((await call(app, "owner", "GET", "/loops?kind=waiting")).body);
+    const usual = (id: string) => list.items.find((item) => item.id === id);
+    expect(usual(contact.id)).toMatchObject({ dueSource: "contact", usualReplyDays: 2 });
+    expect(usual(plain.id)).toMatchObject({ dueSource: "default", usualReplyDays: null });
   });
 
   test("filter due: due by the end of the local day (inclusive); open and closed are split", async () => {

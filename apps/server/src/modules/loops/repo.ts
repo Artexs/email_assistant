@@ -54,7 +54,9 @@ export interface LoopRow {
   text: string | null;
   language: "pl" | "en";
   due_at: Date;
-  due_source: "stated" | "default";
+  due_source: "stated" | "default" | "contact";
+  // The usual reply time of the contact in days; set only with `due_source` `contact`.
+  usual_reply_days: number | null;
   wait_from_at: Date;
   later_count: number;
   follow_ups_sent: number;
@@ -80,7 +82,7 @@ export function toLoopRow<
     status: loopStatusSchema.parse(row.status),
     close_reason: row.close_reason === null ? null : loopCloseReasonSchema.parse(row.close_reason),
     language: z.enum(["pl", "en"]).parse(row.language),
-    due_source: z.enum(["stated", "default"]).parse(row.due_source),
+    due_source: z.enum(["stated", "default", "contact"]).parse(row.due_source),
   } as unknown as LoopRow;
 }
 
@@ -101,7 +103,9 @@ export interface NewLoop {
   text: string | null;
   language: "pl" | "en";
   dueAt: Date;
-  dueSource: "stated" | "default";
+  dueSource: "stated" | "default" | "contact";
+  // Only with `dueSource` `contact`.
+  usualReplyDays: number | null;
   waitFromAt: Date;
   at: Date;
 }
@@ -131,6 +135,7 @@ export async function insertLoop(
       language: row.language,
       due_at: row.dueAt,
       due_source: row.dueSource,
+      usual_reply_days: row.usualReplyDays,
       wait_from_at: row.waitFromAt,
       created_at: row.at,
       updated_at: row.at,

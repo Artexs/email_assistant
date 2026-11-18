@@ -40,6 +40,7 @@ const loop = (patch: Partial<LoopItem> = {}): LoopItem => ({
   subject: "Offer",
   dueAt: "2026-11-20T10:00:00.000Z",
   dueSource: "default",
+  usualReplyDays: null,
   sentAt: "2026-11-16T09:00:00.000Z",
   laterLeft: 3,
   followUpsSent: 0,

@@ -48,7 +48,9 @@ export const loopItemSchema = z.strictObject({
   text: z.string().nullable(),
   subject: z.string().nullable(),
   dueAt: z.iso.datetime(),
-  dueSource: z.enum(["stated", "default"]),
+  dueSource: z.enum(["stated", "default", "contact"]),
+  // The usual reply time of the counterpart in days; set only with `dueSource` `contact`.
+  usualReplyDays: z.number().int().min(1).max(60).nullable(),
   // When the wait began: the Sent time of the mail that opened the loop or last restarted the wait.
   sentAt: z.iso.datetime(),
   // Later taps left (3 at most in all).

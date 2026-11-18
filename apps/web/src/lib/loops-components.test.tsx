@@ -21,6 +21,7 @@ const loop = (patch: Partial<LoopItem> = {}): LoopItem => ({
   subject: "Offer",
   dueAt: "2026-11-20T10:00:00.000Z",
   dueSource: "stated",
+  usualReplyDays: null,
   sentAt: "2026-11-16T09:00:00.000Z",
   laterLeft: 3,
   followUpsSent: 0,
@@ -60,6 +61,19 @@ describe("a loop row", () => {
 
   test("a default due date says so", () => {
     expect(row(loop({ dueSource: "default" }))).toContain("Due 20 Nov 2026 (default wait)");
+  });
+
+  test("a due date from the usual reply time says so and shows the usual reply under it, in both languages", () => {
+    const contact = loop({ dueSource: "contact", usualReplyDays: 2 });
+    const en = row(contact);
+    expect(en).toContain("Due 20 Nov 2026 (usual reply time of this contact)");
+    expect(en).toContain("Usual reply: 2 days");
+    expect(row(loop({ dueSource: "contact", usualReplyDays: 1 }))).toContain("Usual reply: 1 day<");
+    expect(row(loop({ dueSource: "default" }))).not.toContain("Usual reply");
+    setLocaleForTest("pl");
+    const pl = row(contact);
+    expect(pl).toContain("zwykły czas odpowiedzi tej osoby");
+    expect(pl).toContain("Zwykle odpowiada w 2 dni");
   });
 
   test("an owner gets named buttons in the order of the rules; ids let the page return the focus", () => {
