@@ -1702,6 +1702,8 @@ describe("send result notices", () => {
         providerResult: { stage: "envelope", response_code: 450, code: "EENVELOPE", cap: "soft_retry" },
       });
       const bad = await ended(trx, o, { status: "failed", reason: "bad_payload", attempts: 1 });
+      // A reply whose text still held a gap at the claim (stage 05): told like a bad payload, nothing was sent.
+      const gaps = await ended(trx, o, { status: "failed", reason: "has_gaps", attempts: 0 });
 
       await run(trx);
 
@@ -1720,6 +1722,9 @@ describe("send result notices", () => {
       const b = await resultText(trx, o, bad.sendId);
       expect(b.text).toContain("The stored send data is not valid; nothing was sent");
       expect(b.data).toEqual([]);
+      const g = await resultText(trx, o, gaps.sendId);
+      expect(g.text).toContain("The stored send data is not valid; nothing was sent");
+      expect(g.data).toEqual([]);
     });
   });
 

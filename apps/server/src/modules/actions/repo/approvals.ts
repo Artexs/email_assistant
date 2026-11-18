@@ -20,7 +20,8 @@ const isReply = sql<boolean>`(a.payload->>'kind' is not distinct from 'reply')`;
 // D22: the sends of one mailbox that the expiry job closes, each with the first reason that applies.
 // `timeout` needs a delivered request. An old request that no owner received ends as `not_seen`, except in a suspended
 // organization: there the send waits and the resume hook ends it (F079, `expireUnseenApprovals`).
-// A reply ends as `timeout` 7 days after `created_at`, whatever `notified_at`; the 48 h rules of the other kinds skip it.
+// A reply ends as `timeout` 7 days after `created_at`, whatever `notified_at`; the 48 h rules of the other kinds skip it. `not_notified`
+// needs no guard: it has the same 7-day cut-off, and the reply clause above it matches first.
 export async function listExpiredApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -38,8 +39,8 @@ export async function listExpiredApprovals(
           when a.status = 'awaiting_approval' and not ${isReply} and a.notified_at < ${ttlBefore} and ${requestSent}
             then 'timeout'
           when a.status = 'awaiting_approval' and d.status in ('failed', 'undone') then 'draft_missing'
-          when a.status = 'awaiting_approval' and not ${isReply} and a.notified_at is null
-            and a.created_at < ${createdBefore} then 'not_notified'
+          when a.status = 'awaiting_approval' and a.notified_at is null and a.created_at < ${createdBefore}
+            then 'not_notified'
           when a.status = 'awaiting_approval' and not ${isReply} and a.notified_at < ${ttlBefore}
             and o.plan <> 'suspended' then 'not_seen'
           when a.status = 'approved' and a.approved_at < ${ttlBefore}

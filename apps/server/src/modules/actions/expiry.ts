@@ -70,7 +70,7 @@ export async function closeLockedSend(
   const staleBefore = new Date(opts.now.getTime() - STALE_AFTER_MS);
   if (send.status === "approved") {
     if (!opts.approvedCloses) return { kind: "not_open", state: send.status };
-    if (!opts.claimed && send.locked_at !== null && send.locked_at >= staleBefore) return { kind: "busy" };
+    // A fresh lock that the caller does not own: `setExpired` finds no row below and the answer is `busy`.
   } else if (send.status === "applying") {
     return { kind: "busy" };
   } else if (send.status !== "awaiting_approval") {

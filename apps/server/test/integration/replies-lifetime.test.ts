@@ -267,6 +267,22 @@ describe("step 1: the time limit per kind", () => {
     });
   });
 
+  test("1i: the approval list gives a held (approved) reply expiresAt = approved_at + 48 h", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const held = await reply(trx, w, 3 * DAY, {
+        sendStatus: "approved",
+        approved: { userId: w.userId, at: ago(5 * HOUR) },
+      });
+
+      const list = await listApprovals({ db: trx as unknown as Db, sendScope: { kind: "all" } }, w.ctx, NOW);
+
+      const item = list.items.find((entry) => entry.id === held.sendId);
+      expect(item).toMatchObject({ state: "held" });
+      expect(item?.expiresAt).toBe(new Date(ago(5 * HOUR).getTime() + 48 * HOUR).toISOString());
+    });
+  });
+
   test("1h: the approval list gives a reply expiresAt = created_at + 7 d, notified or not", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
@@ -342,6 +358,21 @@ describe("step 2: gaps and the flag", () => {
 
       expect(await tap(trx, w, gapInEdit.sendId)).toEqual({ kind: "has_gaps" });
       expect(await tap(trx, w, cleanEdit.sendId)).toEqual({ kind: "approved" });
+    });
+  });
+
+  test("2b2: a reply whose draft text cannot be read is not approved (the gap check cannot run)", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const p = await reply(trx, w, HOUR);
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ kind: "reply" }) })
+        .where("id", "=", p.draftId)
+        .execute();
+
+      expect(await tap(trx, w, p.sendId)).toEqual({ kind: "draft_not_ready" });
+      expect(await row(trx, p.sendId)).toMatchObject({ status: "awaiting_approval" });
     });
   });
 
@@ -423,6 +454,53 @@ describe("step 2: gaps and the flag", () => {
         approved: { userId: w.userId, at: ago(MINUTE) },
         replyBody: "Tak [[godzina]]",
       });
+      const claimed = (
+        await claimActions(trx, w.ctx, w.mailboxId, {
+          now: NOW,
+          limit: 20,
+          staleBefore: ago(10 * MINUTE),
+          filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
+        })
+      ).find((entry) => entry.id === p.sendId) as ClaimedAction;
+      const folders = createFolderResolver(
+        { db: trx, now: () => NOW, provider: w.fake, mailboxId: w.mailboxId, folderMap: w.folderMap },
+        w.ctx
+      );
+      const deps: ApplyDeps = {
+        db: trx,
+        now: () => NOW,
+        mailboxId: w.mailboxId,
+        folders,
+        mailbox: { address: w.address, capabilities: { uidplus: true }, folderMap: w.folderMap },
+        owner: { displayName: "Owner" },
+        organization: { styleText: null, timezone: "Europe/Warsaw" },
+        compose: composeMessage,
+        sender: w.sender,
+        hooks: noDelegationHooks,
+        appendFolders: new Set(),
+      };
+
+      expect(await applySend(deps, w.ctx, claimed, w.fake)).toEqual({ kind: "failed", reason: "has_gaps" });
+
+      expect(w.sender.calls).toEqual([]);
+      expect(await row(trx, p.sendId)).toMatchObject({ status: "failed", status_reason: "has_gaps" });
+    });
+  });
+
+  test("2f2: the gap in an edited text (body_text) is refused at the claim too", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const p = await reply(trx, w, HOUR, {
+        draftStatus: "applied",
+        sendStatus: "approved",
+        approved: { userId: w.userId, at: ago(MINUTE) },
+        replyBody: "Tak.",
+      });
+      await trx
+        .updateTable("actions")
+        .set({ payload: sql`payload || ${JSON.stringify({ body_text: "Tak [[kiedy]]" })}::jsonb` })
+        .where("id", "=", p.draftId)
+        .execute();
       const claimed = (
         await claimActions(trx, w.ctx, w.mailboxId, {
           now: NOW,

@@ -72,8 +72,8 @@ export async function closeSend(
       await input.deps.approvalHooks.onDecided(trx, ctx, { sendId: input.sendId, decision: "expired", at: input.now });
       return { kind: "closed", sendId: input.sendId };
     case "lost":
-      // The row was locked by this transaction and `approved` with a fresh lock that the caller does not own, or it changed
-      // under the guard: nothing was written.
+      // The row is `approved` with a fresh lock that the caller does not own: the guard of the write found no row, and
+      // nothing was written.
       return { kind: "busy" };
     default:
       return result;
