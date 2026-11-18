@@ -11,6 +11,7 @@ capabilities:
 ---
 
 import UiText from "../../../../components/UiText.astro";
+import Shot from "../../../../components/Shot.astro";
 
 Ten samouczek uczy jednej ścieżki. Zaczynasz od linku z zaproszeniem. Kończysz na pierwszym podsumowaniu w Telegramie.
 Wykonuj kroki po kolei. Każdy krok mówi, co widzisz i co robi system.
@@ -48,6 +49,7 @@ Logowanie dwuetapowe jest opcjonalne. Gdy je włączysz, panel po haśle pyta o 
 Włączasz je w **<UiText k="nav_settings" />**, w karcie Konto. Zobacz [Włącz logowanie dwuetapowe](../how-to/two-factor/).
 
 ## 4. Przejdź listę startową
+<Shot page="onboarding" />
 
 Po pierwszym logowaniu panel otwiera stronę **<UiText k="nav_onboarding" />**. Pokazuje listę startową.
 Lista jest gotowa, gdy masz skrzynkę, połączony Telegram i wybrany tryb. Ostatnia pozycja jest opcjonalna. Połączenie z Telegramem liczy się tylko wtedy, gdy serwer ma bota Telegrama.
@@ -56,6 +58,7 @@ Gdy lista jest gotowa, panel pokazuje ten tekst i przy każdym następnym logowa
 > <UiText k="ob_all_set" />
 
 ### Połącz skrzynkę
+<Shot page="mailboxes" />
 
 Skrzynkę może połączyć tylko właściciel. Inni członkowie widzą ten tekst:
 
@@ -105,10 +108,12 @@ Nowa skrzynka zaczyna w trybie podglądu. Dla właściciela pozycja listy mówi:
 Naciśnij **<UiText k="ob_keep_shadow" />**, aby zostać w trybie podglądu. Skrzynkę możesz później przełączyć na tryb asystenta w Ustawieniach.
 
 ### Dodaj reguły nadawców
+<Shot page="rules" />
 
 Ta pozycja jest opcjonalna. Na stronie **<UiText k="nav_rules" />** możesz dodać nadawców VIP, z listy dozwolonych i z listy blokowanych. Możesz to zrobić później.
 
 ## 5. Tryb podglądu
+<Shot page="activity" />
 
 W trybie podglądu system czyta i sortuje Twoje wiadomości oraz zgłasza, co by zrobił. Niczego nie zmienia w Twojej skrzynce.
 Nie przenosi, nie oznacza flagą i nie oznacza jako przeczytanych. Nie tworzy szkiców i nie wysyła wiadomości.
@@ -121,6 +126,7 @@ Wynik widzisz w dwóch miejscach:
 Podsumowanie pokazuje ten wiersz, gdy wymienia wiadomości, a każda skrzynka jest w trybie podglądu.
 
 ## 6. Pierwsze podsumowanie
+<Shot page="settings" />
 
 Domyślnie system wysyła podsumowanie o 08:00 i o 16:00. Używa strefy czasowej Twojej organizacji.
 Godziny możesz zmienić w **<UiText k="nav_settings" />**, w karcie **<UiText k="digest_title" />**.
