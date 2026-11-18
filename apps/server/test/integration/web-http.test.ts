@@ -28,7 +28,9 @@ let dist = "";
 
 beforeAll(() => {
   dist = mkdtempSync(join(tmpdir(), "ea-web-dist-"));
-  for (const dir of ["login", "setup", "forgot", "mailboxes", "_astro"]) mkdirSync(join(dist, dir));
+  for (const dir of ["login", "setup", "forgot", "mailboxes", "_astro", "icons", "offline.html"]) {
+    mkdirSync(join(dist, dir));
+  }
   writeFileSync(join(dist, "login/index.html"), "login page");
   writeFileSync(join(dist, "setup/index.html"), "setup page");
   writeFileSync(join(dist, "forgot/index.html"), "forgot page");
@@ -36,6 +38,11 @@ beforeAll(() => {
   writeFileSync(join(dist, "404.html"), "not found page");
   writeFileSync(join(dist, "_astro/x.js"), "console.log(1)");
   writeFileSync(join(dist, "favicon.png"), "png");
+  // The installable shell. Astro writes the offline page as `offline.html/index.html`.
+  writeFileSync(join(dist, "sw.js"), "self.addEventListener('fetch',()=>{})");
+  writeFileSync(join(dist, "manifest.webmanifest"), '{"start_url":"/activity"}');
+  writeFileSync(join(dist, "offline.html/index.html"), "offline page");
+  writeFileSync(join(dist, "icons/icon-192.png"), "png");
 });
 
 afterAll(async () => {
@@ -109,6 +116,42 @@ describe("static pages", () => {
     const health = await app.request("/health");
     expect(health.status).toBe(200);
     expect(await health.json()).toEqual({ status: "ok", db: "up" });
+  });
+});
+
+describe("the installable shell", () => {
+  test("the worker, the manifest, the offline page and the icons are public with their content types; the worker is never cached for long", async () => {
+    const app = appWith();
+    const worker = await app.request("/sw.js");
+    expect(worker.status).toBe(200);
+    expect(worker.headers.get("content-type")).toContain("text/javascript");
+    expect(worker.headers.get("cache-control")).toBe("no-cache");
+    expect(await worker.text()).toContain("addEventListener");
+
+    const manifest = await app.request("/manifest.webmanifest");
+    expect(manifest.status).toBe(200);
+    expect(manifest.headers.get("content-type")).toContain("application/manifest+json");
+    expect(manifest.headers.get("cache-control")).toBe("private, no-store");
+
+    const offline = await app.request("/offline.html");
+    expect(offline.status).toBe(200);
+    expect(offline.headers.get("content-type")).toContain("text/html");
+    expect(await offline.text()).toBe("offline page");
+
+    const icon = await app.request("/icons/icon-192.png");
+    expect(icon.status).toBe(200);
+    expect(icon.headers.get("content-type")).toContain("image/png");
+  });
+
+  test("a page still needs a session: /activity and /mailboxes redirect to the login page", async () => {
+    const app = appWith();
+    for (const path of ["/activity", "/mailboxes", "/settings"]) {
+      const res = await app.request(path);
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe(`/login?next=${encodeURIComponent(path)}`);
+    }
+    // A write to a shell path is not a static file: only GET and HEAD are served.
+    expect((await app.request("/sw.js", { method: "POST" })).status).toBe(404);
   });
 });
 

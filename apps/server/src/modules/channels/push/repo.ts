@@ -16,7 +16,7 @@ import type { PushTarget } from "./send";
 
 const log = createLog("channels");
 
-/** A user keeps at most this many devices; the next subscribe removes the oldest first. */
+/** A user keeps at most this many devices; the next subscribe removes a dead device first, else the oldest. */
 export const MAX_DEVICES_PER_USER = 10;
 
 /** The device key of the dedup of a push row: the Telegram key of the event, the word `push` and the device id. */
@@ -61,7 +61,8 @@ export async function lockPushUser(trx: Transaction<DB>, userId: string): Promis
 }
 
 // An existing `(user, endpoint)` gets the new session, keys and label (re-bind; `created` false). With `rebindOnly` and no such
-// device: null, nothing stored. A new device beyond the cap removes the oldest of the user first, which fails its open rows.
+// device: null, nothing stored. A new device beyond the cap removes a device of the user first (a dead one before a live one,
+// then the oldest), which fails its open rows.
 export async function upsertPushSubscription(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -97,11 +98,18 @@ export async function upsertPushSubscription(
   }
   if (input.rebindOnly) return null;
 
+  // Devices that are not live (no session, or an expired one) go first, oldest first; a live device goes last. A live
+  // device is the one that the user can still receive on, so a full list drops the dead ones before it drops a working phone.
   const own = await trx
     .selectFrom("push_subscriptions")
     .select("id")
     .where("org_id", "=", ctx.orgId)
     .where("user_id", "=", input.userId)
+    .orderBy(
+      sql`(session_id is not null and exists (
+        select 1 from auth_sessions s where s.id = push_subscriptions.session_id and s.expires_at > ${input.now}
+      ))`
+    )
     .orderBy("created_at")
     .orderBy("id")
     .forUpdate()
