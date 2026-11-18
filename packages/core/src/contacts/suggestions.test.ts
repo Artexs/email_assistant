@@ -184,6 +184,30 @@ describe("suggestionsFor: domain", () => {
     expect(result).toHaveLength(2);
   });
 
+  test("each protected sender of the domain blocks the domain blocklist", () => {
+    const protectedOnes = [
+      { relation: "known" as const },
+      { relation: "delegate" as const },
+      { isDelegate: true },
+      { isVip: true },
+      { isWhitelisted: true },
+      { answered90: 1 },
+      { userMailsTo90: 1 },
+    ];
+    for (const over of protectedOnes) {
+      const result = suggestionsFor(
+        [sender("a@acme.pl", spammer), sender("b@acme.pl", spammer), sender("jan@acme.pl", over)],
+        ctx()
+      );
+      expect(result.map((c) => c.scope)).toEqual(["address", "address"]);
+    }
+  });
+
+  test("one address twice is one sender: no domain candidate", () => {
+    const result = suggestionsFor([sender("a@acme.pl", spammer), sender("a@acme.pl", spammer)], ctx());
+    expect(result.map((c) => `${c.scope}:${c.pattern}`)).toEqual(["address:a@acme.pl"]);
+  });
+
   test("an own domain gives address candidates only", () => {
     const own = { isOwnDomain: true };
     const result = suggestionsFor(
