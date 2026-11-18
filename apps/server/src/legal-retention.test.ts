@@ -30,7 +30,7 @@ describe("data categories: retention pins", () => {
   });
 });
 
-// Reply texts (F115 stage 03b, review 3 N6): ONE period and ONE cut-off column. The period is the text period of the job
+// Reply texts: ONE period and ONE cut-off column. The period is the text period of the job
 // (`RETENTION_TEXT_DAYS`), not `data_retention_days`; the column is `created_at`. The four places agree: the job
 // (`retention.ts` and `clearReplyTexts`, pinned by `replies-retention.test.ts`), the category `reply-texts`, `docs/architecture.md`
 // §7 and `docs/legal/records-of-processing.md`.
