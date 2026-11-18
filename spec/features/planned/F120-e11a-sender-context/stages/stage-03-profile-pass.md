@@ -2,12 +2,12 @@
 
 Part of [`../plan.md`](../plan.md). Names: [`../interfaces.md`](../interfaces.md) § Contacts module.
 
-Carry-over reads: stages 01–02 code; `apps/server/src/modules/triage/extras-reader.ts` (`readSenderHistory`, `mailKindFilter`), `modules/triage/suspicious-context.ts` (own addresses), `modules/loops` match rule (Sent From aliases as own), `apps/server/src/main.ts` (scheduler lines of `loops.match`), `docs/capabilities/sync.md`, `sent-mail.md`, `triage.md` rule 18, `layers.json`.
+Carry-over reads: stages 01–02; `modules/triage/extras-reader.ts` (`mailKindFilter`), `suspicious-context.ts` (own addresses), loops match rule (Sent From aliases), `main.ts` (`loops.match` scheduling), `docs/capabilities/sent-mail.md`, `layers.json`.
 
 ## Step 1 — module and aggregate read
 
-- Goal: new module `contacts` (layer 3; `layers.json` edges `contacts → triage`, `contacts → delegation` only if imported, each with its `why`; run `bun run graph:modules`).
-- `readSenderActivity(db, ctx, mailboxId, { now, testMail })`: set-based SQL (a fixed number of statements per mailbox, never one per sender) that returns per lower-case address the raw counts of interfaces.md § Profile row, the 30-day sub-counts that stage 05 needs (`received30`, `answered30`, `flagged30`), the 90-day suggestion counts (corrected to spam, corrected or moved back away from `spam`/`notification`, suspicious mail), the reply-delay samples (D5) and the bulk signal codes. Plain addresses live only in memory.
+- Goal: new module `contacts` (layer 3; edges of D7 only if imported; `bun run graph:modules`).
+- `readSenderActivity(db, ctx, mailboxId, { now, testMail })`: set-based SQL (a fixed number of statements per mailbox, never one per sender) that returns per lower-case address the raw counts of interfaces.md § Profile row, the 30-day sub-counts that stage 05 needs (`received30`, `answered30`, `flagged30`), the 90-day suggestion counts (corrected to spam, corrected or moved back away from `spam`/`notification`, suspicious mail), the reply-delay samples (D5) and the bulk signal codes. Plain addresses stay in memory.
 - Decisions: D4, D5. Own addresses (all mailboxes of the org, Sent From aliases of the mailbox) never get a row. Test mail never counts. A mail counts once per address even if the address is in To and Cc.
 - Bulk: a mail is bulk when it has `list_id`, `list_unsubscribe`, `auto_submitted` other than `no`, or a noreply sender (`isNoreplyAddress`). `relation` = `relationOf` with `isDelegate` (active delegate email equals the address) and `isVip` (a VIP rule of this mailbox or the org matches the address or its `@domain`).
 
@@ -15,8 +15,8 @@ Carry-over reads: stages 01–02 code; `apps/server/src/modules/triage/extras-re
 
 - `refreshMailboxProfiles(deps, ctx, mailboxId, { now })`: in one transaction, `pg_try_advisory_xact_lock` on a key of the mailbox (D8; not taken → `{ skipped: true }`, no write); upsert one row per address (counts from the read; `first_seen_at` = least of stored and read; `last_seen_at` = greatest of stored, last incoming mail and last user mail; `refreshed_at = now`); set all counts to 0, medians to null and `relation = 'new'` for rows of the mailbox not in the read (D6). Hash with `senderKeyHash`.
 - `readProfiles(db, ctx, mailboxId, addresses)` → `Map<lower address, SenderHistory>` with `days: 90`, `firstSeenDaysAgo`, `lastSeenDaysAgo`, `lastUserMailDaysAgo` from `now`.
-- Job `contacts.refresh` (`0 7 * * * *`): each active mailbox of each organization that is not suspended and has `sender_context` on; a mailbox error logs `contacts_refresh_mailbox_failed` (ids and error code) and the run goes on. `bun run job:run --name contacts.refresh` runs one pass and prints counts. Log `contacts_refresh_done` (`mailbox_id`, `count` = written, `zeroed`); add the fields to `platform/log-fields.ts` if missing. No address, hash or subject in a line.
-- Fixture: `seedSenderActivity(db, ctx, mailboxId, spec)` in `apps/server/test/integration/fixtures.ts` writes `emails`, `triage_results`, `triage_feedback`, `email_flags`, `email_headers`, `sent_emails` for a sender spec. Later stages reuse it.
+- Job `contacts.refresh` (`0 7 * * * *`): each active mailbox of each organization that is not suspended and has `sender_context` on; a mailbox error logs `contacts_refresh_mailbox_failed` (ids and error code) and the run goes on. `bun run job:run --name contacts.refresh` runs one pass and prints counts. Log `contacts_refresh_done` (`mailbox_id`, `count`, `zeroed`; fields in `platform/log-fields.ts`). No address, hash or subject in a line.
+- Fixture: `seedSenderActivity(db, ctx, mailboxId, spec)` in `apps/server/test/integration/fixtures.ts` writes the source rows of one sender spec; later stages reuse it.
 
 ## Test (integration `contacts-refresh.test.ts`, fixed `now`)
 
@@ -33,7 +33,7 @@ Carry-over reads: stages 01–02 code; `apps/server/src/modules/triage/extras-re
 11. Flag off → the job writes nothing for that org; a suspended org → nothing.
 12. Org B sender with the same address → its own row with a different `key_hash`.
 
-Report in the final message the pass time for a seeded mailbox of 5,000 mails and 500 senders (no assert).
+Report the pass time for 5,000 mails and 500 senders in the final message (no assert).
 
 ## Done when
 

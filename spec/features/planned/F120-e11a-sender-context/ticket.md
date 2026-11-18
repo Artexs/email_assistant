@@ -2,31 +2,42 @@
 opened: 2026-11-13
 ---
 
-# F120 · E11a Sender context
+# F120 · The assistant knows who each sender is to the user and suggests rules from it
 
 ## Outcome
 
-E11a Sender context: the Stage 2 ticket in row 26 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 10 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E11-contacts-and-context.md` and its discovery notes `docs/product/stage-2/epics/E11-discovery-notes.md`; the planning job turns them into stages.
+The assistant keeps a count-only profile of each sender per mailbox (mails, answers, corrections, reply times; no mail text, keyed hash, deleted 12 months after the last mail). From it, the owner gets VIP, whitelist and blocklist suggestions with a reason on the Rules page, sees one sender line in Activity and Approvals, and open loops wait as long as the contact usually takes to reply. The profile line enters the classifier prompt only if it wins the sim holdout. Stage 2 row 26 (`docs/product/stage-2/05-execution-plan.md` §2.1), epic E11 page and discovery notes §2.
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- Profile table and an hourly recompute pass from the stored mail, Sent, flags and feedback of 90 days.
+- Privacy: retention, DSR find and erase, export, org and mailbox delete.
+- Suggestions (generator, Accept and Dismiss, Rules card, weekly-report line).
+- Readers: sender line, per-contact loop wait, known domains for the look-alike rule, a `classifier-v4` lab experiment.
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- A contacts page, trust score, client or vendor labels, learned delegate tags, thread summaries, snooze (PD-104, PD-105).
+- The EU endpoint and the own model (E11b, F111).
+- A sender line in Telegram (questions.md Q1).
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- `plan.md` § Done when, items 1–6.
+- No column of `sender_profiles` holds a plain address (stage 03 scan test).
+- A DSR erase removes the person's profile rows in every mailbox of the organization (stage 04).
+- Accept on a suggestion creates the sender rule; Dismiss hides it for 90 days (stage 05).
+
+## Slices
+
+13 stages, one worker job each; order and parallel lanes in `plan.md` § How to run. Stage 02 is the only migration. Stage 13 is a coordinator VPS step.
 
 ## Sequenced
 
-- Plan after: none (planning may run ahead of the build).
-- Build after: E3a, E5a, E4-B (landed, in `spec/features/done/`).
-- Gate: —
+- Plan after: F116 (open loops), F102 (approvals page), F104 (Sent sync), F110 (history check): all have `stages/`.
+- Build after: F100 (E3a, done), F104 (E5a), F110 (E4-B) in `spec/features/done/`.
+- Gate: — (stage 13 waits for the F104 and F110 VPS stages).
 
 ## Notes
 
-Source row: §2.1 # 26. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+- Decisions: `plan.md` § Input; defaults: `questions.md`; ADR 0034 (accepted with amendments in stage 12).

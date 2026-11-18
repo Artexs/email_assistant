@@ -6,53 +6,52 @@ Names: [interfaces.md](interfaces.md). Defaults and owner steps: [questions.md](
 
 ## Input
 
-Owner, 2026-11-13 (PD-104–PD-114): "Okay, go with defaults." The binding rows: PD-105 (no contacts page; a Suggestions card on the Rules page; one sender line in activity and approvals), PD-106 (counts and dates only, no text, no LLM; relation class by code; keyed hash; deleted 12 months after the last mail; DSR, export, delete), PD-107 (profile in the prompt only if it beats the hint on the holdout), PD-108 (VIP, whitelist, blocklist suggestions with a reason; Accept or Dismiss for 90 days; at most 3 new a week; never automatic; no delegate suggestions), PD-109 (per-contact wait 1.5 × median, 1–7 working days, ≥ 5 replies).
+Owner, 2026-11-13 (PD-104–PD-114): "Okay, go with defaults." Binding: PD-105 (no page; Suggestions card; sender line), PD-106 (counts only, keyed hash, 12 months, DSR), PD-107 (prompt only on a holdout win), PD-108 (suggestion rules), PD-109 (contact wait). Text: E11 page § Decisions.
 
-- **P1** Three flags, default off, epic `E11a`, remove-by 2027-06-01: `sender_context` (profile job, sender line, known domains), `sender_suggestions`, `contact_wait`. The last two do nothing without profiles. Rejected: one flag (no staged roll-out of the user-visible parts).
-- **P2** Sender line only in the panel (Activity, Approvals). Telegram cards do not change (default, owner to confirm, Q1). Reason: the Telegram detail level of ADR 0032 is not built; strict outbox views make a rollback harder.
+- **P1** Three flags, default off, epic `E11a`, remove-by 2027-06-01: `sender_context` (job, sender line, known domains), `sender_suggestions`, `contact_wait`. Rejected: one flag (no staged roll-out).
+- **P2** Sender line only in the panel (Activity, Approvals); Telegram unchanged (default, owner to confirm, Q1). Reason: ADR 0032 detail level not built; strict outbox views.
 - **P3** Suggestions: owner taps Accept or Dismiss; a member sees the card read-only. Accept calls `addSenderRule` with the mailbox as scope.
-- **P4** Weekly report line: one count line and a fixed link to `/rules`, no address. No consent change (counts and fixed words, as F110 D15).
+- **P4** Weekly report: one count line and a fixed link to `/rules`; no consent change (counts only).
 - **P5** Per-contact wait wins over `loop_wait_days` when the contact has ≥ 5 reply samples (PD-109 "else E5's default").
-- **D1** Storage is a derived snapshot, not counters. A job recomputes all profile rows of a mailbox from the source tables of the last 90 days in one pass. Reason: a rolling 90-day window cannot be kept by increments; a recompute is idempotent, survives a crash and a double run, and needs no hook in triage, flag refresh or Sent sync. Rejected: increments in each writer (drift, double counts on retry, 4 hook points).
-- **D2** Only address rows are stored. Domain aggregates are computed in memory for suggestions. Reason: no reader needs stored domain rows (the look-alike rule needs plain domains, D9); fewer rows of personal data. This amends ADR 0034 point 1 (stage 12 writes the amendment).
-- **D3** Key: `senderKeyHash(credentialsKey, orgId, address)` = HMAC-SHA256 hex, key HKDF-SHA256 of `CREDENTIALS_KEY` (empty salt, info `ea/sender-profile/v1`), message `<orgId>:<normalized address>`. Reason: no new secret (as `dsrAddressHash`); the org id stops linking one person across organizations. A key change orphans rows: the next pass writes new rows, old rows age out (D6).
-- **D4** Window and sources: mail of the last 90 days with `received_at` in the window; real mail only (test mail never counts); own addresses never get a row. Profile keys = senders of incoming mail ∪ To and Cc of `origin = user` Sent mail. History-check mail (`status = skipped`) counts. Column meanings: interfaces.md § Profile row.
+- **D1** Storage is a derived snapshot, not counters. A job recomputes all profile rows of a mailbox from the source tables of the last 90 days in one pass. Reason: increments cannot keep a rolling window; a recompute is idempotent, crash-safe and needs no hook in the writers. Rejected: increments in each writer (drift, double counts on retry).
+- **D2** Only address rows are stored. Domain aggregates are computed in memory for suggestions. Reason: no reader needs them (look-alike needs plain domains, D9); less personal data. Amends ADR 0034 point 1.
+- **D3** Key: `senderKeyHash` (interfaces.md): HMAC-SHA256, key from `CREDENTIALS_KEY` by HKDF, org id in the message. Reason: no new secret; no link of one person across organizations. A key change orphans rows; they age out (D6).
+- **D4** Window and sources: mail of the last 90 days with `received_at` in the window; real mail only (test mail never counts); own addresses never get a row. Keys = senders of incoming mail ∪ To and Cc of `origin = user` Sent mail. History-check mail counts. Columns: interfaces.md.
 - **D5** Reply delays: user delay = Sent `sent_at` − incoming `received_at` where Sent `parent_message_id` = incoming `message_id_header`; their delay = incoming `received_at` − Sent `sent_at` where incoming `in_reply_to` = Sent `message_id`. Median only with ≥ 5 samples, else null.
 - **D6** A row absent from the window keeps only `first_seen_at` and `last_seen_at`; the pass sets its counts to 0. Retention deletes a row whose `last_seen_at` is older than 365 days.
-- **D7** Module `contacts`, layer 3. Edges: `contacts → triage`, `contacts → delegation`, `loops → contacts`. Triage gets the profile reader as a parameter from `composition.ts` (triage must not import contacts: cycle). Reports (activity), channels (approvals, weekly report) and privacy import contacts from higher layers.
+- **D7** Module `contacts`, layer 3. Edges: `contacts → triage`, `contacts → delegation`, `loops → contacts`. Triage gets the profile reader as a parameter from `composition.ts` (no cycle). Higher layers import contacts directly.
 - **D8** Two runs at once: a transaction-level advisory lock per mailbox; the second run skips the mailbox. A crash before commit leaves the old snapshot.
-- **D9** Known domains for `lookalike_domain`: add registrable domains of To and Cc of `origin = user` Sent mail of 90 days, minus `freeMailDomains`, read live from `sent_emails` (plain text is needed for the look-alike compare; a hash cannot be compared). Behind `sender_context`.
-- **D10** Suggestion rules: discovery notes §2.6 with these additions. VIP and whitelist never for a sender with a suspicious reason on any mail in 90 days. Whitelist and blocklist both true: neither. Domain suggestions only whitelist and blocklist, non-free-mail domain, ≥ 2 distinct senders meet the rule. Order under the cap: whitelist, VIP, blocklist; then the larger count; then the hash. Cap: rows created in the last 7 days per mailbox, any status, at most 3.
+- **D9** Known domains for `lookalike_domain`: add the registrable domains of To and Cc of `origin = user` Sent mail of 90 days, minus `freeMailDomains`, read live from `sent_emails` (a hash cannot be compared for look-alikes). Behind `sender_context`.
+- **D10** Suggestion rules: discovery notes §2.6 with these additions. VIP and whitelist never for a sender with a suspicious reason on any mail in 90 days. Whitelist and blocklist both true: neither. Domain suggestions only whitelist and blocklist, non-free-mail domain, ≥ 2 distinct senders meet the rule. Cap: at most 3 rows created per mailbox in 7 days, any status; order whitelist, VIP, blocklist.
 - **D11** Suggestion life: `open` → `accepted`, `dismissed`, `withdrawn` (rule no longer holds, or the rule exists), `expired` (30 days). Pattern cleared at every end state. Dismissed blocks the same key and kind for 90 days. End-state rows are deleted 90 days after the end.
 - **D12** Wait = clamp(ceil(1.5 × median their-reply hours / 24), 1, 7) working days, used only at loop open for `waiting` and `delegated` loops without a stated date. `due_source = 'contact'`, `usual_reply_days` = max(1, round(median hours / 24)). The restart and Later rules keep their 3 days.
-- **D13** Classifier: a new prompt version `classifier-v4` = v3 plus the part `profile` (the full `SenderHistory` line; it replaces `history` when both are chosen). The production pointer does not change in F120; a ship is an owner decision (Q4). Spend cap $1.50 for the stage.
-- **D14** DSR: erase deletes the profile rows and suggestions of the hashed address in every mailbox of the organization; find counts them. Export gives each row with the address when a hash of an address in `emails`, `sent_emails`, `sender_rules` or `delegates` of the org matches, else null.
-- **D15** Data category: profiles and suggestions join the legal data catalog as subject `others`. The privacy page text change is batched with the next legal change (as F110), default, owner to confirm (Q2).
+- **D13** Classifier: new prompt version `classifier-v4` = v3 plus part `profile` (replaces `history`). The production pointer does not change in F120; a ship is an owner decision (Q4). Spend cap $1.50.
+- **D14** DSR: erase deletes the profile rows and suggestions of the hashed address in every mailbox of the organization; find counts them. Export joins the address where a stored address of the org hashes to the key, else null.
+- **D15** Both tables join the legal data catalog (subject `others`); the privacy text change waits for the next legal batch (Q2).
 
-## Facts checked (planner, 2026-11-18, at db85425a)
+## Facts checked (planner, 2026-11-18, at db85425a; files read)
 
-- No `sender_profiles` table or writer exists (scout 1; checked by grep).
-- `SenderHistory`, `senderHistorySchema`, `relationOf` exist in `packages/core/src/triage/sender-history.ts` with the full E11 shape; the sim bank cases carry it (`sim.senderHistory`); `eval-extras.ts` passes only `days`, `received`, `corrections` (scout 4; file read).
-- Production prompt is `classifier-v2`; the E3b `history` part lost on dev (K 27 vs 23); owner decision 42 (v3[list]) is open (`notes/2026-11-15-e3b-improve-results.md`).
-- `dsrAddressHash` uses HKDF of `CREDENTIALS_KEY`; no per-org secret (read `platform/crypto.ts`).
-- `addSenderRule(db | trx, ctx, { mailboxId, pattern, kind, actor, now })` returns `added`, `exists`, `limit`, `mailbox_not_found` (read).
-- `open_loops.due_source` CHECK is `('stated','default')`; `analyze-write.ts` calls `defaultDue(sentAt, env.waitDays, tz)` (read).
-- Retention clears `emails` and `sent_emails` addresses after 90 days (scout 2; `retention.ts` read).
-- Layers: `loops` is layer 3 (`layers.json` read).
+- No `sender_profiles` table or writer exists (grep).
+- `SenderHistory`, `relationOf` in `packages/core/src/triage/sender-history.ts` hold the E11 shape; sim cases carry `sim.senderHistory`; `eval-extras.ts` passes 3 fields only.
+- Production prompt `classifier-v2`; E3b `history` lost on dev (K 27 vs 23); owner decision 42 open (`notes/2026-11-15-e3b-improve-results.md`).
+- `dsrAddressHash`: HKDF of `CREDENTIALS_KEY`; no per-org secret.
+- `addSenderRule(db | trx, …)` returns `added`, `exists`, `limit`, `mailbox_not_found`.
+- `open_loops.due_source` CHECK `('stated','default')`; `analyze-write.ts` calls `defaultDue`.
+- Retention clears addresses on `emails`, `sent_emails` after 90 days; `loops` is layer 3.
 
 ## Not verified
 
 - The aggregate pass time on a 30k-mail mailbox: stage 03 measures it with a seeded test and a time limit.
-- Whether the sim week cases render the profile line well: stage 11 dev runs.
+- Profile line value on the sim: stage 11 dev runs.
 
 ## Done when
 
-1. With `sender_context` on, the job writes one row per sender and recipient of 90 days, no plain address in any column (stage 03 scan test).
-2. Retention, DSR find and erase, export, org and mailbox delete cover both tables (stage 04 tests).
-3. With `sender_suggestions` on, the Rules card shows at most 3 new suggestions a week with reasons; Accept creates the rule; Dismiss hides it 90 days (stages 05–07).
-4. Activity and Approvals show the sender line (stage 08); loops use the contact wait (stage 09); known domains grow (stage 10).
-5. A dev and, if won, holdout report for `classifier-v4[profile]` is committed (stage 11).
-6. Capability page `sender-context.md`, ADR 0034 accepted with amendments (stage 12).
+1. The job writes one row per contact of 90 days; no plain address in any column (stage 03).
+2. Retention, DSR, export, org and mailbox delete cover both tables (stage 04).
+3. At most 3 new suggestions a week with reasons; Accept creates the rule; Dismiss hides 90 days (05–07).
+4. Sender line (08), contact wait (09), known domains (10) work behind their flags.
+5. The `classifier-v4[profile]` dev summary (and holdout report on a win) is committed (11).
+6. `sender-context.md` exists; ADR 0034 accepted with amendments (12).
 
 ## Rules for every stage
 
@@ -73,7 +72,7 @@ Web stages (07, 08, 09) add before `echo PROOF_OK` the web tail of F102 `plan.md
 
 ## Owner checkpoints and steps
 
-- Checkpoint after stage 04 (schema, job, privacy): a review job checks 02–04; the coordinator goes on without the owner unless it finds a BLOCKING item.
+- Checkpoint after stage 04: a review job checks 02–04; the coordinator goes on unless it finds a BLOCKING item.
 - Owner steps: Q4 (ship `classifier-v4`, only if stage 11 wins), stage 13 flags on the pilot, Q2 privacy text. Defaults in questions.md.
 
 ## Review
@@ -106,7 +105,7 @@ Opus review before the land: 02, 03, 04, 05, 11, 13 (migration, data delete, pri
 
 ## Planning progress
 
-Scouts: 4 (all returned). Files written: see `git log`. Word counts: § Cold review.
+Scouts: 4 (all returned). All files written. Word counts: § Cold review.
 
 ## Cold review
 
