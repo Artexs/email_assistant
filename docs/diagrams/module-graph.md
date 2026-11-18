@@ -20,6 +20,7 @@ flowchart BT
     delegation
     loops
     replies
+    contacts
   end
   subgraph group4["Layer 4"]
     reports
@@ -49,6 +50,10 @@ flowchart BT
   channels --> triage
   config --> audit
   config --> tenancy
+  contacts --> config
+  contacts --> delegation
+  contacts --> mail
+  contacts --> tenancy
   delegation --> actions
   delegation --> audit
   delegation --> config

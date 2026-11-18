@@ -414,6 +414,11 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 - **Owns (built so far):** the tables `history_checks`, `history_check_items` and `autonomy_trips` (migration `20261115180001`) and their repository: `queueHistoryCheck` (one open check per mailbox, by a partial unique index), `latestHistoryCheck`, `historyResultFor` (the newest `done` check; a newer `no_result` check does not hide a `fail`), `activeTripsOf`, `insertTrip` (one trip per grant) and `clearTrips`. Later stages add the grant, the history job, the re-gate, the tripwire and the trust view (`spec/features/active/F110-e4-b-earn-trust/`).
 - **Imports:** only the `index.ts` of lower layers (`channels`, `reports`, `triage`, `config`, `mail`, `audit`, `tenancy`); no module imports `trust`. `reports` gets trust data by a parameter that the composition root fills.
 
+### 3.16 `contacts` — what each sender is to the user (F120, layer 3)
+
+- **Owns (built so far):** the table `sender_profiles` (one row per contact of a mailbox: counts, medians and dates of 90 days, keyed by `senderKeyHash`, never an address). `readSenderActivity` (set-based reads of mail, flags, triage results, feedback, headers, Sent mail and delegations; the plain addresses stay in memory), `refreshMailboxProfiles` (one transaction: the flag `sender_context`, the per-mailbox advisory lock `profileLockKey` with try, the read, the upsert, the zeroing of rows that left the window) and `readProfiles` (`SenderHistory` of `(mailbox, address)` pairs in one query).
+- **Imports:** `config` (sender rules), `mail` (mailboxes, test-mail filter), `tenancy` (flags); the same-layer edge `contacts → delegation` (active delegate addresses) is named in `layers.json`.
+
 ## 4. `apps/web` — pages
 
 | Page                 | Content                                                                                                                                                                         | Slice       |
