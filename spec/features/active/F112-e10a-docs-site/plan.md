@@ -131,3 +131,5 @@ Review 2 of refresh 1 ([plan-review-2.md](plan-review-2.md)): FAIL, 2 blocking, 
 
 - 2026-11-15: planned; review 1 fixed.
 - 2026-11-15: stage 01 landed. Refresh 1 to `17b2a369`: stages 03, 04, 06, 11, 13, 15, 16 ([plan-refresh-1.md](plan-refresh-1.md)).
+
+- 2026-11-18 stage 16, first publication (coordinator): Pages source set to workflow, tag ruleset `release tags` (id 27551812) active, `docs-deploy.yml` run 44315644180 on master `cb3f73dd` success (build and deploy). C1 ok. C2: 200 for /, /pl/, /start/, /operate/install-and-run/, /operate/release-checklist/, /changelog/. C3: one CSP meta, `default-src self`, no `unsafe-inline` in script-src. C6: `csp checked in 47 page(s)`, `public content checked in 60 file(s)`, `links checked in 47 page(s)`. C5 NOT MET: /shots/onboarding-en-desktop.png is 404: stages 11 (shot run) and 12 (shots in pages and deploy) were never built (the earlier board line was wrong). C4 (docs:test on the live site) waits for stage 12. Stage 16 stays open until stages 11 and 12 land and C4 and C5 pass.
