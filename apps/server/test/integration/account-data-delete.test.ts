@@ -139,6 +139,13 @@ const DELETE_SEEDS: Record<string, Seed> = {
   mailboxes: base,
   memberships: base,
   open_loops: base,
+  // The device of a member (F118): the secret is a made-up ciphertext, the hash a made-up digest.
+  push_subscriptions: (trx, org) =>
+    execute(
+      trx,
+      sql`insert into push_subscriptions (org_id, user_id, secret, key_version, endpoint_hash, device_label)
+        values (${org.orgId}::uuid, ${org.userId}::uuid, 'ciphertext', 1, ${createHash("sha256").update(randomUUID()).digest("hex")}, 'Phone')`
+    ),
   reply_requests: base,
   org_features: async (trx, org) => {
     await upsertOrgFeature(trx, { orgId: org.orgId }, { flag: "stats_page", enabled: true, setBy: "cli", setAt: NOW });

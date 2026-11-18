@@ -49,6 +49,7 @@ const TENANT_TABLES = [
   "open_loops",
   "org_features",
   "outbox",
+  "push_subscriptions",
   "reply_requests",
   "sender_rules",
   "sent_analyses",

@@ -273,6 +273,15 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     ["sso_providers.oidc_config"],
     "the IdP configuration of the organization's own setup: endpoints, client id and client secret, no third-party address"
   ),
+  ...reasons(
+    ["push_subscriptions.secret", "push_subscriptions.endpoint_hash"],
+    "the encrypted push endpoint and keys of a device (a ciphertext), and the SHA-256 hex of the endpoint; no mail address"
+  ),
+  ...reasons(
+    ["push_subscriptions.device_label"],
+    "the name of the member's own device (at most 60 characters, set by the panel from the browser); no address of a third party"
+  ),
+  ...reasons(["push_subscriptions.last_error_code"], "a short result code (CHECK constraint), never a URL"),
 ]);
 
 // Tables whose text, array and jsonb columns hold no address of a third party. The completeness test accepts every

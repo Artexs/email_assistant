@@ -197,6 +197,7 @@ describe("org_features", () => {
         { flag: "bulk_unsubscribe", enabled: false, source: "default" },
         { flag: "reply_drafts", enabled: false, source: "default" },
         { flag: "draft_copy_check", enabled: false, source: "default" },
+        { flag: "web_push", enabled: false, source: "default" },
       ]);
     });
   });

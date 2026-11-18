@@ -282,7 +282,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "quiet_start",
     "quiet_end",
     "report_channel",
-    "report_mailbox_id"
+    "report_mailbox_id",
+    "notice_routes"
   ),
   // What the user waits for, promised or handed on: the text of the mail-derived copy and the state a person understands.
   // The ids and the counters of the chaser stay out (they mean nothing without the database). `org_id` goes out like in
@@ -363,7 +364,26 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "channel",
     "locale",
     "detail",
-    "edit_of_outbox_id"
+    "edit_of_outbox_id",
+    "push_subscription_id"
+  ),
+  // The phone and browser devices of a member (F118). The endpoint and the keys live only inside `secret` (the encrypted
+  // box of ADR 0009) and `endpoint_hash` is derived from the endpoint: neither goes out. The label, the times and the
+  // last error code are the member's own device data.
+  push_subscriptions: byOrgExcluding(
+    {
+      secret: "secrets: the encrypted push endpoint and keys of the device",
+      endpoint_hash: "derived from the secret endpoint of the device",
+      key_version: "internal: the version of the key that encrypts the secret",
+    },
+    "id",
+    "org_id",
+    "user_id",
+    "session_id",
+    "device_label",
+    "created_at",
+    "last_success_at",
+    "last_error_code"
   ),
   // A reply request: what the user asked for (the instruction), the sample text and the state a person understands. The
   // ids, the thread key, the folder and the counters of the drafter job stay out.

@@ -93,6 +93,8 @@ export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
     "F115 stage 03b adds the flag and the switch only (`tool_switches.reply_drafts`, hidden while the flag is off): the text of the drafts, notices and cards comes in the stages 12 to 15",
   draft_copy_check:
     "only the committer reads it (`actions/send.ts`, F115 stage 08): a stopped send tells the user with the fixed result text `draft_changed`, which a reply draft shows whatever the flag says",
+  web_push:
+    "F118 stage 02 adds the flag and the tables only: no route, sender or text exists yet (the device routes come in F118 stage 03, the sender in stage 08)",
 };
 
 export const FLAGGED_TEXT: FlaggedText[] = [
