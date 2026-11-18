@@ -1,5 +1,25 @@
 import { z } from "./zod";
 
+// The card checks the texts before it saves them, with the same function as the route, the CLI and the preview.
+export {
+  checkProfileInput,
+  PROFILE_NAME_MAX,
+  PROFILE_SIGNATURE_MAX,
+  PROFILE_STYLE_MAX,
+  profileLength,
+  type ProfileErrorCode,
+  type ProfileField,
+} from "../replies/profile";
+export {
+  STYLE_FORM_LINE_MAX,
+  styleAddressForms,
+  styleFromForm,
+  styleLengths,
+  type StyleAddressForm,
+  type StyleForm,
+  type StyleLength,
+} from "../replies/style-form";
+
 // F115 stage 10: the mailbox profile of reply drafts, as the routes `GET|PUT /api/mailboxes/:id/profile` and
 // `POST /api/mailboxes/:id/profile/preview` carry it. The limits and the character rules are in `checkProfileInput`
 // (`replies/profile.ts`): the route, the CLI and the preview all call it, and a text that fails answers 400 `validation`.

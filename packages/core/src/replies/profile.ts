@@ -52,6 +52,11 @@ export function checkProfileInput(input: ProfileInput): ProfileCheck {
   return { ok: true, fields };
 }
 
+/** The length that `checkProfileInput` limits: code points of the cleaned text. The card shows it as "n / max". */
+export function profileLength(field: ProfileField, text: string): number {
+  return Array.from(cleanUserText(text, { oneLine: field === "displayName" })).length;
+}
+
 function nonBlank(text: string | null | undefined): string | null {
   const trimmed = text?.trim() ?? "";
   return trimmed === "" ? null : trimmed;

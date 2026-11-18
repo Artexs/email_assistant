@@ -72,15 +72,15 @@ When you turn a folder on again, the system starts a new first sync of that fold
 
 ## Settings of the account and the organization
 
-| Setting            | Card                            | Values                              | Default                                      | Who         |
-| ------------------ | ------------------------------- | ----------------------------------- | -------------------------------------------- | ----------- |
-| Digest times       | **<UiText k="digest_title" />** | Up to 6 times of the day            | 08:00 and 16:00                              | Each member |
-| Time zone          | **<UiText k="tz_title" />**     | A time zone from the list           | Set by your operator when the account starts | Owner       |
-| Signature          | **<UiText k="sig_title" />**    | Text of up to 500 characters        | Empty: your display name                     | Owner       |
-| Language           | **<UiText k="acct_title" />**   | Polish or English                   | The panel follows your browser               | Each member |
-| Password           | **<UiText k="acct_title" />**   | 12 to 128 characters                | Set when you accept the invite               | Each member |
-| Two-factor sign-in | **<UiText k="acct_title" />**   | On or off                           | Off                                          | Each member |
-| Sessions           | **<UiText k="acct_title" />**   | End other sessions, or all sessions | Not applicable                               | Each member |
+| Setting            | Card                            | Values                              | Default                                                    | Who         |
+| ------------------ | ------------------------------- | ----------------------------------- | ---------------------------------------------------------- | ----------- |
+| Digest times       | **<UiText k="digest_title" />** | Up to 6 times of the day            | 08:00 and 16:00                                            | Each member |
+| Time zone          | **<UiText k="tz_title" />**     | A time zone from the list           | Set by your operator when the account starts               | Owner       |
+| Signature          | **<UiText k="rs_title" />**     | Text of up to 1000 characters       | Empty: the old text of the account, then your display name | Owner       |
+| Language           | **<UiText k="acct_title" />**   | Polish or English                   | The panel follows your browser                             | Each member |
+| Password           | **<UiText k="acct_title" />**   | 12 to 128 characters                | Set when you accept the invite                             | Each member |
+| Two-factor sign-in | **<UiText k="acct_title" />**   | On or off                           | Off                                                        | Each member |
+| Sessions           | **<UiText k="acct_title" />**   | End other sessions, or all sessions | Not applicable                                             | Each member |
 
 ### Digest times
 
@@ -94,8 +94,11 @@ On the day of the change, digests can be skipped, come later or come at once.
 
 ### Signature
 
+Each mailbox has its own signature and display name. You set them in the card **<UiText k="rs_title" />** of the mailbox, on the Settings page.
 The assistant adds the signature at the end of the messages that it writes for you: delegations, questions and reminders.
 A change applies to the messages that the assistant writes from then on.
+The card **<UiText k="sig_title" />** is read-only now. It still shows the old text of the account, and a link to the card of each mailbox.
+A mailbox with an empty signature uses that old text, then your display name.
 
 ### Language
 

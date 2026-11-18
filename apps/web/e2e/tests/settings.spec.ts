@@ -12,6 +12,7 @@ import {
   nextAddress,
   signInAs,
 } from "../helpers";
+import { E2E_BASE_URL } from "../env";
 import { readSeed } from "../seed";
 
 test.describe.configure({ mode: "serial" });
@@ -61,6 +62,14 @@ test("mode, switch and auto", async ({ page }, testInfo) => {
   await expect(mode.getByText(en.mode_shadow, { exact: true })).toBeVisible();
   await expect(page.locator("[data-card=folders]")).toBeVisible();
   await expect(page.locator("[data-card=signature]")).toBeVisible();
+  // F115 stage 11: with the flag `reply_drafts` off (the main organization) the style card keeps the name and the signature; the switch,
+  // the writing style and Preview are gone.
+  const style = page.locator("[data-card=reply-style]");
+  await expect(style.getByLabel(en.rs_name_label, { exact: true })).toBeVisible();
+  await expect(style.getByLabel(en.rs_signature_label, { exact: true })).toBeVisible();
+  await expect(style.getByLabel(en.rs_style_label, { exact: true })).toHaveCount(0);
+  await expect(style.getByRole("button", { name: en.rs_preview })).toHaveCount(0);
+  await expect(mode.getByRole("switch", { name: en.switch_reply_drafts, exact: true })).toHaveCount(0);
   expect(await seenNoMailbox()).toBe(false);
   expect(logged).toEqual([]);
   await expectNoA11yViolations(page);
@@ -128,10 +137,24 @@ test("general: digest time, signature, timezone", async ({ page }) => {
     page.locator("[data-card=digest]").getByLabel(t("digest_time_label", { n: 1 }), { exact: true })
   ).toHaveValue("08:00");
 
+  // The organization signature is read-only (F115 stage 11): the old text shows, there is no field and no Save, and the panel sends no
+  // write of it. Only the API route still takes `styleText`, so the test sets the old text through it.
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/organization") && request.method() !== "GET") writes.push(request.method());
+  });
+  const set = await page.request.patch("/api/organization", {
+    headers: { origin: E2E_BASE_URL },
+    data: { styleText: "E2E Owner\nCEO" },
+  });
+  expect(set.ok()).toBe(true);
+  await page.reload();
   const signature = page.locator("[data-card=signature]");
-  await signature.getByLabel(en.sig_label).fill("E2E Owner\nCEO");
-  await signature.getByRole("button", { name: en.save }).click();
-  await expect(page.getByText(en.sig_saved_toast)).toBeVisible();
+  await expect(signature.locator("[data-old-text]")).toHaveText("E2E Owner\nCEO");
+  await expect(signature.getByText(en.rs_org_note)).toBeVisible();
+  await expect(signature.getByRole("textbox")).toHaveCount(0);
+  await expect(signature.getByRole("button", { name: en.save })).toHaveCount(0);
+  expect(writes).toEqual([]);
 
   const timezone = page.locator("[data-card=timezone]");
   await timezone.getByLabel(en.tz_search_label).fill("london");

@@ -20,6 +20,7 @@ import { DigestTimesCard } from "../components/settings/DigestTimesCard";
 import { NotifySection } from "../components/settings/NotifyCards";
 import { LoopSettingsCard } from "../components/settings/LoopSettingsCard";
 import { ModeCard } from "../components/settings/ModeCard";
+import { ReplyStyleCard } from "../components/settings/ReplyStyleCard";
 import { SentMailCard } from "../components/settings/SentMailCard";
 import { SignatureCard } from "../components/settings/SignatureCard";
 import { SyncFoldersCard } from "../components/settings/SyncFoldersCard";
@@ -47,6 +48,8 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
   // F110 stage 13: with the flag `trust_ladder` on, the card also reads the trust view. Flag off: no request, the card is as before.
   const { me } = useMe();
   const trustOn = me?.features.includes("trust_ladder") === true;
+  // F115 stage 11: the style card always shows the name and the signature (every draft kind); the writing style and Preview need the flag.
+  const replyDraftsOn = me?.features.includes("reply_drafts") === true;
   const trust = useResource(() => (trustOn ? loadTrustView(mailbox.id) : Promise.resolve(null)));
 
   // A 404 on the settings means the mailbox is gone (removed in another tab): the list decides what is selected.
@@ -104,11 +107,20 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
         />
       )}
       <LoopSettingsCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
+      <ReplyStyleCard mailbox={mailbox} isOwner={isOwner} replyDraftsOn={replyDraftsOn} />
     </>
   );
 }
 
-function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRole: boolean }) {
+function GeneralSection({
+  isOwner,
+  isOwnerRole,
+  mailboxes,
+}: {
+  isOwner: boolean;
+  isOwnerRole: boolean;
+  mailboxes: readonly MailboxView[];
+}) {
   const { me, reload: reloadMe } = useMe();
   const { data, error, loading, reload, mutate } = useResource(() =>
     api("/api/organization", organizationSettingsSchema)
@@ -136,7 +148,7 @@ function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRol
     };
     organizationCards = (
       <>
-        <SignatureCard organization={data} isOwner={isOwner} onSaved={saved} />
+        <SignatureCard organization={data} mailboxes={mailboxes} />
         <TimezoneCard organization={data} isOwner={isOwner} onSaved={saved} />
       </>
     );
@@ -237,7 +249,7 @@ function Settings() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-4">{content}</div>
-      <GeneralSection isOwner={isOwner} isOwnerRole={isOwnerRole} />
+      <GeneralSection isOwner={isOwner} isOwnerRole={isOwnerRole} mailboxes={data ?? []} />
     </div>
   );
 }
