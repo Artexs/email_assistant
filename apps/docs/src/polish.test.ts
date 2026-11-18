@@ -173,7 +173,7 @@ describe("Polish pages", () => {
         imports: pages.length > 0 ? 1 : 0,
         pages: pages.length > 0,
       });
-      if (pages.length > 0) expect({ id, path: imports[0]?.[1] }).toEqual({ id, path: uiImport?.[1] });
+      if (pages.length > 0) expect({ id, path: imports[0]?.[1] ?? null }).toEqual({ id, path: uiImport?.[1] ?? "" });
     }
   });
   test("at most one Shot line a section, directly under its heading and before a blank line (the hash of the page stays)", () => {
