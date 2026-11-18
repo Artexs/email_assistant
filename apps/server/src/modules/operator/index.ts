@@ -1,5 +1,5 @@
 export { operatorRoutes, type OperatorRouteDeps } from "./routes";
-export { listOperatorOrgs, llmToday } from "./service";
+export { listOperatorNotices, listOperatorOrgs, llmToday } from "./service";
 export {
   getActiveAlert,
   listAlerts,

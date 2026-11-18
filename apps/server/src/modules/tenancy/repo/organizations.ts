@@ -61,6 +61,17 @@ export async function listOrganizations(db: Db | Transaction<DB>): Promise<
   }));
 }
 
+// The plan state of every organization, in the order of `listOrganizations`. The operator list reads it with one query.
+export async function listOrgPlansOfAll(db: Db | Transaction<DB>): Promise<{ orgId: string; state: OrgPlanState }[]> {
+  const rows = await db
+    .selectFrom("organizations")
+    .select(["id", "plan", "trial_ends_at", "max_mailboxes", "resumed_at"])
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  return rows.map((row) => ({ orgId: row.id, state: planStateOfRow(row) }));
+}
+
 export function planStateOfRow(
   row: Pick<OrganizationRow, "plan" | "trial_ends_at" | "max_mailboxes" | "resumed_at">
 ): OrgPlanState {

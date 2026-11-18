@@ -5,7 +5,7 @@ import {
   type MembershipRole,
   type UserLocale,
 } from "@ea/core";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
 
@@ -81,6 +81,17 @@ export async function listMemberships(db: Db | Transaction<DB>, ctx: TenantConte
     .orderBy("users.email")
     .execute();
   return rows.map((row) => ({ ...row, role: membershipRoleSchema.parse(row.role) }));
+}
+
+// The member count of every organization (an organization with no member has no entry). Counts what `listMemberships` lists.
+export async function countMembershipsOfAll(db: Db | Transaction<DB>): Promise<Map<string, number>> {
+  const rows = await db
+    .selectFrom("memberships")
+    .innerJoin("users", "users.id", "memberships.user_id")
+    .select(["memberships.org_id", sql<string>`count(*)`.as("count")])
+    .groupBy("memberships.org_id")
+    .execute();
+  return new Map(rows.map((row) => [row.org_id, Number(row.count)]));
 }
 
 export async function getMembership(

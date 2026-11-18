@@ -268,6 +268,13 @@ export async function listMailboxes(db: DbOrTrx, ctx: TenantContext): Promise<Ma
     .execute();
   return rows.map(toSummary);
 }
+// The status and the last sync of every mailbox of every organization, for the operator list (no address, no secret).
+export async function listMailboxStatesOfAll(
+  db: DbOrTrx
+): Promise<{ orgId: string; status: string; lastSyncedAt: Date | null }[]> {
+  const rows = await db.selectFrom("mailboxes").select(["org_id", "status", "last_synced_at"]).execute();
+  return rows.map((row) => ({ orgId: row.org_id, status: row.status, lastSyncedAt: row.last_synced_at }));
+}
 // The draft removal needs UIDPLUS (D13). An unknown mailbox counts as no UIDPLUS.
 export async function mailboxHasUidplus(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
   const mailbox = await getMailbox(db, ctx, mailboxId);

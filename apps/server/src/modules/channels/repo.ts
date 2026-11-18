@@ -189,6 +189,16 @@ export async function listLinkedChatsOfOrg(db: DbOrTrx, ctx: TenantContext): Pro
   return rows.map(toLinkedChat);
 }
 
+// The linked chats of every organization, counted as `listLinkedChatsOfOrg` lists them (an organization with none has no entry).
+export async function countLinkedChatsOfAll(db: DbOrTrx): Promise<Map<string, number>> {
+  const rows = await selectLinkedChats(db)
+    .clearSelect()
+    .select(["chat_links.org_id", sql<string>`count(*)`.as("count")])
+    .groupBy("chat_links.org_id")
+    .execute();
+  return new Map(rows.map((row) => [row.org_id, Number(row.count)]));
+}
+
 export async function getChatLinkForUser(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -844,4 +854,17 @@ export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, si
     .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", ["outdated", "expired"])]))
     .executeTakeFirstOrThrow();
   return Number(row.count);
+}
+
+// The same count for every organization at once (an organization with no failed row has no entry).
+export async function countFailedOutboxSinceOfAll(db: DbOrTrx, since: Date): Promise<Map<string, number>> {
+  const rows = await db
+    .selectFrom("outbox")
+    .select(["org_id", sql<string>`count(*)`.as("count")])
+    .where("status", "=", "failed")
+    .where("created_at", ">", since)
+    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", ["outdated", "expired"])]))
+    .groupBy("org_id")
+    .execute();
+  return new Map(rows.map((row) => [row.org_id, Number(row.count)]));
 }
