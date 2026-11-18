@@ -30,13 +30,16 @@ CREATE TABLE sender_profiles (
   unseen_7d integer NOT NULL DEFAULT 0 CHECK (unseen_7d >= 0),
   user_mails_to integer NOT NULL DEFAULT 0 CHECK (user_mails_to >= 0),
   delegations_to integer NOT NULL DEFAULT 0 CHECK (delegations_to >= 0),
-  -- Category name -> count. `jsonb - text[]` removes the listed keys: what is left is a key that is no category.
+  -- Category name -> count. `jsonb - text[]` removes the listed keys: what is left is a key that is no category. The path
+  -- check refuses every value that is not a number >= 0 (a string, an array, an object or null could hold an address).
   by_category jsonb NOT NULL DEFAULT '{}'
     CHECK (jsonb_typeof(by_category) = 'object'
-      AND by_category - ARRAY['urgent', 'needs_reply', 'delegation', 'info', 'notification', 'spam', 'unsure'] = '{}'::jsonb),
+      AND by_category - ARRAY['urgent', 'needs_reply', 'delegation', 'info', 'notification', 'spam', 'unsure'] = '{}'::jsonb
+      AND NOT jsonb_path_exists(by_category, 'strict $.* ? (@.type() != "number" || @ < 0)')),
   corrections jsonb NOT NULL DEFAULT '{}'
     CHECK (jsonb_typeof(corrections) = 'object'
-      AND corrections - ARRAY['urgent', 'needs_reply', 'delegation', 'info', 'notification', 'spam', 'unsure'] = '{}'::jsonb),
+      AND corrections - ARRAY['urgent', 'needs_reply', 'delegation', 'info', 'notification', 'spam', 'unsure'] = '{}'::jsonb
+      AND NOT jsonb_path_exists(corrections, 'strict $.* ? (@.type() != "number" || @ < 0)')),
   bulk_signals text[] NOT NULL DEFAULT '{}'
     CHECK (bulk_signals <@ ARRAY['list_id', 'list_unsubscribe', 'noreply', 'auto_submitted']),
   -- Hours; null below 5 samples. A delay of 0 or less is dropped by the pass, so a stored median is never negative.
@@ -68,10 +71,11 @@ CREATE TABLE sender_suggestions (
   scope text NOT NULL CHECK (scope IN ('address', 'domain')),
   kind text NOT NULL CHECK (kind IN ('vip', 'whitelist', 'blocklist')),
   pattern text
-    CHECK (pattern = lower(pattern) AND char_length(pattern) BETWEEN 2 AND 254),
+    CHECK (pattern = lower(pattern) AND char_length(pattern) BETWEEN 2 AND 254 AND pattern !~ '[[:space:][:cntrl:]<>]'),
   reason jsonb NOT NULL DEFAULT '{}'
     CHECK (jsonb_typeof(reason) = 'object'
-      AND reason - ARRAY['received', 'answered', 'flagged', 'corrected', 'rescued', 'senders'] = '{}'::jsonb),
+      AND reason - ARRAY['received', 'answered', 'flagged', 'corrected', 'rescued', 'senders'] = '{}'::jsonb
+      AND NOT jsonb_path_exists(reason, 'strict $.* ? (@.type() != "number" || @ < 0)')),
   status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'accepted', 'dismissed', 'withdrawn', 'expired')),
   created_at timestamptz NOT NULL DEFAULT now(),
   ended_at timestamptz,

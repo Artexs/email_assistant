@@ -168,6 +168,11 @@ describe("sender_profiles: constraints", () => {
       await expectSqlState(trx, () => profile(trx, o, { by_category: JSON.stringify({ "jan@acme.test": 3 }) }), CHECK);
       await expectSqlState(trx, () => profile(trx, o, { corrections: JSON.stringify({ "jan@acme.test": 1 }) }), CHECK);
       await expectSqlState(trx, () => profile(trx, o, { by_category: JSON.stringify(["urgent"]) }), CHECK);
+      // A value must be a number >= 0: a string (an address), an array, an object, null or a negative count is refused.
+      for (const value of ["jan@acme.test", ["jan@acme.test"], { a: 1 }, null, -1, []]) {
+        await expectSqlState(trx, () => profile(trx, o, { by_category: JSON.stringify({ urgent: value }) }), CHECK);
+        await expectSqlState(trx, () => profile(trx, o, { corrections: JSON.stringify({ spam: value }) }), CHECK);
+      }
       for (const relation of ["delegate", "vip", "bulk", "known", "new"]) await profile(trx, o, { relation });
       await profile(trx, o, {
         bulk_signals: ["list_id", "list_unsubscribe", "noreply", "auto_submitted"],
@@ -203,6 +208,11 @@ describe("sender_suggestions: constraints", () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       await expectSqlState(trx, () => suggestion(trx, o, { key_hash: "jan@acme.test" }), CHECK);
+      // The anchors: 64 hex characters and then more text (a line end, an address) are refused, as is a shorter key.
+      await expectSqlState(trx, () => suggestion(trx, o, { key_hash: `${"a".repeat(64)}\n` }), CHECK);
+      await expectSqlState(trx, () => suggestion(trx, o, { key_hash: `${"a".repeat(64)}@x.test` }), CHECK);
+      await expectSqlState(trx, () => suggestion(trx, o, { key_hash: `x${"a".repeat(64)}` }), CHECK);
+      await expectSqlState(trx, () => suggestion(trx, o, { key_hash: "A".repeat(64) }), CHECK);
       await expectSqlState(trx, () => suggestion(trx, o, { scope: "org" }), CHECK);
       await expectSqlState(trx, () => suggestion(trx, o, { kind: "mute" }), CHECK);
       await expectSqlState(trx, () => suggestion(trx, o, { status: "done", ended_at: NOW, pattern: null }), CHECK);
@@ -249,6 +259,18 @@ describe("sender_suggestions: constraints", () => {
       await expectSqlState(trx, () => suggestion(trx, o, { scope: "address", pattern: "@acme.test" }), CHECK);
       await expectSqlState(trx, () => suggestion(trx, o, { pattern: "Jan@acme.test" }), CHECK);
       await expectSqlState(trx, () => suggestion(trx, o, { pattern: "x" }), CHECK);
+      // No whitespace, control character, `<` or `>`: a pasted `Jan <jan@acme.test>` or a line break is not an address.
+      for (const pattern of [
+        "jan @acme.test",
+        "jan@acme.test ",
+        "jan@acme.test\n",
+        "jan\t@acme.test",
+        "<jan@acme.test>",
+        "jan@acme.test>",
+        "jan\u0001@acme.test",
+        "jan\u007f@acme.test",
+      ])
+        await expectSqlState(trx, () => suggestion(trx, o, { pattern }), CHECK);
       await expectSqlState(trx, () => suggestion(trx, o, { pattern: `${"a".repeat(250)}@l.test` }), CHECK);
       await suggestion(trx, o, { scope: "domain", pattern: "@acme.test" });
       await suggestion(trx, o, { pattern: "jan@acme.test", kind: "whitelist" });
@@ -264,6 +286,9 @@ describe("sender_suggestions: constraints", () => {
         CHECK
       );
       await expectSqlState(trx, () => suggestion(trx, o, { reason: JSON.stringify(["received"]) }), CHECK);
+      // A value must be a number >= 0 (a string, an array, an object, null or a negative count could hold an address).
+      for (const value of ["jan@acme.test", ["jan@acme.test"], { a: 1 }, null, -1])
+        await expectSqlState(trx, () => suggestion(trx, o, { reason: JSON.stringify({ received: value }) }), CHECK);
       await suggestion(trx, o, {
         reason: JSON.stringify({ received: 9, answered: 6, flagged: 1, corrected: 2, rescued: 3, senders: 4 }),
       });
@@ -330,7 +355,7 @@ describe("the mailbox and the organization delete", () => {
     });
   });
 
-  test("13: deleting the organization removes its rows through the organization key", async () => {
+  test("13: deleting the organization removes its rows through the key of the mailbox", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
