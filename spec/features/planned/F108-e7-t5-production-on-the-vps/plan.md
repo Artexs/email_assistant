@@ -90,11 +90,11 @@ Opus 5.5 before land: 01, 03 (`[risky]`). Sonnet 5.5: 02. Stages 04, 05: the coo
 ## Planning progress
 
 - Scouts: 4, all done. Stages 01–05 [written].
-- Words: see § Cold review.
+- Words (`wc -w`, before review): plan.md 1394; stages 01–05: 560, 636, 627, 672, 520.
 
 ## Cold review
 
-Not run yet.
+Model `claude-opus-5-5`, thinking high: stages 01, 03, 04 are `[risky]` (deploy path, secret scope, production VPS). Result: pending.
 
 ## Log
 
