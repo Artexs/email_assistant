@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-15
+landed: 2026-11-18
 ---
 
 # F132 · comments carry no bare ticket or decision codes (quality pass 1, finding 8)
