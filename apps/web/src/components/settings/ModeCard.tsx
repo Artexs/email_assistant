@@ -67,7 +67,7 @@ export function ModeCard({ mailbox, settings, isOwner, onChanged, onMissing }: M
   };
 
   const texts = modeTexts[settings.mode];
-  // F115 stage 11: the settings view holds `reply_drafts` only while the flag of the organization is on, so its absence hides the row.
+  // The settings view holds `reply_drafts` only while the flag of the organization is on, so its absence hides the row.
   const replySwitch = settings.toolSwitches.reply_drafts;
   const replyBlocked = replySwitchBlocked(mailbox);
 

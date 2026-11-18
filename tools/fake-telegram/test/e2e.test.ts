@@ -80,7 +80,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
         .execute();
       expect(links).toHaveLength(1);
       expect(Number(links[0]?.external_chat_id)).toBe(DEFAULT_CHAT_ID);
-      // In one transaction now() is the start time; move the link back so the mail counts as new (D13).
+      // In one transaction now() is the start time; move the link back so the mail counts as new.
       await trx
         .updateTable("chat_links")
         .set({ linked_at: startedAt })

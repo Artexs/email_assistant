@@ -29,18 +29,18 @@ export interface DigestTexts {
   waiting: (count: number) => string;
   delegations: (open: number, overdue: number) => string;
   shadow: string;
-  // The spam review line of the footer (F110 stage 17, flag `spam_review_line`). `url` null: the panel text instead of the link.
+  // The spam review line of the footer (flag `spam_review_line`). `url` null: the panel text instead of the link.
   // `would` is the shadow-mode form: the moves were only logged.
   spamReview: {
     moved: (count: number, url: string | null) => string;
     would: (count: number, url: string | null) => string;
   };
-  // The LLM pause line of /status and the digest footer (F100 stage 07): the quota case has its own words.
+  // The LLM pause line of /status and the digest footer: the quota case has its own words.
   llmPause: {
     quota: (since: string, code: string) => string;
     other: (since: string, code: string) => string;
   };
-  // The handled-share line of the footer (F100 stage 16); `rate` is a text like "62% (124 of 200)".
+  // The handled-share line of the footer; `rate` is a text like "62% (124 of 200)".
   handled: (rate: string) => string;
   wouldHandle: (rate: string) => string;
 }

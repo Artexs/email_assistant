@@ -21,7 +21,7 @@ import { insertTestEmail } from "./fixtures";
 import { addMailbox, insertCheckItemRow, insertCheckRow, insertTripRow } from "./trust-fixtures";
 import { webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// Committed rows for the trust routes (F110 stage 11): an organization with an owner and a member (role `assistant`), one mailbox
+// Committed rows for the trust routes: an organization with an owner and a member (role `assistant`), one mailbox
 // each for it and for a second organization, the flag `trust_ladder`, a gate file for the running key and history checks.
 export const NOW = new Date("2026-11-17T12:00:00Z");
 

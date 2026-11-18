@@ -8,7 +8,7 @@ const repoRoot = path.resolve(import.meta.dir, "../../../..");
 const baseKeys = ["time", "level", "module", "event", "msg"];
 const allowedKeys = new Set<string>([...baseKeys, ...logFieldNames, "dropped_fields"]);
 
-// F089 acceptance: with LOG_FORMAT=json the server writes one JSON object per line, with the base keys and allow-listed fields only.
+// With LOG_FORMAT=json the server writes one JSON object per line, with the base keys and allow-listed fields only.
 test("bun apps/server/src/main.ts writes JSON event lines", async () => {
   // A free port: bind 0, read it, release it.
   const probe = Bun.serve({ port: 0, fetch: () => new Response() });
@@ -88,7 +88,7 @@ test("bun apps/server/src/main.ts writes JSON event lines", async () => {
     expect(stray, `line ${index + 1} stray keys`).toEqual([]);
   }
 
-  // F114 stage 05: every line carries the release of EA_RELEASE, right after the base keys
+  // Every line carries the release of EA_RELEASE, right after the base keys
   for (const [index, object] of objects.entries()) {
     expect(object.release, `line ${index + 1} release`).toBe("v0.0.1-test");
     expect(Object.keys(object)[baseKeys.length], `line ${index + 1} key after base keys`).toBe("release");
@@ -108,7 +108,7 @@ test("bun apps/server/src/main.ts writes JSON event lines", async () => {
   if (password) expect(output.includes(password)).toBe(false);
 }, 45_000);
 
-// F103 stage 14: main.ts installs both guards. Remove the wiring and this test fails.
+// main.ts installs both guards. Remove the wiring and this test fails.
 test("main.ts turns a library console.error and an uncaught throw into events and exits 1", async () => {
   const probe = Bun.serve({ port: 0, fetch: () => new Response() });
   const port = probe.port;

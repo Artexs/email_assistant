@@ -24,7 +24,7 @@ interface FeedbackInput {
   at: Date;
 }
 
-// One reason per rejected send: a later reason replaces the earlier one (D21). The unique key is (org_id, action_id, kind).
+// One reason per rejected send: a later reason replaces the earlier one. The unique key is (org_id, action_id, kind).
 export async function upsertRejectReason(
   db: DbOrTrx,
   ctx: TenantContext,

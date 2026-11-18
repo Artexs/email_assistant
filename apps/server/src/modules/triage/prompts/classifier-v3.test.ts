@@ -58,7 +58,7 @@ describe("classifier-v3 prompt", () => {
     const plain = v2.buildUser(email, sender, delegates, NONCE, EMPTY_EXTRAS, []);
     const withExtras = v2.buildUser(email, sender, delegates, NONCE, extras, ["urgency", "history", "list"]);
     expect(sha(withExtras)).toBe(sha(plain));
-    // Hashes of the v2 text taken from the commit before stage 08: the v2 text did not change.
+    // Hashes of the v2 text taken from an earlier commit: the v2 text did not change.
     expect(sha(plain)).toBe("308218018966df84097eb558368653447321aa0b3f09c2a30adb70faeaa2b4f3");
     expect(sha(v2.buildSystem(["urgent", "info", "spam"], ["urgency"]))).toBe(
       "e589a0c12935c976f632962c8c803d1f3593ceaf775508d0dc7cdfdbaa3cfc48"

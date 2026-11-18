@@ -6,12 +6,12 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import type { CallbackResult, LinkedChat } from "./port";
 import { OUTBOX_REMOVED_TEXT } from "./repo";
 
-// What a tap on a loop line of the brief edits: the line of the digest message that was tapped (F116 stage 19). The stored text of
+// What a tap on a loop line of the brief edits: the line of the digest message that was tapped. The stored text of
 // the digest is kept: the edit changes one line and its buttons, it never renders the digest again (docs/code-patterns.md). The edit is
 // stored back in the outbox row (the cache of the sent message), so the next tap on another line starts from this one's result.
 // The digest view holds the line number of each loop or delegation (`lineOf`). A digest that has no such number, was cleared, or
 // whose line no longer starts as a brief line does: the buttons go and the text stays.
-// `keyboard`: the stored text was blanked (`[removed]`): only the buttons of the chat message change, its text stays (review 19 N2).
+// `keyboard`: the stored text was blanked (`[removed]`): only the buttons of the chat message change, its text stays.
 export type BriefLineEdit =
   | { digest: false }
   | { digest: true; edit: OutMessage | undefined; keyboard?: OutButton[][] };

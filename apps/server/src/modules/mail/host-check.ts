@@ -5,7 +5,7 @@ import { isLocalAddress } from "../../platform/net-address";
 export { isLocalAddress };
 
 /**
- * True for a host that names this machine or a private network (B12). A name other than `localhost` is
+ * True for a host that names this machine or a private network. A name other than `localhost` is
  * public here: `resolveMailHost` (`host-guard.ts`) checks the addresses a name resolves to.
  */
 export function isLocalMailHost(host: string): boolean {

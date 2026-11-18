@@ -12,7 +12,7 @@ export interface HeldReasonDeps {
 
 // Why the committer will not claim the send just approved: the state of the mailbox first, then the scope (as /status).
 // A send or mailbox that cannot be read counts as held by the scope: the answer must not promise a send.
-// One check for the Telegram toast, the card edits of other channels and the panel (F102).
+// One check for the Telegram toast, the card edits of other channels and the panel.
 export async function heldReason(
   deps: HeldReasonDeps,
   ctx: TenantContext,

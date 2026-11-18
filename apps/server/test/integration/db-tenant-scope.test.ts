@@ -6,7 +6,7 @@ import { createDb, withoutTenantScope, withTenantScope, type Db, type DB } from 
 const A = "aaaaaaaa-0000-4000-8000-000000000001";
 const B = "bbbbbbbb-0000-4000-8000-000000000002";
 
-// A fresh session returns NULL and a session after a driver write returns '': both mean "no scope" (D15 rule 2).
+// A fresh session returns NULL and a session after a driver write returns '': both mean "no scope".
 const setting = async (executor: Kysely<DB>): Promise<string> => {
   const result = await sql<{ s: string }>`select coalesce(current_setting('app.org_id', true), '') as s`.execute(
     executor

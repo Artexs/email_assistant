@@ -8,7 +8,7 @@ export interface EnsureResult {
   leftoverDeleted: boolean;
 }
 
-/** UIDs that other `emails` rows of the same identity hold in each folder: never this row's copy (D3). */
+/** UIDs that other `emails` rows of the same identity hold in each folder: never this row's copy. */
 export interface EnsureExclude {
   from: ReadonlySet<number>;
   to: ReadonlySet<number>;
@@ -29,7 +29,7 @@ async function ensureOnce(
   opts: { byAppend: boolean }
 ): Promise<EnsureResult | null> {
   const target = await locateMessage(provider, to, locateKeyOf(email, hints.toUid), { excludeUids: exclude.to });
-  // B1: the source is the target. A second locate would find the same mail, and "both" would expunge the only copy.
+  // The source is the target. A second locate would find the same mail, and "both" would expunge the only copy.
   if (from === to) {
     return target === null ? null : { uid: target.uid, movedNow: false, leftoverDeleted: false };
   }
@@ -57,7 +57,7 @@ async function ensureOnce(
 }
 
 /**
- * Makes the mail sit in `to` and nowhere else (D5). `null` = the mail is nowhere.
+ * Makes the mail sit in `to` and nowhere else. `null` = the mail is nowhere.
  * The mail may leave the source between the locate and the move (a user move): one retry of the whole ensure.
  */
 export async function ensureMoved(

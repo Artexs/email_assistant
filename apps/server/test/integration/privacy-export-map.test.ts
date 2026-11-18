@@ -5,8 +5,8 @@ import { EXPORT_MAP } from "../../src/modules/privacy";
 
 import { testDb } from "./helpers";
 
-// F106 stage 05: `EXPORT_MAP` names every table and column of the database. A new table or column fails here until the
-// map classifies it (D18).
+// `EXPORT_MAP` names every table and column of the database. A new table or column fails here until the
+// map classifies it.
 const db = testDb();
 
 afterAll(async () => {

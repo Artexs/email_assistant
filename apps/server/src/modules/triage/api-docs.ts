@@ -40,7 +40,7 @@ export const triageDocs = {
   }),
 };
 
-// F110 stage 23 (flag `bulk_unsubscribe`): with the flag off the route answers 404 `not_found` for every role. A mailbox of another
+// Flag `bulk_unsubscribe`: with the flag off the route answers 404 `not_found` for every role. A mailbox of another
 // organization looks like an unknown one: the same 404.
 export const newsletterDocs = {
   getNewsletters: apiDoc({
@@ -73,7 +73,7 @@ export const newsletterDocs = {
   }),
 };
 
-// F110 stage 15 (flag `panel_review`): with the flag off both routes answer 404 `not_found` for every role. A mailbox or a mail of
+// Flag `panel_review`: with the flag off both routes answer 404 `not_found` for every role. A mailbox or a mail of
 // another organization looks like an unknown one: the same 404.
 export const reviewDocs = {
   getReviewSample: apiDoc({

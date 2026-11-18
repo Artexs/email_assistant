@@ -187,7 +187,7 @@ describe("the delegate routes", () => {
     });
     const same = await send(s, "owner", "PATCH", `/${id}`, { name: "Anna Nowak-Lis" });
     expect(same.status).toBe(200);
-    // D10: the address never changes.
+    // The address never changes.
     const mail = await send(s, "owner", "PATCH", `/${id}`, { active: true, email: "other@example.com" });
     expect([mail.status, ((await mail.json()) as { error: string }).error]).toEqual([400, "validation"]);
     const kept = await db

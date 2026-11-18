@@ -6,8 +6,8 @@ import { parseBody, requireOwner, type ApiEnv } from "../../../platform/http";
 import { mailOAuthDocs } from "./api-docs";
 import { mailOAuthOptions, startMailOAuth, type MailOAuthStartDeps } from "./start";
 
-// The mailbox OAuth routes (F117 stage 07, D10). The callback is stage 08.
-// D18: the answer of the start holds the one-time `state`. Nothing here logs it, and the answer is not cached.
+// The mailbox OAuth routes. The callback route is in `callback-route.ts`.
+// The answer of the start holds the one-time `state`. Nothing here logs it, and the answer is not cached.
 
 export interface MailOAuthRouteDeps extends MailOAuthStartDeps {
   now(): Date;

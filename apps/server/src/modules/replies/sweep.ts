@@ -26,7 +26,7 @@ export const SWEEP_LIMIT = 200;
 // One run also lists at most this many open reply sends over all mailboxes, so a run stays short.
 export const SWEEP_LIST_LIMIT = 1000;
 
-// Why the sweep closes an open reply (D11, D12). The order is the order of the checks.
+// Why the sweep closes an open reply. The order is the order of the checks.
 export const sweepReasons = ["answered", "newer_mail", "original_moved", "suspicious", "policy_changed"] as const;
 export type SweepReason = (typeof sweepReasons)[number];
 
@@ -90,7 +90,7 @@ async function reasonOf(
   return null;
 }
 
-// One close, one transaction: the lock of the thread (D7: the drafter takes it too), then the shared close. A waiting send closes
+// One close, one transaction: the lock of the thread (the drafter takes it too), then the shared close. A waiting send closes
 // with no result notice; a send that the user tapped (`approved` when the close locks it) gets one, because that user waits for a result.
 async function closeOne(
   deps: SweepDeps,

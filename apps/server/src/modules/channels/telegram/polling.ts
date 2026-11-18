@@ -12,7 +12,7 @@ function commandList(locale: UserLocale): { command: CommandName; description: s
   return botCommandNames.map((command) => ({ command, description: textTables[locale].bot.commands[command] }));
 }
 
-// The default menu is English; the Polish menu is for Telegram apps set to Polish (F098 D20).
+// The default menu is English; the Polish menu is for Telegram apps set to Polish.
 export const BOT_COMMANDS: readonly { command: CommandName; description: string }[] = commandList("en");
 
 const BASE_DELAY_MS = 60_000;

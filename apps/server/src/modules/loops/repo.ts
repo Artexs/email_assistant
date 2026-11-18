@@ -30,7 +30,7 @@ export const MAX_LATER = MAX_LATER_TAPS;
 
 export const SYSTEM = "system";
 
-// Who started a command (stage 14). It goes into the audit row of the command: a code, never text.
+// Who started a command. It goes into the audit row of the command: a code, never text.
 export type LoopVia = "web" | "telegram" | "cli";
 const viaData = (via: LoopVia | undefined): { via?: LoopVia } => (via === undefined ? {} : { via });
 

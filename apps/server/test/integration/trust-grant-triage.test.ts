@@ -13,7 +13,7 @@ import type { LlmClient } from "../../src/platform/llm";
 import { createOrgWithMailbox, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// Triage moves mail only under the key that `auto` was granted on (F110 stage 04): the same job, two running keys.
+// Triage moves mail only under the key that `auto` was granted on: the same job, two running keys.
 const db = testDb();
 const NOW = new Date("2026-11-05T12:00:00.123Z");
 
@@ -59,7 +59,7 @@ const llm: LlmClient = {
   },
 } as LlmClient;
 
-// A mailbox in `assist` with `notification` on auto; `grant` is the stored grant (absent: a row from before F110).
+// A mailbox in `assist` with `notification` on auto; `grant` is the stored grant (absent: a row from before the trust ladder).
 async function setup(trx: Transaction<DB>, grantKey: EvidenceKey | null) {
   await pauseOtherMailboxes(trx);
   const box = await createOrgWithMailbox(trx);

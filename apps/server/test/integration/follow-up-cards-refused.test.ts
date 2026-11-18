@@ -1,4 +1,4 @@
-// F116 stage 21 (review 11 N5): a follow-up card that the renderer refuses is not tried again at every run, so 50 of them do not hold
+// A follow-up card that the renderer refuses is not tried again at every run, so 50 of them do not hold
 // back newer cards. Every test runs in a transaction that is rolled back.
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";

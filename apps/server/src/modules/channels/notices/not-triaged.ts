@@ -11,7 +11,7 @@ export const NOT_TRIAGED_LOOKBACK_MS = 24 * 3_600_000;
 // At most this many mails per mailbox get a notice during one run of pauses. A whole-domain whitelist could flood the chat.
 export const NOT_TRIAGED_MAX_PER_MAILBOX = 5;
 
-// F109 stage 15 (D17, PD-067): while the AI is paused, every linked member learns that mail of a VIP or whitelisted
+// While the AI is paused, every linked member learns that mail of a VIP or whitelisted
 // sender waits. The pause is the in-memory pause of the triage worker (one process, `main.ts`), not the audit rows
 // (those are per organization and end a soft pause early). A restart clears the pause, and triage tries again.
 // The notice holds the sender address only. The log line holds a count only.

@@ -43,7 +43,7 @@ const item = (patch: Partial<DelegationItem> = {}): DelegationItem => ({
 const apiError = (status: number, code: string) => new ApiError(status, code);
 
 describe("delegationActions", () => {
-  // T2: the action list per state and role equals the table of the stage (every `DelegationStatus`).
+  // The action list per state and role equals the table of the stage (every `DelegationStatus`).
   const table: Record<(typeof delegationStatuses)[number], { owner: string[]; member: string[] }> = {
     drafted: { owner: ["cancel"], member: [] },
     sent: { owner: ["remind", "cancel"], member: [] },
@@ -68,7 +68,7 @@ describe("delegationActions", () => {
 });
 
 describe("the kind map", () => {
-  // T3: a component for every `DelegationItem.kind`.
+  // A component for every `DelegationItem.kind`.
   test("has a component for every kind of the schema", () => {
     const kinds = [...delegationItemSchema.shape.kind.values];
     expect(kinds.length).toBeGreaterThan(0);

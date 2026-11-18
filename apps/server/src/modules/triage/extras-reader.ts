@@ -10,7 +10,7 @@ import type { ClassifierV3Part } from "./prompts";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-// The window of the sender history (F109 stage 10, decision P4): mail received in the 90 days before this mail.
+// The window of the sender history: mail received in the 90 days before this mail.
 export const SENDER_HISTORY_DAYS = 90;
 const MAX_ATTACHMENTS = 10;
 
@@ -29,7 +29,7 @@ export interface ClassifierExtrasInput {
 }
 
 // The counts of earlier mail of one sender in this mailbox: `received` and the user's corrections. Counts only: no subject,
-// no text and no id leaves this function (P4). `from_address_lower` is the indexed column (`emails_mailbox_sender_idx`):
+// no text and no id leaves this function. `from_address_lower` is the indexed column (`emails_mailbox_sender_idx`):
 // never `lower(from_address)`. Every statement filters `org_id`. Zero earlier mail gives `null`.
 export async function readSenderHistory(
   db: DbOrTrx,
@@ -80,8 +80,8 @@ export async function readSenderHistory(
   return received === 0 ? null : { days: SENDER_HISTORY_DAYS, received, corrections };
 }
 
-// The `ClassifierExtras` of one real or test mail (stage 08 shape, decision D10). It reads only what `parts` needs: no
-// `history` part, no history query. Attachments are always on (P2); a mail with no `email_headers` row, or with cleared
+// The `ClassifierExtras` of one real or test mail. It reads only what `parts` needs: no
+// `history` part, no history query. Attachments are always on; a mail with no `email_headers` row, or with cleared
 // texts, has none. Nothing here logs or returns mail text.
 export async function loadClassifierExtras(
   db: DbOrTrx,

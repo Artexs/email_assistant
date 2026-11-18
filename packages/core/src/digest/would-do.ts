@@ -16,7 +16,7 @@ export interface ActionView {
   appliedAt: Date | null;
   kind: DraftKind | null; // from the payload of a draft or a send
   delegateId: string | null;
-  waiting?: "send_limit"; // an approved send held by the send limit (F099 D11 a)
+  waiting?: "send_limit"; // an approved send held by the send limit
   reason?: string | null; // the status reason of the row (`superseded` for a send that a panel edit replaced)
 }
 
@@ -72,7 +72,7 @@ function draftPhrase(
 ): string {
   const name = action.delegateId === null ? null : (names.get(action.delegateId) ?? null);
   const kind = action.kind ?? "delegation";
-  // F110 stage 16: the competence tags only for a delegation draft, and only when the caller passes them (flag `why_lines`).
+  // The competence tags only for a delegation draft, and only when the caller passes them (flag `why_lines`).
   const skills =
     kind === "delegation" && action.delegateId !== null ? skillsLabel(tags?.get(action.delegateId), texts) : null;
   return texts.wouldDo.draft(tense, kind, name, skills);

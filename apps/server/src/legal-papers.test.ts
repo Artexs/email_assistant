@@ -4,7 +4,7 @@ import path from "node:path";
 import { dataCategories, subprocessors } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-// The internal papers of `docs/legal/` (ticket `spec/features/active/F107-e7-t4-papers-and-cost/`) must name every data category and every sub-processor with personal
+// The internal papers of `docs/legal/` must name every data category and every sub-processor with personal
 // data, hold the headings of the DPIA and the breach procedure, and cite only paths that exist. A new table or an outside
 // service then fails here until the papers name it.
 

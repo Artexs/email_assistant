@@ -15,7 +15,7 @@ export function renderNotice(kind: NoticeKind, view: unknown, opts: NoticeRender
   const renderer: NoticeRenderer<z.ZodType> = noticeRenderers[kind];
   const parsed = renderer.schema.safeParse(view);
   if (!parsed.success) return { ok: false };
-  // A channel with no renderer (mail, before F110 stage 20) never renders: the caller treats it as a bad view.
+  // A channel with no renderer (mail, before its renderer existed) never renders: the caller treats it as a bad view.
   const render = renderer[opts.channel]?.[opts.detail];
   if (render === undefined) return { ok: false };
   let message: OutMessage;

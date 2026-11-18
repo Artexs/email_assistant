@@ -8,7 +8,7 @@ import type { DB } from "../../src/platform/db";
 
 import { testCapabilities } from "./fixtures";
 
-// Rows for the tests of the trust tables (F110). Raw inserts: the repository is the code under test elsewhere.
+// Rows for the tests of the trust tables. Raw inserts: the repository is the code under test elsewhere.
 
 const GRANTED_AT = new Date("2026-11-10T10:00:00Z");
 

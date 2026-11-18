@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { briefTexts } from "./brief";
 
-// The brief lines of the first digest (F116 stage 18). English and Polish have the same entries (the type enforces it); these tests
+// The brief lines of the first digest. English and Polish have the same entries (the type enforces it); these tests
 // pin the Polish forms: the plural of a count, the words that need a diacritic, and no machine-made ASCII spelling.
 const en = briefTexts.en;
 const pl = briefTexts.pl;

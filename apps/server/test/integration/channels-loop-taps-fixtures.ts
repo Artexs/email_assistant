@@ -11,7 +11,7 @@ import type { DB } from "../../src/platform/db";
 import { EIGHT, LINKED, runDigests, type BriefOrg } from "./channels-digest-brief-fixtures";
 import { commandLoop } from "./loops-commands-fixtures";
 
-// Helpers of the tests of the Telegram taps (F116 stage 19). The digest is queued by the real job and sent by the real sender
+// Helpers of the tests of the Telegram taps. The digest is queued by the real job and sent by the real sender
 // through the fake channel, so the stored text, buttons and view are the ones of a delivered message.
 
 export const MESSAGE_AT = new Date(EIGHT);

@@ -8,7 +8,7 @@ import { parseOrgDeleteArgs, usage } from "./org-delete-args";
 
 const log = createLog("org-delete");
 
-// Prints ids and counts. The one exception (F106 D17): after a delete it prints the mailbox addresses, so that the
+// Prints ids and counts. The one exception: after a delete it prints the mailbox addresses, so that the
 // operator tells the owner which passwords to change. Never the organization name. Returns the exit code.
 async function main(): Promise<number> {
   const args = parseOrgDeleteArgs(process.argv.slice(2));

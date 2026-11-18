@@ -10,7 +10,7 @@ import type { ConfigCode, SoftCode } from "../errors";
 
 import type { LlmProvider } from "./index";
 
-/** Keywords that strict mode rejects. Stage 0 case A: none, only the root `$schema` goes. */
+/** Keywords that strict mode rejects.Measured: none, only the root `$schema` goes. */
 const REJECTED_KEYWORDS: ReadonlySet<string> = new Set();
 const SCHEMA_CACHE_LIMIT = 64;
 
@@ -153,7 +153,7 @@ const CONFIG_STATUSES = new Set([401, 402, 403, 404]);
 export function classifyOpenAiError(error: unknown, model: string): LlmSoftError | LlmConfigError | LlmHardError {
   if (!isRecord(error)) return new LlmHardError("unknown", model);
   // The timeout class is a child of APIConnectionError: check it first.
-  // A timeout signal gives APIUserAbortError, not the timeout class (stage 0 note, case H).
+  // A timeout signal gives APIUserAbortError, not the timeout class.
   if (
     error instanceof OpenAI.APIUserAbortError ||
     error instanceof OpenAI.APIConnectionTimeoutError ||

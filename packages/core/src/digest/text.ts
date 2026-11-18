@@ -29,7 +29,7 @@ export function senderLabel(from: string | null, texts: CoreTexts): string {
 }
 
 // The remains of a terminal color code ("[31m", "[0;1K") that an escape-stripping step left in stored text, and the forms in which
-// the code can come through a text channel (F116 review 12 N6, review 18 N1, N2). Telegram shows plain text, so none of them can
+// the code can come through a text channel. Telegram shows plain text, so none of them can
 // format a message, but they look like damage: the loop lines and the follow-up cards drop them. The forms: a raw ESC, the
 // single-character CSI (U+009B), an escaped spelling in the text (`\x1b`, `\u001b`, `\033`, `\e`, `^[`), an encoded one (`%1B`,
 // quoted-printable `=1B`, the HTML entities `&#27;` and `&#x1b;`), full-width brackets, digits and letters, invisible characters

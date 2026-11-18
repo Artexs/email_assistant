@@ -16,7 +16,7 @@ export interface ReviewRouteDeps {
 }
 
 /**
- * The panel review routes (F110 stage 15, flag `panel_review`). The flag comes first: with it off both routes are a 404 for every role
+ * The panel review routes (flag `panel_review`). The flag comes first: with it off both routes are a 404 for every role
  * and with a bad id. Any member reads a sample and labels (as the Telegram buttons). A mailbox or a mail of another organization, an
  * unknown id and a bad id are the same 404 `not_found`. Every query filters `org_id`. Nothing here logs mail text.
  */

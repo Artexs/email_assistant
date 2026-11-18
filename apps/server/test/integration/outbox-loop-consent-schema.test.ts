@@ -11,7 +11,7 @@ import { createDb, type DB } from "../../src/platform/db";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F116 stage 11: the notice kind `loop_consent` (migration `20261115190001_outbox_loop_consent.sql`).
+// The notice kind `loop_consent` (migration `20261115190001_outbox_loop_consent.sql`).
 const db = testDb();
 afterAll(async () => {
   await db.destroy();

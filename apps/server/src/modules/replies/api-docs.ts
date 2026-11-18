@@ -2,7 +2,7 @@ import { profileBodySchema, profilePreviewSchema, profileViewSchema, z } from "@
 
 import { apiDoc } from "../../platform/openapi";
 
-// The OpenAPI description of the mailbox profile routes of the reply drafts (ADR 0023, F115 stage 10). Any member reads; the write
+// The OpenAPI description of the mailbox profile routes of the reply drafts (ADR 0023). Any member reads; the write
 // and the preview are owner only. An unknown mailbox, or one of another organization, answers 404 `not_found`.
 const tags = ["replies"];
 const params = z.object({ id: z.uuid() });

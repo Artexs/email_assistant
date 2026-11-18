@@ -1,4 +1,4 @@
-// The week service (F100 D19): one organization, one week, every metric. It reads and writes nothing.
+// The week service: one organization, one week, every metric. It reads and writes nothing.
 import {
   barCategories,
   buildWeekStats,
@@ -52,7 +52,7 @@ export interface WeekStatsDeps {
   /** The M5 reader of `channels` (`listUrgentNoticeTimes`); the composition root fills it, `reports` may not import `channels`. */
   urgentNotices: UrgentNoticeReader;
   testMail: TestMailRule;
-  /** M8 only. Absent, or the flag `trust_ladder` off: the three evidence keys of an M8 row are null (F110 stage 12). */
+  /** M8 only. Absent, or the flag `trust_ladder` off: the three evidence keys of an M8 row are null. */
   trustEvidence?: TrustEvidenceReader;
 }
 
@@ -141,7 +141,7 @@ async function readMetricRows(
   opts: { llmRange?: { start: Date; end: Date }; withLoops: boolean }
 ) {
   const llmRange = opts.llmRange ?? q.range;
-  // Loops are read only for an organization with the flag `open_loops` on: off, the loops are hidden (F116 D18).
+  // Loops are read only for an organization with the flag `open_loops` on: off, the loops are hidden.
   const loopsOn = opts.withLoops && (await isFeatureOn(db, ctx, "open_loops"));
   const [truth, delegations, loops, moves, rejects, mistakes, handled, urgent, llmCalls] = await Promise.all([
     listTruthRows(db, ctx, q),

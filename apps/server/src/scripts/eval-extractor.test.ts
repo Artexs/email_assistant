@@ -17,7 +17,7 @@ import { runExtractorEval } from "./eval-extractor";
 import { runSimInProcess } from "./sim-fixtures.test-helper";
 import { completeSentCorpus, miniSentFloors, type SentCorpus } from "./sim-sent-fixtures.test-helper";
 
-// F116 stage 06: the extractor runner on a mini sent corpus with a fake LLM. No real call, no money.
+// The extractor runner on a mini sent corpus with a fake LLM. No real call, no money.
 
 const MODEL = "gpt-6-luna";
 const env = {

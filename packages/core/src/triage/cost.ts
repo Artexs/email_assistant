@@ -33,7 +33,7 @@ export const llmPrices: Record<string, LlmPrice[]> = {
   "gpt-6-luna": [
     { inputPerM: 0.1, outputPerM: 0.5, source: OPENAI_PRICING_URL, checked: "2026-11-06" },
     // UNVERIFIED: a secondary source (+10% over the standard price), not the OpenAI price page.
-    // F111 stage 07 replaces this row with the price that OpenAI shows for the EU project.
+    // A later row replaces this one with the price that OpenAI shows for the EU project.
     {
       inputPerM: 0.11,
       outputPerM: 0.55,
@@ -43,7 +43,7 @@ export const llmPrices: Record<string, LlmPrice[]> = {
       checked: "2026-11-13",
     },
   ],
-  // Read on the OpenAI price page, standard tier, 2026-11-15 (the model of the F109 cascade eval, which did not ship; the price row stays as data).
+  // Read on the OpenAI price page, standard tier, 2026-11-15 (the model of the cascade eval, which did not ship; the price row stays as data).
   "gpt-6.1-terra": [
     { inputPerM: 1, cachedInputPerM: 0.05, outputPerM: 5, source: OPENAI_PRICING_URL, checked: "2026-11-15" },
   ],
@@ -57,7 +57,7 @@ export const DEFAULT_MAILS_PER_DAY = 200;
 const ENDPOINT_KINDS: readonly string[] = ["standard", "eu", "own"];
 
 /**
- * Reads the `endpoint` key of an `llm.call` row. A row written before F111 has none: it ran on `standard`.
+ * Reads the `endpoint` key of an `llm.call` row. A row written before the endpoint was logged has none: it ran on `standard`.
  * Any other value reads `standard` too: the dearest rate, so a damaged row never makes a call cheaper.
  */
 export function toEndpointKind(value: unknown): LlmEndpointKind {

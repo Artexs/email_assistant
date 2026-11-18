@@ -11,8 +11,8 @@ import {
 
 import { dataBlock, neutralize } from "./classifier-v2";
 
-// Any change to the text below needs a new file and version id (`drafter-v2.ts`) and a passing drafter run (F115
-// stage 02). The text of this file never holds a mail, an address or a draft.
+// Any change to the text below needs a new file and version id (`drafter-v2.ts`) and a passing drafter run.
+// The text of this file never holds a mail, an address or a draft.
 export const PROMPT_VERSION = "drafter-v1";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;

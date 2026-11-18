@@ -2,7 +2,7 @@ import type { Scenario } from "./scenario";
 import { sentBlindOf, sentExpectedOf, type SentExpected } from "./sent-blind";
 import type { SentBlindCase, SentLabels, SentPart, SentSlot, SentText } from "./sent-slot";
 
-// One case for the extractor gate (stage 06): the blind view plus the slot labels.
+// One case for the extractor gate: the blind view plus the slot labels.
 export interface SentEvalCase {
   id: string;
   part: SentPart;

@@ -18,7 +18,7 @@ const alertVariants = cva(
   }
 );
 
-// One column without an icon, so a bare text child fills the width (F127). With an icon the grid has an icon column and a
+// One column without an icon, so a bare text child fills the width. With an icon the grid has an icon column and a
 // text column: the title and the description go in the text column, and a bare text child is placed there by the grid.
 function Alert({ className, variant, ...props }: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
   return <div data-slot="alert" role="alert" className={cn(alertVariants({ variant }), className)} {...props} />;

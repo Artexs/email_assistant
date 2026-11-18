@@ -33,7 +33,7 @@ import {
   type BatchFolder,
 } from "./sim-files";
 
-// The fs code of the sent bank (F116 stage 02). Layout: <corpus>/<sent part>/{slots,texts,blind,labels}/batch-NNN.json.
+// The fs code of the sent bank. Layout: <corpus>/<sent part>/{slots,texts,blind,labels}/batch-NNN.json.
 
 export function readSentPlanSpec(dir: string): SentPlanSpec {
   const spec = readParsed(dir, join(dir, "sent-plan-spec.json"), sentPlanSpecSchema);

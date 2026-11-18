@@ -39,7 +39,7 @@ const OPEN_SEND_STATUSES = ["awaiting_approval", "approved", "applying"];
 
 type DraftResult = Record<string, string | number | boolean | null>;
 
-// D8: the message of a draft row, from the payload, the original mail and the mailbox. Throws on a payload that does not parse.
+// The message of a draft row, from the payload, the original mail and the mailbox. Throws on a payload that does not parse.
 // A follow-up has no mail: the anchor (the loop, read through `LoopHooks.anchorOf`) gives the thread ids for In-Reply-To
 // and References; the subject, the date and the quote are in the payload, so an approved text never changes.
 export function buildDraftMessage(deps: ApplyDeps, action: ClaimedAction, anchor?: LoopAnchor): OutgoingMessage {
@@ -94,7 +94,7 @@ export async function draftMessageOf(
   return buildDraftMessage(deps, action, await loopAnchorOf(deps, ctx, action));
 }
 
-// The draft failed for good: its open sends expire with `draft_missing`, in the same transaction (D12).
+// The draft failed for good: its open sends expire with `draft_missing`, in the same transaction.
 // Lock order: the sends first, then the draft row, as `reject` and `expireSend` do. The reverse order deadlocks with them.
 async function failDraft(
   deps: ApplyDeps,
@@ -244,7 +244,7 @@ async function copyBaseline(
   }
 }
 
-// D12. A ready draft ends as exactly one message in the Drafts folder, whatever happened before.
+// A ready draft ends as exactly one message in the Drafts folder, whatever happened before.
 export async function applyDraft(
   deps: ApplyDeps,
   ctx: TenantContext,
@@ -367,7 +367,7 @@ export async function applyDraft(
   return { kind: "applied" };
 }
 
-// N12: the send of this draft ended before the APPEND. No message is made for a dead send.
+// The send of this draft ended before the APPEND. No message is made for a dead send.
 async function closeDraft(deps: ApplyDeps, ctx: TenantContext, action: ClaimedAction): Promise<ApplyOutcome> {
   const now = deps.now();
   const done = await inTransaction(deps.db, async (trx) => {
@@ -396,7 +396,7 @@ async function closeDraft(deps: ApplyDeps, ctx: TenantContext, action: ClaimedAc
   return { kind: "expired", reason: "send_closed" };
 }
 
-// D13: the payload of a reverse row (`closeDraftOfSend` writes it).
+// The payload of a reverse row (`closeDraftOfSend` writes it).
 const reversePayloadSchema = z.object({
   kind: z.string(),
   folder: z.string().min(1),
@@ -420,7 +420,7 @@ async function keptReason(
   return judgeCopy({ kind: "found", uid: input.found.uid, copy }, baseline) === "same" ? null : "changed";
 }
 
-// D13. The reverse row removes the system's draft once and marks the original `undone`. Not found = done.
+// The reverse row removes the system's draft once and marks the original `undone`. Not found = done.
 export async function removeDraft(
   deps: ApplyDeps,
   ctx: TenantContext,

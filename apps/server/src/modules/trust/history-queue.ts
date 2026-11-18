@@ -1,4 +1,4 @@
-// The queue side of the history job: claim, lock, wait, advance, fail and end one check (F110 D13). Every write after a claim
+// The queue side of the history job: claim, lock, wait, advance, fail and end one check. Every write after a claim
 // holds the lock of the claim (`locked_at` equal to the claimed value): a run whose lock was taken back after 10 minutes
 // writes nothing. Codes, ids, counts and times only: no mail text and no address.
 import type { EvidenceKey } from "@ea/core";
@@ -365,7 +365,7 @@ export async function listMailboxesWithoutCheck(db: Conn, ctx: TenantContext, ma
 }
 
 /**
- * Queues a check with the reason `flag_on` for a mailbox that has no `history_checks` row at all (review 1 N3). The mailbox row is
+ * Queues a check with the reason `flag_on` for a mailbox that has no `history_checks` row at all. The mailbox row is
  * locked first: two runs at once take the lock one after the other, and the second run sees the row of the first. Returns true when
  * it queued a check.
  */

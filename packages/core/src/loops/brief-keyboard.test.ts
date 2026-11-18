@@ -26,7 +26,7 @@ import {
   ZONE,
 } from "./brief-fixtures.test-helper";
 
-// F116 stage 19: the keyboard of the brief lines (D11, D13, D17) and the line numbers that the tap edit needs.
+// The keyboard of the brief lines and the line numbers that the tap edit needs.
 const en = textTables.en;
 const pl = textTables.pl;
 

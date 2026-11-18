@@ -17,7 +17,7 @@ export interface SendLimitHit {
 
 export type SendStart = { kind: "started" } | { kind: "held"; hit: SendLimitHit } | { kind: "lost" };
 
-// PD-044 (D6). Runs in the caller's transaction, under the mailbox's send lock: the check and `markApplying`
+// Runs in the caller's transaction, under the mailbox's send lock: the check and `markApplying`
 // are one unit, so two committers never pass a limit together. A held send goes back to `approved` with no attempt counted.
 export async function startSendWithinLimits(
   trx: Transaction<DB>,

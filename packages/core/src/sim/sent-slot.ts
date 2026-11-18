@@ -5,7 +5,7 @@ import { dueRefSchema } from "../loops/dates";
 import { sentHardCaseRule, sentHardCaseTags } from "./sent-hard-cases";
 import { lengthBuckets } from "./slot";
 
-// The parts of the sent-mail bank (F116). `simParts` stays as it is, so the frozen lab-01 manifest does not change.
+// The parts of the sent-mail bank. `simParts` stays as it is, so the frozen lab-01 manifest does not change.
 export const sentParts = ["sent-dev", "sent-holdout"] as const;
 export type SentPart = (typeof sentParts)[number];
 
@@ -18,7 +18,7 @@ export const sentLabelsSchema = z
     // The English brief of the ask: set if and only if `expectsReply`.
     ask: z.string().min(1).max(80).nullable(),
     due: dueRefSchema.nullable(),
-    // The firm promise of the executive; it always has a date (an undated promise opens no loop, D7).
+    // The firm promise of the executive; it always has a date (an undated promise opens no loop).
     promise: z.string().min(1).max(80).nullable(),
     promiseDue: dueRefSchema.nullable(),
   })
@@ -129,7 +129,7 @@ export const sentBlindCaseSchema = z
   .strict();
 export type SentBlindCase = z.infer<typeof sentBlindCaseSchema>;
 
-// The checker's label of one case. Dates are the resolved local day (YYYY-MM-DD), null when none or dropped (D7).
+// The checker's label of one case. Dates are the resolved local day (YYYY-MM-DD), null when none or dropped.
 export const sentLabelSchema = z
   .object({
     id: z.string(),

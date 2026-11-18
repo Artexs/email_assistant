@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { addressPattern, emptyAsUndefined, parseAddressList } from "./config-shared";
 
-// The providers of mailbox OAuth (F117). The mail module has the same union (`MailOAuthProvider`): `platform` does not import `modules`.
+// The providers of mailbox OAuth. The mail module has the same union (`MailOAuthProvider`): `platform` does not import `modules`.
 export const mailOAuthProviderIds = ["microsoft", "google"] as const;
 export type MailOAuthProviderId = (typeof mailOAuthProviderIds)[number];
 
@@ -26,9 +26,9 @@ export const mailShape = {
   SEND_SCOPE: z.enum(["off", "self", "all"]).default("off"),
   // Comma-separated; needed with SEND_SCOPE=self.
   SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // Comma-separated sender addresses whose mail counts as test mail (D1 of F097). Empty = none.
+  // Comma-separated sender addresses whose mail counts as test mail. Empty = none.
   TEST_SENDER_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // Send limits per mailbox (PD-044); a send over a limit waits. Integers 1 to 10 000; empty = the default.
+  // Send limits per mailbox; a send over a limit waits. Integers 1 to 10 000; empty = the default.
   SEND_LIMIT_MAILBOX_HOUR: z.preprocess(
     emptyAsUndefined,
     z.coerce.number().int().min(1).max(10_000).default(DEFAULT_SEND_LIMITS.mailboxHour)
@@ -42,15 +42,15 @@ export const mailShape = {
     z.coerce.number().int().min(1).max(10_000).default(DEFAULT_SEND_LIMITS.recipientDay)
   ),
   // Comma list of authserv-ids (hosts) whose `Authentication-Results` header the suspicious-mail rules trust, besides the
-  // registrable domain of the mailbox IMAP host (F109 D2). Empty = none.
+  // registrable domain of the mailbox IMAP host. Empty = none.
   MAIL_TRUSTED_AUTHSERV_IDS: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // Minutes between two mail syncs (D7 of F100): 2, 3 or 5. Empty = 2.
+  // Minutes between two mail syncs: 2, 3 or 5. Empty = 2.
   MAIL_SYNC_EVERY_MIN: z.preprocess(emptyAsUndefined, z.enum(["2", "3", "5"]).default("2")),
   // Old name of MAIL_ALLOW_LOCAL_HOSTS; read only while that key is unset. No default: "unset" must stay visible.
   WEB_MAIL_ALLOW_LOCAL: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).optional()),
   // true = mail hosts on localhost or a private network are allowed for the connect form, sync and send (dev, e2e).
   MAIL_ALLOW_LOCAL_HOSTS: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).optional()),
-  // Auth mail (S6b): host, user, password and from are set together. None set = the sender is off.
+  // Auth mail: host, user, password and from are set together. None set = the sender is off.
   AUTH_SMTP_HOST: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   AUTH_SMTP_PORT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(65535).default(465)),
   AUTH_SMTP_SECURITY: z.preprocess(emptyAsUndefined, z.enum(["tls", "starttls"]).default("tls")),
@@ -60,7 +60,7 @@ export const mailShape = {
   AUTH_MAIL_FROM: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
   // on = a new password is checked against the Have I Been Pwned list; off = tests only.
   AUTH_PWNED_CHECK: z.preprocess(emptyAsUndefined, z.enum(["on", "off"]).default("on")),
-  // Mailbox OAuth apps (F117, D7). Each client id is set with its secret. Secrets: never print or log them.
+  // Mailbox OAuth apps. Each client id is set with its secret. Secrets: never print or log them.
   MAIL_OAUTH_MICROSOFT_CLIENT_ID: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   MAIL_OAUTH_GOOGLE_CLIENT_ID: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
@@ -115,7 +115,7 @@ export function checkAuthMail(config: MailConfig, ctx: z.RefinementCtx): void {
 
 // The mailbox OAuth checks of `configSchema`.
 export function checkMailOAuth(config: MailConfig, ctx: z.RefinementCtx): void {
-  // D7: both keys of a provider or none; a provider that is set needs WEB_BASE_URL (the redirect URI). A message never holds a value.
+  // Both keys of a provider or none; a provider that is set needs WEB_BASE_URL (the redirect URI). A message never holds a value.
   for (const provider of mailOAuthProviderIds) {
     const [idKey, secretKey] = mailOAuthKeys[provider];
     const idSet = config[idKey] !== undefined;
@@ -158,7 +158,7 @@ export function testMailRule(config: MailConfig): { senders: string[] } {
   return { senders: parseAddressList(config.TEST_SENDER_ADDRESSES) };
 }
 
-/** The send limits (PD-044). */
+/** The send limits. */
 export function sendLimits(config: MailConfig): SendLimits {
   return {
     mailboxHour: config.SEND_LIMIT_MAILBOX_HOUR,

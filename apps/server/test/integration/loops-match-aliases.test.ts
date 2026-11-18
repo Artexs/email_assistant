@@ -7,7 +7,7 @@ import { sentMail } from "./loops-analyze-fixtures";
 import { ANNA, JAN, loopRow, loopsOrg, reply, RUN_AT, waiting } from "./loops-match-fixtures";
 import { siblingMailbox } from "./mail-sent-fixtures";
 
-// F116 stage 14 (carry-over of the stage 13 review, N2): an alias of the user is not a mailbox address, but the user wrote
+// An alias of the user is not a mailbox address, but the user wrote
 // from it in the Sent folder, so a mail from it is not a reply. The own addresses of a mailbox are the mailbox addresses
 // of the organization and every From address of the Sent rows of that mailbox.
 const db = testDb();

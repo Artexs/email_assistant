@@ -10,7 +10,7 @@ import { pl } from "../i18n/pl";
 
 import { isAllowedPlaceholder, legalDocs, legalLangs, type LegalDoc, type LegalLang } from "./legal";
 
-// Checks of the legal Markdown sources (F107 stage 02). Test use only: it reads files with Node APIs, so no island
+// Checks of the legal Markdown sources. Test use only: it reads files with Node APIs, so no island
 // imports it.
 
 const here = dirname(fileURLToPath(import.meta.url));

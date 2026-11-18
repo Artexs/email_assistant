@@ -1,4 +1,4 @@
-// Row reader of the open-loops metric (M2) for loops (F116 stage 23). Dates, ids and codes only: no text, no address.
+// Row reader of the open-loops metric (M2) for loops. Dates, ids and codes only: no text, no address.
 import type { LoopDueRow } from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";

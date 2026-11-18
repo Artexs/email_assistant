@@ -10,7 +10,7 @@ import { applyOAuthGrant, type ApplyGrantDeps, type ApplyResult, type OAuthResul
 import { finishOAuthCallback } from "./callback";
 import type { MailOAuthProvider } from "./providers";
 
-// The redirect target of the provider sign-in (F117 stage 09). It sits before the session guard: a browser that comes back from the
+// The redirect target of the provider sign-in. It sits before the session guard: a browser that comes back from the
 // provider without a session cookie gets a redirect to the login page, not the 401 JSON of `requireSession`. So this route reads the
 // session itself, resolves the organization the way `requireTenant` does, and enters the tenant scope itself.
 // It always answers 303. The query holds the one-time `code` and `state`: nothing here logs it (the request log line carries the route

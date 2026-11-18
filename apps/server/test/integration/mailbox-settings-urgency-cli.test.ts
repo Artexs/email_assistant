@@ -9,7 +9,7 @@ import { insertDefaultSettings } from "../../src/modules/config";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
 
-// `bun run mailbox:settings urgency` (F109 stage 07). The profile may name people: the CLI prints counts and Zod
+// `bun run mailbox:settings urgency`. The profile may name people: the CLI prints counts and Zod
 // issue paths, never a label, a keyword or a value. `print` goes to stdout, `fail` to stderr (createCliOutput).
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

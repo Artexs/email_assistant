@@ -1,7 +1,7 @@
 import type { TextKey } from "../en";
 
 export const plSettings = {
-  // S5c: settings
+  // settings
   set_mailbox_label: "Skrzynka",
   set_no_mailbox: "Nie ma jeszcze skrzynki.",
   set_open_mailboxes: "Otwórz skrzynki",
@@ -214,7 +214,7 @@ export const plSettings = {
   os_linux: "Linux",
   os_unknown: "nieznany system",
   empty_patch: "Najpierw coś zmień.",
-  // S5c: rules
+  // rules
   rules_filter_label: "Pokaż reguły dla",
   rules_all_mailboxes: "Wszystkie skrzynki",
   rules_add_title: "Dodaj regułę",
@@ -238,7 +238,7 @@ export const plSettings = {
   rule_deleted_toast: "Reguła usunięta.",
   err_rule_exists: "Ta reguła już istnieje.",
   err_rule_limit: "Osiągnięto limit reguł: 1000.",
-  // F110: the urgency card on the Rules page
+  // The urgency card on the Rules page
   urg_title: "Co jest dla mnie pilne",
   urg_help: "Tematy i terminy dla tej skrzynki. Liczą się, gdy kontrola pilnych wiadomości z nich korzysta.",
   urg_mailbox_label: "Skrzynka",

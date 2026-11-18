@@ -6,7 +6,7 @@ import type { DB } from "../../src/platform/db";
 
 import { testDb, withRollback } from "./helpers";
 
-// F114 stage 01: the repository of `ops_alerts` (host-wide alert state, no org_id) and its schema rules.
+// The repository of `ops_alerts` (host-wide alert state, no org_id) and its schema rules.
 const db = testDb();
 
 afterAll(async () => {

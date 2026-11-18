@@ -25,7 +25,7 @@ export type MailboxRow = Omit<
   | "auth_reason"
 > & {
   smtp_security: SmtpSecurity;
-  /** `smtp` sends through the SMTP adapter, `graph` through Microsoft Graph (F117 D5). */
+  /** `smtp` sends through the SMTP adapter, `graph` through Microsoft Graph. */
   send_via: "smtp" | "graph";
   /** Null for a password mailbox. */
   oauth_provider: "microsoft" | "google" | null;
@@ -121,7 +121,7 @@ export async function countMailboxesOfOrg(db: DbOrTrx, ctx: TenantContext): Prom
     .executeTakeFirstOrThrow();
   return Number(row.n);
 }
-// Serializes the connects of one organization until the transaction ends (D6). It needs a transaction:
+// Serializes the connects of one organization until the transaction ends. It needs a transaction:
 // outside one, the lock ends with its own statement.
 export async function lockMailboxLimit(db: DbOrTrx, ctx: TenantContext): Promise<void> {
   if (!db.isTransaction) throw new Error("lockMailboxLimit needs a transaction");
@@ -275,7 +275,7 @@ export async function listMailboxStatesOfAll(
   const rows = await db.selectFrom("mailboxes").select(["org_id", "status", "last_synced_at"]).execute();
   return rows.map((row) => ({ orgId: row.org_id, status: row.status, lastSyncedAt: row.last_synced_at }));
 }
-// The draft removal needs UIDPLUS (D13). An unknown mailbox counts as no UIDPLUS.
+// The draft removal needs UIDPLUS. An unknown mailbox counts as no UIDPLUS.
 export async function mailboxHasUidplus(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
   const mailbox = await getMailbox(db, ctx, mailboxId);
   return (mailbox?.capabilities as Partial<MailCapabilities> | undefined)?.uidplus === true;

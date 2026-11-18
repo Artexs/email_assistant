@@ -10,7 +10,7 @@ import { testDb } from "./helpers";
 import { NOW } from "./loops-chaser-fixtures";
 import { call, FRIDAY, loopApp, loopWorld, type LoopWorld } from "./web-loops-fixtures";
 
-// F115 stage 03b, step 3: the flag `reply_drafts` and the tool switch `reply_drafts`.
+// The flag `reply_drafts` and the tool switch `reply_drafts`.
 const db = testDb();
 const worlds: LoopWorld[] = [];
 

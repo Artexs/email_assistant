@@ -9,7 +9,7 @@ import { lockThread } from "../../src/modules/replies/write";
 import { testDb } from "./helpers";
 import { markAnswered, SWEEP_NOW, sweepOrg, sweepReply, type SweepOrg } from "./reply-answered-fixtures";
 
-// F115 stage 09: the sweep with real commits. A rollback test cannot show that the close waits for the lock of the thread, or that two
+// The sweep with real commits. A rollback test cannot show that the close waits for the lock of the thread, or that two
 // sweeps at once close a send once. Each test makes its own organization and deletes it at the end.
 const db = testDb();
 

@@ -1,4 +1,4 @@
-// Front matter of the docs pages (plan D7): the capabilities a user page describes, and the source of a Polish page.
+// Front matter of the docs pages: the capabilities a user page describes, and the source of a Polish page.
 // The schema is `docsSchema({ extend })`; the rule "a user page names at least one existing capability" needs the page id,
 // so `frontMatterLoader` applies it to the loaded entries (a schema cannot see the id).
 import { existsSync, readdirSync } from "node:fs";
@@ -10,7 +10,7 @@ import { repoRoot } from "./in-place";
 // A page whose id starts with one of these (also under `pl/`) is a user page.
 export const USER_SECTIONS = ["start", "how-to", "reference", "explanation", "faq"] as const;
 
-// The English page ids that need a Polish page (plan P6): the landing page, the tutorial, every how-to guide, the FAQ and
+// The English page ids that need a Polish page: the landing page, the tutorial, every how-to guide, the FAQ and
 // "How a mail is sorted". The reference and the operator pages stay English only (Starlight fallback).
 export const POLISH_SET: readonly string[] = [
   "index",

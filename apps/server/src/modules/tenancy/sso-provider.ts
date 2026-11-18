@@ -19,7 +19,7 @@ import {
 
 const log = createLog("tenancy");
 
-// The operator sets and removes a provider (F119 PD-041, stage 07). The client secret lives in `oidcConfig` (the plugin JSON)
+// The operator sets and removes a provider. The client secret lives in `oidcConfig` (the plugin JSON)
 // and never reaches a log line, an audit row or a return value.
 
 export type SsoState = SsoStateRow;
@@ -45,7 +45,7 @@ export type SetSsoProviderResult =
 
 const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
 
-// The stage 02 CHECK also allows `1.2`. A domain with only digit labels is no mail domain.
+// The table CHECK also allows `1.2`. A domain with only digit labels is no mail domain.
 function isValidMailDomain(domain: string): boolean {
   return DOMAIN_PATTERN.test(domain) && !domain.split(".").every((label) => /^[0-9]+$/.test(label));
 }
@@ -57,7 +57,7 @@ export function normalizeMailDomain(raw: string): string | null {
   return isValidMailDomain(domain) ? domain : null;
 }
 
-// The e-mail has the provider domain after the last `@`; a subdomain does not match (one domain per provider, Q8). Both
+// The e-mail has the provider domain after the last `@`; a subdomain does not match (one domain per provider). Both
 // sides are lower case.
 export function hasMailDomain(email: string, domain: string): boolean {
   const at = email.lastIndexOf("@");

@@ -82,7 +82,7 @@ describe("AccountCard delete block (F106 stage 04, B1)", () => {
       const blocks = html.match(/<div class="border-t pt-4">/g) ?? [];
       expect(blocks.length).toBe(1);
     }
-    // F119 stage 13: while `me` is not loaded no password control shows, so the two-factor block is not there either.
+    // While `me` is not loaded no password control shows, so the two-factor block is not there either.
     expect(loading.match(/<div class="border-t pt-4">/g) ?? []).toHaveLength(0);
   });
 

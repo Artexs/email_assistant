@@ -14,7 +14,7 @@ import { analysisOf, ASK, depsOf, fakeExtractor, FRI, loopsOrg, RUN_AT, sentMail
 import { insertLoopRow } from "./loops-fixtures";
 import { ago, DAY, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
-// The rules of the Sent analysis that need no model (F116 stage 12, step 1): the thread rule, the promise rule and the
+// The rules of the Sent analysis that need no model (step 1): the thread rule, the promise rule and the
 // delegation rule. The tests run without `app.org_id`: only the `org_id` filter of each
 // query stands between an organization and the rows of another one.
 const db = testDb();

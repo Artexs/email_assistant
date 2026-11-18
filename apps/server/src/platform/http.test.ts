@@ -28,7 +28,7 @@ import {
 } from "./http";
 import { setLogFormat, setLogLevel } from "./log";
 
-// Logged user ids must be UUIDs (F103 D1).
+// Logged user ids must be UUIDs.
 const U_MULTI = "1f2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b";
 const U_OTHER = "2a3b4c5d-6e7f-4809-9a0b-1c2d3e4f5a6b";
 const U_OP = "3b4c5d6e-7f80-4910-8b1c-2d3e4f5a6b7c";
@@ -555,7 +555,7 @@ describe("requireOperator", () => {
     }
   });
 
-  // The guard order of createApp: requireTenant, then requireOperator, then refuseSuspendedWrites (D15, D17).
+  // The guard order of createApp: requireTenant, then requireOperator, then refuseSuspendedWrites.
   const orderApp = (extra: Partial<WebDeps>) => {
     const web = {
       auth: {

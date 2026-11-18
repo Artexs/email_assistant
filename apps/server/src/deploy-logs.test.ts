@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 
-// F103 stage 18: deploy/logs.sh prints the server log as text lines and filters it by run, request, event and level.
+// deploy/logs.sh prints the server log as text lines and filters it by run, request, event and level.
 // The hidden option --stdin reads lines from stdin; a fake `docker` on PATH shows the command the script builds without it.
 
 const repoRoot = join(import.meta.dir, "..", "..", "..");

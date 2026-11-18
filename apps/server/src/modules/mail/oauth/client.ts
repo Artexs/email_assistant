@@ -4,8 +4,8 @@ import type { AuthErrorReason, TokenResource } from "../port";
 
 import type { MailOAuthProvider, MailOAuthProviderSpec } from "./providers";
 
-// The token client of mailbox OAuth (F117 stage 06, D17, D18): authorize URL, code redeem, refresh, revoke.
-// D18: no token, code, verifier, client secret, ID token or provider `error_description` reaches an error, a log line or a return value
+// The token client of mailbox OAuth: authorize URL, code redeem, refresh, revoke.
+// No token, code, verifier, client secret, ID token or provider `error_description` reaches an error, a log line or a return value
 // that is not a token answer. An error has a fixed message and no `cause`. It keeps three safe facts: the reason, the provider's
 // error code (only when it looks like a code) and the AADSTS number.
 
@@ -39,7 +39,7 @@ export class OAuthGrantError extends HardError {
   }
 }
 
-/** A fault of the operator or the network. The mailbox status stays as it is (D16). */
+/** A fault of the operator or the network. The mailbox status stays as it is. */
 export class OAuthSoftError extends SoftError {
   readonly kind: "client_invalid" | "server" | "timeout";
 
@@ -50,11 +50,11 @@ export class OAuthSoftError extends SoftError {
   }
 }
 
-/** What stages 08 and 10 call. One per configured provider (`MailOAuthClients`). */
+/** What the callback and the login retry call. One per configured provider (`MailOAuthClients`). */
 export interface MailOAuthClient {
-  /** The public client id of the app: the `aud` an ID token must carry (stage 08). Not the secret. */
+  /** The public client id of the app: the `aud` an ID token must carry. Not the secret. */
   readonly clientId: string;
-  /** The provider registry entry this client was built with: hosts, ports and the send route of a new mailbox (stage 09). */
+  /** The provider registry entry this client was built with: hosts, ports and the send route of a new mailbox. */
   readonly spec: MailOAuthProviderSpec;
   authorizeUrl(input: { state: string; codeChallenge: string; loginHint?: string }): string;
   /** Asks for the `mail` resource (Microsoft gives one resource per token). */
@@ -80,16 +80,16 @@ export interface MailOAuthClientOptions {
 }
 
 // Microsoft error codes (AADSTS) by reason. The nine numbers of the three reason sets below were checked on 2026-11-15 by the
-// Opus review of stage 06 against the Microsoft Entra authentication and authorization error-code reference: 70008 and 700082
+// review against the Microsoft Entra authentication and authorization error-code reference: 70008 and 700082
 // (refresh token expired from inactivity), 700084 (SPA refresh token expired), 70043 (sign-in frequency), 50173 (grant revoked,
 // for example after a password change), 65001 (the user or an administrator has not consented), 65004 (the user declined consent),
-// 90094 and 90095 (admin consent required). 65001 has one reason only (review N4): `admin_consent_required`, also for a refresh.
+// 90094 and 90095 (admin consent required). 65001 has one reason only: `admin_consent_required`, also for a refresh.
 // It does not always mean an administrator: a personal account, or a user who withdrew consent, gives it too. The texts of
-// stages 11 and 18 must not say only "administrator". 50000 and 90033 are from the plan review (N3); the reference page was not
+// the user texts for this reason must not say only "administrator". 50000 and 90033 came from the plan review; the reference page was not
 // read for them: they name a fault of the Microsoft service (TokenIssuanceError, MSODS unavailable).
 const EXPIRED_AADSTS: ReadonlySet<number> = new Set([70008, 700082, 700084, 70043]);
 const REVOKED_AADSTS: ReadonlySet<number> = new Set([50173, 65004]);
-// A fault of the Microsoft service, not of the grant: the mailbox must stay connected (review N3).
+// A fault of the Microsoft service, not of the grant: the mailbox must stay connected.
 const SERVICE_FAULT_AADSTS: ReadonlySet<number> = new Set([50000, 90033]);
 const CONSENT_AADSTS: ReadonlySet<number> = new Set([65001, 90094, 90095]);
 const CLIENT_INVALID_CODES: ReadonlySet<string> = new Set([
@@ -110,7 +110,7 @@ export function aadstsOf(description: unknown, codes: unknown): number | null {
   return typeof first === "number" && Number.isInteger(first) && first > 0 ? first : null;
 }
 
-/** The error map (D17). Pure: it reads the status, the `error` code and the AADSTS number, never the description. */
+/** The error map. Pure: it reads the status, the `error` code and the AADSTS number, never the description. */
 export function classifyTokenError(
   status: number,
   providerCode: string,
@@ -125,12 +125,12 @@ export function classifyTokenError(
   if (aadsts !== null && SERVICE_FAULT_AADSTS.has(aadsts)) return { soft: "server" };
   if (aadsts !== null && REVOKED_AADSTS.has(aadsts)) return { grant: "oauth_revoked" };
   if (aadsts !== null && EXPIRED_AADSTS.has(aadsts)) return { grant: "oauth_expired" };
-  // Any other invalid_grant (Google gives no detail: Q10) and interaction_required: sign in again.
+  // Any other invalid_grant (Google gives no detail) and interaction_required: sign in again.
   if (providerCode === "invalid_grant" || providerCode === "interaction_required") return { grant: "oauth_expired" };
   return { soft: "server" };
 }
 
-/** The largest token answer the client reads (review N1). A real answer is a few KiB. */
+/** The largest token answer the client reads. A real answer is a few KiB. */
 export const OAUTH_MAX_BODY_BYTES = 64 * 1024;
 
 /** The body as text, or null when it is over the cap (the stream is cancelled at once). */

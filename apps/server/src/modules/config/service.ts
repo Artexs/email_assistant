@@ -43,7 +43,7 @@ export class SettingsNotFoundError extends HardError {
 }
 
 // The switch `reply_drafts` cannot go on for a mailbox that has an OAuth provider: reply drafts are for password IMAP mailboxes until
-// Graph and Gmail get them (F115 D19). A route maps it to 400 `validation` (field `reply_drafts`); the CLI exits 1.
+// Graph and Gmail get them. A route maps it to 400 `validation` (field `reply_drafts`); the CLI exits 1.
 export class OauthMailboxError extends HardError {
   constructor() {
     super("oauth_mailbox");
@@ -54,7 +54,7 @@ export class OauthMailboxError extends HardError {
 export interface SettingsDeps {
   db: Db | Transaction<DB>;
   now(): Date;
-  // The global evidence of the running classifier, built once at start (F110 stage 02). The setter reads its running key.
+  // The global evidence of the running classifier, built once at start. The setter reads its running key.
   gate: GateEvidenceDeps;
   // Ends the active trips of a category in the caller's transaction (the `trust` repository, injected by the composition
   // root: `config` sits below `trust`). Turning `auto` on calls it.
@@ -65,7 +65,7 @@ export interface SettingsDeps {
     category: BarCategory,
     at: Date
   ): Promise<number>;
-  // Required, so typecheck stops a caller that forgets it (the CLI now, the S5 page later).
+  // Required, so typecheck stops a caller that forgets it (the CLI and the panel page).
   expireReady(
     trx: Transaction<DB>,
     ctx: TenantContext,
@@ -126,7 +126,7 @@ export function closedBy(
       return { types: ["mark_read"] };
     case "flag":
       return { types: ["flag"] };
-    // A reply draft has its own switch (PD-082): `create_draft` off leaves the reply sends open.
+    // A reply draft has its own switch: `create_draft` off leaves the reply sends open.
     case "create_draft":
       return { types: [], sends: "others" };
     // A follow-up that waits for a tap stays valid: the owner decides at the card.
@@ -399,7 +399,7 @@ export async function setToolSwitch(
   mailboxId: string,
   input: { name: keyof ToolSwitches; value: boolean; actor: string }
 ): Promise<SettingsChange> {
-  // D19: the guard sits here, so the route and the CLI both meet it. `oauth_provider` is set at insert only: a mailbox never turns OAuth
+  // The guard sits here, so the route and the CLI both meet it. `oauth_provider` is set at insert only: a mailbox never turns OAuth
   // later, so the read before the settings lock cannot go stale. Off is always accepted.
   if (input.name === "reply_drafts" && input.value) {
     const provider = await getMailboxOauthProvider(deps.db, ctx, mailboxId);

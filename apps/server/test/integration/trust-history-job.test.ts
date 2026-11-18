@@ -40,7 +40,7 @@ import {
   type HistoryBox,
 } from "./trust-history-helpers";
 
-// The history check job (F110 stage 06): claim, backfill, flags wait. Committed rows, a fixed clock and the in-memory mail server;
+// The history check job: claim, backfill, flags wait. Committed rows, a fixed clock and the in-memory mail server;
 // the model is never called (the job has no client). The two-connection rules are in trust-history-job-race.test.ts.
 const db = testDb();
 
@@ -548,7 +548,7 @@ describe("step 3: the flags wait", () => {
       const job = jobOf(db, box);
       await job.run();
       expect((await theCheck(db, box)).status).toBe("waiting_flags");
-      // N1: `refreshFlags` covers `skipped` mail.
+      // `refreshFlags` covers `skipped` mail.
       const flags = await db
         .selectFrom("email_flags")
         .innerJoin("emails", "emails.id", "email_flags.email_id")

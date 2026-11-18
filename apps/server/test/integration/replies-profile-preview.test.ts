@@ -14,7 +14,7 @@ import { testDb } from "./helpers";
 import { CLEAN_ANSWER, fakeLlm, type FakeLlm } from "./reply-job-fixtures";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F115 stage 10 step 3: POST /api/mailboxes/:id/profile/preview. One drafter call on a fixed sample mail, with a fake model. Committed
+// POST /api/mailboxes/:id/profile/preview. One drafter call on a fixed sample mail, with a fake model. Committed
 // rows; the cleanup deletes both organizations.
 const db = testDb();
 const UNKNOWN = "00000000-0000-4000-8000-000000000000";

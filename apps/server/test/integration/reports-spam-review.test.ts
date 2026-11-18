@@ -29,7 +29,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-// F110 stage 17: the spam review line of the digest. T is 08:00 in Warsaw (UTC+1 in November).
+// The spam review line of the digest. T is 08:00 in Warsaw (UTC+1 in November).
 const T = new Date("2026-11-06T07:00:00Z");
 const MIN = 60_000;
 const HOUR = 3_600_000;

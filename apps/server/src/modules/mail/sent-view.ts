@@ -36,7 +36,7 @@ export async function getSentSyncView(
 
 // Can the system see the Sent mail of this mailbox? The org flag `sent_sync` is on, the switch of the mailbox is on, and the Sent folder
 // is known and was found (no `no_folder` or `folder_missing` in the state, and a `sent` key in the folder map). A reply card says "I cannot
-// see your sent mail" when it is not (F115 D10: then only `\Answered` on the original shows an answer).
+// see your sent mail" when it is not (then only `\Answered` on the original shows an answer).
 export async function isSentVisible(db: Db | Transaction<DB>, ctx: TenantContext, mailboxId: string): Promise<boolean> {
   if (!(await isFeatureOn(db, ctx, "sent_sync"))) return false;
   const state = await getSentSyncState(db, ctx, mailboxId);

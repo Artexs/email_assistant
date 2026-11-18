@@ -184,7 +184,7 @@ async function insertTombstones(trx: Transaction<DB>, orgId: string, dedupKeys: 
   return inserted;
 }
 
-// The erase of one person's data (F106 account data ticket), on the owner's instruction. One transaction, so a failure
+// The erase of one person's data, on the owner's instruction. One transaction, so a failure
 // at any point changes nothing. Order: lock the organization; lock the sync folders (sync and backfill apply their chunks
 // under this lock, so a chunk planned before the erase meets the tombstone) and the Sent state rows (the Sent pass does
 // the same); match; refuse; lock the mails that go;

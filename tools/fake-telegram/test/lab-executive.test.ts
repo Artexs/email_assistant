@@ -39,7 +39,7 @@ import { FAKE_TOKEN, startFakeTelegram } from "../src";
 
 import { timeZoneOutsideQuietHours } from "./setup";
 
-// F113 stage 10: the executive driver against the real fake Telegram, the server's Telegram runtime and the DB.
+// The executive driver against the real fake Telegram, the server's Telegram runtime and the DB.
 // The cards of the approval cases are the real ones (the outbox notices of the runtime). The cards of the digest cases
 // are the real `/digest` answer. Cards that only need an id (cases 4, 6, 7, 7b) are built by `botSend` from button data.
 const db = testDb();

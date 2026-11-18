@@ -51,7 +51,7 @@ function runEnv(): Record<string, string> {
   return env;
 }
 
-// The env of `db:migrate`, the seed and the server. Refuses a target that the seed would wipe (stage 12) before any command runs.
+// The env of `db:migrate`, the seed and the server. Refuses a target that the seed would wipe before any command runs.
 export function e2eEnv(): Record<string, string> {
   const appUrl = process.env.E2E_DATABASE_URL;
   const migratorUrl = process.env.E2E_MIGRATOR_DATABASE_URL;
@@ -71,17 +71,17 @@ export function e2eEnv(): Record<string, string> {
     WEB_TRUSTED_PROXIES: "127.0.0.1",
     DATABASE_URL: appUrl,
     MIGRATOR_DATABASE_URL: migratorUrl,
-    // F110 stage 13: a pinned classifier setup and a fixture folder of gate files (not the committed ones), so the autonomy card
+    // A pinned classifier setup and a fixture folder of gate files (not the committed ones), so the autonomy card
     // spec sees the same proof in every checkout. `e2e-gate-fixture.test.ts` ties the two.
     ...E2E_LLM_PIN,
     GATE_EVIDENCE_DIR: `${repoRoot}/${E2E_GATE_FIXTURE_DIR}`,
     ACTIONS_SCOPE: "synthetic",
     TRIAGE_LLM_SCOPE: "off",
-    // F102 stage 12: only the first delegate of the approvals organizations passes, so one approved send goes out (to the GreenMail of
+    // Only the first delegate of the approvals organizations passes, so one approved send goes out (to the GreenMail of
     // the dev stack, through the seeded mailbox) and the others stay held by the scope. Every other organization has no approved send.
     SEND_SCOPE: "self",
     SEND_TEST_ADDRESSES: E2E_SEND_TEST_ADDRESS,
-    // F110 stage 23: the newsletters spec seeds a `dkim=pass` of this authserv-id; it gives one-click.
+    // The newsletters spec seeds a `dkim=pass` of this authserv-id; it gives one-click.
     MAIL_TRUSTED_AUTHSERV_IDS: E2E_AUTHSERV_ID,
     MAIL_ALLOW_LOCAL_HOSTS: "true",
     // The e2e server has no internet: the leaked-password check would fail closed.
@@ -91,7 +91,7 @@ export function e2eEnv(): Record<string, string> {
     TELEGRAM_API_ROOT: E2E_TELEGRAM_URL,
     HEARTBEAT_URL: "",
     LOG_LEVEL: "info",
-    // F117 stage 16: fake client keys turn the Microsoft sign-in on as "configured". A new connect also needs the flag
+    // Fake client keys turn the Microsoft sign-in on as "configured". A new connect also needs the flag
     // `mail_oauth_microsoft`, which only `mailbox-oauth.spec.ts` turns on. No request goes to Microsoft.
     MAIL_OAUTH_MICROSOFT_CLIENT_ID: "e2e-fake-client-id",
     MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: "e2e-fake-client-secret",

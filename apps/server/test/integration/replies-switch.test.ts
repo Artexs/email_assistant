@@ -20,7 +20,7 @@ import { createOrgWithMailbox, insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { addReplyMail, CLEAN_ANSWER, fakeLlm, jobDeps, NOW, requestsOf, runJob, setupBox } from "./reply-job-fixtures";
 
-// F115 stage 10 step 1: the switch `reply_drafts` through the service `setToolSwitch` (the route and the CLI both call it). Every
+// The switch `reply_drafts` through the service `setToolSwitch` (the route and the CLI both call it). Every
 // test runs in a transaction that is rolled back. The route and the CLI are in replies-switch-route.test.ts and replies-switch-cli.test.ts.
 const db = testDb();
 

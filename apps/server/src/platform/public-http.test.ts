@@ -21,7 +21,7 @@ import {
   type DialRequest,
 } from "./public-http";
 
-// The guarded one-click client (F110 stage 24). No test calls a real host: every request goes to a server on 127.0.0.1 that
+// The guarded one-click client. No test calls a real host: every request goes to a server on 127.0.0.1 that
 // the test starts, through the `dial` seam (the guard still runs and sees a public test address). The certificate of the local
 // server is made by `openssl` into a temporary folder in `beforeAll`; no key is committed.
 

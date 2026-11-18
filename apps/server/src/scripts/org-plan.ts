@@ -52,7 +52,7 @@ async function main(): Promise<number> {
   }
 
   const config = loadConfig();
-  // The resume hook can reach mail code; without a policy the guard refuses local hosts (F082 stage 9).
+  // The resume hook can reach mail code; without a policy the guard refuses local hosts.
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {

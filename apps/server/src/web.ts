@@ -104,7 +104,7 @@ const eventNames = {
   two_factor_refused: auditEvents.webTwoFactorRefused,
 } satisfies Record<AuthEventKind, string>;
 
-// D4: a login or a password change is a row in the audit log of the user's oldest organization. It never throws.
+// A login or a password change is a row in the audit log of the user's oldest organization. It never throws.
 export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
   return async (kind, userId, data) => {
     try {
@@ -124,7 +124,7 @@ export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
   };
 }
 
-// F119: an SSO sign-in or refusal is a row in the provider's organization. `ssoPlugins` catches a failure and logs it.
+// An SSO sign-in or refusal is a row in the provider's organization. `ssoPlugins` catches a failure and logs it.
 export function auditSsoEvent(db: Db): NonNullable<AuthDeps["onSsoEvent"]> {
   return async (event) => {
     await recordAudit(
@@ -139,7 +139,7 @@ export function auditSsoEvent(db: Db): NonNullable<AuthDeps["onSsoEvent"]> {
   };
 }
 
-// L16: the accepted terms and their audit row go in one transaction, in the user's oldest organization. It never throws.
+// The accepted terms and their audit row go in one transaction, in the user's oldest organization. It never throws.
 export function termsAcceptedHandler(db: Db, now: () => Date): AuthDeps["onTermsAccepted"] {
   return async (userId, version) => {
     try {
@@ -160,7 +160,7 @@ export function termsAcceptedHandler(db: Db, now: () => Date): AuthDeps["onTerms
   };
 }
 
-// L7: a failed auth mail is an operator notice in the user's oldest organization. It never throws.
+// A failed auth mail is an operator notice in the user's oldest organization. It never throws.
 export function authMailFailedHandler(
   db: Db,
   notify: WebExtras["onAuthMailFailed"]
@@ -206,12 +206,12 @@ export function countMailboxes(db: Db): TenancyRouteDeps["countMailboxes"] {
   };
 }
 
-// F102 ticket: the badge of the nav. 0 while the flag `approvals_page` is off; `tenancy` gets it as a function (it must not import `actions`).
+// The badge of the nav. 0 while the flag `approvals_page` is off; `tenancy` gets it as a function (it must not import `actions`).
 export function approvalsWaiting(db: Db): TenancyRouteDeps["approvalsWaiting"] {
   return async (ctx) => ((await isFeatureOn(db, ctx, "approvals_page")) ? countWaitingApprovals(db, ctx) : 0);
 }
 
-// F110 stage 14: with `trust_ladder` on, onboarding asks for a channel (per user) and a finished history check (per organization).
+// With `trust_ladder` on, onboarding asks for a channel (per user) and a finished history check (per organization).
 // `null`: the flag is off and onboarding is as before. The member row and the check are read with the organization of the caller only.
 async function trustOnboardingOf(
   db: Db,
@@ -226,7 +226,7 @@ async function trustOnboardingOf(
   };
 }
 
-// D15: the Telegram item is per user, the others per organization.
+// The Telegram item is per user, the others per organization.
 export function onboardingDeps(
   db: Db,
   botUsername: (() => Promise<string>) | null
@@ -259,7 +259,7 @@ export function onboardingDeps(
   };
 }
 
-// `botUsername` only tells whether Telegram is on: a server without a bot never blocks `done` (B2).
+// `botUsername` only tells whether Telegram is on: a server without a bot never blocks `done`.
 export function homePathOf(
   db: Db,
   botUsername: (() => Promise<string>) | null = null
@@ -273,7 +273,7 @@ export function homePathOf(
   };
 }
 
-// F110 stage 12: the stats route reads the three evidence sources of M8 through the trust reader. `reports` may not import `trust`,
+// The stats route reads the three evidence sources of M8 through the trust reader. `reports` may not import `trust`,
 // so this root passes the reader.
 export function statsRouteDeps(
   db: Db,
@@ -290,7 +290,7 @@ export function statsRouteDeps(
   };
 }
 
-// D8, D16: the web calls the same setters as the CLI, with the one `settingsDeps` builder.
+// The web calls the same setters as the CLI, with the one `settingsDeps` builder.
 export function settingsRouteDeps(
   db: Db,
   now: () => Date,
@@ -353,7 +353,7 @@ export interface WebExtras {
   gate?: GateEvidenceDeps;
   /** Default: `postOneClick` with the system lookup (the guarded client). A test passes a fake: no test sends a real request. */
   postOneClick?: (url: URL) => Promise<OneClickResult>;
-  /** The style preview of the reply drafts (F115): one drafter call on a fixed sample mail. Absent or null: no model client runs, and a preview answers `failed`. */
+  /** The style preview of the reply drafts: one drafter call on a fixed sample mail. Absent or null: no model client runs, and a preview answers `failed`. */
   stylePreview?: StylePreview | null;
 }
 

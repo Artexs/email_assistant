@@ -334,7 +334,7 @@ export interface ReplyStyleCardProps {
   replyDraftsOn: boolean;
 }
 
-// The name, signature and writing style of one mailbox (F115 stage 11, D13). The name and the signature serve every draft kind; the
+// The name, signature and writing style of one mailbox. The name and the signature serve every draft kind; the
 // writing style and Preview serve reply drafts. A member sees the texts and cannot change them.
 export function ReplyStyleCard({ mailbox, isOwner, replyDraftsOn }: ReplyStyleCardProps) {
   const { data, error, loading, reload, mutate } = useResource(() => loadProfile(mailbox.id));

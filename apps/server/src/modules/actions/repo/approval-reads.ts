@@ -5,7 +5,7 @@ import type { TenantContext } from "../../../platform/db";
 import { sendBase, toSendRow, type SendRow } from "./sends";
 import type { DbOrTrx } from "./shared";
 
-// F102 ticket: the sends that the approvals page lists. `awaiting_approval` sends (state `waiting`) and `approved` sends that
+// The sends that the approvals page lists. `awaiting_approval` sends (state `waiting`) and `approved` sends that
 // no run holds (state `held`: `locked_at` null or before `staleBefore`, as `setRejected` decides). Newest first.
 export async function listApprovalSends(
   db: DbOrTrx,
@@ -29,7 +29,7 @@ export async function listApprovalSends(
   return rows.map(toSendRow);
 }
 
-// F102 ticket (nav badge): the sends that wait for approval and whose draft is `applied` (the card has gone out, or goes out next).
+// The sends for the nav badge: the sends that wait for approval and whose draft is `applied` (the card has gone out, or goes out next).
 export async function countWaitingApprovals(db: DbOrTrx, ctx: TenantContext): Promise<number> {
   const row = await db
     .selectFrom("actions")

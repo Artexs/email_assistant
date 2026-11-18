@@ -35,16 +35,16 @@ export interface NoticeTexts {
     status: string;
   };
   mailboxRemoved: string;
-  // For an OAuth mailbox (F117): replaces `mailboxRemoved`. What the owner does at the provider depends on the secret kind.
+  // For an OAuth mailbox: replaces `mailboxRemoved`. What the owner does at the provider depends on the secret kind.
   mailboxRemovedAccess: {
     googleRevoked: string;
     googleFailed: string;
     microsoftWork: string;
     microsoftPersonal: string;
   };
-  // F109 stage 15: mail of a VIP or whitelisted sender waits while the AI service is paused.
+  // Mail of a VIP or whitelisted sender waits while the AI service is paused.
   notTriaged: (sender: string) => string;
-  // Open loops (F116 stage 11). A follow-up notice names no address and no text: the owner reads the details in the panel.
+  // Open loops. A follow-up notice names no address and no text: the owner reads the details in the panel.
   followUp: {
     failed: string; // the send failed and nothing went out
     unknown: string; // the connection broke after the text went out: the mail may have been sent
@@ -52,10 +52,10 @@ export interface NoticeTexts {
   };
   // The one line for an owner whose consent does not cover open-loop data (replaces a follow-up card or result).
   loopConsent: { approval: string; result: string };
-  // Reply drafts (F115 stage 03): one fixed line per kind, no button. A count and a clock only: no mail text. The
+  // Reply drafts: one fixed line per kind, no button. A count and a clock only: no mail text. The
   // Telegram review stages replace these lines and keep the kind names.
   replyDrafts: { ready: (count: number, clock: string) => string; prompt: string; result: string };
-  // F110 stage 10 (D15): counts, category names and fixed phrases only. `link` is a text line, not a button.
+  // Counts, category names and fixed phrases only. `link` is a text line, not a button.
   trustReady: {
     first: (checked: number) => string;
     recommended: (categories: string) => string;
@@ -76,7 +76,7 @@ export interface NoticeTexts {
     limit: Record<SendLimitKind, string>;
     waiting: (count: number, clock: string) => string;
   };
-  // The weekly report (F100 stage 16): one function per line; `rate` is a text like "33% (3 of 9)".
+  // The weekly report: one function per line; `rate` is a text like "33% (3 of 9)".
   weekly: {
     title: (from: string, to: string) => string; // the two days are formatted by the caller
     noMail: string;
@@ -105,7 +105,7 @@ export interface NoticeTexts {
     autoFew: (category: string, labels: number, minimum: number) => string;
     auto: (items: string) => string;
     autoNone: string;
-    // F110 stage 12 (D15, fixed phrases only): the evidence line of a category on `auto`, and the line of a paused one.
+    // Fixed phrases only: the evidence line of a category on `auto`, and the line of a paused one.
     autoOn: (category: string, proof: string, check: string) => string;
     autoPaused: (category: string, reason: string) => string;
     proof: { go: string; noGo: string; none: string };

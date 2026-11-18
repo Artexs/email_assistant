@@ -120,7 +120,7 @@ export function gateRow(overrides: Partial<GateRow> = {}): GateRow {
   };
 }
 
-// The numbers of the seeded week of the server tests (stage 12 step 1 case 1): all mailboxes, one auto category.
+// The numbers of the seeded week of the server tests: all mailboxes, one auto category.
 export function weekStatsExample(overrides: Partial<WeekStats> = {}): WeekStats {
   const mailboxId = "00000000-0000-4000-8000-000000000001";
   const row = {

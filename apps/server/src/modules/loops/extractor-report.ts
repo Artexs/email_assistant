@@ -6,10 +6,10 @@ import { z } from "zod";
 
 import type { ExtractorScores, Group, MissIds } from "./extractor-eval";
 
-// The report and the gate file of the extractor eval (F116 stage 06). A holdout report has counts and rates only:
+// The report and the gate file of the extractor eval. A holdout report has counts and rates only:
 // no case id, no mail text.
 
-// The bars of the extractor gate (product decision in the F116 plan). The Wilson bounds are the lower end of the 95% interval.
+// The bars of the extractor gate. The Wilson bounds are the lower end of the 95% interval.
 export const EXTRACTOR_BARS = {
   replyRecallLower: 0.9,
   replyPrecisionLower: 0.8,

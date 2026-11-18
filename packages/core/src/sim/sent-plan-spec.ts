@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const share = z.number().min(0).max(1);
 
-// The plan of the sent-mail bank (F116 stage 01): the file is evals/sim/<id>/sent-plan-spec.json.
+// The plan of the sent-mail bank: the file is evals/sim/<id>/sent-plan-spec.json.
 // The incoming bank has its own plan file; this one does not touch it.
 export const sentPlanSpecSchema = z
   .object({
@@ -22,7 +22,7 @@ export const sentPlanSpecSchema = z
     promiseShare: share,
     // Share of the `expectsReply` slots with a stated due date.
     dueShare: share,
-    // Share of the `expectsReply` slots with a delegate as first recipient (D8). At least 15%.
+    // Share of the `expectsReply` slots with a delegate as first recipient. At least 15%.
     delegateShare: share.min(0.15),
     weekendShare: share,
     threadShare: share,

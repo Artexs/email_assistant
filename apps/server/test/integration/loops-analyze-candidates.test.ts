@@ -14,7 +14,7 @@ import { analysisOf, depsOf, fakeExtractor, loopsOrg, NOW, RUN_AT, sentMail, WED
 import { insertAnalysisRow } from "./loops-fixtures";
 import { ago, DAY, HOUR, newOrg, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
-// The gates and the candidates of the Sent analysis (F116 stage 12, step 1): the flags, the switch, which rows are read
+// The gates and the candidates of the Sent analysis (step 1): the flags, the switch, which rows are read
 // and in which order, and the code filters. The tests run without `app.org_id`: only the `org_id` filter of each query
 // stands between an organization and the rows of another one.
 const db = testDb();

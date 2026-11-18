@@ -11,7 +11,7 @@ const FIRST_UID = 940_001;
 
 type SenderKey = keyof typeof E2E_NEWSLETTER_SENDERS;
 
-// How each sender looks in the stored headers of its newest mail (F110 stage 23): `oneClick` has the post header, an `https` link and a
+// How each sender looks in the stored headers of its newest mail: `oneClick` has the post header, an `https` link and a
 // `dkim=pass` of the trusted authserv-id; `link` has a link only; `none` has no link; `failed` is a one-click sender with a failed
 // request; `markup` has a link and a display name with markup in it.
 const HEADERS: Record<SenderKey, { link: string | null; post: boolean; dkim: boolean }> = {

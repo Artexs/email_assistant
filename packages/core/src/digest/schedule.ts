@@ -1,4 +1,4 @@
-// Pure rules for "which digest is due now" (P1, D15). Slot keys are local wall-clock strings
+// Pure rules for "which digest is due now". Slot keys are local wall-clock strings
 // `YYYY-MM-DDTHH:MM`, so a daylight-saving change gives no double and no lost digest.
 import { localDateTime, localKey, localToInstant, nextLocalDate } from "./local-time";
 

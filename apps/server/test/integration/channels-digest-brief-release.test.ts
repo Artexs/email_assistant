@@ -1,4 +1,4 @@
-// F116 stage 19 review (TG1, TG4, N1): the marks of a digest that no sender delivered go back, on every path that ends it.
+// The marks of a digest that no sender delivered go back, on every path that ends it.
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 

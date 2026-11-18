@@ -7,7 +7,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 
 import { getOrgFeature, listOrganizations, listOrgFeatureRows, listOrgFeatureRowsOfAll } from "./repo";
 
-// The process kill list (FEATURES_OFF, D9). null = not set yet: the first read parses process.env once.
+// The process kill list (FEATURES_OFF). null = not set yet: the first read parses process.env once.
 let off: ReadonlySet<FeatureKey> | null = null;
 
 /** Sets the kill list explicitly (main.ts, org:flag, tests). */
@@ -42,7 +42,7 @@ export async function featureStates(
   }));
 }
 
-/** D18: every organization (listOrganizations order) × every registry key (registry order), effective values. Rows with an unknown key are skipped. */
+/** Every organization (listOrganizations order) × every registry key (registry order), effective values. Rows with an unknown key are skipped. */
 export async function featureStatesOfAll(db: Db | Transaction<DB>): Promise<OperatorFlagRow[]> {
   const { off: killedKeys } = featureSettings();
   const [orgs, rows] = await Promise.all([listOrganizations(db), listOrgFeatureRowsOfAll(db)]);

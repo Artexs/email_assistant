@@ -30,7 +30,7 @@ export type TrustNoticeInput =
   | { kind: "trust_report_ready"; view: NoticeView<"trust_report_ready">; mailboxId: string; now: Date }
   | { kind: "autonomy_paused"; view: NoticeView<"autonomy_paused">; mailboxId: string; tripId: string; now: Date };
 
-// F110 stage 10 (D15, D16), widened in stage 19 (D14): one row per owner of the organization and channel. The Telegram row goes to
+// One row per owner of the organization and channel. The Telegram row goes to
 // an owner with a linked chat, in the locale of the user. With the flag `report_mail`, an owner whose report channel is `mail`
 // or `both` and who has a report mailbox also gets a mail row (dedup key `<telegram key>:mail`), and a `mail` owner gets that
 // row only (no row to a chat). A member who is not an owner gets none. Runs inside the caller's transaction, so the notice and

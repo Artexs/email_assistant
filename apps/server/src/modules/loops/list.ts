@@ -113,7 +113,7 @@ export async function briefLoopsOf(
   // `lock`: every row that the brief may name is read with `FOR UPDATE` in ONE pass ordered by id, the order `onSentOff` locks the open loops of a mailbox in (two orders would deadlock them); the sections are cut in memory (the caller is in
   // the queue transaction of a digest, which marks the rows and stores the text). Two effects: a second digest that runs at
   // the same time waits for the first and then sees `stale_notified_at` set, so a ⌛ line is named once; a command that closes a
-  // loop (Sent tracking off, a tap) waits until the text is stored, so it finds the stored copy and can clear it (F116 stage 18).
+  // loop (Sent tracking off, a tap) waits until the text is stored, so it finds the stored copy and can clear it.
   opts: { now: Date; timeZone: string; lock?: boolean }
 ): Promise<BriefLoops> {
   if (mailboxIds.length === 0) {

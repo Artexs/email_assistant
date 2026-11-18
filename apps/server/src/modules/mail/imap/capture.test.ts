@@ -169,7 +169,7 @@ describe("captureFromParsed", () => {
     expect(await postOf(link, "List-Unsubscribe-Post:")).toBe(false);
     expect(await postOf(link, "List-Unsubscribe-Post: List-Unsubscribe=One-Click-Not")).toBe(false);
     expect(await postOf(link, "List-Unsubscribe-Post: yes; List-Unsubscribe=One-Click")).toBe(false);
-    // Two lines are never one-click (F110 stage 24 review, test 5d): the old rule read the topmost line and gave true for the
+    // Two lines are never one-click: the old rule read the topmost line and gave true for the
     // second case; a repeated header can be a forged line above a signed one.
     expect(await postOf(link, "List-Unsubscribe-Post: no", "List-Unsubscribe-Post: List-Unsubscribe=One-Click")).toBe(
       false

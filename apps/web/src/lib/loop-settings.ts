@@ -1,6 +1,6 @@
 import type { SettingsWebView } from "@ea/core/web";
 
-// The controls of the open loops in the mailbox settings (F116 stage 22). The server sends `toolSwitches.auto_follow_up` only
+// The controls of the open loops in the mailbox settings. The server sends `toolSwitches.auto_follow_up` only
 // while the flag `open_loops` is on, so its absence hides the card. The controls need "Track my sent mail": a loop is read from Sent.
 export const LOOP_WAIT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 

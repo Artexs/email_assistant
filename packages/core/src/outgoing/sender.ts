@@ -20,7 +20,7 @@ export interface ApprovalView {
   kind: DraftPayload["kind"];
   recipient: OutgoingAddress;
   sender: { label: string; external: boolean } | null; // null for a reminder and a follow-up
-  recipientInactive: boolean; // the delegate row is inactive (D6)
+  recipientInactive: boolean; // the delegate row is inactive
   subject: string;
   dueDate: string | null;
   body: string; // parts.body
@@ -30,9 +30,9 @@ export interface ApprovalView {
   to?: string[];
   cc?: string[];
   followUpNumber?: 1 | 2;
-  version?: number; // the edit version of the send, from 2 on (stage 08 sets it)
-  panelUrl?: string; // the panel page of this send (stage 09 sets it)
-  sentVisible?: false; // a reply only: the system cannot see the Sent mail of the mailbox, so only `\Answered` on the original shows an answer (F115 D10)
+  version?: number; // the edit version of the send, from 2 on
+  panelUrl?: string; // the panel page of this send
+  sentVisible?: false; // a reply only: the system cannot see the Sent mail of the mailbox, so only `\Answered` on the original shows an answer
   copyCheck?: true; // the org flag `draft_copy_check` was on when the card was made: the card line allows an edit in the mail client
 }
 
@@ -53,7 +53,7 @@ export function approvalViewOf(
   return {
     kind: draft.kind,
     recipient,
-    // An unknown sender is stored as the English placeholder (plan D19); the approval renderer maps it to the row's language.
+    // An unknown sender is stored as the English placeholder; the approval renderer maps it to the row's language.
     sender:
       draft.kind === "reminder" || draft.kind === "follow_up"
         ? null

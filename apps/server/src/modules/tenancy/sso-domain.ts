@@ -10,7 +10,7 @@ import { normalizeMailDomain } from "./sso-provider";
 
 const log = createLog("tenancy");
 
-// The domain proof (ticket F119, PD-041): the plugin signs nobody in until the row says `domain_verified`. The operator proves the
+// The domain proof: the plugin signs nobody in until the row says `domain_verified`. The operator proves the
 // domain with a DNS TXT record, or attests it for a test organization without DNS control.
 
 const DNS_TIMEOUT_MS = 10_000;
@@ -54,7 +54,7 @@ async function readTxt(
 }
 
 // The provider row of an organization with a valid mail domain, or null: a row made by SQL with a domain of digit labels
-// (`1.2`, which the stage 02 CHECK accepts) gets no proof.
+// (`1.2`, which the table CHECK accepts) gets no proof.
 async function readProviderForProof(db: Db | Transaction<DB>, ctx: TenantContext) {
   const state = await readSsoState(db, ctx);
   return state && normalizeMailDomain(state.domain) === state.domain ? state : null;

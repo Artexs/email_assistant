@@ -7,7 +7,7 @@ import { setLogFormat } from "../src/platform/log";
 process.env.MAIL_ALLOW_LOCAL_HOSTS = "true";
 configureMailHosts({ allowLocal: true });
 
-// The tests read console spies in the text form (ADR 0024, F089). A CLI that a test spawns prints text by default (D11).
+// The tests read console spies in the text form (ADR 0024). A CLI that a test spawns prints text by default.
 process.env.LOG_FORMAT = "text";
 setLogFormat("text");
 

@@ -79,7 +79,7 @@ function Activity() {
 }
 
 export default function ActivityPage() {
-  // A language change re-renders the whole island (spec/features/active/F098-e7-t1-polish-ui-i18n-frame-first, panel locale store).
+  // A language change re-renders the whole island (the panel locale store).
   useLocale();
   return (
     <AppShell active="activity" title="title_activity">

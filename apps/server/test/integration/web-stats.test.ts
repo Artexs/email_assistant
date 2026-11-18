@@ -117,7 +117,7 @@ describe("GET /api/stats", () => {
     expect(assistant.status).toBe(200);
   });
 
-  // F110 stage 12: the reader is wired like the root does; both roles read the same keys, and the flag decides.
+  // The reader is wired like the root does; both roles read the same keys, and the flag decides.
   test("trust_ladder on: both roles get the three evidence keys; off: null", async () => {
     await flag(true);
     // The root's own builder, with a gate file in which `info` is `go`.

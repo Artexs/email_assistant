@@ -40,7 +40,7 @@ import { lastTriageAt } from "../triage";
 
 type LlmRows = Awaited<ReturnType<typeof sumLlmCallsByModelSince>>;
 
-// D18: calls and cost of the quota day. A model without a price adds its calls to `unpricedCalls`.
+// Calls and cost of the quota day. A model without a price adds its calls to `unpricedCalls`.
 function llmTotals(rows: LlmRows, since: Date, now: Date): OperatorOrgRow["llmToday"] {
   const today = { since: since.toISOString(), calls: 0, costUsd: 0, unpricedCalls: 0 };
   for (const row of rows) {
@@ -57,7 +57,7 @@ export async function llmToday(db: Db, ctx: TenantContext, now: Date): Promise<O
   return llmTotals(await sumLlmCallsByModelSince(db, ctx, since), since, now);
 }
 
-// D14: the list reads each table once across all organizations (the console reads across organizations by design, behind
+// The list reads each table once across all organizations (the console reads across organizations by design, behind
 // the operator role) and groups the rows by organization. The reads run together. The row of an organization holds the same
 // values as its one-by-one reads (`getOperatorOrg`).
 export async function listOperatorOrgs(deps: { db: Db; now: () => Date }): Promise<OperatorOrgList> {
@@ -107,7 +107,7 @@ const NOTICE_LIMIT = 200;
 
 const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
 
-// D15: one organization, every read tenant-scoped. No address, name or text.
+// One organization, every read tenant-scoped. No address, name or text.
 export async function getOperatorOrg(
   deps: { db: Db; now: () => Date },
   orgId: string
@@ -153,7 +153,7 @@ export async function getOperatorOrg(
     failures24h: { sends, outbox },
     llmToday: llm,
     flags,
-    // PD-047: the domain, the proof, counts and two booleans. Never the issuer, the client id, a secret or a member id.
+    // The domain, the proof, counts and two booleans. Never the issuer, the client id, a secret or a member id.
     sso: sso
       ? {
           domain: sso.domain,
@@ -167,7 +167,7 @@ export async function getOperatorOrg(
   };
 }
 
-// D16: the operator notices of all organizations, newest first (at desc, then orgId), at most 200.
+// The operator notices of all organizations, newest first (at desc, then orgId), at most 200.
 export async function listOperatorNotices(deps: { db: Db; now: () => Date }, days: number): Promise<OperatorNotices> {
   const now = deps.now();
   const since = new Date(now.getTime() - days * DAY_MS);
@@ -234,7 +234,7 @@ export function planOutcomeOf(result: SetOrgPlanResult): OperatorPlanOutcome {
   }
 }
 
-// D20: the same service functions as the CLIs; the actor is the operator's user id. The audit rows go into the target organization.
+// The same service functions as the CLIs; the actor is the operator's user id. The audit rows go into the target organization.
 export async function changeOrgPlan(
   deps: { db: Db; now: () => Date; planHooks: SetOrgPlanHooks },
   input: { orgId: string; actor: string; body: OperatorPlanBody }

@@ -16,7 +16,7 @@ export function triggerOf(row: Pick<ReplyRequestRow, "trigger">): ReplyTrigger {
 }
 export type ReplyRequestEnd = "done" | "no_draft" | "failed" | "cancelled" | "superseded";
 
-// A `drafting` row whose claim is older than this is taken back (the worker that held it died). D2: the claim is `locked_at`.
+// A `drafting` row whose claim is older than this is taken back (the worker that held it died). The claim is `locked_at`.
 export const REPLY_CLAIM_STALE_MS = 5 * 60_000;
 
 export interface NewReplyRequest {

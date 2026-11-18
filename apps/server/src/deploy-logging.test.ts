@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 
-// F103 stage 17: deploy/check-logging.sh wants `server` on json-file (the files the log store reads), every other service on
+// deploy/check-logging.sh wants `server` on json-file (the files the log store reads), every other service on
 // `local`, and no document line that runs a one-off command in `server`. The script needs the `docker compose` CLI and jq, no daemon.
 
 const repoRoot = join(import.meta.dir, "..", "..", "..");

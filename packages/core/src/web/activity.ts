@@ -91,9 +91,9 @@ export const activityItemSchema = z.object({
   undoPending: z.boolean(),
   feedback: activityFeedbackSchema.nullable(),
   delegation: activityDelegationSchema.nullable(),
-  // The codes of the suspicious-mail rules; always `[]` while the flag `suspicious_mail` is off (F109).
+  // The codes of the suspicious-mail rules; always `[]` while the flag `suspicious_mail` is off.
   suspicious: z.array(z.enum(suspiciousReasons)),
-  // The sender rule that shaped the result (F110 stage 16); always null while the flag `why_lines` is off and on an old row.
+  // The sender rule that shaped the result; always null while the flag `why_lines` is off and on an old row.
   rule: z.enum(senderRuleKinds).nullable(),
 });
 export type ActivityItem = z.infer<typeof activityItemSchema>;

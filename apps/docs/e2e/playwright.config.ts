@@ -6,7 +6,7 @@ import { DOCS_BASE } from "@ea/core";
 
 import { DOCS_LOCAL_ORIGIN } from "./site";
 
-// The browser check of the built docs site (plan D11): Chromium only (Firefox and Safari stay open, plan N2).
+// The browser check of the built docs site: Chromium only (Firefox and Safari stay open).
 // The build must exist first: `bun run docs:build`.
 const chromiumPath = process.env.CHROMIUM_PATH;
 const remote = Boolean(process.env.DOCS_TEST_URL?.trim());

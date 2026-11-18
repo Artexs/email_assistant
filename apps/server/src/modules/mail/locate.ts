@@ -109,7 +109,7 @@ const bare = (id: string): string => id.trim().replace(/^<|>$/g, "").toLowerCase
 /**
  * Finds a message that the system appended itself by its fixed Message-ID, with no header search (Interia finds nothing by `Message-ID`,
  * but a FETCH returns it). The newest messages are read first: an appended report mail is among them. A message flagged `\Deleted` does
- * not count. Nothing here writes to the mailbox (F110 stage 20).
+ * not count. Nothing here writes to the mailbox.
  */
 export async function locateByMessageId(
   provider: MailProvider,

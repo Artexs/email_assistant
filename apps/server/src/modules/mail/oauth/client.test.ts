@@ -10,7 +10,7 @@ import type { AuthErrorReason } from "../port";
 import { createMailOAuthClient, OAuthGrantError, OAuthSoftError, type MailOAuthClient } from "./client";
 import { mailOAuthProviders, type MailOAuthProvider, type MailOAuthProviderSpec } from "./providers";
 
-// Stage 06: the token client against the fake token server (a test double: no production code reads its URLs).
+// The token client against the fake token server (a test double: no production code reads its URLs).
 const REDIRECT = "https://ea.x.test/api/mailboxes/oauth/microsoft/callback";
 const ADDRESS = "ann@x.test";
 const RT_CANARY = "rt-canary";
@@ -309,7 +309,7 @@ describe("revoke", () => {
   });
 });
 
-// D18: no secret in an error message, String(error), a property dump or a log line. Each guard has a mutation (see the job notes).
+// No secret in an error message, String(error), a property dump or a log line. Each guard has a mutation (see the job notes).
 describe("secrets stay out of errors and logs", () => {
   function assertClean(error: unknown, lines: string[]): void {
     const shown = [

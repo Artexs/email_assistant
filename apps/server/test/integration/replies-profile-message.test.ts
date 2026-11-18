@@ -24,7 +24,7 @@ import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from ".
 import { testDb, withRollback } from "./helpers";
 import { insertMailboxProfile } from "./reply-fixtures";
 
-// F115 stage 04, step 3: the name and the signature of a mailbox reach every message of every kind. The committer, the
+// The name and the signature of a mailbox reach every message of every kind. The committer, the
 // approval view and the panel edit read the profile row of the mailbox; the fallbacks are the signature, the organization
 // style text and the owner name. Every test runs in a transaction that is rolled back.
 const db = testDb();

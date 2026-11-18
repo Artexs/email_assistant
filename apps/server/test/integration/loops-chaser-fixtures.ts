@@ -9,7 +9,7 @@ import { insertDelegate } from "./fixtures";
 import { commandLoop, type CommandOrg } from "./loops-commands-fixtures";
 import { insertLoopActionPair } from "./loops-fixtures";
 
-// Rows for the tests of the one chaser (F116 stage 15). The clock is Friday 2026-11-20 07:31 in Warsaw (06:31 UTC, CET);
+// Rows for the tests of the one chaser. The clock is Friday 2026-11-20 07:31 in Warsaw (06:31 UTC, CET);
 // the organization time zone is Europe/Warsaw. A loop is "due yesterday" at Thursday 17:00 Warsaw.
 
 export const DAY_MS = 86_400_000;

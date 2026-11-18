@@ -8,7 +8,7 @@ import { parseOrgExportArgs, usage } from "./org-export-args";
 
 const log = createLog("org-export");
 
-// Prints the organization id, the size and one count per table, never an address, a name or mail text (F106 D17).
+// Prints the organization id, the size and one count per table, never an address, a name or mail text.
 // Returns the exit code.
 async function main(): Promise<number> {
   const args = parseOrgExportArgs(process.argv.slice(2));

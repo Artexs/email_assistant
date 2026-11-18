@@ -1,4 +1,4 @@
-// The history check's classifier (F110 stage 07, interfaces `classifyStored`): one stored mail through the same steps as triage, without any
+// The history check's classifier (interfaces `classifyStored`): one stored mail through the same steps as triage, without any
 // write. No `triage_results` row, no action, no status change. The caller owns the `llm.call` row (through `onCall`), the cost and the item.
 import {
   applyHardRules,

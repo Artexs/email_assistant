@@ -62,7 +62,7 @@ export function shotsPerSection(markdown: string): number[] {
   return counts;
 }
 
-// Everything the two pages of a pair must share (stage 10 T4, stage 12 T2): sections, steps, panel labels, links, shots, capabilities.
+// Everything the two pages of a pair must share: sections, steps, panel labels, links, shots, capabilities.
 function structure(markdown: string) {
   const lines = outsideCode(markdown);
   const text = lines.join("\n");
@@ -74,7 +74,7 @@ function structure(markdown: string) {
     uiKeys: [...text.matchAll(/<UiText\s+k="([^"]+)"/g)].map((match) => match[1]),
     // The link targets in page order. A target is relative to the page folder; the pair has the same folder depth.
     links: [...text.matchAll(/\]\(([^)\s]+)\)/g)].map((match) => match[1]),
-    // The `<Shot page />` values in page order: both languages show the same panel pages in the same sections (stage 12 T2).
+    // The `<Shot page />` values in page order: both languages show the same panel pages in the same sections.
     shots: shotLines(markdown).map((shot) => shot.page),
   };
 }

@@ -302,7 +302,7 @@ function toCheckRow(row: {
 
 /**
  * True when any mailbox of the organization has a check that ended, as `done` or as `no_result` for any reason: the report page has a
- * result or an explanation to show (the onboarding step "See what I would have done", F110 stage 14). An open check does not count.
+ * result or an explanation to show (the onboarding step "See what I would have done"). An open check does not count.
  */
 export async function hasEndedCheck(db: DbOrTrx, ctx: TenantContext): Promise<boolean> {
   const row = await db
@@ -317,7 +317,7 @@ export async function hasEndedCheck(db: DbOrTrx, ctx: TenantContext): Promise<bo
 
 /**
  * How many other checks of the mailbox ended already, as `done` or as `no_result` for a reason other than `key_changed`: a check that a
- * model switch cut short is not "the first check" of the report notice (F110 D16). A quiet end (see below) does not count either.
+ * model switch cut short is not "the first check" of the report notice. A quiet end (see below) does not count either.
  */
 export async function countEarlierEndedChecks(
   db: DbOrTrx,

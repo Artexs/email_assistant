@@ -15,7 +15,7 @@ import type { DB, Db } from "../../src/platform/db";
 import { insertDelegate, insertDraftAndSend, linkChat, randomChatId, testCapabilities } from "./fixtures";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// The world of the approval write tests (F102 ticket): an organization with an owner, a member and a second owner who holds a Telegram
+// The world of the approval write tests: an organization with an owner, a member and a second owner who holds a Telegram
 // card of every send, a second organization, and the approval routes with the real card hook. A test file builds one kit with its
 // own `db`; a kit shares no state with another file.
 export const NOW = new Date("2026-11-20T12:00:00Z");
@@ -114,7 +114,7 @@ export function approvalKit(db: Db) {
 
   type World = Awaited<ReturnType<typeof setup>>;
 
-  // A send S1 with its draft, and a sent Telegram card for U1 and U2 (as the notifier leaves them).
+  // A send with its draft, and a sent Telegram card for U1 and U2 (as the notifier leaves them).
   async function addSend(s: World, opts: SendOpts = {}, orgId = s.org.orgId, mailboxId = s.mailboxId) {
     const created = await db
       .transaction()

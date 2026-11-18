@@ -4,7 +4,7 @@ import type { TenantContext } from "../../../platform/db";
 
 import type { DbOrTrx } from "./shared";
 
-// F099 D14: the newest `sent_at` of an outbox row of the organization, null when none was sent.
+// The newest `sent_at` of an outbox row of the organization, null when none was sent.
 export async function lastOutboxSentAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
   const row = await db
     .selectFrom("outbox")
@@ -16,7 +16,7 @@ export async function lastOutboxSentAt(db: DbOrTrx, ctx: TenantContext): Promise
     .executeTakeFirst();
   return row?.sent_at ?? null;
 }
-// F099 D17: failed outbox rows created after `since`. The outbox has no failure time; the sender gives up
+// Failed outbox rows created after `since`. The outbox has no failure time; the sender gives up
 // 24 h after the queue time, so `created_at` bounds it. `outdated` and `expired` are cancellations.
 export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number> {
   const row = await db

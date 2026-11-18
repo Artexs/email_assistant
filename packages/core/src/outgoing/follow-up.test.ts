@@ -1,4 +1,4 @@
-// F116 stage 10 step 1: the follow-up kind, its template and its message.
+// The follow-up kind, its template and its message.
 import { describe, expect, test } from "bun:test";
 
 import { draftPayloadSchema, sendPayloadFor, sendRecipients, type DraftPayload } from "../triage/payloads";

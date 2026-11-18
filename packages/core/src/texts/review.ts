@@ -4,7 +4,7 @@ import { pluralCategory } from "./locale";
 
 const PL_MAILS = { one: "wiadomość", few: "wiadomości", many: "wiadomości", other: "wiadomości" } as const;
 
-// The texts of the /review page (F097 D4, D5). The help line, the menu entry and the picker are in `bot.ts`.
+// The texts of the /review page. The help line, the menu entry and the picker are in `bot.ts`.
 export interface ReviewTexts {
   // `count` is the number of mails on the page.
   header: (count: number) => string;
@@ -14,7 +14,7 @@ export interface ReviewTexts {
   answered: AnsweredCheckTexts;
 }
 
-// The answered check at the end of the /review page (F100 stage 15). One colon at most per line.
+// The answered check at the end of the /review page. One colon at most per line.
 export interface AnsweredCheckTexts {
   // `count` is the number of mails in the block; the text asks one question for all of them.
   block: (count: number) => string;

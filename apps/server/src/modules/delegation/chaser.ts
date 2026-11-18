@@ -32,7 +32,7 @@ const log = createLog("delegation");
 export const CHASER_LOCAL_TIME = "07:30";
 export const REMINDER_GAP_MS = 3 * 24 * 3_600_000;
 export const MAX_REMINDERS = MAX_REMINDER_SENDS;
-// The set request shows every item with its task within 4096 characters (stage 14.2, review round 2 N25).
+// The set request shows every item with its task within 4096 characters.
 export const CHASER_SET_LIMIT = 10;
 const DUE_BATCH = 200;
 

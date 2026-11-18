@@ -14,7 +14,7 @@ import { listMemberships } from "../tenancy";
 
 import { FREQUENT_WINDOW_DAYS, listFrequentSenders, listNewestFromNames } from "./suspicious-repo";
 
-// The context of `assessSuspicious` for one mailbox, read once per batch (F109 stage 03, decision D4).
+// The context of `assessSuspicious` for one mailbox, read once per batch.
 export interface SuspiciousContext {
   // Known senders get only `auth_fail` and `risky_attachment`. Case does not matter.
   isKnown(address: string | null): boolean;
@@ -24,7 +24,7 @@ export interface SuspiciousContext {
   trustedAuthservIds: string[];
 }
 
-// Accepted limit (stage 16 writes it, review N16): mail that forges an own address or a domain of the organization counts as known.
+// Accepted limit: mail that forges an own address or a domain of the organization counts as known.
 // Only `auth_fail` catches it, and only when the mail host adds a trusted `Authentication-Results` header.
 
 export interface SuspiciousContextInput {
@@ -34,7 +34,7 @@ export interface SuspiciousContextInput {
     rules: readonly SenderRule[];
     delegates: readonly { name: string; email: string }[];
   };
-  // The IMAP host of the mailbox: its registrable domain is a trusted authserv-id (D2).
+  // The IMAP host of the mailbox: its registrable domain is a trusted authserv-id.
   imapHost: string;
   // The sender addresses of the claimed batch: the frequency query runs once for all of them.
   senders: readonly (string | null)[];

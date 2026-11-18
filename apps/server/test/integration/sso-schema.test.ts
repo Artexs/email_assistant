@@ -8,7 +8,7 @@ import type { DB } from "../../src/platform/db";
 
 import { testDb, withRollback } from "./helpers";
 
-// Stage 02 of spec/features/active/F119-e7-t7-identity-b-oidc: the migration `sso.sql`. `sso_providers`, `organizations.sso_required`, `auth_sessions.sign_in_method`,
+// The migration `sso.sql`. `sso_providers`, `organizations.sso_required`, `auth_sessions.sign_in_method`,
 // `auth_sessions.sso_started_at` and the cap trigger `auth_sessions_sso_cap`. The connection is the `app` role.
 const db = testDb();
 

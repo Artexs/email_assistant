@@ -42,7 +42,7 @@ describe("onboardingOf", () => {
   });
 });
 
-// F110 stage 14: with `trust_ladder` on the steps are mailbox, channel, report, rules. The mode step is gone.
+// With `trust_ladder` on the steps are mailbox, channel, report, rules. The mode step is gone.
 describe("onboardingOf with the flag trust_ladder", () => {
   const flagged = { ...full, modeChosen: false, trust: { reportByMail: false, reportReady: false } };
 

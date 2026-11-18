@@ -17,7 +17,7 @@ import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertAnalysisRow, insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
-// F116 stage 07: the open loops are in the data request and the organization export. A loop copies recipients and
+// The open loops are in the data request and the organization export. A loop copies recipients and
 // short texts from sent mail, so an erase for a person must leave no address and no text of that person in it. The seed
 // is committed (the erase runs its own transaction); `afterEach` removes it. The connection is the `app` role.
 const db = testDb();
@@ -267,7 +267,7 @@ describe("open loops in a data request", () => {
           dedup_key: `approval:${pair.sendId}`,
           loop_id: loop,
           text: `Follow-up to ${w.person}`,
-          // The stored view of a follow-up card spells out every recipient (F116 stage 11).
+          // The stored view of a follow-up card spells out every recipient.
           view: JSON.stringify({
             view: { kind: "follow_up", to: [w.person, w.other], cc: [], body: `Hi ${w.person}` },
           }),

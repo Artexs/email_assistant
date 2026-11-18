@@ -19,7 +19,7 @@ import type { TenantContext } from "../../../platform/db";
 import { releaseMarksOfFailedDigests } from "./digest-marks";
 import type { DbOrTrx } from "./shared";
 
-// The text of a `sent` or `failed` row after retention (A23); the view is `{}` then.
+// The text of a `sent` or `failed` row after retention; the view is `{}` then.
 export const OUTBOX_REMOVED_TEXT = "[removed]";
 export const outboxKinds = noticeKinds;
 export type OutboxKind = NoticeKind;
@@ -32,11 +32,11 @@ export const outboxFailCodes = [
   "too_many_errors",
   "bad_view",
   "answered_elsewhere",
-  // `approval_edit` rows (F102 card sync): the card follows an outcome that the send no longer has, the card is gone, or Telegram refused the edit.
+  // `approval_edit` rows: the card follows an outcome that the send no longer has, the card is gone, or Telegram refused the edit.
   "stale_edit",
   "no_target",
   "edit_failed",
-  // Report mail (F110 stage 20): the mail server refused the APPEND into the INBOX.
+  // Report mail: the mail server refused the APPEND into the INBOX.
   "append_refused",
 ] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];
@@ -53,12 +53,12 @@ export interface NewOutboxRow {
   editOfOutboxId?: string;
   view: Record<string, unknown>;
   locale: UserLocale;
-  // Absent = `telegram`. A `mail` row is the report mail of F110 stage 19 (`mailboxId` names the mailbox it goes into).
+  // Absent = `telegram`. A `mail` row is the report mail (`mailboxId` names the mailbox it goes into).
   channel?: NoticeChannel;
   createdAt: Date;
   nextAttemptAt: Date;
 }
-// null = the event has a row already (D4: exactly one row per event).
+// null = the event has a row already (exactly one row per event).
 export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutboxRow): Promise<string | null> {
   const inserted = await db
     .insertInto("outbox")
@@ -86,7 +86,7 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
   return inserted?.id ?? null;
 }
 // The mails of one mailbox that got a `not_triaged` notice since `since` (any member, any status): the cap of the
-// degraded notice counts mails, not rows (F109 stage 15).
+// degraded notice counts mails, not rows.
 export async function listNotTriagedEmailIds(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -152,9 +152,9 @@ export interface ClaimedOutbox {
   editOfOutboxId: string | null;
   wasStale: boolean;
 }
-// Scheduler entry point (D18): it walks all organizations. `orgIds` is for tests only.
+// Scheduler entry point: it walks all organizations. `orgIds` is for tests only.
 // One channel per claim, `telegram` by default: the Telegram sender never claims a `mail` row, so it is never sent to a chat; the report mail sender
-// (F110 stage 20) claims `mail` rows only.
+//  claims `mail` rows only.
 // `lockedAt` is the JS `now` value; it is the token for markOutboxSent, releaseOutbox and failOutbox, so it must survive
 // the round trip exactly. The claim does not change `attempts`.
 export async function claimDueOutbox(
@@ -176,7 +176,7 @@ export async function claimDueOutbox(
             eb.and([eb("status", "=", "sending"), eb("locked_at", "<", opts.staleBefore)]),
           ])
         )
-        // D4: a suspended organization gets no message, approval requests included; its rows wait (A12, A17).
+        // A suspended organization gets no message, approval requests included; its rows wait.
         .where((eb) =>
           eb.not(
             eb.exists(
@@ -300,7 +300,7 @@ export async function releaseOutbox(
   return Number(result.numUpdatedRows) === 1;
 }
 // A claim that took a row over from a dead run (`wasStale`) counts one attempt of that row, so a row that keeps crashing its sender ends
-// as `too_many_errors` (F110 stage 20). The token compare-and-set is the one of `releaseOutbox`.
+// as `too_many_errors`. The token compare-and-set is the one of `releaseOutbox`.
 export async function countOutboxAttempt(
   db: DbOrTrx,
   ctx: TenantContext,

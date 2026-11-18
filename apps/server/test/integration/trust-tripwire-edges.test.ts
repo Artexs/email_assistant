@@ -27,7 +27,7 @@ import {
   type TripBox,
 } from "./trust-tripwire-helpers";
 
-// Edges of the tripwire that the review of stage 09 found open (see `review-9.md` in the ticket folder of F110): the lock against a grant in flight, a history
+// Edges of the tripwire that a review found open: the lock against a grant in flight, a history
 // check that ended with no result, the exact edge of the 7-day window in SQL, an unreadable check result, and two moves of one mail.
 // Committed rows and a fixed clock (the grant is 2026-11-01T10:00Z, now is 2026-11-08T12:00Z, so the window starts 11-01T12:00Z).
 const db = testDb();

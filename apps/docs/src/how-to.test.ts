@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const HOW_TO_DIR = join(import.meta.dir, "content/docs/how-to");
-// Stage 08: a how-to page is short (the plan says about 50 lines).
+// A how-to page is short (the plan says about 50 lines).
 const MAX_LINES = 60;
 // A CLI command appears only as "your operator runs ..." and the operator pages hold the detail.
 const CLI_COMMAND = /\bbun run\b|\$C run\b|\bdocker compose\b/;

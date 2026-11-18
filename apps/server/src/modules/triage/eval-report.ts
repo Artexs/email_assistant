@@ -13,7 +13,7 @@ function counts(cases: CasesEvalReport["cases"], kind: "synthetic" | "injection"
 }
 
 // The price rows of the endpoint of the run. An own server has none: the operator runs it, the cost is 0.
-// A secondary-source row says so in the line (F111: the EU price is not verified).
+// A secondary-source row says so in the line (the EU price is not verified).
 function priceSourceLines(report: CasesEvalReport): string[] {
   if (report.endpoint === "own") return [`- price source ${report.model}: own endpoint: cost 0`];
   const prices = Object.hasOwn(llmPrices, report.model) ? llmPrices[report.model] : undefined;

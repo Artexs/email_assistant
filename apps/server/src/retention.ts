@@ -24,7 +24,7 @@ import { createLog } from "./platform/log";
 
 const log = createLog("retention");
 
-// A23: every text of the §7 list goes after this period, except the mail body (the organization's `data_retention_days`).
+// Every text of the §7 list goes after this period, except the mail body (the organization's `data_retention_days`).
 export const RETENTION_TEXT_DAYS = 90;
 export const LINK_TOKEN_GRACE_MS = 24 * HOUR_MS;
 // An OAuth sign-in state row goes this long after it expired.
@@ -80,7 +80,7 @@ export interface RetentionJob {
 
 const sumOf = (counts: RetentionCounts): number => Object.values(counts).reduce((sum, count) => sum + count, 0);
 
-// Daily job (A23, A24): clears the texts of every organization of every plan, a suspended one too.
+// Daily job: clears the texts of every organization of every plan, a suspended one too.
 // Each clear function runs its own batches; there is no transaction around them, and a crash in the middle is safe to repeat.
 // The log has counts and the organization id only: no text, no mail id. The expired Better Auth verification rows go once per run, not per organization.
 export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {

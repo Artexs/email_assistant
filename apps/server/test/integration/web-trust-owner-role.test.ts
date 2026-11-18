@@ -21,7 +21,7 @@ import {
 } from "./web-trust-kit";
 
 // The `org_id` filters of the trust routes and readers, as the table owner: the owner skips row-level security, so only the code
-// keeps a mailbox, a check, an item or a trip of another organization out (F110 stage 11). Committed rows.
+// keeps a mailbox, a check, an item or a trip of another organization out. Committed rows.
 const ownerUrl = process.env.MIGRATOR_DATABASE_URL;
 if (!ownerUrl) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs these tests");
 const db = createDb(ownerUrl);

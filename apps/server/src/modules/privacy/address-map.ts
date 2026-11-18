@@ -1,6 +1,6 @@
-// The registry of the columns that can hold the address of a third party (ticket F106, account data).
+// The registry of the columns that can hold the address of a third party (account data).
 //
-// One list serves the find (stage 07) and the erase (stage 08), so a column cannot be searched and then skipped when
+// One list serves the find and the erase, so a column cannot be searched and then skipped when
 // the rows are cleaned. A completeness test reads `information_schema` and fails for a candidate column that is in
 // neither `DSR_ADDRESS_MAP` nor `NOT_PERSONAL`: a new column that may hold an address needs an owner's decision here.
 
@@ -54,7 +54,7 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     signature: "text",
     writing_style: "text",
   },
-  // The sender that the user asked to unsubscribe from (F110): a third-party address. The erase of the sender deletes the
+  // The sender that the user asked to unsubscribe from: a third-party address. The erase of the sender deletes the
   // row. `sender_domain` is its domain part (no address): it goes with the row, see `NOT_PERSONAL`.
   unsubscribe_requests: {
     sender_lower: "delete",
@@ -318,7 +318,7 @@ const MAX_ADDRESS_LENGTH = 254;
 // Trims and lower-cases. Null unless the value is one address: one `@`, a domain of non-empty labels with a dot, at most
 // 254 characters, and no whitespace, quote, backslash, angle bracket, control, format (zero-width) or separator
 // character. A value that NFKC changes (full-width letters) is null: it would match no stored address. Reviewed after
-// stage 06: `p@x.test.`, `p@.test` and `p@x..test` matched nothing and passed.
+// `p@x.test.`, `p@.test` and `p@x..test` matched nothing and passed.
 export function normalizeDsrAddress(input: string): string | null {
   const address = input.trim().toLowerCase();
   if (address.length === 0 || address.length > MAX_ADDRESS_LENGTH) return null;
@@ -335,26 +335,26 @@ export function normalizeDsrAddress(input: string): string | null {
 // Characters that can stand next to an address inside one larger word: the RFC 5322 `atext` characters and the dot of
 // a local part, and letters (ASCII, then Latin, Greek and Cyrillic ranges that hold the non-ASCII letters; `[:alpha:]`
 // depends on the database locale, the ranges do not). The look-behind rejects the address inside a longer local part
-// (`o'p@x.test`, `=p@x.test`, `x/p@x.test`, `łp@x.test`). Widened after the Opus review of stage 06.
+// (`o'p@x.test`, `=p@x.test`, `x/p@x.test`, `łp@x.test`). The ranges were widened after a review.
 const ATEXT = "a-z0-9._%+!#$&'*/=?^`{|}~-";
 const LETTERS = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\\u052f";
 
-// The Postgres regular expression for `text` and `json` columns (F106 plan, fact 5). Use it with `~*` here and with
-// `regexp_replace(…, 'gi')` in stage 08. `jimbob@x.test`, `o'bob@x.test`, `bob@x.test.pl`, `bob@x.test_x` and
+// The Postgres regular expression for `text` and `json` columns (fact 5). Use it with `~*` here and with
+// `regexp_replace(…, 'gi')` in the erase. `jimbob@x.test`, `o'bob@x.test`, `bob@x.test.pl`, `bob@x.test_x` and
 // `bob@x.testé` do not match `bob@x.test`; `bob@x.test.` (end of a sentence), `<bob@x.test>` and `"bob@x.test"` do.
 // The input must be normalized (`normalizeDsrAddress`).
 //
-// A quote or a brace at the start of the text or after a non-`atext` character is a boundary too (found in the stage 08
+// A quote or a brace at the start of the text or after a non-`atext` character is a boundary too (found in a
 // review: `'p@x.test'` and `{p@x.test}` stayed in the text); `p@x.test.vcf` is still a longer domain (a documented limit).
 //
 // A key and `=` in front of the address is a boundary too (`smtp.mailfrom=p@x.test` in `auth_results`, the reason that this
-// column is mapped); a bare `=p@x.test` is still a longer local part. Found in stage 08: the look-behind of `atext`
+// column is mapped); a bare `=p@x.test` is still a longer local part. Found in testing: the look-behind of `atext`
 // alone left the address in `auth_results`. A local part such as `a=p` is scrubbed too: it errs on the side of removing.
 //
 // With `json: true` the pattern is for the text form of a jsonb value. There a line break, a tab or a similar control
 // character stands as a two-character escape (`\n`), so a letter stands in front of an address that follows a line break
 // (`Regards\np@x.test`). The json pattern also accepts a look-behind of such an escape. It can scrub a little more than
-// needed (`\\np@x.test`: an escaped backslash and `np@x.test`); it never scrubs less. Found in stage 08: the plain
+// needed (`\\np@x.test`: an escaped backslash and `np@x.test`); it never scrubs less. Found in testing: the plain
 // pattern left an address on its own line of a draft payload.
 export function addressRegex(address: string, opts: { json?: boolean } = {}): string {
   // `\` before an ASCII punctuation character makes it an ordinary character in a Postgres regex.

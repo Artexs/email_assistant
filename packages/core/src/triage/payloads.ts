@@ -4,7 +4,7 @@ import { EDIT_BODY_MAX, EDIT_SUBJECT_MAX } from "../outgoing/user-text";
 
 import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
 
-// One strict rule for every recipient in a payload (D2): no space, comma, angle bracket, quote or line break, and no control,
+// One strict rule for every recipient in a payload: no space, comma, angle bracket, quote or line break, and no control,
 // zero-width or bidi character. The approval card spells a recipient out and the owner decides on it: the address that is shown
 // must be the address that is sent, so no character that a renderer would hide or reorder is allowed.
 const HIDDEN =
@@ -21,7 +21,7 @@ export type DraftKind = (typeof draftKinds)[number];
 const recipientSchema = z.array(addressSchema).length(1);
 // A follow-up goes to the To and Cc of the loop (open loops feature): 1 to 10 recipients together.
 export const FOLLOW_UP_RECIPIENTS_MAX = 10;
-// A reply (F115) goes to the sender (To, one address) and, after "Reply all", to at most 10 more recipients (Cc).
+// A reply goes to the sender (To, one address) and, after "Reply all", to at most 10 more recipients (Cc).
 export const REPLY_CC_MAX = 10;
 export const replyRecipientModes = ["from", "reply_to", "all"] as const;
 // `YYYY-MM-DD` or "" for none. The regex checks the shape only.
@@ -86,7 +86,7 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
     })
     // To and Cc together are at most 10 (the loop row holds them that way).
     .refine((draft) => draft.to.length + draft.cc.length <= FOLLOW_UP_RECIPIENTS_MAX),
-  // A reply draft (F115 interfaces): the text is `body_text ?? body`. The recipients are never LLM text: the writer sets
+  // A reply draft: the text is `body_text ?? body`. The recipients are never LLM text: the writer sets
   // `to` and `cc` from the stored headers of the mail (`replyRecipientsProblem` checks the rest).
   z.object({
     kind: z.literal("reply"),

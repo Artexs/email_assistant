@@ -12,7 +12,7 @@ import { llmRoleTable, loadConfig } from "../../src/platform/config";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
 
-// The CLI reads the same gate files and the same running key as the server (F110 stage 04): with the flag `trust_ladder`
+// The CLI reads the same gate files and the same running key as the server: with the flag `trust_ladder`
 // on and a gate file for the running key, `mailbox:settings auto` is no stricter than `PATCH /api/settings/.../auto`.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

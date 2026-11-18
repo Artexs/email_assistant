@@ -1,4 +1,4 @@
-// F116 stage 18: the brief on real connections. Committed rows; the organizations and users are deleted at the end.
+// The brief on real connections. Committed rows; the organizations and users are deleted at the end.
 // Each case runs on the app role, on the table owner (it has no row level security, so only the org filters of the queries
 // hold) and on a mix of both. The rules under test:
 //   1. the first digest of a member's local day is one (a second digest of the day, queued at the same time, has no brief);

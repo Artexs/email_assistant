@@ -15,7 +15,7 @@ import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { addMailbox, deleteMailboxRow, insertCheckItemRow, insertCheckRow, insertTripRow } from "./trust-fixtures";
 
-// The repository of the trust module (F110 stage 03). The connection is the `app` role; the tests roll back.
+// The repository of the trust module. The connection is the `app` role; the tests roll back.
 // The races of the same functions, with committed rows and two connections, are in trust-race.test.ts.
 const db = testDb();
 

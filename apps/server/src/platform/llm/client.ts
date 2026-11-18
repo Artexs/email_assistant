@@ -85,7 +85,7 @@ export interface LlmUsage {
   latencyMs: number;
   role: LlmRole;
   promptVersion: string;
-  /** Where the call ran; stage 03 writes it to the audit row. */
+  /** Where the call ran; it goes to the audit row. */
   endpoint: LlmEndpointKind;
 }
 

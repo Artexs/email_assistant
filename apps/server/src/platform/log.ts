@@ -15,7 +15,7 @@ export interface LogContext {
 const contextKeys = ["job", "run_id", "request_id"] as const;
 const contextStorage = new AsyncLocalStorage<Readonly<LogContext>>();
 
-/** D15: every line written inside fn (also after await) carries these keys. A nested call adds keys; an outer key keeps its value. */
+/** Every line written inside fn (also after await) carries these keys. A nested call adds keys; an outer key keeps its value. */
 export function withLogContext<T>(context: LogContext, fn: () => T): T {
   const defined = Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined));
   const merged: LogContext = { ...defined, ...contextStorage.getStore() };
@@ -27,7 +27,7 @@ export interface Log {
   info(event: string, fields?: LogFields): void;
   warn(event: string, fields?: LogFields): void;
   error(event: string, fields?: LogFields): void;
-  /** A child logger: every line adds `fields` after the context keys (D3, D8). */
+  /** A child logger: every line adds `fields` after the context keys. */
   with(fields: LogFields): Log;
 }
 
@@ -46,17 +46,17 @@ export function setLogFormat(format: LogFormat): void {
   currentFormat = format;
 }
 
-/** F114 D10: the release name (`EA_RELEASE`). After this call every JSON line carries `release`. Text lines stay as they are. `undefined` turns it off (tests). */
+/** The release name (`EA_RELEASE`). After this call every JSON line carries `release`. Text lines stay as they are. `undefined` turns it off (tests). */
 export function setLogRelease(release: string | undefined): void {
   currentRelease = release;
 }
 
-/** D11: "json" gives json; anything else, also unset, gives text (a process that never loads the config is a CLI or a test). */
+/** "json" gives json; anything else, also unset, gives text (a process that never loads the config is a CLI or a test). */
 export function logFormatFromEnv(env: Record<string, string | undefined>): LogFormat {
   return env.LOG_FORMAT === "json" ? "json" : "text";
 }
 
-/** D8: fields dropped since the process started. Tests read a difference. */
+/** Fields dropped since the process started. Tests read a difference. */
 export function droppedLogFields(): number {
   return droppedTotal;
 }

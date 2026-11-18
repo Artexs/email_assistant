@@ -16,7 +16,7 @@ function isMailboxActionType(type: string): type is (typeof MAILBOX_ACTION_TYPES
   return (MAILBOX_ACTION_TYPES as readonly string[]).includes(type);
 }
 
-// D11: owners get one notice per failed action; the dedup key and `notified_at` keep it single.
+// Owners get one notice per failed action; the dedup key and `notified_at` keep it single.
 async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: LinkedChat[], now: Date): Promise<void> {
   const failed = await listFailedUnnotified(db, ctx, { limit: ACTION_FAILED_LIMIT });
   for (const action of failed) {
@@ -73,7 +73,7 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
   }
 }
 
-// A follow-up that failed (open loops stage 11, review G13): one fixed `action_failed` notice per owner, no recipient, no text,
+// A follow-up that failed: one fixed `action_failed` notice per owner, no recipient, no text,
 // so the consent gate has nothing to withhold. A send that may have gone out (`outcome_unknown`) says so. The mark is
 // `result_notified_at` (the send's own `notified_at` marks its approval card). There is no "Send again": a new follow-up is drafted
 // from its loop.

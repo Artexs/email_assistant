@@ -16,7 +16,7 @@ import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertReplyRequest } from "./reply-fixtures";
 
-// F115 stage 03b, step 1: the repository of `reply_requests` (claim, finish, release, list, count).
+// The repository of `reply_requests` (claim, finish, release, list, count).
 const db = testDb();
 
 afterAll(async () => {

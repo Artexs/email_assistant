@@ -25,14 +25,14 @@ import { followUpOffered, judgeFollowUp, planFollowUpPair } from "./follow-up-dr
 import { expireFollowUpSends } from "./follow-up-expiry";
 import { closeLoop, SYSTEM, toLoopRow, type DbOrTrx, type LoopRow } from "./repo";
 
-// F116 stage 15: the one chaser. It replaces the job `delegation.chaser`: once per local day per mailbox, from
+// The one chaser. It replaces the job `delegation.chaser`: once per local day per mailbox, from
 // 07:30 local time, in one transaction after the settings share lock and the version compare (the settings snapshot rule): the delegation part
 // (`planDelegationReminders`), then the loop part below, then the approval set of the delegation reminders.
 //
 // The loop part (every rule of the day):
 //   (a) a `delegated` loop past due, open, no waiting follow-up, fewer than 2 sent, 3 working days since the last, not
 //       suspicious: a follow-up pair (the planning core of the Draft command, actor `system`). `assist` and drafts on.
-//   (b) a `waiting` loop: the same, only with the switch `auto_follow_up` (PD-120, off by default).
+//   (b) a `waiting` loop: the same, only with the switch `auto_follow_up` (off by default).
 //   (c) `stale`: a `waiting` or `delegated` loop with 2 follow-ups sent and the last one 14 days ago, or due 30 days ago.
 //   (d) `expired`: a `promised` loop 7 days past due.
 // (c) and (d) run in every mode and close the loop; (a) and (b) plan nothing in `shadow`. Each follow-up is its own card:

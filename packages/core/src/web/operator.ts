@@ -4,7 +4,7 @@ import { orgPlanSchema } from "../tenancy";
 import { mailboxStatuses } from "./mailboxes";
 import { z } from "./zod";
 
-// GET /api/operator/flags (F087, D18): ids, keys and booleans only.
+// GET /api/operator/flags: ids, keys and booleans only.
 export interface OperatorFlagRow {
   orgId: string;
   flag: FeatureKey;
@@ -15,7 +15,7 @@ export interface OperatorFlags {
   rows: OperatorFlagRow[];
 }
 
-// GET /api/operator/orgs (F099 D15): ids, codes, counts and dates only. No name, address or text; strict objects keep it so.
+// GET /api/operator/orgs: ids, codes, counts and dates only. No name, address or text; strict objects keep it so.
 export const operatorLlmTodaySchema = z.strictObject({
   since: z.iso.datetime(), // the quota day start
   calls: z.number().int().min(0),
@@ -48,7 +48,7 @@ export const operatorOrgListSchema = z.strictObject({ orgs: z.array(operatorOrgR
 export type OperatorOrgRow = z.infer<typeof operatorOrgRowSchema>;
 export type OperatorOrgList = z.infer<typeof operatorOrgListSchema>;
 
-// GET /api/operator/orgs/:orgId (F099 D15, D16): the same rule. A mailbox has an id, a state and times, no address.
+// GET /api/operator/orgs/:orgId: the same rule. A mailbox has an id, a state and times, no address.
 export const operatorNoticesQuerySchema = z.object({ days: z.coerce.number().int().min(1).max(30).default(7) });
 
 export const operatorOrgDetailSchema = z.strictObject({
@@ -75,7 +75,7 @@ export const operatorOrgDetailSchema = z.strictObject({
   failures24h: z.strictObject({ sends: z.number().int(), outbox: z.number().int() }),
   llmToday: operatorLlmTodaySchema,
   flags: z.array(z.strictObject({ flag: z.string(), enabled: z.boolean(), source: z.enum(["env", "row", "default"]) })),
-  // F119 PD-047: the domain is the organization's own; no issuer URL, client id, secret or member id.
+  // The domain is the organization's own; no issuer URL, client id, secret or member id.
   sso: z
     .strictObject({
       domain: z.string(),
@@ -88,7 +88,7 @@ export const operatorOrgDetailSchema = z.strictObject({
   at: z.iso.datetime(),
 });
 
-// GET /api/operator/notices (F099 D16): the operator notices of all organizations, newest first.
+// GET /api/operator/notices: the operator notices of all organizations, newest first.
 export const operatorNoticesSchema = z.strictObject({
   notices: z.array(z.strictObject({ orgId: z.uuid(), kind: z.string(), key: z.string(), at: z.iso.datetime() })),
   since: z.iso.datetime(),
@@ -97,7 +97,7 @@ export const operatorNoticesSchema = z.strictObject({
 export type OperatorOrgDetail = z.infer<typeof operatorOrgDetailSchema>;
 export type OperatorNotices = z.infer<typeof operatorNoticesSchema>;
 
-// POST /api/operator/orgs/:orgId/plan and /flags (F099 D20): the bodies of the CLIs `org:plan` and `org:flag`.
+// POST /api/operator/orgs/:orgId/plan and /flags: the bodies of the CLIs `org:plan` and `org:flag`.
 export const operatorPlanBodySchema = z.strictObject({
   plan: orgPlanSchema.optional(),
   trialDays: z.number().int().min(1).max(365).optional(),
@@ -123,7 +123,7 @@ export const operatorFlagResultSchema = z.strictObject({
   result: z.enum(["changed", "unchanged"]),
   flag: z.string(),
   enabled: z.boolean(),
-  // F119 N12: the flag `sso_sign_in` went off in an organization that requires SSO; only its break-glass owner can sign in.
+  // The flag `sso_sign_in` went off in an organization that requires SSO; only its break-glass owner can sign in.
   warning: z.literal("sso_required_on").optional(),
 });
 

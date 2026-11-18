@@ -1,6 +1,6 @@
 import type { SentFolderReader } from "./port";
 
-// The time budget of one Sent pass (F104 stage 13a). The pass is the last step of a `mail.sync` run on one IMAP connection: a slow Sent folder must not hold the run.
+// The time budget of one Sent pass. The pass is the last step of a `mail.sync` run on one IMAP connection: a slow Sent folder must not hold the run.
 // The clock is monotonic and injected. Wall time (`now()`) stays the timestamp of the rows.
 
 /** Thrown when the budget is used up, or when an IMAP call did not return in time. It never leaves the Sent pass. */

@@ -2,7 +2,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
-// D29: the `actions` module must not import `delegation` (a cycle). The committer, the approvals and the expiry job
+// The `actions` module must not import `delegation` (a cycle). The committer, the approvals and the expiry job
 // update the delegation through these callbacks; `main.ts` wires them from the `delegation` index.
 // Each one runs in the caller's transaction and returns false when the delegation was not in a state that takes the change.
 export interface DelegationHooks {
@@ -27,14 +27,14 @@ export interface DelegationHooks {
     input: { delegationId: string; sentMessageId: string; at: Date; dueAtWhenNull: Date; actor: string }
   ): Promise<"changed" | "already" | "not_open">;
   // Locks the delegation row (the caller holds the send lock: send, then delegation). A `reminder` send needs the delegation `sent` or `overdue`; a `delegation` send needs it `drafted`,
-  // or `cancelled` with the reason `outcome_unknown` or `send_failed` (D6: "Send again" after a failed send).
+  // or `cancelled` with the reason `outcome_unknown` or `send_failed` ("Send again" after a failed send).
   isOpen(
     trx: Transaction<DB>,
     ctx: TenantContext,
     delegationId: string,
     kind: "reminder" | "delegation"
   ): Promise<boolean>;
-  // A panel edit replaced the waiting send and its draft (F102 ticket). Locks the delegation row (lock order: send, then delegation).
+  // A panel edit replaced the waiting send and its draft. Locks the delegation row (lock order: send, then delegation).
   // true: the delegation was `drafted` and now points at the new draft, the new send and the delegate of the new version.
   // false: any other state or no such delegation; the caller rolls the edit back.
   onSuperseded(
@@ -61,7 +61,7 @@ export const noDelegationHooks: DelegationHooks = {
   activeDelegate: async () => undefined,
 };
 
-// F102 ticket: what a decision does for the cards of other channels. The real hook is built in `channels` (stage 09);
+// What a decision does for the cards of other channels. The real hook is built in `channels`;
 // `actions` only calls it, in the transaction of the decision. The hook, not the caller, finds out whether an approved
 // send is held and by what, so no caller passes `heldBy`.
 export interface ApprovalHooks {
@@ -79,7 +79,7 @@ export interface ApprovalHooks {
 
 export const noApprovalHooks: ApprovalHooks = { onDecided: () => Promise.resolve() };
 
-// Open loops (F116): `actions` must not import `loops` (layer rule). A follow-up hangs on a loop; the committer reads the
+// Open loops: `actions` must not import `loops` (layer rule). A follow-up hangs on a loop; the committer reads the
 // loop and writes its counters through these callbacks. `main.ts` and `job:run` wire `loopHooks()` from the `loops` index.
 // Lock order: the loop first, then its sends. `isOpen` takes the loop lock, so a caller that must hold it calls it first.
 export interface LoopAnchor {

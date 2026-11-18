@@ -10,7 +10,7 @@ import { consentRow, CURRENT_CONSENT } from "./follow-up-fixtures";
 import { commandOrg, FRIDAY, type CommandOrg } from "./loops-commands-fixtures";
 import { insertLoopRow } from "./loops-fixtures";
 
-// Rows for the tests of the brief in the digest (F116 stage 18). The clock is Friday 2026-11-20 08:00 in Warsaw (07:00Z); the
+// Rows for the tests of the brief in the digest. The clock is Friday 2026-11-20 08:00 in Warsaw (07:00Z); the
 // member is linked on 2026-11-05 and has the digest times 08:00 and 16:00.
 
 export const LINKED = new Date("2026-11-05T20:00:00Z");

@@ -1,5 +1,5 @@
 export const enMailboxes = {
-  // S5b: shared
+  // shared
   owner_only: "Only the owner can do this.",
   cancel: "Cancel",
   save: "Save",
@@ -89,7 +89,7 @@ export const enMailboxes = {
   err_port: "Enter a port from 1 to 65535.",
   err_host: "Enter a host name without spaces.",
   connected_toast: "Mailbox connected. The first sync runs within 5 minutes.",
-  // mailbox OAuth sign-in (F117)
+  // mailbox OAuth sign-in
   oauth_btn_microsoft: "Sign in with Microsoft",
   oauth_btn_google: "Sign in with Google",
   oauth_or_password: "Or connect with a password",

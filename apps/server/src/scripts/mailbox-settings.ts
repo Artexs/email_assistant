@@ -170,7 +170,7 @@ async function run(
         printChange(result);
         return 0;
       } catch (error) {
-        // D19: reply drafts are for password IMAP mailboxes until Graph and Gmail get them.
+        // Reply drafts are for password IMAP mailboxes until Graph and Gmail get them.
         if (!(error instanceof OauthMailboxError)) throw error;
         out.fail("refused: oauth_mailbox (reply drafts are not available for an OAuth mailbox); nothing stored");
         return 1;

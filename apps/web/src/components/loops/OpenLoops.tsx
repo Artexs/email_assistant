@@ -6,9 +6,9 @@ import { useMe } from "../shell/MeProvider";
 import { LoopFilterTabs, LoopTabs } from "./LoopTabs";
 import { LoopsBoard } from "./LoopsBoard";
 
-// The F102 page `/delegations` while the flag `open_loops` is on (F116 stage 21, PD-126): the tabs Delegated, Waiting and Promised.
-// The Delegated tab is the F102 list, then the loops that the analysis of the Sent mail tracked as a hand forward to a delegate. The
-// F102 list needs the flag `delegation_pages`; without it (and without the Delegates header) the Delegated tab holds the loops only.
+// The page `/delegations` while the flag `open_loops` is on: the tabs Delegated, Waiting and Promised.
+// The Delegated tab is the delegations list, then the loops that the analysis of the Sent mail tracked as a hand forward to a delegate. The
+// delegations list needs the flag `delegation_pages`; without it (and without the Delegates header) the Delegated tab holds the loops only.
 export function OpenLoops() {
   const { me } = useMe();
   const { tab, filter, selectTab, selectFilter } = useLoopView();

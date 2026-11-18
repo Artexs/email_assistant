@@ -15,7 +15,7 @@ import { insertAction, insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F099 stage 07: GET /api/operator/orgs (plan D13 to D18).
+// GET /api/operator/orgs.
 const db = testDb();
 const key = randomBytes(32).toString("base64");
 const testConfig = loadConfig({
@@ -193,7 +193,7 @@ describe("GET /api/operator/orgs (F099 stage 07)", () => {
     });
   });
 
-  // Golden (F133): the whole rows, as the per-organization reads wrote them before the list was batched.
+  // Golden: the whole rows, as the per-organization reads wrote them before the list was batched.
   test("5b. the rows of A and B are equal, field for field, to the rows of the one-by-one reads", async () => {
     const res = await app().request("/api/operator/orgs", as("assistant"));
     const body = (await res.json()) as OperatorOrgList;

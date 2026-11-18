@@ -24,10 +24,10 @@ export type ApplyOutcome =
         | "copy_check_error"
         | "outcome_unknown";
     }
-  // An `applying` draft whose send ended before the APPEND (N12).
+  // An `applying` draft whose send ended before the APPEND.
   // `loop_closed`: the loop of a follow-up closed before the APPEND (the draft) or before the SMTP call (the send).
   // `draft_changed`, `draft_missing`: the Drafts copy was edited or is gone before the SMTP call (no mail went out).
-  // `answered`, `sent_by_user`, `newer_mail`, `original_moved`: a reply that the pass before the send stopped (F115 stage 09).
+  // `answered`, `sent_by_user`, `newer_mail`, `original_moved`: a reply that the pass before the send stopped.
   | {
       kind: "expired";
       reason:
@@ -82,15 +82,15 @@ export interface ApplyDeps {
   appendFolders: ReadonlySet<string>;
   /** Test hook: runs after the IMAP change, before the DB transaction. */
   beforeCommit?: () => void | Promise<void>;
-  /** Test hooks of the send (D11): before the SMTP call, after the 250, before the Sent copy. A throw is a crash. */
+  /** Test hooks of the send: before the SMTP call, after the 250, before the Sent copy. A throw is a crash. */
   beforeSend?: () => void | Promise<void>;
   afterSend?: () => void | Promise<void>;
   beforeSentCopy?: () => void | Promise<void>;
   /** Waits between the looks for the provider's Sent copy (`graph` sends). Absent: a real wait. Tests pass a fake. */
   sleep?: (ms: number) => Promise<void>;
-  /** PD-044: the send limits. Absent: `DEFAULT_SEND_LIMITS`. */
+  /** The send limits. Absent: `DEFAULT_SEND_LIMITS`. */
   sendLimits?: SendLimits;
-  /** Called after the commit of a held send; never awaited, a throw is logged (D10). Absent: no callback. */
+  /** Called after the commit of a held send; never awaited, a throw is logged. Absent: no callback. */
   onSendLimited?: (ctx: TenantContext, hit: SendLimitHit) => void;
 }
 

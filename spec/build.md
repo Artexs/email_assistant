@@ -17,6 +17,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F131-the-large-files-named-in-quality-pass-1-are-split-by-aggregate-findings-4-to-7` (🟠 ACTIVE): the large files named in quality pass 1 are split by aggregate (findings 4 to 7)
 - `F120-e11a-sender-context` (🟠 ACTIVE): The assistant knows who each sender is to the user and suggests rules from it
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟠 ACTIVE): E9b Phone channel (PWA, push, Telegram detail)
@@ -84,6 +85,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F133-the-small-duplicates-and-stale-statements-of-quality-pass-1-are-cleaned-findings-9-to-18` (🟢 PROVEN): the small duplicates and stale statements of quality pass 1 are cleaned (findings 9 to 18); landed 2026-11-18
+- `F132-comments-carry-no-bare-ticket-or-decision-codes-quality-pass-1-finding-8` (🟢 PROVEN): comments carry no bare ticket or decision codes (quality pass 1, finding 8); landed 2026-11-18
 - `F130-the-escalation-cascade-code-its-role-and-its-keys-are-removed-from-production-quality-pass-1-finding-2` (🟢 PROVEN): the escalation cascade code, its role and its keys are removed from production (quality pass 1, finding 2); landed 2026-11-18
 - `F112-e10a-docs-site` (🟢 PROVEN): E10a Docs site; landed 2026-11-18
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
@@ -92,5 +94,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F106-e7-t3-account-data-delete-export-dsr` (🟢 PROVEN): E7-T3 Account data (delete, export, DSR); landed 2026-11-15
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟢 PROVEN): E7-T6 Identity A (TOTP, backup codes, break-glass); landed 2026-11-15
 - `F103-e8a-logs` (🟢 PROVEN): E8a Logs; landed 2026-11-15
-- `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
-- 2026-11: 82 landed. spec/features/done/2026-11/
+- 2026-11: 83 landed. spec/features/done/2026-11/

@@ -7,7 +7,7 @@ import { textTables } from "../texts";
 export const QUOTE_NAME_MAX_CHARS = 100;
 
 // The quote block of a reply: one header line ("On <date>, <name> wrote:" / "<date> <name> napisał(a):"), then the text of the
-// original with `> ` on each line, at most `QUOTE_MAX_CHARS` code points (F115 interfaces). The date is in the time zone of the
+// original with `> ` on each line, at most `QUOTE_MAX_CHARS` code points. The date is in the time zone of the
 // organization, as in `quoteOriginal`. `<name>` is the display name of the sender (`email_headers.from_name`), else the address.
 // An original with no text gives "": a reply to an empty mail quotes nothing.
 export function quoteReply(original: OriginalMail, language: "pl" | "en", timeZone: string): string {

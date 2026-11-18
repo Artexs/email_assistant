@@ -29,7 +29,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F117 stage 07: the sign-in state (single use, hashed, encrypted verifier, binding to user and organization) and the start and options
+// The sign-in state (single use, hashed, encrypted verifier, binding to user and organization) and the start and options
 // routes. Rows are committed, because the state store runs its own transactions. Times are set by SQL; the clock never moves.
 const db = testDb();
 const NOW = new Date("2026-11-15T10:00:00.000Z");

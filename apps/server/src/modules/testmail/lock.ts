@@ -53,7 +53,7 @@ export function acquireSendLock(
     if (held !== null && isAlive(held.pid) && Date.now() - held.at < MAX_LOCK_AGE_MS) {
       throw new HardError(`another testmail send runs (pid ${held.pid})`);
     }
-    // Two processes may remove the same stale lock; the D3 keys bound the harm.
+    // Two processes may remove the same stale lock; the keys bound the harm.
     try {
       unlinkSync(path);
     } catch (error) {

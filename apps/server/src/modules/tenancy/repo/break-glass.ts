@@ -2,7 +2,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
 
-// The break-glass owner of the organization (F105 D11), or null. The partial unique index allows at most one.
+// The break-glass owner of the organization, or null. The partial unique index allows at most one.
 export async function getBreakGlassUserId(db: Db | Transaction<DB>, ctx: TenantContext): Promise<string | null> {
   const row = await db
     .selectFrom("memberships")
@@ -31,7 +31,7 @@ export async function setBreakGlassFlag(
 }
 
 // No TenantContext: the user gives the rows. True when any membership of the user has the mark.
-// RLS (F105 F13): it reads the memberships of every organization, so call it only with no tenant scope
+// RLS: it reads the memberships of every organization, so call it only with no tenant scope
 // (`/api/auth/*`, a CLI, a job). Inside an `/api` request RLS limits it to the session's organization.
 export async function isBreakGlassOwner(db: Db | Transaction<DB>, userId: string): Promise<boolean> {
   const row = await db
@@ -45,7 +45,7 @@ export async function isBreakGlassOwner(db: Db | Transaction<DB>, userId: string
 }
 
 // No TenantContext: the user gives the rows. The ids of the organizations where the user holds the mark.
-// RLS (F105 F13): like isBreakGlassOwner, call it only with no tenant scope (a CLI, a job).
+// RLS: like isBreakGlassOwner, call it only with no tenant scope (a CLI, a job).
 export async function listBreakGlassOrgIdsOfUser(db: Db | Transaction<DB>, userId: string): Promise<string[]> {
   const rows = await db
     .selectFrom("memberships")

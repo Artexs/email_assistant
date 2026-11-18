@@ -11,9 +11,9 @@ import type { CallbackResult, LinkedChat, TapSource } from "./port";
 
 const log = createLog("channels");
 
-// The taps on the buttons of a loop line of the brief (F116 stage 19, D11). The tenant and the user come from the chat link, never from
+// The taps on the buttons of a loop line of the brief. The tenant and the user come from the chat link, never from
 // the callback. The role check comes before any query: Draft, Drop and Reopen are for owners, Done and Later for any linked member. Each
-// tap calls the command of stage 14 with `via: "telegram"`; the command checks the right again and every rule under its locks.
+// tap calls the loop command with `via: "telegram"`; the command checks the right again and every rule under its locks.
 // An id that is unknown and an id of another organization get the same answer (`not_found`). The log line holds the kind and the id only.
 const OWNER_ONLY: ReadonlySet<LoopCallback["kind"]> = new Set(["loop_follow_up", "loop_drop", "loop_reopen"]);
 

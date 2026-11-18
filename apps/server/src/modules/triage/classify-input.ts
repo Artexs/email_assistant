@@ -1,5 +1,5 @@
 // What both triage paths hand to the classifier for one stored mail: the thread context, the extras of a v3 prompt and the
-// prompt choice (F110 stage 07 moved it out of `triageOne` so the history check classifies a mail exactly as triage does).
+// prompt choice (it lives apart from `triageOne` so the history check classifies a mail exactly as triage does).
 import type { TenantContext } from "../../platform/db";
 import { isTestMail, listThreadContext, type StoredEmail, type TestMailRule } from "../mail";
 

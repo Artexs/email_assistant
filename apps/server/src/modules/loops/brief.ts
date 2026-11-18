@@ -6,7 +6,7 @@ import type { TenantContext } from "../../platform/db";
 import { briefLoopsOf, type BriefLoopSection } from "./list";
 import type { DbOrTrx, LoopRow } from "./repo";
 
-// Another follow-up is not drafted after this many (D12).
+// Another follow-up is not drafted after this many.
 const FOLLOW_UP_LIMIT = 2;
 
 export interface LoopBrief {
@@ -15,8 +15,8 @@ export interface LoopBrief {
   stale: BriefPart<{ id: string; subject: string | null }>;
 }
 
-// The loops of the brief in the shape of the renderer (F116 stage 18). `modes`: the mode of each mailbox, for the "would draft a
-// follow-up" marker of a shadow mailbox (stage 15 plans nothing there). `approval`: a follow-up send of the loop waits for the owner.
+// The loops of the brief in the shape of the renderer. `modes`: the mode of each mailbox, for the "would draft a
+// follow-up" marker of a shadow mailbox (the plan step plans nothing there). `approval`: a follow-up send of the loop waits for the owner.
 export async function loadLoopBrief(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -115,7 +115,7 @@ export async function markBriefShown(
   }
 }
 
-// A digest that ended `failed` (never delivered) gives its marks back, so each line is shown once (F116 stage 19, review 18 N4): the loops that
+// A digest that ended `failed` (never delivered) gives its marks back, so each line is shown once: the loops that
 // it named get `surfaced_at` and `stale_notified_at` null again when the mark is the time of this digest and no other digest that
 // is not `failed` names the loop. A mark from another time (an earlier or a later digest) stays. `digest.at` is the creation time of
 // the outbox row: `markBriefShown` wrote the same time (`queueDigest` passes `now` to both).

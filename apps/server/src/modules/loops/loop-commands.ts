@@ -20,7 +20,7 @@ import {
   type LoopVia,
 } from "./repo";
 
-// The commands of a loop that a user starts (F116 stage 14). Telegram (stage 19) and `/api` (stage 20) call them.
+// The commands of a loop that a user starts. Telegram and `/api` call them.
 // Each one runs in one transaction, locks the loop first (the lock order: loop, then its sends) and writes one audit row with the `via`. A closing
 // command ends the waiting follow-up of the loop (`loop_closed`) in the same transaction.
 

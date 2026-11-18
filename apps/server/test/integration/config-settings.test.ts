@@ -51,7 +51,7 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
       return true;
     },
   };
-  // The composition root wraps `expireReady` with the send close (S4 D13).
+  // The composition root wraps `expireReady` with the send close.
   const deps: SettingsDeps = {
     db: trx,
     now: () => NOW,

@@ -9,7 +9,7 @@ import { E2E_BASE_URL, e2eEnv, GREENMAIL, repoRoot } from "./env";
 // The counter lives in the worker process and all spec files of that worker share it, so two files can use the same block.
 // Playwright runs each project in its own worker process, where the counter starts at 1 again: the caller gives each a block.
 // The sum `base + counter` is the host number inside the range 198.18.0.0/15 (RFC 2544, benchmark testing): a sum above 255
-// moves to the next third octet. A fourth octet above 255 (the old `198.51.100.${base + counter}`, F117 s16 made it reach 256
+// moves to the next third octet. A fourth octet above 255 (the old `198.51.100.${base + counter}`, a longer run made it reach 256
 // in the desktop project) is no address: the server then keys the limit on the proxy address 127.0.0.1, and every later test
 // of the project shares one bucket. The specs with a literal address use 198.51.100.0/24 and 203.0.113.0/24, away from this range.
 let addressCount = 0;
@@ -123,7 +123,7 @@ export async function connectGreenMail(page: Page, project: string): Promise<voi
   await expect(page.getByText(en.connected_toast)).toBeVisible();
 }
 
-// Fills the connected mailbox with the activity rows (S5d B12). Runs the server script with the e2e env;
+// Fills the connected mailbox with the activity rows. Runs the server script with the e2e env;
 // `execFileSync` throws with the script's stderr on a non-zero exit.
 export function seedActivity(mailboxId: string): void {
   execFileSync("bun", ["apps/server/src/scripts/e2e-activity.ts", "--mailbox-id", mailboxId], {
@@ -142,7 +142,7 @@ export interface AlertFill {
 
 // The layout of the text inside one alert: the width of the box, the width of the widest text line, and the number of lines.
 // A text node has no element of its own, so the helper measures it with a DOM range. An alert that collapses its bare text
-// into a zero-width column (F127) shows as many lines as words and a narrow text.
+// into a zero-width column shows as many lines as words and a narrow text.
 export async function alertFill(alert: Locator): Promise<AlertFill> {
   return alert.evaluate((element) => {
     const range = document.createRange();

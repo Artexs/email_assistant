@@ -23,7 +23,7 @@ export function mailKindFilter(kind: MailKind, rule: TestMailRule): Expression<S
   if (rule.senders.length === 0) return notSynthetic;
   return eb.and([notSynthetic, eb.or([eb("emails.from_address", "is", null), eb.not(fromSender)])]);
 }
-// `source_folder` has a DB default (INBOX), but no insert path may rely on it (D6). `from_address_lower` is a generated
+// `source_folder` has a DB default (INBOX), but no insert path may rely on it. `from_address_lower` is a generated
 // column: an insert that names it fails (kysely-codegen types it as `Generated`, so the type must leave it out).
 export type NewEmail = Omit<
   Insertable<DB["emails"]>,
@@ -57,7 +57,7 @@ export async function updateEmailUid(
     .executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
-// D8 returned: the user put the mail into synced folder `opts.folder`. Only while the row is system-moved.
+// Returned: the user put the mail into synced folder `opts.folder`. Only while the row is system-moved.
 // With `from`, only while the row still has that folder and UID.
 export async function markEmailReturned(
   db: DbOrTrx,
@@ -78,7 +78,7 @@ export async function markEmailReturned(
   const result = await query.executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
-// D8 relocated: the user moved the mail between synced folders. Only while the row is still in the old source folder.
+// Relocated: the user moved the mail between synced folders. Only while the row is still in the old source folder.
 // With `fromUid`, only while the row still has that UID.
 export async function markEmailRelocated(
   db: DbOrTrx,
@@ -97,7 +97,7 @@ export async function markEmailRelocated(
   const result = await query.executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
-// Rows that the sync flagged as returned (D12), oldest flag first.
+// Rows that the sync flagged as returned, oldest flag first.
 export async function listReturned(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -126,7 +126,7 @@ export async function clearReturned(trx: DbOrTrx, ctx: TenantContext, emailId: s
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
-// D22: `at` marks a reverse move in flight (the sync stores no INBOX copy of the mail); `null` clears it.
+// `at` marks a reverse move in flight (the sync stores no INBOX copy of the mail); `null` clears it.
 export async function setUndoPending(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -205,7 +205,7 @@ export async function getEmailMeta(db: DbOrTrx, ctx: TenantContext, emailId: str
     .where("id", "=", emailId)
     .executeTakeFirst();
 }
-// `undefined` keeps the column (M7). `sourceUid` writes `inbox_uid` (the UID in `source_folder`). `movedAt: null` clears `moved_at` (the mail is back in its source folder). `undoPendingAt: null` clears the D22 flag. Never touches `status` or `returned_at`.
+// `undefined` keeps the column. `sourceUid` writes `inbox_uid` (the UID in `source_folder`). `movedAt: null` clears `moved_at` (the mail is back in its source folder). `undoPendingAt: null` clears the undo-pending flag. Never touches `status` or `returned_at`.
 export async function updateEmailLocation(
   db: DbOrTrx,
   ctx: TenantContext,

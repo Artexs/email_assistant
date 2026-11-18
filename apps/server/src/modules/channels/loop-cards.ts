@@ -14,7 +14,7 @@ import { OUTBOX_REMOVED_TEXT, releaseMarksOfUndeliveredDigests } from "./repo";
 // Telegram already delivered stays in the chat: nothing here can recall it, but its text and its buttons can change: a
 // delivered card whose follow-up the switch expired gets one edit (`approval_edit`, outcome `expired`) with a fixed text of
 // ours as the original: no quote, no address, no subject. The edit rows are queued after the blanking below, so they are not
-// blanked themselves. A card already blank is not touched. The digests that name a loop of the mailbox in a brief line (`view.loopIds`, F116 stage 18) are the same case: they hold the
+// blanked themselves. A card already blank is not touched. The digests that name a loop of the mailbox in a brief line (`view.loopIds`) are the same case: they hold the
 // address, ask and subject of the loop in `text`. A digest that no sender delivered ends `failed` / `outdated` (the next slot covers the
 // period), a delivered or failed one loses its text and view. The caller holds the transaction of the switch. Returns the row count.
 export async function clearLoopCards(
@@ -64,7 +64,7 @@ async function clearDigestsNamingLoops(
       and jsonb_exists(outbox.view->'loopIds', open_loops.id::text)
   )`;
   // A digest that no sender delivered ends here: the marks of its loops that are NOT being cleared go back first, while its view
-  // still names them (review 19 N1). The loops of this mailbox are being cleared: their marks do not matter any more.
+  // still names them. The loops of this mailbox are being cleared: their marks do not matter any more.
   const clearing = (
     await trx
       .selectFrom("open_loops")

@@ -18,7 +18,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F114 stage 02: the three service-level checks that read the database. They read every organization that is not
+// The three service-level checks that read the database. They read every organization that is not
 // `suspended` and return numbers and UUIDs only.
 const db = testDb();
 
@@ -635,7 +635,7 @@ describe("LLM errors", () => {
   });
 });
 
-// F110 stage 18 (Q18): with `user_quiet_hours` on, the wait leaves out the own quiet hours of the user of the notice.
+// With `user_quiet_hours` on, the wait leaves out the own quiet hours of the user of the notice.
 // 2026-11-19 is CET (UTC+1): local time is UTC + 1 h.
 describe("urgent latency with own quiet hours", () => {
   const LONG_NIGHT = { quiet_start: "21:00", quiet_end: "08:00" };

@@ -63,7 +63,7 @@ export function SsoView({ state, onOpen, onBack, onEmail, onSubmit, inputRef, bu
   );
 }
 
-// The company sign-in block of the login page (F119 D14). The page renders it only when `GET /api/sign-in-options` said `sso: true`.
+// The company sign-in block of the login page. The page renders it only when `GET /api/sign-in-options` said `sso: true`.
 // `next` is a path that `safeNextPath` already checked.
 export function SsoSignIn({ next }: { next: string }) {
   const [state, dispatch] = useReducer(ssoFormReducer, ssoFormStart);

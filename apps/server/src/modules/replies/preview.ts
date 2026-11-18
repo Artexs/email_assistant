@@ -101,7 +101,7 @@ async function run(
       orgStyleText: organization.style_text,
     })
   );
-  // The language of the owner; no owner or no locale reads as Polish (stage 06).
+  // The language of the owner; no owner or no locale reads as Polish.
   const language = owner?.locale === "en" ? "en" : "pl";
   const sample = SAMPLE_MAIL[language];
 

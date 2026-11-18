@@ -25,8 +25,8 @@ export function keptText(texts: Dictionary, kept: Kept): string {
   }
 }
 
-// "Used when" of a sub-processor row. A page shows the condition, never a claim that the service is always used (E2),
-// and it prints the name of the key, never a value (E3).
+// "Used when" of a sub-processor row. A page shows the condition, never a claim that the service is always used,
+// and it prints the name of the key, never a value.
 export function usedWhenText(texts: Dictionary, row: Pick<Subprocessor, "name">, when: ActiveWhen): string {
   switch (when.kind) {
     case "always":

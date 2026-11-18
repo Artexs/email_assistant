@@ -1,6 +1,6 @@
 import type { SloKind } from "@ea/core";
 
-// F114 stage 03: the text of one operator alert, in English or Polish (`OPERATOR_LOCALE`). Plain text for Telegram.
+// The text of one operator alert, in English or Polish (`OPERATOR_LOCALE`). Plain text for Telegram.
 // It holds numbers, UUIDs of mailboxes, mails or organizations, the kind code and the runbook path. It never holds a
 // subject, an address, a folder name, an error text or the chat id: no function here reads such a value.
 

@@ -156,7 +156,7 @@ describe("weekStats", () => {
   });
 });
 
-// F110 stage 12: the three sources of ADR 0028 on the M8 rows (tests 1 to 3 of the stage).
+// The three sources of ADR 0028 on the M8 rows (tests 1 to 3 of the stage).
 describe("M8 trust evidence", () => {
   // `info` is `go` but provisional; the other categories are `no-go`.
   const provisional = gateFile({ info: 0.8 });

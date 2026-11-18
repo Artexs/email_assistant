@@ -2,7 +2,7 @@ import type { Transaction } from "kysely";
 
 import type { DB } from "./db";
 
-// Kysely only, no better-auth import (F119 N8). The third place where our SQL touches the Better Auth tables
+// Kysely only, no better-auth import. The third place where our SQL touches the Better Auth tables
 // (docs/code-patterns.md § Data access), next to `auth-two-factor-reset.ts`.
 // The caller owns the transaction: the deletes commit or roll back with the caller's other writes.
 
@@ -27,7 +27,7 @@ export async function endSsoLinksAndSessions(
   return { linksRemoved: Number(removed.numDeletedRows), sessionsEnded };
 }
 
-// Ends every password session of the users and every open verification row whose value is the user id (F119 stage 09):
+// Ends every password session of the users and every open verification row whose value is the user id:
 // "SSO required" went on for them. A pending two-factor challenge lives 600 s: its cookie plus `/two-factor/verify-totp`
 // would still make a password session after the switch. Better Auth stores the identifiers hashed, so the user id in
 // `value` is the only link to the challenge (like `resetTwoFactorRows`). The same rows hold the trusted devices and the open
@@ -50,7 +50,7 @@ export async function endPasswordSessionsAndChallenges(
   return { sessionsEnded: Number(sessions.numDeletedRows), challengesEnded: Number(verifications.numDeletedRows) };
 }
 
-// Ends the sessions of one user: all of them, or only the SSO ones (F119 stage 10). Returns the count. The caller has checked
+// Ends the sessions of one user: all of them, or only the SSO ones. Returns the count. The caller has checked
 // that the user belongs to the organization of the operator's request. Sessions belong to the user, not to the organization:
 // a user with a membership in two organizations loses the sessions in both, and `onlySso` ends the SSO sessions of every
 // provider of the user.

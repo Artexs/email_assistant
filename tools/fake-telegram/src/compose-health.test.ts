@@ -6,7 +6,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { startFakeTelegram, type FakeTelegram } from "./server";
 
 // The sim stack (deploy/compose.sim.yaml) waits for the healthcheck of fake-telegram. A path that the fake does not serve
-// keeps the service unhealthy and the server never starts (F113 stage 03 review B1). The test reads the URL from the Compose file.
+// keeps the service unhealthy and the server never starts. The test reads the URL from the Compose file.
 const COMPOSE = resolve(import.meta.dir, "../../../deploy/compose.sim.yaml");
 
 interface Compose {

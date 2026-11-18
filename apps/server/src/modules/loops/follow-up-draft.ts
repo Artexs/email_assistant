@@ -20,7 +20,7 @@ import { FOLLOW_UP_MIN_WAIT_DAYS, loopHooks } from "./hooks";
 import { inTransaction, logCommand, mayAct, type LoopCommandDeps, type LoopCommandInput } from "./loop-commands";
 import { getLoop, lockLoop, type LoopRow, type LoopVia } from "./repo";
 
-// F116 stage 14: the user asks for a follow-up of a loop. The command plans one `create_draft` and one `send` that waits
+// The user asks for a follow-up of a loop. The command plans one `create_draft` and one `send` that waits
 // for a tap (nothing leaves before that), or says why it plans nothing. Telegram and `/api` call it.
 
 export type DraftFollowUpResult =
@@ -193,7 +193,7 @@ async function decide(
   return planned === undefined ? { kind: "not_allowed" } : { kind: "planned", sendId: planned };
 }
 
-// Who started the plan. `chaser` is the daily job (stage 15): the actor of its rows is `system`.
+// Who started the plan. `chaser` is the daily job: the actor of its rows is `system`.
 export type PlanVia = LoopVia | "chaser";
 
 // The planning core, shared by the command and the chaser: one `create_draft` and one `send` that waits for a tap. The

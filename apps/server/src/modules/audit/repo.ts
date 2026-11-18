@@ -16,8 +16,8 @@ export const auditEvents = {
   emailRequeued: "email.requeued",
   chatLinked: "chat.linked",
   chatUnlinked: "chat.unlinked",
-  mailboxConnected: "mailbox.connected", // data: mailbox_id, via, sent_sync; OAuth (F117): method, provider
-  mailboxReconnected: "mailbox.reconnected", // data: mailbox_id, via, provider, reactivated (F117)
+  mailboxConnected: "mailbox.connected", // data: mailbox_id, via, sent_sync; OAuth: method, provider
+  mailboxReconnected: "mailbox.reconnected", // data: mailbox_id, via, provider, reactivated
   mailboxPaused: "mailbox.paused",
   mailboxResumed: "mailbox.resumed",
   mailboxPasswordChanged: "mailbox.password_changed",
@@ -69,9 +69,9 @@ export const auditEvents = {
   delegationDone: "delegation.done",
   delegationRemindRequested: "delegation.remind_requested", // data: delegation_id, reminder (1 or 2), via; the actor is the user
   delegationChaserRun: "delegation.chaser_run",
-  // F116 stage 15: the loop part of the chaser ran for a mailbox. Flat; data: mailbox_id, follow_ups, stale, expired, forced (counts and ids only).
+  // The loop part of the chaser ran for a mailbox. Flat; data: mailbox_id, follow_ups, stale, expired, forced (counts and ids only).
   loopsChaserRun: "loops.chaser_run",
-  // F116. Flat; ids and codes only, never the subject, the ask or an address of a loop. The actor is a user id or "system".
+  // Flat; ids and codes only, never the subject, the ask or an address of a loop. The actor is a user id or "system".
   loopOpened: "loop.opened", // data: loop_id, kind
   loopClosed: "loop.closed", // data: loop_id, kind, reason
   loopReopened: "loop.reopened", // data: loop_id, kind
@@ -94,12 +94,12 @@ export const auditEvents = {
   webTwoFactorRefused: "web.two_factor_refused", // data: via, action (disable | backup_codes), reason (missing | wrong | locked)
   webTwoFactorReset: "web.two_factor_reset", // data: via, sessions_ended
   operatorNotice: "operator.notice", // data: kind, key
-  // F106. Every key is flat (a string, number, boolean or null); never an address, a name or a hash of text.
+  // Every key is flat (a string, number, boolean or null); never an address, a name or a hash of text.
   orgDeleteRefused: "org.delete_refused", // data: reason, via
   orgExported: "org.exported", // data: tables, rows
   dsrFind: "dsr.find", // data: address_hash, mails, mentions, listed_delegates, listed_sender_rules, open_actions
   dsrErase: "dsr.erase", // data: the keys of dsr.find, tombstones, chain_actions, chain_delegations, outbox_blanked, outbox_dropped
-  // F119. Flat; never the IdP e-mail or a token. The organization is the provider's.
+  // Flat; never the IdP e-mail or a token. The organization is the provider's.
   ssoLogin: "sso.login", // actor: the user; data: provider_id, first_link
   ssoRefused: "sso.refused", // actor: system; data: provider_id, code
   ssoProviderSet: "sso.provider_set", // actor: cli; data: provider_id, change, issuer_host, domain, links_removed, sessions_ended
@@ -108,8 +108,8 @@ export const auditEvents = {
   ssoDomainAttested: "sso.domain_attested", // actor: cli; data: provider_id, domain (the attestation of a test organization)
   ssoRequiredChanged: "sso.required_changed", // actor: cli; data: from, to, sessions_ended
   ssoUnlinked: "sso.unlinked", // actor: cli; data: user_id, sessions_ended
-  memberNotifyChanged: "member.notify_changed", // F110 s18. actor: the user; data: via, keys (the changed keys in one string, comma between); never a value
-  newsletterUnsubscribe: "newsletter.unsubscribe", // F110 s24. actor: the user; data: mailbox_id, domain (the sender domain), status, code; never a URL
+  memberNotifyChanged: "member.notify_changed", // Actor: the user; data: via, keys (the changed keys in one string, comma between); never a value
+  newsletterUnsubscribe: "newsletter.unsubscribe", // Actor: the user; data: mailbox_id, domain (the sender domain), status, code; never a URL
   orgMemberAdded: "org.member_added", // actor: cli; data: user_id, role
   webMemberSessionsEnded: "web.member_sessions_ended", // actor: cli; data: user_id, count, only_sso
 } as const;
@@ -126,7 +126,7 @@ export interface AuditEvent {
   at?: Date;
 }
 
-// The type forbids nested data; this guard stops a cast or a JSON value that slips past it (F106 D17).
+// The type forbids nested data; this guard stops a cast or a JSON value that slips past it.
 function assertFlatData(data: AuditData | undefined): void {
   for (const [key, value] of Object.entries(data ?? {})) {
     if (typeof value === "object" && value !== null) {
@@ -205,7 +205,7 @@ export interface LlmCallRecord {
   tokensOut: number | null;
   latencyMs: number;
   at: Date;
-  /** The call belongs to a history check (F110): the daily cap leaves it out, the cost reports count it. */
+  /** The call belongs to a history check: the daily cap leaves it out, the cost reports count it. */
   historyCheckId?: string;
 }
 
@@ -234,14 +234,14 @@ export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCa
   });
 }
 
-// F099 D18: `llm.call` rows of the organization at or after `since`, per model (no model: "unknown").
+// `llm.call` rows of the organization at or after `since`, per model (no model: "unknown").
 export async function sumLlmCallsByModelSince(
   db: DbOrTrx,
   ctx: TenantContext,
   since: Date
 ): Promise<{ model: string; endpoint: LlmEndpointKind; calls: number; tokensIn: number; tokensOut: number }[]> {
   const model = sql<string>`coalesce(data->>'model', 'unknown')`;
-  // A row written before F111 has no `endpoint` key: it ran on the standard endpoint.
+  // A row written before the endpoint was logged has no `endpoint` key: it ran on the standard endpoint.
   const endpoint = sql<string>`coalesce(data->>'endpoint', 'standard')`;
   const rows = await db
     .selectFrom("audit_log")
@@ -308,7 +308,7 @@ export async function sumLlmCallsByModelSinceOfAll(
   return byOrg;
 }
 
-// The `llm.call` rows of the style preview (F115 stage 10): the calls of one mailbox with this prompt version that belong to no mail
+// The `llm.call` rows of the style preview: the calls of one mailbox with this prompt version that belong to no mail
 // (`email_id` is null), at or after `since`. A preview makes one row per call, so a retry inside one preview counts twice.
 export async function countMaillessCallsSince(
   db: DbOrTrx,
@@ -332,7 +332,7 @@ export async function countMaillessCallsSince(
 
 // One `llm.call` row per LLM call attempt; the mailbox id is in `data`, so no join to `emails`.
 // With a role: rows of that role; rows without a role count as classifier rows (written before roles existed).
-// The calls of history checks are not counted: the daily cap holds triage and the loop analysis, and a check has its own cap (F110).
+// The calls of history checks are not counted: the daily cap holds triage and the loop analysis, and a check has its own cap.
 export async function countLlmCallsSince(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -380,7 +380,7 @@ export async function countHistoryLlmCallsSince(
   return Number(row.count);
 }
 
-// SLO job entry point (F114): no TenantContext. The `llm.call` rows of all organizations that are not `suspended`, written at or
+// SLO job entry point: no TenantContext. The `llm.call` rows of all organizations that are not `suspended`, written at or
 // after `since`: how many, and how many with an outcome other than `ok`. Counts only; no id, no text. The name differs from
 // `countLlmCallsSince` (one mailbox) on purpose.
 export async function countLlmCallOutcomesSince(db: DbOrTrx, since: Date): Promise<{ total: number; failed: number }> {

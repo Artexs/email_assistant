@@ -1,6 +1,6 @@
 import type { TextKey } from "../i18n";
 
-// The state of the company sign-in block (F119 stage 12). `focus` is a request for the component: it moves the focus once,
+// The state of the company sign-in block. `focus` is a request for the component: it moves the focus once,
 // then the component forgets it. `focusSeq` makes two equal requests in a row different.
 export interface SsoFormState {
   open: boolean;

@@ -6,7 +6,7 @@ import { slotSchema, valueCategories, type Slot } from "./slot";
 export const AUDIT_RANDOM = 30;
 export const AUDIT_CONTESTED = 20;
 
-// Random cases by seed, then the contested ones (D35).
+// Random cases by seed, then the contested ones.
 export function pickAuditCases(input: {
   ids: readonly string[];
   contested: readonly string[];

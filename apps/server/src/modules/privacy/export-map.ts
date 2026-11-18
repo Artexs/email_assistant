@@ -1,4 +1,4 @@
-// F106 stage 05 (D6, D17, S6 D14): what `org:export` writes, per table and column. Test `privacy-export-map` compares the
+// What `org:export` writes, per table and column. Test `privacy-export-map` compares the
 // keys with `information_schema`: a new table or column fails there until someone classifies it here.
 export type ExportTable =
   | {
@@ -62,7 +62,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
   auth_sessions: secret("secrets: session tokens"),
   auth_two_factors: secret("secrets: the second factor and its backup codes"),
   auth_verifications: secret("secrets: reset and verification tokens"),
-  // The trust ladder (F110): a pause of `auto` for one category, with the counts that caused it. No mail text.
+  // The trust ladder: a pause of `auto` for one category, with the counts that caused it. No mail text.
   autonomy_trips: byOrg(
     "id",
     "org_id",
@@ -169,7 +169,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "undo_pending_at",
     "source_folder"
   ),
-  // The history check of a mailbox and its decision per mail (F110): codes, counts and money only. No mail text.
+  // The history check of a mailbox and its decision per mail: codes, counts and money only. No mail text.
   history_check_items: byOrg(
     "check_id",
     "org_id",
@@ -518,7 +518,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "latency_ms",
     "created_at"
   ),
-  // A request to unsubscribe from a sender (F110): the sender address, its domain and the result code of the request.
+  // A request to unsubscribe from a sender: the sender address, its domain and the result code of the request.
   unsubscribe_requests: byOrg(
     "id",
     "org_id",

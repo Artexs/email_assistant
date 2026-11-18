@@ -1,7 +1,7 @@
 import type { Category, Suspicion } from "../triage";
 import { isNoreplyAddress } from "../triage";
 
-// Who may get a reply draft (F115 D4, PD-071). One pure rule: the caller reads the facts, this function decides. No I/O.
+// Who may get a reply draft. One pure rule: the caller reads the facts, this function decides. No I/O.
 
 export const REPLY_BLOCK_REASONS = [
   "not_checked",
@@ -22,7 +22,7 @@ export type ReplyBlockReason = (typeof REPLY_BLOCK_REASONS)[number];
 export type ReplyTrigger = "auto" | "tap" | "redraft" | "sample";
 export type ReplyLanguage = "pl" | "en";
 
-// An automatic draft waits for mail of the last 7 days only (PD-071).
+// An automatic draft waits for mail of the last 7 days only.
 export const REPLY_AUTO_MAX_AGE_MS = 7 * 86_400_000;
 
 export interface ReplyHeaderFacts {
@@ -88,9 +88,9 @@ function isNotAPerson(facts: ReplyFacts, headers: ReplyHeaderFacts): boolean {
 // suspicious, junk, own, automatic, calendar or answered mail.
 export function replyEligibility(facts: ReplyFacts, opts: { trigger: ReplyTrigger; now: Date }): ReplyEligibility {
   const headers = facts.headers;
-  // Untriaged mail and mail stored before header capture are not checked (F109 N3): not clean, so no draft.
+  // Untriaged mail and mail stored before header capture are not checked: not clean, so no draft.
   if (!facts.triaged || facts.suspicion.state === "untriaged" || headers === null) return blocked("not_checked");
-  // Any reason blocks every trigger, whatever the flag `suspicious_mail` says (PD-063).
+  // Any reason blocks every trigger, whatever the flag `suspicious_mail` says.
   if (facts.suspicion.state === "flagged") return blocked("suspicious");
   if (facts.fromJunk) return blocked("junk_source");
   const from = facts.fromAddress?.trim().toLowerCase() ?? "";

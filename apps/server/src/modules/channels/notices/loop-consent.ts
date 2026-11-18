@@ -4,7 +4,7 @@ import { type LinkedChat } from "../port";
 
 import { DbOrTrx, queue } from "./run";
 
-// The gate of the follow-up notices (F116 stage 11, D17). A card or a result of a follow-up names recipients of the owner's own
+// The gate of the follow-up notices. A card or a result of a follow-up names recipients of the owner's own
 // sent mail: only an owner whose Telegram consent covers open-loop data gets it (`loopConsentOf`, the one choke point). The others get
 // one fixed line per day and kind, with the panel link: no recipient, no subject, no text.
 export async function splitByLoopConsent(

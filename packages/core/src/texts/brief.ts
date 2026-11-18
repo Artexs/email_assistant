@@ -2,7 +2,7 @@ import type { UserLocale } from "../tenancy";
 
 import { pluralCategory } from "./locale";
 
-// The "needs you today" block of the first digest of the day (open loops feature, F116 stage 18). One entry per fixed
+// The "needs you today" block of the first digest of the day (open loops feature). One entry per fixed
 // line; a function where the line holds values. Loop texts are in the language of the loop, these lines in the user's.
 export interface BriefTexts {
   title: string;
@@ -18,7 +18,7 @@ export interface BriefTexts {
   promisedLine: (who: string | null, what: string, due: string) => string;
   staleLine: (subject: string) => string;
   more: (count: number, url: string | null) => string;
-  // The lines of a user whose consent does not cover loop data: a count and no mail data (D17).
+  // The lines of a user whose consent does not cover loop data: a count and no mail data.
   waitingCount: (count: number) => string;
   promisedCount: (count: number) => string;
   staleCount: (count: number) => string;

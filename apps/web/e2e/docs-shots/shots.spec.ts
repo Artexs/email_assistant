@@ -15,9 +15,9 @@ import { signIn } from "../helpers";
 import { readSeed } from "../seed";
 import { SHOTS_DIR } from "./shots-dir";
 
-// F112 stage 11 (plan P5, ADR 0030 point 4): every screenshot of the docs site, made from the e2e seed only (synthetic data, `x.test` and
+// ADR 0030 point 4: every screenshot of the docs site, made from the e2e seed only (synthetic data, `x.test` and
 // `e2e.test` addresses). The run signs in as the owner of the seed's main organization, never as an owner of a flagged spec organization
-// (approvals, delegates, stats, delete). Before the first shot it asserts that the organization has no feature flag on (plan P2), so no
+// (approvals, delegates, stats, delete). Before the first shot it asserts that the organization has no feature flag on, so no
 // shot shows a default-off feature. Before each shot it runs `publicContentProblems` on the text of the page: a problem stops the run.
 test.describe.configure({ mode: "serial" });
 
@@ -78,7 +78,7 @@ test.beforeAll(async ({ browser }) => {
   const page = await context.newPage();
   await signIn(page, owner.email, owner.password);
   await expect(page).toHaveURL(/\/onboarding$/);
-  // P2: the enabled list of the organization must be empty, so it holds no `docs_links` and no other flag.
+  // The enabled list of the organization must be empty, so it holds no `docs_links` and no other flag.
   expect(shotFeaturesProblem(await features(page))).toBeNull();
   state = await context.storageState();
   await context.close();

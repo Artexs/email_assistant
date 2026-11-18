@@ -1,4 +1,4 @@
-// The history check outcome (F110 D4). Only `fail` blocks a category.
+// The history check outcome. Only `fail` blocks a category.
 import { wilsonInterval } from "../triage/metrics";
 
 export type HistoryOutcome = "pass" | "fail" | "inconclusive" | "no_result";

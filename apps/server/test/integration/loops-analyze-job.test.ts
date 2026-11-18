@@ -13,7 +13,7 @@ import { testDb, withRollback } from "./helpers";
 import { analysisOf, ASK, fakeExtractor, loopsOf, loopsOrg, RUN_AT, sentMail } from "./loops-analyze-fixtures";
 import type { Org } from "./mail-sent-fixtures";
 
-// The job loops.analyze (F116 stage 12, step 3): the runner, `job:run`, and the lock order with the switch.
+// The job loops.analyze (step 3): the runner, `job:run`, and the lock order with the switch.
 const db = testDb();
 
 afterAll(async () => {

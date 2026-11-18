@@ -237,7 +237,7 @@ test("the text event form prints the prefix and key=value pairs", () => {
   expect(out.mock.calls[2]).toEqual(["[mail]", "sync_done status=null"]);
 });
 
-// Another call shape writes no argument (D9): the line says that the call was invalid and counts one drop.
+// Another call shape writes no argument: the line says that the call was invalid and counts one drop.
 const raw = createLog("mail") as unknown as { info: (...args: unknown[]) => void; warn: (...args: unknown[]) => void };
 
 test("another call shape writes one log_call_invalid line in JSON and text, and no argument", () => {
@@ -530,7 +530,7 @@ export function typeChecks(): void {
   log.info("x", { subject: "a" });
 }
 
-// F114 stage 05 (D10). The release is process state: each test resets it with undefined.
+// The release is process state: each test resets it with undefined.
 describe("setLogRelease", () => {
   // Bun runs the test files in one process: the release must not leak into other files.
   afterEach(() => setLogRelease(undefined));

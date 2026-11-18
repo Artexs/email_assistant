@@ -539,7 +539,7 @@ describe("buildDigestMessage: suspicious mail", () => {
       }
       return emailId;
     };
-    // A flagged mail that got no plan (stage 03), and one that was drafted before the flag went on (it keeps its would-do line).
+    // A flagged mail that got no plan, and one that was drafted before the flag went on (it keeps its would-do line).
     await draft(ctx, a.mailboxId, "SUBJECT-A", ["link_mismatch"], false);
     await draft(ctx, a.mailboxId, "SUBJECT-DRAFTED", ["risky_attachment"]);
     // Organization B has a flagged mail too: it never shows in the digest of A.
@@ -704,7 +704,7 @@ describe("digest why lines (F110 stage 16)", () => {
         createdAt: at(-80 * MIN),
         subject: "SUBJECT-DELEGATED",
       });
-      // TG6: a reverse draft that carries another delegate (created before the original) never shows its tags or its name.
+      // A reverse draft that carries another delegate (created before the original) never shows its tags or its name.
       const bob = await insertDelegate(trx, ctx, { name: "Bob Reverse", tags: ["secret-tag"] });
       await insertAction(trx, ctx, delegated.emailId, {
         type: "create_draft",
@@ -737,14 +737,14 @@ describe("digest why lines (F110 stage 16)", () => {
       // An unsure item keeps its guess percent only.
       expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).toContain("55%");
       expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).not.toContain("·");
-      // The tags sit next to the delegate name, before the send state (N1); at most 3.
+      // The tags sit next to the delegate name, before the send state; at most 3.
       expect(on).toContain(
         "will draft a delegation to Anna Nowak (skills: finance, legal, hr); waits for your approval"
       );
       expect(on).not.toContain(", it)");
       // The same delegation with the flag off: the line of today.
       expect(off).toContain("will draft a delegation to Anna Nowak; waits for your approval");
-      // TG1: an old blocklist row has no rule key and confidence 1: no percent.
+      // An old blocklist row has no rule key and confidence 1: no percent.
       expect(on).toMatch(/SUBJECT-OLDBLOCK\n💬 The sender is on your blocklist\.\n/);
       expect(on).not.toContain("100%");
 

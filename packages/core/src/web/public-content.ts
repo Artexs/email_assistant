@@ -1,4 +1,4 @@
-// The public-content check of a built text file (docs plan D4). A public site must show no private data and load no
+// The public-content check of a built text file. A public site must show no private data and load no
 // third-party asset. Used by the docs build (`apps/docs/integrations/public-content.ts`) and, later, by the screenshot run.
 // Pure text work: no Node module (browser-safe folder). Each rule runs on the raw text and on the text with HTML tags removed.
 import { DOCS_ORIGIN } from "../site";

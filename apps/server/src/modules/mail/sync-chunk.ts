@@ -39,7 +39,7 @@ type Write =
   | { kind: "returned"; emailId: string; uid: number; folder: string }
   | { kind: "relocated"; emailId: string; uid: number; from: string; to: string };
 
-// D7: one mail in two synced folders is stored once. It sets no `matched` entry (a rescan would turn the row's own pass into a cross copy).
+// One mail in two synced folders is stored once. It sets no `matched` entry (a rescan would turn the row's own pass into a cross copy).
 function countCrossCopy(mailboxLog: Log, result: SyncResult, emailId: string): void {
   result.crossCopies += 1;
   mailboxLog.debug("sync_cross_copy", { folder_key: result.folder, email_id: emailId });

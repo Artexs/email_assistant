@@ -87,9 +87,9 @@ export async function runEval(
     done?: CaseResult[];
     concurrency?: number;
     budget?: EvalBudget;
-    // With a judge, every planned delegation or clarification draft is judged (stage 16 of the lab ticket).
+    // With a judge, every planned delegation or clarification draft is judged.
     judge?: JudgeSetup;
-    // The classifier prompt version and parts; absent: the production prompt (stage 08).
+    // The classifier prompt version and parts; absent: the production prompt.
     prompt?: ClassifierPromptChoice;
     extrasOf?: (c: EvalCase) => ClassifierExtras;
   }

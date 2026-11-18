@@ -1,4 +1,4 @@
-// The item rows of a history check (F110 D10, D13): one row per classified mail, written with the cost of its call. Codes, counts,
+// The item rows of a history check: one row per classified mail, written with the cost of its call. Codes, counts,
 // ids and money only: no mail text and no address.
 import { categorySchema, type Category } from "@ea/core";
 import { sql, type Transaction } from "kysely";

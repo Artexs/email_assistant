@@ -5,17 +5,17 @@ import type { RealEvalReport } from "./eval";
 import { pct, table } from "./eval-format";
 import type { GateFile } from "./eval-sim-report";
 
-// P9 (real-label clause): fewer real precision labels than this and the gap check gives no verdict.
+// Real-label clause: fewer real precision labels than this and the gap check gives no verdict.
 export const GAP_MIN_REAL_N = 30;
 
-// The categories the gap check compares (P7).
+// The categories the gap check compares.
 const GAP_CATEGORIES = ["notification", "spam"] as const;
 
 const countsSchema = z
   .object({ tp: z.number().int(), fp: z.number().int(), fn: z.number().int(), support: z.number().int() })
   .strict();
 
-// The real-label counts of D32: per category counts only, no mail id, no address, no text.
+// The real-label counts: per category counts only, no mail id, no address, no text.
 export const realCountsSchema = z
   .object({
     date: z.iso.date(),

@@ -1,5 +1,5 @@
 export const enReply = {
-  // F115 stage 11: the reply drafts switch and the style card (name, signature, writing style, preview)
+  // The reply drafts switch and the style card (name, signature, writing style, preview)
   switch_reply_drafts: "Reply drafts",
   rs_switch_help: "Drafts a reply for mail that needs your answer. Nothing is sent without your tap.",
   rs_switch_oauth: "Reply drafts work only for mailboxes connected with a password for now.",
@@ -40,7 +40,7 @@ export const enReply = {
   rs_org_note: "Signatures are set per mailbox now.",
   rs_org_old: "This old text of the organization still applies to a mailbox that has no signature of its own.",
   rs_org_link: "Open the card of {address}",
-  // F110 stage 14: the report page ("what I would have done") and the onboarding steps with the flag trust_ladder
+  // The report page ("what I would have done") and the onboarding steps with the flag trust_ladder
   title_report: "Report",
   rep_off: "This page is off for your organization.",
   rep_no_mailbox: "Connect a mailbox first. The check starts after that.",
@@ -86,7 +86,7 @@ export const enReply = {
     "The assistant checks your last 30 days of mail, read-only. Then it shows what it would have done, and you can turn on what it recommends.",
   ob_report_done: "The check is ready.",
   ob_report_link: "Open the report",
-  // F110 stage 15: the optional panel review "Check 10 decisions" (flag panel_review)
+  // The optional panel review "Check 10 decisions" (flag panel_review)
   title_review: "Check 10 decisions",
   rv_intro:
     "These are decisions the assistant made on your mail from the last 30 days. Say if each one is right. This is optional. It changes nothing in your mailbox.",
@@ -101,6 +101,6 @@ export const enReply = {
   rv_done: "Done",
   rv_thanks: "Thank you. Your answers help the assistant check itself. They do not turn anything on.",
   rv_back: "Back to the report",
-  // F133: an amount in US dollars (the number carries the decimal mark of the language)
+  // An amount in US dollars (the number carries the decimal mark of the language)
   money_usd: "${amount}",
 } as const;

@@ -1,4 +1,4 @@
-// The trust view of one mailbox (F110 stage 11): the one reader behind the autonomy card, the report page and M8. It
+// The trust view of one mailbox: the one reader behind the autonomy card, the report page and M8. It
 // reads the settings, the three evidence sources, the real labels, the newest check and the examples of the report. Counts, codes
 // and dates, plus the examples (sender name and subject: the panel is behind login and the view never goes to Telegram).
 import {
@@ -130,7 +130,7 @@ export async function trustViewFor(
 }
 
 /**
- * The M8 reader (F110 stage 12): the global, history and trip state of each bar category of one mailbox, from the one reader
+ * The M8 reader: the global, history and trip state of each bar category of one mailbox, from the one reader
  * `trustViewFor`. `null`: no such mailbox in the organization. The composition roots hand it to `reports`, which may not import `trust`.
  */
 export function trustEvidenceReader(

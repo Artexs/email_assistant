@@ -6,7 +6,7 @@ import type { DB } from "../../src/platform/db";
 import { createOrgWithMailbox, insertTestEmail, insertTriagedWithActions } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// Constraints of the F100 stage 04 migration (spec/features/active/F100-e3a-measure/stages/stage-04-migration.md).
+// Constraints of the measure migration (`docs/capabilities/measurement.md`).
 const db = testDb();
 
 afterAll(async () => {

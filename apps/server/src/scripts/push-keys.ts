@@ -1,7 +1,7 @@
 import { createCliOutput } from "../platform/cli";
 import { generateVapidKeyPair } from "../platform/vapid-keys";
 
-// `bun run push:keys`: prints a new VAPID key pair (RFC 8292) as the three `.env` lines of Web Push (F118). The owner runs it,
+// `bun run push:keys`: prints a new VAPID key pair (RFC 8292) as the three `.env` lines of Web Push. The owner runs it,
 // never an agent: the private key goes to the terminal of the owner. It reads no config, opens no database, makes no request and
 // writes no file or log line. The subject line is a placeholder that the owner edits (it fails the config check until then).
 const out = createCliOutput("push-keys");

@@ -51,13 +51,13 @@ export const meSchema = z.object({
   scopes: z.object({ triage: scopeInfoSchema, actions: scopeInfoSchema, send: scopeInfoSchema }),
   mailboxCount: z.number().int().min(0),
   mailboxesInAuthError: z.number().int().min(0),
-  approvalsWaiting: z.number().int().min(0), // sends in `awaiting_approval` with an applied draft; 0 while `approvals_page` is off (F102 ticket, nav badge)
+  approvalsWaiting: z.number().int().min(0), // sends in `awaiting_approval` with an applied draft; 0 while `approvals_page` is off (nav badge)
   digestTimes: z.array(z.string()),
   terms: z.object({ accepted: z.boolean(), current: z.string() }),
   operator: z.boolean(),
-  features: z.array(z.string()), // the registry keys that are on for the organization (plan D23)
-  signInMethod: z.enum(["password", "sso"]), // how this session was made (F119 D6)
-  hasPassword: z.boolean(), // the user has a password credential; an SSO member made by `org:member` has none (F119 D14)
+  features: z.array(z.string()), // the registry keys that are on for the organization
+  signInMethod: z.enum(["password", "sso"]), // how this session was made
+  hasPassword: z.boolean(), // the user has a password credential; an SSO member made by `org:member` has none
 });
 export type Me = z.infer<typeof meSchema>;
 

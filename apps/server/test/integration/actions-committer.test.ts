@@ -472,7 +472,7 @@ describe("createCommitterJob", () => {
   });
 });
 
-// F117 stage 10: the reason of an OAuth login refusal reaches `auth_reason` in the same write as the status.
+// The reason of an OAuth login refusal reaches `auth_reason` in the same write as the status.
 describe("createCommitterJob: auth_error with a reason", () => {
   const oauthTokens = { accessToken: async () => "access-token-stub", drop: () => undefined };
 
@@ -546,7 +546,7 @@ describe("createCommitterJob: auth_error with a reason", () => {
   });
 });
 
-// S4 stage 12: sends in the committer job.
+// Sends in the committer job.
 interface SendOpener {
   calls: string[];
   failure: Error | null;

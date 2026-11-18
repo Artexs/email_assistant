@@ -756,7 +756,7 @@ describe("outbox sender log events", () => {
   });
 });
 
-// F110 stage 18: the quiet hours of each member (P5). 2026-11-06 is CET (UTC+1): local time is UTC + 1 h.
+// The quiet hours of each member. 2026-11-06 is CET (UTC+1): local time is UTC + 1 h.
 describe("outbox sender: own quiet hours", () => {
   const LOCAL_2230 = new Date("2026-11-06T21:30:00Z");
   const LOCAL_1200 = new Date("2026-11-06T11:00:00Z");

@@ -23,7 +23,7 @@ import { createOrgWithMailbox, insertDelegate, insertTestEmail } from "./fixture
 import { testDb, withRollback } from "./helpers";
 import { insertLoopRow, insertSentRow } from "./loops-fixtures";
 
-// The repository of the loops (F116 stage 8, step 1): the unique key, the close and reopen rules, the audit rows and the
+// The repository of the loops (step 1): the unique key, the close and reopen rules, the audit rows and the
 // organization filter of every function. The tests run without `app.org_id`, so only the `org_id` filter of the query
 // stands between an organization and the loops of another one.
 const db = testDb();

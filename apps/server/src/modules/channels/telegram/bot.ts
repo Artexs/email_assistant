@@ -20,7 +20,7 @@ const log = createLog("telegram");
 
 const ANSWER_MAX_CHARS = 200;
 
-// The language of a user who has no linked chat yet (D12). A user with no choice gets the default of plan P2: Polish.
+// The language of a user who has no linked chat yet. A user with no choice gets the default: Polish.
 export async function localeOfUser(db: Db | Transaction<DB>, userId: string): Promise<UserLocale> {
   try {
     return (await getUserAuthProfile(db, userId))?.locale ?? "pl";
@@ -159,7 +159,7 @@ export function createTelegramBot(
       }
     }
     if (result.keyboard) {
-      // Only the buttons: the chat message keeps its text (a blanked digest, review 19 N2).
+      // Only the buttons: the chat message keeps its text (a blanked digest).
       try {
         await ctx.editMessageReplyMarkup({
           reply_markup: messageOptions(result.keyboard, { clearKeyboard: true }).reply_markup,

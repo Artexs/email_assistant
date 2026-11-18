@@ -54,7 +54,7 @@ export interface MovedRow {
   id: string;
   /** The UID in `folder` (the hint of the folder check). */
   uid: number;
-  /** The last known UID in `source_folder` (D3: the name stays). */
+  /** The last known UID in `source_folder` (the name stays). */
   inbox_uid: number | null;
   folder: string;
   source_folder: string;
@@ -64,7 +64,7 @@ export interface MovedRow {
   received_at: Date;
   moved_at: Date;
 }
-// Mail that the system moved out of `sourceFolder` lately: the candidates for a return below that folder's UID cursor (D4).
+// Mail that the system moved out of `sourceFolder` lately: the candidates for a return below that folder's UID cursor.
 export async function listRecentlyMoved(
   db: DbOrTrx,
   ctx: TenantContext,

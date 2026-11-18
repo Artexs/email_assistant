@@ -15,7 +15,7 @@ import {
 } from "./trust-history-classify-helpers";
 import { advance, jobOf, MINUTE_MS } from "./trust-history-helpers";
 
-// A hook that runs when a check ends (the report notice) and throws every time must not keep the check open (F110 stage 07 review).
+// A hook that runs when a check ends (the report notice) and throws every time must not keep the check open.
 // The end of a done check fails its step and costs an attempt; the third attempt ends the check as `stopped` with no notice.
 const db = testDb();
 let removePrice: () => void;

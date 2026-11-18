@@ -19,7 +19,7 @@ export async function insertUser(
     .executeTakeFirstOrThrow();
 }
 
-// A user with no password and a verified address, for an SSO member (F119 stage 10). `ON CONFLICT` on the unique index
+// A user with no password and a verified address, for an SSO member. `ON CONFLICT` on the unique index
 // `lower(email)`: two operators who add the same address in two organizations at once get one row and one `undefined`
 // (one user, one organization). The caller lower-cases the address.
 export async function insertSsoUserOnce(
@@ -38,11 +38,11 @@ export interface UserAuthProfile {
   locale: UserLocale | null;
   termsVersion: string | null;
   termsAcceptedAt: Date | null;
-  // users.two_factor_enabled: a Better Auth column read by our SQL (F105 D11).
+  // users.two_factor_enabled: a Better Auth column read by our SQL.
   twoFactorEnabled: boolean;
 }
 
-// No TenantContext: the user gives the row; the web resolves the user from the session (S6b).
+// No TenantContext: the user gives the row; the web resolves the user from the session.
 export async function getUserAuthProfile(
   db: Db | Transaction<DB>,
   userId: string
@@ -85,7 +85,7 @@ export async function setUserLocale(db: Db | Transaction<DB>, userId: string, lo
   return Number(result.numUpdatedRows) === 1;
 }
 
-// True when the user has a password: a `credential` row in `auth_accounts` (a Better Auth table read, F119 stage 11).
+// True when the user has a password: a `credential` row in `auth_accounts` (a Better Auth table read).
 // An SSO member made by `org:member --add` has none. No TenantContext: the user gives the row.
 export async function hasPasswordCredential(db: Db | Transaction<DB>, userId: string): Promise<boolean> {
   const row = await db

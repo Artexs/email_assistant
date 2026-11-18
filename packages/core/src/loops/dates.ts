@@ -4,7 +4,7 @@ import { localDateTime, localToInstant, nextLocalDate } from "../digest/local-ti
 import { addWorkingDays } from "../metrics/week";
 import { DAY_MS } from "../time";
 
-// Pure date rules of the open loops (D7). The model gives a date or a time word; the code resolves it.
+// Pure date rules of the open loops. The model gives a date or a time word; the code resolves it.
 // Every due date is 17:00 local time of the organization.
 const DUE_TIME = "17:00";
 const MAX_DAYS_AHEAD = 60;
@@ -73,7 +73,7 @@ function resolveDay(word: DueWord, local: { date: string; time: string; weekday:
   }
 }
 
-// The instant of the due date, or null when it is before `sentAt` or more than 60 local days after it (D7).
+// The instant of the due date, or null when it is before `sentAt` or more than 60 local days after it.
 export function resolveDue(ref: DueRef, context: DueContext): Date | null {
   const { sentAt, timeZone } = context;
   const local = localDateTime(sentAt, timeZone);

@@ -15,7 +15,7 @@ import { createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { fillMailbox } from "./mailbox-rows";
 
-// Policy tests of F092 (spec/features/active/F092-rls-safety-net/plan.md D8–D13). The connection is the `app` role.
+// Policy tests of the RLS safety net (ADR 0011). The connection is the `app` role.
 const db = testDb();
 
 afterAll(async () => {
@@ -62,7 +62,7 @@ const TENANT_TABLES = [
 ];
 const ALL_POLICY_TABLES = [...TENANT_TABLES, "organizations"];
 
-// The text Postgres stores for the policy (plan P9).
+// The text Postgres stores for the policy.
 const POLICY_TEXT = "((app_current_org() IS NULL) OR (org_id = app_current_org()))";
 const ORG_POLICY_TEXT = "((app_current_org() IS NULL) OR (id = app_current_org()))";
 
@@ -70,7 +70,7 @@ const NOW = new Date("2026-11-20T10:00:00Z");
 
 type Trx = Transaction<DB>;
 
-// Local to the transaction only (plan D18); "" means no scope.
+// Local to the transaction only; "" means no scope.
 async function scopeLocal(trx: Trx, orgId: string): Promise<void> {
   await sql`select set_config('app.org_id', ${orgId}, true)`.execute(trx);
 }

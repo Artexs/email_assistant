@@ -639,3 +639,15 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: master CI would stay red otherwise, and only you and test organizations exist now.
 - Undo: remove the entry together with the tables (F120 rollback).
 - Source: F120 stage 02 worker question and review.
+
+### 2026-11-18 · TERMS_VERSION 2026-11-18-2 for the data category push-devices (F118) · privacy · new
+- Choice: F118 stage 02 adds the data category `push-devices` (push endpoint and keys, encrypted at rest, per user and device). It moves the legal digest again, so a second `TERMS_HISTORY` entry `2026-11-18-2` is needed. Members accept the terms again at next sign-in. The privacy page text for push and the push services as sub-processors come in F118 stage 13 (Q12).
+- Why: master CI would be red otherwise; only you and test organizations exist.
+- Undo: remove the entry together with the table (F118 rollback).
+- Source: F118 stage 02 worker question.
+
+### 2026-11-18 · F118 stage 02 also adds the `web_push` flag and `push` in the core channel list (F118) · scope · new
+- Choice: the flag and the channel name come in stage 02 (planned for stages 03 and 07), because a schema test ties the outbox CHECK to the core channel list. Stages 03 and 07 must not add them again.
+- Why: the stage cannot pass its own tests otherwise.
+- Undo: remove them from `packages/core/src/features.ts` and the channel list, and let the test allow the difference.
+- Source: F118 stage 02 worker notes.

@@ -29,7 +29,7 @@ import {
 
 const HOUR = 3_600_000;
 
-// F115 stage 09, step 2: the sweep closes open reply sends whose reason to exist ended. It reads the database only.
+// The sweep closes open reply sends whose reason to exist ended. It reads the database only.
 const db = testDb();
 let logs: CapturedLogs | null = null;
 
