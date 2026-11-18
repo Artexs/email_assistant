@@ -17,11 +17,8 @@ export {
   countOutboxAttempt,
   expireOldMailOutbox,
   failOutbox,
-  findApprovalCardOfTap,
   findOutboxByDedup,
-  findReviewCards,
   insertOutbox,
-  lastRepliesReady,
   listNotTriagedEmailIds,
   markOutboxSent,
   outboxFailCodes,
@@ -32,6 +29,7 @@ export {
   type OutboxFailCode,
   type OutboxKind,
 } from "./outbox";
+export { findApprovalCardOfTap, findReviewCards, lastRepliesReady } from "./review-cards";
 export { releaseMarksOfUndeliveredDigests } from "./digest-marks";
 export {
   cancelPendingApprovalRequestsOfClosedSends,
