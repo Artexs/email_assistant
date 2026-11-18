@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 export interface SetAnywayDialogProps {
   category: BarCategory | null; // null = closed
   gate: GateView | null;
-  // The reasons the evidence gate refused (the flag `trust_ladder` is on). Empty: the real-label text of the gate shows, as before F110.
+  // The reasons the evidence gate refused (the flag `trust_ladder` is on). Empty: the real-label text of the gate shows, as before the trust ladder.
   blocks?: readonly TrustBlock[];
   bar: number;
   minKept: number;

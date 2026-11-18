@@ -30,7 +30,7 @@ const headings: Record<LegalLang, string[]> = {
   ],
 };
 
-// Features that the policy must not describe until they ship (stage 03 decisions).
+// Features that the policy must not describe until they ship.
 const plannedFeatures = /OAuth|Vertex|EU endpoint|endpoint w UE|sender profile|profil(e|i) nadawc|push notification/i;
 
 describe("the privacy policy sources", () => {

@@ -189,7 +189,7 @@ export const plApprovals = {
   dgn_cancel_text: "Wykonawca: {name}. Nie można tego cofnąć.",
   dgn_cancel_confirm: "Anuluj zlecenie",
   dgn_keep: "Zachowaj zlecenie",
-  // open loops page: the F102 page /delegations while the flag open_loops is on
+  // open loops page: the page /delegations while the flag open_loops is on
   nav_open_loops: "Otwarte sprawy",
   title_open_loops: "Otwarte sprawy",
   lp_tabs_label: "Rodzaje otwartych spraw",

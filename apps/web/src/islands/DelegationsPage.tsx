@@ -4,7 +4,7 @@ import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { useLocale } from "../i18n";
 
-// The page `/delegations`: the F102 delegations dashboard, or, while the flag `open_loops` is on, the "Open loops" page.
+// The page `/delegations`: the delegations dashboard, or, while the flag `open_loops` is on, the "Open loops" page.
 function Page() {
   const { me } = useMe();
   return me?.features.includes("open_loops") === true ? <OpenLoops /> : <Delegations />;

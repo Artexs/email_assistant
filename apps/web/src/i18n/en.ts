@@ -26,7 +26,7 @@ export const enPlurals = {
   expired_suffix: { one: "1 planned action was cancelled.", other: "{count} planned actions were cancelled." },
   // The wait of an open loop
   lp_working_days: { one: "1 working day", other: "{count} working days" },
-  // F116 stage 22
+  // Loop settings
   lset_wait_days: { one: "1 working day", other: "{count} working days" },
   // Mails of a newsletter sender
   nl_count: { one: "1 mail in 30 days", other: "{count} mails in 30 days" },

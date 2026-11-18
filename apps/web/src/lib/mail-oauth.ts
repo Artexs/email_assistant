@@ -90,7 +90,7 @@ export interface OAuthBanner {
   text: TextKey;
 }
 
-// `mailbox_exists` and `mailbox_limit` reuse the texts of the password connect. `admin_consent_required` shows `oauth_err_admin` (stage 17 adds the approval link).
+// `mailbox_exists` and `mailbox_limit` reuse the texts of the password connect. `admin_consent_required` shows `oauth_err_admin`.
 const resultTexts = {
   connected: { tone: "success", text: "oauth_ok_connected" },
   reconnected: { tone: "success", text: "oauth_ok_reconnected" },

@@ -13,7 +13,7 @@ import { t, tp, type TextKey } from "../i18n";
 import { ApiError } from "./api";
 import { errorText } from "./errors";
 
-// The "Open loops" page is the F102 page `/delegations` while the flag `open_loops` is on. Its tabs are the kinds of
+// The "Open loops" page is the page `/delegations` while the flag `open_loops` is on. Its tabs are the kinds of
 // loop; `?tab=` names the tab and `?filter=` the state filter.
 export const LOOP_TABS = loopKinds;
 export type LoopTab = LoopKindName;
@@ -59,7 +59,7 @@ export const LOOP_CLOSED_TEXTS: Record<NonNullable<LoopItem["closeReason"]>, Tex
   sent_off: "lp_closed_sent_off",
 };
 
-// The tracked loops under the F102 list on the Delegated tab follow its filter. `answered` has no loop counterpart (a loop that got
+// The tracked loops under the delegations list on the Delegated tab follow its filter. `answered` has no loop counterpart (a loop that got
 // its answer is closed), so that filter shows no second list.
 export const LOOP_FILTER_OF_DELEGATION: Record<DelegationFilter, LoopFilterName | null> = {
   open: "open",
@@ -79,7 +79,7 @@ export function loopFilterOf(search: string): LoopFilterName {
   return loopFilters.find((filter) => filter === value) ?? LOOP_DEFAULT_FILTER;
 }
 
-// The default tab keeps the plain address of the F102 page.
+// The default tab keeps the plain address of the delegations page.
 export const tabHref = (tab: LoopTab): string =>
   tab === LOOP_DEFAULT_TAB ? "/delegations" : `/delegations?tab=${tab}`;
 export const loopFilterHref = (tab: LoopTab, filter: LoopFilterName): string =>

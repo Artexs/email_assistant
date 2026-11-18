@@ -32,7 +32,7 @@ function dateFormat(): Intl.DateTimeFormat {
   return new Intl.DateTimeFormat(getLocale() === "pl" ? "pl-PL" : undefined, { dateStyle: "medium" });
 }
 
-// L21: the member's own live sessions, with a mark on this device. No button ends one session (B3).
+// The member's own live sessions, with a mark on this device. No button ends one session.
 function SessionsList({ ssoSession }: { ssoSession: boolean }) {
   const { data, error, loading, reload } = useResource(() => api("/api/me/sessions", sessionsSchema));
   return (

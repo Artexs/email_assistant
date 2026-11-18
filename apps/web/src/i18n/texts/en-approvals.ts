@@ -187,7 +187,7 @@ export const enApprovals = {
   dgn_cancel_text: "Delegate: {name}. It cannot be undone.",
   dgn_cancel_confirm: "Cancel delegation",
   dgn_keep: "Keep the delegation",
-  // open loops page: the F102 page /delegations while the flag open_loops is on
+  // open loops page: the page /delegations while the flag open_loops is on
   nav_open_loops: "Open loops",
   title_open_loops: "Open loops",
   lp_tabs_label: "Kinds of open loops",

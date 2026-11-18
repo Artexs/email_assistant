@@ -176,7 +176,7 @@ export const plAuth = {
   legal_privacy_title: "Polityka prywatności",
   legal_terms_title: "Regulamin",
   legal_dpa_title: "Umowa powierzenia przetwarzania danych",
-  // legal page frame (every key starts with `legal_`: the version guard of stage 06 hashes them)
+  // legal page frame (every key starts with `legal_`: the version guard hashes them)
   legal_draft_line:
     "WERSJA ROBOCZA, nie jest poradą prawną. Ta usługa działa na prywatnym serwerze wyłącznie dla jej właściciela.",
   legal_version: "Wersja: {version}",

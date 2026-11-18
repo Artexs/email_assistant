@@ -18,7 +18,7 @@ describe("navItems", () => {
   const expectedAll = (features: readonly string[]): string[] => [
     "activity",
     ...(features.includes("approvals_page") ? ["approvals"] : []),
-    // The F102 flag or the flag of the open loops shows the item.
+    // The delegations flag or the flag of the open loops shows the item.
     ...(features.includes("delegation_pages") || features.includes("open_loops") ? ["delegations"] : []),
     "mailboxes",
     "settings",
@@ -59,7 +59,7 @@ describe("navItems", () => {
     expect(label(["delegation_pages", "open_loops"])).toBe("nav_open_loops");
     expect(label(["open_loops"])).toBe("nav_open_loops");
     expect(label([])).toBeUndefined();
-    // The address stays the F102 page, and no other item changes its label.
+    // The address stays the delegations page, and no other item changes its label.
     expect(navItems(["delegation_pages", "open_loops"]).find((item) => item.key === "delegations")?.href).toBe(
       "/delegations"
     );

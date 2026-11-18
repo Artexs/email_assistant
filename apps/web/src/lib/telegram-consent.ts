@@ -2,7 +2,7 @@ import { consentCovers, TELEGRAM_CONSENT_VERSION, type TelegramState } from "@ea
 
 // The "New Telegram terms: open loops" block. It shows for a linked user whose consent is older than the current
 // text, while the flag `open_loops` is on: the loop lines in Telegram need the new consent. An unlink withdraws a consent, and the
-// server then reports `consentVersion: null`, so a user linked again by the CLI sees the block too (review 17).
+// server then reports `consentVersion: null`, so a user linked again by the CLI sees the block too.
 export function needsNewTerms(
   state: Pick<TelegramState, "linked" | "consentVersion">,
   features: readonly string[]

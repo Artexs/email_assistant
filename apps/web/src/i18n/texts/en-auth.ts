@@ -171,7 +171,7 @@ export const enAuth = {
   legal_privacy_title: "Privacy policy",
   legal_terms_title: "Terms of service",
   legal_dpa_title: "Data processing agreement",
-  // legal page frame (every key starts with `legal_`: the version guard of stage 06 hashes them)
+  // legal page frame (every key starts with `legal_`: the version guard hashes them)
   legal_draft_line: "DRAFT, not legal advice. This service runs on a private server for its owner only.",
   legal_version: "Version: {version}",
   legal_categories_title: "What we store",
