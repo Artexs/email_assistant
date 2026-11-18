@@ -5,7 +5,7 @@ import { isTestMail, listThreadContext, type StoredEmail, type TestMailRule } fr
 
 import type { ClassifierEmail, ClassifierExtras } from "./classifier";
 import { loadClassifierExtras } from "./extras-reader";
-import { type ClassifierPromptChoice, productionClassifierChoice } from "./prompts";
+import { type ClassifierPromptChoice, classifierVersions, productionClassifierChoice } from "./prompts";
 import type { TriageMailbox } from "./service";
 
 export interface ClassifierInputDeps {
@@ -31,18 +31,17 @@ export async function buildClassifierInput(
       : false,
   });
   const choice = deps.prompt ?? productionClassifierChoice();
-  // Only a v3 prompt reads the user's data: v2 triage runs no new query. The part list is the one of the prompt.
-  const extras =
-    choice.version === "classifier-v2"
-      ? undefined
-      : await loadClassifierExtras(deps.db, ctx, {
-          mailbox: { id: mailbox.id, urgencyProfile: mailbox.urgencyProfile },
-          email,
-          parts: choice.parts,
-          timezone: mailbox.timezone,
-          testMail: deps.testMail,
-          suspicious: suspiciousReasons,
-        });
+  // Only a prompt that reads extras (v3) gets the user's data: v2 triage runs no new query. The part list is the one of the prompt.
+  const extras = classifierVersions[choice.version].readsExtras
+    ? await loadClassifierExtras(deps.db, ctx, {
+        mailbox: { id: mailbox.id, urgencyProfile: mailbox.urgencyProfile },
+        email,
+        parts: choice.parts,
+        timezone: mailbox.timezone,
+        testMail: deps.testMail,
+        suspicious: suspiciousReasons,
+      })
+    : undefined;
   const classifierEmail: ClassifierEmail = {
     from: email.from_address,
     to: email.to_addresses,

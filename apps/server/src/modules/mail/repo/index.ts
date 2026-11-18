@@ -7,6 +7,7 @@ export {
   getMailboxSummary,
   insertMailbox,
   listMailboxes,
+  listMailboxStatesOfAll,
   lockMailbox,
   lockMailboxLimit,
   mailboxHasUidplus,

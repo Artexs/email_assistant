@@ -1,9 +1,9 @@
+import { DAY_MS } from "@ea/core";
+
 import type { FolderMessageMeta, MailProvider } from "./port";
 import { isDeleted, type MailIdentity, sameMailIdentity } from "./sync-rules";
 
 export const LOCATE_CHUNK = 100;
-
-const DAY_MS = 86_400_000;
 
 export interface LocateKey extends MailIdentity {
   /** The UID the row holds for this folder, when known. */

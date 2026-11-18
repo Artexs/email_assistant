@@ -4,20 +4,21 @@ import { parseArgs } from "node:util";
 
 import {
   applyBlindLabels,
+  type Batch,
   BATCH_ID_PATTERN,
+  batchCategories,
   batchSchema,
   blindLabelsSchema,
   blindView,
   buildSendRequest,
   caseStates,
+  DAY_MS,
+  type PersonaFile,
   personaFileSchema,
   planSends,
-  sentInWindow,
-  batchCategories,
-  validateBatch,
-  type Batch,
-  type PersonaFile,
   type SendLogLine,
+  sentInWindow,
+  validateBatch,
 } from "@ea/core";
 import { z } from "zod";
 
@@ -52,7 +53,6 @@ const usage = [
 ].join("\n");
 
 const addressPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DAY_MS = 24 * 3_600_000;
 
 const batchOption = z.string().regex(BATCH_ID_PATTERN);
 

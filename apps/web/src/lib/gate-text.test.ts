@@ -1,8 +1,21 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+
+import { setLocaleForTest } from "../i18n";
 
 import { formatConfidence, formatPercent, formatPrecision, gateText } from "./gate-text";
 
+afterEach(() => setLocaleForTest("en"));
+
 describe("formatters", () => {
+  test("Polish writes a decimal comma", () => {
+    setLocaleForTest("pl");
+    expect(formatPercent(0.991)).toBe("99,1");
+    expect(formatPercent(0.98)).toBe("98");
+    expect(formatPrecision(0.9796)).toBe("97,9");
+    expect(formatPrecision(1)).toBe("100");
+    expect(formatConfidence(0.85)).toBe("0,85");
+  });
+
   test("formatPercent", () => {
     expect(formatPercent(0.985)).toBe("98.5");
     expect(formatPercent(1)).toBe("100");

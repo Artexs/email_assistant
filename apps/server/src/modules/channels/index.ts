@@ -15,6 +15,8 @@ export {
   claimDueOutbox,
   closeWaitingApprovalSetsSince,
   countFailedOutboxSince,
+  countFailedOutboxSinceOfAll,
+  countLinkedChatsOfAll,
   lastOutboxSentAt,
   clearOutboxTexts,
   deleteOldLinkTokens,

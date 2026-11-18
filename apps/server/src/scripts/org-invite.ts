@@ -1,3 +1,5 @@
+import { DAY_MS } from "@ea/core";
+
 import { createOrganizationWithOwner } from "../modules/tenancy";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
@@ -8,8 +10,6 @@ import { deliverInvite } from "./invite-delivery";
 import { orgInviteUsage, parseOrgInviteArgs } from "./org-invite-args";
 
 const out = createCliOutput("org-invite");
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "23505";

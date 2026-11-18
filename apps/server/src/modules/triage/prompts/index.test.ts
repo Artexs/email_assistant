@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { isLlmRole, llmRoles } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { prompts, rolesWithoutPrompt } from "./index";
+import { classifierV3Parts, classifierVersionIds, classifierVersions, prompts, rolesWithoutPrompt } from "./index";
 
 const promptsDir = import.meta.dir;
 const modulesDir = join(import.meta.dir, "../..");
@@ -44,6 +44,40 @@ describe("prompt registry", () => {
       const file = (await import(join(promptsDir, name))) as { PROMPT_VERSION: string };
       expect(file.PROMPT_VERSION).toBe(name.replace(/\.ts$/, ""));
     }
+  });
+
+  test("`readsExtras` is true exactly for the versions whose user prompt changes with the extras", () => {
+    const email = {
+      from: "a@x.test",
+      to: ["b@x.test"],
+      cc: [],
+      subject: "Hello",
+      receivedAt: new Date("2026-11-18T10:00:00Z"),
+      bodyText: "Body",
+      thread: [],
+    };
+    const sender = { whitelisted: false, vip: false, noreply: false };
+    const extras = {
+      attachments: [{ name: "plan.pdf", type: "application/pdf", size: 10 }],
+      isList: true,
+      senderHistory: { days: 30, received: 12, corrections: { info: 2 } },
+      urgency: { today: "2026-11-18", topics: [{ label: "Audit", keywords: ["audit"] }], deadlines: [] },
+    };
+    const empty = { attachments: [], isList: false, senderHistory: null, urgency: null };
+    for (const id of classifierVersionIds) {
+      const entry = classifierVersions[id];
+      const build = (value: typeof extras | typeof empty) =>
+        entry.buildUser(email, sender, [], "nonce", value, classifierV3Parts);
+      expect(`${id}:${build(extras) !== build(empty)}`).toBe(`${id}:${entry.readsExtras}`);
+    }
+  });
+
+  test("module code outside prompts/ compares no classifier version with a literal", () => {
+    const problems: string[] = [];
+    for (const file of sourceFiles(modulesDir)) {
+      if (/[!=]==\s*["'`]classifier-v\d+["'`]/.test(readFileSync(file, "utf8"))) problems.push(file);
+    }
+    expect(problems).toEqual([]);
   });
 
   test("module code outside prompts/ holds no version literal and no role literal of a role without a prompt", () => {

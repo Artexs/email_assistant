@@ -3,13 +3,14 @@
 // ended after the grant. The job reads the corrections with one query per organization and writes each trip in one transaction under
 // the settings row lock. Logs hold the organization, the mailbox, the category and a reason code: never a mail id or a mail value.
 import {
+  type CategoryGrant,
+  DAY_MS,
   movingCategories,
+  type MovingCategory,
   parseCategoryPolicy,
   TRIP_WINDOW_DAYS,
-  tripwireDue,
-  type CategoryGrant,
-  type MovingCategory,
   type TripReason,
+  tripwireDue,
 } from "@ea/core";
 
 import type { Db, TenantContext } from "../../platform/db";
@@ -25,7 +26,6 @@ import { insertTrip, newestDoneCheck, type HistoryResult } from "./repo";
 
 const log = createLog("trust");
 
-const DAY_MS = 86_400_000;
 // A correction is important when the user needed the mail that the move hid.
 const isImportant = (row: MoveCorrection): boolean =>
   row.trueCategory === "urgent" || row.trueCategory === "needs_reply";

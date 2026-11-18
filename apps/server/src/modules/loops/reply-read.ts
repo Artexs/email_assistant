@@ -1,11 +1,10 @@
-import { replyMatch, SUBJECT_MATCH_DAYS, type ReplyMail } from "@ea/core";
+import { DAY_MS, type ReplyMail, replyMatch, SUBJECT_MATCH_DAYS } from "@ea/core";
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../platform/db";
 
 import type { DbOrTrx, LoopRow } from "./repo";
 
-const DAY_MS = 86_400_000;
 // The mails one loop reads per call, oldest first. An automatic mail is never a close, so a few of them do not hide a reply.
 const MAX_CANDIDATES = 200;
 

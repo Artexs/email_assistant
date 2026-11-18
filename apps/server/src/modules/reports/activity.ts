@@ -1,15 +1,16 @@
 import {
   ACTIVITY_MAX_DAYS,
   ACTIVITY_PAGE_SIZE,
+  type ActivityItem,
   activityRangeMs,
+  type ActivityWebPage,
   aiTextFor,
+  type Category,
+  type CoreTexts,
+  DAY_MS,
   describeAction,
   describeActions,
   isUndoable,
-  type ActivityItem,
-  type ActivityWebPage,
-  type Category,
-  type CoreTexts,
 } from "@ea/core";
 import { z } from "zod";
 
@@ -19,7 +20,6 @@ import { listDelegateNames, listLatestDelegationsByEmailIds } from "../delegatio
 import { isFeatureOn } from "../tenancy";
 import { listActivityRows, listLatestFeedbackByEmailIds, suspiciousReasonsToShow } from "../triage";
 
-const DAY_MS = 24 * 3_600_000;
 const KEY_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 const TEXT_PATTERN = /^[A-Za-z0-9_-]+$/;
 const uuidSchema = z.uuid();

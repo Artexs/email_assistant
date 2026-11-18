@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 
+import { DAY_MS } from "@ea/core";
 import { z } from "zod";
 
 import { listUsageSince, type MailKind } from "../modules/triage";
@@ -13,8 +14,6 @@ import { groupUsage, modelReportLines } from "./triage-cost-report";
 const cli = createCliOutput("triage-cost");
 
 const usage = "usage: bun run triage:cost --org-id <uuid> --mailbox-id <uuid> [--days 7] [--mail real|synthetic]";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface Options {
   orgId: string;

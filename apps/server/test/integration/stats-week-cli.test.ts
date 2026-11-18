@@ -65,7 +65,7 @@ describe("stats:week CLI", () => {
     ]) {
       const result = await run(args);
       expect(result.code).toBe(1);
-      expect(result.stderr).toContain(usage);
+      expect(result.stderr).toContain(`[stats-week] ${usage}`);
       expect(result.stdout).toBe("");
     }
   });
@@ -82,7 +82,7 @@ describe("stats:week CLI", () => {
       WEEK,
     ]);
     expect(foreign.code).toBe(1);
-    expect(foreign.stderr).toContain("not_found");
+    expect(foreign.stderr).toContain("[stats-week] not_found: no such mailbox");
   });
 
   test("a run against the seeded week prints one line per metric and no address, subject or mail id", async () => {
@@ -91,6 +91,10 @@ describe("stats:week CLI", () => {
     const result = await run(["--org-id", orgA.ctx.orgId, "--week", WEEK]);
     expect(result.code).toBe(0);
     const lines = result.stdout.trim().split("\n");
+    // The figures are bare lines (`raw`): no `[stats-week]` prefix, and nothing else on stdout.
+    expect(lines.every((l) => /^[a-z0-9_]+ /.test(l))).toBe(true);
+    expect(result.stdout.endsWith("\n")).toBe(true);
+    expect(result.stderr).toBe("");
     expect(lines.find((l) => l.startsWith("m1_missed"))).toStartWith(
       "m1_missed 1 of 5 (lower bound) sample 0 of 1 labelled 1"
     );

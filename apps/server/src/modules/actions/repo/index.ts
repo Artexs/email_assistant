@@ -45,6 +45,7 @@ export { countReadyOriginals, expireReadyOriginals, expireStaleReady } from "./e
 export { insertReverse, lockActionsForUndo, lockLatestOriginalMove, markUndone, type UndoCandidate } from "./undo";
 export {
   countFailedSendsSince,
+  countFailedSendsSinceOfAll,
   findSendByKey,
   getAnySend,
   getSend,

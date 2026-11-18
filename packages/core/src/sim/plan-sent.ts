@@ -1,5 +1,6 @@
 import { localDateTime, localToInstant } from "../digest/local-time";
 import { dueWords, resolveDue, type DueContext, type DueRef } from "../loops/dates";
+import { addDays } from "../time";
 
 import { threadBriefFor } from "./briefs";
 import { greetingOf, pad, personGroups } from "./plan-bank";
@@ -52,10 +53,6 @@ function dayMs(date: string): number {
   return Date.parse(`${date}T00:00:00Z`);
 }
 
-function shiftDate(date: string, days: number): string {
-  return new Date(dayMs(date) + days * 86_400_000).toISOString().slice(0, 10);
-}
-
 function isWeekend(date: string): boolean {
   const day = new Date(dayMs(date)).getUTCDay();
   return day === 0 || day === 6;
@@ -82,8 +79,8 @@ function dueRefFor(rng: Rng, kind: "date" | "word", context: DueContext): DueRef
     }
     throw new Error("no time word resolves for the sent time");
   }
-  let date = shiftDate(localDateTime(context.sentAt, context.timeZone).date, 1 + rng.int(21));
-  while (isWeekend(date)) date = shiftDate(date, 1);
+  let date = addDays(localDateTime(context.sentAt, context.timeZone).date, 1 + rng.int(21));
+  while (isWeekend(date)) date = addDays(date, 1);
   return { kind: "date", date };
 }
 
@@ -257,7 +254,7 @@ function buildPart(env: Env, part: SentPart, plans: readonly Plan[]): SentSlot[]
     const rule = plan.rule;
     const lang = langs[index] as SentSlot["lang"];
 
-    const date = shiftDate(scenario.calendar.weekStart, weekends.has(index) ? 5 + rng.int(2) : rng.int(5));
+    const date = addDays(scenario.calendar.weekStart, weekends.has(index) ? 5 + rng.int(2) : rng.int(5));
     const minutes = weekends.has(index) ? 9 * 60 + rng.int(9 * 60) : 7 * 60 + rng.int(12 * 60);
     const sentAtDate = localToInstant(date, `${pad(Math.floor(minutes / 60), 2)}:${pad(minutes % 60, 2)}`, timeZone);
     const context: DueContext = { sentAt: sentAtDate, timeZone };
@@ -283,8 +280,8 @@ function buildPart(env: Env, part: SentPart, plans: readonly Plan[]): SentSlot[]
     // The date a past_date or far_date ask names: no label holds it, so the brief does.
     const localDay = localDateTime(sentAtDate, timeZone).date;
     let stated = due === null ? "" : ` by ${due.kind === "word" ? `"${dueText(due)}" (words only)` : dueText(due)}`;
-    if (rule?.id === "past_date") stated = ` by ${shiftDate(localDay, -(2 + rng.int(9)))}`;
-    if (rule?.id === "far_date") stated = ` by ${shiftDate(localDay, 61 + rng.int(60))}`;
+    if (rule?.id === "past_date") stated = ` by ${addDays(localDay, -(2 + rng.int(9)))}`;
+    if (rule?.id === "far_date") stated = ` by ${addDays(localDay, 61 + rng.int(60))}`;
 
     const others = recipients.to.length + recipients.cc.length - 1;
     // The ask and the promise name the topic, so a long topic label and a long display name are given up

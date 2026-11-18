@@ -2,13 +2,15 @@ import type { OperatorOrgDetail, OperatorOrgRow } from "@ea/core/web";
 
 import { dateLocale, t, tp } from "../i18n";
 
+import { formatUsd } from "./format-number";
+
 // The first 8 characters of an id; the full id goes in a `title`.
 export function shortId(id: string): string {
   return id.slice(0, 8);
 }
 
 export function costText(costUsd: number): string {
-  return `$${costUsd.toFixed(4)}`;
+  return formatUsd(costUsd, 4);
 }
 
 export function llmTodayText(llm: OperatorOrgRow["llmToday"]): string {

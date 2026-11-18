@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { recordLlmCall } from "../../src/modules/audit";
 import { insertOutbox } from "../../src/modules/channels";
 import { insertMailbox } from "../../src/modules/mail/repo";
+import { listOperatorOrgs } from "../../src/modules/operator";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { apiRouters } from "../../src/web";
@@ -190,6 +191,53 @@ describe("GET /api/operator/orgs (F099 stage 07)", () => {
       failures24h: { sends: 0, outbox: 0 },
       llmToday: { calls: 0, costUsd: 0, unpricedCalls: 0 },
     });
+  });
+
+  // Golden (F133): the whole rows, as the per-organization reads wrote them before the list was batched.
+  test("5b. the rows of A and B are equal, field for field, to the rows of the one-by-one reads", async () => {
+    const res = await app().request("/api/operator/orgs", as("assistant"));
+    const body = (await res.json()) as OperatorOrgList;
+    const quota = { since: "2026-11-20T08:00:00.000Z" };
+    expect(rowOf(body, org.orgId)).toEqual({
+      orgId: org.orgId,
+      plan: "active",
+      trialEndsAt: null,
+      resumedAt: null,
+      maxMailboxes: 2,
+      members: 2,
+      linkedChats: 1,
+      mailboxes: { total: 2, active: 1, paused: 0, authError: 1, hostBlocked: 0 },
+      lastSyncAt: "2026-11-20T09:55:00.000Z",
+      failures24h: { sends: 1, outbox: 1 },
+      llmToday: { ...quota, calls: 5, costUsd: 0.06, unpricedCalls: 2 },
+    });
+    expect(rowOf(body, org.otherOrgId)).toEqual({
+      orgId: org.otherOrgId,
+      plan: "active",
+      trialEndsAt: null,
+      resumedAt: null,
+      maxMailboxes: 2,
+      members: 1,
+      linkedChats: 0,
+      mailboxes: { total: 2, active: 1, paused: 0, authError: 0, hostBlocked: 1 },
+      lastSyncAt: null,
+      failures24h: { sends: 0, outbox: 0 },
+      llmToday: { ...quota, calls: 0, costUsd: 0, unpricedCalls: 0 },
+    });
+  });
+
+  test("5c. the list reads once per table, not once per organization", async () => {
+    let queries = 0;
+    const counted = db.withPlugin({
+      transformQuery: (args) => {
+        queries += 1;
+        return args.node;
+      },
+      transformResult: (args) => Promise.resolve(args.result),
+    });
+    const list = await listOperatorOrgs({ db: counted, now: () => NOW });
+    expect(list.orgs.length).toBeGreaterThanOrEqual(2);
+    expect(queries).toBeLessThanOrEqual(7);
   });
 
   test("6. the body holds no organization name, address or display name", async () => {

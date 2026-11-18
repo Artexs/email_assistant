@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
@@ -5,7 +6,6 @@ import { mailKindFilter, type TestMailRule } from "../../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-const DAY_MS = 86_400_000;
 // A mail older than this gets no automatic request (the rule `too_old` of the eligibility says the same).
 export const SCAN_MAX_AGE_DAYS = 7;
 

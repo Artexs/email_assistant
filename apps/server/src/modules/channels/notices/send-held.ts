@@ -7,11 +7,10 @@ import { cancelPendingOutbox } from "../repo";
 import { panelListUrlOf } from "./approval";
 import { log, queue, warnSkipped, type Detector, type OrgRun } from "./run";
 
-// F099 D11 (b): sends of an active mailbox wait on a send limit. One notice per owner, mailbox and UTC day.
-// The dedup key stops a second row; no source mark. A mailbox with no hold loses its pending notice, so a notice
-// that the quiet hours kept never arrives after the sends went out.
-// The holds of one kind (mail sends, or the follow-ups of open loops) become one notice per owner, mailbox and UTC day. A mailbox
-// with no hold of the kind loses its pending notice of that kind. The follow-up notice names no address and no text.
+// Sends of an active mailbox that wait on a send limit. The holds of one kind (mail sends, or the follow-ups of open loops)
+// become one notice per owner, mailbox and UTC day; the dedup key stops a second row. A mailbox with no hold of the kind
+// loses its pending notice of that kind, so a notice that the quiet hours kept never arrives after the sends went out.
+// The follow-up notice names no address and no text.
 async function noticeHolds(
   run: OrgRun,
   holds: SendLimitHold[],
