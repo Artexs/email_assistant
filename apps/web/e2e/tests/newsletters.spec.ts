@@ -42,11 +42,14 @@ test("T1: the owner sees one row per sender with the method, the count and the o
   await openCard(page);
   await expect(card(page).locator("li[data-sender]")).toHaveCount(5);
 
-  // One-click: no link and no text of the link kinds (the button comes with the one-click stage).
+  // One-click: no link; the owner gets the button, named by the address. The test never taps it: a tap makes the server resolve
+  // the host of the seeded link (the tap is tested with a fake client in `web-newsletters-unsubscribe.test.ts`).
   const one = row(page, S.oneClick.address);
   await expect(one).toHaveAttribute("data-method", "one_click");
   await expect(one).toContainText("3 mails in 30 days");
   await expect(one.getByRole("link")).toHaveCount(0);
+  await expect(one.getByRole("button", { name: `Unsubscribe from ${S.oneClick.address}` })).toBeVisible();
+  await expect(card(page).getByRole("button", { name: /^Unsubscribe from / })).toHaveCount(1);
 
   // Link only: the page opens in a new tab, and the server does nothing.
   const link = row(page, S.link.address);
@@ -91,7 +94,7 @@ test("T2: the display name of a sender is plain text: markup in it makes no elem
   expect(errors).toEqual([]);
 });
 
-test("T3: a member sees the list and no link, and the page sends no request but the list", async ({
+test("T3: a member sees the list and no link and no button, and the page sends no request but the list", async ({
   context,
   page,
 }) => {
@@ -105,6 +108,7 @@ test("T3: a member sees the list and no link, and the page sends no request but 
   await openCard(page);
   await expect(card(page).locator("li[data-sender]")).toHaveCount(5);
   await expect(card(page).getByRole("link")).toHaveCount(0);
+  await expect(card(page).getByRole("button")).toHaveCount(0);
   await expect(row(page, S.none.address)).toContainText(en.nl_none);
   await expect(row(page, S.failed.address)).toContainText(en.nl_failed);
   await expect(row(page, S.failed.address)).not.toContainText(en.nl_failed_open);

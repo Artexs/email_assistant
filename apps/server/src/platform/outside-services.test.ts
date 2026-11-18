@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { type ActiveWhen, subprocessors } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { configSchema } from "./config";
 import { llmProviderIds } from "./llm";
-import { OUTSIDE_SERVICE_KEYS } from "./outside-services";
+import { OUTSIDE_CALL_CLASSES, OUTSIDE_SERVICE_KEYS } from "./outside-services";
 
 const configKeys = Object.keys(configSchema.shape);
 const rowIds = new Set(subprocessors.map((row) => row.id));
@@ -45,5 +48,15 @@ describe("sub-processor registry and config", () => {
         expect({ key, target, isRow: rowIds.has(target) }).toEqual({ key, target, isRow: true });
       else expect({ key, reason: target.exempt.trim() !== "" }).toEqual({ key, reason: true });
     }
+  });
+
+  test("4. an outside call to a host from mail text is a listed class with a reason, and its file still makes the call", () => {
+    for (const [name, entry] of Object.entries(OUTSIDE_CALL_CLASSES)) {
+      expect({ name, reason: entry.exempt.trim().length > 40 }).toEqual({ name, reason: true });
+      const text = readFileSync(join(import.meta.dir, "..", entry.file), "utf8");
+      expect({ name, calls: text.includes(entry.call) }).toEqual({ name, calls: true });
+    }
+    // Production code that calls the guarded client is one listed file (the test of the client also scans for a seam).
+    expect(Object.values(OUTSIDE_CALL_CLASSES).map((entry) => entry.file)).toEqual(["web.ts"]);
   });
 });

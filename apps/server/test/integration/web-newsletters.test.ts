@@ -165,8 +165,14 @@ describe("GET /api/newsletters/:mailboxId", () => {
     expect(byId.get("a@c.example")).toEqual({
       status: "requested",
       at: new Date(NOW.getTime() - 2 * 3_600_000).toISOString(),
+      code: null,
     });
-    expect(byId.get("b@c.example")).toEqual({ status: "done", at: new Date(NOW.getTime() - 3_600_000).toISOString() });
+    // The code of the request shows too (a short token, never a URL).
+    expect(byId.get("b@c.example")).toEqual({
+      status: "done",
+      at: new Date(NOW.getTime() - 3_600_000).toISOString(),
+      code: "done",
+    });
     expect(byId.get("c@c.example")).toBeNull();
   });
 

@@ -4,7 +4,7 @@ import { configureFeatures } from "../../src/modules/tenancy";
 import { createDb } from "../../src/platform/db";
 
 import { as } from "./web-helpers";
-import { addRequest, addSenderMail, LINK, newsletterBox, type NewsletterBox } from "./web-newsletters-kit";
+import { addRequest, addSenderMail, LINK, newsletterBox, NOW, PASS, type NewsletterBox } from "./web-newsletters-kit";
 
 // The `org_id` filters of the newsletters route, as the table owner: the owner skips row-level security, so only the code keeps a
 // mailbox, a mail or a request of another organization out (F110 stage 23). Committed rows.
@@ -44,5 +44,33 @@ describe("the newsletters route as the table owner", () => {
     const body = (await res.json()) as { senders: { senderLower: string }[] };
     expect(res.status).toBe(200);
     expect(body.senders.map((s) => s.senderLower)).toEqual(["n@c.example"]);
+  });
+
+  test("an unsubscribe tap counts the own requests only: three recent requests of another organization for the same domain do not block it", async () => {
+    const recent = new Date(NOW.getTime() - 5 * 60_000);
+    for (const sender of ["x1@c.example", "x2@c.example", "x3@c.example"])
+      await addRequest(db, box.org.otherOrgId, box.otherMailboxId, sender, { status: "done", createdAt: recent });
+    await addSenderMail(db, box.org.orgId, box.mailboxId, {
+      from: "own@c.example",
+      link: LINK,
+      post: true,
+      authResults: PASS,
+    });
+    const res = await box
+      .app()
+      .request(
+        `/api/newsletters/${box.mailboxId}/unsubscribe`,
+        as("owner", { method: "POST", body: { sender: "own@c.example" } })
+      );
+    expect(res.status).toBe(200);
+    // The other organization's mailbox is a 404 for this owner, and its rows stay as they were.
+    const foreign = await box
+      .app()
+      .request(
+        `/api/newsletters/${box.otherMailboxId}/unsubscribe`,
+        as("owner", { method: "POST", body: { sender: "o@c.example" } })
+      );
+    expect(foreign.status).toBe(404);
+    expect(box.posts).toEqual(["https://u.c.example/unsub?id=1"]);
   });
 });

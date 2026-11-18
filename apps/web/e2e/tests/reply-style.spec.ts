@@ -1,0 +1,314 @@
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+
+import { t } from "../../src/i18n";
+import { en } from "../../src/i18n/en";
+import { expectNoA11yViolations } from "../a11y";
+import { E2E_BASE_URL } from "../env";
+import { cspErrors, signInAs } from "../helpers";
+import { readSeed } from "../seed";
+
+// F115 stage 11: the style card (name, signature, writing style, Preview) and the reply drafts switch. The seed gives each project an
+// organization with the flag `reply_drafts` on and two mailboxes: `box` (password) and `oauth` (a provider is set). The tests of a
+// project run in this order and leave the organization as they found it (`reset`).
+//
+// The e2e server runs with the LLM scope off, so a real Preview answers `llm_off` (the first Preview test checks that round trip). The
+// sample body comes from a faked answer of the route: the integration tests `replies-profile-preview.test.ts` and
+// `replies-profile-routes.test.ts` cover the real route with a fake model client.
+test.describe.configure({ mode: "serial" });
+
+const project = (): "mobile" | "desktop" => (test.info().project.name === "mobile" ? "mobile" : "desktop");
+const org = () => readSeed().replyStyleOrgs[project()];
+
+// One client address for each sign-in: the login rate limit counts per address. Documentation range 192.0.2.0/24, away from the other specs.
+let signIns = 0;
+let ownerSession = false;
+let errors: string[] = [];
+
+async function startSession(
+  context: BrowserContext,
+  page: Page,
+  who: "owner" | "member",
+  mailboxId: string = org().box.id
+): Promise<void> {
+  signIns += 1;
+  await context.setExtraHTTPHeaders({
+    "x-forwarded-for": `192.0.2.${(project() === "mobile" ? 110 : 215) + signIns}`,
+  });
+  errors = await cspErrors(page);
+  await signInAs(page, org()[who]);
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+  ownerSession = who === "owner";
+  await page.goto(`/settings?mailbox=${mailboxId}`);
+  await expect(card(page)).toBeVisible();
+}
+
+const card = (page: Page) => page.locator("[data-card=reply-style]");
+const nameField = (page: Page) => card(page).getByLabel(en.rs_name_label, { exact: true });
+const signatureField = (page: Page) => card(page).getByLabel(en.rs_signature_label, { exact: true });
+const styleField = (page: Page) => card(page).getByLabel(en.rs_style_label, { exact: true });
+const replySwitch = (page: Page) => page.getByRole("switch", { name: en.switch_reply_drafts, exact: true });
+
+// Puts the organization back: empty profiles, the switch off, no old organization text. Errors do not hide the real failure.
+async function reset(page: Page): Promise<void> {
+  const headers = { origin: E2E_BASE_URL };
+  try {
+    for (const mailbox of [org().box, org().oauth]) {
+      await page.request.put(`/api/mailboxes/${mailbox.id}/profile`, {
+        headers,
+        data: { displayName: "", signature: "", writingStyle: "" },
+      });
+      await page.request.patch(`/api/settings/${mailbox.id}/switches/reply_drafts`, {
+        headers,
+        data: { value: false },
+      });
+    }
+    await page.request.patch("/api/organization", { headers, data: { styleText: null } });
+  } catch {
+    // Ignored on purpose.
+  }
+}
+
+test.afterEach(async ({ page }) => {
+  if (ownerSession) await reset(page);
+  ownerSession = false;
+  expect(errors).toEqual([]);
+});
+
+test("T1: the owner saves a name and a signature and sees them after a reload; an empty field shows the text in use", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  // No profile yet: the name in use, and the signature in use, are the name of the owner of the organization (no old org text yet).
+  await expect(card(page).getByText(t("rs_in_use", { text: `E2E Reply Style owner ${project()}` }))).toHaveCount(2);
+  await expect(card(page).getByRole("button", { name: en.save })).toBeDisabled();
+
+  await nameField(page).fill("Anna Nowak");
+  await signatureField(page).fill("Pozdrawiam,\nAnna");
+  await expect(card(page).getByText(t("sig_counter", { count: 16, max: 1000 }))).toBeVisible();
+  await card(page).getByRole("button", { name: en.save }).click();
+  await expect(page.getByText(en.rs_saved_toast)).toBeVisible();
+  // The text in use is hidden once the field holds a text.
+  await expect(card(page).getByText(/^In use:/)).toHaveCount(0);
+
+  await page.reload();
+  await expect(nameField(page)).toHaveValue("Anna Nowak");
+  await expect(signatureField(page)).toHaveValue("Pozdrawiam,\nAnna");
+});
+
+test("T1b: a name with a character that a header cannot hold is refused with a text under the field", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  await nameField(page).fill("Anna <anna@x.test>");
+  await card(page).getByRole("button", { name: en.save }).click();
+  await expect(card(page).getByRole("alert")).toHaveText(en.rs_err_bad_character);
+  await expect(nameField(page)).toHaveAttribute("aria-invalid", "true");
+  await nameField(page).fill("Anna");
+  await expect(card(page).getByRole("alert")).toHaveCount(0);
+});
+
+test("T2: the organization signature is read-only and links to the card of each mailbox", async ({ context, page }) => {
+  await startSession(context, page, "owner");
+  const set = await page.request.patch("/api/organization", {
+    headers: { origin: E2E_BASE_URL },
+    data: { styleText: "E2E old organization text" },
+  });
+  expect(set.ok()).toBe(true);
+  await page.reload();
+  // With no signature of the mailbox, the text in use is the old text of the organization (the fallback of D13).
+  await expect(card(page).getByText(t("rs_in_use", { text: "E2E old organization text" }))).toBeVisible();
+  const signature = page.locator("[data-card=signature]");
+  await expect(signature.locator("[data-old-text]")).toHaveText("E2E old organization text");
+  await expect(signature.getByText(en.rs_org_note)).toBeVisible();
+  await expect(signature.getByRole("textbox")).toHaveCount(0);
+  await expect(signature.getByRole("button")).toHaveCount(0);
+
+  const link = signature.getByRole("link", { name: t("rs_org_link", { address: org().oauth.address }) });
+  await expect(link).toHaveAttribute("href", `/settings?mailbox=${org().oauth.id}#style-card`);
+  await expect(signature.getByRole("link")).toHaveCount(2);
+  await link.click();
+  await expect(page).toHaveURL(new RegExp(`mailbox=${org().oauth.id}`));
+  await expect(card(page)).toBeInViewport();
+});
+
+test("T3: a member sees the card and the switch and cannot change them", async ({ context, page }) => {
+  // The owner sets a name and turns the switch on through the API, so the member has something to read.
+  await startSession(context, page, "owner");
+  const headers = { origin: E2E_BASE_URL };
+  const saved = await page.request.put(`/api/mailboxes/${org().box.id}/profile`, {
+    headers,
+    data: { displayName: "Anna Nowak" },
+  });
+  expect(saved.ok()).toBe(true);
+  const turned = await page.request.patch(`/api/settings/${org().box.id}/switches/reply_drafts`, {
+    headers,
+    data: { value: true },
+  });
+  expect(turned.ok()).toBe(true);
+
+  await context.clearCookies();
+  await startSession(context, page, "member");
+  await expect(nameField(page)).toHaveValue("Anna Nowak");
+  await expect(nameField(page)).not.toBeEditable();
+  await expect(signatureField(page)).not.toBeEditable();
+  await expect(styleField(page)).not.toBeEditable();
+  await expect(card(page).getByRole("button")).toHaveCount(0);
+  await expect(card(page).getByRole("combobox")).toHaveCount(0);
+  await expect(replySwitch(page)).toBeDisabled();
+  await expect(replySwitch(page)).toBeChecked();
+  // A member who tries the write anyway gets 403.
+  const write = await page.request.put(`/api/mailboxes/${org().box.id}/profile`, {
+    headers,
+    data: { displayName: "X" },
+  });
+  expect(write.status()).toBe(403);
+
+  // The owner signs in again, so that the reset can run.
+  await context.clearCookies();
+  await startSession(context, page, "owner");
+});
+
+test("T4: the switch shows with the help line, turns on and off; an OAuth mailbox shows it disabled", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  const mode = page.locator("[data-card=mode]");
+  await expect(mode.getByText(en.rs_switch_help)).toBeVisible();
+  await expect(mode.getByText(en.rs_switch_oauth)).toHaveCount(0);
+  await expect(replySwitch(page)).not.toBeChecked();
+  await replySwitch(page).click();
+  await expect(page.getByText(t("switch_on_toast", { name: en.switch_reply_drafts }))).toBeVisible();
+  await expect(replySwitch(page)).toBeChecked();
+  await page.reload();
+  await expect(replySwitch(page)).toBeChecked();
+  await replySwitch(page).click();
+  await expect(page.getByText(t("switch_off_toast", { name: en.switch_reply_drafts }))).toBeVisible();
+  await expect(replySwitch(page)).not.toBeChecked();
+
+  await page.goto(`/settings?mailbox=${org().oauth.id}`);
+  await expect(card(page)).toBeVisible();
+  await expect(replySwitch(page)).toBeDisabled();
+  await expect(mode.getByText(en.rs_switch_oauth)).toBeVisible();
+  // The style card of an OAuth mailbox stays editable.
+  await expect(nameField(page)).toBeEditable();
+  await nameField(page).fill("Oauth Name");
+  await card(page).getByRole("button", { name: en.save }).click();
+  await expect(page.getByText(en.rs_saved_toast)).toBeVisible();
+});
+
+test("T5: the form fills the writing style and nothing is saved; Preview on this server answers that the model is off", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  await card(page).getByLabel(en.rs_form_address, { exact: true }).selectOption("formal");
+  await card(page).getByLabel(en.rs_form_greeting, { exact: true }).fill("Dzień dobry");
+  await card(page).getByLabel(en.rs_form_sign_off, { exact: true }).fill("Pozdrawiam");
+  await card(page).getByLabel(en.rs_form_length, { exact: true }).selectOption("short");
+  await card(page).getByRole("button", { name: en.rs_apply }).click();
+  await expect(styleField(page)).toHaveValue(
+    'Address the recipient formally. Start with the greeting "Dzień dobry". End with the sign-off "Pozdrawiam". Keep replies short.'
+  );
+  await expect(card(page).getByRole("button", { name: en.save })).toBeEnabled();
+  // The form is not saved: a reload shows an empty writing style.
+  await page.reload();
+  await expect(styleField(page)).toHaveValue("");
+
+  // The real route: the e2e server has the model off.
+  await card(page).getByRole("button", { name: en.rs_preview }).click();
+  await expect(card(page).getByRole("alert")).toHaveText(en.rs_preview_llm_off);
+});
+
+test("T6: Preview sends the unsaved values and shows the sample as text; the button is off while the call runs", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  await nameField(page).fill("Anna Nowak");
+  await styleField(page).fill("Pisz krótko.");
+
+  const sent: unknown[] = [];
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/mailboxes/*/profile/preview", async (route) => {
+    sent.push(route.request().postDataJSON());
+    await held;
+    // Text from a model is untrusted: this body holds markup, and the card must show it as text.
+    await route.fulfill({ json: { body: "Dzień dobry,\n<img src=x onerror=alert(1)>\nPozdrawiam,\nAnna Nowak" } });
+  });
+
+  const preview = card(page).getByRole("button", { name: en.rs_preview });
+  await preview.click();
+  await expect(preview).toBeDisabled();
+  release();
+  const body = card(page).locator("[data-preview-body]");
+  await expect(body).toHaveText("Dzień dobry,\n<img src=x onerror=alert(1)>\nPozdrawiam,\nAnna Nowak");
+  await expect(card(page).getByText(en.rs_preview_note)).toBeVisible();
+  await expect(card(page).locator("img")).toHaveCount(0);
+  await expect(preview).toBeEnabled();
+  // The values of the card went to the route, saved or not; a field that was never filled goes as an empty text.
+  expect(sent).toEqual([{ displayName: "Anna Nowak", signature: "", writingStyle: "Pisz krótko." }]);
+  // Nothing was saved by the preview.
+  await page.unroute("**/api/mailboxes/*/profile/preview");
+  await page.reload();
+  await expect(nameField(page)).toHaveValue("");
+});
+
+test("T7: the answers of a refused or failed preview have their own texts", async ({ context, page }) => {
+  await startSession(context, page, "owner");
+  const answers: { status: number; json: unknown; text: string }[] = [
+    { status: 429, json: { error: "preview_limit" }, text: en.rs_preview_limit },
+    { status: 429, json: { error: "preview_busy" }, text: en.rs_preview_busy },
+    { status: 200, json: { kind: "failed", reason: "llm_cap" }, text: en.rs_preview_cap },
+    { status: 200, json: { kind: "failed", reason: "checks" }, text: en.rs_preview_failed },
+  ];
+  for (const answer of answers) {
+    await page.route("**/api/mailboxes/*/profile/preview", (route) =>
+      route.fulfill({ status: answer.status, json: answer.json })
+    );
+    await card(page).getByRole("button", { name: en.rs_preview }).click();
+    await expect(card(page).getByRole("alert")).toHaveText(answer.text);
+    await page.unroute("**/api/mailboxes/*/profile/preview");
+  }
+});
+
+test("T8: the card passes axe and the keyboard reaches every field and button in order", async ({ context, page }) => {
+  await startSession(context, page, "owner");
+  await page.route("**/api/mailboxes/*/profile/preview", (route) =>
+    route.fulfill({ json: { body: "Dzień dobry,\nPozdrawiam,\nAnna" } })
+  );
+  await nameField(page).fill("Anna Nowak");
+  await card(page).getByRole("button", { name: en.rs_preview }).click();
+  await expect(card(page).getByText(en.rs_preview_note)).toBeVisible();
+  await expectNoA11yViolations(page);
+
+  // From the name field, Tab visits each control once, in the order of the page.
+  await nameField(page).focus();
+  const names: string[] = [];
+  for (let step = 0; step < 10; step += 1) {
+    names.push(
+      await page.evaluate(() => {
+        const element = document.activeElement as (HTMLElement & { labels?: NodeListOf<HTMLLabelElement> }) | null;
+        return (element?.labels?.[0]?.textContent ?? element?.textContent ?? "").trim();
+      })
+    );
+    await page.keyboard.press("Tab");
+  }
+  expect(names).toEqual([
+    en.rs_name_label,
+    en.rs_signature_label,
+    en.rs_form_address,
+    en.rs_form_greeting,
+    en.rs_form_sign_off,
+    en.rs_form_length,
+    en.rs_apply,
+    en.rs_style_label,
+    en.save,
+    en.rs_preview,
+  ]);
+});

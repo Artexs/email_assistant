@@ -8,6 +8,7 @@ import {
   PROFILE_SIGNATURE_MAX,
   PROFILE_STYLE_MAX,
   profileFallbacks,
+  profileLength,
   resolveReplyStyle,
 } from "./profile";
 import { SAMPLE_MAIL } from "./sample-mail";
@@ -153,5 +154,15 @@ describe("the sample mail of the preview", () => {
         checkReplyBody("Dzień dobry", { language: "pl", allowed: [], quoted: [mail.subject, mail.body] })
       ).toMatchObject({ ok: true });
     }
+  });
+});
+
+describe("profileLength (F115 stage 11)", () => {
+  test("it counts code points of the cleaned text, as the check does", () => {
+    expect(profileLength("signature", "  Anna \n")).toBe(4);
+    expect(profileLength("displayName", "Anna\u0007   Nowak")).toBe(10);
+    expect(profileLength("signature", "😀".repeat(3))).toBe(3);
+    expect(checkProfileInput({ signature: "ą".repeat(PROFILE_SIGNATURE_MAX) }).ok).toBe(true);
+    expect(profileLength("signature", `${"ą".repeat(PROFILE_SIGNATURE_MAX)}  `)).toBe(PROFILE_SIGNATURE_MAX);
   });
 });

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { t, type TextKey } from "../../i18n";
 import { ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
+import { replySwitchBlocked } from "../../lib/reply-style";
 import { patchSettings } from "../../lib/settings-api";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -49,7 +50,7 @@ export function ModeCard({ mailbox, settings, isOwner, onChanged, onMissing }: M
     }
   };
 
-  const changeSwitch = async (name: (typeof toolSwitchNames)[number], value: boolean) => {
+  const changeSwitch = async (name: (typeof toolSwitchNames)[number] | "reply_drafts", value: boolean) => {
     setPendingSwitches((prev) => new Set(prev).add(name));
     try {
       const change = await patchSettings(mailbox.id, `/switches/${name}`, { value });
@@ -66,6 +67,9 @@ export function ModeCard({ mailbox, settings, isOwner, onChanged, onMissing }: M
   };
 
   const texts = modeTexts[settings.mode];
+  // F115 stage 11: the settings view holds `reply_drafts` only while the flag of the organization is on, so its absence hides the row.
+  const replySwitch = settings.toolSwitches.reply_drafts;
+  const replyBlocked = replySwitchBlocked(mailbox);
 
   return (
     <Card data-card="mode">
@@ -102,6 +106,30 @@ export function ModeCard({ mailbox, settings, isOwner, onChanged, onMissing }: M
             </li>
           ))}
         </ul>
+        {replySwitch !== undefined && (
+          <div data-switch="reply_drafts" className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="switch_reply_drafts"
+                aria-describedby={
+                  replyBlocked ? "switch_reply_drafts_help switch_reply_drafts_oauth" : "switch_reply_drafts_help"
+                }
+                checked={replySwitch}
+                disabled={!isOwner || replyBlocked || pendingSwitches.has("reply_drafts")}
+                onCheckedChange={(value) => void changeSwitch("reply_drafts", value)}
+              />
+              <Label htmlFor="switch_reply_drafts">{t("switch_reply_drafts")}</Label>
+            </div>
+            <p id="switch_reply_drafts_help" className="text-sm text-muted-foreground">
+              {t("rs_switch_help")}
+            </p>
+            {replyBlocked && (
+              <p id="switch_reply_drafts_oauth" className="text-sm text-muted-foreground">
+                {t("rs_switch_oauth")}
+              </p>
+            )}
+          </div>
+        )}
         {isOwner && (
           <AssistDialog
             mailbox={mailbox}
