@@ -683,6 +683,8 @@ export interface SeededSent {
   parent?: string;
   from?: string;
   autoSubmitted?: string;
+  // A send of the assistant: the row has an action id and no text.
+  system?: boolean;
 }
 
 export interface SenderActivitySpec {
@@ -788,7 +790,8 @@ export async function seedSenderActivity(
         to_addresses: sent.to ?? (spec.address === undefined ? [] : [spec.address]),
         cc_addresses: sent.cc ?? [],
         auto_submitted: sent.autoSubmitted ?? null,
-        origin: "user",
+        origin: sent.system === true ? "system" : "user",
+        action_id: sent.system === true ? randomUUID() : null,
         content: "headers_only",
         sent_at: sent.at,
         internal_date: sent.at,

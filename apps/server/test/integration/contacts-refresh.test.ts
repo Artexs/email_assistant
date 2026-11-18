@@ -1,30 +1,31 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, describe, expect, test } from "bun:test";
-import { sql, type Transaction } from "kysely";
+import { sql } from "kysely";
 
 import { insertSenderRule } from "../../src/modules/config";
-import {
-  profileLockKey,
-  readProfiles,
-  readSenderActivity,
-  refreshMailboxProfiles,
-  type RefreshDeps,
-} from "../../src/modules/contacts";
+import { profileLockKey, readProfiles, readSenderActivity, refreshMailboxProfiles } from "../../src/modules/contacts";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
-import { senderKeyHash } from "../../src/platform/crypto";
-import type { DB, TenantContext } from "../../src/platform/db";
 
 import {
-  createOrgWithMailbox,
-  insertDelegate,
-  insertDelegation,
-  insertDraftAndSend,
-  seedSenderActivity,
-  testCapabilities,
-  type SeededMail,
-} from "./fixtures";
+  ago,
+  countRows,
+  deps,
+  DAY,
+  HOUR,
+  hashOf,
+  KEY,
+  mailId,
+  mailsAt,
+  ms,
+  newOrg,
+  NO_TEST,
+  NOW,
+  profileOf,
+  refresh,
+} from "./contacts-fixtures";
+import { insertDelegate, insertDelegation, insertDraftAndSend, seedSenderActivity, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 // Sender context: the profile pass (`readSenderActivity`, `refreshMailboxProfiles`, `readProfiles`). The clock is
@@ -33,58 +34,6 @@ const db = testDb();
 afterAll(async () => {
   await db.destroy();
 });
-
-type Trx = Transaction<DB>;
-
-const NOW = new Date("2026-11-18T10:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-const KEY = Buffer.alloc(32, 7).toString("base64");
-const NO_TEST = { senders: [] as string[] };
-
-const ago = (days: number, hours = 0): Date => new Date(NOW.getTime() - days * DAY - hours * HOUR);
-const ms = (value: Date | null | undefined): number | null => value?.getTime() ?? null;
-const deps = (trx: Trx, testMail = NO_TEST): RefreshDeps => ({ db: trx, credentialsKey: KEY, testMail });
-const hashOf = (orgId: string, address: string): string => senderKeyHash(KEY, orgId, address);
-
-interface Org {
-  ctx: TenantContext;
-  mailboxId: string;
-  address: string;
-}
-
-// An organization with one mailbox and the flag `sender_context` on.
-async function newOrg(trx: Trx, opts: { flag?: boolean } = {}): Promise<Org> {
-  const address = `box-${randomUUID()}@x.test`;
-  const { orgId, mailboxId } = await createOrgWithMailbox(trx, { address });
-  const ctx = { orgId };
-  if (opts.flag !== false)
-    await setOrgFeature(trx, ctx, { flag: "sender_context", enabled: true, actor: "cli", now: NOW });
-  return { ctx, mailboxId, address };
-}
-
-const refresh = (trx: Trx, org: Org, now = NOW, testMail = NO_TEST) =>
-  refreshMailboxProfiles(deps(trx, testMail), org.ctx, org.mailboxId, { now });
-
-const profileOf = (trx: Trx, org: Org, address: string) =>
-  trx
-    .selectFrom("sender_profiles")
-    .selectAll()
-    .where("org_id", "=", org.ctx.orgId)
-    .where("mailbox_id", "=", org.mailboxId)
-    .where("key_hash", "=", hashOf(org.ctx.orgId, address))
-    .executeTakeFirst();
-
-const countRows = async (trx: Trx, org: Org): Promise<number> =>
-  (await trx.selectFrom("sender_profiles").select("id").where("mailbox_id", "=", org.mailboxId).execute()).length;
-
-const mailsAt = (days: number[], extra: Partial<SeededMail> = {}): SeededMail[] =>
-  days.map((day) => ({ at: ago(day), ...extra }));
-
-// One incoming mail and, for a delay pair, the Message-ID that the Sent mail names.
-function mailId(name: string): string {
-  return `<${name}-${randomUUID()}@x.test>`;
-}
 
 describe("refreshMailboxProfiles: counts", () => {
   test("1 a known contact: mails, answers, flags and Sent mail", async () => {

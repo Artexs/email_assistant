@@ -3,6 +3,7 @@ import {
   DAY_MS,
   isNoreplyAddress,
   matchSender,
+  normalizeSenderAddress,
   relationOf,
   type Category,
   type SenderHistory,
@@ -14,6 +15,8 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { listSenderRules } from "../config";
 import { listDelegateAddresses } from "../delegation";
 import { listMailboxes, mailKindFilter, type TestMailRule } from "../mail";
+
+import { normalizedAddress } from "./address-sql";
 
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
@@ -106,13 +109,13 @@ const emptyActivity = (address: string): SenderActivity => ({
 // The own addresses of the mailbox: every mailbox address of the organization, and the From addresses of the Sent rows of
 // this mailbox (aliases, `send as`). Lower case. They never get a row.
 async function ownAddresses(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<Set<string>> {
-  const own = new Set((await listMailboxes(db, ctx)).map((mailbox) => mailbox.address.trim().toLowerCase()));
+  const own = new Set((await listMailboxes(db, ctx)).map((mailbox) => normalizeSenderAddress(mailbox.address)));
   const { rows } = await sql<{ address: string }>`
-    SELECT lower(btrim(from_address)) AS address
+    SELECT ${normalizedAddress("from_address")} AS address
     FROM sent_emails
     WHERE org_id = ${ctx.orgId} AND mailbox_id = ${mailboxId} AND from_address IS NOT NULL AND btrim(from_address) <> ''
-    GROUP BY lower(btrim(from_address))
-    ORDER BY max(sent_at) DESC, lower(btrim(from_address))
+    GROUP BY ${normalizedAddress("from_address")}
+    ORDER BY max(sent_at) DESC, ${normalizedAddress("from_address")}
     LIMIT ${MAX_ALIASES}
   `.execute(db);
   for (const row of rows) own.add(row.address);
@@ -185,7 +188,7 @@ export async function readSenderActivity(
 
   // The incoming mails of the window: real mail of this mailbox with a sender. `emails` has no alias, as `mailKindFilter` needs.
   const win = sql`
-    SELECT emails.id, emails.from_address_lower AS addr, emails.received_at, emails.message_id_header, emails.in_reply_to
+    SELECT emails.id, ${normalizedAddress("emails.from_address_lower")} AS addr, emails.received_at, emails.message_id_header, emails.in_reply_to
     FROM emails
     WHERE emails.org_id = ${ctx.orgId}
       AND emails.mailbox_id = ${mailboxId}
@@ -215,7 +218,7 @@ export async function readSenderActivity(
   const own = await ownAddresses(db, ctx, mailboxId);
   const rules = await listSenderRules(db, ctx, mailboxId);
   const delegateEmails = new Set(
-    (await listDelegateAddresses(db, ctx, { activeOnly: true })).map((e) => e.trim().toLowerCase())
+    (await listDelegateAddresses(db, ctx, { activeOnly: true })).map(normalizeSenderAddress)
   );
 
   const mails = await sql<MailRow>`
@@ -290,7 +293,7 @@ export async function readSenderActivity(
 
   // The user's own mail (not system sends, not automatic replies) to each address in To or Cc, once per mail.
   const sent = await sql<SentRow>`
-    SELECT lower(btrim(a.addr)) AS addr, count(DISTINCT s.id)::int AS n, max(s.internal_date) AS last_at
+    SELECT ${normalizedAddress("a.addr")} AS addr, count(DISTINCT s.id)::int AS n, max(s.internal_date) AS last_at
     FROM sent_emails s
     CROSS JOIN LATERAL unnest(s.to_addresses || s.cc_addresses) AS a(addr)
     WHERE s.org_id = ${ctx.orgId}
@@ -300,7 +303,7 @@ export async function readSenderActivity(
       AND s.internal_date <= ${now}
       AND ${notAutomatic("s.auto_submitted")}
       AND a.addr LIKE '%@%'
-    GROUP BY lower(btrim(a.addr))
+    GROUP BY ${normalizedAddress("a.addr")}
   `.execute(db);
 
   // The user's delay is the first Sent reply after the mail whose `parent_message_id` is the Message-ID of the mail; it goes
@@ -320,7 +323,9 @@ export async function readSenderActivity(
           AND s.parent_message_id = w.message_id_header
           AND s.sent_at > w.received_at
           AND ${notAutomatic("s.auto_submitted")}
-          AND (cardinality(s.to_addresses || s.cc_addresses) = 0 OR (s.to_addresses || s.cc_addresses) && ARRAY[w.addr])
+          AND (cardinality(s.to_addresses || s.cc_addresses) = 0 OR EXISTS (
+            SELECT 1 FROM unnest(s.to_addresses || s.cc_addresses) AS r(x) WHERE ${normalizedAddress("r.x")} = w.addr
+          ))
         ORDER BY s.sent_at, s.id
         LIMIT 1
       ) r ON true
@@ -362,7 +367,7 @@ export async function readSenderActivity(
   `.execute(db);
 
   const delegations = await sql<DelegationRow>`
-    SELECT lower(btrim(d.email)) AS addr, count(*)::int AS n
+    SELECT ${normalizedAddress("d.email")} AS addr, count(*)::int AS n
     FROM delegations dn
     JOIN delegates d ON d.id = dn.delegate_id AND d.org_id = dn.org_id
     WHERE dn.org_id = ${ctx.orgId}
@@ -370,10 +375,10 @@ export async function readSenderActivity(
       AND dn.created_at >= ${since}
       AND dn.created_at <= ${now}
       AND d.active
-    GROUP BY lower(btrim(d.email))
+    GROUP BY ${normalizedAddress("d.email")}
   `.execute(db);
 
-  const testSenders = new Set(testMail.senders.map((address) => address.trim().toLowerCase()));
+  const testSenders = new Set(testMail.senders.map(normalizeSenderAddress));
   const byAddress = new Map<string, SenderActivity>();
   const entry = (address: string): SenderActivity | null => {
     if (own.has(address) || testSenders.has(address)) return null;
