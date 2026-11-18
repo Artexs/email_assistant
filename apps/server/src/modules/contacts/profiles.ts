@@ -1,4 +1,4 @@
-import { senderHistorySchema, type Category, type SenderHistory } from "@ea/core";
+import { DAY_MS, senderHistorySchema, type Category, type SenderHistory } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import { senderKeyHash } from "../../platform/crypto";
@@ -8,7 +8,6 @@ import { PROFILE_DAYS } from "./activity";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-const DAY_MS = 24 * 3_600_000;
 // Pairs per query: 2 values a pair stay far below the 65,535 parameter limit.
 const PAIR_CHUNK = 1000;
 

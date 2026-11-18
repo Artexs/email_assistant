@@ -1,5 +1,6 @@
 import {
   categorySchema,
+  DAY_MS,
   isNoreplyAddress,
   matchSender,
   relationOf,
@@ -19,7 +20,6 @@ type BulkSignal = SenderHistory["bulkSignals"][number];
 
 // The window of the profile (plan F120): mail received in the 90 days up to `now`.
 export const PROFILE_DAYS = 90;
-const DAY_MS = 24 * 3_600_000;
 // A reply delay median needs this many samples.
 const MIN_DELAY_SAMPLES = 5;
 // A delay above this many hours is no sample: the column CHECK of `sender_profiles` allows up to 100000.
