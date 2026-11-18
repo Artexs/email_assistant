@@ -44,3 +44,9 @@ PD-076 for the draft, send and reverse paths of `actions`. Merge `master` first 
 - **Test:** unit tests of both texts in pl and en; an integration test of the CLI service function on GreenMail (`same`, then `changed` after an edit).
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the answered check (09).
+
+## Changes after the review (Opus, PASS a84e9b26)
+
+- The card line "Edit here, or edit and send in your mail client." shows only for a `reply` and while the org flag `draft_copy_check` is on (view field `copyCheck`); other cards keep the old line (coordinator decision N1).
+- An IMAP error in the copy check ends the send `failed` / `copy_check_error` (not `expired`, not `smtp_error`), with `provider_result.stage = copy_check`: after 6 hours of soft errors, or at the third hard error. The result notice has its own text (en, pl) and offers "Send again". A login error returns the send to `approved` with no count.
+- `bun run reply:check-copy` changes no row and writes nothing to the mailbox; opening an OAuth mailbox can store a rotated refresh token.

@@ -18,7 +18,9 @@ describe("readCheckCopyOptions", () => {
     expect(readCheckCopyOptions(["--org-id", org, "--action-id", action, "--write"])).toBeUndefined();
   });
 
-  test("the usage names the four words and says it never writes", () => {
-    for (const word of ["same", "changed", "missing", "no_baseline", "never writes"]) expect(usage).toContain(word);
+  test("the usage names the four words, says it never writes to the mailbox or a row, and names the OAuth token write", () => {
+    for (const word of ["same", "changed", "missing", "no_baseline", "never writes to the mailbox", "refresh"]) {
+      expect(usage).toContain(word);
+    }
   });
 });

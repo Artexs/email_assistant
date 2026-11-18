@@ -46,7 +46,7 @@ const sendResultKindSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({
     kind: z.literal("failed"),
-    cause: z.enum(["tries", "content_soft", "soft_cap", "compose", "bad_payload"]),
+    cause: z.enum(["tries", "content_soft", "soft_cap", "compose", "bad_payload", "copy_check"]),
     code: nullableText,
     tries: z.number(),
   }),

@@ -83,7 +83,7 @@ interface Prepared {
 }
 
 interface Failure {
-  reason: "smtp_rejected" | "smtp_error" | "outcome_unknown" | "bad_payload" | "has_gaps";
+  reason: "smtp_rejected" | "smtp_error" | "outcome_unknown" | "bad_payload" | "has_gaps" | "copy_check_error";
   // The row is `approved` before `markApplying` (payload and compose errors), else `applying`.
   from: "approved" | "applying";
   cancel: "send_failed" | "outcome_unknown";
@@ -390,7 +390,8 @@ async function composeFailed(
   const label = describeError(error);
   if (action.attempts + 1 >= SEND_HARD_TRIES) {
     return failSend(deps, ctx, action, {
-      reason: "smtp_error",
+      // An IMAP error of the copy check is not an SMTP error: it has its own reason and notice text.
+      reason: stage === "copy_check" ? "copy_check_error" : "smtp_error",
       from: "approved",
       cancel: "send_failed",
       lastError: label,
@@ -505,7 +506,7 @@ async function copyCheckFailed(
   const sinceTapMs = action.approved_at === null ? 0 : now.getTime() - action.approved_at.getTime();
   if (sinceTapMs >= SEND_SOFT_CAP_MS) {
     return failSend(deps, ctx, action, {
-      reason: "smtp_error",
+      reason: "copy_check_error",
       from: "approved",
       cancel: "send_failed",
       lastError: label,

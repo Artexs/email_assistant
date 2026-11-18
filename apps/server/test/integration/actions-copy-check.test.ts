@@ -4,9 +4,12 @@ import { sendPayloadFor, type DraftPayload } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { noApprovalHooks, sendAgain, type ApprovalDeps } from "../../src/modules/actions";
 import { SEND_SOFT_CAP_MS } from "../../src/modules/actions/constants";
+import { delegationHooks } from "../../src/modules/delegation";
+import { MailAuthError } from "../../src/modules/mail";
 import type { DB } from "../../src/platform/db";
-import { SoftError } from "../../src/platform/errors";
+import { HardError, SoftError } from "../../src/platform/errors";
 import { captureLogs, type CapturedLogs } from "../log-capture";
 
 import {
@@ -43,6 +46,13 @@ afterEach(async () => {
 
 afterAll(async () => {
   await db.destroy();
+});
+
+const approvals = (trx: Transaction<DB>): ApprovalDeps => ({
+  db: trx,
+  hooks: delegationHooks({ db: trx }),
+  approvalHooks: noApprovalHooks,
+  uidplus: async () => true,
 });
 
 const checked = (captured: CapturedLogs): unknown[] =>
@@ -234,7 +244,7 @@ describe("the copy check: an IMAP error", () => {
     });
   });
 
-  test("7b. the error counts against the 6 hour soft cap: past it the send fails smtp_error with the cap mark", async () => {
+  test("7b. the error counts against the 6 hour soft cap: past it the send fails copy_check_error with the cap mark", async () => {
     await withRollback(db, async (trx) => {
       const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
       failOnce(box);
@@ -249,10 +259,71 @@ describe("the copy check: an IMAP error", () => {
 
       expect(await actionRow(trx, p.sendId)).toMatchObject({
         status: "failed",
-        status_reason: "smtp_error",
+        status_reason: "copy_check_error",
         provider_result: { stage: "copy_check", cap: "soft_retry" },
       });
       expect(box.sender.sent).toHaveLength(0);
+      // Nothing went out: "Send again" is offered, as for a failed SMTP call.
+      const again = await sendAgain(approvals(trx), box.ctx, p.sendId, { userId: box.userId, via: "web", now: NOW });
+      expect(again.kind).toBe("created");
+    });
+  });
+
+  test("7c. a hard error counts: the third one fails copy_check_error (not smtp_error), no SMTP call", async () => {
+    await withRollback(db, async (trx) => {
+      const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
+      box.wrap.provider = (provider) =>
+        new Proxy(provider, {
+          get(target, prop) {
+            if (prop !== "fetchContent") return Reflect.get(target, prop, target) as unknown;
+            return async () => {
+              throw new HardError("read failed");
+            };
+          },
+        });
+      await tap(trx, box, p.sendId);
+
+      const states: unknown[] = [];
+      for (let run = 0; run < 3; run += 1) {
+        box.clock.now = new Date(NOW.getTime() + run * 6 * MINUTE);
+        await box.committer.run();
+        const row = await actionRow(trx, p.sendId);
+        states.push([row.status, row.status_reason, row.attempts]);
+      }
+
+      expect(states).toEqual([
+        ["approved", null, 1],
+        ["approved", null, 2],
+        ["failed", "copy_check_error", 3],
+      ]);
+      expect((await actionRow(trx, p.sendId)).provider_result).toEqual({ stage: "copy_check" });
+      expect(box.sender.sent).toHaveLength(0);
+    });
+  });
+
+  test("7d. a login error during the check sends the row back to approved with no count; the mailbox goes to auth_error", async () => {
+    await withRollback(db, async (trx) => {
+      const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
+      box.wrap.provider = (provider) =>
+        new Proxy(provider, {
+          get(target, prop) {
+            if (prop !== "fetchContent") return Reflect.get(target, prop, target) as unknown;
+            return async () => {
+              throw new MailAuthError("login refused");
+            };
+          },
+        });
+
+      const waiting = await runSend(trx, box, p.sendId);
+
+      expect(waiting).toMatchObject({ status: "approved", attempts: 0, locked_at: null, next_attempt_at: null });
+      expect(box.sender.sent).toHaveLength(0);
+      const mailbox = await trx
+        .selectFrom("mailboxes")
+        .select("status")
+        .where("id", "=", box.mailboxId)
+        .executeTakeFirstOrThrow();
+      expect(mailbox.status).toBe("auth_error");
     });
   });
 });
@@ -358,6 +429,56 @@ describe("the copy check: a follow-up", () => {
         outboxBefore
       );
       expect(await draftCopies(box)).toHaveLength(1);
+    });
+  });
+
+  test("8b. the loop lock comes first: isOpen runs before the send closes, once, for the loop of the follow-up", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await copyBox(trx);
+      boxes.push(box);
+      await flagOn(trx, box, "draft_copy_check");
+      const to = [`anna-${randomUUID()}@example.com`];
+      const sent = await insertSentRow(trx, box.ctx, box.mailboxId, { toAddresses: to, ccAddresses: [], subject: "S" });
+      const loopId = await insertLoopRow(trx, box.ctx, box.mailboxId, {
+        sent_email_id: sent,
+        message_id: "<own-2@x.test>",
+        subject: "S",
+        to_addresses: to,
+        cc_addresses: [],
+        counterpart: to[0] ?? null,
+        language: "en",
+        due_at: new Date(NOW.getTime() - 86_400_000),
+      });
+      const draft: DraftPayload = {
+        kind: "follow_up",
+        loop_id: loopId,
+        to,
+        cc: [],
+        language: "en",
+        sent_at: "2026-11-10T09:30:00.000Z",
+        subject: "S",
+        quote: "Q",
+        n: 1,
+      };
+      const ids = await insertLoopActionPair(trx, box.ctx, loopId, {
+        draftStatus: "ready",
+        sendStatus: "awaiting_approval",
+        createdAt: new Date(NOW.getTime() - 60 * MINUTE),
+        payloads: { draft, send: sendPayloadFor(draft) },
+      });
+      await box.committer.run();
+      await editCopy(box, ids.draftId, { text: (text) => `${text}\n\nedited` });
+      const seen: { loopId: string; sendStatus: string }[] = [];
+      box.onIsOpen.run = async (hookTrx, id) => {
+        const send = await actionRow(hookTrx, ids.sendId);
+        seen.push({ loopId: id, sendStatus: send.status });
+      };
+
+      await runSend(trx, box, ids.sendId);
+
+      // One call, while the send is still `approved`: the loop lock is taken before the send row is closed.
+      expect(seen).toEqual([{ loopId, sendStatus: "approved" }]);
+      expect((await actionRow(trx, ids.sendId)).status_reason).toBe("draft_changed");
     });
   });
 });

@@ -21,6 +21,7 @@ export type ApplyOutcome =
         | "has_gaps"
         | "smtp_rejected"
         | "smtp_error"
+        | "copy_check_error"
         | "outcome_unknown";
     }
   // An `applying` draft whose send ended before the APPEND (N12).

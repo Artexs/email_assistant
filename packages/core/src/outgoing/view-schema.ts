@@ -26,4 +26,5 @@ export const approvalViewSchema = z.strictObject({
   followUpNumber: z.union([z.literal(1), z.literal(2)]).optional(),
   version: z.number().int().min(1).optional(),
   panelUrl: panelUrlSchema.optional(),
+  copyCheck: z.literal(true).optional(),
 });

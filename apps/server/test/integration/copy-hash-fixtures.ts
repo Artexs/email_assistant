@@ -52,6 +52,8 @@ export interface CopyBox {
   clock: { now: Date };
   /** The wrapper that the committer's connection goes through (fault injection). Default: none. */
   wrap: { provider: (provider: MailProvider) => MailProvider };
+  /** Test hook: runs inside `LoopHooks.isOpen` before the loop is read, with the transaction (the loop lock is taken there). */
+  onIsOpen: { run?: (trx: Transaction<DB>, loopId: string) => Promise<void> };
   /** The sends whose cards the committer asked to edit (`ApprovalHooks.onDecided`). */
   decided: { sendId: string; decision: string }[];
   committer: ReturnType<typeof createCommitterJob>;
@@ -94,6 +96,8 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
   const clock = { now: NOW };
   const wrap: CopyBox["wrap"] = { provider: (provider) => provider };
   const decided: CopyBox["decided"] = [];
+  const onIsOpen: CopyBox["onIsOpen"] = {};
+  const loops = loopHooks();
   const committer = createCommitterJob({
     db: trx,
     secrets,
@@ -109,7 +113,13 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
         decided.push({ sendId: input.sendId, decision: input.decision });
       },
     },
-    loopHooks: loopHooks(),
+    loopHooks: {
+      ...loops,
+      isOpen: async (trx, ctx, loopId) => {
+        await onIsOpen.run?.(trx, loopId);
+        return loops.isOpen(trx, ctx, loopId);
+      },
+    },
     scope: { kind: "all" },
     sendScope: { kind: "all" },
     now: () => clock.now,
@@ -123,6 +133,7 @@ export async function copyBox(trx: Transaction<DB>): Promise<CopyBox> {
     sender,
     clock,
     wrap,
+    onIsOpen,
     decided,
     committer,
     async close() {

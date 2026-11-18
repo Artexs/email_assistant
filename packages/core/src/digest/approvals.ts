@@ -138,7 +138,8 @@ export function renderApprovalRequest(
     }
     lines.push("");
     if (view.panelUrl !== undefined) lines.push(t.panelLine(view.panelUrl));
-    lines.push(t.sendLine);
+    // A reply, and every kind while the flag `draft_copy_check` is on (the view says so), may be edited in the mail client.
+    lines.push(view.kind === "reply" || view.copyCheck === true ? t.sendLineEditable : t.sendLine);
     return lines.join("\n");
   };
   const quoteAt = (max: number) => {
@@ -245,7 +246,7 @@ export type SendResultKind =
   | { kind: "rejected_by_server"; stage: string; responseCode: number | null }
   | {
       kind: "failed";
-      cause: "tries" | "content_soft" | "soft_cap" | "compose" | "bad_payload";
+      cause: "tries" | "content_soft" | "soft_cap" | "compose" | "bad_payload" | "copy_check";
       code: string | null;
       tries: number;
     }
@@ -282,6 +283,8 @@ function causeLine(result: Extract<SendResultKind, { kind: "failed" }>, texts: C
       return causes.softCap(code);
     case "compose":
       return causes.compose(result.tries);
+    case "copy_check":
+      return causes.copyCheck(code);
     case "bad_payload":
       return causes.badPayload;
   }

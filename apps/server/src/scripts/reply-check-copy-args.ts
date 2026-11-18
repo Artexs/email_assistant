@@ -5,7 +5,8 @@ import { z } from "zod";
 export const usage = [
   "usage: bun run reply:check-copy --org-id <uuid> --action-id <draft id>",
   "  Read-only probe. Finds the Drafts copy of one draft, hashes it and compares it with the hash that the committer stored.",
-  "  Prints one word: same, changed, missing or no_baseline. It never writes to the mailbox or the database.",
+  "  Prints one word: same, changed, missing or no_baseline. It never writes to the mailbox and never changes a draft, a send or any other row.",
+  "  Opening an OAuth mailbox can refresh its access token and store the rotated refresh token, as every open of that mailbox does.",
   "  Exit 0: it printed a word. Exit 1: usage error, unknown draft id, or failure.",
 ].join("\n");
 

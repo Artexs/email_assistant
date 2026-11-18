@@ -18,6 +18,7 @@ import { captureLogs, type CapturedLogs } from "../log-capture";
 import {
   actionRow,
   builtText,
+  connectOptions,
   copyBox,
   copyOf,
   deleteCopy,
@@ -222,6 +223,32 @@ describe("the baseline after the APPEND", () => {
       ]);
     });
   });
+
+  test("4b. a copy whose text cannot be read gets no copy_hash and one text_unreadable event; the draft stays applied", async () => {
+    await withRollback(db, async (trx) => {
+      logs = captureLogs();
+      const box = await copyBox(trx);
+      boxes.push(box);
+      box.wrap.provider = (provider) =>
+        new Proxy(provider, {
+          get(target, prop) {
+            if (prop !== "fetchContent") return Reflect.get(target, prop, target) as unknown;
+            return async () => ({ text: null, capture: null });
+          },
+        });
+      const p = await waitingPair(trx, box);
+
+      await box.committer.run();
+
+      const draft = await actionRow(trx, p.draftId);
+      expect(draft.status).toBe("applied");
+      expect(draft.provider_result).toEqual({ uid: expect.any(Number), folder: "Drafts", found: false });
+      expect(await draftCopies(box)).toHaveLength(1);
+      expect(events(logs, "draft_copy_unhashed")).toEqual([
+        expect.objectContaining({ action_id: p.draftId, error_code: "text_unreadable" }),
+      ]);
+    });
+  });
 });
 
 describe("getDraftMailboxId", () => {
@@ -270,6 +297,45 @@ describe("the probe service of reply:check-copy", () => {
       expect(await check(trx, box, p.draftId)).toEqual({ kind: "checked", result: "missing" });
       // The probe writes nothing to the row.
       expect((await actionRow(trx, p.draftId)).provider_result).toEqual(before);
+    });
+  });
+
+  test("5b. the probe closes its connection after an answer and after an error", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await copyBox(trx);
+      boxes.push(box);
+      const p = await waitingPair(trx, box);
+      await box.committer.run();
+      let closed = 0;
+      const opener = (fail: boolean) => async () => {
+        const provider = await openImapProvider(connectOptions(box.address));
+        return new Proxy(provider, {
+          get(target, prop) {
+            if (prop === "close") {
+              return async () => {
+                closed += 1;
+                await target.close();
+              };
+            }
+            if (prop === "fetchContent" && fail) {
+              return async () => {
+                throw new HardError("read failed");
+              };
+            }
+            return Reflect.get(target, prop, target) as unknown;
+          },
+        });
+      };
+
+      expect(await checkDraftCopy({ db: trx, openProvider: opener(false) }, box.ctx, p.draftId)).toEqual({
+        kind: "checked",
+        result: "same",
+      });
+      expect(closed).toBe(1);
+      await expect(checkDraftCopy({ db: trx, openProvider: opener(true) }, box.ctx, p.draftId)).rejects.toThrow(
+        "read failed"
+      );
+      expect(closed).toBe(2);
     });
   });
 

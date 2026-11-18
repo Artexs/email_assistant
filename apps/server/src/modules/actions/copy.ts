@@ -78,7 +78,7 @@ export type CheckDraftCopyResult = { kind: "checked"; result: CopyCheck } | { ki
 
 /**
  * The service of `bun run reply:check-copy`: the check of one draft of this organization against its Drafts copy. It opens
- * the mailbox, reads, compares and writes nothing. An id of another organization or of no draft answers `not_found`.
+ * the mailbox, reads, compares and changes no draft, send or mailbox row (an OAuth mailbox may store a rotated refresh token when it opens). An id of another organization or of no draft answers `not_found`.
  */
 export async function checkDraftCopy(
   deps: {

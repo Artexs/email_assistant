@@ -101,7 +101,7 @@ describe("renderApprovalRequest", () => {
     expect(message.text).toContain("Please check the offer.");
     expect(message.text).toContain("\n\nQuoted original:\n> Hello\n> World");
     expect(
-      message.text.endsWith("The system sends it after your tap. Edit here, or edit and send in your mail client.")
+      message.text.endsWith("The system sends it after your tap. Do not send the draft from your mail client.")
     ).toBe(true);
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     expect(message.buttons).toHaveLength(1);
@@ -174,7 +174,7 @@ describe("renderApprovalRequest", () => {
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     expect(message.text).toContain("(draft text cut; the full text is in the draft)");
     expect(message.text).toContain("…");
-    expect(message.text.endsWith("Edit here, or edit and send in your mail client.")).toBe(true);
+    expect(message.text.endsWith("Do not send the draft from your mail client.")).toBe(true);
   });
 
   test("a big body makes the quote shorter, not the body", () => {
@@ -252,16 +252,52 @@ describe("renderApprovalRequest with an edited body", () => {
 });
 
 describe("the texts of the copy check (the mail client edit)", () => {
-  test("the card line invites an edit here or in the mail client, in English and in Polish", () => {
+  test("the two card lines, in English and in Polish", () => {
     expect(textTables.en.approvals.sendLine).toBe(
-      "The system sends it after your tap. Edit here, or edit and send in your mail client."
+      "The system sends it after your tap. Do not send the draft from your mail client."
     );
     expect(textTables.pl.approvals.sendLine).toBe(
+      "System wyśle wiadomość po naciśnięciu przycisku. Nie wysyłaj szkicu z programu pocztowego."
+    );
+    expect(textTables.en.approvals.sendLineEditable).toBe(
+      "The system sends it after your tap. Edit here, or edit and send in your mail client."
+    );
+    expect(textTables.pl.approvals.sendLineEditable).toBe(
       "System wyśle wiadomość po naciśnięciu przycisku. Edytuj tutaj albo edytuj i wyślij w programie pocztowym."
     );
+  });
+
+  test("N1: the editable line shows for a reply, or for any kind while the flag is on; the other cards keep the old line", () => {
+    const line = (over: Partial<ApprovalView>, lang: "en" | "pl") =>
+      renderApprovalRequest({ actionId: ID, view: view(over), now: NOW, timeZone: TZ }, textTables[lang]).text;
     for (const lang of ["en", "pl"] as const) {
-      const text = renderApprovalRequest({ actionId: ID, view: view(), now: NOW, timeZone: TZ }, textTables[lang]).text;
-      expect(text.endsWith(textTables[lang].approvals.sendLine)).toBe(true);
+      const a = textTables[lang].approvals;
+      expect(line({}, lang).endsWith(a.sendLine)).toBe(true);
+      expect(line({ kind: "clarification" }, lang).endsWith(a.sendLine)).toBe(true);
+      expect(line({ kind: "reply" }, lang).endsWith(a.sendLineEditable)).toBe(true);
+      expect(line({ copyCheck: true }, lang).endsWith(a.sendLineEditable)).toBe(true);
+      expect(line({ kind: "clarification", copyCheck: true }, lang).endsWith(a.sendLineEditable)).toBe(true);
+    }
+  });
+
+  test("a failed send with the cause copy_check says the draft could not be read and offers Send again (en, pl)", () => {
+    for (const [lang, text] of [
+      ["en", "The system could not read the draft in your mailbox; nothing was sent"],
+      ["pl", "System nie mógł odczytać szkicu w Twojej skrzynce; nic nie wysłano"],
+    ] as const) {
+      const message = renderSendResult(
+        {
+          actionId: ID,
+          sendKind: "reply",
+          result: { kind: "failed", cause: "copy_check", code: null, tries: 3 },
+          recipient: { name: null, address: "anna@example.com" },
+          subject: "Fwd: Offer",
+          synthetic: false,
+        },
+        textTables[lang]
+      );
+      expect(message.text).toContain(text);
+      expect(message.buttons).toHaveLength(1);
     }
   });
 
@@ -280,7 +316,7 @@ describe("the texts of the copy check (the mail client edit)", () => {
 });
 
 const PANEL_URL = "https://ea.example.ts.net/approvals?id=7f1c0d1e-0000-4000-8000-000000000001";
-const SEND_LINE_EN = "The system sends it after your tap. Edit here, or edit and send in your mail client.";
+const SEND_LINE_EN = "The system sends it after your tap. Do not send the draft from your mail client.";
 
 describe("renderApprovalRequest version line and panel link", () => {
   test("T1 a view without the new fields has no version line and no panel line", () => {

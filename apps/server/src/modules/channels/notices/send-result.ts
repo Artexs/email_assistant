@@ -72,6 +72,14 @@ async function resultKindOf(
         case "bad_payload":
         case "has_gaps":
           return { kind: "failed", cause: "bad_payload", code: null, tries: row.attempts };
+        // The Drafts copy could not be read before the send (an IMAP error): nothing went out, and "Send again" is offered.
+        case "copy_check_error":
+          return {
+            kind: "failed",
+            cause: "copy_check",
+            code: code === null ? null : String(code),
+            tries: row.attempts,
+          };
         default: {
           const cause =
             result.cap === SOFT_CAP_MARK

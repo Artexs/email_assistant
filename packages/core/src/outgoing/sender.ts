@@ -32,6 +32,7 @@ export interface ApprovalView {
   followUpNumber?: 1 | 2;
   version?: number; // the edit version of the send, from 2 on (stage 08 sets it)
   panelUrl?: string; // the panel page of this send (stage 09 sets it)
+  copyCheck?: true; // the org flag `draft_copy_check` was on when the card was made: the card line allows an edit in the mail client
 }
 
 export function approvalViewOf(

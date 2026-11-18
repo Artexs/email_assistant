@@ -45,6 +45,9 @@ export interface ApprovalTexts {
   linksHidden: string;
   quoteCut: string;
   sendLine: string;
+  // The line for a reply, and for any kind while the org flag `draft_copy_check` is on: the system stops a send whose Drafts copy
+  // the user changed, so an edit in the mail client is safe. Otherwise `sendLine` says not to send from the mail client.
+  sendLineEditable: string;
   versionLine: (version: number) => string; // below the title, from version 2 on
   panelLine: (url: string) => string; // directly above `sendLine`
   buttons: {
@@ -78,6 +81,7 @@ export interface ApprovalTexts {
     tries: (tries: number, code: string) => string; // code "" = none
     contentSoft: (code: string) => string; // code "" = unknown
     softCap: (code: string) => string;
+    copyCheck: (code: string) => string; // the Drafts copy could not be read before the send
     compose: (tries: number) => string;
     badPayload: string;
   };
@@ -176,7 +180,8 @@ export const approvalTexts = {
     quoted: "Quoted original:",
     linksHidden: "(links shown as [link]; the draft has them)",
     quoteCut: "(quote cut; the draft has the full text)",
-    sendLine: "The system sends it after your tap. Edit here, or edit and send in your mail client.",
+    sendLine: "The system sends it after your tap. Do not send the draft from your mail client.",
+    sendLineEditable: "The system sends it after your tap. Edit here, or edit and send in your mail client.",
     versionLine: (version) => `✏️ Version ${version}, edited in the panel.`,
     panelLine: (url) => `Open in panel: ${url}`,
     buttons: {
@@ -214,6 +219,8 @@ export const approvalTexts = {
         `The mail server refused the content for now (code ${code === "" ? "unknown" : code}); the system never retries after the content`,
       softCap: (code) =>
         `The mail server did not accept the mail for 6 hours${code === "" ? "" : ` (${code})`}; nothing was sent`,
+      copyCheck: (code) =>
+        `The system could not read the draft in your mailbox${code === "" ? "" : ` (${code})`}; nothing was sent`,
       compose: (tries) => `The mail could not be built ${tries} times`,
       badPayload: "The stored send data is not valid; nothing was sent",
     },
@@ -314,7 +321,8 @@ export const approvalTexts = {
     quoted: "Cytowany oryginał:",
     linksHidden: "(linki pokazane jako [link]; szkic je zawiera)",
     quoteCut: "(cytat skrócony; pełny tekst jest w szkicu)",
-    sendLine:
+    sendLine: "System wyśle wiadomość po naciśnięciu przycisku. Nie wysyłaj szkicu z programu pocztowego.",
+    sendLineEditable:
       "System wyśle wiadomość po naciśnięciu przycisku. Edytuj tutaj albo edytuj i wyślij w programie pocztowym.",
     versionLine: (version) => `✏️ Wersja ${version}, zmieniona w panelu.`,
     panelLine: (url) => `Otwórz w panelu: ${url}`,
@@ -354,6 +362,8 @@ export const approvalTexts = {
         `Serwer poczty chwilowo odrzucił treść (kod: ${code === "" ? "nieznany" : code}); system nie ponawia próby po wysłaniu treści`,
       softCap: (code) =>
         `Serwer poczty nie przyjął wiadomości przez 6 godzin${code === "" ? "" : ` (${code})`}; nic nie wysłano`,
+      copyCheck: (code) =>
+        `System nie mógł odczytać szkicu w Twojej skrzynce${code === "" ? "" : ` (${code})`}; nic nie wysłano`,
       compose: (tries) => `Nie udało się zbudować wiadomości ${tries} ${PL_TIMES[pluralCategory("pl", tries)]}`,
       badPayload: "Zapisane dane wysyłki są nieprawidłowe; nic nie wysłano",
     },

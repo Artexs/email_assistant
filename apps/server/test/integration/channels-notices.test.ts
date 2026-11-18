@@ -1212,7 +1212,7 @@ describe("approval requests", () => {
         expect(row.text).toContain("Prepare the offer");
         expect(row.text).toContain("Quoted original:");
         expect(row.text).toContain(BODY);
-        expect(row.text).toContain("Edit here, or edit and send in your mail client.");
+        expect(row.text).toContain("Do not send the draft from your mail client.");
         expect(buttonData(row)).toEqual([`ap:${p.sendId}`, `ar:${p.sendId}`]);
       }
       expect((await sendState(trx, p.sendId)).notified_at).toEqual(T);
@@ -1751,6 +1751,49 @@ describe("send result notices", () => {
       expect(h).toContain("it waited 48 h after your approval and was not sent");
       expect(h).toContain("The draft stays in Drafts.");
       expect((await resultText(trx, o, closed.sendId)).text).toContain("the delegation was closed");
+    });
+  });
+
+  test("(4c) failed copy_check_error: the cause text and the Send again button", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      const failed = await ended(trx, o, {
+        status: "failed",
+        reason: "copy_check_error",
+        providerResult: { stage: "copy_check" },
+        attempts: 3,
+      });
+
+      await run(trx);
+
+      const result = await resultText(trx, o, failed.sendId);
+      expect(result.text).toContain("The system could not read the draft in your mailbox; nothing was sent");
+      expect(result.data).toEqual([`ag:${failed.sendId}`]);
+    });
+  });
+
+  test("(1c) the card line allows an edit in the mail client only while the flag draft_copy_check is on", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const off = await sendOrg(trx);
+      await waiting(trx, off);
+      const on = await sendOrg(trx);
+      await waiting(trx, on);
+      await setOrgFeature(trx, on.ctx, { flag: "draft_copy_check", enabled: true, actor: "cli", now: T });
+
+      await run(trx);
+
+      for (const row of await rows(trx, off.orgId, "approval")) {
+        expect(row.text).toContain("Do not send the draft from your mail client.");
+        expect(row.text).not.toContain("Edit here, or edit and send in your mail client.");
+      }
+      const flagged = await rows(trx, on.orgId, "approval");
+      expect(flagged.length).toBeGreaterThan(0);
+      for (const row of flagged) {
+        expect(row.text).toContain("Edit here, or edit and send in your mail client.");
+        expect(row.text).not.toContain("Do not send the draft from your mail client.");
+      }
     });
   });
 

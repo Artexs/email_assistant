@@ -185,7 +185,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     to: "failed",
     types: ["send"],
     writer: "finishAction",
-    reasons: ["bad_payload", "has_gaps", "smtp_error"], // `smtp_error`: the third compose error; `has_gaps`: a reply text with a gap
+    reasons: ["bad_payload", "has_gaps", "smtp_error", "copy_check_error"], // `smtp_error`: the third compose error; `has_gaps`: a reply text with a gap; `copy_check_error`: the Drafts copy could not be read (6 h of soft errors, or the third hard error)
     callers: ["send.ts"],
   },
   {

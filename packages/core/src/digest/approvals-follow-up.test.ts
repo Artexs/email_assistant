@@ -61,7 +61,7 @@ describe("the follow-up card (T1, T2, T3)", () => {
         "Quoted original:",
         "My message of 10 Nov 2026:\n> Can you confirm the date?",
         "",
-        "The system sends it after your tap. Edit here, or edit and send in your mail client.",
+        "The system sends it after your tap. Do not send the draft from your mail client.",
       ].join("\n")
     );
     expect(message.buttons).toEqual([
