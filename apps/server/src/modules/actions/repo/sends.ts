@@ -335,7 +335,7 @@ export async function getSetSend(db: DbOrTrx, ctx: TenantContext, setId: string)
   return row && toSendRow(row);
 }
 export async function findSendByKey(
-  trx: Transaction<DB>,
+  trx: DbOrTrx,
   ctx: TenantContext,
   key: string
 ): Promise<{ id: string } | undefined> {
