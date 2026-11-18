@@ -5,7 +5,7 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { eraseSubjectData, matchSubject } from "../../src/modules/privacy";
 
 import { createOrgWithMailbox } from "./fixtures";
-import { testDb } from "./helpers";
+import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
 
 // Sender context: the address of an open rule suggestion is in the data request. A data-request erase of the
 // address deletes the row (`DSR_ADDRESS_MAP`, rule `delete`), as for `unsubscribe_requests`. A domain pattern names no person
@@ -62,7 +62,8 @@ const idsOf = (w: World) =>
     .execute()
     .then((rows) => rows.map((row) => row.id));
 
-const match = (w: World, address: string) => db.transaction().execute((trx) => matchSubject(trx, w.orgId, address));
+const match = (w: World, address: string) =>
+  db.transaction().execute((trx) => matchSubject(trx, w.orgId, address, TEST_CREDENTIALS_KEY));
 
 const erase = (w: World, address: string) =>
   eraseSubjectData(db, { orgId: w.orgId, address, confirm: address, credentialsKey: KEY, now: NOW });

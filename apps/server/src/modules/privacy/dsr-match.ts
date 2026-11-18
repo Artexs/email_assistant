@@ -1,6 +1,7 @@
 import { sql, type RawBuilder, type Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
+import { senderContextRowsOf, type SenderContextRows } from "../contacts";
 
 import { addressRegex, DSR_ADDRESS_MAP, normalizeDsrAddress, type AddressRule } from "./address-map";
 
@@ -26,6 +27,9 @@ export interface DsrMatch {
   // Delegations of kept mails whose draft or send action is deleted by the erase (an action of a mail that goes, or a
   // chain action): the foreign keys cascade, so the delegation goes with the action. Counted, never a surprise.
   chainDelegations: string[];
+  // The sender profiles and the address suggestions of the person, found by the keyed hash of the address in every mailbox of
+  // the organization (the profile tables hold no address). The suggestions with the address as `pattern` are in `mentions` too.
+  senderContext: SenderContextRows;
 }
 
 // The key of a row (`id`) and the column that names its incoming mail (`emailId`) for each table that a mention reads.
@@ -274,8 +278,14 @@ async function isOwnAddress(db: DbOrTrx, orgId: string, address: string): Promis
 }
 
 // What an erase for one address would touch, read-only. Every query filters by `org_id`; nothing is written.
-// The address goes to the database as a parameter and into no error text.
-export async function matchSubject(db: DbOrTrx, orgId: string, address: string): Promise<DsrMatch> {
+// The address goes to the database as a parameter and into no error text. `credentialsKey` is the key of the profile hash:
+// without it the profiles of the person could not be found, so it is not optional.
+export async function matchSubject(
+  db: DbOrTrx,
+  orgId: string,
+  address: string,
+  credentialsKey: string
+): Promise<DsrMatch> {
   const normalized = normalizeDsrAddress(address);
   if (normalized === null) throw new Error("dsr_match_invalid_address");
   if (await isOwnAddress(db, orgId, normalized)) {
@@ -288,6 +298,7 @@ export async function matchSubject(db: DbOrTrx, orgId: string, address: string):
       openActions: [],
       chainActions: [],
       chainDelegations: [],
+      senderContext: { profiles: [], suggestions: [] },
     };
   }
   const patterns = addressPatterns(normalized);
@@ -310,5 +321,6 @@ export async function matchSubject(db: DbOrTrx, orgId: string, address: string):
     openActions: await findOpenActions(db, orgId, patterns.json, goes, chains.actions),
     chainActions: chains.actions,
     chainDelegations: chains.delegations,
+    senderContext: await senderContextRowsOf(db, { orgId }, credentialsKey, normalized),
   };
 }

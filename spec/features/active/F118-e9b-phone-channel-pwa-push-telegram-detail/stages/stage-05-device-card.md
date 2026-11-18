@@ -29,4 +29,6 @@ Carry-over reads: `plan.md` D9, D16; `interfaces.md` (routes of stage 03); `apps
 
 ## Checkpoint A (owner, after the land)
 
+The exact checklist (commands, clicks, expected results, rollback) is [`../checkpoint-a.md`](../checkpoint-a.md).
+
 Owner steps O1–O3 in `questions.md`: VAPID keys on the VPS, deploy, flag `web_push` on for the pilot org, install the panel on the Android phone, turn on notices, "Send a test notice". Pass: the notice shows on the locked phone within 30 s and its tap opens the panel. Fail → stop F118 and report (fallback: a WebCrypto library, a new stage 01b).

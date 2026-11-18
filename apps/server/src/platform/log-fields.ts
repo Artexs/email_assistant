@@ -57,6 +57,8 @@ export const numberFieldNames = [
   "loop_rows",
   "reply_text_rows",
   "token_rows",
+  "profile_rows",
+  "suggestion_rows",
   // telegram
   "update_id",
   "bot_id",

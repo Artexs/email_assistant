@@ -22,7 +22,7 @@ import { insertMembership, insertUser, upsertOrgFeature } from "../../src/module
 import type { DB } from "../../src/platform/db";
 
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
-import { testDb } from "./helpers";
+import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
 import { fillMailbox } from "./mailbox-rows";
 
 // `exportOrganization` and `writeEncryptedFile`. The seed is committed (the export reads a snapshot in
@@ -274,7 +274,15 @@ describe("exportOrganization", () => {
         b: true,
       });
     }
-    const result = written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+    const result = written(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    );
 
     const { json, text } = await decryptFile(path);
     expect(json).toMatchObject({
@@ -333,7 +341,15 @@ describe("exportOrganization", () => {
   test("2. the plain text holds no password, credential, session token, IdP client secret, link token, push secret or verification identifier", async () => {
     const a = await seedOrg();
     const path = outPath();
-    written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+    written(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    );
     const { text } = await decryptFile(path);
     for (const secret of [
       a.password,
@@ -356,7 +372,15 @@ describe("exportOrganization", () => {
   test("3. the file has mode 600 and no .part file is left", async () => {
     const a = await seedOrg();
     const path = outPath();
-    written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+    written(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    );
     expect((await stat(path)).mode & 0o777).toBe(0o600);
     expect((await readdir(dir)).filter((name) => name.endsWith(".part"))).toEqual([]);
   });
@@ -366,7 +390,15 @@ describe("exportOrganization", () => {
     const own = mkdtempSync(join(tmpdir(), "f106-export-dir-"));
     try {
       const path = join(own, "org.age");
-      written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+      written(
+        await exportOrganization(db, {
+          orgId: a.orgId,
+          recipient,
+          out: path,
+          credentialsKey: TEST_CREDENTIALS_KEY,
+          now: NOW,
+        })
+      );
       expect(await readdir(own)).toEqual(["org.age"]);
       const raw = await readFile(path, "latin1");
       expect(raw).not.toContain(a.mailboxAddress);
@@ -379,9 +411,25 @@ describe("exportOrganization", () => {
   test("4. a second run with the same path gives exists; the first file stays the same; one audit row", async () => {
     const a = await seedOrg();
     const path = outPath();
-    written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+    written(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    );
     const before = await readFile(path);
-    expect(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW })).toEqual({
+    expect(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    ).toEqual({
       kind: "exists",
     });
     expect(Buffer.compare(before, await readFile(path))).toBe(0);
@@ -398,6 +446,7 @@ describe("exportOrganization", () => {
         recipient,
         out: path,
         now: NOW,
+        credentialsKey: TEST_CREDENTIALS_KEY,
         onTable: () => {
           throw new Error("stop after one table");
         },
@@ -410,7 +459,15 @@ describe("exportOrganization", () => {
   test("6. one org.exported row: actor cli, tables and rows as numbers that match the file", async () => {
     const a = await seedOrg();
     const path = outPath();
-    const result = written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+    const result = written(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    );
     const rows = await auditRows(a.orgId);
     expect(rows).toHaveLength(1);
     expect(rows[0]?.actor).toBe("cli");
@@ -421,7 +478,15 @@ describe("exportOrganization", () => {
   test("7. the console holds no address, no mail text and no organization name", async () => {
     const a = await seedOrg();
     const path = outPath();
-    written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+    written(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    );
     const org = await db.selectFrom("organizations").select("name").where("id", "=", a.orgId).executeTakeFirstOrThrow();
     const log = lines.join("\n");
     for (const needle of [a.ownerEmail, a.mailboxAddress, org.name, "@"]) expect(log).not.toContain(needle);
@@ -429,7 +494,15 @@ describe("exportOrganization", () => {
 
   test("8. an unknown organization gives not_found and writes no file", async () => {
     const path = outPath();
-    expect(await exportOrganization(db, { orgId: randomUUID(), recipient, out: path, now: NOW })).toEqual({
+    expect(
+      await exportOrganization(db, {
+        orgId: randomUUID(),
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    ).toEqual({
       kind: "not_found",
     });
     expect(await leftovers(path)).toEqual([]);
@@ -441,7 +514,15 @@ describe("exportOrganization", () => {
       select ${a.orgId}::uuid, 'system', 'test.bulk', ${NOW} from generate_series(1, 1250)`.execute(db);
     const path = outPath();
     const before = await dbCount("audit_log", a.orgId);
-    written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
+    written(
+      await exportOrganization(db, {
+        orgId: a.orgId,
+        recipient,
+        out: path,
+        credentialsKey: TEST_CREDENTIALS_KEY,
+        now: NOW,
+      })
+    );
     const { json } = await decryptFile(path);
     const audit = (json.tables as Record<string, { id: string }[]>).audit_log ?? [];
     expect(audit).toHaveLength(before);

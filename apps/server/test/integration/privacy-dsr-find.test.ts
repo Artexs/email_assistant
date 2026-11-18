@@ -16,7 +16,7 @@ import { dsrAddressHash } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 
 import { insertAction, insertDelegate, insertDelegation, insertTestEmail, testCapabilities } from "./fixtures";
-import { testDb } from "./helpers";
+import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
 
 // `findSubjectData`, `dsrAddressHash` and the `org:dsr --find` CLI. The seed is committed (the find reads
 // a snapshot in its own transaction); `afterEach` removes it. The connection is the `app` role.
@@ -372,7 +372,7 @@ describe("findSubjectData", () => {
       })
       .returning("id")
       .executeTakeFirstOrThrow();
-    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person));
+    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY));
     expect(match.mentions["sent_emails.cc_addresses"]).toEqual([sent.id]);
     expect(match.mentions["sent_emails.subject"]).toEqual([sent.id]);
     expect(match.mails).toHaveLength(2);
@@ -380,7 +380,7 @@ describe("findSubjectData", () => {
 
   test("counts and audit data come from the match", async () => {
     const w = await seed();
-    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person));
+    const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person, TEST_CREDENTIALS_KEY));
     const counts = dsrCounts(match);
     expect(dsrAuditData("h", counts)).toMatchObject({ address_hash: "h", mails: 2, open_actions: 1 });
   });
