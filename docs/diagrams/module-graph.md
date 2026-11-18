@@ -72,6 +72,7 @@ flowchart BT
   loops --> actions
   loops --> audit
   loops --> config
+  loops --> contacts
   loops --> delegation
   loops --> mail
   loops --> tenancy

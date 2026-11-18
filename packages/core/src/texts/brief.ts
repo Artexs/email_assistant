@@ -15,6 +15,8 @@ export interface BriefTexts {
   // `who` is null when the loop holds no address any more. `what` is the loop text, else the subject.
   waitingLine: (who: string | null, since: string, what: string) => string;
   waitingMarker: { autoReply: string; wouldDraft: string; approval: string };
+  // The end of a ⏳ line whose due date comes from the usual reply time of the contact: "usual reply: 2 days".
+  usualReply: (days: number) => string;
   promisedLine: (who: string | null, what: string, due: string) => string;
   staleLine: (subject: string) => string;
   more: (count: number, url: string | null) => string;
@@ -45,6 +47,7 @@ export const briefTexts = {
       wouldDraft: "would draft a follow-up",
       approval: "follow-up waits for your approval",
     },
+    usualReply: (days) => `usual reply: ${days} ${days === 1 ? "day" : "days"}`,
     promisedLine: (who, what, due) =>
       who === null ? `🤝 You promised: ${what} · due ${due}` : `🤝 You promised ${who}: ${what} · due ${due}`,
     staleLine: (subject) => `⌛ Closed without an answer: ${subject}`,
@@ -75,6 +78,7 @@ export const briefTexts = {
       wouldDraft: "przygotowałbym przypomnienie o odpowiedzi",
       approval: "przypomnienie czeka na Twoje zatwierdzenie",
     },
+    usualReply: (days) => `zwykle odpowiada w ${days} ${polish(days, "dzień", "dni", "dni")}`,
     promisedLine: (who, what, due) =>
       who === null ? `🤝 Obietnica: ${what} · termin ${due}` : `🤝 Obietnica dla ${who}: ${what} · termin ${due}`,
     staleLine: (subject) => `⌛ Zamknięte bez odpowiedzi: ${subject}`,
