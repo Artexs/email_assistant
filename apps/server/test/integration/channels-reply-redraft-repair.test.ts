@@ -79,7 +79,10 @@ describe("a request is answered once, and only when it ended now", () => {
       // Something other than the drafter moved `updated_at` (an operator, a repair job).
       await trx
         .updateTable("reply_requests")
-        .set({ created_at: new Date(r.clock.now.getTime() - 91 * DAY), updated_at: r.clock.now })
+        .set({
+          created_at: new Date(r.clock.now.getTime() - 91 * DAY),
+          updated_at: new Date(r.clock.now.getTime() + 30_000),
+        })
         .where("org_id", "=", r.box.ctx.orgId)
         .execute();
 
