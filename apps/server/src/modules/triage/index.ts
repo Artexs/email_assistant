@@ -11,6 +11,7 @@ export type { LabelItem, RecordFeedbackInput, WebFeedbackResult } from "./feedba
 export { undoWithFeedback } from "./undo";
 export { answeredEmailIds, listWaitingOnYou, WAITING_ON_YOU_DAYS } from "./waiting-on-you";
 export type { WaitingOnYouRow } from "./waiting-on-you";
+export { reviewRoutes, type ReviewRouteDeps } from "./review-routes";
 export { triageRoutes } from "./routes";
 export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";

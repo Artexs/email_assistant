@@ -53,7 +53,7 @@ import {
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";
-import { goNoGoFor, newsletterRoutes, triageRoutes } from "./modules/triage";
+import { goNoGoFor, newsletterRoutes, reviewRoutes, triageRoutes } from "./modules/triage";
 import { hasEndedCheck, queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
 import {
   createAuth,
@@ -426,6 +426,7 @@ export function apiRouters(
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
+    api.route("/", reviewRoutes({ db, now, testMail: testMailRule(config) }));
     api.route(
       "/",
       newsletterRoutes({

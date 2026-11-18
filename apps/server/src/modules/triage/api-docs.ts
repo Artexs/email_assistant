@@ -3,6 +3,10 @@ import {
   feedbackBodySchema,
   feedbackResultSchema,
   newsletterListSchema,
+  reviewLabelBodySchema,
+  reviewLabelResultSchema,
+  reviewSampleQuerySchema,
+  reviewSampleSchema,
   undoBodySchema,
   undoResultSchema,
   unsubscribeBodySchema,
@@ -66,5 +70,28 @@ export const newsletterDocs = {
       },
       { status: 429, codes: ["rate_limited"] },
     ],
+  }),
+};
+
+// F110 stage 15 (flag `panel_review`): with the flag off both routes answer 404 `not_found` for every role. A mailbox or a mail of
+// another organization looks like an unknown one: the same 404.
+export const reviewDocs = {
+  getReviewSample: apiDoc({
+    operationId: "getReviewSample",
+    summary:
+      "A random sample of up to 10 unlabelled decisions of one mailbox, for every member (the sample rules of the Telegram /review page: real mail of 30 days, no feedback row, no test mail). Each item holds the category, the confidence, the stored AI summary, the sender's display name, the subject and the date. A new request gives a new sample. `delegation` says whether the organization has an active delegate.",
+    tags: ["review"],
+    query: reviewSampleQuerySchema,
+    ok: { status: 200, schema: reviewSampleSchema },
+    errors: [notFound],
+  }),
+  postReviewLabel: apiDoc({
+    operationId: "postReviewLabel",
+    summary:
+      "Label one decision with the source `review`, for every member: `verdict: right` agrees with the category, `category` names the true one (`delegation` only when the organization has an active delegate). The same answer twice gives `saved: false`. The label unlocks nothing: it feeds the tripwire and the real-label block only. `needs_category`: `right` on a mail the assistant could not place.",
+    tags: ["review"],
+    body: reviewLabelBodySchema,
+    ok: { status: 200, schema: reviewLabelResultSchema },
+    errors: [notFound, { status: 409, codes: ["needs_category", "no_delegates"] }],
   }),
 };

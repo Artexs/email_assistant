@@ -585,3 +585,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the risk is low (fixed body, public https host on port 443, after an owner tap, the same POST an attacker with their own DKIM domain gets today).
 - Undo: keep the flag `bulk_unsubscribe` off.
 - Source: same job, NOTE 1.
+
+### 2026-11-18 · F110 panel review: sender names and subjects of sample mail are shown to every signed-in member of the organization (F110) · privacy · new
+- Choice: the panel review page (flag `panel_review`, off) shows, for a sample of recent mail, the sender's display name, the subject and the date, to any signed-in member of the owning organization. It never shows an address, never calls the model for these texts and never logs them.
+- Why: a mailbox has no single user owner, the stage text says "any member", and the Activity page already shows subjects to members. Owner-only would need a per-user owner of a mailbox.
+- Undo: restrict the routes to the owner role in `modules/triage/review-routes.ts` (the member case then answers 403, like the other owner-only routes).
+- Source: job `2026-11-18-f110-s15-panel-review-eac1e969`.
