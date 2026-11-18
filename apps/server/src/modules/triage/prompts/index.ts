@@ -24,6 +24,8 @@ export { classifierV3Parts, optionalParts } from "./classifier-v3";
 export interface ClassifierPrompt {
   role: "classifier";
   version: PromptVersion<"classifier">;
+  /** True when the user prompt reads the extras (attachments, history, urgency, list): the caller then loads them. */
+  readsExtras: boolean;
   buildSystem: (allowed: readonly Category[], parts: readonly ClassifierV3Part[]) => string;
   buildUser: (
     email: ClassifierEmail,
@@ -41,12 +43,14 @@ export const classifierVersions = {
   "classifier-v2": {
     role: "classifier",
     version: classifierV2.PROMPT_VERSION,
+    readsExtras: false,
     buildSystem: (allowed) => classifierV2.buildSystemPrompt(allowed),
     buildUser: (email, sender, delegates, nonce) => classifierV2.buildUserPrompt(email, sender, delegates, nonce),
   },
   "classifier-v3": {
     role: "classifier",
     version: classifierV3.PROMPT_VERSION,
+    readsExtras: true,
     buildSystem: classifierV3.buildSystemPrompt,
     buildUser: classifierV3.buildUserPrompt,
   },
