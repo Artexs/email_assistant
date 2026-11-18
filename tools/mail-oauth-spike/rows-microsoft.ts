@@ -38,7 +38,7 @@ import {
   type Row,
 } from "./rows-core";
 
-// Rows of the Microsoft business tenant (M1–M14) and the personal account (P1).
+// Rows of the Microsoft business tenant (M1–M14) and the personal account.
 
 const m1: Row = {
   id: "M1",
