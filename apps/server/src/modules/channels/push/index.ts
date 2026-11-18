@@ -23,7 +23,7 @@ export {
   type UpsertPushSubscription,
   upsertPushSubscription,
 } from "./repo";
-export { checkPushEndpoint, PUSH_HOST_SUFFIXES, type PushEndpointCheck } from "./endpoint";
+export { canonicalEndpoint, checkPushEndpoint, PUSH_HOST_SUFFIXES, type PushEndpointCheck } from "./endpoint";
 export { type PushOptions, type PushResult, type PushTarget, sendWebPush, type SendDeps } from "./send";
 export { VapidError, type VapidKeys, vapidHeaders } from "./vapid";
 export { deviceLabelOf, PUSH_TEST_LIMIT, pushRoutes, type PushRouteDeps } from "./routes";

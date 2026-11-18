@@ -50,7 +50,7 @@ describe("reply texts: one period and one cut-off column", () => {
     expect(source).toContain('.where("created_at", "<", opts.before)');
     expect(source).not.toContain('"updated_at", "<"');
     const job = read("apps/server/src/retention.ts");
-    expect(job).toContain("clearers.clearReplyTexts(db, ctx, { before: textsBefore, now })");
+    expect(job).toContain("clearers.clearReplyTexts(db, ctx, { before: textsBefore })");
   });
 
   test("§7 of the architecture and the records of processing name the same period and the same column", () => {

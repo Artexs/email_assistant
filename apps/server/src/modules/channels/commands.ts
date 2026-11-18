@@ -38,9 +38,11 @@ import { buildDigestMessage, digestPeriodStart, llmPauseToShow, WAITING_WINDOW_M
 import { getMemberNotify, getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
 import { ANSWERED_CHECK_WINDOW_MS, listAnsweredCandidates, listForReview } from "../triage";
 
-import { handleCallback } from "./callbacks";
+import { handleCallback, type CallbackDeps } from "./callbacks";
+import { replyConsentOf } from "./consent";
 import { SYNC_LATE_MS } from "./notices";
 import type { CommandName, LinkedChat, UpdateHandlers } from "./port";
+import { handleReplyText } from "./reply-redraft";
 
 export interface CommandDeps {
   db: Db | Transaction<DB>;
@@ -222,6 +224,9 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
     role: link.role,
     testMail: deps.testMail,
     ...(deps.webBaseUrl === undefined ? {} : { panelBase: deps.webBaseUrl }),
+    ...(link.role === "owner" && (await replyConsentOf(deps.db, ctx, [link.userId])).has(link.userId)
+      ? { replyDrafts: true }
+      : {}),
   });
 }
 
@@ -360,6 +365,18 @@ export function runCommand(deps: CommandDeps, link: LinkedChat, name: CommandNam
   }
 }
 
+function callbackDepsOf(deps: CommandDeps): CallbackDeps {
+  return {
+    db: deps.db,
+    now: deps.now,
+    actionsScope: deps.actionsScope,
+    hooks: deps.hooks,
+    uidplus: deps.uidplus,
+    sendScope: deps.sendScope,
+    ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
+  };
+}
+
 export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
   return {
     command: async (link, name) => {
@@ -374,20 +391,14 @@ export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
         log.info("tap_refused_suspended", { org_id: link.orgId });
         return { answer: textsFor(link.locale).bot.accountPaused(deps.operatorContact) };
       }
-      return handleCallback(
-        {
-          db: deps.db,
-          now: deps.now,
-          actionsScope: deps.actionsScope,
-          hooks: deps.hooks,
-          uidplus: deps.uidplus,
-          sendScope: deps.sendScope,
-          ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
-        },
-        link,
-        data,
-        source
-      );
+      return handleCallback(callbackDepsOf(deps), link, data, source);
+    },
+    text: async (link, text, replyToMessageId) => {
+      if (await isOrgSuspended(deps.db, { orgId: link.orgId })) {
+        log.info("tap_refused_suspended", { org_id: link.orgId });
+        return { text: textsFor(link.locale).bot.accountPaused(deps.operatorContact), buttons: [] };
+      }
+      return handleReplyText(callbackDepsOf(deps), link, text, replyToMessageId);
     },
   };
 }

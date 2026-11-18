@@ -22,10 +22,13 @@ export {
   claimReplyRequests,
   countRedrafts,
   createReplyRequest,
+  findOpenRequest,
+  listEndedRequestsVia,
   finishReplyRequest,
   listReplyRequestsOfEmail,
   releaseReplyRequest,
   REPLY_CLAIM_STALE_MS,
+  type EndedRequest,
   type NewReplyRequest,
   type ReplyRequestEnd,
   type ReplyRequestRow,
@@ -43,3 +46,16 @@ export {
 } from "./preview";
 export { getProfileView, updateMailboxProfile, type ProfileUpdate, type ProfileVia } from "./profile";
 export { replyRoutes, type ReplyRouteDeps } from "./routes";
+export {
+  cleanInstruction,
+  INSTRUCTION_MAX,
+  redraftReply,
+  REDRAFT_LIMIT,
+  requestReply,
+  setReplyRecipients,
+  type RedraftReplyResult,
+  type ReplyBlock,
+  type RequestReplyResult,
+  type SetRecipientsResult,
+} from "./service";
+export { draftableMails } from "./draftable";

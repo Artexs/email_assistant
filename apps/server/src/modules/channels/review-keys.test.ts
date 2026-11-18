@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { isReviewCardKey, reviewCardKey, sendIdOfCardKey } from "./review-keys";
+import {
+  isAskedForKey,
+  isReviewCardKey,
+  replyPromptKey,
+  reviewCardKey,
+  sendIdOfCardKey,
+  sendIdOfPromptKey,
+} from "./review-keys";
 
 const ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
 
@@ -26,5 +33,33 @@ describe("the keys of the approval cards", () => {
     expect(sendIdOfCardKey(`approval:${ID}:rx`)).toBeNull();
     expect(sendIdOfCardKey(`approval_set:${ID}`)).toBeNull();
     expect(sendIdOfCardKey("approval:x")).toBeNull();
+  });
+});
+
+describe("the keys of the question after Redraft", () => {
+  test("a prompt key is `reply_prompt:<send>:<n>`; the send is read from it and from no other shape", () => {
+    expect(replyPromptKey(ID, 2)).toBe(`reply_prompt:${ID}:2`);
+    expect(sendIdOfPromptKey(`reply_prompt:${ID}:1`)).toBe(ID);
+    expect(sendIdOfPromptKey(`reply_prompt:${ID}:12`)).toBe(ID);
+    for (const key of [
+      `reply_prompt:${ID}`,
+      `reply_prompt:${ID}:0`,
+      `reply_prompt:${ID}:1x`,
+      `approval:${ID}:r1`,
+      "reply_prompt:x:1",
+    ]) {
+      expect(sendIdOfPromptKey(key), key).toBeNull();
+    }
+    // A card key is no prompt key and a prompt key is no card key: a line of text answers each by its own rule.
+    expect(sendIdOfCardKey(`reply_prompt:${ID}:1`)).toBeNull();
+  });
+
+  test("a message that the user asked for is never held in quiet hours: a review card, the question and the result; a plain card and every other kind are", () => {
+    expect(isAskedForKey("approval", `approval:${ID}:r1`)).toBe(true);
+    expect(isAskedForKey("reply_prompt", `reply_prompt:${ID}:1`)).toBe(true);
+    expect(isAskedForKey("reply_result", "reply_result:any")).toBe(true);
+    expect(isAskedForKey("approval", `approval:${ID}`)).toBe(false);
+    expect(isAskedForKey("replies_ready", `replies_ready:${ID}`)).toBe(false);
+    expect(isAskedForKey("urgent", `urgent:${ID}`)).toBe(false);
   });
 });

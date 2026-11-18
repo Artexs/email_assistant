@@ -51,4 +51,9 @@ export interface TapSource {
 export interface UpdateHandlers {
   command(link: LinkedChat, name: CommandName): Promise<OutMessage>;
   callback(link: LinkedChat, data: string, source?: TapSource): Promise<CallbackResult>;
+  /**
+   * A line of text that replies to a message of the bot (`replyToMessageId`). The answer, or `undefined` when the line answers no
+   * message that takes text: the bot then gives its help answer. Any other text (no reply) never reaches this handler.
+   */
+  text(link: LinkedChat, text: string, replyToMessageId: number): Promise<OutMessage | undefined>;
 }

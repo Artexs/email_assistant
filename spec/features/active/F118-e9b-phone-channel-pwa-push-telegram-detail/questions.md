@@ -11,7 +11,7 @@ Part of [plan.md](plan.md). None of these blocks the plan. Each has a default th
 - **Q5** `[minor]` The org lock does not change the members' stored levels; while it is on, everyone gets `minimal`; on unlock, members who chose `full` get `full` again. **Default:** yes.
 - **Q6** `[important: security]` Push endpoints come from the browser. **Default (D19):** only `https` hosts under `fcm.googleapis.com`, `push.services.mozilla.com`, `push.apple.com`, `notify.windows.com`; any other host is refused. A new browser vendor needs a code change.
 - **Q7** `[important: user-visible]` When the chosen channel does not exist (route "Phone" but no device, or "Telegram" but no chat), the notice goes to the other channel if it exists; a push that fails `no_device` later falls back to Telegram (D23). **Default:** yes. A push-only user whose only device ends loses that notice (nothing to fall back to).
-- **Q8** `[minor]` At most 10 devices per user; the 11th removes the oldest. **Default:** yes.
+- **Q8** `[minor]` At most 10 devices per user; the 11th removes a dead device first (no live session), else the oldest. **Default:** yes.
 - **Q9** `[minor]` Urgent push opens `/activity?category=urgent`, not one mail (there is no mail page, and the mail id does not go into the payload). **Default:** yes.
 - **Q10** `[minor]` Payload language: the payload holds `lang` (`pl` or `en`), so the service worker shows the text in the user's language. **Default:** yes; `lang` is not mail data.
 - **Q11** `[minor]` The M5 metric and the urgent-latency SLO keep counting Telegram rows only; an org with only push users is outside the alert. **Default:** yes for F118; a later ticket can add push to M5.

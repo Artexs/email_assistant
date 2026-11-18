@@ -9,6 +9,7 @@ import type { CallbackDeps } from "./approval-taps";
 import { replyConsentOf } from "./consent";
 import { panelListUrlOf } from "./notices/approval";
 import type { CallbackResult, LinkedChat, TapSource } from "./port";
+import { handleReplyChangeTap } from "./reply-redraft";
 import { panelBaseOf, queueNextReviewCard } from "./reply-review";
 import { findApprovalCardOfTap } from "./repo";
 
@@ -44,7 +45,8 @@ export async function nextReviewResult(
   return next.kind === "none" ? { send: { text: texts.approvals.reply.noMore, buttons: [] } } : {};
 }
 
-// `reply_review` (the Review button of the notice) and `reply_skip` (the Skip button of a card). Owners only, flag `reply_drafts` on and
+// `reply_review` (the Review button of the notice), `reply_skip` (the Skip button of a card) and the buttons that change a reply (Redraft,
+// Reply all, Use Reply-To, Draft reply: `reply-redraft.ts`). Owners only, flag `reply_drafts` on and
 // the Telegram consent of the user must cover reply data. The card itself goes out through the outbox (kind `approval`, so the
 // card sync finds it), not as the answer of the tap.
 export async function handleReplyCallback(
@@ -61,7 +63,7 @@ export async function handleReplyCallback(
   log.info("tap_received", {
     kind: callback.kind,
     user_id: link.userId,
-    ...(callback.kind === "reply_skip" ? { action_id: callback.sendId } : {}),
+    ...("sendId" in callback ? { action_id: callback.sendId } : {}),
   });
   if (!(await isFeatureOn(deps.db, ctx, "reply_drafts"))) return { answer: taps.featureOff };
   if (!(await replyConsentOf(deps.db, ctx, [link.userId])).has(link.userId)) {
@@ -70,6 +72,7 @@ export async function handleReplyCallback(
   if (callback.kind === "reply_review") {
     return { answer: "", ...(await nextReviewResult(deps, ctx, link, callback.afterId, texts, now)) };
   }
+  if (callback.kind !== "reply_skip") return handleReplyChangeTap(deps, link, ctx, callback, texts, source);
   const send = await getSend(deps.db, ctx, callback.sendId);
   if (send === undefined || send.payload.kind !== "reply") return { answer: taps.notFound };
   // The skipped card loses its buttons and says so. A send that is not open any more has its own closing edit.

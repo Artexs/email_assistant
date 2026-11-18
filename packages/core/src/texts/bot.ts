@@ -1,3 +1,4 @@
+import type { ReplyBlockReason } from "../replies/eligibility";
 import type { UserLocale } from "../tenancy";
 
 import { pluralCategory } from "./locale";
@@ -109,6 +110,23 @@ export interface BotTexts {
     wentOutSentAgain: string;
     wentOutNotUnknown: string;
     wentOutDelegationNotOpen: string;
+    // The taps and the reply text of the reply drafts (Redraft, Reply all, Use Reply-To, Draft reply).
+    reply: {
+      drafting: string; // the answer to "Draft reply": the card follows as a new message
+      redraftAsk: string; // the answer to Redraft: the user writes one line next
+      redraftQueued: string; // the message after the user's line: a new version follows
+      redraftLimit: string; // the fifth redraft of one mail was made already
+      instructionLength: string; // the line is empty or over 300 characters
+      closed: string; // the draft does not wait any more
+      recipientsDone: string;
+      tooManyRecipients: string;
+      noReplyTo: string;
+      noOthers: string; // Reply all: the mail has no other recipient
+      badRecipient: string; // an address of the mail cannot be used as a recipient
+      recipientsUnchanged: string;
+      // Why a draft cannot be made now: the reasons of the eligibility rule and the closed gate of the mailbox.
+      blocked: Record<ReplyBlockReason | "policy_changed", string>;
+    };
   };
 }
 
@@ -280,7 +298,7 @@ export const botTexts = {
       featureOff: "Reply drafts are switched off. Nothing was sent.",
       rejectedNow: "✖️ Rejected. The draft will be removed.",
       notFound: "This mail is not in your account.",
-      changed: "This draft was changed in the panel. Use the newest message.",
+      changed: "This draft was changed. Use the newest message.",
       sendAgain: "⏳ A new send was approved. Sending within a minute.",
       sendAgainHeld: {
         scope: "A new send was approved. Sending is held by SEND_SCOPE on the server; /status shows it.",
@@ -311,6 +329,35 @@ export const botTexts = {
       wentOutSentAgain: "The mail was sent again: no change.",
       wentOutNotUnknown: "This send is not in the unknown state: no change.",
       wentOutDelegationNotOpen: "The delegation is not waiting for this answer any more: no change.",
+      reply: {
+        drafting: "✍️ Drafting. The draft comes as a new message.",
+        redraftAsk: "Write one line as a reply to the message below.",
+        redraftQueued: "✍️ Writing a new version. It comes as a new message.",
+        redraftLimit: "This draft has 5 new versions already. Edit it in the panel.",
+        instructionLength: "Write one line of 1 to 300 characters.",
+        closed: "This draft is closed. Nothing changed.",
+        recipientsDone: "👥 Recipients changed. The new version comes as a new message.",
+        tooManyRecipients: "Too many recipients: a reply goes to at most 10 more people. Use the panel.",
+        noReplyTo: "This mail has no other Reply-To address.",
+        noOthers: "This mail has no other recipients.",
+        badRecipient: "An address of this mail cannot be used. Change the recipients in the panel.",
+        recipientsUnchanged: "The draft already goes to these recipients.",
+        blocked: {
+          not_checked: "This mail is not checked yet. Try again in a few minutes.",
+          category: "This mail does not need a reply.",
+          junk_source: "This mail came from the spam folder. No draft.",
+          not_a_person: "This mail is automatic or from a mailing list. No draft.",
+          own_mailbox: "This mail is from your own mailbox. No draft.",
+          suspicious: "This mail looks suspicious. No draft.",
+          calendar: "This is a calendar invitation. Answer it in your calendar.",
+          answered: "This mail has an answer already.",
+          too_old: "This mail is too old for a draft.",
+          language: "The language of this mail is not clear. No draft.",
+          open_newer: "A newer mail in this thread has a draft already.",
+          oauth_mailbox: "Reply drafts do not work for this kind of mailbox yet.",
+          policy_changed: "Reply drafts are off for this mailbox. Turn them on in the panel.",
+        },
+      },
     },
   },
   pl: {
@@ -410,7 +457,7 @@ export const botTexts = {
       featureOff: "Szkice odpowiedzi są wyłączone. Nic nie wysłano.",
       rejectedNow: "✖️ Odrzucono. Szkic zostanie usunięty.",
       notFound: "Tej wiadomości nie ma na Twoim koncie.",
-      changed: "Ten szkic zmieniono w panelu. Użyj najnowszej wiadomości.",
+      changed: "Ten szkic został zmieniony. Użyj najnowszej wiadomości.",
       sendAgain: "⏳ Zatwierdzono nową wysyłkę. Wysyłanie w ciągu minuty.",
       sendAgainHeld: {
         scope:
@@ -448,6 +495,35 @@ export const botTexts = {
       wentOutSentAgain: "Wiadomość wysłano ponownie: bez zmian.",
       wentOutNotUnknown: "Ta wysyłka nie jest w stanie nieznanym: bez zmian.",
       wentOutDelegationNotOpen: "Zlecenie nie czeka już na tę odpowiedź: bez zmian.",
+      reply: {
+        drafting: "✍️ Piszę szkic. Przyjdzie w nowej wiadomości.",
+        redraftAsk: "Napisz jedną linijkę w odpowiedzi na wiadomość poniżej.",
+        redraftQueued: "✍️ Piszę nową wersję. Przyjdzie w nowej wiadomości.",
+        redraftLimit: "Ten szkic ma już 5 nowych wersji. Edytuj go w panelu.",
+        instructionLength: "Napisz jedną linijkę, od 1 do 300 znaków.",
+        closed: "Ten szkic jest zamknięty. Nic się nie zmieniło.",
+        recipientsDone: "👥 Zmieniono odbiorców. Nowa wersja przyjdzie w nowej wiadomości.",
+        tooManyRecipients: "Zbyt wielu odbiorców: odpowiedź może trafić najwyżej do 10 dodatkowych osób. Użyj panelu.",
+        noReplyTo: "Ta wiadomość nie ma innego adresu Reply-To.",
+        noOthers: "Ta wiadomość nie ma innych odbiorców.",
+        badRecipient: "Nie można użyć jednego z adresów tej wiadomości. Zmień odbiorców w panelu.",
+        recipientsUnchanged: "Szkic już trafia do tych odbiorców.",
+        blocked: {
+          not_checked: "Ta wiadomość nie została jeszcze sprawdzona. Spróbuj za kilka minut.",
+          category: "Ta wiadomość nie wymaga odpowiedzi.",
+          junk_source: "Ta wiadomość pochodzi z folderu spam. Brak szkicu.",
+          not_a_person: "Ta wiadomość jest automatyczna albo z listy mailingowej. Brak szkicu.",
+          own_mailbox: "Ta wiadomość pochodzi z Twojej własnej skrzynki. Brak szkicu.",
+          suspicious: "Ta wiadomość wygląda podejrzanie. Brak szkicu.",
+          calendar: "To zaproszenie z kalendarza. Odpowiedz na nie w kalendarzu.",
+          answered: "Ta wiadomość ma już odpowiedź.",
+          too_old: "Ta wiadomość jest za stara na szkic.",
+          language: "Nie można ustalić języka tej wiadomości. Brak szkicu.",
+          open_newer: "Nowsza wiadomość w tym wątku ma już szkic.",
+          oauth_mailbox: "Szkice odpowiedzi nie działają jeszcze dla tego typu skrzynki.",
+          policy_changed: "Szkice odpowiedzi są wyłączone dla tej skrzynki. Włącz je w panelu.",
+        },
+      },
     },
   },
 } satisfies Record<UserLocale, BotTexts>;
