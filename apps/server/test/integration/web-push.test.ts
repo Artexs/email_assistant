@@ -75,7 +75,8 @@ async function register(cookie: string, receiver = newReceiver(), endpoint = `${
 }
 
 describe("the flag web_push", () => {
-  test("1. off: every route answers 404 not_found, for the owner and the assistant", async () => {
+  test("1. off: every route answers 404 not_found, for the owner and the assistant; a real device stays", async () => {
+    const mine = await register(owner);
     await db.deleteFrom("org_features").where("org_id", "=", org.orgId).execute();
     const calls: [string, string][] = [
       ["GET", "/api/me/push"],
@@ -103,7 +104,10 @@ describe("the flag web_push", () => {
         });
       }
     }
-    expect(await devicesOf(org.ownerId)).toHaveLength(0);
+    // The id of a real device of the caller: with the flag off the DELETE is a 404 too, and the device stays.
+    const real = await app().request(`/api/me/push/devices/${mine.id}`, as(owner, { method: "DELETE" }));
+    expect({ status: real.status, body: await real.json() }).toEqual({ status: 404, body: { error: "not_found" } });
+    expect(await devicesOf(org.ownerId)).toHaveLength(1);
     expect(push.calls).toHaveLength(0);
   });
 
@@ -261,6 +265,11 @@ describe("PUT /api/me/push/subscription and GET /api/me/push", () => {
       expect({ name, status: res.status }).toEqual({ name, status });
       expect(text).not.toContain("CANARYPUSH");
       expect(text).not.toContain(receiver.sub.p256dh);
+      // The size caps and the strict objects answer from the schema, not from a later check.
+      const code = (JSON.parse(text) as { details?: { code: string }[] }).details?.[0]?.code;
+      const expected = { "endpoint 1025": "too_big", "p256dh 101": "too_big", "auth 51": "too_big" }[name];
+      if (expected !== undefined) expect({ name, code }).toEqual({ name, code: expected });
+      if (name.startsWith("extra")) expect({ name, code }).toEqual({ name, code: "unrecognized_keys" });
     }
     const notJson = await app().request("/api/me/push/subscription", {
       ...put(owner, {}),
@@ -453,6 +462,19 @@ describe("POST /api/me/push/test", () => {
     const later = await app().request("/api/me/push/test", as(owner, { method: "POST", body: {} }));
     expect(later.status).toBe(200);
     expect(await auditOf("push.test_sent")).toHaveLength(PUSH_TEST_LIMIT + 2);
+  });
+
+  test("6c. twelve calls at once: exactly 5 pass and 7 answer 429 (the count and its audit row sit under the user lock)", async () => {
+    await register(owner);
+    const answers = await Promise.all(
+      Array.from({ length: 12 }, () => app().request("/api/me/push/test", as(owner, { method: "POST", body: {} })))
+    );
+    expect(answers.map((res) => res.status).sort()).toEqual([
+      ...Array(PUSH_TEST_LIMIT).fill(200),
+      ...Array(12 - PUSH_TEST_LIMIT).fill(429),
+    ]);
+    expect(await auditOf("push.test_sent")).toHaveLength(PUSH_TEST_LIMIT);
+    expect(push.calls).toHaveLength(PUSH_TEST_LIMIT);
   });
 
   test("a call with no device on the session counts and answers sent 0", async () => {
