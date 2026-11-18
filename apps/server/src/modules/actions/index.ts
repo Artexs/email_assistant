@@ -137,6 +137,16 @@ export type {
   UndoCandidate,
 } from "./repo";
 export { createCommitterJob, createFolderResolver, type CommitterDeps } from "./committer";
+export { closeSend, closeSendReasons, type CloseSendDeps, type CloseSendReason, type CloseSendResult } from "./close";
+export { approvalExpiresAt, approvalExpiryReason, sendKindOf, type LifetimeRow } from "./lifetime";
+export {
+  replaceApproval,
+  type LockedPair,
+  type ReplaceDeps,
+  type ReplacePayload,
+  type ReplaceRefusal,
+  type ReplaceResult,
+} from "./replace";
 export { APPROVAL_TTL_MS, STALE_AFTER_MS } from "./constants";
 export {
   claimFilterFor,

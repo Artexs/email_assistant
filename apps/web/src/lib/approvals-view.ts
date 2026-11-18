@@ -173,6 +173,10 @@ export function failureOutcome(error: unknown): FailureOutcome {
         : { kind: "changed", currentId: conflict.data.currentId };
     case "draft_not_ready":
       return { kind: "notice", key: "appr_draft_not_ready" };
+    case "has_gaps":
+      return { kind: "notice", key: "appr_has_gaps" };
+    case "feature_off":
+      return { kind: "notice", key: "appr_feature_off" };
     case "closed":
       return { kind: "notice", key: closedTextKey(conflict.data.state) };
     case "drafts_off":

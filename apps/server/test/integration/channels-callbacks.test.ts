@@ -1047,6 +1047,28 @@ describe("approval taps", () => {
     });
   });
 
+  test("(5e) a reply with a gap and a reply while the flag is off: the tap answers and changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        kind: "reply",
+        replyBody: "Tak [[godzina]]",
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      expect(await handleCallback(s.deps, s.owner1, `ap:${sendId}`)).toEqual({
+        answer: textTables.en.bot.taps.featureOff,
+      });
+      await setOrgFeature(trx, s.ctx, { flag: "reply_drafts", enabled: true, actor: "cli", now: T });
+      expect(await handleCallback(s.deps, s.owner1, `ap:${sendId}`)).toEqual({
+        answer: textTables.en.bot.taps.hasGaps,
+      });
+      expect(await sendRow(trx, sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
+    });
+  });
+
   test("(7c) another organization's set id: nothing happens, the rows stay", async () => {
     await withRollback(db, async (trx) => {
       const s = await approvalSetup(trx);

@@ -9,6 +9,7 @@ import {
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { updateMailboxSettings } from "../../src/modules/config";
+import { setOrgFeature } from "../../src/modules/tenancy";
 
 import { insertDelegation } from "./fixtures";
 import { testDb } from "./helpers";
@@ -75,6 +76,23 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
     const res = await s.app.request(`/api/approvals/${id}/approve`, post("owner", "approve"));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "draft_not_ready" });
+    expect(await send(id)).toMatchObject({ status: "awaiting_approval", approved_by: null });
+    expect(await editRows(s.org.orgId)).toEqual([]);
+  });
+
+  test("T5b. a reply that still has a gap: 409 has_gaps; with the flag off: 409 feature_off; nothing changes", async () => {
+    const s = await setup();
+    const id = await addSend(s, { kind: "reply", replyBody: "Tak [[godzina]]" });
+
+    // The flag `reply_drafts` is off by default.
+    const off = await s.app.request(`/api/approvals/${id}/approve`, post("owner", "approve"));
+    expect(off.status).toBe(409);
+    expect(approvalConflictSchema.parse(await off.json())).toEqual({ error: "feature_off" });
+
+    await setOrgFeature(db, s.ctx, { flag: "reply_drafts", enabled: true, actor: "cli", now: NOW });
+    const gaps = await s.app.request(`/api/approvals/${id}/approve`, post("owner", "approve"));
+    expect(gaps.status).toBe(409);
+    expect(approvalConflictSchema.parse(await gaps.json())).toEqual({ error: "has_gaps" });
     expect(await send(id)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     expect(await editRows(s.org.orgId)).toEqual([]);
   });

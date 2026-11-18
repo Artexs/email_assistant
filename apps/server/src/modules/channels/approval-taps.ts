@@ -159,6 +159,10 @@ export async function handleApprovalCallback(
           return { answer: taps.changed };
         case "draft_not_ready":
           return { answer: taps.draftNotReady };
+        case "has_gaps":
+          return { answer: taps.hasGaps };
+        case "feature_off":
+          return { answer: taps.featureOff };
         case "not_found":
           return { answer: taps.notFound };
       }

@@ -85,6 +85,8 @@ export interface BotTexts {
     expired: string;
     failed: string;
     draftNotReady: string;
+    hasGaps: string; // a reply draft that still holds a gap `[[…]]`
+    featureOff: string; // the reply drafts are switched off
     rejectedNow: string;
     notFound: string;
     changed: string; // an old card of a draft that a panel edit replaced
@@ -274,6 +276,8 @@ export const botTexts = {
       expired: "This approval expired (48 h). The mail was not sent.",
       failed: "This send failed. See the result notice.",
       draftNotReady: "The draft is not in Drafts yet. Tap again in a minute.",
+      hasGaps: "This draft still has a gap ([[…]]). Fill it in the panel first. Nothing was sent.",
+      featureOff: "Reply drafts are switched off. Nothing was sent.",
       rejectedNow: "✖️ Rejected. The draft will be removed.",
       notFound: "This mail is not in your account.",
       changed: "This draft was changed in the panel. Use the newest message.",
@@ -402,6 +406,8 @@ export const botTexts = {
       expired: "To zatwierdzenie wygasło (48 h). Wiadomość nie została wysłana.",
       failed: "Ta wysyłka nie powiodła się. Zobacz komunikat z wynikiem.",
       draftNotReady: "Szkicu nie ma jeszcze w folderze Drafts. Stuknij ponownie za minutę.",
+      hasGaps: "W tym szkicu jest jeszcze luka ([[…]]). Najpierw uzupełnij ją w panelu. Nic nie wysłano.",
+      featureOff: "Szkice odpowiedzi są wyłączone. Nic nie wysłano.",
       rejectedNow: "✖️ Odrzucono. Szkic zostanie usunięty.",
       notFound: "Tej wiadomości nie ma na Twoim koncie.",
       changed: "Ten szkic zmieniono w panelu. Użyj najnowszej wiadomości.",

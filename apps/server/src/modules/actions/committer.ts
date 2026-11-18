@@ -27,7 +27,7 @@ import {
   type OpenDeps,
   type SmtpConnectOptions,
 } from "../mail";
-import { getOrganization, isOrgSuspended, listMemberships } from "../tenancy";
+import { getOrganization, isFeatureOn, isOrgSuspended, listMemberships } from "../tenancy";
 
 import { APPLY_HANDLERS, applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
 import type { ApplyNeeds } from "./apply-shared";
@@ -349,9 +349,12 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     if (expired > 0) mailboxLog.warn("committer_stale_expired", { count: expired });
 
     const sendScope = deps.sendScope ?? { kind: "off" };
+    // The flag of the reply drafts stops their sends too: an approved reply waits while it is off (the expiry job ends it).
+    const replies = (await isFeatureOn(deps.db, ctx, "reply_drafts")) ? undefined : ("off" as const);
     const filter = {
       mailbox: claimFilterFor(deps.scope),
       send: sendFilterFor(sendScope),
+      ...(replies === undefined ? {} : { replies }),
     };
     await warnWhenHeldBack(ctx, mailboxId, now);
     await warnWhenSendsHeld(ctx, mailboxId, sendScope, filter.send);

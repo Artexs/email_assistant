@@ -12,13 +12,13 @@ import {
 
 import type { Db, TenantContext } from "../../platform/db";
 import {
-  APPROVAL_TTL_MS,
+  approvalExpiresAt,
   getDraft,
   getSend,
   listApprovalSends,
   newestVersionOf,
+  sendKindOf,
   STALE_AFTER_MS,
-  UNNOTIFIED_TTL_MS,
   type DraftRow,
   type SendRow,
   type SendScope,
@@ -61,15 +61,11 @@ export function stateOf(send: SendRow, now: Date): DetailState | undefined {
   }
 }
 
-// `waiting` from the link to Telegram (`notified_at`), else from the plan time; `held` from the tap.
+// The end of the approval: `approvalExpiresAt` is the one rule (a reply 7 days after it was made, another kind 48 h after the owner
+// was told or 7 days after it was planned, a held send 48 h after the tap).
 export function expiresAtOf(send: SendRow, state: DetailState): Date | null {
-  if (state === "waiting") {
-    return send.notified_at === null
-      ? new Date(send.created_at.getTime() + UNNOTIFIED_TTL_MS)
-      : new Date(send.notified_at.getTime() + APPROVAL_TTL_MS);
-  }
-  if (state === "held") return new Date((send.approved_at ?? send.created_at).getTime() + APPROVAL_TTL_MS);
-  return null;
+  if (state !== "waiting" && state !== "held") return null;
+  return approvalExpiresAt(sendKindOf(send.payload), send);
 }
 
 interface Built {

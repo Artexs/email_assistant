@@ -1,14 +1,16 @@
-import { sendPayloadSchema } from "@ea/core";
+import { draftPayloadSchema, hasGaps, sendPayloadSchema } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { auditEvents, recordAudit } from "../audit";
+import { isFeatureOn } from "../tenancy";
 
 import { inTransaction } from "./apply-shared";
-import { APPROVAL_TTL_MS, DELEGATION_DUE_AFTER_MS, STALE_AFTER_MS, UNNOTIFIED_TTL_MS } from "./constants";
+import { DELEGATION_DUE_AFTER_MS, STALE_AFTER_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import type { ApprovalHooks, DelegationHooks, LoopHooks } from "./hooks";
+import { approvalExpiresAt, approvalExpiryReason, sendKindOf } from "./lifetime";
 import {
   findSendByKey,
   getDraft,
@@ -56,6 +58,10 @@ export type ApproveResult =
   // A panel edit replaced this send: `currentId` is the newest version.
   | { kind: "superseded"; currentId: string }
   | { kind: "draft_not_ready" }
+  // A reply whose text still holds a gap (`[[`): the user fills it first (an edit makes a new version).
+  | { kind: "has_gaps" }
+  // The flag `reply_drafts` is off: a reply send does not go out.
+  | { kind: "feature_off" }
   | { kind: "not_found" };
 
 export type RejectResult =
@@ -138,18 +144,26 @@ async function approveRow(
 ): Promise<ApproveResult> {
   switch (send.status) {
     case "awaiting_approval": {
-      // The hourly job is late by up to an hour: a tap in that window must not send (D18).
-      if (send.notified_at !== null && send.notified_at.getTime() + APPROVAL_TTL_MS < input.now.getTime()) {
-        return expireByTap(trx, deps, ctx, send, input, "timeout");
+      // The hourly job is late by up to an hour: a tap in that window must not send. `approvalExpiresAt` is the one rule of the
+      // limit: 48 h after the owner was told, 7 days after the plan when no owner was told (the panel can approve such a send),
+      // and for a reply 7 days after it was made, whatever `notified_at`.
+      const kind = sendKindOf(send.payload);
+      const expiresAt = approvalExpiresAt(kind, send);
+      if (expiresAt !== null && expiresAt.getTime() < input.now.getTime()) {
+        return expireByTap(trx, deps, ctx, send, input, approvalExpiryReason(kind, send));
       }
-      // A send that no owner was told about (`notified_at` null: no linked Telegram chat) has the 7-day limit of the expiry job; the panel
-      // can approve it, so the check runs here too, for the same reason: the hourly job is late by up to an hour.
-      if (send.notified_at === null && send.created_at.getTime() + UNNOTIFIED_TTL_MS < input.now.getTime()) {
-        return expireByTap(trx, deps, ctx, send, input, "not_notified");
-      }
-      // A send whose draft is not in Drafts yet (or never will be) must not go out: the tap changes nothing.
+      // A reply goes out only while its flag is on (a kill switch that stops sends too).
+      if (kind === "reply" && !(await isFeatureOn(trx, ctx, "reply_drafts"))) return { kind: "feature_off" };
       const draft =
         send.depends_on_action_id === null ? undefined : await getDraft(trx, ctx, send.depends_on_action_id);
+      // A reply with a gap in its effective text (`body_text ?? body`) is not approvable: the user edits it first.
+      if (kind === "reply" && draft !== undefined) {
+        const draftPayload = draftPayloadSchema.safeParse(draft.payload);
+        // A text that cannot be read cannot be checked for gaps: nothing goes out.
+        if (!draftPayload.success || draftPayload.data.kind !== "reply") return { kind: "draft_not_ready" };
+        if (hasGaps(draftPayload.data.body_text ?? draftPayload.data.body)) return { kind: "has_gaps" };
+      }
+      // A send whose draft is not in Drafts yet (or never will be) must not go out: the tap changes nothing.
       if (draft?.status !== "applied") return { kind: "draft_not_ready" };
       const changed = await setApproved(trx, ctx, send.id, { userId: input.userId, via: input.via, at: input.now });
       if (!changed) throw new HardError("a locked awaiting_approval send did not change");

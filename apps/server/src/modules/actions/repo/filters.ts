@@ -9,6 +9,9 @@ export type SendClaimFilter = { kind: "none" } | { kind: "self"; addresses: stri
 export interface ClaimFilter {
   mailbox: MailboxClaimFilter;
   send: SendClaimFilter;
+  // `off`: the flag `reply_drafts` of the organization is off, so an `approved` reply send is not claimed (it waits and ends as
+  // `held_timeout`). Absent: replies are claimed as every other send. The committer sets it on every run.
+  replies?: "off";
 }
 export const sqlTrue = sql<SqlBool>`true`;
 const sqlFalse = sql<SqlBool>`false`;

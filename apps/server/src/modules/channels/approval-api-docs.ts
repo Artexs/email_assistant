@@ -48,7 +48,7 @@ export const approvalDocs = {
       notFound,
       {
         status: 409,
-        codes: ["changed", "draft_not_ready", "closed"],
+        codes: ["changed", "draft_not_ready", "has_gaps", "feature_off", "closed"],
         schema: approvalConflictSchema,
       },
     ],

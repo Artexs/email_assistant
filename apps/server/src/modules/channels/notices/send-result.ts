@@ -67,7 +67,9 @@ async function resultKindOf(
           };
         case "outcome_unknown":
           return { kind: "outcome_unknown" };
+        // A reply with a gap never went out: the stored data was not valid for a send.
         case "bad_payload":
+        case "has_gaps":
           return { kind: "failed", cause: "bad_payload", code: null, tries: row.attempts };
         default: {
           const cause =

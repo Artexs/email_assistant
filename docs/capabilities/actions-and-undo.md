@@ -101,7 +101,7 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; test
                  approved → rejected                                  (the Reject tap on an approved send that no committer holds, or whose lock is stale)
                  awaiting_approval → expired                          (timeout: 48 h after notified_at, request received | draft_missing | not_notified: 7 days after creation, no owner | not_seen: request not received, at the resume of a suspended organization or 48 h after notified_at |
                                                                        policy_changed | delegation_closed | superseded: a panel edit made a newer version; the new send starts at awaiting_approval, the new draft at ready)
-                 approved → expired                                   (held_timeout: 48 h after the tap, when no committer holds it; or delegation_closed)
+                 approved → expired                                   (held_timeout: 48 h after the tap, when no committer holds it; or delegation_closed; or a `closeSend` reason of the reply drafts, `drafts-and-send.md` rule 16)
                  applied → undone                                     (Undo button, or the user moved the mail back: user_moved_back)
                  logged                                               (policy log_only, for example shadow mode)
                  ready | approved → same status, retry later          (soft error: no count; hard error: attempts + 1)
@@ -115,7 +115,7 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; test
                  create_draft reverse row: ready → applied            (removes the draft after sent | rejected | expired; the original draft becomes undone; failed after 3 hard errors)
                  ready | approved | applying → failed                 (after 3 hard errors; notice to the user)
                  ready → failed                                       (mail_not_found, bad_payload: at once, no count)
-                 approved → failed                                    (send: bad_payload, or the third compose error with smtp_error, before the SMTP call)
+                 approved → failed                                    (send: bad_payload, or has_gaps for a reply text with a gap, or the third compose error with smtp_error, before the SMTP call)
 ```
 
 - `actions`: `type` (`move`, `mark_read`, `flag`, `save_summary`, `create_draft`, `send`), `payload`, `status`, `status_reason`, `attempts`, `next_attempt_at`, `locked_at`, `last_error` (no mail text), `provider_result`, `reverses_action_id` (a reverse row of an Undo; unique), `supersedes_action_id` (F102: a `create_draft` or `send` row that replaces an older row of the same organization after a panel edit; composite FK `(supersedes_action_id, org_id)`; unique where not null; the replaced send is `expired` with the reason `superseded`; [drafts-and-send.md](drafts-and-send.md) rule 12), `applied_at` (the Undo window counts from it), `notified_at` (set by the `action_failed` detector). The full column list is in `docs/architecture.md` §5.

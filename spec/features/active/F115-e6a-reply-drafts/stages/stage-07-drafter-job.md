@@ -37,3 +37,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (exactly-once, LLM spend). Needs 0
 
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the copy hash (08), the pre-send pass and the sweep (09), notices (12).
+
+## Carry-over from stage 04 and 05
+
+- **Payload folder is never a command target.** The `folder` of a reply payload is the folder of the mail at request time. It is data to compare with `emails.folder` (the `original_moved` rule), never a folder to move to, delete from or APPEND into. Stage 07 proves it with a test: a reply whose payload `folder` is a hostile text (`"INBOX; DELETE"`, a path of another mailbox) makes no IMAP command and no move; the draft goes to `Drafts` only.
+- Stage 05 gave `closeSend` (see `interfaces.md`); the thread close of step 4 calls it with the `deps` of `approvals` (`hooks`, `approvalHooks`, `uidplus`).

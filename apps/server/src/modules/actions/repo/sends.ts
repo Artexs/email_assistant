@@ -207,11 +207,19 @@ export async function getSend(db: DbOrTrx, ctx: TenantContext, id: string): Prom
 // `from` guards the change. An `approved` send closes only when no run holds it (`locked_at` null or before `staleBefore`).
 // `result_notified_at` stays null: the notifier sends the result (D20). `resultNotifiedAt` is for the send that a panel edit
 // replaced (`superseded`): no result notice is due (F102 ticket). The caller writes the audit row.
+// `ignoreLock`: the caller is the run that holds the lock of an `approved` row (the committer), so the lock does not stop the close.
 export async function setExpired(
   trx: Transaction<DB>,
   ctx: TenantContext,
   id: string,
-  opts: { reason: string; at: Date; from: "awaiting_approval" | "approved"; staleBefore: Date; resultNotifiedAt?: Date }
+  opts: {
+    reason: string;
+    at: Date;
+    from: "awaiting_approval" | "approved";
+    staleBefore: Date;
+    resultNotifiedAt?: Date;
+    ignoreLock?: boolean;
+  }
 ): Promise<boolean> {
   const result = await trx
     .updateTable("actions")
@@ -227,7 +235,7 @@ export async function setExpired(
     .where("org_id", "=", ctx.orgId)
     .where("type", "=", "send")
     .where("status", "=", opts.from)
-    .$if(opts.from === "approved", (qb) =>
+    .$if(opts.from === "approved" && opts.ignoreLock !== true, (qb) =>
       qb.where((eb) => eb.or([eb("locked_at", "is", null), eb("locked_at", "<", opts.staleBefore)]))
     )
     .executeTakeFirst();

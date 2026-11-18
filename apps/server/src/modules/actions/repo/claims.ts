@@ -132,6 +132,7 @@ function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts
         eb("actions.status", "=", "approved"),
         eb("actions.approved_at", ">=", new Date(opts.now.getTime() - APPROVAL_TTL_MS)),
         sendFilterExpr(send),
+        opts.filter.replies === "off" ? sql<SqlBool>`actions.payload->>'kind' is distinct from 'reply'` : sqlTrue,
       ]),
       eb("actions.status", "=", "applying"),
     ]),

@@ -920,6 +920,8 @@ export const en = {
   appr_done_rejected: "Rejected.",
   appr_changed: "This draft was changed. Check the new version.",
   appr_draft_not_ready: "The draft is not ready yet. Try again in a moment.",
+  appr_has_gaps: "This reply still has a gap in double square brackets. Fill it in, then approve.",
+  appr_feature_off: "Reply drafts are switched off. Nothing was sent.",
   appr_closed_held: "This draft is already approved. It waits to be sent.",
   appr_closed_sending: "This draft is already approved and is being sent.",
   appr_closed_sent: "This draft was already sent.",

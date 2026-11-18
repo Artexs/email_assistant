@@ -123,6 +123,8 @@ export function editOutcome(error: unknown): EditOutcome {
       case "drafts_off":
         return { kind: "message", key: "appr_edit_drafts_off" };
       case "draft_not_ready":
+      case "has_gaps":
+      case "feature_off":
         return { kind: "error", key: errorText(error) };
     }
   }

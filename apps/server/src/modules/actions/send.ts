@@ -1,6 +1,7 @@
 import {
   DEFAULT_SEND_LIMITS,
   draftPayloadSchema,
+  hasGaps,
   sendPayloadSchema,
   sameAddresses,
   sendRecipients,
@@ -73,7 +74,7 @@ interface Prepared {
 }
 
 interface Failure {
-  reason: "smtp_rejected" | "smtp_error" | "outcome_unknown" | "bad_payload";
+  reason: "smtp_rejected" | "smtp_error" | "outcome_unknown" | "bad_payload" | "has_gaps";
   // The row is `approved` before `markApplying` (payload and compose errors), else `applying`.
   from: "approved" | "applying";
   cancel: "send_failed" | "outcome_unknown";
@@ -202,6 +203,22 @@ async function prepare(
 const badPayload = (deps: ApplyDeps, ctx: TenantContext, action: ClaimedAction): Promise<ApplyOutcome> =>
   failSend(deps, ctx, action, {
     reason: "bad_payload",
+    from: "approved",
+    cancel: "send_failed",
+    providerResult: { stage: "payload" },
+    auditData: { action_type: "send", stage: "payload" },
+  });
+
+// A reply whose effective text (`body_text ?? body`) holds a gap (`[[`) never goes out. The product cannot make such a send (the tap
+// refuses it); this guards a hand edit of the database. The row ends `failed` / `has_gaps` before any SMTP call.
+function replyHasGaps(draft: DraftRow): boolean {
+  const payload = draftPayloadSchema.safeParse(draft.payload);
+  return payload.success && payload.data.kind === "reply" && hasGaps(payload.data.body_text ?? payload.data.body);
+}
+
+const hasGapsFailure = (deps: ApplyDeps, ctx: TenantContext, action: ClaimedAction): Promise<ApplyOutcome> =>
+  failSend(deps, ctx, action, {
+    reason: "has_gaps",
     from: "approved",
     cancel: "send_failed",
     providerResult: { stage: "payload" },
@@ -534,6 +551,7 @@ export async function applySend(
   let raw: Buffer | null = null;
   try {
     prepared = await prepare(deps, ctx, action, draft);
+    if (prepared !== null && replyHasGaps(draft)) return hasGapsFailure(deps, ctx, action);
     if (prepared !== null) raw = await deps.compose(prepared.message);
   } catch (error) {
     return composeFailed(deps, ctx, action, error);

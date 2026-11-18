@@ -18,6 +18,7 @@ export type ApplyOutcome =
         | "hard_error"
         | "no_provider"
         | "bad_payload"
+        | "has_gaps"
         | "smtp_rejected"
         | "smtp_error"
         | "outcome_unknown";

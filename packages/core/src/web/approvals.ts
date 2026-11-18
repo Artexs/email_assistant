@@ -127,7 +127,14 @@ const closedStatesAreDetailStates: [(typeof approvalClosedStates)[number]] exten
   : false = true;
 void closedStatesAreDetailStates;
 
-export const approvalConflictCodes = ["changed", "closed", "draft_not_ready", "drafts_off"] as const;
+export const approvalConflictCodes = [
+  "changed",
+  "closed",
+  "draft_not_ready",
+  "drafts_off",
+  "has_gaps",
+  "feature_off",
+] as const;
 export const approvalConflictSchema = z.strictObject({
   error: z.enum(approvalConflictCodes),
   currentId: z.uuid().optional(),

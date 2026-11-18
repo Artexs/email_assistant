@@ -67,6 +67,19 @@ describe("bot texts", () => {
     );
   });
 
+  // F115 stage 05: the two answers of a tap on a reply that cannot go out. Fixed values, so a wording change is a decision.
+  test("the Polish tap texts for a reply with a gap and for the flag off", () => {
+    const { taps } = textTables.pl.bot;
+    expect(taps.hasGaps).toBe(
+      "W tym szkicu jest jeszcze luka ([[…]]). Najpierw uzupełnij ją w panelu. Nic nie wysłano."
+    );
+    expect(taps.featureOff).toBe("Szkice odpowiedzi są wyłączone. Nic nie wysłano.");
+    expect(textTables.en.bot.taps.hasGaps).toBe(
+      "This draft still has a gap ([[…]]). Fill it in the panel first. Nothing was sent."
+    );
+    expect(textTables.en.bot.taps.featureOff).toBe("Reply drafts are switched off. Nothing was sent.");
+  });
+
   // The Polish count texts: the noun and the verb follow the count (1, 2, 5, 22).
   test("the Polish reminder-set texts agree with the count", () => {
     const { taps } = textTables.pl.bot;

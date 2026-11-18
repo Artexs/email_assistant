@@ -17,6 +17,7 @@ import {
   lockAnySend,
   lockDraft,
   setExpired,
+  type AnySendRow,
 } from "./repo";
 
 const log = createLog("actions");
@@ -35,31 +36,55 @@ export type SendCloseReason =
 // An `approved` send closes only for these reasons; a tap was given, so a plain timeout of the request does not apply (D22).
 const CLOSES_APPROVED: readonly SendCloseReason[] = ["held_timeout", "delegation_closed", "loop_closed"];
 
-// D22: the cascade for one send. The caller holds the transaction.
-// false = the row was not in a closable state (a tap, a send or another close won).
-// A send in flight (`applying`, or `approved` with a fresh lock) finishes. `result_notified_at` stays null (D20).
-export async function expireSend(
+// What `closeLockedSend` found. `busy`: a run holds the row (`applying`, or `approved` with a fresh lock that the caller does not
+// own). `not_open`: the send is past the states that can close (`state` names it). `lost`: the guarded write changed no row.
+export type CloseLockedResult =
+  | { kind: "closed"; send: AnySendRow }
+  | { kind: "busy" }
+  | { kind: "not_open"; state: string }
+  | { kind: "not_found" }
+  | { kind: "lost" };
+
+// The cascade of one close, for every reason: the send `expired` with the reason, the audit row, the draft, the delegation. The
+// caller holds the transaction. `approvedCloses`: an `approved` send may close for this reason. `claimed`: the caller owns the lock
+// of an `approved` row (the committer), so a fresh lock does not stop the close; an `applying` row never closes.
+// `resultNotifiedAt`: set when no result notice is due.
+export async function closeLockedSend(
   trx: Transaction<DB>,
   ctx: TenantContext,
   sendId: string,
-  opts: { reason: SendCloseReason; now: Date; actor: string; hooks: DelegationHooks; uidplus: boolean }
-): Promise<boolean> {
+  opts: {
+    reason: string;
+    now: Date;
+    actor: string;
+    hooks: DelegationHooks;
+    // Read after the state checks, once the mailbox of the send is known.
+    uidplus(mailboxId: string): Promise<boolean>;
+    approvedCloses: boolean;
+    claimed: boolean;
+    resultNotifiedAt?: Date;
+  }
+): Promise<CloseLockedResult> {
   const send = await lockAnySend(trx, ctx, sendId);
-  if (send === undefined) return false;
+  if (send === undefined) return { kind: "not_found" };
   const staleBefore = new Date(opts.now.getTime() - STALE_AFTER_MS);
   if (send.status === "approved") {
-    if (!CLOSES_APPROVED.includes(opts.reason)) return false;
-    if (send.locked_at !== null && send.locked_at >= staleBefore) return false;
+    if (!opts.approvedCloses) return { kind: "not_open", state: send.status };
+    if (!opts.claimed && send.locked_at !== null && send.locked_at >= staleBefore) return { kind: "busy" };
+  } else if (send.status === "applying") {
+    return { kind: "busy" };
   } else if (send.status !== "awaiting_approval") {
-    return false;
+    return { kind: "not_open", state: send.status };
   }
   const changed = await setExpired(trx, ctx, sendId, {
     reason: opts.reason,
     at: opts.now,
     from: send.status as "awaiting_approval" | "approved",
     staleBefore,
+    ignoreLock: opts.claimed,
+    ...(opts.resultNotifiedAt === undefined ? {} : { resultNotifiedAt: opts.resultNotifiedAt }),
   });
-  if (!changed) return false;
+  if (!changed) return { kind: "lost" };
   await recordAudit(trx, ctx, {
     emailId: send.email_id,
     actionId: sendId,
@@ -73,7 +98,7 @@ export async function expireSend(
     await closeDraftOfSend(trx, ctx, send.depends_on_action_id, {
       reason: "expired",
       now: opts.now,
-      uidplus: opts.uidplus,
+      uidplus: await opts.uidplus(send.mailbox_id),
     });
   }
   const delegationId = send.payload.delegation_id;
@@ -84,7 +109,28 @@ export async function expireSend(
       at: opts.now,
     });
   }
-  return true;
+  return { kind: "closed", send };
+}
+
+// D22: the cascade for one send. The caller holds the transaction.
+// false = the row was not in a closable state (a tap, a send or another close won).
+// A send in flight (`applying`, or `approved` with a fresh lock) finishes. `result_notified_at` stays null (D20).
+export async function expireSend(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  sendId: string,
+  opts: { reason: SendCloseReason; now: Date; actor: string; hooks: DelegationHooks; uidplus: boolean }
+): Promise<boolean> {
+  const result = await closeLockedSend(trx, ctx, sendId, {
+    reason: opts.reason,
+    now: opts.now,
+    actor: opts.actor,
+    hooks: opts.hooks,
+    uidplus: () => Promise.resolve(opts.uidplus),
+    approvedCloses: CLOSES_APPROVED.includes(opts.reason),
+    claimed: false,
+  });
+  return result.kind === "closed";
 }
 
 // D13: the draft of a dead send never lands and never stays behind when the server has UIDPLUS.

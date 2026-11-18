@@ -31,3 +31,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 - **Test:** unit: new version > previous, = `REPLY_CONSENT_SINCE`, ≥ `OPEN_LOOPS_CONSENT_SINCE` when present. Integration: a link with the old version → 409 `telegram_consent_outdated`, the new one → linked; a user linked with the old version taps Review → panel-link answer, no card; after the consent route → cards.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** Redraft, Reply all, Draft reply (13).
+
+## Carry-over from stage 04 and 05
+
+- **The approval detector skips `reply`.** Test 5 above is the proof: the detector (`channels/notices/approval.ts`) lists only sends whose payload kind is not `reply`. Stage 05 also made the `not_seen` rule skip replies (a reply has no `approval:<id>` card), so a reply is never closed because "no owner saw its card".
+- A tap on a reply answers `has_gaps` and `feature_off` with the texts of stage 05 (`taps.hasGaps`, `taps.featureOff`); the review card of this stage shows no Send button for a gap (D15), so those answers cover a stale card only.

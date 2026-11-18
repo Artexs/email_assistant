@@ -1,7 +1,7 @@
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
-import { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS } from "../constants";
+import { APPROVAL_TTL_MS, REPLY_TTL_MS, UNNOTIFIED_TTL_MS } from "../constants";
 
 import { sendFilterExpr, type SendClaimFilter } from "./filters";
 import type { DbOrTrx } from "./shared";
@@ -14,9 +14,13 @@ const requestSent = sql<boolean>`exists (
     and ((o2.kind = 'approval' and o2.dedup_key = 'approval:' || a.id::text)
       or (o2.kind = 'approval_set' and o2.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
 )`;
+// A reply send (payload kind `reply`). The reply rules differ: a 7-day limit from `created_at`, no `not_notified`, no `not_seen`
+// (`approvalExpiresAt` in lifetime.ts holds the same rule for the tap and the panel).
+const isReply = sql<boolean>`(a.payload->>'kind' is not distinct from 'reply')`;
 // D22: the sends of one mailbox that the expiry job closes, each with the first reason that applies.
 // `timeout` needs a delivered request. An old request that no owner received ends as `not_seen`, except in a suspended
 // organization: there the send waits and the resume hook ends it (F079, `expireUnseenApprovals`).
+// A reply ends as `timeout` 7 days after `created_at`, whatever `notified_at`; the 48 h rules of the other kinds skip it.
 export async function listExpiredApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -25,15 +29,19 @@ export async function listExpiredApprovals(
 ): Promise<{ id: string; reason: ExpiredReason }[]> {
   const ttlBefore = new Date(opts.now.getTime() - APPROVAL_TTL_MS);
   const createdBefore = new Date(opts.now.getTime() - UNNOTIFIED_TTL_MS);
+  const replyBefore = new Date(opts.now.getTime() - REPLY_TTL_MS);
   const result = await sql<{ id: string; reason: ExpiredReason }>`
     select id, reason from (
       select a.id, a.created_at,
         case
-          when a.status = 'awaiting_approval' and a.notified_at < ${ttlBefore} and ${requestSent} then 'timeout'
+          when a.status = 'awaiting_approval' and ${isReply} and a.created_at < ${replyBefore} then 'timeout'
+          when a.status = 'awaiting_approval' and not ${isReply} and a.notified_at < ${ttlBefore} and ${requestSent}
+            then 'timeout'
           when a.status = 'awaiting_approval' and d.status in ('failed', 'undone') then 'draft_missing'
-          when a.status = 'awaiting_approval' and a.notified_at is null and a.created_at < ${createdBefore}
-            then 'not_notified'
-          when a.status = 'awaiting_approval' and a.notified_at < ${ttlBefore} and o.plan <> 'suspended' then 'not_seen'
+          when a.status = 'awaiting_approval' and not ${isReply} and a.notified_at is null
+            and a.created_at < ${createdBefore} then 'not_notified'
+          when a.status = 'awaiting_approval' and not ${isReply} and a.notified_at < ${ttlBefore}
+            and o.plan <> 'suspended' then 'not_seen'
           when a.status = 'approved' and a.approved_at < ${ttlBefore}
             and (a.locked_at is null or a.locked_at < ${opts.staleBefore}) then 'held_timeout'
         end as reason
@@ -69,6 +77,8 @@ export async function listUnseenApprovalSends(
     where a.org_id = ${ctx.orgId}
       and coalesce(e.mailbox_id, l.mailbox_id) is not null
       and a.type = 'send' and a.status = 'awaiting_approval'
+      -- A reply never ends as not_seen: it has its own 7-day limit, and the approval detector writes no card for it.
+      and a.payload->>'kind' is distinct from 'reply'
       and a.notified_at is not null and a.notified_at < ${opts.before}
       and not exists (
         select 1 from outbox o

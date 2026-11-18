@@ -185,7 +185,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     to: "failed",
     types: ["send"],
     writer: "finishAction",
-    reasons: ["bad_payload", "smtp_error"], // `smtp_error`: the third compose error
+    reasons: ["bad_payload", "has_gaps", "smtp_error"], // `smtp_error`: the third compose error; `has_gaps`: a reply text with a gap
     callers: ["send.ts"],
   },
   {
@@ -335,8 +335,15 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
       "policy_changed",
       "delegation_closed",
       "superseded",
+      // `closeSend` (close.ts) for every kind: the reasons of the reply drafts. No caller yet; the sweep and the pre-send pass call it.
+      "answered",
+      "newer_mail",
+      "original_moved",
+      "suspicious",
+      "sent_by_user",
+      "draft_changed",
     ],
-    callers: ["expiry.ts", "edit.ts"], // through `expireSend`: approvals.ts, drafts.ts, expire.ts, expiry.ts; `superseded`: edit.ts
+    callers: ["expiry.ts", "replace.ts", "close.ts"], // through `expireSend`: approvals.ts, drafts.ts, expire.ts, expiry.ts; `superseded`: replace.ts (the core of editApproval)
   },
   {
     id: "E19",
@@ -344,8 +351,20 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     to: "expired",
     types: ["send"],
     writer: "setExpired",
-    reasons: ["held_timeout", "delegation_closed"], // only when the row is not held
-    callers: ["expiry.ts"],
+    // Only when the row is not held, or when the committer that holds it closes it (`closeSend` with `claimed: true`).
+    reasons: [
+      "held_timeout",
+      "delegation_closed",
+      "policy_changed",
+      "answered",
+      "newer_mail",
+      "original_moved",
+      "suspicious",
+      "sent_by_user",
+      "draft_changed",
+      "draft_missing",
+    ],
+    callers: ["expiry.ts", "close.ts"],
   },
   {
     id: "E20",

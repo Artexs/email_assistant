@@ -937,6 +937,8 @@ export const pl: Record<TextKey, string> = {
   appr_done_rejected: "Odrzucono.",
   appr_changed: "Ten szkic został zmieniony. Sprawdź nową wersję.",
   appr_draft_not_ready: "Szkic nie jest jeszcze gotowy. Spróbuj za chwilę.",
+  appr_has_gaps: "W tej odpowiedzi jest jeszcze luka w podwójnych nawiasach kwadratowych. Uzupełnij ją i zatwierdź.",
+  appr_feature_off: "Szkice odpowiedzi są wyłączone. Nic nie wysłano.",
   appr_closed_held: "Ten szkic jest już zatwierdzony. Czeka na wysłanie.",
   appr_closed_sending: "Ten szkic jest już zatwierdzony i trwa jego wysyłanie.",
   appr_closed_sent: "Ten szkic został już wysłany.",
