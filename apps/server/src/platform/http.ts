@@ -49,13 +49,13 @@ export interface WebDeps {
   listMembershipsOfUser: (userId: string) => Promise<{ org_id: string; role: MembershipRole }[]>;
   homePath?: (userId: string) => Promise<"/onboarding" | "/activity">; // where "/" goes; default "/onboarding"
   routers?: (api: Hono<ApiEnv>) => void; // web.ts mounts the module routers (after requireTenant)
-  // Routes before the session guard (F117: the OAuth callback answers 303 /login, not 401). Each reads the session itself and enters the
+  // Routes before the session guard (the OAuth callback answers 303 /login, not 401). Each reads the session itself and enters the
   // tenant scope itself; the tenant-scope test lists them in `PUBLIC_ROUTES`.
   publicRouters?: (api: Hono<ApiEnv>) => void;
   isOrgSuspended?: (orgId: string) => Promise<boolean>; // absent: no organization is suspended (old tests)
   resetRequestOpen?: boolean; // absent = false: /request-password-reset answers 404
-  operatorUserIds?: ReadonlySet<string>; // D16: absent = nobody is an operator
-  anySsoUsable?: () => Promise<boolean>; // F119 D14: one provider is proved and its flag is on; absent = false
+  operatorUserIds?: ReadonlySet<string>; // Absent = nobody is an operator
+  anySsoUsable?: () => Promise<boolean>; // One provider is proved and its flag is on; absent = false
 }
 
 export interface HttpDeps {
@@ -114,7 +114,7 @@ export function clientAddress(
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** D17: a proxy's x-request-id is reused only from a trusted peer and only as a UUID (lower-cased). null: make a new one. */
+/** A proxy's x-request-id is reused only from a trusted peer and only as a UUID (lower-cased). null: make a new one. */
 export function incomingRequestId(
   header: string | undefined,
   peer: string | undefined,
@@ -224,7 +224,7 @@ export const requireSession: MiddlewareHandler<ApiEnv> = async (c, next) => {
 
 const warnedMultiOrg = new Set<string>();
 
-// D3: the tenant comes from the session user's oldest membership, never from the request.
+// The tenant comes from the session user's oldest membership, never from the request.
 export function requireTenant(deps: {
   listMembershipsOfUser: WebDeps["listMembershipsOfUser"];
 }): MiddlewareHandler<ApiEnv> {
@@ -253,7 +253,7 @@ export const SUSPENDED_WRITE_ALLOW: readonly { method: string; path: RegExp }[] 
   { method: "PATCH", path: /^\/api\/me\/locale$/ },
   // A paused account can still delete itself (owner decision of the suspended-organization ticket).
   { method: "DELETE", path: /^\/api\/organization$/ },
-  // The operator acts on other organizations; its own organization's plan does not matter (plan D21).
+  // The operator acts on other organizations; its own organization's plan does not matter.
   { method: "POST", path: /^\/api\/operator\// },
 ];
 
@@ -264,7 +264,7 @@ export const OPERATOR_PAGE = /^\/operator(\/|$)/i;
 
 const READ_METHODS: readonly string[] = ["GET", "HEAD", "OPTIONS"];
 
-// D4, S2: a suspended organization reads, it does not write. A throw goes to onError (500): fail closed.
+// A suspended organization reads, it does not write. A throw goes to onError (500): fail closed.
 export const refuseSuspendedWrites: MiddlewareHandler<ApiEnv> = async (c, next) => {
   const web = c.get("web");
   if (
@@ -279,8 +279,8 @@ export const refuseSuspendedWrites: MiddlewareHandler<ApiEnv> = async (c, next) 
   await next();
 };
 
-// D15: every path under /api/operator answers a non-operator like a path that does not exist. The log holds the user id only.
-// F105 D10 (ADR 0026 point 1): an operator needs TOTP. The 404 check stays first, so a non-operator never learns about this rule.
+// Every path under /api/operator answers a non-operator like a path that does not exist. The log holds the user id only.
+// ADR 0026 point 1: an operator needs TOTP. The 404 check stays first, so a non-operator never learns about this rule.
 export const requireOperator: MiddlewareHandler<ApiEnv> = async (c, next) => {
   const { userId, twoFactorEnabled, signInMethod } = c.get("session");
   if (c.get("web").operatorUserIds?.has(userId) !== true) {
@@ -329,7 +329,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   const { web } = deps;
   const app = new Hono<ApiEnv>();
 
-  // D17: one request id per request, in every log line of the request and in the response header.
+  // One request id per request, in every log line of the request and in the response header.
   app.use("*", async (c, next) => {
     const requestId =
       (web === null ? null : incomingRequestId(c.req.header("x-request-id"), web.connInfo(c), web.trustedProxies)) ??
@@ -398,7 +398,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     return web.auth.handler(authRequest(c.req.raw, address));
   });
 
-  // Public, before the session guard (F119 D14, Q6). It takes no input and answers one bit that is the same for every
+  // Public, before the session guard. It takes no input and answers one bit that is the same for every
   // caller, so it cannot tell an address or an organization apart. The read is small: sso_providers (a seq scan at this
   // size) joined to org_features by key, the same for any data. Only GET: every other method falls through to the session guard like an unknown path.
   app.get("/api/sign-in-options", signInOptionsDoc, async (c) => {

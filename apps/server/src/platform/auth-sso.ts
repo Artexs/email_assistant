@@ -11,7 +11,7 @@ import { dnsLookupAll, isLocalAddress, type LookupAll } from "./net-address";
 
 const log = createLog("auth_sso");
 
-// The sign-in with a company identity provider (F119). This file is the only one that imports `@better-auth/sso` (ESLint).
+// The sign-in with a company identity provider. This file is the only one that imports `@better-auth/sso` (ESLint).
 // Better Auth loads the plugin with a small surface: two paths, no provider endpoints, no sign-up.
 
 export const SSO_SIGN_IN_PATH = "/sign-in/sso";
@@ -244,7 +244,7 @@ function ssoPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
   });
 }
 
-// Discovery of a provider, for the operator CLI (F119, stage 07). The plugin trusts a discovery URL only inside Better Auth's
+// Discovery of a provider, for the operator CLI. The plugin trusts a discovery URL only inside Better Auth's
 // `trustedOrigins`; that list stays the panel list. Discovery gets our own predicate instead, and a DNS check for the
 // hosts it accepts by name (the plugin skips its own DNS check for a trusted URL: `spike.md` C3).
 

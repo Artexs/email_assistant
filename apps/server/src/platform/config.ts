@@ -89,7 +89,7 @@ function parseAddressList(value: string | undefined): string[] {
   return [...new Set(items.filter((item) => item !== ""))];
 }
 
-// The providers of mailbox OAuth (F117). The mail module has the same union (`MailOAuthProvider`): `platform` does not import `modules`.
+// The providers of mailbox OAuth. The mail module has the same union (`MailOAuthProvider`): `platform` does not import `modules`.
 export const mailOAuthProviderIds = ["microsoft", "google"] as const;
 export type MailOAuthProviderId = (typeof mailOAuthProviderIds)[number];
 
@@ -115,7 +115,7 @@ const baseSchema = z.object({
   CREDENTIALS_KEY: z.string().refine(isCredentialsKey, "must be base64 of 32 bytes"),
   CREDENTIALS_KEY_VERSION: z.coerce.number().int().positive().default(1),
   HEARTBEAT_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
-  // Web Push (F118, RFC 8292): the VAPID key pair (raw P-256, base64url) and the contact URI. All three or none. Secret: never print or log.
+  // Web Push (RFC 8292): the VAPID key pair (raw P-256, base64url) and the contact URI. All three or none. Secret: never print or log.
   VAPID_PUBLIC_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
   VAPID_PRIVATE_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
   VAPID_SUBJECT: z.preprocess(emptyAsUndefined, z.string().optional()),
@@ -161,7 +161,7 @@ const baseSchema = z.object({
   OPENAI_ENDPOINT_KIND: z.preprocess(emptyAsUndefined, z.literal("own").optional()),
   // LLM call attempts per mailbox per America/Los_Angeles day.
   LLM_DAILY_CAP: z.coerce.number().int().positive().default(defaultLlmDailyCap),
-  // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended (S6a).
+  // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended.
   TRIAGE_LLM_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
   // off = no mailbox change; synthetic = only synthetic mail; all = real mail, by the mode and the switches of each mailbox.
   ACTIONS_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
@@ -171,7 +171,7 @@ const baseSchema = z.object({
   SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Comma-separated sender addresses whose mail counts as test mail (D1 of F097). Empty = none.
   TEST_SENDER_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // Send limits per mailbox (PD-044); a send over a limit waits. Integers 1 to 10 000; empty = the default.
+  // Send limits per mailbox; a send over a limit waits. Integers 1 to 10 000; empty = the default.
   SEND_LIMIT_MAILBOX_HOUR: z.preprocess(
     emptyAsUndefined,
     z.coerce.number().int().min(1).max(10_000).default(DEFAULT_SEND_LIMITS.mailboxHour)
@@ -185,7 +185,7 @@ const baseSchema = z.object({
     z.coerce.number().int().min(1).max(10_000).default(DEFAULT_SEND_LIMITS.recipientDay)
   ),
   // Comma list of authserv-ids (hosts) whose `Authentication-Results` header the suspicious-mail rules trust, besides the
-  // registrable domain of the mailbox IMAP host (F109 D2). Empty = none.
+  // registrable domain of the mailbox IMAP host. Empty = none.
   MAIL_TRUSTED_AUTHSERV_IDS: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Minutes between two mail syncs (D7 of F100): 2, 3 or 5. Empty = 2.
   MAIL_SYNC_EVERY_MIN: z.preprocess(emptyAsUndefined, z.enum(["2", "3", "5"]).default("2")),
@@ -204,7 +204,7 @@ const baseSchema = z.object({
       .regex(/^-?\d{1,15}$/)
       .optional()
   ),
-  // The language of the operator alert texts (F114): `en` or `pl`. Empty = `en`.
+  // The language of the operator alert texts: `en` or `pl`. Empty = `en`.
   OPERATOR_LOCALE: z.preprocess(emptyAsUndefined, z.enum(["en", "pl"]).default("en")),
   // F114 service levels of the operator alerts. Empty = the default. Whole numbers, except SLO_DISK_FREE_GB (decimals).
   // Minutes since the last sync before a mailbox counts as late.
@@ -226,7 +226,7 @@ const baseSchema = z.object({
   SLO_BACKUP_MAX_AGE_H: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(720).default(26)),
   // The status file that deploy/backup.sh writes (mounted read-only). Empty = the backup check is off.
   BACKUP_STATUS_FILE: z.preprocess(emptyAsUndefined, z.string().startsWith("/", "must be an absolute path").optional()),
-  // The folder of the gate files (`classifier-*.json`) that the server reads at start (F110 D1). Empty = `evals/results/gate` of the image.
+  // The folder of the gate files (`classifier-*.json`) that the server reads at start. Empty = `evals/results/gate` of the image.
   GATE_EVIDENCE_DIR: z.preprocess(emptyAsUndefined, z.string().startsWith("/", "must be an absolute path").optional()),
   // Comma list of flag keys (packages/core/src/features.ts) that read off for every organization. Empty = none.
   FEATURES_OFF: z.preprocess(emptyAsUndefined, z.string().optional()),
@@ -244,7 +244,7 @@ const baseSchema = z.object({
   WEB_MAIL_ALLOW_LOCAL: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).optional()),
   // true = mail hosts on localhost or a private network are allowed for the connect form, sync and send (dev, e2e).
   MAIL_ALLOW_LOCAL_HOSTS: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).optional()),
-  // Auth mail (S6b): host, user, password and from are set together. None set = the sender is off.
+  // Auth mail: host, user, password and from are set together. None set = the sender is off.
   AUTH_SMTP_HOST: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   AUTH_SMTP_PORT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(65535).default(465)),
   AUTH_SMTP_SECURITY: z.preprocess(emptyAsUndefined, z.enum(["tls", "starttls"]).default("tls")),
@@ -254,7 +254,7 @@ const baseSchema = z.object({
   AUTH_MAIL_FROM: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
   // on = a new password is checked against the Have I Been Pwned list; off = tests only.
   AUTH_PWNED_CHECK: z.preprocess(emptyAsUndefined, z.enum(["on", "off"]).default("on")),
-  // Mailbox OAuth apps (F117, D7). Each client id is set with its secret. Secrets: never print or log them.
+  // Mailbox OAuth apps. Each client id is set with its secret. Secrets: never print or log them.
   MAIL_OAUTH_MICROSOFT_CLIENT_ID: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   MAIL_OAUTH_MICROSOFT_CLIENT_SECRET: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   MAIL_OAUTH_GOOGLE_CLIENT_ID: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
@@ -399,7 +399,7 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
       }
     }
   }
-  // D7: both keys of a provider or none; a provider that is set needs WEB_BASE_URL (the redirect URI). A message never holds a value.
+  // Both keys of a provider or none; a provider that is set needs WEB_BASE_URL (the redirect URI). A message never holds a value.
   for (const provider of mailOAuthProviderIds) {
     const [idKey, secretKey] = mailOAuthKeys[provider];
     const idSet = config[idKey] !== undefined;
@@ -478,7 +478,7 @@ export interface LlmRoleOverride {
  */
 export function llmRoleTable(config: Config, overrides: Partial<Record<LlmRole, LlmRoleOverride>> = {}): LlmRoleTable {
   const providerRow = (provider: LlmProviderId) => providerBlocks[provider](config);
-  // D4: an own server gets no `reasoning` field, whatever an env key or an override says.
+  // An own server gets no `reasoning` field, whatever an env key or an override says.
   const noEffort = (provider: LlmProviderId) => providerRow(provider).endpoint()?.endpoint === "own";
   const finish = (row: LlmRoleSettings): LlmRoleSettings =>
     noEffort(row.provider) ? { ...row, reasoningEffort: null } : row;
@@ -578,7 +578,7 @@ export function testMailRule(config: Config): { senders: string[] } {
   return { senders: parseAddressList(config.TEST_SENDER_ADDRESSES) };
 }
 
-/** The send limits (PD-044). */
+/** The send limits. */
 export function sendLimits(config: Config): SendLimits {
   return {
     mailboxHour: config.SEND_LIMIT_MAILBOX_HOUR,
@@ -613,7 +613,7 @@ export function mailSyncCron(config: Config): string {
   return `*/${config.MAIL_SYNC_EVERY_MIN} * * * *`;
 }
 
-/** The thresholds of the service-level checks (F114). */
+/** The thresholds of the service-level checks. */
 export function sloThresholds(config: Config): SloThresholds {
   return {
     syncLagMin: config.SLO_SYNC_LAG_MIN,

@@ -76,16 +76,16 @@ export interface AuthDeps {
   onTermsAccepted: (userId: string, version: string) => Promise<void>;
   // Absent = no check (the CLIs and the tests that do not test it). Never rejects.
   pwnedCheck?: (password: string) => Promise<PwnedResult>;
-  // True = the user may not turn TOTP off (the break-glass owner, F105 D12). Absent = every user may.
+  // True = the user may not turn TOTP off (the break-glass owner). Absent = every user may.
   // Not caught: an error fails the request (500) and nothing changes (fail closed).
   keepsTwoFactor?: (userId: string) => Promise<boolean>;
-  // Who may sign in with the company IdP (F119). Absent = every identity is refused with `sso_off`.
+  // Who may sign in with the company IdP. Absent = every identity is refused with `sso_off`.
   resolveSsoMember?: (identity: SsoIdentity) => Promise<SsoResolution>;
   // True = the user's organization requires SSO and the user is not its break-glass owner with TOTP: the password sign-in
   // and the reset request are refused like a wrong password (ADR 0026 point 6). Absent = never refused (the CLIs and old tests).
   // Not caught: an error fails the request (500) and nothing changes (fail closed).
   passwordSignInRefused?: (userId: string) => Promise<boolean>;
-  // The audit row of an SSO sign-in or refusal (stage 04). It never throws into Better Auth.
+  // The audit row of an SSO sign-in or refusal. It never throws into Better Auth.
   onSsoEvent?: (event: SsoEvent) => Promise<void>;
 }
 
@@ -96,7 +96,7 @@ export interface AuthHandle {
   close(): Promise<void>;
 }
 
-// D1: the only paths of `/api/auth/*` that reach Better Auth. The five two-factor paths come from `auth-two-factor.ts`.
+// The only paths of `/api/auth/*` that reach Better Auth. The five two-factor paths come from `auth-two-factor.ts`.
 export const AUTH_ALLOWED_PATHS: ReadonlySet<string> = new Set([
   "/sign-in/email",
   "/sign-out",
@@ -160,7 +160,7 @@ export function createAddressLimiter(opts: { max: number; windowMs: number; now:
   };
 }
 
-// D20: Better Auth logs library text; only a fixed code reaches our log. Message starts from docs/known-alerts.md.
+// Better Auth logs library text; only a fixed code reaches our log. Message starts from docs/known-alerts.md.
 const BETTER_AUTH_REASONS: readonly (readonly [string, string])[] = [
   ["Reset Password: User not found", "reset_user_not_found"],
   ["Invalid password", "invalid_password"],

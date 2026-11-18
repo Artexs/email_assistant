@@ -18,9 +18,9 @@ const filesWith = (...needles: string[]): string[] =>
 
 describe("the call sites of the tenant scope", () => {
   test("only requireTenant, the OAuth callback and the two operator services of the DSR call withTenantScope", () => {
-    // The DSR find and erase run for one organization named by the operator: their scope backs up the org filter (F106).
+    // The DSR find and erase run for one organization named by the operator: their scope backs up the org filter.
     // The OAuth callback sits before the session guard (a browser without a session goes to /login), so it reads the session and enters
-    // the scope of the session's organization itself (F117 stage 09).
+    // the scope of the session's organization itself.
     expect(filesWith("withTenantScope(")).toEqual([
       "modules/mail/oauth/callback-route.ts",
       "modules/privacy/dsr.ts",

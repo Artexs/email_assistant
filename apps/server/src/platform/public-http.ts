@@ -3,7 +3,7 @@ import { BlockList, isIP } from "node:net";
 
 import { isLocalAddress, type LookupAll } from "./net-address";
 
-// The one place where the server sends a request to a URL that mail text names (F110 stage 24, D17, RFC 8058 one-click
+// The one place where the server sends a request to a URL that mail text names (RFC 8058 one-click
 // unsubscribe). The URL is untrusted. This module can send ONE request: a POST with the fixed body
 // `List-Unsubscribe=One-Click` to a public `https` host on port 443. What it does, in order:
 //   1. It reads the URL and refuses a scheme, a user name, a port or a host form that is not a plain public name (an IP literal in

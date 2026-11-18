@@ -77,7 +77,7 @@ export function twoFactorOn(user: object): boolean {
 
 type AuditContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
-// F128: turning two-factor off and making new backup codes need a code, not only the password.
+// Turning two-factor off and making new backup codes need a code, not only the password.
 // The code goes through the plugin's own verify (`verifyTOTP`, `verifyBackupCode`); no code check is written here.
 // The plugin counts failed codes only at sign-in, so the lock-out is applied here on the same columns and numbers.
 export const SECOND_FACTOR_ACTIONS: Readonly<Record<string, "disable" | "backup_codes" | undefined>> = {
@@ -226,7 +226,7 @@ export async function requireSecondFactorCode(ctx: AuditContext, input: SecondFa
 
 const WRONG_CODE_ERRORS: ReadonlySet<string> = new Set(["INVALID_CODE", "INVALID_BACKUP_CODE"]);
 
-// D8: the request whose failed code made the count reach the limit reports the lock, once.
+// The request whose failed code made the count reach the limit reports the lock, once.
 // The challenge cookie names the user; the request has no session.
 async function reportLockOnce(ctx: AuditContext, report: AuthReport): Promise<void> {
   const id = await ctx.getSignedCookie(ctx.context.createAuthCookie("two_factor").name, ctx.context.secret);
@@ -246,7 +246,7 @@ async function reportLockOnce(ctx: AuditContext, report: AuthReport): Promise<vo
   await report("two_factor_locked", userId, { locked_until: row.lockedUntil.toISOString() });
 }
 
-// D9: TOTP turns on. Every older trusted device and every other session of the user ends: none of
+// TOTP turns on. Every older trusted device and every other session of the user ends: none of
 // them passed a second factor. The read comes first, so a failed read changes nothing.
 async function endOlderAccess(ctx: AuditContext, userId: string, keepSessionId: string): Promise<void> {
   const others = (await ctx.context.internalAdapter.listSessions(userId))
