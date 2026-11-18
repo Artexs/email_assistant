@@ -37,7 +37,7 @@ import {
 } from "./modules/mail";
 import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
-import { activityRoutes, statsRoutes } from "./modules/reports";
+import { activityRoutes, statsRoutes, type StatsRouteDeps } from "./modules/reports";
 import {
   anySsoUsable,
   getUserAuthProfile,
@@ -252,6 +252,23 @@ export function homePathOf(
   };
 }
 
+// F110 stage 12: the stats route reads the three evidence sources of M8 through the trust reader. `reports` may not import `trust`,
+// so this root passes the reader.
+export function statsRouteDeps(
+  db: Db,
+  now: () => Date,
+  testMail: TestMailRule,
+  gate?: GateEvidenceDeps
+): StatsRouteDeps {
+  return {
+    db,
+    now,
+    urgentNotices: listUrgentNoticeTimes,
+    testMail,
+    trustEvidence: trustEvidenceOf(db, now, gate, testMail),
+  };
+}
+
 // D8, D16: the web calls the same setters as the CLI, with the one `settingsDeps` builder.
 export function settingsRouteDeps(
   db: Db,
@@ -381,16 +398,7 @@ export function apiRouters(
     api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
-    api.route(
-      "/",
-      statsRoutes({
-        db,
-        now,
-        urgentNotices: listUrgentNoticeTimes,
-        testMail: testMailRule(config),
-        trustEvidence: trustEvidenceOf(db, now, extras.gate, testMailRule(config)),
-      })
-    );
+    api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));

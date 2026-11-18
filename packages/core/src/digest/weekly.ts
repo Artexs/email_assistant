@@ -53,12 +53,12 @@ function autoItems(week: WeekStats, texts: CoreTexts): string[] {
 
 // F110 stage 12 (PD-066, D15): one line per bar category with the evidence of its `auto`. A category with an active trip in any
 // mailbox reads "paused (reason)"; else a category with `auto` on reads proof and check, from the row with the most kept labels.
-// One line per category, so the lines never grow with the number of mailboxes. Rows with null keys (flag off, no reader) add nothing.
+// One line per category, so the lines never grow with the number of mailboxes. A row with null keys (flag off, no reader) adds nothing.
 function evidenceItems(week: WeekStats, texts: CoreTexts): string[] {
   const t = texts.notices.weekly;
   const items: string[] = [];
   for (const category of barCategories) {
-    const rows = week.m8.filter((row) => row.category === category && row.global !== null);
+    const rows = week.m8.filter((row) => row.category === category);
     const name = t.category[category];
     const paused = rows.find((row) => row.trip?.tripped === true && row.trip.reason !== null);
     if (paused?.trip?.reason) {

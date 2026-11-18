@@ -3,12 +3,11 @@ import { randomUUID } from "node:crypto";
 import { statsResponseSchema } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import { settingsDeps } from "../../src/composition";
 import { listUrgentNoticeTimes } from "../../src/modules/channels";
 import { statsRoutes, weekStats } from "../../src/modules/reports";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
-import { trustEvidenceReader } from "../../src/modules/trust";
+import { statsRouteDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 import { flagLoops, seedLoops } from "./loops-m2-fixtures";
@@ -121,23 +120,13 @@ describe("GET /api/stats", () => {
   // F110 stage 12: the reader is wired like the root does; both roles read the same keys, and the flag decides.
   test("trust_ladder on: both roles get the three evidence keys; off: null", async () => {
     await flag(true);
+    // The root's own builder, with a gate file in which `info` is `go`.
+    const gate = gateOf(gateFile({ info: 0.8 }));
     const withReader = () =>
       webTestApp({
         db,
         sessions: { owner: seeded.orgA.ownerId, assistant: assistantId },
-        routers: (api) =>
-          api.route(
-            "/",
-            statsRoutes({
-              db,
-              now: () => NOW,
-              ...deps,
-              trustEvidence: trustEvidenceReader({
-                settings: settingsDeps(db, () => NOW, gateOf(gateFile({ info: 0.8 }))),
-                testMail: { senders: [] },
-              }),
-            })
-          ),
+        routers: (api) => api.route("/", statsRoutes(statsRouteDeps(db, () => NOW, { senders: [] }, gate))),
       });
     const rowsOf = async (role: "owner" | "assistant") =>
       statsResponseSchema.parse(await (await withReader().request("/api/stats?weeks=1", as(role))).json()).weeks[0]
