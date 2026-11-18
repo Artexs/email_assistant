@@ -39,3 +39,7 @@ Own e2e DB first (name `f115_s15_e2e`). Never `web:dev`.
 
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** samples (16), docs (17).
+
+## Carry-over from stage 08
+
+- The Telegram card line is now "Edit here, or edit and send in your mail client." The panel keeps the old texts: `appr_send_note` ("The system sends it after your approval. Do not send the draft from your mail client.") and `appr_edit_hint` ("Edit here, not in your mail client."). Change both (en and pl, in place) so the panel and the card agree. A panel row that ends `expired` / `draft_changed` needs a status text; the approvals list has no text per reason, so check how `expired` rows show their reason.
