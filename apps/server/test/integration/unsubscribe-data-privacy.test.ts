@@ -11,7 +11,7 @@ import { eraseSubjectData, exportOrganization, matchSubject } from "../../src/mo
 import { createDb } from "../../src/platform/db";
 
 import { createOrgWithMailbox } from "./fixtures";
-import { testDb } from "./helpers";
+import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
 
 // The unsubscribe request of a sender is in the data request, the erase and the organization export.
 // The seed is committed (the erase runs its own transaction); `afterEach` removes it. The connection is the `app` role.
@@ -82,7 +82,8 @@ const rowsOf = (w: World) =>
     .orderBy("id")
     .execute();
 
-const match = (w: World, address: string) => db.transaction().execute((trx) => matchSubject(trx, w.orgId, address));
+const match = (w: World, address: string) =>
+  db.transaction().execute((trx) => matchSubject(trx, w.orgId, address, TEST_CREDENTIALS_KEY));
 
 const erase = (w: World, address: string) =>
   eraseSubjectData(db, { orgId: w.orgId, address, confirm: address, credentialsKey: KEY, now: NOW });
@@ -187,7 +188,13 @@ describe("unsubscribe requests in the organization export", () => {
     const person = `news-${randomUUID().slice(0, 8)}@list.test`;
     await seedRequest(w, person, { status: "refused", code: "private_host" });
     const out = join(dir, `${randomUUID()}.age`);
-    const exported = await exportOrganization(db, { orgId: w.orgId, recipient, out, now: NOW });
+    const exported = await exportOrganization(db, {
+      orgId: w.orgId,
+      recipient,
+      out,
+      credentialsKey: TEST_CREDENTIALS_KEY,
+      now: NOW,
+    });
     expect(exported.kind).toBe("written");
     const tables = (await decrypt(out)).tables as Record<string, Record<string, unknown>[]>;
 

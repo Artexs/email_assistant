@@ -1,10 +1,13 @@
 import { resolve } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
+import { sql } from "kysely";
 
 import { insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
+import { setOrgFeature } from "../../src/modules/tenancy";
+import { createDb } from "../../src/platform/db";
 
-import { createOrgWithMailbox } from "./fixtures";
+import { createOrgWithMailbox, seedSenderActivity } from "./fixtures";
 import { testDb } from "./helpers";
 
 const db = testDb();
@@ -92,6 +95,70 @@ describe("job:run CLI", () => {
     } finally {
       await db.deleteFrom("organizations").where("id", "=", created.orgId).execute();
       await db.deleteFrom("users").where("id", "=", created.userId).execute();
+    }
+  });
+
+  // The profile pass: counts only. A mailbox whose write fails gives exit 1, and the failure text (here with the address, the
+  // key hash and the subject in it) never reaches stdout or stderr.
+  test("contacts.refresh prints the counts line and exits 0; a mailbox that fails gives exit 1 and leaks no address", async () => {
+    const ownerUrl = process.env.MIGRATOR_DATABASE_URL;
+    if (ownerUrl === undefined) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role makes the trigger");
+    const owner = createDb(ownerUrl);
+    const created = await db.transaction().execute(async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const ctx = { orgId: org.orgId };
+      await setOrgFeature(trx, ctx, { flag: "sender_context", enabled: true, actor: "cli", now: new Date() });
+      await seedSenderActivity(trx, ctx, org.mailboxId, {
+        address: "anna.cli@acme.pl",
+        mails: [{ at: new Date(Date.now() - 24 * 3_600_000) }],
+      });
+      return org;
+    });
+    const fn = `cli_fail_${created.mailboxId.replaceAll("-", "")}`;
+    try {
+      const ok = await runJob(["--name", "contacts.refresh"]);
+      expect(ok.code).toBe(0);
+      expect(ok.stdout).toMatch(
+        /\[job-run\] contacts\.refresh: ran once \(mailboxes \d+, skipped \d+, written \d+, unchanged \d+, zeroed \d+, mailbox errors 0\)/
+      );
+      expect(ok.stdout).toMatch(/written [1-9]/);
+      expect(ok.stdout + ok.stderr).not.toContain("@");
+
+      // A trigger that fails the next write of this mailbox with the address in the message.
+      await sql
+        .raw(
+          `CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN
+             IF NEW.mailbox_id = '${created.mailboxId}' THEN
+               RAISE EXCEPTION 'MARKER anna.cli@acme.pl %', NEW.key_hash USING DETAIL = 'Subject: MARKER-SUBJECT';
+             END IF;
+             RETURN NEW;
+           END $f$`
+        )
+        .execute(owner);
+      await sql
+        .raw(`CREATE TRIGGER ${fn} BEFORE UPDATE ON sender_profiles FOR EACH ROW EXECUTE FUNCTION ${fn}()`)
+        .execute(owner);
+      // A new mail changes the stored row, so the next pass tries the UPDATE.
+      await db.transaction().execute(async (trx) => {
+        await seedSenderActivity(trx, { orgId: created.orgId }, created.mailboxId, {
+          address: "anna.cli@acme.pl",
+          mails: [{ at: new Date(Date.now() - 3_600_000) }],
+        });
+      });
+      const failed = await runJob(["--name", "contacts.refresh"]);
+      expect(failed.code).toBe(1);
+      expect(failed.stdout).toMatch(/contacts\.refresh: ran once \(.*mailbox errors [1-9]\)/);
+      const text = failed.stdout + failed.stderr;
+      expect(text).not.toContain("@");
+      expect(text).not.toContain("anna");
+      expect(text).not.toContain("MARKER");
+      expect(text).not.toMatch(/[0-9a-f]{64}/);
+    } finally {
+      await sql.raw(`DROP TRIGGER IF EXISTS ${fn} ON sender_profiles`).execute(owner);
+      await sql.raw(`DROP FUNCTION IF EXISTS ${fn}()`).execute(owner);
+      await db.deleteFrom("organizations").where("id", "=", created.orgId).execute();
+      await db.deleteFrom("users").where("id", "=", created.userId).execute();
+      await owner.destroy();
     }
   });
 });

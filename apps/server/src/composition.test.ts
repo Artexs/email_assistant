@@ -51,6 +51,27 @@ describe("the history job is wired in main.ts", () => {
   });
 });
 
+describe("the sender profile job is wired in main.ts", () => {
+  const main = read("main.ts");
+
+  test("it runs hourly at minute 7 (six fields: second 0), once, outside the block of the triage scope", () => {
+    expect(main).toContain('scheduler.add("contacts.refresh", "0 7 * * * *"');
+    expect(main.split('scheduler.add("contacts.refresh"')).toHaveLength(2);
+    const scopeStart = main.indexOf("if (scope !== null) {");
+    expect(scopeStart).toBeGreaterThan(-1);
+    const scopeEnd = main.indexOf("\n}\n", scopeStart);
+    const at = main.indexOf('scheduler.add("contacts.refresh"');
+    expect(at < scopeStart || at > scopeEnd).toBe(true);
+  });
+
+  test("the shutdown waits for its run", () => {
+    const start = main.indexOf("Promise.allSettled([");
+    expect(start).toBeGreaterThan(-1);
+    expect(main.slice(start, main.indexOf("])", start))).toContain("contactsRefreshRun");
+    expect(main).toContain("contactsRefreshRun = contactsRefresh.run()");
+  });
+});
+
 // ADR 0022 point 2: report mail is the system's own mail, so every caller of the sync, the backfill and the history run
 // passes the composed own-mail check. A root that passed `isOwnActionId` alone would store, triage and sample the report mail.
 describe("the own-mail check is composed in every root (F110 stage 20)", () => {

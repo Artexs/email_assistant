@@ -3,6 +3,7 @@ import { sql, type Transaction } from "kysely";
 import { dsrAddressHash, tombstoneKeyHash } from "../../platform/crypto";
 import { withTenantScope, type DB, type Db } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
+import { deleteSenderContextRowsOf, lockProfilesOfOrg } from "../contacts";
 
 import { DSR_ADDRESS_MAP, normalizeDsrAddress } from "./address-map";
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";
@@ -229,7 +230,12 @@ async function eraseInScope(
         trx
       );
 
-      const match = await matchSubject(trx, orgId, address);
+      // The profile pass of each mailbox takes its lock with try and reads under it. The erase takes the same locks and waits, so
+      // a running pass commits first (the delete below then removes the row it wrote) and a pass that starts later skips.
+      // The locks come before the match, so the match reads the rows of a pass that just ended.
+      await lockProfilesOfOrg(trx, { orgId });
+
+      const match = await matchSubject(trx, orgId, address, input.credentialsKey);
       if (match.ownAddress) return { kind: "own_address" };
       if (match.openActions.length > 0) return { kind: "open_actions", actionIds: match.openActions };
       const counts = dsrCounts(match);
@@ -279,10 +285,19 @@ async function eraseInScope(
       const step = input.step ?? eraseManyMailOutbox;
       const stepCounts = await step(trx, orgId, { mailIds, earliestCreatedAt: earliest.rows[0]?.at ?? null });
       const scrubbed = await scrubMentions(trx, orgId, patterns);
+      // The profile rows of the person (every mailbox) and the address suggestions found by the hash, among them the ended ones
+      // that hold no pattern. The open ones with the address as pattern went in the scrub above.
+      await deleteSenderContextRowsOf(trx, { orgId }, input.credentialsKey, address);
 
       // The erase must leave nothing that the match shows. If it does, roll back: a half erase is worse than none.
-      const after = await matchSubject(trx, orgId, address);
-      if (after.mails.length > 0 || after.sentMails.length > 0 || Object.keys(after.mentions).length > 0)
+      const after = await matchSubject(trx, orgId, address, input.credentialsKey);
+      if (
+        after.mails.length > 0 ||
+        after.sentMails.length > 0 ||
+        Object.keys(after.mentions).length > 0 ||
+        after.senderContext.profiles.length > 0 ||
+        after.senderContext.suggestions.length > 0
+      )
         throw new Error("dsr_erase_incomplete");
 
       await recordAudit(

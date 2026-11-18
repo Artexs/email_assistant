@@ -36,6 +36,9 @@ async function find(args: Extract<OrgDsrArgs, { mode: "find" }>, db: Db) {
   // a mail that goes, and the delegations that those deletions remove. The report line stays the last line.
   line(`chain actions ${counts.chain_actions}`);
   line(`chain delegations ${counts.chain_delegations}`);
+  // The profiles are found by the keyed hash of the address in every mailbox of the organization; the suggestions by the hash or the address.
+  line(`sender profiles ${counts.sender_profiles}`);
+  line(`sender suggestions ${counts.sender_suggestions}`);
   if (result.reportBytes !== null) line(`report ${result.reportBytes} bytes`);
   if (dsrIsEmpty(counts)) process.stderr.write("warning: no match, check the spelling of the address\n");
   return 0;
@@ -69,6 +72,8 @@ async function erase(args: Extract<OrgDsrArgs, { mode: "erase" }>, db: Db) {
   line(`tombstones ${result.tombstones}`);
   line(`chain actions ${result.counts.chain_actions}`);
   line(`chain delegations ${result.counts.chain_delegations}`);
+  line(`erased sender profiles ${result.counts.sender_profiles}`);
+  line(`erased sender suggestions ${result.counts.sender_suggestions}`);
   for (const [key, count] of Object.entries(result.scrubbed)) line(`scrubbed ${key} ${count}`);
   line(`blanked outbox ${result.stepCounts.outbox_blanked ?? 0}`);
   line(`dropped outbox ${result.stepCounts.outbox_dropped ?? 0}`);

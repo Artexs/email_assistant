@@ -44,3 +44,6 @@ All tests pass; mutation: drop the `status = 'open'` check in Accept → test 4 
 
 ## Carry-over from the stage 03b review (2026-11-18)
 See `../review-3b.md` (Stage 05 lines): Sent coverage with a missing Sent folder; frozen profiles of auth_error and host_blocked mailboxes.
+
+## Carry-over from the stage 04 review (2026-11-19)
+FIRST COMMIT of this stage: the tests TG1 to TG3, the two comment fixes N10 and the docs line N5 from `../review-4.md`, each test with a saved mutation log.
