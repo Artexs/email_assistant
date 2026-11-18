@@ -8,7 +8,7 @@ import { updateMailboxSettings } from "../../src/modules/config";
 import { delegationHooks } from "../../src/modules/delegation";
 import { newerMailInThread, refreshFlagsOfEmail } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
-import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
+import { insertInboxFolder, insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
 import { createReplySweep, SWEEP_LIMIT, SWEEP_LIST_LIMIT } from "../../src/modules/replies";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
@@ -756,6 +756,103 @@ describe("the sweep and the pass: moves, junk, spam (review N6, N7)", () => {
       await triage(spamMail, "needs_reply", new Date(later.getTime() + HOUR));
       await run(trx, o);
       expect(await send(trx, spam.sendId)).toMatchObject({ status: "expired", status_reason: "newer_mail" });
+    });
+  });
+});
+
+describe("the sweep: a paused mailbox, and a Sent row whose header is not read yet (stage 09 re-review G1, N-a)", () => {
+  test("G1. a mailbox that is not active (paused) is not swept: its answered send stays open; after a resume it closes", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      const pair = await sweepReply(trx, o);
+      await markAnswered(trx, o, pair.emailId);
+      await setMailboxStatus(trx, o.ctx, o.mailboxId, "paused", T0);
+
+      const paused = await run(trx, o);
+
+      expect(paused).toMatchObject({ mailboxes: 0, checked: 0 });
+      expect((await send(trx, pair.sendId)).status).toBe("awaiting_approval");
+
+      await setMailboxStatus(trx, o.ctx, o.mailboxId, "active", T0);
+      const resumed = await run(trx, o);
+
+      expect(resumed.closed.answered).toBe(1);
+      expect(await send(trx, pair.sendId)).toMatchObject({ status: "expired", status_reason: "answered" });
+    });
+  });
+
+  test("N-a. a user Sent row with content pending and no Auto-Submitted does not close the reply; once read (stored, or headers known) it does", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      const unread = await sweepReply(trx, o, { messageId: "<unread-one@x.test>" });
+      const sentRow = async (parent: string, content: "pending" | "stored", autoSubmitted: string | null) =>
+        trx
+          .insertInto("sent_emails")
+          .values({
+            org_id: o.ctx.orgId,
+            mailbox_id: o.mailboxId,
+            dedup_key: `mid:<${randomUUID()}@x.test>:h1`,
+            path: "Sent",
+            uidvalidity: "7",
+            uid: String(Math.floor(Math.random() * 1_000_000)),
+            message_id: `<${randomUUID()}@x.test>`,
+            parent_message_id: parent,
+            thread_key: parent,
+            to_addresses: ["boss@x.test"],
+            origin: "user",
+            content,
+            auto_submitted: autoSubmitted,
+            sent_at: new Date(T0.getTime() + HOUR),
+            internal_date: new Date(T0.getTime() + HOUR),
+          })
+          .returning("id")
+          .executeTakeFirstOrThrow();
+      const row = await sentRow("<unread-one@x.test>", "pending", null);
+
+      const first = await run(trx, o);
+
+      expect(first.closed.answered).toBe(0);
+      expect((await send(trx, unread.sendId)).status).toBe("awaiting_approval");
+
+      // The text step read the mail: no automatic header, so it is an answer.
+      await trx.updateTable("sent_emails").set({ content: "stored" }).where("id", "=", row.id).execute();
+      const second = await run(trx, o);
+
+      expect(second.closed.answered).toBe(1);
+      expect(await send(trx, unread.sendId)).toMatchObject({ status: "expired", status_reason: "answered" });
+    });
+  });
+
+  test("N-a. a pending row with a stored `no` counts as an answer", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await sweepOrg(trx);
+      const withNo = await sweepReply(trx, o, { messageId: "<with-no@x.test>" });
+      const insert = (parent: string, autoSubmitted: string) =>
+        trx
+          .insertInto("sent_emails")
+          .values({
+            org_id: o.ctx.orgId,
+            mailbox_id: o.mailboxId,
+            dedup_key: `mid:<${randomUUID()}@x.test>:h1`,
+            path: "Sent",
+            uidvalidity: "7",
+            uid: String(Math.floor(Math.random() * 1_000_000)),
+            message_id: `<${randomUUID()}@x.test>`,
+            parent_message_id: parent,
+            thread_key: parent,
+            to_addresses: ["boss@x.test"],
+            origin: "user",
+            content: "pending",
+            auto_submitted: autoSubmitted,
+            sent_at: new Date(T0.getTime() + HOUR),
+            internal_date: new Date(T0.getTime() + HOUR),
+          })
+          .execute();
+      await insert("<with-no@x.test>", "no");
+
+      await run(trx, o);
+
+      expect(await send(trx, withNo.sendId)).toMatchObject({ status: "expired", status_reason: "answered" });
     });
   });
 });

@@ -17,10 +17,13 @@ export interface UserAnswer {
 // mail's Message-ID. A system send never counts. It must also go to the sender of the mail or to its Reply-To (a forward to a colleague
 // that keeps the thread headers is no answer), and it must not be automatic (`Auto-Submitted` other than `no`: a vacation reply is no
 // answer). A row whose recipients were cleared by the retention is not judged by the recipient rule. The order is the send time, then the row id. Ids without a reply are absent.
+// `settledOnly`: a row whose text step has not run (`content = 'pending'`) and that has no stored `Auto-Submitted` does not count yet: its
+// header is unknown, so it may be a vacation reply. The sweep sets it (it reads no mailbox; the row counts once the sync reads it).
 export async function listUserAnswers(
   db: DbOrTrx,
   ctx: TenantContext,
-  emailIds: readonly string[]
+  emailIds: readonly string[],
+  opts: { settledOnly?: boolean } = {}
 ): Promise<Map<string, UserAnswer>> {
   const answers = new Map<string, UserAnswer>();
   for (let start = 0; start < emailIds.length; start += ANSWER_CHUNK) {
@@ -51,6 +54,9 @@ export async function listUserAnswers(
         )`
       )
       .where(sql<boolean>`${sql.raw(notAutomaticSql("s.auto_submitted"))}`)
+      .$if(opts.settledOnly === true, (qb) =>
+        qb.where(sql<boolean>`NOT (s.content = 'pending' AND s.auto_submitted IS NULL)`)
+      )
       .orderBy("e.id")
       .orderBy("s.sent_at")
       .orderBy("s.id")

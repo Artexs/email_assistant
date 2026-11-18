@@ -17,4 +17,14 @@ describe("docs/capabilities/drafts-and-send.md, the drafter job", () => {
     expect(page).toContain("`listSendsToNotify` skips every `reply` send");
     expect(page).toContain("A hard error and a timeout count a try");
   });
+
+  test("the limits of the answered check and the sweep (stage 09 re-review N-a to N-d)", () => {
+    expect(page).toContain("*Unread Sent header (N-a).*");
+    expect(page).toContain("*A client that sets no `\\Answered` (N-b).*");
+    expect(page).toContain("a plus address");
+    expect(page).toContain("*Starvation (N-c).*");
+    expect(page).toContain("more than 1000 open reply sends");
+    expect(page).toContain("*Two moves (N-d).*");
+    expect(page).toContain("does not compare the current folder");
+  });
 });
