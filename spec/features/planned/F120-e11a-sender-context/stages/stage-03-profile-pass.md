@@ -8,7 +8,7 @@ Carry-over reads: stages 01–02; `modules/triage/extras-reader.ts` (`mailKindFi
 
 - Goal: new module `contacts` (layer 3; edges of D7 only if imported; `bun run graph:modules`).
 - `readSenderActivity(db, ctx, mailboxId, { now, testMail })`: set-based SQL (a fixed number of statements per mailbox, never one per sender) that returns per lower-case address the raw counts of interfaces.md § Profile row, the 30-day sub-counts that stage 05 needs (`received30`, `answered30`, `flagged30`), the 90-day suggestion counts (corrected to spam, corrected or moved back away from `spam`/`notification`, suspicious mail), the reply-delay samples (D5) and the bulk signal codes. Plain addresses stay in memory.
-- Decisions: D4, D5. Own addresses (all mailboxes of the org, Sent From aliases of the mailbox) never get a row. Test mail never counts. A mail counts once per address even if the address is in To and Cc.
+- Decisions: D4, D5. Own addresses (all mailboxes of the org, Sent From aliases of the mailbox) never get a row. Test mail never counts. A mail counts once per address.
 - Bulk: a mail is bulk when it has `list_id`, `list_unsubscribe`, `auto_submitted` other than `no`, or a noreply sender (`isNoreplyAddress`). `relation` = `relationOf` with `isDelegate` (active delegate email equals the address) and `isVip` (a VIP rule of this mailbox or the org matches the address or its `@domain`).
 
 ## Step 2 — the pass and the job
