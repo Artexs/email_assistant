@@ -582,6 +582,10 @@ describe("the sweep: the cap counts closes, mailboxes are visited by the age of 
     await withRollback(db, async (trx) => {
       const idle = await sweepOrg(trx);
       const busy = await sweepOrg(trx);
+      // The idle mailbox holds a delegation send and a reply send that is no longer open: neither makes it a target.
+      await insertDraftAndSend(trx, idle.ctx, idle.mailboxId, { createdAt: T0 });
+      const rejected = await sweepReply(trx, idle);
+      await trx.updateTable("actions").set({ status: "rejected" }).where("id", "=", rejected.sendId).execute();
       const pair = await sweepReply(trx, busy);
       await markAnswered(trx, busy, pair.emailId);
 

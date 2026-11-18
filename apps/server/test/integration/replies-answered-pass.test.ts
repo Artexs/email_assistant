@@ -3,8 +3,9 @@ import type { Transaction } from "kysely";
 import MailComposer from "nodemailer/lib/mail-composer";
 
 import { getSend } from "../../src/modules/actions";
+import { sentOriginOf } from "../../src/modules/actions";
 import { approvalViewFor } from "../../src/modules/channels/notices/approval";
-import type { MailProvider } from "../../src/modules/mail";
+import { syncSentHeaders, type MailProvider } from "../../src/modules/mail";
 import { markSentPass } from "../../src/modules/mail/repo";
 import type { DB } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
@@ -296,6 +297,48 @@ describe("the pass before a reply send: answered", () => {
       const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
       await sentSyncOn(trx, box.ctx, box.mailboxId);
       await appendUserReply(box, await messageIdOf(trx, p.emailId), LATE, { headers: { "Auto-Submitted": "no" } });
+
+      const send = await runSend(trx, box, p.sendId);
+
+      expect(send).toMatchObject({ status: "expired", status_reason: "answered" });
+      expect(box.sender.sent).toHaveLength(0);
+      // Only an automatic mail is marked: `no` is stored as nothing.
+      const row = await trx
+        .selectFrom("sent_emails")
+        .select("auto_submitted")
+        .where("mailbox_id", "=", box.mailboxId)
+        .executeTakeFirstOrThrow();
+      expect(row.auto_submitted).toBeNull();
+    });
+  });
+
+  test("4j. a UID that names another mail (a renumbered folder) is not read as the answer: its Auto-Submitted header is not used (review N4)", async () => {
+    await withRollback(db, async (trx) => {
+      const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
+      await sentSyncOn(trx, box.ctx, box.mailboxId);
+      const answerUid = await appendUserReply(box, await messageIdOf(trx, p.emailId), LATE);
+      // Another mail of the user in Sent, automatic and unrelated.
+      const autoUid = await appendUserReply(box, "<unrelated-mail@x.test>", LATE, {
+        headers: { "Auto-Submitted": "auto-replied" },
+      });
+      await syncSentHeaders(
+        {
+          db: trx,
+          provider: box.mailClient,
+          sentOriginOf: (ctx, mailboxId, actionId) => sentOriginOf(trx, ctx, mailboxId, actionId),
+          now: () => NOW,
+        },
+        box.ctx,
+        box.mailboxId
+      );
+      // The folder is renumbered: the stored answer now points at the UID of the automatic mail.
+      const moved = await trx
+        .updateTable("sent_emails")
+        .set({ uid: String(autoUid) })
+        .where("mailbox_id", "=", box.mailboxId)
+        .where("uid", "=", String(answerUid))
+        .executeTakeFirst();
+      expect(Number(moved.numUpdatedRows)).toBe(1);
 
       const send = await runSend(trx, box, p.sendId);
 
